@@ -228,6 +228,13 @@ class ObjectEntity extends Entity implements JsonSerializable
     protected ?string $description = null;
 
     /**
+     * Image of the object.
+     *
+     * @var string|null Image of the object (base64 encoded or file reference)
+     */
+    protected ?string $image = null;
+
+    /**
      * An array defining group-based permissions for CRUD actions.
      * The keys are the CRUD actions ('create', 'read', 'update', 'delete'),
      * and the values are arrays of group IDs that are permitted to perform that action.
@@ -254,33 +261,34 @@ class ObjectEntity extends Entity implements JsonSerializable
     public function __construct(
 	)
     {
-        $this->addType(fieldName:'uuid', type: 'string');
-        $this->addType(fieldName:'uri', type: 'string');
-        $this->addType(fieldName:'version', type: 'string');
-        $this->addType(fieldName:'register', type: 'string');
-        $this->addType(fieldName:'schema', type: 'string');
-        $this->addType(fieldName:'object', type: 'json');
-        $this->addType(fieldName:'files', type: 'json');
-        $this->addType(fieldName:'relations', type: 'json');
-        $this->addType(fieldName:'locked', type: 'json');
-        $this->addType(fieldName:'owner', type: 'string');
-        $this->addType(fieldName:'authorization', type: 'json');
-        $this->addType(fieldName:'folder', type: 'string');
-        $this->addType(fieldName:'application', type: 'string');
-        $this->addType(fieldName:'organisation', type: 'string');
-        $this->addType(fieldName:'validation', type: 'json');
-        $this->addType(fieldName:'deleted', type: 'json');
-        $this->addType(fieldName:'geo', type: 'json');
-        $this->addType(fieldName:'retention', type: 'json');
-        $this->addType(fieldName:'size', type: 'string');
-        $this->addType(fieldName:'schemaVersion', type: 'string');
-        $this->addType(fieldName:'name', type: 'string');
-        $this->addType(fieldName:'description', type: 'string');
-        $this->addType(fieldName:'updated', type: 'datetime');
-        $this->addType(fieldName:'created', type: 'datetime');
-        $this->addType(fieldName:'published', type: 'datetime');
-        $this->addType(fieldName:'depublished', type: 'datetime');
-        $this->addType('groups', 'json');
+        $this->addType(fieldName: 'uuid', type: 'string');
+        $this->addType(fieldName: 'uri', type: 'string');
+        $this->addType(fieldName: 'version', type: 'string');
+        $this->addType(fieldName: 'register', type: 'string');
+        $this->addType(fieldName: 'schema', type: 'string');
+        $this->addType(fieldName: 'object', type: 'json');
+        $this->addType(fieldName: 'files', type: 'json');
+        $this->addType(fieldName: 'relations', type: 'json');
+        $this->addType(fieldName: 'locked', type: 'json');
+        $this->addType(fieldName: 'owner', type: 'string');
+        $this->addType(fieldName: 'authorization', type: 'json');
+        $this->addType(fieldName: 'folder', type: 'string');
+        $this->addType(fieldName: 'application', type: 'string');
+        $this->addType(fieldName: 'organisation', type: 'string');
+        $this->addType(fieldName: 'validation', type: 'json');
+        $this->addType(fieldName: 'deleted', type: 'json');
+        $this->addType(fieldName: 'geo', type: 'json');
+        $this->addType(fieldName: 'retention', type: 'json');
+        $this->addType(fieldName: 'size', type: 'string');
+        $this->addType(fieldName: 'schemaVersion', type: 'string');
+        $this->addType(fieldName: 'name', type: 'string');
+        $this->addType(fieldName: 'description', type: 'string');
+        $this->addType(fieldName: 'image', type: 'string');
+        $this->addType(fieldName: 'updated', type: 'datetime');
+        $this->addType(fieldName: 'created', type: 'datetime');
+        $this->addType(fieldName: 'published', type: 'datetime');
+        $this->addType(fieldName: 'depublished', type: 'datetime');
+        $this->addType(fieldName: 'groups', type: 'json');
 
     }//end __construct()
 
@@ -296,7 +304,7 @@ class ObjectEntity extends Entity implements JsonSerializable
         $objectData = $this->object ?? [];
 
         // Ensure 'id' is the first field by setting it before merging with object data
-        $objectData = array_merge(['id' => $this->uuid], $objectData);
+        $objectData = array_merge(array1: ['id' => $this->uuid], array2: $objectData);
 
         return $objectData;
 
@@ -464,6 +472,7 @@ class ObjectEntity extends Entity implements JsonSerializable
             'id'            => $this->uuid,
             'name'          => $this->name ?? $this->uuid,
             'description'   => $this->description ?? $this->id,
+            'image'         => $this->image,
             'uri'           => $this->uri,
             'version'       => $this->version,
             'register'      => $this->register,

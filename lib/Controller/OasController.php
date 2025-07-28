@@ -71,7 +71,7 @@ class OasController extends Controller
             $oasData = $this->oasService->createOas();
             return new JSONResponse($oasData);
         } catch (Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
     }//end generateAll()
@@ -95,7 +95,7 @@ class OasController extends Controller
             $oasData = $this->oasService->createOas($id);
             return new JSONResponse($oasData);
         } catch (Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
     }//end generate()

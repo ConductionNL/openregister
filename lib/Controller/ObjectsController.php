@@ -121,9 +121,9 @@ class ObjectsController extends Controller
     public function page(): TemplateResponse
     {
         return new TemplateResponse(
-            'openconnector',
-            'index',
-            []
+            appName: 'openconnector',
+            templateName: 'index',
+            parameters: []
         );
 
     }//end page()
@@ -283,7 +283,7 @@ class ObjectsController extends Controller
         }
 
         // Add object field filters directly to query
-        $query = array_merge($query, $objectFilters);
+        $query = array_merge(array1: $query, array2: $objectFilters);
 
         // Add IDs if provided
         if ($ids !== null) {
@@ -291,7 +291,7 @@ class ObjectsController extends Controller
         }
 
         // Add all special parameters (they'll be handled by searchObjectsPaginated)
-        $query = array_merge($query, $specialParams);
+        $query = array_merge(array1: $query, array2: $specialParams);
 
         return $query;
 
@@ -355,6 +355,36 @@ class ObjectsController extends Controller
 
 
     /**
+     * Helper method to resolve register and schema slugs to numeric IDs
+     * 
+     * This ensures consistent slug-to-ID conversion across all controller methods
+     * and prevents the discrepancy between slug-based and ID-based API calls.
+     *
+     * @param string        $register      Register slug or ID
+     * @param string        $schema        Schema slug or ID  
+     * @param ObjectService $objectService Object service instance
+     * @return array Array with resolved register and schema IDs: ['register' => int, 'schema' => int]
+     */
+    private function resolveRegisterSchemaIds(string $register, string $schema, ObjectService $objectService): array
+    {
+        // STEP 1: Initial resolution - convert slugs/IDs to numeric IDs
+        $objectService->setRegister($register)->setSchema($schema);
+        
+        // STEP 2: Get resolved numeric IDs
+        $resolvedRegisterId = $objectService->getRegister();
+        $resolvedSchemaId = $objectService->getSchema();
+        
+        // STEP 3: Reset ObjectService with resolved numeric IDs
+        // This ensures the entire pipeline works with IDs consistently
+        $objectService->setRegister((string)$resolvedRegisterId)->setSchema((string)$resolvedSchemaId);
+        
+        return [
+            'register' => $resolvedRegisterId,
+            'schema' => $resolvedSchemaId
+        ];
+    }
+
+    /**
      * Retrieves a list of all objects for a specific register and schema
      *
      * This method returns a paginated list of objects that match the specified register and schema.
@@ -381,31 +411,16 @@ class ObjectsController extends Controller
      */
     public function index(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
-        // IMPORTANT: Set register and schema context first to resolve IDs, slugs, or UUIDs to numeric IDs
-        // This is crucial for supporting both Nextcloud UI calls (/api/objects/4/666) and 
-        // external frontend calls (/api/objects/petstore/dogs)
-        $objectService->setRegister($register)->setSchema($schema);
-
-        // Get resolved numeric IDs for the search query
-        $resolvedRegisterId = $objectService->getRegister();
-        $resolvedSchemaId = $objectService->getSchema();
-
+        // Resolve slugs to numeric IDs consistently
+        $resolved = $this->resolveRegisterSchemaIds($register, $schema, $objectService);
+        
         // Build search query with resolved numeric IDs
-        $query = $this->buildSearchQuery($resolvedRegisterId, $resolvedSchemaId);
+        $query = $this->buildSearchQuery($resolved['register'], $resolved['schema']);
 
-        try {
-            // Use searchObjectsPaginated which handles facets, facetable fields, and all other features
-            $result = $objectService->searchObjectsPaginated($query);
-            
-            return new JSONResponse($result);
-        } catch (\Exception $e) {
-            // Fallback to legacy method if something goes wrong
-            // Use findAllPaginated which now supports _facetable parameter
-            $requestParams = $this->request->getParams();
-            $result = $objectService->findAllPaginated($requestParams);
-            
-            return new JSONResponse($result);
-        }
+        // Use searchObjectsPaginated which handles facets, facetable fields, and all other features
+        $result = $objectService->searchObjectsPaginated($query);
+        
+        return new JSONResponse($result);
 
     }//end index()
 
@@ -433,9 +448,8 @@ class ObjectsController extends Controller
         string $schema,
         ObjectService $objectService
     ): JSONResponse {
-        // Set the schema and register to the object service.
-        $objectService->setSchema($schema);
-        $objectService->setRegister($register);
+        // Resolve slugs to numeric IDs consistently
+        $resolved = $this->resolveRegisterSchemaIds($register, $schema, $objectService);
 
         // Get request parameters for filtering and searching.
         $requestParams = $this->request->getParams();
@@ -457,7 +471,7 @@ class ObjectsController extends Controller
             // Render the object with requested extensions and filters.
             return new JSONResponse($object);
         } catch (DoesNotExistException $exception) {
-            return new JSONResponse(['error' => 'Not Found'], 404);
+            return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
         }//end try
 
     }//end show()
@@ -485,9 +499,8 @@ class ObjectsController extends Controller
         ObjectService $objectService
     ): JSONResponse {
 
-        // Set the schema and register to the object service.
-        $objectService->setSchema($schema);
-        $objectService->setRegister($register);
+        // Resolve slugs to numeric IDs consistently
+        $resolved = $this->resolveRegisterSchemaIds($register, $schema, $objectService);
 
         // Get object data from request parameters.
         $object = $this->request->getParams();
@@ -517,10 +530,10 @@ class ObjectsController extends Controller
             }
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
-           return new JSONResponse($exception->getMessage(), 400);
+                       return new JSONResponse(data: $exception->getMessage(), statusCode: 400);
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors)
-            return new JSONResponse(['error' => $exception->getMessage()], 403);
+            return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
         }
 
         // Return the created object.
@@ -552,9 +565,8 @@ class ObjectsController extends Controller
         string $id,
         ObjectService $objectService
     ): JSONResponse {
-        // Set the schema and register to the object service.
-        $objectService->setSchema($schema);
-        $objectService->setRegister($register);
+        // Resolve slugs to numeric IDs consistently
+        $resolved = $this->resolveRegisterSchemaIds($register, $schema, $objectService);
 
         // Get object data from request parameters.
         $object = $this->request->getParams();
@@ -716,7 +728,7 @@ class ObjectsController extends Controller
 
             // Get the existing object data and merge with patch data
             $existingData = $existingObject->getObject();
-            $mergedData = array_merge($existingData, $patchData);
+            $mergedData = array_merge(array1: $existingData, array2: $patchData);
             $existingObject->setObject($mergedData);
 
         } catch (DoesNotExistException $exception) {
@@ -785,7 +797,7 @@ class ObjectsController extends Controller
 
             // Clone the object to pass as the new state for response
             $newObject = clone $oldObject;
-            $newObject->delete($this->userSession, $this->request->getParam('deletedReason'), $this->request->getParam('retentionPeriod'));
+            $newObject->delete($this->userSession, $this->request->getParam(key: 'deletedReason'), $this->request->getParam(key: 'retentionPeriod'));
 
             // Update the object in the mapper (soft delete)
             $this->objectEntityMapper->update($newObject);
@@ -1088,7 +1100,7 @@ class ObjectsController extends Controller
         // Get filters and type from request
         $filters = $this->request->getParams();
         unset($filters['_route']);
-        $type = $this->request->getParam('type', 'excel');
+        $type = $this->request->getParam(key: 'type', default: 'excel');
 
         // Get register and schema entities
         $registerEntity = $this->registerMapper->find($register);
@@ -1191,7 +1203,7 @@ class ObjectsController extends Controller
                     error_log("[ObjectsController] Processing CSV file");
                     
                     // For CSV, schema can be specified in the request
-                    $schemaId = $this->request->getParam('schema');
+                    $schemaId = $this->request->getParam(key: 'schema');
                     
                     if (!$schemaId) {
                         // If no schema specified, get the first available schema from the register
@@ -1264,8 +1276,8 @@ class ObjectsController extends Controller
         try {
             // Get the publication date from request if provided
             $date = null;
-            if ($this->request->getParam('date') !== null) {
-                $date = new \DateTime($this->request->getParam('date'));
+            if ($this->request->getParam(key: 'date') !== null) {
+                $date = new \DateTime($this->request->getParam(key: 'date'));
             }
 
             // Publish the object
@@ -1305,8 +1317,8 @@ class ObjectsController extends Controller
         try {
             // Get the depublication date from request if provided
             $date = null;
-            if ($this->request->getParam('date') !== null) {
-                $date = new \DateTime($this->request->getParam('date'));
+            if ($this->request->getParam(key: 'date') !== null) {
+                $date = new \DateTime($this->request->getParam(key: 'date'));
             }
 
             // Depublish the object
@@ -1480,7 +1492,7 @@ class ObjectsController extends Controller
             $fileService = $this->container->get(FileService::class);
 
             // Optional: get custom filename from query parameters
-            $customFilename = $this->request->getParam('filename');
+            $customFilename = $this->request->getParam(key: 'filename');
 
             // Create the ZIP archive
             $zipInfo = $fileService->createObjectFilesZip($object, $customFilename);

@@ -305,10 +305,17 @@ class ObjectEntityMapper extends QBMapper
         $user = $this->userSession->getUser();
         if ($user !== null) {
             $userGroups = $this->groupManager->getUserGroupIds($user);
-
-            // Admin users see all objects - no filtering needed
+            
+            // Admin users see all objects by default, but should still respect organization filtering
+            // when an active organization is explicitly set (i.e., when they switch organizations)
             if (in_array('admin', $userGroups)) {
-                return;
+                // If no active organization is set, admin users see everything (no filtering)
+                if ($activeOrganisationUuid === null) {
+                    return;
+                }
+                // If an active organization IS set, admin users should see only that organization's objects
+                // This allows admins to "switch context" to work within a specific organization
+                // Continue with organization filtering logic below
             }
         }
 
@@ -316,7 +323,6 @@ class ObjectEntityMapper extends QBMapper
         $userId = $user ? $user->getUID() : null;
         if ($userId === null) {
             // For unauthenticated requests, show objects that are currently published
-            // This provides publication-based public access similar to RBAC filters
             $now = (new \DateTime())->format('Y-m-d H:i:s');
             $qb->andWhere(
                 $qb->expr()->andX(
@@ -333,26 +339,23 @@ class ObjectEntityMapper extends QBMapper
 
         // Use provided active organization UUID or fall back to null (no filtering)
         if ($activeOrganisationUuid === null) {
-            // If no active organization provided, don't apply organization filtering
-            // This maintains backward compatibility when organization context isn't available
             return;
         }
 
         $organizationColumn = $objectTableAlias ? $objectTableAlias . '.organisation' : 'organisation';
 
-        // Check if this is the user's default (oldest) organization
-        $isDefaultOrgQb = $this->db->getQueryBuilder();
-        $isDefaultOrgQb->select('uuid')
-                       ->from('openregister_organisations')
-                       ->where($isDefaultOrgQb->expr()->like('users', $isDefaultOrgQb->createNamedParameter('%"' . $userId . '"%')))
-                       ->orderBy('created', 'ASC')
-                       ->setMaxResults(1);
-
-        $defaultResult = $isDefaultOrgQb->executeQuery();
-        $defaultOrgUuid = $defaultResult->fetchColumn();
+        // Check if this is the system-wide default organization (not user's oldest organization)
+        $defaultOrgQb = $this->db->getQueryBuilder();
+        $defaultOrgQb->select('uuid')
+                     ->from('openregister_organisations')
+                     ->where($defaultOrgQb->expr()->eq('is_default', $defaultOrgQb->createNamedParameter(1)))
+                     ->setMaxResults(1);
+        
+        $defaultResult = $defaultOrgQb->executeQuery();
+        $systemDefaultOrgUuid = $defaultResult->fetchColumn();
         $defaultResult->closeCursor();
-
-        $isDefaultOrg = ($activeOrganisationUuid === $defaultOrgUuid);
+        
+        $isSystemDefaultOrg = ($activeOrganisationUuid === $systemDefaultOrgUuid);
 
         // Build organization filter conditions
         $orgConditions = $qb->expr()->orX();
@@ -362,26 +365,26 @@ class ObjectEntityMapper extends QBMapper
             $qb->expr()->eq($organizationColumn, $qb->createNamedParameter($activeOrganisationUuid))
         );
 
-        // If this is the default organization, also include objects with NULL organization
-        if ($isDefaultOrg) {
+        // ONLY if this is the system-wide default organization, include additional objects
+        if ($isSystemDefaultOrg) {
+            // Include objects with NULL organization (legacy data)
             $orgConditions->add(
                 $qb->expr()->isNull($organizationColumn)
             );
-        }
-
-        // Objects that are currently published (publication-based public access)
-        // Published objects should always be visible regardless of organization restrictions
-        $now = (new \DateTime())->format('Y-m-d H:i:s');
-        $orgConditions->add(
-            $qb->expr()->andX(
-                $qb->expr()->isNotNull("{$objectTableAlias}.published"),
-                $qb->expr()->lte("{$objectTableAlias}.published", $qb->createNamedParameter($now)),
-                $qb->expr()->orX(
-                    $qb->expr()->isNull("{$objectTableAlias}.depublished"),
-                    $qb->expr()->gt("{$objectTableAlias}.depublished", $qb->createNamedParameter($now))
+            
+            // Include published objects (for backwards compatibility with the system default org)
+            $now = (new \DateTime())->format('Y-m-d H:i:s');
+            $orgConditions->add(
+                $qb->expr()->andX(
+                    $qb->expr()->isNotNull("{$objectTableAlias}.published"),
+                    $qb->expr()->lte("{$objectTableAlias}.published", $qb->createNamedParameter($now)),
+                    $qb->expr()->orX(
+                        $qb->expr()->isNull("{$objectTableAlias}.depublished"),
+                        $qb->expr()->gt("{$objectTableAlias}.depublished", $qb->createNamedParameter($now))
+                    )
                 )
-            )
-        );
+            );
+        }
 
         $qb->andWhere($orgConditions);
 
@@ -1205,21 +1208,21 @@ class ObjectEntityMapper extends QBMapper
 
         // Build base count query - use COUNT(*) instead of selecting all columns
         $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count')
-            ->from('openregister_objects');
+            ->from('openregister_objects', 'o');
 
         // Handle basic filters - skip register/schema if they're in metadata filters (to avoid double filtering)
         $basicRegister = isset($metadataFilters['register']) ? null : $register;
         $basicSchema = isset($metadataFilters['schema']) ? null : $schema;
-        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema, '');
+        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema, 'o');
 
         // Apply organization filtering for multi-tenancy (no RBAC in count queries due to no schema join)
-        $this->applyOrganizationFilters($queryBuilder, '', $activeOrganisationUuid);
+        $this->applyOrganizationFilters($queryBuilder, 'o', $activeOrganisationUuid);
 
         // Handle filtering by IDs/UUIDs if provided (same as searchObjects)
         if ($ids !== null && empty($ids) === false) {
             $orX = $queryBuilder->expr()->orX();
-            $orX->add($queryBuilder->expr()->in('id', $queryBuilder->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
-            $orX->add($queryBuilder->expr()->in('uuid', $queryBuilder->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            $orX->add($queryBuilder->expr()->in('o.id', $queryBuilder->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            $orX->add($queryBuilder->expr()->in('o.uuid', $queryBuilder->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
             $queryBuilder->andWhere($orX);
         }
 
@@ -1558,7 +1561,6 @@ class ObjectEntityMapper extends QBMapper
         $object = $entity->getObject();
         unset($object['@self'], $object['id']);
         $entity->setObject($object);
-        $this->hydrateNameAndDescription($entity);
         $entity->setSize(strlen(serialize($entity->jsonSerialize()))); // Set the size to the byte size of the serialized object
 
         $entity = parent::insert($entity);
@@ -1633,7 +1635,6 @@ class ObjectEntityMapper extends QBMapper
         $object = $entity->getObject();
         unset($object['@self'], $object['id']);
         $entity->setObject($object);
-        $this->hydrateNameAndDescription($entity);
         $entity->setSize(strlen(serialize($entity->jsonSerialize()))); // Set the size to the byte size of the serialized object
 
         $entity = parent::update($entity);
@@ -2324,82 +2325,7 @@ class ObjectEntityMapper extends QBMapper
     }//end getFacetableFields()
 
 
-    /**
-     * Hydrates the name and description of the entity from the object data based on schema configuration.
-     *
-     * This method will only fetch the schema from the database if name and description are not already set.
-     * This optimization prevents unnecessary database calls when the SaveObject handler has already
-     * hydrated these fields using the schema that was already available.
-     *
-     * @param ObjectEntity $entity The entity to hydrate.
-     *
-     * @return void
-     */
-    private function hydrateNameAndDescription(ObjectEntity &$entity): void
-    {
-        if (!$entity->getSchema()) {
-            return;
-        }
 
-        // Check if name and description are already set - if so, skip hydration to avoid extra DB call
-        $needsName = $entity->getName() === null || $entity->getName() === '';
-        $needsDescription = $entity->getDescription() === null || $entity->getDescription() === '';
-
-        if (!$needsName && !$needsDescription) {
-            // Both name and description are already set, no need to hydrate
-            return;
-        }
-
-        try {
-            $schema = $this->schemaMapper->find($entity->getSchema());
-        } catch (\Exception $e) {
-            // Schema not found, can't hydrate.
-            return;
-        }
-
-        $config     = $schema->getConfiguration();
-        $objectData = $entity->getObject();
-
-        if ($needsName && isset($config['objectNameField']) === true) {
-            $name = $this->getValueFromPath($objectData, $config['objectNameField']);
-            if ($name !== null) {
-                $entity->setName($name);
-            }
-        }
-
-        if ($needsDescription && isset($config['objectDescriptionField']) === true) {
-            $description = $this->getValueFromPath($objectData, $config['objectDescriptionField']);
-            if ($description !== null) {
-                $entity->setDescription($description);
-            }
-        }
-
-    }//end hydrateNameAndDescription()
-
-
-    /**
-     * Gets a value from a nested array using a dot-notation path.
-     *
-     * @param array  $data The array to search in.
-     * @param string $path The dot-notation path.
-     *
-     * @return string|null The value if found and is a string, otherwise null.
-     */
-    private function getValueFromPath(array $data, string $path): ?string
-    {
-        $keys  = explode('.', $path);
-        $value = $data;
-        foreach ($keys as $key) {
-            if (is_array($value) === false || isset($value[$key]) === false) {
-                return null;
-            }
-
-            $value = $value[$key];
-        }
-
-        return is_string($value) ? $value : null;
-
-    }//end getValueFromPath()
 
 
     /**

@@ -32,6 +32,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\DB\Exception as DBException;
+use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCP\IAppConfig;
 use OCP\IRequest;
 use Symfony\Component\Uid\Uuid;
@@ -89,9 +90,9 @@ class SchemasController extends Controller
     public function page(): TemplateResponse
     {
         return new TemplateResponse(
-            'openconnector',
-            'index',
-            []
+            appName: 'openconnector',
+            templateName: 'index',
+            parameters: []
         );
 
     }//end page()
@@ -116,14 +117,21 @@ class SchemasController extends Controller
         SearchService $searchService
     ): JSONResponse {
         // Get request parameters for filtering and searching.
-        $filters = $this->request->getParam('filters', []);
-        $search  = $this->request->getParam('_search', '');
-        $extend  = $this->request->getParam('_extend', []);
+        $filters = $this->request->getParam(key: 'filters', default: []);
+        $search  = $this->request->getParam(key: '_search', default: '');
+        $extend  = $this->request->getParam(key: '_extend', default: []);
         if (is_string($extend)) {
             $extend = [$extend];
         }
 
-        $schemas    = $this->schemaMapper->findAll(null, null, $filters, [], [], []);
+        $schemas    = $this->schemaMapper->findAll(
+            limit: null, 
+            offset: null, 
+            filters: $filters, 
+            searchConditions: [], 
+            searchParams: [], 
+            extend: []
+        );
         $schemasArr = array_map(fn($schema) => $schema->jsonSerialize(), $schemas);
         // If '@self.stats' is requested, attach statistics to each schema
         if (in_array('@self.stats', $extend, true)) {
@@ -157,7 +165,7 @@ class SchemasController extends Controller
      */
     public function show($id): JSONResponse
     {
-        $extend = $this->request->getParam('_extend', []);
+        $extend = $this->request->getParam(key: '_extend', default: []);
         if (is_string($extend)) {
             $extend = [$extend];
         }
@@ -222,6 +230,13 @@ class SchemasController extends Controller
             }
 
             return new JSONResponse($schema);
+        } catch (DBException $e) {
+            // Handle database constraint violations with user-friendly messages
+            $constraintException = DatabaseConstraintException::fromDatabaseException($e, 'schema');
+            return new JSONResponse(data: ['error' => $constraintException->getMessage()], statusCode: $constraintException->getHttpStatusCode());
+        } catch (DatabaseConstraintException $e) {
+            // Handle our custom database constraint exceptions
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getHttpStatusCode());
         } catch (Exception $e) {
             // Check if this is a validation error by examining the message
             if (str_contains($e->getMessage(), 'Invalid') || 
@@ -229,7 +244,7 @@ class SchemasController extends Controller
                 str_contains($e->getMessage(), 'required') ||
                 str_contains($e->getMessage(), 'format')) {
                 // Return 400 Bad Request for validation errors
-                return new JSONResponse(['error' => $e->getMessage()], 400);
+                return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
             }
             
             // Re-throw other exceptions to maintain existing behavior
@@ -272,6 +287,13 @@ class SchemasController extends Controller
         try {
             // Update the schema with the provided data.
             return new JSONResponse($this->schemaMapper->updateFromArray(id: $id, object: $data));
+        } catch (DBException $e) {
+            // Handle database constraint violations with user-friendly messages
+            $constraintException = DatabaseConstraintException::fromDatabaseException($e, 'schema');
+            return new JSONResponse(['error' => $constraintException->getMessage()], $constraintException->getHttpStatusCode());
+        } catch (DatabaseConstraintException $e) {
+            // Handle our custom database constraint exceptions
+            return new JSONResponse(['error' => $e->getMessage()], $e->getHttpStatusCode());
         } catch (Exception $e) {
             // Check if this is a validation error by examining the message
             if (str_contains($e->getMessage(), 'Invalid') || 
@@ -399,6 +421,13 @@ class SchemasController extends Controller
             }
 
             return new JSONResponse($schema);
+        } catch (DBException $e) {
+            // Handle database constraint violations with user-friendly messages
+            $constraintException = DatabaseConstraintException::fromDatabaseException($e, 'schema');
+            return new JSONResponse(['error' => $constraintException->getMessage()], $constraintException->getHttpStatusCode());
+        } catch (DatabaseConstraintException $e) {
+            // Handle our custom database constraint exceptions
+            return new JSONResponse(['error' => $e->getMessage()], $e->getHttpStatusCode());
         } catch (Exception $e) {
             // Check if this is a validation error by examining the message
             if (str_contains($e->getMessage(), 'Invalid') || 

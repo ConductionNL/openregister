@@ -222,9 +222,9 @@ class SaveObject
 
 
     /**
-     * Hydrates the name and description of the entity from the object data based on schema configuration.
+     * Hydrates the name, description, and image of the entity from the object data based on schema configuration.
      *
-     * This method uses the schema configuration to set the name and description fields
+     * This method uses the schema configuration to set the name, description, and image fields
      * on the object entity based on the object data. It prevents an extra database call
      * by using the schema that's already available in the SaveObject handler.
      *
@@ -236,7 +236,7 @@ class SaveObject
      * @psalm-return   void
      * @phpstan-return void
      */
-    private function hydrateNameAndDescription(ObjectEntity $entity, Schema $schema): void
+    private function hydrateNameDescriptionAndImage(ObjectEntity $entity, Schema $schema): void
     {
         $config     = $schema->getConfiguration();
         $objectData = $entity->getObject();
@@ -255,7 +255,14 @@ class SaveObject
             }
         }
 
-    }//end hydrateNameAndDescription()
+        if (isset($config['objectImageField']) === true) {
+            $image = $this->getValueFromPath($objectData, $config['objectImageField']);
+            if ($image !== null) {
+                $entity->setImage($image);
+            }
+        }
+
+    }//end hydrateNameDescriptionAndImage()
 
 
     /**
@@ -1160,7 +1167,7 @@ class SaveObject
 
         // Hydrate name and description from schema configuration.
         try {
-            $this->hydrateNameAndDescription($objectEntity, $schema);
+            $this->hydrateNameDescriptionAndImage($objectEntity, $schema);
         } catch (Exception $e) {
             // Continue without hydration if it fails
         }
@@ -1395,7 +1402,7 @@ class SaveObject
         }
 
         // Hydrate name and description from schema configuration.
-        $this->hydrateNameAndDescription($existingObject, $schemaObject);
+                    $this->hydrateNameDescriptionAndImage($existingObject, $schemaObject);
 
         // Update object relations.
         $existingObject = $this->updateObjectRelations($existingObject, $data);
