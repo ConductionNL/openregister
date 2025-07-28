@@ -164,6 +164,9 @@ class MySQLJsonService implements IDatabaseJsonService
                     $builder->andWhere("json_unquote(json_extract(object, :path$filter)) < (:value{$filter}before)");
                     break;
                 default:
+                    if(is_array($value) === false) {
+                        $value = explode(',', $value);
+                    }
                     // Add IN clause for array of values.
                     $builder->createNamedParameter(
                         value: $value,
@@ -271,6 +274,14 @@ class MySQLJsonService implements IDatabaseJsonService
                 placeHolder: ":path$filter"
             );
 
+            if ($value === 'IS NULL') {
+                $builder->andWhere("json_unquote(json_extract(object, :path$filter)) = 'null' OR json_unquote(json_extract(object, :path$filter)) IS NULL");
+                continue;
+            } else if ($value == 'IS NOT NULL') {
+                $builder->andWhere("json_unquote(json_extract(object, :path$filter)) != 'null' AND json_unquote(json_extract(object, :path$filter)) IS NOT NULL");
+                continue;
+            }
+
             if (is_array($value) === true && array_is_list($value) === false) {
                 // Handle complex filters (after/before).
                 $builder = $this->jsonFilterArray(builder: $builder, filter: $filter, values: $value);
@@ -335,7 +346,7 @@ class MySQLJsonService implements IDatabaseJsonService
 
         // Handle specific deleted properties like @self.deleted.deletedBy
         $deletedProperty = str_replace('@self.deleted.', '', $filter);
-        
+
         // Create parameter name for this specific deleted filter
         $paramName = str_replace('@self.deleted.', 'deleted_', $filter);
         $paramName = str_replace('.', '_', $paramName);
@@ -369,7 +380,7 @@ class MySQLJsonService implements IDatabaseJsonService
                         type: IQueryBuilder::PARAM_STR,
                         placeHolder: ":$opParamName"
                     );
-                    
+
                     switch ($op) {
                         case 'after':
                         case 'gte':
