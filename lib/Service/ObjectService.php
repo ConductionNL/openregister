@@ -1253,11 +1253,15 @@ class ObjectService
     {
         try {
             $activeOrganisation = $this->organisationService->getActiveOrganisation();
+            
             if ($activeOrganisation !== null) {
                 return $activeOrganisation->getUuid();
+            } else {
+                return null;
             }
         } catch (Exception $e) {
             // Log error but continue without organization context
+            return null;
         }
 
         return null;
