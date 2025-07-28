@@ -516,6 +516,23 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 								:options="propertyOptions"
 								input-label="Object Description Field"
 								placeholder="Select a property to use as object description" />
+							<NcSelect
+								v-model="schemaItem.configuration.objectImageField"
+								:disabled="loading"
+								:options="propertyOptions"
+								input-label="Object Image Field"
+								placeholder="Select a property to use as object image representing the object. e.g. logo (should contain base64 encoded image)" />
+							<NcCheckboxRadioSwitch
+								:disabled="loading"
+								:checked.sync="schemaItem.configuration.allowFiles">
+								Allow Files
+							</NcCheckboxRadioSwitch>
+							<NcTextField
+								v-model="allowedTagsInput" 
+								:disabled="loading"
+								label="Allowed Tags (comma-separated)"
+								placeholder="image, document, audio, video"
+								@update:value="updateAllowedTags" />
 							<NcCheckboxRadioSwitch
 								:disabled="loading"
 								:checked.sync="schemaItem.hardValidation">
@@ -760,6 +777,7 @@ export default {
 			propertyStableIds: {}, // Map property names to stable IDs
 			nextPropertyId: 1, // Counter for generating unique IDs
 			enumInputValue: '', // For entering new enum values
+			allowedTagsInput: '', // For entering allowed tags as comma-separated string
 			schemaItem: {
 				title: '',
 				version: '0.0.0',
@@ -770,6 +788,9 @@ export default {
 				configuration: {
 					objectNameField: '',
 					objectDescriptionField: '',
+					objectImageField: '',
+					allowFiles: false,
+					allowedTags: [],
 				},
 				authorization: {},
 				hardValidation: false,
@@ -989,6 +1010,9 @@ export default {
 					this.schemaItem.configuration = {
 						objectNameField: '',
 						objectDescriptionField: '',
+						objectImageField: '',
+						allowFiles: false,
+						allowedTags: [],
 					}
 				} else {
 				// Ensure all configuration fields exist
@@ -998,7 +1022,19 @@ export default {
 					if (!this.schemaItem.configuration.objectDescriptionField) {
 						this.schemaItem.configuration.objectDescriptionField = ''
 					}
+					if (!this.schemaItem.configuration.objectImageField) {
+						this.schemaItem.configuration.objectImageField = ''
+					}
+					if (this.schemaItem.configuration.allowFiles === undefined) {
+						this.schemaItem.configuration.allowFiles = false
+					}
+					if (!this.schemaItem.configuration.allowedTags) {
+						this.schemaItem.configuration.allowedTags = []
+					}
 				}
+
+				// Initialize allowedTagsInput from existing allowedTags array
+				this.allowedTagsInput = (this.schemaItem.configuration.allowedTags || []).join(', ')
 
 				// Ensure authorization object exists
 				if (!this.schemaItem.authorization) {
@@ -1032,6 +1068,15 @@ export default {
 				// Store original properties for comparison AFTER setting defaults
 				this.originalProperties = JSON.parse(JSON.stringify(this.schemaItem.properties || {}))
 			} else {
+				// Initialize configuration for new schemas
+				this.schemaItem.configuration = {
+					objectNameField: '',
+					objectDescriptionField: '',
+					objectImageField: '',
+					allowFiles: false,
+					allowedTags: [],
+				}
+				this.allowedTagsInput = ''
 				this.originalProperties = {}
 			}
 			this.propertiesModified = false
@@ -1231,11 +1276,15 @@ export default {
 							configuration: {
 								objectNameField: '',
 								objectDescriptionField: '',
+								objectImageField: '',
+								allowFiles: false,
+								allowedTags: [],
 							},
 							hardValidation: false,
 							immutable: false,
 							maxDepth: 0,
 						}
+						this.allowedTagsInput = ''
 						this.originalProperties = {}
 						this.propertiesModified = false
 					}, 500)
@@ -1760,6 +1809,22 @@ export default {
 			// Ensure authorization object exists with proper structure
 			if (!this.schemaItem.authorization) {
 				this.$set(this.schemaItem, 'authorization', {})
+			}
+		},
+
+		/**
+		 * Update allowed tags from comma-separated input string
+		 *
+		 * @param {string} value The comma-separated string of tags
+		 */
+		updateAllowedTags(value) {
+			if (!value || value.trim() === '') {
+				// Clear the allowed tags if empty
+				this.$set(this.schemaItem.configuration, 'allowedTags', [])
+			} else {
+				// Parse comma-separated values and trim whitespace
+				const tags = value.split(',').map(tag => tag.trim()).filter(tag => tag !== '')
+				this.$set(this.schemaItem.configuration, 'allowedTags', tags)
 			}
 		},
 	},

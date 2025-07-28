@@ -10,6 +10,62 @@ Schemas define the structure, validation rules, and relationships for objects in
 - **Required fields**: Specify which properties are mandatory
 - **Validation rules**: Define constraints and data formats
 - **Relationships**: Define connections to other objects via 'inversedBy' properties
+- **Configuration**: Define metadata behavior and file handling settings
+
+### Schema Configuration
+
+Schemas support various configuration options that control how objects are handled and displayed:
+
+#### Object Metadata Fields
+These configuration options define which object properties should be used for common metadata:
+
+- **objectNameField**: (string) A dot-notation path to the field that should be used as the object's display name
+  - Example: 'person.firstName' or 'title'
+  - If not configured, the object's UUID will be used as the name
+  
+- **objectDescriptionField**: (string) A dot-notation path to the field that should be used as the object's description
+  - Example: 'case.summary' or 'description'
+  - Used for object previews and search results
+  
+- **objectImageField**: (string) A dot-notation path to the field that contains the image representing the object. e.g. logo
+  - Example: 'profile.avatar' or 'image'
+  - Expected to contain base64 encoded image data
+  - Used for visual representation of objects in lists and details
+
+#### File Handling Configuration
+These options control how files are handled within the schema:
+
+- **allowFiles**: (boolean) Whether objects of this schema can have file attachments
+  - Default: false
+  - When enabled, indicates this schema supports file uploads and management
+  - Currently used for indication purposes (filtering not yet implemented)
+  
+- **allowedTags**: (array of strings) Specifies which file tags/types are allowed for this schema
+  - Example: ['image', 'document', 'audio', 'video']
+  - Used for categorizing and filtering file attachments
+  - Tags can be custom strings to match your use case
+
+#### Configuration Example
+```json
+{
+  'configuration': {
+    'objectNameField': 'person.fullName',
+    'objectDescriptionField': 'person.bio', 
+    'objectImageField': 'person.avatar',
+    'allowFiles': true,
+    'allowedTags': ['image', 'document', 'identity']
+  }
+}
+```
+
+#### Dot-Notation Paths
+The objectNameField, objectDescriptionField, and objectImageField use dot-notation to access nested properties:
+
+- **Simple property**: 'title' → accesses object.title
+- **Nested property**: 'person.name' → accesses object.person.name  
+- **Deep nesting**: 'contact.address.street' → accesses object.contact.address.street
+
+If the specified field doesn't exist or contains invalid data, the system will gracefully fall back to default values.
 
 ## Creating Objects
 

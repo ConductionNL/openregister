@@ -228,6 +228,13 @@ class ObjectEntity extends Entity implements JsonSerializable
     protected ?string $description = null;
 
     /**
+     * Image of the object.
+     *
+     * @var string|null Image of the object (base64 encoded or file reference)
+     */
+    protected ?string $image = null;
+
+    /**
      * An array defining group-based permissions for CRUD actions.
      * The keys are the CRUD actions ('create', 'read', 'update', 'delete'),
      * and the values are arrays of group IDs that are permitted to perform that action.
@@ -276,6 +283,7 @@ class ObjectEntity extends Entity implements JsonSerializable
         $this->addType(fieldName:'schemaVersion', type: 'string');
         $this->addType(fieldName:'name', type: 'string');
         $this->addType(fieldName:'description', type: 'string');
+        $this->addType(fieldName:'image', type: 'string');
         $this->addType(fieldName:'updated', type: 'datetime');
         $this->addType(fieldName:'created', type: 'datetime');
         $this->addType(fieldName:'published', type: 'datetime');
@@ -464,6 +472,7 @@ class ObjectEntity extends Entity implements JsonSerializable
             'id'            => $this->uuid,
             'name'          => $this->name ?? $this->uuid,
             'description'   => $this->description ?? $this->id,
+            'image'         => $this->image,
             'uri'           => $this->uri,
             'version'       => $this->version,
             'register'      => $this->register,
