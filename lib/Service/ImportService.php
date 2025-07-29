@@ -111,12 +111,16 @@ class ImportService
      *
      * @return PromiseInterface<array<string, array>> Promise that resolves to import summary.
      */
-    public function importFromExcelAsync(string $filePath, ?Register $register=null, ?Schema $schema=null, int $chunkSize=self::DEFAULT_CHUNK_SIZE): PromiseInterface
-    {
+    public function importFromExcelAsync(
+        string $filePath,
+        ?Register $register=null,
+        ?Schema $schema=null,
+        int $chunkSize=self::DEFAULT_CHUNK_SIZE
+    ): PromiseInterface {
         return new Promise(
             function (callable $resolve, callable $reject) use ($filePath, $register, $schema, $chunkSize) {
                 try {
-                    $result = $this->importFromExcel($filePath, $register, $schema, $chunkSize);
+                    $result = $this->importFromExcel(filePath: $filePath, register: $register, schema: $schema, chunkSize: $chunkSize);
                     $resolve($result);
                 } catch (\Throwable $e) {
                     $reject($e);
@@ -179,8 +183,12 @@ class ImportService
      *
      * @return PromiseInterface<array<string, array>> Promise that resolves to import summary.
      */
-    public function importFromCsvAsync(string $filePath, ?Register $register=null, ?Schema $schema=null, int $chunkSize=self::DEFAULT_CHUNK_SIZE): PromiseInterface
-    {
+    public function importFromCsvAsync(
+        string $filePath,
+        ?Register $register=null,
+        ?Schema $schema=null,
+        int $chunkSize=self::DEFAULT_CHUNK_SIZE
+    ): PromiseInterface {
         return new Promise(
             function (callable $resolve, callable $reject) use ($filePath, $register, $schema, $chunkSize) {
                 try {
@@ -323,8 +331,12 @@ class ImportService
      * @phpstan-return array{created: array<int|string>, updated: array<int|string>, unchanged: array<int|string>, errors: array<mixed>}
      * @psalm-return   array{created: array<int|string>, updated: array<int|string>, unchanged: array<int|string>, errors: array<mixed>}
      */
-    private function processSpreadsheetAsync(Spreadsheet $spreadsheet, ?Register $register=null, ?Schema $schema=null, int $chunkSize=self::DEFAULT_CHUNK_SIZE): array
-    {
+    private function processSpreadsheetAsync(
+        Spreadsheet $spreadsheet,
+        ?Register $register=null,
+        ?Schema $schema=null,
+        int $chunkSize=self::DEFAULT_CHUNK_SIZE
+    ): array {
         $sheet      = $spreadsheet->getActiveSheet();
         $sheetTitle = $sheet->getTitle();
         $highestRow = $sheet->getHighestRow();
@@ -333,7 +345,11 @@ class ImportService
         $columnMapping = $this->buildColumnMapping($sheet);
 
         // Get schema properties for reference.
-        $schemaProperties = ($schema !== null) ? $schema->getProperties() : [];
+        if ($schema !== null) {
+            $schemaProperties = $schema->getProperties();
+        } else {
+            $schemaProperties = [];
+        }
 
         // Step 2: Process data in chunks to prevent memory overflow.
         $summary = [
@@ -415,8 +431,15 @@ class ImportService
      *
      * @return array<string, array> Chunk processing summary
      */
-    private function processChunk(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, array $columnMapping, int $startRow, int $endRow, ?Register $register, ?Schema $schema, array $schemaProperties): array
-    {
+    private function processChunk(
+        \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
+        array $columnMapping,
+        int $startRow,
+        int $endRow,
+        ?Register $register,
+        ?Schema $schema,
+        array $schemaProperties
+    ): array {
         $chunkSummary = [
             'found'     => 0,
             'created'   => [],
@@ -460,7 +483,7 @@ class ImportService
                 $results = \React\Async\await(\React\Promise\all($batch));
 
                 foreach ($results as $result) {
-                    if (isset($result['error'])) {
+                    if (isset($result['error']) === true) {
                         $chunkSummary['errors'][] = $result['error'];
                     } else {
                         if ($result['wasExisting'] === true) {
@@ -490,7 +513,7 @@ class ImportService
     private function extractRowData(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, array $columnMapping, int $row): array
     {
         $rowData = [];
-        // name -> value
+        // Name -> value.
         $hasData = false;
 
         // Loop through each column in the mapping.
@@ -498,7 +521,11 @@ class ImportService
             $cellValue = $sheet->getCell($columnLetter.$row)->getValue();
 
             // Convert cell value to string and trim whitespace.
-            $cleanCellValue = $cellValue !== null ? trim((string) $cellValue) : '';
+            if ($cellValue !== null) {
+                $cleanCellValue = trim((string) $cellValue);
+            } else {
+                $cleanCellValue = '';
+            }
 
             if ($cleanCellValue !== '') {
                 $rowData[$columnName] = $cleanCellValue;
@@ -506,7 +533,11 @@ class ImportService
             }
         }
 
-        return ($hasData === true) ? $rowData : [];
+        if ($hasData === true) {
+            return $rowData;
+        }
+
+        return [];
 
     }//end extractRowData()
 
@@ -524,18 +555,23 @@ class ImportService
     private function processRow(array $rowData, Register $register, Schema $schema, int $rowIndex): array
     {
         try {
-            // Separate regular properties from system properties (starting with _)
+            // Separate regular properties from system properties starting with _ or @self.
             $objectData = [];
             $selfData   = [];
 
             foreach ($rowData as $key => $value) {
-                if (str_starts_with($key, '_')) {
-                    // Move properties starting with _ to @self array and remove the _
+                if (str_starts_with($key, '_') === true) {
+                    // Move properties starting with _ to @self array and remove the _.
                     $selfPropertyName = substr($key, 1);
-                    // Remove the _ prefix
+                    // Remove the _ prefix.
+                    $selfData[$selfPropertyName] = $value;
+                } else if (str_starts_with($key, '@self.') === true) {
+                    // Move properties starting with @self. to @self array and remove the @self. prefix.
+                    $selfPropertyName = substr($key, 6);
+                    // Remove the @self. prefix (6 characters).
                     $selfData[$selfPropertyName] = $value;
                 } else {
-                    // Regular properties go to main object data
+                    // Regular properties go to main object data.
                     $objectData[$key] = $value;
                 }
             }
@@ -606,17 +642,17 @@ class ImportService
             $schema = $this->schemaMapper->find($slug);
             return $schema;
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            // Fallback: Search all schemas for case-insensitive match
+            // Fallback: Search all schemas for case-insensitive match.
             try {
                 $allSchemas = $this->schemaMapper->findAll();
 
                 foreach ($allSchemas as $schema) {
-                    // Try exact match first
+                    // Try exact match first.
                     if ($schema->getSlug() === $slug) {
                         return $schema;
                     }
 
-                    // Try case-insensitive match
+                    // Try case-insensitive match.
                     if (strtolower($schema->getSlug()) === strtolower($slug)) {
                         return $schema;
                     }
@@ -654,29 +690,29 @@ class ImportService
             $transformedData  = [];
 
             foreach ($objectData as $propertyName => $value) {
-                // Skip @self array - it's handled separately
+                // Skip @self array - it's handled separately.
                 if ($propertyName === '@self') {
                     $transformedData[$propertyName] = $value;
                     continue;
                 }
 
-                // Get property definition from schema
+                // Get property definition from schema.
                 $propertyDef = $schemaProperties[$propertyName] ?? null;
 
                 if ($propertyDef === null) {
-                    // Property not in schema, keep as is
+                    // Property not in schema, keep as is.
                     $transformedData[$propertyName] = $value;
                     continue;
                 }
 
-                // Transform based on type
+                // Transform based on type.
                 $transformedData[$propertyName] = $this->transformValueByType($value, $propertyDef);
             }
 
             return $transformedData;
         } catch (\Exception $e) {
+            // Return original data if transformation fails.
             return $objectData;
-            // Return original data if transformation fails
         }//end try
 
     }//end transformObjectBySchema()
@@ -692,7 +728,7 @@ class ImportService
      */
     private function transformValueByType($value, array $propertyDef)
     {
-        // If value is empty or null, return as is
+        // If value is empty or null, return as is.
         if ($value === null || $value === '') {
             return $value;
         }
@@ -731,7 +767,7 @@ class ImportService
      */
     private function stringToBoolean($value): bool
     {
-        if (is_bool($value)) {
+        if (is_bool($value) === true) {
             return $value;
         }
 
@@ -750,21 +786,21 @@ class ImportService
      */
     private function stringToObject($value)
     {
-        if (is_array($value) || is_object($value)) {
+        if (is_array($value) === true || is_object($value) === true) {
             return $value;
         }
 
         $value = trim((string) $value);
 
-        // Try to parse as JSON first
-        if (str_starts_with($value, '{') && str_ends_with($value, '}')) {
+        // Try to parse as JSON first.
+        if (str_starts_with($value, '{') === true && str_ends_with($value, '}') === true) {
             $decoded = json_decode($value, true);
             if (json_last_error() === JSON_ERROR_NONE) {
                 return $decoded;
             }
         }
 
-        // If not JSON, return as single-key object
+        // If not JSON, return as single-key object.
         return ['value' => $value];
 
     }//end stringToObject()
@@ -788,7 +824,7 @@ class ImportService
      */
     private function stringToArray($value): array
     {
-        if (is_array($value)) {
+        if (is_array($value) === true) {
             return $value;
         }
 
@@ -798,7 +834,7 @@ class ImportService
 
         $value = trim($value);
 
-        // Empty string returns empty array
+        // Empty string returns empty array.
         if ($value === '') {
             return [];
         }
@@ -832,7 +868,7 @@ class ImportService
             return $result;
         }
 
-        // Single value - return as array with one element
+        // Single value - return as array with one element.
         return [$value];
 
     }//end stringToArray()
