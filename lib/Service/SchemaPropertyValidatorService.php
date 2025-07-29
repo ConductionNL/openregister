@@ -50,6 +50,7 @@ class SchemaPropertyValidatorService
         'array',
         'object',
         'null',
+        'file',
     ];
 
     /**
@@ -171,6 +172,11 @@ class SchemaPropertyValidatorService
             }
         }
 
+        // Validate file properties if type is file
+        if ($property['type'] === 'file') {
+            $this->validateFileProperty($property, $path);
+        }
+
         // Validate enum values if present.
         if (isset($property['enum']) === true) {
             if (is_array($property['enum']) === false || empty($property['enum']) === true) {
@@ -239,6 +245,109 @@ class SchemaPropertyValidatorService
         return $this->validStringFormats;
 
     }//end getValidStringFormats()
+
+
+    /**
+     * Validate file-specific properties
+     *
+     * Validates file property configuration options including allowedTypes,
+     * maxSize, allowedTags, and autoTags
+     *
+     * @param array  $property The file property definition to validate
+     * @param string $path     The current path in the schema (for error messages)
+     *
+     * @throws Exception If the file property configuration is invalid
+     * @return bool True if the file property is valid
+     *
+     * @psalm-param array<string, mixed> $property
+     * @phpstan-param array<string, mixed> $property
+     * @psalm-return bool
+     * @phpstan-return bool
+     */
+    private function validateFileProperty(array $property, string $path): bool
+    {
+        // Validate allowedTypes if present
+        if (isset($property['allowedTypes'])) {
+            if (!is_array($property['allowedTypes'])) {
+                throw new Exception("'allowedTypes' at '$path' must be an array");
+            }
+
+            // Validate each MIME type
+            foreach ($property['allowedTypes'] as $index => $mimeType) {
+                if (!is_string($mimeType)) {
+                    throw new Exception("'allowedTypes[$index]' at '$path' must be a string");
+                }
+
+                // Basic MIME type validation (type/subtype)
+                if (!preg_match('/^[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_]*\/[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_.]*$/', $mimeType)) {
+                    throw new Exception("'allowedTypes[$index]' at '$path' contains invalid MIME type format: '$mimeType'");
+                }
+            }
+        }
+
+        // Validate maxSize if present
+        if (isset($property['maxSize'])) {
+            if (!is_int($property['maxSize']) && !is_numeric($property['maxSize'])) {
+                throw new Exception("'maxSize' at '$path' must be a numeric value");
+            }
+
+            $maxSize = (int) $property['maxSize'];
+            if ($maxSize < 0) {
+                throw new Exception("'maxSize' at '$path' must be a positive number");
+            }
+
+            // Reasonable upper limit (100MB)
+            if ($maxSize > 104857600) {
+                throw new Exception("'maxSize' at '$path' exceeds maximum allowed size (100MB)");
+            }
+        }
+
+        // Validate allowedTags if present
+        if (isset($property['allowedTags'])) {
+            if (!is_array($property['allowedTags'])) {
+                throw new Exception("'allowedTags' at '$path' must be an array");
+            }
+
+            foreach ($property['allowedTags'] as $index => $tag) {
+                if (!is_string($tag)) {
+                    throw new Exception("'allowedTags[$index]' at '$path' must be a string");
+                }
+
+                // Basic tag validation (no empty strings, reasonable length)
+                if (trim($tag) === '') {
+                    throw new Exception("'allowedTags[$index]' at '$path' cannot be empty");
+                }
+
+                if (strlen($tag) > 50) {
+                    throw new Exception("'allowedTags[$index]' at '$path' exceeds maximum length (50 characters)");
+                }
+            }
+        }
+
+        // Validate autoTags if present
+        if (isset($property['autoTags'])) {
+            if (!is_array($property['autoTags'])) {
+                throw new Exception("'autoTags' at '$path' must be an array");
+            }
+
+            foreach ($property['autoTags'] as $index => $tag) {
+                if (!is_string($tag)) {
+                    throw new Exception("'autoTags[$index]' at '$path' must be a string");
+                }
+
+                // Basic tag validation (no empty strings, reasonable length)
+                if (trim($tag) === '') {
+                    throw new Exception("'autoTags[$index]' at '$path' cannot be empty");
+                }
+
+                if (strlen($tag) > 50) {
+                    throw new Exception("'autoTags[$index]' at '$path' exceeds maximum length (50 characters)");
+                }
+            }
+        }
+
+        return true;
+    }//end validateFileProperty()
 
 
 }//end class
