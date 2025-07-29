@@ -1467,14 +1467,14 @@ export default {
 			// Get tags for multiselect display
 			const property = this.schemaItem.properties[key]
 			if (!property) return []
-			
+
 			let tags = []
 			if (property.type === 'file') {
 				tags = property[setting] || []
 			} else if (property.type === 'array' && property.items) {
 				tags = property.items[setting] || []
 			}
-			
+
 			// Convert to multiselect format
 			return tags.map(tag => ({
 				id: tag,
@@ -1486,7 +1486,7 @@ export default {
 			if (this.schemaItem.properties[key]) {
 				// Extract tag names from selected options
 				const tags = selectedOptions ? selectedOptions.map(option => option.id || option) : []
-				
+
 				// Apply to both direct file properties and array[file] properties
 				if (this.schemaItem.properties[key].type === 'file') {
 					this.$set(this.schemaItem.properties[key], setting, tags)
