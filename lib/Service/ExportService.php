@@ -85,7 +85,7 @@ class ExportService
         return new Promise(
                 function (callable $resolve, callable $reject) use ($register, $schema, $filters) {
                     try {
-                        $spreadsheet = $this->exportToExcel($register, $schema, $filters);
+                        $spreadsheet = $this->exportToExcel(register: $register, schema: $schema, filters: $filters);
                         $resolve($spreadsheet);
                     } catch (\Throwable $e) {
                         $reject($e);
@@ -117,11 +117,11 @@ class ExportService
             // Export all schemas in register.
             $schemas = $this->getSchemasForRegister($register);
             foreach ($schemas as $schema) {
-                $this->populateSheet($spreadsheet, $register, $schema, $filters);
+                $this->populateSheet(spreadsheet: $spreadsheet, register: $register, schema: $schema, filters: $filters);
             }
         } else {
             // Export single schema.
-            $this->populateSheet($spreadsheet, $register, $schema, $filters);
+            $this->populateSheet(spreadsheet: $spreadsheet, register: $register, schema: $schema, filters: $filters);
         }
 
         return $spreadsheet;
@@ -143,7 +143,7 @@ class ExportService
         return new Promise(
                 function (callable $resolve, callable $reject) use ($register, $schema, $filters) {
                     try {
-                        $csv = $this->exportToCsv($register, $schema, $filters);
+                        $csv = $this->exportToCsv(register: $register, schema: $schema, filters: $filters);
                         $resolve($csv);
                     } catch (\Throwable $e) {
                         $reject($e);
@@ -171,7 +171,7 @@ class ExportService
             throw new InvalidArgumentException('Cannot export multiple schemas to CSV format.');
         }
 
-        $spreadsheet = $this->exportToExcel($register, $schema, $filters);
+        $spreadsheet = $this->exportToExcel(register: $register, schema: $schema, filters: $filters);
         $writer      = new Csv($spreadsheet);
 
         ob_start();
@@ -191,37 +191,39 @@ class ExportService
      *
      * @return void
      */
-    private function populateSheet(Spreadsheet $spreadsheet, ?Register $register=null, ?Schema $schema=null, array $filters=[]): void
-    {
+    private function populateSheet(
+        Spreadsheet $spreadsheet,
+        ?Register $register=null,
+        ?Schema $schema=null,
+        array $filters=[]
+    ): void {
         $sheet = $spreadsheet->createSheet();
-        $sheet->setTitle($schema !== null ? $schema->getSlug() : 'data');
 
-        $headers = $this->getHeaders($register, $schema);
+        if ($schema !== null) {
+            $sheet->setTitle($schema->getSlug());
+        } else {
+            $sheet->setTitle('data');
+        }
+
+        $headers = $this->getHeaders(register: $register, schema: $schema);
         $row     = 1;
 
-        // Write headers using property keys for consistency with imports.
+        // Set headers.
         foreach ($headers as $col => $header) {
-            $sheet->setCellValue($col.$row, $header);
+            $sheet->setCellValue(coordinate: $col.$row, value: $header);
         }
 
-        // Add register and schema to filters if they are set.
-        if ($register !== null) {
-            $filters['register'] = $register->getId();
-        }
-        if ($schema !== null) {
-            $filters['schema'] = $schema->getId();
-        }
+        $row++;
 
-        // Get objects.
-        $objects = $this->objectEntityMapper->findAll(filters: $filters);
-
-        // Write data.
+        // Export data.
+        $objects = $this->objectEntityMapper->findAll();
         foreach ($objects as $object) {
-            $row++;
             foreach ($headers as $col => $header) {
-                $value = $this->getObjectValue($object, $header);
-                $sheet->setCellValue($col.$row, $value);
+                $value = $this->getObjectValue(object: $object, header: $header);
+                $sheet->setCellValue(coordinate: $col.$row, value: $value);
             }
+
+            $row++;
         }
 
     }//end populateSheet()
@@ -237,30 +239,32 @@ class ExportService
      */
     private function getHeaders(?Register $register=null, ?Schema $schema=null): array
     {
-        // Start with id as the first column
+        // Start with id as the first column.
+        // Will contain the uuid.
         $headers = [
-            'A' => 'id',  // Will contain the uuid
+            'A' => 'id',
         ];
 
-        // Add schema fields from the schema properties
+        // Add schema fields from the schema properties.
         if ($schema !== null) {
-            $col = 'B';  // Start after id column
+            // Start after id column.
+            $col        = 'B';
             $properties = $schema->getProperties();
-            
-            // Sort properties by their order in the schema
+
+            // Sort properties by their order in the schema.
             foreach ($properties as $fieldName => $fieldDefinition) {
-                // Skip fields that are already in the default headers
-                if (in_array($fieldName, ['id', 'uuid', 'uri', 'register', 'schema', 'created', 'updated'])) {
+                // Skip fields that are already in the default headers.
+                if (in_array($fieldName, ['id', 'uuid', 'uri', 'register', 'schema', 'created', 'updated']) === true) {
                     continue;
                 }
-                
-                // Always use the property key as the header to ensure consistent data access
+
+                // Always use the property key as the header to ensure consistent data access.
                 $headers[$col] = $fieldName;
                 $col++;
             }
         }
 
-        // Add other metadata fields at the end with _ prefix
+        // Add other metadata fields at the end with @self. prefix.
         $metadataFields = [
             'created',
             'updated',
@@ -288,14 +292,13 @@ class ExportService
         ];
 
         foreach ($metadataFields as $field) {
-            $headers[$col] = '_' . $field;
+            $headers[$col] = '@self.'.$field;
             $col++;
         }
 
         return $headers;
-    }
 
-
+    }//end getHeaders()
 
 
     /**
@@ -308,52 +311,108 @@ class ExportService
      */
     private function getObjectValue(ObjectEntity $object, string $header): ?string
     {
-        // Handle metadata fields with _ prefix
-        if (str_starts_with($header, '_')) {
-            $fieldName = substr($header, 1); // Remove the _ prefix
-            
-            // Get the object array which contains all metadata
+        // Handle metadata fields with @self. prefix.
+        if (str_starts_with(haystack: $header, needle: '@self.') === true) {
+            // Remove the @self. prefix (6 characters).
+            $fieldName = substr(string: $header, offset: 6);
+
+            // Get the object array which contains all metadata.
             $objectArray = $object->getObjectArray();
-            
-            // Check if the field exists in the object array
-            if (isset($objectArray[$fieldName])) {
+
+            // Check if the field exists in the object array.
+            if (isset($objectArray[$fieldName]) === true) {
                 $value = $objectArray[$fieldName];
-                
-                // Handle DateTime objects (they come as ISO strings from getObjectArray)
-                if (is_string($value) && str_contains($value, 'T') && str_contains($value, 'Z')) {
-                    // Convert ISO 8601 to our preferred format
+
+                // Handle DateTime objects (they come as ISO strings from getObjectArray).
+                if (is_string($value) === true
+                    && str_contains(haystack: $value, needle: 'T') === true
+                    && str_contains(haystack: $value, needle: 'Z') === true
+                ) {
+                    // Convert ISO 8601 to our preferred format.
                     try {
                         $date = new \DateTime($value);
                         return $date->format('Y-m-d H:i:s');
                     } catch (\Exception $e) {
-                        return $value; // Return as-is if parsing fails
+                        // Return as-is if parsing fails.
+                        return $value;
                     }
                 }
-                
-                // Handle arrays and objects
-                if (is_array($value) || is_object($value)) {
+
+                // Handle arrays and objects.
+                if (is_array($value) === true || is_object($value) === true) {
                     return $this->convertValueToString($value);
                 }
-                
-                // Handle scalar values
-                return $value !== null ? (string) $value : null;
-            }
-            
-            // Fallback for fields that might not exist
-            return null;
-        }
 
-        // Handle regular fields
+                // Handle scalar values.
+                if ($value !== null) {
+                    return (string) $value;
+                }
+
+                return null;
+            }//end if
+
+            // Fallback for fields that might not exist.
+            return null;
+        }//end if
+
+        // Handle legacy metadata fields with _ prefix for backward compatibility.
+        if (str_starts_with(haystack: $header, needle: '_') === true) {
+            // Remove the _ prefix.
+            $fieldName = substr(string: $header, offset: 1);
+
+            // Get the object array which contains all metadata.
+            $objectArray = $object->getObjectArray();
+
+            // Check if the field exists in the object array.
+            if (isset($objectArray[$fieldName]) === true) {
+                $value = $objectArray[$fieldName];
+
+                // Handle DateTime objects (they come as ISO strings from getObjectArray).
+                if (is_string($value) === true
+                    && str_contains(haystack: $value, needle: 'T') === true
+                    && str_contains(haystack: $value, needle: 'Z') === true
+                ) {
+                    // Convert ISO 8601 to our preferred format.
+                    try {
+                        $date = new \DateTime($value);
+                        return $date->format('Y-m-d H:i:s');
+                    } catch (\Exception $e) {
+                        // Return as-is if parsing fails.
+                        return $value;
+                    }
+                }
+
+                // Handle arrays and objects.
+                if (is_array($value) === true || is_object($value) === true) {
+                    return $this->convertValueToString($value);
+                }
+
+                // Handle scalar values.
+                if ($value !== null) {
+                    return (string) $value;
+                }
+
+                return null;
+            }//end if
+
+            // Fallback for fields that might not exist.
+            return null;
+        }//end if
+
+        // Handle regular fields.
         switch ($header) {
             case 'id':
-                return $object->getUuid();  // Return uuid for id column
+                // Return uuid for id column.
+                return $object->getUuid();
             default:
-                // Get value from object data and convert to string
+                // Get value from object data and convert to string.
                 $objectData = $object->getObject();
-                $value = $objectData[$header] ?? null;
+                $value      = $objectData[$header] ?? null;
                 return $this->convertValueToString($value);
         }
-    }
+
+    }//end getObjectValue()
+
 
     /**
      * Convert a value to a string representation
@@ -368,26 +427,28 @@ class ExportService
             return null;
         }
 
-        if (is_scalar($value)) {
+        if (is_scalar($value) === true) {
             return (string) $value;
         }
 
-        if (is_array($value)) {
-            // Convert array to JSON string
+        if (is_array($value) === true) {
+            // Convert array to JSON string.
             return json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         }
 
-        if (is_object($value)) {
-            if (method_exists($value, '__toString')) {
+        if (is_object($value) === true) {
+            if (method_exists(object_or_class: $value, method: '__toString') === true) {
                 return (string) $value;
             }
-            // Convert object to JSON string
+
+            // Convert object to JSON string.
             return json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         }
 
-        // Fallback for any other type
+        // Fallback for any other type.
         return (string) $value;
-    }
+
+    }//end convertValueToString()
 
 
     /**

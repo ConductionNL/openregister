@@ -136,13 +136,13 @@ class Configuration extends Entity implements JsonSerializable
     /**
      * Set the registers of the configuration
      *
-     * @param array<int> $registers Array of register IDs
+     * @param array<int>|null $registers Array of register IDs or null
      * 
      * @return void
      */
-    public function setRegisters(array $registers): void
+    public function setRegisters(?array $registers): void
     {
-        $this->registers = $registers;
+        $this->registers = $registers ?? [];
 
     }//end setRegisters()
 
@@ -162,13 +162,13 @@ class Configuration extends Entity implements JsonSerializable
     /**
      * Set the schemas of the configuration
      *
-     * @param array<int> $schemas Array of schema IDs
+     * @param array<int>|null $schemas Array of schema IDs or null
      * 
      * @return void
      */
-    public function setSchemas(array $schemas): void
+    public function setSchemas(?array $schemas): void
     {
-        $this->schemas = $schemas;
+        $this->schemas = $schemas ?? [];
 
     }//end setSchemas()
 
@@ -188,13 +188,13 @@ class Configuration extends Entity implements JsonSerializable
     /**
      * Set the objects of the configuration
      *
-     * @param array<int> $objects Array of object IDs
+     * @param array<int>|null $objects Array of object IDs or null
      * 
      * @return void
      */
-    public function setObjects(array $objects): void
+    public function setObjects(?array $objects): void
     {
-        $this->objects = $objects;
+        $this->objects = $objects ?? [];
 
     }//end setObjects()
 
