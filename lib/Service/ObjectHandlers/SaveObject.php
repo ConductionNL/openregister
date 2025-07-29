@@ -1200,7 +1200,7 @@ class SaveObject
 
         // Handle file properties - process them and replace content with file IDs
         foreach ($data as $propertyName => $value) {
-            if ($this->isFileProperty($value) === true) {
+            if ($this->isFileProperty($value, $schema, $propertyName) === true) {
                 $this->handleFileProperty($savedEntity, $data, $propertyName, $schema);
             }
         }
@@ -1251,37 +1251,88 @@ class SaveObject
 
 
     /**
-     * Checks if a value represents a file property.
+     * Check if a value should be treated as a file property
      *
-     * This method checks for various file data formats:
-     * - Base64 data URIs (data:image/png;base64,...)
-     * - Base64 encoded strings (without data: prefix)
-     * - URLs (http/https URLs to fetch)
-     * - File objects (existing file objects with id, title, etc.)
-     * - Arrays of the above (for array[file] properties)
+     * @param mixed $value The value to check
+     * @param Schema|null $schema Optional schema for property-based checking
+     * @param string|null $propertyName Optional property name for schema lookup
      *
-     * @param mixed $value The value to check.
-     *
-     * @return bool Whether the value is a file property.
-     *
-     * @psalm-param mixed $value
-     * @phpstan-param mixed $value
-     * @psalm-return bool
+     * @return bool True if the value should be treated as a file property
      * @phpstan-return bool
      */
-    private function isFileProperty($value): bool
+    private function isFileProperty($value, ?Schema $schema = null, ?string $propertyName = null): bool
     {
-        // Check for single file (data URI, base64, URL, or file object)
+        // If we have schema and property name, use schema-based checking
+        if ($schema !== null && $propertyName !== null) {
+            $schemaProperties = $schema->getProperties() ?? [];
+            
+            if (!isset($schemaProperties[$propertyName])) {
+                return false; // Property not in schema, not a file
+            }
+            
+            $propertyConfig = $schemaProperties[$propertyName];
+            
+            // Check if it's a direct file property
+            if (($propertyConfig['type'] ?? '') === 'file') {
+                return true;
+            }
+            
+            // Check if it's an array of files
+            if (($propertyConfig['type'] ?? '') === 'array') {
+                $itemsConfig = $propertyConfig['items'] ?? [];
+                if (($itemsConfig['type'] ?? '') === 'file') {
+                    return true;
+                }
+            }
+            
+            return false; // Property exists but is not configured as file type
+        }
+        
+        // Fallback to format-based checking when schema info is not available
+        // This is used within handleFileProperty for individual value validation
+        
+        // Check for single file (data URI, base64, URL with file extension, or file object)
         if (is_string($value)) {
             // Data URI format
             if (strpos($value, 'data:') === 0) {
                 return true;
             }
             
-            // URL format (http/https)
+            // URL format (http/https) - but only if it looks like a downloadable file
             if (filter_var($value, FILTER_VALIDATE_URL) && 
                 (strpos($value, 'http://') === 0 || strpos($value, 'https://') === 0)) {
-                return true;
+                
+                // Parse URL to get path
+                $urlPath = parse_url($value, PHP_URL_PATH);
+                if ($urlPath) {
+                    // Get file extension
+                    $extension = strtolower(pathinfo($urlPath, PATHINFO_EXTENSION));
+                    
+                    // Common file extensions that indicate downloadable files
+                    $fileExtensions = [
+                        // Documents
+                        'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp',
+                        'rtf', 'txt', 'csv',
+                        // Images  
+                        'jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'tiff', 'ico',
+                        // Videos
+                        'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', '3gp',
+                        // Audio
+                        'mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma',
+                        // Archives
+                        'zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz',
+                        // Other common file types
+                        'xml', 'json', 'sql', 'exe', 'dmg', 'iso', 'deb', 'rpm'
+                    ];
+                    
+                    // Only treat as file if it has a recognized file extension
+                    if (in_array($extension, $fileExtensions)) {
+                        return true;
+                    }
+                }
+                
+                // Don't treat regular website URLs as files
+                return false;
             }
             
             // Base64 encoded string (simple heuristic)
@@ -1303,10 +1354,23 @@ class SaveObject
                     if (strpos($item, 'data:') === 0) {
                         return true;
                     }
-                    // URL
+                    // URL with file extension
                     if (filter_var($item, FILTER_VALIDATE_URL) && 
                         (strpos($item, 'http://') === 0 || strpos($item, 'https://') === 0)) {
-                        return true;
+                        $urlPath = parse_url($item, PHP_URL_PATH);
+                        if ($urlPath) {
+                            $extension = strtolower(pathinfo($urlPath, PATHINFO_EXTENSION));
+                            $fileExtensions = [
+                                'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp',
+                                'rtf', 'txt', 'csv', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 
+                                'tiff', 'ico', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', '3gp',
+                                'mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma', 'zip', 'rar', '7z', 
+                                'tar', 'gz', 'bz2', 'xz', 'xml', 'json', 'sql', 'exe', 'dmg', 'iso', 'deb', 'rpm'
+                            ];
+                            if (in_array($extension, $fileExtensions)) {
+                                return true;
+                            }
+                        }
                     }
                     // Base64
                     if (base64_encode(base64_decode($item, true)) === $item && strlen($item) > 100) {
@@ -2236,7 +2300,7 @@ class SaveObject
 
         // Handle file properties - process them and replace content with file IDs
         foreach ($data as $propertyName => $value) {
-            if ($this->isFileProperty($value) === true) {
+            if ($this->isFileProperty($value, $schema, $propertyName) === true) {
                 $this->handleFileProperty($updatedEntity, $data, $propertyName, $schema);
             }
         }
