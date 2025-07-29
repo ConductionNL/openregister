@@ -283,7 +283,7 @@ class ObjectsController extends Controller
         }
 
         // Add object field filters directly to query
-        $query = array_merge(array1: $query, array2: $objectFilters);
+        $query = array_merge($query, $objectFilters);
 
         // Add IDs if provided
         if ($ids !== null) {
@@ -291,7 +291,7 @@ class ObjectsController extends Controller
         }
 
         // Add all special parameters (they'll be handled by searchObjectsPaginated)
-        $query = array_merge(array1: $query, array2: $specialParams);
+        $query = array_merge($query, $specialParams);
 
         return $query;
 
@@ -728,7 +728,7 @@ class ObjectsController extends Controller
 
             // Get the existing object data and merge with patch data
             $existingData = $existingObject->getObject();
-            $mergedData = array_merge(array1: $existingData, array2: $patchData);
+            $mergedData = array_merge($existingData, $patchData);
             $existingObject->setObject($mergedData);
 
         } catch (DoesNotExistException $exception) {

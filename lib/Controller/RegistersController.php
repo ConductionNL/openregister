@@ -420,7 +420,8 @@ class RegistersController extends Controller
      *
      * This method imports data into a register in the specified format and returns a detailed summary.
      *
-     * @param int $id The ID of the register to import into
+     * @param int  $id    The ID of the register to import into
+     * @param bool $force Force import even if the same or newer version already exists
      *
      * @return JSONResponse The result of the import operation with summary
      * @phpstan-return JSONResponse
@@ -429,7 +430,7 @@ class RegistersController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function import(int $id): JSONResponse
+    public function import(int $id, bool $force=false): JSONResponse
     {
         try {
             // Get the uploaded file
@@ -500,7 +501,10 @@ class RegistersController extends Controller
                     // Import the data and get the result
                     $result = $this->configurationService->importFromJson(
                         $jsonData,
-                        $this->request->getParam('owner')
+                        $this->request->getParam('owner'),
+                        $this->request->getParam('appId'),
+                        $this->request->getParam('version'),
+                        $force
                     );
                     // Build a summary for objects if present in sheet-based format
                     $summary = [

@@ -380,6 +380,212 @@ class RenderObject
 	}
 
 
+    /**
+     * Hydrates file properties by replacing file IDs with actual file objects.
+     *
+     * This method processes object properties that are configured as file types in the schema,
+     * replacing stored file IDs with complete file objects for presentation. It handles both
+     * single file properties and arrays of files.
+     *
+     * @param ObjectEntity $entity The entity to process.
+     *
+     * @return ObjectEntity The entity with hydrated file properties.
+     *
+     * @throws Exception If schema or file operations fail.
+     *
+     * @psalm-param ObjectEntity $entity
+     * @phpstan-param ObjectEntity $entity
+     * @psalm-return ObjectEntity
+     * @phpstan-return ObjectEntity
+     */
+    private function renderFileProperties(ObjectEntity $entity): ObjectEntity
+    {
+        try {
+            // Get the schema for this object to understand property configurations
+            $schema = $this->getSchema($entity->getSchema());
+            if ($schema === null) {
+                // If no schema found, return entity unchanged
+                return $entity;
+            }
+
+            $schemaProperties = $schema->getProperties() ?? [];
+            $objectData = $entity->getObject();
+
+            // Process each property in the object data
+            foreach ($objectData as $propertyName => $propertyValue) {
+                // Skip metadata properties
+                if (str_starts_with($propertyName, '@') || $propertyName === 'id') {
+                    continue;
+                }
+
+                // Check if this property is configured in the schema
+                if (!isset($schemaProperties[$propertyName])) {
+                    continue;
+                }
+
+                $propertyConfig = $schemaProperties[$propertyName];
+
+                // Check if this is a file property (direct or array[file])
+                if ($this->isFilePropertyConfig($propertyConfig)) {
+                    $objectData[$propertyName] = $this->hydrateFileProperty(
+                        propertyValue: $propertyValue,
+                        propertyConfig: $propertyConfig,
+                        propertyName: $propertyName
+                    );
+                }
+            }
+
+            // Update the entity with hydrated data
+            $entity->setObject($objectData);
+
+        } catch (Exception $e) {
+            // Log error but don't break rendering - just return original entity
+            error_log("Error hydrating file properties for object {$entity->getId()}: " . $e->getMessage());
+        }
+
+        return $entity;
+
+    }//end renderFileProperties()
+
+
+    /**
+     * Checks if a property configuration indicates a file property.
+     *
+     * @param array $propertyConfig The property configuration from schema.
+     *
+     * @return bool True if this is a file property configuration.
+     *
+     * @psalm-param array<string, mixed> $propertyConfig
+     * @phpstan-param array<string, mixed> $propertyConfig
+     * @psalm-return bool
+     * @phpstan-return bool
+     */
+    private function isFilePropertyConfig(array $propertyConfig): bool
+    {
+        // Direct file property
+        if (($propertyConfig['type'] ?? '') === 'file') {
+            return true;
+        }
+
+        // Array of files
+        if (($propertyConfig['type'] ?? '') === 'array' &&
+            isset($propertyConfig['items']) &&
+            ($propertyConfig['items']['type'] ?? '') === 'file') {
+            return true;
+        }
+
+        return false;
+
+    }//end isFilePropertyConfig()
+
+
+    /**
+     * Hydrates a file property by replacing file IDs with file objects.
+     *
+     * @param mixed  $propertyValue  The property value (file ID or array of file IDs).
+     * @param array  $propertyConfig The property configuration from schema.
+     * @param string $propertyName   The property name (for error reporting).
+     *
+     * @return mixed The hydrated property value (file object or array of file objects).
+     *
+     * @psalm-param mixed $propertyValue
+     * @phpstan-param mixed $propertyValue
+     * @psalm-param array<string, mixed> $propertyConfig
+     * @phpstan-param array<string, mixed> $propertyConfig
+     * @psalm-param string $propertyName
+     * @phpstan-param string $propertyName
+     * @psalm-return mixed
+     * @phpstan-return mixed
+     */
+    private function hydrateFileProperty($propertyValue, array $propertyConfig, string $propertyName)
+    {
+        $isArrayProperty = ($propertyConfig['type'] ?? '') === 'array';
+
+        if ($isArrayProperty) {
+            // Handle array of files
+            if (!is_array($propertyValue)) {
+                return $propertyValue; // Return unchanged if not an array
+            }
+
+            $hydratedFiles = [];
+            foreach ($propertyValue as $fileId) {
+                $fileObject = $this->getFileObject($fileId);
+                if ($fileObject !== null) {
+                    $hydratedFiles[] = $fileObject;
+                }
+            }
+
+            return $hydratedFiles;
+
+        } else {
+            // Handle single file
+            if (is_numeric($propertyValue) || (is_string($propertyValue) && ctype_digit($propertyValue))) {
+                return $this->getFileObject($propertyValue);
+            }
+
+            return $propertyValue; // Return unchanged if not a file ID
+        }
+
+    }//end hydrateFileProperty()
+
+
+    /**
+     * Gets a file object by its ID using the FileService.
+     *
+     * @param mixed $fileId The file ID to retrieve.
+     *
+     * @return array|null The formatted file object or null if not found.
+     *
+     * @psalm-param mixed $fileId
+     * @phpstan-param mixed $fileId
+     * @psalm-return array<string, mixed>|null
+     * @phpstan-return array<string, mixed>|null
+     */
+    private function getFileObject($fileId): ?array
+    {
+        try {
+            // Convert to string/int as needed
+            $fileIdStr = is_numeric($fileId) ? (string) $fileId : $fileId;
+
+            if (!is_string($fileIdStr) && !is_int($fileIdStr)) {
+                return null;
+            }
+
+            // Use FileMapper to get file information directly
+            $fileRecord = $this->fileMapper->getFile((int) $fileIdStr);
+
+            if (empty($fileRecord)) {
+                return null;
+            }
+
+            // Get file tags
+            $labels = $this->getFileTags((string) $fileRecord['fileid']);
+
+            // Format the file object (same structure as renderFiles method)
+            return [
+                'id'          => (string) $fileRecord['fileid'],
+                'path'        => $fileRecord['path'],
+                'title'       => $fileRecord['name'],
+                'accessUrl'   => $fileRecord['accessUrl'] ?? null,
+                'downloadUrl' => $fileRecord['downloadUrl'] ?? null,
+                'type'        => $fileRecord['mimetype'] ?? 'application/octet-stream',
+                'extension'   => pathinfo($fileRecord['name'], PATHINFO_EXTENSION),
+                'size'        => (int) $fileRecord['size'],
+                'hash'        => $fileRecord['etag'] ?? '',
+                'published'   => $fileRecord['published'] ?? null,
+                'modified'    => isset($fileRecord['mtime']) ? 
+                    (new \DateTime())->setTimestamp($fileRecord['mtime'])->format('c') : null,
+                'labels'      => $labels,
+            ];
+
+        } catch (Exception $e) {
+            error_log("Error getting file object for ID $fileId: " . $e->getMessage());
+            return null;
+        }
+
+    }//end getFileObject()
+
+
 
     /**
      * Renders an entity with optional extensions and filters.
@@ -442,6 +648,9 @@ class RenderObject
         }
 
 		$entity = $this->renderFiles($entity);
+
+        // Hydrate file properties (replace file IDs with file objects)
+        $entity = $this->renderFileProperties($entity);
 
         // Get the object data as an array for manipulation.
         $objectData = $entity->getObject();
