@@ -604,6 +604,8 @@ class RenderObject
      * @param array|null        $schemas    Preloaded schemas to use
      * @param array|null        $objects    Preloaded objects to use
      * @param array|null        $visitedIds All ids we already handled
+     * @param bool              $rbac       Whether to apply RBAC checks (default: true).
+     * @param bool              $multi      Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity The rendered entity with applied extensions and filters
      */
@@ -617,6 +619,8 @@ class RenderObject
         ?array $schemas=[],
         ?array $objects=[],
         ?array $visitedIds=[],
+        bool $rbac=true,
+        bool $multi=true
     ): ObjectEntity {
         if ($entity->getUuid() !== null && in_array($entity->getUuid(), $visitedIds, true)) {
             return $entity->setObject(['@circular' => true, 'id' => $entity->getUuid()]);
