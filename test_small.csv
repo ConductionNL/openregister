@@ -1,0 +1,5 @@
+id,TYPE,samenwerkingtype,naam,website,e-mailadres,telefoonnummer_TEMP,telefoonnummer,cbs,deelnemers,STATUS,sector,@self.organisation
+1f41e9e0-ac4d-471d-850a-9c083103667d,Gemeente,,'s-Gravenhage,www.denhaag.nl,brenda.degraaf@denhaag.nl,0703532958,+31 7035 32958,518.0,,Actief,Gemeenten,1f41e9e0-ac4d-471d-850a-9c083103667d
+8c3363d7-2269-49fd-ac71-5b4e9b809ed3,Gemeente,,'s-Hertogenbosch,www.s-hertogenbosch.nl,w.oostdam@s-hertogenbosch.nl,+31629047187,,796.0,,Actief,Gemeenten,8c3363d7-2269-49fd-ac71-5b4e9b809ed3
+f7db0bc8-ec7a-4aa9-902e-51a23f7bce51,Gemeente,,Aa en Hunze,www.aaenhunze.nl,emuntinga@aaenhunze.nl,0592-267856,+31 592 267856,1680.0,,Actief,Gemeenten,f7db0bc8-ec7a-4aa9-902e-51a23f7bce51
+e1863e39-a0d3-4384-b359-a3f0d98af2c8,Gemeente,,Aalsmeer,,l.de.regt@amstelveen.nl,020-5404596,+31 20 5404596,358.0,,Actief,Gemeenten,e1863e39-a0d3-4384-b359-a3f0d98af2c8
