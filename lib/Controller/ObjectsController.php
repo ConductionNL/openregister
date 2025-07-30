@@ -39,6 +39,7 @@ use OCP\DB\Exception;
 use OCP\IAppConfig;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCP\IGroupManager;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -98,6 +99,7 @@ class ObjectsController extends Controller
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly ObjectService $objectService,
         private readonly IUserSession $userSession,
+        private readonly IGroupManager $groupManager,
         ExportService $exportService,
         ImportService $importService
     ) {
@@ -105,6 +107,30 @@ class ObjectsController extends Controller
         $this->exportService = $exportService;
         $this->importService = $importService;
     }
+
+
+    /**
+     * Check if the current user is in the admin group.
+     *
+     * This helper method determines if the current logged-in user belongs to the 'admin' group,
+     * which allows bypassing RBAC and multitenancy restrictions.
+     *
+     * @return bool True if user is admin, false otherwise
+     *
+     * @psalm-return bool
+     * @phpstan-return bool
+     */
+    private function isCurrentUserAdmin(): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        $userGroups = $this->groupManager->getUserGroupIds($user);
+        return in_array('admin', $userGroups);
+
+    }//end isCurrentUserAdmin()
 
 
     /**
@@ -464,9 +490,14 @@ class ObjectsController extends Controller
             $extend = explode(',', $extend);
         }
 
+        // Determine RBAC and multitenancy settings based on admin status
+        $isAdmin = $this->isCurrentUserAdmin();
+        $rbac = !$isAdmin;  // If admin, disable RBAC
+        $multi = !$isAdmin; // If admin, disable multitenancy
+
         // Find and validate the object.
         try {
-            $object = $this->objectService->find($id, $extend);
+            $object = $this->objectService->find($id, $extend, false, null, null, $rbac, $multi);
 
             // Render the object with requested extensions and filters.
             return new JSONResponse($object);
@@ -515,11 +546,18 @@ class ObjectsController extends Controller
             ARRAY_FILTER_USE_KEY
         );
 
+        // Determine RBAC and multitenancy settings based on admin status
+        $isAdmin = $this->isCurrentUserAdmin();
+        $rbac = !$isAdmin;  // If admin, disable RBAC
+        $multi = !$isAdmin; // If admin, disable multitenancy
+
         // Save the object.
         try {
             // Use the object service to validate and save the object.
             $objectEntity = $objectService->saveObject(
-                object: $object
+                object: $object,
+                rbac: $rbac,
+                multi: $multi
             );
 
             // Unlock the object after saving.
@@ -581,10 +619,15 @@ class ObjectsController extends Controller
             ARRAY_FILTER_USE_KEY
         );
 
+        // Determine RBAC and multitenancy settings based on admin status
+        $isAdmin = $this->isCurrentUserAdmin();
+        $rbac = !$isAdmin;  // If admin, disable RBAC
+        $multi = !$isAdmin; // If admin, disable multitenancy
+
         // Check if the object exists and can be updated.
         // @todo shouldn't this be part of the object service?
         try {
-            $existingObject = $this->objectService->find($id);
+            $existingObject = $this->objectService->find($id, [], false, null, null, $rbac, $multi);
 
             // Get the resolved register and schema IDs from the ObjectService
             // This ensures proper handling of both numeric IDs and slug identifiers
@@ -628,7 +671,9 @@ class ObjectsController extends Controller
             // Use the object service to validate and update the object.
             $objectEntity = $objectService->saveObject(
                 object: $object,
-                uuid: $id
+                uuid: $id,
+                rbac: $rbac,
+                multi: $multi
             );
 
             // Unlock the object after saving.
@@ -784,11 +829,16 @@ class ObjectsController extends Controller
             $objectService->setRegister($register);
             $objectService->setSchema($schema);
 
+            // Determine RBAC and multitenancy settings based on admin status
+            $isAdmin = $this->isCurrentUserAdmin();
+            $rbac = !$isAdmin;  // If admin, disable RBAC
+            $multi = !$isAdmin; // If admin, disable multitenancy
+
             // Get the object before deletion for response (include soft-deleted objects)
             $oldObject = $this->objectEntityMapper->find($id, null, null, true);
             
             // Use ObjectService to delete the object (includes RBAC permission checks)
-            $deleteResult = $objectService->deleteObject($id);
+            $deleteResult = $objectService->deleteObject($id, $rbac, $multi);
             
             if (!$deleteResult) {
                 // If delete operation failed, return error
@@ -1273,6 +1323,11 @@ class ObjectsController extends Controller
         $objectService->setSchema($schema);
         $objectService->setRegister($register);
 
+        // Determine RBAC and multitenancy settings based on admin status
+        $isAdmin = $this->isCurrentUserAdmin();
+        $rbac = !$isAdmin;  // If admin, disable RBAC
+        $multi = !$isAdmin; // If admin, disable multitenancy
+
         try {
             // Get the publication date from request if provided
             $date = null;
@@ -1281,7 +1336,7 @@ class ObjectsController extends Controller
             }
 
             // Publish the object
-            $object = $objectService->publish($id, $date);
+            $object = $objectService->publish($id, $date, $rbac, $multi);
 
             return new JSONResponse($object->jsonSerialize());
         } catch (\Exception $e) {
@@ -1314,6 +1369,11 @@ class ObjectsController extends Controller
         $objectService->setSchema($schema);
         $objectService->setRegister($register);
 
+        // Determine RBAC and multitenancy settings based on admin status
+        $isAdmin = $this->isCurrentUserAdmin();
+        $rbac = !$isAdmin;  // If admin, disable RBAC
+        $multi = !$isAdmin; // If admin, disable multitenancy
+
         try {
             // Get the depublication date from request if provided
             $date = null;
@@ -1322,7 +1382,7 @@ class ObjectsController extends Controller
             }
 
             // Depublish the object
-            $object = $objectService->depublish($id, $date);
+            $object = $objectService->depublish($id, $date, $rbac, $multi);
 
             return new JSONResponse($object->jsonSerialize());
         } catch (\Exception $e) {

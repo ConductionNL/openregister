@@ -126,6 +126,8 @@ class DeleteObject
      * @param Schema|int|string   $schema           The schema of the object.
      * @param string              $uuid             The UUID of the object to delete.
      * @param string|null         $originalObjectId The ID of original object for cascading.
+     * @param bool                $rbac             Whether to apply RBAC checks (default: true).
+     * @param bool                $multi            Whether to apply multitenancy filtering (default: true).
      *
      * @return bool Whether the deletion was successful.
      *
@@ -135,7 +137,9 @@ class DeleteObject
         Register | int | string $register,
         Schema | int | string $schema,
         string $uuid,
-        ?string $originalObjectId=null
+        ?string $originalObjectId=null,
+        bool $rbac=true,
+        bool $multi=true
     ): bool {
         try {
             $object = $this->objectEntityMapper->find($uuid, null, null, true);

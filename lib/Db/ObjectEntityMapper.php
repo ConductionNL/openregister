@@ -171,11 +171,16 @@ class ObjectEntityMapper extends QBMapper
      * @param string $objectTableAlias Optional alias for the objects table (default: 'o')
      * @param string $schemaTableAlias Optional alias for the schemas table (default: 's')
      * @param string|null $userId Optional user ID (defaults to current user)
+     * @param bool $rbac Whether to apply RBAC checks (default: true). If false, no filtering is applied.
      *
      * @return void
      */
-    private function applyRbacFilters(IQueryBuilder $qb, string $objectTableAlias = 'o', string $schemaTableAlias = 's', ?string $userId = null): void
+    private function applyRbacFilters(IQueryBuilder $qb, string $objectTableAlias = 'o', string $schemaTableAlias = 's', ?string $userId = null, bool $rbac = true): void
     {
+        // If RBAC is disabled, skip all permission filtering
+        if ($rbac === false) {
+            return;
+        }
         // Get current user if not provided
         if ($userId === null) {
             $user = $this->userSession->getUser();
@@ -296,31 +301,20 @@ class ObjectEntityMapper extends QBMapper
      * @param IQueryBuilder $qb The query builder to modify
      * @param string $objectTableAlias Optional alias for the objects table (default: 'o')
      * @param string|null $activeOrganisationUuid The active organization UUID to filter by
+     * @param bool $multi Whether to apply multitenancy filtering (default: true). If false, no filtering is applied.
      *
      * @return void
      */
-    private function applyOrganizationFilters(IQueryBuilder $qb, string $objectTableAlias = 'o', ?string $activeOrganisationUuid = null): void
+    private function applyOrganizationFilters(IQueryBuilder $qb, string $objectTableAlias = 'o', ?string $activeOrganisationUuid = null, bool $multi = true): void
     {
+        // If multitenancy is disabled, skip all organization filtering
+        if ($multi === false) {
+            return;
+        }
         // Get current user to check if they're admin
         $user = $this->userSession->getUser();
-        if ($user !== null) {
-            $userGroups = $this->groupManager->getUserGroupIds($user);
-            
-            // Admin users see all objects by default, but should still respect organization filtering
-            // when an active organization is explicitly set (i.e., when they switch organizations)
-            if (in_array('admin', $userGroups)) {
-                // If no active organization is set, admin users see everything (no filtering)
-                if ($activeOrganisationUuid === null) {
-                    return;
-                }
-                // If an active organization IS set, admin users should see only that organization's objects
-                // This allows admins to "switch context" to work within a specific organization
-                // Continue with organization filtering logic below
-            }
-        }
-
-        // Get user's organizations directly from database
         $userId = $user ? $user->getUID() : null;
+        
         if ($userId === null) {
             // For unauthenticated requests, show objects that are currently published
             $now = (new \DateTime())->format('Y-m-d H:i:s');
@@ -342,9 +336,7 @@ class ObjectEntityMapper extends QBMapper
             return;
         }
 
-        $organizationColumn = $objectTableAlias ? $objectTableAlias . '.organisation' : 'organisation';
-
-        // Check if this is the system-wide default organization (not user's oldest organization)
+        // Check if this is the system-wide default organization (move this check up)
         $defaultOrgQb = $this->db->getQueryBuilder();
         $defaultOrgQb->select('uuid')
                      ->from('openregister_organisations')
@@ -356,6 +348,29 @@ class ObjectEntityMapper extends QBMapper
         $defaultResult->closeCursor();
         
         $isSystemDefaultOrg = ($activeOrganisationUuid === $systemDefaultOrgUuid);
+
+        if ($user !== null) {
+            $userGroups = $this->groupManager->getUserGroupIds($user);
+            
+            // Admin users see all objects by default, but should still respect organization filtering
+            // when an active organization is explicitly set (i.e., when they switch organizations)
+            // EXCEPTION: Admin users with the default organization should see everything (no filtering)
+            if (in_array('admin', $userGroups)) {
+                // If no active organization is set, admin users see everything (no filtering)
+                if ($activeOrganisationUuid === null) {
+                    return;
+                }
+                // NEW: If admin user has the default organization set, they see everything (no filtering)
+                if ($isSystemDefaultOrg) {
+                    return;
+                }
+                // If an active organization IS set (and it's not default), admin users should see only that organization's objects
+                // This allows admins to "switch context" to work within a specific organization
+                // Continue with organization filtering logic below
+            }
+        }
+
+        $organizationColumn = $objectTableAlias ? $objectTableAlias . '.organisation' : 'organisation';
 
         // Build organization filter conditions
         $orgConditions = $qb->expr()->orX();
@@ -451,7 +466,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return ObjectEntity The ObjectEntity.
      */
-    public function find(string | int $identifier, ?Register $register=null, ?Schema $schema=null, bool $includeDeleted=false): ObjectEntity
+    public function find(string | int $identifier, ?Register $register=null, ?Schema $schema=null, bool $includeDeleted=false, bool $rbac=true, bool $multi=true): ObjectEntity
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -562,7 +577,9 @@ class ObjectEntityMapper extends QBMapper
         bool $includeDeleted = false,
         ?Register $register = null,
         ?Schema $schema = null,
-        ?bool $published = false
+        ?bool $published = false,
+        bool $rbac = true,
+        bool $multi = true
     ): array {
         // Filter out system variables (starting with _).
         $filters = array_filter(
@@ -601,7 +618,7 @@ class ObjectEntityMapper extends QBMapper
             ->setFirstResult($offset);
 
         // Apply RBAC filtering based on user permissions
-        $this->applyRbacFilters($qb, 'o', 's');
+        $this->applyRbacFilters($qb, 'o', 's', null, $rbac);
 
 		// By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
         if ($includeDeleted === false) {
@@ -965,7 +982,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return array<int, ObjectEntity>|int An array of ObjectEntity objects matching the criteria, or integer count if _count is true
      */
-    public function searchObjects(array $query = [], ?string $activeOrganisationUuid = null): array|int {
+    public function searchObjects(array $query = [], ?string $activeOrganisationUuid = null, bool $rbac = true, bool $multi = true): array|int {
         // Extract options from query (prefixed with _)
         $limit = $query['_limit'] ?? null;
         $offset = $query['_offset'] ?? null;
@@ -1052,10 +1069,10 @@ class ObjectEntityMapper extends QBMapper
         }
 
         // Apply RBAC filtering based on user permissions
-        $this->applyRbacFilters($queryBuilder, 'o', 's');
+        $this->applyRbacFilters($queryBuilder, 'o', 's', null, $rbac);
 
         // Apply organization filtering for multi-tenancy
-        $this->applyOrganizationFilters($queryBuilder, 'o', $activeOrganisationUuid);
+        $this->applyOrganizationFilters($queryBuilder, 'o', $activeOrganisationUuid, $multi);
 
         // Handle basic filters - skip register/schema if they're in metadata filters (to avoid double filtering)
         $basicRegister = isset($metadataFilters['register']) ? null : $register;
@@ -1154,7 +1171,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return int The number of objects matching the criteria
      */
-    public function countSearchObjects(array $query = [], ?string $activeOrganisationUuid = null): int
+    public function countSearchObjects(array $query = [], ?string $activeOrganisationUuid = null, bool $rbac = true, bool $multi = true): int
     {
         // Extract options from query (prefixed with _)
         $search = $this->processSearchParameter($query['_search'] ?? null);
@@ -1216,7 +1233,7 @@ class ObjectEntityMapper extends QBMapper
         $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema, 'o');
 
         // Apply organization filtering for multi-tenancy (no RBAC in count queries due to no schema join)
-        $this->applyOrganizationFilters($queryBuilder, 'o', $activeOrganisationUuid);
+        $this->applyOrganizationFilters($queryBuilder, 'o', $activeOrganisationUuid, $multi);
 
         // Handle filtering by IDs/UUIDs if provided (same as searchObjects)
         if ($ids !== null && empty($ids) === false) {
@@ -1437,7 +1454,9 @@ class ObjectEntityMapper extends QBMapper
         bool $includeDeleted=false,
         ?Register $register=null,
         ?Schema $schema=null,
-        ?bool $published=false
+        ?bool $published=false,
+        bool $rbac=true,
+        bool $multi=true
     ): int {
         $qb = $this->db->getQueryBuilder();
 
@@ -1474,7 +1493,7 @@ class ObjectEntityMapper extends QBMapper
         }
 
         // Apply RBAC filtering based on user permissions
-        $this->applyRbacFilters($qb, 'o', 's');
+        $this->applyRbacFilters($qb, 'o', 's', null, $rbac);
 
         // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
         if ($includeDeleted === false) {

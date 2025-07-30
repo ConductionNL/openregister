@@ -1142,37 +1142,93 @@ class ConfigurationService
     /**
      * Import an object from configuration data
      *
+     * This method imports objects using a combination of register, schema slug, and object name
+     * to determine uniqueness instead of UUID. It also performs version checking to prevent
+     * downgrading existing objects to older versions.
+     *
      * @param array       $data  The object data.
      * @param string|null $owner The owner of the object.
      *
      * @return ObjectEntity|null The imported object or null if skipped.
+     * @throws Exception If object import fails.
      */
     private function importObject(array $data, ?string $owner=null): ?ObjectEntity
     {
         try {
-            // Determine the UUID or ID to use for finding the existing object.
-            $uuid = $data['uuid'] ?? $data['id'] ?? null;
-
-            // Check if object already exists by UUID or ID.
-            $existingObject = null;
-
-            if ($uuid !== null) {
-                try {
-                    $existingObject = $this->objectEntityMapper->find($uuid);
-                } catch (\Exception $e) {
-                    // Catch all exceptions, object doesn't exist or other error occurred, we'll create a new one.
-                    $this->logger->error('Error finding object: '.$e->getMessage());
-                }
+            // Validate required @self metadata
+            if (!isset($data['@self']['register']) || !isset($data['@self']['schema']) || !isset($data['name'])) {
+                $this->logger->warning('Object data missing required @self metadata (register, schema) or name field');
+                return null;
             }
 
-            // Set the register and schema context for the object service.
-            $this->objectService->setRegister($data['@self']['register']);
-            $this->objectService->setSchema($data['@self']['schema']);
+            $registerId = $data['@self']['register'];
+            $schemaId = $data['@self']['schema'];
+            $objectName = $data['name'];
+            $objectVersion = $data['@self']['version'] ?? $data['version'] ?? '1.0.0';
 
-            // Save the object using the object service.
+            // Find existing objects using register, schema, and name combination for uniqueness
+            $existingObjects = $this->objectEntityMapper->findAll([
+                'filters' => [
+                    'register' => $registerId,
+                    'schema' => $schemaId,
+                    'name' => $objectName
+                ]
+            ]);
+
+            $existingObject = null;
+            if (!empty($existingObjects)) {
+                $existingObject = $existingObjects[0]; // Take the first match
+                $existingObjectData = $existingObject->jsonSerialize();
+                $existingVersion = $existingObjectData['@self']['version'] ?? $existingObjectData['version'] ?? '1.0.0';
+
+                // Compare versions using version_compare for proper semver comparison
+                if (version_compare($objectVersion, $existingVersion, '<=')) {
+                    $this->logger->info(
+                        sprintf(
+                            'Skipping object import as existing version (%s) is newer or equal to import version (%s) for object: %s',
+                            $existingVersion,
+                            $objectVersion,
+                            $objectName
+                        )
+                    );
+                    // Return the existing object without updating
+                    return $existingObject;
+                }
+
+                $this->logger->info(
+                    sprintf(
+                        'Updating existing object "%s" from version %s to %s',
+                        $objectName,
+                        $existingVersion,
+                        $objectVersion
+                    )
+                );
+            } else {
+                $this->logger->info(
+                    sprintf(
+                        'Creating new object "%s" with version %s',
+                        $objectName,
+                        $objectVersion
+                    )
+                );
+            }
+
+            // Set the register and schema context for the object service
+            $this->objectService->setRegister($registerId);
+            $this->objectService->setSchema($schemaId);
+
+            // Ensure version is set in @self metadata
+            if (!isset($data['@self']['version'])) {
+                $data['@self']['version'] = $objectVersion;
+            }
+
+            // Use existing object's UUID if available, otherwise let the service generate a new one
+            $uuid = $existingObject ? $existingObject->getUuid() : ($data['uuid'] ?? $data['id'] ?? null);
+
+            // Save the object using the object service
             $object = $this->objectService->saveObject(
                 object: $data,
-                uuid: $uuid ?? null
+                uuid: $uuid
             );
 
             return $object;
