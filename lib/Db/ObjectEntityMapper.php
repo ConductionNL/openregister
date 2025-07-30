@@ -303,24 +303,8 @@ class ObjectEntityMapper extends QBMapper
     {
         // Get current user to check if they're admin
         $user = $this->userSession->getUser();
-        if ($user !== null) {
-            $userGroups = $this->groupManager->getUserGroupIds($user);
-            
-            // Admin users see all objects by default, but should still respect organization filtering
-            // when an active organization is explicitly set (i.e., when they switch organizations)
-            if (in_array('admin', $userGroups)) {
-                // If no active organization is set, admin users see everything (no filtering)
-                if ($activeOrganisationUuid === null) {
-                    return;
-                }
-                // If an active organization IS set, admin users should see only that organization's objects
-                // This allows admins to "switch context" to work within a specific organization
-                // Continue with organization filtering logic below
-            }
-        }
-
-        // Get user's organizations directly from database
         $userId = $user ? $user->getUID() : null;
+        
         if ($userId === null) {
             // For unauthenticated requests, show objects that are currently published
             $now = (new \DateTime())->format('Y-m-d H:i:s');
@@ -342,9 +326,7 @@ class ObjectEntityMapper extends QBMapper
             return;
         }
 
-        $organizationColumn = $objectTableAlias ? $objectTableAlias . '.organisation' : 'organisation';
-
-        // Check if this is the system-wide default organization (not user's oldest organization)
+        // Check if this is the system-wide default organization (move this check up)
         $defaultOrgQb = $this->db->getQueryBuilder();
         $defaultOrgQb->select('uuid')
                      ->from('openregister_organisations')
@@ -356,6 +338,29 @@ class ObjectEntityMapper extends QBMapper
         $defaultResult->closeCursor();
         
         $isSystemDefaultOrg = ($activeOrganisationUuid === $systemDefaultOrgUuid);
+
+        if ($user !== null) {
+            $userGroups = $this->groupManager->getUserGroupIds($user);
+            
+            // Admin users see all objects by default, but should still respect organization filtering
+            // when an active organization is explicitly set (i.e., when they switch organizations)
+            // EXCEPTION: Admin users with the default organization should see everything (no filtering)
+            if (in_array('admin', $userGroups)) {
+                // If no active organization is set, admin users see everything (no filtering)
+                if ($activeOrganisationUuid === null) {
+                    return;
+                }
+                // NEW: If admin user has the default organization set, they see everything (no filtering)
+                if ($isSystemDefaultOrg) {
+                    return;
+                }
+                // If an active organization IS set (and it's not default), admin users should see only that organization's objects
+                // This allows admins to "switch context" to work within a specific organization
+                // Continue with organization filtering logic below
+            }
+        }
+
+        $organizationColumn = $objectTableAlias ? $objectTableAlias . '.organisation' : 'organisation';
 
         // Build organization filter conditions
         $orgConditions = $qb->expr()->orX();
