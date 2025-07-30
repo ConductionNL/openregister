@@ -2436,7 +2436,7 @@ class FileService
                 if($existingFile->hash(type: 'md5') === md5(string: $content)) {
                     return $existingFile;
                 }
-                
+
                 // Update the existing file - pass the object so updateFile can find it in the object folder
                 return $this->updateFile(
                     filePath: $fileName,  // Just pass the filename, not the full path
