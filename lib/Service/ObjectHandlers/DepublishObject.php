@@ -43,8 +43,10 @@ class DepublishObject
     /**
      * Depublish an object
      *
-   * @param string        $uuid     The UUID of the object to depublish
+     * @param string        $uuid     The UUID of the object to depublish
      * @param DateTime|null $date     Optional depublication date
+     * @param bool          $rbac     Whether to apply RBAC checks (default: true).
+     * @param bool          $multi    Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity The depublished object
      *
@@ -52,7 +54,9 @@ class DepublishObject
      */
     public function depublish(
         string $uuid,
-        ?DateTime $date = null
+        ?DateTime $date = null,
+        bool $rbac = true,
+        bool $multi = true
     ): ObjectEntity {
         // Get the object
         $object = $this->objectEntityMapper->find($uuid);
