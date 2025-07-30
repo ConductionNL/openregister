@@ -442,7 +442,7 @@ class SchemaMapper extends QBMapper
 
 
     /**
-     * Delete a schema only if no objects are attached
+     * Delete a schema
      *
      * @param Entity $schema The schema to delete
      *
@@ -452,14 +452,7 @@ class SchemaMapper extends QBMapper
      */
     public function delete(Entity $schema): Schema
     {
-        // Check for attached objects before deleting
-        $schemaId = method_exists($schema, 'getId') ? $schema->getId() : $schema->id;
-        $stats    = $this->objectEntityMapper->getStatistics(null, $schemaId);
-        if (($stats['total'] ?? 0) > 0) {
-            throw new \Exception('Cannot delete schema: objects are still attached.');
-        }
-
-        // Proceed with deletion if no objects are attached
+        // Proceed with deletion directly - no need to check stats on deletion
         $result = parent::delete($schema);
 
         // Dispatch deletion event.
