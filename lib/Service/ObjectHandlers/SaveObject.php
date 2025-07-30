@@ -973,6 +973,8 @@ class SaveObject
      * @param array                    $data     The object data to save.
      * @param string|null              $uuid     The UUID of the object to update (if updating).
      * @param int|null                 $folderId The folder ID to set on the object (optional).
+     * @param bool                     $rbac     Whether to apply RBAC checks (default: true).
+     * @param bool                     $multi    Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity The saved object entity.
      *
@@ -983,7 +985,9 @@ class SaveObject
         Schema | int | string $schema,
         array $data,
         ?string $uuid=null,
-        ?int $folderId=null
+        ?int $folderId=null,
+        bool $rbac=true,
+        bool $multi=true
     ): ObjectEntity {
 
         if (isset($data['@self']) && is_array($data['@self'])) {
@@ -1178,8 +1182,8 @@ class SaveObject
             $objectEntity->setOwner($user->getUID());
         }
 
-        // Set organisation from active organisation for multi-tenancy (if not already set)
-        if ($objectEntity->getOrganisation() === null || $objectEntity->getOrganisation() === '') {
+        // Set organisation from active organisation for multi-tenancy (if not already set and multi is enabled)
+        if ($multi === true && ($objectEntity->getOrganisation() === null || $objectEntity->getOrganisation() === '')) {
             $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
             $objectEntity->setOrganisation($organisationUuid);
         }

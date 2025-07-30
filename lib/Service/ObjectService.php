@@ -126,6 +126,30 @@ class ObjectService
 
 
     /**
+     * Check if the current user is in the admin group.
+     *
+     * This helper method determines if the current logged-in user belongs to the 'admin' group,
+     * which allows bypassing RBAC and multitenancy restrictions.
+     *
+     * @return bool True if user is admin, false otherwise
+     *
+     * @psalm-return bool
+     * @phpstan-return bool
+     */
+    private function isCurrentUserAdmin(): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        $userGroups = $this->groupManager->getUserGroupIds($user);
+        return in_array('admin', $userGroups);
+
+    }//end isCurrentUserAdmin()
+
+
+    /**
      * Check if the current user has permission to perform a specific CRUD action on objects of a given schema
      *
      * This method implements the RBAC permission checking logic:
@@ -143,8 +167,13 @@ class ObjectService
      *
      * @throws \Exception If user session is invalid or user groups cannot be determined
      */
-    private function hasPermission(Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null): bool
+    private function hasPermission(Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $rbac = true): bool
     {
+        // If RBAC is disabled, always return true (bypass all permission checks)
+        if ($rbac === false) {
+            return true;
+        }
+
         // Get current user if not provided
         if ($userId === null) {
             $user = $this->userSession->getUser();
@@ -195,9 +224,9 @@ class ObjectService
      *
      * @return void
      */
-    private function checkPermission(Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null): void
+    private function checkPermission(Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $rbac = true): void
     {
-        if (!$this->hasPermission($schema, $action, $userId, $objectOwner)) {
+        if (!$this->hasPermission($schema, $action, $userId, $objectOwner, $rbac)) {
             $user = $this->userSession->getUser();
             $userName = $user ? $user->getDisplayName() : 'Anonymous';
             throw new \Exception("User '{$userName}' does not have permission to '{$action}' objects in schema '{$schema->getTitle()}'");
@@ -337,6 +366,8 @@ class ObjectService
      * @param bool                     $files    Whether to include file information.
      * @param Register|string|int|null $register The register object or its ID/UUID.
      * @param Schema|string|int|null   $schema   The schema object or its ID/UUID.
+     * @param bool                     $rbac     Whether to apply RBAC checks (default: true).
+     * @param bool                     $multi    Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity|null The rendered object or null.
      *
@@ -347,7 +378,9 @@ class ObjectService
         ?array $extend=[],
         bool $files=false,
         Register | string | int | null $register=null,
-        Schema | string | int | null $schema=null
+        Schema | string | int | null $schema=null,
+        bool $rbac=true,
+        bool $multi=true
     ): ?ObjectEntity {
         // Check if a register is provided and set the current register context.
         if ($register !== null) {
@@ -365,7 +398,9 @@ class ObjectService
             register: $this->currentRegister,
             schema: $this->currentSchema,
             extend: $extend,
-            files: $files
+            files: $files,
+            rbac: $rbac,
+            multi: $multi
         );
 
         // If the object is not found, return null.
@@ -379,7 +414,7 @@ class ObjectService
         }
 
         // Check user has permission to read this specific object (includes object owner check)
-        $this->checkPermission($this->currentSchema, 'read', null, $object->getOwner());
+        $this->checkPermission($this->currentSchema, 'read', null, $object->getOwner(), $rbac);
 
         // Render the object before returning.
         $registers = null;
@@ -394,7 +429,9 @@ class ObjectService
             entity: $object,
             extend: $extend,
             registers: $registers,
-            schemas: $schemas
+            schemas: $schemas,
+            rbac: $rbac,
+            multi: $multi
         );
 
     }//end find()
@@ -407,6 +444,8 @@ class ObjectService
      * @param array|null               $extend   Properties to extend the object with.
      * @param Register|string|int|null $register The register object or its ID/UUID.
      * @param Schema|string|int|null   $schema   The schema object or its ID/UUID.
+     * @param bool                     $rbac     Whether to apply RBAC checks (default: true).
+     * @param bool                     $multi    Whether to apply multitenancy filtering (default: true).
      *
      * @return array The created object.
      *
@@ -416,7 +455,9 @@ class ObjectService
         array $object,
         ?array $extend=[],
         Register | string | int | null $register=null,
-        Schema | string | int | null $schema=null
+        Schema | string | int | null $schema=null,
+        bool $rbac=true,
+        bool $multi=true
     ): ObjectEntity {
         // Check if a register is provided and set the current register context.
         if ($register !== null) {
@@ -430,7 +471,7 @@ class ObjectService
 
         // Check user has permission to create objects in this schema
         if ($this->currentSchema !== null) {
-            $this->checkPermission($this->currentSchema, 'create');
+            $this->checkPermission($this->currentSchema, 'create', null, null, $rbac);
         }
 
         // Skip validation here - let saveObject handle the proper order of pre-validation cascading then validation
@@ -441,9 +482,11 @@ class ObjectService
         $tempObject->setSchema($this->currentSchema->getId());
         $tempObject->setUuid(Uuid::v4()->toRfc4122());
 
-        // Set organisation from active organisation for multi-tenancy
-        $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
-        $tempObject->setOrganisation($organisationUuid);
+        // Set organisation from active organisation for multi-tenancy (only if multi is enabled)
+        if ($multi === true) {
+            $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
+            $tempObject->setOrganisation($organisationUuid);
+        }
 
         // Create folder before saving to avoid double update
         $folderId = null;
@@ -468,7 +511,9 @@ class ObjectService
             entity: $savedObject,
             extend: $extend,
             registers: [$this->currentRegister->getId() => $this->currentRegister],
-            schemas: [$this->currentSchema->getId() => $this->currentSchema]
+            schemas: [$this->currentSchema->getId() => $this->currentSchema],
+            rbac: $rbac,
+            multi: $multi
         );
 
     }//end createFromArray()
@@ -484,6 +529,8 @@ class ObjectService
      * @param array|null               $extend        Properties to extend the object with.
      * @param Register|string|int|null $register      The register object or its ID/UUID.
      * @param Schema|string|int|null   $schema        The schema object or its ID/UUID.
+     * @param bool                     $rbac          Whether to apply RBAC checks (default: true).
+     * @param bool                     $multi         Whether to apply multitenancy filtering (default: true).
      *
      * @return array The updated object.
      *
@@ -496,7 +543,9 @@ class ObjectService
         bool $patch=false,
         ?array $extend=[],
         Register | string | int | null $register=null,
-        Schema | string | int | null $schema=null
+        Schema | string | int | null $schema=null,
+        bool $rbac=true,
+        bool $multi=true
     ): ObjectEntity {
         // Check if a register is provided and set the current register context.
         if ($register !== null) {
@@ -509,7 +558,7 @@ class ObjectService
         }
 
         // Retrieve the existing object by its UUID.
-        $existingObject = $this->getHandler->find(id: $id);
+        $existingObject = $this->getHandler->find(id: $id, rbac: $rbac, multi: $multi);
         if ($existingObject === null) {
             throw new \OCP\AppFramework\Db\DoesNotExistException('Object not found');
         }
@@ -520,7 +569,7 @@ class ObjectService
         }
 
         // Check user has permission to update this specific object
-        $this->checkPermission($this->currentSchema, 'update', null, $existingObject->getOwner());
+        $this->checkPermission($this->currentSchema, 'update', null, $existingObject->getOwner(), $rbac);
 
         // If patch is true, merge the existing object with the new data.
         if ($patch === true) {
@@ -546,7 +595,9 @@ class ObjectService
             schema: $this->currentSchema,
             data: $object,
             uuid: $id,
-            folderId: $folderId
+            folderId: $folderId,
+            rbac: $rbac,
+            multi: $multi
         );
 
         // Render and return the saved object.
@@ -554,7 +605,9 @@ class ObjectService
             entity: $savedObject,
             extend: $extend,
             registers: [$this->currentRegister->getId() => $this->currentRegister],
-            schemas: [$this->currentSchema->getId() => $this->currentSchema]
+            schemas: [$this->currentSchema->getId() => $this->currentSchema],
+            rbac: $rbac,
+            multi: $multi
         );
 
     }//end updateFromArray()
@@ -595,10 +648,12 @@ class ObjectService
      *                      - unset: Fields to unset from results
      *                      - fields: Fields to include in results
      *                      - ids: Array of IDs or UUIDs to filter by
+     * @param bool $rbac Whether to apply RBAC checks (default: true).
+     * @param bool $multi Whether to apply multitenancy filtering (default: true).
      *
      * @return array Array of objects matching the configuration
      */
-    public function findAll(array $config=[]): array
+    public function findAll(array $config=[], bool $rbac=true, bool $multi=true): array
     {
 
         // Convert extend to an array if it's a string.
@@ -626,7 +681,9 @@ class ObjectService
             files: $config['files'] ?? false,
             uses: $config['uses'] ?? null,
             ids: $config['ids'] ?? null,
-            published: $config['published'] ?? false
+            published: $config['published'] ?? false,
+            rbac: $rbac,
+            multi: $multi
         );
 
         // Determine if register and schema should be passed to renderEntity only if currentSchema and currentRegister aren't null.
@@ -661,7 +718,9 @@ class ObjectService
                 filter: $config['unset'] ?? null,
                 fields: $config['fields'] ?? null,
                 registers: $registers,
-                schemas: $schemas
+                schemas: $schemas,
+                rbac: $rbac,
+                multi: $multi
             );
         }
 
@@ -738,14 +797,16 @@ class ObjectService
      *
      * @param string $uuid    The UUID of the object
      * @param array  $filters Optional filters to apply
+     * @param bool   $rbac    Whether to apply RBAC checks (default: true).
+     * @param bool   $multi   Whether to apply multitenancy filtering (default: true).
      *
      * @return array Array of log entries
      */
-    public function getLogs(string $uuid, array $filters=[]): array
+    public function getLogs(string $uuid, array $filters=[], bool $rbac=true, bool $multi=true): array
     {
         // Get logs for the specified object.
         $object = $this->objectEntityMapper->find($uuid);
-        $logs   = $this->getHandler->findLogs($object, filters: $filters);
+        $logs   = $this->getHandler->findLogs($object, filters: $filters, rbac: $rbac, multi: $multi);
 
         return $logs;
 
@@ -760,6 +821,8 @@ class ObjectService
      * @param Register|string|int|null $register The register object or its ID/UUID.
      * @param Schema|string|int|null   $schema   The schema object or its ID/UUID.
      * @param string|null              $uuid     The UUID of the object to update (if updating).
+     * @param bool                     $rbac     Whether to apply RBAC checks (default: true).
+     * @param bool                     $multi    Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity The saved object.
      *
@@ -770,7 +833,9 @@ class ObjectService
         ?array $extend=[],
         Register | string | int | null $register=null,
         Schema | string | int | null $schema=null,
-        ?string $uuid=null
+        ?string $uuid=null,
+        bool $rbac=true,
+        bool $multi=true
     ): ObjectEntity {
         // Check if a register is provided and set the current register context.
         if ($register !== null) {
@@ -802,18 +867,18 @@ class ObjectService
                 $isUpdate = true;
                 // This is an UPDATE operation
                 if ($this->currentSchema !== null) {
-                    $this->checkPermission($this->currentSchema, 'update', null, $existingObject->getOwner());
+                    $this->checkPermission($this->currentSchema, 'update', null, $existingObject->getOwner(), $rbac);
                 }
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Object not found, this is a CREATE operation with specific UUID
                 if ($this->currentSchema !== null) {
-                    $this->checkPermission($this->currentSchema, 'create');
+                    $this->checkPermission($this->currentSchema, 'create', null, null, $rbac);
                 }
             }
         } else {
             // No UUID provided, this is a CREATE operation
             if ($this->currentSchema !== null) {
-                $this->checkPermission($this->currentSchema, 'create');
+                $this->checkPermission($this->currentSchema, 'create', null, null, $rbac);
             }
         }
 
@@ -874,7 +939,9 @@ class ObjectService
             $this->currentSchema,
             $object,
             $uuid,
-            $folderId
+            $folderId,
+            $rbac,
+            $multi
         );
 
         // Determine if register and schema should be passed to renderEntity.
@@ -895,7 +962,9 @@ class ObjectService
             entity: $savedObject,
             extend: $extend,
             registers: $registers,
-            schemas: $schemas
+            schemas: $schemas,
+            rbac: $rbac,
+            multi: $multi
         );
 
     }//end saveObject()
@@ -905,12 +974,14 @@ class ObjectService
      * Delete an object.
      *
      * @param string $uuid The UUID of the object to delete
+     * @param bool   $rbac Whether to apply RBAC checks (default: true).
+     * @param bool   $multi Whether to apply multitenancy filtering (default: true).
      *
      * @return bool Whether the deletion was successful
      *
      * @throws \Exception If user does not have delete permission
      */
-    public function deleteObject(string $uuid): bool
+    public function deleteObject(string $uuid, bool $rbac=true, bool $multi=true): bool
     {
         // Find the object to get its owner for permission check (include soft-deleted objects)
         try {
@@ -922,18 +993,21 @@ class ObjectService
             }
 
             // Check user has permission to delete this specific object
-            $this->checkPermission($this->currentSchema, 'delete', null, $objectToDelete->getOwner());
+            $this->checkPermission($this->currentSchema, 'delete', null, $objectToDelete->getOwner(), $rbac);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Object doesn't exist, no permission check needed but let the deleteHandler handle this
             if ($this->currentSchema !== null) {
-                $this->checkPermission($this->currentSchema, 'delete');
+                $this->checkPermission($this->currentSchema, 'delete', null, null, $rbac);
             }
         }
 
         return $this->deleteHandler->deleteObject(
             $this->currentRegister,
             $this->currentSchema,
-            $uuid
+            $uuid,
+            null,
+            $rbac,
+            $multi
         );
 
     }//end deleteObject()
@@ -1072,10 +1146,12 @@ class ObjectService
      * Find all objects conforming to the request parameters, surrounded with pagination data.
      *
      * @param array $requestParams The request parameters to search with.
+     * @param bool  $rbac          Whether to apply RBAC checks (default: true).
+     * @param bool  $multi         Whether to apply multitenancy filtering (default: true).
      *
      * @return array The result including pagination data.
      */
-    public function findAllPaginated(array $requestParams): array
+    public function findAllPaginated(array $requestParams, bool $rbac=true, bool $multi=true): array
     {
         $requestParams = $this->cleanQuery($requestParams);
 
@@ -1294,13 +1370,13 @@ class ObjectService
      *
      * @return array<int, ObjectEntity>|int An array of ObjectEntity objects matching the criteria, or integer count if _count is true
      */
-    public function searchObjects(array $query = []): array|int
+    public function searchObjects(array $query = [], bool $rbac = true, bool $multi = true): array|int
     {
-        // Get active organization context for multi-tenancy
-        $activeOrganisationUuid = $this->getActiveOrganisationForContext();
+        // Get active organization context for multi-tenancy (only if multi is enabled)
+        $activeOrganisationUuid = $multi ? $this->getActiveOrganisationForContext() : null;
 
         // Use the new searchObjects method from ObjectEntityMapper with organization context
-        $result = $this->objectEntityMapper->searchObjects($query, $activeOrganisationUuid);
+        $result = $this->objectEntityMapper->searchObjects($query, $activeOrganisationUuid, $rbac, $multi);
 
         // If _count option was used, return the integer count directly
         if (isset($query['_count']) && $query['_count'] === true) {
@@ -1354,7 +1430,9 @@ class ObjectService
                 filter: $filter,
                 fields: $fields,
                 registers: $registers,
-                schemas: $schemas
+                schemas: $schemas,
+                rbac: $rbac,
+                multi: $multi
             );
         }
 
@@ -1385,13 +1463,13 @@ class ObjectService
      *
      * @return int The number of objects matching the criteria
      */
-    public function countSearchObjects(array $query = []): int
+    public function countSearchObjects(array $query = [], bool $rbac = true, bool $multi = true): int
     {
-        // Get active organization context for multi-tenancy
-        $activeOrganisationUuid = $this->getActiveOrganisationForContext();
+        // Get active organization context for multi-tenancy (only if multi is enabled)
+        $activeOrganisationUuid = $multi ? $this->getActiveOrganisationForContext() : null;
 
         // Use the new optimized countSearchObjects method from ObjectEntityMapper with organization context
-        return $this->objectEntityMapper->countSearchObjects($query, $activeOrganisationUuid);
+        return $this->objectEntityMapper->countSearchObjects($query, $activeOrganisationUuid, $rbac, $multi);
 
     }//end countSearchObjects()
 
@@ -2039,12 +2117,14 @@ class ObjectService
      * @param int|null   $depth  Optional depth for rendering
      * @param array|null $filter Optional filters to apply
      * @param array|null $fields Optional fields to include
+     * @param bool       $rbac   Whether to apply RBAC checks (default: true).
+     * @param bool       $multi  Whether to apply multitenancy filtering (default: true).
      *
      * @return array The rendered entity.
      */
-    public function renderEntity(ObjectEntity $entity, ?array $extend=[], ?int $depth=0, ?array $filter=[], ?array $fields=[]): array
+    public function renderEntity(ObjectEntity $entity, ?array $extend=[], ?int $depth=0, ?array $filter=[], ?array $fields=[], bool $rbac=true, bool $multi=true): array
     {
-        return $this->renderHandler->renderEntity(entity: $entity, extend: $extend, depth: $depth, filter: $filter, fields: $fields)->jsonSerialize();
+        return $this->renderHandler->renderEntity(entity: $entity, extend: $extend, depth: $depth, filter: $filter, fields: $fields, rbac: $rbac, multi: $multi)->jsonSerialize();
 
     }//end renderEntity()
 
@@ -2125,18 +2205,22 @@ class ObjectService
      *
      * @param string|null $uuid The UUID of the object to publish. If null, uses the current object.
      * @param \DateTime|null $date Optional publication date. If null, uses current date/time.
+     * @param bool $rbac Whether to apply RBAC checks (default: true).
+     * @param bool $multi Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity The updated object entity.
      *
      * @throws \Exception If the object is not found or if there's an error during update.
      */
-    public function publish(string $uuid = null, ?\DateTime $date = null): ObjectEntity
+    public function publish(string $uuid = null, ?\DateTime $date = null, bool $rbac = true, bool $multi = true): ObjectEntity
     {
 
         // Use the publish handler to publish the object
         return $this->publishHandler->publish(
             uuid: $uuid,
-            date: $date
+            date: $date,
+            rbac: $rbac,
+            multi: $multi
         );
     }
 
@@ -2145,17 +2229,21 @@ class ObjectService
      *
      * @param string|null $uuid The UUID of the object to depublish. If null, uses the current object.
      * @param \DateTime|null $date Optional depublication date. If null, uses current date/time.
+     * @param bool $rbac Whether to apply RBAC checks (default: true).
+     * @param bool $multi Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity The updated object entity.
      *
      * @throws \Exception If the object is not found or if there's an error during update.
      */
-    public function depublish(string $uuid = null, ?\DateTime $date = null): ObjectEntity
+    public function depublish(string $uuid = null, ?\DateTime $date = null, bool $rbac = true, bool $multi = true): ObjectEntity
     {
         // Use the depublish handler to depublish the object
         return $this->depublishHandler->depublish(
             uuid: $uuid,
-            date: $date
+            date: $date,
+            rbac: $rbac,
+            multi: $multi
         );
     }
 
@@ -2714,7 +2802,10 @@ class ObjectService
                 register: $targetRegister,
                 schema: $targetSchema,
                 data: $objectData,
-                uuid: null // Let it generate a new UUID
+                uuid: null, // Let it generate a new UUID
+                folderId: null,
+                rbac: true, // Use default RBAC for internal cascading operations
+                multi: true // Use default multitenancy for internal cascading operations
             );
 
             return $createdObject->getUuid();
