@@ -73,11 +73,13 @@ class GetObject
      *
      * This method also creates an audit trail entry for the 'read' action.
      *
-     * @param string   $id       The ID of the object to get.
-     * @param Register $register The register containing the object.
-     * @param Schema   $schema   The schema of the object.
-     * @param array    $extend   Properties to extend with.
-     * @param bool     $files    Include file information.
+     * @param string    $id       The ID of the object to get.
+     * @param Register  $register The register containing the object.
+     * @param Schema    $schema   The schema of the object.
+     * @param array     $extend   Properties to extend with.
+     * @param bool      $files    Include file information.
+     * @param bool      $rbac     Whether to apply RBAC checks (default: true).
+     * @param bool      $multi    Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity The retrieved object.
      *
@@ -88,9 +90,11 @@ class GetObject
         ?Register $register=null,
         ?Schema $schema=null,
         ?array $extend=[],
-        bool $files=false
+        bool $files=false,
+        bool $rbac=true,
+        bool $multi=true
     ): ObjectEntity {
-        $object = $this->objectEntityMapper->find($id, $register, $schema);
+        $object = $this->objectEntityMapper->find($id, $register, $schema, false, $rbac, $multi);
 
         if ($files === true) {
             $object = $this->hydrateFiles($object, $this->fileService->getFiles($object));
@@ -119,6 +123,9 @@ class GetObject
      * @param Register|null $register Optional register to filter objects.
      * @param Schema|null   $schema   Optional schema to filter objects.
      * @param array|null    $ids      Array of IDs or UUIDs to filter by.
+     * @param bool|null     $published Whether to filter by published status.
+     * @param bool          $rbac     Whether to apply RBAC checks (default: true).
+     * @param bool          $multi    Whether to apply multitenancy filtering (default: true).
      *
      * @return array The found objects.
      */
@@ -134,7 +141,9 @@ class GetObject
         ?Register $register=null,
         ?Schema $schema=null,
         ?array $ids=null,
-        ?bool $published=false
+        ?bool $published=false,
+        bool $rbac=true,
+        bool $multi=true
     ): array {
         // Retrieve objects using the objectEntityMapper with optional register, schema, and ids.
         $objects = $this->objectEntityMapper->findAll(
@@ -147,7 +156,9 @@ class GetObject
             uses: $uses,
             register: $register,
             schema: $schema,
-            published: $published
+            published: $published,
+            rbac: $rbac,
+            multi: $multi
         );
 
         // If files are to be included, hydrate each object with its file information.
@@ -317,10 +328,10 @@ class GetObject
      * @param int|null     $limit            Maximum number of logs to return
      * @param int|null     $offset           Number of logs to skip
      * @param array|null   $filters          Additional filters to apply
-     * @param array|null   $searchConditions Search conditions to apply
-     * @param array|null   $searchParams     Search parameters to apply
      * @param array|null   $sort             Sort criteria ['field' => 'ASC|DESC']
      * @param string|null  $search           Optional search term
+     * @param bool         $rbac             Whether to apply RBAC checks (default: true).
+     * @param bool         $multi            Whether to apply multitenancy filtering (default: true).
      *
      * @return array Array of log entries
      */
@@ -330,7 +341,9 @@ class GetObject
         ?int $offset=null,
         ?array $filters=[],
         ?array $sort=['created' => 'DESC'],
-        ?string $search=null
+        ?string $search=null,
+        bool $rbac=true,
+        bool $multi=true
     ): array {
         // Ensure object ID is always included in filters.
         $filters['object'] = $object->getId();
