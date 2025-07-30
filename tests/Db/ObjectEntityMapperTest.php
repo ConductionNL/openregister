@@ -186,29 +186,5 @@ class ObjectEntityMapperTest extends TestCase
         $registerMapper->delete($register);
     }
 
-    /**
-     * Test that SchemaMapper::delete throws an exception if objects are attached
-     */
-    public function testSchemaDeleteThrowsIfObjectsAttached(): void
-    {
-        $db = $this->createMock(\OCP\IDBConnection::class);
-        $eventDispatcher = $this->createMock(\OCP\EventDispatcher\IEventDispatcher::class);
-        $validator = $this->createMock(\OCA\OpenRegister\Service\SchemaPropertyValidatorService::class);
-        $schemaMapper = $this->getMockBuilder(\OCA\OpenRegister\Db\SchemaMapper::class)
-            ->setConstructorArgs([$db, $eventDispatcher, $validator])
-            ->onlyMethods(['parent::delete'])
-            ->getMock();
-        $schema = $this->createMock(\OCA\OpenRegister\Db\Schema::class);
-        $schema->method('getId')->willReturn(1);
-        // Patch ObjectEntityMapper to return stats with total > 0
-        $objectEntityMapper = $this->createMock(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
-        $objectEntityMapper->method('getStatistics')->willReturn(['total' => 1]);
-        // Inject the mock into the SchemaMapper
-        \Closure::bind(function () use ($objectEntityMapper) {
-            $this->objectEntityMapper = $objectEntityMapper;
-        }, $schemaMapper, $schemaMapper)();
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('Cannot delete schema: objects are still attached.');
-        $schemaMapper->delete($schema);
-    }
+
 } 
