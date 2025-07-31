@@ -413,8 +413,12 @@ class ObjectService
             $this->setSchema($object->getSchema());
         }
 
-        // Check user has permission to read this specific object (includes object owner check)
-        $this->checkPermission($this->currentSchema, 'read', null, $object->getOwner(), $rbac);
+        // If the object is not published, check the permissions.
+        $now = new \DateTime('now');
+        if ($object->getPublished() === null || $now < $object->getPublished() || ($object->getDepublished() !== null && $object->getDepublished() <= $now)) {
+            // Check user has permission to read this specific object (includes object owner check)
+            $this->checkPermission($this->currentSchema, 'read', null, $object->getOwner(), $rbac);
+        }
 
         // Render the object before returning.
         $registers = null;
@@ -1329,7 +1333,7 @@ class ObjectService
     {
         try {
             $activeOrganisation = $this->organisationService->getActiveOrganisation();
-            
+
             if ($activeOrganisation !== null) {
                 return $activeOrganisation->getUuid();
             } else {
