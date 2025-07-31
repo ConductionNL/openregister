@@ -112,11 +112,11 @@ class Application extends App implements IBootstrap
         });
 
         // Register OrganisationMapper (event dispatching removed - handled by cron job)
-        $context->registerService(OrganisationMapper::class, function ($container) {
-            return new OrganisationMapper(
-                $container->get('OCP\IDBConnection')
-            );
-        });
+//        $context->registerService(OrganisationMapper::class, function ($container) {
+//            return new OrganisationMapper(
+//                $container->get('OCP\IDBConnection')
+//            );
+//        });
 
         // Register ObjectEntityMapper with IGroupManager and IUserManager dependencies
         $context->registerService(ObjectEntityMapper::class, function ($container) {
