@@ -27,36 +27,40 @@ use OCP\IDBConnection;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 
 
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
 
 /**
  * OrganisationMapper
- * 
+ *
  * Database mapper for Organisation entities with multi-tenancy support.
  * Manages CRUD operations and user-organisation relationships.
- * 
+ *
  * @package OCA\OpenRegister\Db
  */
 class OrganisationMapper extends QBMapper
 {
     /**
      * OrganisationMapper constructor
-     * 
+     *
      * @param IDBConnection $db Database connection
      */
-    public function __construct(IDBConnection $db)
+    public function __construct(
+        IDBConnection $db,
+        private readonly LoggerInterface $logger
+    )
     {
         parent::__construct($db, 'openregister_organisations', Organisation::class);
     }
 
     /**
      * Find organisation by UUID
-     * 
+     *
      * @param string $uuid The organisation UUID
-     * 
+     *
      * @return Organisation The organisation entity
-     * 
+     *
      * @throws DoesNotExistException If organisation not found
      * @throws MultipleObjectsReturnedException If multiple organisations found
      */
@@ -73,9 +77,9 @@ class OrganisationMapper extends QBMapper
 
     /**
      * Find all organisations for a specific user
-     * 
+     *
      * @param string $userId The Nextcloud user ID
-     * 
+     *
      * @return array Array of Organisation entities
      */
     public function findByUserId(string $userId): array
@@ -91,7 +95,7 @@ class OrganisationMapper extends QBMapper
 
     /**
      * Get all organisations with user count
-     * 
+     *
      * @return array Array of organisations with additional user count information
      */
     public function findAllWithUserCount(): array
@@ -103,7 +107,7 @@ class OrganisationMapper extends QBMapper
            ->orderBy('name', 'ASC');
 
         $organisations = $this->findEntities($qb);
-        
+
         // Add user count to each organisation
         foreach ($organisations as &$organisation) {
             $organisation->userCount = count($organisation->getUserIds());
@@ -114,11 +118,11 @@ class OrganisationMapper extends QBMapper
 
     /**
      * Insert or update organisation with UUID generation
-     * 
+     *
      * @param Organisation $organisation The organisation to save
-     * 
+     *
      * @return Organisation The saved organisation
-     * 
+     *
      * @throws \Exception If UUID is invalid or already exists
      */
     public function save(Organisation $organisation): Organisation
@@ -130,7 +134,7 @@ class OrganisationMapper extends QBMapper
         if ($organisation->getUuid() === null || $organisation->getUuid() === '') {
             $generatedUuid = $this->generateUuid();
             $organisation->setUuid($generatedUuid);
-            
+
             // Debug logging
             error_log('[OrganisationMapper] Generated UUID: ' . $generatedUuid);
             error_log('[OrganisationMapper] Organisation UUID after setting: ' . $organisation->getUuid());
@@ -144,8 +148,8 @@ class OrganisationMapper extends QBMapper
         $organisation->setUpdated($now);
 
         // Debug logging before insert/update
-        \OC::$server->getLogger()->info('[OrganisationMapper] About to save organisation with UUID: ' . $organisation->getUuid());
-        \OC::$server->getLogger()->info('[OrganisationMapper] Organisation object properties:', [
+        $this->logger->info('[OrganisationMapper] About to save organisation with UUID: ' . $organisation->getUuid());
+        $this->logger->info('[OrganisationMapper] Organisation object properties:', [
             'uuid' => $organisation->getUuid(),
             'name' => $organisation->getName(),
             'description' => $organisation->getDescription(),
@@ -155,10 +159,10 @@ class OrganisationMapper extends QBMapper
         ]);
 
         if ($organisation->getId() === null) {
-            \OC::$server->getLogger()->info('[OrganisationMapper] Calling insert() method');
-            
+            $this->logger->info('[OrganisationMapper] Calling insert() method');
+
             // Debug: Log the entity state before insert
-            \OC::$server->getLogger()->info('[OrganisationMapper] Entity state before insert:', [
+            $this->logger->info('[OrganisationMapper] Entity state before insert:', [
                 'id' => $organisation->getId(),
                 'uuid' => $organisation->getUuid(),
                 'name' => $organisation->getName(),
@@ -169,16 +173,16 @@ class OrganisationMapper extends QBMapper
                 'created' => $organisation->getCreated(),
                 'updated' => $organisation->getUpdated()
             ]);
-            
+
             try {
                 $result = $this->insert($organisation);
-                \OC::$server->getLogger()->info('[OrganisationMapper] insert() completed successfully');
-                
+                $this->logger->info('[OrganisationMapper] insert() completed successfully');
+
                 // Organization events are now handled by cron job - no event dispatching needed
-                
+
                 return $result;
             } catch (\Exception $e) {
-                \OC::$server->getLogger()->error('[OrganisationMapper] insert() failed: ' . $e->getMessage(), [
+                $this->logger->error('[OrganisationMapper] insert() failed: ' . $e->getMessage(), [
                     'exception' => $e->getMessage(),
                     'exceptionClass' => get_class($e),
                     'trace' => $e->getTraceAsString()
@@ -186,14 +190,14 @@ class OrganisationMapper extends QBMapper
                 throw $e;
             }
         } else {
-            \OC::$server->getLogger()->info('[OrganisationMapper] Calling update() method');
+            $this->logger->info('[OrganisationMapper] Calling update() method');
             return $this->update($organisation);
         }
     }
 
     /**
      * Generate a unique UUID for organisations
-     * 
+     *
      * @return string A unique UUID
      */
     private function generateUuid(): string
@@ -203,10 +207,10 @@ class OrganisationMapper extends QBMapper
 
     /**
      * Check if a UUID already exists
-     * 
+     *
      * @param string $uuid The UUID to check
      * @param int|null $excludeId Optional organisation ID to exclude from check (for updates)
-     * 
+     *
      * @return bool True if UUID already exists
      */
     public function uuidExists(string $uuid, ?int $excludeId = null): bool
@@ -230,17 +234,17 @@ class OrganisationMapper extends QBMapper
 
     /**
      * Validate and ensure UUID uniqueness
-     * 
+     *
      * @param Organisation $organisation The organisation to validate
-     * 
+     *
      * @throws \Exception If UUID is invalid or already exists
-     * 
+     *
      * @return void
      */
     private function validateUuid(Organisation $organisation): void
     {
         $uuid = $organisation->getUuid();
-        
+
         if ($uuid === null || $uuid === '') {
             return; // Will be generated in save method
         }
@@ -260,9 +264,9 @@ class OrganisationMapper extends QBMapper
 
     /**
      * Find organisations by name (case-insensitive search)
-     * 
+     *
      * @param string $name Organisation name to search for
-     * 
+     *
      * @return array Array of matching organisations
      */
     public function findByName(string $name): array
@@ -279,7 +283,7 @@ class OrganisationMapper extends QBMapper
 
     /**
      * Get organisation statistics
-     * 
+     *
      * @return array Statistics about organisations
      */
     public function getStatistics(): array
@@ -300,9 +304,9 @@ class OrganisationMapper extends QBMapper
 
     /**
      * Remove user from all organisations
-     * 
+     *
      * @param string $userId The user ID to remove
-     * 
+     *
      * @return int Number of organisations updated
      */
     public function removeUserFromAll(string $userId): int
@@ -321,12 +325,12 @@ class OrganisationMapper extends QBMapper
 
     /**
      * Add user to organisation by UUID
-     * 
+     *
      * @param string $organisationUuid The organisation UUID
      * @param string $userId The user ID to add
-     * 
+     *
      * @return Organisation The updated organisation
-     * 
+     *
      * @throws DoesNotExistException If organisation not found
      */
     public function addUserToOrganisation(string $organisationUuid, string $userId): Organisation
@@ -338,12 +342,12 @@ class OrganisationMapper extends QBMapper
 
     /**
      * Remove user from organisation by UUID
-     * 
+     *
      * @param string $organisationUuid The organisation UUID
      * @param string $userId The user ID to remove
-     * 
+     *
      * @return Organisation The updated organisation
-     * 
+     *
      * @throws DoesNotExistException If organisation not found
      */
     public function removeUserFromOrganisation(string $organisationUuid, string $userId): Organisation
@@ -355,9 +359,9 @@ class OrganisationMapper extends QBMapper
 
     /**
      * Find the default organisation
-     * 
+     *
      * @return Organisation The default organisation
-     * 
+     *
      * @throws DoesNotExistException If no default organisation found
      */
     public function findDefault(): Organisation
@@ -374,11 +378,11 @@ class OrganisationMapper extends QBMapper
 
     /**
      * Find the default organisation for a specific user
-     * 
+     *
      * @param string $userId The user ID
-     * 
+     *
      * @return Organisation The default organisation for the user
-     * 
+     *
      * @throws DoesNotExistException If no default organisation found for user
      */
     public function findDefaultForUser(string $userId): Organisation
@@ -396,7 +400,7 @@ class OrganisationMapper extends QBMapper
 
     /**
      * Create a default organisation
-     * 
+     *
      * @return Organisation The created default organisation
      */
     public function createDefault(): Organisation
@@ -413,16 +417,16 @@ class OrganisationMapper extends QBMapper
 
     /**
      * Create an organisation with a specific UUID
-     * 
+     *
      * @param string $name Organisation name
      * @param string $description Organisation description
      * @param string $uuid Specific UUID to use
      * @param string $owner Owner user ID
      * @param array $users Array of user IDs
      * @param bool $isDefault Whether this is the default organisation
-     * 
+     *
      * @return Organisation The created organisation
-     * 
+     *
      * @throws \Exception If UUID is invalid or already exists
      */
     public function createWithUuid(
@@ -434,7 +438,7 @@ class OrganisationMapper extends QBMapper
         bool $isDefault = false
     ): Organisation {
         // Debug logging
-        \OC::$server->getLogger()->info('[OrganisationMapper::createWithUuid] Starting with parameters:', [
+        $this->logger->info('[OrganisationMapper::createWithUuid] Starting with parameters:', [
             'name' => $name,
             'description' => $description,
             'uuid' => $uuid,
@@ -442,7 +446,7 @@ class OrganisationMapper extends QBMapper
             'users' => $users,
             'isDefault' => $isDefault
         ]);
-        
+
         $organisation = new Organisation();
         $organisation->setName($name);
         $organisation->setDescription($description);
@@ -452,22 +456,22 @@ class OrganisationMapper extends QBMapper
 
         // Set UUID if provided, otherwise let save() generate one
         if ($uuid !== '') {
-            \OC::$server->getLogger()->info('[OrganisationMapper::createWithUuid] Setting UUID: ' . $uuid);
+            $this->logger->info('[OrganisationMapper::createWithUuid] Setting UUID: ' . $uuid);
             $organisation->setUuid($uuid);
-            \OC::$server->getLogger()->info('[OrganisationMapper::createWithUuid] UUID after setting: ' . $organisation->getUuid());
+            $this->logger->info('[OrganisationMapper::createWithUuid] UUID after setting: ' . $organisation->getUuid());
         } else {
-            \OC::$server->getLogger()->info('[OrganisationMapper::createWithUuid] No UUID provided, will generate in save()');
+            $this->logger->info('[OrganisationMapper::createWithUuid] No UUID provided, will generate in save()');
         }
 
-        \OC::$server->getLogger()->info('[OrganisationMapper::createWithUuid] About to call save() with UUID: ' . $organisation->getUuid());
+        $this->logger->info('[OrganisationMapper::createWithUuid] About to call save() with UUID: ' . $organisation->getUuid());
         return $this->save($organisation);
     }
 
     /**
      * Set an organisation as the default and update all entities without organisation
-     * 
+     *
      * @param Organisation $organisation The organisation to set as default
-     * 
+     *
      * @return bool True if successful
      */
     public function setAsDefault(Organisation $organisation): bool
@@ -509,20 +513,20 @@ class OrganisationMapper extends QBMapper
 
     /**
      * Find organisations updated after a specific datetime
-     * 
+     *
      * @param \DateTime $cutoffTime The cutoff time to search after
-     * 
+     *
      * @return array Array of Organisation entities updated after the cutoff time
      */
     public function findUpdatedAfter(\DateTime $cutoffTime): array
     {
         $qb = $this->db->getQueryBuilder();
-        
+
         $qb->select('*')
            ->from($this->getTableName())
            ->where($qb->expr()->gt('updated', $qb->createNamedParameter($cutoffTime->format('Y-m-d H:i:s'))))
            ->orderBy('updated', 'DESC');
-        
+
         return $this->findEntities($qb);
     }
-} 
+}

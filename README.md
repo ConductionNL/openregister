@@ -36,7 +36,7 @@ Open Register is a powerful object management system for Nextcloud that helps or
 
 ## Background
 
-Open Register emerged from the Dutch Common Ground movement, which aims to modernize municipal data management. The project specifically addresses the challenge many organizations face: implementing standardized registers quickly and cost-effectively while maintaining compliance with central definitions.
+Open Register emerged from the Dutch Common Ground movement, which aims to modernize municipal datamanagement. The project specifically addresses the challenge many organizations face: implementing standardized registers quickly and cost-effectively while maintaining compliance with central definitions.
 
 ### Common Ground Principles
 - Decentralized data storage
