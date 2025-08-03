@@ -2308,12 +2308,14 @@ class FileService
      * This method automatically adds an 'object:' tag containing the object's UUID
      * in addition to any user-provided tags.
      *
-     * @param ObjectEntity|string $objectEntity The object entity to add the file to
-     * @param string              $fileName     The name of the file to create
-     * @param string              $content      The content to write to the file
-     * @param bool                $share        Whether to create a share link for the file
-     * @param array               $tags         Optional array of tags to attach to the file
-     * @param int|string|null     $registerId   The register of the object to add the file to
+     * @param ObjectEntity|string      $objectEntity The object entity to add the file to
+     * @param string                   $fileName     The name of the file to create
+     * @param string                   $content      The content to write to the file
+     * @param bool                     $share        Whether to create a share link for the file
+     * @param array                    $tags         Optional array of tags to attach to the file
+     * @param int|string|Schema|null   $schema       The register of the object to add the file to
+     * @param int|string|Register|null $register     The register of the object to add the file to   (?)
+     * @param int|string|null          $registerId   The registerId of the object to add the file to (?)
      *
      * @throws NotPermittedException If file creation fails due to permissions
      * @throws Exception If file creation fails for other reasons
@@ -2323,7 +2325,7 @@ class FileService
      * @phpstan-param array<int, string> $tags
      * @psalm-param array<int, string> $tags
      */
-    public function addFile(ObjectEntity | string $objectEntity, string $fileName, string $content, bool $share = false, array $tags = [], int | Schema | null $schema = null, int | Register | null $register = null, int|string|null $registerId = null): File
+    public function addFile(ObjectEntity | string $objectEntity, string $fileName, string $content, bool $share = false, array $tags = [], int | string | Schema | null $schema = null, int | string | Register | null $register = null, int|string|null $registerId = null): File
     {
 		try {
 			// Ensure we have an ObjectEntity instance
