@@ -353,7 +353,7 @@ class SaveObject
         foreach ($properties as $property) {
             $key = $property['title'];
             $defaultValue = $property['default'] ?? null;
-            
+
             // Skip if no default value is defined
             if ($defaultValue === null) {
                 continue;
@@ -365,9 +365,9 @@ class SaveObject
             // Determine if default should be applied based on behavior
             if ($defaultBehavior === 'falsy') {
                 // Apply default if property is missing, null, empty string, or empty array/object
-                $shouldApplyDefault = !isset($data[$key]) 
-                    || $data[$key] === null 
-                    || $data[$key] === '' 
+                $shouldApplyDefault = !isset($data[$key])
+                    || $data[$key] === null
+                    || $data[$key] === ''
                     || (is_array($data[$key]) && empty($data[$key]));
             } else {
                 // Default behavior: only apply if property is missing or null
@@ -448,10 +448,10 @@ class SaveObject
             if (isset($property['writeBack']) && $property['writeBack'] === true) {
                 return false;
             }
-            
-            return $property['type'] === 'object' 
-                && isset($property['$ref']) === true 
-                && (isset($property['inversedBy']) === true || 
+
+            return $property['type'] === 'object'
+                && isset($property['$ref']) === true
+                && (isset($property['inversedBy']) === true ||
                     (isset($property['objectConfiguration']['handling']) && $property['objectConfiguration']['handling'] === 'cascade'));
           }
           );
@@ -467,7 +467,7 @@ class SaveObject
                 (isset($property['items']['writeBack']) && $property['items']['writeBack'] === true)) {
                 return false;
             }
-            
+
             return $property['type'] === 'array'
                 && (isset($property['$ref']) || isset($property['items']['$ref']))
                 && (isset($property['inversedBy']) === true || isset($property['items']['inversedBy']) === true ||
@@ -498,7 +498,7 @@ class SaveObject
 
             try {
                 $createdUuid = $this->cascadeSingleObject(objectEntity: $objectEntity, definition: $definition, object: $objectData);
-                
+
                 // Handle the result based on whether inversedBy is present
                 if (isset($definition['inversedBy'])) {
                     // With inversedBy: check if writeBack is enabled
@@ -527,13 +527,13 @@ class SaveObject
 
             try {
                 $createdUuids = $this->cascadeMultipleObjects(objectEntity: $objectEntity, property: $definition, propData: $data[$property]);
-                
+
                 // Handle the result based on whether inversedBy is present
                 if (isset($definition['inversedBy']) || isset($definition['items']['inversedBy'])) {
                     // With inversedBy: check if writeBack is enabled
                     $hasWriteBack = (isset($definition['writeBack']) && $definition['writeBack'] === true) ||
                                    (isset($definition['items']['writeBack']) && $definition['items']['writeBack'] === true);
-                    
+
                     if ($hasWriteBack) {
                         // Keep the property for write-back processing
                         $data[$property] = $createdUuids;
@@ -650,7 +650,7 @@ class SaveObject
         // Only set inversedBy if it's configured (for relation-based cascading)
         if (isset($definition['inversedBy'])) {
             $inversedByProperty = $definition['inversedBy'];
-            
+
             // Check if the inversedBy property already exists and is an array
             if (isset($object[$inversedByProperty]) && is_array($object[$inversedByProperty])) {
                 // Add to existing array if not already present
@@ -665,12 +665,12 @@ class SaveObject
 
         // Extract register ID from definition or use parent object's register
         $register = $definition['register'] ?? $objectEntity->getRegister();
-        
+
         // If register is an array, extract the ID
         if (is_array($register)) {
             $register = $register['id'] ?? $register;
         }
-        
+
         // For cascading with inversedBy, preserve existing UUID for updates
         // For cascading without inversedBy, always create new objects (no UUID)
         $uuid = null;
@@ -719,7 +719,7 @@ class SaveObject
      */
     private function handleInverseRelationsWriteBack(ObjectEntity $objectEntity, Schema $schema, array $data): array
     {
-        
+
         try {
             $schemaObject = $schema->getSchemaObject($this->urlGenerator);
             $properties   = json_decode(json_encode($schemaObject), associative: true)['properties'] ?? [];
@@ -750,9 +750,9 @@ class SaveObject
             return false;
           }
           );
-        
+
         foreach ($writeBackProperties as $propertyName => $definition) {
-            
+
             // Skip if property not present in data or is empty
             if (!isset($data[$propertyName]) || empty($data[$propertyName])) {
                 continue;
@@ -867,11 +867,11 @@ class SaveObject
      *
      * This method prevents empty strings from causing issues in downstream processing by converting
      * them to appropriate values for properties based on their schema definitions.
-     * 
+     *
      * For object properties:
      * - If not required: empty objects {} become null (allows clearing the field)
      * - If required: empty objects {} remain as {} but will fail validation with clear error
-     * 
+     *
      * For array properties:
      * - If no minItems constraint: empty arrays [] are allowed
      * - If minItems > 0: empty arrays [] will fail validation with clear error
@@ -881,7 +881,7 @@ class SaveObject
      * @param Schema $schema The schema to check property definitions against
      *
      * @return array The sanitized data with appropriate handling of empty values
-     * 
+     *
      * @throws \Exception If schema processing fails
      */
     private function sanitizeEmptyStringsForObjectProperties(array $data, Schema $schema): array
@@ -926,7 +926,7 @@ class SaveObject
                 } elseif (is_array($value)) {
                     // Check minItems constraint
                     $minItems = $propertyDefinition['minItems'] ?? 0;
-                    
+
                     if (empty($value) && $minItems > 0) {
                         // Keep empty array [] for arrays with minItems > 0 - will fail validation with clear error
                     } elseif (empty($value) && $minItems === 0) {
@@ -1186,6 +1186,9 @@ class SaveObject
         if ($multi === true && ($objectEntity->getOrganisation() === null || $objectEntity->getOrganisation() === '')) {
             $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
             $objectEntity->setOrganisation($organisationUuid);
+        } else {
+            $organisationUuid = $this->organisationService->ensureDefaultOrganisation();
+            $objectEntity->setOrganisation($organisationUuid);
         }
 
         // Update object relations.
@@ -1208,7 +1211,7 @@ class SaveObject
                 $this->handleFileProperty($savedEntity, $data, $propertyName, $schema);
             }
         }
-        
+
         // Update the object with the modified data (file IDs instead of content)
         $savedEntity->setObject($data);
 
@@ -1269,18 +1272,18 @@ class SaveObject
         // If we have schema and property name, use schema-based checking
         if ($schema !== null && $propertyName !== null) {
             $schemaProperties = $schema->getProperties() ?? [];
-            
+
             if (!isset($schemaProperties[$propertyName])) {
                 return false; // Property not in schema, not a file
             }
-            
+
             $propertyConfig = $schemaProperties[$propertyName];
-            
+
             // Check if it's a direct file property
             if (($propertyConfig['type'] ?? '') === 'file') {
                 return true;
             }
-            
+
             // Check if it's an array of files
             if (($propertyConfig['type'] ?? '') === 'array') {
                 $itemsConfig = $propertyConfig['items'] ?? [];
@@ -1288,36 +1291,36 @@ class SaveObject
                     return true;
                 }
             }
-            
+
             return false; // Property exists but is not configured as file type
         }
-        
+
         // Fallback to format-based checking when schema info is not available
         // This is used within handleFileProperty for individual value validation
-        
+
         // Check for single file (data URI, base64, URL with file extension, or file object)
         if (is_string($value)) {
             // Data URI format
             if (strpos($value, 'data:') === 0) {
                 return true;
             }
-            
+
             // URL format (http/https) - but only if it looks like a downloadable file
-            if (filter_var($value, FILTER_VALIDATE_URL) && 
+            if (filter_var($value, FILTER_VALIDATE_URL) &&
                 (strpos($value, 'http://') === 0 || strpos($value, 'https://') === 0)) {
-                
+
                 // Parse URL to get path
                 $urlPath = parse_url($value, PHP_URL_PATH);
                 if ($urlPath) {
                     // Get file extension
                     $extension = strtolower(pathinfo($urlPath, PATHINFO_EXTENSION));
-                    
+
                     // Common file extensions that indicate downloadable files
                     $fileExtensions = [
                         // Documents
                         'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp',
                         'rtf', 'txt', 'csv',
-                        // Images  
+                        // Images
                         'jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'tiff', 'ico',
                         // Videos
                         'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', '3gp',
@@ -1328,17 +1331,17 @@ class SaveObject
                         // Other common file types
                         'xml', 'json', 'sql', 'exe', 'dmg', 'iso', 'deb', 'rpm'
                     ];
-                    
+
                     // Only treat as file if it has a recognized file extension
                     if (in_array($extension, $fileExtensions)) {
                         return true;
                     }
                 }
-                
+
                 // Don't treat regular website URLs as files
                 return false;
             }
-            
+
             // Base64 encoded string (simple heuristic)
             if (base64_encode(base64_decode($value, true)) === $value && strlen($value) > 100) {
                 return true;
@@ -1359,16 +1362,16 @@ class SaveObject
                         return true;
                     }
                     // URL with file extension
-                    if (filter_var($item, FILTER_VALIDATE_URL) && 
+                    if (filter_var($item, FILTER_VALIDATE_URL) &&
                         (strpos($item, 'http://') === 0 || strpos($item, 'https://') === 0)) {
                         $urlPath = parse_url($item, PHP_URL_PATH);
                         if ($urlPath) {
                             $extension = strtolower(pathinfo($urlPath, PATHINFO_EXTENSION));
                             $fileExtensions = [
                                 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp',
-                                'rtf', 'txt', 'csv', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 
+                                'rtf', 'txt', 'csv', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp',
                                 'tiff', 'ico', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', '3gp',
-                                'mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma', 'zip', 'rar', '7z', 
+                                'mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma', 'zip', 'rar', '7z',
                                 'tar', 'gz', 'bz2', 'xz', 'xml', 'json', 'sql', 'exe', 'dmg', 'iso', 'deb', 'rpm'
                             ];
                             if (in_array($extension, $fileExtensions)) {
@@ -1423,7 +1426,7 @@ class SaveObject
         // File objects typically have file-specific properties
         $fileProperties = ['id', 'title', 'path', 'type', 'size', 'accessUrl', 'downloadUrl', 'labels', 'extension', 'hash', 'modified', 'published'];
         $hasFileProperties = false;
-        
+
         foreach ($fileProperties as $prop) {
             if (isset($value[$prop])) {
                 $hasFileProperties = true;
@@ -1469,29 +1472,29 @@ class SaveObject
     {
         $fileValue = $object[$propertyName];
         $schemaProperties = $schema->getProperties() ?? [];
-        
+
         // Get property configuration for this file property
         if (!isset($schemaProperties[$propertyName])) {
             throw new Exception("Property '$propertyName' not found in schema configuration");
         }
-        
+
         $propertyConfig = $schemaProperties[$propertyName];
-        
+
         // Determine if this is a direct file property or array[file]
         $isArrayProperty = ($propertyConfig['type'] ?? '') === 'array';
         $fileConfig = $isArrayProperty ? ($propertyConfig['items'] ?? []) : $propertyConfig;
-        
+
         // Validate that the property is configured for files
         if (($fileConfig['type'] ?? '') !== 'file') {
             throw new Exception("Property '$propertyName' is not configured as a file property");
         }
-        
+
         if ($isArrayProperty) {
             // Handle array of files
             if (!is_array($fileValue)) {
                 throw new Exception("Property '$propertyName' is configured as array but received non-array value");
             }
-            
+
                          $fileIds = [];
              foreach ($fileValue as $index => $singleFileContent) {
                  if ($this->isFileProperty($singleFileContent)) {
@@ -1507,10 +1510,10 @@ class SaveObject
                      }
                  }
              }
-            
+
             // Replace the file content with file IDs in the object data
             $object[$propertyName] = $fileIds;
-            
+
         } else {
             // Handle single file
             if ($this->isFileProperty($fileValue)) {
@@ -1520,7 +1523,7 @@ class SaveObject
                     propertyName: $propertyName,
                     fileConfig: $fileConfig
                 );
-                
+
                 // Replace the file content with file ID in the object data
                 if ($fileId !== null) {
                     $object[$propertyName] = $fileId;
@@ -1622,7 +1625,7 @@ class SaveObject
         ?int $index = null
     ): int {
         // Check if it's a URL
-        if (filter_var($fileInput, FILTER_VALIDATE_URL) && 
+        if (filter_var($fileInput, FILTER_VALIDATE_URL) &&
             (strpos($fileInput, 'http://') === 0 || strpos($fileInput, 'https://') === 0)) {
             // Fetch file content from URL
             $fileContent = $this->fetchFileFromUrl($fileInput);
@@ -1631,16 +1634,16 @@ class SaveObject
             // Parse as base64 or data URI
             $fileData = $this->parseFileData($fileInput);
         }
-        
+
         // Validate file against property configuration
         $this->validateFileAgainstConfig($fileData, $fileConfig, $propertyName, $index);
-        
+
         // Generate filename
         $filename = $this->generateFileName($propertyName, $fileData['extension'], $index);
-        
+
         // Prepare auto tags
         $autoTags = $this->prepareAutoTags($fileConfig, $propertyName, $index);
-        
+
         // Create the file with validation and tagging
         $file = $this->fileService->addFile(
             objectEntity: $objectEntity,
@@ -1649,7 +1652,7 @@ class SaveObject
             share: false, // Don't auto-share, let user decide
             tags: $autoTags
         );
-        
+
         return $file->getId();
 
     }//end processStringFileInput()
@@ -1691,7 +1694,7 @@ class SaveObject
         // If file object has an ID, try to use the existing file
         if (isset($fileObject['id'])) {
             $fileId = (int) $fileObject['id'];
-            
+
             // Validate that the existing file meets the property configuration
             // Get file info to validate against config
             try {
@@ -1699,10 +1702,10 @@ class SaveObject
                 if ($existingFile !== null) {
                     // Validate the existing file against current config
                     $this->validateExistingFileAgainstConfig($existingFile, $fileConfig, $propertyName, $index);
-                    
+
                     // Apply auto tags if needed (non-destructive - adds to existing tags)
                     $this->applyAutoTagsToExistingFile($existingFile, $fileConfig, $propertyName, $index);
-                    
+
                     return $fileId;
                 }
             } catch (Exception $e) {
@@ -1710,7 +1713,7 @@ class SaveObject
                 error_log("Existing file {$fileId} not accessible, creating new file: " . $e->getMessage());
             }
         }
-        
+
         // If no ID or existing file not accessible, create a new file
         // This requires downloadUrl or accessUrl to fetch content
         if (isset($fileObject['downloadUrl'])) {
@@ -1720,7 +1723,7 @@ class SaveObject
         } else {
             throw new Exception("File object for property '$propertyName' has no downloadable URL");
         }
-        
+
         // Fetch and process as URL
         return $this->processStringFileInput($objectEntity, $fileUrl, $propertyName, $fileConfig, $index);
 
@@ -1752,13 +1755,13 @@ class SaveObject
                 'max_redirects' => 5,
             ]
         ]);
-        
+
         $content = file_get_contents($url, false, $context);
-        
+
         if ($content === false) {
             throw new Exception("Unable to fetch file from URL: $url");
         }
-        
+
         return $content;
 
     }//end fetchFileFromUrl()
@@ -1786,21 +1789,21 @@ class SaveObject
         // Try to detect MIME type from content
         $finfo = new \finfo(FILEINFO_MIME_TYPE);
         $mimeType = $finfo->buffer($content);
-        
+
         if ($mimeType === false) {
             $mimeType = 'application/octet-stream';
         }
-        
+
         // Try to get extension from URL
         $parsedUrl = parse_url($url);
         $path = $parsedUrl['path'] ?? '';
         $extension = pathinfo($path, PATHINFO_EXTENSION);
-        
+
         // If no extension from URL, get from MIME type
         if (empty($extension)) {
             $extension = $this->getExtensionFromMimeType($mimeType);
         }
-        
+
         return [
             'content' => $content,
             'mimeType' => $mimeType,
@@ -1837,7 +1840,7 @@ class SaveObject
     private function validateExistingFileAgainstConfig($file, array $fileConfig, string $propertyName, ?int $index = null): void
     {
         $errorPrefix = $index !== null ? "Existing file at $propertyName[$index]" : "Existing file at $propertyName";
-        
+
         // Validate MIME type
         if (isset($fileConfig['allowedTypes']) && !empty($fileConfig['allowedTypes'])) {
             $fileMimeType = $file->getMimeType();
@@ -1848,7 +1851,7 @@ class SaveObject
                 );
             }
         }
-        
+
         // Validate file size
         if (isset($fileConfig['maxSize']) && $fileConfig['maxSize'] > 0) {
             $fileSize = $file->getSize();
@@ -1887,14 +1890,14 @@ class SaveObject
     private function applyAutoTagsToExistingFile($file, array $fileConfig, string $propertyName, ?int $index = null): void
     {
         $autoTags = $this->prepareAutoTags($fileConfig, $propertyName, $index);
-        
+
         if (!empty($autoTags)) {
             // Get existing tags and merge with auto tags
             try {
                 $formattedFile = $this->fileService->formatFile($file);
                 $existingTags = $formattedFile['labels'] ?? [];
                 $allTags = array_unique(array_merge($existingTags, $autoTags));
-                
+
                 // Update file with merged tags
                 $this->fileService->updateFile(
                     filePath: $file->getId(),
@@ -1929,14 +1932,14 @@ class SaveObject
         $content = '';
         $mimeType = 'application/octet-stream';
         $extension = 'bin';
-        
+
         // Handle data URI format (data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...)
         if (strpos($fileContent, 'data:') === 0) {
             // Extract MIME type and content from data URI
             if (preg_match('/^data:([^;]+);base64,(.+)$/', $fileContent, $matches)) {
                 $mimeType = $matches[1];
                 $content = base64_decode($matches[2]);
-                
+
                 if ($content === false) {
                     throw new Exception('Invalid base64 content in data URI');
                 }
@@ -1949,7 +1952,7 @@ class SaveObject
             if ($content === false) {
                 throw new Exception('Invalid base64 content');
             }
-            
+
             // Try to detect MIME type from content
             $finfo = new \finfo(FILEINFO_MIME_TYPE);
             $detectedMimeType = $finfo->buffer($content);
@@ -1957,10 +1960,10 @@ class SaveObject
                 $mimeType = $detectedMimeType;
             }
         }
-        
+
         // Determine file extension from MIME type
         $extension = $this->getExtensionFromMimeType($mimeType);
-        
+
         return [
             'content' => $content,
             'mimeType' => $mimeType,
@@ -1997,7 +2000,7 @@ class SaveObject
     private function validateFileAgainstConfig(array $fileData, array $fileConfig, string $propertyName, ?int $index = null): void
     {
         $errorPrefix = $index !== null ? "File at $propertyName[$index]" : "File at $propertyName";
-        
+
         // Validate MIME type
         if (isset($fileConfig['allowedTypes']) && !empty($fileConfig['allowedTypes'])) {
             if (!in_array($fileData['mimeType'], $fileConfig['allowedTypes'], true)) {
@@ -2007,7 +2010,7 @@ class SaveObject
                 );
             }
         }
-        
+
         // Validate file size
         if (isset($fileConfig['maxSize']) && $fileConfig['maxSize'] > 0) {
             if ($fileData['size'] > $fileConfig['maxSize']) {
@@ -2043,7 +2046,7 @@ class SaveObject
     {
         $timestamp = time();
         $indexSuffix = $index !== null ? "_$index" : '';
-        
+
         return "{$propertyName}{$indexSuffix}_{$timestamp}.{$extension}";
 
     }//end generateFileName()
@@ -2070,22 +2073,22 @@ class SaveObject
     private function prepareAutoTags(array $fileConfig, string $propertyName, ?int $index = null): array
     {
         $autoTags = $fileConfig['autoTags'] ?? [];
-        
+
         // Replace placeholders in auto tags
         $processedTags = [];
         foreach ($autoTags as $tag) {
             // Replace property name placeholder
             $tag = str_replace('{property}', $propertyName, $tag);
             $tag = str_replace('{propertyName}', $propertyName, $tag);
-            
+
             // Replace index placeholder for array properties
             if ($index !== null) {
                 $tag = str_replace('{index}', (string)$index, $tag);
             }
-            
+
             $processedTags[] = $tag;
         }
-        
+
         return $processedTags;
 
     }//end prepareAutoTags()
@@ -2116,7 +2119,7 @@ class SaveObject
             'image/bmp' => 'bmp',
             'image/tiff' => 'tiff',
             'image/x-icon' => 'ico',
-            
+
             // Documents
             'application/pdf' => 'pdf',
             'application/msword' => 'doc',
@@ -2129,7 +2132,7 @@ class SaveObject
             'application/vnd.oasis.opendocument.text' => 'odt',
             'application/vnd.oasis.opendocument.spreadsheet' => 'ods',
             'application/vnd.oasis.opendocument.presentation' => 'odp',
-            
+
             // Text
             'text/plain' => 'txt',
             'text/csv' => 'csv',
@@ -2139,21 +2142,21 @@ class SaveObject
             'application/json' => 'json',
             'application/xml' => 'xml',
             'text/xml' => 'xml',
-            
+
             // Archives
             'application/zip' => 'zip',
             'application/x-rar-compressed' => 'rar',
             'application/x-7z-compressed' => '7z',
             'application/x-tar' => 'tar',
             'application/gzip' => 'gz',
-            
+
             // Audio
             'audio/mpeg' => 'mp3',
             'audio/wav' => 'wav',
             'audio/ogg' => 'ogg',
             'audio/aac' => 'aac',
             'audio/flac' => 'flac',
-            
+
             // Video
             'video/mp4' => 'mp4',
             'video/mpeg' => 'mpeg',
@@ -2161,7 +2164,7 @@ class SaveObject
             'video/x-msvideo' => 'avi',
             'video/webm' => 'webm',
         ];
-        
+
         return $mimeToExtension[$mimeType] ?? 'bin';
 
     }//end getExtensionFromMimeType()
@@ -2308,7 +2311,7 @@ class SaveObject
                 $this->handleFileProperty($updatedEntity, $data, $propertyName, $schema);
             }
         }
-        
+
         // Update the object with the modified data (file IDs instead of content)
         $updatedEntity->setObject($data);
 
