@@ -1130,7 +1130,7 @@ class SaveObject
             $objectEntity->setUuid($uuid);
             // @todo: check if this is a correct uuid.
         } else {
-            $objectEntity->setUuid(Uuid::v4());
+            $objectEntity->setUuid(Uuid::v4()->toRfc4122());
         }
 
         $objectEntity->setUri(
