@@ -2284,6 +2284,392 @@ class ObjectService
 	}
 
 
+	/**
+	 * Save multiple objects to the database using true bulk operations
+	 *
+	 * This method provides a high-performance bulk save operation that processes
+	 * multiple objects in a single database transaction using optimized SQL statements.
+	 * Objects are expected to be in serialized format and will be enriched with
+	 * missing metadata (owner, organisation, created, updated) if not present.
+	 *
+	 * @param array $objects Array of objects in serialized format (each object is an array representation of ObjectEntity)
+	 * @param Register|string|int|null $register Optional register filter for validation
+	 * @param Schema|string|int|null $schema Optional schema filter for validation
+	 * @param bool $rbac Whether to apply RBAC filtering
+	 * @param bool $multi Whether to apply multi-organization filtering
+	 *
+	 * @throws \InvalidArgumentException If required fields are missing from any object
+	 * @throws \OCP\DB\Exception If a database error occurs during bulk operations
+	 *
+	 * @return array Array of saved ObjectEntity instances from the database
+	 *
+	 * @phpstan-param array<int, array<string, mixed>> $objects
+	 * @psalm-param array<int, array<string, mixed>> $objects
+	 * @phpstan-return array<int, ObjectEntity>
+	 * @psalm-return array<int, ObjectEntity>
+	 */
+	public function saveObjects(
+		array $objects,
+		Register|string|int|null $register = null,
+		Schema|string|int|null $schema = null,
+		bool $rbac = true,
+		bool $multi = true
+	): array {
+		// Set register and schema context if provided
+		if ($register !== null) {
+			$this->setRegister($register);
+		}
+		if ($schema !== null) {
+			$this->setSchema($schema);
+		}
+
+		// Apply RBAC and multi-organization filtering if enabled
+		if ($rbac || $multi) {
+			$filteredObjects = $this->filterObjectsForPermissions($objects, $rbac, $multi);
+		} else {
+			$filteredObjects = $objects;
+		}
+
+		// Validate that all objects have required fields in their @self section
+		$this->validateRequiredFields($filteredObjects);
+
+		// Enrich objects with missing metadata (owner, organisation, created, updated)
+		$enrichedObjects = $this->enrichObjects($filteredObjects);
+
+		// Transform objects from serialized format to database format
+		$transformedObjects = $this->transformObjectsToDatabaseFormat($enrichedObjects);
+
+		// Extract IDs from transformed objects to find existing objects
+		$objectIds = $this->extractObjectIds($transformedObjects);
+
+		// Find existing objects in the database using the mapper's findAll method
+		$existingObjects = $this->findExistingObjects($objectIds);
+
+		// Separate objects into insert and update arrays
+		$insertObjects = [];
+		$updateObjects = [];
+
+		foreach ($transformedObjects as $transformedObject) {
+			$objectId = $transformedObject['uuid'] ?? $transformedObject['id'] ?? null;
+			
+			if ($objectId !== null && isset($existingObjects[$objectId])) {
+				// Object exists - merge new data into existing object for update
+				$mergedObject = $this->mergeObjectData($existingObjects[$objectId], $transformedObject);
+				$updateObjects[] = $mergedObject;
+			} else {
+				// Object doesn't exist - add to insert array
+				$insertObjects[] = $transformedObject;
+			}
+		}
+
+		// Use the mapper's bulk save operation
+		$savedObjectIds = $this->objectEntityMapper->saveObjects($insertObjects, $updateObjects);
+
+		// Fetch all saved objects from the database to return their current state
+		$savedObjects = [];
+		if (!empty($savedObjectIds)) {
+			$savedObjects = $this->objectEntityMapper->findAll(ids: $savedObjectIds, includeDeleted: true);
+		}
+
+		return $savedObjects;
+
+	}//end saveObjects()
+
+
+	/**
+	 * Filter objects based on RBAC and multi-organization permissions
+	 *
+	 * @param array $objects Array of objects to filter
+	 * @param bool $rbac Whether to apply RBAC filtering
+	 * @param bool $multi Whether to apply multi-organization filtering
+	 *
+	 * @return array Filtered array of objects
+	 *
+	 * @phpstan-param array<int, array<string, mixed>> $objects
+	 * @psalm-param array<int, array<string, mixed>> $objects
+	 * @phpstan-return array<int, array<string, mixed>>
+	 * @psalm-return array<int, array<string, mixed>>
+	 */
+	private function filterObjectsForPermissions(array $objects, bool $rbac, bool $multi): array
+	{
+		$filteredObjects = [];
+		$currentUser = $this->userSession->getUser();
+		$userId = $currentUser ? $currentUser->getUID() : null;
+		$activeOrganisation = $this->getActiveOrganisationForContext();
+
+		foreach ($objects as $object) {
+			$self = $object['@self'] ?? [];
+			
+			// Check RBAC permissions if enabled
+			if ($rbac && $userId !== null) {
+				$objectOwner = $self['owner'] ?? null;
+				$objectSchema = $self['schema'] ?? null;
+				
+				if ($objectSchema !== null) {
+					try {
+						$schema = $this->schemaMapper->find($objectSchema);
+						if (!$this->hasPermission($schema, 'create', $userId, $objectOwner, $rbac)) {
+							continue; // Skip this object if user doesn't have permission
+						}
+					} catch (\Exception $e) {
+						// Skip objects with invalid schemas
+						continue;
+					}
+				}
+			}
+
+			// Check multi-organization filtering if enabled
+			if ($multi && $activeOrganisation !== null) {
+				$objectOrganisation = $self['organisation'] ?? null;
+				if ($objectOrganisation !== null && $objectOrganisation !== $activeOrganisation) {
+					continue; // Skip objects from different organizations
+				}
+			}
+
+			$filteredObjects[] = $object;
+		}
+
+		return $filteredObjects;
+
+	}//end filterObjectsForPermissions()
+
+
+	/**
+	 * Validate that all objects have required fields in their @self section
+	 *
+	 * @param array $objects Array of objects to validate
+	 *
+	 * @throws \InvalidArgumentException If required fields are missing
+	 *
+	 * @return void
+	 *
+	 * @phpstan-param array<int, array<string, mixed>> $objects
+	 * @psalm-param array<int, array<string, mixed>> $objects
+	 */
+	private function validateRequiredFields(array $objects): void
+	{
+		$requiredFields = ['register', 'schema'];
+
+		foreach ($objects as $index => $object) {
+			// Check if object has @self section
+			if (!isset($object['@self']) || !is_array($object['@self'])) {
+				throw new \InvalidArgumentException(
+					"Object at index {$index} is missing required '@self' section"
+				);
+			}
+
+			$self = $object['@self'];
+
+			// Check each required field
+			foreach ($requiredFields as $field) {
+				if (!isset($self[$field]) || empty($self[$field])) {
+					throw new \InvalidArgumentException(
+						"Object at index {$index} is missing required field '{$field}' in @self section"
+					);
+				}
+			}
+		}
+
+	}//end validateRequiredFields()
+
+
+	/**
+	 * Enrich objects with missing metadata (owner, organisation, created, updated)
+	 *
+	 * This method optimizes enrichment for large datasets (20k+ objects) by
+	 * pre-fetching user and organisation data and applying it in batches.
+	 * 
+	 * Datetime values are formatted in MySQL-compatible format (Y-m-d H:i:s)
+	 * to ensure proper database storage without timezone conversion issues.
+	 *
+	 * @param array $objects Array of objects to enrich
+	 *
+	 * @return array Array of enriched objects
+	 *
+	 * @phpstan-param array<int, array<string, mixed>> $objects
+	 * @psalm-param array<int, array<string, mixed>> $objects
+	 * @phpstan-return array<int, array<string, mixed>>
+	 * @psalm-return array<int, array<string, mixed>>
+	 */
+	private function enrichObjects(array $objects): array
+	{
+		// Get current user and organisation data once for all objects
+		$currentUser = $this->userSession->getUser();
+		$currentUserId = $currentUser ? $currentUser->getUID() : null;
+		$currentOrganisation = $this->organisationService->getOrganisationForNewEntity();
+		$now = new \DateTime();
+
+		// Process objects in batches for memory efficiency
+		$batchSize = 1000;
+		$enrichedObjects = [];
+
+		for ($i = 0; $i < count($objects); $i += $batchSize) {
+			$batch = array_slice($objects, $i, $batchSize);
+			
+			foreach ($batch as $object) {
+				$self = $object['@self'] ?? [];
+				
+				            // Generate UUID if not present
+            if (empty($self['uuid'])) {
+                $self['uuid'] = Uuid::v4()->toRfc4122();
+            }
+
+				// Set owner if not present
+				if (empty($self['owner']) && $currentUserId !== null) {
+					$self['owner'] = $currentUserId;
+				}
+
+				// Set organisation if not present
+				if (empty($self['organisation'])) {
+					$self['organisation'] = $currentOrganisation;
+				}
+
+				// Set created timestamp if not present
+				if (empty($self['created'])) {
+					$self['created'] = $now->format('Y-m-d H:i:s');
+				}
+
+				// Set updated timestamp (always update)
+				$self['updated'] = $now->format('Y-m-d H:i:s');
+
+				// Update the object with enriched @self
+				$object['@self'] = $self;
+				$enrichedObjects[] = $object;
+			}
+		}
+
+		return $enrichedObjects;
+
+	}//end enrichObjects()
+
+
+	/**
+	 * Transform objects from serialized format to database format
+	 *
+	 * Moves everything except '@self' into the 'object' property and moves
+	 * '@self' contents to the root level.
+	 *
+	 * @param array $objects Array of objects in serialized format
+	 *
+	 * @return array Array of transformed objects in database format
+	 *
+	 * @phpstan-param array<int, array<string, mixed>> $objects
+	 * @psalm-param array<int, array<string, mixed>> $objects
+	 * @phpstan-return array<int, array<string, mixed>>
+	 * @psalm-return array<int, array<string, mixed>>
+	 */
+	private function transformObjectsToDatabaseFormat(array $objects): array
+	{
+		$transformedObjects = [];
+
+		foreach ($objects as $object) {
+			// Extract @self data to root level
+			$self = $object['@self'] ?? [];
+			
+			// Create object data by excluding @self
+			$objectData = $object;
+			unset($objectData['@self']);
+
+			// Create transformed object with @self data at root and object data in 'object' property
+			$transformedObject = array_merge($self, ['object' => $objectData]);
+			
+			$transformedObjects[] = $transformedObject;
+		}
+
+		return $transformedObjects;
+
+	}//end transformObjectsToDatabaseFormat()
+
+
+	/**
+	 * Extract object IDs from transformed objects
+	 *
+	 * @param array $transformedObjects Array of transformed objects
+	 *
+	 * @return array Array of object IDs (UUIDs or IDs)
+	 *
+	 * @phpstan-param array<int, array<string, mixed>> $transformedObjects
+	 * @psalm-param array<int, array<string, mixed>> $transformedObjects
+	 * @phpstan-return array<int, string>
+	 * @psalm-return array<int, string>
+	 */
+	private function extractObjectIds(array $transformedObjects): array
+	{
+		$ids = [];
+
+		foreach ($transformedObjects as $object) {
+			// Try to get UUID first, then fall back to ID
+			$id = $object['uuid'] ?? $object['id'] ?? null;
+			
+			if ($id !== null) {
+				$ids[] = $id;
+			}
+		}
+
+		return array_filter($ids);
+
+	}//end extractObjectIds()
+
+
+	/**
+	 * Find existing objects in the database by their IDs
+	 *
+	 * @param array $objectIds Array of object IDs to find
+	 *
+	 * @return array Associative array of existing objects indexed by their ID
+	 *
+	 * @phpstan-param array<int, string> $objectIds
+	 * @psalm-param array<int, string> $objectIds
+	 * @phpstan-return array<string, ObjectEntity>
+	 * @psalm-return array<string, ObjectEntity>
+	 */
+	private function findExistingObjects(array $objectIds): array
+	{
+		if (empty($objectIds)) {
+			return [];
+		}
+
+		// Use mapper's findAll method to find existing objects by IDs
+		$existingObjects = $this->objectEntityMapper->findAll(ids: $objectIds, includeDeleted: true);
+		
+		// Create associative array indexed by ID
+		$indexedObjects = [];
+		foreach ($existingObjects as $object) {
+			$id = $object->getUuid() ?? $object->getId();
+			if ($id !== null) {
+				$indexedObjects[$id] = $object;
+			}
+		}
+
+		return $indexedObjects;
+
+	}//end findExistingObjects()
+
+
+	/**
+	 * Merge new object data into existing object
+	 *
+	 * @param ObjectEntity $existingObject The existing object from database
+	 * @param array        $newObjectData  The new object data to merge
+	 *
+	 * @return ObjectEntity The merged object ready for update
+	 *
+	 * @phpstan-param array<string, mixed> $newObjectData
+	 * @psalm-param array<string, mixed> $newObjectData
+	 */
+	private function mergeObjectData(ObjectEntity $existingObject, array $newObjectData): ObjectEntity
+	{
+		// Clone the existing object to avoid modifying the original
+		$mergedObject = clone $existingObject;
+		
+		// Hydrate the merged object with new data (this will overwrite existing values)
+		$mergedObject->hydrate($newObjectData);
+		
+		return $mergedObject;
+
+	}//end mergeObjectData()
+
+
     /**
      * Merge two objects within the same register and schema
      *
