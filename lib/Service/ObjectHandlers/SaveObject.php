@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -72,6 +73,7 @@ class SaveObject
      * @param FileService        $fileService        File service for managing files.
      * @param IUserSession       $userSession        User session service.
      * @param AuditTrailMapper   $auditTrailMapper   Audit trail mapper for logging changes.
+     * @param OrganisationService $organisationService Service for organisation operations.
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
@@ -81,6 +83,7 @@ class SaveObject
         private readonly SchemaMapper $schemaMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly IURLGenerator $urlGenerator,
+        private readonly OrganisationService $organisationService,
         ArrayLoader $arrayLoader,
     ) {
         $this->twig = new Environment($arrayLoader);
@@ -219,9 +222,9 @@ class SaveObject
 
 
     /**
-     * Hydrates the name and description of the entity from the object data based on schema configuration.
+     * Hydrates the name, description, and image of the entity from the object data based on schema configuration.
      *
-     * This method uses the schema configuration to set the name and description fields
+     * This method uses the schema configuration to set the name, description, and image fields
      * on the object entity based on the object data. It prevents an extra database call
      * by using the schema that's already available in the SaveObject handler.
      *
@@ -233,7 +236,7 @@ class SaveObject
      * @psalm-return   void
      * @phpstan-return void
      */
-    private function hydrateNameAndDescription(ObjectEntity $entity, Schema $schema): void
+    private function hydrateNameDescriptionAndImage(ObjectEntity $entity, Schema $schema): void
     {
         $config     = $schema->getConfiguration();
         $objectData = $entity->getObject();
@@ -252,7 +255,14 @@ class SaveObject
             }
         }
 
-    }//end hydrateNameAndDescription()
+        if (isset($config['objectImageField']) === true) {
+            $image = $this->getValueFromPath($objectData, $config['objectImageField']);
+            if ($image !== null) {
+                $entity->setImage($image);
+            }
+        }
+
+    }//end hydrateNameDescriptionAndImage()
 
 
     /**
@@ -291,6 +301,10 @@ class SaveObject
 
     /**
      * Set default values and constant values for properties based on the schema.
+     *
+     * This method now supports different default value behaviors:
+     * - 'false' (default): Only apply defaults when property is missing or null
+     * - 'falsy': Also apply defaults when property is empty string or empty array/object
      *
      * @param ObjectEntity $objectEntity The objectEntity for which to perform this action.
      * @param Schema       $schema       The schema the objectEntity belongs to.
@@ -334,11 +348,36 @@ class SaveObject
             }
         }
 
-        // Handle default values - only set if not already present in data
-        $defaultValues = array_filter(array_column($properties, 'default', 'title'));
+        // Handle default values with new behavior support
+        $defaultValues = [];
+        foreach ($properties as $property) {
+            $key = $property['title'];
+            $defaultValue = $property['default'] ?? null;
 
-        // Remove all keys from array for which a value has already been set in $data.
-        $defaultValues = array_diff_key($defaultValues, $data);
+            // Skip if no default value is defined
+            if ($defaultValue === null) {
+                continue;
+            }
+
+            $defaultBehavior = $property['defaultBehavior'] ?? 'false';
+            $shouldApplyDefault = false;
+
+            // Determine if default should be applied based on behavior
+            if ($defaultBehavior === 'falsy') {
+                // Apply default if property is missing, null, empty string, or empty array/object
+                $shouldApplyDefault = !isset($data[$key])
+                    || $data[$key] === null
+                    || $data[$key] === ''
+                    || (is_array($data[$key]) && empty($data[$key]));
+            } else {
+                // Default behavior: only apply if property is missing or null
+                $shouldApplyDefault = !isset($data[$key]) || $data[$key] === null;
+            }
+
+            if ($shouldApplyDefault) {
+                $defaultValues[$key] = $defaultValue;
+            }
+        }
 
         // Render twig templated default values.
         $renderedDefaultValues = [];
@@ -356,10 +395,10 @@ class SaveObject
         }
 
         // Merge in this order:
-        // 1. Start with rendered default values (only for properties not in $data)
-        // 2. Add existing data (this preserves user input)
+        // 1. Start with existing data
+        // 2. Apply rendered default values (only for properties that should get defaults)
         // 3. Override with constant values (constants always take precedence)
-        $mergedData = array_merge($renderedDefaultValues, $data, $constantValues);
+        $mergedData = array_merge($data, $renderedDefaultValues, $constantValues);
 
         return $mergedData;
 
@@ -378,6 +417,8 @@ class SaveObject
      *
      * Objects with only $ref (like nested objects with objectConfiguration.handling: "nested-object")
      * are kept as-is in the data and not cascaded.
+     *
+     * TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
      *
      * @param ObjectEntity $objectEntity The parent object entity
      * @param Schema       $schema       The schema of the parent object
@@ -399,6 +440,7 @@ class SaveObject
         // 2. objectConfiguration.handling: "cascade" (stores IDs in parent) - results in IDs stored in parent
         // Objects with only $ref and nested-object handling remain in the data
         // BUT skip if they have writeBack enabled (those are handled by write-back method)
+        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
         $objectProperties = array_filter(
           $properties,
           function (array $property) {
@@ -406,16 +448,17 @@ class SaveObject
             if (isset($property['writeBack']) && $property['writeBack'] === true) {
                 return false;
             }
-            
-            return $property['type'] === 'object' 
-                && isset($property['$ref']) === true 
-                && (isset($property['inversedBy']) === true || 
+
+            return $property['type'] === 'object'
+                && isset($property['$ref']) === true
+                && (isset($property['inversedBy']) === true ||
                     (isset($property['objectConfiguration']['handling']) && $property['objectConfiguration']['handling'] === 'cascade'));
           }
           );
 
         // Same logic for array properties - cascade if they have inversedBy OR cascade handling
         // BUT skip if they have writeBack enabled (those are handled by write-back method)
+        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
         $arrayObjectProperties = array_filter(
           $properties,
           function (array $property) {
@@ -424,7 +467,7 @@ class SaveObject
                 (isset($property['items']['writeBack']) && $property['items']['writeBack'] === true)) {
                 return false;
             }
-            
+
             return $property['type'] === 'array'
                 && (isset($property['$ref']) || isset($property['items']['$ref']))
                 && (isset($property['inversedBy']) === true || isset($property['items']['inversedBy']) === true ||
@@ -455,7 +498,7 @@ class SaveObject
 
             try {
                 $createdUuid = $this->cascadeSingleObject(objectEntity: $objectEntity, definition: $definition, object: $objectData);
-                
+
                 // Handle the result based on whether inversedBy is present
                 if (isset($definition['inversedBy'])) {
                     // With inversedBy: check if writeBack is enabled
@@ -484,13 +527,13 @@ class SaveObject
 
             try {
                 $createdUuids = $this->cascadeMultipleObjects(objectEntity: $objectEntity, property: $definition, propData: $data[$property]);
-                
+
                 // Handle the result based on whether inversedBy is present
                 if (isset($definition['inversedBy']) || isset($definition['items']['inversedBy'])) {
                     // With inversedBy: check if writeBack is enabled
                     $hasWriteBack = (isset($definition['writeBack']) && $definition['writeBack'] === true) ||
                                    (isset($definition['items']['writeBack']) && $definition['items']['writeBack'] === true);
-                    
+
                     if ($hasWriteBack) {
                         // Keep the property for write-back processing
                         $data[$property] = $createdUuids;
@@ -607,7 +650,7 @@ class SaveObject
         // Only set inversedBy if it's configured (for relation-based cascading)
         if (isset($definition['inversedBy'])) {
             $inversedByProperty = $definition['inversedBy'];
-            
+
             // Check if the inversedBy property already exists and is an array
             if (isset($object[$inversedByProperty]) && is_array($object[$inversedByProperty])) {
                 // Add to existing array if not already present
@@ -622,12 +665,12 @@ class SaveObject
 
         // Extract register ID from definition or use parent object's register
         $register = $definition['register'] ?? $objectEntity->getRegister();
-        
+
         // If register is an array, extract the ID
         if (is_array($register)) {
             $register = $register['id'] ?? $register;
         }
-        
+
         // For cascading with inversedBy, preserve existing UUID for updates
         // For cascading without inversedBy, always create new objects (no UUID)
         $uuid = null;
@@ -665,6 +708,8 @@ class SaveObject
      * For example, when creating a community with a list of deelnemers (participant UUIDs),
      * this method will update each participant's deelnames array to include the community's UUID.
      *
+     * TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
+     *
      * @param ObjectEntity $objectEntity The current object being saved
      * @param Schema       $schema       The schema of the current object
      * @param array        $data         The data being saved
@@ -674,7 +719,7 @@ class SaveObject
      */
     private function handleInverseRelationsWriteBack(ObjectEntity $objectEntity, Schema $schema, array $data): array
     {
-        
+
         try {
             $schemaObject = $schema->getSchemaObject($this->urlGenerator);
             $properties   = json_decode(json_encode($schemaObject), associative: true)['properties'] ?? [];
@@ -683,6 +728,7 @@ class SaveObject
         }
 
         // Find properties that have inversedBy configuration with writeBack enabled
+        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
         $writeBackProperties = array_filter(
           $properties,
           function (array $property) {
@@ -704,9 +750,9 @@ class SaveObject
             return false;
           }
           );
-        
+
         foreach ($writeBackProperties as $propertyName => $definition) {
-            
+
             // Skip if property not present in data or is empty
             if (!isset($data[$propertyName]) || empty($data[$propertyName])) {
                 continue;
@@ -821,11 +867,11 @@ class SaveObject
      *
      * This method prevents empty strings from causing issues in downstream processing by converting
      * them to appropriate values for properties based on their schema definitions.
-     * 
+     *
      * For object properties:
      * - If not required: empty objects {} become null (allows clearing the field)
      * - If required: empty objects {} remain as {} but will fail validation with clear error
-     * 
+     *
      * For array properties:
      * - If no minItems constraint: empty arrays [] are allowed
      * - If minItems > 0: empty arrays [] will fail validation with clear error
@@ -835,7 +881,7 @@ class SaveObject
      * @param Schema $schema The schema to check property definitions against
      *
      * @return array The sanitized data with appropriate handling of empty values
-     * 
+     *
      * @throws \Exception If schema processing fails
      */
     private function sanitizeEmptyStringsForObjectProperties(array $data, Schema $schema): array
@@ -880,7 +926,7 @@ class SaveObject
                 } elseif (is_array($value)) {
                     // Check minItems constraint
                     $minItems = $propertyDefinition['minItems'] ?? 0;
-                    
+
                     if (empty($value) && $minItems > 0) {
                         // Keep empty array [] for arrays with minItems > 0 - will fail validation with clear error
                     } elseif (empty($value) && $minItems === 0) {
@@ -927,6 +973,8 @@ class SaveObject
      * @param array                    $data     The object data to save.
      * @param string|null              $uuid     The UUID of the object to update (if updating).
      * @param int|null                 $folderId The folder ID to set on the object (optional).
+     * @param bool                     $rbac     Whether to apply RBAC checks (default: true).
+     * @param bool                     $multi    Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity The saved object entity.
      *
@@ -937,7 +985,9 @@ class SaveObject
         Schema | int | string $schema,
         array $data,
         ?string $uuid=null,
-        ?int $folderId=null
+        ?int $folderId=null,
+        bool $rbac=true,
+        bool $multi=true
     ): ObjectEntity {
 
         if (isset($data['@self']) && is_array($data['@self'])) {
@@ -1121,7 +1171,7 @@ class SaveObject
 
         // Hydrate name and description from schema configuration.
         try {
-            $this->hydrateNameAndDescription($objectEntity, $schema);
+            $this->hydrateNameDescriptionAndImage($objectEntity, $schema);
         } catch (Exception $e) {
             // Continue without hydration if it fails
         }
@@ -1130,6 +1180,15 @@ class SaveObject
         $user = $this->userSession->getUser();
         if ($user !== null) {
             $objectEntity->setOwner($user->getUID());
+        }
+
+        // Set organisation from active organisation for multi-tenancy (if not already set and multi is enabled)
+        if ($multi === true && ($objectEntity->getOrganisation() === null || $objectEntity->getOrganisation() === '')) {
+            $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
+            $objectEntity->setOrganisation($organisationUuid);
+        } else {
+            $organisationUuid = $this->organisationService->ensureDefaultOrganisation();
+            $objectEntity->setOrganisation($organisationUuid);
         }
 
         // Update object relations.
@@ -1146,12 +1205,15 @@ class SaveObject
         $log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity);
         $savedEntity->setLastLog($log->jsonSerialize());
 
-        // Handle file properties.
+        // Handle file properties - process them and replace content with file IDs
         foreach ($data as $propertyName => $value) {
-            if ($this->isFileProperty($value) === true) {
-                $this->handleFileProperty($savedEntity, $data, $propertyName);
+            if ($this->isFileProperty($value, $schema, $propertyName) === true) {
+                $this->handleFileProperty($savedEntity, $data, $propertyName, $schema);
             }
         }
+
+        // Update the object with the modified data (file IDs instead of content)
+        $savedEntity->setObject($data);
 
         return $savedEntity;
 
@@ -1196,35 +1258,916 @@ class SaveObject
 
 
     /**
-     * Checks if a value represents a file property.
+     * Check if a value should be treated as a file property
      *
-     * @param mixed $value The value to check.
+     * @param mixed $value The value to check
+     * @param Schema|null $schema Optional schema for property-based checking
+     * @param string|null $propertyName Optional property name for schema lookup
      *
-     * @return bool Whether the value is a file property.
+     * @return bool True if the value should be treated as a file property
+     * @phpstan-return bool
      */
-    private function isFileProperty($value): bool
+    private function isFileProperty($value, ?Schema $schema = null, ?string $propertyName = null): bool
     {
-        return is_string($value) && strpos($value, 'data:') === 0;
+        // If we have schema and property name, use schema-based checking
+        if ($schema !== null && $propertyName !== null) {
+            $schemaProperties = $schema->getProperties() ?? [];
+
+            if (!isset($schemaProperties[$propertyName])) {
+                return false; // Property not in schema, not a file
+            }
+
+            $propertyConfig = $schemaProperties[$propertyName];
+
+            // Check if it's a direct file property
+            if (($propertyConfig['type'] ?? '') === 'file') {
+                return true;
+            }
+
+            // Check if it's an array of files
+            if (($propertyConfig['type'] ?? '') === 'array') {
+                $itemsConfig = $propertyConfig['items'] ?? [];
+                if (($itemsConfig['type'] ?? '') === 'file') {
+                    return true;
+                }
+            }
+
+            return false; // Property exists but is not configured as file type
+        }
+
+        // Fallback to format-based checking when schema info is not available
+        // This is used within handleFileProperty for individual value validation
+
+        // Check for single file (data URI, base64, URL with file extension, or file object)
+        if (is_string($value)) {
+            // Data URI format
+            if (strpos($value, 'data:') === 0) {
+                return true;
+            }
+
+            // URL format (http/https) - but only if it looks like a downloadable file
+            if (filter_var($value, FILTER_VALIDATE_URL) &&
+                (strpos($value, 'http://') === 0 || strpos($value, 'https://') === 0)) {
+
+                // Parse URL to get path
+                $urlPath = parse_url($value, PHP_URL_PATH);
+                if ($urlPath) {
+                    // Get file extension
+                    $extension = strtolower(pathinfo($urlPath, PATHINFO_EXTENSION));
+
+                    // Common file extensions that indicate downloadable files
+                    $fileExtensions = [
+                        // Documents
+                        'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp',
+                        'rtf', 'txt', 'csv',
+                        // Images
+                        'jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'tiff', 'ico',
+                        // Videos
+                        'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', '3gp',
+                        // Audio
+                        'mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma',
+                        // Archives
+                        'zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz',
+                        // Other common file types
+                        'xml', 'json', 'sql', 'exe', 'dmg', 'iso', 'deb', 'rpm'
+                    ];
+
+                    // Only treat as file if it has a recognized file extension
+                    if (in_array($extension, $fileExtensions)) {
+                        return true;
+                    }
+                }
+
+                // Don't treat regular website URLs as files
+                return false;
+            }
+
+            // Base64 encoded string (simple heuristic)
+            if (base64_encode(base64_decode($value, true)) === $value && strlen($value) > 100) {
+                return true;
+            }
+        }
+
+        // Check for file object (array with required file object properties)
+        if (is_array($value) && $this->isFileObject($value)) {
+            return true;
+        }
+
+        // Check for array of files
+        if (is_array($value)) {
+            foreach ($value as $item) {
+                if (is_string($item)) {
+                    // Data URI
+                    if (strpos($item, 'data:') === 0) {
+                        return true;
+                    }
+                    // URL with file extension
+                    if (filter_var($item, FILTER_VALIDATE_URL) &&
+                        (strpos($item, 'http://') === 0 || strpos($item, 'https://') === 0)) {
+                        $urlPath = parse_url($item, PHP_URL_PATH);
+                        if ($urlPath) {
+                            $extension = strtolower(pathinfo($urlPath, PATHINFO_EXTENSION));
+                            $fileExtensions = [
+                                'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp',
+                                'rtf', 'txt', 'csv', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp',
+                                'tiff', 'ico', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', '3gp',
+                                'mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma', 'zip', 'rar', '7z',
+                                'tar', 'gz', 'bz2', 'xz', 'xml', 'json', 'sql', 'exe', 'dmg', 'iso', 'deb', 'rpm'
+                            ];
+                            if (in_array($extension, $fileExtensions)) {
+                                return true;
+                            }
+                        }
+                    }
+                    // Base64
+                    if (base64_encode(base64_decode($item, true)) === $item && strlen($item) > 100) {
+                        return true;
+                    }
+                } elseif (is_array($item) && $this->isFileObject($item)) {
+                    // File object in array
+                    return true;
+                }
+            }
+        }
+
+        return false;
 
     }//end isFileProperty()
 
 
     /**
-     * Handles a file property during save.
+     * Checks if an array represents a file object.
+     *
+     * A file object should have at least an 'id' and either 'title' or 'path'.
+     * This matches the structure returned by the file renderer.
+     *
+     * @param array $value The array to check.
+     *
+     * @return bool Whether the array is a file object.
+     *
+     * @psalm-param array<string, mixed> $value
+     * @phpstan-param array<string, mixed> $value
+     * @psalm-return bool
+     * @phpstan-return bool
+     */
+    private function isFileObject(array $value): bool
+    {
+        // Must have an ID
+        if (!isset($value['id'])) {
+            return false;
+        }
+
+        // Must have either title or path (typical file object properties)
+        if (!isset($value['title']) && !isset($value['path'])) {
+            return false;
+        }
+
+        // Should not be a regular data array with other purposes
+        // File objects typically have file-specific properties
+        $fileProperties = ['id', 'title', 'path', 'type', 'size', 'accessUrl', 'downloadUrl', 'labels', 'extension', 'hash', 'modified', 'published'];
+        $hasFileProperties = false;
+
+        foreach ($fileProperties as $prop) {
+            if (isset($value[$prop])) {
+                $hasFileProperties = true;
+                break;
+            }
+        }
+
+        return $hasFileProperties;
+
+    }//end isFileObject()
+
+
+    /**
+     * Handles a file property during save with validation and proper ID storage.
+     *
+     * This method processes file properties by:
+     * - Validating files against schema property configuration (MIME type, size)
+     * - Applying auto tags from the property configuration
+     * - Storing file IDs in the object data instead of just attaching files
+     * - Supporting both single files and arrays of files
      *
      * @param ObjectEntity $objectEntity The object entity being saved.
-     * @param array        $object       The object data.
+     * @param array        &$object      The object data (passed by reference to update with file IDs).
      * @param string       $propertyName The name of the file property.
+     * @param Schema       $schema       The schema containing property configuration.
      *
      * @return void
+     *
+     * @throws Exception If file validation fails or file operations fail.
+     *
+     * @psalm-param ObjectEntity $objectEntity
+     * @phpstan-param ObjectEntity $objectEntity
+     * @psalm-param array<string, mixed> &$object
+     * @phpstan-param array<string, mixed> &$object
+     * @psalm-param string $propertyName
+     * @phpstan-param string $propertyName
+     * @psalm-param Schema $schema
+     * @phpstan-param Schema $schema
+     * @psalm-return void
+     * @phpstan-return void
      */
-    private function handleFileProperty(ObjectEntity $objectEntity, array $object, string $propertyName): void
+    private function handleFileProperty(ObjectEntity $objectEntity, array &$object, string $propertyName, Schema $schema): void
     {
-        $fileContent = $object[$propertyName];
-        $fileName    = $propertyName.'_'.time();
-        $this->fileService->addFile(objectEntity: $objectEntity, fileName: $fileName, content: $fileContent);
+        $fileValue = $object[$propertyName];
+        $schemaProperties = $schema->getProperties() ?? [];
+
+        // Get property configuration for this file property
+        if (!isset($schemaProperties[$propertyName])) {
+            throw new Exception("Property '$propertyName' not found in schema configuration");
+        }
+
+        $propertyConfig = $schemaProperties[$propertyName];
+
+        // Determine if this is a direct file property or array[file]
+        $isArrayProperty = ($propertyConfig['type'] ?? '') === 'array';
+        $fileConfig = $isArrayProperty ? ($propertyConfig['items'] ?? []) : $propertyConfig;
+
+        // Validate that the property is configured for files
+        if (($fileConfig['type'] ?? '') !== 'file') {
+            throw new Exception("Property '$propertyName' is not configured as a file property");
+        }
+
+        if ($isArrayProperty) {
+            // Handle array of files
+            if (!is_array($fileValue)) {
+                throw new Exception("Property '$propertyName' is configured as array but received non-array value");
+            }
+
+                         $fileIds = [];
+             foreach ($fileValue as $index => $singleFileContent) {
+                 if ($this->isFileProperty($singleFileContent)) {
+                     $fileId = $this->processSingleFileProperty(
+                         objectEntity: $objectEntity,
+                         fileInput: $singleFileContent,
+                         propertyName: $propertyName,
+                         fileConfig: $fileConfig,
+                         index: $index
+                     );
+                     if ($fileId !== null) {
+                         $fileIds[] = $fileId;
+                     }
+                 }
+             }
+
+            // Replace the file content with file IDs in the object data
+            $object[$propertyName] = $fileIds;
+
+        } else {
+            // Handle single file
+            if ($this->isFileProperty($fileValue)) {
+                $fileId = $this->processSingleFileProperty(
+                    objectEntity: $objectEntity,
+                    fileInput: $fileValue,
+                    propertyName: $propertyName,
+                    fileConfig: $fileConfig
+                );
+
+                // Replace the file content with file ID in the object data
+                if ($fileId !== null) {
+                    $object[$propertyName] = $fileId;
+                }
+            }
+        }
 
     }//end handleFileProperty()
+
+
+    /**
+     * Processes a single file property with validation, tagging, and storage.
+     *
+     * This method handles three types of file input:
+     * - Base64 data URIs or encoded strings
+     * - URLs (fetches file content from URL)
+     * - File objects (existing files, returns existing ID or creates copy)
+     *
+     * @param ObjectEntity $objectEntity The object entity being saved.
+     * @param mixed        $fileInput    The file input (string, URL, or file object).
+     * @param string       $propertyName The name of the file property.
+     * @param array        $fileConfig   The file property configuration from schema.
+     * @param int|null     $index        Optional index for array properties.
+     *
+     * @return int|null The ID of the created/existing file, or null if processing fails.
+     *
+     * @throws Exception If file validation fails or file operations fail.
+     *
+     * @psalm-param ObjectEntity $objectEntity
+     * @phpstan-param ObjectEntity $objectEntity
+     * @psalm-param mixed $fileInput
+     * @phpstan-param mixed $fileInput
+     * @psalm-param string $propertyName
+     * @phpstan-param string $propertyName
+     * @psalm-param array<string, mixed> $fileConfig
+     * @phpstan-param array<string, mixed> $fileConfig
+     * @psalm-param int|null $index
+     * @phpstan-param int|null $index
+     * @psalm-return int|null
+     * @phpstan-return int|null
+     */
+    private function processSingleFileProperty(
+        ObjectEntity $objectEntity,
+        $fileInput,
+        string $propertyName,
+        array $fileConfig,
+        ?int $index = null
+    ): ?int {
+        try {
+            // Determine input type and process accordingly
+            if (is_string($fileInput)) {
+                // Handle string inputs (base64, data URI, or URL)
+                return $this->processStringFileInput($objectEntity, $fileInput, $propertyName, $fileConfig, $index);
+            } elseif (is_array($fileInput) && $this->isFileObject($fileInput)) {
+                // Handle file object input
+                return $this->processFileObjectInput($objectEntity, $fileInput, $propertyName, $fileConfig, $index);
+            } else {
+                throw new Exception("Unsupported file input type for property '$propertyName'");
+            }
+        } catch (Exception $e) {
+            error_log("Error processing file property '$propertyName': " . $e->getMessage());
+            throw $e;
+        }
+
+    }//end processSingleFileProperty()
+
+
+    /**
+     * Processes string file input (base64, data URI, or URL).
+     *
+     * @param ObjectEntity $objectEntity The object entity being saved.
+     * @param string       $fileInput    The string input (base64, data URI, or URL).
+     * @param string       $propertyName The name of the file property.
+     * @param array        $fileConfig   The file property configuration from schema.
+     * @param int|null     $index        Optional index for array properties.
+     *
+     * @return int The ID of the created file.
+     *
+     * @throws Exception If file processing fails.
+     *
+     * @psalm-param ObjectEntity $objectEntity
+     * @phpstan-param ObjectEntity $objectEntity
+     * @psalm-param string $fileInput
+     * @phpstan-param string $fileInput
+     * @psalm-param string $propertyName
+     * @phpstan-param string $propertyName
+     * @psalm-param array<string, mixed> $fileConfig
+     * @phpstan-param array<string, mixed> $fileConfig
+     * @psalm-param int|null $index
+     * @phpstan-param int|null $index
+     * @psalm-return int
+     * @phpstan-return int
+     */
+    private function processStringFileInput(
+        ObjectEntity $objectEntity,
+        string $fileInput,
+        string $propertyName,
+        array $fileConfig,
+        ?int $index = null
+    ): int {
+        // Check if it's a URL
+        if (filter_var($fileInput, FILTER_VALIDATE_URL) &&
+            (strpos($fileInput, 'http://') === 0 || strpos($fileInput, 'https://') === 0)) {
+            // Fetch file content from URL
+            $fileContent = $this->fetchFileFromUrl($fileInput);
+            $fileData = $this->parseFileDataFromUrl($fileInput, $fileContent);
+        } else {
+            // Parse as base64 or data URI
+            $fileData = $this->parseFileData($fileInput);
+        }
+
+        // Validate file against property configuration
+        $this->validateFileAgainstConfig($fileData, $fileConfig, $propertyName, $index);
+
+        // Generate filename
+        $filename = $this->generateFileName($propertyName, $fileData['extension'], $index);
+
+        // Prepare auto tags
+        $autoTags = $this->prepareAutoTags($fileConfig, $propertyName, $index);
+
+        // Create the file with validation and tagging
+        $file = $this->fileService->addFile(
+            objectEntity: $objectEntity,
+            fileName: $filename,
+            content: $fileData['content'],
+            share: false, // Don't auto-share, let user decide
+            tags: $autoTags
+        );
+
+        return $file->getId();
+
+    }//end processStringFileInput()
+
+
+    /**
+     * Processes file object input (existing file object).
+     *
+     * @param ObjectEntity $objectEntity The object entity being saved.
+     * @param array        $fileObject   The file object input.
+     * @param string       $propertyName The name of the file property.
+     * @param array        $fileConfig   The file property configuration from schema.
+     * @param int|null     $index        Optional index for array properties.
+     *
+     * @return int The ID of the existing or created file.
+     *
+     * @throws Exception If file processing fails.
+     *
+     * @psalm-param ObjectEntity $objectEntity
+     * @phpstan-param ObjectEntity $objectEntity
+     * @psalm-param array<string, mixed> $fileObject
+     * @phpstan-param array<string, mixed> $fileObject
+     * @psalm-param string $propertyName
+     * @phpstan-param string $propertyName
+     * @psalm-param array<string, mixed> $fileConfig
+     * @phpstan-param array<string, mixed> $fileConfig
+     * @psalm-param int|null $index
+     * @phpstan-param int|null $index
+     * @psalm-return int
+     * @phpstan-return int
+     */
+    private function processFileObjectInput(
+        ObjectEntity $objectEntity,
+        array $fileObject,
+        string $propertyName,
+        array $fileConfig,
+        ?int $index = null
+    ): int {
+        // If file object has an ID, try to use the existing file
+        if (isset($fileObject['id'])) {
+            $fileId = (int) $fileObject['id'];
+
+            // Validate that the existing file meets the property configuration
+            // Get file info to validate against config
+            try {
+                $existingFile = $this->fileService->getFile(object: $objectEntity, file: $fileId);
+                if ($existingFile !== null) {
+                    // Validate the existing file against current config
+                    $this->validateExistingFileAgainstConfig($existingFile, $fileConfig, $propertyName, $index);
+
+                    // Apply auto tags if needed (non-destructive - adds to existing tags)
+                    $this->applyAutoTagsToExistingFile($existingFile, $fileConfig, $propertyName, $index);
+
+                    return $fileId;
+                }
+            } catch (Exception $e) {
+                // Existing file not accessible, continue to create new one
+                error_log("Existing file {$fileId} not accessible, creating new file: " . $e->getMessage());
+            }
+        }
+
+        // If no ID or existing file not accessible, create a new file
+        // This requires downloadUrl or accessUrl to fetch content
+        if (isset($fileObject['downloadUrl'])) {
+            $fileUrl = $fileObject['downloadUrl'];
+        } elseif (isset($fileObject['accessUrl'])) {
+            $fileUrl = $fileObject['accessUrl'];
+        } else {
+            throw new Exception("File object for property '$propertyName' has no downloadable URL");
+        }
+
+        // Fetch and process as URL
+        return $this->processStringFileInput($objectEntity, $fileUrl, $propertyName, $fileConfig, $index);
+
+    }//end processFileObjectInput()
+
+
+    /**
+     * Fetches file content from a URL.
+     *
+     * @param string $url The URL to fetch from.
+     *
+     * @return string The file content.
+     *
+     * @throws Exception If the URL cannot be fetched.
+     *
+     * @psalm-param string $url
+     * @phpstan-param string $url
+     * @psalm-return string
+     * @phpstan-return string
+     */
+    private function fetchFileFromUrl(string $url): string
+    {
+        // Create a context with appropriate options
+        $context = stream_context_create([
+            'http' => [
+                'timeout' => 30, // 30 second timeout
+                'user_agent' => 'OpenRegister/1.0',
+                'follow_location' => true,
+                'max_redirects' => 5,
+            ]
+        ]);
+
+        $content = file_get_contents($url, false, $context);
+
+        if ($content === false) {
+            throw new Exception("Unable to fetch file from URL: $url");
+        }
+
+        return $content;
+
+    }//end fetchFileFromUrl()
+
+
+    /**
+     * Parses file data from URL fetch results.
+     *
+     * @param string $url     The original URL.
+     * @param string $content The fetched content.
+     *
+     * @return array File data with content, mimeType, extension, and size.
+     *
+     * @throws Exception If the file data cannot be parsed.
+     *
+     * @psalm-param string $url
+     * @phpstan-param string $url
+     * @psalm-param string $content
+     * @phpstan-param string $content
+     * @psalm-return array{content: string, mimeType: string, extension: string, size: int}
+     * @phpstan-return array{content: string, mimeType: string, extension: string, size: int}
+     */
+    private function parseFileDataFromUrl(string $url, string $content): array
+    {
+        // Try to detect MIME type from content
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mimeType = $finfo->buffer($content);
+
+        if ($mimeType === false) {
+            $mimeType = 'application/octet-stream';
+        }
+
+        // Try to get extension from URL
+        $parsedUrl = parse_url($url);
+        $path = $parsedUrl['path'] ?? '';
+        $extension = pathinfo($path, PATHINFO_EXTENSION);
+
+        // If no extension from URL, get from MIME type
+        if (empty($extension)) {
+            $extension = $this->getExtensionFromMimeType($mimeType);
+        }
+
+        return [
+            'content' => $content,
+            'mimeType' => $mimeType,
+            'extension' => $extension,
+            'size' => strlen($content)
+        ];
+
+    }//end parseFileDataFromUrl()
+
+
+    /**
+     * Validates an existing file against property configuration.
+     *
+     * @param \OCP\Files\File $file         The existing file.
+     * @param array           $fileConfig   The file property configuration.
+     * @param string          $propertyName The property name (for error messages).
+     * @param int|null        $index        Optional array index (for error messages).
+     *
+     * @return void
+     *
+     * @throws Exception If validation fails.
+     *
+     * @psalm-param \OCP\Files\File $file
+     * @phpstan-param \OCP\Files\File $file
+     * @psalm-param array<string, mixed> $fileConfig
+     * @phpstan-param array<string, mixed> $fileConfig
+     * @psalm-param string $propertyName
+     * @phpstan-param string $propertyName
+     * @psalm-param int|null $index
+     * @phpstan-param int|null $index
+     * @psalm-return void
+     * @phpstan-return void
+     */
+    private function validateExistingFileAgainstConfig($file, array $fileConfig, string $propertyName, ?int $index = null): void
+    {
+        $errorPrefix = $index !== null ? "Existing file at $propertyName[$index]" : "Existing file at $propertyName";
+
+        // Validate MIME type
+        if (isset($fileConfig['allowedTypes']) && !empty($fileConfig['allowedTypes'])) {
+            $fileMimeType = $file->getMimeType();
+            if (!in_array($fileMimeType, $fileConfig['allowedTypes'], true)) {
+                throw new Exception(
+                    "$errorPrefix has invalid type '$fileMimeType'. " .
+                    "Allowed types: " . implode(', ', $fileConfig['allowedTypes'])
+                );
+            }
+        }
+
+        // Validate file size
+        if (isset($fileConfig['maxSize']) && $fileConfig['maxSize'] > 0) {
+            $fileSize = $file->getSize();
+            if ($fileSize > $fileConfig['maxSize']) {
+                throw new Exception(
+                    "$errorPrefix exceeds maximum size ({$fileConfig['maxSize']} bytes). " .
+                    "File size: {$fileSize} bytes"
+                );
+            }
+        }
+
+    }//end validateExistingFileAgainstConfig()
+
+
+    /**
+     * Applies auto tags to an existing file (non-destructive).
+     *
+     * @param \OCP\Files\File $file         The existing file.
+     * @param array           $fileConfig   The file property configuration.
+     * @param string          $propertyName The property name.
+     * @param int|null        $index        Optional array index.
+     *
+     * @return void
+     *
+     * @psalm-param \OCP\Files\File $file
+     * @phpstan-param \OCP\Files\File $file
+     * @psalm-param array<string, mixed> $fileConfig
+     * @phpstan-param array<string, mixed> $fileConfig
+     * @psalm-param string $propertyName
+     * @phpstan-param string $propertyName
+     * @psalm-param int|null $index
+     * @phpstan-param int|null $index
+     * @psalm-return void
+     * @phpstan-return void
+     */
+    private function applyAutoTagsToExistingFile($file, array $fileConfig, string $propertyName, ?int $index = null): void
+    {
+        $autoTags = $this->prepareAutoTags($fileConfig, $propertyName, $index);
+
+        if (!empty($autoTags)) {
+            // Get existing tags and merge with auto tags
+            try {
+                $formattedFile = $this->fileService->formatFile($file);
+                $existingTags = $formattedFile['labels'] ?? [];
+                $allTags = array_unique(array_merge($existingTags, $autoTags));
+
+                // Update file with merged tags
+                $this->fileService->updateFile(
+                    filePath: $file->getId(),
+                    content: null, // Don't change content
+                    tags: $allTags
+                );
+            } catch (Exception $e) {
+                // Log but don't fail - auto tagging is not critical
+                error_log("Failed to apply auto tags to existing file {$file->getId()}: " . $e->getMessage());
+            }
+        }
+
+    }//end applyAutoTagsToExistingFile()
+
+
+    /**
+     * Parses file data from various formats (data URI, base64) and extracts metadata.
+     *
+     * @param string $fileContent The file content to parse.
+     *
+     * @return array File data with content, mimeType, extension, and size.
+     *
+     * @throws Exception If the file data format is invalid.
+     *
+     * @psalm-param string $fileContent
+     * @phpstan-param string $fileContent
+     * @psalm-return array{content: string, mimeType: string, extension: string, size: int}
+     * @phpstan-return array{content: string, mimeType: string, extension: string, size: int}
+     */
+    private function parseFileData(string $fileContent): array
+    {
+        $content = '';
+        $mimeType = 'application/octet-stream';
+        $extension = 'bin';
+
+        // Handle data URI format (data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...)
+        if (strpos($fileContent, 'data:') === 0) {
+            // Extract MIME type and content from data URI
+            if (preg_match('/^data:([^;]+);base64,(.+)$/', $fileContent, $matches)) {
+                $mimeType = $matches[1];
+                $content = base64_decode($matches[2]);
+
+                if ($content === false) {
+                    throw new Exception('Invalid base64 content in data URI');
+                }
+            } else {
+                throw new Exception('Invalid data URI format');
+            }
+        } else {
+            // Handle plain base64 content
+            $content = base64_decode($fileContent);
+            if ($content === false) {
+                throw new Exception('Invalid base64 content');
+            }
+
+            // Try to detect MIME type from content
+            $finfo = new \finfo(FILEINFO_MIME_TYPE);
+            $detectedMimeType = $finfo->buffer($content);
+            if ($detectedMimeType !== false) {
+                $mimeType = $detectedMimeType;
+            }
+        }
+
+        // Determine file extension from MIME type
+        $extension = $this->getExtensionFromMimeType($mimeType);
+
+        return [
+            'content' => $content,
+            'mimeType' => $mimeType,
+            'extension' => $extension,
+            'size' => strlen($content)
+        ];
+
+    }//end parseFileData()
+
+
+    /**
+     * Validates a file against property configuration.
+     *
+     * @param array    $fileData     The parsed file data.
+     * @param array    $fileConfig   The file property configuration.
+     * @param string   $propertyName The property name (for error messages).
+     * @param int|null $index        Optional array index (for error messages).
+     *
+     * @return void
+     *
+     * @throws Exception If validation fails.
+     *
+     * @psalm-param array{content: string, mimeType: string, extension: string, size: int} $fileData
+     * @phpstan-param array{content: string, mimeType: string, extension: string, size: int} $fileData
+     * @psalm-param array<string, mixed> $fileConfig
+     * @phpstan-param array<string, mixed> $fileConfig
+     * @psalm-param string $propertyName
+     * @phpstan-param string $propertyName
+     * @psalm-param int|null $index
+     * @phpstan-param int|null $index
+     * @psalm-return void
+     * @phpstan-return void
+     */
+    private function validateFileAgainstConfig(array $fileData, array $fileConfig, string $propertyName, ?int $index = null): void
+    {
+        $errorPrefix = $index !== null ? "File at $propertyName[$index]" : "File at $propertyName";
+
+        // Validate MIME type
+        if (isset($fileConfig['allowedTypes']) && !empty($fileConfig['allowedTypes'])) {
+            if (!in_array($fileData['mimeType'], $fileConfig['allowedTypes'], true)) {
+                throw new Exception(
+                    "$errorPrefix has invalid type '{$fileData['mimeType']}'. " .
+                    "Allowed types: " . implode(', ', $fileConfig['allowedTypes'])
+                );
+            }
+        }
+
+        // Validate file size
+        if (isset($fileConfig['maxSize']) && $fileConfig['maxSize'] > 0) {
+            if ($fileData['size'] > $fileConfig['maxSize']) {
+                throw new Exception(
+                    "$errorPrefix exceeds maximum size ({$fileConfig['maxSize']} bytes). " .
+                    "File size: {$fileData['size']} bytes"
+                );
+            }
+        }
+
+    }//end validateFileAgainstConfig()
+
+
+    /**
+     * Generates a filename for a file property.
+     *
+     * @param string   $propertyName The property name.
+     * @param string   $extension    The file extension.
+     * @param int|null $index        Optional array index.
+     *
+     * @return string The generated filename.
+     *
+     * @psalm-param string $propertyName
+     * @phpstan-param string $propertyName
+     * @psalm-param string $extension
+     * @phpstan-param string $extension
+     * @psalm-param int|null $index
+     * @phpstan-param int|null $index
+     * @psalm-return string
+     * @phpstan-return string
+     */
+    private function generateFileName(string $propertyName, string $extension, ?int $index = null): string
+    {
+        $timestamp = time();
+        $indexSuffix = $index !== null ? "_$index" : '';
+
+        return "{$propertyName}{$indexSuffix}_{$timestamp}.{$extension}";
+
+    }//end generateFileName()
+
+
+    /**
+     * Prepares auto tags for a file based on property configuration.
+     *
+     * @param array    $fileConfig   The file property configuration.
+     * @param string   $propertyName The property name.
+     * @param int|null $index        Optional array index.
+     *
+     * @return array The prepared auto tags.
+     *
+     * @psalm-param array<string, mixed> $fileConfig
+     * @phpstan-param array<string, mixed> $fileConfig
+     * @psalm-param string $propertyName
+     * @phpstan-param string $propertyName
+     * @psalm-param int|null $index
+     * @phpstan-param int|null $index
+     * @psalm-return array<int, string>
+     * @phpstan-return array<int, string>
+     */
+    private function prepareAutoTags(array $fileConfig, string $propertyName, ?int $index = null): array
+    {
+        $autoTags = $fileConfig['autoTags'] ?? [];
+
+        // Replace placeholders in auto tags
+        $processedTags = [];
+        foreach ($autoTags as $tag) {
+            // Replace property name placeholder
+            $tag = str_replace('{property}', $propertyName, $tag);
+            $tag = str_replace('{propertyName}', $propertyName, $tag);
+
+            // Replace index placeholder for array properties
+            if ($index !== null) {
+                $tag = str_replace('{index}', (string)$index, $tag);
+            }
+
+            $processedTags[] = $tag;
+        }
+
+        return $processedTags;
+
+    }//end prepareAutoTags()
+
+
+    /**
+     * Gets file extension from MIME type.
+     *
+     * @param string $mimeType The MIME type.
+     *
+     * @return string The file extension.
+     *
+     * @psalm-param string $mimeType
+     * @phpstan-param string $mimeType
+     * @psalm-return string
+     * @phpstan-return string
+     */
+    private function getExtensionFromMimeType(string $mimeType): string
+    {
+        $mimeToExtension = [
+            // Images
+            'image/jpeg' => 'jpg',
+            'image/jpg' => 'jpg',
+            'image/png' => 'png',
+            'image/gif' => 'gif',
+            'image/webp' => 'webp',
+            'image/svg+xml' => 'svg',
+            'image/bmp' => 'bmp',
+            'image/tiff' => 'tiff',
+            'image/x-icon' => 'ico',
+
+            // Documents
+            'application/pdf' => 'pdf',
+            'application/msword' => 'doc',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+            'application/vnd.ms-excel' => 'xls',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'xlsx',
+            'application/vnd.ms-powerpoint' => 'ppt',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'pptx',
+            'application/rtf' => 'rtf',
+            'application/vnd.oasis.opendocument.text' => 'odt',
+            'application/vnd.oasis.opendocument.spreadsheet' => 'ods',
+            'application/vnd.oasis.opendocument.presentation' => 'odp',
+
+            // Text
+            'text/plain' => 'txt',
+            'text/csv' => 'csv',
+            'text/html' => 'html',
+            'text/css' => 'css',
+            'text/javascript' => 'js',
+            'application/json' => 'json',
+            'application/xml' => 'xml',
+            'text/xml' => 'xml',
+
+            // Archives
+            'application/zip' => 'zip',
+            'application/x-rar-compressed' => 'rar',
+            'application/x-7z-compressed' => '7z',
+            'application/x-tar' => 'tar',
+            'application/gzip' => 'gz',
+
+            // Audio
+            'audio/mpeg' => 'mp3',
+            'audio/wav' => 'wav',
+            'audio/ogg' => 'ogg',
+            'audio/aac' => 'aac',
+            'audio/flac' => 'flac',
+
+            // Video
+            'video/mp4' => 'mp4',
+            'video/mpeg' => 'mpeg',
+            'video/quicktime' => 'mov',
+            'video/x-msvideo' => 'avi',
+            'video/webm' => 'webm',
+        ];
+
+        return $mimeToExtension[$mimeType] ?? 'bin';
+
+    }//end getExtensionFromMimeType()
 
 
     /**
@@ -1350,7 +2293,7 @@ class SaveObject
         }
 
         // Hydrate name and description from schema configuration.
-        $this->hydrateNameAndDescription($existingObject, $schemaObject);
+                    $this->hydrateNameDescriptionAndImage($existingObject, $schemaObject);
 
         // Update object relations.
         $existingObject = $this->updateObjectRelations($existingObject, $data);
@@ -1362,12 +2305,15 @@ class SaveObject
         $log = $this->auditTrailMapper->createAuditTrail(old: $oldObject, new: $updatedEntity);
         $updatedEntity->setLastLog($log->jsonSerialize());
 
-        // Handle file properties.
+        // Handle file properties - process them and replace content with file IDs
         foreach ($data as $propertyName => $value) {
-            if ($this->isFileProperty($value) === true) {
-                $this->handleFileProperty($updatedEntity, $data, $propertyName);
+            if ($this->isFileProperty($value, $schema, $propertyName) === true) {
+                $this->handleFileProperty($updatedEntity, $data, $propertyName, $schema);
             }
         }
+
+        // Update the object with the modified data (file IDs instead of content)
+        $updatedEntity->setObject($data);
 
         return $updatedEntity;
 

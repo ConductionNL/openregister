@@ -52,11 +52,11 @@ class Configuration extends Entity implements JsonSerializable
     protected $type = null;
 
     /**
-     * Owner of the configuration
+     * Application identifier that owns the configuration
      *
      * @var string
      */
-    protected $owner = null;
+    protected $app = null;
 
     /**
      * Version of the configuration
@@ -66,11 +66,25 @@ class Configuration extends Entity implements JsonSerializable
     protected $version = null;
 
     /**
-     * Array of registers of the configuration
+     * Array of register IDs managed by this configuration
      *
      * @var array|null
      */
     protected ?array $registers = [];
+
+    /**
+     * Array of schema IDs managed by this configuration
+     *
+     * @var array|null
+     */
+    protected ?array $schemas = [];
+
+    /**
+     * Array of object IDs managed by this configuration
+     *
+     * @var array|null
+     */
+    protected ?array $objects = [];
 
     /**
      * Creation timestamp
@@ -96,9 +110,11 @@ class Configuration extends Entity implements JsonSerializable
         $this->addType('title', 'string');
         $this->addType('description', 'string');
         $this->addType('type', 'string');
-        $this->addType('owner', 'string');
+        $this->addType('app', 'string');
         $this->addType('version', 'string');
         $this->addType('registers', 'json');
+        $this->addType('schemas', 'json');
+        $this->addType('objects', 'json');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
 
@@ -108,7 +124,7 @@ class Configuration extends Entity implements JsonSerializable
     /**
      * Get the registers of the configuration
      *
-     * @return array<string> Array of registers
+     * @return array<int> Array of register IDs
      */
     public function getRegisters(): array
     {
@@ -120,8 +136,67 @@ class Configuration extends Entity implements JsonSerializable
     /**
      * Set the registers of the configuration
      *
-     * @param array<string> $registers Array of registers
+     * @param array<int>|null $registers Array of register IDs or null
+     * 
+     * @return void
      */
+    public function setRegisters(?array $registers): void
+    {
+        $this->registers = $registers ?? [];
+
+    }//end setRegisters()
+
+
+    /**
+     * Get the schemas of the configuration
+     *
+     * @return array<int> Array of schema IDs
+     */
+    public function getSchemas(): array
+    {
+        return ($this->schemas ?? []);
+
+    }//end getSchemas()
+
+
+    /**
+     * Set the schemas of the configuration
+     *
+     * @param array<int>|null $schemas Array of schema IDs or null
+     * 
+     * @return void
+     */
+    public function setSchemas(?array $schemas): void
+    {
+        $this->schemas = $schemas ?? [];
+
+    }//end setSchemas()
+
+
+    /**
+     * Get the objects of the configuration
+     *
+     * @return array<int> Array of object IDs
+     */
+    public function getObjects(): array
+    {
+        return ($this->objects ?? []);
+
+    }//end getObjects()
+
+
+    /**
+     * Set the objects of the configuration
+     *
+     * @param array<int>|null $objects Array of object IDs or null
+     * 
+     * @return void
+     */
+    public function setObjects(?array $objects): void
+    {
+        $this->objects = $objects ?? [];
+
+    }//end setObjects()
 
 
     /**
@@ -189,9 +264,11 @@ class Configuration extends Entity implements JsonSerializable
             'title'       => $this->title,
             'description' => $this->description,
             'type'        => $this->type,
-            'owner'       => $this->owner,
+            'app'         => $this->app,
             'version'     => $this->version,
             'registers'   => $this->registers,
+            'schemas'     => $this->schemas,
+            'objects'     => $this->objects,
             'created'     => ($this->created !== null) ? $this->created->format('c') : null,
             'updated'     => ($this->updated !== null) ? $this->updated->format('c') : null,
         ];

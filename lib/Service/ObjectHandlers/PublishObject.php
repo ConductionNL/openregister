@@ -45,6 +45,8 @@ class PublishObject
      *
      * @param string        $uuid     The UUID of the object to publish
      * @param DateTime|null $date     Optional publication date
+     * @param bool          $rbac     Whether to apply RBAC checks (default: true).
+     * @param bool          $multi    Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity The published object
      *
@@ -52,7 +54,9 @@ class PublishObject
      */
     public function publish(
         string $uuid,
-        ?DateTime $date = null
+        ?DateTime $date = null,
+        bool $rbac = true,
+        bool $multi = true
     ): ObjectEntity {
         // Get the object
         $object = $this->objectEntityMapper->find($uuid);

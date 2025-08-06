@@ -17,3 +17,9 @@
 
 /coverage/
 /coverage-frontend/
+
+# Data files
+*.csv
+*.xls
+*.xlsx
+

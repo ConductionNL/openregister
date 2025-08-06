@@ -380,6 +380,212 @@ class RenderObject
 	}
 
 
+    /**
+     * Hydrates file properties by replacing file IDs with actual file objects.
+     *
+     * This method processes object properties that are configured as file types in the schema,
+     * replacing stored file IDs with complete file objects for presentation. It handles both
+     * single file properties and arrays of files.
+     *
+     * @param ObjectEntity $entity The entity to process.
+     *
+     * @return ObjectEntity The entity with hydrated file properties.
+     *
+     * @throws Exception If schema or file operations fail.
+     *
+     * @psalm-param ObjectEntity $entity
+     * @phpstan-param ObjectEntity $entity
+     * @psalm-return ObjectEntity
+     * @phpstan-return ObjectEntity
+     */
+    private function renderFileProperties(ObjectEntity $entity): ObjectEntity
+    {
+        try {
+            // Get the schema for this object to understand property configurations
+            $schema = $this->getSchema($entity->getSchema());
+            if ($schema === null) {
+                // If no schema found, return entity unchanged
+                return $entity;
+            }
+
+            $schemaProperties = $schema->getProperties() ?? [];
+            $objectData = $entity->getObject();
+
+            // Process each property in the object data
+            foreach ($objectData as $propertyName => $propertyValue) {
+                // Skip metadata properties
+                if (str_starts_with($propertyName, '@') || $propertyName === 'id') {
+                    continue;
+                }
+
+                // Check if this property is configured in the schema
+                if (!isset($schemaProperties[$propertyName])) {
+                    continue;
+                }
+
+                $propertyConfig = $schemaProperties[$propertyName];
+
+                // Check if this is a file property (direct or array[file])
+                if ($this->isFilePropertyConfig($propertyConfig)) {
+                    $objectData[$propertyName] = $this->hydrateFileProperty(
+                        propertyValue: $propertyValue,
+                        propertyConfig: $propertyConfig,
+                        propertyName: $propertyName
+                    );
+                }
+            }
+
+            // Update the entity with hydrated data
+            $entity->setObject($objectData);
+
+        } catch (Exception $e) {
+            // Log error but don't break rendering - just return original entity
+            error_log("Error hydrating file properties for object {$entity->getId()}: " . $e->getMessage());
+        }
+
+        return $entity;
+
+    }//end renderFileProperties()
+
+
+    /**
+     * Checks if a property configuration indicates a file property.
+     *
+     * @param array $propertyConfig The property configuration from schema.
+     *
+     * @return bool True if this is a file property configuration.
+     *
+     * @psalm-param array<string, mixed> $propertyConfig
+     * @phpstan-param array<string, mixed> $propertyConfig
+     * @psalm-return bool
+     * @phpstan-return bool
+     */
+    private function isFilePropertyConfig(array $propertyConfig): bool
+    {
+        // Direct file property
+        if (($propertyConfig['type'] ?? '') === 'file') {
+            return true;
+        }
+
+        // Array of files
+        if (($propertyConfig['type'] ?? '') === 'array' &&
+            isset($propertyConfig['items']) &&
+            ($propertyConfig['items']['type'] ?? '') === 'file') {
+            return true;
+        }
+
+        return false;
+
+    }//end isFilePropertyConfig()
+
+
+    /**
+     * Hydrates a file property by replacing file IDs with file objects.
+     *
+     * @param mixed  $propertyValue  The property value (file ID or array of file IDs).
+     * @param array  $propertyConfig The property configuration from schema.
+     * @param string $propertyName   The property name (for error reporting).
+     *
+     * @return mixed The hydrated property value (file object or array of file objects).
+     *
+     * @psalm-param mixed $propertyValue
+     * @phpstan-param mixed $propertyValue
+     * @psalm-param array<string, mixed> $propertyConfig
+     * @phpstan-param array<string, mixed> $propertyConfig
+     * @psalm-param string $propertyName
+     * @phpstan-param string $propertyName
+     * @psalm-return mixed
+     * @phpstan-return mixed
+     */
+    private function hydrateFileProperty($propertyValue, array $propertyConfig, string $propertyName)
+    {
+        $isArrayProperty = ($propertyConfig['type'] ?? '') === 'array';
+
+        if ($isArrayProperty) {
+            // Handle array of files
+            if (!is_array($propertyValue)) {
+                return $propertyValue; // Return unchanged if not an array
+            }
+
+            $hydratedFiles = [];
+            foreach ($propertyValue as $fileId) {
+                $fileObject = $this->getFileObject($fileId);
+                if ($fileObject !== null) {
+                    $hydratedFiles[] = $fileObject;
+                }
+            }
+
+            return $hydratedFiles;
+
+        } else {
+            // Handle single file
+            if (is_numeric($propertyValue) || (is_string($propertyValue) && ctype_digit($propertyValue))) {
+                return $this->getFileObject($propertyValue);
+            }
+
+            return $propertyValue; // Return unchanged if not a file ID
+        }
+
+    }//end hydrateFileProperty()
+
+
+    /**
+     * Gets a file object by its ID using the FileService.
+     *
+     * @param mixed $fileId The file ID to retrieve.
+     *
+     * @return array|null The formatted file object or null if not found.
+     *
+     * @psalm-param mixed $fileId
+     * @phpstan-param mixed $fileId
+     * @psalm-return array<string, mixed>|null
+     * @phpstan-return array<string, mixed>|null
+     */
+    private function getFileObject($fileId): ?array
+    {
+        try {
+            // Convert to string/int as needed
+            $fileIdStr = is_numeric($fileId) ? (string) $fileId : $fileId;
+
+            if (!is_string($fileIdStr) && !is_int($fileIdStr)) {
+                return null;
+            }
+
+            // Use FileMapper to get file information directly
+            $fileRecord = $this->fileMapper->getFile((int) $fileIdStr);
+
+            if (empty($fileRecord)) {
+                return null;
+            }
+
+            // Get file tags
+            $labels = $this->getFileTags((string) $fileRecord['fileid']);
+
+            // Format the file object (same structure as renderFiles method)
+            return [
+                'id'          => (string) $fileRecord['fileid'],
+                'path'        => $fileRecord['path'],
+                'title'       => $fileRecord['name'],
+                'accessUrl'   => $fileRecord['accessUrl'] ?? null,
+                'downloadUrl' => $fileRecord['downloadUrl'] ?? null,
+                'type'        => $fileRecord['mimetype'] ?? 'application/octet-stream',
+                'extension'   => pathinfo($fileRecord['name'], PATHINFO_EXTENSION),
+                'size'        => (int) $fileRecord['size'],
+                'hash'        => $fileRecord['etag'] ?? '',
+                'published'   => $fileRecord['published'] ?? null,
+                'modified'    => isset($fileRecord['mtime']) ? 
+                    (new \DateTime())->setTimestamp($fileRecord['mtime'])->format('c') : null,
+                'labels'      => $labels,
+            ];
+
+        } catch (Exception $e) {
+            error_log("Error getting file object for ID $fileId: " . $e->getMessage());
+            return null;
+        }
+
+    }//end getFileObject()
+
+
 
     /**
      * Renders an entity with optional extensions and filters.
@@ -398,6 +604,8 @@ class RenderObject
      * @param array|null        $schemas    Preloaded schemas to use
      * @param array|null        $objects    Preloaded objects to use
      * @param array|null        $visitedIds All ids we already handled
+     * @param bool              $rbac       Whether to apply RBAC checks (default: true).
+     * @param bool              $multi      Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity The rendered entity with applied extensions and filters
      */
@@ -411,6 +619,8 @@ class RenderObject
         ?array $schemas=[],
         ?array $objects=[],
         ?array $visitedIds=[],
+        bool $rbac=true,
+        bool $multi=true
     ): ObjectEntity {
         if ($entity->getUuid() !== null && in_array($entity->getUuid(), $visitedIds, true)) {
             return $entity->setObject(['@circular' => true, 'id' => $entity->getUuid()]);
@@ -442,6 +652,9 @@ class RenderObject
         }
 
 		$entity = $this->renderFiles($entity);
+
+        // Hydrate file properties (replace file IDs with file objects)
+        $entity = $this->renderFileProperties($entity);
 
         // Get the object data as an array for manipulation.
         $objectData = $entity->getObject();
@@ -773,6 +986,8 @@ class RenderObject
     /**
      * Gets the inversed properties from a schema
      *
+     * TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
+     *
      * @param Schema $schema The schema to check for inversed properties
      *
      * @return array Array of property names that have inversedBy configurations
@@ -782,6 +997,7 @@ class RenderObject
         $properties = $schema->getProperties();
 
         // Use array_filter to get properties with inversedBy configurations.
+        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
         $inversedProperties = array_filter(
                 $properties,
                 function ($property) {
@@ -865,6 +1081,11 @@ class RenderObject
                 $inversedByProperty = $propertyConfig['inversedBy'];
                 $targetSchema = $propertyConfig['$ref'] ?? null;
                 $isArray = false;
+
+				// Fallback for misconfigured arrays
+				if($propertyConfig['type'] === 'array') {
+					$isArray = true;
+            }
             }
             // Skip if no inversedBy configuration found
             else {
@@ -893,10 +1114,10 @@ class RenderObject
                         // Handle both array and single value references
                         if (is_array($referenceValue)) {
                             // Check if the current entity's UUID is in the array
-                            return in_array($entity->getUuid(), $referenceValue, true);
+                            return in_array($entity->getUuid(), $referenceValue, true) && $object->getSchema() === $schemaId;
                         } else {
                             // Check if the reference value matches the current entity's UUID
-                            return $referenceValue === $entity->getUuid();
+                            return str_ends_with(haystack: $referenceValue, needle: $entity->getUuid()) && $object->getSchema() === $schemaId;
                         }
                     }
                     ));
@@ -965,6 +1186,13 @@ class RenderObject
                 // If not found by slug, continue
             }
         }
+
+		// If it's a slug, try to find the schema by slug
+		$schemas = $this->schemaMapper->findAll(filters: ['slug' => $schemaRef]);
+
+		if(count($schemas) === 1) {
+			return (string) array_shift($schemas)->getId();
+		}
 
         // If all else fails, try to use the reference as-is
         return $schemaRef;

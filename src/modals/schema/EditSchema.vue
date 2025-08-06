@@ -234,6 +234,60 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 														@update:value="enumInputValue = $event"
 														@keydown.enter.prevent="addEnumValueAndClear(key)" />
 
+													<!-- Default Value Configuration -->
+													<NcActionSeparator />
+													<NcActionCaption name="Default Value Configuration" />
+													<template v-if="property.type === 'string'">
+														<NcActionInput
+															:value="property.default || ''"
+															label="Default Value"
+															@update:value="updatePropertySetting(key, 'default', $event === '' ? undefined : $event)" />
+													</template>
+													<template v-else-if="property.type === 'number' || property.type === 'integer'">
+														<NcActionInput
+															:value="property.default || 0"
+															type="number"
+															label="Default Value"
+															@update:value="updatePropertySetting(key, 'default', Number($event))" />
+													</template>
+													<template v-else-if="property.type === 'boolean'">
+														<NcActionCheckbox
+															:checked="property.default === true"
+															@update:checked="updatePropertySetting(key, 'default', $event)">
+															Default Value
+														</NcActionCheckbox>
+													</template>
+													<template v-else-if="property.type === 'array' && property.items && property.items.type === 'string'">
+														<NcActionInput
+															:value="getArrayDefaultAsString(property.default)"
+															label="Default Values (comma separated)"
+															placeholder="value1, value2, value3"
+															@update:value="updateArrayDefault(key, $event)" />
+													</template>
+													<template v-else-if="property.type === 'object'">
+														<NcActionInput
+															:value="typeof property.default === 'object' ? JSON.stringify(property.default, null, 2) : (property.default || '{}')"
+															label="Default Value (JSON)"
+															@update:value="updateObjectDefault(key, $event)" />
+													</template>
+
+													<!-- Default Behavior Toggle -->
+													<template v-if="property.default !== undefined && property.default !== null && property.default !== ''">
+														<NcActionCheckbox
+															:checked="property.defaultBehavior === 'falsy'"
+															@update:checked="updatePropertySetting(key, 'defaultBehavior', $event ? 'falsy' : 'false')">
+															Apply default for empty values
+														</NcActionCheckbox>
+														<NcActionCaption
+															v-if="property.defaultBehavior === 'falsy'"
+															name="ℹ️ Default will be applied when value is missing, null, or empty string"
+															style="color: var(--color-text-lighter); font-size: 11px;" />
+														<NcActionCaption
+															v-else
+															name="ℹ️ Default will only be applied when value is missing or null"
+															style="color: var(--color-text-lighter); font-size: 11px;" />
+													</template>
+
 													<!-- Type-specific configurations -->
 													<template v-if="property.type === 'string'">
 														<NcActionSeparator />
@@ -295,7 +349,8 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 																{ id: 'number', label: 'Number' },
 																{ id: 'integer', label: 'Integer' },
 																{ id: 'object', label: 'Object' },
-																{ id: 'boolean', label: 'Boolean' }
+																{ id: 'boolean', label: 'Boolean' },
+																{ id: 'file', label: 'File' }
 															]"
 															input-label="Array Item Type"
 															label="Array Item Type" />
@@ -351,6 +406,16 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 																:disabled="!schemaItem.properties[key].items.$ref"
 																@update:value="updateInversedByForArrayItems(key, $event)" />
 															<NcActionCheckbox
+																:checked="property.items.writeBack || false"
+																@update:checked="updateArrayItemObjectConfigurationSetting(key, 'writeBack', $event)">
+																Write Back
+															</NcActionCheckbox>
+															<NcActionCheckbox
+																:checked="property.items.removeAfterWriteBack || false"
+																@update:checked="updateArrayItemObjectConfigurationSetting(key, 'removeAfterWriteBack', $event)">
+																Remove After Write Back
+															</NcActionCheckbox>
+															<NcActionCheckbox
 																:checked="property.items.cascadeDelete || false"
 																@update:checked="updateArrayItemObjectConfigurationSetting(key, 'cascadeDelete', $event)">
 																Cascade Delete
@@ -398,10 +463,53 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 															:disabled="!schemaItem.properties[key].$ref"
 															@update:value="updateInversedBy(key, $event)" />
 														<NcActionCheckbox
+															:checked="property.writeBack || false"
+															@update:checked="updatePropertySetting(key, 'writeBack', $event)">
+															Write Back
+														</NcActionCheckbox>
+														<NcActionCheckbox
+															:checked="property.removeAfterWriteBack || false"
+															@update:checked="updatePropertySetting(key, 'removeAfterWriteBack', $event)">
+															Remove After Write Back
+														</NcActionCheckbox>
+														<NcActionCheckbox
 															:checked="property.cascadeDelete || false"
 															@update:checked="updatePropertySetting(key, 'cascadeDelete', $event)">
 															Cascade Delete
 														</NcActionCheckbox>
+													</template>
+
+													<!-- File Configuration -->
+													<template v-if="property.type === 'file' || (property.type === 'array' && property.items && property.items.type === 'file')">
+														<NcActionSeparator />
+														<NcActionCaption name="File Configuration" />
+														<NcActionInput
+															:value="(property.allowedTypes || []).join(', ')"
+															label="Allowed MIME Types (comma separated)"
+															placeholder="image/png, image/jpeg, application/pdf"
+															@update:value="updateFileProperty(key, 'allowedTypes', $event)" />
+														<NcActionInput
+															:value="property.maxSize || ''"
+															type="number"
+															label="Maximum File Size (bytes)"
+															placeholder="5242880"
+															@update:value="updateFileProperty(key, 'maxSize', $event)" />
+														<NcActionInput
+															:value="getFilePropertyTags(key, 'allowedTags')"
+															type="multiselect"
+															:options="availableTagsOptions"
+															input-label="Allowed Tags"
+															label="Allowed Tags (select from available tags)"
+															multiple
+															@update:value="updateFilePropertyTags(key, 'allowedTags', $event)" />
+														<NcActionInput
+															:value="getFilePropertyTags(key, 'autoTags')"
+															type="multiselect"
+															:options="availableTagsOptions"
+															input-label="Auto Tags"
+															label="Auto Tags (automatically applied to uploaded files)"
+															multiple
+															@update:value="updateFilePropertyTags(key, 'autoTags', $event)" />
 													</template>
 												</NcActions>
 											</td>
@@ -442,6 +550,23 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 								:options="propertyOptions"
 								input-label="Object Description Field"
 								placeholder="Select a property to use as object description" />
+							<NcSelect
+								v-model="schemaItem.configuration.objectImageField"
+								:disabled="loading"
+								:options="propertyOptions"
+								input-label="Object Image Field"
+								placeholder="Select a property to use as object image representing the object. e.g. logo (should contain base64 encoded image)" />
+							<NcCheckboxRadioSwitch
+								:disabled="loading"
+								:checked.sync="schemaItem.configuration.allowFiles">
+								Allow Files
+							</NcCheckboxRadioSwitch>
+							<NcTextField
+								v-model="allowedTagsInput"
+								:disabled="loading"
+								label="Allowed Tags (comma-separated)"
+								placeholder="image, document, audio, video"
+								@update:value="updateAllowedTags" />
 							<NcCheckboxRadioSwitch
 								:disabled="loading"
 								:checked.sync="schemaItem.hardValidation">
@@ -459,9 +584,132 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 						</div>
 					</BTab>
 					<BTab title="Security">
-						<NcNoteCard type="info">
-							<p>Security options for schemas are not yet implemented.</p>
-						</NcNoteCard>
+						<div class="security-section">
+							<NcNoteCard type="info">
+								<p><strong>Role-Based Access Control (RBAC)</strong></p>
+								<p>Configure which Nextcloud user groups can perform CRUD operations on objects of this schema.</p>
+								<ul>
+									<li>If no groups are specified for an operation, all users can perform it</li>
+									<li>The 'admin' group always has full access (cannot be changed)</li>
+									<li>The object owner always has full access</li>
+									<li>'public' represents unauthenticated access</li>
+								</ul>
+							</NcNoteCard>
+
+							<div v-if="loadingGroups" class="loading-groups">
+								<NcLoadingIcon :size="20" />
+								<span>Loading user groups...</span>
+							</div>
+
+							<div v-else class="rbac-table-container">
+								<h3>Group Permissions</h3>
+								<table class="rbac-table">
+									<thead>
+										<tr>
+											<th>Group</th>
+											<th>Create</th>
+											<th>Read</th>
+											<th>Update</th>
+											<th>Delete</th>
+										</tr>
+									</thead>
+									<tbody>
+										<!-- Public group at top -->
+										<tr class="public-row">
+											<td class="group-name">
+												<span class="group-badge public">public</span>
+												<small>Unauthenticated users</small>
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="hasGroupPermission('public', 'create')"
+													@update:checked="updateGroupPermission('public', 'create', $event)" />
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="hasGroupPermission('public', 'read')"
+													@update:checked="updateGroupPermission('public', 'read', $event)" />
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="hasGroupPermission('public', 'update')"
+													@update:checked="updateGroupPermission('public', 'update', $event)" />
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="hasGroupPermission('public', 'delete')"
+													@update:checked="updateGroupPermission('public', 'delete', $event)" />
+											</td>
+										</tr>
+
+										<!-- Regular user groups -->
+										<tr v-for="group in sortedUserGroups" :key="group.id" class="group-row">
+											<td class="group-name">
+												<span class="group-badge">{{ group.displayname || group.id }}</span>
+												<small v-if="group.displayname && group.displayname !== group.id">{{ group.id }}</small>
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="hasGroupPermission(group.id, 'create')"
+													@update:checked="updateGroupPermission(group.id, 'create', $event)" />
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="hasGroupPermission(group.id, 'read')"
+													@update:checked="updateGroupPermission(group.id, 'read', $event)" />
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="hasGroupPermission(group.id, 'update')"
+													@update:checked="updateGroupPermission(group.id, 'update', $event)" />
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="hasGroupPermission(group.id, 'delete')"
+													@update:checked="updateGroupPermission(group.id, 'delete', $event)" />
+											</td>
+										</tr>
+
+										<!-- Admin group at bottom (disabled) -->
+										<tr class="admin-row">
+											<td class="group-name">
+												<span class="group-badge admin">admin</span>
+												<small>Always has full access</small>
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="true"
+													:disabled="true" />
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="true"
+													:disabled="true" />
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="true"
+													:disabled="true" />
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="true"
+													:disabled="true" />
+											</td>
+										</tr>
+									</tbody>
+								</table>
+
+								<div class="rbac-summary">
+									<NcNoteCard v-if="!hasAnyPermissions" type="success">
+										<p><strong>Open Access:</strong> No specific permissions set - all users can perform all operations.</p>
+									</NcNoteCard>
+									<NcNoteCard v-else-if="isRestrictiveSchema" type="warning">
+										<p><strong>Restrictive Schema:</strong> Access is limited to specified groups only.</p>
+									</NcNoteCard>
+								</div>
+							</div>
+						</div>
 					</BTab>
 				</BTabs>
 			</div>
@@ -563,6 +811,8 @@ export default {
 			propertyStableIds: {}, // Map property names to stable IDs
 			nextPropertyId: 1, // Counter for generating unique IDs
 			enumInputValue: '', // For entering new enum values
+			allowedTagsInput: '', // For entering allowed tags as comma-separated string
+			availableTags: [], // Available tags from the API
 			schemaItem: {
 				title: '',
 				version: '0.0.0',
@@ -573,7 +823,11 @@ export default {
 				configuration: {
 					objectNameField: '',
 					objectDescriptionField: '',
+					objectImageField: '',
+					allowFiles: false,
+					allowedTags: [],
 				},
+				authorization: {},
 				hardValidation: false,
 				immutable: false,
 				maxDepth: 0,
@@ -583,6 +837,8 @@ export default {
 			loading: false,
 			error: false,
 			closeModalTimeout: null,
+			loadingGroups: false,
+			userGroups: [], // List of Nextcloud user groups
 			typeOptions: [
 				{ label: 'String', value: 'string' },
 				{ label: 'Number', value: 'number' },
@@ -616,6 +872,30 @@ export default {
 					}, {})
 			}
 		},
+		sortedUserGroups() {
+			// Filter out admin and public groups, sort alphabetically
+			return this.userGroups
+				.filter(group => group.id !== 'admin' && group.id !== 'public')
+				.sort((a, b) => {
+					const nameA = a.displayname || a.id
+					const nameB = b.displayname || b.id
+					return nameA.localeCompare(nameB)
+				})
+		},
+		hasAnyPermissions() {
+			const auth = this.schemaItem.authorization || {}
+			return Object.keys(auth).some(action =>
+				Array.isArray(auth[action]) && auth[action].length > 0,
+			)
+		},
+		isRestrictiveSchema() {
+			const auth = this.schemaItem.authorization || {}
+			const actions = ['create', 'read', 'update', 'delete']
+			return actions.some(action =>
+				Array.isArray(auth[action]) && auth[action].length > 0
+					&& !auth[action].includes('public'),
+			)
+		},
 		typeOptionsForSelect() {
 			return [
 				{ id: 'string', label: 'String' },
@@ -647,6 +927,13 @@ export default {
 			return schemaStore.schemaList.map(schema => ({
 				id: `#/components/schemas/${schema.slug || schema.title || schema.id}`,
 				label: schema.title || schema.name || schema.id,
+			}))
+		},
+		availableTagsOptions() {
+			// Return available tags for multiselect
+			return this.availableTags.map(tag => ({
+				id: tag,
+				label: tag,
 			}))
 		},
 	},
@@ -720,8 +1007,25 @@ export default {
 	mounted() {
 		this.initializeSchemaItem()
 		this.loadRegistersAndSchemas()
+		this.loadUserGroups()
+		this.fetchAvailableTags()
 	},
 	methods: {
+		async fetchAvailableTags() {
+			try {
+				const response = await fetch('/index.php/apps/openregister/api/tags')
+				if (response.ok) {
+					const tags = await response.json()
+					this.availableTags = Array.isArray(tags) ? tags : []
+				} else {
+					console.warn('Failed to fetch available tags:', response.statusText)
+					this.availableTags = []
+				}
+			} catch (error) {
+				console.error('Error fetching available tags:', error)
+				this.availableTags = []
+			}
+		},
 		async loadRegistersAndSchemas() {
 			try {
 				// Load registers if not already loaded
@@ -764,15 +1068,35 @@ export default {
 					this.schemaItem.configuration = {
 						objectNameField: '',
 						objectDescriptionField: '',
+						objectImageField: '',
+						allowFiles: false,
+						allowedTags: [],
 					}
 				} else {
-					// Ensure all configuration fields exist
+				// Ensure all configuration fields exist
 					if (!this.schemaItem.configuration.objectNameField) {
 						this.schemaItem.configuration.objectNameField = ''
 					}
 					if (!this.schemaItem.configuration.objectDescriptionField) {
 						this.schemaItem.configuration.objectDescriptionField = ''
 					}
+					if (!this.schemaItem.configuration.objectImageField) {
+						this.schemaItem.configuration.objectImageField = ''
+					}
+					if (this.schemaItem.configuration.allowFiles === undefined) {
+						this.schemaItem.configuration.allowFiles = false
+					}
+					if (!this.schemaItem.configuration.allowedTags) {
+						this.schemaItem.configuration.allowedTags = []
+					}
+				}
+
+				// Initialize allowedTagsInput from existing allowedTags array
+				this.allowedTagsInput = (this.schemaItem.configuration.allowedTags || []).join(', ')
+
+				// Ensure authorization object exists
+				if (!this.schemaItem.authorization) {
+					this.schemaItem.authorization = {}
 				}
 
 				// Ensure existing properties have facetable set to false by default if not specified
@@ -802,6 +1126,15 @@ export default {
 				// Store original properties for comparison AFTER setting defaults
 				this.originalProperties = JSON.parse(JSON.stringify(this.schemaItem.properties || {}))
 			} else {
+				// Initialize configuration for new schemas
+				this.schemaItem.configuration = {
+					objectNameField: '',
+					objectDescriptionField: '',
+					objectImageField: '',
+					allowFiles: false,
+					allowedTags: [],
+				}
+				this.allowedTagsInput = ''
 				this.originalProperties = {}
 			}
 			this.propertiesModified = false
@@ -1001,11 +1334,15 @@ export default {
 							configuration: {
 								objectNameField: '',
 								objectDescriptionField: '',
+								objectImageField: '',
+								allowFiles: false,
+								allowedTags: [],
 							},
 							hardValidation: false,
 							immutable: false,
 							maxDepth: 0,
 						}
+						this.allowedTagsInput = ''
 						this.originalProperties = {}
 						this.propertiesModified = false
 					}, 500)
@@ -1094,6 +1431,71 @@ export default {
 				this.$set(this.schemaItem.properties[key], setting, settingValue)
 				// Enforce $ref is always a string after any update
 				this.ensureRefIsString(this.schemaItem.properties, key)
+				this.checkPropertiesModified()
+			}
+		},
+		updateFileProperty(key, setting, value) {
+			if (this.schemaItem.properties[key]) {
+				// Handle array properties (allowedTypes, allowedTags, autoTags)
+				if (['allowedTypes', 'allowedTags', 'autoTags'].includes(setting)) {
+					const arrayValue = value ? value.split(',').map(item => item.trim()).filter(item => item !== '') : []
+					// Apply to both direct file properties and array[file] properties
+					if (this.schemaItem.properties[key].type === 'file') {
+						this.$set(this.schemaItem.properties[key], setting, arrayValue)
+					} else if (this.schemaItem.properties[key].type === 'array' && this.schemaItem.properties[key].items) {
+						if (!this.schemaItem.properties[key].items) {
+							this.$set(this.schemaItem.properties[key], 'items', {})
+						}
+						this.$set(this.schemaItem.properties[key].items, setting, arrayValue)
+					}
+				} else if (setting === 'maxSize') {
+					// Handle maxSize as number
+					const numValue = value ? Number(value) : undefined
+					if (this.schemaItem.properties[key].type === 'file') {
+						this.$set(this.schemaItem.properties[key], setting, numValue)
+					} else if (this.schemaItem.properties[key].type === 'array' && this.schemaItem.properties[key].items) {
+						if (!this.schemaItem.properties[key].items) {
+							this.$set(this.schemaItem.properties[key], 'items', {})
+						}
+						this.$set(this.schemaItem.properties[key].items, setting, numValue)
+					}
+				}
+				this.checkPropertiesModified()
+			}
+		},
+		getFilePropertyTags(key, setting) {
+			// Get tags for multiselect display
+			const property = this.schemaItem.properties[key]
+			if (!property) return []
+
+			let tags = []
+			if (property.type === 'file') {
+				tags = property[setting] || []
+			} else if (property.type === 'array' && property.items) {
+				tags = property.items[setting] || []
+			}
+
+			// Convert to multiselect format
+			return tags.map(tag => ({
+				id: tag,
+				label: tag,
+			}))
+		},
+		updateFilePropertyTags(key, setting, selectedOptions) {
+			// Handle multiselect tag updates
+			if (this.schemaItem.properties[key]) {
+				// Extract tag names from selected options
+				const tags = selectedOptions ? selectedOptions.map(option => option.id || option) : []
+
+				// Apply to both direct file properties and array[file] properties
+				if (this.schemaItem.properties[key].type === 'file') {
+					this.$set(this.schemaItem.properties[key], setting, tags)
+				} else if (this.schemaItem.properties[key].type === 'array' && this.schemaItem.properties[key].items) {
+					if (!this.schemaItem.properties[key].items) {
+						this.$set(this.schemaItem.properties[key], 'items', {})
+					}
+					this.$set(this.schemaItem.properties[key].items, setting, tags)
+				}
 				this.checkPropertiesModified()
 			}
 		},
@@ -1374,6 +1776,180 @@ export default {
 			const rawRef = typeof property.items.$ref === 'object' ? property.items.$ref.id : property.items.$ref
 			return typeof rawRef === 'number'
 		},
+		/**
+		 * Helper method to convert array default value to comma-separated string for display
+		 *
+		 * @param {Array|null|undefined} defaultValue The array default value to convert
+		 * @return {string} Comma-separated string representation of the array
+		 */
+		getArrayDefaultAsString(defaultValue) {
+			if (!defaultValue || !Array.isArray(defaultValue)) {
+				return ''
+			}
+			return defaultValue.join(', ')
+		},
+
+		/**
+		 * Update array default value from comma-separated string input
+		 *
+		 * @param {string} key The property key to update
+		 * @param {string} value The comma-separated string of values
+		 */
+		updateArrayDefault(key, value) {
+			if (!this.schemaItem.properties[key]) {
+				return
+			}
+
+			if (!value || value.trim() === '') {
+				// Clear the default value if empty
+				this.$set(this.schemaItem.properties[key], 'default', undefined)
+			} else {
+				// Parse comma-separated values and trim whitespace
+				const arrayValues = value.split(',').map(item => item.trim()).filter(item => item !== '')
+				this.$set(this.schemaItem.properties[key], 'default', arrayValues)
+			}
+
+			this.checkPropertiesModified()
+		},
+
+		/**
+		 * Update object default value from JSON string input
+		 *
+		 * @param {string} key The property key to update
+		 * @param {string} value The JSON string representation of the object
+		 */
+		updateObjectDefault(key, value) {
+			if (!this.schemaItem.properties[key]) {
+				return
+			}
+
+			if (!value || value.trim() === '' || value.trim() === '{}') {
+				// Clear the default value if empty or empty object
+				this.$set(this.schemaItem.properties[key], 'default', undefined)
+				this.checkPropertiesModified()
+				return
+			}
+
+			try {
+				// Try to parse as JSON
+				const parsedValue = JSON.parse(value)
+				this.$set(this.schemaItem.properties[key], 'default', parsedValue)
+				this.checkPropertiesModified()
+			} catch (e) {
+				// Invalid JSON - don't update the value
+				console.warn('Invalid JSON for default value:', e.message)
+			}
+		},
+
+		// RBAC Methods
+		async loadUserGroups() {
+			this.loadingGroups = true
+			try {
+				// Use Nextcloud's OCS API to get groups
+				const response = await fetch('/ocs/v1.php/cloud/groups?format=json', {
+					headers: {
+						'OCS-APIRequest': 'true',
+					},
+				})
+
+				if (response.ok) {
+					const data = await response.json()
+
+					if (data.ocs && data.ocs.data && data.ocs.data.groups) {
+						// Transform group list to include display names
+						this.userGroups = data.ocs.data.groups.map(groupId => ({
+							id: groupId,
+							displayname: groupId, // In a real implementation, you might want to fetch display names separately
+						}))
+					} else {
+						console.warn('Invalid API response structure:', data)
+						this.setFallbackGroups()
+					}
+				} else {
+					console.warn('Failed to load user groups:', response.statusText)
+					this.setFallbackGroups()
+				}
+			} catch (error) {
+				console.error('Error loading user groups:', error)
+				this.setFallbackGroups()
+			} finally {
+				this.loadingGroups = false
+			}
+		},
+
+		setFallbackGroups() {
+			// Fallback groups including our test groups
+			this.userGroups = [
+				{ id: 'users', displayname: 'All Users' },
+				{ id: 'editors', displayname: 'Editors' },
+				{ id: 'managers', displayname: 'Managers' },
+				{ id: 'viewers', displayname: 'Viewers' },
+			]
+		},
+
+		hasGroupPermission(groupId, action) {
+			const auth = this.schemaItem.authorization || {}
+			if (!auth[action] || !Array.isArray(auth[action])) {
+				return false
+			}
+			return auth[action].includes(groupId)
+		},
+
+		updateGroupPermission(groupId, action, hasPermission) {
+			// Initialize authorization object if it doesn't exist
+			if (!this.schemaItem.authorization) {
+				this.$set(this.schemaItem, 'authorization', {})
+			}
+
+			// Initialize action array if it doesn't exist
+			if (!this.schemaItem.authorization[action]) {
+				this.$set(this.schemaItem.authorization, action, [])
+			}
+
+			const currentPermissions = this.schemaItem.authorization[action]
+			const groupIndex = currentPermissions.indexOf(groupId)
+
+			if (hasPermission && groupIndex === -1) {
+				// Add permission
+				currentPermissions.push(groupId)
+			} else if (!hasPermission && groupIndex !== -1) {
+				// Remove permission
+				currentPermissions.splice(groupIndex, 1)
+			}
+
+			// Clean up empty arrays to keep the data structure clean
+			if (currentPermissions.length === 0) {
+				this.$delete(this.schemaItem.authorization, action)
+			}
+
+			// If authorization object is empty, remove it entirely
+			if (Object.keys(this.schemaItem.authorization).length === 0) {
+				this.$set(this.schemaItem, 'authorization', {})
+			}
+		},
+
+		initializeAuthorizationIfNeeded() {
+			// Ensure authorization object exists with proper structure
+			if (!this.schemaItem.authorization) {
+				this.$set(this.schemaItem, 'authorization', {})
+			}
+		},
+
+		/**
+		 * Update allowed tags from comma-separated input string
+		 *
+		 * @param {string} value The comma-separated string of tags
+		 */
+		updateAllowedTags(value) {
+			if (!value || value.trim() === '') {
+				// Clear the allowed tags if empty
+				this.$set(this.schemaItem.configuration, 'allowedTags', [])
+			} else {
+				// Parse comma-separated values and trim whitespace
+				const tags = value.split(',').map(tag => tag.trim()).filter(tag => tag !== '')
+				this.$set(this.schemaItem.configuration, 'allowedTags', tags)
+			}
+		},
 	},
 }
 </script>
@@ -1443,5 +2019,118 @@ export default {
 
 .enum-action-chip .action-button__icon {
 	color: var(--color-primary-text) !important;
+}
+
+/* RBAC Security Tab Styling */
+.security-section {
+	padding: 20px 0;
+}
+
+.loading-groups {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 20px;
+	justify-content: center;
+}
+
+.rbac-table-container {
+	margin-top: 20px;
+}
+
+.rbac-table-container h3 {
+	margin-bottom: 15px;
+	color: var(--color-text-dark);
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.rbac-table {
+	width: 100%;
+	border-collapse: collapse;
+	border: 1px solid var(--color-border-dark);
+	border-radius: 8px;
+	overflow: hidden;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.rbac-table th {
+	background: var(--color-background-dark);
+	color: var(--color-text-dark);
+	font-weight: 600;
+	padding: 12px 16px;
+	text-align: left;
+	border-bottom: 2px solid var(--color-border-dark);
+}
+
+.rbac-table th:first-child {
+	width: 40%;
+}
+
+.rbac-table th:not(:first-child) {
+	width: 15%;
+	text-align: center;
+}
+
+.rbac-table td {
+	padding: 12px 16px;
+	border-bottom: 1px solid var(--color-border);
+	vertical-align: middle;
+}
+
+.rbac-table td:not(.group-name) {
+	text-align: center;
+}
+
+.rbac-table tr:hover {
+	background: var(--color-background-hover);
+}
+
+.public-row {
+	background: var(--color-primary-light) !important;
+}
+
+.admin-row {
+	background: var(--color-success-light) !important;
+}
+
+.admin-row:hover {
+	background: var(--color-success-light) !important;
+}
+
+.group-name {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.group-badge {
+	display: inline-block;
+	padding: 4px 8px;
+	border-radius: 12px;
+	font-size: 12px;
+	font-weight: 600;
+	background: var(--color-primary-element-light);
+	color: var(--color-primary-text);
+}
+
+.group-badge.public {
+	background: var(--color-info);
+	color: white;
+}
+
+.group-badge.admin {
+	background: var(--color-success);
+	color: white;
+}
+
+.group-name small {
+	color: var(--color-text-lighter);
+	font-size: 11px;
+	font-style: italic;
+}
+
+.rbac-summary {
+	margin-top: 20px;
 }
 </style>

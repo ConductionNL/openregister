@@ -88,9 +88,9 @@ class SchemaMapper extends QBMapper
             ->from('openregister_schemas')
             ->where(
                 $qb->expr()->orX(
-                    $qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)),
-                    $qb->expr()->eq('uuid', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR)),
-                    $qb->expr()->eq('slug', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR))
+                    $qb->expr()->eq('id', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_INT)),
+                    $qb->expr()->eq('uuid', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR)),
+                    $qb->expr()->eq('slug', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR))
                 )
             );
         // Just return the entity; do not attach stats here
@@ -266,8 +266,8 @@ class SchemaMapper extends QBMapper
             // Check if the property has a 'required' field set to true or the string 'true'
             if (isset($property['required']) === true) {
                 $requiredValue = $property['required'];
-                if ($requiredValue === true || 
-                    $requiredValue === 'true' || 
+                if ($requiredValue === true ||
+                    $requiredValue === 'true' ||
                     (is_string($requiredValue) === true && strtolower(trim($requiredValue)) === 'true')) {
                     $requiredFields[] = $propertyKey;
                 }
@@ -334,8 +334,11 @@ class SchemaMapper extends QBMapper
                     $property['$ref'] = $property['$ref']['id'];
                 } elseif (is_object($property['$ref']) && isset($property['$ref']->id)) {
                     $property['$ref'] = $property['$ref']->id;
-                } elseif (!is_string($property['$ref']) && $property['$ref'] !== '') {
-                    throw new \Exception("Schema property '$key' has a $ref that is not a string or empty: " . print_r($property['$ref'], true));
+                } elseif (is_int($property['$ref'])) {
+
+                }
+                elseif (!is_string($property['$ref']) && $property['$ref'] !== '') {
+                    throw new \Exception("Schema property '$key' has a \$ref that is not a string or empty: " . print_r($property['$ref'], true));
                 }
             }
             // Check array items recursively
@@ -417,7 +420,7 @@ class SchemaMapper extends QBMapper
      */
     public function updateFromArray(int $id, array $object): Schema
     {
-        $schema = $this->find($id);        
+        $schema = $this->find($id);
 
         // Set or update the version.
         if (isset($object['version']) === false) {
@@ -439,7 +442,7 @@ class SchemaMapper extends QBMapper
 
 
     /**
-     * Delete a schema only if no objects are attached
+     * Delete a schema
      *
      * @param Entity $schema The schema to delete
      *
@@ -449,14 +452,7 @@ class SchemaMapper extends QBMapper
      */
     public function delete(Entity $schema): Schema
     {
-        // Check for attached objects before deleting
-        $schemaId = method_exists($schema, 'getId') ? $schema->getId() : $schema->id;
-        $stats    = $this->objectEntityMapper->getStatistics(null, $schemaId);
-        if (($stats['total'] ?? 0) > 0) {
-            throw new \Exception('Cannot delete schema: objects are still attached.');
-        }
-
-        // Proceed with deletion if no objects are attached
+        // Proceed with deletion directly - no need to check stats on deletion
         $result = parent::delete($schema);
 
         // Dispatch deletion event.

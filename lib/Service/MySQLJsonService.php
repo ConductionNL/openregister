@@ -164,6 +164,9 @@ class MySQLJsonService implements IDatabaseJsonService
                     $builder->andWhere("json_unquote(json_extract(object, :path$filter)) < (:value{$filter}before)");
                     break;
                 default:
+                    if(is_array($value) === false) {
+                        $value = explode(',', $value);
+                    }
                     // Add IN clause for array of values.
                     $builder->createNamedParameter(
                         value: $value,
@@ -271,6 +274,14 @@ class MySQLJsonService implements IDatabaseJsonService
                 placeHolder: ":path$filter"
             );
 
+            if ($value === 'IS NULL') {
+                $builder->andWhere("json_unquote(json_extract(object, :path$filter)) = 'null' OR json_unquote(json_extract(object, :path$filter)) IS NULL");
+                continue;
+            } else if ($value == 'IS NOT NULL') {
+                $builder->andWhere("json_unquote(json_extract(object, :path$filter)) != 'null' AND json_unquote(json_extract(object, :path$filter)) IS NOT NULL");
+                continue;
+            }
+
             if (is_array($value) === true && array_is_list($value) === false) {
                 // Handle complex filters (after/before).
                 $builder = $this->jsonFilterArray(builder: $builder, filter: $filter, values: $value);
@@ -326,16 +337,16 @@ class MySQLJsonService implements IDatabaseJsonService
         if ($filter === '@self.deleted') {
             // Handle @self.deleted filter (check if object is deleted or not)
             if ($value === 'IS NOT NULL') {
-                $builder->andWhere($builder->expr()->isNotNull('deleted'));
+                $builder->andWhere($builder->expr()->isNotNull('o.deleted'));
             } else if ($value === 'IS NULL') {
-                $builder->andWhere($builder->expr()->isNull('deleted'));
+                $builder->andWhere($builder->expr()->isNull('o.deleted'));
             }
             return $builder;
         }
 
         // Handle specific deleted properties like @self.deleted.deletedBy
         $deletedProperty = str_replace('@self.deleted.', '', $filter);
-        
+
         // Create parameter name for this specific deleted filter
         $paramName = str_replace('@self.deleted.', 'deleted_', $filter);
         $paramName = str_replace('.', '_', $paramName);
@@ -345,7 +356,7 @@ class MySQLJsonService implements IDatabaseJsonService
             $builder->andWhere(
                 $builder->expr()->isNotNull(
                     $builder->createFunction(
-                        "JSON_UNQUOTE(JSON_EXTRACT(deleted, '$.$deletedProperty'))"
+                        "JSON_UNQUOTE(JSON_EXTRACT(o.deleted, '$.$deletedProperty'))"
                     )
                 )
             );
@@ -354,7 +365,7 @@ class MySQLJsonService implements IDatabaseJsonService
             $builder->andWhere(
                 $builder->expr()->isNull(
                     $builder->createFunction(
-                        "JSON_UNQUOTE(JSON_EXTRACT(deleted, '$.$deletedProperty'))"
+                        "JSON_UNQUOTE(JSON_EXTRACT(o.deleted, '$.$deletedProperty'))"
                     )
                 )
             );
@@ -369,27 +380,27 @@ class MySQLJsonService implements IDatabaseJsonService
                         type: IQueryBuilder::PARAM_STR,
                         placeHolder: ":$opParamName"
                     );
-                    
+
                     switch ($op) {
                         case 'after':
                         case 'gte':
                         case '>=':
-                            $builder->andWhere("JSON_UNQUOTE(JSON_EXTRACT(deleted, '$.$deletedProperty')) >= :$opParamName");
+                            $builder->andWhere("JSON_UNQUOTE(JSON_EXTRACT(o.deleted, '$.$deletedProperty')) >= :$opParamName");
                             break;
                         case 'before':
                         case 'lte':
                         case '<=':
-                            $builder->andWhere("JSON_UNQUOTE(JSON_EXTRACT(deleted, '$.$deletedProperty')) <= :$opParamName");
+                            $builder->andWhere("JSON_UNQUOTE(JSON_EXTRACT(o.deleted, '$.$deletedProperty')) <= :$opParamName");
                             break;
                         case 'strictly_after':
                         case 'gt':
                         case '>':
-                            $builder->andWhere("JSON_UNQUOTE(JSON_EXTRACT(deleted, '$.$deletedProperty')) > :$opParamName");
+                            $builder->andWhere("JSON_UNQUOTE(JSON_EXTRACT(o.deleted, '$.$deletedProperty')) > :$opParamName");
                             break;
                         case 'strictly_before':
                         case 'lt':
                         case '<':
-                            $builder->andWhere("JSON_UNQUOTE(JSON_EXTRACT(deleted, '$.$deletedProperty')) < :$opParamName");
+                            $builder->andWhere("JSON_UNQUOTE(JSON_EXTRACT(o.deleted, '$.$deletedProperty')) < :$opParamName");
                             break;
                     }
                 }
@@ -400,7 +411,7 @@ class MySQLJsonService implements IDatabaseJsonService
                     type: IQueryBuilder::PARAM_STR_ARRAY,
                     placeHolder: ":$paramName"
                 );
-                $builder->andWhere("JSON_UNQUOTE(JSON_EXTRACT(deleted, '$.$deletedProperty')) IN (:$paramName)");
+                $builder->andWhere("JSON_UNQUOTE(JSON_EXTRACT(o.deleted, '$.$deletedProperty')) IN (:$paramName)");
             }
         } else {
             // Handle simple equality filter for deleted properties
@@ -408,7 +419,7 @@ class MySQLJsonService implements IDatabaseJsonService
                 value: $value,
                 placeHolder: ":$paramName"
             );
-            $builder->andWhere("JSON_UNQUOTE(JSON_EXTRACT(deleted, '$.$deletedProperty')) = :$paramName");
+            $builder->andWhere("JSON_UNQUOTE(JSON_EXTRACT(o.deleted, '$.$deletedProperty')) = :$paramName");
         }
 
         return $builder;
