@@ -214,6 +214,190 @@ Before diving into schema examples, let's understand the key components of a pro
 
 Properties can also have nested objects and arrays with their own validation rules, allowing for complex data structures while maintaining strict validation. See the [Nesting schema's](#nesting-schemas) section below for more details.
 
+### File Properties
+
+File properties allow you to attach files directly to specific object properties with validation and automatic processing. File properties support both single files and arrays of files.
+
+#### Basic File Property
+
+```json
+{
+  'properties': {
+    'avatar': {
+      'type': 'file',
+      'description': 'User profile picture',
+      'allowedTypes': ['image/jpeg', 'image/png', 'image/gif'],
+      'maxSize': 2097152,
+      'autoTags': ['profile-image', 'auto-uploaded']
+    }
+  }
+}
+```
+
+#### Array of Files Property
+
+```json
+{
+  'properties': {
+    'attachments': {
+      'type': 'array',
+      'description': 'Document attachments',
+      'items': {
+        'type': 'file',
+        'allowedTypes': ['application/pdf', 'image/jpeg', 'image/png'],
+        'maxSize': 10485760,
+        'allowedTags': ['document', 'attachment'],
+        'autoTags': ['auto-uploaded', 'property-attachments']
+      }
+    }
+  }
+}
+```
+
+#### File Property Configuration
+
+| Property | Type | Description | Example |
+|----------|------|-------------|---------|
+| 'allowedTypes' | array | Array of allowed MIME types | '['image/jpeg', 'image/png']' |
+| 'maxSize' | integer | Maximum file size in bytes | '5242880' (5MB) |
+| 'allowedTags' | array | Tags that are allowed on files | '['document', 'public']' |
+| 'autoTags' | array | Tags automatically applied to uploaded files | '['auto-uploaded', 'property-{propertyName}']' |
+
+#### File Input Types
+
+File properties support three types of input:
+
+1. **Base64 Data URIs**: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAAA...'
+2. **URLs**: 'https://example.com/image.jpg' (system fetches the file)
+3. **File Objects**: '{id: '12345', title: 'image.jpg', downloadUrl: '...'}'
+
+#### File Property Processing
+
+When objects are saved:
+
+1. **File Detection**: System detects file data (base64, URLs, or file objects) in file properties
+2. **File Processing**: 
+   - Base64: Decoded and validated
+   - URLs: Fetched from remote source
+   - File Objects: Validated against existing files
+3. **Validation**: Files are validated against 'allowedTypes' and 'maxSize' constraints
+4. **File Creation**: Files are created and stored in the object's folder
+5. **Auto Tagging**: 'autoTags' are automatically applied to files
+6. **ID Storage**: File IDs replace file content in the object data
+
+When objects are rendered:
+
+1. **ID Detection**: System detects file IDs in file properties
+2. **File Hydration**: File IDs are replaced with complete file objects
+3. **Metadata**: File objects include path, size, type, tags, and access URLs
+
+#### Auto Tag Placeholders
+
+Auto tags support placeholder replacement:
+
+| Placeholder | Replacement | Example |
+|-------------|-------------|---------|
+| '{property}' or '{propertyName}' | Property name | 'property-avatar' |
+| '{index}' | Array index (for array properties) | 'file-0', 'file-1' |
+
+#### File Upload Examples
+
+**Base64 Input:**
+```json
+// Input object with base64 file data
+{
+  'name': 'John Doe',
+  'avatar': 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAAA...',
+  'documents': [
+    'data:application/pdf;base64,JVBERi0xLjQKJcOkw6k...',
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...'
+  ]
+}
+```
+
+**URL Input:**
+```json
+// Input object with URLs (system fetches files)
+{
+  'name': 'Jane Smith',
+  'avatar': 'https://example.com/avatars/jane.jpg',
+  'documents': [
+    'https://example.com/docs/resume.pdf',
+    'https://example.com/certificates/cert.png'
+  ]
+}
+```
+
+**File Object Input:**
+```json
+// Input object with existing file objects
+{
+  'name': 'Bob Wilson',
+  'avatar': {
+    'id': '12345',
+    'title': 'profile.jpg',
+    'downloadUrl': 'https://example.com/s/AbCdEfGh/download'
+  },
+  'documents': [
+    {
+      'id': '12346',
+      'title': 'document1.pdf',
+      'downloadUrl': 'https://example.com/s/XyZwVuTs/download'
+    }
+  ]
+}
+```
+
+**All Input Types - Final Storage:**
+
+// Stored object with file IDs
+{
+  'name': 'John Doe',
+  'avatar': 12345,
+  'documents': [12346, 12347]
+}
+
+// Rendered object with file objects
+{
+  'name': 'John Doe',
+  'avatar': {
+    'id': '12345',
+    'title': 'avatar_1640995200.jpg',
+    'type': 'image/jpeg',
+    'size': 15420,
+    'accessUrl': 'https://example.com/s/AbCdEfGh',
+    'downloadUrl': 'https://example.com/s/AbCdEfGh/download',
+    'labels': ['profile-image', 'auto-uploaded']
+  },
+  'documents': [
+    {
+      'id': '12346',
+      'title': 'documents_0_1640995200.pdf',
+      'type': 'application/pdf',
+      'size': 245760,
+      'accessUrl': 'https://example.com/s/XyZwVuTs',
+      'labels': ['auto-uploaded', 'property-documents']
+    },
+    {
+      'id': '12347',
+      'title': 'documents_1_1640995200.png',
+      'type': 'image/png',
+      'size': 89123,
+      'accessUrl': 'https://example.com/s/MnOpQrSt',
+      'labels': ['auto-uploaded', 'property-documents']
+    }
+  ]
+}
+```
+
+#### Best Practices
+
+1. **MIME Type Validation**: Always specify 'allowedTypes' to prevent unwanted file uploads
+2. **Size Limits**: Set appropriate 'maxSize' limits to prevent storage abuse
+3. **Auto Tags**: Use descriptive auto tags for better file organization
+4. **Property Names**: Use clear property names that indicate file purpose
+5. **Array Usage**: Use array properties for multiple files of the same type
+
 ## Example Schema
 
 ```json
@@ -1000,6 +1184,217 @@ Use two-way relationships when:
 - Consider the impact on bulk operations
 - Monitor database performance with large relationship sets
 - Use `removeAfterWriteBack` to reduce storage overhead
+
+## Default Values Configuration
+
+Open Register provides enhanced default value functionality that allows you to configure how and when default values are applied to object properties.
+
+### Basic Default Values
+
+Default values can be set for any property type to provide fallback values when data is not provided:
+
+```json
+{
+  'properties': {
+    'status': {
+      'type': 'string',
+      'default': 'pending',
+      'description': 'Object status'
+    },
+    'priority': {
+      'type': 'integer',
+      'default': 1,
+      'description': 'Priority level'
+    },
+    'active': {
+      'type': 'boolean',
+      'default': true,
+      'description': 'Whether object is active'
+    }
+  }
+}
+```
+
+### Array Default Values
+
+For array properties with string items, you can set default values that will be applied as arrays:
+
+```json
+{
+  'properties': {
+    'tags': {
+      'type': 'array',
+      'items': {
+        'type': 'string'
+      },
+      'default': ['general', 'untagged'],
+      'description': 'Default tags applied to objects'
+    },
+    'categories': {
+      'type': 'array',
+      'items': {
+        'type': 'string'
+      },
+      'default': ['uncategorized'],
+      'description': 'Object categories'
+    }
+  }
+}
+```
+
+### Object Default Values
+
+Object properties can have default JSON values:
+
+```json
+{
+  'properties': {
+    'metadata': {
+      'type': 'object',
+      'default': {
+        'version': '1.0',
+        'author': 'system',
+        'created': true
+      },
+      'description': 'Default metadata object'
+    }
+  }
+}
+```
+
+### Default Behavior Configuration
+
+Open Register supports two modes for applying default values via the `defaultBehavior` property:
+
+#### Mode 1: 'false' (Default Behavior)
+
+Default values are only applied when the property is **missing** or **null**:
+
+```json
+{
+  'properties': {
+    'status': {
+      'type': 'string',
+      'default': 'pending',
+      'defaultBehavior': 'false'
+    }
+  }
+}
+```
+
+**Application Logic:**
+- Property not provided → Apply default
+- Property is `null` → Apply default  
+- Property is empty string `''` → Keep empty string
+- Property has value → Keep existing value
+
+#### Mode 2: 'falsy' (Enhanced Behavior)
+
+Default values are applied when the property is **missing**, **null**, **empty string**, or **empty array/object**:
+
+```json
+{
+  'properties': {
+    'description': {
+      'type': 'string',
+      'default': 'No description provided',
+      'defaultBehavior': 'falsy'
+    },
+    'tags': {
+      'type': 'array',
+      'items': { 'type': 'string' },
+      'default': ['untagged'],
+      'defaultBehavior': 'falsy'
+    }
+  }
+}
+```
+
+**Application Logic:**
+- Property not provided → Apply default
+- Property is `null` → Apply default
+- Property is empty string `''` → Apply default
+- Property is empty array `[]` → Apply default
+- Property is empty object `{}` → Apply default
+- Property has meaningful value → Keep existing value
+
+### Practical Use Cases
+
+#### Preventing Empty Values
+
+Use `defaultBehavior: 'falsy'` when you want to ensure properties always have meaningful values:
+
+```json
+{
+  'properties': {
+    'title': {
+      'type': 'string',
+      'default': 'Untitled',
+      'defaultBehavior': 'falsy',
+      'description': 'Ensures every object has a title'
+    }
+  }
+}
+```
+
+#### Optional Fields with Fallbacks
+
+Use `defaultBehavior: 'false'` when empty values should be preserved but missing values need defaults:
+
+```json
+{
+  'properties': {
+    'notes': {
+      'type': 'string',
+      'default': 'No notes',
+      'defaultBehavior': 'false',
+      'description': 'User can intentionally leave empty'
+    }
+  }
+}
+```
+
+### Template Support
+
+Default values support Twig templating for dynamic defaults:
+
+```json
+{
+  'properties': {
+    'created_by': {
+      'type': 'string',
+      'default': '{{ user.name }}',
+      'description': 'Auto-filled with current user'
+    },
+    'reference': {
+      'type': 'string', 
+      'default': 'REF-{{ uuid }}',
+      'description': 'Generated reference number'
+    }
+  }
+}
+```
+
+### Processing Order
+
+Default values are applied during object saving in this order:
+
+1. **Sanitization**: Clean empty values based on schema
+2. **Write-Back**: Process inverse relationships  
+3. **Cascading**: Handle object cascading
+4. **Default Values**: Apply defaults based on behavior configuration
+5. **Constants**: Apply constant values (always override)
+
+### Frontend Configuration
+
+In the OpenRegister frontend, default values can be configured through the schema editor:
+
+1. **Basic Defaults**: Set default values for string, number, boolean properties
+2. **Array Defaults**: Comma-separated values for string arrays  
+3. **Object Defaults**: JSON object notation for object properties
+4. **Behavior Toggle**: Choose between 'false' and 'falsy' behavior modes
+
+The behavior toggle appears when a default value is set and shows helpful hints about when defaults will be applied.
 
 ## Troubleshooting
 

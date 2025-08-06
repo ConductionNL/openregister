@@ -100,28 +100,28 @@ class ConfigurationMapper extends QBMapper
 
 
     /**
-     * Find configurations by owner
+     * Find configurations by app
      *
-     * @param string $owner  Owner identifier
+     * @param string $app    App identifier
      * @param int    $limit  Maximum number of results
      * @param int    $offset Offset for pagination
      *
      * @return Configuration[] Array of configuration entities
      */
-    public function findByOwner(string $owner, int $limit=50, int $offset=0): array
+    public function findByApp(string $app, int $limit=50, int $offset=0): array
     {
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
             ->from($this->tableName)
-            ->where($qb->expr()->eq('owner', $qb->createNamedParameter($owner, IQueryBuilder::PARAM_STR)))
+            ->where($qb->expr()->eq('app', $qb->createNamedParameter($app, IQueryBuilder::PARAM_STR)))
             ->setMaxResults($limit)
             ->setFirstResult($offset)
             ->orderBy('created', 'DESC');
 
         return $this->findEntities($qb);
 
-    }//end findByOwner()
+    }//end findByApp()
 
 
     /**
@@ -208,15 +208,15 @@ class ConfigurationMapper extends QBMapper
         $object = $this->find($id);        
 
         // Set or update the version.
-        if (isset($object['version']) === false) {
-            $version    = explode('.', $obj->getVersion());
+        if (isset($data['version']) === false) {
+            $version    = explode('.', $object->getVersion());
             $version[2] = ((int) $version[2] + 1);
-            $obj->setVersion(implode('.', $version));
+            $object->setVersion(implode('.', $version));
         }
 
         $object->hydrate(object: $data);
 
-        return $this->update($config);
+        return $this->update($object);
 
     }//end updateFromArray()
 
@@ -246,19 +246,19 @@ class ConfigurationMapper extends QBMapper
 
 
     /**
-     * Count configurations by owner
+     * Count configurations by app
      *
-     * @param string $owner Owner ID
+     * @param string $app App ID
      *
      * @return int Number of configurations
      */
-    public function countByOwner(string $owner): int
+    public function countByApp(string $app): int
     {
         $qb = $this->db->getQueryBuilder();
 
         $qb->select($qb->createFunction('COUNT(*)'))
             ->from($this->tableName)
-            ->where($qb->expr()->eq('owner', $qb->createNamedParameter($owner, IQueryBuilder::PARAM_STR)));
+            ->where($qb->expr()->eq('app', $qb->createNamedParameter($app, IQueryBuilder::PARAM_STR)));
 
         $result = $qb->executeQuery();
         $count  = $result->fetchOne();
@@ -266,7 +266,7 @@ class ConfigurationMapper extends QBMapper
 
         return (int) $count;
 
-    }//end countByOwner()
+    }//end countByApp()
 
 
     /**

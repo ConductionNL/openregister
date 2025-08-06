@@ -36,7 +36,8 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\DataDownloadResponse;
-use OCP\DB\Exception;
+use OCP\DB\Exception as DBException;
+use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCP\IRequest;
 use Symfony\Component\Uid\Uuid;
 
@@ -159,9 +160,9 @@ class RegistersController extends Controller
         SearchService $searchService
     ): JSONResponse {
         // Get request parameters for filtering and searching.
-        $filters = $this->request->getParam('filters', []);
-        $search  = $this->request->getParam('_search', '');
-        $extend  = $this->request->getParam('_extend', []);
+        $filters = $this->request->getParam(key: 'filters', default: []);
+        $search  = $this->request->getParam(key: '_search', default: '');
+        $extend  = $this->request->getParam(key: '_extend', default: []);
         if (is_string($extend)) {
             $extend = [$extend];
         }
@@ -196,7 +197,7 @@ class RegistersController extends Controller
      */
     public function show($id): JSONResponse
     {
-        $extend = $this->request->getParam('_extend', []);
+        $extend = $this->request->getParam(key: '_extend', default: []);
         if (is_string($extend)) {
             $extend = [$extend];
         }
@@ -245,8 +246,17 @@ class RegistersController extends Controller
             unset($data['id']);
         }
 
-        // Create a new register from the data.
-        return new JSONResponse($this->registerService->createFromArray($data));
+        try {
+            // Create a new register from the data.
+            return new JSONResponse($this->registerService->createFromArray($data));
+        } catch (DBException $e) {
+            // Handle database constraint violations with user-friendly messages
+            $constraintException = DatabaseConstraintException::fromDatabaseException($e, 'register');
+            return new JSONResponse(data: ['error' => $constraintException->getMessage()], statusCode: $constraintException->getHttpStatusCode());
+        } catch (DatabaseConstraintException $e) {
+            // Handle our custom database constraint exceptions
+            return new JSONResponse(['error' => $e->getMessage()], $e->getHttpStatusCode());
+        }
 
     }//end create()
 
@@ -281,8 +291,17 @@ class RegistersController extends Controller
             unset($data['id']);
         }
 
-        // Update the register with the provided data.
-        return new JSONResponse($this->registerService->updateFromArray((int) $id, $data));
+        try {
+            // Update the register with the provided data.
+            return new JSONResponse($this->registerService->updateFromArray((int) $id, $data));
+        } catch (DBException $e) {
+            // Handle database constraint violations with user-friendly messages
+            $constraintException = DatabaseConstraintException::fromDatabaseException($e, 'register');
+            return new JSONResponse(['error' => $constraintException->getMessage()], $constraintException->getHttpStatusCode());
+        } catch (DatabaseConstraintException $e) {
+            // Handle our custom database constraint exceptions
+            return new JSONResponse(['error' => $e->getMessage()], $e->getHttpStatusCode());
+        }
 
     }//end update()
 
@@ -355,8 +374,8 @@ class RegistersController extends Controller
     {
         try {
             // Get export format from query parameter
-            $format = $this->request->getParam('format', 'configuration');
-            $includeObjects = filter_var($this->request->getParam('includeObjects', false), FILTER_VALIDATE_BOOLEAN);
+            $format = $this->request->getParam(key: 'format', default: 'configuration');
+            $includeObjects = filter_var($this->request->getParam(key: 'includeObjects', default: false), FILTER_VALIDATE_BOOLEAN);
             $register = $this->registerService->find($id);
 
             switch ($format) {
@@ -374,7 +393,7 @@ class RegistersController extends Controller
                     
                     if (!$schemaId) {
                         // If no schema specified, return error (CSV cannot handle multiple schemas)
-                        return new JSONResponse(['error' => 'CSV export requires a specific schema to be selected'], 400);
+                        return new JSONResponse(data: ['error' => 'CSV export requires a specific schema to be selected'], statusCode: 400);
                     }
                     
                     $schema = $this->schemaMapper->find($schemaId);
@@ -401,7 +420,8 @@ class RegistersController extends Controller
      *
      * This method imports data into a register in the specified format and returns a detailed summary.
      *
-     * @param int $id The ID of the register to import into
+     * @param int  $id    The ID of the register to import into
+     * @param bool $force Force import even if the same or newer version already exists
      *
      * @return JSONResponse The result of the import operation with summary
      * @phpstan-return JSONResponse
@@ -410,7 +430,7 @@ class RegistersController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function import(int $id): JSONResponse
+    public function import(int $id, bool $force=false): JSONResponse
     {
         try {
             // Get the uploaded file
@@ -481,7 +501,10 @@ class RegistersController extends Controller
                     // Import the data and get the result
                     $result = $this->configurationService->importFromJson(
                         $jsonData,
-                        $this->request->getParam('owner')
+                        $this->request->getParam('owner'),
+                        $this->request->getParam('appId'),
+                        $this->request->getParam('version'),
+                        $force
                     );
                     // Build a summary for objects if present in sheet-based format
                     $summary = [

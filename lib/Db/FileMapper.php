@@ -280,8 +280,13 @@ class FileMapper extends QBMapper
             $nodeId = (int) $rows[0]['fileid'];
             return $this->getFiles($nodeId);
         } elseif ($count > 1) {
-            // More than one result found, throw an error
-            throw new \RuntimeException('Multiple nodes found in oc_filecache with name equal to object uuid: ' . $uuid);
+            // Multiple folders found with same UUID - pick the oldest one (lowest fileid)
+            // TODO: Add nightly cron job to cleanup orphaned folders and logs
+            usort($rows, function($a, $b) {
+                return (int) $a['fileid'] - (int) $b['fileid'];
+            });
+            $oldestNodeId = (int) $rows[0]['fileid'];
+            return $this->getFiles($oldestNodeId);
         } else {
             // No results found, return empty array
             return [];

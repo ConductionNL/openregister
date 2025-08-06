@@ -12,6 +12,145 @@ You are a senior programmer at an innovation-oriented development company. You a
 - Layout should follow https://docs.nextcloud.com/server/latest/developer_manual/design/layoutcomponents.html 
 - Components can be used from https://nextcloud-vue-components.netlify.app/
 
+## Testing 
+We are developing a nextcloud application that has a back and frontend, all our bussen logic should therfore be accible trough api. All backend busnes logic that you write should be tested by mkaing api calls.  
+
+#### Common Mistakes to Avoid
+
+1. **❌ DO NOT** make API calls from the host machine to `http://localhost` or `http://nextcloud.local`
+   - These will result in 401 Unauthorized errors
+   - Authentication cookies and sessions don't work properly from external calls
+
+2. **❌ DO NOT** use standalone PHP server for API testing
+   - `php -S localhost:8000` lacks the Nextcloud framework and routing system
+   - API routes will return 404 errors
+   - Dependency injection and service container won't work
+
+3. **❌ DO NOT** forget authentication headers
+   - Always include `-u 'admin:admin'` for basic auth
+   - Always include `-H 'OCS-APIREQUEST: true'` header
+
+#### 1. REQUIRED: Test from within the Docker Container
+Execute curl commands from inside the Nextcloud Docker container:
+
+**Step 1: Find your Nextcloud container name**
+```bash
+# List running containers to find Nextcloud container
+docker ps | grep nextcloud
+```
+
+**Step 2: Test API from within container (REQUIRED for local development)**
+```bash
+# Execute curl command in the container (replace 'master-nextcloud-1' with your container name)
+docker exec -it -u 33 master-nextcloud-1 bash -c "curl -u 'admin:admin' -H 'http://localhost/index.php/apps/openregister/api/objects/6/35?extend=deelnemers'"
+
+# For statistics endpoint specifically
+docker exec -it -u 33 master-nextcloud-1 bash -c "curl -u 'admin:admin' -H 'http://localhost/index.php/apps/openregister/api/search-trails/statistics'"
+
+# Or get a shell in the container for interactive testing
+docker exec -it -u 33 master-nextcloud-1 /bin/bash
+
+#### 2. External API Testing (Production/Staging Only)
+For external access, use the proper domain:
+
+```bash
+# For external access (production/staging environments only)
+curl -u 'admin:admin' -H  \
+     -H 'Content-Type: application/json' \
+     'http://nextcloud.local/index.php/apps/openregister/api/objects/6/35'
+```
+
+**Note:** External calls require proper DNS resolution and may not work in all local development environments.
+
+#### 3. Required Headers for API Testing
+Always include these headers when testing:
+```bash
+# Test with authentication headers (REQUIRED)
+curl -u 'admin:admin' \
+     -H 'Content-Type: application/json' \
+     'http://localhost/index.php/apps/openregister/api/search-trails/statistics'
+```
+
+We alwasy test first form the command line, but when the test is completed we should create a newman test in order to protect the functionality against feuture changes. 
+
+### Debugging API Endpoint Issues
+
+#### 1. Check App Status
+Ensure the app is enabled in Nextcloud:
+```bash
+# Check if app is enabled (replace 'master-nextcloud-1' with your container name)
+docker exec -u 33 master-nextcloud-1 php /var/www/html/occ app:list | grep openregister
+
+# Enable the app if needed
+docker exec -u 33 master-nextcloud-1 php /var/www/html/occ app:enable openregister
+
+# Verify app is enabled (should show 'openregister already enabled')
+docker exec -u 33 master-nextcloud-1 php /var/www/html/occ app:enable openregister
+```
+
+#### 2. View Debug Logs (CORRECT METHOD)
+For local development, debug logs appear in the Docker container's stdout, not in the Nextcloud log file:
+
+```bash
+# View real-time debug logs from Docker stdout
+docker logs -f master-nextcloud-1
+
+# Or view recent logs
+docker logs master-nextcloud-1 | tail -n 100
+
+# Filter for specific debug messages
+docker logs master-nextcloud-1 | grep -E '\[SaveObject\]|\[ObjectService\]|\[ObjectsController\]'
+
+# View logs for specific time period
+docker logs master-nextcloud-1 --since 10m | grep '\[SaveObject\]'
+```
+
+**Important**: Debug logs with `error_log()` calls appear in Docker stdout, not in `/var/www/html/data/nextcloud.log`. The Nextcloud log file only contains framework-level logs and errors.
+
+#### 2. Verify Routes Configuration
+Check that routes are properly defined in `appinfo/routes.php`:
+```php
+// Ensure routes are properly defined
+['name' => 'controller#method', 'url' => '/api/endpoint', 'verb' => 'GET'],
+```
+
+#### 3. Check Controller Methods
+Verify that controller methods have proper annotations:
+```php
+/**
+ * @NoAdminRequired
+ * @NoCSRFRequired
+ */
+public function statistics(): JSONResponse
+{
+    // Method implementation
+}
+```
+
+#### 4. Monitor Nextcloud Logs
+Check Nextcloud logs for API errors:
+```bash
+# View live logs (replace 'master-nextcloud-1' with your container name)
+docker exec -u 33 master-nextcloud-1 tail -f /var/www/html/data/nextcloud.log
+
+# Check recent errors
+docker exec -u 33 master-nextcloud-1 grep -i error /var/www/html/data/nextcloud.log | tail -10
+```
+
+#### 5. Test Database Connectivity
+Verify database queries work properly:
+```bash
+# Test database connection in container (replace 'master-nextcloud-1' with your container name)
+docker exec -u 33 master-nextcloud-1 php -r "
+\$config = include '/var/www/html/config/config.php';
+\$pdo = new PDO('mysql:host=' . \$config['dbhost'] . ';dbname=' . \$config['dbname'], \$config['dbuser'], \$config['dbpassword']);
+var_dump(\$pdo->query('SELECT COUNT(*) FROM oc_search_trails')->fetchColumn());
+"
+```
+
+### Code qoulity
+
+
 ## App Structure
 ## App Structure
 - Root Directory:
@@ -71,21 +210,6 @@ You are a senior programmer at an innovation-oriented development company. You a
 - Use appropriate file extensions
 - Keep related files together
 - Maintain clear separation of concerns
-
-## Development Workflow
-- Use development, staging, and production environments
-- Implement continuous integration
-- Use automated testing
-- Regular dependency updates
-- Security scanning
-- Performance monitoring
-
-## Accessibility
-- Follow WCAG guidelines
-- Test with screen readers
-- Ensure keyboard navigation
-- Maintain proper contrast ratios
-- Provide alternative text for images
 
 ## Internationalization
 - Use translation files

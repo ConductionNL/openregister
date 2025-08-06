@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IAppConfig;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -100,6 +101,13 @@ class ConfigurationService
     private $container;
 
     /**
+     * App config for storing configuration metadata.
+     *
+     * @var \OCP\IAppConfig The app config instance.
+     */
+    private $appConfig;
+
+    /**
      * Schema property validator instance for validating schema properties.
      *
      * @var SchemaPropertyValidatorService The schema property validator instance.
@@ -153,6 +161,7 @@ class ConfigurationService
      * @param LoggerInterface                   $logger              The logger instance
      * @param \OCP\App\IAppManager              $appManager          The app manager instance
      * @param \Psr\Container\ContainerInterface $container           The container instance
+     * @param \OCP\IAppConfig                   $appConfig           The app config instance
      * @param Client                            $client              The HTTP client instance
      * @param ObjectService                     $objectService       The object service instance
      */
@@ -165,6 +174,7 @@ class ConfigurationService
         LoggerInterface $logger,
         IAppManager $appManager,
         ContainerInterface $container,
+        IAppConfig $appConfig,
         Client $client,
         ObjectService $objectService
     ) {
@@ -176,6 +186,7 @@ class ConfigurationService
         $this->logger        = $logger;
         $this->appManager    = $appManager;
         $this->container     = $container;
+        $this->appConfig     = $appConfig;
         $this->client        = $client;
         $this->objectService = $objectService;
 
@@ -643,9 +654,13 @@ class ConfigurationService
      * - Full configurations with schemas, registers, and objects
      * - Partial configurations with only objects (using existing schemas and registers)
      * - Objects with references to existing schemas and registers
+     * - Version checking to prevent unnecessary imports
      *
-     * @param array       $data  The configuration JSON content
-     * @param string|null $owner The owner of the imported data
+     * @param array       $data    The configuration JSON content
+     * @param string|null $owner   The owner of the imported data
+     * @param string|null $appId   The app ID for version tracking (optional, will be extracted from data if not provided)
+     * @param string|null $version The version for version tracking (optional, will be extracted from data if not provided)
+     * @param bool        $force   Force import even if the same or newer version already exists
      *
      * @throws JsonException If JSON parsing fails
      * @throws Exception     If schema validation fails or format is unsupported
@@ -663,8 +678,45 @@ class ConfigurationService
      *     rules: array
      * }
      */
-    public function importFromJson(array $data, ?string $owner=null): array
+    public function importFromJson(array $data, ?string $owner=null, ?string $appId=null, ?string $version=null, bool $force=false): array
     {
+        // Extract appId and version from data if not provided as parameters
+        if ($appId === null && isset($data['appId']) === true) {
+            $appId = $data['appId'];
+        }
+        
+        if ($version === null && isset($data['version']) === true) {
+            $version = $data['version'];
+        }
+
+        // Perform version check if appId and version are available (unless force is enabled)
+        if ($appId !== null && $version !== null && $force === false) {
+            $storedVersion = $this->appConfig->getValueString('openregister', "imported_config_{$appId}_version", '');
+            
+            // If we have a stored version, compare it with the current version
+            if ($storedVersion !== '' && version_compare($version, $storedVersion, '<=') === true) {
+                $this->logger->info("Skipping import for app {$appId} - current version {$version} is not newer than stored version {$storedVersion}");
+                
+                // Return empty result to indicate no import was performed
+                return [
+                    'registers'        => [],
+                    'schemas'          => [],
+                    'endpoints'        => [],
+                    'sources'          => [],
+                    'mappings'         => [],
+                    'jobs'             => [],
+                    'synchronizations' => [],
+                    'rules'            => [],
+                    'objects'          => [],
+                ];
+            }
+        }
+
+        // Log force import if enabled
+        if ($force === true && $appId !== null && $version !== null) {
+            $this->logger->info("Force import enabled for app {$appId} version {$version} - bypassing version check");
+        }
+
         // Reset the maps for this import.
         $this->registersMap = [];
         $this->schemasMap   = [];
@@ -689,7 +741,7 @@ class ConfigurationService
                     $schemaData['title'] = $key;
                 }
 
-                $schema = $this->importSchema(data: $schemaData, slugsAndIdsMap: $slugsAndIdsMap, owner: $owner);
+                $schema = $this->importSchema(data: $schemaData, slugsAndIdsMap: $slugsAndIdsMap, owner: $owner, appId: $appId, version: $version);
                 if ($schema !== null) {
                     // Store schema in map by slug for reference.
                     $this->schemasMap[$schema->getSlug()] = $schema;
@@ -727,7 +779,7 @@ class ConfigurationService
                     $registerData['schemas'] = $schemaIds;
                 }//end if
 
-                $register = $this->importRegister($registerData, $owner);
+                $register = $this->importRegister(data: $registerData, owner: $owner, appId: $appId, version: $version);
                 if ($register !== null) {
                     // Store register in map by slug for reference.
                     $this->registersMap[$slug] = $register;
@@ -786,7 +838,7 @@ class ConfigurationService
                     continue;
                 }//end if
 
-                $object = $this->importObject($objectData, $owner);
+                $object = $this->importObject(data: $objectData, owner: $owner);
                 if ($object !== null) {
                     $result['objects'][] = $object;
                 }
@@ -800,9 +852,121 @@ class ConfigurationService
             $result = array_replace_recursive($openConnectorResult, $result);
         }
 
+        // Create or update configuration entity to track imported data
+        if ($appId !== null && $version !== null && (count($result['registers']) > 0 || count($result['schemas']) > 0 || count($result['objects']) > 0)) {
+            $this->createOrUpdateConfiguration($data, $appId, $version, $result, $owner);
+        }
+
+        // Store the version information if appId and version are available
+        if ($appId !== null && $version !== null) {
+            $this->appConfig->setValueString('openregister', "imported_config_{$appId}_version", $version);
+            $this->logger->info("Stored version {$version} for app {$appId} after successful import");
+        }
+
         return $result;
 
     }//end importFromJson()
+
+
+    /**
+     * Create or update a configuration entity to track imported data
+     *
+     * This method creates or updates a Configuration entity to track which registers,
+     * schemas, and objects are managed by a specific app configuration.
+     *
+     * @param array       $data    The original import data
+     * @param string      $appId   The application ID
+     * @param string      $version The version of the import
+     * @param array       $result  The import result containing created entities
+     * @param string|null $owner   The owner of the configuration (for backwards compatibility)
+     *
+     * @return Configuration The created or updated configuration
+     *
+     * @throws Exception If configuration creation/update fails
+     */
+    private function createOrUpdateConfiguration(array $data, string $appId, string $version, array $result, ?string $owner = null): Configuration
+    {
+        try {
+            // Try to find existing configuration for this app
+            $existingConfiguration = null;
+            try {
+                $configurations = $this->configurationMapper->findByApp($appId);
+                if (count($configurations) > 0) {
+                    $existingConfiguration = $configurations[0]; // Get the first (most recent) configuration
+                }
+            } catch (\Exception $e) {
+                // No existing configuration found, we'll create a new one
+            }
+
+            // Extract title and description from import data
+            $title = $data['info']['title'] ?? $data['title'] ?? "Configuration for {$appId}";
+            $description = $data['info']['description'] ?? $data['description'] ?? "Imported configuration for application {$appId}";
+            $type = $data['type'] ?? 'imported';
+
+            // Collect IDs of imported entities
+            $registerIds = [];
+            foreach ($result['registers'] as $register) {
+                if ($register instanceof Register) {
+                    $registerIds[] = $register->getId();
+                }
+            }
+
+            $schemaIds = [];
+            foreach ($result['schemas'] as $schema) {
+                if ($schema instanceof Schema) {
+                    $schemaIds[] = $schema->getId();
+                }
+            }
+
+            $objectIds = [];
+            foreach ($result['objects'] as $object) {
+                if ($object instanceof ObjectEntity) {
+                    $objectIds[] = $object->getId();
+                }
+            }
+
+            if ($existingConfiguration !== null) {
+                // Update existing configuration
+                $existingConfiguration->setTitle($title);
+                $existingConfiguration->setDescription($description);
+                $existingConfiguration->setType($type);
+                $existingConfiguration->setVersion($version);
+                
+                // Merge with existing IDs to avoid losing previously imported entities
+                $existingRegisterIds = $existingConfiguration->getRegisters();
+                $existingSchemaIds = $existingConfiguration->getSchemas();
+                $existingObjectIds = $existingConfiguration->getObjects();
+                
+                $existingConfiguration->setRegisters(array_unique(array_merge($existingRegisterIds, $registerIds)));
+                $existingConfiguration->setSchemas(array_unique(array_merge($existingSchemaIds, $schemaIds)));
+                $existingConfiguration->setObjects(array_unique(array_merge($existingObjectIds, $objectIds)));
+
+                $configuration = $this->configurationMapper->update($existingConfiguration);
+                $this->logger->info("Updated existing configuration for app {$appId} with version {$version}");
+            } else {
+                // Create new configuration
+                $configuration = new Configuration();
+                $configuration->setTitle($title);
+                $configuration->setDescription($description);
+                $configuration->setType($type);
+                $configuration->setApp($appId);
+                $configuration->setVersion($version);
+                $configuration->setRegisters($registerIds);
+                $configuration->setSchemas($schemaIds);
+                $configuration->setObjects($objectIds);
+
+                $configuration = $this->configurationMapper->insert($configuration);
+                $this->logger->info("Created new configuration for app {$appId} with version {$version}");
+            }
+
+            return $configuration;
+
+        } catch (\Exception $e) {
+            $this->logger->error("Failed to create or update configuration for app {$appId}: " . $e->getMessage());
+            throw new Exception("Failed to create or update configuration: " . $e->getMessage());
+        }
+
+    }//end createOrUpdateConfiguration()
 
 
     /**
@@ -813,7 +977,7 @@ class ConfigurationService
      *
      * @return Register|null The imported register or null if skipped.
      */
-    private function importRegister(array $data, ?string $owner=null): ?Register
+    private function importRegister(array $data, ?string $owner=null, ?string $appId=null, ?string $version=null): ?Register
     {
         try {
             // Remove id and uuid from the data.
@@ -825,6 +989,9 @@ class ConfigurationService
                 $existingRegister = $this->registerMapper->find(strtolower($data['slug']));
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Register doesn't exist, we'll create a new one.
+            } catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
+                // Multiple registers found with the same identifier
+                $this->handleDuplicateRegisterError($data['slug'], $appId ?? 'unknown', $version ?? 'unknown');
             }
 
             if ($existingRegister !== null) {
@@ -866,10 +1033,12 @@ class ConfigurationService
      * @param array       $data           The schema data.
      * @param array       $slugsAndIdsMap Slugs with their ids.
      * @param string|null $owner          The owner of the schema.
+     * @param string|null $appId          The application ID importing the schema.
+     * @param string|null $version        The version of the import.
      *
      * @return Schema|null The imported schema or null if skipped.
      */
-    private function importSchema(array $data, array $slugsAndIdsMap, ?string $owner = null): ?Schema
+    private function importSchema(array $data, array $slugsAndIdsMap, ?string $owner = null, ?string $appId = null, ?string $version = null): ?Schema
     {
         try {
             // Remove id and uuid from the data.
@@ -932,6 +1101,9 @@ class ConfigurationService
                 $existingSchema = $this->schemaMapper->find(strtolower($data['slug']));
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Schema doesn't exist, we'll create a new one.
+            } catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
+                // Multiple schemas found with the same identifier
+                $this->handleDuplicateSchemaError($data['slug'], $appId ?? 'unknown', $version ?? 'unknown');
             }
 
             if ($existingSchema !== null) {
@@ -970,37 +1142,93 @@ class ConfigurationService
     /**
      * Import an object from configuration data
      *
+     * This method imports objects using a combination of register, schema slug, and object name
+     * to determine uniqueness instead of UUID. It also performs version checking to prevent
+     * downgrading existing objects to older versions.
+     *
      * @param array       $data  The object data.
      * @param string|null $owner The owner of the object.
      *
      * @return ObjectEntity|null The imported object or null if skipped.
+     * @throws Exception If object import fails.
      */
     private function importObject(array $data, ?string $owner=null): ?ObjectEntity
     {
         try {
-            // Determine the UUID or ID to use for finding the existing object.
-            $uuid = $data['uuid'] ?? $data['id'] ?? null;
-
-            // Check if object already exists by UUID or ID.
-            $existingObject = null;
-
-            if ($uuid !== null) {
-                try {
-                    $existingObject = $this->objectEntityMapper->find($uuid);
-                } catch (\Exception $e) {
-                    // Catch all exceptions, object doesn't exist or other error occurred, we'll create a new one.
-                    $this->logger->error('Error finding object: '.$e->getMessage());
-                }
+            // Validate required @self metadata
+            if (!isset($data['@self']['register']) || !isset($data['@self']['schema']) || !isset($data['name'])) {
+                $this->logger->warning('Object data missing required @self metadata (register, schema) or name field');
+                return null;
             }
 
-            // Set the register and schema context for the object service.
-            $this->objectService->setRegister($data['@self']['register']);
-            $this->objectService->setSchema($data['@self']['schema']);
+            $registerId = $data['@self']['register'];
+            $schemaId = $data['@self']['schema'];
+            $objectName = $data['name'];
+            $objectVersion = $data['@self']['version'] ?? $data['version'] ?? '1.0.0';
 
-            // Save the object using the object service.
+            // Find existing objects using register, schema, and name combination for uniqueness
+            $existingObjects = $this->objectEntityMapper->findAll([
+                'filters' => [
+                    'register' => $registerId,
+                    'schema' => $schemaId,
+                    'name' => $objectName
+                ]
+            ]);
+
+            $existingObject = null;
+            if (!empty($existingObjects)) {
+                $existingObject = $existingObjects[0]; // Take the first match
+                $existingObjectData = $existingObject->jsonSerialize();
+                $existingVersion = $existingObjectData['@self']['version'] ?? $existingObjectData['version'] ?? '1.0.0';
+
+                // Compare versions using version_compare for proper semver comparison
+                if (version_compare($objectVersion, $existingVersion, '<=')) {
+                    $this->logger->info(
+                        sprintf(
+                            'Skipping object import as existing version (%s) is newer or equal to import version (%s) for object: %s',
+                            $existingVersion,
+                            $objectVersion,
+                            $objectName
+                        )
+                    );
+                    // Return the existing object without updating
+                    return $existingObject;
+                }
+
+                $this->logger->info(
+                    sprintf(
+                        'Updating existing object "%s" from version %s to %s',
+                        $objectName,
+                        $existingVersion,
+                        $objectVersion
+                    )
+                );
+            } else {
+                $this->logger->info(
+                    sprintf(
+                        'Creating new object "%s" with version %s',
+                        $objectName,
+                        $objectVersion
+                    )
+                );
+            }
+
+            // Set the register and schema context for the object service
+            $this->objectService->setRegister($registerId);
+            $this->objectService->setSchema($schemaId);
+
+            // Ensure version is set in @self metadata
+            if (!isset($data['@self']['version'])) {
+                $data['@self']['version'] = $objectVersion;
+            }
+
+            // Use existing object's UUID if available, otherwise let the service generate a new one
+            $uuid = $existingObject ? $existingObject->getUuid() : ($data['uuid'] ?? $data['id'] ?? null);
+
+            // Save the object using the object service
             $object = $this->objectService->saveObject(
                 object: $data,
-                uuid: $uuid ?? null
+                uuid: $uuid
             );
 
             return $object;
@@ -1057,6 +1285,168 @@ class ConfigurationService
         } catch (Exception $e) {
             $this->logger->error('Failed to import configuration from Open Connector: ' . $e->getMessage());
             throw new Exception('Failed to import configuration from Open Connector: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get the currently configured version for a specific app.
+     *
+     * This method retrieves the stored version information for an app
+     * that was previously imported through the importFromJson method.
+     *
+     * @param string $appId The application ID to get the version for
+     *
+     * @return string|null The stored version string, or null if not found
+     *
+     * @phpstan-return string|null
+     */
+    public function getConfiguredAppVersion(string $appId): ?string
+    {
+        try {
+            $storedVersion = $this->appConfig->getValueString('openregister', "imported_config_{$appId}_version", '');
+            
+            return $storedVersion !== '' ? $storedVersion : null;
+        } catch (\Exception $e) {
+            $this->logger->error("Failed to get configured version for app {$appId}: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Handle duplicate schema error with detailed information.
+     *
+     * This method provides a clear error message when duplicate schemas are found,
+     * including information about which identifier is duplicated and from which app/version.
+     *
+     * @param string $slug    The schema slug that has duplicates
+     * @param string $appId   The application ID that encountered the duplicate
+     * @param string $version The version of the import that encountered the duplicate
+     *
+     * @throws \Exception Always throws an exception with detailed duplicate information
+     */
+    private function handleDuplicateSchemaError(string $slug, string $appId, string $version): void
+    {
+        // Get details about the duplicate schemas
+        $duplicateInfo = $this->getDuplicateSchemaInfo($slug);
+        
+        $errorMessage = sprintf(
+            "Duplicate schema detected during import from app '%s' (version %s). " .
+            "Schema with slug '%s' has multiple entries in the database: %s. " .
+            "Please resolve this by removing duplicate entries or updating the schema slugs to be unique. " .
+            "You can identify duplicates by checking schemas with the same slug, uuid, or id.",
+            $appId,
+            $version,
+            $slug,
+            $duplicateInfo
+        );
+        
+        $this->logger->error($errorMessage);
+        throw new \Exception($errorMessage);
+    }
+
+    /**
+     * Get detailed information about duplicate schemas.
+     *
+     * @param string $slug The schema slug to check for duplicates
+     *
+     * @return string Formatted string with duplicate schema information
+     */
+    private function getDuplicateSchemaInfo(string $slug): string
+    {
+        try {
+            // Try to get all schemas with this slug to provide detailed info
+            $schemas = $this->schemaMapper->findAll();
+            $duplicates = array_filter($schemas, function($schema) use ($slug) {
+                return strtolower($schema->getSlug()) === strtolower($slug);
+            });
+            
+            if (count($duplicates) <= 1) {
+                return "Unable to retrieve detailed duplicate information";
+            }
+            
+            $info = [];
+            foreach ($duplicates as $schema) {
+                $info[] = sprintf(
+                    "ID: %s, UUID: %s, Title: '%s', Created: %s",
+                    $schema->getId(),
+                    $schema->getUuid(),
+                    $schema->getTitle(),
+                    $schema->getCreated() ? $schema->getCreated()->format('Y-m-d H:i:s') : 'unknown'
+                );
+            }
+            
+            return implode('; ', $info);
+        } catch (\Exception $e) {
+            return "Unable to retrieve duplicate information: " . $e->getMessage();
+        }
+    }
+
+    /**
+     * Handle duplicate register error with detailed information.
+     *
+     * This method provides a clear error message when duplicate registers are found,
+     * including information about which identifier is duplicated and from which app/version.
+     *
+     * @param string $slug    The register slug that has duplicates
+     * @param string $appId   The application ID that encountered the duplicate
+     * @param string $version The version of the import that encountered the duplicate
+     *
+     * @throws \Exception Always throws an exception with detailed duplicate information
+     */
+    private function handleDuplicateRegisterError(string $slug, string $appId, string $version): void
+    {
+        // Get details about the duplicate registers
+        $duplicateInfo = $this->getDuplicateRegisterInfo($slug);
+        
+        $errorMessage = sprintf(
+            "Duplicate register detected during import from app '%s' (version %s). " .
+            "Register with slug '%s' has multiple entries in the database: %s. " .
+            "Please resolve this by removing duplicate entries or updating the register slugs to be unique. " .
+            "You can identify duplicates by checking registers with the same slug, uuid, or id.",
+            $appId,
+            $version,
+            $slug,
+            $duplicateInfo
+        );
+        
+        $this->logger->error($errorMessage);
+        throw new \Exception($errorMessage);
+    }
+
+    /**
+     * Get detailed information about duplicate registers.
+     *
+     * @param string $slug The register slug to check for duplicates
+     *
+     * @return string Formatted string with duplicate register information
+     */
+    private function getDuplicateRegisterInfo(string $slug): string
+    {
+        try {
+            // Try to get all registers with this slug to provide detailed info
+            $registers = $this->registerMapper->findAll();
+            $duplicates = array_filter($registers, function($register) use ($slug) {
+                return strtolower($register->getSlug()) === strtolower($slug);
+            });
+            
+            if (count($duplicates) <= 1) {
+                return "Unable to retrieve detailed duplicate information";
+            }
+            
+            $info = [];
+            foreach ($duplicates as $register) {
+                $info[] = sprintf(
+                    "ID: %s, UUID: %s, Title: '%s', Created: %s",
+                    $register->getId(),
+                    $register->getUuid(),
+                    $register->getTitle(),
+                    $register->getCreated() ? $register->getCreated()->format('Y-m-d H:i:s') : 'unknown'
+                );
+            }
+            
+            return implode('; ', $info);
+        } catch (\Exception $e) {
+            return "Unable to retrieve duplicate information: " . $e->getMessage();
         }
     }
 
