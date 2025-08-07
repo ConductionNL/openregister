@@ -2506,13 +2506,14 @@ class ObjectService
 		for ($i = 0; $i < count($objects); $i += $batchSize) {
 			$batch = array_slice($objects, $i, $batchSize);
 			
-			foreach ($batch as $object) {
+			foreach ($batch as $object) {                
+
 				$self = $object['@self'] ?? [];
 				
-				            // Generate UUID if not present
-            if (empty($self['uuid'])) {
-                $self['uuid'] = Uuid::v4()->toRfc4122();
-            }
+				// Generate UUID if not present - check both 'uuid' and 'id' fields
+                if (empty($self['id'])) {
+                    $self['id'] = Uuid::v4()->toRfc4122();
+                }
 
 				// Set owner if not present
 				if (empty($self['owner']) && $currentUserId !== null) {
@@ -2536,7 +2537,9 @@ class ObjectService
 				$object['@self'] = $self;
 				$enrichedObjects[] = $object;
 			}
+
 		}
+
 
 		return $enrichedObjects;
 
@@ -2558,6 +2561,22 @@ class ObjectService
 	 * @phpstan-return array<int, array<string, mixed>>
 	 * @psalm-return array<int, array<string, mixed>>
 	 */
+	/**
+	 * Transform objects from serialized format to database format
+	 *
+	 * This method converts objects from the serialized format (with @self section)
+	 * to the database format where @self data is moved to root level and the
+	 * object data is stored in the 'object' property.
+	 *
+	 * @param array $objects Array of objects in serialized format
+	 *
+	 * @return array Array of objects in database format
+	 *
+	 * @phpstan-param array<int, array<string, mixed>> $objects
+	 * @psalm-param array<int, array<string, mixed>> $objects
+	 * @phpstan-return array<int, array<string, mixed>>
+	 * @psalm-return array<int, array<string, mixed>>
+	 */
 	private function transformObjectsToDatabaseFormat(array $objects): array
 	{
 		$transformedObjects = [];
@@ -2572,9 +2591,12 @@ class ObjectService
 
 			// Create transformed object with @self data at root and object data in 'object' property
 			$transformedObject = array_merge($self, ['object' => $objectData]);
-			
+            $transformedObject['uuid'] = $transformedObject['id'];
+			unset($transformedObject['id']);
+
 			$transformedObjects[] = $transformedObject;
 		}
+
 
 		return $transformedObjects;
 
