@@ -3654,4 +3654,185 @@ class ObjectService
         return $newParameters;
     }
 
+    /**
+     * Perform bulk delete operations on objects by UUID
+     *
+     * This method handles both soft delete and hard delete based on the current state
+     * of the objects. If an object has no deleted value set, it performs a soft delete
+     * by setting the deleted timestamp. If an object already has a deleted value set,
+     * it performs a hard delete by removing the object from the database.
+     *
+     * @param array $uuids Array of object UUIDs to delete
+     * @param bool  $rbac  Whether to apply RBAC filtering
+     * @param bool  $multi Whether to apply multi-organization filtering
+     *
+     * @return array Array of UUIDs of deleted objects
+     *
+     * @phpstan-param array<int, string> $uuids
+     * @psalm-param array<int, string> $uuids
+     * @phpstan-return array<int, string>
+     * @psalm-return array<int, string>
+     */
+    public function deleteObjects(array $uuids = [], bool $rbac = true, bool $multi = true): array
+    {
+        if (empty($uuids)) {
+            return [];
+        }
+
+        // Apply RBAC and multi-organization filtering if enabled
+        if ($rbac || $multi) {
+            $filteredUuids = $this->filterUuidsForPermissions($uuids, $rbac, $multi);
+        } else {
+            $filteredUuids = $uuids;
+        }
+
+        // Use the mapper's bulk delete operation
+        $deletedObjectIds = $this->objectEntityMapper->deleteObjects($filteredUuids);
+
+        return $deletedObjectIds;
+
+    }//end deleteObjects()
+
+
+    /**
+     * Perform bulk publish operations on objects by UUID
+     *
+     * This method sets the published timestamp for the specified objects.
+     * If a datetime is provided, it uses that value; otherwise, it uses the current datetime.
+     * If false is provided, it unsets the published timestamp.
+     *
+     * @param array         $uuids    Array of object UUIDs to publish
+     * @param DateTime|bool $datetime Optional datetime for publishing (false to unset)
+     * @param bool          $rbac     Whether to apply RBAC filtering
+     * @param bool          $multi    Whether to apply multi-organization filtering
+     *
+     * @return array Array of UUIDs of published objects
+     *
+     * @phpstan-param array<int, string> $uuids
+     * @psalm-param array<int, string> $uuids
+     * @phpstan-return array<int, string>
+     * @psalm-return array<int, string>
+     */
+    public function publishObjects(array $uuids = [], \DateTime|bool $datetime = true, bool $rbac = true, bool $multi = true): array
+    {
+        if (empty($uuids)) {
+            return [];
+        }
+
+        // Apply RBAC and multi-organization filtering if enabled
+        if ($rbac || $multi) {
+            $filteredUuids = $this->filterUuidsForPermissions($uuids, $rbac, $multi);
+        } else {
+            $filteredUuids = $uuids;
+        }
+
+        // Use the mapper's bulk publish operation
+        $publishedObjectIds = $this->objectEntityMapper->publishObjects($filteredUuids, $datetime);
+
+        return $publishedObjectIds;
+
+    }//end publishObjects()
+
+
+    /**
+     * Perform bulk depublish operations on objects by UUID
+     *
+     * This method sets the depublished timestamp for the specified objects.
+     * If a datetime is provided, it uses that value; otherwise, it uses the current datetime.
+     * If false is provided, it unsets the depublished timestamp.
+     *
+     * @param array         $uuids    Array of object UUIDs to depublish
+     * @param DateTime|bool $datetime Optional datetime for depublishing (false to unset)
+     * @param bool          $rbac     Whether to apply RBAC filtering
+     * @param bool          $multi    Whether to apply multi-organization filtering
+     *
+     * @return array Array of UUIDs of depublished objects
+     *
+     * @phpstan-param array<int, string> $uuids
+     * @psalm-param array<int, string> $uuids
+     * @phpstan-return array<int, string>
+     * @psalm-return array<int, string>
+     */
+    public function depublishObjects(array $uuids = [], \DateTime|bool $datetime = true, bool $rbac = true, bool $multi = true): array
+    {
+        if (empty($uuids)) {
+            return [];
+        }
+
+        // Apply RBAC and multi-organization filtering if enabled
+        if ($rbac || $multi) {
+            $filteredUuids = $this->filterUuidsForPermissions($uuids, $rbac, $multi);
+        } else {
+            $filteredUuids = $uuids;
+        }
+
+        // Use the mapper's bulk depublish operation
+        $depublishedObjectIds = $this->objectEntityMapper->depublishObjects($filteredUuids, $datetime);
+
+        return $depublishedObjectIds;
+
+    }//end depublishObjects()
+
+
+    /**
+     * Filter UUIDs based on RBAC and multi-organization permissions
+     *
+     * @param array $uuids Array of UUIDs to filter
+     * @param bool  $rbac  Whether to apply RBAC filtering
+     * @param bool  $multi Whether to apply multi-organization filtering
+     *
+     * @return array Filtered array of UUIDs
+     *
+     * @phpstan-param array<int, string> $uuids
+     * @psalm-param array<int, string> $uuids
+     * @phpstan-return array<int, string>
+     * @psalm-return array<int, string>
+     */
+    private function filterUuidsForPermissions(array $uuids, bool $rbac, bool $multi): array
+    {
+        $filteredUuids = [];
+        $currentUser = $this->userSession->getUser();
+        $userId = $currentUser ? $currentUser->getUID() : null;
+        $activeOrganisation = $this->getActiveOrganisationForContext();
+
+        // Get objects for permission checking
+        $objects = $this->objectEntityMapper->findAll(ids: $uuids, includeDeleted: true);
+
+        foreach ($objects as $object) {
+            $objectUuid = $object->getUuid();
+            
+            // Check RBAC permissions if enabled
+            if ($rbac && $userId !== null) {
+                $objectOwner = $object->getOwner();
+                $objectSchema = $object->getSchema();
+                
+                if ($objectSchema !== null) {
+                    try {
+                        $schema = $this->schemaMapper->find($objectSchema);
+                        
+                        if (!$this->hasPermission($schema, 'delete', $userId, $objectOwner, $rbac)) {
+                            continue; // Skip this object - no permission
+                        }
+                    } catch (DoesNotExistException $e) {
+                        continue; // Skip this object - schema not found
+                    }
+                }
+            }
+            
+            // Check multi-organization permissions if enabled
+            if ($multi && $activeOrganisation !== null) {
+                $objectOrganisation = $object->getOrganisation();
+                
+                if ($objectOrganisation !== null && $objectOrganisation !== $activeOrganisation) {
+                    continue; // Skip this object - different organization
+                }
+            }
+            
+            $filteredUuids[] = $objectUuid;
+        }
+
+        return $filteredUuids;
+
+    }//end filterUuidsForPermissions()
+
 }//end class
