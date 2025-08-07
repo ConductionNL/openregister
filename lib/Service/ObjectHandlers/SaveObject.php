@@ -997,6 +997,11 @@ class SaveObject
         // Remove the @self property from the data.
         unset($data['@self']);
         unset($data['id']);
+        
+        // Use @self.id as UUID if no UUID is provided
+        if ($uuid === null && isset($selfData['id'])) {
+            $uuid = $selfData['id'];
+        }
 
         // Debug logging can be added here if needed
 
