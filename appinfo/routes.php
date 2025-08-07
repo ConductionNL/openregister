@@ -41,6 +41,11 @@ return [
         ['name' => 'objects#unlock', 'url' => '/api/objects/{register}/{schema}/{id}/unlock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#publish', 'url' => '/api/objects/{register}/{schema}/{id}/publish', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#depublish', 'url' => '/api/objects/{register}/{schema}/{id}/depublish', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // Bulk Operations
+        ['name' => 'bulk#save', 'url' => '/api/bulk/{register}/{schema}/save', 'verb' => 'POST'],
+        ['name' => 'bulk#delete', 'url' => '/api/bulk/{register}/{schema}/delete', 'verb' => 'POST'],
+        ['name' => 'bulk#publish', 'url' => '/api/bulk/{register}/{schema}/publish', 'verb' => 'POST'],
+        ['name' => 'bulk#depublish', 'url' => '/api/bulk/{register}/{schema}/depublish', 'verb' => 'POST'],
         // Audit Trails
         ['name' => 'auditTrail#objects', 'url' => '/api/objects/{register}/{schema}/{id}/audit-trails', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'auditTrail#index', 'url' => '/api/audit-trails', 'verb' => 'GET'],
