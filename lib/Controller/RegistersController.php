@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Controller;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
 
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RegisterService;
@@ -83,6 +84,13 @@ class RegistersController extends Controller
     private readonly SchemaMapper $schemaMapper;
 
     /**
+     * Register mapper for handling register operations
+     *
+     * @var RegisterMapper
+     */
+    private readonly RegisterMapper $registerMapper;
+
+    /**
      * Constructor for the RegistersController
      *
      * @param string               $appName              The name of the app
@@ -95,6 +103,7 @@ class RegistersController extends Controller
      * @param ExportService        $exportService        The export service
      * @param ImportService        $importService        The import service
      * @param SchemaMapper         $schemaMapper         The schema mapper
+     * @param RegisterMapper       $registerMapper       The register mapper
      *
      * @return void
      */
@@ -108,7 +117,8 @@ class RegistersController extends Controller
         AuditTrailMapper $auditTrailMapper,
         ExportService $exportService,
         ImportService $importService,
-        SchemaMapper $schemaMapper
+        SchemaMapper $schemaMapper,
+        RegisterMapper $registerMapper
     ) {
         parent::__construct($appName, $request);
         $this->configurationService = $configurationService;
@@ -116,6 +126,7 @@ class RegistersController extends Controller
         $this->exportService        = $exportService;
         $this->importService        = $importService;
         $this->schemaMapper         = $schemaMapper;
+        $this->registerMapper       = $registerMapper;
     }//end __construct()
 
 
@@ -331,6 +342,47 @@ class RegistersController extends Controller
         return new JSONResponse([]);
 
     }//end destroy()
+
+
+    /**
+     * Get schemas associated with a register
+     *
+     * This method returns all schemas that are associated with the specified register.
+     *
+     * @param int|string $id The ID, UUID, or slug of the register
+     *
+     * @return JSONResponse A JSON response containing the schemas associated with the register
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired  
+     */
+    public function schemas(int|string $id): JSONResponse
+    {
+        try {
+            // Find the register first to validate it exists and get its ID
+            $register = $this->registerService->find($id);
+            $registerId = $register->getId();
+            
+            // Get the schemas associated with this register
+            $schemas = $this->registerMapper->getSchemasByRegisterId($registerId);
+            
+            // Convert schemas to array format for JSON response
+            $schemasArray = array_map(fn($schema) => $schema->jsonSerialize(), $schemas);
+            
+            return new JSONResponse([
+                'results' => $schemasArray,
+                'total' => count($schemasArray)
+            ]);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            // Return a 404 error if the register doesn't exist
+            return new JSONResponse(['error' => 'Register not found'], 404);
+        } catch (\Exception $e) {
+            // Return a 500 error for other exceptions
+            return new JSONResponse(['error' => 'Internal server error: ' . $e->getMessage()], 500);
+        }
+
+    }//end schemas()
 
 
     /**

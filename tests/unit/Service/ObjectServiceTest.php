@@ -636,4 +636,65 @@ class ObjectServiceTest extends TestCase
         // Assertions
         $this->assertInstanceOf(ObjectEntity::class, $result);
     }
+
+    /**
+     * Test that enrichObjects method formats datetime values correctly for database storage
+     *
+     * This test verifies that the enrichObjects method uses MySQL-compatible datetime format
+     * (Y-m-d H:i:s) instead of ISO 8601 format to prevent SQL datetime format errors.
+     *
+     * @return void
+     */
+    public function testEnrichObjectsFormatsDateTimeCorrectly(): void
+    {
+        // Create reflection to access private method
+        $reflection = new \ReflectionClass($this->objectService);
+        $enrichObjectsMethod = $reflection->getMethod('enrichObjects');
+        $enrichObjectsMethod->setAccessible(true);
+
+        // Test data with missing datetime fields
+        $testObjects = [
+            [
+                'name' => 'Test Object',
+                '@self' => []
+            ]
+        ];
+
+        // Execute the private method
+        $enrichedObjects = $enrichObjectsMethod->invoke($this->objectService, $testObjects);
+
+        // Verify the enriched object has datetime fields in correct format
+        $this->assertNotEmpty($enrichedObjects);
+        $enrichedObject = $enrichedObjects[0];
+        $this->assertArrayHasKey('@self', $enrichedObject);
+        
+        $self = $enrichedObject['@self'];
+        $this->assertArrayHasKey('created', $self);
+        $this->assertArrayHasKey('updated', $self);
+
+        // Verify datetime format is Y-m-d H:i:s (MySQL format)
+        $this->assertMatchesRegularExpression(
+            '/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/',
+            $self['created'],
+            'Created datetime should be in Y-m-d H:i:s format'
+        );
+        
+        $this->assertMatchesRegularExpression(
+            '/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/',
+            $self['updated'], 
+            'Updated datetime should be in Y-m-d H:i:s format'
+        );
+
+        // Verify the datetime values are valid and can be parsed
+        $createdDateTime = \DateTime::createFromFormat('Y-m-d H:i:s', $self['created']);
+        $updatedDateTime = \DateTime::createFromFormat('Y-m-d H:i:s', $self['updated']);
+        
+        $this->assertNotFalse($createdDateTime, 'Created datetime should be parseable');
+        $this->assertNotFalse($updatedDateTime, 'Updated datetime should be parseable');
+        
+        // Verify that both timestamps are recent (within last minute)
+        $now = new \DateTime();
+        $this->assertLessThan(60, $now->getTimestamp() - $createdDateTime->getTimestamp());
+        $this->assertLessThan(60, $now->getTimestamp() - $updatedDateTime->getTimestamp());
+    }
 } 

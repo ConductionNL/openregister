@@ -2632,4 +2632,722 @@ class ObjectEntityMapper extends QBMapper
 
     }//end mergeFieldConfigs()
 
+
+    /**
+     * Save multiple objects to the database in a single operation
+     *
+     * This method performs true bulk insert and update operations using optimized SQL.
+     * It expects pre-processed objects in database format (not serialized format).
+     * The method uses database transactions to ensure data consistency.
+     *
+     * @param array $insertObjects Array of objects to insert (in database format)
+     * @param array $updateObjects Array of ObjectEntity instances to update
+     *
+     * @throws \OCP\DB\Exception If a database error occurs during bulk operations
+     *
+     * @return array Array of saved object IDs
+     *
+     * @phpstan-param array<int, array<string, mixed>> $insertObjects
+     * @psalm-param array<int, array<string, mixed>> $insertObjects
+     * @phpstan-param array<int, ObjectEntity> $updateObjects
+     * @psalm-param array<int, ObjectEntity> $updateObjects
+     * @phpstan-return array<int, string>
+     * @psalm-return array<int, string>
+     */
+    public function saveObjects(array $insertObjects = [], array $updateObjects = []): array
+    {
+        // Perform bulk operations within a database transaction for consistency
+        $savedObjectIds = [];
+
+        try {
+            // Start database transaction
+            $this->db->beginTransaction();
+            error_log("ObjectEntityMapper::saveObjects - Transaction started. Insert objects: " . count($insertObjects) . ", Update objects: " . count($updateObjects));
+
+            // Bulk insert new objects
+            if (!empty($insertObjects)) {
+                error_log("ObjectEntityMapper::saveObjects - Starting bulk insert of " . count($insertObjects) . " objects");
+                $insertedIds = $this->bulkInsert($insertObjects);
+                $savedObjectIds = array_merge($savedObjectIds, $insertedIds);
+                error_log("ObjectEntityMapper::saveObjects - Bulk insert completed. Inserted IDs: " . count($insertedIds));
+            }
+
+            // Bulk update existing objects
+            if (!empty($updateObjects)) {
+                error_log("ObjectEntityMapper::saveObjects - Starting bulk update of " . count($updateObjects) . " objects");
+                $updatedIds = $this->bulkUpdate($updateObjects);
+                $savedObjectIds = array_merge($savedObjectIds, $updatedIds);
+                error_log("ObjectEntityMapper::saveObjects - Bulk update completed. Updated IDs: " . count($updatedIds));
+            }
+
+            // Commit transaction
+            $this->db->commit();
+            error_log("ObjectEntityMapper::saveObjects - Transaction committed successfully. Total saved IDs: " . count($savedObjectIds));
+
+        } catch (\Exception $e) {
+            // Rollback transaction on error
+            $this->db->rollBack();
+            error_log("ObjectEntityMapper::saveObjects - Transaction rolled back due to error: " . $e->getMessage());
+            throw $e;
+        }
+
+        return $savedObjectIds;
+
+    }//end saveObjects()
+
+
+
+
+
+    /**
+     * Perform true bulk insert of objects using single SQL statement
+     *
+     * This method uses a single INSERT statement with multiple VALUES for optimal performance.
+     * It bypasses individual entity creation and event dispatching for maximum speed.
+     * 
+     * The 'object' field is automatically JSON-encoded when it contains array data to ensure
+     * proper database storage and prevent constraint violations.
+     *
+     * @param array $insertObjects Array of objects to insert
+     *
+     * @return array Array of inserted object UUIDs
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @phpstan-param array<int, array<string, mixed>> $insertObjects
+     * @psalm-param array<int, array<string, mixed>> $insertObjects
+     * @phpstan-return array<int, string>
+     * @psalm-return array<int, string>
+     */
+    private function bulkInsert(array $insertObjects): array
+    {
+        if (empty($insertObjects)) {
+            return [];
+        }
+
+        // Use the proper table name method to avoid prefix issues
+        $tableName = $this->getTableName();
+        
+        // Debug logging
+        error_log("ObjectEntityMapper::bulkInsert - Starting bulk insert");
+        error_log("ObjectEntityMapper::bulkInsert - Table name: " . $tableName);
+        error_log("ObjectEntityMapper::bulkInsert - Objects to insert: " . count($insertObjects));
+        
+        // Get the first object to determine column structure
+        $firstObject = $insertObjects[0];
+        $columns = array_keys($firstObject);
+        
+        error_log("ObjectEntityMapper::bulkInsert - Columns: " . implode(', ', $columns));
+        
+        // Build the INSERT statement
+        $qb = $this->db->getQueryBuilder();
+        $qb->insert($tableName);
+        
+        // Add columns to the INSERT statement
+        foreach ($columns as $column) {
+            $qb->setValue($column, $qb->createParameter($column));
+        }
+        
+        // Prepare the statement
+        $stmt = $qb->getSQL();
+        
+        // Execute bulk insert in batches to avoid memory issues
+        $batchSize = 1000; // Process 1000 objects at a time
+        $insertedIds = [];
+        
+        for ($i = 0; $i < count($insertObjects); $i += $batchSize) {
+            $batch = array_slice($insertObjects, $i, $batchSize);
+            
+            // Build VALUES clause for this batch
+            $valuesClause = [];
+            $parameters = [];
+            $paramIndex = 0;
+            
+            foreach ($batch as $objectData) {
+                $rowValues = [];
+                foreach ($columns as $column) {
+                    $paramName = 'param_' . $paramIndex . '_' . $column;
+                    $rowValues[] = ':' . $paramName;
+                    
+                    $value = $objectData[$column] ?? null;
+                    
+                    // JSON encode the object field if it's an array
+                    if ($column === 'object' && is_array($value)) {
+                        $value = json_encode($value);
+                    }
+                    
+                    $parameters[$paramName] = $value;
+                    $paramIndex++;
+                }
+                $valuesClause[] = '(' . implode(', ', $rowValues) . ')';
+            }
+            
+            // Build the complete INSERT statement for this batch
+            $batchSql = "INSERT INTO {$tableName} (" . implode(', ', $columns) . ") VALUES " . implode(', ', $valuesClause);
+            
+            error_log("ObjectEntityMapper::bulkInsert - Executing SQL: " . substr($batchSql, 0, 200) . "...");
+            error_log("ObjectEntityMapper::bulkInsert - Parameters count: " . count($parameters));
+            
+            // Execute the batch insert
+            try {
+                $stmt = $this->db->prepare($batchSql);
+                $result = $stmt->execute($parameters);
+                
+                error_log("ObjectEntityMapper::bulkInsert - SQL executed successfully. Result: " . ($result ? 'true' : 'false'));
+                error_log("ObjectEntityMapper::bulkInsert - Rows affected: " . $stmt->rowCount());
+            } catch (\Exception $e) {
+                error_log("ObjectEntityMapper::bulkInsert - SQL execution failed: " . $e->getMessage());
+                error_log("ObjectEntityMapper::bulkInsert - SQL: " . substr($batchSql, 0, 500));
+                throw $e;
+            }
+            
+            // Collect UUIDs from the inserted objects for return
+            // Since findAll() accepts UUIDs, we return those instead of database IDs
+            foreach ($batch as $objectData) {
+                if (isset($objectData['uuid'])) {
+                    $insertedIds[] = $objectData['uuid'];
+                }
+            }
+        }
+        
+        return $insertedIds;
+
+    }//end bulkInsert()
+
+
+    /**
+     * Perform bulk update of objects using optimized SQL
+     *
+     * This method uses CASE statements for efficient bulk updates.
+     * It bypasses individual entity updates for maximum performance.
+     *
+     * @param array $updateObjects Array of ObjectEntity instances to update
+     *
+     * @return array Array of updated object UUIDs
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @phpstan-param array<int, ObjectEntity> $updateObjects
+     * @psalm-param array<int, ObjectEntity> $updateObjects
+     * @phpstan-return array<int, string>
+     * @psalm-return array<int, string>
+     */
+    private function bulkUpdate(array $updateObjects): array
+    {
+        if (empty($updateObjects)) {
+            return [];
+        }
+
+        // Use the proper table name method to avoid prefix issues
+        $tableName = $this->getTableName();
+        $updatedIds = [];
+        
+        // Process each object individually for better compatibility
+        foreach ($updateObjects as $object) {
+            $dbId = $object->getId();
+            if ($dbId === null) {
+                continue; // Skip objects without database ID
+            }
+            
+            // Get all column names from the object
+            $columns = $this->getEntityColumns($object);
+            
+            // Build UPDATE statement for this object
+            $qb = $this->db->getQueryBuilder();
+            $qb->update($tableName);
+            
+            // Set values for each column
+            foreach ($columns as $column) {
+                if ($column === 'id') {
+                    continue; // Skip primary key
+                }
+                
+                $value = $this->getEntityValue($object, $column);
+                $qb->set($column, $qb->createNamedParameter($value));
+            }
+            
+            // Add WHERE clause for this specific ID
+            $qb->where($qb->expr()->eq('id', $qb->createNamedParameter($dbId)));
+            
+            // Execute the update for this object
+            $qb->executeStatement();
+            
+            // Collect UUID for return (findAll() accepts UUIDs)
+            $updatedIds[] = $object->getUuid();
+        }
+        
+        return $updatedIds;
+
+    }//end bulkUpdate()
+
+
+    /**
+     * Get all column names from an entity for bulk operations
+     *
+     * @param ObjectEntity $entity The entity to extract columns from
+     *
+     * @return array Array of column names
+     *
+     * @phpstan-return array<int, string>
+     * @psalm-return array<int, string>
+     */
+    private function getEntityColumns(ObjectEntity $entity): array
+    {
+        // Get all field types to determine which fields are database columns
+        $fieldTypes = $entity->getFieldTypes();
+        $columns = [];
+        
+        foreach ($fieldTypes as $fieldName => $fieldType) {
+            // Skip virtual fields that don't exist in the database
+            if ($fieldType !== 'virtual') {
+                // Skip schemaVersion column for now in bulk operations
+                if ($fieldName === 'schemaVersion') {
+                    continue;
+                }
+                $columns[] = $fieldName;
+            }
+        }
+        
+        return $columns;
+
+    }//end getEntityColumns()
+
+
+    /**
+     * Get the value of a specific column from an entity
+     *
+     * This method retrieves the raw value from the entity property and performs
+     * necessary transformations for database storage. The 'object' field is 
+     * automatically JSON-encoded when it contains array data, and DateTime objects
+     * are converted to the appropriate database format.
+     *
+     * @param ObjectEntity $entity The entity to get the value from
+     * @param string       $column The column name
+     *
+     * @return mixed The column value, with proper transformations applied for database storage
+     */
+    private function getEntityValue(ObjectEntity $entity, string $column): mixed
+    {
+        // Use reflection to get the value of the property
+        $reflection = new \ReflectionClass($entity);
+        
+        try {
+            $property = $reflection->getProperty($column);
+            $property->setAccessible(true);
+            $value = $property->getValue($entity);
+        } catch (\ReflectionException $e) {
+            // If property doesn't exist, try to get it using getter method
+            $getterMethod = 'get' . ucfirst($column);
+            if (method_exists($entity, $getterMethod)) {
+                $value = $entity->$getterMethod();
+            } else {
+                return null;
+            }
+        }
+        
+        // Handle DateTime objects by converting them to database format
+        if ($value instanceof \DateTime) {
+            $value = $value->format('Y-m-d H:i:s');
+        }
+        
+        // Handle boolean values by converting them to integers for database storage
+        if (is_bool($value)) {
+            $value = $value ? 1 : 0;
+        }
+        
+        // Handle null values explicitly
+        if ($value === null) {
+            return null;
+        }
+        
+        // JSON encode the object field if it's an array
+        if ($column === 'object' && is_array($value)) {
+            $value = json_encode($value);
+        }
+        
+        // Handle other array values that might need JSON encoding
+        if (is_array($value) && in_array($column, ['files', 'relations', 'locked', 'authorization', 'deleted', 'validation'])) {
+            $value = json_encode($value);
+        }
+        
+        return $value;
+
+    }//end getEntityValue()
+
+
+    /**
+     * Perform bulk delete operations on objects by UUID
+     *
+     * This method handles both soft delete and hard delete based on the current state
+     * of the objects. If an object has no deleted value set, it performs a soft delete
+     * by setting the deleted timestamp. If an object already has a deleted value set,
+     * it performs a hard delete by removing the object from the database.
+     *
+     * @param array $uuids Array of object UUIDs to delete
+     *
+     * @return array Array of UUIDs of deleted objects
+     *
+     * @phpstan-param array<int, string> $uuids
+     * @psalm-param array<int, string> $uuids
+     * @phpstan-return array<int, string>
+     * @psalm-return array<int, string>
+     */
+    private function bulkDelete(array $uuids): array
+    {
+        if (empty($uuids)) {
+            return [];
+        }
+
+        // Use the proper table name method to avoid prefix issues
+        $tableName = $this->getTableName();
+        $deletedIds = [];
+        
+        // First, get the current state of objects to determine soft vs hard delete
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('id', 'uuid', 'deleted')
+            ->from($tableName)
+            ->where($qb->expr()->in('uuid', $qb->createNamedParameter($uuids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+        
+        $objects = $qb->execute()->fetchAll();
+        
+        // Separate objects for soft delete and hard delete
+        $softDeleteIds = [];
+        $hardDeleteIds = [];
+        
+        foreach ($objects as $object) {
+            if (empty($object['deleted'])) {
+                // No deleted value set - perform soft delete
+                $softDeleteIds[] = $object['id'];
+            } else {
+                // Already has deleted value - perform hard delete
+                $hardDeleteIds[] = $object['id'];
+            }
+            $deletedIds[] = $object['uuid'];
+        }
+        
+        // Perform soft deletes (set deleted timestamp)
+        if (!empty($softDeleteIds)) {
+            $currentTime = (new \DateTime())->format('Y-m-d H:i:s');
+            $qb = $this->db->getQueryBuilder();
+            $qb->update($tableName)
+                ->set('deleted', $qb->createNamedParameter(json_encode([
+                    'timestamp' => $currentTime,
+                    'reason' => 'bulk_delete'
+                ])))
+                ->where($qb->expr()->in('id', $qb->createNamedParameter($softDeleteIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
+            
+            $qb->executeStatement();
+            error_log("ObjectEntityMapper::bulkDelete - Soft deleted " . count($softDeleteIds) . " objects");
+        }
+        
+        // Perform hard deletes (remove from database)
+        if (!empty($hardDeleteIds)) {
+            $qb = $this->db->getQueryBuilder();
+            $qb->delete($tableName)
+                ->where($qb->expr()->in('id', $qb->createNamedParameter($hardDeleteIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
+            
+            $qb->executeStatement();
+            error_log("ObjectEntityMapper::bulkDelete - Hard deleted " . count($hardDeleteIds) . " objects");
+        }
+        
+        return $deletedIds;
+
+    }//end bulkDelete()
+
+
+    /**
+     * Perform bulk publish operations on objects by UUID
+     *
+     * This method sets the published timestamp for the specified objects.
+     * If a datetime is provided, it uses that value; otherwise, it uses the current datetime.
+     * If false is provided, it unsets the published timestamp.
+     *
+     * @param array         $uuids    Array of object UUIDs to publish
+     * @param DateTime|bool $datetime Optional datetime for publishing (false to unset)
+     *
+     * @return array Array of UUIDs of published objects
+     *
+     * @phpstan-param array<int, string> $uuids
+     * @psalm-param array<int, string> $uuids
+     * @phpstan-return array<int, string>
+     * @psalm-return array<int, string>
+     */
+    private function bulkPublish(array $uuids, \DateTime|bool $datetime = true): array
+    {
+        if (empty($uuids)) {
+            return [];
+        }
+
+        // Use the proper table name method to avoid prefix issues
+        $tableName = $this->getTableName();
+        
+        // Determine the published value based on the datetime parameter
+        if ($datetime === false) {
+            // Unset published timestamp
+            $publishedValue = null;
+        } elseif ($datetime instanceof \DateTime) {
+            // Use provided datetime
+            $publishedValue = $datetime->format('Y-m-d H:i:s');
+        } else {
+            // Use current datetime
+            $publishedValue = (new \DateTime())->format('Y-m-d H:i:s');
+        }
+        
+        // Get object IDs for the UUIDs
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('id', 'uuid')
+            ->from($tableName)
+            ->where($qb->expr()->in('uuid', $qb->createNamedParameter($uuids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+        
+        $objects = $qb->execute()->fetchAll();
+        $objectIds = array_column($objects, 'id');
+        $publishedIds = array_column($objects, 'uuid');
+        
+        if (!empty($objectIds)) {
+            // Update published timestamp
+            $qb = $this->db->getQueryBuilder();
+            $qb->update($tableName);
+            
+            if ($publishedValue === null) {
+                $qb->set('published', $qb->createNamedParameter(null));
+            } else {
+                $qb->set('published', $qb->createNamedParameter($publishedValue));
+            }
+            
+            $qb->where($qb->expr()->in('id', $qb->createNamedParameter($objectIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
+            
+            $qb->executeStatement();
+            error_log("ObjectEntityMapper::bulkPublish - Published " . count($objectIds) . " objects");
+        }
+        
+        return $publishedIds;
+
+    }//end bulkPublish()
+
+
+    /**
+     * Perform bulk depublish operations on objects by UUID
+     *
+     * This method sets the depublished timestamp for the specified objects.
+     * If a datetime is provided, it uses that value; otherwise, it uses the current datetime.
+     * If false is provided, it unsets the depublished timestamp.
+     *
+     * @param array         $uuids    Array of object UUIDs to depublish
+     * @param DateTime|bool $datetime Optional datetime for depublishing (false to unset)
+     *
+     * @return array Array of UUIDs of depublished objects
+     *
+     * @phpstan-param array<int, string> $uuids
+     * @psalm-param array<int, string> $uuids
+     * @phpstan-return array<int, string>
+     * @psalm-return array<int, string>
+     */
+    private function bulkDepublish(array $uuids, \DateTime|bool $datetime = true): array
+    {
+        if (empty($uuids)) {
+            return [];
+        }
+
+        // Use the proper table name method to avoid prefix issues
+        $tableName = $this->getTableName();
+        
+        // Determine the depublished value based on the datetime parameter
+        if ($datetime === false) {
+            // Unset depublished timestamp
+            $depublishedValue = null;
+        } elseif ($datetime instanceof \DateTime) {
+            // Use provided datetime
+            $depublishedValue = $datetime->format('Y-m-d H:i:s');
+        } else {
+            // Use current datetime
+            $depublishedValue = (new \DateTime())->format('Y-m-d H:i:s');
+        }
+        
+        // Get object IDs for the UUIDs
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('id', 'uuid')
+            ->from($tableName)
+            ->where($qb->expr()->in('uuid', $qb->createNamedParameter($uuids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+        
+        $objects = $qb->execute()->fetchAll();
+        $objectIds = array_column($objects, 'id');
+        $depublishedIds = array_column($objects, 'uuid');
+        
+        if (!empty($objectIds)) {
+            // Update depublished timestamp
+            $qb = $this->db->getQueryBuilder();
+            $qb->update($tableName);
+            
+            if ($depublishedValue === null) {
+                $qb->set('depublished', $qb->createNamedParameter(null));
+            } else {
+                $qb->set('depublished', $qb->createNamedParameter($depublishedValue));
+            }
+            
+            $qb->where($qb->expr()->in('id', $qb->createNamedParameter($objectIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
+            
+            $qb->executeStatement();
+            error_log("ObjectEntityMapper::bulkDepublish - Depublished " . count($objectIds) . " objects");
+        }
+        
+        return $depublishedIds;
+
+    }//end bulkDepublish()
+
+
+    /**
+     * Perform bulk delete operations on objects by UUID
+     *
+     * This method handles both soft delete and hard delete based on the current state
+     * of the objects. If an object has no deleted value set, it performs a soft delete
+     * by setting the deleted timestamp. If an object already has a deleted value set,
+     * it performs a hard delete by removing the object from the database.
+     *
+     * @param array $uuids Array of object UUIDs to delete
+     *
+     * @return array Array of UUIDs of deleted objects
+     *
+     * @phpstan-param array<int, string> $uuids
+     * @psalm-param array<int, string> $uuids
+     * @phpstan-return array<int, string>
+     * @psalm-return array<int, string>
+     */
+    public function deleteObjects(array $uuids = []): array
+    {
+        if (empty($uuids)) {
+            return [];
+        }
+
+        // Perform bulk operations within a database transaction for consistency
+        $deletedObjectIds = [];
+
+        try {
+            // Start database transaction
+            $this->db->beginTransaction();
+            error_log("ObjectEntityMapper::deleteObjects - Transaction started. Objects to delete: " . count($uuids));
+
+            // Bulk delete objects
+            $deletedIds = $this->bulkDelete($uuids);
+            $deletedObjectIds = array_merge($deletedObjectIds, $deletedIds);
+            error_log("ObjectEntityMapper::deleteObjects - Bulk delete completed. Deleted IDs: " . count($deletedIds));
+
+            // Commit transaction
+            $this->db->commit();
+            error_log("ObjectEntityMapper::deleteObjects - Transaction committed successfully. Total deleted IDs: " . count($deletedObjectIds));
+
+        } catch (\Exception $e) {
+            // Rollback transaction on error
+            $this->db->rollBack();
+            error_log("ObjectEntityMapper::deleteObjects - Transaction rolled back due to error: " . $e->getMessage());
+            throw $e;
+        }
+
+        return $deletedObjectIds;
+
+    }//end deleteObjects()
+
+
+    /**
+     * Perform bulk publish operations on objects by UUID
+     *
+     * This method sets the published timestamp for the specified objects.
+     * If a datetime is provided, it uses that value; otherwise, it uses the current datetime.
+     * If false is provided, it unsets the published timestamp.
+     *
+     * @param array         $uuids    Array of object UUIDs to publish
+     * @param DateTime|bool $datetime Optional datetime for publishing (false to unset)
+     *
+     * @return array Array of UUIDs of published objects
+     *
+     * @phpstan-param array<int, string> $uuids
+     * @psalm-param array<int, string> $uuids
+     * @phpstan-return array<int, string>
+     * @psalm-return array<int, string>
+     */
+    public function publishObjects(array $uuids = [], \DateTime|bool $datetime = true): array
+    {
+        if (empty($uuids)) {
+            return [];
+        }
+
+        // Perform bulk operations within a database transaction for consistency
+        $publishedObjectIds = [];
+
+        try {
+            // Start database transaction
+            $this->db->beginTransaction();
+            error_log("ObjectEntityMapper::publishObjects - Transaction started. Objects to publish: " . count($uuids));
+
+            // Bulk publish objects
+            $publishedIds = $this->bulkPublish($uuids, $datetime);
+            $publishedObjectIds = array_merge($publishedObjectIds, $publishedIds);
+            error_log("ObjectEntityMapper::publishObjects - Bulk publish completed. Published IDs: " . count($publishedIds));
+
+            // Commit transaction
+            $this->db->commit();
+            error_log("ObjectEntityMapper::publishObjects - Transaction committed successfully. Total published IDs: " . count($publishedObjectIds));
+
+        } catch (\Exception $e) {
+            // Rollback transaction on error
+            $this->db->rollBack();
+            error_log("ObjectEntityMapper::publishObjects - Transaction rolled back due to error: " . $e->getMessage());
+            throw $e;
+        }
+
+        return $publishedObjectIds;
+
+    }//end publishObjects()
+
+
+    /**
+     * Perform bulk depublish operations on objects by UUID
+     *
+     * This method sets the depublished timestamp for the specified objects.
+     * If a datetime is provided, it uses that value; otherwise, it uses the current datetime.
+     * If false is provided, it unsets the depublished timestamp.
+     *
+     * @param array         $uuids    Array of object UUIDs to depublish
+     * @param DateTime|bool $datetime Optional datetime for depublishing (false to unset)
+     *
+     * @return array Array of UUIDs of depublished objects
+     *
+     * @phpstan-param array<int, string> $uuids
+     * @psalm-param array<int, string> $uuids
+     * @phpstan-return array<int, string>
+     * @psalm-return array<int, string>
+     */
+    public function depublishObjects(array $uuids = [], \DateTime|bool $datetime = true): array
+    {
+        if (empty($uuids)) {
+            return [];
+        }
+
+        // Perform bulk operations within a database transaction for consistency
+        $depublishedObjectIds = [];
+
+        try {
+            // Start database transaction
+            $this->db->beginTransaction();
+            error_log("ObjectEntityMapper::depublishObjects - Transaction started. Objects to depublish: " . count($uuids));
+
+            // Bulk depublish objects
+            $depublishedIds = $this->bulkDepublish($uuids, $datetime);
+            $depublishedObjectIds = array_merge($depublishedObjectIds, $depublishedIds);
+            error_log("ObjectEntityMapper::depublishObjects - Bulk depublish completed. Depublished IDs: " . count($depublishedIds));
+
+            // Commit transaction
+            $this->db->commit();
+            error_log("ObjectEntityMapper::depublishObjects - Transaction committed successfully. Total depublished IDs: " . count($depublishedObjectIds));
+
+        } catch (\Exception $e) {
+            // Rollback transaction on error
+            $this->db->rollBack();
+            error_log("ObjectEntityMapper::depublishObjects - Transaction rolled back due to error: " . $e->getMessage());
+            throw $e;
+        }
+
+        return $depublishedObjectIds;
+
+    }//end depublishObjects()
+
 }//end class

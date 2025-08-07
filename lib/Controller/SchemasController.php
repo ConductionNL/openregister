@@ -477,4 +477,42 @@ class SchemasController extends Controller
     }//end download()
 
 
+    /**
+     * Get schemas that have properties referencing the given schema
+     *
+     * This method finds schemas that contain properties with $ref values pointing
+     * to the specified schema, indicating a relationship between schemas.
+     *
+     * @param int|string $id The ID, UUID, or slug of the schema to find relationships for
+     *
+     * @return JSONResponse A JSON response containing related schemas
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     */
+    public function related(int|string $id): JSONResponse
+    {
+        try {
+            // Find related schemas using the SchemaMapper
+            $relatedSchemas = $this->schemaMapper->getRelated($id);
+            
+            // Convert to array format for JSON response
+            $relatedSchemasArray = array_map(fn($schema) => $schema->jsonSerialize(), $relatedSchemas);
+            
+            return new JSONResponse([
+                'results' => $relatedSchemasArray,
+                'total' => count($relatedSchemasArray)
+            ]);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            // Return a 404 error if the target schema doesn't exist
+            return new JSONResponse(['error' => 'Schema not found'], 404);
+        } catch (Exception $e) {
+            // Return a 500 error for other exceptions
+            return new JSONResponse(['error' => 'Internal server error: ' . $e->getMessage()], 500);
+        }
+
+    }//end related()
+
+
 }//end class

@@ -72,6 +72,7 @@ Open Register makes these principles accessible to any organization by providing
 | ✂️ [Data Filtering](website/docs/data-filtering.md) | Select specific properties to return | Data minimalization, GDPR compliance, efficient responses |
 | 🔍 [Advanced Search](website/docs/advanced-search.md) | Filter objects using flexible property-based queries | Precise filtering, complex conditions, efficient results |
 | 🗑️ [Object Deletion](website/docs/object-deletion.md) | Soft deletion with retention and recovery | Data safety, compliance, lifecycle management |
+| ⚡ [Bulk Operations](website/docs/api/bulk-operations.md) | Perform operations on multiple objects simultaneously | Performance, efficiency, batch processing |
 
 ## Documentation
 
