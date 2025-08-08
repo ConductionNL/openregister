@@ -268,7 +268,7 @@ class ObjectService
             } catch (\Exception $e) {
                 // Log the error but don't fail the object creation/update
                 // The object can still function without a folder
-                error_log("Failed to create folder for object {$entity->getId()}: " . $e->getMessage());
+
             }
         }
     }//end ensureObjectFolderExists()
@@ -498,7 +498,7 @@ class ObjectService
             $folderId = $this->fileService->createObjectFolderWithoutUpdate($tempObject);
         } catch (\Exception $e) {
             // Log error but continue - object can function without folder
-            error_log("Failed to create folder for new object: " . $e->getMessage());
+
         }
 
         // Save the object using the current register and schema with folder ID
@@ -589,7 +589,7 @@ class ObjectService
                 $folderId = $this->fileService->createObjectFolderWithoutUpdate($existingObject);
             } catch (\Exception $e) {
                 // Log error but continue - object can function without folder
-                error_log("Failed to create folder for updated object: " . $e->getMessage());
+
             }
         }
 
@@ -907,9 +907,7 @@ class ObjectService
                 $meaningfulMessage = $this->validateHandler->generateErrorMessage($result);
                 throw new ValidationException($meaningfulMessage, errors: $result->error());
             }
-            // error_log('[ObjectService] Object validation passed'); // Removed info log
         } else {
-            // error_log('[ObjectService] Hard validation disabled, skipping validation'); // Removed info log
         }
 
         // Handle folder creation for existing objects or new objects with UUIDs
@@ -923,7 +921,7 @@ class ObjectService
                         $folderId = $this->fileService->createObjectFolderWithoutUpdate($existingObject);
                     } catch (\Exception $e) {
                         // Log error but continue - object can function without folder
-                        error_log("Failed to create folder for existing object: " . $e->getMessage());
+
                     }
                 }
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
@@ -931,7 +929,7 @@ class ObjectService
                 // Let SaveObject handle the creation with the provided UUID
             } catch (\Exception $e) {
                 // Other errors - let SaveObject handle the creation
-                error_log("Error checking for existing object: " . $e->getMessage());
+
             }
         }
         // For new objects without UUID, let SaveObject generate the UUID and handle folder creation
@@ -3356,11 +3354,9 @@ class ObjectService
                     $migrationReport['statistics']['propertiesDiscarded'] += (count($sourceData) - count($mappedData));
 
                     // Log the mapping result for debugging
-                    error_log("Migration mapping for object {$objectId}: " . json_encode([
-                        'sourceData' => $sourceData,
-                        'mapping' => $mapping,
+                    $this->logger->debug('Object properties mapped', [
                         'mappedData' => $mappedData
-                    ]));
+                    ]);
 
                     // Store original files and relations before altering the object
                     $originalFiles = $sourceObject->getFolder();
@@ -3376,19 +3372,18 @@ class ObjectService
                     // Update the object using the mapper
                     $savedObject = $this->objectEntityMapper->update($sourceObject);
 
-                    // Log the save response for debugging
-                    error_log("Migration save response for object {$objectId}: " . json_encode($savedObject->jsonSerialize()));
+
 
                     // Handle file migration (files should already be attached to the object)
                     if ($originalFiles !== null) {
                         // Files are already associated with this object, no migration needed
-                        error_log("Files preserved for migrated object {$objectId}");
+
                     }
 
                     // Handle relations migration (relations are already on the object)
                     if (!empty($originalRelations)) {
                         // Relations are preserved on the object, no additional migration needed
-                        error_log("Relations preserved for migrated object {$objectId}");
+
                     }
 
                     $objectDetail['success'] = true;
@@ -3400,8 +3395,7 @@ class ObjectService
                     $migrationReport['statistics']['objectsFailed']++;
                     $migrationReport['errors'][] = "Failed to migrate object {$objectId}: " . $e->getMessage();
 
-                    // Log the full exception for debugging
-                    error_log("Migration error for object {$objectId}: " . $e->getMessage() . "\n" . $e->getTraceAsString());
+
                 }
 
                 $migrationReport['details'][] = $objectDetail;
@@ -3431,7 +3425,7 @@ class ObjectService
 
         } catch (\Exception $e) {
             $migrationReport['errors'][] = $e->getMessage();
-            error_log("Migration process error: " . $e->getMessage() . "\n" . $e->getTraceAsString());
+
             throw $e;
         }
 
@@ -3516,12 +3510,12 @@ class ObjectService
                     );
                 } catch (\Exception $e) {
                     // Log error but continue with other files
-                    error_log("Failed to migrate file {$file->getName()}: " . $e->getMessage());
+
                 }
             }
         } catch (\Exception $e) {
             // Log error but don't fail the migration
-            error_log("Failed to migrate files for object {$sourceObject->getUuid()}: " . $e->getMessage());
+
         }
 
     }//end migrateObjectFiles()
@@ -3569,7 +3563,7 @@ class ObjectService
             }
         } catch (\Exception $e) {
             // Log error but don't fail the migration
-            error_log("Failed to migrate relations for object {$sourceObject->getUuid()}: " . $e->getMessage());
+
         }
 
     }//end migrateObjectRelations()
@@ -3603,7 +3597,7 @@ class ObjectService
             );
         } catch (\Exception $e) {
             // Log the error but don't fail the request
-            error_log("Failed to log search trail: " . $e->getMessage());
+
         }
 
     }//end logSearchTrail()

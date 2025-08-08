@@ -530,25 +530,19 @@ class ValidateObject
      */
     private function transformSchemaForValidation(object $schemaObject, array $object, string $currentSchemaSlug): array
     {
-        // error_log('[ValidateObject] Starting schema transformation for schema slug: ' . $currentSchemaSlug); // Remove info log
-        // error_log('[ValidateObject] Original schema object keys: ' . json_encode(array_keys((array)$schemaObject))); // Remove info log
+
 
         if (!isset($schemaObject->properties)) {
-            // error_log('[ValidateObject] No properties found in schema'); // Remove info log
+
             return [$schemaObject, $object];
         }
 
         $propertiesArray = (array)$schemaObject->properties;
-        // error_log('[ValidateObject] Processing ' . count($propertiesArray) . ' properties'); // Remove info log
-
         // Step 1: Handle circular references
-        // error_log('[ValidateObject] Step 1: Handling circular references'); // Remove info log
         foreach ($propertiesArray as $propertyName => $propertySchema) {
-            // error_log('[ValidateObject] Checking property: ' . $propertyName); // Remove info log
 
             // Check if this property has a $ref that references the current schema
             if ($this->isSelfReference($propertySchema, $currentSchemaSlug)) {
-                // error_log('[ValidateObject] Found self-reference in property: ' . $propertyName); // Remove info log
 
                 // Check if this is a related-object with objectConfiguration
                 if (isset($propertySchema->objectConfiguration) &&
@@ -581,7 +575,7 @@ class ValidateObject
                         $propertySchema->description = 'UUID reference to a related object (self-reference)';
                     }
                     unset($propertySchema->properties, $propertySchema->required, $propertySchema->{'$ref'});
-                    // error_log('[ValidateObject] Transformed ' . $propertyName . ' to UUID string property'); // Remove info log
+
                 } else if (isset($propertySchema->type) && $propertySchema->type === 'array' &&
                           isset($propertySchema->items) && is_object($propertySchema->items) && $this->isSelfReference($propertySchema->items, $currentSchemaSlug)) {
 
@@ -615,7 +609,7 @@ class ValidateObject
                     }
 
                     unset($propertySchema->{'$ref'});
-                    // error_log('[ValidateObject] Transformed ' . $propertyName . ' array items to UUID string property'); // Remove info log
+
 
                     // Ensure items has a valid schema after transformation
                     if (!isset($propertySchema->items->type) && !isset($propertySchema->items->oneOf)) {
@@ -625,31 +619,21 @@ class ValidateObject
 
                 // Remove the $ref to prevent circular validation issues
                 unset($propertySchema->{'$ref'});
-                // error_log('[ValidateObject] Removed $ref from property: ' . $propertyName); // Remove info log
+
             }
         }
 
         // Step 2: Transform OpenRegister-specific object configurations
-        // error_log('[ValidateObject] Step 2: Transforming OpenRegister object configurations'); // Remove info log
         $schemaObject = $this->transformOpenRegisterObjectConfigurations($schemaObject);
 
         // Step 3: Remove $id property to prevent duplicate schema ID errors
-        // error_log('[ValidateObject] Step 3: Removing $id property'); // Remove info log
         if (isset($schemaObject->{'$id'})) {
-            // error_log('[ValidateObject] Removed $id: ' . $schemaObject->{'$id'}); // Remove info log
             unset($schemaObject->{'$id'});
-        } else {
-            // error_log('[ValidateObject] No $id property found to remove'); // Remove info log
         }
 
         // Step 4: Pre-process the schema to resolve all schema references (but skip UUID-transformed properties)
-        // error_log('[ValidateObject] Step 4: Pre-processing schema references'); // Remove info log
         // Temporarily disable schema resolution to see if that's causing the duplicate schema ID issue
         // $schemaObject = $this->preprocessSchemaReferences($schemaObject, [], true);
-        // error_log('[ValidateObject] Skipping schema resolution for now'); // Remove info log
-
-        // error_log('[ValidateObject] Final schema object keys: ' . json_encode(array_keys((array)$schemaObject))); // Remove info log
-        // error_log('[ValidateObject] Schema transformation completed'); // Remove info log
 
         return [$schemaObject, $object];
 
@@ -667,7 +651,7 @@ class ValidateObject
      */
     private function cleanSchemaForValidation(object $schemaObject, bool $isArrayItems = false): object
     {
-        // error_log('[ValidateObject] Cleaning schema for validation, isArrayItems: ' . ($isArrayItems ? 'true' : 'false')); // Remove info log
+
 
         // Clone the schema object to avoid modifying the original
         $cleanedSchema = json_decode(json_encode($schemaObject));
@@ -692,7 +676,7 @@ class ValidateObject
 
         foreach ($metadataProperties as $property) {
             if (isset($cleanedSchema->$property)) {
-                // error_log('[ValidateObject] Removing metadata property: ' . $property); // Remove info log
+
                 unset($cleanedSchema->$property);
             }
         }
@@ -752,7 +736,7 @@ class ValidateObject
 
         foreach ($metadataProperties as $property) {
             if (isset($cleanedProperty->$property)) {
-                // error_log('[ValidateObject] Removing metadata property from ' . ($isArrayItems ? 'array items' : 'property') . ': ' . $property); // Remove info log
+
                 unset($cleanedProperty->$property);
             }
         }
@@ -788,7 +772,7 @@ class ValidateObject
      */
     private function transformArrayItemsForValidation(object $itemsSchema): object
     {
-        // error_log('[ValidateObject] Transforming array items for validation'); // Remove info log
+
 
         // If items don't have a type or aren't objects, return as-is
         if (!isset($itemsSchema->type) || $itemsSchema->type !== 'object') {
@@ -798,7 +782,7 @@ class ValidateObject
         // Check if this has objectConfiguration to determine handling
         if (isset($itemsSchema->objectConfiguration) && isset($itemsSchema->objectConfiguration->handling)) {
             $handling = $itemsSchema->objectConfiguration->handling;
-            // error_log('[ValidateObject] Array items have objectConfiguration handling: ' . $handling); // Remove info log
+
 
             switch ($handling) {
                 case 'related-object':
@@ -836,7 +820,7 @@ class ValidateObject
      */
     private function transformItemsToUuidStrings(object $itemsSchema): object
     {
-        // error_log('[ValidateObject] Transforming array items to UUID strings'); // Remove info log
+
 
         // Remove all object-specific properties
         unset($itemsSchema->properties, $itemsSchema->required, $itemsSchema->{'$ref'});
@@ -860,7 +844,7 @@ class ValidateObject
      */
     private function transformItemsToSimpleObject(object $itemsSchema): object
     {
-        // error_log('[ValidateObject] Transforming array items to simple object structure'); // Remove info log
+
 
         // Remove $ref to prevent circular references
         unset($itemsSchema->{'$ref'});
@@ -945,7 +929,7 @@ class ValidateObject
                 }
             }
         } catch (Exception $e) {
-            // error_log('[ValidateObject] Error searching schemas by slug: ' . $e->getMessage()); // Remove info log
+
         }
 
         return null;
@@ -992,7 +976,7 @@ class ValidateObject
         $schemaObject = $this->cleanSchemaForValidation($schemaObject);
 
         // Log the final schema object before validation
-        // error_log('[ValidateObject] Final schema before validation: ' . json_encode($schemaObject)); // Remove info log
+
 
         // If schemaObject reuired is empty unset it.
         if (isset($schemaObject->required) === true && empty($schemaObject->required) === true) {

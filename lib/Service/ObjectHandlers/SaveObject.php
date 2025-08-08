@@ -1589,7 +1589,7 @@ class SaveObject
                 throw new Exception("Unsupported file input type for property '$propertyName'");
             }
         } catch (Exception $e) {
-            error_log("Error processing file property '$propertyName': " . $e->getMessage());
+
             throw $e;
         }
 
@@ -1715,7 +1715,7 @@ class SaveObject
                 }
             } catch (Exception $e) {
                 // Existing file not accessible, continue to create new one
-                error_log("Existing file {$fileId} not accessible, creating new file: " . $e->getMessage());
+
             }
         }
 
@@ -1911,7 +1911,7 @@ class SaveObject
                 );
             } catch (Exception $e) {
                 // Log but don't fail - auto tagging is not critical
-                error_log("Failed to apply auto tags to existing file {$file->getId()}: " . $e->getMessage());
+
             }
         }
 

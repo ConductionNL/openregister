@@ -277,7 +277,6 @@ Graceful handling of database errors:
 try {
     $qb->executeStatement();
 } catch (\Exception $e) {
-    error_log("Bulk operation failed: " . $e->getMessage());
     throw new \Exception("Database operation failed: " . $e->getMessage());
 }
 ```
@@ -296,7 +295,7 @@ foreach ($objects as $object) {
         $processedCount++;
     } catch (\Exception $e) {
         $skippedCount++;
-        error_log("Failed to process object {$object['uuid']}: " . $e->getMessage());
+        // Object processing failed, continue with next object
     }
 }
 ```
@@ -349,9 +348,8 @@ if ($multi && $activeOrganisation !== null) {
 All operations are logged with detailed information:
 
 ```php
-error_log("ObjectEntityMapper::deleteObjects - Transaction started. Objects to delete: " . count($uuids));
-error_log("ObjectEntityMapper::deleteObjects - Bulk delete completed. Deleted IDs: " . count($deletedIds));
-error_log("ObjectEntityMapper::deleteObjects - Transaction committed successfully. Total deleted IDs: " . count($deletedObjectIds));
+// Transaction logging has been removed for production
+// Operations are tracked through audit trails instead
 ```
 
 ### 2. Performance Monitoring
@@ -367,8 +365,9 @@ $startMemory = memory_get_usage();
 $endTime = microtime(true);
 $endMemory = memory_get_usage();
 
-error_log("Operation completed in " . ($endTime - $startTime) . " seconds");
-error_log("Memory usage: " . ($endMemory - $startMemory) . " bytes");
+// Performance metrics can be logged to application logs if needed
+// $operationTime = ($endTime - $startTime);
+// $memoryUsed = ($endMemory - $startMemory);
 ```
 
 ## Testing Strategy
