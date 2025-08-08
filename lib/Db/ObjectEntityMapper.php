@@ -1585,7 +1585,7 @@ class ObjectEntityMapper extends QBMapper
         $entity = parent::insert($entity);
 
         // Dispatch creation event.
-        // error_log("ObjectEntityMapper: Dispatching ObjectCreatedEvent for object ID: " . ($entity->getId() ?? 'NULL') . ", UUID: " . ($entity->getUuid() ?? 'NULL'));
+
         $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent($entity));
 
         return $entity;
@@ -1634,8 +1634,7 @@ class ObjectEntityMapper extends QBMapper
     {
         // For ObjectEntity, we need to find by the internal database ID, not UUID
         // The getId() method returns the database primary key
-        error_log("ObjectEntityMapper->update() called with entity ID: " . ($entity->getId() ?? 'NULL'));
-        error_log("ObjectEntityMapper->update() entity type: " . get_class($entity));
+
 
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
@@ -1646,9 +1645,7 @@ class ObjectEntityMapper extends QBMapper
             $qb->andWhere($qb->expr()->isNull('deleted'));
         }
 
-        error_log("ObjectEntityMapper->update() about to execute findEntity with internal ID");
         $oldObject = $this->findEntity($qb);
-        error_log("ObjectEntityMapper->update() successfully found old object for update");
 
         // Lets make sure that @self and id never enter the database.
         $object = $entity->getObject();
@@ -1659,7 +1656,7 @@ class ObjectEntityMapper extends QBMapper
         $entity = parent::update($entity);
 
         // Dispatch update event.
-        // error_log("ObjectEntityMapper: Dispatching ObjectUpdatedEvent for object ID: " . ($entity->getId() ?? 'NULL') . ", UUID: " . ($entity->getUuid() ?? 'NULL'));
+
         $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent($entity, $oldObject));
 
         return $entity;
@@ -1712,7 +1709,7 @@ class ObjectEntityMapper extends QBMapper
         $result = parent::delete($object);
 
         // Dispatch deletion event.
-        // error_log("ObjectEntityMapper: Dispatching ObjectDeletedEvent for object ID: " . ($object->getId() ?? 'NULL') . ", UUID: " . ($object->getUuid() ?? 'NULL'));
+
         $this->eventDispatcher->dispatchTyped(
             new ObjectDeletedEvent($object)
         );
@@ -1851,7 +1848,7 @@ class ObjectEntityMapper extends QBMapper
         $object = $this->update($object);
 
         // Dispatch lock event.
-        // error_log("ObjectEntityMapper: Dispatching ObjectLockedEvent for object ID: " . ($object->getId() ?? 'NULL') . ", UUID: " . ($object->getUuid() ?? 'NULL') . ", Process: " . ($process ?? 'NULL'));
+
         $this->eventDispatcher->dispatchTyped(new ObjectLockedEvent($object));
 
         return $object;
@@ -1885,7 +1882,7 @@ class ObjectEntityMapper extends QBMapper
         $object = $this->update($object);
 
         // Dispatch unlock event.
-        // error_log("ObjectEntityMapper: Dispatching ObjectUnlockedEvent for object ID: " . ($object->getId() ?? 'NULL') . ", UUID: " . ($object->getUuid() ?? 'NULL'));
+
         $this->eventDispatcher->dispatchTyped(new ObjectUnlockedEvent($object));
 
         return $object;
@@ -2662,32 +2659,28 @@ class ObjectEntityMapper extends QBMapper
         try {
             // Start database transaction
             $this->db->beginTransaction();
-            error_log("ObjectEntityMapper::saveObjects - Transaction started. Insert objects: " . count($insertObjects) . ", Update objects: " . count($updateObjects));
+
 
             // Bulk insert new objects
             if (!empty($insertObjects)) {
-                error_log("ObjectEntityMapper::saveObjects - Starting bulk insert of " . count($insertObjects) . " objects");
                 $insertedIds = $this->bulkInsert($insertObjects);
                 $savedObjectIds = array_merge($savedObjectIds, $insertedIds);
-                error_log("ObjectEntityMapper::saveObjects - Bulk insert completed. Inserted IDs: " . count($insertedIds));
             }
 
             // Bulk update existing objects
             if (!empty($updateObjects)) {
-                error_log("ObjectEntityMapper::saveObjects - Starting bulk update of " . count($updateObjects) . " objects");
                 $updatedIds = $this->bulkUpdate($updateObjects);
                 $savedObjectIds = array_merge($savedObjectIds, $updatedIds);
-                error_log("ObjectEntityMapper::saveObjects - Bulk update completed. Updated IDs: " . count($updatedIds));
             }
 
             // Commit transaction
             $this->db->commit();
-            error_log("ObjectEntityMapper::saveObjects - Transaction committed successfully. Total saved IDs: " . count($savedObjectIds));
+
 
         } catch (\Exception $e) {
             // Rollback transaction on error
             $this->db->rollBack();
-            error_log("ObjectEntityMapper::saveObjects - Transaction rolled back due to error: " . $e->getMessage());
+
             throw $e;
         }
 
@@ -2728,16 +2721,13 @@ class ObjectEntityMapper extends QBMapper
         // Use the proper table name method to avoid prefix issues
         $tableName = $this->getTableName();
         
-        // Debug logging
-        error_log("ObjectEntityMapper::bulkInsert - Starting bulk insert");
-        error_log("ObjectEntityMapper::bulkInsert - Table name: " . $tableName);
-        error_log("ObjectEntityMapper::bulkInsert - Objects to insert: " . count($insertObjects));
+
         
         // Get the first object to determine column structure
         $firstObject = $insertObjects[0];
         $columns = array_keys($firstObject);
         
-        error_log("ObjectEntityMapper::bulkInsert - Columns: " . implode(', ', $columns));
+
         
         // Build the INSERT statement
         $qb = $this->db->getQueryBuilder();
@@ -2785,19 +2775,16 @@ class ObjectEntityMapper extends QBMapper
             // Build the complete INSERT statement for this batch
             $batchSql = "INSERT INTO {$tableName} (" . implode(', ', $columns) . ") VALUES " . implode(', ', $valuesClause);
             
-            error_log("ObjectEntityMapper::bulkInsert - Executing SQL: " . substr($batchSql, 0, 200) . "...");
-            error_log("ObjectEntityMapper::bulkInsert - Parameters count: " . count($parameters));
+
             
             // Execute the batch insert
             try {
                 $stmt = $this->db->prepare($batchSql);
                 $result = $stmt->execute($parameters);
                 
-                error_log("ObjectEntityMapper::bulkInsert - SQL executed successfully. Result: " . ($result ? 'true' : 'false'));
-                error_log("ObjectEntityMapper::bulkInsert - Rows affected: " . $stmt->rowCount());
+
             } catch (\Exception $e) {
-                error_log("ObjectEntityMapper::bulkInsert - SQL execution failed: " . $e->getMessage());
-                error_log("ObjectEntityMapper::bulkInsert - SQL: " . substr($batchSql, 0, 500));
+
                 throw $e;
             }
             
@@ -3037,7 +3024,7 @@ class ObjectEntityMapper extends QBMapper
                 ->where($qb->expr()->in('id', $qb->createNamedParameter($softDeleteIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
             
             $qb->executeStatement();
-            error_log("ObjectEntityMapper::bulkDelete - Soft deleted " . count($softDeleteIds) . " objects");
+
         }
         
         // Perform hard deletes (remove from database)
@@ -3047,7 +3034,7 @@ class ObjectEntityMapper extends QBMapper
                 ->where($qb->expr()->in('id', $qb->createNamedParameter($hardDeleteIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
             
             $qb->executeStatement();
-            error_log("ObjectEntityMapper::bulkDelete - Hard deleted " . count($hardDeleteIds) . " objects");
+
         }
         
         return $deletedIds;
@@ -3117,7 +3104,7 @@ class ObjectEntityMapper extends QBMapper
             $qb->where($qb->expr()->in('id', $qb->createNamedParameter($objectIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
             
             $qb->executeStatement();
-            error_log("ObjectEntityMapper::bulkPublish - Published " . count($objectIds) . " objects");
+
         }
         
         return $publishedIds;
@@ -3187,7 +3174,7 @@ class ObjectEntityMapper extends QBMapper
             $qb->where($qb->expr()->in('id', $qb->createNamedParameter($objectIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
             
             $qb->executeStatement();
-            error_log("ObjectEntityMapper::bulkDepublish - Depublished " . count($objectIds) . " objects");
+
         }
         
         return $depublishedIds;
@@ -3224,21 +3211,21 @@ class ObjectEntityMapper extends QBMapper
         try {
             // Start database transaction
             $this->db->beginTransaction();
-            error_log("ObjectEntityMapper::deleteObjects - Transaction started. Objects to delete: " . count($uuids));
+
 
             // Bulk delete objects
             $deletedIds = $this->bulkDelete($uuids);
             $deletedObjectIds = array_merge($deletedObjectIds, $deletedIds);
-            error_log("ObjectEntityMapper::deleteObjects - Bulk delete completed. Deleted IDs: " . count($deletedIds));
+
 
             // Commit transaction
             $this->db->commit();
-            error_log("ObjectEntityMapper::deleteObjects - Transaction committed successfully. Total deleted IDs: " . count($deletedObjectIds));
+
 
         } catch (\Exception $e) {
             // Rollback transaction on error
             $this->db->rollBack();
-            error_log("ObjectEntityMapper::deleteObjects - Transaction rolled back due to error: " . $e->getMessage());
+
             throw $e;
         }
 
@@ -3276,21 +3263,21 @@ class ObjectEntityMapper extends QBMapper
         try {
             // Start database transaction
             $this->db->beginTransaction();
-            error_log("ObjectEntityMapper::publishObjects - Transaction started. Objects to publish: " . count($uuids));
+
 
             // Bulk publish objects
             $publishedIds = $this->bulkPublish($uuids, $datetime);
             $publishedObjectIds = array_merge($publishedObjectIds, $publishedIds);
-            error_log("ObjectEntityMapper::publishObjects - Bulk publish completed. Published IDs: " . count($publishedIds));
+
 
             // Commit transaction
             $this->db->commit();
-            error_log("ObjectEntityMapper::publishObjects - Transaction committed successfully. Total published IDs: " . count($publishedObjectIds));
+
 
         } catch (\Exception $e) {
             // Rollback transaction on error
             $this->db->rollBack();
-            error_log("ObjectEntityMapper::publishObjects - Transaction rolled back due to error: " . $e->getMessage());
+
             throw $e;
         }
 
@@ -3328,21 +3315,21 @@ class ObjectEntityMapper extends QBMapper
         try {
             // Start database transaction
             $this->db->beginTransaction();
-            error_log("ObjectEntityMapper::depublishObjects - Transaction started. Objects to depublish: " . count($uuids));
+
 
             // Bulk depublish objects
             $depublishedIds = $this->bulkDepublish($uuids, $datetime);
             $depublishedObjectIds = array_merge($depublishedObjectIds, $depublishedIds);
-            error_log("ObjectEntityMapper::depublishObjects - Bulk depublish completed. Depublished IDs: " . count($depublishedIds));
+
 
             // Commit transaction
             $this->db->commit();
-            error_log("ObjectEntityMapper::depublishObjects - Transaction committed successfully. Total depublished IDs: " . count($depublishedObjectIds));
+
 
         } catch (\Exception $e) {
             // Rollback transaction on error
             $this->db->rollBack();
-            error_log("ObjectEntityMapper::depublishObjects - Transaction rolled back due to error: " . $e->getMessage());
+
             throw $e;
         }
 

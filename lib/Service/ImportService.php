@@ -616,7 +616,7 @@ class ImportService
                 'wasExisting' => $wasExisting,
             ];
         } catch (\Exception $e) {
-            error_log("[ImportService] Error processing row ".$rowIndex.": ".$e->getMessage());
+
             return [
                 'error' => [
                     'row'   => $rowIndex,
