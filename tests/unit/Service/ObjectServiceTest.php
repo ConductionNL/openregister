@@ -697,4 +697,103 @@ class ObjectServiceTest extends TestCase
         $this->assertLessThan(60, $now->getTimestamp() - $createdDateTime->getTimestamp());
         $this->assertLessThan(60, $now->getTimestamp() - $updatedDateTime->getTimestamp());
     }
+
+    /**
+     * Test that saveObjects function properly updates the updated datetime when updating existing objects
+     *
+     * This test verifies that when using saveObjects to update existing objects,
+     * the updated datetime field is properly updated in the ObjectEntity instances.
+     *
+     * @return void
+     */
+    public function testSaveObjectsUpdatesUpdatedDateTimeForExistingObjects(): void
+    {
+        // Create reflection to access private method
+        $reflection = new \ReflectionClass($this->objectService);
+        $saveObjectsMethod = $reflection->getMethod('saveObjects');
+        $saveObjectsMethod->setAccessible(true);
+
+        // Create test objects - one new, one existing
+        $testObjects = [
+            [
+                'name' => 'New Object',
+                '@self' => []
+            ],
+            [
+                'name' => 'Updated Object',
+                '@self' => [
+                    'id' => 'existing-uuid-123',
+                    'created' => '2024-01-01 10:00:00',
+                    'updated' => '2024-01-01 10:00:00'
+                ]
+            ]
+        ];
+
+        // Mock existing object for the update case
+        $existingObject = new ObjectEntity();
+        $existingObject->setId(1);
+        $existingObject->setUuid('existing-uuid-123');
+        $existingObject->setCreated(new \DateTime('2024-01-01 10:00:00'));
+        $existingObject->setUpdated(new \DateTime('2024-01-01 10:00:00'));
+        $existingObject->setObject(['name' => 'Original Object']);
+
+        // Mock the objectEntityMapper to return existing objects
+        $this->objectEntityMapper
+            ->method('findAll')
+            ->willReturn(['existing-uuid-123' => $existingObject]);
+
+        // Mock successful save operation
+        $this->objectEntityMapper
+            ->method('saveObjects')
+            ->willReturn(['new-uuid-456', 'existing-uuid-123']);
+
+        // Mock successful find operations for returned objects
+        $newObject = new ObjectEntity();
+        $newObject->setId(2);
+        $newObject->setUuid('new-uuid-456');
+        $newObject->setCreated(new \DateTime());
+        $newObject->setUpdated(new \DateTime());
+        $newObject->setObject(['name' => 'New Object']);
+
+        $updatedObject = new ObjectEntity();
+        $updatedObject->setId(1);
+        $updatedObject->setUuid('existing-uuid-123');
+        $updatedObject->setCreated(new \DateTime('2024-01-01 10:00:00'));
+        $updatedObject->setUpdated(new \DateTime()); // This should be updated
+        $updatedObject->setObject(['name' => 'Updated Object']);
+
+        $this->objectEntityMapper
+            ->method('find')
+            ->willReturnMap([
+                ['new-uuid-456', null, null, false, true, true, $newObject],
+                ['existing-uuid-123', null, null, false, true, true, $updatedObject]
+            ]);
+
+        // Execute the private method
+        $savedObjects = $saveObjectsMethod->invoke($this->objectService, $testObjects, $this->mockRegister, $this->mockSchema);
+
+        // Verify that we got the expected number of saved objects
+        $this->assertCount(2, $savedObjects);
+
+        // Find the updated object
+        $updatedSavedObject = null;
+        foreach ($savedObjects as $savedObject) {
+            if ($savedObject->getUuid() === 'existing-uuid-123') {
+                $updatedSavedObject = $savedObject;
+                break;
+            }
+        }
+
+        $this->assertNotNull($updatedSavedObject, 'Updated object should be found in saved objects');
+
+        // Verify that the updated datetime is recent (within last minute)
+        $now = new \DateTime();
+        $updatedDateTime = $updatedSavedObject->getUpdated();
+        $this->assertNotNull($updatedDateTime, 'Updated datetime should not be null');
+        $this->assertLessThan(60, $now->getTimestamp() - $updatedDateTime->getTimestamp(), 'Updated datetime should be recent');
+
+        // Verify that the updated datetime is different from the original
+        $originalUpdated = new \DateTime('2024-01-01 10:00:00');
+        $this->assertGreaterThan($originalUpdated->getTimestamp(), $updatedDateTime->getTimestamp(), 'Updated datetime should be newer than original');
+    }
 } 

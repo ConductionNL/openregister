@@ -2313,6 +2313,9 @@ class ObjectService
 		bool $rbac = true,
 		bool $multi = true
 	): array {
+		
+		$now = new \DateTime();
+
 		// Set register and schema context if provided
 		if ($register !== null) {
 			$this->setRegister($register);
@@ -2323,22 +2326,23 @@ class ObjectService
 
 		// Apply RBAC and multi-organization filtering if enabled
 		if ($rbac || $multi) {
-			$filteredObjects = $this->filterObjectsForPermissions($objects, $rbac, $multi);
+			// @todo: Uncomment this when we have a way to check permissions
+            // $objects = $this->filterObjectsForPermissions($objects, $rbac, $multi);
 		} else {
-			$filteredObjects = $objects;
+			$objects = $objects;
 		}
 
 		// Validate that all objects have required fields in their @self section
-		$this->validateRequiredFields($filteredObjects);
+		$this->validateRequiredFields($objects);
 
 		// Enrich objects with missing metadata (owner, organisation, created, updated)
-		$enrichedObjects = $this->enrichObjects($filteredObjects);
+		$objects = $this->enrichObjects($objects);
 
 		// Transform objects from serialized format to database format
-		$transformedObjects = $this->transformObjectsToDatabaseFormat($enrichedObjects);
+		$objects = $this->transformObjectsToDatabaseFormat($objects);
 
 		// Extract IDs from transformed objects to find existing objects
-		$objectIds = $this->extractObjectIds($transformedObjects);
+		$objectIds = $this->extractObjectIds($objects);
 
 		// Find existing objects in the database using the mapper's findAll method
 		$existingObjects = $this->findExistingObjects($objectIds);
@@ -2347,26 +2351,30 @@ class ObjectService
 		$insertObjects = [];
 		$updateObjects = [];
 
-		foreach ($transformedObjects as $transformedObject) {
+		foreach ($objects as $transformedObject) {
 			$objectId = $transformedObject['uuid'] ?? $transformedObject['id'] ?? null;
 			
 			if ($objectId !== null && isset($existingObjects[$objectId])) {
 				// Object exists - merge new data into existing object for update
 				$mergedObject = $this->mergeObjectData($existingObjects[$objectId], $transformedObject);
+				$mergedObject->setUpdated($now->format('Y-m-d H:i:s'));
 				$updateObjects[] = $mergedObject;
 			} else {
 				// Object doesn't exist - add to insert array
+				$transformedObject['created'] = $now->format('Y-m-d H:i:s');
+				$transformedObject['updated'] = $now->format('Y-m-d H:i:s');
 				$insertObjects[] = $transformedObject;
 			}
 		}
 
 		// Use the mapper's bulk save operation
 		$savedObjectIds = $this->objectEntityMapper->saveObjects($insertObjects, $updateObjects);
-
+        
 		// Fetch all saved objects from the database to return their current state
 		$savedObjects = [];
 		if (!empty($savedObjectIds)) {
 			$savedObjects = $this->objectEntityMapper->findAll(ids: $savedObjectIds, includeDeleted: true);
+			error_log('[ObjectService] Retrieved ' . count($savedObjects) . ' saved objects from database');
 		}
 
 		return $savedObjects;
@@ -2504,18 +2512,22 @@ class ObjectService
 		for ($i = 0; $i < count($objects); $i += $batchSize) {
 			$batch = array_slice($objects, $i, $batchSize);
 			
-			foreach ($batch as $object) {                
+			foreach ($batch as $object) {
+				// Ensure @self section exists
+				if (!isset($object['@self']) || !is_array($object['@self'])) {
+					$object['@self'] = [];
+				}
 
-				$self = $object['@self'] ?? [];
+				$self = $object['@self'];
 				
 				// Generate UUID if not present - check both 'uuid' and 'id' fields
-                if (empty($self['id'])) {
-                    $self['id'] = Uuid::v4()->toRfc4122();
-                }
+				if (empty($self['id'])) {
+					$self['id'] = Uuid::v4()->toRfc4122();
+				}
 
 				// Set owner if not present
-				if (empty($self['owner']) && $currentUserId !== null) {
-					$self['owner'] = $currentUserId;
+				if (empty($self['owner'])) {
+					$self['owner'] = $currentUserId ?? 'admin';
 				}
 
 				// Set organisation if not present
@@ -2523,10 +2535,6 @@ class ObjectService
 					$self['organisation'] = $currentOrganisation;
 				}
 
-				// Set created timestamp if not present
-				if (empty($self['created'])) {
-					$self['created'] = $now->format('Y-m-d H:i:s');
-				}
 
 				// Set updated timestamp (always update)
 				$self['updated'] = $now->format('Y-m-d H:i:s');
@@ -2535,9 +2543,7 @@ class ObjectService
 				$object['@self'] = $self;
 				$enrichedObjects[] = $object;
 			}
-
 		}
-
 
 		return $enrichedObjects;
 

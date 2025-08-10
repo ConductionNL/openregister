@@ -70,6 +70,7 @@ export const useRegisterStore = defineStore('register', {
 		},
 		/* istanbul ignore next */ // ignore this for Jest until moved into a service
 		async refreshRegisterList(search = null) {
+			console.log('RegisterStore: Starting refreshRegisterList')
 			// Always include _extend[]=@self.stats to get statistics
 			let endpoint = '/index.php/apps/openregister/api/registers?_extend[]=@self.stats'
 			if (search !== null && search !== '') {
@@ -82,6 +83,7 @@ export const useRegisterStore = defineStore('register', {
 			const data = (await response.json()).results
 
 			this.setRegisterList(data)
+			console.log('RegisterStore: refreshRegisterList completed, got', data.length, 'registers')
 
 			return { response, data }
 		},
@@ -233,7 +235,7 @@ export const useRegisterStore = defineStore('register', {
 				throw new Error('No file to import')
 			}
 
-			console.log('Importing register...')
+			console.log('RegisterStore: Starting import...')
 
 			const registerId = this.registerItem?.id
 			if (!registerId) {
@@ -260,6 +262,7 @@ export const useRegisterStore = defineStore('register', {
 			}
 
 			try {
+				console.log('RegisterStore: Sending import request to:', endpoint)
 				const response = await fetch(
 					endpoint,
 					{
@@ -282,11 +285,17 @@ export const useRegisterStore = defineStore('register', {
 					throw new Error('Invalid response data')
 				}
 
-				await this.refreshRegisterList()
+				console.log('RegisterStore: Import successful, starting register refresh in background...')
+				// Start the register refresh in the background without waiting for it to complete
+				// This way the import can complete and the loading state can be turned off
+				this.refreshRegisterList().catch(error => {
+					console.error('RegisterStore: Error refreshing register list:', error)
+				})
+				console.log('RegisterStore: Register refresh started in background')
 
 				return { response, responseData }
 			} catch (error) {
-				console.error('Error importing register:', error)
+				console.error('RegisterStore: Error importing register:', error)
 				throw error // Pass through the original error message
 			}
 		},

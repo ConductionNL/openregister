@@ -111,6 +111,16 @@ class ImportService
      *
      * @return PromiseInterface<array<string, array>> Promise that resolves to import summary.
      */
+    /**
+     * Import data from Excel file asynchronously.
+     *
+     * @param string        $filePath  The path to the Excel file.
+     * @param Register|null $register  Optional register to associate with imported objects.
+     * @param Schema|null   $schema    Optional schema to associate with imported objects.
+     * @param int           $chunkSize Number of rows to process in each chunk (default: 100).
+     *
+     * @return PromiseInterface Promise that resolves to import summary with created/updated/unchanged/errors.
+     */
     public function importFromExcelAsync(
         string $filePath,
         ?Register $register=null,
@@ -140,8 +150,20 @@ class ImportService
      * @param int           $chunkSize Number of rows to process in each chunk (default: 100).
      *
      * @return         array<string, array> Summary of import with sheet-based results.
-     * @phpstan-return array<string, array{created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
-     * @psalm-return   array<string, array{created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
+     * @phpstan-return array<string, array{found: int, created: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
+     * @psalm-return   array<string, array{found: int, created: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
+     */
+    /**
+     * Import data from Excel file.
+     *
+     * @param string        $filePath  The path to the Excel file.
+     * @param Register|null $register  Optional register to associate with imported objects.
+     * @param Schema|null   $schema    Optional schema to associate with imported objects.
+     * @param int           $chunkSize Number of rows to process in each chunk (default: 100).
+     *
+     * @return         array<string, array> Summary of import with sheet-based results.
+     * @phpstan-return array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
+     * @psalm-return   array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      */
     public function importFromExcel(string $filePath, ?Register $register=null, ?Schema $schema=null, int $chunkSize=self::DEFAULT_CHUNK_SIZE): array
     {
@@ -154,9 +176,9 @@ class ImportService
             return $this->processMultiSchemaSpreadsheetAsync($spreadsheet, $register, $chunkSize);
         }
 
-        // Single schema processing - return in sheet-based format for consistency.
-        $sheetTitle   = $spreadsheet->getActiveSheet()->getTitle();
-        $sheetSummary = $this->processSpreadsheetAsync($spreadsheet, $register, $schema, $chunkSize);
+        // Single schema processing - use batch processing for better performance
+        $sheetTitle = $spreadsheet->getActiveSheet()->getTitle();
+        $sheetSummary = $this->processSpreadsheetBatch($spreadsheet, $register, $schema, $chunkSize);
 
         // Add schema information to the summary (consistent with multi-sheet Excel import).
         if ($schema !== null) {
@@ -181,7 +203,7 @@ class ImportService
      * @param Schema|null   $schema    Optional schema to associate with imported objects.
      * @param int           $chunkSize Number of rows to process in each chunk (default: 100).
      *
-     * @return PromiseInterface<array<string, array>> Promise that resolves to import summary.
+     * @return PromiseInterface Promise that resolves to import summary with created/updated/unchanged/errors.
      */
     public function importFromCsvAsync(
         string $filePath,
@@ -229,8 +251,8 @@ class ImportService
         $spreadsheet = $reader->load($filePath);
 
         // Get the sheet title for CSV (usually just 'Worksheet' or similar).
-        $sheetTitle   = $spreadsheet->getActiveSheet()->getTitle();
-        $sheetSummary = $this->processSpreadsheetAsync($spreadsheet, $register, $schema, $chunkSize);
+        $sheetTitle = $spreadsheet->getActiveSheet()->getTitle();
+        $sheetSummary = $this->processCsvSheet($spreadsheet->getActiveSheet(), $register, $schema, $chunkSize);
 
         // Add schema information to the summary (consistent with Excel import).
         $sheetSummary['schema'] = [
@@ -246,15 +268,15 @@ class ImportService
 
 
     /**
-     * Process spreadsheet with multiple schemas asynchronously
+     * Process spreadsheet with multiple schemas using batch saving for better performance
      *
      * @param Spreadsheet $spreadsheet The spreadsheet to process
      * @param Register    $register    The register to associate with imported objects
      * @param int         $chunkSize   Number of rows to process in each chunk
      *
      * @return         array<string, array> Summary of import with sheet-based results
-     * @phpstan-return array<string, array{created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
-     * @psalm-return   array<string, array{created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
+     * @phpstan-return array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
+     * @psalm-return   array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      */
     private function processMultiSchemaSpreadsheetAsync(Spreadsheet $spreadsheet, Register $register, int $chunkSize): array
     {
@@ -306,9 +328,9 @@ class ImportService
             $propertyKeys     = array_keys($schemaProperties);
             $summary[$schemaSlug]['debug']['schemaProperties'] = $propertyKeys;
 
-            // Set the worksheet as active and process.
+            // Set the worksheet as active and process using batch saving for better performance.
             $spreadsheet->setActiveSheetIndex($spreadsheet->getIndex($worksheet));
-            $sheetSummary = $this->processSpreadsheetAsync($spreadsheet, $register, $schema, $chunkSize);
+            $sheetSummary = $this->processSpreadsheetBatch($spreadsheet, $register, $schema, $chunkSize);
 
             // Merge the sheet summary with the existing summary (preserve debug info).
             $summary[$schemaSlug] = array_merge($summary[$schemaSlug], $sheetSummary);
@@ -381,6 +403,552 @@ class ImportService
         return $summary;
 
     }//end processSpreadsheetAsync()
+
+
+    /**
+     * Process spreadsheet with single schema using batch saving for better performance
+     *
+     * @param Spreadsheet $spreadsheet The spreadsheet to process
+     * @param Register|null $register  Optional register to associate with imported objects
+     * @param Schema|null   $schema    Optional schema to associate with imported objects
+     * @param int           $chunkSize Number of rows to process in each chunk
+     *
+     * @return         array<string, array> Summary of import with sheet-based results
+     * @phpstan-return array<string, array{found: int, created: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
+     * @psalm-return   array<string, array{found: int, created: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
+     */
+    /**
+     * Process a single spreadsheet sheet using batch saving for better performance
+     *
+     * @param Spreadsheet      $spreadsheet The spreadsheet to process
+     * @param Register|null    $register    Optional register to associate with imported objects
+     * @param Schema|null      $schema      Optional schema to associate with imported objects
+     * @param int              $chunkSize   Number of rows to process in each chunk
+     *
+     * @return array<string, array> Sheet processing summary
+     * @phpstan-return array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
+     * @psalm-return   array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
+     */
+    private function processSpreadsheetBatch(
+        Spreadsheet $spreadsheet,
+        ?Register $register=null,
+        ?Schema $schema=null,
+        int $chunkSize=self::DEFAULT_CHUNK_SIZE
+    ): array {
+        $summary = [
+            'found'     => 0,
+            'created'   => [],
+            'updated'   => [],
+            'unchanged' => [],
+            'errors'    => [],
+        ];
+
+        try {
+            // Get the active sheet
+            $sheet = $spreadsheet->getActiveSheet();
+            $sheetTitle = $sheet->getTitle();
+
+            // Build column mapping from headers
+            $columnMapping = $this->buildColumnMapping($sheet);
+            
+            if (empty($columnMapping)) {
+                $summary['errors'][] = [
+                    'sheet'  => $sheetTitle,
+                    'row'    => 1,
+                    'data'   => [],
+                    'error'  => 'No valid headers found in sheet',
+                ];
+                return $summary;
+            }
+
+            // Get total rows in the sheet
+            $highestRow = $sheet->getHighestRow();
+            
+            if ($highestRow <= 1) {
+                $summary['errors'][] = [
+                    'sheet'  => $sheetTitle,
+                    'row'    => 1,
+                    'data'   => [],
+                    'error'  => 'No data rows found in sheet',
+                ];
+                return $summary;
+            }
+
+            // Process rows in chunks
+            $startRow = 2; // Skip header row
+            $allObjects = [];
+            $rowErrors = [];
+
+            for ($chunkStart = $startRow; $chunkStart <= $highestRow; $chunkStart += $chunkSize) {
+                $chunkEnd = min($chunkStart + $chunkSize - 1, $highestRow);
+                
+                // Process this chunk
+                $chunkResult = $this->processExcelChunk($sheet, $columnMapping, $chunkStart, $chunkEnd, $register, $schema);
+                
+                // Collect objects and errors
+                $allObjects = array_merge($allObjects, $chunkResult['objects']);
+                $rowErrors = array_merge($rowErrors, $chunkResult['errors']);
+            }
+
+            $summary['found'] = count($allObjects);
+
+            // Create a map of input objects by their ID for comparison
+            foreach ($allObjects as $index => $object) {
+                $inputId = $object['@self']['id'] ?? null;
+                if ($inputId !== null) {
+                    $objectIdMap[$inputId] = $index;
+                }
+            }
+
+            // Save all objects in a single batch operation if we have any
+            if (!empty($allObjects) && $register !== null && $schema !== null) {
+                try {
+                    $savedObjects = $this->objectService->saveObjects($allObjects, $register, $schema);
+                    
+                    // Categorize results by comparing input objects with returned objects
+                    foreach ($savedObjects as $savedObject) {
+                        $savedUuid = $savedObject->getUuid();
+                        
+                        // Check if this object had an input ID (meaning it was an update)
+                        $wasUpdate = false;
+                        foreach ($objectIdMap as $inputId => $objectIndex) {
+                            if ($inputId === $savedUuid) {
+                                $wasUpdate = true;
+                                break;
+                            }
+                        }
+                        
+                        if ($wasUpdate) {
+                            $summary['updated'][] = $savedUuid;
+                        } else {
+                            $summary['created'][] = $savedUuid;
+                        }
+                    }
+                } catch (\Exception $e) {
+                    // If batch save fails, add to errors
+                    $summary['errors'][] = [
+                        'sheet' => $sheetTitle,
+                        'row'   => 'batch',
+                        'data'  => [],
+                        'error' => 'Batch save failed: ' . $e->getMessage(),
+                    ];
+                }
+            }
+
+            // Add individual row errors
+            $summary['errors'] = array_merge($summary['errors'], $rowErrors);
+
+        } catch (\Exception $e) {
+            $summary['errors'][] = [
+                'sheet' => $sheetTitle ?? 'unknown',
+                'row'   => 'general',
+                'data'  => [],
+                'error' => 'General processing error: ' . $e->getMessage(),
+            ];
+        }
+
+        return $summary;
+
+    }//end processSpreadsheetBatch()
+
+
+    /**
+     * Process CSV sheet and import all objects in batches
+     *
+     * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet      The worksheet to process
+     * @param Register                                        $register   The register to associate with imported objects
+     * @param Schema                                          $schema     The schema to associate with imported objects
+     * @param int                                             $chunkSize  Number of rows to process in each chunk
+     *
+     * @return array<string, array> Sheet processing summary
+     * @phpstan-return array<string, array{found: int, created: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
+     * @psalm-return   array<string, array{found: int, created: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
+     */
+    private function processCsvSheet(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, Register $register, Schema $schema, int $chunkSize): array
+    {
+        $summary = [
+            'found'     => 0,
+            'created'   => [],
+            'updated'   => [],
+            'unchanged' => [],
+            'errors'    => [],
+        ];
+
+        try {
+            // Build column mapping from headers
+            $columnMapping = $this->buildColumnMapping($sheet);
+            
+            if (empty($columnMapping)) {
+                $summary['errors'][] = [
+                    'row'   => 1,
+                    'data'  => [],
+                    'error' => 'No valid headers found in CSV file',
+                ];
+                return $summary;
+            }
+
+            // Get total rows in the sheet
+            $highestRow = $sheet->getHighestRow();
+            
+            if ($highestRow <= 1) {
+                $summary['errors'][] = [
+                    'row'   => 1,
+                    'data'  => [],
+                    'error' => 'No data rows found in CSV file',
+                ];
+                return $summary;
+            }
+
+            // Process rows in chunks
+            $startRow = 2; // Skip header row
+            $allObjects = [];
+            $rowErrors = [];
+            $objectIdMap = []; // Track original objects by their input ID for comparison
+
+            for ($chunkStart = $startRow; $chunkStart <= $highestRow; $chunkStart += $chunkSize) {
+                $chunkEnd = min($chunkStart + $chunkSize - 1, $highestRow);
+                
+                // Process this chunk
+                $chunkResult = $this->processCsvChunk($sheet, $columnMapping, $chunkStart, $chunkEnd, $register, $schema);
+                
+                // Collect objects and errors
+                $allObjects = array_merge($allObjects, $chunkResult['objects']);
+                $rowErrors = array_merge($rowErrors, $chunkResult['errors']);
+            }
+
+            $summary['found'] = count($allObjects);
+
+            // Create a map of input objects by their ID for comparison
+            foreach ($allObjects as $index => $object) {
+                $inputId = $object['@self']['id'] ?? null;
+                if ($inputId !== null) {
+                    $objectIdMap[$inputId] = $index;
+                }
+            }
+
+            // Save all objects in a single batch operation if we have any
+            if (!empty($allObjects)) {
+                try {
+                    
+                    // Track which objects existed before saving (for update vs create determination)
+                    $existingObjectIds = [];
+                    $existingObjectData = []; // Store existing object data for comparison
+                    foreach ($allObjects as $object) {
+                        $inputId = $object['@self']['id'] ?? null;
+                        if ($inputId !== null) {
+                            // Check if object with this ID already exists in the database
+                            try {
+                                $existingObject = $this->objectService->find($inputId, [], false, $register, $schema);
+                                if ($existingObject !== null) {
+                                    $existingObjectIds[$inputId] = true;
+                                    $existingObjectData[$inputId] = $existingObject->getObject();
+                                } else {
+                                }
+                            } catch (\Exception $e) {
+                                // If we can't find the object, assume it's new
+                            }
+                        }
+                    }
+                    
+                    $savedObjects = $this->objectService->saveObjects($allObjects, $register, $schema);
+                    
+                    // Categorize results based on whether objects existed before saving
+                    foreach ($savedObjects as $savedObject) {
+                        $savedUuid = $savedObject->getUuid();
+                        
+                        // Check if this object existed before saving
+                        $wasUpdate = false;
+                        foreach ($allObjects as $inputObject) {
+                            $inputId = $inputObject['@self']['id'] ?? null;
+                            if ($inputId !== null && $inputId === $savedUuid && isset($existingObjectIds[$inputId])) {
+                                $wasUpdate = true;
+                                break;
+                            }
+                        }
+                        
+                        if ($wasUpdate) {
+                            $summary['updated'][] = $savedUuid;
+                        } else {
+                            $summary['created'][] = $savedUuid;
+                        }
+                    }
+                    
+                    // Check for unchanged objects (objects that exist but had no changes)
+                    foreach ($allObjects as $inputObject) {
+                        $inputId = $inputObject['@self']['id'] ?? null;
+                        if ($inputId !== null && isset($existingObjectIds[$inputId]) && isset($existingObjectData[$inputId])) {
+                            // Compare input data with existing data to see if anything changed
+                            $inputData = $inputObject;
+                            unset($inputData['@self']); // Remove metadata for comparison
+                            
+                            $existingData = $existingObjectData[$inputId];
+                            
+                            // Simple comparison - if data is identical, mark as unchanged
+                            if (json_encode($inputData) === json_encode($existingData)) {
+                                $summary['unchanged'][] = $inputId;
+                                
+                                // Remove from updated list if it was marked as updated
+                                $updatedIndex = array_search($inputId, $summary['updated']);
+                                if ($updatedIndex !== false) {
+                                    unset($summary['updated'][$updatedIndex]);
+                                    $summary['updated'] = array_values($summary['updated']); // Re-index array
+                                }
+                            }
+                        }
+                    }
+                    
+                } catch (\Exception $e) {
+                    // If batch save fails, add to errors
+                    $summary['errors'][] = [
+                        'row'   => 'batch',
+                        'data'  => [],
+                        'error' => 'Batch save failed: ' . $e->getMessage(),
+                    ];
+                }
+            } else {
+            }
+
+            // Add individual row errors
+            $summary['errors'] = array_merge($summary['errors'], $rowErrors);
+
+        } catch (\Exception $e) {
+            $summary['errors'][] = [
+                'row'   => 'general',
+                'data'  => [],
+                'error' => 'General processing error: ' . $e->getMessage(),
+            ];
+        }
+
+        return $summary;
+
+    }//end processCsvSheet()
+
+
+    /**
+     * Process a chunk of CSV rows and prepare objects for batch saving
+     *
+     * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet         The worksheet
+     * @param array<string, string>                         $columnMapping Column mapping
+     * @param int                                           $startRow      Starting row number
+     * @param int                                           $endRow        Ending row number
+     * @param Register                                      $register      The register
+     * @param Schema                                        $schema        The schema
+     *
+     * @return array<string, array> Chunk processing result
+     * @phpstan-return array{objects: array<int, array<string, mixed>>, errors: array<int, array<string, mixed>>}
+     * @psalm-return   array{objects: array<int, array<string, mixed>>, errors: array<int, array<string, mixed>>}
+     */
+    private function processCsvChunk(
+        \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
+        array $columnMapping,
+        int $startRow,
+        int $endRow,
+        Register $register,
+        Schema $schema
+    ): array {
+        $objects = [];
+        $errors = [];
+
+        for ($row = $startRow; $row <= $endRow; $row++) {
+            try {
+                $rowData = $this->extractRowData($sheet, $columnMapping, $row);
+                
+                if (empty($rowData)) {
+                    // Skip empty rows
+                    continue;
+                }
+
+                // Transform row data to object format
+                $object = $this->transformCsvRowToObject($rowData, $register, $schema, $row);
+                
+                if ($object !== null) {
+                    $objects[] = $object;
+                }
+
+            } catch (\Exception $e) {
+                $errors[] = [
+                    'row'   => $row,
+                    'data'  => $rowData ?? [],
+                    'error' => $e->getMessage(),
+                ];
+            }
+        }
+
+        return [
+            'objects' => $objects,
+            'errors'  => $errors,
+        ];
+
+    }//end processCsvChunk()
+
+
+    /**
+     * Transform CSV row data to object format for batch saving
+     *
+     * @param array    $rowData  Row data from CSV
+     * @param Register $register The register
+     * @param Schema   $schema   The schema
+     * @param int      $rowIndex Row index for error reporting
+     *
+     * @return array<string, mixed>|null Object data or null if transformation fails
+     */
+    private function transformCsvRowToObject(array $rowData, Register $register, Schema $schema, int $rowIndex): ?array
+    {
+        // Separate regular properties from system properties
+        $objectData = [];
+        $selfData = [];
+
+        foreach ($rowData as $key => $value) {
+            if (str_starts_with($key, '_') === true) {
+                // Ignore properties starting with _ (skip them)
+                continue;
+            } else if (str_starts_with($key, '@self.') === true) {
+                // Move properties starting with @self. to @self array and remove the @self. prefix
+                $selfPropertyName = substr($key, 6);
+                $selfData[$selfPropertyName] = $value;
+            } else {
+                // Regular properties go to main object data
+                $objectData[$key] = $value;
+            }
+        }
+
+        // Build @self section with required metadata
+        $selfData['register'] = $register->getId();
+        $selfData['schema'] = $schema->getId();
+        
+        // Add ID if present in the data (for updates)
+        if (isset($rowData['id']) && !empty($rowData['id'])) {
+            $selfData['id'] = $rowData['id'];
+        }
+
+        // Add @self array to object data
+        $objectData['@self'] = $selfData;
+
+        // Transform object data based on schema property types
+        $transformedData = $this->transformObjectBySchema($objectData, $schema);
+
+        return $transformedData;
+
+    }//end transformCsvRowToObject()
+
+
+    /**
+     * Process a chunk of Excel rows and prepare objects for batch saving
+     *
+     * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet         The worksheet
+     * @param array<string, string>                         $columnMapping Column mapping
+     * @param int                                           $startRow      Starting row number
+     * @param int                                           $endRow        Ending row number
+     * @param Register|null                                 $register      Optional register
+     * @param Schema|null                                   $schema        Optional schema
+     *
+     * @return array<string, array> Chunk processing result
+     * @phpstan-return array{objects: array<int, array<string, mixed>>, errors: array<int, array<string, mixed>>}
+     * @psalm-return   array{objects: array<int, array<string, mixed>>, errors: array<int, array<string, mixed>>}
+     */
+    private function processExcelChunk(
+        \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
+        array $columnMapping,
+        int $startRow,
+        int $endRow,
+        ?Register $register,
+        ?Schema $schema
+    ): array {
+        $objects = [];
+        $errors = [];
+
+        for ($row = $startRow; $row <= $endRow; $row++) {
+            try {
+                $rowData = $this->extractRowData($sheet, $columnMapping, $row);
+                
+                if (empty($rowData)) {
+                    // Skip empty rows
+                    continue;
+                }
+
+                // Transform row data to object format
+                $object = $this->transformExcelRowToObject($rowData, $register, $schema, $row);
+                
+                if ($object !== null) {
+                    $objects[] = $object;
+                }
+
+            } catch (\Exception $e) {
+                $errors[] = [
+                    'row'   => $row,
+                    'data'  => $rowData ?? [],
+                    'error' => $e->getMessage(),
+                ];
+            }
+        }
+
+        return [
+            'objects' => $objects,
+            'errors'  => $errors,
+        ];
+
+    }//end processExcelChunk()
+
+
+    /**
+     * Transform Excel row data to object format for batch saving
+     *
+     * @param array         $rowData  Row data from Excel
+     * @param Register|null $register Optional register
+     * @param Schema|null   $schema   Optional schema
+     * @param int           $rowIndex Row index for error reporting
+     *
+     * @return array<string, mixed>|null Object data or null if transformation fails
+     */
+    private function transformExcelRowToObject(array $rowData, ?Register $register, ?Schema $schema, int $rowIndex): ?array
+    {
+        // Separate regular properties from system properties
+        $objectData = [];
+        $selfData = [];
+
+        foreach ($rowData as $key => $value) {
+            if (str_starts_with($key, '_') === true) {
+                // Move properties starting with _ to @self array and remove the _
+                $selfPropertyName = substr($key, 1);
+                $selfData[$selfPropertyName] = $value;
+            } else if (str_starts_with($key, '@self.') === true) {
+                // Move properties starting with @self. to @self array and remove the @self. prefix
+                $selfPropertyName = substr($key, 6);
+                $selfData[$selfPropertyName] = $value;
+            } else {
+                // Regular properties go to main object data
+                $objectData[$key] = $value;
+            }
+        }
+
+        // Build @self section with metadata if available
+        if ($register !== null) {
+            $selfData['register'] = $register->getId();
+        }
+        if ($schema !== null) {
+            $selfData['schema'] = $schema->getId();
+        }
+        
+        // Add ID if present in the data (for updates)
+        if (isset($rowData['id']) && !empty($rowData['id'])) {
+            $selfData['id'] = $rowData['id'];
+        }
+
+        // Add @self array to object data if we have self properties
+        if (!empty($selfData)) {
+            $objectData['@self'] = $selfData;
+        }
+
+        // Transform object data based on schema property types if schema is available
+        if ($schema !== null) {
+            $transformedData = $this->transformObjectBySchema($objectData, $schema);
+        } else {
+            $transformedData = $objectData;
+        }
+
+        return $transformedData;
+
+    }//end transformExcelRowToObject()
 
 
     /**

@@ -273,4 +273,23 @@ class Organisation extends Entity implements JsonSerializable
             'updated' => $this->updated ? $this->updated->format('c') : null,
         ];
     }
+
+    /**
+     * String representation of the organisation
+     * 
+     * This magic method returns the organisation UUID. If no UUID exists,
+     * it creates a new one, sets it to the organisation, and returns it.
+     * This ensures every organisation has a unique identifier.
+     * 
+     * @return string UUID of the organisation
+     */
+    public function __toString(): string
+    {
+        // Generate new UUID if none exists or is empty
+        if ($this->uuid === null || $this->uuid === '') {
+            $this->uuid = Uuid::v4()->toRfc4122();
+        }
+        
+        return $this->uuid;
+    }
 } 

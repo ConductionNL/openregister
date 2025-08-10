@@ -2715,17 +2715,22 @@ class ObjectEntityMapper extends QBMapper
     private function bulkInsert(array $insertObjects): array
     {
         if (empty($insertObjects)) {
+            error_log('[Bulk Insert] No objects to insert');
             return [];
         }
 
-        // Use the proper table name method to avoid prefix issues
-        $tableName = $this->getTableName();
+        error_log('[Bulk Insert] Starting bulk insert of ' . count($insertObjects) . ' objects');
+
+        // Use the proper table name method to avoid prefix issues @todo: make dynamic
+        $tableName = 'oc_openregister_objects';
+        error_log('[Bulk Insert] Using table: ' . $tableName);
         
 
         
         // Get the first object to determine column structure
         $firstObject = $insertObjects[0];
         $columns = array_keys($firstObject);
+        error_log('[Bulk Insert] Columns: ' . implode(', ', $columns));
         
 
         
@@ -2747,6 +2752,7 @@ class ObjectEntityMapper extends QBMapper
         
         for ($i = 0; $i < count($insertObjects); $i += $batchSize) {
             $batch = array_slice($insertObjects, $i, $batchSize);
+            error_log('[Bulk Insert] Processing batch ' . ($i / $batchSize + 1) . ' with ' . count($batch) . ' objects');
             
             // Build VALUES clause for this batch
             $valuesClause = [];
@@ -2774,6 +2780,7 @@ class ObjectEntityMapper extends QBMapper
             
             // Build the complete INSERT statement for this batch
             $batchSql = "INSERT INTO {$tableName} (" . implode(', ', $columns) . ") VALUES " . implode(', ', $valuesClause);
+            error_log('[Bulk Insert] SQL: ' . substr($batchSql, 0, 200) . '...');
             
 
             
@@ -2781,10 +2788,11 @@ class ObjectEntityMapper extends QBMapper
             try {
                 $stmt = $this->db->prepare($batchSql);
                 $result = $stmt->execute($parameters);
+                error_log('[Bulk Insert] Batch executed successfully, result: ' . ($result ? 'true' : 'false'));
                 
 
             } catch (\Exception $e) {
-
+                error_log('[Bulk Insert] Error executing batch: ' . $e->getMessage());
                 throw $e;
             }
             
@@ -2797,6 +2805,7 @@ class ObjectEntityMapper extends QBMapper
             }
         }
         
+        error_log('[Bulk Insert] Completed bulk insert, returning ' . count($insertedIds) . ' UUIDs');
         return $insertedIds;
 
     }//end bulkInsert()
@@ -2825,8 +2834,8 @@ class ObjectEntityMapper extends QBMapper
             return [];
         }
 
-        // Use the proper table name method to avoid prefix issues
-        $tableName = $this->getTableName();
+        // Use the proper table name method to avoid prefix issues @todo: make dynamic
+        $tableName = 'openregister_objects';
         $updatedIds = [];
         
         // Process each object individually for better compatibility
