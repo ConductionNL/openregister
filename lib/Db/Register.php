@@ -342,5 +342,28 @@ class Register extends Entity implements JsonSerializable
 
     }//end jsonSerialize()
 
+    /**
+     * String representation of the register
+     * 
+     * This magic method is required for proper entity handling in Nextcloud
+     * when the framework needs to convert the object to a string.
+     * 
+     * @return string String representation of the register
+     */
+    public function __toString(): string
+    {
+        // Return the register title if available, otherwise return a descriptive string
+        if ($this->title !== null && $this->title !== '') {
+            return $this->title;
+        }
+        
+        // Fallback to slug if title is not available
+        if ($this->slug !== null && $this->slug !== '') {
+            return $this->slug;
+        }
+        
+        // Final fallback with ID
+        return 'Register #' . ($this->id ?? 'unknown');
+    }
 
 }//end class

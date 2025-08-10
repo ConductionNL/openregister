@@ -275,5 +275,33 @@ class Configuration extends Entity implements JsonSerializable
 
     }//end jsonSerialize()
 
+    /**
+     * String representation of the configuration
+     * 
+     * This magic method is required for proper entity handling in Nextcloud
+     * when the framework needs to convert the object to a string.
+     * 
+     * @return string String representation of the configuration
+     */
+    public function __toString(): string
+    {
+        // Return the title if available, otherwise return a descriptive string
+        if ($this->title !== null && $this->title !== '') {
+            return $this->title;
+        }
+        
+        // Fallback to type if available
+        if ($this->type !== null && $this->type !== '') {
+            return 'Config: ' . $this->type;
+        }
+        
+        // Fallback to ID if available
+        if ($this->id !== null) {
+            return 'Configuration #' . $this->id;
+        }
+        
+        // Final fallback
+        return 'Configuration';
+    }
 
 }//end class
