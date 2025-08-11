@@ -1192,8 +1192,7 @@ class SaveObject
             $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
             $objectEntity->setOrganisation($organisationUuid);
         } else {
-            $organisation = $this->organisationService->ensureDefaultOrganisation();
-            $organisationUuid = $organisation->getUuid();
+            $organisationUuid = $this->organisationService->ensureDefaultOrganisation()->getUuid();
             $objectEntity->setOrganisation($organisationUuid);
         }
 
