@@ -440,7 +440,7 @@ class RenderObject
 
         } catch (Exception $e) {
             // Log error but don't break rendering - just return original entity
-            error_log("Error hydrating file properties for object {$entity->getId()}: " . $e->getMessage());
+
         }
 
         return $entity;
@@ -579,7 +579,7 @@ class RenderObject
             ];
 
         } catch (Exception $e) {
-            error_log("Error getting file object for ID $fileId: " . $e->getMessage());
+
             return null;
         }
 

@@ -1216,32 +1216,32 @@ class ObjectsController extends Controller
     public function import(int $register): JSONResponse
     {
         try {
-            error_log("[ObjectsController] Starting import for register ID: $register");
+
             
             // Get the uploaded file
             $uploadedFile = $this->request->getUploadedFile('file');
             if ($uploadedFile === null) {
-                error_log("[ObjectsController] No file uploaded");
+
                 return new JSONResponse(['error' => 'No file uploaded'], 400);
             }
 
-            error_log("[ObjectsController] File uploaded: " . $uploadedFile['name'] . " (size: " . $uploadedFile['size'] . " bytes)");
+
 
             // Find the register
             $registerEntity = $this->registerMapper->find($register);
-            error_log("[ObjectsController] Found register: " . $registerEntity->getTitle());
+
 
             // Determine file type from extension
             $filename = $uploadedFile['name'];
             $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
             
-            error_log("[ObjectsController] File extension: $extension");
+
 
             // Handle different file types
             switch ($extension) {
                 case 'xlsx':
                 case 'xls':
-                    error_log("[ObjectsController] Processing Excel file");
+
                     $summary = $this->importService->importFromExcel(
                         $uploadedFile['tmp_name'],
                         $registerEntity,
@@ -1250,7 +1250,7 @@ class ObjectsController extends Controller
                     break;
                     
                 case 'csv':
-                    error_log("[ObjectsController] Processing CSV file");
+
                     
                     // For CSV, schema can be specified in the request
                     $schemaId = $this->request->getParam(key: 'schema');
@@ -1259,7 +1259,7 @@ class ObjectsController extends Controller
                         // If no schema specified, get the first available schema from the register
                         $schemas = $registerEntity->getSchemas();
                         if (empty($schemas)) {
-                            error_log("[ObjectsController] No schemas found for register");
+
                             return new JSONResponse(['error' => 'No schema found for register'], 400);
                         }
                         $schemaId = is_array($schemas) ? reset($schemas) : $schemas;
@@ -1267,7 +1267,7 @@ class ObjectsController extends Controller
                     
                     $schema = $this->schemaMapper->find($schemaId);
                     
-                    error_log("[ObjectsController] Using schema: " . $schema->getTitle());
+
                     
                     $summary = $this->importService->importFromCsv(
                         $uploadedFile['tmp_name'],
@@ -1277,12 +1277,11 @@ class ObjectsController extends Controller
                     break;
                     
                 default:
-                    error_log("[ObjectsController] Unsupported file type: $extension");
+
                     return new JSONResponse(['error' => "Unsupported file type: $extension"], 400);
             }
 
-            error_log("[ObjectsController] Import completed successfully");
-            error_log("[ObjectsController] Summary: " . json_encode($summary));
+
 
             return new JSONResponse([
                 'message' => 'Import successful',
@@ -1290,9 +1289,7 @@ class ObjectsController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            error_log("[ObjectsController] Import failed with error: " . $e->getMessage());
-            error_log("[ObjectsController] Exception type: " . get_class($e));
-            error_log("[ObjectsController] Stack trace: " . $e->getTraceAsString());
+
             
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }

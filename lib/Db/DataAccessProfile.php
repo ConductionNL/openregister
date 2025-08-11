@@ -76,4 +76,33 @@ class DataAccessProfile extends Entity implements JsonSerializable
             'updated' => $this->updated ? $this->updated->format('c') : null,
         ];
     }
+
+    /**
+     * String representation of the data access profile
+     * 
+     * This magic method is required for proper entity handling in Nextcloud
+     * when the framework needs to convert the object to a string.
+     * 
+     * @return string String representation of the data access profile
+     */
+    public function __toString(): string
+    {
+        // Return the name if available, otherwise return a descriptive string
+        if ($this->name !== null && $this->name !== '') {
+            return $this->name;
+        }
+        
+        // Fallback to UUID if available
+        if ($this->uuid !== null && $this->uuid !== '') {
+            return $this->uuid;
+        }
+        
+        // Fallback to ID if available
+        if ($this->id !== null) {
+            return 'DataAccessProfile #' . $this->id;
+        }
+        
+        // Final fallback
+        return 'Data Access Profile';
+    }
 } 

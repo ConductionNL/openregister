@@ -742,4 +742,28 @@ class ObjectEntity extends Entity implements JsonSerializable
         $this->lastLog = $log;
     }
 
+    /**
+     * String representation of the object entity
+     * 
+     * This magic method is required for proper entity handling in Nextcloud
+     * when the framework needs to convert the object to a string.
+     * 
+     * @return string String representation of the object entity
+     */
+    public function __toString(): string
+    {
+        // Return the UUID if available, otherwise return a descriptive string
+        if ($this->uuid !== null && $this->uuid !== '') {
+            return $this->uuid;
+        }
+        
+        // Fallback to ID if UUID is not available
+        if ($this->id !== null) {
+            return 'Object #' . $this->id;
+        }
+        
+        // Final fallback
+        return 'Object Entity';
+    }
+
 }//end class
