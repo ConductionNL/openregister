@@ -2313,7 +2313,6 @@ class ObjectService
 		bool $rbac = true,
 		bool $multi = true
 	): array {
-		
 		$now = new \DateTime();
 
 		// Set register and schema context if provided
@@ -2367,7 +2366,8 @@ class ObjectService
 			}
 		}
 
-		// Use the mapper's bulk save operation
+        
+        // Use the mapper's bulk save operation
 		$savedObjectIds = $this->objectEntityMapper->saveObjects($insertObjects, $updateObjects);
         
 		// Fetch all saved objects from the database to return their current state

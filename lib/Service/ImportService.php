@@ -75,14 +75,14 @@ class ImportService
      *
      * @var int
      */
-    private const DEFAULT_CHUNK_SIZE = 100;
+    private const DEFAULT_CHUNK_SIZE = 25;
 
     /**
      * Maximum concurrent operations
      *
      * @var int
      */
-    private const MAX_CONCURRENT = 50;
+    private const MAX_CONCURRENT = 10;
 
 
     /**
@@ -599,123 +599,118 @@ class ImportService
                 return $summary;
             }
 
-            // Process rows in chunks
+            // Process rows in chunks and save after each chunk
             $startRow = 2; // Skip header row
-            $allObjects = [];
+            $totalProcessed = 0;
             $rowErrors = [];
-            $objectIdMap = []; // Track original objects by their input ID for comparison
 
             for ($chunkStart = $startRow; $chunkStart <= $highestRow; $chunkStart += $chunkSize) {
                 $chunkEnd = min($chunkStart + $chunkSize - 1, $highestRow);
                 
+                error_log('[CSV Import] Processing chunk: rows ' . $chunkStart . '-' . $chunkEnd . ' of ' . $highestRow);
+                
                 // Process this chunk
                 $chunkResult = $this->processCsvChunk($sheet, $columnMapping, $chunkStart, $chunkEnd, $register, $schema);
                 
-                // Collect objects and errors
-                $allObjects = array_merge($allObjects, $chunkResult['objects']);
+                // Collect errors
                 $rowErrors = array_merge($rowErrors, $chunkResult['errors']);
-            }
-
-            $summary['found'] = count($allObjects);
-
-            // Create a map of input objects by their ID for comparison
-            foreach ($allObjects as $index => $object) {
-                $inputId = $object['@self']['id'] ?? null;
-                if ($inputId !== null) {
-                    $objectIdMap[$inputId] = $index;
-                }
-            }
-
-            // Save all objects in a single batch operation if we have any
-            if (!empty($allObjects)) {
-                try {
-                    
-                    // Track which objects existed before saving (for update vs create determination)
-                    $existingObjectIds = [];
-                    $existingObjectData = []; // Store existing object data for comparison
-                    foreach ($allObjects as $object) {
-                        $inputId = $object['@self']['id'] ?? null;
-                        if ($inputId !== null) {
-                            // Check if object with this ID already exists in the database
-                            try {
-                                $existingObject = $this->objectService->find($inputId, [], false, $register, $schema);
-                                if ($existingObject !== null) {
-                                    $existingObjectIds[$inputId] = true;
-                                    $existingObjectData[$inputId] = $existingObject->getObject();
-                                } else {
+                
+                // Save objects from this chunk immediately
+                if (!empty($chunkResult['objects'])) {
+                    try {
+                        $chunkObjects = $chunkResult['objects'];
+                        $totalProcessed += count($chunkObjects);
+                        
+                        error_log('[CSV Import] Saving chunk with ' . count($chunkObjects) . ' objects (total processed: ' . $totalProcessed . ')');
+                        
+                        // Track which objects existed before saving (for update vs create determination)
+                        $existingObjectIds = [];
+                        $existingObjectData = [];
+                        foreach ($chunkObjects as $object) {
+                            $inputId = $object['@self']['id'] ?? null;
+                            if ($inputId !== null) {
+                                try {
+                                    $existingObject = $this->objectService->find($inputId, [], false, $register, $schema);
+                                    if ($existingObject !== null) {
+                                        $existingObjectIds[$inputId] = true;
+                                        $existingObjectData[$inputId] = $existingObject->getObject();
+                                    }
+                                } catch (\Exception $e) {
+                                    // If we can't find the object, assume it's new
                                 }
-                            } catch (\Exception $e) {
-                                // If we can't find the object, assume it's new
                             }
                         }
-                    }
-                    
-                    $savedObjects = $this->objectService->saveObjects($allObjects, $register, $schema);
-                    
-                    // Categorize results based on whether objects existed before saving
-                    foreach ($savedObjects as $savedObject) {
-                        $savedUuid = $savedObject->getUuid();
                         
-                        // Check if this object existed before saving
-                        $wasUpdate = false;
-                        foreach ($allObjects as $inputObject) {
+                        $savedObjects = $this->objectService->saveObjects($chunkObjects, $register, $schema);
+                        
+                        // Categorize results for this chunk
+                        foreach ($savedObjects as $savedObject) {
+                            $savedUuid = $savedObject->getUuid();
+                            
+                            // Check if this object existed before saving
+                            $wasUpdate = false;
+                            foreach ($chunkObjects as $inputObject) {
+                                $inputId = $inputObject['@self']['id'] ?? null;
+                                if ($inputId !== null && $inputId === $savedUuid && isset($existingObjectIds[$inputId])) {
+                                    $wasUpdate = true;
+                                    break;
+                                }
+                            }
+
+                            if ($wasUpdate) {
+                                $summary['updated'][] = $savedUuid;
+                            } else {
+                                $summary['created'][] = $savedUuid;
+                            }
+                        }
+                        
+                        // Check for unchanged objects in this chunk
+                        foreach ($chunkObjects as $inputObject) {
                             $inputId = $inputObject['@self']['id'] ?? null;
-                            if ($inputId !== null && $inputId === $savedUuid && isset($existingObjectIds[$inputId])) {
-                                $wasUpdate = true;
-                                break;
-                            }
-                        }
-                        
-                        if ($wasUpdate) {
-                            $summary['updated'][] = $savedUuid;
-                        } else {
-                            $summary['created'][] = $savedUuid;
-                        }
-                    }
-                    
-                    // Check for unchanged objects (objects that exist but had no changes)
-                    foreach ($allObjects as $inputObject) {
-                        $inputId = $inputObject['@self']['id'] ?? null;
-                        if ($inputId !== null && isset($existingObjectIds[$inputId]) && isset($existingObjectData[$inputId])) {
-                            // Compare input data with existing data to see if anything changed
-                            $inputData = $inputObject;
-                            unset($inputData['@self']); // Remove metadata for comparison
-                            
-                            $existingData = $existingObjectData[$inputId];
-                            
-                            // Simple comparison - if data is identical, mark as unchanged
-                            if (json_encode($inputData) === json_encode($existingData)) {
-                                $summary['unchanged'][] = $inputId;
-                                
-                                // Remove from updated list if it was marked as updated
-                                $updatedIndex = array_search($inputId, $summary['updated']);
-                                if ($updatedIndex !== false) {
-                                    unset($summary['updated'][$updatedIndex]);
-                                    $summary['updated'] = array_values($summary['updated']); // Re-index array
+                            if ($inputId !== null && isset($existingObjectIds[$inputId]) && isset($existingObjectData[$inputId])) {
+                                $currentObjectData = $inputObject;
+                                $oldObjectData = $existingObjectData[$inputId];
+
+                                // Remove @self properties from comparison
+                                $cleanCurrent = $currentObjectData;
+                                unset($cleanCurrent['@self']);
+                                $cleanOld = $oldObjectData;
+                                unset($cleanOld['@self']);
+
+                                if ($cleanCurrent === $cleanOld) {
+                                    $summary['unchanged'][] = $inputId;
                                 }
                             }
                         }
+                        
+                        error_log('[CSV Import] Chunk saved successfully: ' . count($savedObjects) . ' objects');
+                        
+                        // Clear chunk objects from memory
+                        unset($chunkObjects);
+                        gc_collect_cycles();
+                        
+                    } catch (\Exception $e) {
+                        error_log('[CSV Import] Error saving chunk: ' . $e->getMessage());
+                        $summary['errors'][] = [
+                            'rows'  => $chunkStart . '-' . $chunkEnd,
+                            'error' => 'Failed to save chunk: ' . $e->getMessage(),
+                        ];
                     }
-                    
-                } catch (\Exception $e) {
-                    // If batch save fails, add to errors
-                    $summary['errors'][] = [
-                        'row'   => 'batch',
-                        'data'  => [],
-                        'error' => 'Batch save failed: ' . $e->getMessage(),
-                    ];
                 }
-            } else {
+                
+                // Add a small delay between chunks to prevent overwhelming the database
+                if ($chunkEnd < $highestRow) {
+                    usleep(100000); // 0.1 second delay
+                }
             }
 
-            // Add individual row errors
+            $summary['found'] = $totalProcessed;
             $summary['errors'] = array_merge($summary['errors'], $rowErrors);
 
         } catch (\Exception $e) {
+            error_log('[CSV Import] Error processing CSV sheet: ' . $e->getMessage());
             $summary['errors'][] = [
-                'row'   => 'general',
-                'data'  => [],
-                'error' => 'General processing error: ' . $e->getMessage(),
+                'error' => 'Sheet processing failed: ' . $e->getMessage(),
             ];
         }
 
@@ -748,6 +743,7 @@ class ImportService
     ): array {
         $objects = [];
         $errors = [];
+        $startMemory = memory_get_usage(true);
 
         for ($row = $startRow; $row <= $endRow; $row++) {
             try {
@@ -765,6 +761,23 @@ class ImportService
                     $objects[] = $object;
                 }
 
+                // Memory management: check memory usage every 10 rows
+                if ($row % 10 === 0) {
+                    $currentMemory = memory_get_usage(true);
+                    $memoryIncrease = $currentMemory - $startMemory;
+                    
+                    // Log memory usage for monitoring
+                    if ($memoryIncrease > 50 * 1024 * 1024) { // 50MB threshold
+                        error_log('[CSV Import] Memory usage high: ' . round($memoryIncrease / 1024 / 1024, 2) . 'MB at row ' . $row);
+                    }
+                    
+                    // Force garbage collection if memory usage is high
+                    if ($memoryIncrease > 100 * 1024 * 1024) { // 100MB threshold
+                        gc_collect_cycles();
+                        error_log('[CSV Import] Forced garbage collection at row ' . $row);
+                    }
+                }
+
             } catch (\Exception $e) {
                 $errors[] = [
                     'row'   => $row,
@@ -773,6 +786,11 @@ class ImportService
                 ];
             }
         }
+
+        // Final memory cleanup
+        $finalMemory = memory_get_usage(true);
+        $totalMemoryUsed = $finalMemory - $startMemory;
+        error_log('[CSV Import] Chunk processed: rows ' . $startRow . '-' . $endRow . ', memory used: ' . round($totalMemoryUsed / 1024 / 1024, 2) . 'MB');
 
         return [
             'objects' => $objects,
