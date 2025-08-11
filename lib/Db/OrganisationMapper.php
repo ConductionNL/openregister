@@ -135,9 +135,7 @@ class OrganisationMapper extends QBMapper
             $generatedUuid = $this->generateUuid();
             $organisation->setUuid($generatedUuid);
 
-            // Debug logging
-            error_log('[OrganisationMapper] Generated UUID: ' . $generatedUuid);
-            error_log('[OrganisationMapper] Organisation UUID after setting: ' . $organisation->getUuid());
+
         }
 
         // Set timestamps

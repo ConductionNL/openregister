@@ -741,7 +741,7 @@ class ConfigurationService
                     $schemaData['title'] = $key;
                 }
 
-                $schema = $this->importSchema(data: $schemaData, slugsAndIdsMap: $slugsAndIdsMap, owner: $owner, appId: $appId, version: $version);
+                $schema = $this->importSchema(data: $schemaData, slugsAndIdsMap: $slugsAndIdsMap, owner: $owner, appId: $appId, version: $version, force: $force);
                 if ($schema !== null) {
                     // Store schema in map by slug for reference.
                     $this->schemasMap[$schema->getSlug()] = $schema;
@@ -779,7 +779,7 @@ class ConfigurationService
                     $registerData['schemas'] = $schemaIds;
                 }//end if
 
-                $register = $this->importRegister(data: $registerData, owner: $owner, appId: $appId, version: $version);
+                $register = $this->importRegister(data: $registerData, owner: $owner, appId: $appId, version: $version, force: $force);
                 if ($register !== null) {
                     // Store register in map by slug for reference.
                     $this->registersMap[$slug] = $register;
@@ -977,7 +977,7 @@ class ConfigurationService
      *
      * @return Register|null The imported register or null if skipped.
      */
-    private function importRegister(array $data, ?string $owner=null, ?string $appId=null, ?string $version=null): ?Register
+    private function importRegister(array $data, ?string $owner=null, ?string $appId=null, ?string $version=null, bool $force=false): ?Register
     {
         try {
             // Remove id and uuid from the data.
@@ -996,7 +996,7 @@ class ConfigurationService
 
             if ($existingRegister !== null) {
                 // Compare versions using version_compare for proper semver comparison.
-                if (version_compare($data['version'], $existingRegister->getVersion(), '<=') === true) {
+                if ($force === false && version_compare($data['version'], $existingRegister->getVersion(), '<=') === true) {
                     $this->logger->info('Skipping register import as existing version is newer or equal.');
                     // Even though we're skipping the update, we still need to add it to the map.
                     return $existingRegister;
@@ -1038,7 +1038,7 @@ class ConfigurationService
      *
      * @return Schema|null The imported schema or null if skipped.
      */
-    private function importSchema(array $data, array $slugsAndIdsMap, ?string $owner = null, ?string $appId = null, ?string $version = null): ?Schema
+    private function importSchema(array $data, array $slugsAndIdsMap, ?string $owner = null, ?string $appId = null, ?string $version = null, bool $force=false): ?Schema
     {
         try {
             // Remove id and uuid from the data.
@@ -1108,7 +1108,7 @@ class ConfigurationService
 
             if ($existingSchema !== null) {
                 // Compare versions using version_compare for proper semver comparison.
-                if (version_compare($data['version'], $existingSchema->getVersion(), '<=') === true) {
+                if ($force === false && version_compare($data['version'], $existingSchema->getVersion(), '<=') === true) {
                     $this->logger->info('Skipping schema import as existing version is newer or equal.');
                     // Even though we're skipping the update, we still need to add it to the map.
                     return $existingSchema;

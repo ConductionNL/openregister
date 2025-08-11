@@ -890,5 +890,28 @@ class Schema extends Entity implements JsonSerializable
 
     }//end setConfiguration()
 
+    /**
+     * String representation of the schema
+     * 
+     * This magic method is required for proper entity handling in Nextcloud
+     * when the framework needs to convert the object to a string.
+     * 
+     * @return string String representation of the schema
+     */
+    public function __toString(): string
+    {
+        // Return the schema slug if available, otherwise return a descriptive string
+        if ($this->slug !== null && $this->slug !== '') {
+            return $this->slug;
+        }
+        
+        // Fallback to title if slug is not available
+        if ($this->title !== null && $this->title !== '') {
+            return $this->title;
+        }
+        
+        // Final fallback with ID
+        return 'Schema #' . ($this->id ?? 'unknown');
+    }
 
 }//end class

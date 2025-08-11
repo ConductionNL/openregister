@@ -10,6 +10,13 @@ This section contains documentation for fixes and solutions implemented in OpenR
 
 ## Available Fixes
 
+### [Entity __toString() Magic Method Fix](./ENTITY_TOSTRING_FIX.md)
+**Issue**: Object entities could not be saved due to string conversion errors when the framework attempted to convert entity objects to strings.
+
+**Solution**: Added `__toString()` magic methods to all entity classes and fixed organisation handling logic in the SaveObject service.
+
+**Impact**: Resolves object entity saving errors and prevents similar string conversion issues across all entity operations.
+
 ### [Organisation Default Fix](./ORGANISATION_DEFAULT_FIX.md)
 **Issue**: Import functionality failing on production with missing default organisation methods.
 

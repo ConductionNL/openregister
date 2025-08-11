@@ -10,6 +10,7 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 		@close="closeModal">
 		<NcNoteCard v-if="success && importSummary" type="success">
 			<p>Register imported successfully!</p>
+			<p><small>The register list is being refreshed in the background.</small></p>
 		</NcNoteCard>
 
 		<div v-if="importResults" class="importResults">
@@ -466,18 +467,31 @@ export default {
 				return
 			}
 
+			console.log('ImportRegister: Starting import, setting loading to true')
 			this.loading = true
 			this.error = null
 
 			try {
+				console.log('ImportRegister: Calling registerStore.importRegister')
+				// Call importRegister - the register refresh will happen in the background
+				// This way the loading state is turned off as soon as the import is done
 				const result = await registerStore.importRegister(this.selectedFile, this.includeObjects)
+				
+				console.log('ImportRegister: Import completed, setting success state')
 				// Store the import summary from the backend response
 				this.importSummary = result?.responseData?.summary || result?.summary || null
 				this.importResults = result?.responseData?.summary || result?.summary || null
 				this.success = true
+				
+				console.log('ImportRegister: Setting loading to false')
+				// Turn off loading immediately after import completes
+				// The register refresh will happen in the background
 				this.loading = false
+				
+				console.log('ImportRegister: Loading state set to false, success:', this.success)
 				// Do not auto-close; let user review the summary and close manually
 			} catch (error) {
+				console.error('ImportRegister: Import failed:', error)
 				this.error = error.message || 'Failed to import register'
 				this.loading = false
 			}

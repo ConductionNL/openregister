@@ -114,7 +114,7 @@ class SearchTrailService
 
             return $trail;
         } catch (Exception $e) {
-            error_log("Failed to create search trail: ".$e->getMessage());
+
             throw new Exception("Search trail creation failed: ".$e->getMessage(), 0, $e);
         }
 

@@ -534,5 +534,125 @@ class SchemaMapper extends QBMapper
         return $mappings;
     }
 
+    /**
+     * Find schemas that have properties referencing the given schema
+     *
+     * This method searches through all schemas to find ones that have properties
+     * with $ref pointing to the target schema, indicating a relationship.
+     *
+     * @param Schema|int|string $schema The target schema to find references to
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If the target schema does not exist
+     * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple target schemas are found
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return array<Schema> Array of schemas that reference the target schema
+     */
+    public function getRelated(Schema|int|string $schema): array
+    {
+        // If we received a Schema entity, get its ID, otherwise find the schema
+        if ($schema instanceof Schema) {
+            $targetSchemaId = (string) $schema->getId();
+            $targetSchemaUuid = $schema->getUuid();
+            $targetSchemaSlug = $schema->getSlug();
+        } else {
+            // Find the target schema to get all its identifiers
+            $targetSchema = $this->find($schema);
+            $targetSchemaId = (string) $targetSchema->getId();
+            $targetSchemaUuid = $targetSchema->getUuid();
+            $targetSchemaSlug = $targetSchema->getSlug();
+        }
+
+        // Get all schemas to search through their properties
+        $allSchemas = $this->findAll();
+        $relatedSchemas = [];
+
+        foreach ($allSchemas as $currentSchema) {
+            // Skip the target schema itself
+            if ($currentSchema->getId() === (int) $targetSchemaId) {
+                continue;
+            }
+
+            // Get the properties of the current schema
+            $properties = $currentSchema->getProperties() ?? [];
+            
+            // Search for references to the target schema
+            if ($this->hasReferenceToSchema($properties, $targetSchemaId, $targetSchemaUuid, $targetSchemaSlug)) {
+                $relatedSchemas[] = $currentSchema;
+            }
+        }
+
+        return $relatedSchemas;
+    }
+
+    /**
+     * Recursively check if properties contain a reference to the target schema
+     *
+     * This method searches through properties recursively to find $ref values
+     * that match the target schema's ID, UUID, or slug.
+     *
+     * @param array  $properties        The properties array to search through
+     * @param string $targetSchemaId    The target schema ID to look for
+     * @param string $targetSchemaUuid  The target schema UUID to look for
+     * @param string $targetSchemaSlug  The target schema slug to look for
+     *
+     * @return bool True if a reference to the target schema is found
+     */
+    private function hasReferenceToSchema(array $properties, string $targetSchemaId, string $targetSchemaUuid, string $targetSchemaSlug): bool
+    {
+        foreach ($properties as $property) {
+            // Skip non-array properties
+            if (!is_array($property)) {
+                continue;
+            }
+
+            // Check if this property has a $ref that matches our target schema
+            if (isset($property['$ref'])) {
+                $ref = $property['$ref'];
+                
+                // Check exact matches first
+                if ($ref === $targetSchemaId || 
+                    $ref === $targetSchemaUuid || 
+                    $ref === $targetSchemaSlug ||
+                    $ref === (int) $targetSchemaId) {
+                    return true;
+                }
+                
+                // Check if the ref contains the target schema slug in JSON Schema format
+                // Format: "#/components/schemas/slug" or "components/schemas/slug" etc.
+                if (is_string($ref) && !empty($targetSchemaSlug)) {
+                    if (str_contains($ref, '/schemas/' . $targetSchemaSlug) ||
+                        str_contains($ref, 'schemas/' . $targetSchemaSlug) ||
+                        str_ends_with($ref, '/' . $targetSchemaSlug)) {
+                        return true;
+                    }
+                }
+                
+                // Check if the ref contains the target schema UUID
+                if (is_string($ref) && !empty($targetSchemaUuid)) {
+                    if (str_contains($ref, $targetSchemaUuid)) {
+                        return true;
+                    }
+                }
+            }
+
+            // Recursively check nested properties
+            if (isset($property['properties']) && is_array($property['properties'])) {
+                if ($this->hasReferenceToSchema($property['properties'], $targetSchemaId, $targetSchemaUuid, $targetSchemaSlug)) {
+                    return true;
+                }
+            }
+
+            // Check array items for references
+            if (isset($property['items']) && is_array($property['items'])) {
+                if ($this->hasReferenceToSchema([$property['items']], $targetSchemaId, $targetSchemaUuid, $targetSchemaSlug)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
 
 }//end class
