@@ -241,6 +241,142 @@ try {
 }
 ```
 
+### 4. Dynamic Packet Size Management
+
+The system automatically detects and adapts to the database's `max_allowed_packet` setting to prevent packet size errors during large bulk operations:
+
+#### Automatic Detection
+
+The system queries the database to determine the actual `max_allowed_packet` value:
+
+```php
+public function getMaxAllowedPacketSize(): int
+{
+    try {
+        $stmt = $this->db->executeQuery('SHOW VARIABLES LIKE \'max_allowed_packet\'');
+        $result = $stmt->fetch();
+        
+        if ($result && isset($result['Value'])) {
+            return (int) $result['Value'];
+        }
+    } catch (\Exception $e) {
+        error_log('[ObjectEntityMapper] Could not get max_allowed_packet, using default: 16777216 bytes');
+    }
+    
+    // Default fallback value (16MB)
+    return 16777216;
+}
+```
+
+#### Configurable Buffer Percentage
+
+Administrators can adjust the safety buffer percentage used for chunk size calculations:
+
+```php
+// Set buffer to 30% (more conservative)
+$objectEntityMapper->setMaxPacketSizeBuffer(0.3);
+
+// Set buffer to 60% (less conservative)
+$objectEntityMapper->setMaxPacketSizeBuffer(0.6);
+
+// Get current buffer setting
+$currentBuffer = $objectEntityMapper->getMaxPacketSizeBuffer();
+```
+
+#### Adaptive Buffer Sizing
+
+The system automatically adjusts the buffer based on the detected packet size:
+
+- **≤ 16MB**: 30% buffer (very conservative)
+- **> 16MB**: 40% buffer (conservative)
+- **> 32MB**: 50% buffer (moderate)
+- **> 64MB**: 60% buffer (less conservative)
+
+#### Dynamic Chunk Sizing
+
+Chunk sizes are calculated dynamically based on actual object sizes and the configured buffer:
+
+```php
+private function calculateOptimalChunkSize(array $insertObjects, array $updateObjects): int
+{
+    // Sample objects to estimate data size
+    $sampleSize = min(20, max(5, count($insertObjects) + count($updateObjects)));
+    
+    // Calculate safety object size (using maximum size for safety)
+    $safetyObjectSize = max($averageObjectSize, $maxObjectSize);
+    
+    // Use dynamic buffer percentage
+    $maxPacketSize = $this->getMaxAllowedPacketSize() * $this->maxPacketSizeBuffer;
+    $safeChunkSize = intval($maxPacketSize / $safetyObjectSize);
+    
+    // Ensure chunk size is within conservative bounds
+    return max(5, min(100, $safeChunkSize));
+}
+```
+
+## Configuration Options
+
+### 1. Max Packet Size Buffer Configuration
+
+The system provides several configuration methods for fine-tuning bulk operation performance:
+
+#### Runtime Configuration
+```php
+// Get the ObjectEntityMapper instance
+$objectEntityMapper = $this->getObjectEntityMapper();
+
+// Configure buffer percentage (0.1 = 10%, 0.5 = 50%)
+$objectEntityMapper->setMaxPacketSizeBuffer(0.3);  // Very conservative
+$objectEntityMapper->setMaxPacketSizeBuffer(0.5);  // Default
+$objectEntityMapper->setMaxPacketSizeBuffer(0.7);  // Less conservative
+
+// Get current configuration
+$currentBuffer = $objectEntityMapper->getMaxPacketSizeBuffer();
+$maxPacketSize = $objectEntityMapper->getMaxAllowedPacketSize();
+```
+
+#### Configuration in Service Layer
+```php
+// In ObjectService or similar service class
+public function configureBulkOperations(float $bufferPercentage): void
+{
+    if ($bufferPercentage >= 0.1 && $bufferPercentage <= 0.9) {
+        $this->objectEntityMapper->setMaxPacketSizeBuffer($bufferPercentage);
+        $this->logger->info('Bulk operations buffer set to ' . ($bufferPercentage * 100) . '%');
+    }
+}
+```
+
+#### Environment-Based Configuration
+```php
+// Configure based on environment variables
+$bufferPercentage = getenv('OPENREGISTER_BULK_BUFFER') ?: 0.5;
+$objectEntityMapper->setMaxPacketSizeBuffer((float) $bufferPercentage);
+```
+
+### 2. Large Object Threshold Configuration
+
+The threshold for separating large objects can be configured:
+
+```php
+// Default threshold is 500KB (500,000 bytes)
+$maxSafeSize = 1000000; // 1MB threshold
+
+$objectGroups = $this->separateLargeObjects($objects, $maxSafeSize);
+```
+
+### 3. Chunk Size Bounds
+
+The system enforces conservative bounds for chunk sizes:
+
+```php
+// Minimum chunk size: 5 objects
+// Maximum chunk size: 100 objects
+// These bounds prevent memory issues and ensure stability
+
+$optimalChunkSize = max(5, min(100, $safeChunkSize));
+```
+
 ## Error Handling Strategy
 
 ### 1. Input Validation
@@ -298,6 +434,66 @@ foreach ($objects as $object) {
         // Object processing failed, continue with next object
     }
 }
+```
+
+## Troubleshooting Common Issues
+
+### 1. Max Packet Size Errors
+
+If you encounter `SQLSTATE[08S01]: Communication link failure: 1153 Got a packet bigger than 'max_allowed_packet' bytes` errors:
+
+#### Check Current Database Setting
+```bash
+# From within the Nextcloud container
+docker exec -it -u 33 master-nextcloud-1 bash -c "mysql -u root -p -e 'SHOW VARIABLES LIKE \"max_allowed_packet\";'"
+
+# Or directly from MySQL container
+docker exec -it master-database-mysql-1 mysql -u root -p -e 'SHOW VARIABLES LIKE "max_allowed_packet";'
+```
+
+#### Adjust Buffer Percentage
+If the system is still too aggressive, reduce the buffer percentage:
+
+```php
+// More conservative (smaller chunks)
+$objectEntityMapper->setMaxPacketSizeBuffer(0.3);
+
+// Very conservative (very small chunks)
+$objectEntityMapper->setMaxPacketSizeBuffer(0.2);
+```
+
+#### Monitor Chunk Sizing
+Check the application logs for chunk size calculations:
+
+```bash
+docker logs master-nextcloud-1 | grep 'ObjectEntityMapper.*chunk size'
+docker logs master-nextcloud-1 | grep 'ObjectEntityMapper.*Max packet size buffer'
+```
+
+### 2. Large Object Handling
+
+The system automatically separates extremely large objects (>500KB by default) for individual processing:
+
+```php
+// Objects larger than this threshold are processed individually
+$maxSafeSize = 500000; // 500KB
+
+$objectGroups = $this->separateLargeObjects($objects, $maxSafeSize);
+$largeObjects = $objectGroups['large'];      // Process individually
+$normalObjects = $objectGroups['normal'];    // Process in chunks
+```
+
+### 3. Performance Monitoring
+
+Monitor bulk operation performance through logs:
+
+```bash
+# Check for performance issues
+docker logs master-nextcloud-1 | grep 'ObjectEntityMapper.*Starting saveObjects'
+docker logs master-nextcloud-1 | grep 'ObjectEntityMapper.*Completed processing'
+
+# Monitor memory usage
+docker logs master-nextcloud-1 | grep 'ObjectEntityMapper.*memory'
 ```
 
 ## Security Considerations
