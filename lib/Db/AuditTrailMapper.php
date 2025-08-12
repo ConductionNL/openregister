@@ -262,7 +262,9 @@ class AuditTrailMapper extends QBMapper
             $auditTrail->setExpires(new \DateTime('+30 days'));
         }
 
-        $auditTrail->setSize(strlen(serialize( $object))); // Set the size to the byte size of the serialized object.
+        // Set the size to the byte size of the serialized object, with a minimum default of 14 bytes
+        $serializedSize = strlen(serialize($object));
+        $auditTrail->setSize(max($serializedSize, 14));
 
         return $this->insert(entity: $auditTrail);
 
@@ -352,7 +354,9 @@ class AuditTrailMapper extends QBMapper
         $auditTrail->setCreated(new \DateTime());
         $auditTrail->setRegister($objectEntity->getRegister());
         $auditTrail->setSchema($objectEntity->getSchema());
-        $auditTrail->setSize(strlen(serialize($objectEntity->jsonSerialize()))); // Set the size to the byte size of the serialized object
+        // Set the size to the byte size of the serialized object, with a minimum default of 14 bytes
+        $serializedSize = strlen(serialize($objectEntity->jsonSerialize()));
+        $auditTrail->setSize(max($serializedSize, 14));
 
         // Set default expiration date (30 days from now)
         $auditTrail->setExpires(new \DateTime('+30 days'));
@@ -599,8 +603,9 @@ class AuditTrailMapper extends QBMapper
      */
     public function update(Entity $entity): Entity
     {
-        // Recalculate size before update
-        $entity->setSize(strlen(serialize($entity->jsonSerialize()))); // Set the size to the byte size of the serialized object
+        // Recalculate size before update, with a minimum default of 14 bytes
+        $serializedSize = strlen(serialize($entity->jsonSerialize()));
+        $entity->setSize(max($serializedSize, 14));
 
         return parent::update($entity);
     }
@@ -976,5 +981,224 @@ class AuditTrailMapper extends QBMapper
         }
 
     }//end clearLogs()
+
+
+    /**
+     * Count audit trails with optional filters
+     *
+     * @param array|null $filters The filters to apply (same format as findAll)
+     *
+     * @return int The count of audit trails matching the filters
+     */
+    public function count(?array $filters = []): int
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select($qb->func()->count('*'))
+            ->from('openregister_audit_trails');
+
+        // Filter out system variables (starting with _).
+        $filters = array_filter(
+            $filters ?? [],
+            function ($key) {
+                return !str_starts_with($key, '_');
+            },
+            ARRAY_FILTER_USE_KEY
+        );
+
+        // Apply filters.
+        foreach ($filters as $field => $value) {
+            // Ensure the field is a valid column name.
+            if (in_array(
+                    $field,
+                    [
+                        'id',
+                        'uuid',
+                        'schema',
+                        'register',
+                        'object',
+                        'action',
+                        'changed',
+                        'user',
+                        'user_name',
+                        'session',
+                        'request',
+                        'ip_address',
+                        'version',
+                        'created',
+                        'expires',
+                    ]
+                    ) === false
+            ) {
+                continue;
+            }
+
+            if ($value === 'IS NOT NULL') {
+                $qb->andWhere($qb->expr()->isNotNull($field));
+            } else if ($value === 'IS NULL') {
+                $qb->andWhere($qb->expr()->isNull($field));
+            } else if (is_array($value)) {
+                // Handle array values like ['IS NULL', '']
+                $conditions = [];
+                foreach ($value as $val) {
+                    if ($val === 'IS NULL') {
+                        $conditions[] = $qb->expr()->isNull($field);
+                    } else if ($val === 'IS NOT NULL') {
+                        $conditions[] = $qb->expr()->isNotNull($field);
+                    } else {
+                        $conditions[] = $qb->expr()->eq($field, $qb->createNamedParameter($val));
+                    }
+                }
+                if (!empty($conditions)) {
+                    $qb->andWhere($qb->expr()->orX(...$conditions));
+                }
+            } else {
+                // Handle comma-separated values (e.g., action=create,update)
+                if (strpos($value, ',') !== false) {
+                    $values = array_map('trim', explode(',', $value));
+                    $qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($values, IQueryBuilder::PARAM_STR_ARRAY)));
+                } else {
+                    $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value)));
+                }
+            }
+        }//end foreach
+
+        $result = $qb->executeQuery();
+        $row = $result->fetch();
+
+        return (int)($row['COUNT(*)'] ?? 0);
+    }//end count()
+
+
+    /**
+     * Sum the size of audit trails with optional filters
+     *
+     * @param array|null $filters The filters to apply (same format as findAll)
+     *
+     * @return int The total size of audit trails matching the filters in bytes
+     */
+    public function sizeAuditTrails(?array $filters = []): int
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select($qb->createFunction('COALESCE(SUM(CAST(size AS UNSIGNED)), 0)'))
+            ->from($this->getTableName());
+
+        // Filter out system variables (starting with _).
+        $filters = array_filter(
+            $filters ?? [],
+            function ($key) {
+                return !str_starts_with($key, '_');
+            },
+            ARRAY_FILTER_USE_KEY
+        );
+
+        // Apply filters.
+        foreach ($filters as $field => $value) {
+            // Ensure the field is a valid column name.
+            if (in_array(
+                    $field,
+                    [
+                        'id',
+                        'uuid',
+                        'schema',
+                        'register',
+                        'object',
+                        'action',
+                        'changed',
+                        'user',
+                        'user_name',
+                        'session',
+                        'request',
+                        'ip_address',
+                        'version',
+                        'created',
+                        'expires',
+                        'size',
+                    ]
+                    ) === false
+            ) {
+                continue;
+            }
+
+            if ($value === 'IS NOT NULL') {
+                $qb->andWhere($qb->expr()->isNotNull($field));
+            } else if ($value === 'IS NULL') {
+                $qb->andWhere($qb->expr()->isNull($field));
+            } else if (is_array($value)) {
+                // Handle array values like ['IS NULL', '']
+                $conditions = [];
+                foreach ($value as $val) {
+                    if ($val === 'IS NULL') {
+                        $conditions[] = $qb->expr()->isNull($field);
+                    } else if ($val === 'IS NOT NULL') {
+                        $conditions[] = $qb->expr()->isNotNull($field);
+                    } else {
+                        $conditions[] = $qb->expr()->eq($field, $qb->createNamedParameter($val));
+                    }
+                }
+                if (!empty($conditions)) {
+                    $qb->andWhere($qb->expr()->orX(...$conditions));
+                }
+            } else {
+                // Handle comma-separated values (e.g., action=create,update)
+                if (strpos($value, ',') !== false) {
+                    $values = array_map('trim', explode(',', $value));
+                    $qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($values, IQueryBuilder::PARAM_STR_ARRAY)));
+                } else {
+                    $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value)));
+                }
+            }
+        }//end foreach
+
+        $result = $qb->executeQuery();
+        $size = $result->fetchOne();
+        $result->closeCursor();
+
+        return (int)($size ?? 0);
+    }//end sizeAuditTrails()
+
+
+    /**
+     * Set expiry dates for audit trails based on retention period in milliseconds
+     *
+     * Updates the expires column for audit trails based on their creation date plus the retention period.
+     * Only affects audit trails that don't already have an expiry date set.
+     *
+     * @param int $retentionMs Retention period in milliseconds
+     *
+     * @return int Number of audit trails updated
+     *
+     * @throws \Exception Database operation exceptions
+     */
+    public function setExpiryDate(int $retentionMs): int
+    {
+        try {
+            // Convert milliseconds to seconds for DateTime calculation
+            $retentionSeconds = intval($retentionMs / 1000);
+            
+            // Get the query builder
+            $qb = $this->db->getQueryBuilder();
+            
+            // Update audit trails that don't have an expiry date set
+            $qb->update($this->getTableName())
+               ->set('expires', $qb->createFunction(
+                   sprintf('DATE_ADD(created, INTERVAL %d SECOND)', $retentionSeconds)
+               ))
+               ->where($qb->expr()->isNull('expires'));
+            
+            // Execute the update and return number of affected rows
+            return $qb->executeStatement();
+        } catch (\Exception $e) {
+            // Log the error for debugging purposes
+            \OC::$server->getLogger()->error('Failed to set expiry dates for audit trails: ' . $e->getMessage(), [
+                'app' => 'openregister',
+                'exception' => $e
+            ]);
+            
+            // Re-throw the exception so the caller knows something went wrong
+            throw $e;
+        }
+    }//end setExpiryDate()
 
 }//end class

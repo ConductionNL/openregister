@@ -8,6 +8,12 @@ return [
         'Configurations' => ['url' => 'api/configurations'],
     ],
     'routes' => [
+        // Settings
+        ['name' => 'settings#index', 'url' => '/api/settings', 'verb' => 'GET'],
+        ['name' => 'settings#update', 'url' => '/api/settings', 'verb' => 'PUT'],
+        ['name' => 'settings#rebase', 'url' => '/api/settings/rebase', 'verb' => 'POST'],
+        ['name' => 'settings#stats', 'url' => '/api/settings/stats', 'verb' => 'GET'],
+        // Dashbaord
         ['name' => 'dashboard#page', 'url' => '/', 'verb' => 'GET'],
         ['name' => 'dashboard#index', 'url' => '/api/dashboard', 'verb' => 'GET'],
         ['name' => 'dashboard#calculate', 'url' => '/api/dashboard/calculate/{registerId}', 'verb' => 'POST', 'requirements' => ['registerId' => '\d+']],

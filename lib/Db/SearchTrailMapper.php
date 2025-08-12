@@ -241,6 +241,10 @@ class SearchTrailMapper extends QBMapper
         // Set user information
         $this->setUserInformation($searchTrail);
 
+        // Calculate and set the size of the search trail entry, with a minimum default of 14 bytes
+        $serializedSize = strlen(serialize($searchTrail->jsonSerialize()));
+        $searchTrail->setSize(max($serializedSize, 14));
+
         return $this->insert($searchTrail);
 
     }//end createSearchTrail()
@@ -664,29 +668,43 @@ class SearchTrailMapper extends QBMapper
 
 
     /**
-     * Clean up old search trails based on expiration date
+     * Clear expired search trail logs from the database
      *
-     * @param DateTime|null $before Delete entries older than this date
+     * This method deletes all search trail logs that have expired (i.e., their 'expires' date is earlier than the current date and time)
+     * and have the 'expires' column set. This helps maintain database performance by removing old log entries that are no longer needed.
      *
-     * @return int Number of deleted entries
+     * @return bool True if any logs were deleted, false otherwise
+     *
+     * @throws \Exception Database operation exceptions
      */
-    public function cleanup(?DateTime $before = null): int
+    public function clearLogs(): bool
     {
-        $qb = $this->db->getQueryBuilder();
+        try {
+            // Get the query builder for database operations
+            $qb = $this->db->getQueryBuilder();
 
-        $qb->delete($this->getTableName());
+            // Build the delete query to remove expired search trail logs that have the 'expires' column set
+            $qb->delete($this->getTableName())
+               ->where($qb->expr()->isNotNull('expires'))
+               ->andWhere($qb->expr()->lt('expires', $qb->createFunction('NOW()')));
 
-        if ($before !== null) {
-            $qb->where($qb->expr()->lt('created', $qb->createNamedParameter($before->format('Y-m-d H:i:s'))));
-        } else {
-            // Default: delete entries older than 1 year
-            $oneYearAgo = new DateTime('-1 year');
-            $qb->where($qb->expr()->lt('created', $qb->createNamedParameter($oneYearAgo->format('Y-m-d H:i:s'))));
+            // Execute the query and get the number of affected rows
+            $result = $qb->executeStatement();
+
+            // Return true if any rows were affected (i.e., any logs were deleted)
+            return $result > 0;
+        } catch (\Exception $e) {
+            // Log the error for debugging purposes
+            \OC::$server->getLogger()->error('Failed to clear expired search trail logs: ' . $e->getMessage(), [
+                'app' => 'openregister',
+                'exception' => $e
+            ]);
+            
+            // Re-throw the exception so the caller knows something went wrong
+            throw $e;
         }
 
-        return $qb->executeStatement();
-
-    }//end cleanup()
+    }//end clearLogs()
 
 
     /**
@@ -699,11 +717,49 @@ class SearchTrailMapper extends QBMapper
      */
     private function applyFilters(IQueryBuilder $qb, array $filters): void
     {
+        // Valid column names for SearchTrail
+        $validColumns = [
+            'id', 'uuid', 'created', 'expires', 'search_term', 'page', 'limit', 'offset',
+            'facets_requested', 'facetable_requested', 'register', 'register_uuid',
+            'schema', 'schema_uuid', 'sort_parameters', 'published_only', 'filters',
+            'query_parameters', 'result_count', 'total_results', 'response_time',
+            'execution_type', 'ip_address', 'user_agent', 'request_uri', 'http_method',
+            'user', 'user_name', 'session', 'size'
+        ];
+
         foreach ($filters as $field => $value) {
-            if (is_array($value)) {
-                $qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)));
+            // Skip system variables and ensure valid column names
+            if (str_starts_with($field, '_') || !in_array($field, $validColumns)) {
+                continue;
+            }
+
+            if ($value === 'IS NOT NULL') {
+                $qb->andWhere($qb->expr()->isNotNull($field));
+            } else if ($value === 'IS NULL') {
+                $qb->andWhere($qb->expr()->isNull($field));
+            } else if (is_array($value)) {
+                // Handle array values like ['IS NULL', '']
+                $conditions = [];
+                foreach ($value as $val) {
+                    if ($val === 'IS NULL') {
+                        $conditions[] = $qb->expr()->isNull($field);
+                    } else if ($val === 'IS NOT NULL') {
+                        $conditions[] = $qb->expr()->isNotNull($field);
+                    } else {
+                        $conditions[] = $qb->expr()->eq($field, $qb->createNamedParameter($val));
+                    }
+                }
+                if (!empty($conditions)) {
+                    $qb->andWhere($qb->expr()->orX(...$conditions));
+                }
             } else {
-                $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value)));
+                // Handle comma-separated values
+                if (is_string($value) && strpos($value, ',') !== false) {
+                    $values = array_map('trim', explode(',', $value));
+                    $qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($values, IQueryBuilder::PARAM_STR_ARRAY)));
+                } else {
+                    $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value)));
+                }
             }
         }
 
@@ -812,5 +868,100 @@ class SearchTrailMapper extends QBMapper
 
     }//end setUserInformation()
 
+
+    /**
+     * Calculate the total size of search trails with optional filters
+     *
+     * Sums the size column of search trails matching the given criteria
+     *
+     * @param array         $filters Filter criteria
+     * @param string|null   $search  Search term
+     * @param DateTime|null $from    Start date filter
+     * @param DateTime|null $to      End date filter
+     *
+     * @return int Total size in bytes
+     */
+    public function sizeSearchTrails(
+        array $filters = [],
+        ?string $search = null,
+        ?DateTime $from = null,
+        ?DateTime $to = null
+    ): int {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select($qb->func()->sum('size'))
+            ->from($this->getTableName());
+
+        // Apply filters
+        $this->applyFilters($qb, $filters);
+
+        // Apply search term
+        if ($search !== null) {
+            $qb->andWhere(
+                $qb->expr()->orX(
+                    $qb->expr()->like('search_term', $qb->createNamedParameter('%' . $search . '%')),
+                    $qb->expr()->like('request_uri', $qb->createNamedParameter('%' . $search . '%')),
+                    $qb->expr()->like('user_agent', $qb->createNamedParameter('%' . $search . '%'))
+                )
+            );
+        }
+
+        // Apply date filters
+        if ($from !== null) {
+            $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
+        }
+        if ($to !== null) {
+            $qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
+        }
+
+        $result = $qb->executeQuery();
+        $size = $result->fetchOne();
+        $result->closeCursor();
+
+        return (int) ($size ?? 0);
+    }//end sizeSearchTrails()
+
+
+    /**
+     * Set expiry dates for search trails based on retention period in milliseconds
+     *
+     * Updates the expires column for search trails based on their creation date plus the retention period.
+     * Only affects search trails that don't already have an expiry date set.
+     *
+     * @param int $retentionMs Retention period in milliseconds
+     *
+     * @return int Number of search trails updated
+     *
+     * @throws \Exception Database operation exceptions
+     */
+    public function setExpiryDate(int $retentionMs): int
+    {
+        try {
+            // Convert milliseconds to seconds for DateTime calculation
+            $retentionSeconds = intval($retentionMs / 1000);
+            
+            // Get the query builder
+            $qb = $this->db->getQueryBuilder();
+            
+            // Update search trails that don't have an expiry date set
+            $qb->update($this->getTableName())
+               ->set('expires', $qb->createFunction(
+                   sprintf('DATE_ADD(created, INTERVAL %d SECOND)', $retentionSeconds)
+               ))
+               ->where($qb->expr()->isNull('expires'));
+            
+            // Execute the update and return number of affected rows
+            return $qb->executeStatement();
+        } catch (\Exception $e) {
+            // Log the error for debugging purposes
+            \OC::$server->getLogger()->error('Failed to set expiry dates for search trails: ' . $e->getMessage(), [
+                'app' => 'openregister',
+                'exception' => $e
+            ]);
+            
+            // Re-throw the exception so the caller knows something went wrong
+            throw $e;
+        }
+    }//end setExpiryDate()
 
 }//end class 

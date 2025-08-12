@@ -127,7 +127,8 @@ class Application extends App implements IBootstrap
                 $container->get('OCP\IUserSession'),
                 $container->get(SchemaMapper::class),
                 $container->get('OCP\IGroupManager'),
-                $container->get('OCP\IUserManager')
+                $container->get('OCP\IUserManager'),
+                $container->get('OCP\IAppConfig')
             );
         });
 
