@@ -258,6 +258,13 @@ class SearchTrail extends Entity implements JsonSerializable
      */
     protected ?DateTime $expires = null;
 
+    /**
+     * The size of the search trail entry in bytes
+     *
+     * @var integer|null The size of the search trail entry in bytes
+     */
+    protected ?int $size = null;
+
 
     /**
      * Constructor for the SearchTrail class
@@ -298,6 +305,7 @@ class SearchTrail extends Entity implements JsonSerializable
         $this->addType(fieldName: 'organisationId', type: 'string');
         $this->addType(fieldName: 'organisationIdType', type: 'string');
         $this->addType(fieldName: 'expires', type: 'datetime');
+        $this->addType(fieldName: 'size', type: 'integer');
 
     }//end __construct()
 
@@ -472,6 +480,7 @@ class SearchTrail extends Entity implements JsonSerializable
             'organisationId'     => $this->organisationId,
             'organisationIdType' => $this->organisationIdType,
             'expires'            => $expires,
+            'size'               => $this->size,
         ];
 
     }//end jsonSerialize()

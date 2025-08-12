@@ -39,6 +39,7 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IUserSession;
+use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use Symfony\Component\Uid\Uuid;
@@ -93,6 +94,13 @@ class ObjectEntityMapper extends QBMapper
      */
     private IUserManager $userManager;
 
+    /**
+     * App configuration instance
+     *
+     * @var IAppConfig
+     */
+    private IAppConfig $appConfig;
+
 
 
     /**
@@ -139,6 +147,7 @@ class ObjectEntityMapper extends QBMapper
      * @param SchemaMapper     $schemaMapper     The schema mapper
      * @param IGroupManager    $groupManager     The group manager
      * @param IUserManager     $userManager      The user manager
+     * @param IAppConfig       $appConfig        The app configuration
      */
     public function __construct(
         IDBConnection $db,
@@ -147,7 +156,8 @@ class ObjectEntityMapper extends QBMapper
         IUserSession $userSession,
         SchemaMapper $schemaMapper,
         IGroupManager $groupManager,
-        IUserManager $userManager
+        IUserManager $userManager,
+        IAppConfig $appConfig
     ) {
         parent::__construct($db, 'openregister_objects');
 
@@ -163,10 +173,45 @@ class ObjectEntityMapper extends QBMapper
         $this->schemaMapper    = $schemaMapper;
         $this->groupManager    = $groupManager;
         $this->userManager     = $userManager;
+        $this->appConfig       = $appConfig;
 
         // Try to get max_allowed_packet from database configuration
         $this->initializeMaxPacketSize();
-    }
+    }//end __construct()
+
+
+    /**
+     * Check if RBAC is enabled in app configuration
+     *
+     * @return bool True if RBAC is enabled, false otherwise
+     */
+    private function isRbacEnabled(): bool
+    {
+        $rbacConfig = $this->appConfig->getValueString('openregister', 'rbac', '');
+        if (empty($rbacConfig)) {
+            return false;
+        }
+        
+        $rbacData = json_decode($rbacConfig, true);
+        return $rbacData['enabled'] ?? false;
+    }//end isRbacEnabled()
+
+
+    /**
+     * Check if multi-tenancy is enabled in app configuration
+     *
+     * @return bool True if multi-tenancy is enabled, false otherwise
+     */
+    private function isMultiTenancyEnabled(): bool
+    {
+        $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
+        if (empty($multitenancyConfig)) {
+            return false;
+        }
+        
+        $multitenancyData = json_decode($multitenancyConfig, true);
+        return $multitenancyData['enabled'] ?? false;
+    }//end isMultiTenancyEnabled()
 
     /**
      * Initialize the max packet size buffer based on database configuration
@@ -265,7 +310,7 @@ class ObjectEntityMapper extends QBMapper
     private function applyRbacFilters(IQueryBuilder $qb, string $objectTableAlias = 'o', string $schemaTableAlias = 's', ?string $userId = null, bool $rbac = true): void
     {
         // If RBAC is disabled, skip all permission filtering
-        if ($rbac === false) {
+        if ($rbac === false || !$this->isRbacEnabled()) {
             return;
         }
         // Get current user if not provided
@@ -395,7 +440,7 @@ class ObjectEntityMapper extends QBMapper
     private function applyOrganizationFilters(IQueryBuilder $qb, string $objectTableAlias = 'o', ?string $activeOrganisationUuid = null, bool $multi = true): void
     {
         // If multitenancy is disabled, skip all organization filtering
-        if ($multi === false) {
+        if ($multi === false || !$this->isMultiTenancyEnabled()) {
             return;
         }
         // Get current user to check if they're admin
@@ -1354,6 +1399,114 @@ class ObjectEntityMapper extends QBMapper
         return (int) $result->fetchOne();
 
     }//end countSearchObjects()
+
+
+    /**
+     * Sum the size of search objects based on query parameters
+     *
+     * @param array       $query                   Query parameters for filtering
+     * @param string|null $activeOrganisationUuid UUID of the active organisation
+     * @param bool        $rbac                    Whether to apply RBAC filters
+     * @param bool        $multi                   Whether to apply multi-tenancy filters
+     *
+     * @return int Total size of matching objects in bytes
+     */
+    public function sizeSearchObjects(array $query = [], ?string $activeOrganisationUuid = null, bool $rbac = true, bool $multi = true): int
+    {
+        // Extract options from query (prefixed with _) - same as countSearchObjects
+        $search = $this->processSearchParameter($query['_search'] ?? null);
+        $includeDeleted = $query['_includeDeleted'] ?? false;
+        $published = $query['_published'] ?? false;
+        $ids = $query['_ids'] ?? null;
+
+        // Extract metadata from @self
+        $metadataFilters = [];
+        $register = null;
+        $schema = null;
+
+        if (isset($query['@self']) === true && is_array($query['@self']) === true) {
+            $metadataFilters = $query['@self'];
+
+            // Process register: convert objects to IDs and handle arrays
+            if (isset($metadataFilters['register']) === true) {
+                $register = $this->processRegisterSchemaValue($metadataFilters['register'], 'register');
+                $metadataFilters['register'] = $register;
+            }
+
+            // Process schema: convert objects to IDs and handle arrays
+            if (isset($metadataFilters['schema']) === true) {
+                $schema = $this->processRegisterSchemaValue($metadataFilters['schema'], 'schema');
+                $metadataFilters['schema'] = $schema;
+            }
+        }
+
+        // Clean the query: remove @self and all properties prefixed with _
+        $cleanQuery = array_filter($query, function($key) {
+            return $key !== '@self' && str_starts_with($key, '_') === false;
+        }, ARRAY_FILTER_USE_KEY);
+
+        // If search handler is not available, fall back to a basic size query
+        if ($this->searchHandler === null) {
+            $queryBuilder = $this->db->getQueryBuilder();
+            $queryBuilder->select($queryBuilder->func()->sum('size'))
+                ->from($this->getTableName());
+            
+            $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $register, $schema);
+            $this->applyOrganizationFilters($queryBuilder, '', null, $multi);
+            
+            $result = $queryBuilder->executeQuery();
+            $size = $result->fetchOne();
+            $result->closeCursor();
+            return (int) ($size ?? 0);
+        }
+
+        $queryBuilder = $this->db->getQueryBuilder();
+
+        // Build base size query - use SUM(size) instead of COUNT(*)
+        $queryBuilder->select($queryBuilder->func()->sum('o.size'))
+            ->from('openregister_objects', 'o');
+
+        // Handle basic filters - skip register/schema if they're in metadata filters
+        $basicRegister = isset($metadataFilters['register']) ? null : $register;
+        $basicSchema = isset($metadataFilters['schema']) ? null : $schema;
+        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema, 'o');
+
+        // Apply organization filtering for multi-tenancy
+        $this->applyOrganizationFilters($queryBuilder, 'o', $activeOrganisationUuid, $multi);
+
+        // Handle filtering by IDs/UUIDs if provided
+        if ($ids !== null && empty($ids) === false) {
+            $orX = $queryBuilder->expr()->orX();
+            $orX->add($queryBuilder->expr()->in('o.id', $queryBuilder->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            $orX->add($queryBuilder->expr()->in('o.uuid', $queryBuilder->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            $queryBuilder->andWhere($orX);
+        }
+
+        // Use cleaned query as object filters
+        $objectFilters = $cleanQuery;
+
+        // Apply metadata filters (register, schema, etc.)
+        if (empty($metadataFilters) === false) {
+            $queryBuilder = $this->searchHandler->applyMetadataFilters($queryBuilder, $metadataFilters);
+        }
+
+        // Apply object field filters (JSON searches)
+        if (empty($objectFilters) === false) {
+            $queryBuilder = $this->searchHandler->applyObjectFilters($queryBuilder, $objectFilters);
+        }
+
+        // Apply full-text search if provided
+        if ($search !== null && trim($search) !== '') {
+            $queryBuilder = $this->searchHandler->applyFullTextSearch($queryBuilder, trim($search));
+        }
+
+        $result = $queryBuilder->executeQuery();
+        $size = $result->fetchOne();
+        $result->closeCursor();
+
+        return (int) ($size ?? 0);
+
+    }//end sizeSearchObjects()
 
 
     /**
@@ -4153,4 +4306,263 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Calculate optimal chunk size based on actual data size to prevent max_allowed_packet errors
      */
+
+
+    /**
+     * Bulk assign default owner and organization to objects that don't have them assigned.
+     *
+     * This method updates objects in batches to assign default values where they are missing.
+     * It only updates objects that have null or empty values for owner or organization.
+     *
+     * @param string|null $defaultOwner Default owner to assign to objects without an owner
+     * @param string|null $defaultOrganisation Default organization UUID to assign to objects without an organization
+     * @param int $batchSize Number of objects to process in each batch (default: 1000)
+     *
+     * @return array Array containing statistics about the bulk operation
+     * @throws \Exception If the bulk operation fails
+     */
+    public function bulkOwnerDeclaration(?string $defaultOwner = null, ?string $defaultOrganisation = null, int $batchSize = 1000): array
+    {
+        if ($defaultOwner === null && $defaultOrganisation === null) {
+            throw new \InvalidArgumentException('At least one of defaultOwner or defaultOrganisation must be provided');
+        }
+
+        $results = [
+            'totalProcessed' => 0,
+            'ownersAssigned' => 0,
+            'organisationsAssigned' => 0,
+            'errors' => [],
+            'startTime' => new \DateTime(),
+        ];
+
+        try {
+            $offset = 0;
+            $hasMoreRecords = true;
+
+            while ($hasMoreRecords) {
+                // Build query to find objects without owner or organization
+                $qb = $this->db->getQueryBuilder();
+                $qb->select('id', 'uuid', 'owner', 'organisation')
+                   ->from($this->tableName)
+                   ->setMaxResults($batchSize)
+                   ->setFirstResult($offset);
+
+                // Add conditions for missing owner or organization
+                $conditions = [];
+                if ($defaultOwner !== null) {
+                    $conditions[] = $qb->expr()->orX(
+                        $qb->expr()->isNull('owner'),
+                        $qb->expr()->eq('owner', $qb->createNamedParameter(''))
+                    );
+                }
+                if ($defaultOrganisation !== null) {
+                    $conditions[] = $qb->expr()->orX(
+                        $qb->expr()->isNull('organisation'),
+                        $qb->expr()->eq('organisation', $qb->createNamedParameter(''))
+                    );
+                }
+
+                if (!empty($conditions)) {
+                    $qb->where($qb->expr()->orX(...$conditions));
+                }
+
+                $result = $qb->executeQuery();
+                $objects = $result->fetchAll();
+
+                if (empty($objects)) {
+                    $hasMoreRecords = false;
+                    break;
+                }
+
+                // Process batch of objects
+                $batchResults = $this->processBulkOwnerDeclarationBatch($objects, $defaultOwner, $defaultOrganisation);
+                
+                // Update statistics
+                $results['totalProcessed'] += count($objects);
+                $results['ownersAssigned'] += $batchResults['ownersAssigned'];
+                $results['organisationsAssigned'] += $batchResults['organisationsAssigned'];
+                $results = array_merge_recursive($results, ['errors' => $batchResults['errors']]);
+
+                $offset += $batchSize;
+
+                // If we got fewer records than the batch size, we're done
+                if (count($objects) < $batchSize) {
+                    $hasMoreRecords = false;
+                }
+            }
+
+            $results['endTime'] = new \DateTime();
+            $results['duration'] = $results['endTime']->diff($results['startTime'])->format('%H:%I:%S');
+
+            return $results;
+
+        } catch (\Exception $e) {
+            error_log('[BulkOwnerDeclaration] Error during bulk owner declaration: ' . $e->getMessage());
+            throw new \RuntimeException('Bulk owner declaration failed: ' . $e->getMessage());
+        }
+    }//end bulkOwnerDeclaration()
+
+
+    /**
+     * Process a batch of objects for bulk owner declaration.
+     *
+     * @param array $objects Array of object data from database
+     * @param string|null $defaultOwner Default owner to assign
+     * @param string|null $defaultOrganisation Default organization UUID to assign
+     *
+     * @return array Batch processing results
+     */
+    private function processBulkOwnerDeclarationBatch(array $objects, ?string $defaultOwner, ?string $defaultOrganisation): array
+    {
+        $batchResults = [
+            'ownersAssigned' => 0,
+            'organisationsAssigned' => 0,
+            'errors' => []
+        ];
+
+        foreach ($objects as $objectData) {
+            try {
+                $needsUpdate = false;
+                $updateData = [];
+
+                // Check if owner needs to be assigned
+                if ($defaultOwner !== null && (empty($objectData['owner']) || $objectData['owner'] === null)) {
+                    $updateData['owner'] = $defaultOwner;
+                    $needsUpdate = true;
+                    $batchResults['ownersAssigned']++;
+                }
+
+                // Check if organization needs to be assigned
+                if ($defaultOrganisation !== null && (empty($objectData['organisation']) || $objectData['organisation'] === null)) {
+                    $updateData['organisation'] = $defaultOrganisation;
+                    $needsUpdate = true;
+                    $batchResults['organisationsAssigned']++;
+                }
+
+                // Update the object if needed
+                if ($needsUpdate) {
+                    $this->updateObjectOwnership((int)$objectData['id'], $updateData);
+                }
+
+            } catch (\Exception $e) {
+                $error = 'Error updating object ' . $objectData['uuid'] . ': ' . $e->getMessage();
+                error_log('[BulkOwnerDeclaration] ' . $error);
+                $batchResults['errors'][] = $error;
+            }
+        }
+
+        return $batchResults;
+    }//end processBulkOwnerDeclarationBatch()
+
+
+    /**
+     * Update ownership information for a specific object.
+     *
+     * @param int $objectId The ID of the object to update
+     * @param array $updateData Array containing owner and/or organisation data
+     *
+     * @return void
+     * @throws \Exception If the update fails
+     */
+    private function updateObjectOwnership(int $objectId, array $updateData): void
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->update($this->tableName)
+           ->where($qb->expr()->eq('id', $qb->createNamedParameter($objectId, IQueryBuilder::PARAM_INT)));
+
+        foreach ($updateData as $field => $value) {
+            $qb->set($field, $qb->createNamedParameter($value));
+        }
+
+        // Update the modified timestamp
+        $qb->set('modified', $qb->createNamedParameter(new \DateTime(), IQueryBuilder::PARAM_DATE));
+
+        $qb->executeStatement();
+    }//end updateObjectOwnership()
+    /**
+     * Clear expired objects from the database
+     *
+     * This method deletes all objects that have expired (i.e., their 'expires' date is earlier than the current date and time)
+     * and have the 'expires' column set. This helps maintain database performance by removing old objects that are no longer needed.
+     *
+     * @return bool True if any objects were deleted, false otherwise
+     *
+     * @throws \Exception Database operation exceptions
+     */
+    public function clearObjects(): bool
+    {
+        try {
+            // Get the query builder for database operations
+            $qb = $this->db->getQueryBuilder();
+
+            // Build the delete query to remove expired objects that have the 'expires' column set
+            $qb->delete($this->getTableName())
+               ->where($qb->expr()->isNotNull('expires'))
+               ->andWhere($qb->expr()->lt('expires', $qb->createFunction('NOW()')));
+
+            // Execute the query and get the number of affected rows
+            $result = $qb->executeStatement();
+
+            // Return true if any rows were affected (i.e., any objects were deleted)
+            return $result > 0;
+        } catch (\Exception $e) {
+            // Log the error for debugging purposes
+            \OC::$server->getLogger()->error('Failed to clear expired objects: ' . $e->getMessage(), [
+                'app' => 'openregister',
+                'exception' => $e
+            ]);
+            
+            // Re-throw the exception so the caller knows something went wrong
+            throw $e;
+        }
+
+    }//end clearObjects()
+
+
+    /**
+     * Set expiry dates for objects based on retention period in milliseconds
+     *
+     * Updates the expires column for objects based on their deleted date plus the retention period.
+     * Only affects objects that have been soft-deleted and don't already have an expiry date set.
+     * Objects without a deleted date will not get an expiry date.
+     *
+     * @param int $retentionMs Retention period in milliseconds
+     *
+     * @return int Number of objects updated
+     *
+     * @throws \Exception Database operation exceptions
+     */
+    public function setExpiryDate(int $retentionMs): int
+    {
+        try {
+            // Convert milliseconds to seconds for DateTime calculation
+            $retentionSeconds = intval($retentionMs / 1000);
+            
+            // Get the query builder
+            $qb = $this->db->getQueryBuilder();
+            
+            // Update objects that have been deleted but don't have an expiry date set
+            // We need to extract the timestamp from the JSON deleted field
+            $qb->update($this->getTableName())
+               ->set('expires', $qb->createFunction(
+                   sprintf('DATE_ADD(JSON_UNQUOTE(JSON_EXTRACT(deleted, "$.deletedAt")), INTERVAL %d SECOND)', $retentionSeconds)
+               ))
+               ->where($qb->expr()->isNull('expires'))
+               ->andWhere($qb->expr()->isNotNull('deleted'))
+               ->andWhere($qb->expr()->neq('deleted', $qb->createNamedParameter('null')));
+            
+            // Execute the update and return number of affected rows
+            return $qb->executeStatement();
+        } catch (\Exception $e) {
+            // Log the error for debugging purposes
+            \OC::$server->getLogger()->error('Failed to set expiry dates for objects: ' . $e->getMessage(), [
+                'app' => 'openregister',
+                'exception' => $e
+            ]);
+            
+            // Re-throw the exception so the caller knows something went wrong
+            throw $e;
+        }
+    }//end setExpiryDate()
+
 }//end class
