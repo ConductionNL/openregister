@@ -213,6 +213,23 @@ class ObjectEntityMapper extends QBMapper
         return $multitenancyData['enabled'] ?? false;
     }//end isMultiTenancyEnabled()
 
+
+    /**
+     * Check if RBAC admin override is enabled in app configuration
+     *
+     * @return bool True if RBAC admin override is enabled, false otherwise
+     */
+    private function isAdminOverrideEnabled(): bool
+    {
+        $rbacConfig = $this->appConfig->getValueString('openregister', 'rbac', '');
+        if (empty($rbacConfig)) {
+            return true; // Default to true if no RBAC config exists
+        }
+        
+        $rbacData = json_decode($rbacConfig, true);
+        return $rbacData['adminOverride'] ?? true;
+    }//end isAdminOverrideEnabled()
+
     /**
      * Initialize the max packet size buffer based on database configuration
      */
@@ -484,15 +501,23 @@ class ObjectEntityMapper extends QBMapper
         if ($user !== null) {
             $userGroups = $this->groupManager->getUserGroupIds($user);
             
-            // Admin users see all objects by default, but should still respect organization filtering
-            // when an active organization is explicitly set (i.e., when they switch organizations)
-            // EXCEPTION: Admin users with the default organization should see everything (no filtering)
+            // Check if user is admin and admin override is enabled
             if (in_array('admin', $userGroups)) {
+                // If admin override is enabled, admin users see all objects regardless of organization
+                if ($this->isAdminOverrideEnabled()) {
+                    return; // No filtering for admin users when override is enabled
+                }
+                
+                // If admin override is disabled, apply organization filtering logic for admin users
+                // Admin users see all objects by default, but should respect organization filtering
+                // when an active organization is explicitly set (i.e., when they switch organizations)
+                // EXCEPTION: Admin users with the default organization should see everything (no filtering)
+                
                 // If no active organization is set, admin users see everything (no filtering)
                 if ($activeOrganisationUuid === null) {
                     return;
                 }
-                // NEW: If admin user has the default organization set, they see everything (no filtering)
+                // If admin user has the default organization set, they see everything (no filtering)
                 if ($isSystemDefaultOrg) {
                     return;
                 }
