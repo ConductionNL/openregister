@@ -136,16 +136,29 @@ class OasService
 
         // Add schemas to components and create tags.
         foreach ($schemas as $schema) {
+            // Ensure schema has valid title
+            $schemaTitle = $schema->getTitle();
+            if (empty($schemaTitle)) {
+                error_log("OpenAPI Warning: Schema with ID {$schema->getId()} has no title, skipping");
+                continue;
+            }
+            
             // Add schema to components with sanitized name.
             $schemaDefinition = $this->enrichSchema($schema);
-            $sanitizedSchemaName = $this->sanitizeSchemaName($schema->getTitle());
-            $this->oas['components']['schemas'][$sanitizedSchemaName] = $schemaDefinition;
+            $sanitizedSchemaName = $this->sanitizeSchemaName($schemaTitle);
+            
+            // Validate schema definition before adding
+            if (!empty($schemaDefinition) && is_array($schemaDefinition)) {
+                $this->oas['components']['schemas'][$sanitizedSchemaName] = $schemaDefinition;
 
-            // Add tag for the schema (keep original title for display).
-            $this->oas['tags'][] = [
-                'name'        => $schema->getTitle(),
-                'description' => $schema->getDescription() ?? 'Operations for '.$schema->getTitle(),
-            ];
+                // Add tag for the schema (keep original title for display).
+                $this->oas['tags'][] = [
+                    'name'        => $schemaTitle,
+                    'description' => $schema->getDescription() ?? 'Operations for '.$schemaTitle,
+                ];
+            } else {
+                error_log("OpenAPI Warning: Invalid schema definition for {$schemaTitle}, skipping");
+            }
         }
 
         // Initialize paths array.
@@ -166,6 +179,9 @@ class OasService
             }
         }
 
+        // Validate the final OpenAPI specification before returning
+        $this->validateOasIntegrity();
+        
         return $this->oas;
 
     }//end createOas()
@@ -306,9 +322,27 @@ class OasService
             unset($cleanDef['anyOf']);
         }
 
-        // allOf must have at least 1 item, remove if empty
-        if (isset($cleanDef['allOf']) && (empty($cleanDef['allOf']) || !is_array($cleanDef['allOf']))) {
-            unset($cleanDef['allOf']);
+        // allOf must have at least 1 item, remove if empty or invalid
+        if (isset($cleanDef['allOf'])) {
+            if (!is_array($cleanDef['allOf']) || empty($cleanDef['allOf'])) {
+                unset($cleanDef['allOf']);
+            } else {
+                // Validate each allOf element
+                $validAllOfItems = [];
+                foreach ($cleanDef['allOf'] as $item) {
+                    // Each allOf item must be an object/array
+                    if (is_array($item) && !empty($item)) {
+                        $validAllOfItems[] = $item;
+                    }
+                }
+                
+                // If no valid items remain, remove allOf
+                if (empty($validAllOfItems)) {
+                    unset($cleanDef['allOf']);
+                } else {
+                    $cleanDef['allOf'] = $validAllOfItems;
+                }
+            }
         }
 
         // $ref must be a non-empty string, remove if empty
@@ -562,15 +596,28 @@ class OasService
      */
     private function createGetCollectionOperation(object $schema): array
     {
+        // Ensure schema has a valid title before proceeding
+        $schemaTitle = $schema->getTitle();
+        if (empty($schemaTitle)) {
+            $schemaTitle = 'UnknownSchema';
+        }
+        
+        $sanitizedSchemaName = $this->sanitizeSchemaName($schemaTitle);
+        
+        // Validate that we have a proper schema reference
+        if (empty($sanitizedSchemaName)) {
+            $sanitizedSchemaName = 'UnknownSchema';
+        }
+        
         return [
-            'summary'     => 'Get all '.$schema->getTitle().' objects',
-            'operationId' => 'getAll'.$this->pascalCase($schema->getTitle()),
-            'tags'        => [$schema->getTitle()],
-            'description' => 'Retrieve a list of all '.$schema->getTitle().' objects',
+            'summary'     => 'Get all '.$schemaTitle.' objects',
+            'operationId' => 'getAll'.$this->pascalCase($schemaTitle),
+            'tags'        => [$schemaTitle],
+            'description' => 'Retrieve a list of all '.$schemaTitle.' objects',
             'parameters'  => $this->createCommonQueryParameters(true, $schema),
             'responses'   => [
                 '200' => [
-                    'description' => 'List of '.$schema->getTitle().' objects with pagination metadata',
+                    'description' => 'List of '.$schemaTitle.' objects with pagination metadata',
                     'content'     => [
                         'application/json' => [
                             'schema' => [
@@ -584,7 +631,7 @@ class OasService
                                             'results' => [
                                                 'type' => 'array',
                                                 'items' => [
-                                                    '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName($schema->getTitle()),
+                                                    '$ref' => '#/components/schemas/'.$sanitizedSchemaName,
                                                 ],
                                             ],
                                         ],
@@ -635,7 +682,7 @@ class OasService
                     'content'     => [
                         'application/json' => [
                             'schema' => [
-                                '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName($schema->getTitle()),
+                                '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName($schema->getTitle() ?: 'UnknownSchema'),
                             ],
                         ],
                     ],
@@ -690,7 +737,7 @@ class OasService
                 'content'  => [
                     'application/json' => [
                         'schema' => [
-                            '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName($schema->getTitle()),
+                            '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName($schema->getTitle() ?: 'UnknownSchema'),
                         ],
                     ],
                 ],
@@ -701,7 +748,7 @@ class OasService
                     'content'     => [
                         'application/json' => [
                             'schema' => [
-                                '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName($schema->getTitle()),
+                                '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName($schema->getTitle() ?: 'UnknownSchema'),
                             ],
                         ],
                     ],
@@ -742,7 +789,7 @@ class OasService
                 'content'  => [
                     'application/json' => [
                         'schema' => [
-                            '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName($schema->getTitle()),
+                            '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName($schema->getTitle() ?: 'UnknownSchema'),
                         ],
                     ],
                 ],
@@ -753,7 +800,7 @@ class OasService
                     'content'     => [
                         'application/json' => [
                             'schema' => [
-                                '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName($schema->getTitle()),
+                                '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName($schema->getTitle() ?: 'UnknownSchema'),
                             ],
                         ],
                     ],
@@ -1131,12 +1178,17 @@ class OasService
      * OpenAPI schema names must match pattern ^[a-zA-Z0-9._-]+$ 
      * This method converts titles with spaces and special characters to valid schema names.
      *
-     * @param string $title The schema title to sanitize
+     * @param string|null $title The schema title to sanitize
      *
      * @return string The sanitized schema name
      */
-    private function sanitizeSchemaName(string $title): string
+    private function sanitizeSchemaName(?string $title): string
     {
+        // Handle null or empty titles
+        if (empty($title)) {
+            return 'UnknownSchema';
+        }
+
         // Replace spaces and invalid characters with underscores
         $sanitized = preg_replace('/[^a-zA-Z0-9._-]/', '_', $title);
         
@@ -1146,6 +1198,11 @@ class OasService
         // Remove leading/trailing underscores
         $sanitized = trim($sanitized, '_');
         
+        // Handle edge case where sanitization results in empty string
+        if (empty($sanitized)) {
+            return 'UnknownSchema';
+        }
+        
         // Ensure it starts with a letter (prepend 'Schema_' if it starts with number)
         if (preg_match('/^[0-9]/', $sanitized)) {
             $sanitized = 'Schema_' . $sanitized;
@@ -1153,6 +1210,114 @@ class OasService
         
         return $sanitized;
     }//end sanitizeSchemaName()
+
+    
+    /**
+     * Validate OpenAPI specification integrity
+     * 
+     * This method checks for common issues that could cause ReDoc or other
+     * OpenAPI tools to fail when parsing the specification.
+     *
+     * @return void
+     */
+    private function validateOasIntegrity(): void
+    {
+        // Check for invalid $ref references in schemas
+        if (isset($this->oas['components']['schemas'])) {
+            foreach ($this->oas['components']['schemas'] as $schemaName => &$schema) {
+                if (is_array($schema)) {
+                    $this->validateSchemaReferences($schema, $schemaName);
+                }
+            }
+        }
+        
+        // Check for invalid allOf constructs in paths
+        if (isset($this->oas['paths'])) {
+            foreach ($this->oas['paths'] as $pathName => &$path) {
+                foreach ($path as $method => &$operation) {
+                    if (isset($operation['responses'])) {
+                        foreach ($operation['responses'] as $statusCode => &$response) {
+                            if (isset($response['content']['application/json']['schema'])) {
+                                $this->validateSchemaReferences($response['content']['application/json']['schema'], "path:{$pathName}:{$method}:response:{$statusCode}");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }//end validateOasIntegrity()
+    
+    
+    /**
+     * Validate schema references recursively
+     *
+     * @param array  &$schema The schema to validate (passed by reference for modifications)
+     * @param string $context Context information for debugging
+     *
+     * @return void
+     */
+    private function validateSchemaReferences(array &$schema, string $context): void
+    {
+        // Check allOf constructs
+        if (isset($schema['allOf'])) {
+            if (!is_array($schema['allOf']) || empty($schema['allOf'])) {
+                error_log("OpenAPI Validation Warning: Invalid allOf in {$context} - removing");
+                unset($schema['allOf']);
+            } else {
+                $validAllOfItems = [];
+                foreach ($schema['allOf'] as $index => $item) {
+                    if (!is_array($item) || empty($item)) {
+                        error_log("OpenAPI Validation Warning: Invalid allOf item at index {$index} in {$context} - removing");
+                    } else {
+                        // Validate each allOf item has required structure
+                        if (isset($item['$ref']) && !empty($item['$ref']) && is_string($item['$ref'])) {
+                            $validAllOfItems[] = $item;
+                        } elseif (isset($item['type']) || isset($item['properties'])) {
+                            $validAllOfItems[] = $item;
+                        } else {
+                            error_log("OpenAPI Validation Warning: allOf item at index {$index} in {$context} lacks valid schema structure - removing");
+                        }
+                    }
+                }
+                
+                // If no valid items remain, remove allOf
+                if (empty($validAllOfItems)) {
+                    error_log("OpenAPI Validation Warning: Empty allOf after cleanup in {$context} - removing");
+                    unset($schema['allOf']);
+                } else {
+                    $schema['allOf'] = $validAllOfItems;
+                }
+            }
+        }
+        
+        // Check $ref validity
+        if (isset($schema['$ref'])) {
+            if (empty($schema['$ref']) || !is_string($schema['$ref'])) {
+                error_log("OpenAPI Validation Warning: Invalid \$ref in {$context} - removing");
+                unset($schema['$ref']);
+            } else {
+                // Check if reference points to existing schema
+                $refPath = str_replace('#/components/schemas/', '', $schema['$ref']);
+                if (strpos($schema['$ref'], '#/components/schemas/') === 0 && 
+                    !isset($this->oas['components']['schemas'][$refPath])) {
+                    error_log("OpenAPI Validation Warning: Broken \$ref '{$schema['$ref']}' in {$context}");
+                }
+            }
+        }
+        
+        // Recursively check nested schemas
+        if (isset($schema['properties'])) {
+            foreach ($schema['properties'] as $propName => $property) {
+                if (is_array($property)) {
+                    $this->validateSchemaReferences($property, "{$context}.properties.{$propName}");
+                }
+            }
+        }
+        
+        if (isset($schema['items']) && is_array($schema['items'])) {
+            $this->validateSchemaReferences($schema['items'], "{$context}.items");
+        }
+    }//end validateSchemaReferences()
 
 
 }//end class
