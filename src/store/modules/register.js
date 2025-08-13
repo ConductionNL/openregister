@@ -71,10 +71,9 @@ export const useRegisterStore = defineStore('register', {
 		/* istanbul ignore next */ // ignore this for Jest until moved into a service
 		async refreshRegisterList(search = null) {
 			console.log('RegisterStore: Starting refreshRegisterList')
-			// Always include _extend[]=@self.stats to get statistics
-			let endpoint = '/index.php/apps/openregister/api/registers?_extend[]=@self.stats'
+			let endpoint = '/index.php/apps/openregister/api/registers'
 			if (search !== null && search !== '') {
-				endpoint = endpoint + '&_search=' + encodeURIComponent(search)
+				endpoint = endpoint + '?_search=' + encodeURIComponent(search)
 			}
 			const response = await fetch(endpoint, {
 				method: 'GET',
@@ -89,14 +88,27 @@ export const useRegisterStore = defineStore('register', {
 		},
 		// New function to get a single register
 		async getRegister(id) {
-			// Always include _extend[]=@self.stats to get statistics
-			const endpoint = `/index.php/apps/openregister/api/registers/${id}?_extend[]=@self.stats`
+			const endpoint = `/index.php/apps/openregister/api/registers/${id}`
 			try {
 				const response = await fetch(endpoint, {
 					method: 'GET',
 				})
 				const data = await response.json()
 				this.setRegisterItem(data)
+				return data
+			} catch (err) {
+				console.error(err)
+				throw err
+			}
+		},
+		// New function to get register statistics
+		async getRegisterStats(id) {
+			const endpoint = `/index.php/apps/openregister/api/registers/${id}/stats`
+			try {
+				const response = await fetch(endpoint, {
+					method: 'GET',
+				})
+				const data = await response.json()
 				return data
 			} catch (err) {
 				console.error(err)

@@ -1,5 +1,6 @@
 <script setup>
 import { dashboardStore, registerStore, navigationStore } from '../../store/store.js'
+import formatBytes from '../../services/formatBytes.js'
 </script>
 
 <template>
@@ -34,7 +35,59 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 			</div>
 
 			<!-- Stats Tab Content -->
-			<div v-else-if="registerStore.getActiveTab === 'stats-tab'" class="chartGrid">
+			<div v-else-if="registerStore.getActiveTab === 'stats-tab'">
+				<!-- Register Statistics -->
+				<div v-if="registerStats" class="statsContainer">
+					<h3>{{ t('openregister', 'Register Statistics') }}</h3>
+					<table class="statisticsTable registerStats">
+						<thead>
+							<tr>
+								<th>{{ t('openregister', 'Type') }}</th>
+								<th>{{ t('openregister', 'Total') }}</th>
+								<th>{{ t('openregister', 'Size') }}</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>{{ t('openregister', 'Objects') }}</td>
+								<td>{{ registerStats.objects?.total || 0 }}</td>
+								<td>{{ formatBytes(registerStats.objects?.size || 0) }}</td>
+							</tr>
+							<tr class="subRow">
+								<td class="indented">{{ t('openregister', 'Invalid') }}</td>
+								<td>{{ registerStats.objects?.invalid || 0 }}</td>
+								<td>-</td>
+							</tr>
+							<tr class="subRow">
+								<td class="indented">{{ t('openregister', 'Deleted') }}</td>
+								<td>{{ registerStats.objects?.deleted || 0 }}</td>
+								<td>-</td>
+							</tr>
+							<tr class="subRow">
+								<td class="indented">{{ t('openregister', 'Published') }}</td>
+								<td>{{ registerStats.objects?.published || 0 }}</td>
+								<td>-</td>
+							</tr>
+							<tr>
+								<td>{{ t('openregister', 'Files') }}</td>
+								<td>{{ registerStats.files?.total || 0 }}</td>
+								<td>{{ formatBytes(registerStats.files?.size || 0) }}</td>
+							</tr>
+							<tr>
+								<td>{{ t('openregister', 'Logs') }}</td>
+								<td>{{ registerStats.logs?.total || 0 }}</td>
+								<td>{{ formatBytes(registerStats.logs?.size || 0) }}</td>
+							</tr>
+							<tr>
+								<td>{{ t('openregister', 'Schemas') }}</td>
+								<td>{{ registerStats.schemas || 0 }}</td>
+								<td>-</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
+				<div class="chartGrid">
 				<!-- Audit Trail Actions Chart -->
 				<div class="chartCard">
 					<h3>Audit Trail Actions</h3>
@@ -66,9 +119,10 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 						:series="[{ name: 'Objects', data: dashboardStore.chartData.objectsBySize?.series || [] }]" />
 				</div>
 			</div>
+			</div>
 
 			<!-- Schemas Tab Content -->
-			<div v-else-if="registerStore.getActiveTab === 'schemas-tab'" class="cardGrid">
+			<div v-else class="cardGrid">
 				<div v-if="!register.schemas?.length" class="emptyContainer">
 					<NcEmptyContent
 						:title="t('openregister', 'No schemas found')"
@@ -135,7 +189,6 @@ import VueApexCharts from 'vue-apexcharts'
 import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
-import formatBytes from '../../services/formatBytes.js'
 
 export default {
 	name: 'RegisterDetail',
@@ -150,6 +203,13 @@ export default {
 		FileCodeOutline,
 		DotsHorizontal,
 		Pencil,
+	},
+	data() {
+		return {
+			registerStats: null,
+			statsLoading: false,
+			statsError: null,
+		}
 	},
 	computed: {
 		register() {
@@ -257,8 +317,34 @@ export default {
 			// If no register ID at all, go back to list
 			navigationStore.setSelected('registers')
 		}
+		
+		// Load register stats if register is available
+		if (registerStore.getRegisterItem?.id) {
+			await this.loadRegisterStats()
+		}
 	},
 	methods: {
+		/**
+		 * Load register statistics from the dedicated stats endpoint
+		 * @return {Promise<void>}
+		 */
+		async loadRegisterStats() {
+			if (!registerStore.getRegisterItem?.id) {
+				return
+			}
+			
+			this.statsLoading = true
+			this.statsError = null
+			
+			try {
+				this.registerStats = await registerStore.getRegisterStats(registerStore.getRegisterItem.id)
+			} catch (error) {
+				console.error('Error loading register stats:', error)
+				this.statsError = error.message
+			} finally {
+				this.statsLoading = false
+			}
+		},
 		getSchemaChartOptions() {
 			return {
 				chart: {
@@ -385,5 +471,14 @@ export default {
 
 .schemaChart {
 	margin-top: 16px;
+}
+
+.statsContainer {
+	margin-bottom: 30px;
+	
+	h3 {
+		margin-bottom: 15px;
+		color: var(--color-main-text);
+	}
 }
 </style>

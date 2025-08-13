@@ -615,4 +615,35 @@ class RegistersController extends Controller
         }
     }
 
+    /**
+     * Get statistics for a specific register
+     *
+     * @param int $id The register ID
+     * @return JSONResponse The register statistics
+     * @throws DoesNotExistException When the register is not found
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function stats(int $id): JSONResponse
+    {
+        try {
+            // Get the register with stats
+            $register = $this->registerService->find($id);
+            
+            if (!$register) {
+                return new JSONResponse(['error' => 'Register not found'], 404);
+            }
+
+            // Calculate statistics for this register
+            $stats = $this->registerService->calculateStats($register);
+            
+            return new JSONResponse($stats);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => 'Register not found'], 404);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
 }//end class

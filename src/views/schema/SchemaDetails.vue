@@ -1,5 +1,6 @@
 <script setup>
 import { dashboardStore, schemaStore, navigationStore } from '../../store/store.js'
+import formatBytes from '../../services/formatBytes.js'
 </script>
 
 <template>
@@ -64,6 +65,64 @@ import { dashboardStore, schemaStore, navigationStore } from '../../store/store.
 			</span>
 			<div class="dashboardContent">
 				<span>{{ schemaStore.schemaItem.description }}</span>
+
+				<!-- Schema Statistics -->
+				<div v-if="schemaStats" class="statsContainer">
+					<h3>{{ t('openregister', 'Schema Statistics') }}</h3>
+					<table class="statisticsTable schemaStats">
+						<thead>
+							<tr>
+								<th>{{ t('openregister', 'Type') }}</th>
+								<th>{{ t('openregister', 'Total') }}</th>
+								<th>{{ t('openregister', 'Size') }}</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>{{ t('openregister', 'Objects') }}</td>
+								<td>{{ schemaStats.objects?.total || 0 }}</td>
+								<td>{{ formatBytes(schemaStats.objects?.size || 0) }}</td>
+							</tr>
+							<tr class="subRow">
+								<td class="indented">
+									{{ t('openregister', 'Invalid') }}
+								</td>
+								<td>{{ schemaStats.objects?.invalid || 0 }}</td>
+								<td>-</td>
+							</tr>
+							<tr class="subRow">
+								<td class="indented">
+									{{ t('openregister', 'Deleted') }}
+								</td>
+								<td>{{ schemaStats.objects?.deleted || 0 }}</td>
+								<td>-</td>
+							</tr>
+							<tr class="subRow">
+								<td class="indented">
+									{{ t('openregister', 'Published') }}
+								</td>
+								<td>{{ schemaStats.objects?.published || 0 }}</td>
+								<td>-</td>
+							</tr>
+							<tr>
+								<td>{{ t('openregister', 'Files') }}</td>
+								<td>{{ schemaStats.files?.total || 0 }}</td>
+								<td>{{ formatBytes(schemaStats.files?.size || 0) }}</td>
+							</tr>
+							<tr>
+								<td>{{ t('openregister', 'Logs') }}</td>
+								<td>{{ schemaStats.logs?.total || 0 }}</td>
+								<td>{{ formatBytes(schemaStats.logs?.size || 0) }}</td>
+							</tr>
+							<tr>
+								<td>{{ t('openregister', 'Registers') }}</td>
+								<td>{{ schemaStats.registers || 0 }}</td>
+								<td>-</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
 				<div class="chartGrid">
 					<!-- Audit Trail Actions Chart -->
 					<div class="chartCard">
@@ -128,6 +187,13 @@ export default {
 		Download,
 		Upload,
 		AlertCircle,
+	},
+	data() {
+		return {
+			schemaStats: null,
+			statsLoading: false,
+			statsError: null,
+		}
 	},
 	computed: {
 		/**
@@ -198,8 +264,34 @@ export default {
 		if (!dashboardStore.chartData || Object.keys(dashboardStore.chartData).length === 0) {
 			await dashboardStore.fetchAllChartData()
 		}
+
+		// Fetch schema stats if schema is available
+		if (schemaStore.schemaItem?.id) {
+			await this.loadSchemaStats()
+		}
 	},
 	methods: {
+		/**
+		 * Load schema statistics from the dedicated stats endpoint
+		 * @return {Promise<void>}
+		 */
+		async loadSchemaStats() {
+			if (!schemaStore.schemaItem?.id) {
+				return
+			}
+
+			this.statsLoading = true
+			this.statsError = null
+
+			try {
+				this.schemaStats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
+			} catch (error) {
+				console.error('Error loading schema stats:', error)
+				this.statsError = error.message
+			} finally {
+				this.statsLoading = false
+			}
+		},
 		/**
 		 * Set the active property for editing
 		 * @param {string|null} key - The key to process
@@ -255,6 +347,15 @@ export default {
 @media screen and (max-width: 1024px) {
 	.chartGrid {
 		grid-template-columns: 1fr;
+	}
+}
+
+.statsContainer {
+	margin-bottom: 30px;
+
+	h3 {
+		margin-bottom: 15px;
+		color: var(--color-main-text);
 	}
 }
 </style>
