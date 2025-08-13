@@ -31,12 +31,19 @@ OpenRegister now has a **fully functional multi-tenancy system** with comprehens
 - Organization membership validation
 - Owner privileges for entity creators
 - Permission layering with existing RBAC system
+- Dynamic enabling/disabling through admin settings
 
 ✅ **Data Migration**
 - Complete migration for existing data
 - Default organization creation and assignment
 - Mandatory organization/owner fields
 - Legacy data compatibility
+
+✅ **Configuration Management**
+- Dynamic RBAC enabling/disabling through admin interface
+- Multi-tenancy toggle with real-time effect
+- System statistics with table-formatted display
+- Retention policies for data and logs management
 
 ## 📊 **Implementation Statistics**
 

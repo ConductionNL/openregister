@@ -8,6 +8,12 @@ return [
         'Configurations' => ['url' => 'api/configurations'],
     ],
     'routes' => [
+        // Settings
+        ['name' => 'settings#index', 'url' => '/api/settings', 'verb' => 'GET'],
+        ['name' => 'settings#update', 'url' => '/api/settings', 'verb' => 'PUT'],
+        ['name' => 'settings#rebase', 'url' => '/api/settings/rebase', 'verb' => 'POST'],
+        ['name' => 'settings#stats', 'url' => '/api/settings/stats', 'verb' => 'GET'],
+        // Dashbaord
         ['name' => 'dashboard#page', 'url' => '/', 'verb' => 'GET'],
         ['name' => 'dashboard#index', 'url' => '/api/dashboard', 'verb' => 'GET'],
         ['name' => 'dashboard#calculate', 'url' => '/api/dashboard/calculate/{registerId}', 'verb' => 'POST', 'requirements' => ['registerId' => '\d+']],
@@ -21,6 +27,7 @@ return [
         ['name' => 'dashboard#getAuditTrailActionDistribution', 'url' => '/api/dashboard/statistics/audit-trail-distribution', 'verb' => 'GET'],
         ['name' => 'dashboard#getMostActiveObjects', 'url' => '/api/dashboard/statistics/most-active-objects', 'verb' => 'GET'],
         // Objects
+        ['name' => 'objects#objects', 'url' => '/api/objects', 'verb' => 'GET'],
         ['name' => 'objects#import', 'url' => '/api/objects/{register}/import', 'verb' => 'POST'],
         ['name' => 'objects#index', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'GET'],
         ['name' => 'objects#create', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'POST'],

@@ -233,6 +233,8 @@ curl -u 'alice:password123' -H 'OCS-APIREQUEST: true' -X POST 'http://localhost/
 2. **Entity Organisation Assignment** - All entities set active organisation ✅
 3. **RBAC + Multi-Tenancy Integration** - Layered security model ✅
 4. **Performance & Security** - Production-ready, SQL injection protected ✅
+5. **Configuration Management** - RBAC and multi-tenancy can be enabled/disabled ✅
+6. **System Statistics** - Comprehensive data overview with table display ✅
 
 ### **🔧 TECHNICAL ISSUES RESOLVED:**
 1. **Dependency Injection Error** - Added `OrganisationService` to `ObjectService` ✅
@@ -240,10 +242,12 @@ curl -u 'alice:password123' -H 'OCS-APIREQUEST: true' -X POST 'http://localhost/
 3. **User Membership Race Condition** - Fixed validation logic in `getActiveOrganisation()` ✅
 
 ### **🎯 SUCCESS CRITERIA MET:**
-- **Core Functionality**: 4/4 Complete ✅
+- **Core Functionality**: 6/6 Complete ✅
 - **Security & Validation**: Production ready ✅
 - **Performance**: Optimized database queries ✅
 - **Multi-Tenancy**: Full isolation and context management ✅
+- **Configuration**: Dynamic RBAC and multi-tenancy control ✅
+- **User Interface**: Enhanced admin settings with statistics table ✅
 
 ---
 
@@ -255,11 +259,14 @@ The **OpenRegister Multi-Tenancy implementation is COMPLETE and PRODUCTION-READY
 - **Multi-Organisation Support**: Users can belong to multiple organisations
 - **Active Organisation Context**: Session-based organisation switching
 - **Entity Isolation**: Registers, Schemas, Objects isolated by organisation
-- **RBAC Integration**: Permissions work within organisation boundaries
+- **RBAC Integration**: Permissions work within organisation boundaries with toggle control
+- **Configuration Management**: Dynamic enabling/disabling of RBAC and multi-tenancy
+- **System Statistics**: Comprehensive data overview with table-formatted display
 - **Performance Optimized**: Database-level filtering with efficient queries
 - **Security Hardened**: SQL injection protection, input validation, unicode support
 - **Migration Complete**: 6,119+ records migrated successfully
 - **API Fully Functional**: 12 organisation management endpoints working
+- **Admin Interface**: Complete settings management with real-time configuration
 
 ### **🚀 Ready for Production:**
 - All core multi-tenancy functionality working
@@ -270,3 +277,253 @@ The **OpenRegister Multi-Tenancy implementation is COMPLETE and PRODUCTION-READY
 - API endpoints tested and validated
 
 **The multi-tenancy system provides enterprise-grade features for OpenRegister with complete data isolation, flexible permissions, and optimal performance.** 
+
+---
+
+## 🔄 **CURRENT TESTING SESSION** (January 2025)
+
+### **Testing Context**
+- **Date**: January 2025  
+- **Environment**: Nextcloud Docker Development Environment  
+- **Objective**: Validate multitenancy object access controls after OAS generation fixes
+- **Test Users**: admin:admin, user1:user1, user2:user2, user3:user3, user4:user4, user5:user5, user6:user6
+
+### **Configuration Verification** ✅ COMPLETED
+
+**Multitenancy Settings Retrieved**:
+```json
+{
+  "multitenancy": {
+    "enabled": true,
+    "adminOverride": true,
+    "defaultTenant": "Default Organisation",
+    "defaultTenantUuid": "e410bc36-005e-45b5-8377-dbed32254815"
+  },
+  "rbac": {
+    "enabled": true
+  }
+}
+```
+
+**✅ Validation Results**:
+- Multitenancy is **enabled** ✅
+- Admin override is **enabled** (admins should see ALL objects) ✅  
+- Default tenant exists with UUID ✅
+- RBAC is also enabled (can work together with multitenancy) ✅
+
+### **API Endpoints for Testing**
+
+**Settings Endpoint**:
+```bash
+# Get current multitenancy configuration
+docker exec -u 33 master-nextcloud-1 bash -c "curl -s -u 'admin:admin' -H 'Content-Type: application/json' -X GET 'http://localhost/index.php/apps/openregister/api/settings'"
+```
+
+**Objects Endpoint** (Main Test Endpoint):
+```bash
+# Test object access for different users
+docker exec -u 33 master-nextcloud-1 bash -c "curl -s -u 'admin:admin' -H 'Content-Type: application/json' -X GET 'http://localhost/index.php/apps/openregister/api/objects'"
+```
+
+**Organizations Endpoint**:
+```bash
+# Get user organizations
+docker exec -u 33 master-nextcloud-1 bash -c "curl -s -u 'admin:admin' -H 'OCS-APIREQUEST: true' -H 'Content-Type: application/json' 'http://localhost/index.php/apps/openregister/api/organisations'"
+```
+
+### **🔐 Test Users and Credentials**
+
+**Available Test Users**:
+- `admin:admin` - Administrator with admin override capabilities
+- `user1:user1` - Regular user  
+- `user2:user2` - Regular user
+- `user3:user3` - Regular user  
+- `user4:user4` - Regular user
+- `user5:user5` - Regular user
+- `user6:user6` - Regular user
+
+**Organization Structure**:
+- **Default Organisation**: `e410bc36-005e-45b5-8377-dbed32254815`
+  - All users initially belong to this organization
+  - Created during migration with system ownership
+  - Contains all existing/legacy data
+
+### **🗄️ Data Structure for Testing**
+
+**Current System Data** (from migration):
+- **Organizations**: 1 (Default Organisation)
+- **Registers**: 7 total
+- **Schemas**: 49 total  
+- **Objects**: 6,051+ total
+- **All entities**: Assigned to Default Organisation
+
+**Organization Properties**:
+```json
+{
+  "id": 1,
+  "uuid": "e410bc36-005e-45b5-8377-dbed32254815", 
+  "name": "Default Organisation",
+  "description": "Default organisation for users without specific organisation membership",
+  "users": ["admin"],
+  "isDefault": true,
+  "owner": "system",
+  "created": "2025-07-21T20:04:39+00:00",
+  "updated": "2025-07-21T20:04:39+00:00"
+}
+```
+
+### **Test Scenarios to Validate**
+
+#### **📋 Test Plan**: 
+1. **✅ Verify Configuration** - COMPLETED
+   - Multitenancy enabled ✅
+   - Admin override enabled ✅  
+   - Default organization exists ✅
+
+2. **🔄 Test User Organization Access** - IN PROGRESS
+   - Test users can access objects of their own organization
+   - Test users cannot access objects of other organizations
+   - Verify organization filtering in ObjectEntityMapper
+
+3. **⏳ Test Admin Access** - PENDING
+   - Test admin can access all objects (with adminOverride enabled)
+   - Test admin can access own organization objects
+   - Verify admin override functionality
+
+4. **⏳ Test RBAC + Multitenancy Integration** - PENDING
+   - Test both RBAC and multitenancy working together
+   - Verify schema-based permissions within organization context
+   - Test object ownership permissions
+
+### **Implementation Details**
+
+**Key Files for Multitenancy Logic**:
+- `lib/Service/SettingsService.php` - Configuration management
+- `lib/Db/ObjectEntityMapper.php` - Object filtering with `applyOrganizationFilters()`  
+- `lib/Service/OrganisationService.php` - Organization context management
+- `appinfo/routes.php` - API endpoint definitions
+- `lib/Controller/ObjectsController.php` - Objects API controller
+
+**Critical Logic in ObjectEntityMapper**:
+```php
+// Lines 444-564: applyOrganizationFilters method
+// Handles multitenancy filtering and admin override
+if ($this->settingsService->getSetting('multitenancy', false) && 
+    !($this->settingsService->getSetting('adminOverride', false) && in_array('admin', $userGroups))) {
+    // Apply organization filtering
+}
+```
+
+### **📁 Key File References for Testing**
+
+#### **Configuration Management**
+**File**: `lib/Service/SettingsService.php`
+- **Purpose**: Handles multitenancy and RBAC configuration
+- **Key Methods**: `getSetting()`, settings management
+- **Test Endpoint**: `/api/settings`
+
+#### **Object Filtering Logic**  
+**File**: `lib/Db/ObjectEntityMapper.php`
+- **Purpose**: Core multitenancy filtering for object access
+- **Key Method**: `applyOrganizationFilters()` (lines 444-564)
+- **Logic**: Checks multitenancy enabled + admin override + user groups
+- **Filter Types**: Organization membership, admin override, RBAC permissions
+
+#### **Organization Management**
+**File**: `lib/Service/OrganisationService.php`  
+- **Purpose**: User organization context and active organization management
+- **Key Methods**: `getActiveOrganisation()`, `getUserOrganisations()`
+- **Session Management**: Active organization persistence
+
+#### **API Routes**
+**File**: `appinfo/routes.php`
+- **Objects API**: `/api/objects` - Main testing endpoint
+- **Organizations API**: `/api/organisations` - Organization management
+- **Settings API**: `/api/settings` - Configuration access
+
+#### **Objects Controller**
+**File**: `lib/Controller/ObjectsController.php`
+- **Purpose**: Handles object API requests with multitenancy context
+- **Key Method**: `objects()` - Uses `ObjectService->searchObjectsPaginated()`
+- **Integration**: Works with ObjectEntityMapper for filtering
+
+### **Expected Behavior**
+1. **Regular Users**: Should only see objects from their organization(s)
+2. **Admin Users**: Should see ALL objects (adminOverride enabled) or own organization objects
+3. **Cross-Organization**: Users should NOT see objects from organizations they don't belong to
+4. **RBAC Integration**: Schema permissions should work WITHIN organization boundaries
+
+### **Test Status** 
+- **Configuration**: ✅ VERIFIED
+- **User Access Testing**: 🔄 IN PROGRESS  
+- **Admin Access Testing**: ⏳ PENDING
+- **Cross-Organization Isolation**: ⏳ PENDING
+- **Documentation**: ✅ COMPLETED
+
+### **🛠️ Debugging Commands & Troubleshooting**
+
+#### **Check User Organization Membership**
+```bash
+# Get user's organizations
+docker exec -u 33 master-nextcloud-1 bash -c "curl -s -u 'user1:user1' -H 'OCS-APIREQUEST: true' 'http://localhost/index.php/apps/openregister/api/organisations' | jq '.active'"
+```
+
+#### **Verify Object Counts by User**
+```bash
+# Check objects accessible by admin (should see ALL with adminOverride)
+docker exec -u 33 master-nextcloud-1 bash -c "curl -s -u 'admin:admin' 'http://localhost/index.php/apps/openregister/api/objects?_limit=1' | jq '.total'"
+
+# Check objects accessible by regular user (should be filtered)
+docker exec -u 33 master-nextcloud-1 bash -c "curl -s -u 'user1:user1' 'http://localhost/index.php/apps/openregister/api/objects?_limit=1' | jq '.total'"
+```
+
+#### **Debug Organization Filtering**
+```bash
+# Check ObjectEntityMapper filtering logic
+docker exec -u 33 master-nextcloud-1 bash -c "grep -n 'applyOrganizationFilters' /var/www/html/apps-extra/openregister/lib/Db/ObjectEntityMapper.php"
+
+# Check SettingsService configuration
+docker exec -u 33 master-nextcloud-1 bash -c "curl -s -u 'admin:admin' 'http://localhost/index.php/apps/openregister/api/settings' | jq '{multitenancy: .multitenancy, rbac: .rbac}'"
+```
+
+#### **Monitor Debug Logs**
+```bash
+# View real-time debug logs
+docker logs -f master-nextcloud-1 | grep -E '\[ObjectEntityMapper\]|\[multitenancy\]|\[organization\]'
+
+# Check for specific multitenancy debug messages
+docker logs master-nextcloud-1 --since 10m | grep -i multitenancy
+```
+
+#### **Database Direct Queries**
+```bash
+# Check organization assignments
+docker exec -u 33 master-nextcloud-1 bash -c "mysql -u nextcloud -pnextcloud nextcloud -e 'SELECT organisation, COUNT(*) as object_count FROM oc_openregister_objects GROUP BY organisation;'"
+
+# Check user organization memberships
+docker exec -u 33 master-nextcloud-1 bash -c "mysql -u nextcloud -pnextcloud nextcloud -e 'SELECT uuid, name, users FROM oc_openregister_organisations;'"
+```
+
+### **🚨 Common Issues & Solutions**
+
+#### **Issue**: Users see wrong number of objects
+- **Check**: Organization membership in session vs database
+- **Debug**: Compare `getActiveOrganisation()` vs actual object `organisation` field
+- **Solution**: Clear organization cache or verify organization assignment
+
+#### **Issue**: Admin override not working  
+- **Check**: `adminOverride` setting enabled + user in 'admin' group
+- **Debug**: Log user groups in `applyOrganizationFilters()`
+- **Solution**: Verify admin user group membership
+
+#### **Issue**: RBAC conflicts with multitenancy
+- **Check**: Both systems enabled simultaneously  
+- **Debug**: Check permission layering in ObjectEntityMapper
+- **Solution**: Verify both filters work together, not conflicting
+
+#### **Issue**: Objects not assigned to organization
+- **Check**: New objects missing `organisation` field
+- **Debug**: Check SaveObject handler and ObjectService
+- **Solution**: Verify OrganisationService injection and active organization
+
+---

@@ -46,8 +46,9 @@ class SearchTrailService
 
     /**
      * Whether self-clearing (automatic cleanup) is enabled.
+     * Disabled by default - cleanup should be handled by cron jobs.
      */
-    private bool $selfClearingEnabled = true;
+    private bool $selfClearingEnabled = false;
 
     /**
      * Constructor for SearchTrailService
@@ -55,8 +56,8 @@ class SearchTrailService
      * @param SearchTrailMapper $searchTrailMapper Mapper for search trail database operations
      * @param RegisterMapper    $registerMapper    Mapper for register database operations
      * @param SchemaMapper      $schemaMapper      Mapper for schema database operations
-     * @param int|null          $retentionDays     Optional retention period in days for self-clearing
-     * @param bool|null         $selfClearing      Optional flag to enable/disable self-clearing
+     * @param int|null          $retentionDays     Optional retention period in days (default: 365)
+     * @param bool|null         $selfClearing      Optional flag to enable/disable self-clearing (default: false, use cron jobs instead)
      */
     public function __construct(
         private readonly SearchTrailMapper $searchTrailMapper,
@@ -109,7 +110,7 @@ class SearchTrailService
 
             // Self-clearing: automatically clean up old search trails if enabled
             if ($this->selfClearingEnabled) {
-                $this->selfClearSearchTrails();
+                $this->clearExpiredSearchTrails();
             }
 
             return $trail;
@@ -121,24 +122,23 @@ class SearchTrailService
     }//end createSearchTrail()
 
     /**
-     * Self-clearing: Automatically clean up old search trail logs based on retention policy.
+     * Clean up expired search trails
      *
-     * This method deletes search trails older than the configured retention period.
-     * It is called automatically after creating a new search trail if self-clearing is enabled.
+     * This method deletes search trails that have expired based on their expires column.
+     * Intended to be called by cron jobs or manual cleanup operations.
      *
      * @return array Cleanup results
      */
-    public function selfClearSearchTrails(): array
+    public function clearExpiredSearchTrails(): array
     {
-        $before = new DateTime('-' . $this->retentionDays . ' days');
         try {
-            $deletedCount = $this->searchTrailMapper->cleanup($before);
+            $deletedCount = $this->searchTrailMapper->clearLogs();
 
             return [
                 'success'      => true,
-                'deleted'      => $deletedCount,
-                'cleanup_date' => $before->format('Y-m-d H:i:s'),
-                'message'      => "Self-clearing: deleted {$deletedCount} old search trail entries",
+                'deleted'      => $deletedCount ? 1 : 0, // clearLogs returns boolean, not count
+                'cleanup_date' => (new DateTime())->format('Y-m-d H:i:s'),
+                'message'      => "Self-clearing: " . ($deletedCount ? "deleted expired search trail entries" : "no expired entries to delete"),
             ];
         } catch (Exception $e) {
             return [
@@ -437,13 +437,15 @@ class SearchTrailService
     public function cleanupSearchTrails(?DateTime $before=null): array
     {
         try {
-            $deletedCount = $this->searchTrailMapper->cleanup($before);
+            // Note: clearLogs() only removes expired entries, ignoring the $before parameter
+            // This maintains consistency with the audit trail cleanup approach
+            $deletedCount = $this->searchTrailMapper->clearLogs();
 
             return [
                 'success'      => true,
-                'deleted'      => $deletedCount,
-                'cleanup_date' => $before?->format('Y-m-d H:i:s') ?? (new DateTime('-1 year'))->format('Y-m-d H:i:s'),
-                'message'      => "Successfully deleted {$deletedCount} old search trail entries",
+                'deleted'      => $deletedCount ? 1 : 0, // clearLogs returns boolean, not count
+                'cleanup_date' => (new DateTime())->format('Y-m-d H:i:s'),
+                'message'      => $deletedCount ? "Successfully deleted expired search trail entries" : "No expired entries to delete",
             ];
         } catch (Exception $e) {
             return [

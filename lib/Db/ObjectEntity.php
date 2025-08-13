@@ -256,6 +256,13 @@ class ObjectEntity extends Entity implements JsonSerializable
     protected ?array $groups = [];
 
     /**
+     * The expiration timestamp for this object
+     *
+     * @var DateTime|null The expiration timestamp for this object
+     */
+    protected ?DateTime $expires = null;
+
+    /**
      * Initialize the entity and define field types
      */
     public function __construct(
@@ -289,6 +296,7 @@ class ObjectEntity extends Entity implements JsonSerializable
         $this->addType(fieldName: 'published', type: 'datetime');
         $this->addType(fieldName: 'depublished', type: 'datetime');
         $this->addType(fieldName: 'groups', type: 'json');
+        $this->addType(fieldName: 'expires', type: 'datetime');
 
     }//end __construct()
 
