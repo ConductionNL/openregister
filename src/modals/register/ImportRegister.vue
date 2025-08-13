@@ -476,18 +476,18 @@ export default {
 				// Call importRegister - the register refresh will happen in the background
 				// This way the loading state is turned off as soon as the import is done
 				const result = await registerStore.importRegister(this.selectedFile, this.includeObjects)
-				
+
 				console.log('ImportRegister: Import completed, setting success state')
 				// Store the import summary from the backend response
 				this.importSummary = result?.responseData?.summary || result?.summary || null
 				this.importResults = result?.responseData?.summary || result?.summary || null
 				this.success = true
-				
+
 				console.log('ImportRegister: Setting loading to false')
 				// Turn off loading immediately after import completes
 				// The register refresh will happen in the background
 				this.loading = false
-				
+
 				console.log('ImportRegister: Loading state set to false, success:', this.success)
 				// Do not auto-close; let user review the summary and close manually
 			} catch (error) {
