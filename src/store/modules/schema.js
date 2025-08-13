@@ -56,10 +56,9 @@ export const useSchemaStore = defineStore('schema', {
 		},
 		/* istanbul ignore next */ // ignore this for Jest until moved into a service
 		async refreshSchemaList(search = null) {
-			// Always include _extend[]=@self.stats to get statistics
-			let endpoint = '/index.php/apps/openregister/api/schemas?_extend[]=@self.stats'
+			let endpoint = '/index.php/apps/openregister/api/schemas'
 			if (search !== null && search !== '') {
-				endpoint = endpoint + '&_search=' + encodeURIComponent(search)
+				endpoint = endpoint + '?_search=' + encodeURIComponent(search)
 			}
 			const response = await fetch(endpoint, {
 				method: 'GET',
@@ -73,14 +72,27 @@ export const useSchemaStore = defineStore('schema', {
 		},
 		// Function to get a single schema
 		async getSchema(id, options = { setItem: false }) {
-			// Always include _extend[]=@self.stats to get statistics
-			const endpoint = `/index.php/apps/openregister/api/schemas/${id}?_extend[]=@self.stats`
+			const endpoint = `/index.php/apps/openregister/api/schemas/${id}`
 			try {
 				const response = await fetch(endpoint, {
 					method: 'GET',
 				})
 				const data = await response.json()
 				options.setItem && this.setSchemaItem(data)
+				return data
+			} catch (err) {
+				console.error(err)
+				throw err
+			}
+		},
+		// New function to get schema statistics
+		async getSchemaStats(id) {
+			const endpoint = `/index.php/apps/openregister/api/schemas/${id}/stats`
+			try {
+				const response = await fetch(endpoint, {
+					method: 'GET',
+				})
+				const data = await response.json()
 				return data
 			} catch (err) {
 				console.error(err)

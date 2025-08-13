@@ -1,7 +1,3 @@
-<script setup>
-import { navigationStore } from '../store/store.js'
-</script>
-
 <template>
 	<NcAppNavigation>
 		<NcAppNavigationList>
@@ -67,6 +63,7 @@ import { navigationStore } from '../store/store.js'
 	</NcAppNavigation>
 </template>
 <script>
+import { navigationStore } from '../store/store.js'
 
 import {
 	NcAppNavigation,
@@ -108,6 +105,11 @@ export default {
 		DeleteRestore,
 		TextBoxOutline,
 		MagnifyPlus,
+	},
+	computed: {
+		navigationStore() {
+			return navigationStore
+		},
 	},
 	methods: {
 		openLink(url, type = '') {

@@ -514,5 +514,41 @@ class SchemasController extends Controller
 
     }//end related()
 
+    /**
+     * Get statistics for a specific schema
+     *
+     * @param int $id The schema ID
+     * @return JSONResponse The schema statistics
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When the schema is not found
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function stats(int $id): JSONResponse
+    {
+        try {
+            // Get the schema
+            $schema = $this->schemaMapper->find($id);
+            
+            if (!$schema) {
+                return new JSONResponse(['error' => 'Schema not found'], 404);
+            }
+
+            // Calculate statistics for this schema
+            $stats = [
+                'objects' => $this->objectService->getObjectStats($schema->getId()),
+                'files' => $this->objectService->getFileStats($schema->getId()),
+                'logs' => $this->objectService->getLogStats($schema->getId()),
+                'registers' => $this->schemaMapper->getRegisterCount($schema->getId())
+            ];
+            
+            return new JSONResponse($stats);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            return new JSONResponse(['error' => 'Schema not found'], 404);
+        } catch (Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }//end stats()
+
 
 }//end class
