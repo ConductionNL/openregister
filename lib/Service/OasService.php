@@ -113,14 +113,22 @@ class OasService
             ],
         ];
 
-        // If specific register, update info.
+        // If specific register, update info while preserving contact and license.
         if ($registerId !== null) {
-            $register          = $registers[0];
-            $this->oas['info'] = [
+            $register = $registers[0];
+            
+            // Build enhanced description
+            $description = $register->getDescription();
+            if (empty($description)) {
+                $description = 'API for '.$register->getTitle().' register providing CRUD operations, filtering, and search capabilities.';
+            }
+            
+            // Update info while preserving base contact and license
+            $this->oas['info'] = array_merge($this->oas['info'], [
                 'title'       => $register->getTitle().' API',
                 'version'     => $register->getVersion(),
-                'description' => $register->getDescription(),
-            ];
+                'description' => $description,
+            ]);
         }
 
         // Initialize tags array.
@@ -128,11 +136,12 @@ class OasService
 
         // Add schemas to components and create tags.
         foreach ($schemas as $schema) {
-            // Add schema to components.
+            // Add schema to components with sanitized name.
             $schemaDefinition = $this->enrichSchema($schema);
-            $this->oas['components']['schemas'][$schema->getTitle()] = $schemaDefinition;
+            $sanitizedSchemaName = $this->sanitizeSchemaName($schema->getTitle());
+            $this->oas['components']['schemas'][$sanitizedSchemaName] = $schemaDefinition;
 
-            // Add tag for the schema.
+            // Add tag for the schema (keep original title for display).
             $this->oas['tags'][] = [
                 'name'        => $schema->getTitle(),
                 'description' => $schema->getDescription() ?? 'Operations for '.$schema->getTitle(),
@@ -187,42 +196,144 @@ class OasService
 
 
     /**
-     * Enrich a schema with @self property and x-tags.
+     * Extended endpoints that should be included in OAS generation
+     * This whitelist ensures only stable, public-facing endpoints are documented
+     * 
+     * @var array<string>
+     */
+    private const INCLUDED_EXTENDED_ENDPOINTS = [
+        // Only include stable, public-facing endpoints
+        // 'audit-trails' - Internal audit functionality, not for public API
+        // 'files' - File management, may be too complex for basic API consumers  
+        // 'lock' - Locking mechanism, typically used internally
+        // 'unlock' - Unlocking mechanism, typically used internally
+    ];
+
+    /**
+     * Enrich a schema with valid OpenAPI schema definitions
+     *
+     * This method includes legitimate API properties like @self but ensures
+     * property definitions conform to OpenAPI schema standards.
      *
      * @param object $schema The schema object
      *
-     * @return array The enriched schema definition
+     * @return array The valid OpenAPI schema definition
      */
     private function enrichSchema(object $schema): array
     {
-        $schemaDefinition = $schema->getProperties();
+        $schemaProperties = $schema->getProperties();
+        
+        // Start with core API properties
+        $cleanProperties = [
+            '@self' => [
+                '$ref'        => '#/components/schemas/@self',
+                'readOnly'    => true,
+                'description' => 'Object metadata including timestamps, ownership, and system information',
+            ],
+            'id' => [
+                'type'        => 'string',
+                'format'      => 'uuid',
+                'readOnly'    => true,
+                'example'     => '123e4567-e89b-12d3-a456-426614174000',
+                'description' => 'The unique identifier for the object.',
+            ],
+        ];
 
-        // Add @self reference, id, lastLog, and x-tags for schema categorization.
+        // Process schema-defined properties and ensure they're valid OAS
+        foreach ($schemaProperties as $propertyName => $propertyDefinition) {
+            $cleanProperties[$propertyName] = $this->sanitizePropertyDefinition($propertyDefinition);
+        }
+
         return [
             'type'       => 'object',
             'x-tags'     => [$schema->getTitle()],
-            'properties' => [
-                '@self' => [
-                    '$ref'        => '#/components/schemas/@self',
-                    'readOnly'    => true,
-                    'description' => 'The metadata of the object e.g. owner, created, modified, etc.',
-                ],
-                'id'    => [
-                    'type'        => 'string',
-                    'format'      => 'uuid',
-                    'readOnly'    => true,
-                    'example'     => '123e4567-e89b-12d3-a456-426614174000',
-                    'description' => 'The unique identifier for the object.',
-                ],
-                'lastLog' => [
-                    'type'        => 'object',
-                    'nullable'    => true,
-                    'description' => 'The most recent log entry for this object (runtime only, not persisted in the database).',
-                ],
-            ] + $schemaDefinition,
+            'properties' => $cleanProperties,
         ];
 
     }//end enrichSchema()
+
+
+    /**
+     * Sanitize property definition to be valid OpenAPI schema
+     * 
+     * This method ensures property definitions conform to OpenAPI 3.1 standards
+     * by removing invalid properties and normalizing the structure.
+     *
+     * @param mixed $propertyDefinition The property definition to sanitize
+     *
+     * @return array Valid OpenAPI property definition
+     */
+    private function sanitizePropertyDefinition($propertyDefinition): array
+    {
+        // If it's not an array, convert to basic string type
+        if (!is_array($propertyDefinition)) {
+            return [
+                'type' => 'string',
+                'description' => 'Property value',
+            ];
+        }
+
+        // Start with a clean definition
+        $cleanDef = [];
+
+        // Standard OpenAPI schema keywords that are allowed
+        $allowedSchemaKeywords = [
+            'type', 'format', 'description', 'example', 'examples', 
+            'default', 'enum', 'const', 'multipleOf', 'maximum', 
+            'exclusiveMaximum', 'minimum', 'exclusiveMinimum', 
+            'maxLength', 'minLength', 'pattern', 'maxItems', 
+            'minItems', 'uniqueItems', 'maxProperties', 'minProperties',
+            'required', 'properties', 'items', 'additionalProperties',
+            'allOf', 'anyOf', 'oneOf', 'not', '$ref', 'nullable',
+            'readOnly', 'writeOnly', 'title'
+        ];
+
+        // Copy only valid OpenAPI schema keywords
+        foreach ($allowedSchemaKeywords as $keyword) {
+            if (isset($propertyDefinition[$keyword])) {
+                $cleanDef[$keyword] = $propertyDefinition[$keyword];
+            }
+        }
+
+        // Remove invalid/empty values that violate OpenAPI spec
+        // oneOf must have at least 1 item, remove if empty
+        if (isset($cleanDef['oneOf']) && (empty($cleanDef['oneOf']) || !is_array($cleanDef['oneOf']))) {
+            unset($cleanDef['oneOf']);
+        }
+
+        // anyOf must have at least 1 item, remove if empty  
+        if (isset($cleanDef['anyOf']) && (empty($cleanDef['anyOf']) || !is_array($cleanDef['anyOf']))) {
+            unset($cleanDef['anyOf']);
+        }
+
+        // allOf must have at least 1 item, remove if empty
+        if (isset($cleanDef['allOf']) && (empty($cleanDef['allOf']) || !is_array($cleanDef['allOf']))) {
+            unset($cleanDef['allOf']);
+        }
+
+        // $ref must be a non-empty string, remove if empty
+        if (isset($cleanDef['$ref']) && (empty($cleanDef['$ref']) || !is_string($cleanDef['$ref']))) {
+            unset($cleanDef['$ref']);
+        }
+
+        // enum must have at least 1 item, remove if empty
+        if (isset($cleanDef['enum']) && (empty($cleanDef['enum']) || !is_array($cleanDef['enum']))) {
+            unset($cleanDef['enum']);
+        }
+
+        // Ensure we have at least a type
+        if (!isset($cleanDef['type']) && !isset($cleanDef['$ref'])) {
+            $cleanDef['type'] = 'string';
+        }
+
+        // Add basic description if missing
+        if (!isset($cleanDef['description']) && !isset($cleanDef['$ref'])) {
+            $cleanDef['description'] = 'Property value';
+        }
+
+        return $cleanDef;
+
+    }//end sanitizePropertyDefinition()
 
 
     /**
@@ -237,18 +348,14 @@ class OasService
     {
         $basePath = '/'.$this->slugify($register->getTitle()).'/'.$this->slugify($schema->getTitle());
 
-        // Collection endpoints with path-level tags.
+        // Collection endpoints (tags are inside individual operations).
         $this->oas['paths'][$basePath] = [
-            'tags' => [$schema->getTitle()],
-            // Add tags at path level.
             'get'  => $this->createGetCollectionOperation($schema),
             'post' => $this->createPostOperation($schema),
         ];
 
-        // Individual resource endpoints with path-level tags.
+        // Individual resource endpoints (tags are inside individual operations).
         $this->oas['paths'][$basePath.'/{id}'] = [
-            'tags'   => [$schema->getTitle()],
-            // Add tags at path level.
             'get'    => $this->createGetOperation($schema),
             'put'    => $this->createPutOperation($schema),
             'delete' => $this->createDeleteOperation($schema),
@@ -258,7 +365,10 @@ class OasService
 
 
     /**
-     * Add extended paths for a schema (logs, files, lock, unlock).
+     * Add extended paths for a schema using whitelist approach
+     *
+     * Only adds endpoints that are explicitly whitelisted in INCLUDED_EXTENDED_ENDPOINTS.
+     * This prevents internal/complex endpoints from being exposed in the public API spec.
      *
      * @param object $register The register object
      * @param object $schema   The schema object
@@ -269,32 +379,39 @@ class OasService
     {
         $basePath = '/'.$this->slugify($register->getTitle()).'/'.$this->slugify($schema->getTitle());
 
-        // Logs endpoint with path-level tags.
-        $this->oas['paths'][$basePath.'/{id}/audit-trails'] = [
-            'tags' => [$schema->getTitle()],
-            // Add tags at path level.
-            'get'  => $this->createLogsOperation($schema),
-        ];
+        // Only add whitelisted extended endpoints
+        foreach (self::INCLUDED_EXTENDED_ENDPOINTS as $endpoint) {
+            switch ($endpoint) {
+                case 'audit-trails':
+                    $this->oas['paths'][$basePath.'/{id}/audit-trails'] = [
+                        'get'  => $this->createLogsOperation($schema),
+                    ];
+                    break;
 
-        // Files endpoints with path-level tags.
-        $this->oas['paths'][$basePath.'/{id}/files'] = [
-            'tags' => [$schema->getTitle()],
-            // Add tags at path level.
-            'get'  => $this->createGetFilesOperation($schema),
-            'post' => $this->createPostFileOperation($schema),
-        ];
+                case 'files':
+                    $this->oas['paths'][$basePath.'/{id}/files'] = [
+                        'get'  => $this->createGetFilesOperation($schema),
+                        'post' => $this->createPostFileOperation($schema),
+                    ];
+                    break;
 
-        // Lock/Unlock endpoints with path-level tags.
-        $this->oas['paths'][$basePath.'/{id}/lock'] = [
-            'tags' => [$schema->getTitle()],
-            // Add tags at path level.
-            'post' => $this->createLockOperation($schema),
-        ];
-        $this->oas['paths'][$basePath.'/{id}/unlock'] = [
-            'tags' => [$schema->getTitle()],
-            // Add tags at path level.
-            'post' => $this->createUnlockOperation($schema),
-        ];
+                case 'lock':
+                    $this->oas['paths'][$basePath.'/{id}/lock'] = [
+                        'post' => $this->createLockOperation($schema),
+                    ];
+                    break;
+
+                case 'unlock':
+                    $this->oas['paths'][$basePath.'/{id}/unlock'] = [
+                        'post' => $this->createUnlockOperation($schema),
+                    ];
+                    break;
+            }
+        }
+
+        // Note: By default, NO extended endpoints are included
+        // To include them, add them to INCLUDED_EXTENDED_ENDPOINTS constant
+        // This ensures a clean, minimal API specification focused on core CRUD operations
 
     }//end addExtendedPaths()
 
@@ -360,22 +477,37 @@ class OasService
             if ($schema !== null) {
                 $schemaProperties = $schema->getProperties();
                 foreach ($schemaProperties as $propertyName => $propertyDefinition) {
-                    // Skip internal properties and metadata.
-                    if (str_starts_with($propertyName, '@') === true || $propertyName === 'id') {
+                    // Skip metadata properties and internal system properties
+                    if (str_starts_with($propertyName, '@')) {
+                        continue;
+                    }
+
+                    // Skip the id property as it's already handled as a path parameter
+                    if ($propertyName === 'id') {
                         continue;
                     }
 
                     // Get property type from definition.
                     $propertyType = $this->getPropertyType($propertyDefinition);
 
+                    // Build schema for parameter
+                    $paramSchema = [
+                        'type' => $propertyType,
+                    ];
+
+                    // Array types require an items field
+                    if ($propertyType === 'array') {
+                        $paramSchema['items'] = [
+                            'type' => 'string', // Default array item type for query parameters
+                        ];
+                    }
+
                     $parameters[] = [
                         'name'        => $propertyName,
                         'in'          => 'query',
                         'required'    => false,
                         'description' => 'Filter results by '.$propertyName,
-                        'schema'      => [
-                            'type' => $propertyType,
-                        ],
+                        'schema'      => $paramSchema,
                     ];
                 }
             }//end if
@@ -438,13 +570,25 @@ class OasService
             'parameters'  => $this->createCommonQueryParameters(true, $schema),
             'responses'   => [
                 '200' => [
-                    'description' => 'List of '.$schema->getTitle().' objects',
+                    'description' => 'List of '.$schema->getTitle().' objects with pagination metadata',
                     'content'     => [
                         'application/json' => [
                             'schema' => [
-                                'type'  => 'array',
-                                'items' => [
-                                    '$ref' => '#/components/schemas/'.$schema->getTitle(),
+                                'allOf' => [
+                                    [
+                                        '$ref' => '#/components/schemas/PaginatedResponse',
+                                    ],
+                                    [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'results' => [
+                                                'type' => 'array',
+                                                'items' => [
+                                                    '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName($schema->getTitle()),
+                                                ],
+                                            ],
+                                        ],
+                                    ],
                                 ],
                             ],
                         ],
@@ -491,13 +635,20 @@ class OasService
                     'content'     => [
                         'application/json' => [
                             'schema' => [
-                                '$ref' => '#/components/schemas/'.$schema->getTitle(),
+                                '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName($schema->getTitle()),
                             ],
                         ],
                     ],
                 ],
                 '404' => [
-                    'description' => $schema->getTitle().' not found.',
+                    'description' => $schema->getTitle().' not found',
+                    'content'     => [
+                        'application/json' => [
+                            'schema' => [
+                                '$ref' => '#/components/schemas/Error',
+                            ],
+                        ],
+                    ],
                 ],
             ],
         ];
@@ -539,7 +690,7 @@ class OasService
                 'content'  => [
                     'application/json' => [
                         'schema' => [
-                            '$ref' => '#/components/schemas/'.$schema->getTitle(),
+                            '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName($schema->getTitle()),
                         ],
                     ],
                 ],
@@ -550,13 +701,20 @@ class OasService
                     'content'     => [
                         'application/json' => [
                             'schema' => [
-                                '$ref' => '#/components/schemas/'.$schema->getTitle(),
+                                '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName($schema->getTitle()),
                             ],
                         ],
                     ],
                 ],
                 '404' => [
                     'description' => $schema->getTitle().' not found',
+                    'content'     => [
+                        'application/json' => [
+                            'schema' => [
+                                '$ref' => '#/components/schemas/Error',
+                            ],
+                        ],
+                    ],
                 ],
             ],
         ];
@@ -584,7 +742,7 @@ class OasService
                 'content'  => [
                     'application/json' => [
                         'schema' => [
-                            '$ref' => '#/components/schemas/'.$schema->getTitle(),
+                            '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName($schema->getTitle()),
                         ],
                     ],
                 ],
@@ -595,7 +753,7 @@ class OasService
                     'content'     => [
                         'application/json' => [
                             'schema' => [
-                                '$ref' => '#/components/schemas/'.$schema->getTitle(),
+                                '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName($schema->getTitle()),
                             ],
                         ],
                     ],
@@ -638,6 +796,13 @@ class OasService
                 ],
                 '404' => [
                     'description' => $schema->getTitle().' not found',
+                    'content'     => [
+                        'application/json' => [
+                            'schema' => [
+                                '$ref' => '#/components/schemas/Error',
+                            ],
+                        ],
+                    ],
                 ],
             ],
         ];
@@ -687,6 +852,13 @@ class OasService
                 ],
                 '404' => [
                     'description' => $schema->getTitle().' not found',
+                    'content'     => [
+                        'application/json' => [
+                            'schema' => [
+                                '$ref' => '#/components/schemas/Error',
+                            ],
+                        ],
+                    ],
                 ],
             ],
         ];
@@ -736,6 +908,13 @@ class OasService
                 ],
                 '404' => [
                     'description' => $schema->getTitle().' not found',
+                    'content'     => [
+                        'application/json' => [
+                            'schema' => [
+                                '$ref' => '#/components/schemas/Error',
+                            ],
+                        ],
+                    ],
                 ],
             ],
         ];
@@ -799,6 +978,13 @@ class OasService
                 ],
                 '404' => [
                     'description' => $schema->getTitle().' not found',
+                    'content'     => [
+                        'application/json' => [
+                            'schema' => [
+                                '$ref' => '#/components/schemas/Error',
+                            ],
+                        ],
+                    ],
                 ],
             ],
         ];
@@ -845,6 +1031,13 @@ class OasService
                 ],
                 '404' => [
                     'description' => $schema->getTitle().' not found',
+                    'content'     => [
+                        'application/json' => [
+                            'schema' => [
+                                '$ref' => '#/components/schemas/Error',
+                            ],
+                        ],
+                    ],
                 ],
                 '409' => [
                     'description' => 'Object is already locked',
@@ -887,6 +1080,13 @@ class OasService
                 ],
                 '404' => [
                     'description' => $schema->getTitle().' not found',
+                    'content'     => [
+                        'application/json' => [
+                            'schema' => [
+                                '$ref' => '#/components/schemas/Error',
+                            ],
+                        ],
+                    ],
                 ],
                 '409' => [
                     'description' => 'Object is not locked or locked by another user',
@@ -923,6 +1123,36 @@ class OasService
         return str_replace(' ', '', ucwords(str_replace('-', ' ', $this->slugify($string))));
 
     }//end pascalCase()
+
+
+    /**
+     * Sanitize schema names to be OpenAPI compliant
+     *
+     * OpenAPI schema names must match pattern ^[a-zA-Z0-9._-]+$ 
+     * This method converts titles with spaces and special characters to valid schema names.
+     *
+     * @param string $title The schema title to sanitize
+     *
+     * @return string The sanitized schema name
+     */
+    private function sanitizeSchemaName(string $title): string
+    {
+        // Replace spaces and invalid characters with underscores
+        $sanitized = preg_replace('/[^a-zA-Z0-9._-]/', '_', $title);
+        
+        // Remove multiple consecutive underscores
+        $sanitized = preg_replace('/_+/', '_', $sanitized);
+        
+        // Remove leading/trailing underscores
+        $sanitized = trim($sanitized, '_');
+        
+        // Ensure it starts with a letter (prepend 'Schema_' if it starts with number)
+        if (preg_match('/^[0-9]/', $sanitized)) {
+            $sanitized = 'Schema_' . $sanitized;
+        }
+        
+        return $sanitized;
+    }//end sanitizeSchemaName()
 
 
 }//end class

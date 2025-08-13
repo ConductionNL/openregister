@@ -14,7 +14,9 @@
     "lint-fix": "npm run lint -- --fix",
     "test": "jest --silent",
     "test-coverage": "jest --silent --coverage",
-    "stylelint": "stylelint src/**/*.vue src/**/*.scss src/**/*.css"
+    "stylelint": "stylelint src/**/*.vue src/**/*.scss src/**/*.css",
+    "validate-oas": "spectral lint oas-*.json --fail-severity error",
+    "download-oas": "scripts/download-oas.sh"
   },
   "browserslist": [
     "extends @nextcloud/browserslist-config"
@@ -56,6 +58,7 @@
     "@babel/core": "^7.23.9",
     "@babel/plugin-transform-typescript": "^7.26.8",
     "@babel/preset-env": "^7.23.9",
+    "@stoplight/spectral-cli": "^6.0.0",
     "@babel/preset-typescript": "^7.26.0",
     "@babel/traverse": "^7.23.9",
     "@nextcloud/browserslist-config": "^2.3.0",

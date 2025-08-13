@@ -452,6 +452,47 @@ class ObjectsController extends Controller
 
 
     /**
+     * Retrieves a list of all objects across all registers and schemas
+     *
+     * This method returns a paginated list of objects that the current user has access to,
+     * regardless of register or schema boundaries. It supports filtering, sorting, pagination,
+     * faceting, and facetable field discovery through query parameters.
+     *
+     * This endpoint respects both RBAC (Role-Based Access Control) and multitenancy settings:
+     * - Regular users see only objects they have read permission for in their organization
+     * - Admin users can see all objects system-wide (overrides RBAC and multitenancy)
+     *
+     * Supported parameters:
+     * - Standard filters: Any object field (e.g., name, status, etc.)
+     * - Metadata filters: register, schema, uuid, created, updated, published, etc.
+     * - Pagination: _limit, _offset, _page
+     * - Search: _search
+     * - Rendering: _extend, _fields, _filter/_unset
+     * - Faceting: _facets (facet configuration), _facetable (facetable field discovery)
+     * - Sorting: _order
+     *
+     * @param ObjectService $objectService The object service
+     *
+     * @return JSONResponse A JSON response containing the list of objects with optional facets and facetable fields
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     */
+    public function objects(ObjectService $objectService): JSONResponse
+    {
+        // Build search query without register/schema constraints
+        $query = $this->buildSearchQuery();
+
+        // Use searchObjectsPaginated which handles facets, facetable fields, RBAC, and multitenancy
+        $result = $objectService->searchObjectsPaginated($query);
+        
+        return new JSONResponse($result);
+
+    }//end objects()
+
+
+    /**
      * Shows a specific object from a register and schema
      *
      * Retrieves and returns a single object from the specified register and schema,
