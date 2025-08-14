@@ -156,16 +156,18 @@ class ImportService
     /**
      * Import data from Excel file.
      *
-     * @param string        $filePath  The path to the Excel file.
-     * @param Register|null $register  Optional register to associate with imported objects.
-     * @param Schema|null   $schema    Optional schema to associate with imported objects.
-     * @param int           $chunkSize Number of rows to process in each chunk (default: 100).
+     * @param string        $filePath   The path to the Excel file.
+     * @param Register|null $register   Optional register to associate with imported objects.
+     * @param Schema|null   $schema     Optional schema to associate with imported objects.
+     * @param int           $chunkSize  Number of rows to process in each chunk (default: 100).
+     * @param bool          $validation Whether to validate objects against schema definitions (default: false).
+     * @param bool          $events     Whether to dispatch object lifecycle events (default: false).
      *
      * @return         array<string, array> Summary of import with sheet-based results.
      * @phpstan-return array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      * @psalm-return   array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      */
-    public function importFromExcel(string $filePath, ?Register $register=null, ?Schema $schema=null, int $chunkSize=self::DEFAULT_CHUNK_SIZE): array
+    public function importFromExcel(string $filePath, ?Register $register=null, ?Schema $schema=null, int $chunkSize=self::DEFAULT_CHUNK_SIZE, bool $validation=false, bool $events=false): array
     {
         $reader = new Xlsx();
         $reader->setReadDataOnly(true);
@@ -173,12 +175,12 @@ class ImportService
 
         // If we have a register but no schema, process each sheet as a different schema.
         if ($register !== null && $schema === null) {
-            return $this->processMultiSchemaSpreadsheetAsync($spreadsheet, $register, $chunkSize);
+            return $this->processMultiSchemaSpreadsheetAsync($spreadsheet, $register, $chunkSize, $validation, $events);
         }
 
         // Single schema processing - use batch processing for better performance
         $sheetTitle = $spreadsheet->getActiveSheet()->getTitle();
-        $sheetSummary = $this->processSpreadsheetBatch($spreadsheet, $register, $schema, $chunkSize);
+        $sheetSummary = $this->processSpreadsheetBatch($spreadsheet, $register, $schema, $chunkSize, $validation, $events);
 
         // Add schema information to the summary (consistent with multi-sheet Excel import).
         if ($schema !== null) {
@@ -228,16 +230,18 @@ class ImportService
     /**
      * Import data from CSV file.
      *
-     * @param string        $filePath  The path to the CSV file.
-     * @param Register|null $register  Optional register to associate with imported objects.
-     * @param Schema|null   $schema    Optional schema to associate with imported objects.
-     * @param int           $chunkSize Number of rows to process in each chunk (default: 100).
+     * @param string        $filePath   The path to the CSV file.
+     * @param Register|null $register   Optional register to associate with imported objects.
+     * @param Schema|null   $schema     Optional schema to associate with imported objects.
+     * @param int           $chunkSize  Number of rows to process in each chunk (default: 100).
+     * @param bool          $validation Whether to validate objects against schema definitions (default: false).
+     * @param bool          $events     Whether to dispatch object lifecycle events (default: false).
      *
      * @return         array<string, array> Summary of import with sheet-based results.
      * @phpstan-return array<string, array{created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      * @psalm-return   array<string, array{created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      */
-    public function importFromCsv(string $filePath, ?Register $register=null, ?Schema $schema=null, int $chunkSize=self::DEFAULT_CHUNK_SIZE): array
+    public function importFromCsv(string $filePath, ?Register $register=null, ?Schema $schema=null, int $chunkSize=self::DEFAULT_CHUNK_SIZE, bool $validation=false, bool $events=false): array
     {
         // CSV can only handle a single schema.
         if ($schema === null) {
@@ -252,7 +256,7 @@ class ImportService
 
         // Get the sheet title for CSV (usually just 'Worksheet' or similar).
         $sheetTitle = $spreadsheet->getActiveSheet()->getTitle();
-        $sheetSummary = $this->processCsvSheet($spreadsheet->getActiveSheet(), $register, $schema, $chunkSize);
+        $sheetSummary = $this->processCsvSheet($spreadsheet->getActiveSheet(), $register, $schema, $chunkSize, $validation, $events);
 
         // Add schema information to the summary (consistent with Excel import).
         $sheetSummary['schema'] = [
@@ -273,12 +277,14 @@ class ImportService
      * @param Spreadsheet $spreadsheet The spreadsheet to process
      * @param Register    $register    The register to associate with imported objects
      * @param int         $chunkSize   Number of rows to process in each chunk
+     * @param bool        $validation  Whether to validate objects against schema definitions
+     * @param bool        $events      Whether to dispatch object lifecycle events
      *
      * @return         array<string, array> Summary of import with sheet-based results
      * @phpstan-return array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      * @psalm-return   array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      */
-    private function processMultiSchemaSpreadsheetAsync(Spreadsheet $spreadsheet, Register $register, int $chunkSize): array
+    private function processMultiSchemaSpreadsheetAsync(Spreadsheet $spreadsheet, Register $register, int $chunkSize, bool $validation=false, bool $events=false): array
     {
         $summary = [];
 
@@ -330,7 +336,7 @@ class ImportService
 
             // Set the worksheet as active and process using batch saving for better performance.
             $spreadsheet->setActiveSheetIndex($spreadsheet->getIndex($worksheet));
-            $sheetSummary = $this->processSpreadsheetBatch($spreadsheet, $register, $schema, $chunkSize);
+            $sheetSummary = $this->processSpreadsheetBatch($spreadsheet, $register, $schema, $chunkSize, $validation, $events);
 
             // Merge the sheet summary with the existing summary (preserve debug info).
             $summary[$schemaSlug] = array_merge($summary[$schemaSlug], $sheetSummary);
@@ -424,6 +430,8 @@ class ImportService
      * @param Register|null    $register    Optional register to associate with imported objects
      * @param Schema|null      $schema      Optional schema to associate with imported objects
      * @param int              $chunkSize   Number of rows to process in each chunk
+     * @param bool             $validation  Whether to validate objects against schema definitions
+     * @param bool             $events      Whether to dispatch object lifecycle events
      *
      * @return array<string, array> Sheet processing summary
      * @phpstan-return array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
@@ -433,7 +441,9 @@ class ImportService
         Spreadsheet $spreadsheet,
         ?Register $register=null,
         ?Schema $schema=null,
-        int $chunkSize=self::DEFAULT_CHUNK_SIZE
+        int $chunkSize=self::DEFAULT_CHUNK_SIZE,
+        bool $validation=false,
+        bool $events=false
     ): array {
         $summary = [
             'found'     => 0,
@@ -503,25 +513,22 @@ class ImportService
             // Save all objects in a single batch operation if we have any
             if (!empty($allObjects) && $register !== null && $schema !== null) {
                 try {
-                    $savedObjects = $this->objectService->saveObjects($allObjects, $register, $schema);
+                    $saveResult = $this->objectService->saveObjects($allObjects, $register, $schema, true, true, $validation, $events);
                     
-                    // Categorize results by comparing input objects with returned objects
-                    foreach ($savedObjects as $savedObject) {
-                        $savedUuid = $savedObject->getUuid();
-                        
-                        // Check if this object had an input ID (meaning it was an update)
-                        $wasUpdate = false;
-                        foreach ($objectIdMap as $inputId => $objectIndex) {
-                            if ($inputId === $savedUuid) {
-                                $wasUpdate = true;
-                                break;
-                            }
-                        }
-                        
-                        if ($wasUpdate) {
-                            $summary['updated'][] = $savedUuid;
-                        } else {
-                            $summary['created'][] = $savedUuid;
+                    // Use the new structured return from saveObjects with null safety
+                    $summary['created'] = array_map(fn($obj) => $obj->getUuid(), $saveResult['saved'] ?? []);
+                    $summary['updated'] = array_map(fn($obj) => $obj->getUuid(), $saveResult['updated'] ?? []);
+                    
+                    // Handle validation errors if validation was enabled
+                    if ($validation && !empty($saveResult['invalid'] ?? [])) {
+                        foreach (($saveResult['invalid'] ?? []) as $invalidItem) {
+                            $summary['errors'][] = [
+                                'sheet' => $sheetTitle,
+                                'row'   => $invalidItem['index'] ?? 'validation',
+                                'data'  => $invalidItem['object'] ?? $invalidItem,
+                                'error' => $invalidItem['error'] ?? 'Validation failed',
+                                'type'  => $invalidItem['type'] ?? 'ValidationException',
+                            ];
                         }
                     }
                 } catch (\Exception $e) {
@@ -559,12 +566,14 @@ class ImportService
      * @param Register                                        $register   The register to associate with imported objects
      * @param Schema                                          $schema     The schema to associate with imported objects
      * @param int                                             $chunkSize  Number of rows to process in each chunk
+     * @param bool                                            $validation Whether to validate objects against schema definitions
+     * @param bool                                            $events     Whether to dispatch object lifecycle events
      *
      * @return array<string, array> Sheet processing summary
      * @phpstan-return array<string, array{found: int, created: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      * @psalm-return   array<string, array{found: int, created: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      */
-    private function processCsvSheet(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, Register $register, Schema $schema, int $chunkSize): array
+    private function processCsvSheet(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, Register $register, Schema $schema, int $chunkSize, bool $validation=false, bool $events=false): array
     {
         $summary = [
             'found'     => 0,
@@ -641,26 +650,24 @@ class ImportService
                             }
                         }
                         
-                        $savedObjects = $this->objectService->saveObjects($chunkObjects, $register, $schema);
+                        $saveResult = $this->objectService->saveObjects($chunkObjects, $register, $schema, true, true, $validation, $events);
                         
-                        // Categorize results for this chunk
-                        foreach ($savedObjects as $savedObject) {
-                            $savedUuid = $savedObject->getUuid();
-                            
-                            // Check if this object existed before saving
-                            $wasUpdate = false;
-                            foreach ($chunkObjects as $inputObject) {
-                                $inputId = $inputObject['@self']['id'] ?? null;
-                                if ($inputId !== null && $inputId === $savedUuid && isset($existingObjectIds[$inputId])) {
-                                    $wasUpdate = true;
-                                    break;
-                                }
-                            }
-
-                            if ($wasUpdate) {
-                                $summary['updated'][] = $savedUuid;
-                            } else {
-                                $summary['created'][] = $savedUuid;
+                        // Use the new structured return from saveObjects with null safety
+                        $chunkCreated = array_map(fn($obj) => $obj->getUuid(), $saveResult['saved'] ?? []);
+                        $chunkUpdated = array_map(fn($obj) => $obj->getUuid(), $saveResult['updated'] ?? []);
+                        
+                        $summary['created'] = array_merge($summary['created'], $chunkCreated);
+                        $summary['updated'] = array_merge($summary['updated'], $chunkUpdated);
+                        
+                        // Handle validation errors if validation was enabled
+                        if ($validation && !empty($saveResult['invalid'] ?? [])) {
+                            foreach (($saveResult['invalid'] ?? []) as $invalidItem) {
+                                $summary['errors'][] = [
+                                    'rows' => $chunkStart . '-' . $chunkEnd,
+                                    'data' => $invalidItem['object'] ?? $invalidItem,
+                                    'error' => $invalidItem['error'] ?? 'Validation failed',
+                                    'type' => $invalidItem['type'] ?? 'ValidationException',
+                                ];
                             }
                         }
                         
@@ -683,7 +690,7 @@ class ImportService
                             }
                         }
                         
-                        error_log('[CSV Import] Chunk saved successfully: ' . count($savedObjects) . ' objects');
+                        error_log('[CSV Import] Chunk saved successfully: ' . (count($chunkCreated) + count($chunkUpdated)) . ' objects');
                         
                         // Clear chunk objects from memory
                         unset($chunkObjects);
