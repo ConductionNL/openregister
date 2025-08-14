@@ -25,6 +25,7 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 							<th>Created</th>
 							<th>Updated</th>
 							<th>Unchanged</th>
+							<th>Invalid</th>
 							<th>Errors</th>
 							<th>Total</th>
 						</tr>
@@ -42,6 +43,9 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 									</div>
 									<div v-else-if="sheetSummary.errors && sheetSummary.errors.some(error => error.type === 'InvalidUuidException')" class="errorInfo">
 										<small class="errorText">Invalid UUID format in ID column</small>
+									</div>
+									<div v-else-if="sheetSummary.errors && sheetSummary.errors.some(error => error.type === 'ValidationException')" class="errorInfo">
+										<small class="errorText">{{ getInvalidCount(sheetSummary) }} objects failed validation</small>
 									</div>
 									<div v-else-if="sheetSummary.found === 0 && sheetSummary.errors && sheetSummary.errors.length > 0" class="errorInfo">
 										<small class="errorText">No data found - check schema matching</small>
@@ -68,6 +72,9 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 								<td class="statCell unchanged">
 									{{ (sheetSummary.unchanged && sheetSummary.unchanged.length) || 0 }}
 								</td>
+								<td class="statCell invalid">
+									{{ getInvalidCount(sheetSummary) }}
+								</td>
 								<td class="statCell errors">
 									<div class="errorCell">
 										<span>{{ (sheetSummary.errors && sheetSummary.errors.length) || 0 }}</span>
@@ -85,13 +92,14 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 										((sheetSummary.created && sheetSummary.created.length) || 0) +
 											((sheetSummary.updated && sheetSummary.updated.length) || 0) +
 											((sheetSummary.unchanged && sheetSummary.unchanged.length) || 0) +
+											getInvalidCount(sheetSummary) +
 											((sheetSummary.errors && sheetSummary.errors.length) || 0)
 									}}
 								</td>
 							</tr>
 							<!-- Error Details Row -->
 							<tr v-if="expandedErrors[sheetKey] && sheetSummary.errors && sheetSummary.errors.length > 0" :key="`${sheetKey}-errors`" class="errorDetailsRow">
-								<td colspan="7" class="errorDetailsCell">
+								<td colspan="8" class="errorDetailsCell">
 									<div class="errorDetailsTable">
 										<table class="errorTable">
 											<thead>
@@ -217,7 +225,7 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 				</div>
 			</div>
 
-			<div class="includeObjects">
+			<div class="importOptions">
 				<NcCheckboxRadioSwitch
 					:checked="includeObjects"
 					type="switch"
@@ -225,6 +233,26 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 					Include objects in the import
 					<template #helper>
 						This will create or update objects on the register
+					</template>
+				</NcCheckboxRadioSwitch>
+
+				<NcCheckboxRadioSwitch
+					:checked="validation"
+					type="switch"
+					@update:checked="validation = $event">
+					Enable validation
+					<template #helper>
+						Validate objects against schema definitions before saving. Invalid objects will be excluded from import.
+					</template>
+				</NcCheckboxRadioSwitch>
+
+				<NcCheckboxRadioSwitch
+					:checked="events"
+					type="switch"
+					@update:checked="events = $event">
+					Enable events (experimental)
+					<template #helper>
+						Dispatch object lifecycle events during bulk operations. May impact performance.
 					</template>
 				</NcCheckboxRadioSwitch>
 			</div>
@@ -291,7 +319,9 @@ export default {
 			loading: false, // Loading state
 			success: false, // Success state
 			error: null, // Error message
-			includeObjects: false, // Whether to include objects
+			includeObjects: true, // Whether to include objects (default: true)
+			validation: true, // Whether to enable validation (default: true)
+			events: false, // Whether to enable events (default: false)
 			allowedFileTypes: ['json', 'xlsx', 'xls', 'csv'], // Allowed file types
 			importSummary: null, // The import summary from the backend
 			importResults: null, // The import results for display
@@ -451,7 +481,9 @@ export default {
 			this.loading = false
 			this.success = false
 			this.error = null
-			this.includeObjects = false
+			this.includeObjects = true // Reset to default
+			this.validation = true // Reset to default
+			this.events = false // Reset to default
 			this.importSummary = null
 			this.importResults = null
 			this.expandedSheets = {} // Reset expanded state
@@ -475,7 +507,7 @@ export default {
 				console.log('ImportRegister: Calling registerStore.importRegister')
 				// Call importRegister - the register refresh will happen in the background
 				// This way the loading state is turned off as soon as the import is done
-				const result = await registerStore.importRegister(this.selectedFile, this.includeObjects)
+				const result = await registerStore.importRegister(this.selectedFile, this.includeObjects, this.validation, this.events)
 
 				console.log('ImportRegister: Import completed, setting success state')
 				// Store the import summary from the backend response
@@ -551,6 +583,19 @@ export default {
 		 */
 		toggleErrorDetails(sheetName) {
 			this.$set(this.expandedErrors, sheetName, !this.expandedErrors[sheetName])
+		},
+		/**
+		 * Get the count of invalid objects from validation errors
+		 * @param {object} sheetSummary - The sheet summary object
+		 * @return {number} - The number of invalid objects
+		 */
+		getInvalidCount(sheetSummary) {
+			if (!sheetSummary.errors || !Array.isArray(sheetSummary.errors)) {
+				return 0
+			}
+			// Count validation errors (objects that failed validation)
+			// Now that invalid objects contain their error info directly, we still count ValidationException types
+			return sheetSummary.errors.filter(error => error.type === 'ValidationException').length
 		},
 	},
 }
@@ -635,8 +680,11 @@ export default {
 	margin-bottom: 0.25rem;
 }
 
-.includeObjects {
+.importOptions {
 	margin-top: 1rem;
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
 }
 
 /* Summary Table Styles */
@@ -756,6 +804,11 @@ export default {
 
 .statCell.unchanged {
 	color: var(--color-text-maxcontrast);
+}
+
+.statCell.invalid {
+	color: var(--color-warning);
+	font-weight: 600;
 }
 
 .statCell.errors {
