@@ -506,8 +506,10 @@ class RegistersController extends Controller
                 }
             }
 
-            // Get includeObjects parameter for all types
+            // Get import options for all types
             $includeObjects = filter_var($this->request->getParam('includeObjects', false), FILTER_VALIDATE_BOOLEAN);
+            $validation = filter_var($this->request->getParam('validation', false), FILTER_VALIDATE_BOOLEAN);
+            $events = filter_var($this->request->getParam('events', false), FILTER_VALIDATE_BOOLEAN);
             // Find the register
             $register = $this->registerService->find($id);
             // Handle different import types
@@ -517,7 +519,10 @@ class RegistersController extends Controller
                     $summary = $this->importService->importFromExcel(
                         $uploadedFile['tmp_name'],
                         $register,
-                        null
+                        null,
+                        25, // chunk size
+                        $validation,
+                        $events
                     );
                     break;
                 case 'csv':
@@ -538,7 +543,10 @@ class RegistersController extends Controller
                     $summary = $this->importService->importFromCsv(
                         $uploadedFile['tmp_name'],
                         $register,
-                        $schema
+                        $schema,
+                        25, // chunk size
+                        $validation,
+                        $events
                     );
                     break;
                 case 'configuration':

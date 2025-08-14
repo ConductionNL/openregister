@@ -157,18 +157,99 @@ class SaveObject
 
 
     /**
+     * Resolves a register reference to a register ID.
+     *
+     * This method handles various types of register references:
+     * - Direct ID/UUID: "34", "21aab6e0-2177-4920-beb0-391492fed04b"
+     * - Slug references: "publication", "voorzieningen"
+     * - URL references: "http://example.com/api/registers/34"
+     *
+     * For path and URL references, it extracts the last part and matches against register slugs (case-insensitive).
+     *
+     * @param string $reference The register reference to resolve
+     *
+     * @return string|null The resolved register ID or null if not found
+     */
+    private function resolveRegisterReference(string $reference): ?string
+    {
+        if (empty($reference)) {
+            return null;
+        }
+
+        // First, try direct ID lookup (numeric ID or UUID)
+        if (is_numeric($reference) || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $reference)) {
+            try {
+                $register = $this->registerMapper->find($reference);
+                return $register->getId();
+            } catch (DoesNotExistException $e) {
+                // Continue with other resolution methods
+            }
+        }
+
+        // Extract the last part of path/URL references
+        $slug = $reference;
+        if (str_contains($reference, '/')) {
+            // For references like "http://example.com/registers/publication"
+            $slug = substr($reference, strrpos($reference, '/') + 1);
+        }
+
+        // Try to find register by slug (case-insensitive)
+        try {
+            $registers = $this->registerMapper->findAll();
+            foreach ($registers as $register) {
+                if (strcasecmp($register->getSlug(), $slug) === 0) {
+                    return $register->getId();
+                }
+            }
+        } catch (Exception $e) {
+            // Register not found
+        }
+
+        // Try direct slug match as last resort
+        try {
+            $register = $this->registerMapper->findBySlug($slug);
+            if ($register) {
+                return $register->getId();
+            }
+        } catch (Exception $e) {
+            // Register not found
+        }
+
+        return null;
+
+    }//end resolveRegisterReference()
+
+
+    /**
      * Scans an object for relations (UUIDs and URLs) and returns them in dot notation
+     *
+     * This method now also checks schema properties for relation types:
+     * - Properties with type 'text' and format 'uuid', 'uri', or 'url'
+     * - Properties with type 'object' that contain string values (always treated as relations)
+     * - Properties with type 'array' of objects that contain string values
      *
      * @param array  $data   The object data to scan
      * @param string $prefix The current prefix for dot notation (used in recursion)
+     * @param Schema|null $schema The schema to check property definitions against
      *
      * @return array Array of relations with dot notation paths as keys and UUIDs/URLs as values
      */
-    private function scanForRelations(array $data, string $prefix=''): array
+    private function scanForRelations(array $data, string $prefix='', ?Schema $schema=null): array
     {
         $relations = [];
 
         try {
+            // Get schema properties if available
+            $schemaProperties = null;
+            if ($schema !== null) {
+                try {
+                    $schemaObject = json_decode(json_encode($schema->getSchemaObject($this->urlGenerator)), associative: true);
+                    $schemaProperties = $schemaObject['properties'] ?? [];
+                } catch (Exception $e) {
+                    // Continue without schema properties if parsing fails
+                }
+            }
+
             foreach ($data as $key => $value) {
                 // Skip if key is not a string or is empty
                 if (!is_string($key) || empty($key)) {
@@ -178,15 +259,63 @@ class SaveObject
                 $currentPath = $prefix ? $prefix.'.'.$key : $key;
 
                 if (is_array($value) && !empty($value)) {
-                    // Recursively scan nested arrays
-                    $relations = array_merge($relations, $this->scanForRelations($value, $currentPath));
-                } else if (is_string($value) && !empty($value) && trim($value) !== '') {
-                    // Check for UUID pattern
-                    if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value)) {
-                        $relations[$currentPath] = $value;
+                    // Check if this is an array property in the schema
+                    $propertyConfig = $schemaProperties[$key] ?? null;
+                    $isArrayOfObjects = $propertyConfig && 
+                                      ($propertyConfig['type'] ?? '') === 'array' && 
+                                      isset($propertyConfig['items']['type']) && 
+                                      $propertyConfig['items']['type'] === 'object';
+
+                    if ($isArrayOfObjects) {
+                        // For arrays of objects, scan each item for relations
+                        foreach ($value as $index => $item) {
+                            if (is_array($item)) {
+                                $itemRelations = $this->scanForRelations(
+                                    $item, 
+                                    $currentPath . '.' . $index, 
+                                    $schema
+                                );
+                                $relations = array_merge($relations, $itemRelations);
+                            } elseif (is_string($item) && !empty($item)) {
+                                // String values in object arrays are always treated as relations
+                                $relations[$currentPath . '.' . $index] = $item;
+                            }
+                        }
+                    } else {
+                        // Recursively scan nested arrays
+                        $relations = array_merge($relations, $this->scanForRelations($value, $currentPath, $schema));
                     }
-                    // Check for URL pattern
-                    else if (filter_var($value, FILTER_VALIDATE_URL)) {
+                } else if (is_string($value) && !empty($value) && trim($value) !== '') {
+                    $shouldTreatAsRelation = false;
+
+                    // Check schema property configuration first
+                    if ($schemaProperties && isset($schemaProperties[$key])) {
+                        $propertyConfig = $schemaProperties[$key];
+                        $propertyType = $propertyConfig['type'] ?? '';
+                        $propertyFormat = $propertyConfig['format'] ?? '';
+
+                        // Check for explicit relation types
+                        if ($propertyType === 'text' && in_array($propertyFormat, ['uuid', 'uri', 'url'])) {
+                            $shouldTreatAsRelation = true;
+                        } elseif ($propertyType === 'object') {
+                            // Object properties with string values are always relations
+                            $shouldTreatAsRelation = true;
+                        }
+                    }
+
+                    // If not determined by schema, check for patterns
+                    if (!$shouldTreatAsRelation) {
+                        // Check for UUID pattern
+                        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value)) {
+                            $shouldTreatAsRelation = true;
+                        }
+                        // Check for URL pattern
+                        else if (filter_var($value, FILTER_VALIDATE_URL)) {
+                            $shouldTreatAsRelation = true;
+                        }
+                    }
+
+                    if ($shouldTreatAsRelation) {
                         $relations[$currentPath] = $value;
                     }
                 }
@@ -205,13 +334,14 @@ class SaveObject
      *
      * @param ObjectEntity $objectEntity The object entity to update
      * @param array        $data         The object data to scan for relations
+     * @param Schema|null  $schema       The schema to check property definitions against
      *
      * @return ObjectEntity The updated object entity
      */
-    private function updateObjectRelations(ObjectEntity $objectEntity, array $data): ObjectEntity
+    private function updateObjectRelations(ObjectEntity $objectEntity, array $data, ?Schema $schema=null): ObjectEntity
     {
         // Scan for relations in the object data
-        $relations = $this->scanForRelations($data);
+        $relations = $this->scanForRelations($data, '', $schema);
 
         // Set the relations on the object entity
         $objectEntity->setRelations($relations);
@@ -400,9 +530,85 @@ class SaveObject
         // 3. Override with constant values (constants always take precedence)
         $mergedData = array_merge($data, $renderedDefaultValues, $constantValues);
 
+        // Generate slug if not present and schema has slug configuration
+        if (!isset($mergedData['slug']) && !isset($mergedData['@self']['slug'])) {
+            $slug = $this->generateSlug($mergedData, $schema);
+            if ($slug !== null) {
+                // Set slug in the data (will be applied to entity in setSelfMetadata)
+                $mergedData['slug'] = $slug;
+            }
+        }
+
         return $mergedData;
 
     }//end setDefaultValues()
+
+
+    /**
+     * Generates a slug for an object based on its data and schema configuration.
+     *
+     * @param array  $data   The object data
+     * @param Schema $schema The schema containing the configuration
+     *
+     * @return string|null The generated slug or null if no slug could be generated
+     */
+    private function generateSlug(array $data, Schema $schema): ?string
+    {
+        try {
+            $config = $schema->getConfiguration();
+            $slugField = $config['objectSlugField'] ?? null;
+
+            if ($slugField === null) {
+                return null;
+            }
+
+            // Get the value from the specified field
+            $value = $this->getValueFromPath($data, $slugField);
+            if ($value === null || empty($value)) {
+                return null;
+            }
+
+            // Convert to string and generate slug
+            $slug = $this->createSlug((string) $value);
+            
+            // Ensure uniqueness by appending timestamp if needed
+            $timestamp = time();
+            $uniqueSlug = $slug . '-' . $timestamp;
+
+            return $uniqueSlug;
+
+        } catch (Exception $e) {
+            return null;
+        }
+    }
+
+
+    /**
+     * Creates a URL-friendly slug from a string.
+     *
+     * @param string $text The text to convert to a slug
+     *
+     * @return string The generated slug
+     */
+    private function createSlug(string $text): string
+    {
+        // Convert to lowercase
+        $text = strtolower($text);
+        
+        // Replace non-alphanumeric characters with hyphens
+        $text = preg_replace('/[^a-z0-9]+/', '-', $text);
+        
+        // Remove leading and trailing hyphens
+        $text = trim($text, '-');
+        
+        // Limit length
+        if (strlen($text) > 50) {
+            $text = substr($text, 0, 50);
+            $text = rtrim($text, '-');
+        }
+        
+        return $text;
+    }
 
 
     /**
@@ -968,13 +1174,15 @@ class SaveObject
     /**
      * Saves an object.
      *
-     * @param Register|int|string|null $register The register containing the object.
-     * @param Schema|int|string        $schema   The schema to validate against.
-     * @param array                    $data     The object data to save.
-     * @param string|null              $uuid     The UUID of the object to update (if updating).
-     * @param int|null                 $folderId The folder ID to set on the object (optional).
-     * @param bool                     $rbac     Whether to apply RBAC checks (default: true).
-     * @param bool                     $multi    Whether to apply multitenancy filtering (default: true).
+     * @param Register|int|string|null $register   The register containing the object.
+     * @param Schema|int|string        $schema     The schema to validate against.
+     * @param array                    $data       The object data to save.
+     * @param string|null              $uuid       The UUID of the object to update (if updating).
+     * @param int|null                 $folderId   The folder ID to set on the object (optional).
+     * @param bool                     $rbac       Whether to apply RBAC checks (default: true).
+     * @param bool                     $multi      Whether to apply multitenancy filtering (default: true).
+     * @param bool                     $persist    Whether to persist the object to database (default: true).
+     * @param bool                     $validation Whether to validate the object (default: true).
      *
      * @return ObjectEntity The saved object entity.
      *
@@ -987,7 +1195,9 @@ class SaveObject
         ?string $uuid=null,
         ?int $folderId=null,
         bool $rbac=true,
-        bool $multi=true
+        bool $multi=true,
+        bool $persist=true,
+        bool $validation=true
     ): ObjectEntity {
 
         if (isset($data['@self']) && is_array($data['@self'])) {
@@ -1010,19 +1220,35 @@ class SaveObject
         if ($schema instanceof Schema === true) {
             $schemaId = $schema->getId();
         } else {
-            $schemaId = $schema;
-            $schema   = $this->schemaMapper->find(id: $schema);
+            // Resolve schema reference if it's a string
+            if (is_string($schema)) {
+                $schemaId = $this->resolveSchemaReference($schema);
+                if ($schemaId === null) {
+                    throw new Exception("Could not resolve schema reference: $schema");
+                }
+                $schema = $this->schemaMapper->find(id: $schemaId);
+            } else {
+                $schemaId = $schema;
+                $schema   = $this->schemaMapper->find(id: $schema);
+            }
         }
 
         $registerId = null;
         if ($register instanceof Register === true) {
             $registerId = $register->getId();
         } else {
-            $registerId = $register;
-            $register   = $this->registerMapper->find(id: $register);
+            // Resolve register reference if it's a string
+            if (is_string($register)) {
+                $registerId = $this->resolveRegisterReference($register);
+                if ($registerId === null) {
+                    throw new Exception("Could not resolve register reference: $register");
+                }
+                $register = $this->registerMapper->find(id: $registerId);
+            } else {
+                $registerId = $register;
+                $register   = $this->registerMapper->find(id: $register);
+            }
         }
-
-        // Debug logging can be added here if needed
 
         // NOTE: Do NOT sanitize here - let validation happen first in ObjectService
         // Sanitization will happen after validation but before cascading operations
@@ -1032,53 +1258,22 @@ class SaveObject
             try {
                 $existingObject = $this->objectEntityMapper->find(identifier: $uuid);
 
-                // Check if '@self' metadata exists and contains published/depublished properties
-                if (isset($selfData) === true) {
-                    // Extract and set published property if present
-                    if (array_key_exists('published', $selfData) && !empty($selfData['published'])) {
-                        try {
-                            // Convert string to DateTime if it's a valid date string
-                            if (is_string($selfData['published']) === true) {
-                                $existingObject->setPublished(new DateTime($selfData['published']));
-                            }
-                        } catch (Exception $exception) {
-                            // Silently ignore invalid date formats
-                        }
-                    } else {
-                        $existingObject->setPublished(null);
-                    }
+                // Prepare the object for update
+                $preparedObject = $this->prepareObjectForUpdate(
+                    existingObject: $existingObject,
+                    schema: $schema,
+                    data: $data,
+                    selfData: $selfData ?? [],
+                    folderId: $folderId
+                );
 
-                    // Extract and set depublished property if present
-                    if (array_key_exists('depublished', $selfData) && !empty($selfData['depublished'])) {
-                        try {
-                            // Convert string to DateTime if it's a valid date string
-                            if (is_string($selfData['depublished']) === true) {
-                                $existingObject->setDepublished(new DateTime($selfData['depublished']));
-                            }
-                        } catch (Exception $exception) {
-                            // Silently ignore invalid date formats
-                        }
-                    } else {
-                        $existingObject->setDepublished(null);
-                    }
-                }//end if
-
-                try {
-                    // Sanitize empty strings after validation but before cascading operations
-                    // This prevents empty values from causing issues in downstream processing
-                    try {
-                        $data = $this->sanitizeEmptyStringsForObjectProperties($data, $schema);
-                    } catch (Exception $e) {
-                        // Continue without sanitization if it fails
-                    }
-
-                    $data = $this->cascadeObjects(objectEntity: $existingObject, schema: $schema, data: $data);
-                    $data = $this->handleInverseRelationsWriteBack(objectEntity: $existingObject, schema: $schema, data: $data);
-                    $data = $this->setDefaultValues(objectEntity: $existingObject, schema: $schema, data: $data);
-                    return $this->updateObject(register: $register, schema: $schema, data: $data, existingObject: $existingObject, folderId: $folderId);
-                } catch (Exception $e) {
-                    throw $e;
+                // If not persisting, return the prepared object
+                if (!$persist) {
+                    return $preparedObject;
                 }
+
+                // Update the object
+                return $this->updateObject(register: $register, schema: $schema, data: $data, existingObject: $preparedObject, folderId: $folderId);
             } catch (DoesNotExistException $e) {
                 // Object not found, proceed with creating new object.
             } catch (Exception $e) {
@@ -1099,80 +1294,88 @@ class SaveObject
             $objectEntity->setFolder((string) $folderId);
         }
 
-        // Check if '@self' metadata exists and contains published/depublished properties
-        if (isset($selfData) === true) {
-            // Extract and set published property if present
-            if (array_key_exists('published', $selfData) && !empty($selfData['published'])) {
-                try {
-                    // Convert string to DateTime if it's a valid date string
-                    if (is_string($selfData['published']) === true) {
-                        $objectEntity->setPublished(new DateTime($selfData['published']));
-                    }
-                } catch (Exception $exception) {
-                    // Silently ignore invalid date formats
-                }
-            } else {
-                $objectEntity->setPublished(null);
-            }
+        // Prepare the object for creation
+        $preparedObject = $this->prepareObjectForCreation(
+            objectEntity: $objectEntity,
+            schema: $schema,
+            data: $data,
+            selfData: $selfData ?? [],
+            multi: $multi
+        );
 
-            // Extract and set depublished property if present
-            if (array_key_exists('depublished', $selfData) && !empty($selfData['depublished'])) {
-                try {
-                    // Convert string to DateTime if it's a valid date string
-                    if (is_string($selfData['depublished']) === true) {
-                        $objectEntity->setDepublished(new DateTime($selfData['depublished']));
-                    }
-                } catch (Exception $exception) {
-                    // Silently ignore invalid date formats
-                }
-            } else {
-                $objectEntity->setDepublished(null);
+        // If not persisting, return the prepared object
+        if (!$persist) {
+            return $preparedObject;
+        }
+
+        // Save the object to database.
+        $savedEntity = $this->objectEntityMapper->insert($preparedObject);
+
+        // Create audit trail for creation.
+        $log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity);
+        $savedEntity->setLastLog($log->jsonSerialize());
+
+        // Handle file properties - process them and replace content with file IDs
+        foreach ($data as $propertyName => $value) {
+            if ($this->isFileProperty($value, $schema, $propertyName) === true) {
+                $this->handleFileProperty($savedEntity, $data, $propertyName, $schema);
             }
-        }//end if
+        }
+
+        // Update the object with the modified data (file IDs instead of content)
+        $savedEntity->setObject($data);
+
+        return $savedEntity;
+
+    }//end saveObject()
+
+
+    /**
+     * Prepares an object for creation by applying all necessary transformations.
+     *
+     * @param ObjectEntity $objectEntity The object entity to prepare.
+     * @param Schema       $schema       The schema of the object.
+     * @param array        $data         The object data.
+     * @param array        $selfData     The @self metadata.
+     * @param bool         $multi        Whether to apply multitenancy filtering.
+     *
+     * @return ObjectEntity The prepared object entity.
+     *
+     * @throws Exception If there is an error during preparation.
+     */
+    private function prepareObjectForCreation(
+        ObjectEntity $objectEntity,
+        Schema $schema,
+        array $data,
+        array $selfData,
+        bool $multi
+    ): ObjectEntity {
+        // Set @self metadata properties
+        $this->setSelfMetadata($objectEntity, $selfData, $data);
 
         // Set UUID if provided, otherwise generate a new one.
-        if ($uuid !== null) {
-            $objectEntity->setUuid($uuid);
-            // @todo: check if this is a correct uuid.
-        } else {
+        if ($objectEntity->getUuid() === null) {
             $objectEntity->setUuid(Uuid::v4()->toRfc4122());
         }
 
         $objectEntity->setUri(
-                $this->urlGenerator->getAbsoluteURL(
+            $this->urlGenerator->getAbsoluteURL(
                 $this->urlGenerator->linkToRoute(
-            self::URL_PATH_IDENTIFIER,
-                [
-                    'register' => $register instanceof Register === true && $schema->getSlug() !== null ? $register->getSlug() : $registerId,
-                    'schema'   => $schema instanceof Schema === true && $schema->getSlug() !== null ? $schema->getSlug() : $schemaId,
-                    'id'       => $objectEntity->getUuid(),
-                ]
+                    self::URL_PATH_IDENTIFIER,
+                    [
+                        'register' => $objectEntity->getRegister(),
+                        'schema'   => $objectEntity->getSchema(),
+                        'id'       => $objectEntity->getUuid(),
+                    ]
                 )
-                )
-                );
+            )
+        );
 
-        // Set default values.
-        if ($schema instanceof Schema === false) {
-            $schema = $this->schemaMapper->find($schemaId);
-        }
+        // Prepare the data
+        $preparedData = $this->prepareObjectData($objectEntity, $schema, $data);
 
-        try {
-            // Sanitize empty strings after validation but before cascading operations
-            // This prevents empty values from causing issues in downstream processing
-            try {
-                $data = $this->sanitizeEmptyStringsForObjectProperties($data, $schema);
-            } catch (Exception $e) {
-                // Continue without sanitization if it fails
-            }
-
-            $data = $this->cascadeObjects($objectEntity, $schema, $data);
-            $data = $this->handleInverseRelationsWriteBack($objectEntity, $schema, $data);
-            $data = $this->setDefaultValues($objectEntity, $schema, $data);
-        } catch (Exception $e) {
-            throw $e;
-        }
-
-        $objectEntity->setObject($data);
+        // Set the prepared data
+        $objectEntity->setObject($preparedData);
 
         // Hydrate name and description from schema configuration.
         try {
@@ -1198,31 +1401,177 @@ class SaveObject
 
         // Update object relations.
         try {
-            $objectEntity = $this->updateObjectRelations($objectEntity, $data);
+            $objectEntity = $this->updateObjectRelations($objectEntity, $preparedData, $schema);
         } catch (Exception $e) {
             // Continue without relations if it fails
         }
 
-        // Save the object to database.
-        $savedEntity = $this->objectEntityMapper->insert($objectEntity);
+        return $objectEntity;
+    }
 
-        // Create audit trail for creation.
-        $log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity);
-        $savedEntity->setLastLog($log->jsonSerialize());
 
-        // Handle file properties - process them and replace content with file IDs
-        foreach ($data as $propertyName => $value) {
-            if ($this->isFileProperty($value, $schema, $propertyName) === true) {
-                $this->handleFileProperty($savedEntity, $data, $propertyName, $schema);
-            }
+    /**
+     * Prepares an object for update by applying all necessary transformations.
+     *
+     * @param ObjectEntity $existingObject The existing object entity to prepare.
+     * @param Schema       $schema         The schema of the object.
+     * @param array        $data           The updated object data.
+     * @param array        $selfData       The @self metadata.
+     * @param int|null     $folderId       The folder ID to set on the object.
+     *
+     * @return ObjectEntity The prepared object entity.
+     *
+     * @throws Exception If there is an error during preparation.
+     */
+    private function prepareObjectForUpdate(
+        ObjectEntity $existingObject,
+        Schema $schema,
+        array $data,
+        array $selfData,
+        ?int $folderId
+    ): ObjectEntity {
+        // Set @self metadata properties
+        $this->setSelfMetadata($existingObject, $selfData, $data);
+
+        // Set folder ID if provided
+        if ($folderId !== null) {
+            $existingObject->setFolder((string) $folderId);
         }
 
-        // Update the object with the modified data (file IDs instead of content)
-        $savedEntity->setObject($data);
+        // Prepare the data
+        $preparedData = $this->prepareObjectData($existingObject, $schema, $data);
 
-        return $savedEntity;
+        // Set the prepared data
+        $existingObject->setObject($preparedData);
 
-    }//end saveObject()
+        // Hydrate name and description from schema configuration.
+        $this->hydrateNameDescriptionAndImage($existingObject, $schema);
+
+        // Update object relations.
+        $existingObject = $this->updateObjectRelations($existingObject, $preparedData, $schema);
+
+        return $existingObject;
+    }
+
+
+    /**
+     * Sets @self metadata properties on an object entity.
+     *
+     * @param ObjectEntity $objectEntity The object entity to set metadata on.
+     * @param array        $selfData     The @self metadata.
+     * @param array        $data         The object data (for generated values like slug).
+     *
+     * @return void
+     */
+    private function setSelfMetadata(ObjectEntity $objectEntity, array $selfData, array $data=[]): void
+    {
+        // Extract and set slug property if present (check both @self and data)
+        $slug = $selfData['slug'] ?? $data['slug'] ?? null;
+        if (!empty($slug)) {
+            $objectEntity->setSlug($slug);
+        }
+
+        // Extract and set published property if present
+        if (array_key_exists('published', $selfData) && !empty($selfData['published'])) {
+            try {
+                // Convert string to DateTime if it's a valid date string
+                if (is_string($selfData['published']) === true) {
+                    $objectEntity->setPublished(new DateTime($selfData['published']));
+                }
+            } catch (Exception $exception) {
+                // Silently ignore invalid date formats
+            }
+        } else {
+            $objectEntity->setPublished(null);
+        }
+
+        // Extract and set depublished property if present
+        if (array_key_exists('depublished', $selfData) && !empty($selfData['depublished'])) {
+            try {
+                // Convert string to DateTime if it's a valid date string
+                if (is_string($selfData['depublished']) === true) {
+                    $objectEntity->setDepublished(new DateTime($selfData['depublished']));
+                }
+            } catch (Exception $exception) {
+                // Silently ignore invalid date formats
+            }
+        } else {
+            $objectEntity->setDepublished(null);
+        }
+    }
+
+
+    /**
+     * Prepares object data by applying all necessary transformations.
+     *
+     * @param ObjectEntity $objectEntity The object entity.
+     * @param Schema       $schema       The schema of the object.
+     * @param array        $data         The object data.
+     *
+     * @return array The prepared object data.
+     *
+     * @throws Exception If there is an error during preparation.
+     */
+    private function prepareObjectData(ObjectEntity $objectEntity, Schema $schema, array $data): array
+    {
+        // Sanitize empty strings after validation but before cascading operations
+        // This prevents empty values from causing issues in downstream processing
+        try {
+            $data = $this->sanitizeEmptyStringsForObjectProperties($data, $schema);
+        } catch (Exception $e) {
+            // Continue without sanitization if it fails
+        }
+
+        // Apply cascading operations
+        $data = $this->cascadeObjects($objectEntity, $schema, $data);
+        $data = $this->handleInverseRelationsWriteBack($objectEntity, $schema, $data);
+        
+        // Apply default values (including slug generation)
+        $data = $this->setDefaultValues($objectEntity, $schema, $data);
+
+        return $data;
+    }
+
+
+    /**
+     * Prepares an object for saving without persisting to database.
+     *
+     * This method applies all the same transformations as saveObject but returns
+     * the prepared ObjectEntity without saving it to the database.
+     *
+     * @param Register|int|string|null $register The register containing the object.
+     * @param Schema|int|string        $schema   The schema to validate against.
+     * @param array                    $data     The object data to prepare.
+     * @param string|null              $uuid     The UUID of the object to update (if updating).
+     * @param int|null                 $folderId The folder ID to set on the object (optional).
+     * @param bool                     $rbac     Whether to apply RBAC checks (default: true).
+     * @param bool                     $multi    Whether to apply multitenancy filtering (default: true).
+     *
+     * @return ObjectEntity The prepared object entity.
+     *
+     * @throws Exception If there is an error during preparation.
+     */
+    public function prepareObject(
+        Register | int | string | null $register,
+        Schema | int | string $schema,
+        array $data,
+        ?string $uuid=null,
+        ?int $folderId=null,
+        bool $rbac=true,
+        bool $multi=true
+    ): ObjectEntity {
+        return $this->saveObject(
+            register: $register,
+            schema: $schema,
+            data: $data,
+            uuid: $uuid,
+            folderId: $folderId,
+            rbac: $rbac,
+            multi: $multi,
+            persist: false,
+            validation: true
+        );
+    }
 
 
     /**
@@ -2199,14 +2548,18 @@ class SaveObject
         // Store the old state for audit trail.
         $oldObject = clone $existingObject;
 
-        // Lets filter out the id and @self properties from the old object.
-        $oldObjectData = $oldObject->getObject();
+        // Extract @self data if present
+        $selfData = [];
+        if (isset($data['@self']) && is_array($data['@self'])) {
+            $selfData = $data['@self'];
+        }
 
-        $oldObject->setObject($oldObjectData);
+        // Remove @self and id from the data before processing
+        unset($data['@self'], $data['id']);
 
         // Set register ID based on input type.
         $registerId = null;
-        if ($register instanceof Register) {
+        if ($register instanceof Register === true) {
             $registerId = $register->getId();
         } else {
             $registerId = $register;
@@ -2214,97 +2567,28 @@ class SaveObject
 
         // Set schema ID based on input type.
         $schemaId = null;
-        if ($schema instanceof Schema) {
+        if ($schema instanceof Schema === true) {
             $schemaId = $schema->getId();
         } else {
             $schemaId = $schema;
         }
 
-        // Check if '@self' metadata exists and contains published/depublished properties
-        if (isset($data['@self']) && is_array($data['@self'])) {
-            $selfData = $data['@self'];
-
-            // Extract and set published property if present
-            if (array_key_exists('published', $selfData) && !empty($selfData['published'])) {
-                try {
-                    // Convert string to DateTime if it's a valid date string
-                    if (is_string($selfData['published']) === true) {
-                        $existingObject->setPublished(new DateTime($selfData['published']));
-                    }
-                } catch (Exception $exception) {
-                    // Silently ignore invalid date formats
-                }
-            } else {
-                $existingObject->setPublished(null);
-            }
-
-            // Extract and set depublished property if present
-            if (array_key_exists('depublished', $selfData) && !empty($selfData['depublished'])) {
-                try {
-                    // Convert string to DateTime if it's a valid date string
-                    if (is_string($selfData['depublished']) === true) {
-                        $existingObject->setDepublished(new DateTime($selfData['depublished']));
-                    }
-                } catch (Exception $exception) {
-                    // Silently ignore invalid date formats
-                }
-            } else {
-                $existingObject->setDepublished(null);
-            }
-        }//end if
-
-        // Remove @self and id from the data before setting object
-        unset($data['@self'], $data['id']);
-
-        // Sanitize empty strings after validation (which happened in the calling saveObject method)
-        // This prevents empty strings from causing issues in downstream processing
-        try {
-            if ($schema instanceof Schema) {
-                $data = $this->sanitizeEmptyStringsForObjectProperties($data, $schema);
-            } else {
-                $schemaObject = $this->schemaMapper->find($schemaId);
-                $data = $this->sanitizeEmptyStringsForObjectProperties($data, $schemaObject);
-            }
-        } catch (Exception $e) {
-            // Continue without sanitization if it fails
-        }
-
-        // Get schema object for processing
-        $schemaObject = null;
-        if ($schema instanceof Schema) {
-            $schemaObject = $schema;
-        } else {
-            $schemaObject = $this->schemaMapper->find($schemaId);
-        }
-
-        // Process the data with the same logic as saveObject to prevent 404 errors
-        try {
-            $data = $this->cascadeObjects($existingObject, $schemaObject, $data);
-            $data = $this->handleInverseRelationsWriteBack($existingObject, $schemaObject, $data);
-            $data = $this->setDefaultValues($existingObject, $schemaObject, $data);
-        } catch (Exception $e) {
-            throw $e;
-        }
+        // Prepare the object for update using the new structure
+        $preparedObject = $this->prepareObjectForUpdate(
+            existingObject: $existingObject,
+            schema: $schema,
+            data: $data,
+            selfData: $selfData,
+            folderId: $folderId
+        );
 
         // Update the object properties.
-        $existingObject->setRegister($registerId);
-        $existingObject->setSchema($schemaId);
-        $existingObject->setObject($data);
-        $existingObject->setUpdated(new DateTime());
-
-        // Set folder ID if provided
-        if ($folderId !== null) {
-            $existingObject->setFolder((string) $folderId);
-        }
-
-        // Hydrate name and description from schema configuration.
-                    $this->hydrateNameDescriptionAndImage($existingObject, $schemaObject);
-
-        // Update object relations.
-        $existingObject = $this->updateObjectRelations($existingObject, $data);
+        $preparedObject->setRegister($registerId);
+        $preparedObject->setSchema($schemaId);
+        $preparedObject->setUpdated(new DateTime());
 
         // Save the object to database.
-        $updatedEntity = $this->objectEntityMapper->update($existingObject);
+        $updatedEntity = $this->objectEntityMapper->update($preparedObject);
 
         // Create audit trail for update.
         $log = $this->auditTrailMapper->createAuditTrail(old: $oldObject, new: $updatedEntity);
