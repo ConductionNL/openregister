@@ -2290,30 +2290,64 @@ class ObjectService
 	 * Objects are expected to be in serialized format and will be enriched with
 	 * missing metadata (owner, organisation, created, updated) if not present.
 	 *
+	 * Optional validation can be enabled to validate objects against their schema definitions
+	 * before saving. Invalid objects will be excluded from the save operation and returned
+	 * in the 'invalid' array with their validation errors in the 'errors' array.
+	 *
+	 * Optional event dispatching can be enabled to trigger object lifecycle events during
+	 * the bulk save operation. This may impact performance but provides full event support.
+	 * NOTE: Event dispatching is reserved for future implementation and currently has no effect.
+	 *
 	 * @param array $objects Array of objects in serialized format (each object is an array representation of ObjectEntity)
 	 * @param Register|string|int|null $register Optional register filter for validation
 	 * @param Schema|string|int|null $schema Optional schema filter for validation
 	 * @param bool $rbac Whether to apply RBAC filtering
 	 * @param bool $multi Whether to apply multi-organization filtering
+	 * @param bool $validation Whether to validate objects against schema definitions before saving (default: false)
+	 * @param bool $events Whether to dispatch object lifecycle events during bulk operations (default: false)
 	 *
 	 * @throws \InvalidArgumentException If required fields are missing from any object
 	 * @throws \OCP\DB\Exception If a database error occurs during bulk operations
 	 *
-	 * @return array Array of saved ObjectEntity instances from the database
+	 * @return array Array containing bulk operation results:
+	 *               - 'saved': Array of newly created ObjectEntity instances
+	 *               - 'updated': Array of updated ObjectEntity instances  
+	 *               - 'skipped': Array of objects that were skipped (reserved for future implementation)
+	 *               - 'invalid': Array of objects that failed validation (when validation=true)
+	 *               - 'errors': Array of validation error messages indexed by object index
+	 *               - 'statistics': Array with counts (totalProcessed, saved, updated, skipped, invalid)
 	 *
 	 * @phpstan-param array<int, array<string, mixed>> $objects
 	 * @psalm-param array<int, array<string, mixed>> $objects
-	 * @phpstan-return array<int, ObjectEntity>
-	 * @psalm-return array<int, ObjectEntity>
+	 * @phpstan-return array<string, mixed>
+	 * @psalm-return array<string, mixed>
 	 */
 	public function saveObjects(
 		array $objects,
 		Register|string|int|null $register = null,
 		Schema|string|int|null $schema = null,
 		bool $rbac = true,
-		bool $multi = true
+		bool $multi = true,
+		bool $validation = false,
+		bool $events = false
 	): array {
 		$now = new \DateTime();
+		
+		// Initialize result arrays for different outcomes
+		$result = [
+			'saved' => [],
+			'updated' => [],
+			'skipped' => [], // Reserved for future implementation
+			'invalid' => [],
+			'errors' => [],
+			'statistics' => [
+				'totalProcessed' => count($objects),
+				'saved' => 0,
+				'updated' => 0,
+				'skipped' => 0,
+				'invalid' => 0
+			]
+		];
 
 		// Set register and schema context if provided
 		if ($register !== null) {
@@ -2332,16 +2366,44 @@ class ObjectService
 		}
 
 		// Validate that all objects have required fields in their @self section
-		$this->validateRequiredFields($objects);
+		try {
+			$this->validateRequiredFields($objects);
+		} catch (\InvalidArgumentException $e) {
+			// If basic required field validation fails, return early with error
+			$result['errors'][] = $e->getMessage();
+			return $result;
+		}
 
 		// Enrich objects with missing metadata (owner, organisation, created, updated)
 		$objects = $this->enrichObjects($objects);
 
-		// Transform objects from serialized format to database format
-		$objects = $this->transformObjectsToDatabaseFormat($objects);
+		// Validate objects against schema if validation is enabled
+		$validObjects = [];
+		if ($validation === true) {
+			$validObjects = $this->validateObjectsAgainstSchema($objects, $result);
+		} else {
+			// No validation requested, all objects are considered valid
+			$validObjects = $objects;
+		}
+
+		// If no valid objects remain after validation, return early
+		if (empty($validObjects)) {
+			return $result;
+		}
+
+		// TODO: Implement event dispatching when $events = true
+		// Event dispatching would trigger object lifecycle events (beforeSave, afterSave, etc.)
+		// during the bulk save operation. This would provide full event support but may impact
+		// performance for large bulk operations. Reserved for future implementation.
+		
+		// Prepare objects using the SaveObject handler (applies defaults, cascading, relations, etc.)
+		$preparedObjects = $this->prepareObjectsForBulkSave($validObjects);
+
+		// Transform prepared objects from serialized format to database format
+		$transformedObjects = $this->transformObjectsToDatabaseFormat($preparedObjects);
 
 		// Extract IDs from transformed objects to find existing objects
-		$objectIds = $this->extractObjectIds($objects);
+		$objectIds = $this->extractObjectIds($transformedObjects);
 
 		// Find existing objects in the database using the mapper's findAll method
 		$existingObjects = $this->findExistingObjects($objectIds);
@@ -2350,7 +2412,7 @@ class ObjectService
 		$insertObjects = [];
 		$updateObjects = [];
 
-		foreach ($objects as $transformedObject) {
+		foreach ($transformedObjects as $transformedObject) {
 			$objectId = $transformedObject['uuid'] ?? $transformedObject['id'] ?? null;
 			
 			if ($objectId !== null && isset($existingObjects[$objectId])) {
@@ -2374,12 +2436,205 @@ class ObjectService
 		$savedObjects = [];
 		if (!empty($savedObjectIds)) {
 			$savedObjects = $this->objectEntityMapper->findAll(ids: $savedObjectIds, includeDeleted: true);
-			error_log('[ObjectService] Retrieved ' . count($savedObjects) . ' saved objects from database');
 		}
 
-		return $savedObjects;
+		// Categorize saved objects into created vs updated
+		foreach ($savedObjects as $savedObject) {
+			$objectId = $savedObject->getUuid();
+			
+			if (isset($existingObjects[$objectId])) {
+				// This was an update operation
+				$result['updated'][] = $savedObject;
+				$result['statistics']['updated']++;
+			} else {
+				// This was a create operation
+				$result['saved'][] = $savedObject;
+				$result['statistics']['saved']++;
+			}
+		}
+
+		return $result;
 
 	}//end saveObjects()
+
+
+	/**
+	 * Prepares objects for bulk save using the SaveObject handler.
+	 *
+	 * This method applies all the same transformations as individual object saving:
+	 * - Default values and constants
+	 * - Cascading operations
+	 * - Inverse relations write-back
+	 * - Slug generation
+	 * - Relation detection
+	 *
+	 * @param array $objects Array of objects in serialized format
+	 *
+	 * @return array Array of prepared objects
+	 */
+	private function prepareObjectsForBulkSave(array $objects): array
+	{
+		$preparedObjects = [];
+
+		foreach ($objects as $object) {
+			try {
+				// Extract @self data
+				$selfData = $object['@self'] ?? [];
+				$objectData = $object;
+				unset($objectData['@self']);
+
+				// Get UUID from @self
+				$uuid = $selfData['id'] ?? null;
+
+				// Determine register and schema for this object
+				$register = $selfData['register'] ?? $this->currentRegister;
+				$schema = $selfData['schema'] ?? $this->currentSchema;
+
+				// Prepare the object using SaveObject handler (without persisting)
+				$preparedObject = $this->saveHandler->prepareObject(
+					register: $register,
+					schema: $schema,
+					data: $objectData,
+					uuid: $uuid,
+					rbac: false, // Skip RBAC for bulk operations
+					multi: false  // Skip multi-tenancy for bulk operations
+				);
+
+				// Convert back to serialized format for transformation
+				$preparedObjectData = $preparedObject->getObject();
+				$preparedObjectArray = [
+					'@self' => [
+						'id' => $preparedObject->getUuid(),
+						'register' => $preparedObject->getRegister(),
+						'schema' => $preparedObject->getSchema(),
+						'owner' => $preparedObject->getOwner(),
+						'organisation' => $preparedObject->getOrganisation(),
+						'created' => $preparedObject->getCreated()?->format('Y-m-d H:i:s'),
+						'updated' => $preparedObject->getUpdated()?->format('Y-m-d H:i:s'),
+						'slug' => $preparedObject->getSlug(),
+						'published' => $preparedObject->getPublished()?->format('Y-m-d H:i:s'),
+						'depublished' => $preparedObject->getDepublished()?->format('Y-m-d H:i:s'),
+					]
+				];
+
+				// Merge with prepared object data
+				$preparedObjectArray = array_merge($preparedObjectArray, $preparedObjectData);
+				$preparedObjects[] = $preparedObjectArray;
+
+			} catch (Exception $e) {
+				// Log error but continue with other objects
+				error_log('[ObjectService] Error preparing object for bulk save: ' . $e->getMessage());
+			}
+		}
+
+		return $preparedObjects;
+	}
+
+
+	/**
+	 * Validate objects against their schema definitions
+	 *
+	 * This method validates each object against its schema definition if validation is enabled.
+	 * Objects that fail validation are moved to the 'invalid' array in the result, and their
+	 * validation errors are added to the 'errors' array. Only valid objects are returned.
+	 *
+	 * The validation uses the same logic as individual object validation:
+	 * - Checks if schema has hard validation enabled
+	 * - Uses ValidateObject handler to validate object data against schema
+	 * - Generates meaningful error messages for failed validation
+	 *
+	 * @param array $objects Array of objects in serialized format to validate
+	 * @param array &$result Reference to result array to populate with invalid objects and errors
+	 *
+	 * @return array Array of objects that passed validation
+	 *
+	 * @phpstan-param array<int, array<string, mixed>> $objects
+	 * @psalm-param array<int, array<string, mixed>> $objects
+	 * @phpstan-return array<int, array<string, mixed>>
+	 * @psalm-return array<int, array<string, mixed>>
+	 */
+	private function validateObjectsAgainstSchema(array $objects, array &$result): array
+	{
+		$validObjects = [];
+		$schemaCache = []; // Cache schemas to avoid repeated database lookups
+		
+		foreach ($objects as $index => $object) {
+			try {
+				$self = $object['@self'] ?? [];
+				$schemaId = $self['schema'] ?? null;
+				
+				if ($schemaId === null) {
+					// This should not happen due to validateRequiredFields, but handle gracefully
+					$result['invalid'][] = [
+						'object' => $object,
+						'error' => 'Object missing schema ID in @self section',
+						'index' => $index,
+						'type' => 'ValidationException'
+					];
+					$result['statistics']['invalid']++;
+					continue;
+				}
+				
+				// Get schema from cache or load it
+				if (!isset($schemaCache[$schemaId])) {
+					try {
+						$schemaCache[$schemaId] = $this->schemaMapper->find($schemaId);
+					} catch (\Exception $e) {
+						$result['invalid'][] = [
+							'object' => $object,
+							'error' => "Schema with ID '{$schemaId}' not found: " . $e->getMessage(),
+							'index' => $index,
+							'type' => 'ValidationException'
+						];
+						$result['statistics']['invalid']++;
+						continue;
+					}
+				}
+				
+				$schema = $schemaCache[$schemaId];
+				
+				// Only validate if schema has hard validation enabled
+				// This follows the same logic as in the regular saveObject method
+				if ($schema->getHardValidation() === true) {
+					// Extract object data (without @self) for validation
+					$objectData = $object;
+					unset($objectData['@self']); // Remove @self section for validation
+					
+					// Validate the object against the schema
+					$validationResult = $this->validateHandler->validateObject($objectData, $schema);
+					
+					if ($validationResult->isValid() === false) {
+						// Object failed validation - add to invalid array with error details
+						$meaningfulMessage = $this->validateHandler->generateErrorMessage($validationResult);
+						$result['invalid'][] = [
+							'object' => $object,
+							'error' => $meaningfulMessage,
+							'index' => $index,
+							'type' => 'ValidationException'
+						];
+						$result['statistics']['invalid']++;
+						continue;
+					}
+				}
+				
+				// Object passed validation (or schema doesn't require validation)
+				$validObjects[] = $object;
+				
+			} catch (\Exception $e) {
+				// Catch any unexpected errors during validation
+				$result['invalid'][] = [
+					'object' => $object,
+					'error' => 'Validation error: ' . $e->getMessage(),
+					'index' => $index,
+					'type' => 'ValidationException'
+				];
+				$result['statistics']['invalid']++;
+			}
+		}
+		
+		return $validObjects;
+		
+	}//end validateObjectsAgainstSchema()
 
 
 	/**

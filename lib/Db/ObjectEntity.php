@@ -44,6 +44,13 @@ class ObjectEntity extends Entity implements JsonSerializable
     protected ?string $uuid = null;
 
     /**
+     * URL-friendly identifier for the object.
+     *
+     * @var string|null URL-friendly slug for the object, unique within register+schema combination
+     */
+    protected ?string $slug = null;
+
+    /**
      * URI of the object.
      *
      * @var string|null URI of the object
@@ -269,6 +276,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 	)
     {
         $this->addType(fieldName: 'uuid', type: 'string');
+        $this->addType(fieldName: 'slug', type: 'string');
         $this->addType(fieldName: 'uri', type: 'string');
         $this->addType(fieldName: 'version', type: 'string');
         $this->addType(fieldName: 'register', type: 'string');
@@ -478,6 +486,7 @@ class ObjectEntity extends Entity implements JsonSerializable
         // Initialize the object array with default properties.
         $objectArray = [
             'id'            => $this->uuid,
+            'slug'          => $this->slug,
             'name'          => $this->name ?? $this->uuid,
             'description'   => $this->description ?? $this->id,
             'image'         => $this->image,
