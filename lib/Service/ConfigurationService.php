@@ -788,59 +788,122 @@ class ConfigurationService
             }//end foreach
         }//end if
 
+        // Build register slug to ID map after register import
+        $registerSlugToId = [];
+        foreach ($this->registersMap as $slug => $register) {
+            if ($register instanceof \OCA\OpenRegister\Db\Register) {
+                $registerSlugToId[$slug] = $register->getId();
+            }
+        }
+        // Build schema slug to ID map after schema import
+        $schemaSlugToId = [];
+        foreach ($this->schemasMap as $slug => $schema) {
+            if ($schema instanceof \OCA\OpenRegister\Db\Schema) {
+                $schemaSlugToId[$slug] = $schema->getId();
+            }
+        }
+
         // Process and import objects.
         if (isset($data['components']['objects']) === true && is_array($data['components']['objects']) === true) {
             foreach ($data['components']['objects'] as $objectData) {
-                // Map register and schema slugs to their respective IDs.
-                if (isset($objectData['@self']['register']) === true) {
-                    $registerSlug = strtolower($objectData['@self']['register']);
-                    if (isset($this->registersMap[$registerSlug]) === true) {
-                        $objectData['@self']['register'] = $this->registersMap[$registerSlug]->getId();
-                    } else {
-                        // Try to find existing register in database.
-                        try {
-                            $existingRegister = $this->registerMapper->find($registerSlug);
-                            $objectData['@self']['register'] = $existingRegister->getId();
-                            // Add to map for future object processing.
-                            $this->registersMap[$registerSlug] = $existingRegister;
-                        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                            $this->logger->warning(
-                                sprintf('Register with slug %s not found during object import.', $registerSlug)
-                            );
-                            continue;
+                // Log raw values before any mapping
+                $rawRegister = $objectData['@self']['register'] ?? null;
+                $rawSchema = $objectData['@self']['schema'] ?? null;
+                $rawSlug = $objectData['@self']['slug'] ?? null;
+                error_log('[Import] Raw object: register=' . var_export($rawRegister, true) . ', schema=' . var_export($rawSchema, true) . ', slug=' . var_export($rawSlug, true));
+
+                // Only import objects with a slug
+                $slug = $rawSlug;
+                if (empty($slug)) {
+                    error_log('[Import] Skipping object: missing slug');
+                    continue;
+                }
+
+                // Map register and schema
+                $registerId = $registerSlugToId[$rawRegister] ?? null;
+                $schemaId = $schemaSlugToId[$rawSchema] ?? null;
+                error_log('[Import] Mapped IDs: registerId=' . var_export($registerId, true) . ', schemaId=' . var_export($schemaId, true));
+                if (empty($registerId) || empty($schemaId)) {
+                    error_log('[Import] Skipping object: missing registerId or schemaId');
+                    continue;
+                }
+                // Use ObjectService::searchObjects to find existing object by register+schema+slug
+                $search = [
+                    '@self' => [
+                        'register' => (int) $registerId, // ensure integer
+                        'schema'   => (int) $schemaId,   // ensure integer
+                        'slug'     => $slug,             // string
+                    ],
+                    '_limit' => 1
+                ];
+                $this->logger->debug('Import object search filter', ['filter' => $search]);
+                // Log what we are searching for (now as warning for visibility)
+                $this->logger->warning('Import: searching for existing object', [
+                    'registerId' => $registerId,
+                    'schemaId' => $schemaId,
+                    'slug' => $slug,
+                    'searchFilter' => $search
+                ]);
+                // TEMP: Always log search filter to Docker logs for debugging
+                error_log('[Import] Searching for object: registerId=' . var_export($registerId, true) . ', schemaId=' . var_export($schemaId, true) . ', slug=' . var_export($slug, true));
+                error_log('[Import] Search filter: ' . var_export($search, true));
+                $results = $this->objectService->searchObjects($search, true, true);
+                $this->logger->warning('Import: search result', [
+                    'resultType' => gettype($results),
+                    'resultCount' => is_array($results) ? count($results) : null,
+                    'resultValue' => $results
+                ]);
+                $existingObject = is_array($results) && count($results) > 0 ? $results[0] : null;
+                if (!$existingObject) {
+                    $this->logger->warning('Import: No existing object found for update', [
+                        'registerId' => $registerId,
+                        'schemaId' => $schemaId,
+                        'slug' => $slug,
+                        'searchFilter' => $search
+                    ]);
+                    $this->logger->error('No existing object found for insert, about to insert new object', [
+                        'registerId' => $registerId,
+                        'schemaId' => $schemaId,
+                        'slug' => $slug,
+                        'search' => $search,
+                        'objectData' => $objectData
+                    ]);
+                }
+                if ($existingObject) {
+                    $existingObjectData = is_array($existingObject) ? $existingObject : $existingObject->jsonSerialize();
+                    $importedVersion = $objectData['@self']['version'] ?? $objectData['version'] ?? '1.0.0';
+                    $existingVersion = $existingObjectData['@self']['version'] ?? $existingObjectData['version'] ?? '1.0.0';
+                    if (version_compare($importedVersion, $existingVersion, '>')) {
+                        $uuid = $existingObjectData['@self']['id'] ?? $existingObjectData['id'] ?? null;
+                        $object = $this->objectService->saveObject(
+                            object: $objectData,
+                            register: (int) $registerId,
+                            schema: (int) $schemaId,
+                            uuid: $uuid
+                        );
+                        if ($object !== null) {
+                            $result['objects'][] = $object;
                         }
+                    } else {
+                        $this->logger->info('Skipped object update: imported version not higher', [
+                            'slug' => $slug,
+                            'register' => $registerId,
+                            'schema' => $schemaId,
+                            'importedVersion' => $importedVersion,
+                            'existingVersion' => $existingVersion
+                        ]);
+                        continue;
                     }
                 } else {
-                    $this->logger->warning('Object data missing required register reference.');
-                    continue;
-                }//end if
-
-                if (isset($objectData['@self']['schema']) === true) {
-                    $schemaSlug = strtolower($objectData['@self']['schema']);
-                    if (isset($this->schemasMap[$schemaSlug]) === true) {
-                        $objectData['@self']['schema'] = $this->schemasMap[$schemaSlug]->getId();
-                    } else {
-                        // Try to find existing schema in database.
-                        try {
-                            $existingSchema = $this->schemaMapper->find($schemaSlug);
-                            $objectData['@self']['schema'] = $existingSchema->getId();
-                            // Add to map for future object processing.
-                            $this->schemasMap[$schemaSlug] = $existingSchema;
-                        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                            $this->logger->warning(
-                                sprintf('Schema with slug %s not found during object import.', $schemaSlug)
-                            );
-                            continue;
-                        }
+                    // Create new object
+                    $object = $this->objectService->saveObject(
+                        object: $objectData,
+                        register: (int) $registerId,
+                        schema: (int) $schemaId
+                    );
+                    if ($object !== null) {
+                        $result['objects'][] = $object;
                     }
-                } else {
-                    $this->logger->warning('Object data missing required schema reference.');
-                    continue;
-                }//end if
-
-                $object = $this->importObject(data: $objectData, owner: $owner);
-                if ($object !== null) {
-                    $result['objects'][] = $object;
                 }
             }//end foreach
         }//end if

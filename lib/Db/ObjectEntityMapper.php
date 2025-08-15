@@ -124,7 +124,7 @@ class ObjectEntityMapper extends QBMapper
      */
     private ?MariaDbFacetHandler $mariaDbFacetHandler = null;
 
-    public const MAIN_FILTERS = ['register', 'schema', 'uuid', 'created', 'updated'];
+    public const MAIN_FILTERS = ['register', 'schema', 'uuid', 'created', 'updated', 'slug'];
 
     public const DEFAULT_LOCK_DURATION = 3600;
 
@@ -821,17 +821,17 @@ class ObjectEntityMapper extends QBMapper
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
                 // Add condition for IS NOT NULL.
-                $qb->andWhere($qb->expr()->isNotNull($filter));
+                $qb->andWhere($qb->expr()->isNotNull('o.' . $filter));
             } else if ($value === 'IS NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
                 // Add condition for IS NULL.
-                $qb->andWhere($qb->expr()->isNull($filter));
+                $qb->andWhere($qb->expr()->isNull('o.' . $filter));
             } else if (in_array($filter, self::MAIN_FILTERS) === true) {
                 if (is_array($value) === true) {
                     // If the value is an array, use IN to search for any of the values in the array.
-                    $qb->andWhere($qb->expr()->in($filter, $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+                    $qb->andWhere($qb->expr()->in('o.' . $filter, $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
                 } else {
                     // Otherwise, use equality for the filter.
-                    $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+                    $qb->andWhere($qb->expr()->eq('o.' . $filter, $qb->createNamedParameter($value)));
                 }
             }
         }
