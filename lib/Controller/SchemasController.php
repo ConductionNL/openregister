@@ -494,15 +494,31 @@ class SchemasController extends Controller
     public function related(int|string $id): JSONResponse
     {
         try {
-            // Find related schemas using the SchemaMapper
-            $relatedSchemas = $this->schemaMapper->getRelated($id);
-            
-            // Convert to array format for JSON response
-            $relatedSchemasArray = array_map(fn($schema) => $schema->jsonSerialize(), $relatedSchemas);
-            
+            // Find related schemas using the SchemaMapper (incoming references)
+            $incomingSchemas = $this->schemaMapper->getRelated($id);
+            $incomingSchemasArray = array_map(fn($schema) => $schema->jsonSerialize(), $incomingSchemas);
+
+            // Find outgoing references: schemas that this schema refers to
+            $targetSchema = $this->schemaMapper->find($id);
+            $properties = $targetSchema->getProperties() ?? [];
+            $allSchemas = $this->schemaMapper->findAll();
+            $outgoingSchemas = [];
+            foreach ($allSchemas as $schema) {
+                // Skip self
+                if ($schema->getId() === $targetSchema->getId()) {
+                    continue;
+                }
+                // Use the same reference logic as getRelated, but reversed
+                if ($this->schemaMapper->hasReferenceToSchema($properties, (string)$schema->getId(), $schema->getUuid(), $schema->getSlug())) {
+                    $outgoingSchemas[$schema->getId()] = $schema;
+                }
+            }
+            $outgoingSchemasArray = array_map(fn($schema) => $schema->jsonSerialize(), array_values($outgoingSchemas));
+
             return new JSONResponse([
-                'results' => $relatedSchemasArray,
-                'total' => count($relatedSchemasArray)
+                'incoming' => $incomingSchemasArray,
+                'outgoing' => $outgoingSchemasArray,
+                'total' => count($incomingSchemasArray) + count($outgoingSchemasArray)
             ]);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Return a 404 error if the target schema doesn't exist
@@ -511,7 +527,6 @@ class SchemasController extends Controller
             // Return a 500 error for other exceptions
             return new JSONResponse(['error' => 'Internal server error: ' . $e->getMessage()], 500);
         }
-
     }//end related()
 
     /**
