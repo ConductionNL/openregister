@@ -1,3 +1,27 @@
+## Error Handling for Missing Register or Schema
+
+If you request a schema or register by slug or ID that does not exist, the API will return a 404 Not Found response with a clear error message. This applies to all endpoints that use register or schema slugs/IDs, including object listing, creation, update, and detail endpoints.
+
+### Example Error Response
+
+'
+{
+  'message': 'Schema not found: voorzieningen'
+}
+'
+
+or
+
+'
+{
+  'message': 'Register not found: voorzieningen'
+}
+'
+
+**Note:**
+- The error message will specify whether the missing resource is a register or a schema.
+- This behavior ensures that clients can distinguish between missing resources and other types of errors.
+
 ## Schema Statistics (stats)
 
 The 'stats' object for a schema now includes the following fields:
