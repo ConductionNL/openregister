@@ -390,20 +390,34 @@ class ObjectsController extends Controller
      * @param string        $schema        Schema slug or ID  
      * @param ObjectService $objectService Object service instance
      * @return array Array with resolved register and schema IDs: ['register' => int, 'schema' => int]
+     *
+     * @throws \OCA\OpenRegister\Exception\RegisterNotFoundException
+     * @throws \OCA\OpenRegister\Exception\SchemaNotFoundException
+     *
+     * @psalm-return array{register: int, schema: int}
+     * @phpstan-return array{register: int, schema: int}
      */
     private function resolveRegisterSchemaIds(string $register, string $schema, ObjectService $objectService): array
     {
-        // STEP 1: Initial resolution - convert slugs/IDs to numeric IDs
-        $objectService->setRegister($register)->setSchema($schema);
-        
+        try {
+            // STEP 1: Initial resolution - convert slugs/IDs to numeric IDs
+            $objectService->setRegister($register);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            // If register not found, throw custom exception
+            throw new \OCA\OpenRegister\Exception\RegisterNotFoundException($register, 404, $e);
+        }
+        try {
+            $objectService->setSchema($schema);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            // If schema not found, throw custom exception
+            throw new \OCA\OpenRegister\Exception\SchemaNotFoundException($schema, 404, $e);
+        }
         // STEP 2: Get resolved numeric IDs
         $resolvedRegisterId = $objectService->getRegister();
         $resolvedSchemaId = $objectService->getSchema();
-        
         // STEP 3: Reset ObjectService with resolved numeric IDs
         // This ensures the entire pipeline works with IDs consistently
         $objectService->setRegister((string)$resolvedRegisterId)->setSchema((string)$resolvedSchemaId);
-        
         return [
             'register' => $resolvedRegisterId,
             'schema' => $resolvedSchemaId
@@ -437,17 +451,18 @@ class ObjectsController extends Controller
      */
     public function index(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
-        // Resolve slugs to numeric IDs consistently
-        $resolved = $this->resolveRegisterSchemaIds($register, $schema, $objectService);
-        
+        try {
+            // Resolve slugs to numeric IDs consistently
+            $resolved = $this->resolveRegisterSchemaIds($register, $schema, $objectService);
+        } catch (\OCA\OpenRegister\Exception\RegisterNotFoundException | \OCA\OpenRegister\Exception\SchemaNotFoundException $e) {
+            // Return 404 with clear error message if register or schema not found
+            return new JSONResponse(['message' => $e->getMessage()], 404);
+        }
         // Build search query with resolved numeric IDs
         $query = $this->buildSearchQuery($resolved['register'], $resolved['schema']);
-
         // Use searchObjectsPaginated which handles facets, facetable fields, and all other features
         $result = $objectService->searchObjectsPaginated($query);
-        
         return new JSONResponse($result);
-
     }//end index()
 
 
@@ -515,8 +530,13 @@ class ObjectsController extends Controller
         string $schema,
         ObjectService $objectService
     ): JSONResponse {
-        // Resolve slugs to numeric IDs consistently
-        $resolved = $this->resolveRegisterSchemaIds($register, $schema, $objectService);
+        try {
+            // Resolve slugs to numeric IDs consistently
+            $resolved = $this->resolveRegisterSchemaIds($register, $schema, $objectService);
+        } catch (\OCA\OpenRegister\Exception\RegisterNotFoundException | \OCA\OpenRegister\Exception\SchemaNotFoundException $e) {
+            // Return 404 with clear error message if register or schema not found
+            return new JSONResponse(['message' => $e->getMessage()], 404);
+        }
 
         // Get request parameters for filtering and searching.
         $requestParams = $this->request->getParams();
@@ -570,9 +590,13 @@ class ObjectsController extends Controller
         string $schema,
         ObjectService $objectService
     ): JSONResponse {
-
-        // Resolve slugs to numeric IDs consistently
-        $resolved = $this->resolveRegisterSchemaIds($register, $schema, $objectService);
+        try {
+            // Resolve slugs to numeric IDs consistently
+            $resolved = $this->resolveRegisterSchemaIds($register, $schema, $objectService);
+        } catch (\OCA\OpenRegister\Exception\RegisterNotFoundException | \OCA\OpenRegister\Exception\SchemaNotFoundException $e) {
+            // Return 404 with clear error message if register or schema not found
+            return new JSONResponse(['message' => $e->getMessage()], 404);
+        }
 
         // Get object data from request parameters.
         $object = $this->request->getParams();
@@ -644,8 +668,13 @@ class ObjectsController extends Controller
         string $id,
         ObjectService $objectService
     ): JSONResponse {
-        // Resolve slugs to numeric IDs consistently
-        $resolved = $this->resolveRegisterSchemaIds($register, $schema, $objectService);
+        try {
+            // Resolve slugs to numeric IDs consistently
+            $resolved = $this->resolveRegisterSchemaIds($register, $schema, $objectService);
+        } catch (\OCA\OpenRegister\Exception\RegisterNotFoundException | \OCA\OpenRegister\Exception\SchemaNotFoundException $e) {
+            // Return 404 with clear error message if register or schema not found
+            return new JSONResponse(['message' => $e->getMessage()], 404);
+        }
 
         // Get object data from request parameters.
         $object = $this->request->getParams();
