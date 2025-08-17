@@ -598,7 +598,7 @@ class SchemaMapper extends QBMapper
      *
      * @return bool True if a reference to the target schema is found
      */
-    private function hasReferenceToSchema(array $properties, string $targetSchemaId, string $targetSchemaUuid, string $targetSchemaSlug): bool
+    public function hasReferenceToSchema(array $properties, string $targetSchemaId, string $targetSchemaUuid, string $targetSchemaSlug): bool
     {
         foreach ($properties as $property) {
             // Skip non-array properties
