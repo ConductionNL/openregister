@@ -382,21 +382,25 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 																input-label="Object Handling"
 																label="Object Handling" />
 															<NcActionInput
-																v-model="schemaItem.properties[key].items.$ref"
+																:value="schemaItem.properties[key].items.$ref"
 																type="multiselect"
 																:options="availableSchemas"
 																input-label="Schema Reference"
-																label="Schema Reference" />
+																label="Schema Reference"
+																@update:value="updateArrayItemSchemaReference(key, $event)" />
 															<NcActionCaption
 																v-if="isArrayItemRefInvalid(key)"
 																:name="`⚠️ Invalid Schema Reference: Expected string, got number (${schemaItem.properties[key].items.$ref}). This will be sent to backend as-is.`"
 																style="color: var(--color-error); font-weight: bold;" />
 															<NcActionInput
-																v-model="schemaItem.properties[key].items.register"
+																:value="getArrayItemRegisterValue(key)"
 																type="multiselect"
 																:options="availableRegisters"
-																input-label="Register (Optional)"
-																label="Register (Optional - defaults to parent register)" />
+																input-label="Register"
+																label="Register (Required when schema is selected)"
+																:required="!!schemaItem.properties[key].items.$ref"
+																:disabled="!schemaItem.properties[key].items.$ref"
+																@update:value="updateArrayItemRegisterReference(key, $event)" />
 															<NcActionInput
 																v-model="schemaItem.properties[key].items.inversedBy"
 																type="multiselect"
@@ -439,21 +443,25 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 															input-label="Object Handling"
 															label="Object Handling" />
 														<NcActionInput
-															v-model="schemaItem.properties[key].$ref"
+															:value="schemaItem.properties[key].$ref"
 															type="multiselect"
 															:options="availableSchemas"
 															input-label="Schema Reference"
-															label="Schema Reference" />
+															label="Schema Reference"
+															@update:value="updateSchemaReference(key, $event)" />
 														<NcActionCaption
 															v-if="isRefInvalid(key)"
 															:name="`⚠️ Invalid Schema Reference: Expected string, got number (${schemaItem.properties[key].$ref}). This will be sent to backend as-is.`"
 															style="color: var(--color-error); font-weight: bold;" />
 														<NcActionInput
-															v-model="schemaItem.properties[key].register"
+															:value="getRegisterValue(key)"
 															type="multiselect"
 															:options="availableRegisters"
-															input-label="Register (Optional)"
-															label="Register (Optional - defaults to parent register)" />
+															input-label="Register"
+															label="Register (Required when schema is selected)"
+															:required="!!schemaItem.properties[key].$ref"
+															:disabled="!schemaItem.properties[key].$ref"
+															@update:value="updateRegisterReference(key, $event)" />
 														<NcActionInput
 															v-model="schemaItem.properties[key].inversedBy"
 															type="multiselect"
@@ -978,10 +986,22 @@ export default {
 								this.$set(this.schemaItem.properties[key].objectConfiguration, 'handling', property.objectConfiguration.handling.id)
 							}
 
+							// Convert register from object to ID
+							if (property.objectConfiguration && property.objectConfiguration.register
+								&& typeof property.objectConfiguration.register === 'object' && property.objectConfiguration.register.id) {
+								this.$set(this.schemaItem.properties[key].objectConfiguration, 'register', property.objectConfiguration.register.id)
+							}
+
 							// Convert array item object handling from object to string
 							if (property.items && property.items.objectConfiguration && property.items.objectConfiguration.handling
 								&& typeof property.items.objectConfiguration.handling === 'object' && property.items.objectConfiguration.handling.id) {
 								this.$set(this.schemaItem.properties[key].items.objectConfiguration, 'handling', property.items.objectConfiguration.handling.id)
+							}
+
+							// Convert array item register from object to ID
+							if (property.items && property.items.objectConfiguration && property.items.objectConfiguration.register
+								&& typeof property.items.objectConfiguration.register === 'object' && property.items.objectConfiguration.register.id) {
+								this.$set(this.schemaItem.properties[key].items.objectConfiguration, 'register', property.items.objectConfiguration.register.id)
 							}
 
 							// Ensure $ref is always a string
@@ -1118,9 +1138,10 @@ export default {
 					}
 				})
 
-				// Ensure all $ref values are strings
+				// Ensure all $ref values are strings and migrate old structure to new
 				Object.keys(this.schemaItem.properties || {}).forEach(key => {
 					this.ensureRefIsString(this.schemaItem.properties, key)
+					this.migratePropertyToNewStructure(key)
 				})
 
 				// Store original properties for comparison AFTER setting defaults
@@ -1309,14 +1330,29 @@ export default {
 		async editSchema() {
 			this.loading = true
 
-			// Ensure all $ref values are strings before saving
-			Object.keys(this.schemaItem.properties || {}).forEach(key => {
-				this.ensureRefIsString(this.schemaItem.properties, key)
+			// Clean up schema properties before saving
+			const cleanedSchemaItem = { ...this.schemaItem }
+			Object.keys(cleanedSchemaItem.properties || {}).forEach(key => {
+				// Ensure all $ref values are strings
+				this.ensureRefIsString(cleanedSchemaItem.properties, key)
+				
+				// Remove the old register property at root level if it exists
+				if (cleanedSchemaItem.properties[key].register && 
+					cleanedSchemaItem.properties[key].objectConfiguration && 
+					cleanedSchemaItem.properties[key].objectConfiguration.register) {
+					delete cleanedSchemaItem.properties[key].register
+				}
+
+				// Remove old register property from array items if it exists
+				if (cleanedSchemaItem.properties[key].items && 
+					cleanedSchemaItem.properties[key].items.register &&
+					cleanedSchemaItem.properties[key].items.objectConfiguration && 
+					cleanedSchemaItem.properties[key].items.objectConfiguration.register) {
+					delete cleanedSchemaItem.properties[key].items.register
+				}
 			})
 
-			schemaStore.saveSchema({
-				...this.schemaItem,
-			}).then(({ response }) => {
+			schemaStore.saveSchema(cleanedSchemaItem).then(({ response }) => {
 
 				if (this.createAnother) {
 					// since saveSchema populates the schema item, we need to clear it
@@ -1756,6 +1792,301 @@ export default {
 				const inversedByValue = typeof value === 'object' && value?.id ? value.id : value
 				this.$set(this.schemaItem.properties[key].items, 'inversedBy', inversedByValue)
 				this.checkPropertiesModified()
+			}
+		},
+		/**
+		 * Update schema reference and handle register requirement
+		 *
+		 * @param {string} key Property key
+		 * @param {object|string} value Schema reference value
+		 */
+		updateSchemaReference(key, value) {
+			if (!this.schemaItem.properties[key]) {
+				return
+			}
+
+			// Extract schema reference value
+			const schemaRef = typeof value === 'object' && value?.id ? value.id : value
+
+			// Update the $ref
+			this.$set(this.schemaItem.properties[key], '$ref', schemaRef)
+
+			// Ensure objectConfiguration exists
+			if (!this.schemaItem.properties[key].objectConfiguration) {
+				this.$set(this.schemaItem.properties[key], 'objectConfiguration', { handling: 'related-object' })
+			}
+
+			// Extract schema ID from reference and save in objectConfiguration
+			if (schemaRef) {
+				// Extract schema slug/ID from reference format like "#/components/schemas/voorzieningmodule"
+				let schemaSlug = schemaRef
+				if (schemaRef.includes('/')) {
+					schemaSlug = schemaRef.substring(schemaRef.lastIndexOf('/') + 1)
+				}
+
+				// Find the schema to get its numeric ID
+				const referencedSchema = schemaStore.schemaList.find(schema =>
+					(schema.slug && schema.slug.toLowerCase() === schemaSlug.toLowerCase()) ||
+					schema.id === schemaSlug ||
+					schema.title === schemaSlug
+				)
+
+				if (referencedSchema) {
+					this.$set(this.schemaItem.properties[key].objectConfiguration, 'schema', referencedSchema.id)
+				}
+
+				// Migrate existing register from old structure to new structure
+				if (this.schemaItem.properties[key].register && !this.schemaItem.properties[key].objectConfiguration.register) {
+					const oldRegister = this.schemaItem.properties[key].register
+					const registerId = typeof oldRegister === 'object' && oldRegister.id ? oldRegister.id : oldRegister
+					this.$set(this.schemaItem.properties[key].objectConfiguration, 'register', registerId)
+				}
+			} else {
+				// Clear schema and register from objectConfiguration if schema reference is removed
+				this.$delete(this.schemaItem.properties[key].objectConfiguration, 'schema')
+				this.$delete(this.schemaItem.properties[key].objectConfiguration, 'register')
+			}
+
+			this.checkPropertiesModified()
+		},
+		/**
+		 * Update array item schema reference and handle register requirement
+		 *
+		 * @param {string} key Property key
+		 * @param {object|string} value Schema reference value
+		 */
+		updateArrayItemSchemaReference(key, value) {
+			if (!this.schemaItem.properties[key] || !this.schemaItem.properties[key].items) {
+				return
+			}
+
+			// Extract schema reference value
+			const schemaRef = typeof value === 'object' && value?.id ? value.id : value
+
+			// Update the $ref
+			this.$set(this.schemaItem.properties[key].items, '$ref', schemaRef)
+
+			// Ensure objectConfiguration exists
+			if (!this.schemaItem.properties[key].items.objectConfiguration) {
+				this.$set(this.schemaItem.properties[key].items, 'objectConfiguration', { handling: 'related-object' })
+			}
+
+			// Extract schema ID from reference and save in objectConfiguration
+			if (schemaRef) {
+				// Extract schema slug/ID from reference format like "#/components/schemas/voorzieningmodule"
+				let schemaSlug = schemaRef
+				if (schemaRef.includes('/')) {
+					schemaSlug = schemaRef.substring(schemaRef.lastIndexOf('/') + 1)
+				}
+
+				// Find the schema to get its numeric ID
+				const referencedSchema = schemaStore.schemaList.find(schema =>
+					(schema.slug && schema.slug.toLowerCase() === schemaSlug.toLowerCase()) ||
+					schema.id === schemaSlug ||
+					schema.title === schemaSlug
+				)
+
+				if (referencedSchema) {
+					this.$set(this.schemaItem.properties[key].items.objectConfiguration, 'schema', referencedSchema.id)
+				}
+			} else {
+				// Clear schema and register from objectConfiguration if schema reference is removed
+				this.$delete(this.schemaItem.properties[key].items.objectConfiguration, 'schema')
+				this.$delete(this.schemaItem.properties[key].items.objectConfiguration, 'register')
+			}
+
+			this.checkPropertiesModified()
+		},
+		/**
+		 * Update register reference in objectConfiguration
+		 *
+		 * @param {string} key Property key
+		 * @param {object|string|number} value Register reference value
+		 */
+		updateRegisterReference(key, value) {
+			if (!this.schemaItem.properties[key]) {
+				return
+			}
+
+			// Ensure objectConfiguration exists
+			if (!this.schemaItem.properties[key].objectConfiguration) {
+				this.$set(this.schemaItem.properties[key], 'objectConfiguration', { handling: 'related-object' })
+			}
+
+			// Extract register ID from value
+			const registerId = typeof value === 'object' && value?.id ? value.id : value
+
+			if (registerId) {
+				this.$set(this.schemaItem.properties[key].objectConfiguration, 'register', registerId)
+				
+				// Remove old register property if it exists
+				if (this.schemaItem.properties[key].register) {
+					this.$delete(this.schemaItem.properties[key], 'register')
+				}
+			} else {
+				this.$delete(this.schemaItem.properties[key].objectConfiguration, 'register')
+			}
+
+			this.checkPropertiesModified()
+		},
+		/**
+		 * Update register reference in array items objectConfiguration
+		 *
+		 * @param {string} key Property key
+		 * @param {object|string|number} value Register reference value
+		 */
+		updateArrayItemRegisterReference(key, value) {
+			if (!this.schemaItem.properties[key] || !this.schemaItem.properties[key].items) {
+				return
+			}
+
+			// Ensure objectConfiguration exists
+			if (!this.schemaItem.properties[key].items.objectConfiguration) {
+				this.$set(this.schemaItem.properties[key].items, 'objectConfiguration', { handling: 'related-object' })
+			}
+
+			// Extract register ID from value
+			const registerId = typeof value === 'object' && value?.id ? value.id : value
+
+			if (registerId) {
+				this.$set(this.schemaItem.properties[key].items.objectConfiguration, 'register', registerId)
+			} else {
+				this.$delete(this.schemaItem.properties[key].items.objectConfiguration, 'register')
+			}
+
+			this.checkPropertiesModified()
+		},
+		/**
+		 * Get register value, handling both old and new structure
+		 *
+		 * @param {string} key Property key
+		 * @return {number|object|null} Register value
+		 */
+		getRegisterValue(key) {
+			if (!this.schemaItem.properties[key]) {
+				return null
+			}
+
+			const property = this.schemaItem.properties[key]
+
+			// Check new structure first
+			if (property.objectConfiguration && property.objectConfiguration.register !== undefined) {
+				return property.objectConfiguration.register
+			}
+
+			// Check old structure
+			if (property.register !== undefined) {
+				return property.register
+			}
+
+			return null
+		},
+		/**
+		 * Get array item register value, handling both old and new structure
+		 *
+		 * @param {string} key Property key
+		 * @return {number|object|null} Register value
+		 */
+		getArrayItemRegisterValue(key) {
+			if (!this.schemaItem.properties[key] || !this.schemaItem.properties[key].items) {
+				return null
+			}
+
+			const items = this.schemaItem.properties[key].items
+
+			// Check new structure first
+			if (items.objectConfiguration && items.objectConfiguration.register !== undefined) {
+				return items.objectConfiguration.register
+			}
+
+			// Check old structure
+			if (items.register !== undefined) {
+				return items.register
+			}
+
+			return null
+		},
+		/**
+		 * Migrate property from old structure to new objectConfiguration structure
+		 *
+		 * @param {string} key Property key
+		 */
+		migratePropertyToNewStructure(key) {
+			if (!this.schemaItem.properties[key]) {
+				return
+			}
+
+			const property = this.schemaItem.properties[key]
+
+			// Only migrate if we have a schema reference and old register structure
+			if (property.$ref && property.register && !property.objectConfiguration?.register) {
+				// Ensure objectConfiguration exists
+				if (!property.objectConfiguration) {
+					this.$set(this.schemaItem.properties[key], 'objectConfiguration', { handling: 'related-object' })
+				}
+
+				// Extract register ID from old structure
+				const registerId = typeof property.register === 'object' && property.register.id 
+					? property.register.id 
+					: property.register
+
+				// Set register in objectConfiguration
+				this.$set(this.schemaItem.properties[key].objectConfiguration, 'register', registerId)
+
+				// Find and set schema ID
+				if (property.$ref) {
+					let schemaSlug = property.$ref
+					if (schemaSlug.includes('/')) {
+						schemaSlug = schemaSlug.substring(schemaSlug.lastIndexOf('/') + 1)
+					}
+
+					const referencedSchema = schemaStore.schemaList.find(schema =>
+						(schema.slug && schema.slug.toLowerCase() === schemaSlug.toLowerCase()) ||
+						schema.id === schemaSlug ||
+						schema.title === schemaSlug
+					)
+
+					if (referencedSchema) {
+						this.$set(this.schemaItem.properties[key].objectConfiguration, 'schema', referencedSchema.id)
+					}
+				}
+
+				// Don't remove the old register property yet - let the save process handle cleanup
+				// This ensures the UI still works during the transition
+			}
+
+			// Handle array items migration
+			if (property.items && property.items.$ref && property.items.register && !property.items.objectConfiguration?.register) {
+				// Ensure objectConfiguration exists for items
+				if (!property.items.objectConfiguration) {
+					this.$set(this.schemaItem.properties[key].items, 'objectConfiguration', { handling: 'related-object' })
+				}
+
+				// Extract register ID from old structure
+				const registerId = typeof property.items.register === 'object' && property.items.register.id 
+					? property.items.register.id 
+					: property.items.register
+
+				// Set register in objectConfiguration
+				this.$set(this.schemaItem.properties[key].items.objectConfiguration, 'register', registerId)
+
+				// Find and set schema ID
+				if (property.items.$ref) {
+					let schemaSlug = property.items.$ref
+					if (schemaSlug.includes('/')) {
+						schemaSlug = schemaSlug.substring(schemaSlug.lastIndexOf('/') + 1)
+					}
+
+					const referencedSchema = schemaStore.schemaList.find(schema =>
+						(schema.slug && schema.slug.toLowerCase() === schemaSlug.toLowerCase()) ||
+						schema.id === schemaSlug ||
+						schema.title === schemaSlug
+					)
+
+					if (referencedSchema) {
+						this.$set(this.schemaItem.properties[key].items.objectConfiguration, 'schema', referencedSchema.id)
+					}
+				}
 			}
 		},
 		// Check if a property's $ref is invalid (contains a number instead of string)

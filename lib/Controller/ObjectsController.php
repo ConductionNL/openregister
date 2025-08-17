@@ -1127,6 +1127,54 @@ class ObjectsController extends Controller
         $objectService->setRegister($register);
         $objectService->setSchema($schema);
 
+        // Try to fetch the object by ID/UUID only (no register/schema filter yet)
+        try {
+            $object = $objectService->find($id);
+        } catch (\Exception $e) {
+            return new JSONResponse(['message' => 'Object not found'], 404);
+        }
+
+        // Normalize and compare register
+        $objectRegister = $object->getRegister(); // could be ID or slug
+        $objectSchema = $object->getSchema(); // could be ID, slug, or array/object
+
+        // Normalize requested register
+        $requestedRegister = $register;
+        $requestedSchema = $schema;
+
+        // If objectSchema is an array/object, get slug and id
+        $objectSchemaId = null;
+        $objectSchemaSlug = null;
+        if (is_array($objectSchema) && isset($objectSchema['id'])) {
+            $objectSchemaId = (string)$objectSchema['id'];
+            $objectSchemaSlug = isset($objectSchema['slug']) ? strtolower($objectSchema['slug']) : null;
+        } elseif (is_object($objectSchema) && isset($objectSchema->id)) {
+            $objectSchemaId = (string)$objectSchema->id;
+            $objectSchemaSlug = isset($objectSchema->slug) ? strtolower($objectSchema->slug) : null;
+        } else {
+            $objectSchemaId = (string)$objectSchema;
+        }
+
+        // Normalize requested schema
+        $requestedSchemaNorm = strtolower((string)$requestedSchema);
+        $objectSchemaIdNorm = strtolower((string)$objectSchemaId);
+        $objectSchemaSlugNorm = $objectSchemaSlug ? strtolower($objectSchemaSlug) : null;
+
+        // Check schema match (by id or slug)
+        $schemaMatch = (
+            $requestedSchemaNorm === $objectSchemaIdNorm ||
+            ($objectSchemaSlugNorm && $requestedSchemaNorm === $objectSchemaSlugNorm)
+        );
+
+        // Register normalization (string compare)
+        $objectRegisterNorm = strtolower((string)$objectRegister);
+        $requestedRegisterNorm = strtolower((string)$requestedRegister);
+        $registerMatch = ($objectRegisterNorm === $requestedRegisterNorm);
+
+        if (!$schemaMatch || !$registerMatch) {
+            return new JSONResponse(['message' => 'Object does not belong to specified register/schema'], 404);
+        }
+
         // Get config and fetch logs.
         $config = $this->getConfig($register, $schema);
         $logs   = $objectService->getLogs($id, $config['filters']);

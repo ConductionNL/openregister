@@ -377,9 +377,15 @@ class ConfigurationService
     /**
      * Export a schema to OpenAPI format
      *
-     * @param Schema $schema The schema to export
+     * This method exports a schema and converts internal IDs to slugs for portability.
+     * It handles both the new objectConfiguration structure (with register and schema IDs)
+     * and the legacy register property structure for backward compatibility.
      *
-     * @return array The OpenAPI schema specification
+     * @param Schema $schema                The schema to export
+     * @param array  $schemaIdsAndSlugsMap  Map of schema IDs to slugs
+     * @param array  $registerIdsAndSlugsMap Map of register IDs to slugs
+     *
+     * @return array The OpenAPI schema specification with IDs converted to slugs
      */
     private function exportSchema(Schema $schema, array $schemaIdsAndSlugsMap, array $registerIdsAndSlugsMap): array
     {
@@ -403,6 +409,39 @@ class ConfigurationService
                     $property['items']['$ref'] = $schemaIdsAndSlugsMap[$schemaId];
                 }
             }
+            // Handle register ID in objectConfiguration (new structure)
+            if (isset($property['objectConfiguration']['register']) === true) {
+                $registerId = $property['objectConfiguration']['register'];
+                if (is_numeric($registerId) && isset($registerIdsAndSlugsMap[$registerId]) === true) {
+                    $property['objectConfiguration']['register'] = $registerIdsAndSlugsMap[$registerId];
+                }
+            }
+
+            // Handle schema ID in objectConfiguration (new structure)
+            if (isset($property['objectConfiguration']['schema']) === true) {
+                $schemaId = $property['objectConfiguration']['schema'];
+                if (is_numeric($schemaId) && isset($schemaIdsAndSlugsMap[$schemaId]) === true) {
+                    $property['objectConfiguration']['schema'] = $schemaIdsAndSlugsMap[$schemaId];
+                }
+            }
+
+            // Handle register ID in array items objectConfiguration (new structure)
+            if (isset($property['items']['objectConfiguration']['register']) === true) {
+                $registerId = $property['items']['objectConfiguration']['register'];
+                if (is_numeric($registerId) && isset($registerIdsAndSlugsMap[$registerId]) === true) {
+                    $property['items']['objectConfiguration']['register'] = $registerIdsAndSlugsMap[$registerId];
+                }
+            }
+
+            // Handle schema ID in array items objectConfiguration (new structure)
+            if (isset($property['items']['objectConfiguration']['schema']) === true) {
+                $schemaId = $property['items']['objectConfiguration']['schema'];
+                if (is_numeric($schemaId) && isset($schemaIdsAndSlugsMap[$schemaId]) === true) {
+                    $property['items']['objectConfiguration']['schema'] = $schemaIdsAndSlugsMap[$schemaId];
+                }
+            }
+
+            // Legacy support: Handle old register property structure
             if (isset($property['register']) === true) {
                 if (is_string($property['register']) === true) {
                     $registerId = $this->getLastNumericSegment(url: $property['register']);
@@ -1093,13 +1132,19 @@ class ConfigurationService
     /**
      * Import a schema from configuration data
      *
-     * @param array       $data           The schema data.
-     * @param array       $slugsAndIdsMap Slugs with their ids.
-     * @param string|null $owner          The owner of the schema.
-     * @param string|null $appId          The application ID importing the schema.
-     * @param string|null $version        The version of the import.
+     * This method imports a schema and converts slugs back to internal IDs.
+     * It handles both the new objectConfiguration structure (with register and schema slugs)
+     * and the legacy register property structure for backward compatibility.
+     * Schema and register references are resolved to their numeric IDs in the database.
      *
-     * @return Schema|null The imported schema or null if skipped.
+     * @param array       $data           The schema data with slugs to be converted to IDs
+     * @param array       $slugsAndIdsMap Slugs with their IDs for quick lookup
+     * @param string|null $owner          The owner of the schema
+     * @param string|null $appId          The application ID importing the schema
+     * @param string|null $version        The version of the import
+     * @param bool        $force          Force import even if version is not newer
+     *
+     * @return Schema|null The imported schema or null if skipped
      */
     private function importSchema(array $data, array $slugsAndIdsMap, ?string $owner = null, ?string $appId = null, ?string $version = null, bool $force=false): ?Schema
     {
@@ -1140,6 +1185,95 @@ class ConfigurationService
                             $property['$ref'] = $this->schemasMap[$property['items']['$ref']]->getId();
                         }
                     }
+                    // Handle register slug/ID in objectConfiguration (new structure)
+                    if (isset($property['objectConfiguration']['register']) === true) {
+                        $registerSlug = $property['objectConfiguration']['register'];
+                        if (isset($this->registersMap[$registerSlug]) === true) {
+                            $property['objectConfiguration']['register'] = $this->registersMap[$registerSlug]->getId();
+                        } else {
+                            // Try to find existing register in database
+                            try {
+                                $existingRegister = $this->registerMapper->find($registerSlug);
+                                $property['objectConfiguration']['register'] = $existingRegister->getId();
+                                // Add to map for future reference
+                                $this->registersMap[$registerSlug] = $existingRegister;
+                            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                                $this->logger->warning(
+                                    sprintf('Register with slug %s not found during schema property import.', $registerSlug)
+                                );
+                                // Remove the register reference if not found
+                                unset($property['objectConfiguration']['register']);
+                            }
+                        }
+                    }
+
+                    // Handle schema slug/ID in objectConfiguration (new structure)
+                    if (isset($property['objectConfiguration']['schema']) === true) {
+                        $schemaSlug = $property['objectConfiguration']['schema'];
+                        if (isset($this->schemasMap[$schemaSlug]) === true) {
+                            $property['objectConfiguration']['schema'] = $this->schemasMap[$schemaSlug]->getId();
+                        } else {
+                            // Try to find existing schema in database
+                            try {
+                                $existingSchema = $this->schemaMapper->find($schemaSlug);
+                                $property['objectConfiguration']['schema'] = $existingSchema->getId();
+                                // Add to map for future reference
+                                $this->schemasMap[$schemaSlug] = $existingSchema;
+                            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                                $this->logger->warning(
+                                    sprintf('Schema with slug %s not found during schema property import.', $schemaSlug)
+                                );
+                                // Remove the schema reference if not found
+                                unset($property['objectConfiguration']['schema']);
+                            }
+                        }
+                    }
+
+                    // Handle register slug/ID in array items objectConfiguration (new structure)
+                    if (isset($property['items']['objectConfiguration']['register']) === true) {
+                        $registerSlug = $property['items']['objectConfiguration']['register'];
+                        if (isset($this->registersMap[$registerSlug]) === true) {
+                            $property['items']['objectConfiguration']['register'] = $this->registersMap[$registerSlug]->getId();
+                        } else {
+                            // Try to find existing register in database
+                            try {
+                                $existingRegister = $this->registerMapper->find($registerSlug);
+                                $property['items']['objectConfiguration']['register'] = $existingRegister->getId();
+                                // Add to map for future reference
+                                $this->registersMap[$registerSlug] = $existingRegister;
+                            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                                $this->logger->warning(
+                                    sprintf('Register with slug %s not found during array items schema property import.', $registerSlug)
+                                );
+                                // Remove the register reference if not found
+                                unset($property['items']['objectConfiguration']['register']);
+                            }
+                        }
+                    }
+
+                    // Handle schema slug/ID in array items objectConfiguration (new structure)
+                    if (isset($property['items']['objectConfiguration']['schema']) === true) {
+                        $schemaSlug = $property['items']['objectConfiguration']['schema'];
+                        if (isset($this->schemasMap[$schemaSlug]) === true) {
+                            $property['items']['objectConfiguration']['schema'] = $this->schemasMap[$schemaSlug]->getId();
+                        } else {
+                            // Try to find existing schema in database
+                            try {
+                                $existingSchema = $this->schemaMapper->find($schemaSlug);
+                                $property['items']['objectConfiguration']['schema'] = $existingSchema->getId();
+                                // Add to map for future reference
+                                $this->schemasMap[$schemaSlug] = $existingSchema;
+                            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                                $this->logger->warning(
+                                    sprintf('Schema with slug %s not found during array items schema property import.', $schemaSlug)
+                                );
+                                // Remove the schema reference if not found
+                                unset($property['items']['objectConfiguration']['schema']);
+                            }
+                        }
+                    }
+
+                    // Legacy support: Handle old register property structure
                     if (isset($property['register']) === true) {
                         if (isset($slugsAndIdsMap[$property['register']]) === true) {
                             $property['register'] = $slugsAndIdsMap[$property['register']];
@@ -1151,7 +1285,7 @@ class ConfigurationService
                         if (isset($slugsAndIdsMap[$property['items']['register']]) === true) {
                             $property['items']['register'] = $slugsAndIdsMap[$property['items']['register']];
                         } elseif (isset($this->registersMap[$property['items']['register']]) === true) {
-                            $property['register'] = $this->registersMap[$property['items']['register']]->getId();
+                            $property['items']['register'] = $this->registersMap[$property['items']['register']]->getId();
                         }
                     }
                 }
