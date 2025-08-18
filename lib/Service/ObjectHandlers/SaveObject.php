@@ -1289,6 +1289,10 @@ class SaveObject
         $objectEntity->setCreated(new DateTime());
         $objectEntity->setUpdated(new DateTime());
 
+        if ($uuid !== null) {
+            $objectEntity->setUuid($uuid);
+        }
+
         // Set folder ID if provided
         if ($folderId !== null) {
             $objectEntity->setFolder((string) $folderId);
