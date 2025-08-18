@@ -1394,12 +1394,10 @@ class SaveObject
             $objectEntity->setOwner($user->getUID());
         }
 
-        // Set organisation from active organisation for multi-tenancy (if not already set and multi is enabled)
-        if ($multi === true && ($objectEntity->getOrganisation() === null || $objectEntity->getOrganisation() === '')) {
+        // Set organisation from active organisation if not already set
+        // Always respect user's active organisation regardless of multitenancy settings
+        if ($objectEntity->getOrganisation() === null || $objectEntity->getOrganisation() === '') {
             $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
-            $objectEntity->setOrganisation($organisationUuid);
-        } else {
-            $organisationUuid = $this->organisationService->ensureDefaultOrganisation()->getUuid();
             $objectEntity->setOrganisation($organisationUuid);
         }
 

@@ -350,6 +350,10 @@ class Schema extends Entity implements JsonSerializable
      * - Values must be arrays of group IDs (strings)
      * - Group IDs must be non-empty strings
      *
+     * TODO: Add validation for property-level authorization
+     * Properties can have their own authorization arrays that should be validated
+     * using the same structure as schema-level authorization.
+     *
      * @throws \InvalidArgumentException If the authorization structure is invalid
      *
      * @return bool True if the authorization structure is valid
@@ -394,6 +398,11 @@ class Schema extends Entity implements JsonSerializable
      * - If authorization is set but action is not specified, all groups have permission for that action
      * - The 'admin' group always has all permissions
      * - Object owner always has all permissions for their specific objects
+     *
+     * TODO: Extend this method to support property-level permission checks
+     * Add optional $propertyName parameter to check property-specific authorization.
+     * When $propertyName is provided, check the property's authorization array first,
+     * then fall back to schema-level authorization if no property-level authorization exists.
      *
      * @param string $groupId     The group ID to check
      * @param string $action      The CRUD action (create, read, update, delete)
