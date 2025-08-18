@@ -117,6 +117,8 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 																class="property-chip chip-success">Enumeration ({{ property.enum.length }})</span>
 															<span v-if="property.facetable === true"
 																class="property-chip chip-info">Facetable</span>
+															<span v-if="hasCustomTableSettings(key)"
+																class="property-chip chip-table">Table</span>
 														</div>
 													</div>
 												</div>
@@ -519,6 +521,93 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 															multiple
 															@update:value="updateFilePropertyTags(key, 'autoTags', $event)" />
 													</template>
+
+													<!-- Property-level Table Configuration -->
+													<NcActionSeparator />
+													<NcActionCaption name="Table" />
+													<NcActionCheckbox
+														:checked="getPropertyTableSetting(key, 'default')"
+														@update:checked="updatePropertyTableSetting(key, 'default', $event)">
+														Default
+													</NcActionCheckbox>
+
+													<!-- Property-level Security Configuration -->
+													<NcActionSeparator />
+													<NcActionCaption name="Property Security" />
+													
+													<template v-if="!loadingGroups">
+														<!-- Current Property Permissions List -->
+														<template v-for="permission in getPropertyPermissionsList(key)">
+															<NcActionText 
+																:key="`${key}-perm-text-${permission.group}`"
+																class="property-permission-text">
+																{{ permission.group }} ({{ permission.rights }})
+															</NcActionText>
+															<NcActionButton 
+																v-if="permission.groupId !== 'admin'"
+																:key="`${key}-perm-remove-${permission.group}`"
+																:aria-label="`Remove ${permission.group} permissions`"
+																class="property-permission-remove-btn"
+																@click="removePropertyGroupPermissions(key, permission.group)">
+																<template #icon>
+																	<Close :size="16" />
+																</template>
+																Remove {{ permission.group }}
+															</NcActionButton>
+														</template>
+														
+														<!-- Show inheritance status if no specific permissions -->
+														<NcActionCaption 
+															v-if="!hasPropertyAnyPermissions(key)"
+															name="📄 Inherits schema permissions" 
+															style="color: var(--color-success); font-size: 11px;" />
+
+														<!-- Add Permission Interface -->
+														<NcActionSeparator />
+														<NcActionInput
+															v-model="propertyNewPermissionGroup"
+															type="multiselect"
+															:options="getAvailableGroupsForProperty()"
+															input-label="Group"
+															label="Add Group Permission"
+															placeholder="Select group..." />
+														
+														<template v-if="propertyNewPermissionGroup">
+															<NcActionCaption name="Select Permissions:" />
+															<NcActionCheckbox
+																:checked="propertyNewPermissionCreate"
+																@update:checked="propertyNewPermissionCreate = $event">
+																Create (C)
+															</NcActionCheckbox>
+															<NcActionCheckbox
+																:checked="propertyNewPermissionRead"
+																@update:checked="propertyNewPermissionRead = $event">
+																Read (R)
+															</NcActionCheckbox>
+															<NcActionCheckbox
+																:checked="propertyNewPermissionUpdate"
+																@update:checked="propertyNewPermissionUpdate = $event">
+																Update (U)
+															</NcActionCheckbox>
+															<NcActionCheckbox
+																:checked="propertyNewPermissionDelete"
+																@update:checked="propertyNewPermissionDelete = $event">
+																Delete (D)
+															</NcActionCheckbox>
+															
+															<NcActionButton 
+																v-if="hasAnyPropertyNewPermissionSelected()"
+																@click="addPropertyGroupPermissions(key)">
+																<template #icon>
+																	<Plus :size="16" />
+																</template>
+																Add Permission
+															</NcActionButton>
+														</template>
+													</template>
+													<template v-else>
+														<NcActionCaption name="Loading groups..." />
+													</template>
 												</NcActions>
 											</td>
 										</tr>
@@ -650,6 +739,34 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 											</td>
 										</tr>
 
+										<!-- User group (authenticated users) -->
+										<tr class="user-row">
+											<td class="group-name">
+												<span class="group-badge user">user</span>
+												<small>Authenticated users</small>
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="hasGroupPermission('user', 'create')"
+													@update:checked="updateGroupPermission('user', 'create', $event)" />
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="hasGroupPermission('user', 'read')"
+													@update:checked="updateGroupPermission('user', 'read', $event)" />
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="hasGroupPermission('user', 'update')"
+													@update:checked="updateGroupPermission('user', 'update', $event)" />
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="hasGroupPermission('user', 'delete')"
+													@update:checked="updateGroupPermission('user', 'delete', $event)" />
+											</td>
+										</tr>
+
 										<!-- Regular user groups -->
 										<tr v-for="group in sortedUserGroups" :key="group.id" class="group-row">
 											<td class="group-name">
@@ -768,6 +885,7 @@ import {
 	NcActionInput,
 	NcActionCaption,
 	NcActionSeparator,
+	NcActionText,
 } from '@nextcloud/vue'
 import { BTabs, BTab } from 'bootstrap-vue'
 
@@ -797,6 +915,7 @@ export default {
 		NcActionInput,
 		NcActionCaption,
 		NcActionSeparator,
+		NcActionText,
 		BTabs,
 		BTab,
 		// Icons
@@ -821,6 +940,12 @@ export default {
 			enumInputValue: '', // For entering new enum values
 			allowedTagsInput: '', // For entering allowed tags as comma-separated string
 			availableTags: [], // Available tags from the API
+			// Property-level permission interface
+			propertyNewPermissionGroup: null,
+			propertyNewPermissionCreate: false,
+			propertyNewPermissionRead: false,
+			propertyNewPermissionUpdate: false,
+			propertyNewPermissionDelete: false,
 			schemaItem: {
 				title: '',
 				version: '0.0.0',
@@ -2281,6 +2406,359 @@ export default {
 				this.$set(this.schemaItem.configuration, 'allowedTags', tags)
 			}
 		},
+
+		// Property-level RBAC Methods
+
+		/**
+		 * Check if a property has any permissions set
+		 *
+		 * @param {string} key Property key
+		 * @return {boolean} True if property has any permissions
+		 */
+		hasPropertyAnyPermissions(key) {
+			if (!this.schemaItem.properties[key] || !this.schemaItem.properties[key].authorization) {
+				return false
+			}
+			const auth = this.schemaItem.properties[key].authorization
+			return Object.keys(auth).some(action =>
+				Array.isArray(auth[action]) && auth[action].length > 0,
+			)
+		},
+
+		/**
+		 * Check if property has restrictive permissions (excludes public)
+		 *
+		 * @param {string} key Property key
+		 * @return {boolean} True if property has restrictive permissions
+		 */
+		isRestrictiveProperty(key) {
+			if (!this.schemaItem.properties[key] || !this.schemaItem.properties[key].authorization) {
+				return false
+			}
+			const auth = this.schemaItem.properties[key].authorization
+			const actions = ['create', 'read', 'update', 'delete']
+			return actions.some(action =>
+				Array.isArray(auth[action]) && auth[action].length > 0
+					&& !auth[action].includes('public'),
+			)
+		},
+
+		/**
+		 * Check if a property has permission for a specific group and action
+		 *
+		 * @param {string} key Property key
+		 * @param {string} groupId Group ID
+		 * @param {string} action CRUD action
+		 * @return {boolean} True if group has permission
+		 */
+		hasPropertyGroupPermission(key, groupId, action) {
+			if (!this.schemaItem.properties[key] || !this.schemaItem.properties[key].authorization) {
+				return false
+			}
+			const auth = this.schemaItem.properties[key].authorization
+			if (!auth[action] || !Array.isArray(auth[action])) {
+				return false
+			}
+			return auth[action].includes(groupId)
+		},
+
+		/**
+		 * Update property-level group permission
+		 *
+		 * @param {string} key Property key
+		 * @param {string} groupId Group ID
+		 * @param {string} action CRUD action
+		 * @param {boolean} hasPermission Whether group should have permission
+		 */
+		updatePropertyGroupPermission(key, groupId, action, hasPermission) {
+			if (!this.schemaItem.properties[key]) {
+				return
+			}
+
+			// Initialize property authorization object if it doesn't exist
+			if (!this.schemaItem.properties[key].authorization) {
+				this.$set(this.schemaItem.properties[key], 'authorization', {})
+			}
+
+			// Initialize action array if it doesn't exist
+			if (!this.schemaItem.properties[key].authorization[action]) {
+				this.$set(this.schemaItem.properties[key].authorization, action, [])
+			}
+
+			const currentPermissions = this.schemaItem.properties[key].authorization[action]
+			const groupIndex = currentPermissions.indexOf(groupId)
+
+			if (hasPermission && groupIndex === -1) {
+				// Add permission
+				currentPermissions.push(groupId)
+			} else if (!hasPermission && groupIndex !== -1) {
+				// Remove permission
+				currentPermissions.splice(groupIndex, 1)
+			}
+
+			// Clean up empty arrays to keep the data structure clean
+			if (currentPermissions.length === 0) {
+				this.$delete(this.schemaItem.properties[key].authorization, action)
+			}
+
+			// If authorization object is empty, remove it entirely
+			if (Object.keys(this.schemaItem.properties[key].authorization).length === 0) {
+				this.$delete(this.schemaItem.properties[key], 'authorization')
+			}
+
+			this.checkPropertiesModified()
+		},
+
+		/**
+		 * Get top user groups for property RBAC display (limit to 8 for action menu)
+		 *
+		 * @return {Array} Array of top user groups
+		 */
+		getTopUserGroupsForProperty() {
+			return this.sortedUserGroups.slice(0, 8)
+		},
+
+		/**
+		 * Get a compact list of current property permissions
+		 *
+		 * @param {string} key Property key
+		 * @return {Array} Array of permission objects with group and rights
+		 */
+		getPropertyPermissionsList(key) {
+			if (!this.schemaItem.properties[key] || !this.schemaItem.properties[key].authorization) {
+				return []
+			}
+
+			const auth = this.schemaItem.properties[key].authorization
+			const permissionsList = []
+			const processedGroups = new Set()
+
+			// Process each action to build group permissions
+			Object.keys(auth).forEach(action => {
+				if (Array.isArray(auth[action])) {
+					auth[action].forEach(groupId => {
+						if (!processedGroups.has(groupId)) {
+							const rights = []
+							if (auth.create && auth.create.includes(groupId)) rights.push('C')
+							if (auth.read && auth.read.includes(groupId)) rights.push('R')
+							if (auth.update && auth.update.includes(groupId)) rights.push('U')
+							if (auth.delete && auth.delete.includes(groupId)) rights.push('D')
+
+							permissionsList.push({
+								group: this.getDisplayGroupName(groupId),
+								groupId: groupId,
+								rights: rights.length > 0 ? rights.join(',') : 'none'
+							})
+							processedGroups.add(groupId)
+						}
+					})
+				}
+			})
+
+			// Always show admin with full rights (even though not stored explicitly)
+			permissionsList.push({
+				group: 'Admin',
+				groupId: 'admin',
+				rights: 'C,R,U,D'
+			})
+
+			return permissionsList.sort((a, b) => {
+				// Sort order: public, user, others alphabetically, admin last
+				if (a.groupId === 'public') return -1
+				if (b.groupId === 'public') return 1
+				if (a.groupId === 'user') return -1
+				if (b.groupId === 'user') return 1
+				if (a.groupId === 'admin') return 1
+				if (b.groupId === 'admin') return -1
+				return a.group.localeCompare(b.group)
+			})
+		},
+
+		/**
+		 * Get available groups for property permission selection
+		 *
+		 * @return {Array} Array of available groups including special groups
+		 */
+		getAvailableGroupsForProperty() {
+			const availableGroups = [
+				{ id: 'public', label: 'Public (Unauthenticated)' },
+				{ id: 'user', label: 'User (Authenticated)' },
+				...this.sortedUserGroups.map(group => ({
+					id: group.id,
+					label: group.displayname || group.id
+				}))
+			]
+			return availableGroups
+		},
+
+		/**
+		 * Get display name for a group ID
+		 *
+		 * @param {string} groupId Group ID
+		 * @return {string} Display name
+		 */
+		getDisplayGroupName(groupId) {
+			if (groupId === 'public') return 'Public'
+			if (groupId === 'user') return 'User'
+			if (groupId === 'admin') return 'Admin'
+			
+			const group = this.userGroups.find(g => g.id === groupId)
+			return group ? (group.displayname || group.id) : groupId
+		},
+
+		/**
+		 * Check if any new permission checkboxes are selected
+		 *
+		 * @return {boolean} True if any permission is selected
+		 */
+		hasAnyPropertyNewPermissionSelected() {
+			return this.propertyNewPermissionCreate || 
+				   this.propertyNewPermissionRead || 
+				   this.propertyNewPermissionUpdate || 
+				   this.propertyNewPermissionDelete
+		},
+
+		/**
+		 * Add permissions for a group to a property
+		 *
+		 * @param {string} key Property key
+		 */
+		addPropertyGroupPermissions(key) {
+			if (!this.propertyNewPermissionGroup) return
+
+			const groupId = typeof this.propertyNewPermissionGroup === 'object' 
+				? this.propertyNewPermissionGroup.id 
+				: this.propertyNewPermissionGroup
+
+			// Initialize property authorization if needed
+			if (!this.schemaItem.properties[key].authorization) {
+				this.$set(this.schemaItem.properties[key], 'authorization', {})
+			}
+
+			// Add permissions for selected actions
+			if (this.propertyNewPermissionCreate) {
+				this.updatePropertyGroupPermission(key, groupId, 'create', true)
+			}
+			if (this.propertyNewPermissionRead) {
+				this.updatePropertyGroupPermission(key, groupId, 'read', true)
+			}
+			if (this.propertyNewPermissionUpdate) {
+				this.updatePropertyGroupPermission(key, groupId, 'update', true)
+			}
+			if (this.propertyNewPermissionDelete) {
+				this.updatePropertyGroupPermission(key, groupId, 'delete', true)
+			}
+
+			// Reset form
+			this.resetPropertyPermissionForm()
+		},
+
+		/**
+		 * Remove all permissions for a group from a property
+		 *
+		 * @param {string} key Property key
+		 * @param {string} displayName Group display name to remove
+		 */
+		removePropertyGroupPermissions(key, displayName) {
+			// Find the actual groupId from the display name
+			const permission = this.getPropertyPermissionsList(key).find(p => p.group === displayName)
+			if (!permission || permission.groupId === 'admin') {
+				return // Cannot remove admin permissions or unknown groups
+			}
+
+			const groupId = permission.groupId
+
+			if (!this.schemaItem.properties[key] || !this.schemaItem.properties[key].authorization) {
+				return
+			}
+
+			// Remove group from all actions
+			['create', 'read', 'update', 'delete'].forEach(action => {
+				this.updatePropertyGroupPermission(key, groupId, action, false)
+			})
+		},
+
+		/**
+		 * Reset the property permission form
+		 */
+		resetPropertyPermissionForm() {
+			this.propertyNewPermissionGroup = null
+			this.propertyNewPermissionCreate = false
+			this.propertyNewPermissionRead = false
+			this.propertyNewPermissionUpdate = false
+			this.propertyNewPermissionDelete = false
+		},
+
+		// Property-level Table Configuration Methods
+
+		/**
+		 * Get a table setting value for a property
+		 *
+		 * @param {string} key Property key
+		 * @param {string} setting Table setting name
+		 * @return {boolean|any} Setting value
+		 */
+		getPropertyTableSetting(key, setting) {
+			if (!this.schemaItem.properties[key] || !this.schemaItem.properties[key].table) {
+				return setting === 'default' ? true : false // Default table setting is true
+			}
+			return this.schemaItem.properties[key].table[setting] ?? (setting === 'default' ? true : false)
+		},
+
+		/**
+		 * Update a table setting for a property
+		 *
+		 * @param {string} key Property key
+		 * @param {string} setting Table setting name
+		 * @param {boolean|any} value Setting value
+		 */
+		updatePropertyTableSetting(key, setting, value) {
+			if (!this.schemaItem.properties[key]) {
+				return
+			}
+
+			// Initialize table object if it doesn't exist
+			if (!this.schemaItem.properties[key].table) {
+				this.$set(this.schemaItem.properties[key], 'table', {})
+			}
+
+			// Update the setting
+			this.$set(this.schemaItem.properties[key].table, setting, value)
+
+			// Clean up table object if all settings are default
+			if (this.isTableConfigDefault(key)) {
+				this.$delete(this.schemaItem.properties[key], 'table')
+			}
+
+			this.checkPropertiesModified()
+		},
+
+		/**
+		 * Check if table configuration is all default values
+		 *
+		 * @param {string} key Property key
+		 * @return {boolean} True if all table settings are default
+		 */
+		isTableConfigDefault(key) {
+			const table = this.schemaItem.properties[key]?.table
+			if (!table) return true
+
+			// Check if all known settings are default values
+			const defaults = { default: true }
+			return Object.keys(table).every(setting => 
+				table[setting] === defaults[setting]
+			)
+		},
+
+		/**
+		 * Check if a property has custom table settings (non-default)
+		 *
+		 * @param {string} key Property key
+		 * @return {boolean} True if property has custom table settings
+		 */
+		hasCustomTableSettings(key) {
+			return !this.isTableConfigDefault(key)
+		},
 	},
 }
 </script>
@@ -2327,6 +2805,11 @@ export default {
 
 .property-chip.chip-info {
 	background: var(--color-info);
+	color: var(--color-primary-text);
+}
+
+.property-chip.chip-table {
+	background: var(--color-primary);
 	color: var(--color-primary-text);
 }
 
@@ -2421,6 +2904,10 @@ export default {
 	background: var(--color-primary-light) !important;
 }
 
+.user-row {
+	background: var(--color-warning-light) !important;
+}
+
 .admin-row {
 	background: var(--color-success-light) !important;
 }
@@ -2450,6 +2937,11 @@ export default {
 	color: white;
 }
 
+.group-badge.user {
+	background: var(--color-warning);
+	color: white;
+}
+
 .group-badge.admin {
 	background: var(--color-success);
 	color: white;
@@ -2463,5 +2955,17 @@ export default {
 
 .rbac-summary {
 	margin-top: 20px;
+}
+
+/* Property-level RBAC Styling - Action Menu Based */
+.property-permission-text {
+	font-family: monospace;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.property-permission-remove-btn {
+	font-size: 11px;
+	color: var(--color-error);
 }
 </style>

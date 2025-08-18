@@ -158,6 +158,11 @@ class ObjectService
      * - If no authorization configured, all users have all permissions
      * - Otherwise, check if user's groups match the required groups for the action
      *
+     * TODO: Implement property-level RBAC checks
+     * Properties can have their own authorization arrays that provide fine-grained access control.
+     * When processing object data, we should check each property's authorization before allowing
+     * create/read/update/delete operations on specific property values.
+     *
      * @param Schema $schema The schema to check permissions for
      * @param string $action The CRUD action (create, read, update, delete)
      * @param string|null $userId Optional user ID (defaults to current user)
@@ -486,11 +491,9 @@ class ObjectService
         $tempObject->setSchema($this->currentSchema->getId());
         $tempObject->setUuid(Uuid::v4()->toRfc4122());
 
-        // Set organisation from active organisation for multi-tenancy (only if multi is enabled)
-        if ($multi === true) {
-            $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
-            $tempObject->setOrganisation($organisationUuid);
-        }
+        // Set organisation from active organisation (always respect user's active organisation)
+        $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
+        $tempObject->setOrganisation($organisationUuid);
 
         // Create folder before saving to avoid double update
         $folderId = null;
@@ -831,6 +834,11 @@ class ObjectService
      * @return ObjectEntity The saved object.
      *
      * @throws Exception If there is an error during save.
+     */
+    /**
+     * TODO: Add property-level RBAC validation here
+     * Before saving object data, check if user has permission to create/update specific properties
+     * based on property-level authorization arrays in the schema.
      */
     public function saveObject(
         array | ObjectEntity $object,
@@ -2669,6 +2677,8 @@ class ObjectService
 				if ($objectSchema !== null) {
 					try {
 						$schema = $this->schemaMapper->find($objectSchema);
+						// TODO: Add property-level RBAC check for 'create' action here
+						// Check individual property permissions before allowing property values to be set
 						if (!$this->hasPermission($schema, 'create', $userId, $objectOwner, $rbac)) {
 							continue; // Skip this object if user doesn't have permission
 						}
@@ -4065,6 +4075,8 @@ class ObjectService
                     try {
                         $schema = $this->schemaMapper->find($objectSchema);
                         
+                        // TODO: Add property-level RBAC check for 'delete' action here
+                        // Check if user has permission to delete objects with specific property values
                         if (!$this->hasPermission($schema, 'delete', $userId, $objectOwner, $rbac)) {
                             continue; // Skip this object - no permission
                         }
