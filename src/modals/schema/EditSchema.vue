@@ -2713,10 +2713,7 @@ export default {
 		 * @return {boolean|any} Setting value
 		 */
 		getOriginalPropertyTableSetting(key, setting) {
-			if (!this.originalProperties || !this.originalProperties[key] || !this.originalProperties[key].table) {
-				return undefined
-			}
-			return this.originalProperties[key].table[setting]
+			return this.originalProperties?.[key]?.table[setting]
 		},
 
 		/**
