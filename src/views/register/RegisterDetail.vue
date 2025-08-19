@@ -54,17 +54,23 @@ import formatBytes from '../../services/formatBytes.js'
 								<td>{{ formatBytes(registerStats.objects?.size || 0) }}</td>
 							</tr>
 							<tr class="subRow">
-								<td class="indented">{{ t('openregister', 'Invalid') }}</td>
+								<td class="indented">
+									{{ t('openregister', 'Invalid') }}
+								</td>
 								<td>{{ registerStats.objects?.invalid || 0 }}</td>
 								<td>-</td>
 							</tr>
 							<tr class="subRow">
-								<td class="indented">{{ t('openregister', 'Deleted') }}</td>
+								<td class="indented">
+									{{ t('openregister', 'Deleted') }}
+								</td>
 								<td>{{ registerStats.objects?.deleted || 0 }}</td>
 								<td>-</td>
 							</tr>
 							<tr class="subRow">
-								<td class="indented">{{ t('openregister', 'Published') }}</td>
+								<td class="indented">
+									{{ t('openregister', 'Published') }}
+								</td>
 								<td>{{ registerStats.objects?.published || 0 }}</td>
 								<td>-</td>
 							</tr>
@@ -88,37 +94,37 @@ import formatBytes from '../../services/formatBytes.js'
 				</div>
 
 				<div class="chartGrid">
-				<!-- Audit Trail Actions Chart -->
-				<div class="chartCard">
-					<h3>Audit Trail Actions</h3>
-					<apexchart
-						type="line"
-						height="350"
-						:options="auditTrailChartOptions"
-						:series="dashboardStore.chartData.auditTrailActions?.series || []" />
-				</div>
+					<!-- Audit Trail Actions Chart -->
+					<div class="chartCard">
+						<h3>Audit Trail Actions</h3>
+						<apexchart
+							type="line"
+							height="350"
+							:options="auditTrailChartOptions"
+							:series="dashboardStore.chartData.auditTrailActions?.series || []" />
+					</div>
 
-				<!-- Objects by Schema Chart -->
-				<div class="chartCard">
-					<h3>Objects by Schema</h3>
-					<apexchart
-						type="pie"
-						height="350"
-						:options="schemaChartOptions"
-						:series="dashboardStore.chartData.objectsBySchema?.series || []"
-						:labels="dashboardStore.chartData.objectsBySchema?.labels || []" />
-				</div>
+					<!-- Objects by Schema Chart -->
+					<div class="chartCard">
+						<h3>Objects by Schema</h3>
+						<apexchart
+							type="pie"
+							height="350"
+							:options="schemaChartOptions"
+							:series="dashboardStore.chartData.objectsBySchema?.series || []"
+							:labels="dashboardStore.chartData.objectsBySchema?.labels || []" />
+					</div>
 
-				<!-- Objects by Size Chart -->
-				<div class="chartCard">
-					<h3>Objects by Size Distribution</h3>
-					<apexchart
-						type="bar"
-						height="350"
-						:options="sizeChartOptions"
-						:series="[{ name: 'Objects', data: dashboardStore.chartData.objectsBySize?.series || [] }]" />
+					<!-- Objects by Size Chart -->
+					<div class="chartCard">
+						<h3>Objects by Size Distribution</h3>
+						<apexchart
+							type="bar"
+							height="350"
+							:options="sizeChartOptions"
+							:series="[{ name: 'Objects', data: dashboardStore.chartData.objectsBySize?.series || [] }]" />
+					</div>
 				</div>
-			</div>
 			</div>
 
 			<!-- Schemas Tab Content -->
@@ -317,7 +323,7 @@ export default {
 			// If no register ID at all, go back to list
 			navigationStore.setSelected('registers')
 		}
-		
+
 		// Load register stats if register is available
 		if (registerStore.getRegisterItem?.id) {
 			await this.loadRegisterStats()
@@ -332,10 +338,10 @@ export default {
 			if (!registerStore.getRegisterItem?.id) {
 				return
 			}
-			
+
 			this.statsLoading = true
 			this.statsError = null
-			
+
 			try {
 				this.registerStats = await registerStore.getRegisterStats(registerStore.getRegisterItem.id)
 			} catch (error) {
@@ -475,7 +481,7 @@ export default {
 
 .statsContainer {
 	margin-bottom: 30px;
-	
+
 	h3 {
 		margin-bottom: 15px;
 		color: var(--color-main-text);
