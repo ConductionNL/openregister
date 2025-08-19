@@ -534,16 +534,16 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 													<!-- Property-level Security Configuration -->
 													<NcActionSeparator />
 													<NcActionCaption name="Property Security" />
-													
+
 													<template v-if="!loadingGroups">
 														<!-- Current Property Permissions List -->
 														<template v-for="permission in getPropertyPermissionsList(key)">
-															<NcActionText 
+															<NcActionText
 																:key="`${key}-perm-text-${permission.group}`"
 																class="property-permission-text">
 																{{ permission.group }} ({{ permission.rights }})
 															</NcActionText>
-															<NcActionButton 
+															<NcActionButton
 																v-if="permission.groupId !== 'admin'"
 																:key="`${key}-perm-remove-${permission.group}`"
 																:aria-label="`Remove ${permission.group} permissions`"
@@ -555,11 +555,11 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 																Remove {{ permission.group }}
 															</NcActionButton>
 														</template>
-														
+
 														<!-- Show inheritance status if no specific permissions -->
-														<NcActionCaption 
+														<NcActionCaption
 															v-if="!hasPropertyAnyPermissions(key)"
-															name="📄 Inherits schema permissions" 
+															name="📄 Inherits schema permissions"
 															style="color: var(--color-success); font-size: 11px;" />
 
 														<!-- Add Permission Interface -->
@@ -571,7 +571,7 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 															input-label="Group"
 															label="Add Group Permission"
 															placeholder="Select group..." />
-														
+
 														<template v-if="propertyNewPermissionGroup">
 															<NcActionCaption name="Select Permissions:" />
 															<NcActionCheckbox
@@ -594,8 +594,8 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 																@update:checked="propertyNewPermissionDelete = $event">
 																Delete (D)
 															</NcActionCheckbox>
-															
-															<NcActionButton 
+
+															<NcActionButton
 																v-if="hasAnyPropertyNewPermissionSelected()"
 																@click="addPropertyGroupPermissions(key)">
 																<template #icon>
@@ -1460,19 +1460,19 @@ export default {
 			Object.keys(cleanedSchemaItem.properties || {}).forEach(key => {
 				// Ensure all $ref values are strings
 				this.ensureRefIsString(cleanedSchemaItem.properties, key)
-				
+
 				// Remove the old register property at root level if it exists
-				if (cleanedSchemaItem.properties[key].register && 
-					cleanedSchemaItem.properties[key].objectConfiguration && 
-					cleanedSchemaItem.properties[key].objectConfiguration.register) {
+				if (cleanedSchemaItem.properties[key].register
+					&& cleanedSchemaItem.properties[key].objectConfiguration
+					&& cleanedSchemaItem.properties[key].objectConfiguration.register) {
 					delete cleanedSchemaItem.properties[key].register
 				}
 
 				// Remove old register property from array items if it exists
-				if (cleanedSchemaItem.properties[key].items && 
-					cleanedSchemaItem.properties[key].items.register &&
-					cleanedSchemaItem.properties[key].items.objectConfiguration && 
-					cleanedSchemaItem.properties[key].items.objectConfiguration.register) {
+				if (cleanedSchemaItem.properties[key].items
+					&& cleanedSchemaItem.properties[key].items.register
+					&& cleanedSchemaItem.properties[key].items.objectConfiguration
+					&& cleanedSchemaItem.properties[key].items.objectConfiguration.register) {
 					delete cleanedSchemaItem.properties[key].items.register
 				}
 			})
@@ -1951,9 +1951,9 @@ export default {
 
 				// Find the schema to get its numeric ID
 				const referencedSchema = schemaStore.schemaList.find(schema =>
-					(schema.slug && schema.slug.toLowerCase() === schemaSlug.toLowerCase()) ||
-					schema.id === schemaSlug ||
-					schema.title === schemaSlug
+					(schema.slug && schema.slug.toLowerCase() === schemaSlug.toLowerCase())
+					|| schema.id === schemaSlug
+					|| schema.title === schemaSlug,
 				)
 
 				if (referencedSchema) {
@@ -2006,9 +2006,9 @@ export default {
 
 				// Find the schema to get its numeric ID
 				const referencedSchema = schemaStore.schemaList.find(schema =>
-					(schema.slug && schema.slug.toLowerCase() === schemaSlug.toLowerCase()) ||
-					schema.id === schemaSlug ||
-					schema.title === schemaSlug
+					(schema.slug && schema.slug.toLowerCase() === schemaSlug.toLowerCase())
+					|| schema.id === schemaSlug
+					|| schema.title === schemaSlug,
 				)
 
 				if (referencedSchema) {
@@ -2043,7 +2043,7 @@ export default {
 
 			if (registerId) {
 				this.$set(this.schemaItem.properties[key].objectConfiguration, 'register', registerId)
-				
+
 				// Remove old register property if it exists
 				if (this.schemaItem.properties[key].register) {
 					this.$delete(this.schemaItem.properties[key], 'register')
@@ -2151,8 +2151,8 @@ export default {
 				}
 
 				// Extract register ID from old structure
-				const registerId = typeof property.register === 'object' && property.register.id 
-					? property.register.id 
+				const registerId = typeof property.register === 'object' && property.register.id
+					? property.register.id
 					: property.register
 
 				// Set register in objectConfiguration
@@ -2166,9 +2166,9 @@ export default {
 					}
 
 					const referencedSchema = schemaStore.schemaList.find(schema =>
-						(schema.slug && schema.slug.toLowerCase() === schemaSlug.toLowerCase()) ||
-						schema.id === schemaSlug ||
-						schema.title === schemaSlug
+						(schema.slug && schema.slug.toLowerCase() === schemaSlug.toLowerCase())
+						|| schema.id === schemaSlug
+						|| schema.title === schemaSlug,
 					)
 
 					if (referencedSchema) {
@@ -2188,8 +2188,8 @@ export default {
 				}
 
 				// Extract register ID from old structure
-				const registerId = typeof property.items.register === 'object' && property.items.register.id 
-					? property.items.register.id 
+				const registerId = typeof property.items.register === 'object' && property.items.register.id
+					? property.items.register.id
 					: property.items.register
 
 				// Set register in objectConfiguration
@@ -2203,9 +2203,9 @@ export default {
 					}
 
 					const referencedSchema = schemaStore.schemaList.find(schema =>
-						(schema.slug && schema.slug.toLowerCase() === schemaSlug.toLowerCase()) ||
-						schema.id === schemaSlug ||
-						schema.title === schemaSlug
+						(schema.slug && schema.slug.toLowerCase() === schemaSlug.toLowerCase())
+						|| schema.id === schemaSlug
+						|| schema.title === schemaSlug,
 					)
 
 					if (referencedSchema) {
@@ -2546,8 +2546,8 @@ export default {
 
 							permissionsList.push({
 								group: this.getDisplayGroupName(groupId),
-								groupId: groupId,
-								rights: rights.length > 0 ? rights.join(',') : 'none'
+								groupId,
+								rights: rights.length > 0 ? rights.join(',') : 'none',
 							})
 							processedGroups.add(groupId)
 						}
@@ -2559,7 +2559,7 @@ export default {
 			permissionsList.push({
 				group: 'Admin',
 				groupId: 'admin',
-				rights: 'C,R,U,D'
+				rights: 'C,R,U,D',
 			})
 
 			return permissionsList.sort((a, b) => {
@@ -2585,8 +2585,8 @@ export default {
 				{ id: 'user', label: 'User (Authenticated)' },
 				...this.sortedUserGroups.map(group => ({
 					id: group.id,
-					label: group.displayname || group.id
-				}))
+					label: group.displayname || group.id,
+				})),
 			]
 			return availableGroups
 		},
@@ -2601,7 +2601,7 @@ export default {
 			if (groupId === 'public') return 'Public'
 			if (groupId === 'user') return 'User'
 			if (groupId === 'admin') return 'Admin'
-			
+
 			const group = this.userGroups.find(g => g.id === groupId)
 			return group ? (group.displayname || group.id) : groupId
 		},
@@ -2612,10 +2612,10 @@ export default {
 		 * @return {boolean} True if any permission is selected
 		 */
 		hasAnyPropertyNewPermissionSelected() {
-			return this.propertyNewPermissionCreate || 
-				   this.propertyNewPermissionRead || 
-				   this.propertyNewPermissionUpdate || 
-				   this.propertyNewPermissionDelete
+			return this.propertyNewPermissionCreate
+				   || this.propertyNewPermissionRead
+				   || this.propertyNewPermissionUpdate
+				   || this.propertyNewPermissionDelete
 		},
 
 		/**
@@ -2626,8 +2626,8 @@ export default {
 		addPropertyGroupPermissions(key) {
 			if (!this.propertyNewPermissionGroup) return
 
-			const groupId = typeof this.propertyNewPermissionGroup === 'object' 
-				? this.propertyNewPermissionGroup.id 
+			const groupId = typeof this.propertyNewPermissionGroup === 'object'
+				? this.propertyNewPermissionGroup.id
 				: this.propertyNewPermissionGroup
 
 			// Initialize property authorization if needed
@@ -2698,11 +2698,25 @@ export default {
 		 * @param {string} setting Table setting name
 		 * @return {boolean|any} Setting value
 		 */
-		getPropertyTableSetting(key, setting) {
+		 getPropertyTableSetting(key, setting) {
 			if (!this.schemaItem.properties[key] || !this.schemaItem.properties[key].table) {
-				return setting === 'default' ? true : false // Default table setting is true
+				return false
 			}
-			return this.schemaItem.properties[key].table[setting] ?? (setting === 'default' ? true : false)
+			return this.schemaItem.properties[key].table[setting] === true
+		},
+
+		/**
+		 * Get the original table setting value for a property
+		 *
+		 * @param {string} key Property key
+		 * @param {string} setting Table setting name
+		 * @return {boolean|any} Setting value
+		 */
+		getOriginalPropertyTableSetting(key, setting) {
+			if (!this.originalProperties || !this.originalProperties[key] || !this.originalProperties[key].table) {
+				return undefined
+			}
+			return this.originalProperties[key].table[setting]
 		},
 
 		/**
@@ -2712,7 +2726,7 @@ export default {
 		 * @param {string} setting Table setting name
 		 * @param {boolean|any} value Setting value
 		 */
-		updatePropertyTableSetting(key, setting, value) {
+		 updatePropertyTableSetting(key, setting, value) {
 			if (!this.schemaItem.properties[key]) {
 				return
 			}
@@ -2725,8 +2739,13 @@ export default {
 			// Update the setting
 			this.$set(this.schemaItem.properties[key].table, setting, value)
 
-			// Clean up table object if all settings are default
-			if (this.isTableConfigDefault(key)) {
+			// Clean up table object if all settings are default,
+			// UNLESS this was an explicit change from true -> false (we must send false)
+			const wasTrueOriginally = this.getOriginalPropertyTableSetting(key, setting) === true
+			const becameExplicitFalse = value === false
+			const shouldKeepExplicitFalse = setting === 'default' && becameExplicitFalse && wasTrueOriginally
+
+			if (this.isTableConfigDefault(key) && !shouldKeepExplicitFalse) {
 				this.$delete(this.schemaItem.properties[key], 'table')
 			}
 
@@ -2744,9 +2763,9 @@ export default {
 			if (!table) return true
 
 			// Check if all known settings are default values
-			const defaults = { default: true }
-			return Object.keys(table).every(setting => 
-				table[setting] === defaults[setting]
+			const defaults = { default: false }
+			return Object.keys(table).every(setting =>
+				table[setting] === defaults[setting],
 			)
 		},
 
