@@ -506,23 +506,30 @@ class RegistersController extends Controller
                 }
             }
 
-            // Get import options for all types
-            $includeObjects = filter_var($this->request->getParam('includeObjects', false), FILTER_VALIDATE_BOOLEAN);
-            $validation = filter_var($this->request->getParam('validation', false), FILTER_VALIDATE_BOOLEAN);
-            $events = filter_var($this->request->getParam('events', false), FILTER_VALIDATE_BOOLEAN);
+            // Get import options for all types - support both boolean and string values
+            $includeObjects = $this->parseBooleanParam('includeObjects', false);
+            $validation = $this->parseBooleanParam('validation', false);
+            $events = $this->parseBooleanParam('events', false);
             // Find the register
             $register = $this->registerService->find($id);
             // Handle different import types
             switch ($type) {
                 case 'excel':
                     // Import from Excel and get summary (now returns sheet-based format)
+                    // Get additional performance parameters with enhanced boolean parsing  
+                    $rbac = $this->parseBooleanParam('rbac', true);
+                    $multi = $this->parseBooleanParam('multi', true);
+                    $chunkSize = (int) $this->request->getParam('chunkSize', 5); // Use optimized default
+                    
                     $summary = $this->importService->importFromExcel(
                         $uploadedFile['tmp_name'],
                         $register,
                         null,
-                        25, // chunk size
+                        $chunkSize,
                         $validation,
-                        $events
+                        $events,
+                        $rbac,
+                        $multi
                     );
                     break;
                 case 'csv':
@@ -540,13 +547,21 @@ class RegistersController extends Controller
                     }
                     
                     $schema = $this->schemaMapper->find($schemaId);
+                    
+                    // Get additional performance parameters with enhanced boolean parsing
+                    $rbac = $this->parseBooleanParam('rbac', true);
+                    $multi = $this->parseBooleanParam('multi', true);
+                    $chunkSize = (int) $this->request->getParam('chunkSize', 5); // Use optimized default
+                    
                     $summary = $this->importService->importFromCsv(
                         $uploadedFile['tmp_name'],
                         $register,
                         $schema,
-                        25, // chunk size
+                        $chunkSize,
                         $validation,
-                        $events
+                        $events,
+                        $rbac,
+                        $multi
                     );
                     break;
                 case 'configuration':
@@ -652,6 +667,43 @@ class RegistersController extends Controller
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }
+    }
+
+
+    /**
+     * Parse boolean parameter from request with enhanced support for string values
+     * 
+     * Supports both actual booleans and string representations:
+     * - true, "true", "1", "on", "yes" -> true
+     * - false, "false", "0", "off", "no", "" -> false
+     *
+     * @param string $paramName The parameter name to retrieve
+     * @param bool   $default   Default value if parameter is not present
+     *
+     * @return bool The parsed boolean value
+     */
+    private function parseBooleanParam(string $paramName, bool $default = false): bool
+    {
+        $value = $this->request->getParam($paramName, $default);
+        
+        // If already boolean, return as-is
+        if (is_bool($value)) {
+            return $value;
+        }
+        
+        // Handle string values
+        if (is_string($value)) {
+            $value = strtolower(trim($value));
+            return in_array($value, ['true', '1', 'on', 'yes'], true);
+        }
+        
+        // Handle numeric values
+        if (is_numeric($value)) {
+            return (bool) $value;
+        }
+        
+        // Fallback to default
+        return $default;
     }
 
 }//end class
