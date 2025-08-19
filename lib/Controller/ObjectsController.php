@@ -1360,10 +1360,17 @@ class ObjectsController extends Controller
                 case 'xlsx':
                 case 'xls':
 
+                    // Get optional validation and events parameters  
+                    $validation = filter_var($this->request->getParam('validation', false), FILTER_VALIDATE_BOOLEAN);
+                    $events = filter_var($this->request->getParam('events', false), FILTER_VALIDATE_BOOLEAN);
+                    
                     $summary = $this->importService->importFromExcel(
                         $uploadedFile['tmp_name'],
                         $registerEntity,
-                        null // Schema will be determined from sheet names
+                        null, // Schema will be determined from sheet names
+                        5, // Use default chunk size
+                        $validation,
+                        $events
                     );
                     break;
                     
@@ -1387,10 +1394,22 @@ class ObjectsController extends Controller
                     
 
                     
+                    // Get optional parameters with sensible defaults
+                    $validation = filter_var($this->request->getParam('validation', false), FILTER_VALIDATE_BOOLEAN);
+                    $events = filter_var($this->request->getParam('events', false), FILTER_VALIDATE_BOOLEAN);
+                    $rbac = filter_var($this->request->getParam('rbac', true), FILTER_VALIDATE_BOOLEAN);
+                    $multi = filter_var($this->request->getParam('multi', true), FILTER_VALIDATE_BOOLEAN);
+                    $chunkSize = (int) $this->request->getParam('chunkSize', 5);
+                    
                     $summary = $this->importService->importFromCsv(
                         $uploadedFile['tmp_name'],
                         $registerEntity,
-                        $schema
+                        $schema,
+                        $chunkSize,
+                        $validation,
+                        $events,
+                        $rbac,
+                        $multi
                     );
                     break;
                     

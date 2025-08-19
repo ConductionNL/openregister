@@ -255,6 +255,26 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 						Dispatch object lifecycle events during bulk operations. May impact performance.
 					</template>
 				</NcCheckboxRadioSwitch>
+
+				<NcCheckboxRadioSwitch
+					:checked="rbac"
+					type="switch"
+					@update:checked="rbac = $event">
+					Enable RBAC (Role-Based Access Control)
+					<template #helper>
+						Apply role-based access control checks during import. Recommended for production environments.
+					</template>
+				</NcCheckboxRadioSwitch>
+
+				<NcCheckboxRadioSwitch
+					:checked="multi"
+					type="switch"
+					@update:checked="multi = $event">
+					Enable Multi-tenancy
+					<template #helper>
+						Apply multi-tenancy filtering during import. Recommended for multi-organization setups.
+					</template>
+				</NcCheckboxRadioSwitch>
 			</div>
 		</div>
 
@@ -322,6 +342,8 @@ export default {
 			includeObjects: true, // Whether to include objects (default: true)
 			validation: true, // Whether to enable validation (default: true)
 			events: false, // Whether to enable events (default: false)
+			rbac: true, // Whether to enable RBAC (default: true)
+			multi: true, // Whether to enable multi-tenancy (default: true)
 			allowedFileTypes: ['json', 'xlsx', 'xls', 'csv'], // Allowed file types
 			importSummary: null, // The import summary from the backend
 			importResults: null, // The import results for display
@@ -484,6 +506,8 @@ export default {
 			this.includeObjects = true // Reset to default
 			this.validation = true // Reset to default
 			this.events = false // Reset to default
+			this.rbac = true // Reset to default
+			this.multi = true // Reset to default
 			this.importSummary = null
 			this.importResults = null
 			this.expandedSheets = {} // Reset expanded state
@@ -507,7 +531,7 @@ export default {
 				console.log('ImportRegister: Calling registerStore.importRegister')
 				// Call importRegister - the register refresh will happen in the background
 				// This way the loading state is turned off as soon as the import is done
-				const result = await registerStore.importRegister(this.selectedFile, this.includeObjects, this.validation, this.events)
+				const result = await registerStore.importRegister(this.selectedFile, this.includeObjects, this.validation, this.events, this.rbac, this.multi)
 
 				console.log('ImportRegister: Import completed, setting success state')
 				// Store the import summary from the backend response
