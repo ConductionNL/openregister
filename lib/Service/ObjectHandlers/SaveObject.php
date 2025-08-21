@@ -352,9 +352,9 @@ class SaveObject
 
 
     /**
-     * Hydrates the name, description, and image of the entity from the object data based on schema configuration.
+     * Hydrates the name, description, summary, and image of the entity from the object data based on schema configuration.
      *
-     * This method uses the schema configuration to set the name, description, and image fields
+     * This method uses the schema configuration to set the name, description, summary, and image fields
      * on the object entity based on the object data. It prevents an extra database call
      * by using the schema that's already available in the SaveObject handler.
      *
@@ -366,7 +366,7 @@ class SaveObject
      * @psalm-return   void
      * @phpstan-return void
      */
-    private function hydrateNameDescriptionAndImage(ObjectEntity $entity, Schema $schema): void
+    private function hydrateNameDescriptionSummaryAndImage(ObjectEntity $entity, Schema $schema): void
     {
         $config     = $schema->getConfiguration();
         $objectData = $entity->getObject();
@@ -385,6 +385,13 @@ class SaveObject
             }
         }
 
+        if (isset($config['objectSummaryField']) === true) {
+            $summary = $this->getValueFromPath($objectData, $config['objectSummaryField']);
+            if ($summary !== null) {
+                $entity->setSummary($summary);
+            }
+        }
+
         if (isset($config['objectImageField']) === true) {
             $image = $this->getValueFromPath($objectData, $config['objectImageField']);
             if ($image !== null) {
@@ -392,7 +399,7 @@ class SaveObject
             }
         }
 
-    }//end hydrateNameDescriptionAndImage()
+    }//end hydrateNameDescriptionSummaryAndImage()
 
 
     /**
@@ -1379,7 +1386,7 @@ class SaveObject
 
         // Hydrate name and description from schema configuration.
         try {
-            $this->hydrateNameDescriptionAndImage($objectEntity, $schema);
+            $this->hydrateNameDescriptionSummaryAndImage($objectEntity, $schema);
         } catch (Exception $e) {
             // Continue without hydration if it fails
         }
@@ -1443,7 +1450,7 @@ class SaveObject
         $existingObject->setObject($preparedData);
 
         // Hydrate name and description from schema configuration.
-        $this->hydrateNameDescriptionAndImage($existingObject, $schema);
+        $this->hydrateNameDescriptionSummaryAndImage($existingObject, $schema);
 
         // Update object relations.
         $existingObject = $this->updateObjectRelations($existingObject, $preparedData, $schema);
