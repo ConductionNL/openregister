@@ -396,6 +396,11 @@ class ConfigurationService
         unset($schemaArray['id'], $schemaArray['uuid']);
 
         foreach ($schemaArray['properties'] as &$property) {
+            // Ensure property is always an array
+            if (is_object($property)) {
+                $property = (array) $property;
+            }
+            
             if (isset($property['$ref']) === true) {
                 $schemaId = $this->getLastNumericSegment(url: $property['$ref']);
                 if (isset($schemaIdsAndSlugsMap[$schemaId]) === true) {
@@ -404,6 +409,11 @@ class ConfigurationService
             }
 
             if (isset($property['items']['$ref']) === true) {
+                // Ensure items is an array for consistent access
+                if (is_object($property['items'])) {
+                    $property['items'] = (array) $property['items'];
+                }
+                
                 $schemaId = $this->getLastNumericSegment(url: $property['items']['$ref']);
                 if (isset($schemaIdsAndSlugsMap[$schemaId]) === true) {
                     $property['items']['$ref'] = $schemaIdsAndSlugsMap[$schemaId];
@@ -411,6 +421,11 @@ class ConfigurationService
             }
             // Handle register ID in objectConfiguration (new structure)
             if (isset($property['objectConfiguration']['register']) === true) {
+                // Ensure objectConfiguration is an array for consistent access
+                if (is_object($property['objectConfiguration'])) {
+                    $property['objectConfiguration'] = (array) $property['objectConfiguration'];
+                }
+                
                 $registerId = $property['objectConfiguration']['register'];
                 if (is_numeric($registerId) && isset($registerIdsAndSlugsMap[$registerId]) === true) {
                     $property['objectConfiguration']['register'] = $registerIdsAndSlugsMap[$registerId];
@@ -419,6 +434,11 @@ class ConfigurationService
 
             // Handle schema ID in objectConfiguration (new structure)
             if (isset($property['objectConfiguration']['schema']) === true) {
+                // Ensure objectConfiguration is an array for consistent access
+                if (is_object($property['objectConfiguration'])) {
+                    $property['objectConfiguration'] = (array) $property['objectConfiguration'];
+                }
+                
                 $schemaId = $property['objectConfiguration']['schema'];
                 if (is_numeric($schemaId) && isset($schemaIdsAndSlugsMap[$schemaId]) === true) {
                     $property['objectConfiguration']['schema'] = $schemaIdsAndSlugsMap[$schemaId];
@@ -427,6 +447,14 @@ class ConfigurationService
 
             // Handle register ID in array items objectConfiguration (new structure)
             if (isset($property['items']['objectConfiguration']['register']) === true) {
+                // Ensure items and objectConfiguration are arrays for consistent access
+                if (is_object($property['items'])) {
+                    $property['items'] = (array) $property['items'];
+                }
+                if (is_object($property['items']['objectConfiguration'])) {
+                    $property['items']['objectConfiguration'] = (array) $property['items']['objectConfiguration'];
+                }
+                
                 $registerId = $property['items']['objectConfiguration']['register'];
                 if (is_numeric($registerId) && isset($registerIdsAndSlugsMap[$registerId]) === true) {
                     $property['items']['objectConfiguration']['register'] = $registerIdsAndSlugsMap[$registerId];
@@ -435,6 +463,14 @@ class ConfigurationService
 
             // Handle schema ID in array items objectConfiguration (new structure)
             if (isset($property['items']['objectConfiguration']['schema']) === true) {
+                // Ensure items and objectConfiguration are arrays for consistent access
+                if (is_object($property['items'])) {
+                    $property['items'] = (array) $property['items'];
+                }
+                if (is_object($property['items']['objectConfiguration'])) {
+                    $property['items']['objectConfiguration'] = (array) $property['items']['objectConfiguration'];
+                }
+                
                 $schemaId = $property['items']['objectConfiguration']['schema'];
                 if (is_numeric($schemaId) && isset($schemaIdsAndSlugsMap[$schemaId]) === true) {
                     $property['items']['objectConfiguration']['schema'] = $schemaIdsAndSlugsMap[$schemaId];
@@ -452,6 +488,11 @@ class ConfigurationService
             }
 
             if (isset($property['items']['register']) === true) {
+                // Ensure items is an array for consistent access
+                if (is_object($property['items'])) {
+                    $property['items'] = (array) $property['items'];
+                }
+                
                 if (is_string($property['items']['register']) === true) {
                     $registerId = $this->getLastNumericSegment(url: $property['items']['register']);
                     if (isset($registerIdsAndSlugsMap[$registerId]) === true) {
@@ -589,9 +630,37 @@ class ConfigurationService
             return null;
         }
 
+        // Ensure all data is consistently arrays by converting any stdClass objects
+        $phpArray = $this->ensureArrayStructure($phpArray);
+
         return $phpArray;
 
     }//end decode()
+
+    /**
+     * Recursively converts stdClass objects to arrays to ensure consistent data structure
+     *
+     * @param mixed $data The data to convert
+     * @return array The converted array data
+     */
+    private function ensureArrayStructure(mixed $data): array
+    {
+        if (is_object($data)) {
+            $data = (array) $data;
+        }
+        
+        if (is_array($data)) {
+            foreach ($data as $key => $value) {
+                if (is_object($value)) {
+                    $data[$key] = $this->ensureArrayStructure($value);
+                } elseif (is_array($value)) {
+                    $data[$key] = $this->ensureArrayStructure($value);
+                }
+            }
+        }
+        
+        return $data;
+    }
 
 
     /**
@@ -681,6 +750,9 @@ class ConfigurationService
             );
         }
 
+        // Ensure all data is consistently arrays by converting any stdClass objects
+        $phpArray = $this->ensureArrayStructure($phpArray);
+
         return $phpArray;
 
     }//end getJSONfromBody()
@@ -719,6 +791,9 @@ class ConfigurationService
      */
     public function importFromJson(array $data, ?string $owner=null, ?string $appId=null, ?string $version=null, bool $force=false): array
     {
+        // Ensure data is consistently an array by converting any stdClass objects
+        $data = $this->ensureArrayStructure($data);
+        
         // Extract appId and version from data if not provided as parameters
         if ($appId === null && isset($data['appId']) === true) {
             $appId = $data['appId'];
@@ -1024,6 +1099,9 @@ class ConfigurationService
     private function createOrUpdateConfiguration(array $data, string $appId, string $version, array $result, ?string $owner = null): Configuration
     {
         try {
+            // Ensure data is consistently an array by converting any stdClass objects
+            $data = $this->ensureArrayStructure($data);
+            
             // Try to find existing configuration for this app
             $existingConfiguration = null;
             try {
@@ -1117,6 +1195,9 @@ class ConfigurationService
     private function importRegister(array $data, ?string $owner=null, ?string $appId=null, ?string $version=null, bool $force=false): ?Register
     {
         try {
+            // Ensure data is consistently an array by converting any stdClass objects
+            $data = $this->ensureArrayStructure($data);
+            
             // Remove id and uuid from the data.
             unset($data['id'], $data['uuid']);
 
@@ -1194,6 +1275,11 @@ class ConfigurationService
             // removes format if format is string
             if (isset($data['properties']) === true) {
                 foreach ($data['properties'] as $key => &$property) {
+                    // Ensure property is always an array
+                    if (is_object($property)) {
+                        $property = (array) $property;
+                    }
+                    
                     // Only set title to key if no title exists, to preserve existing titles
                     if (isset($property['title']) === false || empty($property['title']) === true) {
                         $property['title'] = $key;
@@ -1201,19 +1287,34 @@ class ConfigurationService
                     
                     // Fix empty objects that became arrays during JSON deserialization
                     // objectConfiguration and fileConfiguration should always be objects, not arrays
-                    if (isset($property['objectConfiguration']) === true && $property['objectConfiguration'] === []) {
-                        $property['objectConfiguration'] = new \stdClass();
+                    if (isset($property['objectConfiguration']) === true) {
+                        if (is_array($property['objectConfiguration']) && $property['objectConfiguration'] === []) {
+                            $property['objectConfiguration'] = new \stdClass();
+                        }
                     }
-                    if (isset($property['fileConfiguration']) === true && $property['fileConfiguration'] === []) {
-                        $property['fileConfiguration'] = new \stdClass();
+                    if (isset($property['fileConfiguration']) === true) {
+                        if (is_array($property['fileConfiguration']) && $property['fileConfiguration'] === []) {
+                            $property['fileConfiguration'] = new \stdClass();
+                        }
                     }
                     
                     // Do the same for array items
-                    if (isset($property['items']['objectConfiguration']) === true && $property['items']['objectConfiguration'] === []) {
-                        $property['items']['objectConfiguration'] = new \stdClass();
-                    }
-                    if (isset($property['items']['fileConfiguration']) === true && $property['items']['fileConfiguration'] === []) {
-                        $property['items']['fileConfiguration'] = new \stdClass();
+                    if (isset($property['items']) === true) {
+                        // Ensure items is an array first
+                        if (is_object($property['items'])) {
+                            $property['items'] = (array) $property['items'];
+                        }
+                        
+                        if (isset($property['items']['objectConfiguration']) === true) {
+                            if (is_array($property['items']['objectConfiguration']) && $property['items']['objectConfiguration'] === []) {
+                                $property['items']['objectConfiguration'] = new \stdClass();
+                            }
+                        }
+                        if (isset($property['items']['fileConfiguration']) === true) {
+                            if (is_array($property['items']['fileConfiguration']) && $property['items']['fileConfiguration'] === []) {
+                                $property['items']['fileConfiguration'] = new \stdClass();
+                            }
+                        }
                     }
                     
                     if (isset($property['type']) === false) {
@@ -1241,6 +1342,11 @@ class ConfigurationService
                             $property['$ref'] = $this->schemasMap[$property['items']['$ref']]->getId();
                         }
                     }
+                    // Ensure objectConfiguration is an array for consistent access before any checks
+                    if (isset($property['objectConfiguration']) && is_object($property['objectConfiguration'])) {
+                        $property['objectConfiguration'] = (array) $property['objectConfiguration'];
+                    }
+
                     // Handle register slug/ID in objectConfiguration (new structure)
                     if (isset($property['objectConfiguration']['register']) === true) {
                         $registerSlug = $property['objectConfiguration']['register'];
@@ -1287,6 +1393,16 @@ class ConfigurationService
                             }
                         }
                         // If schemaSlug is empty, preserve the empty schema field as-is
+                    }
+
+                    // Ensure items and its objectConfiguration are arrays for consistent access before any checks
+                    if (isset($property['items'])) {
+                        if (is_object($property['items'])) {
+                            $property['items'] = (array) $property['items'];
+                        }
+                        if (isset($property['items']['objectConfiguration']) && is_object($property['items']['objectConfiguration'])) {
+                            $property['items']['objectConfiguration'] = (array) $property['items']['objectConfiguration'];
+                        }
                     }
 
                     // Handle register slug/ID in array items objectConfiguration (new structure)
@@ -1416,6 +1532,9 @@ class ConfigurationService
     private function importObject(array $data, ?string $owner=null): ?ObjectEntity
     {
         try {
+            // Ensure data is consistently an array by converting any stdClass objects
+            $data = $this->ensureArrayStructure($data);
+            
             // Validate required @self metadata
             if (!isset($data['@self']['register']) || !isset($data['@self']['schema']) || !isset($data['name'])) {
                 $this->logger->warning('Object data missing required @self metadata (register, schema) or name field');
