@@ -488,10 +488,17 @@ class MariaDbSearchHandler
 
 
     /**
-     * Apply full-text search on JSON object
+     * Apply full-text search on JSON object and metadata fields
      *
-     * Performs a case-insensitive full-text search within the JSON object field.
+     * Performs a case-insensitive full-text search within the JSON object field and metadata fields.
      * Supports multiple search terms separated by ' OR ' for OR logic.
+     * 
+     * Searches in the following fields:
+     * - JSON object data (all fields within the object column)
+     * - name (metadata field)
+     * - description (metadata field)
+     * - summary (metadata field)
+     * - image (metadata field)
      *
      * @param IQueryBuilder $queryBuilder The query builder to modify
      * @param string        $searchTerm The search term (can contain multiple terms separated by ' OR ')
@@ -532,15 +539,51 @@ class MariaDbSearchHandler
                 continue;
             }
 
-            // Use case-insensitive JSON_SEARCH with partial matching
-            // This ensures the search is case-insensitive and supports partial matches
-            $searchFunction = "JSON_SEARCH(LOWER(`object`), 'all', " . $queryBuilder->createNamedParameter('%' . $cleanTerm . '%') . ")";
-            
-            $orConditions->add(
+            // Create a parameter for the search term to avoid SQL injection
+            $searchParam = $queryBuilder->createNamedParameter('%' . $cleanTerm . '%');
+
+            // Create OR conditions for each searchable field
+            $termConditions = $queryBuilder->expr()->orX();
+
+            // Search in JSON object data
+            $jsonSearchFunction = "JSON_SEARCH(LOWER(`object`), 'all', " . $searchParam . ")";
+            $termConditions->add(
                 $queryBuilder->expr()->isNotNull(
-                    $queryBuilder->createFunction($searchFunction)
+                    $queryBuilder->createFunction($jsonSearchFunction)
                 )
             );
+
+            // Search in metadata fields (name, description, summary, image)
+            $termConditions->add(
+                $queryBuilder->expr()->like(
+                    $queryBuilder->createFunction('LOWER(o.name)'),
+                    $queryBuilder->createNamedParameter('%' . $cleanTerm . '%')
+                )
+            );
+
+            $termConditions->add(
+                $queryBuilder->expr()->like(
+                    $queryBuilder->createFunction('LOWER(o.description)'),
+                    $queryBuilder->createNamedParameter('%' . $cleanTerm . '%')
+                )
+            );
+
+            $termConditions->add(
+                $queryBuilder->expr()->like(
+                    $queryBuilder->createFunction('LOWER(o.summary)'),
+                    $queryBuilder->createNamedParameter('%' . $cleanTerm . '%')
+                )
+            );
+
+            $termConditions->add(
+                $queryBuilder->expr()->like(
+                    $queryBuilder->createFunction('LOWER(o.image)'),
+                    $queryBuilder->createNamedParameter('%' . $cleanTerm . '%')
+                )
+            );
+
+            // Add the term conditions to the main OR group
+            $orConditions->add($termConditions);
         }
 
         // Add the OR conditions to the query if we have any valid terms
