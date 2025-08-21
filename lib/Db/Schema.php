@@ -803,6 +803,8 @@ class Schema extends Entity implements JsonSerializable
      *   that should be used as its name. Example: 'person.firstName'
      * - 'objectDescriptionField': (string) A dot-notation path to the field for the object's description.
      *   Example: 'case.summary'
+     * - 'objectSummaryField': (string) A dot-notation path to the field for the object's summary.
+     *   Example: 'article.abstract'
      * - 'objectImageField': (string) A dot-notation path to the field for the object's image.
      *   Example: 'profile.avatar' (should contain base64 encoded image data)
      * - 'allowFiles': (bool) Whether this schema allows file attachments
@@ -846,6 +848,7 @@ class Schema extends Entity implements JsonSerializable
         $allowedKeys = [
             'objectNameField',
             'objectDescriptionField', 
+            'objectSummaryField',
             'objectImageField',
             'allowFiles',
             'allowedTags'
@@ -860,6 +863,7 @@ class Schema extends Entity implements JsonSerializable
             switch ($key) {
                 case 'objectNameField':
                 case 'objectDescriptionField':
+                case 'objectSummaryField':
                 case 'objectImageField':
                     // These should be strings (dot-notation paths) or empty
                     if ($value !== null && $value !== '' && !is_string($value)) {

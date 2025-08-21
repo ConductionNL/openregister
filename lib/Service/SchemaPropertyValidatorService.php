@@ -99,7 +99,8 @@ class SchemaPropertyValidatorService
         'color-hsl',
         // Additional type.
         'color-hsla',
-        // Additional type.
+        // Semantic versioning format.
+        'semver',
     ];
 
 

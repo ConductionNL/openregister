@@ -235,6 +235,13 @@ class ObjectEntity extends Entity implements JsonSerializable
     protected ?string $description = null;
 
     /**
+     * Summary of the object.
+     *
+     * @var string|null Summary of the object
+     */
+    protected ?string $summary = null;
+
+    /**
      * Image of the object.
      *
      * @var string|null Image of the object (base64 encoded or file reference)
@@ -298,6 +305,7 @@ class ObjectEntity extends Entity implements JsonSerializable
         $this->addType(fieldName: 'schemaVersion', type: 'string');
         $this->addType(fieldName: 'name', type: 'string');
         $this->addType(fieldName: 'description', type: 'string');
+        $this->addType(fieldName: 'summary', type: 'string');
         $this->addType(fieldName: 'image', type: 'string');
         $this->addType(fieldName: 'updated', type: 'datetime');
         $this->addType(fieldName: 'created', type: 'datetime');
@@ -489,6 +497,7 @@ class ObjectEntity extends Entity implements JsonSerializable
             'slug'          => $this->slug,
             'name'          => $this->name ?? $this->uuid,
             'description'   => $this->description ?? $this->id,
+            'summary'       => $this->summary,
             'image'         => $this->image,
             'uri'           => $this->uri,
             'version'       => $this->version,
