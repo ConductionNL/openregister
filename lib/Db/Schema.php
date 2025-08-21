@@ -797,9 +797,9 @@ class Schema extends Entity implements JsonSerializable
      * Set the configuration for the schema with validation
      *
      * Validates and sets the configuration array for the schema.
-     * 
+     *
      * Supported configuration options:
-     * - 'objectNameField': (string) A dot-notation path to the field within an object's data 
+     * - 'objectNameField': (string) A dot-notation path to the field within an object's data
      *   that should be used as its name. Example: 'person.firstName'
      * - 'objectDescriptionField': (string) A dot-notation path to the field for the object's description.
      *   Example: 'case.summary'
@@ -809,9 +809,9 @@ class Schema extends Entity implements JsonSerializable
      * - 'allowedTags': (array) Array of allowed file tags/types for file filtering
      *
      * @param array|null $configuration The configuration array to validate and set
-     * 
+     *
      * @throws \InvalidArgumentException If configuration contains invalid values
-     * 
+     *
      * @return void
      */
     public function setConfiguration($configuration): void
@@ -845,10 +845,11 @@ class Schema extends Entity implements JsonSerializable
         $validatedConfig = [];
         $allowedKeys = [
             'objectNameField',
-            'objectDescriptionField', 
+            'objectDescriptionField',
             'objectImageField',
             'allowFiles',
-            'allowedTags'
+            'allowedTags',
+            'unique'
         ];
 
         foreach ($configuration as $key => $value) {
@@ -891,6 +892,8 @@ class Schema extends Entity implements JsonSerializable
                     }
                     $validatedConfig[$key] = $value;
                     break;
+                case 'unique':
+                    $validatedConfig[$key] = $value;
             }
         }
 
@@ -901,10 +904,10 @@ class Schema extends Entity implements JsonSerializable
 
     /**
      * String representation of the schema
-     * 
+     *
      * This magic method is required for proper entity handling in Nextcloud
      * when the framework needs to convert the object to a string.
-     * 
+     *
      * @return string String representation of the schema
      */
     public function __toString(): string
@@ -913,12 +916,12 @@ class Schema extends Entity implements JsonSerializable
         if ($this->slug !== null && $this->slug !== '') {
             return $this->slug;
         }
-        
+
         // Fallback to title if slug is not available
         if ($this->title !== null && $this->title !== '') {
             return $this->title;
         }
-        
+
         // Final fallback with ID
         return 'Schema #' . ($this->id ?? 'unknown');
     }
