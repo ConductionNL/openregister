@@ -574,7 +574,7 @@ export default {
 			formatOptions: {
 				inputLabel: 'Format',
 				multiple: false,
-				options: ['text', 'markdown', 'html', 'date', 'time', 'duration', 'date-time', 'url', 'uri', 'uuid', 'email', 'idn-email', 'hostname', 'idn-hostname', 'ipv4', 'ipv6', 'uri-reference', 'iri', 'iri-reference', 'uri-template', 'json-pointer', 'regex', 'binary', 'byte', 'password', 'rsin', 'kvk', 'bsn', 'oidn', 'telephone', 'accessUrl', 'shareUrl', 'downloadUrl', 'extension', 'filename'],
+				options: ['text', 'markdown', 'html', 'date-time', 'date', 'time', 'duration', 'email', 'idn-email', 'hostname', 'idn-hostname', 'ipv4', 'ipv6', 'uri', 'uri-reference', 'iri', 'iri-reference', 'uuid', 'uri-template', 'json-pointer', 'relative-json-pointer', 'regex', 'url', 'color', 'color-hex', 'color-hex-alpha', 'color-rgb', 'color-rgba', 'color-hsl', 'color-hsla'],
 			},
 			loading: false,
 			success: null,

@@ -433,12 +433,8 @@ class OrganisationService
     public function createOrganisation(string $name, string $description = '', bool $addCurrentUser = true, string $uuid = ''): Organisation
     {
         $user = $this->getCurrentUser();
-        if ($user === null) {
-            throw new Exception('No user logged in');
-        }
 
-        $userId = $user->getUID();
-        
+
         // Validate UUID if provided
         if ($uuid !== '' && !Organisation::isValidUuid($uuid)) {
             throw new Exception('Invalid UUID format. UUID must be a 32-character hexadecimal string.');
@@ -453,11 +449,16 @@ class OrganisationService
         if ($uuid !== '') {
             $organisation->setUuid($uuid);
         }
-        
-        if ($addCurrentUser) {
-            $organisation->setOwner($userId);
-            $organisation->setUsers([$userId]);
+
+        if ($user !== null) {
+            $userId = $user->getUID();
+            if ($addCurrentUser) {
+                $organisation->setOwner($userId);
+                $organisation->setUsers([$userId]);
+            }
         }
+
+
 
         // Add all admin group users to the organisation
         $organisation = $this->addAdminUsersToOrganisation($organisation);
