@@ -242,7 +242,7 @@ export const useRegisterStore = defineStore('register', {
 			return { response, data }
 
 		},
-		async importRegister(file, includeObjects = false) {
+		async importRegister(file, includeObjects = false, validation = false, events = false, rbac = true, multi = true) {
 			if (!file) {
 				throw new Error('No file to import')
 			}
@@ -260,10 +260,22 @@ export const useRegisterStore = defineStore('register', {
 			const schemaStore = useSchemaStore()
 			const schemaId = (fileExtension === 'csv' && schemaStore.schemaItem) ? schemaStore.schemaItem.id : null
 
-			// Build endpoint with schema parameter if needed
+			// Build endpoint with all parameters
 			let endpoint = `/index.php/apps/openregister/api/registers/${registerId}/import?includeObjects=${includeObjects ? '1' : '0'}`
 			if (schemaId) {
 				endpoint += `&schema=${schemaId}`
+			}
+			if (validation !== undefined) {
+				endpoint += `&validation=${validation ? '1' : '0'}`
+			}
+			if (events !== undefined) {
+				endpoint += `&events=${events ? '1' : '0'}`
+			}
+			if (rbac !== undefined) {
+				endpoint += `&rbac=${rbac ? '1' : '0'}`
+			}
+			if (multi !== undefined) {
+				endpoint += `&multi=${multi ? '1' : '0'}`
 			}
 
 			const formData = new FormData()
@@ -271,6 +283,18 @@ export const useRegisterStore = defineStore('register', {
 			formData.append('includeObjects', includeObjects ? '1' : '0')
 			if (schemaId) {
 				formData.append('schema', schemaId)
+			}
+			if (validation !== undefined) {
+				formData.append('validation', validation ? '1' : '0')
+			}
+			if (events !== undefined) {
+				formData.append('events', events ? '1' : '0')
+			}
+			if (rbac !== undefined) {
+				formData.append('rbac', rbac ? '1' : '0')
+			}
+			if (multi !== undefined) {
+				formData.append('multi', multi ? '1' : '0')
 			}
 
 			try {
