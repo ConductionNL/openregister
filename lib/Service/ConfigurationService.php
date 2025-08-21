@@ -775,18 +775,53 @@ class ConfigurationService
         // Process and import schemas if present.
         if (isset($data['components']['schemas']) === true && is_array($data['components']['schemas']) === true) {
             $slugsAndIdsMap = $this->schemaMapper->getSlugToIdMap();
+            $this->logger->info('Starting schema import process', [
+                'totalSchemas' => count($data['components']['schemas']),
+                'schemaKeys' => array_keys($data['components']['schemas'])
+            ]);
+            
             foreach ($data['components']['schemas'] as $key => $schemaData) {
+                $this->logger->info('Processing schema', [
+                    'schemaKey' => $key,
+                    'schemaTitle' => $schemaData['title'] ?? 'no title',
+                    'schemaSlug' => $schemaData['slug'] ?? 'no slug'
+                ]);
+                
                 if (isset($schemaData['title']) === false && is_string($key) === true) {
                     $schemaData['title'] = $key;
                 }
 
-                $schema = $this->importSchema(data: $schemaData, slugsAndIdsMap: $slugsAndIdsMap, owner: $owner, appId: $appId, version: $version, force: $force);
-                if ($schema !== null) {
-                    // Store schema in map by slug for reference.
-                    $this->schemasMap[$schema->getSlug()] = $schema;
-                    $result['schemas'][] = $schema;
+                try {
+                    $schema = $this->importSchema(data: $schemaData, slugsAndIdsMap: $slugsAndIdsMap, owner: $owner, appId: $appId, version: $version, force: $force);
+                    if ($schema !== null) {
+                        // Store schema in map by slug for reference.
+                        $this->schemasMap[$schema->getSlug()] = $schema;
+                        $result['schemas'][] = $schema;
+                        $this->logger->info('Successfully imported schema', [
+                            'schemaKey' => $key,
+                            'schemaSlug' => $schema->getSlug(),
+                            'schemaId' => $schema->getId()
+                        ]);
+                    } else {
+                        $this->logger->warning('Schema import returned null', [
+                            'schemaKey' => $key,
+                            'schemaData' => array_keys($schemaData)
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    $this->logger->error('Failed to import schema', [
+                        'schemaKey' => $key,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                    // Continue with other schemas instead of failing the entire import
                 }
             }
+            
+            $this->logger->info('Schema import process completed', [
+                'importedCount' => count($result['schemas']),
+                'importedSchemas' => array_map(fn($schema) => $schema->getSlug(), $result['schemas'])
+            ]);
         }
 
         // Process and import registers if present.
@@ -1159,7 +1194,28 @@ class ConfigurationService
             // removes format if format is string
             if (isset($data['properties']) === true) {
                 foreach ($data['properties'] as $key => &$property) {
-                    $property['title'] = $key;
+                    // Only set title to key if no title exists, to preserve existing titles
+                    if (isset($property['title']) === false || empty($property['title']) === true) {
+                        $property['title'] = $key;
+                    }
+                    
+                    // Fix empty objects that became arrays during JSON deserialization
+                    // objectConfiguration and fileConfiguration should always be objects, not arrays
+                    if (isset($property['objectConfiguration']) === true && $property['objectConfiguration'] === []) {
+                        $property['objectConfiguration'] = new \stdClass();
+                    }
+                    if (isset($property['fileConfiguration']) === true && $property['fileConfiguration'] === []) {
+                        $property['fileConfiguration'] = new \stdClass();
+                    }
+                    
+                    // Do the same for array items
+                    if (isset($property['items']['objectConfiguration']) === true && $property['items']['objectConfiguration'] === []) {
+                        $property['items']['objectConfiguration'] = new \stdClass();
+                    }
+                    if (isset($property['items']['fileConfiguration']) === true && $property['items']['fileConfiguration'] === []) {
+                        $property['items']['fileConfiguration'] = new \stdClass();
+                    }
+                    
                     if (isset($property['type']) === false) {
                         $property['type'] = 'string';
                     }
@@ -1210,23 +1266,27 @@ class ConfigurationService
                     // Handle schema slug/ID in objectConfiguration (new structure)
                     if (isset($property['objectConfiguration']['schema']) === true) {
                         $schemaSlug = $property['objectConfiguration']['schema'];
-                        if (isset($this->schemasMap[$schemaSlug]) === true) {
-                            $property['objectConfiguration']['schema'] = $this->schemasMap[$schemaSlug]->getId();
-                        } else {
-                            // Try to find existing schema in database
-                            try {
-                                $existingSchema = $this->schemaMapper->find($schemaSlug);
-                                $property['objectConfiguration']['schema'] = $existingSchema->getId();
-                                // Add to map for future reference
-                                $this->schemasMap[$schemaSlug] = $existingSchema;
-                            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                                $this->logger->warning(
-                                    sprintf('Schema with slug %s not found during schema property import.', $schemaSlug)
-                                );
-                                // Remove the schema reference if not found
-                                unset($property['objectConfiguration']['schema']);
+                        // Only process non-empty schema slugs
+                        if (!empty($schemaSlug)) {
+                            if (isset($this->schemasMap[$schemaSlug]) === true) {
+                                $property['objectConfiguration']['schema'] = $this->schemasMap[$schemaSlug]->getId();
+                            } else {
+                                // Try to find existing schema in database
+                                try {
+                                    $existingSchema = $this->schemaMapper->find($schemaSlug);
+                                    $property['objectConfiguration']['schema'] = $existingSchema->getId();
+                                    // Add to map for future reference
+                                    $this->schemasMap[$schemaSlug] = $existingSchema;
+                                } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                                    $this->logger->warning(
+                                        sprintf('Schema with slug %s not found during schema property import.', $schemaSlug)
+                                    );
+                                    // Remove the schema reference if not found
+                                    unset($property['objectConfiguration']['schema']);
+                                }
                             }
                         }
+                        // If schemaSlug is empty, preserve the empty schema field as-is
                     }
 
                     // Handle register slug/ID in array items objectConfiguration (new structure)
@@ -1254,23 +1314,27 @@ class ConfigurationService
                     // Handle schema slug/ID in array items objectConfiguration (new structure)
                     if (isset($property['items']['objectConfiguration']['schema']) === true) {
                         $schemaSlug = $property['items']['objectConfiguration']['schema'];
-                        if (isset($this->schemasMap[$schemaSlug]) === true) {
-                            $property['items']['objectConfiguration']['schema'] = $this->schemasMap[$schemaSlug]->getId();
-                        } else {
-                            // Try to find existing schema in database
-                            try {
-                                $existingSchema = $this->schemaMapper->find($schemaSlug);
-                                $property['items']['objectConfiguration']['schema'] = $existingSchema->getId();
-                                // Add to map for future reference
-                                $this->schemasMap[$schemaSlug] = $existingSchema;
-                            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                                $this->logger->warning(
-                                    sprintf('Schema with slug %s not found during array items schema property import.', $schemaSlug)
-                                );
-                                // Remove the schema reference if not found
-                                unset($property['items']['objectConfiguration']['schema']);
+                        // Only process non-empty schema slugs
+                        if (!empty($schemaSlug)) {
+                            if (isset($this->schemasMap[$schemaSlug]) === true) {
+                                $property['items']['objectConfiguration']['schema'] = $this->schemasMap[$schemaSlug]->getId();
+                            } else {
+                                // Try to find existing schema in database
+                                try {
+                                    $existingSchema = $this->schemaMapper->find($schemaSlug);
+                                    $property['items']['objectConfiguration']['schema'] = $existingSchema->getId();
+                                    // Add to map for future reference
+                                    $this->schemasMap[$schemaSlug] = $existingSchema;
+                                } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                                    $this->logger->warning(
+                                        sprintf('Schema with slug %s not found during array items schema property import.', $schemaSlug)
+                                    );
+                                    // Remove the schema reference if not found
+                                    unset($property['items']['objectConfiguration']['schema']);
+                                }
                             }
                         }
+                        // If schemaSlug is empty, preserve the empty schema field as-is
                     }
 
                     // Legacy support: Handle old register property structure

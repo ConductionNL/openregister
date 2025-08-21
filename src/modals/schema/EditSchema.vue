@@ -653,6 +653,12 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 								:options="propertyOptions"
 								input-label="Object Image Field"
 								placeholder="Select a property to use as object image representing the object. e.g. logo (should contain base64 encoded image)" />
+							<NcSelect
+								v-model="schemaItem.configuration.objectSummaryField"
+								:disabled="loading"
+								:options="propertyOptions"
+								input-label="Object Summary Field"
+								placeholder="Select a property to use as object summary. e.g. summary, abstract, or excerpt" />
 							<NcCheckboxRadioSwitch
 								:disabled="loading"
 								:checked.sync="schemaItem.configuration.allowFiles">
@@ -957,6 +963,7 @@ export default {
 					objectNameField: '',
 					objectDescriptionField: '',
 					objectImageField: '',
+					objectSummaryField: '',
 					allowFiles: false,
 					allowedTags: [],
 				},
@@ -1214,6 +1221,7 @@ export default {
 						objectNameField: '',
 						objectDescriptionField: '',
 						objectImageField: '',
+						objectSummaryField: '',
 						allowFiles: false,
 						allowedTags: [],
 					}
@@ -1227,6 +1235,9 @@ export default {
 					}
 					if (!this.schemaItem.configuration.objectImageField) {
 						this.schemaItem.configuration.objectImageField = ''
+					}
+					if (!this.schemaItem.configuration.objectSummaryField) {
+						this.schemaItem.configuration.objectSummaryField = ''
 					}
 					if (this.schemaItem.configuration.allowFiles === undefined) {
 						this.schemaItem.configuration.allowFiles = false
@@ -1277,6 +1288,7 @@ export default {
 					objectNameField: '',
 					objectDescriptionField: '',
 					objectImageField: '',
+					objectSummaryField: '',
 					allowFiles: false,
 					allowedTags: [],
 				}
@@ -1496,6 +1508,7 @@ export default {
 								objectNameField: '',
 								objectDescriptionField: '',
 								objectImageField: '',
+								objectSummaryField: '',
 								allowFiles: false,
 								allowedTags: [],
 							},
@@ -1563,6 +1576,20 @@ export default {
 					{ id: 'json-pointer', label: 'JSON Pointer' },
 					{ id: 'relative-json-pointer', label: 'Relative JSON Pointer' },
 					{ id: 'regex', label: 'Regex' },
+					{ id: 'binary', label: 'Binary' },
+					{ id: 'byte', label: 'Byte' },
+					{ id: 'password', label: 'Password' },
+					{ id: 'rsin', label: 'RSIN' },
+					{ id: 'kvk', label: 'KVK' },
+					{ id: 'bsn', label: 'BSN' },
+					{ id: 'oidn', label: 'OIDN' },
+					{ id: 'telephone', label: 'Telephone' },
+					{ id: 'accessUrl', label: 'Access URL' },
+					{ id: 'shareUrl', label: 'Share URL' },
+					{ id: 'downloadUrl', label: 'Download URL' },
+					{ id: 'extension', label: 'Extension' },
+					{ id: 'filename', label: 'Filename' },
+					{ id: 'semver', label: 'Semantic Version' },
 					{ id: 'url', label: 'URL' },
 					{ id: 'color', label: 'Color' },
 					{ id: 'color-hex', label: 'Color Hex' },
