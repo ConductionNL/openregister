@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Service\ObjectHandlers;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\File;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -70,14 +71,16 @@ class ValidateObject
     /**
      * Constructor for ValidateObject handler.
      *
-     * @param IURLGenerator $urlGenerator URL generator service.
-     * @param IAppConfig    $config       Application configuration service.
-     * @param SchemaMapper  $schemaMapper Schema mapper service.
+     * @param IURLGenerator      $urlGenerator URL generator service.
+     * @param IAppConfig         $config       Application configuration service.
+     * @param SchemaMapper       $schemaMapper Schema mapper service.
+     * @param ObjectEntityMapper $objectMapper Object Entity Mapper
      */
     public function __construct(
         private readonly IURLGenerator $urlGenerator,
         private readonly IAppConfig $config,
         private readonly SchemaMapper $schemaMapper,
+        private readonly ObjectEntityMapper $objectMapper,
     ) {
 
     }//end __construct()
@@ -513,7 +516,6 @@ class ValidateObject
         }
 
     }//end transformToNestedObjectProperty()
-
 
 
 
@@ -969,6 +971,8 @@ class ValidateObject
             }
         }
 
+        $this->validateUniqueFields($object, $schema);
+
         // Get the current schema slug for circular reference detection
         $currentSchemaSlug = '';
         if ($schema instanceof Schema) {
@@ -1371,10 +1375,7 @@ class ValidateObject
             ];
         } else {
             foreach ($exception->getErrors() as $error) {
-                $errors[] = [
-                    'property' => isset($error['property']) ? $error['property'] : null,
-                    'message'  => $error['message'],
-                ];
+                $errors[] = $error;
             }
         }
 
@@ -1388,6 +1389,36 @@ class ValidateObject
         );
 
     }//end handleValidationException()
+
+    /**
+     * Check of the value of a parameter, or a combination of parameters, is unique
+     *
+     * @param array $object The object to check
+     * @param Schema $schema The schema of the object
+     * @return void
+     * @throws CustomValidationException
+     */
+    private function validateUniqueFields(array $object, Schema $schema): void
+    {
+        $config = $schema->getConfiguration();
+        $uniqueFields = $config['unique'] ?? null;
+
+        $filters = [];
+        if(is_array($uniqueFields)) {
+            foreach($uniqueFields as $field) {
+                $filters[$field] = $object[$field];
+            }
+        } else if (is_string($uniqueFields)) {
+            $filters[$uniqueFields] = $object[$uniqueFields];
+        }
+
+        $count = $this->objectMapper->countAll(filters: $filters, schema: $schema);
+
+        if($count !== 0) {
+            throw new CustomValidationException(message: 'Fields are not unique', errors: [['name' => is_array($uniqueFields) ? array_shift($uniqueFields) : $uniqueFields, 'code' => 'identificatie-niet-uniek', 'reason' => 'The identifying fields are not unique']]);
+        }
+
+    }//end validateUniqueFields()
 
 
 }//end class
