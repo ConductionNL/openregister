@@ -1392,7 +1392,7 @@ class ValidateObject
         $count = $this->objectMapper->countAll(filters: $filters, schema: $schema);
 
         if($count !== 0) {
-            throw new CustomValidationException(message: 'Fields are not unique', errors: [['property' => is_array($uniqueFields) ? array_shift($uniqueFields) : $uniqueFields, 'code' => 'identificatie-niet-uniek', 'reason' => 'The identifying fields are not unique']]);
+            throw new CustomValidationException(message: 'Fields are not unique', errors: [['name' => is_array($uniqueFields) ? array_shift($uniqueFields) : $uniqueFields, 'code' => 'identificatie-niet-uniek', 'reason' => 'The identifying fields are not unique']]);
         }
 
     }//end validateUniqueFields()
