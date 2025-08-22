@@ -191,7 +191,7 @@ class ObjectEntityMapper extends QBMapper
         if (empty($rbacConfig)) {
             return false;
         }
-        
+
         $rbacData = json_decode($rbacConfig, true);
         return $rbacData['enabled'] ?? false;
     }//end isRbacEnabled()
@@ -208,7 +208,7 @@ class ObjectEntityMapper extends QBMapper
         if (empty($multitenancyConfig)) {
             return false;
         }
-        
+
         $multitenancyData = json_decode($multitenancyConfig, true);
         return $multitenancyData['enabled'] ?? false;
     }//end isMultiTenancyEnabled()
@@ -225,7 +225,7 @@ class ObjectEntityMapper extends QBMapper
         if (empty($rbacConfig)) {
             return true; // Default to true if no RBAC config exists
         }
-        
+
         $rbacData = json_decode($rbacConfig, true);
         return $rbacData['adminOverride'] ?? true;
     }//end isAdminOverrideEnabled()
@@ -239,11 +239,11 @@ class ObjectEntityMapper extends QBMapper
             // Try to get the actual max_allowed_packet value from the database
             $stmt = $this->db->executeQuery('SHOW VARIABLES LIKE \'max_allowed_packet\'');
             $result = $stmt->fetch();
-            
+
             if ($result && isset($result['Value'])) {
                 $maxPacketSize = (int) $result['Value'];
                 error_log('[ObjectEntityMapper] Detected max_allowed_packet: ' . number_format($maxPacketSize) . ' bytes');
-                
+
                 // Adjust buffer based on detected packet size
                 if ($maxPacketSize > 67108864) { // > 64MB
                     $this->maxPacketSizeBuffer = 0.6; // 60% buffer
@@ -254,7 +254,7 @@ class ObjectEntityMapper extends QBMapper
                 } else {
                     $this->maxPacketSizeBuffer = 0.3; // 30% buffer for smaller packet sizes
                 }
-                
+
                 error_log('[ObjectEntityMapper] Set max packet size buffer to ' . ($this->maxPacketSizeBuffer * 100) . '%');
             }
         } catch (\Exception $e) {
@@ -287,14 +287,14 @@ class ObjectEntityMapper extends QBMapper
         try {
             $stmt = $this->db->executeQuery('SHOW VARIABLES LIKE \'max_allowed_packet\'');
             $result = $stmt->fetch();
-            
+
             if ($result && isset($result['Value'])) {
                 return (int) $result['Value'];
             }
         } catch (\Exception $e) {
             error_log('[ObjectEntityMapper] Could not get max_allowed_packet, using default: 16777216 bytes');
         }
-        
+
         // Default fallback value (16MB)
         return 16777216;
     }
@@ -463,7 +463,7 @@ class ObjectEntityMapper extends QBMapper
         // Get current user to check if they're admin
         $user = $this->userSession->getUser();
         $userId = $user ? $user->getUID() : null;
-        
+
         if ($userId === null) {
             // For unauthenticated requests, show objects that are currently published
             $now = (new \DateTime())->format('Y-m-d H:i:s');
@@ -491,28 +491,28 @@ class ObjectEntityMapper extends QBMapper
                      ->from('openregister_organisations')
                      ->where($defaultOrgQb->expr()->eq('is_default', $defaultOrgQb->createNamedParameter(1)))
                      ->setMaxResults(1);
-        
+
         $defaultResult = $defaultOrgQb->executeQuery();
         $systemDefaultOrgUuid = $defaultResult->fetchColumn();
         $defaultResult->closeCursor();
-        
+
         $isSystemDefaultOrg = ($activeOrganisationUuid === $systemDefaultOrgUuid);
 
         if ($user !== null) {
             $userGroups = $this->groupManager->getUserGroupIds($user);
-            
+
             // Check if user is admin and admin override is enabled
             if (in_array('admin', $userGroups)) {
                 // If admin override is enabled, admin users see all objects regardless of organization
                 if ($this->isAdminOverrideEnabled()) {
                     return; // No filtering for admin users when override is enabled
                 }
-                
+
                 // If admin override is disabled, apply organization filtering logic for admin users
                 // Admin users see all objects by default, but should respect organization filtering
                 // when an active organization is explicitly set (i.e., when they switch organizations)
                 // EXCEPTION: Admin users with the default organization should see everything (no filtering)
-                
+
                 // If no active organization is set, admin users see everything (no filtering)
                 if ($activeOrganisationUuid === null) {
                     return;
@@ -543,7 +543,7 @@ class ObjectEntityMapper extends QBMapper
             $orgConditions->add(
                 $qb->expr()->isNull($organizationColumn)
             );
-            
+
             // Include published objects (for backwards compatibility with the system default org)
             $now = (new \DateTime())->format('Y-m-d H:i:s');
             $orgConditions->add(
@@ -1476,10 +1476,10 @@ class ObjectEntityMapper extends QBMapper
             $queryBuilder = $this->db->getQueryBuilder();
             $queryBuilder->select($queryBuilder->func()->sum('size'))
                 ->from($this->getTableName());
-            
+
             $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $register, $schema);
             $this->applyOrganizationFilters($queryBuilder, '', null, $multi);
-            
+
             $result = $queryBuilder->executeQuery();
             $size = $result->fetchOne();
             $result->closeCursor();
@@ -1750,12 +1750,12 @@ class ObjectEntityMapper extends QBMapper
 
         // Add register to filters if provided
         if ($register !== null) {
-            $filters['register'] = $register;
+            $filters['register'] = $register->getId();
         }
 
         // Add schema to filters if provided
         if ($schema !== null) {
-            $filters['schema'] = $schema;
+            $filters['schema'] = $schema->getId();
         }
 
         // Apply RBAC filtering based on user permissions
@@ -2923,30 +2923,30 @@ class ObjectEntityMapper extends QBMapper
         $savedObjectIds = [];
         $maxRetries = 3;
         $retryCount = 0;
-        
+
         // Calculate optimal chunk sizes based on data size to prevent max_allowed_packet errors
         $maxChunkSize = $this->calculateOptimalChunkSize($insertObjects, $updateObjects);
         $totalObjects = count($insertObjects) + count($updateObjects);
-        
+
         error_log('[ObjectEntityMapper] Starting saveObjects with ' . $totalObjects . ' total objects (insert: ' . count($insertObjects) . ', update: ' . count($updateObjects) . ')');
         error_log('[ObjectEntityMapper] Using dynamic chunk size: ' . $maxChunkSize . ' objects per chunk');
 
         // Separate extremely large objects that should be processed individually
         $insertObjectGroups = $this->separateLargeObjects($insertObjects, 500000); // 500KB threshold
         $updateObjectGroups = $this->separateLargeObjects($updateObjects, 500000); // 500KB threshold
-        
+
         $largeInsertObjects = $insertObjectGroups['large'];
         $normalInsertObjects = $insertObjectGroups['normal'];
         $largeUpdateObjects = $updateObjectGroups['large'];
         $normalUpdateObjects = $updateObjectGroups['normal'];
-        
+
         error_log('[ObjectEntityMapper] Object separation: ' . count($normalInsertObjects) . ' normal inserts, ' . count($largeInsertObjects) . ' large inserts, ' . count($normalUpdateObjects) . ' normal updates, ' . count($largeUpdateObjects) . ' large updates');
 
         while ($retryCount < $maxRetries) {
             try {
                         // First, process large objects individually to prevent packet size errors
         $largeInsertIds = $this->processLargeObjectsIndividually($largeInsertObjects);
-        
+
         // Process large update objects individually using the update method
         $largeUpdateIds = [];
         foreach ($largeUpdateObjects as $largeUpdateObject) {
@@ -2961,53 +2961,53 @@ class ObjectEntityMapper extends QBMapper
                 // Continue with other objects even if one fails
             }
         }
-        
+
         // Add large object IDs to the saved list
         $savedObjectIds = array_merge($largeInsertIds, $largeUpdateIds);
-                
+
                 // Process normal objects in chunks to avoid large transactions and packet size issues
                 $insertChunks = array_chunk($normalInsertObjects, $maxChunkSize);
                 $updateChunks = array_chunk($normalUpdateObjects, $maxChunkSize);
-                
+
                 $chunkNumber = 1;
                 $totalChunks = count($insertChunks) + count($updateChunks);
-                
+
                 error_log('[ObjectEntityMapper] Processing ' . $totalChunks . ' chunks with max ' . $maxChunkSize . ' objects per chunk');
-                
+
                 // Process insert chunks
                 foreach ($insertChunks as $insertChunk) {
                     error_log('[ObjectEntityMapper] Processing insert chunk ' . $chunkNumber . '/' . $totalChunks . ' with ' . count($insertChunk) . ' objects');
-                    
+
                     $chunkIds = $this->processInsertChunk($insertChunk);
                     $savedObjectIds = array_merge($savedObjectIds, $chunkIds);
-                    
+
                     // Clear memory after each chunk
                     unset($insertChunk, $chunkIds);
                     gc_collect_cycles();
-                    
+
                     $chunkNumber++;
                 }
-                
+
                 // Process update chunks
                 foreach ($updateChunks as $updateChunk) {
                     error_log('[ObjectEntityMapper] Processing update chunk ' . $chunkNumber . '/' . $totalChunks . ' with ' . count($updateChunk) . ' objects');
-                    
+
                     $chunkIds = $this->processUpdateChunk($updateChunk);
                     $savedObjectIds = array_merge($savedObjectIds, $chunkIds);
-                    
+
                     // Clear memory after each chunk
                     unset($updateChunk, $chunkIds);
                     gc_collect_cycles();
-                    
+
                     $chunkNumber++;
                 }
-                
+
                 error_log('[ObjectEntityMapper] Successfully processed all chunks, total saved: ' . count($savedObjectIds));
                 break;
 
             } catch (\Exception $e) {
                 error_log('[ObjectEntityMapper] Error in saveObjects (attempt ' . ($retryCount + 1) . '): ' . $e->getMessage());
-                
+
                 // Check if this is a packet size error that requires smaller chunks
                 $errorMessage = $e->getMessage();
                 $isPacketSizeError = (
@@ -3016,7 +3016,7 @@ class ObjectEntityMapper extends QBMapper
                     strpos($errorMessage, 'packet too large') !== false ||
                     strpos($errorMessage, 'packet size') !== false
                 );
-                
+
                 // Check if this is a connection-related error that we should retry
                 $isConnectionError = (
                     strpos($errorMessage, 'MySQL server has gone away') !== false ||
@@ -3030,7 +3030,7 @@ class ObjectEntityMapper extends QBMapper
                     // Reduce chunk size more aggressively and retry with smaller batches
                     $maxChunkSize = max(1, intval($maxChunkSize * 0.3)); // Reduce by 70%, minimum 1
                     error_log('[ObjectEntityMapper] Packet size error detected, reducing chunk size to ' . $maxChunkSize . ' and retrying');
-                    
+
                     // Rechunk the data with smaller size
                     $insertChunks = array_chunk($insertObjects, $maxChunkSize);
                     $updateChunks = array_chunk($updateObjects, $maxChunkSize);
@@ -3040,10 +3040,10 @@ class ObjectEntityMapper extends QBMapper
                 if ($isConnectionError && $retryCount < $maxRetries - 1) {
                     $retryCount++;
                     error_log('[ObjectEntityMapper] Connection error detected, retrying in 5 seconds (attempt ' . ($retryCount + 1) . '/' . $maxRetries . ')');
-                    
+
                     // Wait before retrying
                     sleep(5);
-                    
+
                     // Try to reconnect
                     try {
                         $this->db->close();
@@ -3052,7 +3052,7 @@ class ObjectEntityMapper extends QBMapper
                     } catch (\Exception $reconnectException) {
                         error_log('[ObjectEntityMapper] Failed to reconnect: ' . $reconnectException->getMessage());
                     }
-                    
+
                     continue;
                 }
 
@@ -3080,67 +3080,67 @@ class ObjectEntityMapper extends QBMapper
     {
         // Start with a very conservative chunk size to prevent packet size issues
         $baseChunkSize = 25;
-        
+
         // Sample objects to estimate data size
         $sampleSize = min(20, max(5, count($insertObjects) + count($updateObjects)));
         $sampleObjects = array_merge(
             array_slice($insertObjects, 0, intval($sampleSize / 2)),
             array_slice($updateObjects, 0, intval($sampleSize / 2))
         );
-        
+
         if (empty($sampleObjects)) {
             return $baseChunkSize;
         }
-        
+
         // Calculate average object size in bytes
         $totalSize = 0;
         $objectCount = 0;
         $maxObjectSize = 0;
-        
+
         foreach ($sampleObjects as $object) {
             $objectSize = $this->estimateObjectSize($object);
             $totalSize += $objectSize;
             $maxObjectSize = max($maxObjectSize, $objectSize);
             $objectCount++;
         }
-        
+
         if ($objectCount === 0) {
             return $baseChunkSize;
         }
-        
+
         $averageObjectSize = $totalSize / $objectCount;
-        
+
         // Use the maximum object size to be extra safe, not the average
         // This prevents issues when some objects are much larger than others
         $safetyObjectSize = max($averageObjectSize, $maxObjectSize);
-        
+
         // Calculate safe chunk size based on actual max_allowed_packet value
         // Use the dynamic buffer percentage for SQL overhead, column names, and safety
         $maxPacketSize = $this->getMaxAllowedPacketSize() * $this->maxPacketSizeBuffer;
         $safeChunkSize = intval($maxPacketSize / $safetyObjectSize);
-        
+
         // Ensure chunk size is within very conservative bounds
         // Maximum of 100 objects per chunk to prevent memory issues
         $optimalChunkSize = max(5, min(100, $safeChunkSize));
-        
+
         // If we have very large objects, be extra conservative
         if ($safetyObjectSize > 1000000) { // 1MB per object
             $optimalChunkSize = max(5, min(25, $optimalChunkSize));
         }
-        
+
         // If we have extremely large objects, be very conservative
         if ($safetyObjectSize > 5000000) { // 5MB per object
             $optimalChunkSize = max(1, min(10, $optimalChunkSize));
         }
-        
+
         error_log('[ObjectEntityMapper] Estimated average object size: ' . number_format($averageObjectSize) . ' bytes');
         error_log('[ObjectEntityMapper] Maximum object size in sample: ' . number_format($maxObjectSize) . ' bytes');
         error_log('[ObjectEntityMapper] Using safety object size: ' . number_format($safetyObjectSize) . ' bytes');
         error_log('[ObjectEntityMapper] Calculated optimal chunk size: ' . $optimalChunkSize . ' objects');
         error_log('[ObjectEntityMapper] Max packet size buffer: ' . number_format($maxPacketSize) . ' bytes (' . ($this->maxPacketSizeBuffer * 100) . '% of ' . number_format($this->getMaxAllowedPacketSize()) . ' bytes)');
-        
+
         return $optimalChunkSize;
-        
+
     }//end calculateOptimalChunkSize()
 
     /**
@@ -3175,7 +3175,7 @@ class ObjectEntityMapper extends QBMapper
             foreach ($reflection->getProperties() as $property) {
                 $property->setAccessible(true);
                 $value = $property->getValue($object);
-                
+
                 if (is_string($value)) {
                     $size += strlen($value);
                 } elseif (is_array($value)) {
@@ -3188,7 +3188,7 @@ class ObjectEntityMapper extends QBMapper
             }
             return $size;
         }
-        
+
         return 1000; // Default estimate for unknown types
     }//end estimateObjectSize()
 
@@ -3210,64 +3210,64 @@ class ObjectEntityMapper extends QBMapper
     {
         // Start with a very conservative batch size to prevent packet size issues
         $baseBatchSize = 25;
-        
+
         // Sample objects to estimate data size
         $sampleSize = min(20, max(5, count($insertObjects)));
         $sampleObjects = array_slice($insertObjects, 0, $sampleSize);
-        
+
         if (empty($sampleObjects)) {
             return $baseBatchSize;
         }
-        
+
         // Calculate average and maximum object size in bytes
         $totalSize = 0;
         $objectCount = 0;
         $maxObjectSize = 0;
-        
+
         foreach ($sampleObjects as $object) {
             $objectSize = $this->estimateObjectSize($object);
             $totalSize += $objectSize;
             $maxObjectSize = max($maxObjectSize, $objectSize);
             $objectCount++;
         }
-        
+
         if ($objectCount === 0) {
             return $baseBatchSize;
         }
-        
+
         $averageObjectSize = $totalSize / $objectCount;
-        
+
         // Use the maximum object size to be extra safe, not the average
         // This prevents issues when some objects are much larger than others
         $safetyObjectSize = max($averageObjectSize, $maxObjectSize);
-        
+
         // Calculate safe batch size based on actual max_allowed_packet value
         // Use the dynamic buffer percentage for SQL overhead, column names, and safety
         $maxPacketSize = $this->getMaxAllowedPacketSize() * $this->maxPacketSizeBuffer;
         $safeBatchSize = intval($maxPacketSize / $safetyObjectSize);
-        
+
         // Ensure batch size is within very conservative bounds
         // Maximum of 100 objects per batch to prevent memory issues
         $optimalBatchSize = max(5, min(100, $safeBatchSize));
-        
+
         // If we have very large objects, be extra conservative
         if ($safetyObjectSize > 1000000) { // 1MB per object
             $optimalBatchSize = max(5, min(25, $optimalBatchSize));
         }
-        
+
         // If we have extremely large objects, be very conservative
         if ($safetyObjectSize > 5000000) { // 5MB per object
             $optimalBatchSize = max(1, min(10, $optimalBatchSize));
         }
-        
+
         error_log('[Bulk Insert] Estimated average object size: ' . number_format($averageObjectSize) . ' bytes');
         error_log('[Bulk Insert] Maximum object size in sample: ' . number_format($maxObjectSize) . ' bytes');
         error_log('[Bulk Insert] Using safety object size: ' . number_format($safetyObjectSize) . ' bytes');
         error_log('[Bulk Insert] Calculated optimal batch size: ' . $optimalBatchSize . ' objects');
         error_log('[Bulk Insert] Max packet size buffer: ' . number_format($maxPacketSize) . ' bytes (' . ($this->maxPacketSizeBuffer * 100) . '% of ' . number_format($this->getMaxAllowedPacketSize()) . ' bytes)');
-        
+
         return $optimalBatchSize;
-        
+
     }//end calculateOptimalBatchSize()
 
     /**
@@ -3287,24 +3287,24 @@ class ObjectEntityMapper extends QBMapper
     private function processInsertChunk(array $insertChunk): array
     {
         $transactionStarted = false;
-        
+
         try {
             // Start a new transaction for this chunk
             if ($this->db->inTransaction() === false) {
                 $this->db->beginTransaction();
                 $transactionStarted = true;
             }
-            
+
             // Process the insert chunk
             $insertedIds = $this->bulkInsert($insertChunk);
-            
+
             // Commit transaction if we started it
             if ($transactionStarted === true) {
                 $this->db->commit();
             }
-            
+
             return $insertedIds;
-            
+
         } catch (\Exception $e) {
             // Rollback transaction if we started it
             if ($transactionStarted === true) {
@@ -3335,24 +3335,24 @@ class ObjectEntityMapper extends QBMapper
     private function processUpdateChunk(array $updateChunk): array
     {
         $transactionStarted = false;
-        
+
         try {
             // Start a new transaction for this chunk
             if ($this->db->inTransaction() === false) {
                 $this->db->beginTransaction();
                 $transactionStarted = true;
             }
-            
+
             // Process the update chunk
             $updatedIds = $this->bulkUpdate($updateChunk);
-            
+
             // Commit transaction if we started it
             if ($transactionStarted === true) {
                 $this->db->commit();
             }
-            
+
             return $updatedIds;
-            
+
         } catch (\Exception $e) {
             // Rollback transaction if we started it
             if ($transactionStarted === true) {
@@ -3375,7 +3375,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * This method uses a single INSERT statement with multiple VALUES for optimal performance.
      * It bypasses individual entity creation and event dispatching for maximum speed.
-     * 
+     *
      * The 'object' field is automatically JSON-encoded when it contains array data to ensure
      * proper database storage and prevent constraint violations.
      *
@@ -3402,25 +3402,25 @@ class ObjectEntityMapper extends QBMapper
         // Use the proper table name method to avoid prefix issues @todo: make dynamic
         $tableName = 'oc_openregister_objects';
         error_log('[Bulk Insert] Using table: ' . $tableName);
-        
+
         // Get the first object to determine column structure
         $firstObject = $insertObjects[0];
         $columns = array_keys($firstObject);
         error_log('[Bulk Insert] Columns: ' . implode(', ', $columns));
-        
+
         // Calculate optimal batch size based on actual data size to prevent max_allowed_packet errors
         $batchSize = $this->calculateOptimalBatchSize($insertObjects, $columns);
         $insertedIds = [];
-        
+
         error_log('[Bulk Insert] Using dynamic batch size: ' . $batchSize . ' objects per batch');
-        
+
         for ($i = 0; $i < count($insertObjects); $i += $batchSize) {
             $batch = array_slice($insertObjects, $i, $batchSize);
             $batchNumber = ($i / $batchSize) + 1;
             $totalBatches = ceil(count($insertObjects) / $batchSize);
-            
+
             error_log('[Bulk Insert] Processing batch ' . $batchNumber . '/' . $totalBatches . ' with ' . count($batch) . ' objects');
-            
+
             // Check database connection health before processing batch
             try {
                 $this->db->executeQuery('SELECT 1');
@@ -3428,58 +3428,58 @@ class ObjectEntityMapper extends QBMapper
                 error_log('[Bulk Insert] Database connection check failed: ' . $e->getMessage());
                 throw new \OCP\DB\Exception('Database connection lost during bulk insert', 0, $e);
             }
-            
+
             // Build VALUES clause for this batch
             $valuesClause = [];
             $parameters = [];
             $paramIndex = 0;
-            
+
             foreach ($batch as $objectData) {
                 $rowValues = [];
                 foreach ($columns as $column) {
                     $paramName = 'param_' . $paramIndex . '_' . $column;
                     $rowValues[] = ':' . $paramName;
-                    
+
                     $value = $objectData[$column] ?? null;
-                    
+
                     // JSON encode the object field if it's an array
                     if ($column === 'object' && is_array($value)) {
                         $value = json_encode($value);
                     }
-                    
+
                     $parameters[$paramName] = $value;
                     $paramIndex++;
                 }
                 $valuesClause[] = '(' . implode(', ', $rowValues) . ')';
             }
-            
+
             // Build the complete INSERT statement for this batch
             $batchSql = "INSERT INTO {$tableName} (" . implode(', ', $columns) . ") VALUES " . implode(', ', $valuesClause);
             error_log('[Bulk Insert] SQL: ' . substr($batchSql, 0, 200) . '...');
-            
+
             // Execute the batch insert with retry logic and packet size error handling
             $maxBatchRetries = 3;
             $batchRetryCount = 0;
             $batchSuccess = false;
             $currentBatchSize = $batchSize;
-            
+
             while ($batchRetryCount <= $maxBatchRetries && !$batchSuccess) {
                 try {
                     $stmt = $this->db->prepare($batchSql);
                     $result = $stmt->execute($parameters);
-                    
+
                     if ($result) {
                         error_log('[Bulk Insert] Batch ' . $batchNumber . ' executed successfully');
                         $batchSuccess = true;
                     } else {
                         throw new \Exception('Statement execution returned false');
                     }
-                    
+
                 } catch (\Exception $e) {
                     $batchRetryCount++;
                     $errorMessage = $e->getMessage();
                     error_log('[Bulk Insert] Error executing batch ' . $batchNumber . ' (attempt ' . $batchRetryCount . '): ' . $errorMessage);
-                    
+
                     // Check if this is a packet size error
                     $isPacketSizeError = (
                         strpos($errorMessage, 'Got a packet bigger than \'max_allowed_packet\' bytes') !== false ||
@@ -3487,44 +3487,44 @@ class ObjectEntityMapper extends QBMapper
                         strpos($errorMessage, 'packet too large') !== false ||
                         strpos($errorMessage, 'packet size') !== false
                     );
-                    
+
                     if ($isPacketSizeError && $currentBatchSize > 1) {
                         // Reduce batch size more aggressively and retry with smaller batch
                         $currentBatchSize = max(1, intval($currentBatchSize * 0.3)); // Reduce by 70%, minimum 1
                         error_log('[Bulk Insert] Packet size error detected, reducing batch size to ' . $currentBatchSize . ' and retrying');
-                        
+
                         // Recreate the batch with smaller size
                         $batch = array_slice($insertObjects, $i, $currentBatchSize);
                         $valuesClause = [];
                         $parameters = [];
                         $paramIndex = 0;
-                        
+
                         foreach ($batch as $objectData) {
                             $rowValues = [];
                             foreach ($columns as $column) {
                                 $paramName = 'param_' . $paramIndex . '_' . $column;
                                 $rowValues[] = ':' . $paramName;
-                                
+
                                 $value = $objectData[$column] ?? null;
-                                
+
                                 if ($column === 'object' && is_array($value)) {
                                     $value = json_encode($value);
                                 }
-                                
+
                                 $parameters[$paramName] = $value;
                                 $paramIndex++;
                             }
                             $valuesClause[] = '(' . implode(', ', $rowValues) . ')';
                         }
-                        
+
                         $batchSql = "INSERT INTO {$tableName} (" . implode(', ', $columns) . ") VALUES " . implode(', ', $valuesClause);
                         continue;
                     }
-                    
+
                     if ($batchRetryCount <= $maxBatchRetries) {
                         error_log('[Bulk Insert] Retrying batch ' . $batchNumber . ' in 2 seconds...');
                         sleep(2);
-                        
+
                         // Try to reconnect if it's a connection error
                         if (strpos($errorMessage, 'MySQL server has gone away') !== false) {
                             try {
@@ -3541,21 +3541,21 @@ class ObjectEntityMapper extends QBMapper
                     }
                 }
             }
-            
+
             // Collect UUIDs from the inserted objects for return
             foreach ($batch as $objectData) {
                 if (isset($objectData['uuid'])) {
                     $insertedIds[] = $objectData['uuid'];
                 }
             }
-            
+
             // Clear batch variables to free memory
             unset($batch, $valuesClause, $parameters, $batchSql);
             gc_collect_cycles();
-            
+
             error_log('[Bulk Insert] Completed batch ' . $batchNumber . '/' . $totalBatches);
         }
-        
+
         error_log('[Bulk Insert] Completed bulk insert, returning ' . count($insertedIds) . ' UUIDs');
         return $insertedIds;
 
@@ -3588,41 +3588,41 @@ class ObjectEntityMapper extends QBMapper
         // Use the proper table name method to avoid prefix issues @todo: make dynamic
         $tableName = 'openregister_objects';
         $updatedIds = [];
-        
+
         // Process each object individually for better compatibility
         foreach ($updateObjects as $object) {
             $dbId = $object->getId();
             if ($dbId === null) {
                 continue; // Skip objects without database ID
             }
-            
+
             // Get all column names from the object
             $columns = $this->getEntityColumns($object);
-            
+
             // Build UPDATE statement for this object
             $qb = $this->db->getQueryBuilder();
             $qb->update($tableName);
-            
+
             // Set values for each column
             foreach ($columns as $column) {
                 if ($column === 'id') {
                     continue; // Skip primary key
                 }
-                
+
                 $value = $this->getEntityValue($object, $column);
                 $qb->set($column, $qb->createNamedParameter($value));
             }
-            
+
             // Add WHERE clause for this specific ID
             $qb->where($qb->expr()->eq('id', $qb->createNamedParameter($dbId)));
-            
+
             // Execute the update for this object
             $qb->executeStatement();
-            
+
             // Collect UUID for return (findAll() accepts UUIDs)
             $updatedIds[] = $object->getUuid();
         }
-        
+
         return $updatedIds;
 
     }//end bulkUpdate()
@@ -3643,7 +3643,7 @@ class ObjectEntityMapper extends QBMapper
         // Get all field types to determine which fields are database columns
         $fieldTypes = $entity->getFieldTypes();
         $columns = [];
-        
+
         foreach ($fieldTypes as $fieldName => $fieldType) {
             // Skip virtual fields that don't exist in the database
             if ($fieldType !== 'virtual') {
@@ -3654,7 +3654,7 @@ class ObjectEntityMapper extends QBMapper
                 $columns[] = $fieldName;
             }
         }
-        
+
         return $columns;
 
     }//end getEntityColumns()
@@ -3664,7 +3664,7 @@ class ObjectEntityMapper extends QBMapper
      * Get the value of a specific column from an entity
      *
      * This method retrieves the raw value from the entity property and performs
-     * necessary transformations for database storage. The 'object' field is 
+     * necessary transformations for database storage. The 'object' field is
      * automatically JSON-encoded when it contains array data, and DateTime objects
      * are converted to the appropriate database format.
      *
@@ -3677,7 +3677,7 @@ class ObjectEntityMapper extends QBMapper
     {
         // Use reflection to get the value of the property
         $reflection = new \ReflectionClass($entity);
-        
+
         try {
             $property = $reflection->getProperty($column);
             $property->setAccessible(true);
@@ -3691,32 +3691,32 @@ class ObjectEntityMapper extends QBMapper
                 return null;
             }
         }
-        
+
         // Handle DateTime objects by converting them to database format
         if ($value instanceof \DateTime) {
             $value = $value->format('Y-m-d H:i:s');
         }
-        
+
         // Handle boolean values by converting them to integers for database storage
         if (is_bool($value)) {
             $value = $value ? 1 : 0;
         }
-        
+
         // Handle null values explicitly
         if ($value === null) {
             return null;
         }
-        
+
         // JSON encode the object field if it's an array
         if ($column === 'object' && is_array($value)) {
             $value = json_encode($value);
         }
-        
+
         // Handle other array values that might need JSON encoding
         if (is_array($value) && in_array($column, ['files', 'relations', 'locked', 'authorization', 'deleted', 'validation'])) {
             $value = json_encode($value);
         }
-        
+
         return $value;
 
     }//end getEntityValue()
@@ -3750,18 +3750,18 @@ class ObjectEntityMapper extends QBMapper
         // Use the proper table name method to avoid prefix issues
         $tableName = $this->getTableName();
         $deletedIds = [];
-        
+
         // Process deletes in smaller chunks to prevent connection issues
         $chunkSize = 500;
         $chunks = array_chunk($uuids, $chunkSize);
         $totalChunks = count($chunks);
-        
+
         error_log('[Bulk Delete] Processing ' . $totalChunks . ' chunks with max ' . $chunkSize . ' objects per chunk');
-        
+
         foreach ($chunks as $chunkIndex => $uuidChunk) {
             $chunkNumber = $chunkIndex + 1;
             error_log('[Bulk Delete] Processing chunk ' . $chunkNumber . '/' . $totalChunks . ' with ' . count($uuidChunk) . ' objects');
-            
+
             // Check database connection health before processing chunk
             try {
                 $this->db->executeQuery('SELECT 1');
@@ -3769,19 +3769,19 @@ class ObjectEntityMapper extends QBMapper
                 error_log('[Bulk Delete] Database connection check failed: ' . $e->getMessage());
                 throw new \OCP\DB\Exception('Database connection lost during bulk delete', 0, $e);
             }
-            
+
             // First, get the current state of objects to determine soft vs hard delete
             $qb = $this->db->getQueryBuilder();
             $qb->select('id', 'uuid', 'deleted')
                 ->from($tableName)
                 ->where($qb->expr()->in('uuid', $qb->createNamedParameter($uuidChunk, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
-            
+
             $objects = $qb->execute()->fetchAll();
-            
+
             // Separate objects for soft delete and hard delete
             $softDeleteIds = [];
             $hardDeleteIds = [];
-            
+
             foreach ($objects as $object) {
                 if (empty($object['deleted'])) {
                     // No deleted value set - perform soft delete
@@ -3792,7 +3792,7 @@ class ObjectEntityMapper extends QBMapper
                 }
                 $deletedIds[] = $object['uuid'];
             }
-            
+
             // Perform soft deletes (set deleted timestamp)
             if (!empty($softDeleteIds)) {
                 $currentTime = (new \DateTime())->format('Y-m-d H:i:s');
@@ -3803,28 +3803,28 @@ class ObjectEntityMapper extends QBMapper
                         'reason' => 'bulk_delete'
                     ])))
                     ->where($qb->expr()->in('id', $qb->createNamedParameter($softDeleteIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
-                
+
                 $qb->executeStatement();
                 error_log('[Bulk Delete] Soft deleted ' . count($softDeleteIds) . ' objects in chunk ' . $chunkNumber);
             }
-            
+
             // Perform hard deletes (remove from database)
             if (!empty($hardDeleteIds)) {
                 $qb = $this->db->getQueryBuilder();
                 $qb->delete($tableName)
                     ->where($qb->expr()->in('id', $qb->createNamedParameter($hardDeleteIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
-                
+
                 $qb->executeStatement();
                 error_log('[Bulk Delete] Hard deleted ' . count($hardDeleteIds) . ' objects in chunk ' . $chunkNumber);
             }
-            
+
             // Clear chunk variables to free memory
             unset($uuidChunk, $objects, $softDeleteIds, $hardDeleteIds);
             gc_collect_cycles();
-            
+
             error_log('[Bulk Delete] Completed chunk ' . $chunkNumber . '/' . $totalChunks);
         }
-        
+
         error_log('[Bulk Delete] Completed bulk delete, returning ' . count($deletedIds) . ' UUIDs');
         return $deletedIds;
 
@@ -3858,7 +3858,7 @@ class ObjectEntityMapper extends QBMapper
 
         // Use the proper table name method to avoid prefix issues
         $tableName = $this->getTableName();
-        
+
         // Determine the published value based on the datetime parameter
         if ($datetime === false) {
             // Unset published timestamp
@@ -3870,19 +3870,19 @@ class ObjectEntityMapper extends QBMapper
             // Use current datetime
             $publishedValue = (new \DateTime())->format('Y-m-d H:i:s');
         }
-        
+
         // Process publishes in smaller chunks to prevent connection issues
         $chunkSize = 500;
         $chunks = array_chunk($uuids, $chunkSize);
         $totalChunks = count($chunks);
         $publishedIds = [];
-        
+
         error_log('[Bulk Publish] Processing ' . $totalChunks . ' chunks with max ' . $chunkSize . ' objects per chunk');
-        
+
         foreach ($chunks as $chunkIndex => $uuidChunk) {
             $chunkNumber = $chunkIndex + 1;
             error_log('[Bulk Publish] Processing chunk ' . $chunkNumber . '/' . $totalChunks . ' with ' . count($uuidChunk) . ' objects');
-            
+
             // Check database connection health before processing chunk
             try {
                 $this->db->executeQuery('SELECT 1');
@@ -3890,44 +3890,44 @@ class ObjectEntityMapper extends QBMapper
                 error_log('[Bulk Publish] Database connection check failed: ' . $e->getMessage());
                 throw new \OCP\DB\Exception('Database connection lost during bulk publish', 0, $e);
             }
-            
+
             // Get object IDs for the UUIDs in this chunk
             $qb = $this->db->getQueryBuilder();
             $qb->select('id', 'uuid')
                 ->from($tableName)
                 ->where($qb->expr()->in('uuid', $qb->createNamedParameter($uuidChunk, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
-            
+
             $objects = $qb->execute()->fetchAll();
             $objectIds = array_column($objects, 'id');
             $chunkPublishedIds = array_column($objects, 'uuid');
-            
+
             if (!empty($objectIds)) {
                 // Update published timestamp for this chunk
                 $qb = $this->db->getQueryBuilder();
                 $qb->update($tableName);
-                
+
                 if ($publishedValue === null) {
                     $qb->set('published', $qb->createNamedParameter(null));
                 } else {
                     $qb->set('published', $qb->createNamedParameter($publishedValue));
                 }
-                
+
                 $qb->where($qb->expr()->in('id', $qb->createNamedParameter($objectIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
-                
+
                 $qb->executeStatement();
                 error_log('[Bulk Publish] Published ' . count($objectIds) . ' objects in chunk ' . $chunkNumber);
             }
-            
+
             // Add chunk results to total results
             $publishedIds = array_merge($publishedIds, $chunkPublishedIds);
-            
+
             // Clear chunk variables to free memory
             unset($uuidChunk, $objects, $objectIds, $chunkPublishedIds);
             gc_collect_cycles();
-            
+
             error_log('[Bulk Publish] Completed chunk ' . $chunkNumber . '/' . $totalChunks);
         }
-        
+
         error_log('[Bulk Publish] Completed bulk publish, returning ' . count($publishedIds) . ' UUIDs');
         return $publishedIds;
 
@@ -3961,7 +3961,7 @@ class ObjectEntityMapper extends QBMapper
 
         // Use the proper table name method to avoid prefix issues
         $tableName = $this->getTableName();
-        
+
         // Determine the depublished value based on the datetime parameter
         if ($datetime === false) {
             // Unset depublished timestamp
@@ -3973,19 +3973,19 @@ class ObjectEntityMapper extends QBMapper
             // Use current datetime
             $depublishedValue = (new \DateTime())->format('Y-m-d H:i:s');
         }
-        
+
         // Process depublishes in smaller chunks to prevent connection issues
         $chunkSize = 500;
         $chunks = array_chunk($uuids, $chunkSize);
         $totalChunks = count($chunks);
         $depublishedIds = [];
-        
+
         error_log('[Bulk Depublish] Processing ' . $totalChunks . ' chunks with max ' . $chunkSize . ' objects per chunk');
-        
+
         foreach ($chunks as $chunkIndex => $uuidChunk) {
             $chunkNumber = $chunkIndex + 1;
             error_log('[Bulk Depublish] Processing chunk ' . $chunkNumber . '/' . $totalChunks . ' with ' . count($uuidChunk) . ' objects');
-            
+
             // Check database connection health before processing chunk
             try {
                 $this->db->executeQuery('SELECT 1');
@@ -3993,44 +3993,44 @@ class ObjectEntityMapper extends QBMapper
                 error_log('[Bulk Depublish] Database connection check failed: ' . $e->getMessage());
                 throw new \OCP\DB\Exception('Database connection lost during bulk depublish', 0, $e);
             }
-            
+
             // Get object IDs for the UUIDs in this chunk
             $qb = $this->db->getQueryBuilder();
             $qb->select('id', 'uuid')
                 ->from($tableName)
                 ->where($qb->expr()->in('uuid', $qb->createNamedParameter($uuidChunk, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
-            
+
             $objects = $qb->execute()->fetchAll();
             $objectIds = array_column($objects, 'id');
             $chunkDepublishedIds = array_column($objects, 'uuid');
-            
+
             if (!empty($objectIds)) {
                 // Update depublished timestamp for this chunk
                 $qb = $this->db->getQueryBuilder();
                 $qb->update($tableName);
-                
+
                 if ($depublishedValue === null) {
                     $qb->set('depublished', $qb->createNamedParameter(null));
                 } else {
                     $qb->set('depublished', $qb->createNamedParameter($depublishedValue));
                 }
-                
+
                 $qb->where($qb->expr()->in('id', $qb->createNamedParameter($objectIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
-                
+
                 $qb->executeStatement();
                 error_log('[Bulk Depublish] Depublished ' . count($objectIds) . ' objects in chunk ' . $chunkNumber);
             }
-            
+
             // Add chunk results to total results
             $depublishedIds = array_merge($depublishedIds, $chunkDepublishedIds);
-            
+
             // Clear chunk variables to free memory
             unset($uuidChunk, $objects, $objectIds, $chunkDepublishedIds);
             gc_collect_cycles();
-            
+
             error_log('[Bulk Depublish] Completed chunk ' . $chunkNumber . '/' . $totalChunks);
         }
-        
+
         error_log('[Bulk Depublish] Completed bulk depublish, returning ' . count($depublishedIds) . ' UUIDs');
         return $depublishedIds;
 
@@ -4226,10 +4226,10 @@ class ObjectEntityMapper extends QBMapper
     {
         $largeObjects = [];
         $normalObjects = [];
-        
+
         foreach ($objects as $index => $object) {
             $objectSize = $this->estimateObjectSize($object);
-            
+
             if ($objectSize > $maxSafeSize) {
                 error_log('[ObjectEntityMapper] Large object detected at index ' . $index . ' with size ' . number_format($objectSize) . ' bytes, will process individually');
                 $largeObjects[] = $object;
@@ -4237,9 +4237,9 @@ class ObjectEntityMapper extends QBMapper
                 $normalObjects[] = $object;
             }
         }
-        
+
         error_log('[ObjectEntityMapper] Separated objects: ' . count($normalObjects) . ' normal, ' . count($largeObjects) . ' large');
-        
+
         return [
             'large' => $largeObjects,
             'normal' => $normalObjects
@@ -4248,7 +4248,7 @@ class ObjectEntityMapper extends QBMapper
 
     /**
      * Process large objects individually to prevent packet size errors
-     * 
+     *
      * Note: This method is designed for INSERT operations and expects array data.
      * For UPDATE operations, use the individual update() method instead.
      *
@@ -4264,58 +4264,58 @@ class ObjectEntityMapper extends QBMapper
         if (empty($largeObjects)) {
             return [];
         }
-        
+
         error_log('[ObjectEntityMapper] Processing ' . count($largeObjects) . ' large objects individually');
-        
+
         $processedIds = [];
         $tableName = 'oc_openregister_objects';
-        
+
         foreach ($largeObjects as $index => $objectData) {
             try {
                 error_log('[ObjectEntityMapper] Processing large object ' . ($index + 1) . '/' . count($largeObjects));
-                
+
                 // Ensure we have array data for INSERT operations
                 if (!is_array($objectData)) {
                     error_log('[ObjectEntityMapper] Skipping large object ' . ($index + 1) . ' - not array data, cannot process as INSERT');
                     continue;
                 }
-                
+
                 // Get columns from the object
                 $columns = array_keys($objectData);
-                
+
                 // Build single INSERT statement
                 $placeholders = ':' . implode(', :', $columns);
                 $sql = "INSERT INTO {$tableName} (" . implode(', ', $columns) . ") VALUES ({$placeholders})";
-                
+
                 // Prepare parameters
                 $parameters = [];
                 foreach ($columns as $column) {
                     $value = $objectData[$column] ?? null;
-                    
+
                     // JSON encode the object field if it's an array
                     if ($column === 'object' && is_array($value)) {
                         $value = json_encode($value);
                     }
-                    
+
                     $parameters[':' . $column] = $value;
                 }
-                
+
                 // Execute single insert
                 $stmt = $this->db->prepare($sql);
                 $result = $stmt->execute($parameters);
-                
+
                 if ($result && isset($objectData['uuid'])) {
                     $processedIds[] = $objectData['uuid'];
                     error_log('[ObjectEntityMapper] Successfully processed large object ' . ($index + 1));
                 }
-                
+
                 // Clear memory after each large object
                 unset($parameters, $sql);
                 gc_collect_cycles();
-                
+
             } catch (\Exception $e) {
                 error_log('[ObjectEntityMapper] Error processing large object ' . ($index + 1) . ': ' . $e->getMessage());
-                
+
                 // If it's still a packet size error, log it but continue
                 if (strpos($e->getMessage(), 'max_allowed_packet') !== false) {
                     error_log('[ObjectEntityMapper] Large object ' . ($index + 1) . ' still too large for database, skipping');
@@ -4325,7 +4325,7 @@ class ObjectEntityMapper extends QBMapper
                 }
             }
         }
-        
+
         error_log('[ObjectEntityMapper] Completed processing large objects, successful: ' . count($processedIds));
         return $processedIds;
     }
@@ -4403,7 +4403,7 @@ class ObjectEntityMapper extends QBMapper
 
                 // Process batch of objects
                 $batchResults = $this->processBulkOwnerDeclarationBatch($objects, $defaultOwner, $defaultOrganisation);
-                
+
                 // Update statistics
                 $results['totalProcessed'] += count($objects);
                 $results['ownersAssigned'] += $batchResults['ownersAssigned'];
@@ -4538,7 +4538,7 @@ class ObjectEntityMapper extends QBMapper
                 'app' => 'openregister',
                 'exception' => $e
             ]);
-            
+
             // Re-throw the exception so the caller knows something went wrong
             throw $e;
         }
@@ -4564,10 +4564,10 @@ class ObjectEntityMapper extends QBMapper
         try {
             // Convert milliseconds to seconds for DateTime calculation
             $retentionSeconds = intval($retentionMs / 1000);
-            
+
             // Get the query builder
             $qb = $this->db->getQueryBuilder();
-            
+
             // Update objects that have been deleted but don't have an expiry date set
             // We need to extract the timestamp from the JSON deleted field
             $qb->update($this->getTableName())
@@ -4577,7 +4577,7 @@ class ObjectEntityMapper extends QBMapper
                ->where($qb->expr()->isNull('expires'))
                ->andWhere($qb->expr()->isNotNull('deleted'))
                ->andWhere($qb->expr()->neq('deleted', $qb->createNamedParameter('null')));
-            
+
             // Execute the update and return number of affected rows
             return $qb->executeStatement();
         } catch (\Exception $e) {
@@ -4586,7 +4586,7 @@ class ObjectEntityMapper extends QBMapper
                 'app' => 'openregister',
                 'exception' => $e
             ]);
-            
+
             // Re-throw the exception so the caller knows something went wrong
             throw $e;
         }
