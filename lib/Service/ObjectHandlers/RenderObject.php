@@ -1152,15 +1152,18 @@ class RenderObject
      */
     private function resolveSchemaReference(string $schemaRef): string
     {
+        // Remove query parameters if present (e.g., "schema?key=value" -> "schema")
+        $cleanSchemaRef = $this->removeQueryParameters($schemaRef);
+
         // If it's already a numeric ID, return it
-        if (is_numeric($schemaRef)) {
-            return $schemaRef;
+        if (is_numeric($cleanSchemaRef)) {
+            return $cleanSchemaRef;
         }
 
         // If it's a UUID, try to find the schema by UUID
-        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $schemaRef)) {
+        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $cleanSchemaRef)) {
             try {
-                $schema = $this->schemaMapper->find($schemaRef);
+                $schema = $this->schemaMapper->find($cleanSchemaRef);
                 return (string) $schema->getId();
             } catch (\Exception $e) {
                 // If not found by UUID, continue with other methods
@@ -1168,8 +1171,8 @@ class RenderObject
         }
 
         // Handle JSON Schema path references (e.g., "#/components/schemas/organisatie")
-        if (str_contains($schemaRef, '/')) {
-            $lastSegment = basename($schemaRef);
+        if (str_contains($cleanSchemaRef, '/')) {
+            $lastSegment = basename($cleanSchemaRef);
             // Remove any file extension or fragment
             $lastSegment = preg_replace('/\.[^.]*$/', '', $lastSegment);
             $lastSegment = preg_replace('/#.*$/', '', $lastSegment);
@@ -1188,16 +1191,32 @@ class RenderObject
         }
 
 		// If it's a slug, try to find the schema by slug
-		$schemas = $this->schemaMapper->findAll(filters: ['slug' => $schemaRef]);
+		$schemas = $this->schemaMapper->findAll(filters: ['slug' => $cleanSchemaRef]);
 
 		if(count($schemas) === 1) {
 			return (string) array_shift($schemas)->getId();
 		}
 
         // If all else fails, try to use the reference as-is
-        return $schemaRef;
+        return $cleanSchemaRef;
 
     }//end resolveSchemaReference()
+
+    /**
+     * Removes query parameters from a reference string.
+     *
+     * @param string $reference The reference string that may contain query parameters
+     *
+     * @return string The reference string without query parameters
+     */
+    private function removeQueryParameters(string $reference): string
+    {
+        // Remove query parameters if present (e.g., "schema?key=value" -> "schema")
+        if (str_contains($reference, '?')) {
+            return substr($reference, 0, strpos($reference, '?'));
+        }
+        return $reference;
+    }
 
 
     /**

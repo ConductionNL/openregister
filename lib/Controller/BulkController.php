@@ -317,13 +317,21 @@ class BulkController extends Controller
             $this->objectService->setRegister($register);
             $this->objectService->setSchema($schema);
 
-            // Perform bulk save operation
-            $savedObjects = $this->objectService->saveObjects($objects);
+            // Perform bulk save operation with register and schema context
+            $savedObjects = $this->objectService->saveObjects(
+                objects: $objects,
+                register: $register,
+                schema: $schema,
+                rbac: true,
+                multi: true,
+                validation: true,
+                events: false
+            );
 
             return new JSONResponse([
                 'success' => true,
                 'message' => 'Bulk save operation completed successfully',
-                'saved_count' => count($savedObjects),
+                'saved_count' => ($savedObjects['statistics']['saved'] ?? 0) + ($savedObjects['statistics']['updated'] ?? 0),
                 'saved_objects' => $savedObjects,
                 'requested_count' => count($objects)
             ]);

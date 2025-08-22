@@ -156,7 +156,9 @@ class ValidateObject
 
             // Check if this is a schema reference we should resolve
             if (is_string($reference) && str_contains($reference, '#/components/schemas/')) {
-                $schemaSlug = substr($reference, strrpos($reference, '/') + 1);
+                // Remove query parameters if present
+                $cleanReference = $this->removeQueryParameters($reference);
+                $schemaSlug = substr($cleanReference, strrpos($cleanReference, '/') + 1);
 
                 // Prevent infinite loops
                 if (in_array($schemaSlug, $visited)) {
@@ -492,7 +494,9 @@ class ValidateObject
 
             // If this is a self-reference (circular), convert to a simple object type
             if (is_string($reference) && str_contains($reference, '/components/schemas/')) {
-                $schemaSlug = substr($reference, strrpos($reference, '/') + 1);
+                // Remove query parameters if present
+                $cleanReference = $this->removeQueryParameters($reference);
+                $schemaSlug = substr($cleanReference, strrpos($cleanReference, '/') + 1);
 
                 // For self-references, create a generic object structure to prevent circular validation
                 if ($this->isSelfReference($schemaSlug)) {
@@ -893,7 +897,9 @@ class ValidateObject
 
             // Extract schema slug from reference path
             if (is_string($refId) && str_contains($refId, '#/components/schemas/')) {
-                $referencedSlug = substr($refId, strrpos($refId, '/') + 1);
+                // Remove query parameters if present
+                $cleanRefId = $this->removeQueryParameters($refId);
+                $referencedSlug = substr($cleanRefId, strrpos($cleanRefId, '/') + 1);
                 return $referencedSlug === $schemaSlug;
             }
         }
@@ -1069,6 +1075,7 @@ class ValidateObject
         $validator = new Validator();
         $validator->setMaxErrors(100);
         $validator->parser()->getFormatResolver()->register('string', 'bsn', new BsnFormat());
+        $validator->parser()->getFormatResolver()->register('string', 'semver', new \OCA\OpenRegister\Formats\SemVerFormat());
         $validator->loader()->resolver()->registerProtocol('http', [$this, 'resolveSchema']);
 
         return $validator->validate(json_decode(json_encode($object)), $schemaObject);
@@ -1115,6 +1122,22 @@ class ValidateObject
         return '';
 
     }//end resolveSchema()
+
+    /**
+     * Removes query parameters from a reference string.
+     *
+     * @param string $reference The reference string that may contain query parameters
+     *
+     * @return string The reference string without query parameters
+     */
+    private function removeQueryParameters(string $reference): string
+    {
+        // Remove query parameters if present (e.g., "schema?key=value" -> "schema")
+        if (str_contains($reference, '?')) {
+            return substr($reference, 0, strpos($reference, '?'));
+        }
+        return $reference;
+    }
 
 
     /**
