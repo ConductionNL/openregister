@@ -402,8 +402,14 @@ class RegistersController extends Controller
     public function objects(int $register, int $schema): JSONResponse
     {
         // Find objects by register and schema IDs.
+        $query = [
+            '@self' => [
+                'register' => $register,
+                'schema' => $schema
+            ]
+        ];
         return new JSONResponse(
-            $this->objectEntityMapper->findByRegisterAndSchema(register: $register, schema: $schema)
+            $this->objectEntityMapper->searchObjects($query)
         );
 
     }//end objects()
