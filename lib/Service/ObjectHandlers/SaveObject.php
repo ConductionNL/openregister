@@ -112,10 +112,13 @@ class SaveObject
             return null;
         }
 
+        // Remove query parameters if present (e.g., "schema?key=value" -> "schema")
+        $cleanReference = $this->removeQueryParameters($reference);
+
         // First, try direct ID lookup (numeric ID or UUID)
-        if (is_numeric($reference) || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $reference)) {
+        if (is_numeric($cleanReference) || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $cleanReference)) {
             try {
-                $schema = $this->schemaMapper->find($reference);
+                $schema = $this->schemaMapper->find($cleanReference);
                 return $schema->getId();
             } catch (DoesNotExistException $e) {
                 // Continue with other resolution methods
@@ -123,10 +126,10 @@ class SaveObject
         }
 
         // Extract the last part of path/URL references
-        $slug = $reference;
-        if (str_contains($reference, '/')) {
+        $slug = $cleanReference;
+        if (str_contains($cleanReference, '/')) {
             // For references like "#/components/schemas/Contactgegevens" or "http://example.com/schemas/contactgegevens"
-            $slug = substr($reference, strrpos($reference, '/') + 1);
+            $slug = substr($cleanReference, strrpos($cleanReference, '/') + 1);
         }
 
         // Try to find schema by slug (case-insensitive)
@@ -154,6 +157,22 @@ class SaveObject
         return null;
 
     }//end resolveSchemaReference()
+
+    /**
+     * Removes query parameters from a reference string.
+     *
+     * @param string $reference The reference string that may contain query parameters
+     *
+     * @return string The reference string without query parameters
+     */
+    private function removeQueryParameters(string $reference): string
+    {
+        // Remove query parameters if present (e.g., "schema?key=value" -> "schema")
+        if (str_contains($reference, '?')) {
+            return substr($reference, 0, strpos($reference, '?'));
+        }
+        return $reference;
+    }
 
 
     /**

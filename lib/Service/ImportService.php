@@ -967,7 +967,9 @@ class ImportService
             } else if ($firstChar === '@' && str_starts_with($key, '@self.')) {
                 // Move properties starting with @self. to @self array and remove the @self. prefix
                 $selfPropertyName = substr($key, 6);
-                $selfData[$selfPropertyName] = $value;
+                
+                // Transform special @self properties
+                $selfData[$selfPropertyName] = $this->transformSelfProperty($selfPropertyName, $value);
             } else {
                 // Regular properties - transform based on schema if needed
                 if (isset($schemaProperties[$key])) {
@@ -989,6 +991,67 @@ class ImportService
         return $objectData;
 
     }//end transformCsvRowToObject()
+
+
+    /**
+     * Transform datetime values from various formats to MySQL datetime format
+     *
+     * @param string $value The datetime value to transform
+     *
+     * @return string The transformed datetime value in MySQL format
+     */
+    private function transformDateTimeValue(string $value): string
+    {
+        // Handle ISO 8601 format with timezone (e.g., "2025-01-01T00:00:00+00:00")
+        if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $value)) {
+            try {
+                $dateTime = new \DateTime($value);
+                return $dateTime->format('Y-m-d H:i:s');
+            } catch (\Exception $e) {
+                // Fallback to original value if parsing fails
+                return $value;
+            }
+        }
+        
+        // Handle ISO 8601 format without timezone (e.g., "2025-01-01T00:00:00")
+        if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/', $value)) {
+            try {
+                $dateTime = new \DateTime($value);
+                return $dateTime->format('Y-m-d H:i:s');
+            } catch (\Exception $e) {
+                // Fallback to original value if parsing fails
+                return $value;
+            }
+        }
+        
+        // Handle date-only format (e.g., "2025-01-01")
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+            return $value . ' 00:00:00';
+        }
+        
+        // Return original value if no transformation needed
+        return $value;
+    }
+
+
+    /**
+     * Transform @self properties based on their type
+     *
+     * @param string $propertyName The name of the @self property
+     * @param string $value The value to transform
+     *
+     * @return string The transformed value
+     */
+    private function transformSelfProperty(string $propertyName, string $value): string
+    {
+        // Transform published property to MySQL datetime format
+        if ($propertyName === 'published') {
+            return $this->transformDateTimeValue($value);
+        }
+        
+        // Return original value for other properties
+        return $value;
+    }
 
 
     /**
@@ -1073,7 +1136,9 @@ class ImportService
             } else if (str_starts_with($key, '@self.') === true) {
                 // Move properties starting with @self. to @self array and remove the @self. prefix
                 $selfPropertyName = substr($key, 6);
-                $selfData[$selfPropertyName] = $value;
+                
+                // Transform special @self properties
+                $selfData[$selfPropertyName] = $this->transformSelfProperty($selfPropertyName, $value);
             } else {
                 // Regular properties go to main object data
                 $objectData[$key] = $value;

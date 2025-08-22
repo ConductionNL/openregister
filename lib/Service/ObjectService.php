@@ -1327,31 +1327,56 @@ class ObjectService
     }//end getMapper()
 
 
-    /**
-     * Get the active organization for the current user
-     *
-     * This method determines the active organization using the same logic as SaveObject
-     * to ensure consistency between save and retrieval operations.
-     *
-     * @return string|null The active organization UUID or null if none found
-     */
-    private function getActiveOrganisationForContext(): ?string
-    {
-        try {
-            $activeOrganisation = $this->organisationService->getActiveOrganisation();
+    	/**
+	 * Get the active organization for the current user
+	 *
+	 * This method determines the active organization using the same logic as SaveObject
+	 * to ensure consistency between save and retrieval operations.
+	 *
+	 * @return string|null The active organization UUID or null if none found
+	 */
+	private function getActiveOrganisationForContext(): ?string
+	{
+		try {
+			$activeOrganisation = $this->organisationService->getActiveOrganisation();
 
-            if ($activeOrganisation !== null) {
-                return $activeOrganisation->getUuid();
-            } else {
-                return null;
-            }
-        } catch (Exception $e) {
-            // Log error but continue without organization context
-            return null;
-        }
+			if ($activeOrganisation !== null) {
+				return $activeOrganisation->getUuid();
+			} else {
+				return null;
+			}
+		} catch (Exception $e) {
+			// Log error but continue without organization context
+			return null;
+		}
 
-        return null;
-    }
+		return null;
+	}
+
+	/**
+	 * Get the current user ID
+	 *
+	 * @return string|null The current user ID or null if not authenticated
+	 */
+	private function getCurrentUserId(): ?string
+	{
+		$user = $this->userSession->getUser();
+		return $user ? $user->getUID() : null;
+	}
+
+	/**
+	 * Get the current organisation ID
+	 *
+	 * @return string|null The current organisation ID or null if none found
+	 */
+	private function getCurrentOrganisationId(): ?string
+	{
+		try {
+			return $this->organisationService->getOrganisationForNewEntity();
+		} catch (Exception $e) {
+			return null;
+		}
+	}
 
     /**
      * Search objects using clean query structure
@@ -2291,7 +2316,7 @@ class ObjectService
 
 
 	/**
-	 * Save multiple objects to the database using true bulk operations
+	 * Save multiple objects to the database using bulk operations
 	 *
 	 * This method provides a high-performance bulk save operation that processes
 	 * multiple objects in a single database transaction using optimized SQL statements.
@@ -2328,7 +2353,7 @@ class ObjectService
 	 * @phpstan-param array<int, array<string, mixed>> $objects
 	 * @psalm-param array<int, array<string, mixed>> $objects
 	 * @phpstan-return array<string, mixed>
-	 * @psalm-return array<string, mixed>
+	 * @phpstan-return array<string, mixed>
 	 */
 	public function saveObjects(
 		array $objects,
@@ -2342,7 +2367,7 @@ class ObjectService
 		$startTime = microtime(true);
 		$totalObjects = count($objects);
 		
-		error_log('[ObjectService] Starting ULTRA-OPTIMIZED saveObjects: ' . $totalObjects . ' objects');
+		error_log('[ObjectService] Starting saveObjects: ' . $totalObjects . ' objects');
 		
 		// Initialize result arrays for different outcomes
 		$result = [
@@ -2372,7 +2397,7 @@ class ObjectService
 			$this->setSchema($schema);
 		}
 
-		// CRITICAL FIX: Process objects through SaveObject handler for proper relation handling
+		// Process objects through SaveObject handler for proper relation handling
 		// This ensures that inversedBy relationships and writeBack operations are handled correctly
 		$processedObjects = [];
 		try {
@@ -2402,9 +2427,9 @@ class ObjectService
 		// Update statistics to reflect actual processed objects
 		$result['statistics']['totalProcessed'] = count($processedObjects);
 
-		// ULTRA-OPTIMIZATION: With 4GB memory, use larger chunks and try concurrent processing
+		// Process objects in chunks for optimal performance
 		$chunkSize = $this->calculateOptimalChunkSize(count($processedObjects));
-		error_log('[ObjectService] 4GB Mode: Using AGGRESSIVE chunk size: ' . $chunkSize . ' for ' . count($processedObjects) . ' processed objects');
+		error_log('[ObjectService] Using chunk size: ' . $chunkSize . ' for ' . count($processedObjects) . ' processed objects');
 		
 		// For very large datasets, try concurrent processing if ReactPHP is available
 		if (count($processedObjects) > 1000 && class_exists('\React\Promise\Promise')) {
@@ -2427,13 +2452,13 @@ class ObjectService
 			}
 		}
 		
-		// Sequential processing with LARGE chunks for 4GB memory
+		// Sequential processing with chunks
 		$chunks = array_chunk($processedObjects, $chunkSize);
 		$chunkCount = count($chunks);
 		
 		foreach ($chunks as $chunkIndex => $objectsChunk) {
 			$chunkStart = microtime(true);
-			error_log('[ObjectService] Processing MEGA-chunk ' . ($chunkIndex + 1) . '/' . $chunkCount . ' (' . count($objectsChunk) . ' objects)');
+			error_log('[ObjectService] Processing chunk ' . ($chunkIndex + 1) . '/' . $chunkCount . ' (' . count($objectsChunk) . ' objects)');
 			
 			$chunkResult = $this->processObjectsChunk($objectsChunk, $rbac, $multi, $validation, $events);
 			
@@ -2449,15 +2474,13 @@ class ObjectService
 			
 			$chunkTime = microtime(true) - $chunkStart;
 			$chunkSpeed = count($objectsChunk) / max($chunkTime, 0.001);
-			error_log('[ObjectService] MEGA-chunk ' . ($chunkIndex + 1) . ' completed: ' . count($objectsChunk) . ' objects in ' . round($chunkTime, 3) . 's (' . round($chunkSpeed, 1) . ' obj/sec)');
-			
-			// NO delays for 4GB memory - we can handle rapid processing!
+			error_log('[ObjectService] Chunk ' . ($chunkIndex + 1) . ' completed: ' . count($objectsChunk) . ' objects in ' . round($chunkTime, 3) . 's (' . round($chunkSpeed, 1) . ' obj/sec)');
 		}
 		
 		$totalTime = microtime(true) - $startTime;
 		$overallSpeed = count($processedObjects) / max($totalTime, 0.001);
 		
-		error_log('[ObjectService] ULTRA-OPTIMIZED saveObjects completed: ' . count($processedObjects) . ' objects in ' . round($totalTime, 3) . 's (' . round($overallSpeed, 1) . ' obj/sec)');
+		error_log('[ObjectService] saveObjects completed: ' . count($processedObjects) . ' objects in ' . round($totalTime, 3) . 's (' . round($overallSpeed, 1) . ' obj/sec)');
 
 		return $result;
 
@@ -2466,7 +2489,6 @@ class ObjectService
 	
 	/**
 	 * Calculate optimal chunk size based on total objects for internal processing
-	 * AGGRESSIVE OPTIMIZATION: With 4GB memory, we can process MUCH larger chunks!
 	 *
 	 * @param int $totalObjects Total number of objects to process
 	 *
@@ -2474,7 +2496,7 @@ class ObjectService
 	 */
 	private function calculateOptimalChunkSize(int $totalObjects): int
 	{
-		// ULTRA-AGGRESSIVE chunk sizes for 4GB memory constraint
+		// Balanced chunk sizes for optimal performance
 		if ($totalObjects <= 100) {
 			return $totalObjects; // Process all at once for small sets
 		} elseif ($totalObjects <= 500) {
@@ -2484,13 +2506,13 @@ class ObjectService
 		} elseif ($totalObjects <= 5000) {
 			return 1000; // Very large chunks for very large sets
 		} else {
-			return 2000; // MASSIVE chunks for huge datasets - 4GB can handle it!
+			return 2000; // Large chunks for huge datasets
 		}
 	}
 	
 	
 	/**
-	 * Process a chunk of objects with maximum performance optimizations
+	 * Process a chunk of objects with performance optimizations
 	 *
 	 * @param array $objects Array of objects to process
 	 * @param bool  $rbac    Apply RBAC filtering
@@ -2530,8 +2552,7 @@ class ObjectService
 			return $result;
 		}
 
-		// CRITICAL FIX: Objects are already processed by SaveObject handler for relation handling
-		// Skip fast enrichment and preparation since they're already done
+		// Objects are already prepared by prepareObjectsForBulkSave
 		$validObjects = $objects;
 
 		// Validate objects against schema if validation is enabled
@@ -2543,7 +2564,7 @@ class ObjectService
 			return $result;
 		}
 
-		// Objects are already prepared by SaveObject handler, use them directly
+		// Objects are already prepared, use them directly
 		$preparedObjects = $validObjects;
 
 		// Transform prepared objects from serialized format to database format
@@ -2573,9 +2594,10 @@ class ObjectService
 
         // Use the mapper's bulk save operation
 		$savedObjectIds = $this->objectEntityMapper->saveObjects($insertObjects, $updateObjects);
+		
+		error_log('[ObjectService] Bulk save completed. Insert objects: ' . count($insertObjects) . ', Update objects: ' . count($updateObjects) . ', Saved IDs: ' . count($savedObjectIds));
         
-		// OPTIMIZATION: Skip re-fetching objects if not needed for better performance
-		// Only fetch if we need to return the full objects (for API responses)
+		// Fetch saved objects to return in result
 		if (!empty($savedObjectIds)) {
 			$savedObjects = $this->objectEntityMapper->findAll(ids: $savedObjectIds, includeDeleted: true);
 			
@@ -2591,6 +2613,27 @@ class ObjectService
 					$result['statistics']['saved']++;
 				}
 			}
+			
+			// Handle post-save writeBack operations for inverse relations
+			if (!empty($savedObjects)) {
+				// Build schema cache from saved objects
+				$schemaCache = [];
+				foreach ($savedObjects as $savedObject) {
+					$schemaId = $savedObject->getSchema();
+					if (!isset($schemaCache[$schemaId])) {
+						try {
+							$schemaCache[$schemaId] = $this->schemaMapper->find($schemaId);
+						} catch (\Exception $e) {
+							// Continue without schema if not found
+						}
+					}
+				}
+				
+				error_log('[ObjectService] Calling handlePostSaveInverseRelations with ' . count($savedObjects) . ' objects');
+				$this->handlePostSaveInverseRelations($savedObjects, $schemaCache);
+			}
+		} else {
+			error_log('[ObjectService] No saved object IDs returned from bulk save operation');
 		}
 
 		return $result;
@@ -2598,7 +2641,7 @@ class ObjectService
 	
 	
 	/**
-	 * ULTRA-FAST concurrent processing using ReactPHP for large datasets with 4GB memory
+	 * Concurrent processing using ReactPHP for large datasets
 	 *
 	 * @param array $objects   All objects to process
 	 * @param int   $chunkSize Chunk size for parallel processing
@@ -2620,7 +2663,7 @@ class ObjectService
 			$chunks = array_chunk($objects, $chunkSize);
 			$promises = [];
 			
-			error_log('[ObjectService] CONCURRENT: Processing ' . count($chunks) . ' chunks concurrently with 4GB memory');
+			error_log('[ObjectService] CONCURRENT: Processing ' . count($chunks) . ' chunks concurrently');
 			
 			foreach ($chunks as $chunkIndex => $chunk) {
 				$promises[] = \React\Async\async(function() use ($chunk, $rbac, $multi, $validation, $events, $chunkIndex) {
@@ -2656,8 +2699,8 @@ class ObjectService
 			
 			$finalResult['statistics']['totalProcessed'] = count($objects);
 			
-		// Add preparation statistics to the final result
-		$finalResult['statistics']['prepared'] = count($objects);
+			// Add preparation statistics to the final result
+			$finalResult['statistics']['prepared'] = count($objects);
 			return $finalResult;
 			
 		} catch (\Exception $e) {
@@ -2667,88 +2710,17 @@ class ObjectService
 	}
 
 
-	/**
-	 * ULTRA-FAST object enrichment optimized for 4GB memory constraint
-	 * Lightweight version that only adds essential metadata without heavy processing
-	 *
-	 * @param array $objects Array of objects to enrich
-	 *
-	 * @return array Enriched objects
-	 */
-	private function fastEnrichObjects(array $objects): array
-	{
-		$now = new \DateTime();
-		$currentUser = $this->userId; // Cache user ID
-		$currentOrg = 1; // TODO: Get from context, defaulting to 1 for performance
-		
-		// Pre-generate timestamps once for all objects
-		$timestamp = $now->format('Y-m-d H:i:s');
-		
-		foreach ($objects as &$object) {
-			$selfData = &$object['@self'];
-			
-			// Only add missing essential fields - don't override existing ones
-			if (!isset($selfData['owner'])) {
-				$selfData['owner'] = $currentUser;
-			}
-			if (!isset($selfData['organisation'])) {
-				$selfData['organisation'] = $currentOrg;
-			}
-			if (!isset($selfData['created'])) {
-				$selfData['created'] = $timestamp;
-			}
-			if (!isset($selfData['updated'])) {
-				$selfData['updated'] = $timestamp;
-			}
-		}
-		
-		return $objects;
-	}
+
+
+
+
 
 
 	/**
-	 * ULTRA-FAST object preparation optimized for 4GB memory constraint
-	 * Lightweight version that skips expensive SaveObject processing for imports
+	 * Prepares objects for bulk save with proper relation handling.
 	 *
-	 * @param array $objects Array of objects to prepare
-	 *
-	 * @return array Prepared objects
-	 */
-	private function fastPrepareObjects(array $objects): array
-	{
-		// For bulk imports, we can skip most of the heavy SaveObject processing
-		// since the import data is assumed to be pre-validated and clean
-		
-		// Generate UUIDs for objects that don't have them
-		foreach ($objects as &$object) {
-			$selfData = &$object['@self'];
-			
-			if (empty($selfData['id'])) {
-				$selfData['id'] = Uuid::v4()->toRfc4122();
-			}
-			
-			// Ensure register and schema are set from context if missing
-			if (!isset($selfData['register']) && $this->currentRegister !== null) {
-				$selfData['register'] = $this->currentRegister->getId();
-			}
-			if (!isset($selfData['schema']) && $this->currentSchema !== null) {
-				$selfData['schema'] = $this->currentSchema->getId();
-			}
-		}
-		
-		return $objects;
-	}
-
-
-	/**
-	 * Prepares objects for bulk save with optimized performance while maintaining relation logic.
-	 *
-	 * This method provides the same transformations as individual object saving but optimized for bulk:
-	 * - Batch processing by schema
-	 * - Schema and relation caching
-	 * - Memory-efficient processing
-	 * - Optimized inverse relation handling
-	 * - Performance monitoring
+	 * This method ensures that objects are properly prepared for bulk saving,
+	 * including proper handling of inversedBy relationships through the SaveObject handler.
 	 *
 	 * @param array $objects Array of objects in serialized format
 	 *
@@ -2757,247 +2729,79 @@ class ObjectService
 	private function prepareObjectsForBulkSave(array $objects): array
 	{
 		$startTime = microtime(true);
-		$startMemory = memory_get_usage(true);
 		$objectCount = count($objects);
 		
-		error_log('[ObjectService] Starting optimized bulk preparation for ' . $objectCount . ' objects');
+		error_log('[ObjectService] Starting bulk preparation for ' . $objectCount . ' objects');
 
 		// Early return for empty arrays
 		if (empty($objects)) {
 			return [];
 		}
 
-		// Initialize caches and processing arrays
-		$schemaCache = [];
-		$relationCache = [];
 		$preparedObjects = [];
+		$schemaCache = [];
 		
-		// Group objects by schema for batch processing efficiency
-		$objectsBySchema = [];
+		// Pre-process objects for inversedBy relationships
 		foreach ($objects as $index => $object) {
-			$selfData = $object['@self'] ?? [];
-			$schema = $selfData['schema'] ?? $this->currentSchema;
-			if ($schema !== null) {
-				$schemaId = is_object($schema) ? $schema->getId() : $schema;
-				$objectsBySchema[$schemaId][] = ['index' => $index, 'object' => $object];
-			} else {
-				error_log('[ObjectService] Skipping object at index ' . $index . ' - no schema available');
-			}
-		}
-
-		error_log('[ObjectService] Processing ' . count($objectsBySchema) . ' schema groups');
-
-		// Process objects in schema groups for better cache utilization
-		foreach ($objectsBySchema as $schemaId => $schemaObjects) {
 			try {
-				// Load and cache schema once per group
-				if (!isset($schemaCache[$schemaId])) {
-					$schemaCache[$schemaId] = $this->schemaMapper->find($schemaId);
+				$selfData = $object['@self'] ?? [];
+				$schemaId = $selfData['schema'] ?? null;
+				
+				if (!$schemaId) {
+					$preparedObjects[$index] = $object;
+					continue;
 				}
-				$schema = $schemaCache[$schemaId];
-				$schemaProperties = $schema->getProperties();
-
-				error_log('[ObjectService] Processing ' . count($schemaObjects) . ' objects for schema ' . $schemaId);
-
-				// Process objects in this schema group with optimized logic
-				foreach ($schemaObjects as $objectInfo) {
-					$index = $objectInfo['index'];
-					$object = $objectInfo['object'];
-					
+				
+				// Cache schemas to avoid repeated database calls
+				if (!isset($schemaCache[$schemaId])) {
 					try {
-						$preparedObject = $this->prepareObjectOptimized(
-							$object, 
-							$schema,
-							$schemaProperties, 
-							$relationCache
-						);
-						$preparedObjects[$index] = $preparedObject;
+						$schemaCache[$schemaId] = $this->schemaMapper->find($schemaId);
 					} catch (\Exception $e) {
-						error_log('[ObjectService] Error preparing object at index ' . $index . ': ' . $e->getMessage());
-						// Continue with other objects - don't fail entire batch
+						$preparedObjects[$index] = $object;
+						continue;
 					}
 				}
-
-				// Memory cleanup after processing large schema groups
-				if (count($schemaObjects) > 50) {
-					gc_collect_cycles();
+				
+				$schema = $schemaCache[$schemaId];
+				
+				// Generate UUID if not present
+				if (!isset($selfData['id']) || empty($selfData['id'])) {
+					$selfData['id'] = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
+					$object['@self'] = $selfData;
 				}
-
+				
+				// Handle pre-validation cascading for inversedBy properties
+				[$processedObject, $uuid] = $this->handlePreValidationCascading($object, $schema, $selfData['id']);
+				
+				$preparedObjects[$index] = $processedObject;
+				
 			} catch (\Exception $e) {
-				error_log('[ObjectService] Error processing schema group ' . $schemaId . ': ' . $e->getMessage());
-				// Continue with other schema groups
+				error_log('[ObjectService] Error preparing object at index ' . $index . ': ' . $e->getMessage());
+				$preparedObjects[$index] = $object; // Continue with original object
 			}
 		}
 
-		// Process inverse relations in batch for better performance
+		// Handle bulk inverse relations within the batch
 		$this->handleBulkInverseRelations($preparedObjects, $schemaCache);
-
-		// Sort back to original order and convert to sequential array
-		ksort($preparedObjects);
-		$finalObjects = array_values($preparedObjects);
 
 		// Performance logging
 		$endTime = microtime(true);
-		$endMemory = memory_get_usage(true);
 		$duration = round(($endTime - $startTime) * 1000, 2);
-		$memoryUsed = round(($endMemory - $startMemory) / 1024 / 1024, 2);
-		$successCount = count($finalObjects);
+		$successCount = count($preparedObjects);
 		$failureCount = $objectCount - $successCount;
 		
-		error_log('[ObjectService] Bulk preparation completed: ' . $successCount . ' success, ' . $failureCount . ' failed in ' . $duration . 'ms, memory: ' . $memoryUsed . 'MB');
+		error_log('[ObjectService] Bulk preparation completed: ' . $successCount . ' success, ' . $failureCount . ' failed in ' . $duration . 'ms');
 
-		return $finalObjects;
+		return array_values($preparedObjects);
 	}
 
-	/**
-	 * Optimized object preparation for bulk operations
-	 *
-	 * @param array $object Object to prepare
-	 * @param object $schema Schema object
-	 * @param array $schemaProperties Cached schema properties
-	 * @param array &$relationCache Cache for relation lookups
-	 *
-	 * @return array Prepared object
-	 */
-	private function prepareObjectOptimized(array $object, $schema, array $schemaProperties, array &$relationCache): array
-	{
-		// Extract @self data efficiently
-		$selfData = $object['@self'] ?? [];
-		$objectData = $object;
-		unset($objectData['@self']);
 
-		// Get or generate UUID
-		$uuid = $selfData['id'] ?? \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
-		$register = $selfData['register'] ?? $this->currentRegister;
-		$schemaId = $selfData['schema'] ?? $this->currentSchema;
 
-		// Convert objects to IDs if needed
-		$registerId = is_object($register) ? $register->getId() : $register;
-		$schemaIdFinal = is_object($schemaId) ? $schemaId->getId() : $schemaId;
 
-		// Fast validation of required fields
-		if ($registerId === null || $schemaIdFinal === null) {
-			throw new \Exception('Missing register or schema information');
-		}
 
-		// Process object data with relation handling
-		$processedData = $this->processObjectDataOptimized($objectData, $schemaProperties, $relationCache);
 
-		// Build prepared object with minimal overhead
-		$preparedObject = [
-			'@self' => [
-				'id' => $uuid,
-				'register' => $registerId,
-				'schema' => $schemaIdFinal,
-				'owner' => $selfData['owner'] ?? $this->userId,
-				'organisation' => $selfData['organisation'] ?? $this->currentOrganisation,
-				'created' => $selfData['created'] ?? date('Y-m-d H:i:s'),
-				'updated' => date('Y-m-d H:i:s'),
-				'slug' => $selfData['slug'] ?? null,
-				'published' => $selfData['published'] ?? null,
-				'depublished' => $selfData['depublished'] ?? null,
-			]
-		];
 
-		return array_merge($preparedObject, $processedData);
-	}
 
-	/**
-	 * Process object data with optimized relation handling
-	 *
-	 * @param array $objectData Object data to process
-	 * @param array $schemaProperties Schema properties for validation
-	 * @param array &$relationCache Cache for relation lookups
-	 *
-	 * @return array Processed object data
-	 */
-	private function processObjectDataOptimized(array $objectData, array $schemaProperties, array &$relationCache): array
-	{
-		$processedData = [];
-
-		foreach ($objectData as $property => $value) {
-			if (!isset($schemaProperties[$property])) {
-				// Property not in schema, keep as-is
-				$processedData[$property] = $value;
-				continue;
-			}
-
-			$propertyConfig = $schemaProperties[$property];
-			$propertyType = $propertyConfig['type'] ?? 'string';
-
-			// Handle array/relation properties efficiently
-			if ($propertyType === 'array' && is_array($value)) {
-				$processedData[$property] = $this->processArrayPropertyOptimized($value, $propertyConfig, $relationCache);
-			} else {
-				// Apply basic type conversion if needed
-				$processedData[$property] = $this->convertValueByType($value, $propertyType);
-			}
-		}
-
-		return $processedData;
-	}
-
-	/**
-	 * Convert value by type with minimal overhead
-	 *
-	 * @param mixed $value Value to convert
-	 * @param string $type Target type
-	 *
-	 * @return mixed Converted value
-	 */
-	private function convertValueByType($value, string $type)
-	{
-		switch ($type) {
-			case 'integer':
-				return is_numeric($value) ? (int)$value : $value;
-			case 'number':
-				return is_numeric($value) ? (float)$value : $value;
-			case 'boolean':
-				return is_bool($value) ? $value : in_array(strtolower((string)$value), ['true', '1', 'yes', 'on']);
-			default:
-				return $value;
-		}
-	}
-
-	/**
-	 * Process array properties (potential relations) with optimization
-	 *
-	 * @param array $value Array value to process
-	 * @param array $propertyConfig Property configuration
-	 * @param array &$relationCache Cache for relation lookups
-	 *
-	 * @return array Processed array value
-	 */
-	private function processArrayPropertyOptimized(array $value, array $propertyConfig, array &$relationCache): array
-	{
-		// Check if this is a relation property
-		$items = $propertyConfig['items'] ?? [];
-		$hasRef = isset($items['$ref']) && !empty($items['$ref']);
-
-		if (!$hasRef) {
-			return $value; // Not a relation, return as-is
-		}
-
-		// Process relation array efficiently - just validate UUIDs
-		$processedArray = [];
-		foreach ($value as $item) {
-			if (is_string($item)) {
-				// Try to parse as UUID, if valid keep it, otherwise keep as string
-				if (\Symfony\Component\Uid\Uuid::isValid($item)) {
-					$processedArray[] = $item;
-				} else {
-					$processedArray[] = $item; // Keep non-UUID strings as-is
-				}
-			} elseif (is_array($item)) {
-				// Nested object - keep as-is for now
-				$processedArray[] = $item;
-			} else {
-				$processedArray[] = $item;
-			}
-		}
-
-		return $processedArray;
-	}
 
 	/**
 	 * Handle inverse relations for all objects in batch for optimal performance
@@ -3033,22 +2837,45 @@ class ObjectService
 
 				$propertyConfig = $schemaProperties[$property];
 				$items = $propertyConfig['items'] ?? [];
-				$inversedBy = $items['inversedBy'] ?? null;
+				
+				// Check for inversedBy at property level (single object relations)
+				$inversedBy = $propertyConfig['inversedBy'] ?? null;
 				$writeBack = $propertyConfig['writeBack'] ?? false;
+				
+				// Check for inversedBy in array items (array of object relations)
+				if (!$inversedBy && isset($items['inversedBy'])) {
+					$inversedBy = $items['inversedBy'];
+					$writeBack = $items['writeBack'] ?? false;
+				}
 
-				// Only process if this property has inverse relations with write-back enabled
-				if ($inversedBy && $writeBack && is_array($value)) {
-					foreach ($value as $relatedUuid) {
-						if (is_string($relatedUuid) && \Symfony\Component\Uid\Uuid::isValid($relatedUuid)) {
-							// Map: target UUID -> property name -> source UUIDs
-							if (!isset($inverseRelationMap[$relatedUuid])) {
-								$inverseRelationMap[$relatedUuid] = [];
+				// Process if this property has inverse relations (writeBack not required for bulk)
+				if ($inversedBy) {
+					// Handle single object relations
+					if (!is_array($value) && is_string($value) && \Symfony\Component\Uid\Uuid::isValid($value)) {
+						// Single UUID relation
+						if (!isset($inverseRelationMap[$value])) {
+							$inverseRelationMap[$value] = [];
+						}
+						if (!isset($inverseRelationMap[$value][$inversedBy])) {
+							$inverseRelationMap[$value][$inversedBy] = [];
+						}
+						$inverseRelationMap[$value][$inversedBy][] = $objectUuid;
+						$processedCount++;
+					}
+					// Handle array of object relations
+					elseif (is_array($value)) {
+						foreach ($value as $relatedUuid) {
+							if (is_string($relatedUuid) && \Symfony\Component\Uid\Uuid::isValid($relatedUuid)) {
+								// Map: target UUID -> property name -> source UUIDs
+								if (!isset($inverseRelationMap[$relatedUuid])) {
+									$inverseRelationMap[$relatedUuid] = [];
+								}
+								if (!isset($inverseRelationMap[$relatedUuid][$inversedBy])) {
+									$inverseRelationMap[$relatedUuid][$inversedBy] = [];
+								}
+								$inverseRelationMap[$relatedUuid][$inversedBy][] = $objectUuid;
+								$processedCount++;
 							}
-							if (!isset($inverseRelationMap[$relatedUuid][$inversedBy])) {
-								$inverseRelationMap[$relatedUuid][$inversedBy] = [];
-							}
-							$inverseRelationMap[$relatedUuid][$inversedBy][] = $objectUuid;
-							$processedCount++;
 						}
 					}
 				}
@@ -3077,6 +2904,77 @@ class ObjectService
 		}
 
 		error_log('[ObjectService] Applied ' . $appliedCount . ' inverse relation updates');
+	}
+
+
+	/**
+	 * Handle post-save writeBack operations for inverse relations
+	 *
+	 * This method processes writeBack operations after objects have been saved to the database.
+	 * It uses the SaveObject handler's writeBack functionality for properties that have
+	 * both inversedBy and writeBack enabled.
+	 *
+	 * @param array $savedObjects Array of saved ObjectEntity objects
+	 * @param array $schemaCache Cached schemas indexed by schema ID
+	 *
+	 * @return void
+	 */
+	private function handlePostSaveInverseRelations(array $savedObjects, array $schemaCache): void
+	{
+		error_log('[ObjectService] handlePostSaveInverseRelations started with ' . count($savedObjects) . ' objects');
+		$writeBackCount = 0;
+		
+		foreach ($savedObjects as $savedObject) {
+			$objectData = $savedObject->getObject();
+			$schemaId = $savedObject->getSchema();
+			
+			if (!isset($schemaCache[$schemaId])) {
+				continue;
+			}
+			
+			$schema = $schemaCache[$schemaId];
+			$schemaProperties = $schema->getProperties();
+			
+			foreach ($objectData as $property => $value) {
+				if (!isset($schemaProperties[$property])) {
+					continue;
+				}
+				
+				$propertyConfig = $schemaProperties[$property];
+				$items = $propertyConfig['items'] ?? [];
+				
+				// Check for writeBack enabled properties
+				$writeBack = $propertyConfig['writeBack'] ?? ($items['writeBack'] ?? false);
+				$inversedBy = $propertyConfig['inversedBy'] ?? ($items['inversedBy'] ?? null);
+				
+				if ($writeBack && $inversedBy && !empty($value)) {
+					// Use SaveObject handler's writeBack functionality
+					try {
+						// Create a temporary object data array for writeBack processing
+						$writeBackData = [$property => $value];
+						$this->saveHandler->handleInverseRelationsWriteBack($savedObject, $schema, $writeBackData);
+						$writeBackCount++;
+						
+						// After writeBack, update the source object's property with the current value
+						// This ensures the source object reflects the relationship
+						$currentObjectData = $savedObject->getObject();
+						if (!isset($currentObjectData[$property]) || $currentObjectData[$property] !== $value) {
+							$currentObjectData[$property] = $value;
+							$savedObject->setObject($currentObjectData);
+							
+							// Save the updated source object
+							$this->objectEntityMapper->update($savedObject);
+							error_log('[ObjectService] Updated source object ' . $savedObject->getUuid() . ' property ' . $property . ' with writeBack value');
+						}
+					} catch (\Exception $e) {
+						error_log('[ObjectService] WriteBack failed for object ' . $savedObject->getUuid() . ': ' . $e->getMessage());
+					}
+				}
+			}
+		}
+		
+		error_log('[ObjectService] Processed ' . $writeBackCount . ' writeBack operations');
+		error_log('[ObjectService] handlePostSaveInverseRelations completed');
 	}
 
 
@@ -3285,75 +3183,7 @@ class ObjectService
 	}//end validateRequiredFields()
 
 
-	/**
-	 * Enrich objects with missing metadata (owner, organisation, created, updated)
-	 *
-	 * This method optimizes enrichment for large datasets (20k+ objects) by
-	 * pre-fetching user and organisation data and applying it in batches.
-	 * 
-	 * Datetime values are formatted in MySQL-compatible format (Y-m-d H:i:s)
-	 * to ensure proper database storage without timezone conversion issues.
-	 *
-	 * @param array $objects Array of objects to enrich
-	 *
-	 * @return array Array of enriched objects
-	 *
-	 * @phpstan-param array<int, array<string, mixed>> $objects
-	 * @psalm-param array<int, array<string, mixed>> $objects
-	 * @phpstan-return array<int, array<string, mixed>>
-	 * @psalm-return array<int, array<string, mixed>>
-	 */
-	private function enrichObjects(array $objects): array
-	{
-		// Get current user and organisation data once for all objects
-		$currentUser = $this->userSession->getUser();
-		$currentUserId = $currentUser ? $currentUser->getUID() : null;
-		$currentOrganisation = $this->organisationService->getOrganisationForNewEntity();
-		$now = new \DateTime();
 
-		// Process objects in batches for memory efficiency
-		$batchSize = 1000;
-		$enrichedObjects = [];
-
-		for ($i = 0; $i < count($objects); $i += $batchSize) {
-			$batch = array_slice($objects, $i, $batchSize);
-			
-			foreach ($batch as $object) {
-				// Ensure @self section exists
-				if (!isset($object['@self']) || !is_array($object['@self'])) {
-					$object['@self'] = [];
-				}
-
-				$self = $object['@self'];
-				
-				// Generate UUID if not present - check both 'uuid' and 'id' fields
-				if (empty($self['id'])) {
-					$self['id'] = Uuid::v4()->toRfc4122();
-				}
-
-				// Set owner if not present
-				if (empty($self['owner'])) {
-					$self['owner'] = $currentUserId ?? 'admin';
-				}
-
-				// Set organisation if not present
-				if (empty($self['organisation'])) {
-					$self['organisation'] = $currentOrganisation;
-				}
-
-
-				// Set updated timestamp (always update)
-				$self['updated'] = $now->format('Y-m-d H:i:s');
-
-				// Update the object with enriched @self
-				$object['@self'] = $self;
-				$enrichedObjects[] = $object;
-			}
-		}
-
-		return $enrichedObjects;
-
-	}//end enrichObjects()
 
 
 	/**
