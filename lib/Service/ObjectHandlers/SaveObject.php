@@ -112,10 +112,13 @@ class SaveObject
             return null;
         }
 
+        // Remove query parameters if present (e.g., "schema?key=value" -> "schema")
+        $cleanReference = $this->removeQueryParameters($reference);
+
         // First, try direct ID lookup (numeric ID or UUID)
-        if (is_numeric($reference) || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $reference)) {
+        if (is_numeric($cleanReference) || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $cleanReference)) {
             try {
-                $schema = $this->schemaMapper->find($reference);
+                $schema = $this->schemaMapper->find($cleanReference);
                 return $schema->getId();
             } catch (DoesNotExistException $e) {
                 // Continue with other resolution methods
@@ -123,10 +126,10 @@ class SaveObject
         }
 
         // Extract the last part of path/URL references
-        $slug = $reference;
-        if (str_contains($reference, '/')) {
+        $slug = $cleanReference;
+        if (str_contains($cleanReference, '/')) {
             // For references like "#/components/schemas/Contactgegevens" or "http://example.com/schemas/contactgegevens"
-            $slug = substr($reference, strrpos($reference, '/') + 1);
+            $slug = substr($cleanReference, strrpos($cleanReference, '/') + 1);
         }
 
         // Try to find schema by slug (case-insensitive)
@@ -154,6 +157,22 @@ class SaveObject
         return null;
 
     }//end resolveSchemaReference()
+
+    /**
+     * Removes query parameters from a reference string.
+     *
+     * @param string $reference The reference string that may contain query parameters
+     *
+     * @return string The reference string without query parameters
+     */
+    private function removeQueryParameters(string $reference): string
+    {
+        // Remove query parameters if present (e.g., "schema?key=value" -> "schema")
+        if (str_contains($reference, '?')) {
+            return substr($reference, 0, strpos($reference, '?'));
+        }
+        return $reference;
+    }
 
 
     /**
@@ -352,9 +371,9 @@ class SaveObject
 
 
     /**
-     * Hydrates the name, description, and image of the entity from the object data based on schema configuration.
+     * Hydrates the name, description, summary, and image of the entity from the object data based on schema configuration.
      *
-     * This method uses the schema configuration to set the name, description, and image fields
+     * This method uses the schema configuration to set the name, description, summary, and image fields
      * on the object entity based on the object data. It prevents an extra database call
      * by using the schema that's already available in the SaveObject handler.
      *
@@ -366,7 +385,7 @@ class SaveObject
      * @psalm-return   void
      * @phpstan-return void
      */
-    private function hydrateNameDescriptionAndImage(ObjectEntity $entity, Schema $schema): void
+    private function hydrateNameDescriptionSummaryAndImage(ObjectEntity $entity, Schema $schema): void
     {
         $config     = $schema->getConfiguration();
         $objectData = $entity->getObject();
@@ -385,6 +404,13 @@ class SaveObject
             }
         }
 
+        if (isset($config['objectSummaryField']) === true) {
+            $summary = $this->getValueFromPath($objectData, $config['objectSummaryField']);
+            if ($summary !== null) {
+                $entity->setSummary($summary);
+            }
+        }
+
         if (isset($config['objectImageField']) === true) {
             $image = $this->getValueFromPath($objectData, $config['objectImageField']);
             if ($image !== null) {
@@ -392,7 +418,7 @@ class SaveObject
             }
         }
 
-    }//end hydrateNameDescriptionAndImage()
+    }//end hydrateNameDescriptionSummaryAndImage()
 
 
     /**
@@ -1383,7 +1409,7 @@ class SaveObject
 
         // Hydrate name and description from schema configuration.
         try {
-            $this->hydrateNameDescriptionAndImage($objectEntity, $schema);
+            $this->hydrateNameDescriptionSummaryAndImage($objectEntity, $schema);
         } catch (Exception $e) {
             // Continue without hydration if it fails
         }
@@ -1447,7 +1473,7 @@ class SaveObject
         $existingObject->setObject($preparedData);
 
         // Hydrate name and description from schema configuration.
-        $this->hydrateNameDescriptionAndImage($existingObject, $schema);
+        $this->hydrateNameDescriptionSummaryAndImage($existingObject, $schema);
 
         // Update object relations.
         $existingObject = $this->updateObjectRelations($existingObject, $preparedData, $schema);

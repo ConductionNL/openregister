@@ -124,7 +124,7 @@ class ObjectEntityMapper extends QBMapper
      */
     private ?MariaDbFacetHandler $mariaDbFacetHandler = null;
 
-    public const MAIN_FILTERS = ['register', 'schema', 'uuid', 'created', 'updated', 'slug'];
+    public const MAIN_FILTERS = ['register', 'schema', 'uuid', 'created', 'updated', 'slug', 'name', 'description', 'summary', 'image'];
 
     public const DEFAULT_LOCK_DURATION = 3600;
 
