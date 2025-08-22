@@ -31,7 +31,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 
 				<div v-if="selectedObjects.length" class="selected-objects-list">
 					<div v-for="obj in selectedObjects"
-						:key="obj.id"
+						:key="obj['@self']?.id || obj.id"
 						class="selected-object-item">
 						<div class="object-info">
 							<strong>{{ obj['@self']?.name || obj.name || obj.title || obj['@self']?.title || 'Unnamed Object' }}</strong>
@@ -41,7 +41,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 						</div>
 						<NcButton type="tertiary"
 							:aria-label="`Remove ${obj['@self']?.name || obj.name || obj.title || obj['@self']?.title || obj.id}`"
-							@click="removeObject(obj.id)">
+							@click="removeObject(obj['@self']?.id || obj.id)">
 							<template #icon>
 								<Close :size="20" />
 							</template>
@@ -134,7 +134,7 @@ export default {
 			}
 		},
 		removeObject(objectId) {
-			this.selectedObjects = this.selectedObjects.filter(obj => obj.id !== objectId)
+			this.selectedObjects = this.selectedObjects.filter(obj => (obj['@self']?.id || obj.id) !== objectId)
 			// Update the store as well
 			objectStore.selectedObjects = this.selectedObjects
 			if (this.selectedObjects.length === 0) {
@@ -156,16 +156,21 @@ export default {
 				const results = await Promise.allSettled(
 					this.selectedObjects.map(async (obj) => {
 						try {
+							const register = obj['@self']?.register || obj.register
+							const schema = obj['@self']?.schema || obj.schema
+							const objectId = obj['@self']?.id || obj.id
+
 							await objectStore.depublishObject({
-								register: obj.register,
-								schema: obj.schema,
-								objectId: obj.id,
+								register,
+								schema,
+								objectId,
 								depublishedDate,
 							})
-							return { success: true, id: obj.id }
+							return { success: true, id: objectId }
 						} catch (error) {
-							console.error(`Failed to depublish object ${obj.id}:`, error)
-							return { success: false, id: obj.id, error: error.message }
+							const failedId = obj['@self']?.id || obj.id
+							console.error(`Failed to depublish object ${failedId}:`, error)
+							return { success: false, id: failedId, error: error.message }
 						}
 					}),
 				)
