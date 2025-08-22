@@ -756,7 +756,7 @@ export default {
 						...(schemaProperty.items || {}),
 						objectConfiguration: {
 							...this.properties.items.objectConfiguration,
-							...(schemaProperty.items && schemaProperty.items.objectConfiguration || {}),
+							...((schemaProperty.items && schemaProperty.items.objectConfiguration) || {}),
 							queryParams: (schemaProperty.items && schemaProperty.items.objectConfiguration && schemaProperty.items.objectConfiguration.queryParams) ? schemaProperty.items.objectConfiguration.queryParams : '',
 						},
 					},
