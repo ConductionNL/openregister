@@ -195,6 +195,11 @@ class SchemaPropertyValidatorService
             throw new Exception("'hideOnCollection' at '$path' must be a boolean");
         }
 
+        // Validate hideOnForm property if present
+        if (isset($property['hideOnForm']) === true && is_bool($property['hideOnForm']) === false) {
+            throw new Exception("'hideOnForm' at '$path' must be a boolean");
+        }
+
         return true;
 
     }//end validateProperty()
@@ -260,9 +265,9 @@ class SchemaPropertyValidatorService
      * @throws Exception If the file property configuration is invalid
      * @return bool True if the file property is valid
      *
-     * @psalm-param array<string, mixed> $property
-     * @phpstan-param array<string, mixed> $property
-     * @psalm-return bool
+     * @psalm-param    array<string, mixed> $property
+     * @phpstan-param  array<string, mixed> $property
+     * @psalm-return   bool
      * @phpstan-return bool
      */
     private function validateFileProperty(array $property, string $path): bool
@@ -348,6 +353,7 @@ class SchemaPropertyValidatorService
         }
 
         return true;
+
     }//end validateFileProperty()
 
 

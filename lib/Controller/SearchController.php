@@ -139,15 +139,16 @@ class SearchController extends Controller
         foreach ($searchTerms as $term) {
             // Convert to lowercase for case-insensitive matching
             $lowerTerm = strtolower(trim($term));
-            
+
             // Add wildcards for partial matching if not already present
             if (str_starts_with($lowerTerm, '*') === false && str_starts_with($lowerTerm, '%') === false) {
-                $lowerTerm = '*' . $lowerTerm;
+                $lowerTerm = '*'.$lowerTerm;
             }
+
             if (str_ends_with($lowerTerm, '*') === false && str_ends_with($lowerTerm, '%') === false) {
-                $lowerTerm = $lowerTerm . '*';
+                $lowerTerm = $lowerTerm.'*';
             }
-            
+
             $processedTerms[] = $lowerTerm;
         }
 

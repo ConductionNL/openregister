@@ -9,8 +9,8 @@ Vue.use(PiniaVuePlugin)
 Vue.directive('tooltip', Tooltip)
 
 new Vue(
-	{
-		pinia,
-		render: h => h(App),
-	},
+    {
+        pinia,
+        render: h => h(App),
+    },
 ).$mount('#content')

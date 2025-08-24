@@ -1,17 +1,51 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd"
          bootstrap="tests/bootstrap.php"
-         colors="true">
+         colors="true"
+         cacheDirectory=".phpunit.cache"
+         executionOrder="depends,defects"
+         requireCoverageMetadata="false"
+         beStrictAboutCoverageMetadata="true"
+         beStrictAboutOutputDuringTests="true"
+         failOnRisky="true"
+         failOnWarning="true">
+    
     <testsuites>
         <testsuite name="Unit Tests">
             <directory>tests/unit</directory>
         </testsuite>
+        <testsuite name="Integration Tests">
+            <directory>tests/integration</directory>
+        </testsuite>
+        <testsuite name="Database Tests">
+            <directory>tests/Db</directory>
+        </testsuite>
+        <testsuite name="Service Tests">
+            <directory>tests/Service</directory>
+        </testsuite>
     </testsuites>
 
-    <coverage processUncoveredFiles="true">
+    <source>
         <include>
             <directory suffix=".php">lib/</directory>
         </include>
+        <exclude>
+            <directory>lib/Migration/</directory>
+            <file>lib/AppInfo/Application.php</file>
+        </exclude>
+    </source>
+
+    <coverage>
+        <report>
+            <clover outputFile="coverage/clover.xml"/>
+            <html outputDirectory="coverage/html"/>
+            <text outputFile="php://stdout" showUncoveredFiles="false"/>
+        </report>
     </coverage>
+
+    <php>
+        <env name="PHPUNIT_RUN" value="1"/>
+        <env name="NEXTCLOUD_CONFIG_DIR" value="tests/config"/>
+    </php>
 </phpunit>

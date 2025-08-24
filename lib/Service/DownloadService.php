@@ -158,7 +158,7 @@ class DownloadService
         return match ($objectTypeLower) {
             'schema' => $this->schemaMapper,
             'register' => $this->registerMapper,
-        default => throw new InvalidArgumentException("Unknown object type: $objectType"),
+            default => throw new InvalidArgumentException("Unknown object type: $objectType"),
         };
 
     }//end getMapper()

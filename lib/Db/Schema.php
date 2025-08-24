@@ -184,9 +184,9 @@ class Schema extends Entity implements JsonSerializable
      * Use setConfiguration() method to ensure proper validation of configuration values.
      * See setConfiguration() method documentation for supported options and their validation rules.
      *
-     * @var array|null
+     * @var         array|null
      * @phpstan-var array<string, mixed>|null
-     * @psalm-var array<string, mixed>|null
+     * @psalm-var   array<string, mixed>|null
      */
     protected ?array $configuration = null;
 
@@ -219,11 +219,12 @@ class Schema extends Entity implements JsonSerializable
      *   'delete' => ['group-admin']
      * ]
      *
-     * @var array|null
+     * @var         array|null
      * @phpstan-var array<string, array<string>>|null
-     * @psalm-var array<string, list<string>>|null
+     * @psalm-var   array<string, list<string>>|null
      */
     protected ?array $groups = [];
+
 
     /**
      * Constructor for the Schema class
@@ -369,7 +370,7 @@ class Schema extends Entity implements JsonSerializable
         foreach ($this->authorization as $action => $groups) {
             // Validate action is a valid CRUD operation
             if (in_array($action, $validActions) === false) {
-                throw new \InvalidArgumentException("Invalid authorization action: '{$action}'. Must be one of: " . implode(', ', $validActions));
+                throw new \InvalidArgumentException("Invalid authorization action: '{$action}'. Must be one of: ".implode(', ', $validActions));
             }
 
             // Validate groups is an array
@@ -412,7 +413,7 @@ class Schema extends Entity implements JsonSerializable
      *
      * @return bool True if the group has permission for the action
      */
-    public function hasPermission(string $groupId, string $action, ?string $userId = null, ?string $userGroup = null, ?string $objectOwner = null): bool
+    public function hasPermission(string $groupId, string $action, ?string $userId=null, ?string $userGroup=null, ?string $objectOwner=null): bool
     {
         // Admin group always has all permissions
         if ($groupId === 'admin' || $userGroup === 'admin') {
@@ -464,6 +465,7 @@ class Schema extends Entity implements JsonSerializable
 
     }//end getAuthorizedGroups()
 
+
     /**
      * Normalize inversedBy properties to ensure they are always strings
      *
@@ -483,7 +485,7 @@ class Schema extends Entity implements JsonSerializable
             if (isset($property['inversedBy']) === true) {
                 if (is_array($property['inversedBy']) === true && isset($property['inversedBy']['id']) === true) {
                     $this->properties[$propertyName]['inversedBy'] = $property['inversedBy']['id'];
-                } elseif (is_string($property['inversedBy']) === false) {
+                } else if (is_string($property['inversedBy']) === false) {
                     // Remove invalid inversedBy if it's not a string or object with id
                     unset($this->properties[$propertyName]['inversedBy']);
                 }
@@ -494,12 +496,12 @@ class Schema extends Entity implements JsonSerializable
             if (isset($property['items']['inversedBy']) === true) {
                 if (is_array($property['items']['inversedBy']) === true && isset($property['items']['inversedBy']['id']) === true) {
                     $this->properties[$propertyName]['items']['inversedBy'] = $property['items']['inversedBy']['id'];
-                } elseif (is_string($property['items']['inversedBy']) === false) {
+                } else if (is_string($property['items']['inversedBy']) === false) {
                     // Remove invalid inversedBy if it's not a string or object with id
                     unset($this->properties[$propertyName]['items']['inversedBy']);
                 }
             }
-        }
+        }//end foreach
 
     }//end normalizeInversedByProperties()
 
@@ -542,14 +544,16 @@ class Schema extends Entity implements JsonSerializable
                             $value = null;
                         }
                     }
+
                     $this->setConfiguration($value);
                 } catch (\Exception $exception) {
                     // Silently ignore invalid configuration and set to null
                     $this->configuration = null;
                     $this->markFieldUpdated('configuration');
                 }
+
                 continue;
-            }
+            }//end if
 
             $method = 'set'.ucfirst($key);
 
@@ -558,7 +562,7 @@ class Schema extends Entity implements JsonSerializable
             } catch (\Exception $exception) {
                 // Silently ignore invalid properties.
             }
-        }
+        }//end foreach
 
         // Validate properties if validator is provided.
         if ($validator !== null && isset($object['properties']) === true) {
@@ -664,8 +668,8 @@ class Schema extends Entity implements JsonSerializable
         $schema->version     = $this->version;
         $schema->type        = 'object';
         $schema->required    = $this->required;
-        $schema->{'$schema'}     = 'https://json-schema.org/draft/2020-12/schema';
-        $schema->{'$id'}         = $urlGenerator->getBaseUrl().'/apps/openregister/api/v1/schemas/'.$this->uuid;
+        $schema->{'$schema'} = 'https://json-schema.org/draft/2020-12/schema';
+        $schema->{'$id'}     = $urlGenerator->getBaseUrl().'/apps/openregister/api/v1/schemas/'.$this->uuid;
         $schema->properties  = new stdClass();
 
         foreach ($this->properties as $propertyName => $property) {
@@ -684,9 +688,10 @@ class Schema extends Entity implements JsonSerializable
 
                         $nestedProp = new stdClass();
                         foreach ($subProperty as $key => $value) {
-							if($key === 'oneOf' && empty($value) === true) {
-								continue;
-							}
+                            if ($key === 'oneOf' && empty($value) === true) {
+                                continue;
+                            }
+
                             $nestedProp->{$key} = $value;
                         }
 
@@ -694,7 +699,7 @@ class Schema extends Entity implements JsonSerializable
                     }
                 }
 
-                $nestedProperty->properties        = $nestedProperties;
+                $nestedProperty->properties          = $nestedProperties;
                 $schema->properties->{$propertyName} = $nestedProperty;
             } else {
                 $prop = new stdClass();
@@ -845,14 +850,14 @@ class Schema extends Entity implements JsonSerializable
         }
 
         $validatedConfig = [];
-        $allowedKeys = [
+        $allowedKeys     = [
             'objectNameField',
-            'objectDescriptionField', 
+            'objectDescriptionField',
             'objectSummaryField',
             'objectImageField',
             'allowFiles',
             'allowedTags',
-            'unique'
+            'unique',
         ];
 
         foreach ($configuration as $key => $value) {
@@ -870,6 +875,7 @@ class Schema extends Entity implements JsonSerializable
                     if ($value !== null && $value !== '' && !is_string($value)) {
                         throw new \InvalidArgumentException("Configuration '{$key}' must be a string or null");
                     }
+
                     $validatedConfig[$key] = $value === '' ? null : $value;
                     break;
 
@@ -878,6 +884,7 @@ class Schema extends Entity implements JsonSerializable
                     if ($value !== null && !is_bool($value)) {
                         throw new \InvalidArgumentException("Configuration 'allowFiles' must be a boolean or null");
                     }
+
                     $validatedConfig[$key] = $value;
                     break;
 
@@ -887,6 +894,7 @@ class Schema extends Entity implements JsonSerializable
                         if (!is_array($value)) {
                             throw new \InvalidArgumentException("Configuration 'allowedTags' must be an array or null");
                         }
+
                         // Validate that all tags are strings
                         foreach ($value as $tag) {
                             if (!is_string($tag)) {
@@ -894,17 +902,19 @@ class Schema extends Entity implements JsonSerializable
                             }
                         }
                     }
+
                     $validatedConfig[$key] = $value;
                     break;
                 case 'unique':
                     $validatedConfig[$key] = $value;
-            }
-        }
+            }//end switch
+        }//end foreach
 
         $this->configuration = empty($validatedConfig) ? null : $validatedConfig;
         $this->markFieldUpdated('configuration');
 
     }//end setConfiguration()
+
 
     /**
      * String representation of the schema
@@ -927,7 +937,9 @@ class Schema extends Entity implements JsonSerializable
         }
 
         // Final fallback with ID
-        return 'Schema #' . ($this->id ?? 'unknown');
-    }
+        return 'Schema #'.($this->id ?? 'unknown');
+
+    }//end __toString()
+
 
 }//end class

@@ -69,10 +69,10 @@ class SaveObject
     /**
      * Constructor for SaveObject handler.
      *
-     * @param ObjectEntityMapper $objectEntityMapper Object entity data mapper.
-     * @param FileService        $fileService        File service for managing files.
-     * @param IUserSession       $userSession        User session service.
-     * @param AuditTrailMapper   $auditTrailMapper   Audit trail mapper for logging changes.
+     * @param ObjectEntityMapper  $objectEntityMapper  Object entity data mapper.
+     * @param FileService         $fileService         File service for managing files.
+     * @param IUserSession        $userSession         User session service.
+     * @param AuditTrailMapper    $auditTrailMapper    Audit trail mapper for logging changes.
      * @param OrganisationService $organisationService Service for organisation operations.
      */
     public function __construct(
@@ -158,6 +158,7 @@ class SaveObject
 
     }//end resolveSchemaReference()
 
+
     /**
      * Removes query parameters from a reference string.
      *
@@ -171,8 +172,10 @@ class SaveObject
         if (str_contains($reference, '?')) {
             return substr($reference, 0, strpos($reference, '?'));
         }
+
         return $reference;
-    }
+
+    }//end removeQueryParameters()
 
 
     /**
@@ -247,8 +250,8 @@ class SaveObject
      * - Properties with type 'object' that contain string values (always treated as relations)
      * - Properties with type 'array' of objects that contain string values
      *
-     * @param array  $data   The object data to scan
-     * @param string $prefix The current prefix for dot notation (used in recursion)
+     * @param array       $data   The object data to scan
+     * @param string      $prefix The current prefix for dot notation (used in recursion)
      * @param Schema|null $schema The schema to check property definitions against
      *
      * @return array Array of relations with dot notation paths as keys and UUIDs/URLs as values
@@ -262,7 +265,7 @@ class SaveObject
             $schemaProperties = null;
             if ($schema !== null) {
                 try {
-                    $schemaObject = json_decode(json_encode($schema->getSchemaObject($this->urlGenerator)), associative: true);
+                    $schemaObject     = json_decode(json_encode($schema->getSchemaObject($this->urlGenerator)), associative: true);
                     $schemaProperties = $schemaObject['properties'] ?? [];
                 } catch (Exception $e) {
                     // Continue without schema properties if parsing fails
@@ -279,10 +282,10 @@ class SaveObject
 
                 if (is_array($value) && !empty($value)) {
                     // Check if this is an array property in the schema
-                    $propertyConfig = $schemaProperties[$key] ?? null;
-                    $isArrayOfObjects = $propertyConfig && 
-                                      ($propertyConfig['type'] ?? '') === 'array' && 
-                                      isset($propertyConfig['items']['type']) && 
+                    $propertyConfig   = $schemaProperties[$key] ?? null;
+                    $isArrayOfObjects = $propertyConfig &&
+                                      ($propertyConfig['type'] ?? '') === 'array' &&
+                                      isset($propertyConfig['items']['type']) &&
                                       $propertyConfig['items']['type'] === 'object';
 
                     if ($isArrayOfObjects) {
@@ -290,14 +293,14 @@ class SaveObject
                         foreach ($value as $index => $item) {
                             if (is_array($item)) {
                                 $itemRelations = $this->scanForRelations(
-                                    $item, 
-                                    $currentPath . '.' . $index, 
+                                    $item,
+                                    $currentPath.'.'.$index,
                                     $schema
                                 );
-                                $relations = array_merge($relations, $itemRelations);
-                            } elseif (is_string($item) && !empty($item)) {
+                                $relations     = array_merge($relations, $itemRelations);
+                            } else if (is_string($item) && !empty($item)) {
                                 // String values in object arrays are always treated as relations
-                                $relations[$currentPath . '.' . $index] = $item;
+                                $relations[$currentPath.'.'.$index] = $item;
                             }
                         }
                     } else {
@@ -310,13 +313,13 @@ class SaveObject
                     // Check schema property configuration first
                     if ($schemaProperties && isset($schemaProperties[$key])) {
                         $propertyConfig = $schemaProperties[$key];
-                        $propertyType = $propertyConfig['type'] ?? '';
+                        $propertyType   = $propertyConfig['type'] ?? '';
                         $propertyFormat = $propertyConfig['format'] ?? '';
 
                         // Check for explicit relation types
                         if ($propertyType === 'text' && in_array($propertyFormat, ['uuid', 'uri', 'url'])) {
                             $shouldTreatAsRelation = true;
-                        } elseif ($propertyType === 'object') {
+                        } else if ($propertyType === 'object') {
                             // Object properties with string values are always relations
                             $shouldTreatAsRelation = true;
                         }
@@ -337,7 +340,7 @@ class SaveObject
                     if ($shouldTreatAsRelation) {
                         $relations[$currentPath] = $value;
                     }
-                }
+                }//end if
             }//end foreach
         } catch (Exception $e) {
             // Error scanning for relations
@@ -371,11 +374,13 @@ class SaveObject
 
 
     /**
-     * Hydrates the name, description, summary, and image of the entity from the object data based on schema configuration.
+     * Hydrates object metadata fields based on schema configuration.
      *
      * This method uses the schema configuration to set the name, description, summary, and image fields
-     * on the object entity based on the object data. It prevents an extra database call
-     * by using the schema that's already available in the SaveObject handler.
+     * on the object entity based on the object data. It uses dot notation paths defined in the schema
+     * configuration to extract values from the object's data (e.g., 'contact.email', 'title').
+     * 
+     * This method is public to support both individual saves and bulk save operations.
      *
      * @param ObjectEntity $entity The entity to hydrate
      * @param Schema       $schema The schema containing the configuration
@@ -385,7 +390,7 @@ class SaveObject
      * @psalm-return   void
      * @phpstan-return void
      */
-    private function hydrateNameDescriptionSummaryAndImage(ObjectEntity $entity, Schema $schema): void
+    public function hydrateObjectMetadata(ObjectEntity $entity, Schema $schema): void
     {
         $config     = $schema->getConfiguration();
         $objectData = $entity->getObject();
@@ -418,7 +423,7 @@ class SaveObject
             }
         }
 
-    }//end hydrateNameDescriptionSummaryAndImage()
+    }//end hydrateObjectMetadata()
 
 
     /**
@@ -507,7 +512,7 @@ class SaveObject
         // Handle default values with new behavior support
         $defaultValues = [];
         foreach ($properties as $property) {
-            $key = $property['title'];
+            $key          = $property['title'];
             $defaultValue = $property['default'] ?? null;
 
             // Skip if no default value is defined
@@ -515,7 +520,7 @@ class SaveObject
                 continue;
             }
 
-            $defaultBehavior = $property['defaultBehavior'] ?? 'false';
+            $defaultBehavior    = $property['defaultBehavior'] ?? 'false';
             $shouldApplyDefault = false;
 
             // Determine if default should be applied based on behavior
@@ -533,7 +538,7 @@ class SaveObject
             if ($shouldApplyDefault) {
                 $defaultValues[$key] = $defaultValue;
             }
-        }
+        }//end foreach
 
         // Render twig templated default values.
         $renderedDefaultValues = [];
@@ -581,7 +586,7 @@ class SaveObject
     private function generateSlug(array $data, Schema $schema): ?string
     {
         try {
-            $config = $schema->getConfiguration();
+            $config    = $schema->getConfiguration();
             $slugField = $config['objectSlugField'] ?? null;
 
             if ($slugField === null) {
@@ -596,17 +601,17 @@ class SaveObject
 
             // Convert to string and generate slug
             $slug = $this->createSlug((string) $value);
-            
+
             // Ensure uniqueness by appending timestamp if needed
-            $timestamp = time();
-            $uniqueSlug = $slug . '-' . $timestamp;
+            $timestamp  = time();
+            $uniqueSlug = $slug.'-'.$timestamp;
 
             return $uniqueSlug;
-
         } catch (Exception $e) {
             return null;
-        }
-    }
+        }//end try
+
+    }//end generateSlug()
 
 
     /**
@@ -620,21 +625,22 @@ class SaveObject
     {
         // Convert to lowercase
         $text = strtolower($text);
-        
+
         // Replace non-alphanumeric characters with hyphens
         $text = preg_replace('/[^a-z0-9]+/', '-', $text);
-        
+
         // Remove leading and trailing hyphens
         $text = trim($text, '-');
-        
+
         // Limit length
         if (strlen($text) > 50) {
             $text = substr($text, 0, 50);
             $text = rtrim($text, '-');
         }
-        
+
         return $text;
-    }
+
+    }//end createSlug()
 
 
     /**
@@ -695,8 +701,9 @@ class SaveObject
           $properties,
           function (array $property) {
             // Skip if writeBack is enabled (handled by write-back method)
-            if ((isset($property['writeBack']) && $property['writeBack'] === true) ||
-                (isset($property['items']['writeBack']) && $property['items']['writeBack'] === true)) {
+            if ((isset($property['writeBack']) && $property['writeBack'] === true)
+                || (isset($property['items']['writeBack']) && $property['items']['writeBack'] === true)
+            ) {
                 return false;
             }
 
@@ -748,7 +755,7 @@ class SaveObject
             } catch (Exception $e) {
                 // Continue with other properties even if one fails
             }
-        }
+        }//end foreach
 
         // Process array object properties that need cascading
         foreach ($arrayObjectProperties as $property => $definition) {
@@ -779,8 +786,8 @@ class SaveObject
                 }
             } catch (Exception $e) {
                 // Continue with other properties even if one fails
-            }
-        }
+            }//end try
+        }//end foreach
 
         return $data;
 
@@ -984,7 +991,6 @@ class SaveObject
           );
 
         foreach ($writeBackProperties as $propertyName => $definition) {
-
             // Skip if property not present in data or is empty
             if (!isset($data[$propertyName]) || empty($data[$propertyName])) {
                 continue;
@@ -1077,7 +1083,6 @@ class SaveObject
                         data: $targetData,
                         uuid: $targetUuid
                     );
-
                 } catch (Exception $e) {
                     // Continue with other targets even if one fails
                 }//end try
@@ -1120,8 +1125,8 @@ class SaveObject
     {
         try {
             $schemaObject = $schema->getSchemaObject($this->urlGenerator);
-            $properties = json_decode(json_encode($schemaObject), associative: true)['properties'] ?? [];
-            $required = json_decode(json_encode($schemaObject), associative: true)['required'] ?? [];
+            $properties   = json_decode(json_encode($schemaObject), associative: true)['properties'] ?? [];
+            $required     = json_decode(json_encode($schemaObject), associative: true)['required'] ?? [];
         } catch (Exception $e) {
             return $data;
         }
@@ -1134,39 +1139,39 @@ class SaveObject
                 continue;
             }
 
-            $value = $sanitizedData[$propertyName];
+            $value        = $sanitizedData[$propertyName];
             $propertyType = $propertyDefinition['type'] ?? null;
-            $isRequired = in_array($propertyName, $required) || ($propertyDefinition['required'] ?? false);
+            $isRequired   = in_array($propertyName, $required) || ($propertyDefinition['required'] ?? false);
 
             // Handle object properties
             if ($propertyType === 'object') {
                 if ($value === '') {
                     // Empty string to null for object properties
                     $sanitizedData[$propertyName] = null;
-                } elseif (is_array($value) && empty($value) && !$isRequired) {
+                } else if (is_array($value) && empty($value) && !$isRequired) {
                     // Empty object {} to null for non-required object properties
                     $sanitizedData[$propertyName] = null;
-                } elseif (is_array($value) && empty($value) && $isRequired) {
+                } else if (is_array($value) && empty($value) && $isRequired) {
                     // Keep empty object {} for required properties - will fail validation with clear error
                 }
             }
             // Handle array properties
-            elseif ($propertyType === 'array') {
+            else if ($propertyType === 'array') {
                 if ($value === '') {
                     // Empty string to null for array properties
                     $sanitizedData[$propertyName] = null;
-                } elseif (is_array($value)) {
+                } else if (is_array($value)) {
                     // Check minItems constraint
                     $minItems = $propertyDefinition['minItems'] ?? 0;
 
                     if (empty($value) && $minItems > 0) {
                         // Keep empty array [] for arrays with minItems > 0 - will fail validation with clear error
-                    } elseif (empty($value) && $minItems === 0) {
+                    } else if (empty($value) && $minItems === 0) {
                         // Empty array is valid for arrays with no minItems constraint
                     } else {
                         // Handle array items that might contain empty strings
                         $sanitizedArray = [];
-                        $hasChanges = false;
+                        $hasChanges     = false;
                         foreach ($value as $index => $item) {
                             if ($item === '') {
                                 $sanitizedArray[$index] = null;
@@ -1175,14 +1180,15 @@ class SaveObject
                                 $sanitizedArray[$index] = $item;
                             }
                         }
+
                         if ($hasChanges) {
                             $sanitizedData[$propertyName] = $sanitizedArray;
                         }
-                    }
-                }
+                    }//end if
+                }//end if
             }
             // Handle other property types with empty strings
-            elseif ($value === '' && in_array($propertyType, ['string', 'number', 'integer', 'boolean'])) {
+            else if ($value === '' && in_array($propertyType, ['string', 'number', 'integer', 'boolean'])) {
                 if (!$isRequired) {
                     // Convert empty string to null for non-required scalar properties
                     $sanitizedData[$propertyName] = null;
@@ -1190,7 +1196,7 @@ class SaveObject
                     // Keep empty string for required properties - will fail validation with clear error
                 }
             }
-        }
+        }//end foreach
 
         return $sanitizedData;
 
@@ -1233,14 +1239,13 @@ class SaveObject
         // Remove the @self property from the data.
         unset($data['@self']);
         unset($data['id']);
-        
+
         // Use @self.id as UUID if no UUID is provided
         if ($uuid === null && isset($selfData['id'])) {
             $uuid = $selfData['id'];
         }
 
         // Debug logging can be added here if needed
-
         // Set schema ID based on input type.
         $schemaId = null;
         if ($schema instanceof Schema === true) {
@@ -1252,6 +1257,7 @@ class SaveObject
                 if ($schemaId === null) {
                     throw new Exception("Could not resolve schema reference: $schema");
                 }
+
                 $schema = $this->schemaMapper->find(id: $schemaId);
             } else {
                 $schemaId = $schema;
@@ -1269,6 +1275,7 @@ class SaveObject
                 if ($registerId === null) {
                     throw new Exception("Could not resolve register reference: $register");
                 }
+
                 $register = $this->registerMapper->find(id: $registerId);
             } else {
                 $registerId = $register;
@@ -1278,7 +1285,6 @@ class SaveObject
 
         // NOTE: Do NOT sanitize here - let validation happen first in ObjectService
         // Sanitization will happen after validation but before cascading operations
-
         // If UUID is provided, try to find and update existing object.
         if ($uuid !== null) {
             try {
@@ -1409,7 +1415,7 @@ class SaveObject
 
         // Hydrate name and description from schema configuration.
         try {
-            $this->hydrateNameDescriptionSummaryAndImage($objectEntity, $schema);
+            $this->hydrateObjectMetadata($objectEntity, $schema);
         } catch (Exception $e) {
             // Continue without hydration if it fails
         }
@@ -1435,7 +1441,8 @@ class SaveObject
         }
 
         return $objectEntity;
-    }
+
+    }//end prepareObjectForCreation()
 
 
     /**
@@ -1473,13 +1480,14 @@ class SaveObject
         $existingObject->setObject($preparedData);
 
         // Hydrate name and description from schema configuration.
-        $this->hydrateNameDescriptionSummaryAndImage($existingObject, $schema);
+        $this->hydrateObjectMetadata($existingObject, $schema);
 
         // Update object relations.
         $existingObject = $this->updateObjectRelations($existingObject, $preparedData, $schema);
 
         return $existingObject;
-    }
+
+    }//end prepareObjectForUpdate()
 
 
     /**
@@ -1526,7 +1534,8 @@ class SaveObject
         } else {
             $objectEntity->setDepublished(null);
         }
-    }
+
+    }//end setSelfMetadata()
 
 
     /**
@@ -1553,12 +1562,13 @@ class SaveObject
         // Apply cascading operations
         $data = $this->cascadeObjects($objectEntity, $schema, $data);
         $data = $this->handleInverseRelationsWriteBack($objectEntity, $schema, $data);
-        
+
         // Apply default values (including slug generation)
         $data = $this->setDefaultValues($objectEntity, $schema, $data);
 
         return $data;
-    }
+
+    }//end prepareObjectData()
 
 
     /**
@@ -1599,7 +1609,8 @@ class SaveObject
             persist: false,
             validation: true
         );
-    }
+
+    }//end prepareObject()
 
 
     /**
@@ -1642,21 +1653,22 @@ class SaveObject
     /**
      * Check if a value should be treated as a file property
      *
-     * @param mixed $value The value to check
-     * @param Schema|null $schema Optional schema for property-based checking
+     * @param mixed       $value        The value to check
+     * @param Schema|null $schema       Optional schema for property-based checking
      * @param string|null $propertyName Optional property name for schema lookup
      *
-     * @return bool True if the value should be treated as a file property
+     * @return         bool True if the value should be treated as a file property
      * @phpstan-return bool
      */
-    private function isFileProperty($value, ?Schema $schema = null, ?string $propertyName = null): bool
+    private function isFileProperty($value, ?Schema $schema=null, ?string $propertyName=null): bool
     {
         // If we have schema and property name, use schema-based checking
         if ($schema !== null && $propertyName !== null) {
             $schemaProperties = $schema->getProperties() ?? [];
 
             if (!isset($schemaProperties[$propertyName])) {
-                return false; // Property not in schema, not a file
+                return false;
+                // Property not in schema, not a file
             }
 
             $propertyConfig = $schemaProperties[$propertyName];
@@ -1674,12 +1686,12 @@ class SaveObject
                 }
             }
 
-            return false; // Property exists but is not configured as file type
-        }
+            return false;
+            // Property exists but is not configured as file type
+        }//end if
 
         // Fallback to format-based checking when schema info is not available
         // This is used within handleFileProperty for individual value validation
-
         // Check for single file (data URI, base64, URL with file extension, or file object)
         if (is_string($value)) {
             // Data URI format
@@ -1688,9 +1700,9 @@ class SaveObject
             }
 
             // URL format (http/https) - but only if it looks like a downloadable file
-            if (filter_var($value, FILTER_VALIDATE_URL) &&
-                (strpos($value, 'http://') === 0 || strpos($value, 'https://') === 0)) {
-
+            if (filter_var($value, FILTER_VALIDATE_URL)
+                && (strpos($value, 'http://') === 0 || strpos($value, 'https://') === 0)
+            ) {
                 // Parse URL to get path
                 $urlPath = parse_url($value, PHP_URL_PATH);
                 if ($urlPath) {
@@ -1700,35 +1712,80 @@ class SaveObject
                     // Common file extensions that indicate downloadable files
                     $fileExtensions = [
                         // Documents
-                        'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp',
-                        'rtf', 'txt', 'csv',
+                        'pdf',
+                        'doc',
+                        'docx',
+                        'xls',
+                        'xlsx',
+                        'ppt',
+                        'pptx',
+                        'odt',
+                        'ods',
+                        'odp',
+                        'rtf',
+                        'txt',
+                        'csv',
                         // Images
-                        'jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'tiff', 'ico',
+                        'jpg',
+                        'jpeg',
+                        'png',
+                        'gif',
+                        'bmp',
+                        'svg',
+                        'webp',
+                        'tiff',
+                        'ico',
                         // Videos
-                        'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', '3gp',
+                        'mp4',
+                        'avi',
+                        'mov',
+                        'wmv',
+                        'flv',
+                        'webm',
+                        'mkv',
+                        '3gp',
                         // Audio
-                        'mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma',
+                        'mp3',
+                        'wav',
+                        'ogg',
+                        'flac',
+                        'aac',
+                        'm4a',
+                        'wma',
                         // Archives
-                        'zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz',
+                        'zip',
+                        'rar',
+                        '7z',
+                        'tar',
+                        'gz',
+                        'bz2',
+                        'xz',
                         // Other common file types
-                        'xml', 'json', 'sql', 'exe', 'dmg', 'iso', 'deb', 'rpm'
+                        'xml',
+                        'json',
+                        'sql',
+                        'exe',
+                        'dmg',
+                        'iso',
+                        'deb',
+                        'rpm',
                     ];
 
                     // Only treat as file if it has a recognized file extension
                     if (in_array($extension, $fileExtensions)) {
                         return true;
                     }
-                }
+                }//end if
 
                 // Don't treat regular website URLs as files
                 return false;
-            }
+            }//end if
 
             // Base64 encoded string (simple heuristic)
             if (base64_encode(base64_decode($value, true)) === $value && strlen($value) > 100) {
                 return true;
             }
-        }
+        }//end if
 
         // Check for file object (array with required file object properties)
         if (is_array($value) && $this->isFileObject($value)) {
@@ -1743,34 +1800,84 @@ class SaveObject
                     if (strpos($item, 'data:') === 0) {
                         return true;
                     }
+
                     // URL with file extension
-                    if (filter_var($item, FILTER_VALIDATE_URL) &&
-                        (strpos($item, 'http://') === 0 || strpos($item, 'https://') === 0)) {
+                    if (filter_var($item, FILTER_VALIDATE_URL)
+                        && (strpos($item, 'http://') === 0 || strpos($item, 'https://') === 0)
+                    ) {
                         $urlPath = parse_url($item, PHP_URL_PATH);
                         if ($urlPath) {
-                            $extension = strtolower(pathinfo($urlPath, PATHINFO_EXTENSION));
+                            $extension      = strtolower(pathinfo($urlPath, PATHINFO_EXTENSION));
                             $fileExtensions = [
-                                'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp',
-                                'rtf', 'txt', 'csv', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp',
-                                'tiff', 'ico', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', '3gp',
-                                'mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma', 'zip', 'rar', '7z',
-                                'tar', 'gz', 'bz2', 'xz', 'xml', 'json', 'sql', 'exe', 'dmg', 'iso', 'deb', 'rpm'
+                                'pdf',
+                                'doc',
+                                'docx',
+                                'xls',
+                                'xlsx',
+                                'ppt',
+                                'pptx',
+                                'odt',
+                                'ods',
+                                'odp',
+                                'rtf',
+                                'txt',
+                                'csv',
+                                'jpg',
+                                'jpeg',
+                                'png',
+                                'gif',
+                                'bmp',
+                                'svg',
+                                'webp',
+                                'tiff',
+                                'ico',
+                                'mp4',
+                                'avi',
+                                'mov',
+                                'wmv',
+                                'flv',
+                                'webm',
+                                'mkv',
+                                '3gp',
+                                'mp3',
+                                'wav',
+                                'ogg',
+                                'flac',
+                                'aac',
+                                'm4a',
+                                'wma',
+                                'zip',
+                                'rar',
+                                '7z',
+                                'tar',
+                                'gz',
+                                'bz2',
+                                'xz',
+                                'xml',
+                                'json',
+                                'sql',
+                                'exe',
+                                'dmg',
+                                'iso',
+                                'deb',
+                                'rpm',
                             ];
                             if (in_array($extension, $fileExtensions)) {
                                 return true;
                             }
-                        }
-                    }
+                        }//end if
+                    }//end if
+
                     // Base64
                     if (base64_encode(base64_decode($item, true)) === $item && strlen($item) > 100) {
                         return true;
                     }
-                } elseif (is_array($item) && $this->isFileObject($item)) {
+                } else if (is_array($item) && $this->isFileObject($item)) {
                     // File object in array
                     return true;
-                }
-            }
-        }
+                }//end if
+            }//end foreach
+        }//end if
 
         return false;
 
@@ -1787,9 +1894,9 @@ class SaveObject
      *
      * @return bool Whether the array is a file object.
      *
-     * @psalm-param array<string, mixed> $value
-     * @phpstan-param array<string, mixed> $value
-     * @psalm-return bool
+     * @psalm-param    array<string, mixed> $value
+     * @phpstan-param  array<string, mixed> $value
+     * @psalm-return   bool
      * @phpstan-return bool
      */
     private function isFileObject(array $value): bool
@@ -1806,7 +1913,7 @@ class SaveObject
 
         // Should not be a regular data array with other purposes
         // File objects typically have file-specific properties
-        $fileProperties = ['id', 'title', 'path', 'type', 'size', 'accessUrl', 'downloadUrl', 'labels', 'extension', 'hash', 'modified', 'published'];
+        $fileProperties    = ['id', 'title', 'path', 'type', 'size', 'accessUrl', 'downloadUrl', 'labels', 'extension', 'hash', 'modified', 'published'];
         $hasFileProperties = false;
 
         foreach ($fileProperties as $prop) {
@@ -1839,20 +1946,20 @@ class SaveObject
      *
      * @throws Exception If file validation fails or file operations fail.
      *
-     * @psalm-param ObjectEntity $objectEntity
-     * @phpstan-param ObjectEntity $objectEntity
-     * @psalm-param array<string, mixed> &$object
-     * @phpstan-param array<string, mixed> &$object
-     * @psalm-param string $propertyName
-     * @phpstan-param string $propertyName
-     * @psalm-param Schema $schema
-     * @phpstan-param Schema $schema
-     * @psalm-return void
+     * @psalm-param    ObjectEntity $objectEntity
+     * @phpstan-param  ObjectEntity $objectEntity
+     * @psalm-param    array<string, mixed> &$object
+     * @phpstan-param  array<string, mixed> &$object
+     * @psalm-param    string $propertyName
+     * @phpstan-param  string $propertyName
+     * @psalm-param    Schema $schema
+     * @phpstan-param  Schema $schema
+     * @psalm-return   void
      * @phpstan-return void
      */
     private function handleFileProperty(ObjectEntity $objectEntity, array &$object, string $propertyName, Schema $schema): void
     {
-        $fileValue = $object[$propertyName];
+        $fileValue        = $object[$propertyName];
         $schemaProperties = $schema->getProperties() ?? [];
 
         // Get property configuration for this file property
@@ -1864,7 +1971,7 @@ class SaveObject
 
         // Determine if this is a direct file property or array[file]
         $isArrayProperty = ($propertyConfig['type'] ?? '') === 'array';
-        $fileConfig = $isArrayProperty ? ($propertyConfig['items'] ?? []) : $propertyConfig;
+        $fileConfig      = $isArrayProperty ? ($propertyConfig['items'] ?? []) : $propertyConfig;
 
         // Validate that the property is configured for files
         if (($fileConfig['type'] ?? '') !== 'file') {
@@ -1878,24 +1985,23 @@ class SaveObject
             }
 
                          $fileIds = [];
-             foreach ($fileValue as $index => $singleFileContent) {
-                 if ($this->isFileProperty($singleFileContent)) {
-                     $fileId = $this->processSingleFileProperty(
-                         objectEntity: $objectEntity,
-                         fileInput: $singleFileContent,
-                         propertyName: $propertyName,
-                         fileConfig: $fileConfig,
-                         index: $index
-                     );
-                     if ($fileId !== null) {
-                         $fileIds[] = $fileId;
-                     }
-                 }
-             }
+            foreach ($fileValue as $index => $singleFileContent) {
+                if ($this->isFileProperty($singleFileContent)) {
+                    $fileId = $this->processSingleFileProperty(
+                        objectEntity: $objectEntity,
+                        fileInput: $singleFileContent,
+                        propertyName: $propertyName,
+                        fileConfig: $fileConfig,
+                        index: $index
+                    );
+                    if ($fileId !== null) {
+                        $fileIds[] = $fileId;
+                    }
+                }
+            }
 
             // Replace the file content with file IDs in the object data
             $object[$propertyName] = $fileIds;
-
         } else {
             // Handle single file
             if ($this->isFileProperty($fileValue)) {
@@ -1911,7 +2017,7 @@ class SaveObject
                     $object[$propertyName] = $fileId;
                 }
             }
-        }
+        }//end if
 
     }//end handleFileProperty()
 
@@ -1934,17 +2040,17 @@ class SaveObject
      *
      * @throws Exception If file validation fails or file operations fail.
      *
-     * @psalm-param ObjectEntity $objectEntity
-     * @phpstan-param ObjectEntity $objectEntity
-     * @psalm-param mixed $fileInput
-     * @phpstan-param mixed $fileInput
-     * @psalm-param string $propertyName
-     * @phpstan-param string $propertyName
-     * @psalm-param array<string, mixed> $fileConfig
-     * @phpstan-param array<string, mixed> $fileConfig
-     * @psalm-param int|null $index
-     * @phpstan-param int|null $index
-     * @psalm-return int|null
+     * @psalm-param    ObjectEntity $objectEntity
+     * @phpstan-param  ObjectEntity $objectEntity
+     * @psalm-param    mixed $fileInput
+     * @phpstan-param  mixed $fileInput
+     * @psalm-param    string $propertyName
+     * @phpstan-param  string $propertyName
+     * @psalm-param    array<string, mixed> $fileConfig
+     * @phpstan-param  array<string, mixed> $fileConfig
+     * @psalm-param    int|null $index
+     * @phpstan-param  int|null $index
+     * @psalm-return   int|null
      * @phpstan-return int|null
      */
     private function processSingleFileProperty(
@@ -1952,21 +2058,20 @@ class SaveObject
         $fileInput,
         string $propertyName,
         array $fileConfig,
-        ?int $index = null
+        ?int $index=null
     ): ?int {
         try {
             // Determine input type and process accordingly
             if (is_string($fileInput)) {
                 // Handle string inputs (base64, data URI, or URL)
                 return $this->processStringFileInput($objectEntity, $fileInput, $propertyName, $fileConfig, $index);
-            } elseif (is_array($fileInput) && $this->isFileObject($fileInput)) {
+            } else if (is_array($fileInput) && $this->isFileObject($fileInput)) {
                 // Handle file object input
                 return $this->processFileObjectInput($objectEntity, $fileInput, $propertyName, $fileConfig, $index);
             } else {
                 throw new Exception("Unsupported file input type for property '$propertyName'");
             }
         } catch (Exception $e) {
-
             throw $e;
         }
 
@@ -1986,17 +2091,17 @@ class SaveObject
      *
      * @throws Exception If file processing fails.
      *
-     * @psalm-param ObjectEntity $objectEntity
-     * @phpstan-param ObjectEntity $objectEntity
-     * @psalm-param string $fileInput
-     * @phpstan-param string $fileInput
-     * @psalm-param string $propertyName
-     * @phpstan-param string $propertyName
-     * @psalm-param array<string, mixed> $fileConfig
-     * @phpstan-param array<string, mixed> $fileConfig
-     * @psalm-param int|null $index
-     * @phpstan-param int|null $index
-     * @psalm-return int
+     * @psalm-param    ObjectEntity $objectEntity
+     * @phpstan-param  ObjectEntity $objectEntity
+     * @psalm-param    string $fileInput
+     * @phpstan-param  string $fileInput
+     * @psalm-param    string $propertyName
+     * @phpstan-param  string $propertyName
+     * @psalm-param    array<string, mixed> $fileConfig
+     * @phpstan-param  array<string, mixed> $fileConfig
+     * @psalm-param    int|null $index
+     * @phpstan-param  int|null $index
+     * @psalm-return   int
      * @phpstan-return int
      */
     private function processStringFileInput(
@@ -2004,14 +2109,15 @@ class SaveObject
         string $fileInput,
         string $propertyName,
         array $fileConfig,
-        ?int $index = null
+        ?int $index=null
     ): int {
         // Check if it's a URL
-        if (filter_var($fileInput, FILTER_VALIDATE_URL) &&
-            (strpos($fileInput, 'http://') === 0 || strpos($fileInput, 'https://') === 0)) {
+        if (filter_var($fileInput, FILTER_VALIDATE_URL)
+            && (strpos($fileInput, 'http://') === 0 || strpos($fileInput, 'https://') === 0)
+        ) {
             // Fetch file content from URL
             $fileContent = $this->fetchFileFromUrl($fileInput);
-            $fileData = $this->parseFileDataFromUrl($fileInput, $fileContent);
+            $fileData    = $this->parseFileDataFromUrl($fileInput, $fileContent);
         } else {
             // Parse as base64 or data URI
             $fileData = $this->parseFileData($fileInput);
@@ -2031,7 +2137,8 @@ class SaveObject
             objectEntity: $objectEntity,
             fileName: $filename,
             content: $fileData['content'],
-            share: false, // Don't auto-share, let user decide
+            share: false,
+        // Don't auto-share, let user decide
             tags: $autoTags
         );
 
@@ -2053,17 +2160,17 @@ class SaveObject
      *
      * @throws Exception If file processing fails.
      *
-     * @psalm-param ObjectEntity $objectEntity
-     * @phpstan-param ObjectEntity $objectEntity
-     * @psalm-param array<string, mixed> $fileObject
-     * @phpstan-param array<string, mixed> $fileObject
-     * @psalm-param string $propertyName
-     * @phpstan-param string $propertyName
-     * @psalm-param array<string, mixed> $fileConfig
-     * @phpstan-param array<string, mixed> $fileConfig
-     * @psalm-param int|null $index
-     * @phpstan-param int|null $index
-     * @psalm-return int
+     * @psalm-param    ObjectEntity $objectEntity
+     * @phpstan-param  ObjectEntity $objectEntity
+     * @psalm-param    array<string, mixed> $fileObject
+     * @phpstan-param  array<string, mixed> $fileObject
+     * @psalm-param    string $propertyName
+     * @phpstan-param  string $propertyName
+     * @psalm-param    array<string, mixed> $fileConfig
+     * @phpstan-param  array<string, mixed> $fileConfig
+     * @psalm-param    int|null $index
+     * @phpstan-param  int|null $index
+     * @psalm-return   int
      * @phpstan-return int
      */
     private function processFileObjectInput(
@@ -2071,7 +2178,7 @@ class SaveObject
         array $fileObject,
         string $propertyName,
         array $fileConfig,
-        ?int $index = null
+        ?int $index=null
     ): int {
         // If file object has an ID, try to use the existing file
         if (isset($fileObject['id'])) {
@@ -2092,15 +2199,14 @@ class SaveObject
                 }
             } catch (Exception $e) {
                 // Existing file not accessible, continue to create new one
-
             }
-        }
+        }//end if
 
         // If no ID or existing file not accessible, create a new file
         // This requires downloadUrl or accessUrl to fetch content
         if (isset($fileObject['downloadUrl'])) {
             $fileUrl = $fileObject['downloadUrl'];
-        } elseif (isset($fileObject['accessUrl'])) {
+        } else if (isset($fileObject['accessUrl'])) {
             $fileUrl = $fileObject['accessUrl'];
         } else {
             throw new Exception("File object for property '$propertyName' has no downloadable URL");
@@ -2121,22 +2227,25 @@ class SaveObject
      *
      * @throws Exception If the URL cannot be fetched.
      *
-     * @psalm-param string $url
-     * @phpstan-param string $url
-     * @psalm-return string
+     * @psalm-param    string $url
+     * @phpstan-param  string $url
+     * @psalm-return   string
      * @phpstan-return string
      */
     private function fetchFileFromUrl(string $url): string
     {
         // Create a context with appropriate options
-        $context = stream_context_create([
-            'http' => [
-                'timeout' => 30, // 30 second timeout
-                'user_agent' => 'OpenRegister/1.0',
-                'follow_location' => true,
-                'max_redirects' => 5,
-            ]
-        ]);
+        $context = stream_context_create(
+                [
+                    'http' => [
+                        'timeout'         => 30,
+        // 30 second timeout
+                        'user_agent'      => 'OpenRegister/1.0',
+                        'follow_location' => true,
+                        'max_redirects'   => 5,
+                    ],
+                ]
+                );
 
         $content = file_get_contents($url, false, $context);
 
@@ -2159,17 +2268,17 @@ class SaveObject
      *
      * @throws Exception If the file data cannot be parsed.
      *
-     * @psalm-param string $url
-     * @phpstan-param string $url
-     * @psalm-param string $content
-     * @phpstan-param string $content
-     * @psalm-return array{content: string, mimeType: string, extension: string, size: int}
+     * @psalm-param    string $url
+     * @phpstan-param  string $url
+     * @psalm-param    string $content
+     * @phpstan-param  string $content
+     * @psalm-return   array{content: string, mimeType: string, extension: string, size: int}
      * @phpstan-return array{content: string, mimeType: string, extension: string, size: int}
      */
     private function parseFileDataFromUrl(string $url, string $content): array
     {
         // Try to detect MIME type from content
-        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $finfo    = new \finfo(FILEINFO_MIME_TYPE);
         $mimeType = $finfo->buffer($content);
 
         if ($mimeType === false) {
@@ -2178,7 +2287,7 @@ class SaveObject
 
         // Try to get extension from URL
         $parsedUrl = parse_url($url);
-        $path = $parsedUrl['path'] ?? '';
+        $path      = $parsedUrl['path'] ?? '';
         $extension = pathinfo($path, PATHINFO_EXTENSION);
 
         // If no extension from URL, get from MIME type
@@ -2187,10 +2296,10 @@ class SaveObject
         }
 
         return [
-            'content' => $content,
-            'mimeType' => $mimeType,
+            'content'   => $content,
+            'mimeType'  => $mimeType,
             'extension' => $extension,
-            'size' => strlen($content)
+            'size'      => strlen($content),
         ];
 
     }//end parseFileDataFromUrl()
@@ -2208,18 +2317,18 @@ class SaveObject
      *
      * @throws Exception If validation fails.
      *
-     * @psalm-param \OCP\Files\File $file
-     * @phpstan-param \OCP\Files\File $file
-     * @psalm-param array<string, mixed> $fileConfig
-     * @phpstan-param array<string, mixed> $fileConfig
-     * @psalm-param string $propertyName
-     * @phpstan-param string $propertyName
-     * @psalm-param int|null $index
-     * @phpstan-param int|null $index
-     * @psalm-return void
+     * @psalm-param    \OCP\Files\File $file
+     * @phpstan-param  \OCP\Files\File $file
+     * @psalm-param    array<string, mixed> $fileConfig
+     * @phpstan-param  array<string, mixed> $fileConfig
+     * @psalm-param    string $propertyName
+     * @phpstan-param  string $propertyName
+     * @psalm-param    int|null $index
+     * @phpstan-param  int|null $index
+     * @psalm-return   void
      * @phpstan-return void
      */
-    private function validateExistingFileAgainstConfig($file, array $fileConfig, string $propertyName, ?int $index = null): void
+    private function validateExistingFileAgainstConfig($file, array $fileConfig, string $propertyName, ?int $index=null): void
     {
         $errorPrefix = $index !== null ? "Existing file at $propertyName[$index]" : "Existing file at $propertyName";
 
@@ -2228,8 +2337,7 @@ class SaveObject
             $fileMimeType = $file->getMimeType();
             if (!in_array($fileMimeType, $fileConfig['allowedTypes'], true)) {
                 throw new Exception(
-                    "$errorPrefix has invalid type '$fileMimeType'. " .
-                    "Allowed types: " . implode(', ', $fileConfig['allowedTypes'])
+                    "$errorPrefix has invalid type '$fileMimeType'. "."Allowed types: ".implode(', ', $fileConfig['allowedTypes'])
                 );
             }
         }
@@ -2239,8 +2347,7 @@ class SaveObject
             $fileSize = $file->getSize();
             if ($fileSize > $fileConfig['maxSize']) {
                 throw new Exception(
-                    "$errorPrefix exceeds maximum size ({$fileConfig['maxSize']} bytes). " .
-                    "File size: {$fileSize} bytes"
+                    "$errorPrefix exceeds maximum size ({$fileConfig['maxSize']} bytes). "."File size: {$fileSize} bytes"
                 );
             }
         }
@@ -2258,18 +2365,18 @@ class SaveObject
      *
      * @return void
      *
-     * @psalm-param \OCP\Files\File $file
-     * @phpstan-param \OCP\Files\File $file
-     * @psalm-param array<string, mixed> $fileConfig
-     * @phpstan-param array<string, mixed> $fileConfig
-     * @psalm-param string $propertyName
-     * @phpstan-param string $propertyName
-     * @psalm-param int|null $index
-     * @phpstan-param int|null $index
-     * @psalm-return void
+     * @psalm-param    \OCP\Files\File $file
+     * @phpstan-param  \OCP\Files\File $file
+     * @psalm-param    array<string, mixed> $fileConfig
+     * @phpstan-param  array<string, mixed> $fileConfig
+     * @psalm-param    string $propertyName
+     * @phpstan-param  string $propertyName
+     * @psalm-param    int|null $index
+     * @phpstan-param  int|null $index
+     * @psalm-return   void
      * @phpstan-return void
      */
-    private function applyAutoTagsToExistingFile($file, array $fileConfig, string $propertyName, ?int $index = null): void
+    private function applyAutoTagsToExistingFile($file, array $fileConfig, string $propertyName, ?int $index=null): void
     {
         $autoTags = $this->prepareAutoTags($fileConfig, $propertyName, $index);
 
@@ -2277,18 +2384,18 @@ class SaveObject
             // Get existing tags and merge with auto tags
             try {
                 $formattedFile = $this->fileService->formatFile($file);
-                $existingTags = $formattedFile['labels'] ?? [];
-                $allTags = array_unique(array_merge($existingTags, $autoTags));
+                $existingTags  = $formattedFile['labels'] ?? [];
+                $allTags       = array_unique(array_merge($existingTags, $autoTags));
 
                 // Update file with merged tags
                 $this->fileService->updateFile(
                     filePath: $file->getId(),
-                    content: null, // Don't change content
+                    content: null,
+                // Don't change content
                     tags: $allTags
                 );
             } catch (Exception $e) {
                 // Log but don't fail - auto tagging is not critical
-
             }
         }
 
@@ -2304,15 +2411,15 @@ class SaveObject
      *
      * @throws Exception If the file data format is invalid.
      *
-     * @psalm-param string $fileContent
-     * @phpstan-param string $fileContent
-     * @psalm-return array{content: string, mimeType: string, extension: string, size: int}
+     * @psalm-param    string $fileContent
+     * @phpstan-param  string $fileContent
+     * @psalm-return   array{content: string, mimeType: string, extension: string, size: int}
      * @phpstan-return array{content: string, mimeType: string, extension: string, size: int}
      */
     private function parseFileData(string $fileContent): array
     {
-        $content = '';
-        $mimeType = 'application/octet-stream';
+        $content   = '';
+        $mimeType  = 'application/octet-stream';
         $extension = 'bin';
 
         // Handle data URI format (data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...)
@@ -2320,7 +2427,7 @@ class SaveObject
             // Extract MIME type and content from data URI
             if (preg_match('/^data:([^;]+);base64,(.+)$/', $fileContent, $matches)) {
                 $mimeType = $matches[1];
-                $content = base64_decode($matches[2]);
+                $content  = base64_decode($matches[2]);
 
                 if ($content === false) {
                     throw new Exception('Invalid base64 content in data URI');
@@ -2336,21 +2443,21 @@ class SaveObject
             }
 
             // Try to detect MIME type from content
-            $finfo = new \finfo(FILEINFO_MIME_TYPE);
+            $finfo            = new \finfo(FILEINFO_MIME_TYPE);
             $detectedMimeType = $finfo->buffer($content);
             if ($detectedMimeType !== false) {
                 $mimeType = $detectedMimeType;
             }
-        }
+        }//end if
 
         // Determine file extension from MIME type
         $extension = $this->getExtensionFromMimeType($mimeType);
 
         return [
-            'content' => $content,
-            'mimeType' => $mimeType,
+            'content'   => $content,
+            'mimeType'  => $mimeType,
             'extension' => $extension,
-            'size' => strlen($content)
+            'size'      => strlen($content),
         ];
 
     }//end parseFileData()
@@ -2368,18 +2475,18 @@ class SaveObject
      *
      * @throws Exception If validation fails.
      *
-     * @psalm-param array{content: string, mimeType: string, extension: string, size: int} $fileData
-     * @phpstan-param array{content: string, mimeType: string, extension: string, size: int} $fileData
-     * @psalm-param array<string, mixed> $fileConfig
-     * @phpstan-param array<string, mixed> $fileConfig
-     * @psalm-param string $propertyName
-     * @phpstan-param string $propertyName
-     * @psalm-param int|null $index
-     * @phpstan-param int|null $index
-     * @psalm-return void
+     * @psalm-param    array{content: string, mimeType: string, extension: string, size: int} $fileData
+     * @phpstan-param  array{content: string, mimeType: string, extension: string, size: int} $fileData
+     * @psalm-param    array<string, mixed> $fileConfig
+     * @phpstan-param  array<string, mixed> $fileConfig
+     * @psalm-param    string $propertyName
+     * @phpstan-param  string $propertyName
+     * @psalm-param    int|null $index
+     * @phpstan-param  int|null $index
+     * @psalm-return   void
      * @phpstan-return void
      */
-    private function validateFileAgainstConfig(array $fileData, array $fileConfig, string $propertyName, ?int $index = null): void
+    private function validateFileAgainstConfig(array $fileData, array $fileConfig, string $propertyName, ?int $index=null): void
     {
         $errorPrefix = $index !== null ? "File at $propertyName[$index]" : "File at $propertyName";
 
@@ -2387,8 +2494,7 @@ class SaveObject
         if (isset($fileConfig['allowedTypes']) && !empty($fileConfig['allowedTypes'])) {
             if (!in_array($fileData['mimeType'], $fileConfig['allowedTypes'], true)) {
                 throw new Exception(
-                    "$errorPrefix has invalid type '{$fileData['mimeType']}'. " .
-                    "Allowed types: " . implode(', ', $fileConfig['allowedTypes'])
+                    "$errorPrefix has invalid type '{$fileData['mimeType']}'. "."Allowed types: ".implode(', ', $fileConfig['allowedTypes'])
                 );
             }
         }
@@ -2397,8 +2503,7 @@ class SaveObject
         if (isset($fileConfig['maxSize']) && $fileConfig['maxSize'] > 0) {
             if ($fileData['size'] > $fileConfig['maxSize']) {
                 throw new Exception(
-                    "$errorPrefix exceeds maximum size ({$fileConfig['maxSize']} bytes). " .
-                    "File size: {$fileData['size']} bytes"
+                    "$errorPrefix exceeds maximum size ({$fileConfig['maxSize']} bytes). "."File size: {$fileData['size']} bytes"
                 );
             }
         }
@@ -2415,18 +2520,18 @@ class SaveObject
      *
      * @return string The generated filename.
      *
-     * @psalm-param string $propertyName
-     * @phpstan-param string $propertyName
-     * @psalm-param string $extension
-     * @phpstan-param string $extension
-     * @psalm-param int|null $index
-     * @phpstan-param int|null $index
-     * @psalm-return string
+     * @psalm-param    string $propertyName
+     * @phpstan-param  string $propertyName
+     * @psalm-param    string $extension
+     * @phpstan-param  string $extension
+     * @psalm-param    int|null $index
+     * @phpstan-param  int|null $index
+     * @psalm-return   string
      * @phpstan-return string
      */
-    private function generateFileName(string $propertyName, string $extension, ?int $index = null): string
+    private function generateFileName(string $propertyName, string $extension, ?int $index=null): string
     {
-        $timestamp = time();
+        $timestamp   = time();
         $indexSuffix = $index !== null ? "_$index" : '';
 
         return "{$propertyName}{$indexSuffix}_{$timestamp}.{$extension}";
@@ -2443,16 +2548,16 @@ class SaveObject
      *
      * @return array The prepared auto tags.
      *
-     * @psalm-param array<string, mixed> $fileConfig
-     * @phpstan-param array<string, mixed> $fileConfig
-     * @psalm-param string $propertyName
-     * @phpstan-param string $propertyName
-     * @psalm-param int|null $index
-     * @phpstan-param int|null $index
-     * @psalm-return array<int, string>
+     * @psalm-param    array<string, mixed> $fileConfig
+     * @phpstan-param  array<string, mixed> $fileConfig
+     * @psalm-param    string $propertyName
+     * @phpstan-param  string $propertyName
+     * @psalm-param    int|null $index
+     * @phpstan-param  int|null $index
+     * @psalm-return   array<int, string>
      * @phpstan-return array<int, string>
      */
-    private function prepareAutoTags(array $fileConfig, string $propertyName, ?int $index = null): array
+    private function prepareAutoTags(array $fileConfig, string $propertyName, ?int $index=null): array
     {
         $autoTags = $fileConfig['autoTags'] ?? [];
 
@@ -2465,7 +2570,7 @@ class SaveObject
 
             // Replace index placeholder for array properties
             if ($index !== null) {
-                $tag = str_replace('{index}', (string)$index, $tag);
+                $tag = str_replace('{index}', (string) $index, $tag);
             }
 
             $processedTags[] = $tag;
@@ -2483,68 +2588,68 @@ class SaveObject
      *
      * @return string The file extension.
      *
-     * @psalm-param string $mimeType
-     * @phpstan-param string $mimeType
-     * @psalm-return string
+     * @psalm-param    string $mimeType
+     * @phpstan-param  string $mimeType
+     * @psalm-return   string
      * @phpstan-return string
      */
     private function getExtensionFromMimeType(string $mimeType): string
     {
         $mimeToExtension = [
             // Images
-            'image/jpeg' => 'jpg',
-            'image/jpg' => 'jpg',
-            'image/png' => 'png',
-            'image/gif' => 'gif',
-            'image/webp' => 'webp',
-            'image/svg+xml' => 'svg',
-            'image/bmp' => 'bmp',
-            'image/tiff' => 'tiff',
-            'image/x-icon' => 'ico',
+            'image/jpeg'                                                                => 'jpg',
+            'image/jpg'                                                                 => 'jpg',
+            'image/png'                                                                 => 'png',
+            'image/gif'                                                                 => 'gif',
+            'image/webp'                                                                => 'webp',
+            'image/svg+xml'                                                             => 'svg',
+            'image/bmp'                                                                 => 'bmp',
+            'image/tiff'                                                                => 'tiff',
+            'image/x-icon'                                                              => 'ico',
 
             // Documents
-            'application/pdf' => 'pdf',
-            'application/msword' => 'doc',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
-            'application/vnd.ms-excel' => 'xls',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'xlsx',
-            'application/vnd.ms-powerpoint' => 'ppt',
+            'application/pdf'                                                           => 'pdf',
+            'application/msword'                                                        => 'doc',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'   => 'docx',
+            'application/vnd.ms-excel'                                                  => 'xls',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'         => 'xlsx',
+            'application/vnd.ms-powerpoint'                                             => 'ppt',
             'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'pptx',
-            'application/rtf' => 'rtf',
-            'application/vnd.oasis.opendocument.text' => 'odt',
-            'application/vnd.oasis.opendocument.spreadsheet' => 'ods',
-            'application/vnd.oasis.opendocument.presentation' => 'odp',
+            'application/rtf'                                                           => 'rtf',
+            'application/vnd.oasis.opendocument.text'                                   => 'odt',
+            'application/vnd.oasis.opendocument.spreadsheet'                            => 'ods',
+            'application/vnd.oasis.opendocument.presentation'                           => 'odp',
 
             // Text
-            'text/plain' => 'txt',
-            'text/csv' => 'csv',
-            'text/html' => 'html',
-            'text/css' => 'css',
-            'text/javascript' => 'js',
-            'application/json' => 'json',
-            'application/xml' => 'xml',
-            'text/xml' => 'xml',
+            'text/plain'                                                                => 'txt',
+            'text/csv'                                                                  => 'csv',
+            'text/html'                                                                 => 'html',
+            'text/css'                                                                  => 'css',
+            'text/javascript'                                                           => 'js',
+            'application/json'                                                          => 'json',
+            'application/xml'                                                           => 'xml',
+            'text/xml'                                                                  => 'xml',
 
             // Archives
-            'application/zip' => 'zip',
-            'application/x-rar-compressed' => 'rar',
-            'application/x-7z-compressed' => '7z',
-            'application/x-tar' => 'tar',
-            'application/gzip' => 'gz',
+            'application/zip'                                                           => 'zip',
+            'application/x-rar-compressed'                                              => 'rar',
+            'application/x-7z-compressed'                                               => '7z',
+            'application/x-tar'                                                         => 'tar',
+            'application/gzip'                                                          => 'gz',
 
             // Audio
-            'audio/mpeg' => 'mp3',
-            'audio/wav' => 'wav',
-            'audio/ogg' => 'ogg',
-            'audio/aac' => 'aac',
-            'audio/flac' => 'flac',
+            'audio/mpeg'                                                                => 'mp3',
+            'audio/wav'                                                                 => 'wav',
+            'audio/ogg'                                                                 => 'ogg',
+            'audio/aac'                                                                 => 'aac',
+            'audio/flac'                                                                => 'flac',
 
             // Video
-            'video/mp4' => 'mp4',
-            'video/mpeg' => 'mpeg',
-            'video/quicktime' => 'mov',
-            'video/x-msvideo' => 'avi',
-            'video/webm' => 'webm',
+            'video/mp4'                                                                 => 'mp4',
+            'video/mpeg'                                                                => 'mpeg',
+            'video/quicktime'                                                           => 'mov',
+            'video/x-msvideo'                                                           => 'avi',
+            'video/webm'                                                                => 'webm',
         ];
 
         return $mimeToExtension[$mimeType] ?? 'bin';
@@ -2704,12 +2809,14 @@ class SaveObject
             if (array_keys($value) !== range(0, count($value) - 1)) {
                 return !$this->isEffectivelyEmptyObject($value);
             }
+
             // For indexed arrays, check if any element is not empty
             foreach ($value as $item) {
                 if ($this->isValueNotEmpty($item)) {
                     return true;
                 }
             }
+
             return false;
         }
 

@@ -137,7 +137,7 @@ class Configuration extends Entity implements JsonSerializable
      * Set the registers of the configuration
      *
      * @param array<int>|null $registers Array of register IDs or null
-     * 
+     *
      * @return void
      */
     public function setRegisters(?array $registers): void
@@ -163,7 +163,7 @@ class Configuration extends Entity implements JsonSerializable
      * Set the schemas of the configuration
      *
      * @param array<int>|null $schemas Array of schema IDs or null
-     * 
+     *
      * @return void
      */
     public function setSchemas(?array $schemas): void
@@ -189,7 +189,7 @@ class Configuration extends Entity implements JsonSerializable
      * Set the objects of the configuration
      *
      * @param array<int>|null $objects Array of object IDs or null
-     * 
+     *
      * @return void
      */
     public function setObjects(?array $objects): void
@@ -275,12 +275,13 @@ class Configuration extends Entity implements JsonSerializable
 
     }//end jsonSerialize()
 
+
     /**
      * String representation of the configuration
-     * 
+     *
      * This magic method is required for proper entity handling in Nextcloud
      * when the framework needs to convert the object to a string.
-     * 
+     *
      * @return string String representation of the configuration
      */
     public function __toString(): string
@@ -289,19 +290,21 @@ class Configuration extends Entity implements JsonSerializable
         if ($this->title !== null && $this->title !== '') {
             return $this->title;
         }
-        
+
         // Fallback to type if available
         if ($this->type !== null && $this->type !== '') {
-            return 'Config: ' . $this->type;
+            return 'Config: '.$this->type;
         }
-        
+
         // Fallback to ID if available
         if ($this->id !== null) {
-            return 'Configuration #' . $this->id;
+            return 'Configuration #'.$this->id;
         }
-        
+
         // Final fallback
         return 'Configuration';
-    }
+
+    }//end __toString()
+
 
 }//end class

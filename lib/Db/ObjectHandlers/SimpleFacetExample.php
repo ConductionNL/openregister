@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
 class SimpleFacetExample
 {
 
+
     /**
      * Constructor for SimpleFacetExample
      *
@@ -38,6 +39,7 @@ class SimpleFacetExample
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper
     ) {
+
     }//end __construct()
 
 
@@ -53,26 +55,26 @@ class SimpleFacetExample
     {
         $query = [
             // Basic search filters
-            '@self' => [
-                'register' => 1,
-                'organisation' => 'IS NOT NULL'
+            '@self'   => [
+                'register'     => 1,
+                'organisation' => 'IS NOT NULL',
             ],
-            'status' => 'active',
-            
+            'status'  => 'active',
+
             // Simple facet configuration
             '_facets' => [
                 // Metadata facets (handled by MetaDataFacetHandler)
-                '@self' => [
+                '@self'    => [
                     'register' => ['type' => 'terms'],
-                    'schema' => ['type' => 'terms'],
-                    'owner' => ['type' => 'terms']
+                    'schema'   => ['type' => 'terms'],
+                    'owner'    => ['type' => 'terms'],
                 ],
-                
+
                 // Object field facets (handled by MariaDbFacetHandler)
-                'status' => ['type' => 'terms'],
+                'status'   => ['type' => 'terms'],
                 'priority' => ['type' => 'terms'],
-                'category' => ['type' => 'terms']
-            ]
+                'category' => ['type' => 'terms'],
+            ],
         ];
 
         return $this->objectEntityMapper->getSimpleFacets($query);
@@ -91,34 +93,34 @@ class SimpleFacetExample
     {
         $query = [
             // Search filters
-            '@self' => [
-                'register' => [1, 2, 3]
+            '@self'      => [
+                'register' => [1, 2, 3],
             ],
             '_published' => true,
-            
+
             // Date histogram facets
-            '_facets' => [
-                '@self' => [
+            '_facets'    => [
+                '@self'      => [
                     'created' => [
-                        'type' => 'date_histogram',
-                        'interval' => 'month'
+                        'type'     => 'date_histogram',
+                        'interval' => 'month',
                     ],
                     'updated' => [
-                        'type' => 'date_histogram',
-                        'interval' => 'week'
-                    ]
+                        'type'     => 'date_histogram',
+                        'interval' => 'week',
+                    ],
                 ],
-                
+
                 // Object field date histograms
                 'event_date' => [
-                    'type' => 'date_histogram',
-                    'interval' => 'day'
+                    'type'     => 'date_histogram',
+                    'interval' => 'day',
                 ],
                 'created_at' => [
-                    'type' => 'date_histogram',
-                    'interval' => 'year'
-                ]
-            ]
+                    'type'     => 'date_histogram',
+                    'interval' => 'year',
+                ],
+            ],
         ];
 
         return $this->objectEntityMapper->getSimpleFacets($query);
@@ -137,32 +139,32 @@ class SimpleFacetExample
     {
         $query = [
             // Search filters
-            'status' => 'active',
-            
+            'status'  => 'active',
+
             // Range facets
             '_facets' => [
                 // Price ranges (object field)
                 'price' => [
-                    'type' => 'range',
+                    'type'   => 'range',
                     'ranges' => [
                         ['to' => 50],
                         ['from' => 50, 'to' => 100],
                         ['from' => 100, 'to' => 500],
-                        ['from' => 500]
-                    ]
+                        ['from' => 500],
+                    ],
                 ],
-                
+
                 // Age groups (object field)
-                'age' => [
-                    'type' => 'range',
+                'age'   => [
+                    'type'   => 'range',
                     'ranges' => [
                         ['to' => 18],
                         ['from' => 18, 'to' => 25],
                         ['from' => 25, 'to' => 35],
-                        ['from' => 35]
-                    ]
-                ]
-            ]
+                        ['from' => 35],
+                    ],
+                ],
+            ],
         ];
 
         return $this->objectEntityMapper->getSimpleFacets($query);
@@ -181,48 +183,48 @@ class SimpleFacetExample
     {
         $query = [
             // Complex search filters
-            '@self' => [
+            '@self'      => [
                 'register' => [1, 2],
-                'schema' => 'IS NOT NULL'
+                'schema'   => 'IS NOT NULL',
             ],
-            'status' => ['active', 'pending'],
-            'category' => 'electronics',
+            'status'     => ['active', 'pending'],
+            'category'   => 'electronics',
             '_published' => true,
-            
+
             // Mixed facet configuration
-            '_facets' => [
+            '_facets'    => [
                 // Metadata facets
-                '@self' => [
+                '@self'         => [
                     'register' => ['type' => 'terms'],
-                    'schema' => ['type' => 'terms'],
-                    'created' => [
-                        'type' => 'date_histogram',
-                        'interval' => 'month'
-                    ]
+                    'schema'   => ['type' => 'terms'],
+                    'created'  => [
+                        'type'     => 'date_histogram',
+                        'interval' => 'month',
+                    ],
                 ],
-                
+
                 // Object field facets
-                'status' => ['type' => 'terms'],
-                'category' => ['type' => 'terms'],
-                'brand' => ['type' => 'terms'],
-                
+                'status'        => ['type' => 'terms'],
+                'category'      => ['type' => 'terms'],
+                'brand'         => ['type' => 'terms'],
+
                 // Range facets
-                'price' => [
-                    'type' => 'range',
+                'price'         => [
+                    'type'   => 'range',
                     'ranges' => [
                         ['to' => 100],
                         ['from' => 100, 'to' => 300],
                         ['from' => 300, 'to' => 600],
-                        ['from' => 600]
-                    ]
+                        ['from' => 600],
+                    ],
                 ],
-                
+
                 // Date histogram for object fields
                 'purchase_date' => [
-                    'type' => 'date_histogram',
-                    'interval' => 'week'
-                ]
-            ]
+                    'type'     => 'date_histogram',
+                    'interval' => 'week',
+                ],
+            ],
         ];
 
         return $this->objectEntityMapper->getSimpleFacets($query);
@@ -241,13 +243,13 @@ class SimpleFacetExample
     public function handlerAvailabilityCheck(): array
     {
         $query = [
-            '@self' => ['register' => 1],
+            '@self'   => ['register' => 1],
             '_facets' => [
-                '@self' => [
-                    'register' => ['type' => 'terms']
+                '@self'  => [
+                    'register' => ['type' => 'terms'],
                 ],
-                'status' => ['type' => 'terms']
-            ]
+                'status' => ['type' => 'terms'],
+            ],
         ];
 
         // This will return ['facets' => []] if handlers are not available
@@ -268,20 +270,20 @@ class SimpleFacetExample
     {
         // Query without _facets configuration
         $queryWithoutFacets = [
-            '@self' => ['register' => 1],
-            'status' => 'active'
+            '@self'  => ['register' => 1],
+            'status' => 'active',
         ];
 
         // Query with empty _facets configuration
         $queryWithEmptyFacets = [
-            '@self' => ['register' => 1],
-            'status' => 'active',
-            '_facets' => []
+            '@self'   => ['register' => 1],
+            'status'  => 'active',
+            '_facets' => [],
         ];
 
         return [
-            'without_facets' => $this->objectEntityMapper->getSimpleFacets($queryWithoutFacets),
-            'with_empty_facets' => $this->objectEntityMapper->getSimpleFacets($queryWithEmptyFacets)
+            'without_facets'    => $this->objectEntityMapper->getSimpleFacets($queryWithoutFacets),
+            'with_empty_facets' => $this->objectEntityMapper->getSimpleFacets($queryWithEmptyFacets),
         ];
 
     }//end emptyConfigurationHandling()
@@ -297,29 +299,30 @@ class SimpleFacetExample
     public function performanceTest(): array
     {
         $query = [
-            '@self' => ['register' => 1],
-            'status' => 'active',
+            '@self'   => ['register' => 1],
+            'status'  => 'active',
             '_facets' => [
-                '@self' => [
+                '@self'    => [
                     'register' => ['type' => 'terms'],
-                    'schema' => ['type' => 'terms']
+                    'schema'   => ['type' => 'terms'],
                 ],
-                'status' => ['type' => 'terms'],
-                'category' => ['type' => 'terms']
-            ]
+                'status'   => ['type' => 'terms'],
+                'category' => ['type' => 'terms'],
+            ],
         ];
 
         // Measure execution time
-        $startTime = microtime(true);
-        $results = $this->objectEntityMapper->getSimpleFacets($query);
+        $startTime     = microtime(true);
+        $results       = $this->objectEntityMapper->getSimpleFacets($query);
         $executionTime = microtime(true) - $startTime;
 
         return [
             'execution_time_seconds' => $executionTime,
-            'facets_count' => count($results['facets'] ?? []),
-            'results' => $results
+            'facets_count'           => count($results['facets'] ?? []),
+            'results'                => $results,
         ];
 
     }//end performanceTest()
 
-}//end class 
+
+}//end class

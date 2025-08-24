@@ -18,6 +18,10 @@
 /coverage/
 /coverage-frontend/
 
+# Quality reports
+/quality-reports/
+quality-baseline.json
+
 # Data files
 *.csv
 *.xls
