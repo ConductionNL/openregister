@@ -2698,12 +2698,8 @@ class ObjectService
                 error_log('[ObjectService] Calling handlePostSaveInverseRelations with '.count($savedObjects).' objects');
                 $this->handlePostSaveInverseRelations($savedObjects, $schemaCache);
 
-                // Hydrate metadata fields for all saved objects
-                error_log('[ObjectService] Hydrating metadata fields for '.count($savedObjects).' objects');
-                $this->hydrateBulkObjectMetadata($savedObjects, $schemaCache);
-
-                // Save hydrated objects back to database to persist metadata changes
-                $this->persistBulkMetadataChanges($savedObjects);
+                // Metadata hydration now happens during preparation phase for optimal performance
+                // No additional database operations needed - metadata is included in the original save
             }
         } else {
             error_log('[ObjectService] No saved object IDs returned from bulk save operation');
@@ -2714,93 +2710,94 @@ class ObjectService
     }//end processObjectsChunk()
 
 
-    /**
-     * Hydrate metadata fields for multiple objects in bulk operation
-     *
-     * This method efficiently processes metadata hydration for all saved objects using
-     * the pre-loaded schema cache to avoid additional database queries. It applies the
-     * same metadata mapping logic as individual saves (objectNameField, objectDescriptionField, 
-     * objectSummaryField, objectImageField) but optimized for batch processing.
-     *
-     * @param array $savedObjects Array of ObjectEntity objects that were saved
-     * @param array $schemaCache  Pre-loaded schema cache indexed by schema ID
-     *
-     * @return void
-     *
-     * @psalm-param   array<int, ObjectEntity> $savedObjects
-     * @phpstan-param array<int, ObjectEntity> $savedObjects  
-     * @psalm-param   array<int, Schema> $schemaCache
-     * @phpstan-param array<int, Schema> $schemaCache
-     * @psalm-return   void
-     * @phpstan-return void
-     */
-    private function hydrateBulkObjectMetadata(array $savedObjects, array $schemaCache): void
-    {
-        foreach ($savedObjects as $savedObject) {
-            $schemaId = $savedObject->getSchema();
-            
-            // Skip if schema not in cache
-            if (!isset($schemaCache[$schemaId])) {
-                continue;
-            }
-            
-            $schema = $schemaCache[$schemaId];
-            
-            // Use the existing SaveObject handler's hydration method
-            try {
-                $this->saveHandler->hydrateObjectMetadata($savedObject, $schema);
-            } catch (\Exception $e) {
-                // Continue without hydration if it fails - don't break bulk save
-                error_log('[ObjectService] Failed to hydrate metadata for object '.$savedObject->getUuid().': '.$e->getMessage());
-            }
-        }
-    }//end hydrateBulkObjectMetadata()
+
 
 
     /**
-     * Persist metadata changes to database after bulk hydration
+     * Hydrate metadata fields from object data during preparation phase
      *
-     * This method updates the hydrated objects in the database to ensure metadata
-     * changes are persisted. It only updates the metadata fields (name, description, 
-     * summary, image) without affecting the object data to minimize performance impact.
+     * This method efficiently extracts metadata fields (name, description, summary, image) 
+     * from object data based on schema configuration and sets them in the @self metadata.
+     * This approach eliminates the need for additional database operations after save.
      *
-     * @param array $savedObjects Array of ObjectEntity objects with hydrated metadata
+     * @param array  $objectData Object data array with @self metadata
+     * @param Schema $schema     Schema containing configuration for metadata field mapping
      *
-     * @return void
+     * @return array Modified object data with hydrated @self metadata
      *
-     * @psalm-param   array<int, ObjectEntity> $savedObjects
-     * @phpstan-param array<int, ObjectEntity> $savedObjects
-     * @psalm-return   void
-     * @phpstan-return void
+     * @psalm-param   array $objectData
+     * @phpstan-param array $objectData  
+     * @psalm-return   array
+     * @phpstan-return array
      */
-    private function persistBulkMetadataChanges(array $savedObjects): void
+    private function hydrateObjectMetadataFromData(array $objectData, Schema $schema): array
     {
-        if (empty($savedObjects)) {
-            return;
-        }
+        $config = $schema->getConfiguration();
+        $selfData = $objectData['@self'] ?? [];
 
-        error_log('[ObjectService] Persisting metadata changes for '.count($savedObjects).' objects');
-
-        try {
-            // Group objects into batches for efficient database operations
-            $batchSize = 50; // Process in smaller batches to avoid memory/query limits
-            $batches = array_chunk($savedObjects, $batchSize);
-
-            foreach ($batches as $batchIndex => $batch) {
-                error_log('[ObjectService] Processing metadata persistence batch '.($batchIndex + 1).'/'.count($batches).' ('.count($batch).' objects)');
-                
-                // Use the mapper to update only metadata fields efficiently
-                foreach ($batch as $savedObject) {
-                    $this->objectEntityMapper->update($savedObject, false);
-                }
+        // Hydrate name field
+        if (isset($config['objectNameField']) && !empty($config['objectNameField'])) {
+            $nameValue = $this->getValueFromPath($objectData, $config['objectNameField']);
+            if ($nameValue !== null) {
+                $selfData['name'] = $nameValue;
             }
-
-            error_log('[ObjectService] Successfully persisted metadata changes for '.count($savedObjects).' objects');
-        } catch (\Exception $e) {
-            error_log('[ObjectService] Error persisting metadata changes: '.$e->getMessage());
-            // Don't throw - metadata persistence failure shouldn't break bulk save
         }
-    }//end persistBulkMetadataChanges()
+
+        // Hydrate description field
+        if (isset($config['objectDescriptionField']) && !empty($config['objectDescriptionField'])) {
+            $descriptionValue = $this->getValueFromPath($objectData, $config['objectDescriptionField']);
+            if ($descriptionValue !== null) {
+                $selfData['description'] = $descriptionValue;
+            }
+        }
+
+        // Hydrate summary field
+        if (isset($config['objectSummaryField']) && !empty($config['objectSummaryField'])) {
+            $summaryValue = $this->getValueFromPath($objectData, $config['objectSummaryField']);
+            if ($summaryValue !== null) {
+                $selfData['summary'] = $summaryValue;
+            }
+        }
+
+        // Hydrate image field
+        if (isset($config['objectImageField']) && !empty($config['objectImageField'])) {
+            $imageValue = $this->getValueFromPath($objectData, $config['objectImageField']);
+            if ($imageValue !== null) {
+                $selfData['image'] = $imageValue;
+            }
+        }
+
+        $objectData['@self'] = $selfData;
+        return $objectData;
+    }//end hydrateObjectMetadataFromData()
+
+
+    /**
+     * Get value from object data using dot notation path
+     *
+     * @param array  $data Object data array
+     * @param string $path Dot notation path (e.g., 'contact.email', 'title')
+     *
+     * @return mixed|null Value at the path or null if not found
+     */
+    private function getValueFromPath(array $data, string $path)
+    {
+        $keys = explode('.', $path);
+        $current = $data;
+
+        foreach ($keys as $key) {
+            if (is_array($current) && array_key_exists($key, $current)) {
+                $current = $current[$key];
+            } else {
+                return null;
+            }
+        }
+
+        return $current;
+    }//end getValueFromPath()
+
+
+
 
 
     /**
@@ -2931,6 +2928,9 @@ class ObjectService
 
                 // Handle pre-validation cascading for inversedBy properties
                 [$processedObject, $uuid] = $this->handlePreValidationCascading($object, $schema, $selfData['id']);
+
+                // Hydrate metadata fields during preparation phase for optimal performance
+                $processedObject = $this->hydrateObjectMetadataFromData($processedObject, $schema);
 
                 $preparedObjects[$index] = $processedObject;
             } catch (\Exception $e) {
