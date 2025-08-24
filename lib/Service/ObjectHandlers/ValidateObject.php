@@ -1389,6 +1389,11 @@ class ValidateObject
         $config       = $schema->getConfiguration();
         $uniqueFields = $config['unique'] ?? null;
 
+        // BUGFIX: Early return if no unique fields are configured
+        if (empty($uniqueFields)) {
+            return;
+        }
+
         $filters = [];
         if (is_array($uniqueFields)) {
             foreach ($uniqueFields as $field) {
@@ -1401,7 +1406,22 @@ class ValidateObject
         $count = $this->objectMapper->countAll(filters: $filters, schema: $schema);
 
         if ($count !== 0) {
-            throw new CustomValidationException(message: 'Fields are not unique', errors: [['name' => is_array($uniqueFields) ? array_shift($uniqueFields) : $uniqueFields, 'code' => 'identificatie-niet-uniek', 'reason' => 'The identifying fields are not unique']]);
+            // IMPROVED ERROR MESSAGE: Show which field(s) caused the uniqueness violation
+            $fieldNames = is_array($uniqueFields) ? implode(', ', $uniqueFields) : $uniqueFields;
+            $fieldValues = is_array($uniqueFields) ? 
+                implode(', ', array_map(function($field) use ($object) { 
+                    return $field . '=' . ($object[$field] ?? 'null'); 
+                }, $uniqueFields)) : 
+                $uniqueFields . '=' . ($object[$uniqueFields] ?? 'null');
+                
+            throw new CustomValidationException(
+                message: "Fields are not unique: {$fieldNames} (values: {$fieldValues})", 
+                errors: [[
+                    'name' => is_array($uniqueFields) ? array_shift($uniqueFields) : $uniqueFields, 
+                    'code' => 'identificatie-niet-uniek', 
+                    'reason' => "The identifying fields ({$fieldNames}) are not unique. Found duplicate values: {$fieldValues}"
+                ]]
+            );
         }
 
     }//end validateUniqueFields()
