@@ -35,18 +35,21 @@ use OCP\Migration\SimpleMigrationStep;
 class Version1Date20250830120000 extends SimpleMigrationStep
 {
 
+
     /**
      * Change the database schema
      *
-     * @param IOutput        $output        Output for the migration process
-     * @param Closure        $schemaClosure The schema closure
-     * @param array<string>  $options       Migration options
+     * @param IOutput       $output        Output for the migration process
+     * @param Closure       $schemaClosure The schema closure
+     * @param array<string> $options       Migration options
      *
      * @return ISchemaWrapper|null The modified schema
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        /*
+         * @var ISchemaWrapper $schema
+         */
         $schema = $schemaClosure();
 
         // Check if the configurations table exists
@@ -57,31 +60,43 @@ class Version1Date20250830120000 extends SimpleMigrationStep
             if ($table->hasColumn('owner') === true) {
                 // Add the new 'app' column
                 if ($table->hasColumn('app') === false) {
-                    $table->addColumn('app', Types::STRING, [
-                        'notnull' => false,
-                        'length' => 64,
-                    ]);
+                    $table->addColumn(
+                            'app',
+                            Types::STRING,
+                            [
+                                'notnull' => false,
+                                'length'  => 64,
+                            ]
+                            );
                 }
-                
+
                 // Note: We'll copy data in postSchemaChange, then drop the old column
             }
 
             // Add 'schemas' column if it doesn't exist
             if ($table->hasColumn('schemas') === false) {
-                $table->addColumn('schemas', Types::JSON, [
-                    'notnull' => false,
-                ]);
+                $table->addColumn(
+                        'schemas',
+                        Types::JSON,
+                        [
+                            'notnull' => false,
+                        ]
+                        );
             }
 
             // Add 'objects' column if it doesn't exist
             if ($table->hasColumn('objects') === false) {
-                $table->addColumn('objects', Types::JSON, [
-                    'notnull' => false,
-                ]);
+                $table->addColumn(
+                        'objects',
+                        Types::JSON,
+                        [
+                            'notnull' => false,
+                        ]
+                        );
             }
 
             return $schema;
-        }
+        }//end if
 
         return null;
 
@@ -91,41 +106,43 @@ class Version1Date20250830120000 extends SimpleMigrationStep
     /**
      * Perform post-schema change operations
      *
-     * @param IOutput        $output        Output for the migration process
-     * @param Closure        $schemaClosure The schema closure
-     * @param array<string>  $options       Migration options
+     * @param IOutput       $output        Output for the migration process
+     * @param Closure       $schemaClosure The schema closure
+     * @param array<string> $options       Migration options
      *
      * @return void
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        /** @var ISchemaWrapper $schema */
+        /*
+         * @var ISchemaWrapper $schema
+         */
         $schema = $schemaClosure();
-        
+
         // Check if the configurations table exists
         if ($schema->hasTable('openregister_configurations') === true) {
             $table = $schema->getTable('openregister_configurations');
-            
+
             // If both 'owner' and 'app' columns exist, copy data and drop 'owner'
             if ($table->hasColumn('owner') === true && $table->hasColumn('app') === true) {
                 // Copy data from 'owner' to 'app' column using raw SQL
                 $connection = \OC::$server->getDatabaseConnection();
-                
+
                 // Copy the data
                 $connection->executeStatement(
                     'UPDATE `*PREFIX*openregister_configurations` SET `app` = `owner`'
                 );
-                
+
                 // Drop the old 'owner' column
                 $schema = $schemaClosure();
-                $table = $schema->getTable('openregister_configurations');
+                $table  = $schema->getTable('openregister_configurations');
                 if ($table->hasColumn('owner') === true) {
                     $table->dropColumn('owner');
                 }
             }
-        }
+        }//end if
 
     }//end postSchemaChange()
 
 
-}//end class 
+}//end class

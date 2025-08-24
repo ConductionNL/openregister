@@ -38,16 +38,19 @@ use OCP\Migration\SimpleMigrationStep;
 class Version1Date20250831130000 extends SimpleMigrationStep
 {
 
+
     /**
      * @param IOutput $output
      * @param Closure $schemaClosure The `\Closure` returns a `ISchemaWrapper`
-     * @param array $options
+     * @param array   $options
      *
      * @return null|ISchemaWrapper
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        /*
+         * @var ISchemaWrapper $schema
+         */
         $schema = $schemaClosure();
 
         // Check if the objects table exists
@@ -59,15 +62,21 @@ class Version1Date20250831130000 extends SimpleMigrationStep
 
         // Add expires column if it doesn't exist
         if ($table->hasColumn('expires') === false) {
-            $table->addColumn('expires', 'datetime', [
-                'notnull' => false,
-                'default' => null,
-                'comment' => 'Expiration timestamp for permanent deletion'
-            ]);
+            $table->addColumn(
+                    'expires',
+                    'datetime',
+                    [
+                        'notnull' => false,
+                        'default' => null,
+                        'comment' => 'Expiration timestamp for permanent deletion',
+                    ]
+                    );
             $output->info('Added expires column to openregister_objects table');
         }
 
         return $schema;
+
     }//end changeSchema()
+
 
 }//end class

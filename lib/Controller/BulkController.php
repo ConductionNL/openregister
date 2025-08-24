@@ -35,6 +35,7 @@ use Exception;
 class BulkController extends Controller
 {
 
+
     /**
      * Constructor for the BulkController
      *
@@ -97,7 +98,7 @@ class BulkController extends Controller
             }
 
             // Get request data
-            $data = $this->request->getParams();
+            $data  = $this->request->getParams();
             $uuids = $data['uuids'] ?? [];
 
             // Validate input
@@ -115,21 +116,22 @@ class BulkController extends Controller
             // Perform bulk delete operation
             $deletedUuids = $this->objectService->deleteObjects($uuids);
 
-            return new JSONResponse([
-                'success' => true,
-                'message' => 'Bulk delete operation completed successfully',
-                'deleted_count' => count($deletedUuids),
-                'deleted_uuids' => $deletedUuids,
-                'requested_count' => count($uuids),
-                'skipped_count' => count($uuids) - count($deletedUuids)
-            ]);
-
+            return new JSONResponse(
+                    [
+                        'success'         => true,
+                        'message'         => 'Bulk delete operation completed successfully',
+                        'deleted_count'   => count($deletedUuids),
+                        'deleted_uuids'   => $deletedUuids,
+                        'requested_count' => count($uuids),
+                        'skipped_count'   => count($uuids) - count($deletedUuids),
+                    ]
+                    );
         } catch (Exception $e) {
             return new JSONResponse(
-                ['error' => 'Bulk delete operation failed: ' . $e->getMessage()],
+                ['error' => 'Bulk delete operation failed: '.$e->getMessage()],
                 Http::STATUS_INTERNAL_SERVER_ERROR
             );
-        }
+        }//end try
 
     }//end delete()
 
@@ -156,8 +158,8 @@ class BulkController extends Controller
             }
 
             // Get request data
-            $data = $this->request->getParams();
-            $uuids = $data['uuids'] ?? [];
+            $data     = $this->request->getParams();
+            $uuids    = $data['uuids'] ?? [];
             $datetime = $data['datetime'] ?? true;
 
             // Validate input
@@ -187,22 +189,23 @@ class BulkController extends Controller
             // Perform bulk publish operation
             $publishedUuids = $this->objectService->publishObjects($uuids, $datetime);
 
-            return new JSONResponse([
-                'success' => true,
-                'message' => 'Bulk publish operation completed successfully',
-                'published_count' => count($publishedUuids),
-                'published_uuids' => $publishedUuids,
-                'requested_count' => count($uuids),
-                'skipped_count' => count($uuids) - count($publishedUuids),
-                'datetime_used' => $datetime instanceof \DateTime ? $datetime->format('Y-m-d H:i:s') : $datetime
-            ]);
-
+            return new JSONResponse(
+                    [
+                        'success'         => true,
+                        'message'         => 'Bulk publish operation completed successfully',
+                        'published_count' => count($publishedUuids),
+                        'published_uuids' => $publishedUuids,
+                        'requested_count' => count($uuids),
+                        'skipped_count'   => count($uuids) - count($publishedUuids),
+                        'datetime_used'   => $datetime instanceof \DateTime ? $datetime->format('Y-m-d H:i:s') : $datetime,
+                    ]
+                    );
         } catch (Exception $e) {
             return new JSONResponse(
-                ['error' => 'Bulk publish operation failed: ' . $e->getMessage()],
+                ['error' => 'Bulk publish operation failed: '.$e->getMessage()],
                 Http::STATUS_INTERNAL_SERVER_ERROR
             );
-        }
+        }//end try
 
     }//end publish()
 
@@ -229,8 +232,8 @@ class BulkController extends Controller
             }
 
             // Get request data
-            $data = $this->request->getParams();
-            $uuids = $data['uuids'] ?? [];
+            $data     = $this->request->getParams();
+            $uuids    = $data['uuids'] ?? [];
             $datetime = $data['datetime'] ?? true;
 
             // Validate input
@@ -260,22 +263,23 @@ class BulkController extends Controller
             // Perform bulk depublish operation
             $depublishedUuids = $this->objectService->depublishObjects($uuids, $datetime);
 
-            return new JSONResponse([
-                'success' => true,
-                'message' => 'Bulk depublish operation completed successfully',
-                'depublished_count' => count($depublishedUuids),
-                'depublished_uuids' => $depublishedUuids,
-                'requested_count' => count($uuids),
-                'skipped_count' => count($uuids) - count($depublishedUuids),
-                'datetime_used' => $datetime instanceof \DateTime ? $datetime->format('Y-m-d H:i:s') : $datetime
-            ]);
-
+            return new JSONResponse(
+                    [
+                        'success'           => true,
+                        'message'           => 'Bulk depublish operation completed successfully',
+                        'depublished_count' => count($depublishedUuids),
+                        'depublished_uuids' => $depublishedUuids,
+                        'requested_count'   => count($uuids),
+                        'skipped_count'     => count($uuids) - count($depublishedUuids),
+                        'datetime_used'     => $datetime instanceof \DateTime ? $datetime->format('Y-m-d H:i:s') : $datetime,
+                    ]
+                    );
         } catch (Exception $e) {
             return new JSONResponse(
-                ['error' => 'Bulk depublish operation failed: ' . $e->getMessage()],
+                ['error' => 'Bulk depublish operation failed: '.$e->getMessage()],
                 Http::STATUS_INTERNAL_SERVER_ERROR
             );
-        }
+        }//end try
 
     }//end depublish()
 
@@ -302,7 +306,7 @@ class BulkController extends Controller
             }
 
             // Get request data
-            $data = $this->request->getParams();
+            $data    = $this->request->getParams();
             $objects = $data['objects'] ?? [];
 
             // Validate input
@@ -328,20 +332,21 @@ class BulkController extends Controller
                 events: false
             );
 
-            return new JSONResponse([
-                'success' => true,
-                'message' => 'Bulk save operation completed successfully',
-                'saved_count' => ($savedObjects['statistics']['saved'] ?? 0) + ($savedObjects['statistics']['updated'] ?? 0),
-                'saved_objects' => $savedObjects,
-                'requested_count' => count($objects)
-            ]);
-
+            return new JSONResponse(
+                    [
+                        'success'         => true,
+                        'message'         => 'Bulk save operation completed successfully',
+                        'saved_count'     => ($savedObjects['statistics']['saved'] ?? 0) + ($savedObjects['statistics']['updated'] ?? 0),
+                        'saved_objects'   => $savedObjects,
+                        'requested_count' => count($objects),
+                    ]
+                    );
         } catch (Exception $e) {
             return new JSONResponse(
-                ['error' => 'Bulk save operation failed: ' . $e->getMessage()],
+                ['error' => 'Bulk save operation failed: '.$e->getMessage()],
                 Http::STATUS_INTERNAL_SERVER_ERROR
             );
-        }
+        }//end try
 
     }//end save()
 

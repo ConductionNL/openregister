@@ -132,6 +132,7 @@ class FilesController extends Controller
             if ($file === null) {
                 return new JSONResponse(['error' => 'File not found'], 404);
             }
+
             return new JSONResponse($this->fileService->formatFile($file));
         } catch (Exception $e) {
             return new JSONResponse(
@@ -208,21 +209,21 @@ class FilesController extends Controller
 
         try {
             $data = $this->request->getParams();
-            
+
             // Validate required parameters
             if (empty($data['name']) === true) {
                 return new JSONResponse(['error' => 'File name is required'], 400);
             }
-            
+
             if (empty($data['content']) === true) {
                 return new JSONResponse(['error' => 'File content is required'], 400);
             }
 
             // Extract parameters with defaults
             $fileName = $data['name'];
-            $content = $data['content'];
-            $share = isset($data['share']) && $data['share'] === true;
-            $tags = $data['tags'] ?? [];
+            $content  = $data['content'];
+            $share    = isset($data['share']) && $data['share'] === true;
+            $tags     = $data['tags'] ?? [];
 
             // Ensure tags is an array
             if (is_string($tags) === true) {
@@ -503,5 +504,6 @@ class FilesController extends Controller
         }//end try
 
     }//end depublish()
+
 
 }//end class

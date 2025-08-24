@@ -38,16 +38,19 @@ use OCP\Migration\SimpleMigrationStep;
 class Version1Date20250831120000 extends SimpleMigrationStep
 {
 
+
     /**
      * @param IOutput $output
      * @param Closure $schemaClosure The `\Closure` returns a `ISchemaWrapper`
-     * @param array $options
+     * @param array   $options
      *
      * @return null|ISchemaWrapper
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        /*
+         * @var ISchemaWrapper $schema
+         */
         $schema = $schemaClosure();
 
         // Check if the search trails table exists
@@ -59,15 +62,21 @@ class Version1Date20250831120000 extends SimpleMigrationStep
 
         // Add size column if it doesn't exist
         if ($table->hasColumn('size') === false) {
-            $table->addColumn('size', 'bigint', [
-                'notnull' => false,
-                'default' => null,
-                'comment' => 'Size of the search trail entry in bytes'
-            ]);
+            $table->addColumn(
+                    'size',
+                    'bigint',
+                    [
+                        'notnull' => false,
+                        'default' => null,
+                        'comment' => 'Size of the search trail entry in bytes',
+                    ]
+                    );
             $output->info('Added size column to openregister_search_trails table');
         }
 
         return $schema;
+
     }//end changeSchema()
+
 
 }//end class

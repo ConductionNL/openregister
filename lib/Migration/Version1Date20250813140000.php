@@ -38,16 +38,19 @@ use OCP\Migration\SimpleMigrationStep;
 class Version1Date20250813140000 extends SimpleMigrationStep
 {
 
+
     /**
      * @param IOutput $output
      * @param Closure $schemaClosure The `\Closure` returns a `ISchemaWrapper`
-     * @param array $options
+     * @param array   $options
      *
      * @return null|ISchemaWrapper
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        /*
+         * @var ISchemaWrapper $schema
+         */
         $schema = $schemaClosure();
 
         // Check if the objects table exists
@@ -59,12 +62,16 @@ class Version1Date20250813140000 extends SimpleMigrationStep
 
         // Add slug column if it doesn't exist
         if ($table->hasColumn('slug') === false) {
-            $table->addColumn('slug', 'string', [
-                'notnull' => false,
-                'length' => 255,
-                'default' => null,
-                'comment' => 'URL-friendly identifier for the object, unique within register+schema combination'
-            ]);
+            $table->addColumn(
+                    'slug',
+                    'string',
+                    [
+                        'notnull' => false,
+                        'length'  => 255,
+                        'default' => null,
+                        'comment' => 'URL-friendly identifier for the object, unique within register+schema combination',
+                    ]
+                    );
             $output->info('Added slug column to openregister_objects table');
         }
 
@@ -76,7 +83,8 @@ class Version1Date20250813140000 extends SimpleMigrationStep
         }
 
         return $schema;
+
     }//end changeSchema()
 
-}//end class
 
+}//end class

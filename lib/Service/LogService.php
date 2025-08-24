@@ -181,12 +181,15 @@ class LogService
     /**
      * Export audit trail logs with specified format and filters
      *
-     * @param string $format  Export format: 'csv', 'json', 'xml', 'txt'
-     * @param array  $config  Configuration array containing:
-     *                        - filters: (array) Filter parameters
-     *                        - includeChanges: (bool) Whether to include change data
-     *                        - includeMetadata: (bool) Whether to include metadata
-     *                        - search: (string|null) Search term
+     * @param string $format Export format: 'csv', 'json', 'xml', 'txt'
+     * @param array  $config Configuration array containing:
+     *                       - filters: (array) Filter
+     *                       parameters - includeChanges:
+     *                       (bool) Whether to include
+     *                       change data - includeMetadata:
+     *                       (bool) Whether to include
+     *                       metadata - search:
+     *                       (string|null) Search term
      *
      * @return array Array containing:
      *               - content: (string) Exported content
@@ -194,7 +197,7 @@ class LogService
      *               - contentType: (string) MIME content type
      * @throws \InvalidArgumentException If unsupported format is specified
      */
-    public function exportLogs(string $format, array $config = []): array
+    public function exportLogs(string $format, array $config=[]): array
     {
         // Get all logs with current filters
         $logs = $this->auditTrailMapper->findAll(
@@ -238,7 +241,7 @@ class LogService
             $this->auditTrailMapper->delete($log);
             return true;
         } catch (\Exception $e) {
-            throw new \Exception("Failed to delete audit trail: " . $e->getMessage());
+            throw new \Exception("Failed to delete audit trail: ".$e->getMessage());
         }
 
     }//end deleteLog()
@@ -257,10 +260,10 @@ class LogService
      *               - failed: (int) Number of logs that failed to delete
      * @throws \Exception If mass deletion fails
      */
-    public function deleteLogs(array $config = []): array
+    public function deleteLogs(array $config=[]): array
     {
         $deleted = 0;
-        $failed = 0;
+        $failed  = 0;
 
         try {
             // If specific IDs are provided, use those
@@ -289,16 +292,16 @@ class LogService
                         $failed++;
                     }
                 }
-            }
+            }//end if
 
             return [
                 'deleted' => $deleted,
-                'failed' => $failed,
-                'total' => $deleted + $failed
+                'failed'  => $failed,
+                'total'   => $deleted + $failed,
             ];
         } catch (\Exception $e) {
-            throw new \Exception("Mass deletion failed: " . $e->getMessage());
-        }
+            throw new \Exception("Mass deletion failed: ".$e->getMessage());
+        }//end try
 
     }//end deleteLogs()
 
@@ -313,44 +316,42 @@ class LogService
      */
     private function prepareLogsForExport(array $logs, array $config): array
     {
-        $includeChanges = $config['includeChanges'] ?? true;
+        $includeChanges  = $config['includeChanges'] ?? true;
         $includeMetadata = $config['includeMetadata'] ?? false;
 
         $exportData = [];
         foreach ($logs as $log) {
             $logData = $log->jsonSerialize();
-            
+
             // Always include basic fields
             $exportRow = [
-                'id' => $logData['id'] ?? '',
-                'uuid' => $logData['uuid'] ?? '',
-                'action' => $logData['action'] ?? '',
-                'object' => $logData['object'] ?? '',
+                'id'       => $logData['id'] ?? '',
+                'uuid'     => $logData['uuid'] ?? '',
+                'action'   => $logData['action'] ?? '',
+                'object'   => $logData['object'] ?? '',
                 'register' => $logData['register'] ?? '',
-                'schema' => $logData['schema'] ?? '',
-                'user' => $logData['user'] ?? '',
+                'schema'   => $logData['schema'] ?? '',
+                'user'     => $logData['user'] ?? '',
                 'userName' => $logData['userName'] ?? '',
-                'created' => $logData['created'] ?? '',
-                'size' => $logData['size'] ?? '',
+                'created'  => $logData['created'] ?? '',
+                'size'     => $logData['size'] ?? '',
             ];
 
             // Include changes if requested
             if ($includeChanges && !empty($logData['changed'])) {
-                $exportRow['changes'] = is_array($logData['changed']) 
-                    ? json_encode($logData['changed'])
-                    : $logData['changed'];
+                $exportRow['changes'] = is_array($logData['changed']) ? json_encode($logData['changed']) : $logData['changed'];
             }
 
             // Include metadata if requested
             if ($includeMetadata) {
-                $exportRow['session'] = $logData['session'] ?? '';
-                $exportRow['request'] = $logData['request'] ?? '';
+                $exportRow['session']   = $logData['session'] ?? '';
+                $exportRow['request']   = $logData['request'] ?? '';
                 $exportRow['ipAddress'] = $logData['ipAddress'] ?? '';
-                $exportRow['version'] = $logData['version'] ?? '';
+                $exportRow['version']   = $logData['version'] ?? '';
             }
 
             $exportData[] = $exportRow;
-        }
+        }//end foreach
 
         return $exportData;
 
@@ -368,30 +369,30 @@ class LogService
     {
         if (empty($data)) {
             return [
-                'content' => '',
-                'filename' => 'audit_trails_' . date('Y-m-d_H-i-s') . '.csv',
-                'contentType' => 'text/csv'
+                'content'     => '',
+                'filename'    => 'audit_trails_'.date('Y-m-d_H-i-s').'.csv',
+                'contentType' => 'text/csv',
             ];
         }
 
         $output = fopen('php://temp', 'r+');
-        
+
         // Write header
         fputcsv($output, array_keys($data[0]));
-        
+
         // Write data rows
         foreach ($data as $row) {
             fputcsv($output, $row);
         }
-        
+
         rewind($output);
         $content = stream_get_contents($output);
         fclose($output);
 
         return [
-            'content' => $content,
-            'filename' => 'audit_trails_' . date('Y-m-d_H-i-s') . '.csv',
-            'contentType' => 'text/csv'
+            'content'     => $content,
+            'filename'    => 'audit_trails_'.date('Y-m-d_H-i-s').'.csv',
+            'contentType' => 'text/csv',
         ];
 
     }//end exportToCsv()
@@ -407,9 +408,9 @@ class LogService
     private function exportToJson(array $data): array
     {
         return [
-            'content' => json_encode($data, JSON_PRETTY_PRINT),
-            'filename' => 'audit_trails_' . date('Y-m-d_H-i-s') . '.json',
-            'contentType' => 'application/json'
+            'content'     => json_encode($data, JSON_PRETTY_PRINT),
+            'filename'    => 'audit_trails_'.date('Y-m-d_H-i-s').'.json',
+            'contentType' => 'application/json',
         ];
 
     }//end exportToJson()
@@ -425,7 +426,7 @@ class LogService
     private function exportToXml(array $data): array
     {
         $xml = new \SimpleXMLElement('<auditTrails/>');
-        
+
         foreach ($data as $logData) {
             $logElement = $xml->addChild('auditTrail');
             foreach ($logData as $key => $value) {
@@ -436,9 +437,9 @@ class LogService
         }
 
         return [
-            'content' => $xml->asXML(),
-            'filename' => 'audit_trails_' . date('Y-m-d_H-i-s') . '.xml',
-            'contentType' => 'application/xml'
+            'content'     => $xml->asXML(),
+            'filename'    => 'audit_trails_'.date('Y-m-d_H-i-s').'.xml',
+            'contentType' => 'application/xml',
         ];
 
     }//end exportToXml()
@@ -453,23 +454,24 @@ class LogService
      */
     private function exportToTxt(array $data): array
     {
-        $content = "Audit Trail Export - Generated on " . date('Y-m-d H:i:s') . "\n";
-        $content .= str_repeat('=', 60) . "\n\n";
+        $content  = "Audit Trail Export - Generated on ".date('Y-m-d H:i:s')."\n";
+        $content .= str_repeat('=', 60)."\n\n";
 
         foreach ($data as $index => $logData) {
-            $content .= "Entry #" . ($index + 1) . "\n";
-            $content .= str_repeat('-', 20) . "\n";
-            
+            $content .= "Entry #".($index + 1)."\n";
+            $content .= str_repeat('-', 20)."\n";
+
             foreach ($logData as $key => $value) {
-                $content .= ucfirst($key) . ': ' . ($value ?? 'N/A') . "\n";
+                $content .= ucfirst($key).': '.($value ?? 'N/A')."\n";
             }
+
             $content .= "\n";
         }
 
         return [
-            'content' => $content,
-            'filename' => 'audit_trails_' . date('Y-m-d_H-i-s') . '.txt',
-            'contentType' => 'text/plain'
+            'content'     => $content,
+            'filename'    => 'audit_trails_'.date('Y-m-d_H-i-s').'.txt',
+            'contentType' => 'text/plain',
         ];
 
     }//end exportToTxt()

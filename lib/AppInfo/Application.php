@@ -95,76 +95,90 @@ class Application extends App implements IBootstrap
 
         // @TODO: Usually, services are autowired. Les figure out why we need to do this
         // Register SearchTrail components
-        $context->registerService(SearchTrailMapper::class, function ($container) {
-            return new SearchTrailMapper(
-                $container->get('OCP\IDBConnection'),
-                $container->get('OCP\IRequest'),
-                $container->get('OCP\IUserSession')
-            );
-        });
+        $context->registerService(
+                SearchTrailMapper::class,
+                function ($container) {
+                    return new SearchTrailMapper(
+                    $container->get('OCP\IDBConnection'),
+                    $container->get('OCP\IRequest'),
+                    $container->get('OCP\IUserSession')
+                    );
+                }
+                );
 
-        $context->registerService(SearchTrailService::class, function ($container) {
-            return new SearchTrailService(
-                $container->get(SearchTrailMapper::class),
-                $container->get(RegisterMapper::class),
-                $container->get(SchemaMapper::class)
-            );
-        });
+        $context->registerService(
+                SearchTrailService::class,
+                function ($container) {
+                    return new SearchTrailService(
+                    $container->get(SearchTrailMapper::class),
+                    $container->get(RegisterMapper::class),
+                    $container->get(SchemaMapper::class)
+                    );
+                }
+                );
 
         // Register OrganisationMapper (event dispatching removed - handled by cron job)
-//        $context->registerService(OrganisationMapper::class, function ($container) {
-//            return new OrganisationMapper(
-//                $container->get('OCP\IDBConnection')
-//            );
-//        });
-
+        // $context->registerService(OrganisationMapper::class, function ($container) {
+        // return new OrganisationMapper(
+        // $container->get('OCP\IDBConnection')
+        // );
+        // });
         // Register ObjectEntityMapper with IGroupManager and IUserManager dependencies
-        $context->registerService(ObjectEntityMapper::class, function ($container) {
-            return new ObjectEntityMapper(
-                $container->get('OCP\IDBConnection'),
-                $container->get(MySQLJsonService::class),
-                $container->get('OCP\EventDispatcher\IEventDispatcher'),
-                $container->get('OCP\IUserSession'),
-                $container->get(SchemaMapper::class),
-                $container->get('OCP\IGroupManager'),
-                $container->get('OCP\IUserManager'),
-                $container->get('OCP\IAppConfig')
-            );
-        });
+        $context->registerService(
+                ObjectEntityMapper::class,
+                function ($container) {
+                    return new ObjectEntityMapper(
+                    $container->get('OCP\IDBConnection'),
+                    $container->get(MySQLJsonService::class),
+                    $container->get('OCP\EventDispatcher\IEventDispatcher'),
+                    $container->get('OCP\IUserSession'),
+                    $container->get(SchemaMapper::class),
+                    $container->get('OCP\IGroupManager'),
+                    $container->get('OCP\IUserManager'),
+                    $container->get('OCP\IAppConfig')
+                    );
+                }
+                );
 
         // Register OrganisationService with IConfig and IGroupManager dependencies
-        $context->registerService(OrganisationService::class, function ($container) {
-            return new OrganisationService(
-                $container->get(OrganisationMapper::class),
-                $container->get('OCP\IUserSession'),
-                $container->get('OCP\ISession'),
-                $container->get('OCP\IConfig'),
-                $container->get('OCP\IGroupManager'),
-                $container->get('Psr\Log\LoggerInterface')
-            );
-        });
+        $context->registerService(
+                OrganisationService::class,
+                function ($container) {
+                    return new OrganisationService(
+                    $container->get(OrganisationMapper::class),
+                    $container->get('OCP\IUserSession'),
+                    $container->get('OCP\ISession'),
+                    $container->get('OCP\IConfig'),
+                    $container->get('OCP\IGroupManager'),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
 
         // Register ObjectService with IGroupManager and IUserManager dependencies
-        $context->registerService(ObjectService::class, function ($container) {
-            return new ObjectService(
-                $container->get(DeleteObject::class),
-                $container->get(GetObject::class),
-                $container->get(RenderObject::class),
-                $container->get(SaveObject::class),
-                $container->get(ValidateObject::class),
-                $container->get(PublishObject::class),
-                $container->get(DepublishObject::class),
-                $container->get(RegisterMapper::class),
-                $container->get(SchemaMapper::class),
-                $container->get(ObjectEntityMapper::class),
-                $container->get(FileService::class),
-                $container->get('OCP\IUserSession'),
-                $container->get(SearchTrailService::class),
-                $container->get('OCP\IGroupManager'),
-                $container->get('OCP\IUserManager'),
-                $container->get(OrganisationService::class)
-            );
-        });
+        $context->registerService(
+                ObjectService::class,
+                function ($container) {
+                    return new ObjectService(
+                    $container->get(DeleteObject::class),
+                    $container->get(GetObject::class),
+                    $container->get(RenderObject::class),
+                    $container->get(SaveObject::class),
+                    $container->get(ValidateObject::class),
+                    $container->get(PublishObject::class),
+                    $container->get(DepublishObject::class),
+                    $container->get(RegisterMapper::class),
+                    $container->get(SchemaMapper::class),
+                    $container->get(ObjectEntityMapper::class),
+                    $container->get(FileService::class),
+                    $container->get('OCP\IUserSession'),
+                    $container->get(SearchTrailService::class),
+                    $container->get('OCP\IGroupManager'),
+                    $container->get('OCP\IUserManager'),
+                    $container->get(OrganisationService::class)
+                    );
+                }
+                );
 
     }//end register()
 
