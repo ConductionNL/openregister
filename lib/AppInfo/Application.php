@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\ObjectHandlers\DeleteObject;
 use OCA\OpenRegister\Service\ObjectHandlers\GetObject;
 use OCA\OpenRegister\Service\ObjectHandlers\RenderObject;
 use OCA\OpenRegister\Service\ObjectHandlers\SaveObject;
+use OCA\OpenRegister\Service\ObjectHandlers\SaveObjects;
 use OCA\OpenRegister\Service\ObjectHandlers\ValidateObject;
 use OCA\OpenRegister\Service\ObjectHandlers\PublishObject;
 use OCA\OpenRegister\Service\ObjectHandlers\DepublishObject;
@@ -155,6 +156,22 @@ class Application extends App implements IBootstrap
                 }
                 );
 
+        // Register SaveObjects handler with dependencies
+        $context->registerService(
+                SaveObjects::class,
+                function ($container) {
+                    return new SaveObjects(
+                    $container->get(ObjectEntityMapper::class),
+                    $container->get(SchemaMapper::class),
+                    $container->get(RegisterMapper::class),
+                    $container->get(SaveObject::class),
+                    $container->get(ValidateObject::class),
+                    $container->get('OCP\IUserSession'),
+                    $container->get(OrganisationService::class)
+                    );
+                }
+                );
+
         // Register ObjectService with IGroupManager and IUserManager dependencies
         $context->registerService(
                 ObjectService::class,
@@ -164,6 +181,7 @@ class Application extends App implements IBootstrap
                     $container->get(GetObject::class),
                     $container->get(RenderObject::class),
                     $container->get(SaveObject::class),
+                    $container->get(SaveObjects::class),
                     $container->get(ValidateObject::class),
                     $container->get(PublishObject::class),
                     $container->get(DepublishObject::class),

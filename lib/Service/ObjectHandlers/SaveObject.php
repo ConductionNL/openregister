@@ -45,18 +45,55 @@ use Twig\Environment;
 use Twig\Loader\ArrayLoader;
 
 /**
- * Handler class for saving objects in the OpenRegister application.
+ * Individual Object Save/Create/Update Handler
  *
- * This handler is responsible for saving objects to the database,
- * including handling relations, files, and audit trails.
+ * SPECIALIZED HANDLER OVERVIEW:
+ * This handler is responsible for the detailed business logic of saving individual objects.
+ * It handles complex object relationships, cascading operations, validation coordination,
+ * file processing, and metadata hydration for single object operations.
  *
- * @category  Service
+ * KEY RESPONSIBILITIES:
+ * - Individual object creation and updates with full relationship handling
+ * - Pre-validation cascading for inversedBy properties (nested object creation)
+ * - Post-save writeBack operations for bidirectional relations
+ * - Object metadata hydration (name, description, summary, image extraction)
+ * - File property processing and validation
+ * - Schema-based default value assignment and slug generation
+ * - Audit trail creation and lifecycle event handling
+ *
+ * RELATIONSHIP HANDLING:
+ * - Handles inversedBy properties by creating related objects before main object validation
+ * - Manages writeBack operations to maintain bidirectional relationship integrity
+ * - Supports both single object relations and array-based relations
+ * - Resolves schema references and creates related objects automatically
+ *
+ * INTEGRATION WITH ObjectService:
+ * - Called by ObjectService for individual object operations (createFromArray, updateFromArray)
+ * - Used by bulk operations for complex relation handling and cascading
+ * - Provides hydrateObjectMetadata for bulk metadata processing
+ * - Handles individual object preparation in bulk scenarios
+ *
+ * ⚠️ IMPORTANT: Do NOT confuse with ObjectService!
+ * - SaveObject = Individual object detailed business logic and relations
+ * - ObjectService = High-level orchestration, bulk operations, context management
+ *
+ * PERFORMANCE CONSIDERATIONS:
+ * - Optimized for individual object processing with full feature set
+ * - For bulk operations, ObjectService uses optimized paths + selective SaveObject integration
+ * - Metadata hydration methods are designed for both individual and bulk use
+ *
+ * @category  Handler
  * @package   OCA\OpenRegister\Service\ObjectHandlers
- * @author    Conduction b.v. <info@conduction.nl>
- * @license   AGPL-3.0-or-later
- * @link      https://github.com/OpenCatalogi/OpenRegister
- * @version   1.0.0
- * @copyright 2024 Conduction b.v.
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git_id>
+ * @link      https://www.OpenRegister.app
+ *
+ * @since     1.0.0 Initial SaveObject implementation
+ * @since     1.3.0 Added relationship cascading and writeBack operations
+ * @since     1.8.0 Enhanced metadata hydration and file processing
+ * @since     2.0.0 Optimized for integration with bulk operations
  */
 class SaveObject
 {
