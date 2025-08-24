@@ -51,6 +51,7 @@ use Psr\Log\LoggerInterface;
  */
 class DeleteObject
 {
+
     /**
      * @var AuditTrailMapper
      */
@@ -60,6 +61,7 @@ class DeleteObject
      * @var LoggerInterface
      */
     private LoggerInterface $logger;
+
 
     /**
      * Constructor for DeleteObject handler.
@@ -76,7 +78,8 @@ class DeleteObject
         LoggerInterface $logger
     ) {
         $this->auditTrailMapper = $auditTrailMapper;
-        $this->logger = $logger;
+        $this->logger           = $logger;
+
     }//end __construct()
 
 
@@ -112,8 +115,7 @@ class DeleteObject
 
         // Create audit trail for delete and set lastLog
         $log = $this->auditTrailMapper->createAuditTrail(old: $objectEntity, new: null, action: 'delete');
-//        $result->setLastLog($log->jsonSerialize());
-
+        // $result->setLastLog($log->jsonSerialize());
         return $result;
 
     }//end delete()
@@ -195,6 +197,7 @@ class DeleteObject
 
     }//end cascadeDeleteObjects()
 
+
     /**
      * Delete the object folder when performing hard delete
      *
@@ -208,12 +211,14 @@ class DeleteObject
             $folder = $this->fileService->getObjectFolder($objectEntity);
             if ($folder !== null) {
                 $folder->delete();
-                $this->logger->info('Deleted object folder for hard deleted object: ' . $objectEntity->getId());
+                $this->logger->info('Deleted object folder for hard deleted object: '.$objectEntity->getId());
             }
         } catch (\Exception $e) {
             // Log error but don't fail the deletion process
-            $this->logger->warning('Failed to delete object folder for object ' . $objectEntity->getId() . ': ' . $e->getMessage());
+            $this->logger->warning('Failed to delete object folder for object '.$objectEntity->getId().': '.$e->getMessage());
         }
+
     }//end deleteObjectFolder()
+
 
 }//end class

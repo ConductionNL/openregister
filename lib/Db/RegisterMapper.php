@@ -91,8 +91,6 @@ class RegisterMapper extends QBMapper
     }//end __construct()
 
 
-
-
     /**
      * Find a register by its ID, with optional extension for statistics
      *
@@ -315,8 +313,6 @@ class RegisterMapper extends QBMapper
     {
         $register = $this->find($id);
 
-        
-
         // Set or update the version.
         if (isset($object['version']) === false) {
             $version    = explode('.', $register->getVersion());
@@ -389,7 +385,8 @@ class RegisterMapper extends QBMapper
         return $schemas;
 
     }//end getSchemasByRegisterId()
-    
+
+
     /**
      * Retrieves the ID of the first register that includes the given schema ID.
      *
@@ -398,27 +395,28 @@ class RegisterMapper extends QBMapper
      * a regular expression for exact word matching. If a match is found, the ID
      * of the first such register is returned. Otherwise, it returns null.
      *
-     * @param int $schemaId The ID of the schema to search for.
+     * @param  int $schemaId The ID of the schema to search for.
      * @return int|null The ID of the first matching register, or null if none found.
      */
     public function getFirstRegisterWithSchema(int $schemaId): ?int
     {
         $qb = $this->db->getQueryBuilder();
-    
+
         // REGEXP: match number with optional whitespace and newlines
-        $pattern = '[[:<:]]' . $schemaId . '[[:>:]]';
-    
+        $pattern = '[[:<:]]'.$schemaId.'[[:>:]]';
+
         $qb->select('id')
             ->from('openregister_registers')
             ->where('`schemas` REGEXP :pattern')
             ->setParameter('pattern', $pattern)
             ->setMaxResults(1);
-    
+
         $result = $qb->executeQuery()->fetchOne();
-    
+
         return $result !== false ? (int) $result : null;
-    }
-    
+
+    }//end getFirstRegisterWithSchema()
+
 
     /**
      * Check if a register has a schema with a specific title
@@ -443,6 +441,7 @@ class RegisterMapper extends QBMapper
 
     }//end hasSchemaWithTitle()
 
+
     /**
      * Get all register ID to slug mappings
      *
@@ -454,13 +453,16 @@ class RegisterMapper extends QBMapper
         $qb->select('id', 'slug')
             ->from($this->getTableName());
 
-        $result = $qb->execute();
+        $result   = $qb->execute();
         $mappings = [];
         while ($row = $result->fetch()) {
             $mappings[$row['id']] = $row['slug'];
         }
+
         return $mappings;
-    }
+
+    }//end getIdToSlugMap()
+
 
     /**
      * Get all register slug to ID mappings
@@ -473,13 +475,15 @@ class RegisterMapper extends QBMapper
         $qb->select('id', 'slug')
             ->from($this->getTableName());
 
-        $result = $qb->execute();
+        $result   = $qb->execute();
         $mappings = [];
         while ($row = $result->fetch()) {
             $mappings[$row['slug']] = $row['id'];
         }
+
         return $mappings;
-    }
+
+    }//end getSlugToIdMap()
 
 
 }//end class

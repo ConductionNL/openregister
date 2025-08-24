@@ -24,6 +24,7 @@ use OCP\AppFramework\Db\Entity;
 
 class DataAccessProfile extends Entity implements JsonSerializable
 {
+
     /**
      * @var string|null
      */
@@ -43,7 +44,7 @@ class DataAccessProfile extends Entity implements JsonSerializable
      * @var array|null
      */
     protected ?array $permissions = [];
-    
+
     /**
      * @var DateTime|null
      */
@@ -54,6 +55,7 @@ class DataAccessProfile extends Entity implements JsonSerializable
      */
     protected ?DateTime $updated = null;
 
+
     public function __construct()
     {
         $this->addType('uuid', 'string');
@@ -62,27 +64,31 @@ class DataAccessProfile extends Entity implements JsonSerializable
         $this->addType('permissions', 'json');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
-    }
+
+    }//end __construct()
+
 
     public function jsonSerialize(): array
     {
         return [
-            'id' => $this->id,
-            'uuid' => $this->uuid,
-            'name' => $this->name,
+            'id'          => $this->id,
+            'uuid'        => $this->uuid,
+            'name'        => $this->name,
             'description' => $this->description,
             'permissions' => $this->permissions,
-            'created' => $this->created ? $this->created->format('c') : null,
-            'updated' => $this->updated ? $this->updated->format('c') : null,
+            'created'     => $this->created ? $this->created->format('c') : null,
+            'updated'     => $this->updated ? $this->updated->format('c') : null,
         ];
-    }
+
+    }//end jsonSerialize()
+
 
     /**
      * String representation of the data access profile
-     * 
+     *
      * This magic method is required for proper entity handling in Nextcloud
      * when the framework needs to convert the object to a string.
-     * 
+     *
      * @return string String representation of the data access profile
      */
     public function __toString(): string
@@ -91,18 +97,21 @@ class DataAccessProfile extends Entity implements JsonSerializable
         if ($this->name !== null && $this->name !== '') {
             return $this->name;
         }
-        
+
         // Fallback to UUID if available
         if ($this->uuid !== null && $this->uuid !== '') {
             return $this->uuid;
         }
-        
+
         // Fallback to ID if available
         if ($this->id !== null) {
-            return 'DataAccessProfile #' . $this->id;
+            return 'DataAccessProfile #'.$this->id;
         }
-        
+
         // Final fallback
         return 'Data Access Profile';
-    }
-} 
+
+    }//end __toString()
+
+
+}//end class

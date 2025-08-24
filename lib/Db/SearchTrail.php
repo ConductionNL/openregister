@@ -485,12 +485,13 @@ class SearchTrail extends Entity implements JsonSerializable
 
     }//end jsonSerialize()
 
+
     /**
      * String representation of the search trail
-     * 
+     *
      * This magic method is required for proper entity handling in Nextcloud
      * when the framework needs to convert the object to a string.
-     * 
+     *
      * @return string String representation of the search trail
      */
     public function __toString(): string
@@ -499,20 +500,21 @@ class SearchTrail extends Entity implements JsonSerializable
         if ($this->uuid !== null && $this->uuid !== '') {
             return $this->uuid;
         }
-        
+
         // Fallback to search term if available
         if ($this->searchTerm !== null && $this->searchTerm !== '') {
-            return 'Search: ' . $this->searchTerm;
+            return 'Search: '.$this->searchTerm;
         }
-        
+
         // Fallback to ID if available
         if ($this->id !== null) {
-            return 'SearchTrail #' . $this->id;
+            return 'SearchTrail #'.$this->id;
         }
-        
+
         // Final fallback
         return 'Search Trail';
-    }
+
+    }//end __toString()
+
 
 }//end class
- 

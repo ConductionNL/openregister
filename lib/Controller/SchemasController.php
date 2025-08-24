@@ -48,15 +48,15 @@ class SchemasController extends Controller
     /**
      * Constructor for the SchemasController
      *
-     * @param string             $appName            The name of the app
-     * @param IRequest           $request            The request object
-     * @param IAppConfig         $config             The app configuration object
-     * @param SchemaMapper       $schemaMapper       The schema mapper
-     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
-     * @param DownloadService      $downloadService      The download service
-     * @param UploadService        $uploadService        The upload service
-     * @param AuditTrailMapper     $auditTrailMapper     The audit trail mapper
-     * @param OrganisationService  $organisationService  The organisation service
+     * @param string              $appName             The name of the app
+     * @param IRequest            $request             The request object
+     * @param IAppConfig          $config              The app configuration object
+     * @param SchemaMapper        $schemaMapper        The schema mapper
+     * @param ObjectEntityMapper  $objectEntityMapper  The object entity mapper
+     * @param DownloadService     $downloadService     The download service
+     * @param UploadService       $uploadService       The upload service
+     * @param AuditTrailMapper    $auditTrailMapper    The audit trail mapper
+     * @param OrganisationService $organisationService The organisation service
      *
      * @return void
      */
@@ -125,11 +125,11 @@ class SchemasController extends Controller
         }
 
         $schemas    = $this->schemaMapper->findAll(
-            limit: null, 
-            offset: null, 
-            filters: $filters, 
-            searchConditions: [], 
-            searchParams: [], 
+            limit: null,
+            offset: null,
+            filters: $filters,
+            searchConditions: [],
+            searchParams: [],
             extend: []
         );
         $schemasArr = array_map(fn($schema) => $schema->jsonSerialize(), $schemas);
@@ -239,17 +239,18 @@ class SchemasController extends Controller
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getHttpStatusCode());
         } catch (Exception $e) {
             // Check if this is a validation error by examining the message
-            if (str_contains($e->getMessage(), 'Invalid') || 
-                str_contains($e->getMessage(), 'must be') || 
-                str_contains($e->getMessage(), 'required') ||
-                str_contains($e->getMessage(), 'format')) {
+            if (str_contains($e->getMessage(), 'Invalid')
+                || str_contains($e->getMessage(), 'must be')
+                || str_contains($e->getMessage(), 'required')
+                || str_contains($e->getMessage(), 'format')
+            ) {
                 // Return 400 Bad Request for validation errors
                 return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
             }
-            
+
             // Re-throw other exceptions to maintain existing behavior
             throw $e;
-        }
+        }//end try
 
     }//end create()
 
@@ -296,17 +297,18 @@ class SchemasController extends Controller
             return new JSONResponse(['error' => $e->getMessage()], $e->getHttpStatusCode());
         } catch (Exception $e) {
             // Check if this is a validation error by examining the message
-            if (str_contains($e->getMessage(), 'Invalid') || 
-                str_contains($e->getMessage(), 'must be') || 
-                str_contains($e->getMessage(), 'required') ||
-                str_contains($e->getMessage(), 'format')) {
+            if (str_contains($e->getMessage(), 'Invalid')
+                || str_contains($e->getMessage(), 'must be')
+                || str_contains($e->getMessage(), 'required')
+                || str_contains($e->getMessage(), 'format')
+            ) {
                 // Return 400 Bad Request for validation errors
                 return new JSONResponse(['error' => $e->getMessage()], 400);
             }
-            
+
             // Re-throw other exceptions to maintain existing behavior
             throw $e;
-        }
+        }//end try
 
     }//end update()
 
@@ -408,7 +410,7 @@ class SchemasController extends Controller
             if ($schema->getId() === null) {
                 // Insert a new schema if no ID is set.
                 $schema = $this->schemaMapper->insert($schema);
-                
+
                 // Set organisation from active organisation for multi-tenancy (if not already set)
                 if ($schema->getOrganisation() === null || $schema->getOrganisation() === '') {
                     $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
@@ -430,17 +432,18 @@ class SchemasController extends Controller
             return new JSONResponse(['error' => $e->getMessage()], $e->getHttpStatusCode());
         } catch (Exception $e) {
             // Check if this is a validation error by examining the message
-            if (str_contains($e->getMessage(), 'Invalid') || 
-                str_contains($e->getMessage(), 'must be') || 
-                str_contains($e->getMessage(), 'required') ||
-                str_contains($e->getMessage(), 'format')) {
+            if (str_contains($e->getMessage(), 'Invalid')
+                || str_contains($e->getMessage(), 'must be')
+                || str_contains($e->getMessage(), 'required')
+                || str_contains($e->getMessage(), 'format')
+            ) {
                 // Return 400 Bad Request for validation errors
                 return new JSONResponse(['error' => $e->getMessage()], 400);
             }
-            
+
             // Re-throw other exceptions to maintain existing behavior
             throw $e;
-        }
+        }//end try
 
     }//end upload()
 
@@ -495,44 +498,50 @@ class SchemasController extends Controller
     {
         try {
             // Find related schemas using the SchemaMapper (incoming references)
-            $incomingSchemas = $this->schemaMapper->getRelated($id);
+            $incomingSchemas      = $this->schemaMapper->getRelated($id);
             $incomingSchemasArray = array_map(fn($schema) => $schema->jsonSerialize(), $incomingSchemas);
 
             // Find outgoing references: schemas that this schema refers to
-            $targetSchema = $this->schemaMapper->find($id);
-            $properties = $targetSchema->getProperties() ?? [];
-            $allSchemas = $this->schemaMapper->findAll();
+            $targetSchema    = $this->schemaMapper->find($id);
+            $properties      = $targetSchema->getProperties() ?? [];
+            $allSchemas      = $this->schemaMapper->findAll();
             $outgoingSchemas = [];
             foreach ($allSchemas as $schema) {
                 // Skip self
                 if ($schema->getId() === $targetSchema->getId()) {
                     continue;
                 }
+
                 // Use the same reference logic as getRelated, but reversed
-                if ($this->schemaMapper->hasReferenceToSchema($properties, (string)$schema->getId(), $schema->getUuid(), $schema->getSlug())) {
+                if ($this->schemaMapper->hasReferenceToSchema($properties, (string) $schema->getId(), $schema->getUuid(), $schema->getSlug())) {
                     $outgoingSchemas[$schema->getId()] = $schema;
                 }
             }
+
             $outgoingSchemasArray = array_map(fn($schema) => $schema->jsonSerialize(), array_values($outgoingSchemas));
 
-            return new JSONResponse([
-                'incoming' => $incomingSchemasArray,
-                'outgoing' => $outgoingSchemasArray,
-                'total' => count($incomingSchemasArray) + count($outgoingSchemasArray)
-            ]);
+            return new JSONResponse(
+                    [
+                        'incoming' => $incomingSchemasArray,
+                        'outgoing' => $outgoingSchemasArray,
+                        'total'    => count($incomingSchemasArray) + count($outgoingSchemasArray),
+                    ]
+                    );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Return a 404 error if the target schema doesn't exist
             return new JSONResponse(['error' => 'Schema not found'], 404);
         } catch (Exception $e) {
             // Return a 500 error for other exceptions
-            return new JSONResponse(['error' => 'Internal server error: ' . $e->getMessage()], 500);
-        }
+            return new JSONResponse(['error' => 'Internal server error: '.$e->getMessage()], 500);
+        }//end try
+
     }//end related()
+
 
     /**
      * Get statistics for a specific schema
      *
-     * @param int $id The schema ID
+     * @param  int $id The schema ID
      * @return JSONResponse The schema statistics
      * @throws \OCP\AppFramework\Db\DoesNotExistException When the schema is not found
      *
@@ -544,25 +553,26 @@ class SchemasController extends Controller
         try {
             // Get the schema
             $schema = $this->schemaMapper->find($id);
-            
+
             if (!$schema) {
                 return new JSONResponse(['error' => 'Schema not found'], 404);
             }
 
             // Calculate statistics for this schema
             $stats = [
-                'objects' => $this->objectService->getObjectStats($schema->getId()),
-                'files' => $this->objectService->getFileStats($schema->getId()),
-                'logs' => $this->objectService->getLogStats($schema->getId()),
-                'registers' => $this->schemaMapper->getRegisterCount($schema->getId())
+                'objects'   => $this->objectService->getObjectStats($schema->getId()),
+                'files'     => $this->objectService->getFileStats($schema->getId()),
+                'logs'      => $this->objectService->getLogStats($schema->getId()),
+                'registers' => $this->schemaMapper->getRegisterCount($schema->getId()),
             ];
-            
+
             return new JSONResponse($stats);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Schema not found'], 404);
         } catch (Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
-        }
+        }//end try
+
     }//end stats()
 
 

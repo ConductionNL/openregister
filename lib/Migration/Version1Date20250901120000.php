@@ -39,16 +39,19 @@ use OCP\Migration\SimpleMigrationStep;
 class Version1Date20250901120000 extends SimpleMigrationStep
 {
 
+
     /**
      * @param IOutput $output
      * @param Closure $schemaClosure The `\Closure` returns a `ISchemaWrapper`
-     * @param array $options
+     * @param array   $options
      *
      * @return null|ISchemaWrapper
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        /*
+         * @var ISchemaWrapper $schema
+         */
         $schema = $schemaClosure();
 
         // Check if the objects table exists
@@ -60,15 +63,21 @@ class Version1Date20250901120000 extends SimpleMigrationStep
 
         // Add summary column if it doesn't exist
         if ($table->hasColumn('summary') === false) {
-            $table->addColumn('summary', 'text', [
-                'notnull' => false,
-                'default' => null,
-                'comment' => 'Summary of the object extracted from configured schema property'
-            ]);
+            $table->addColumn(
+                    'summary',
+                    'text',
+                    [
+                        'notnull' => false,
+                        'default' => null,
+                        'comment' => 'Summary of the object extracted from configured schema property',
+                    ]
+                    );
             $output->info('Added summary column to openregister_objects table');
         }
 
         return $schema;
+
     }//end changeSchema()
+
 
 }//end class

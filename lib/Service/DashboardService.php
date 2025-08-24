@@ -151,7 +151,7 @@ class DashboardService
         try {
             // Get all registers.
             $registers = $this->registerMapper->findAll();
-            
+
             // Build array of valid register/schema combinations.
             $validCombinations = [];
             foreach ($registers as $register) {
@@ -159,7 +159,7 @@ class DashboardService
                 foreach ($schemas as $schema) {
                     $validCombinations[] = [
                         'register' => $register->getId(),
-                        'schema' => $schema->getId()
+                        'schema'   => $schema->getId(),
                     ];
                 }
             }
@@ -223,8 +223,8 @@ class DashboardService
      * @throws \Exception If there is an error getting the registers with schemas
      */
     public function getRegistersWithSchemas(
-        ?int $registerId = null,
-        ?int $schemaId = null
+        ?int $registerId=null,
+        ?int $schemaId=null
     ): array {
         try {
             $filters = [];
@@ -241,7 +241,7 @@ class DashboardService
 
             // Add system totals as the first "register".
             $totalStats = $this->getStats($registerId, $schemaId);
-            $result[] = [
+            $result[]   = [
                 'id'          => 'totals',
                 'title'       => 'System Totals',
                 'description' => 'Total statistics across all registers and schemas',
@@ -263,7 +263,6 @@ class DashboardService
                 // Process schemas.
                 $schemasArray = [];
                 foreach ($schemas as $schema) {
-
                     if ($schemaId !== null &&  $schema->getId() !== $schemaId) {
                         continue;
                     }
@@ -501,25 +500,27 @@ class DashboardService
     /**
      * Get chart data for audit trail actions over time
      *
-     * @param \DateTime|null $from      Start date for the chart data
-     * @param \DateTime|null $till      End date for the chart data
-     * @param int|null      $registerId Optional register ID to filter by
-     * @param int|null      $schemaId   Optional schema ID to filter by
+     * @param \DateTime|null $from       Start date for the chart data
+     * @param \DateTime|null $till       End date for the chart data
+     * @param int|null       $registerId Optional register ID to filter by
+     * @param int|null       $schemaId   Optional schema ID to filter by
      *
      * @return array Array containing chart data for audit trail actions
      */
-    public function getAuditTrailActionChartData(?\DateTime $from = null, ?\DateTime $till = null, ?int $registerId = null, ?int $schemaId = null): array
+    public function getAuditTrailActionChartData(?\DateTime $from=null, ?\DateTime $till=null, ?int $registerId=null, ?int $schemaId=null): array
     {
         try {
             return $this->auditTrailMapper->getActionChartData($from, $till, $registerId, $schemaId);
         } catch (\Exception $e) {
-            $this->logger->error('Failed to get audit trail action chart data: ' . $e->getMessage());
+            $this->logger->error('Failed to get audit trail action chart data: '.$e->getMessage());
             return [
                 'labels' => [],
-                'series' => []
+                'series' => [],
             ];
         }
-    }
+
+    }//end getAuditTrailActionChartData()
+
 
     /**
      * Get chart data for objects by register
@@ -529,18 +530,20 @@ class DashboardService
      *
      * @return array Array containing chart data for objects by register
      */
-    public function getObjectsByRegisterChartData(?int $registerId = null, ?int $schemaId = null): array
+    public function getObjectsByRegisterChartData(?int $registerId=null, ?int $schemaId=null): array
     {
         try {
             return $this->objectMapper->getRegisterChartData($registerId, $schemaId);
         } catch (\Exception $e) {
-            $this->logger->error('Failed to get objects by register chart data: ' . $e->getMessage());
+            $this->logger->error('Failed to get objects by register chart data: '.$e->getMessage());
             return [
                 'labels' => [],
-                'series' => []
+                'series' => [],
             ];
         }
-    }
+
+    }//end getObjectsByRegisterChartData()
+
 
     /**
      * Get chart data for objects by schema
@@ -550,18 +553,20 @@ class DashboardService
      *
      * @return array Array containing chart data for objects by schema
      */
-    public function getObjectsBySchemaChartData(?int $registerId = null, ?int $schemaId = null): array
+    public function getObjectsBySchemaChartData(?int $registerId=null, ?int $schemaId=null): array
     {
         try {
             return $this->objectMapper->getSchemaChartData($registerId, $schemaId);
         } catch (\Exception $e) {
-            $this->logger->error('Failed to get objects by schema chart data: ' . $e->getMessage());
+            $this->logger->error('Failed to get objects by schema chart data: '.$e->getMessage());
             return [
                 'labels' => [],
-                'series' => []
+                'series' => [],
             ];
         }
-    }
+
+    }//end getObjectsBySchemaChartData()
+
 
     /**
      * Get chart data for objects by size distribution
@@ -571,18 +576,20 @@ class DashboardService
      *
      * @return array Array containing chart data for objects by size
      */
-    public function getObjectsBySizeChartData(?int $registerId = null, ?int $schemaId = null): array
+    public function getObjectsBySizeChartData(?int $registerId=null, ?int $schemaId=null): array
     {
         try {
             return $this->objectMapper->getSizeDistributionChartData($registerId, $schemaId);
         } catch (\Exception $e) {
-            $this->logger->error('Failed to get objects by size chart data: ' . $e->getMessage());
+            $this->logger->error('Failed to get objects by size chart data: '.$e->getMessage());
             return [
                 'labels' => [],
-                'series' => []
+                'series' => [],
             ];
         }
-    }
+
+    }//end getObjectsBySizeChartData()
+
 
     /**
      * Get audit trail statistics including total counts and recent activity
@@ -598,21 +605,23 @@ class DashboardService
      *               - deletes: Number of delete actions in timeframe
      *               - reads: Number of read actions in timeframe
      */
-    public function getAuditTrailStatistics(?int $registerId = null, ?int $schemaId = null, ?int $hours = 24): array
+    public function getAuditTrailStatistics(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): array
     {
         try {
             return $this->auditTrailMapper->getDetailedStatistics($registerId, $schemaId, $hours);
         } catch (\Exception $e) {
-            $this->logger->error('Failed to get audit trail statistics: ' . $e->getMessage());
+            $this->logger->error('Failed to get audit trail statistics: '.$e->getMessage());
             return [
-                'total' => 0,
+                'total'   => 0,
                 'creates' => 0,
                 'updates' => 0,
                 'deletes' => 0,
-                'reads' => 0
+                'reads'   => 0,
             ];
         }
-    }
+
+    }//end getAuditTrailStatistics()
+
 
     /**
      * Get action distribution data for audit trails with percentages
@@ -624,17 +633,19 @@ class DashboardService
      * @return array Array containing action distribution data:
      *               - actions: Array of action data with name, count, and percentage
      */
-    public function getAuditTrailActionDistribution(?int $registerId = null, ?int $schemaId = null, ?int $hours = 24): array
+    public function getAuditTrailActionDistribution(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): array
     {
         try {
             return $this->auditTrailMapper->getActionDistribution($registerId, $schemaId, $hours);
         } catch (\Exception $e) {
-            $this->logger->error('Failed to get audit trail action distribution: ' . $e->getMessage());
+            $this->logger->error('Failed to get audit trail action distribution: '.$e->getMessage());
             return [
-                'actions' => []
+                'actions' => [],
             ];
         }
-    }
+
+    }//end getAuditTrailActionDistribution()
+
 
     /**
      * Get most active objects based on audit trail activity
@@ -647,16 +658,18 @@ class DashboardService
      * @return array Array containing most active objects:
      *               - objects: Array of object data with name, id, and count
      */
-    public function getMostActiveObjects(?int $registerId = null, ?int $schemaId = null, ?int $limit = 10, ?int $hours = 24): array
+    public function getMostActiveObjects(?int $registerId=null, ?int $schemaId=null, ?int $limit=10, ?int $hours=24): array
     {
         try {
             return $this->auditTrailMapper->getMostActiveObjects($registerId, $schemaId, $limit, $hours);
         } catch (\Exception $e) {
-            $this->logger->error('Failed to get most active objects: ' . $e->getMessage());
+            $this->logger->error('Failed to get most active objects: '.$e->getMessage());
             return [
-                'objects' => []
+                'objects' => [],
             ];
         }
-    }
+
+    }//end getMostActiveObjects()
+
 
 }//end class
