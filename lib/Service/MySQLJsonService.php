@@ -78,7 +78,7 @@ class MySQLJsonService implements IDatabaseJsonService
 
         return $builder;
 
-    }//end orderJson()
+    }//end orderInRoot()
 
 
     /**
@@ -164,9 +164,10 @@ class MySQLJsonService implements IDatabaseJsonService
                     $builder->andWhere("json_unquote(json_extract(object, :path$filter)) < (:value{$filter}before)");
                     break;
                 default:
-                    if(is_array($value) === false) {
+                    if (is_array($value) === false) {
                         $value = explode(',', $value);
                     }
+
                     // Add IN clause for array of values.
                     $builder->createNamedParameter(
                         value: $value,
@@ -299,20 +300,19 @@ class MySQLJsonService implements IDatabaseJsonService
                 continue;
             }
 
-			// Handle simple equality filter.
-			if (is_bool($value) === true) {
-				$builder->createNamedParameter(
-					value: $value,
-					type: IQueryBuilder::PARAM_BOOL,
-					placeHolder: ":value$filter"
-				);
-			} else {
-				$builder->createNamedParameter(
-					value: $value,
-					placeHolder: ":value$filter"
-				);
-			}
-
+            // Handle simple equality filter.
+            if (is_bool($value) === true) {
+                $builder->createNamedParameter(
+                    value: $value,
+                    type: IQueryBuilder::PARAM_BOOL,
+                    placeHolder: ":value$filter"
+                );
+            } else {
+                $builder->createNamedParameter(
+                    value: $value,
+                    placeHolder: ":value$filter"
+                );
+            }
 
             $builder->andWhere(
                 "json_extract(object, :path$filter) = :value$filter OR json_contains(json_extract(object, :path$filter), json_quote(:value$filter))"
@@ -322,6 +322,7 @@ class MySQLJsonService implements IDatabaseJsonService
         return $builder;
 
     }//end filterJson()
+
 
     /**
      * Handle @self.deleted.* filters for deleted object properties
@@ -341,6 +342,7 @@ class MySQLJsonService implements IDatabaseJsonService
             } else if ($value === 'IS NULL') {
                 $builder->andWhere($builder->expr()->isNull('o.deleted'));
             }
+
             return $builder;
         }
 
@@ -374,7 +376,7 @@ class MySQLJsonService implements IDatabaseJsonService
             if (array_is_list($value) === false) {
                 // Handle complex filters (after/before) for deleted properties
                 foreach ($value as $op => $filterValue) {
-                    $opParamName = $paramName . '_' . $op;
+                    $opParamName = $paramName.'_'.$op;
                     $builder->createNamedParameter(
                         value: $filterValue,
                         type: IQueryBuilder::PARAM_STR,
@@ -402,8 +404,8 @@ class MySQLJsonService implements IDatabaseJsonService
                         case '<':
                             $builder->andWhere("JSON_UNQUOTE(JSON_EXTRACT(o.deleted, '$.$deletedProperty')) < :$opParamName");
                             break;
-                    }
-                }
+                    }//end switch
+                }//end foreach
             } else {
                 // Handle IN array for deleted properties
                 $builder->createNamedParameter(
@@ -412,7 +414,7 @@ class MySQLJsonService implements IDatabaseJsonService
                     placeHolder: ":$paramName"
                 );
                 $builder->andWhere("JSON_UNQUOTE(JSON_EXTRACT(o.deleted, '$.$deletedProperty')) IN (:$paramName)");
-            }
+            }//end if
         } else {
             // Handle simple equality filter for deleted properties
             $builder->createNamedParameter(
@@ -420,10 +422,11 @@ class MySQLJsonService implements IDatabaseJsonService
                 placeHolder: ":$paramName"
             );
             $builder->andWhere("JSON_UNQUOTE(JSON_EXTRACT(o.deleted, '$.$deletedProperty')) = :$paramName");
-        }
+        }//end if
 
         return $builder;
-    }
+
+    }//end handleSelfDeletedFilter()
 
 
     /**

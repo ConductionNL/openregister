@@ -36,72 +36,85 @@ use OCP\AppFramework\Utility\ITimeFactory;
 class LogCleanUpTask extends TimedJob
 {
 
-	/**
-	 * The audit trail mapper for database operations
-	 *
-	 * @var AuditTrailMapper
-	 */
-	private readonly AuditTrailMapper $auditTrailMapper;
+    /**
+     * The audit trail mapper for database operations
+     *
+     * @var AuditTrailMapper
+     */
+    private readonly AuditTrailMapper $auditTrailMapper;
 
 
-	/**
-	 * Constructor for the LogCleanUpTask
-	 *
-	 * @param ITimeFactory      $time              The time factory for time operations
-	 * @param AuditTrailMapper  $auditTrailMapper  The audit trail mapper for database operations
-	 *
-	 * @return void
-	 */
-	public function __construct(
-		ITimeFactory $time,
-		AuditTrailMapper $auditTrailMapper,
-	) {
-		parent::__construct($time);
-		$this->auditTrailMapper = $auditTrailMapper;
+    /**
+     * Constructor for the LogCleanUpTask
+     *
+     * @param ITimeFactory     $time             The time factory for time operations
+     * @param AuditTrailMapper $auditTrailMapper The audit trail mapper for database operations
+     *
+     * @return void
+     */
+    public function __construct(
+        ITimeFactory $time,
+        AuditTrailMapper $auditTrailMapper,
+    ) {
+        parent::__construct($time);
+        $this->auditTrailMapper = $auditTrailMapper;
 
-		// Run every hour (3600 seconds)
-		$this->setInterval(3600);
+        // Run every hour (3600 seconds)
+        $this->setInterval(3600);
 
-		// Delay until low-load time
-		$this->setTimeSensitivity(IJob::TIME_INSENSITIVE);
+        // Delay until low-load time
+        $this->setTimeSensitivity(IJob::TIME_INSENSITIVE);
 
-		// Only run one instance of this job at a time
-		$this->setAllowParallelRuns(false);
-	}
+        // Only run one instance of this job at a time
+        $this->setAllowParallelRuns(false);
+
+    }//end __construct()
 
 
-	/**
-	 * Execute the log cleanup task
-	 *
-	 * This method is called by the Nextcloud background job system to clean up
-	 * expired audit trail logs from the database.
-	 *
-	 * @param mixed $argument The job argument (not used in this implementation)
-	 *
-	 * @return void
-	 */
-	public function run(mixed $argument): void
-	{
-		try {
-			// Attempt to clear expired logs
-			$logsCleared = $this->auditTrailMapper->clearLogs();
-			
-			// Log the result for monitoring purposes
-			if ($logsCleared === true) {
-				\OC::$server->getLogger()->info('Successfully cleared expired audit trail logs', [
-					'app' => 'openregister'
-				]);
-			} else {
-				\OC::$server->getLogger()->debug('No expired audit trail logs found to clear', [
-					'app' => 'openregister'
-				]);
-			}
-		} catch (\Exception $e) {
-			// Log any errors that occur during cleanup
-			\OC::$server->getLogger()->error('Failed to clear expired audit trail logs: ' . $e->getMessage(), [
-				'app' => 'openregister',
-				'exception' => $e
-			]);
-		}
-	}
-}
+    /**
+     * Execute the log cleanup task
+     *
+     * This method is called by the Nextcloud background job system to clean up
+     * expired audit trail logs from the database.
+     *
+     * @param mixed $argument The job argument (not used in this implementation)
+     *
+     * @return void
+     */
+    public function run(mixed $argument): void
+    {
+        try {
+            // Attempt to clear expired logs
+            $logsCleared = $this->auditTrailMapper->clearLogs();
+
+            // Log the result for monitoring purposes
+            if ($logsCleared === true) {
+                \OC::$server->getLogger()->info(
+                'Successfully cleared expired audit trail logs',
+                [
+                    'app' => 'openregister',
+                ]
+                );
+            } else {
+                \OC::$server->getLogger()->debug(
+                'No expired audit trail logs found to clear',
+                [
+                    'app' => 'openregister',
+                ]
+                );
+            }
+        } catch (\Exception $e) {
+            // Log any errors that occur during cleanup
+            \OC::$server->getLogger()->error(
+            'Failed to clear expired audit trail logs: '.$e->getMessage(),
+            [
+                'app'       => 'openregister',
+                'exception' => $e,
+            ]
+            );
+        }//end try
+
+    }//end run()
+
+
+}//end class

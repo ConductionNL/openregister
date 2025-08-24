@@ -23,7 +23,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use Psr\Container\ContainerInterface;   
+use Psr\Container\ContainerInterface;
 use OCP\App\IAppManager;
 use OCA\OpenRegister\Service\SettingsService;
 
@@ -134,7 +134,7 @@ class SettingsController extends Controller
     public function update(): JSONResponse
     {
         try {
-            $data = $this->request->getParams();
+            $data   = $this->request->getParams();
             $result = $this->settingsService->updateSettings($data);
             return new JSONResponse($result);
         } catch (\Exception $e) {
@@ -161,7 +161,6 @@ class SettingsController extends Controller
         }
 
     }//end load()
-
 
 
     /**
@@ -228,4 +227,6 @@ class SettingsController extends Controller
         }
 
     }//end stats()
+
+
 }//end class

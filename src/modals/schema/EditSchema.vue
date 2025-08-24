@@ -111,6 +111,8 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 																class="property-chip chip-secondary">Hidden in view</span>
 															<span v-if="property.hideOnCollection"
 																class="property-chip chip-secondary">Hidden in Collection</span>
+															<span v-if="property.hideOnForm"
+																class="property-chip chip-secondary">Hidden in Form</span>
 															<span v-if="property.const !== undefined"
 																class="property-chip chip-success">Constant</span>
 															<span v-if="property.enum && property.enum.length > 0"
@@ -174,6 +176,11 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 														:checked="property.hideOnCollection || false"
 														@update:checked="updatePropertySetting(key, 'hideOnCollection', $event)">
 														Hide in collection view
+													</NcActionCheckbox>
+													<NcActionCheckbox
+														:checked="property.hideOnForm || false"
+														@update:checked="updatePropertySetting(key, 'hideOnForm', $event)">
+														Hide in form view
 													</NcActionCheckbox>
 													<NcActionCheckbox
 														:checked="property.facetable === true"
@@ -411,6 +418,11 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 																label="Inversed By"
 																:disabled="!schemaItem.properties[key].items.$ref"
 																@update:value="updateInversedByForArrayItems(key, $event)" />
+															<NcActionInput
+																:value="getArrayItemQueryParams(key)"
+																label="Query Parameters"
+																placeholder="e.g. gemmaType=referentiecomponent&_extend=aanbevolenStandaarden"
+																@update:value="updateArrayItemQueryParams(key, $event)" />
 															<NcActionCheckbox
 																:checked="property.items.writeBack || false"
 																@update:checked="updateArrayItemObjectConfigurationSetting(key, 'writeBack', $event)">
@@ -472,6 +484,11 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 															label="Inversed By"
 															:disabled="!schemaItem.properties[key].$ref"
 															@update:value="updateInversedBy(key, $event)" />
+														<NcActionInput
+															:value="getObjectQueryParams(key)"
+															label="Query Parameters"
+															placeholder="e.g. gemmaType=referentiecomponent&_extend=aanbevolenStandaarden"
+															@update:value="updateObjectQueryParams(key, $event)" />
 														<NcActionCheckbox
 															:checked="property.writeBack || false"
 															@update:checked="updatePropertySetting(key, 'writeBack', $event)">
@@ -2796,6 +2813,84 @@ export default {
 		 */
 		hasCustomTableSettings(key) {
 			return !this.isTableConfigDefault(key)
+		},
+
+		/**
+		 * Get query parameters for object property
+		 *
+		 * @param {string} key Property key
+		 * @return {string} Query parameters string
+		 */
+		getObjectQueryParams(key) {
+			if (!this.schemaItem.properties[key] || !this.schemaItem.properties[key].objectConfiguration) {
+				return ''
+			}
+			return this.schemaItem.properties[key].objectConfiguration.queryParams || ''
+		},
+
+		/**
+		 * Update query parameters for object property
+		 *
+		 * @param {string} key Property key
+		 * @param {string} value Query parameters string
+		 */
+		updateObjectQueryParams(key, value) {
+			if (!this.schemaItem.properties[key]) {
+				return
+			}
+
+			// Ensure objectConfiguration exists
+			if (!this.schemaItem.properties[key].objectConfiguration) {
+				this.$set(this.schemaItem.properties[key], 'objectConfiguration', { handling: 'related-object' })
+			}
+
+			// Update query parameters (remove if empty)
+			if (value && value.trim()) {
+				this.$set(this.schemaItem.properties[key].objectConfiguration, 'queryParams', value.trim())
+			} else {
+				this.$delete(this.schemaItem.properties[key].objectConfiguration, 'queryParams')
+			}
+
+			this.checkPropertiesModified()
+		},
+
+		/**
+		 * Get query parameters for array item objects
+		 *
+		 * @param {string} key Property key
+		 * @return {string} Query parameters string
+		 */
+		getArrayItemQueryParams(key) {
+			if (!this.schemaItem.properties[key] || !this.schemaItem.properties[key].items || !this.schemaItem.properties[key].items.objectConfiguration) {
+				return ''
+			}
+			return this.schemaItem.properties[key].items.objectConfiguration.queryParams || ''
+		},
+
+		/**
+		 * Update query parameters for array item objects
+		 *
+		 * @param {string} key Property key
+		 * @param {string} value Query parameters string
+		 */
+		updateArrayItemQueryParams(key, value) {
+			if (!this.schemaItem.properties[key] || !this.schemaItem.properties[key].items) {
+				return
+			}
+
+			// Ensure objectConfiguration exists
+			if (!this.schemaItem.properties[key].items.objectConfiguration) {
+				this.$set(this.schemaItem.properties[key].items, 'objectConfiguration', { handling: 'related-object' })
+			}
+
+			// Update query parameters (remove if empty)
+			if (value && value.trim()) {
+				this.$set(this.schemaItem.properties[key].items.objectConfiguration, 'queryParams', value.trim())
+			} else {
+				this.$delete(this.schemaItem.properties[key].items.objectConfiguration, 'queryParams')
+			}
+
+			this.checkPropertiesModified()
 		},
 	},
 }

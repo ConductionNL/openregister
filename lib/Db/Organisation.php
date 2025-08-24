@@ -35,6 +35,7 @@ use Symfony\Component\Uid\Uuid;
  */
 class Organisation extends Entity implements JsonSerializable
 {
+
     /**
      * Unique identifier for the organisation
      *
@@ -94,16 +95,17 @@ class Organisation extends Entity implements JsonSerializable
     /**
      * Whether this organisation is the default organisation
      *
-     * @var bool|null Whether this is the default organisation
+     * @var boolean|null Whether this is the default organisation
      */
     protected ?bool $isDefault = false;
 
     /**
      * Whether this organisation is active
      *
-     * @var bool|null Whether this organisation is active
+     * @var boolean|null Whether this organisation is active
      */
     protected ?bool $active = true;
+
 
     /**
      * Organisation constructor
@@ -122,8 +124,8 @@ class Organisation extends Entity implements JsonSerializable
         $this->addType('updated', 'datetime');
         $this->addType('is_default', 'boolean');
         $this->addType('active', 'boolean');
-    }
 
+    }//end __construct()
 
 
     /**
@@ -141,7 +143,9 @@ class Organisation extends Entity implements JsonSerializable
         } catch (\InvalidArgumentException $e) {
             return false;
         }
-    }
+
+    }//end isValidUuid()
+
 
     /**
      * Add a user to this organisation
@@ -161,7 +165,9 @@ class Organisation extends Entity implements JsonSerializable
         }
 
         return $this;
-    }
+
+    }//end addUser()
+
 
     /**
      * Remove a user from this organisation
@@ -176,12 +182,19 @@ class Organisation extends Entity implements JsonSerializable
             return $this;
         }
 
-        $this->users = array_values(array_filter($this->users, function($id) use ($userId) {
-            return $id !== $userId;
-        }));
+        $this->users = array_values(
+                array_filter(
+                $this->users,
+                function ($id) use ($userId) {
+                    return $id !== $userId;
+                }
+                )
+                );
 
         return $this;
-    }
+
+    }//end removeUser()
+
 
     /**
      * Check if a user belongs to this organisation
@@ -193,7 +206,9 @@ class Organisation extends Entity implements JsonSerializable
     public function hasUser(string $userId): bool
     {
         return $this->users !== null && in_array($userId, $this->users);
-    }
+
+    }//end hasUser()
+
 
     /**
      * Get all users in this organisation
@@ -203,7 +218,9 @@ class Organisation extends Entity implements JsonSerializable
     public function getUserIds(): array
     {
         return $this->users ?? [];
-    }
+
+    }//end getUserIds()
+
 
     /**
      * Get whether this organisation is the default
@@ -213,7 +230,9 @@ class Organisation extends Entity implements JsonSerializable
     public function getIsDefault(): bool
     {
         return $this->isDefault ?? false;
-    }
+
+    }//end getIsDefault()
+
 
     /**
      * Set whether this organisation is the default
@@ -226,7 +245,9 @@ class Organisation extends Entity implements JsonSerializable
     {
         $this->isDefault = $isDefault ?? false;
         return $this;
-    }
+
+    }//end setIsDefault()
+
 
     /**
      * Get whether this organisation is active
@@ -236,7 +257,9 @@ class Organisation extends Entity implements JsonSerializable
     public function getActive(): bool
     {
         return $this->active ?? true;
-    }
+
+    }//end getActive()
+
 
     /**
      * Set whether this organisation is active
@@ -249,7 +272,9 @@ class Organisation extends Entity implements JsonSerializable
     {
         parent::setActive($active ?? true);
         return $this;
-    }
+
+    }//end setActive()
+
 
     /**
      * JSON serialization for API responses
@@ -259,20 +284,22 @@ class Organisation extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         return [
-            'id' => $this->id,
-            'uuid' => $this->uuid,
-            'slug' => $this->slug,
-            'name' => $this->name,
+            'id'          => $this->id,
+            'uuid'        => $this->uuid,
+            'slug'        => $this->slug,
+            'name'        => $this->name,
             'description' => $this->description,
-            'users' => $this->getUserIds(),
-            'userCount' => count($this->getUserIds()),
-            'owner' => $this->owner,
-            'isDefault' => $this->getIsDefault(),
-            'active' => $this->getActive(),
-            'created' => $this->created ? $this->created->format('c') : null,
-            'updated' => $this->updated ? $this->updated->format('c') : null,
+            'users'       => $this->getUserIds(),
+            'userCount'   => count($this->getUserIds()),
+            'owner'       => $this->owner,
+            'isDefault'   => $this->getIsDefault(),
+            'active'      => $this->getActive(),
+            'created'     => $this->created ? $this->created->format('c') : null,
+            'updated'     => $this->updated ? $this->updated->format('c') : null,
         ];
-    }
+
+    }//end jsonSerialize()
+
 
     /**
      * String representation of the organisation
@@ -291,5 +318,8 @@ class Organisation extends Entity implements JsonSerializable
         }
 
         return $this->uuid;
-    }
-}
+
+    }//end __toString()
+
+
+}//end class

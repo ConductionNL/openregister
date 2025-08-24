@@ -79,9 +79,9 @@ class SettingsService
      * @param ObjectEntityMapper $objectEntityMapper Object entity mapper for database operations.
      */
     public function __construct(
-        private readonly IAppConfig $config, 
-        private readonly IRequest $request, 
-        private readonly ContainerInterface $container, 
+        private readonly IAppConfig $config,
+        private readonly IRequest $request,
+        private readonly ContainerInterface $container,
         private readonly IAppManager $appManager,
         private readonly IGroupManager $groupManager,
         private readonly IUserManager $userManager,
@@ -142,9 +142,10 @@ class SettingsService
         if (empty($rbacConfig)) {
             return false;
         }
-        
+
         $rbacData = json_decode($rbacConfig, true);
         return $rbacData['enabled'] ?? false;
+
     }//end isRbacEnabled()
 
 
@@ -159,9 +160,10 @@ class SettingsService
         if (empty($multitenancyConfig)) {
             return false;
         }
-        
+
         $multitenancyData = json_decode($multitenancyConfig, true);
         return $multitenancyData['enabled'] ?? false;
+
     }//end isMultiTenancyEnabled()
 
 
@@ -175,10 +177,10 @@ class SettingsService
     {
         try {
             $data = [];
-            
+
             // Version information
             $data['version'] = [
-                'appName' => 'Open Register',
+                'appName'    => 'Open Register',
                 'appVersion' => '0.2.3',
             ];
 
@@ -186,20 +188,20 @@ class SettingsService
             $rbacConfig = $this->config->getValueString($this->appName, 'rbac', '');
             if (empty($rbacConfig)) {
                 $data['rbac'] = [
-                    'enabled' => false,
-                    'anonymousGroup' => 'public',
+                    'enabled'             => false,
+                    'anonymousGroup'      => 'public',
                     'defaultNewUserGroup' => 'viewer',
-                    'defaultObjectOwner' => '',
-                    'adminOverride' => true,
+                    'defaultObjectOwner'  => '',
+                    'adminOverride'       => true,
                 ];
             } else {
-                $rbacData = json_decode($rbacConfig, true);
+                $rbacData     = json_decode($rbacConfig, true);
                 $data['rbac'] = [
-                    'enabled' => $rbacData['enabled'] ?? false,
-                    'anonymousGroup' => $rbacData['anonymousGroup'] ?? 'public',
+                    'enabled'             => $rbacData['enabled'] ?? false,
+                    'anonymousGroup'      => $rbacData['anonymousGroup'] ?? 'public',
                     'defaultNewUserGroup' => $rbacData['defaultNewUserGroup'] ?? 'viewer',
-                    'defaultObjectOwner' => $rbacData['defaultObjectOwner'] ?? '',
-                    'adminOverride' => $rbacData['adminOverride'] ?? true,
+                    'defaultObjectOwner'  => $rbacData['defaultObjectOwner'] ?? '',
+                    'adminOverride'       => $rbacData['adminOverride'] ?? true,
                 ];
             }
 
@@ -207,15 +209,15 @@ class SettingsService
             $multitenancyConfig = $this->config->getValueString($this->appName, 'multitenancy', '');
             if (empty($multitenancyConfig)) {
                 $data['multitenancy'] = [
-                    'enabled' => false,
-                    'defaultUserTenant' => '',
+                    'enabled'             => false,
+                    'defaultUserTenant'   => '',
                     'defaultObjectTenant' => '',
                 ];
             } else {
-                $multitenancyData = json_decode($multitenancyConfig, true);
+                $multitenancyData     = json_decode($multitenancyConfig, true);
                 $data['multitenancy'] = [
-                    'enabled' => $multitenancyData['enabled'] ?? false,
-                    'defaultUserTenant' => $multitenancyData['defaultUserTenant'] ?? '',
+                    'enabled'             => $multitenancyData['enabled'] ?? false,
+                    'defaultUserTenant'   => $multitenancyData['defaultUserTenant'] ?? '',
                     'defaultObjectTenant' => $multitenancyData['defaultObjectTenant'] ?? '',
                 ];
             }
@@ -233,31 +235,38 @@ class SettingsService
             $retentionConfig = $this->config->getValueString($this->appName, 'retention', '');
             if (empty($retentionConfig)) {
                 $data['retention'] = [
-                    'objectArchiveRetention' => 31536000000, // 1 year default
-                    'objectDeleteRetention' => 63072000000, // 2 years default
-                    'searchTrailRetention' => 2592000000, // 1 month default
-                    'createLogRetention' => 2592000000, // 1 month default
-                    'readLogRetention' => 86400000, // 24 hours default
-                    'updateLogRetention' => 604800000, // 1 week default
-                    'deleteLogRetention' => 2592000000, // 1 month default
+                    'objectArchiveRetention' => 31536000000,
+                // 1 year default
+                    'objectDeleteRetention'  => 63072000000,
+                // 2 years default
+                    'searchTrailRetention'   => 2592000000,
+                // 1 month default
+                    'createLogRetention'     => 2592000000,
+                // 1 month default
+                    'readLogRetention'       => 86400000,
+                // 24 hours default
+                    'updateLogRetention'     => 604800000,
+                // 1 week default
+                    'deleteLogRetention'     => 2592000000,
+                // 1 month default
                 ];
             } else {
-                $retentionData = json_decode($retentionConfig, true);
+                $retentionData     = json_decode($retentionConfig, true);
                 $data['retention'] = [
                     'objectArchiveRetention' => $retentionData['objectArchiveRetention'] ?? 31536000000,
-                    'objectDeleteRetention' => $retentionData['objectDeleteRetention'] ?? 63072000000,
-                    'searchTrailRetention' => $retentionData['searchTrailRetention'] ?? 2592000000,
-                    'createLogRetention' => $retentionData['createLogRetention'] ?? 2592000000,
-                    'readLogRetention' => $retentionData['readLogRetention'] ?? 86400000,
-                    'updateLogRetention' => $retentionData['updateLogRetention'] ?? 604800000,
-                    'deleteLogRetention' => $retentionData['deleteLogRetention'] ?? 2592000000,
+                    'objectDeleteRetention'  => $retentionData['objectDeleteRetention'] ?? 63072000000,
+                    'searchTrailRetention'   => $retentionData['searchTrailRetention'] ?? 2592000000,
+                    'createLogRetention'     => $retentionData['createLogRetention'] ?? 2592000000,
+                    'readLogRetention'       => $retentionData['readLogRetention'] ?? 86400000,
+                    'updateLogRetention'     => $retentionData['updateLogRetention'] ?? 604800000,
+                    'deleteLogRetention'     => $retentionData['deleteLogRetention'] ?? 2592000000,
                 ];
-            }
+            }//end if
 
             return $data;
         } catch (\Exception $e) {
-            throw new \RuntimeException('Failed to retrieve settings: ' . $e->getMessage());
-        }
+            throw new \RuntimeException('Failed to retrieve settings: '.$e->getMessage());
+        }//end try
 
     }//end getSettings()
 
@@ -270,10 +279,10 @@ class SettingsService
     private function getAvailableGroups(): array
     {
         $groups = [];
-        
+
         // Add special "public" group for anonymous users
         $groups['public'] = 'Public (No restrictions)';
-        
+
         // Get all Nextcloud groups
         $nextcloudGroups = $this->groupManager->search('');
         foreach ($nextcloudGroups as $group) {
@@ -294,8 +303,8 @@ class SettingsService
     {
         try {
             $organisations = $this->organisationMapper->findAllWithUserCount();
-            $tenants = [];
-            
+            $tenants       = [];
+
             foreach ($organisations as $organisation) {
                 $tenants[$organisation->getUuid()] = $organisation->getName();
             }
@@ -317,7 +326,7 @@ class SettingsService
     private function getAvailableUsers(): array
     {
         $users = [];
-        
+
         // Get all Nextcloud users (limit to prevent performance issues)
         $nextcloudUsers = $this->userManager->search('', 100);
         foreach ($nextcloudUsers as $user) {
@@ -345,11 +354,11 @@ class SettingsService
                 $rbacData = $data['rbac'];
                 // Always store RBAC config with enabled state
                 $rbacConfig = [
-                    'enabled' => $rbacData['enabled'] ?? false,
-                    'anonymousGroup' => $rbacData['anonymousGroup'] ?? 'public',
+                    'enabled'             => $rbacData['enabled'] ?? false,
+                    'anonymousGroup'      => $rbacData['anonymousGroup'] ?? 'public',
                     'defaultNewUserGroup' => $rbacData['defaultNewUserGroup'] ?? 'viewer',
-                    'defaultObjectOwner' => $rbacData['defaultObjectOwner'] ?? '',
-                    'adminOverride' => $rbacData['adminOverride'] ?? true,
+                    'defaultObjectOwner'  => $rbacData['defaultObjectOwner'] ?? '',
+                    'adminOverride'       => $rbacData['adminOverride'] ?? true,
                 ];
                 $this->config->setValueString($this->appName, 'rbac', json_encode($rbacConfig));
             }
@@ -359,8 +368,8 @@ class SettingsService
                 $multitenancyData = $data['multitenancy'];
                 // Always store Multitenancy config with enabled state
                 $multitenancyConfig = [
-                    'enabled' => $multitenancyData['enabled'] ?? false,
-                    'defaultUserTenant' => $multitenancyData['defaultUserTenant'] ?? '',
+                    'enabled'             => $multitenancyData['enabled'] ?? false,
+                    'defaultUserTenant'   => $multitenancyData['defaultUserTenant'] ?? '',
                     'defaultObjectTenant' => $multitenancyData['defaultObjectTenant'] ?? '',
                 ];
                 $this->config->setValueString($this->appName, 'multitenancy', json_encode($multitenancyConfig));
@@ -368,15 +377,15 @@ class SettingsService
 
             // Handle Retention settings
             if (isset($data['retention'])) {
-                $retentionData = $data['retention'];
+                $retentionData   = $data['retention'];
                 $retentionConfig = [
                     'objectArchiveRetention' => $retentionData['objectArchiveRetention'] ?? 31536000000,
-                    'objectDeleteRetention' => $retentionData['objectDeleteRetention'] ?? 63072000000,
-                    'searchTrailRetention' => $retentionData['searchTrailRetention'] ?? 2592000000,
-                    'createLogRetention' => $retentionData['createLogRetention'] ?? 2592000000,
-                    'readLogRetention' => $retentionData['readLogRetention'] ?? 86400000,
-                    'updateLogRetention' => $retentionData['updateLogRetention'] ?? 604800000,
-                    'deleteLogRetention' => $retentionData['deleteLogRetention'] ?? 2592000000,
+                    'objectDeleteRetention'  => $retentionData['objectDeleteRetention'] ?? 63072000000,
+                    'searchTrailRetention'   => $retentionData['searchTrailRetention'] ?? 2592000000,
+                    'createLogRetention'     => $retentionData['createLogRetention'] ?? 2592000000,
+                    'readLogRetention'       => $retentionData['readLogRetention'] ?? 86400000,
+                    'updateLogRetention'     => $retentionData['updateLogRetention'] ?? 604800000,
+                    'deleteLogRetention'     => $retentionData['deleteLogRetention'] ?? 2592000000,
                 ];
                 $this->config->setValueString($this->appName, 'retention', json_encode($retentionConfig));
             }
@@ -384,8 +393,8 @@ class SettingsService
             // Return the updated settings
             return $this->getSettings();
         } catch (\Exception $e) {
-            throw new \RuntimeException('Failed to update settings: ' . $e->getMessage());
-        }
+            throw new \RuntimeException('Failed to update settings: '.$e->getMessage());
+        }//end try
 
     }//end updateSettings()
 
@@ -471,38 +480,37 @@ class SettingsService
     {
         try {
             $startTime = new \DateTime();
-            $results = [
-                'startTime' => $startTime,
+            $results   = [
+                'startTime'        => $startTime,
                 'ownershipResults' => null,
-                'errors' => [],
+                'errors'           => [],
             ];
 
             // Get current settings
             $settings = $this->getSettings();
-            
+
             // Assign default owners and organizations to objects that don't have them
             if (!empty($settings['rbac']['defaultObjectOwner']) || !empty($settings['multitenancy']['defaultObjectTenant'])) {
                 try {
-                    $defaultOwner = $settings['rbac']['defaultObjectOwner'] ?? null;
+                    $defaultOwner        = $settings['rbac']['defaultObjectOwner'] ?? null;
                     $defaultOrganisation = $settings['multitenancy']['defaultObjectTenant'] ?? null;
-                    
+
                     $results['ownershipResults'] = $this->objectEntityMapper->bulkOwnerDeclaration($defaultOwner, $defaultOrganisation);
-                    
                 } catch (\Exception $e) {
-                    $error = 'Failed to assign default owners/organizations: ' . $e->getMessage();
-                    error_log('[SettingsService] ' . $error);
+                    $error = 'Failed to assign default owners/organizations: '.$e->getMessage();
+                    error_log('[SettingsService] '.$error);
                     $results['errors'][] = $error;
                 }
             } else {
                 $results['ownershipResults'] = [
-                    'message' => 'No default owner or organization configured, skipping ownership assignment.'
+                    'message' => 'No default owner or organization configured, skipping ownership assignment.',
                 ];
             }
 
             // Set expiry dates based on retention settings
             $retention = $settings['retention'] ?? [];
             $results['retentionResults'] = [];
-            
+
             try {
                 // Set expiry dates for audit trails (simplified - using first available retention)
                 $auditRetention = $retention['createLogRetention'] ?? $retention['readLogRetention'] ?? $retention['updateLogRetention'] ?? $retention['deleteLogRetention'] ?? 0;
@@ -522,22 +530,21 @@ class SettingsService
                     $objectsExpired = $this->objectEntityMapper->setExpiryDate($retention['objectDeleteRetention']);
                     $results['retentionResults']['objectsExpired'] = $objectsExpired;
                 }
-                
             } catch (\Exception $e) {
-                $error = 'Failed to set expiry dates: ' . $e->getMessage();
-                error_log('[SettingsService] ' . $error);
+                $error = 'Failed to set expiry dates: '.$e->getMessage();
+                error_log('[SettingsService] '.$error);
                 $results['errors'][] = $error;
-            }
+            }//end try
 
-            $results['endTime'] = new \DateTime();
+            $results['endTime']  = new \DateTime();
             $results['duration'] = $results['endTime']->diff($startTime)->format('%H:%I:%S');
-            $results['success'] = empty($results['errors']);
+            $results['success']  = empty($results['errors']);
 
             return $results;
-
         } catch (\Exception $e) {
-            throw new \RuntimeException('Rebase operation failed: ' . $e->getMessage());
-        }
+            throw new \RuntimeException('Rebase operation failed: '.$e->getMessage());
+        }//end try
+
     }//end rebaseObjectsAndLogs()
 
 
@@ -553,10 +560,8 @@ class SettingsService
     public function rebase(): array
     {
         return $this->rebaseObjectsAndLogs();
+
     }//end rebase()
-
-
-
 
 
     /**
@@ -572,15 +577,15 @@ class SettingsService
     {
         try {
             $stats = [
-                'warnings' => [
-                    'objectsWithoutOwner' => 0,
+                'warnings'    => [
+                    'objectsWithoutOwner'        => 0,
                     'objectsWithoutOrganisation' => 0,
-                    'auditTrailsWithoutExpiry' => 0,
-                    'searchTrailsWithoutExpiry' => 0,
+                    'auditTrailsWithoutExpiry'   => 0,
+                    'searchTrailsWithoutExpiry'  => 0,
                 ],
-                'totals' => [
-                    'totalObjects' => 0,
-                    'totalAuditTrails' => 0,
+                'totals'      => [
+                    'totalObjects'      => 0,
+                    'totalAuditTrails'  => 0,
                     'totalSearchTrails' => 0,
                 ],
                 'lastUpdated' => (new \DateTime())->format('c'),
@@ -590,14 +595,22 @@ class SettingsService
             $objectService = $this->container->get(ObjectService::class);
 
             // Count objects without owner (bypass RBAC and multi-tenancy)
-            $stats['warnings']['objectsWithoutOwner'] = $objectService->countSearchObjects([
-                'owner' => ['IS NULL', '']
-            ], false, false);
+            $stats['warnings']['objectsWithoutOwner'] = $objectService->countSearchObjects(
+                    [
+                        'owner' => ['IS NULL', ''],
+                    ],
+                    false,
+                    false
+                    );
 
             // Count objects without organisation (bypass RBAC and multi-tenancy)
-            $stats['warnings']['objectsWithoutOrganisation'] = $objectService->countSearchObjects([
-                'organisation' => ['IS NULL', '']
-            ], false, false);
+            $stats['warnings']['objectsWithoutOrganisation'] = $objectService->countSearchObjects(
+                    [
+                        'organisation' => ['IS NULL', ''],
+                    ],
+                    false,
+                    false
+                    );
 
             // Count total objects (bypass RBAC and multi-tenancy)
             $stats['totals']['totalObjects'] = $objectService->countSearchObjects([], false, false);
@@ -606,26 +619,39 @@ class SettingsService
             $stats['totals']['totalSize'] = $this->objectEntityMapper->sizeSearchObjects([], null, false, false);
 
             // Count deleted objects (bypass RBAC and multi-tenancy)
-            $stats['totals']['deletedObjects'] = $objectService->countSearchObjects([
-                '_includeDeleted' => true,
-                'deleted' => ['IS NOT NULL']
-            ], false, false);
+            $stats['totals']['deletedObjects'] = $objectService->countSearchObjects(
+                    [
+                        '_includeDeleted' => true,
+                        'deleted'         => ['IS NOT NULL'],
+                    ],
+                    false,
+                    false
+                    );
 
             // Get size of deleted objects (bypass RBAC and multi-tenancy)
-            $stats['totals']['deletedSize'] = $this->objectEntityMapper->sizeSearchObjects([
-                '_includeDeleted' => true,
-                'deleted' => ['IS NOT NULL']
-            ], null, false, false);
+            $stats['totals']['deletedSize'] = $this->objectEntityMapper->sizeSearchObjects(
+                    [
+                        '_includeDeleted' => true,
+                        'deleted'         => ['IS NOT NULL'],
+                    ],
+                    null,
+                    false,
+                    false
+                    );
 
             // Count audit trails without expiry date
-            $stats['warnings']['auditTrailsWithoutExpiry'] = $this->auditTrailMapper->count([
-                'expires' => ['IS NULL', '']
-            ]);
+            $stats['warnings']['auditTrailsWithoutExpiry'] = $this->auditTrailMapper->count(
+                    [
+                        'expires' => ['IS NULL', ''],
+                    ]
+                    );
 
-            // Count search trails without expiry date  
-            $stats['warnings']['searchTrailsWithoutExpiry'] = $this->searchTrailMapper->count([
-                'expires' => ['IS NULL', '']
-            ]);
+            // Count search trails without expiry date
+            $stats['warnings']['searchTrailsWithoutExpiry'] = $this->searchTrailMapper->count(
+                    [
+                        'expires' => ['IS NULL', ''],
+                    ]
+                    );
 
             // Count total audit trails
             $stats['totals']['totalAuditTrails'] = $this->auditTrailMapper->count();
@@ -642,51 +668,48 @@ class SettingsService
             // Count expired items (items past their expiry date) and get their sizes
             // For expired audit trails, we need a custom query to check if expires < NOW()
             $db = $this->container->get('OCP\IDBConnection');
-            
+
             $qb = $db->getQueryBuilder();
             $qb->select($qb->func()->count('*'), $qb->createFunction('COALESCE(SUM(size), 0) as total_size'))
-               ->from('openregister_audit_trails')
-               ->where($qb->expr()->isNotNull('expires'))
-               ->andWhere($qb->expr()->lt('expires', $qb->createFunction('NOW()')));
-            $result = $qb->executeQuery();
+                ->from('openregister_audit_trails')
+                ->where($qb->expr()->isNotNull('expires'))
+                ->andWhere($qb->expr()->lt('expires', $qb->createFunction('NOW()')));
+            $result    = $qb->executeQuery();
             $auditData = $result->fetch();
-            $stats['warnings']['expiredAuditTrails'] = (int)($auditData['COUNT(*)'] ?? 0);
-            $stats['warnings']['expiredAuditTrailsSize'] = (int)($auditData['total_size'] ?? 0);
+            $stats['warnings']['expiredAuditTrails']     = (int) ($auditData['COUNT(*)'] ?? 0);
+            $stats['warnings']['expiredAuditTrailsSize'] = (int) ($auditData['total_size'] ?? 0);
             $result->closeCursor();
 
             // Count expired search trails
             $qb = $db->getQueryBuilder();
             $qb->select($qb->func()->count('*'), $qb->createFunction('COALESCE(SUM(size), 0) as total_size'))
-               ->from('openregister_search_trails')
-               ->where($qb->expr()->isNotNull('expires'))
-               ->andWhere($qb->expr()->lt('expires', $qb->createFunction('NOW()')));
-            $result = $qb->executeQuery();
+                ->from('openregister_search_trails')
+                ->where($qb->expr()->isNotNull('expires'))
+                ->andWhere($qb->expr()->lt('expires', $qb->createFunction('NOW()')));
+            $result     = $qb->executeQuery();
             $searchData = $result->fetch();
-            $stats['warnings']['expiredSearchTrails'] = (int)($searchData['COUNT(*)'] ?? 0);
-            $stats['warnings']['expiredSearchTrailsSize'] = (int)($searchData['total_size'] ?? 0);
+            $stats['warnings']['expiredSearchTrails']     = (int) ($searchData['COUNT(*)'] ?? 0);
+            $stats['warnings']['expiredSearchTrailsSize'] = (int) ($searchData['total_size'] ?? 0);
             $result->closeCursor();
 
             // Count expired objects
             $qb = $db->getQueryBuilder();
             $qb->select($qb->func()->count('*'), $qb->createFunction('COALESCE(SUM(CAST(size AS UNSIGNED)), 0) as total_size'))
-               ->from('openregister_objects')
-               ->where($qb->expr()->isNotNull('expires'))
-               ->andWhere($qb->expr()->lt('expires', $qb->createFunction('NOW()')));
-            $result = $qb->executeQuery();
+                ->from('openregister_objects')
+                ->where($qb->expr()->isNotNull('expires'))
+                ->andWhere($qb->expr()->lt('expires', $qb->createFunction('NOW()')));
+            $result     = $qb->executeQuery();
             $objectData = $result->fetch();
-            $stats['warnings']['expiredObjects'] = (int)($objectData['COUNT(*)'] ?? 0);
-            $stats['warnings']['expiredObjectsSize'] = (int)($objectData['total_size'] ?? 0);
+            $stats['warnings']['expiredObjects']     = (int) ($objectData['COUNT(*)'] ?? 0);
+            $stats['warnings']['expiredObjectsSize'] = (int) ($objectData['total_size'] ?? 0);
             $result->closeCursor();
 
             return $stats;
-
         } catch (\Exception $e) {
-            throw new \RuntimeException('Failed to retrieve statistics: ' . $e->getMessage());
-        }
+            throw new \RuntimeException('Failed to retrieve statistics: '.$e->getMessage());
+        }//end try
+
     }//end getStats()
-
-
-
 
 
 }//end class

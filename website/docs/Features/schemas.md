@@ -584,6 +584,111 @@ Open Register supports schema versioning to manage changes over time:
 2. **Major Updates**: Adding required fields, removing fields, or changing field types
 3. **Archive**: Previous versions are stored in the schema's archive property
 
+## API Property Filtering
+
+When retrieving objects via the API, OpenRegister provides several parameters to control which properties are included or excluded from the response. This is particularly useful for optimizing performance, reducing payload sizes, or filtering out sensitive information.
+
+### Available Filtering Parameters
+
+| Parameter | Purpose | Usage Example |
+|-----------|---------|---------------|
+| '_fields' | **Whitelist** - Include only specified properties | '?_fields=id,name,description' |
+| '_unset' | **Blacklist** - Remove specified properties | '?_unset=internal,private,metadata' |
+| '_filter' | **Conditional** - Filter objects by property values | '?_filter=status,active' |
+
+### Property Inclusion with '_fields'
+
+Use '_fields' to specify exactly which properties should be included in the response:
+
+```bash
+# Only return id, name, and description
+GET /api/objects/register/schema/123?_fields=id,name,description
+```
+
+**Response:**
+```json
+{
+  "id": "123",
+  "name": "Sample Object",
+  "description": "This is a sample",
+  "@self": {
+    "id": "123",
+    "name": "Sample Object",
+    "register": "1",
+    "schema": "5"
+  }
+}
+```
+
+### Property Removal with '_unset'
+
+Use '_unset' to remove specific properties from the response:
+
+```bash
+# Remove internal and metadata properties
+GET /api/objects/register/schema/123?_unset=internal,metadata,created
+```
+
+**Before '_unset':**
+```json
+{
+  "id": "123",
+  "name": "Sample Object",
+  "internal": "sensitive data",
+  "metadata": {"version": "1.0"},
+  "created": "2023-01-01T00:00:00Z",
+  "@self": {...}
+}
+```
+
+**After '_unset=internal,metadata,created':**
+```json
+{
+  "id": "123", 
+  "name": "Sample Object",
+  "@self": {...}
+}
+```
+
+### Alternative Syntax
+
+Both underscore and non-underscore versions are supported:
+
+```bash
+# These are equivalent:
+GET /api/objects/123?_unset=field1,field2
+GET /api/objects/123?unset=field1,field2
+
+GET /api/objects/123?_fields=id,name
+GET /api/objects/123?fields=id,name
+```
+
+### Collection Endpoints
+
+Property filtering works on both single object and collection endpoints:
+
+```bash
+# Remove sensitive data from all objects in collection
+GET /api/objects?_unset=password,token,internal
+
+# Only include essential fields for list view
+GET /api/objects?_fields=id,name,status
+```
+
+### Best Practices
+
+1. **Performance**: Use '_fields' for large objects to reduce response size
+2. **Security**: Use '_unset' to remove sensitive properties without affecting underlying data
+3. **Consistency**: Choose one parameter style ('_unset' vs 'unset') and use consistently
+4. **Documentation**: Document which fields can be filtered for API consumers
+
+### Important Notes
+
+- Property filtering only affects the API response, not the stored data
+- The '@self' metadata object is always included and contains core object information
+- Filtering is applied after object rendering and relationship resolution
+- Invalid property names in filtering parameters are silently ignored
+
 # Schema References and Object Cascading
 
 OpenRegister supports schema references to enable reusable schema definitions and complex object relationships. This document explains how schema references work, how they are resolved, and how to configure object cascading.

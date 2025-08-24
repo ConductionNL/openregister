@@ -67,8 +67,8 @@ class SchemaMapper extends QBMapper
         SchemaPropertyValidatorService $validator
     ) {
         parent::__construct($db, 'openregister_schemas');
-        $this->eventDispatcher    = $eventDispatcher;
-        $this->validator          = $validator;
+        $this->eventDispatcher = $eventDispatcher;
+        $this->validator       = $validator;
 
     }//end __construct()
 
@@ -243,10 +243,10 @@ class SchemaMapper extends QBMapper
             $schema->setSource('internal');
         }
 
-        $properties             = ($schema->getProperties() ?? []);
-        $propertyKeys           = array_keys($properties);
-        $configuration          = $schema->getConfiguration() ?? [];
-        $objectNameField        = $configuration['objectNameField'] ?? '';
+        $properties      = ($schema->getProperties() ?? []);
+        $propertyKeys    = array_keys($properties);
+        $configuration   = $schema->getConfiguration() ?? [];
+        $objectNameField = $configuration['objectNameField'] ?? '';
         $objectDescriptionField = $configuration['objectDescriptionField'] ?? '';
 
         // If an object name field is provided, it must exist in the properties
@@ -266,13 +266,15 @@ class SchemaMapper extends QBMapper
             // Check if the property has a 'required' field set to true or the string 'true'
             if (isset($property['required']) === true) {
                 $requiredValue = $property['required'];
-                if ($requiredValue === true ||
-                    $requiredValue === 'true' ||
-                    (is_string($requiredValue) === true && strtolower(trim($requiredValue)) === 'true')) {
+                if ($requiredValue === true
+                    || $requiredValue === 'true'
+                    || (is_string($requiredValue) === true && strtolower(trim($requiredValue)) === 'true')
+                ) {
                     $requiredFields[] = $propertyKey;
                 }
             }
         }
+
         // Set the required fields on the schema
         $schema->setRequired($requiredFields);
 
@@ -318,7 +320,7 @@ class SchemaMapper extends QBMapper
     /**
      * Recursively enforce that $ref is always a string in all properties and array items
      *
-     * @param array &$properties The properties array to check
+     * @param  array &$properties The properties array to check
      * @throws \Exception If $ref is not a string or cannot be converted
      */
     private function enforceRefIsStringRecursive(array &$properties): void
@@ -328,29 +330,31 @@ class SchemaMapper extends QBMapper
             if (!is_array($property)) {
                 continue;
             }
+
             // Check $ref at this level
             if (isset($property['$ref'])) {
                 if (is_array($property['$ref']) && isset($property['$ref']['id'])) {
                     $property['$ref'] = $property['$ref']['id'];
-                } elseif (is_object($property['$ref']) && isset($property['$ref']->id)) {
+                } else if (is_object($property['$ref']) && isset($property['$ref']->id)) {
                     $property['$ref'] = $property['$ref']->id;
-                } elseif (is_int($property['$ref'])) {
-
-                }
-                elseif (!is_string($property['$ref']) && $property['$ref'] !== '') {
-                    throw new \Exception("Schema property '$key' has a \$ref that is not a string or empty: " . print_r($property['$ref'], true));
+                } else if (is_int($property['$ref'])) {
+                } else if (!is_string($property['$ref']) && $property['$ref'] !== '') {
+                    throw new \Exception("Schema property '$key' has a \$ref that is not a string or empty: ".print_r($property['$ref'], true));
                 }
             }
+
             // Check array items recursively
             if (isset($property['items']) && is_array($property['items'])) {
                 $this->enforceRefIsStringRecursive($property['items']);
             }
+
             // Check nested properties recursively
             if (isset($property['properties']) && is_array($property['properties'])) {
                 $this->enforceRefIsStringRecursive($property['properties']);
             }
-        }
-    }
+        }//end foreach
+
+    }//end enforceRefIsStringRecursive()
 
 
     /**
@@ -496,6 +500,7 @@ class SchemaMapper extends QBMapper
 
     }//end getRegisterCountPerSchema()
 
+
     /**
      * Get all schema ID to slug mappings
      *
@@ -507,13 +512,16 @@ class SchemaMapper extends QBMapper
         $qb->select('id', 'slug')
             ->from($this->getTableName());
 
-        $result = $qb->execute();
+        $result   = $qb->execute();
         $mappings = [];
         while ($row = $result->fetch()) {
             $mappings[$row['id']] = $row['slug'];
         }
+
         return $mappings;
-    }
+
+    }//end getIdToSlugMap()
+
 
     /**
      * Get all schema slug to ID mappings
@@ -526,13 +534,16 @@ class SchemaMapper extends QBMapper
         $qb->select('id', 'slug')
             ->from($this->getTableName());
 
-        $result = $qb->execute();
+        $result   = $qb->execute();
         $mappings = [];
         while ($row = $result->fetch()) {
             $mappings[$row['slug']] = $row['id'];
         }
+
         return $mappings;
-    }
+
+    }//end getSlugToIdMap()
+
 
     /**
      * Find schemas that have properties referencing the given schema
@@ -552,19 +563,19 @@ class SchemaMapper extends QBMapper
     {
         // If we received a Schema entity, get its ID, otherwise find the schema
         if ($schema instanceof Schema) {
-            $targetSchemaId = (string) $schema->getId();
+            $targetSchemaId   = (string) $schema->getId();
             $targetSchemaUuid = $schema->getUuid();
             $targetSchemaSlug = $schema->getSlug();
         } else {
             // Find the target schema to get all its identifiers
-            $targetSchema = $this->find($schema);
-            $targetSchemaId = (string) $targetSchema->getId();
+            $targetSchema     = $this->find($schema);
+            $targetSchemaId   = (string) $targetSchema->getId();
             $targetSchemaUuid = $targetSchema->getUuid();
             $targetSchemaSlug = $targetSchema->getSlug();
         }
 
         // Get all schemas to search through their properties
-        $allSchemas = $this->findAll();
+        $allSchemas     = $this->findAll();
         $relatedSchemas = [];
 
         foreach ($allSchemas as $currentSchema) {
@@ -575,7 +586,7 @@ class SchemaMapper extends QBMapper
 
             // Get the properties of the current schema
             $properties = $currentSchema->getProperties() ?? [];
-            
+
             // Search for references to the target schema
             if ($this->hasReferenceToSchema($properties, $targetSchemaId, $targetSchemaUuid, $targetSchemaSlug)) {
                 $relatedSchemas[] = $currentSchema;
@@ -583,7 +594,9 @@ class SchemaMapper extends QBMapper
         }
 
         return $relatedSchemas;
-    }
+
+    }//end getRelated()
+
 
     /**
      * Recursively check if properties contain a reference to the target schema
@@ -591,10 +604,10 @@ class SchemaMapper extends QBMapper
      * This method searches through properties recursively to find $ref values
      * that match the target schema's ID, UUID, or slug.
      *
-     * @param array  $properties        The properties array to search through
-     * @param string $targetSchemaId    The target schema ID to look for
-     * @param string $targetSchemaUuid  The target schema UUID to look for
-     * @param string $targetSchemaSlug  The target schema slug to look for
+     * @param array  $properties       The properties array to search through
+     * @param string $targetSchemaId   The target schema ID to look for
+     * @param string $targetSchemaUuid The target schema UUID to look for
+     * @param string $targetSchemaSlug The target schema slug to look for
      *
      * @return bool True if a reference to the target schema is found
      */
@@ -609,32 +622,34 @@ class SchemaMapper extends QBMapper
             // Check if this property has a $ref that matches our target schema
             if (isset($property['$ref'])) {
                 $ref = $property['$ref'];
-                
+
                 // Check exact matches first
-                if ($ref === $targetSchemaId || 
-                    $ref === $targetSchemaUuid || 
-                    $ref === $targetSchemaSlug ||
-                    $ref === (int) $targetSchemaId) {
+                if ($ref === $targetSchemaId
+                    || $ref === $targetSchemaUuid
+                    || $ref === $targetSchemaSlug
+                    || $ref === (int) $targetSchemaId
+                ) {
                     return true;
                 }
-                
+
                 // Check if the ref contains the target schema slug in JSON Schema format
                 // Format: "#/components/schemas/slug" or "components/schemas/slug" etc.
                 if (is_string($ref) && !empty($targetSchemaSlug)) {
-                    if (str_contains($ref, '/schemas/' . $targetSchemaSlug) ||
-                        str_contains($ref, 'schemas/' . $targetSchemaSlug) ||
-                        str_ends_with($ref, '/' . $targetSchemaSlug)) {
+                    if (str_contains($ref, '/schemas/'.$targetSchemaSlug)
+                        || str_contains($ref, 'schemas/'.$targetSchemaSlug)
+                        || str_ends_with($ref, '/'.$targetSchemaSlug)
+                    ) {
                         return true;
                     }
                 }
-                
+
                 // Check if the ref contains the target schema UUID
                 if (is_string($ref) && !empty($targetSchemaUuid)) {
                     if (str_contains($ref, $targetSchemaUuid)) {
                         return true;
                     }
                 }
-            }
+            }//end if
 
             // Recursively check nested properties
             if (isset($property['properties']) && is_array($property['properties'])) {
@@ -649,10 +664,11 @@ class SchemaMapper extends QBMapper
                     return true;
                 }
             }
-        }
+        }//end foreach
 
         return false;
-    }
+
+    }//end hasReferenceToSchema()
 
 
 }//end class
