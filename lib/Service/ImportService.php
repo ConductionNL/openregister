@@ -191,11 +191,10 @@ class ImportService
      * @phpstan-return array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      * @psalm-return   array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      */
-    public function importFromExcel(string $filePath, ?Register $register=null, ?Schema $schema=null, int $chunkSize=self::DEFAULT_CHUNK_SIZE, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true): array
+    public function importFromExcel(string $filePath, ?Register $register=null, ?Schema $schema=null, int $chunkSize=self::DEFAULT_CHUNK_SIZE, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false): array
     {
         // Clear caches at the start of each import to prevent stale data issues
         $this->clearCaches();
-        error_log('[ImportService] Starting Excel import, caches cleared');
         
         $reader = new Xlsx();
         $reader->setReadDataOnly(true);
@@ -203,12 +202,12 @@ class ImportService
 
         // If we have a register but no schema, process each sheet as a different schema.
         if ($register !== null && $schema === null) {
-            return $this->processMultiSchemaSpreadsheetAsync($spreadsheet, $register, $chunkSize, $validation, $events, $rbac, $multi);
+            return $this->processMultiSchemaSpreadsheetAsync($spreadsheet, $register, $chunkSize, $validation, $events, $rbac, $multi, $publish);
         }
 
         // Single schema processing - use batch processing for better performance
         $sheetTitle = $spreadsheet->getActiveSheet()->getTitle();
-        $sheetSummary = $this->processSpreadsheetBatch($spreadsheet, $register, $schema, $chunkSize, $validation, $events, $rbac, $multi);
+        $sheetSummary = $this->processSpreadsheetBatch($spreadsheet, $register, $schema, $chunkSize, $validation, $events, $rbac, $multi, $publish);
 
         // Add schema information to the summary (consistent with multi-sheet Excel import).
         if ($schema !== null) {
@@ -269,11 +268,10 @@ class ImportService
      * @phpstan-return array<string, array{created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      * @psalm-return   array<string, array{created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      */
-    public function importFromCsv(string $filePath, ?Register $register=null, ?Schema $schema=null, int $chunkSize=self::DEFAULT_CHUNK_SIZE, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true): array
+    public function importFromCsv(string $filePath, ?Register $register=null, ?Schema $schema=null, int $chunkSize=self::DEFAULT_CHUNK_SIZE, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false): array
     {
         // Clear caches at the start of each import to prevent stale data issues
         $this->clearCaches();
-        error_log('[ImportService] Starting CSV import, caches cleared');
         
         // CSV can only handle a single schema.
         if ($schema === null) {
@@ -289,7 +287,7 @@ class ImportService
 
         // Get the sheet title for CSV (usually just 'Worksheet' or similar).
         $sheetTitle = $spreadsheet->getActiveSheet()->getTitle();
-        $sheetSummary = $this->processCsvSheet($spreadsheet->getActiveSheet(), $register, $schema, $chunkSize, $validation, $events, $rbac, $multi);
+        $sheetSummary = $this->processCsvSheet($spreadsheet->getActiveSheet(), $register, $schema, $chunkSize, $validation, $events, $rbac, $multi, $publish);
 
         // Add schema information to the summary (consistent with Excel import).
         $sheetSummary['schema'] = [
@@ -318,7 +316,7 @@ class ImportService
      * @phpstan-return array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      * @psalm-return   array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      */
-    private function processMultiSchemaSpreadsheetAsync(Spreadsheet $spreadsheet, Register $register, int $chunkSize, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true): array
+    private function processMultiSchemaSpreadsheetAsync(Spreadsheet $spreadsheet, Register $register, int $chunkSize, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false): array
     {
         $summary = [];
 
@@ -370,7 +368,7 @@ class ImportService
 
             // Set the worksheet as active and process using batch saving for better performance.
             $spreadsheet->setActiveSheetIndex($spreadsheet->getIndex($worksheet));
-            $sheetSummary = $this->processSpreadsheetBatch($spreadsheet, $register, $schema, $chunkSize, $validation, $events, $rbac, $multi);
+            $sheetSummary = $this->processSpreadsheetBatch($spreadsheet, $register, $schema, $chunkSize, $validation, $events, $rbac, $multi, $publish);
 
             // Merge the sheet summary with the existing summary (preserve debug info).
             $summary[$schemaSlug] = array_merge($summary[$schemaSlug], $sheetSummary);
@@ -479,7 +477,8 @@ class ImportService
         bool $validation=false,
         bool $events=false,
         bool $rbac=true,
-        bool $multi=true
+        bool $multi=true,
+        bool $publish=false
     ): array {
         $summary = [
             'found'     => 0,
@@ -522,7 +521,6 @@ class ImportService
                 return $summary;
             }
 
-            error_log('[Excel Import] Starting clean architecture import: ' . ($highestRow - 1) . ' rows');
 
             // Parse ALL rows into objects array (no chunking here!)
             $allObjects = [];
@@ -554,16 +552,23 @@ class ImportService
             }
 
             $summary['found'] = count($allObjects);
-            error_log('[Excel Import] Parsed ' . count($allObjects) . ' objects, now calling saveObjects() once');
+
+            // DEBUG: Check conditions for saveObjects call
 
             // Call saveObjects ONCE with all objects - let ObjectService handle performance optimization
             if (!empty($allObjects) && $register !== null && $schema !== null) {
+                // Add publish date to all objects if publish is enabled
+                if ($publish) {
+                    $publishDate = (new \DateTime())->format('c'); // ISO 8601 format
+                    $allObjects = $this->addPublishedDateToObjects($allObjects, $publishDate);
+                }
+                
                 $saveResult = $this->objectService->saveObjects($allObjects, $register, $schema, $rbac, $multi, $validation, $events);
                 
                 // Use the structured return from saveObjects
-                // saveObjects returns serialized arrays, not ObjectEntity objects
-                $summary['created'] = array_map(fn($obj) => $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []);
-                $summary['updated'] = array_map(fn($obj) => $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []);
+                // saveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id
+                $summary['created'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []);
+                $summary['updated'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []);
                 
                 // Handle validation errors if validation was enabled
                 if ($validation && !empty($saveResult['invalid'] ?? [])) {
@@ -584,12 +589,9 @@ class ImportService
             $totalImportTime = microtime(true) - $startTime;
             $overallRowsPerSecond = count($allObjects) / max($totalImportTime, 0.001);
             
-            error_log('[Excel Import] Clean architecture completed: ' . count($allObjects) . ' rows in ' . round($totalImportTime, 2) . 's (' . round($overallRowsPerSecond, 1) . ' rows/sec overall)');
 
         } catch (\Exception $e) {
             // Enhanced error logging for debugging
-            error_log('[ImportService] Excel processing error: ' . $e->getMessage());
-            error_log('[ImportService] Error trace: ' . $e->getTraceAsString());
             
             // Clear caches in case of error to prevent corruption
             $this->clearCaches();
@@ -627,7 +629,7 @@ class ImportService
      * @phpstan-return array<string, array{found: int, created: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      * @psalm-return   array<string, array{found: int, created: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      */
-    private function processCsvSheet(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, Register $register, Schema $schema, int $chunkSize, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true): array
+    private function processCsvSheet(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, Register $register, Schema $schema, int $chunkSize, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false): array
     {
         $summary = [
             'found'     => 0,
@@ -664,7 +666,6 @@ class ImportService
                 return $summary;
             }
 
-            error_log('[CSV Import] Starting clean architecture import: ' . ($highestRow - 1) . ' rows');
             
             // Parse ALL rows into objects array (no chunking here!)
             $allObjects = [];
@@ -695,16 +696,23 @@ class ImportService
             }
 
             $summary['found'] = count($allObjects);
-            error_log('[CSV Import] Parsed ' . count($allObjects) . ' objects, now calling saveObjects() once');
+
+            // DEBUG: Check conditions for saveObjects call
 
             // Call saveObjects ONCE with all objects - let ObjectService handle performance optimization
             if (!empty($allObjects)) {
+                // Add publish date to all objects if publish is enabled
+                if ($publish) {
+                    $publishDate = (new \DateTime())->format('c'); // ISO 8601 format
+                    $allObjects = $this->addPublishedDateToObjects($allObjects, $publishDate);
+                }
+                
                 $saveResult = $this->objectService->saveObjects($allObjects, $register, $schema, $rbac, $multi, $validation, $events);
                 
                 // Use the structured return from saveObjects
-                // saveObjects returns serialized arrays, not ObjectEntity objects
-                $summary['created'] = array_map(fn($obj) => $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []);
-                $summary['updated'] = array_map(fn($obj) => $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []);
+                // saveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id
+                $summary['created'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []);
+                $summary['updated'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []);
                 
                 // Handle validation errors if validation was enabled
                 if ($validation && !empty($saveResult['invalid'] ?? [])) {
@@ -724,12 +732,9 @@ class ImportService
             $totalImportTime = microtime(true) - $startTime;
             $overallRowsPerSecond = count($allObjects) / max($totalImportTime, 0.001);
             
-            error_log('[CSV Import] Clean architecture completed: ' . count($allObjects) . ' rows in ' . round($totalImportTime, 2) . 's (' . round($overallRowsPerSecond, 1) . ' rows/sec overall)');
 
         } catch (\Exception $e) {
             // Enhanced error logging for debugging
-            error_log('[CSV Import] Error processing CSV sheet: ' . $e->getMessage());
-            error_log('[CSV Import] Error trace: ' . $e->getTraceAsString());
             
             // Clear caches in case of error to prevent corruption
             $this->clearCaches();
@@ -796,7 +801,6 @@ class ImportService
             $chunks[] = ['start' => $chunkStart, 'end' => $chunkEnd];
         }
 
-        error_log('[Concurrent Import] Processing ' . count($chunks) . ' chunks concurrently with max concurrent: ' . self::MAX_CONCURRENT);
 
         // Process chunks in concurrent batches
         $batchSize = self::MAX_CONCURRENT;
@@ -869,14 +873,12 @@ class ImportService
                     $summary['errors'] = array_merge($summary['errors'], $result['errors']);
                 }
 
-                error_log('[Concurrent Import] Completed batch ' . (intval($i / $batchSize) + 1) . ' of ' . ceil(count($chunks) / $batchSize));
 
                 // Memory cleanup after each batch
                 unset($batchResults, $promises);
                 gc_collect_cycles();
 
             } catch (\Exception $e) {
-                error_log('[Concurrent Import] Batch processing failed: ' . $e->getMessage());
                 $summary['errors'][] = [
                     'error' => 'Concurrent batch processing failed: ' . $e->getMessage(),
                     'type'  => 'ConcurrentProcessingException',
@@ -937,13 +939,11 @@ class ImportService
                     
                     // Log memory usage for monitoring
                     if ($memoryIncrease > 50 * 1024 * 1024) { // 50MB threshold
-                        error_log('[CSV Import] Memory usage high: ' . round($memoryIncrease / 1024 / 1024, 2) . 'MB at row ' . $row);
                     }
                     
                     // Force garbage collection if memory usage is high
                     if ($memoryIncrease > 100 * 1024 * 1024) { // 100MB threshold
                         gc_collect_cycles();
-                        error_log('[CSV Import] Forced garbage collection at row ' . $row);
                     }
                 }
 
@@ -959,7 +959,6 @@ class ImportService
         // Final memory cleanup
         $finalMemory = memory_get_usage(true);
         $totalMemoryUsed = $finalMemory - $startMemory;
-        error_log('[CSV Import] Chunk processed: rows ' . $startRow . '-' . $endRow . ', memory used: ' . round($totalMemoryUsed / 1024 / 1024, 2) . 'MB');
 
         return [
             'objects' => $objects,
@@ -986,7 +985,6 @@ class ImportService
         
         if (!isset($this->schemaPropertiesCache[$schemaId])) {
             $this->schemaPropertiesCache[$schemaId] = $schema->getProperties();
-            error_log('[ImportService] Cached schema properties for schema ID: ' . $schemaId);
         }
         $schemaProperties = $this->schemaPropertiesCache[$schemaId];
 
@@ -1782,7 +1780,6 @@ class ImportService
     public function clearCaches(): void
     {
         $this->schemaPropertiesCache = [];
-        error_log('[ImportService] Cleared all internal caches');
 
     }//end clearCaches()
 
@@ -1818,13 +1815,35 @@ class ImportService
             
             // Check for invalid properties that commonly cause issues
             if (in_array($key, $invalidProperties)) {
-                error_log('[ImportService] INVALID PROPERTY DETECTED: "' . $key . '" in schema ' . $schemaId);
-                error_log('[ImportService] This may cause "' . $key . ' is not a valid attribute" errors');
-                error_log('[ImportService] Object data keys: ' . implode(', ', array_keys($objectData)));
             }
         }
 
     }//end validateObjectProperties()
+
+
+    /**
+     * Add published date to all objects in the @self section
+     *
+     * @param array  $objects     Array of object data
+     * @param string $publishDate Published date in ISO 8601 format
+     *
+     * @return array Modified objects with published date
+     */
+    private function addPublishedDateToObjects(array $objects, string $publishDate): array
+    {
+        foreach ($objects as &$object) {
+            // Ensure @self section exists
+            if (!isset($object['@self'])) {
+                $object['@self'] = [];
+            }
+            
+            // Add published date to @self section
+            $object['@self']['published'] = $publishDate;
+        }
+        
+        return $objects;
+
+    }//end addPublishedDateToObjects()
 
 
 }//end class

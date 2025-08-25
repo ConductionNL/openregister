@@ -137,7 +137,7 @@ class SaveObjects
         $startTime    = microtime(true);
         $totalObjects = count($objects);
 
-        error_log('[SaveObjects] Starting bulk save: '.$totalObjects.' objects');
+        // Bulk save operation starting
 
         // Initialize result arrays for different outcomes
         $result = [
@@ -166,7 +166,6 @@ class SaveObjects
         try {
             [$processedObjects, $globalSchemaCache] = $this->prepareObjectsForBulkSave($objects);
         } catch (\Exception $e) {
-            error_log('[SaveObjects] Error preparing objects for bulk save: '.$e->getMessage());
             $result['errors'][] = [
                 'error' => 'Failed to prepare objects for bulk save: '.$e->getMessage(),
                 'type'  => 'BulkPreparationException',
@@ -176,27 +175,24 @@ class SaveObjects
 
         // Check if we have any processed objects
         if (empty($processedObjects)) {
-            error_log('[SaveObjects] No objects were successfully prepared for bulk save');
             $result['errors'][] = [
                 'error' => 'No objects were successfully prepared for bulk save',
                 'type'  => 'NoObjectsPreparedException',
             ];
             return $result;
         }
+        
 
         // Log how many objects were successfully prepared
-        error_log('[SaveObjects] Successfully prepared '.count($processedObjects).' out of '.count($objects).' objects for bulk save');
 
         // Update statistics to reflect actual processed objects
         $result['statistics']['totalProcessed'] = count($processedObjects);
 
         // Process objects in chunks for optimal performance
         $chunkSize = $this->calculateOptimalChunkSize(count($processedObjects));
-        error_log('[SaveObjects] Using chunk size: '.$chunkSize.' for '.count($processedObjects).' processed objects');
 
         // PERFORMANCE FIX: Always use bulk processing - no size-based routing
         // Removed concurrent processing attempt that caused performance degradation for large files
-        error_log('[SaveObjects] Using optimized bulk processing for all file sizes ('.count($processedObjects).' objects)');
 
         // Sequential processing with chunks
         $chunks     = array_chunk($processedObjects, $chunkSize);
@@ -204,7 +200,6 @@ class SaveObjects
 
         foreach ($chunks as $chunkIndex => $objectsChunk) {
             $chunkStart = microtime(true);
-            error_log('[SaveObjects] Processing chunk '.($chunkIndex + 1).'/'.$chunkCount.' ('.count($objectsChunk).' objects)');
 
             $chunkResult = $this->processObjectsChunk($objectsChunk, $globalSchemaCache, $rbac, $multi, $validation, $events);
 
@@ -220,13 +215,11 @@ class SaveObjects
 
             $chunkTime  = microtime(true) - $chunkStart;
             $chunkSpeed = count($objectsChunk) / max($chunkTime, 0.001);
-            error_log('[SaveObjects] Chunk '.($chunkIndex + 1).' completed: '.count($objectsChunk).' objects in '.round($chunkTime, 3).'s ('.round($chunkSpeed, 1).' obj/sec)');
         }
 
         $totalTime    = microtime(true) - $startTime;
         $overallSpeed = count($processedObjects) / max($totalTime, 0.001);
 
-        error_log('[SaveObjects] Bulk save completed: '.count($processedObjects).' objects in '.round($totalTime, 3).'s ('.round($overallSpeed, 1).' obj/sec)');
 
         return $result;
 
@@ -279,7 +272,6 @@ class SaveObjects
         $startTime   = microtime(true);
         $objectCount = count($objects);
 
-        error_log('[SaveObjects] Starting bulk preparation for '.$objectCount.' objects');
 
         // Early return for empty arrays
         if (empty($objects)) {
@@ -306,9 +298,7 @@ class SaveObjects
                 $schema = $this->schemaMapper->find($schemaId);
                 $schemaCache[$schemaId] = $schema;
                 $schemaAnalysis[$schemaId] = $this->performComprehensiveSchemaAnalysis($schema);
-                error_log('[SaveObjects] Schema '.$schemaId.' analyzed: '.count($schemaAnalysis[$schemaId]['inverseProperties']).' inverse properties, '.count($schemaAnalysis[$schemaId]['metadataFields']).' metadata fields (Performance Optimization)');
             } catch (\Exception $e) {
-                error_log('[SaveObjects] Failed to load schema '.$schemaId.': '.$e->getMessage());
             }
         }
 
@@ -340,7 +330,6 @@ class SaveObjects
 
                 $preparedObjects[$index] = $processedObject;
             } catch (\Exception $e) {
-                error_log('[SaveObjects] Error preparing object at index '.$index.': '.$e->getMessage());
                 $preparedObjects[$index] = $object;
                 // Continue with original object
             }//end try
@@ -355,8 +344,6 @@ class SaveObjects
         $successCount = count($preparedObjects);
         $failureCount = $objectCount - $successCount;
 
-        error_log('[SaveObjects] Bulk preparation completed: '.$successCount.' success, '.$failureCount.' failed in '.$duration.'ms');
-        error_log('[SaveObjects] Schema cache built with '.count($schemaCache).' schemas (Performance Optimization)');
 
         return [array_values($preparedObjects), $schemaCache];
 
@@ -388,7 +375,6 @@ class SaveObjects
     private function processObjectsChunk(array $objects, array $schemaCache, bool $rbac, bool $multi, bool $validation, bool $events): array
     {
         $startTime = microtime(true);
-        error_log('[SaveObjects] Starting bulk chunk processing for '.count($objects).' objects');
 
         $result = [
             'saved'      => [],
@@ -403,24 +389,19 @@ class SaveObjects
         ];
 
         // STEP 1: Transform objects for database format with metadata hydration
-        error_log('[SaveObjects] Step 1: Transforming objects to database format');
         $transformedObjects = $this->transformObjectsToDatabaseFormatInPlace($objects, $schemaCache);
         
         // DEBUG: Log first transformed object structure to find 'data' issue
         if (!empty($transformedObjects)) {
             $firstObj = $transformedObjects[0];
-            error_log('[SaveObjects] DEBUG: First transformed object keys: ' . implode(', ', array_keys($firstObj)));
             if (isset($firstObj['data'])) {
-                error_log('[SaveObjects] WARNING: Found "data" key in transformed object - this will cause setData() error');
             }
             if (isset($firstObj['object'])) {
-                error_log('[SaveObjects] OK: Found "object" key in transformed object');
             }
         }
 
         // STEP 2: Validate objects against schemas if validation enabled
         if ($validation === true) {
-            error_log('[SaveObjects] Step 2: Validating objects against schemas');
             $validatedObjects = $this->validateObjectsAgainstSchemaOptimized($transformedObjects, $schemaCache);
             // Move invalid objects to result and remove from processing
             foreach ($validatedObjects['invalid'] as $invalidObj) {
@@ -431,12 +412,10 @@ class SaveObjects
         }
 
         if (empty($transformedObjects)) {
-            error_log('[SaveObjects] No valid objects to process after validation');
             return $result;
         }
 
         // STEP 3: Extract object IDs and find existing objects for bulk operation
-        error_log('[SaveObjects] Step 3: Finding existing objects for bulk merge');
         $objectIds = $this->extractObjectIds($transformedObjects);
         $existingObjects = $this->findExistingObjects($objectIds);
 
@@ -459,13 +438,14 @@ class SaveObjects
             }
         }
 
-        error_log('[SaveObjects] Prepared '.count($insertObjects).' inserts and '.count($updateObjects).' updates');
 
         // STEP 5: Execute bulk database operations
         $savedObjectIds = [];
         
         try {
-            error_log('[SaveObjects] Step 5: Executing bulk database operations');
+            
+            // Production ready: Clean bulk processing
+            
             $bulkResult = $this->objectEntityMapper->saveObjects($insertObjects, $updateObjects);
             
             // Collect saved object IDs for response reconstruction
@@ -478,39 +458,37 @@ class SaveObjects
                 $result['statistics']['updated']++;
             }
 
-            error_log('[SaveObjects] Bulk database operation completed successfully');
 
         } catch (\Exception $e) {
-            error_log('[SaveObjects] Bulk database operation failed: '.$e->getMessage());
             
-            // Fallback to individual processing for this chunk
-            error_log('[SaveObjects] Falling back to individual object processing');
-            return $this->fallbackToIndividualProcessing($objects, $schemaCache, $rbac, $multi, $validation, $events);
+            // NO MORE FALLBACK: Let the exception bubble up to reveal the real problem!
+            throw new \Exception('Bulk object save operation failed: ' . $e->getMessage(), 0, $e);
         }
 
         // STEP 6: Reconstruct saved objects for response (avoids redundant DB fetch)
-        error_log('[SaveObjects] Step 6: Reconstructing saved objects for response');
+        
         $savedObjects = $this->reconstructSavedObjects($insertObjects, $updateObjects, $savedObjectIds, $existingObjects);
+        
 
         // Separate into saved vs updated for response
         foreach ($savedObjects as $obj) {
             $uuid = $obj->getUuid();
+            $serialized = $obj->jsonSerialize();
+            
             if (isset($existingObjects[$uuid])) {
-                $result['updated'][] = $obj->jsonSerialize();
+                $result['updated'][] = $serialized;
             } else {
-                $result['saved'][] = $obj->jsonSerialize();
+                $result['saved'][] = $serialized;
             }
         }
 
         // STEP 7: Handle inverse relations in bulk for writeBack operations
         if (!empty($savedObjects)) {
-            error_log('[SaveObjects] Step 7: Processing bulk inverse relations');
             $this->handlePostSaveInverseRelations($savedObjects, $schemaCache);
         }
 
         $endTime = microtime(true);
         $processingTime = round(($endTime - $startTime) * 1000, 2);
-        error_log('[SaveObjects] Chunk processing completed in '.$processingTime.'ms: '.$result['statistics']['saved'].' saved, '.$result['statistics']['updated'].' updated, '.$result['statistics']['invalid'].' invalid');
 
         return $result;
     }//end processObjectsChunk()
@@ -533,7 +511,6 @@ class SaveObjects
      */
     private function fallbackToIndividualProcessing(array $objects, array $schemaCache, bool $rbac, bool $multi, bool $validation, bool $events): array
     {
-        error_log('[SaveObjects] FALLBACK: Processing objects individually');
 
         $result = [
             'saved'      => [],
@@ -585,15 +562,14 @@ class SaveObjects
                 );
                 
                 if ($uuid === null) {
-                    $result['saved'][] = $savedObject;
+                    $result['saved'][] = $savedObject->jsonSerialize();
                     $result['statistics']['saved']++;
                 } else {
-                    $result['updated'][] = $savedObject;
+                    $result['updated'][] = $savedObject->jsonSerialize();
                     $result['statistics']['updated']++;
                 }
                 
             } catch (\Exception $e) {
-                error_log('[SaveObjects] Fallback processing error at index '.$index.': '.$e->getMessage());
                 $result['invalid'][] = [
                     'object' => $object,
                     'error'  => 'Save error: '.$e->getMessage(),
@@ -602,6 +578,28 @@ class SaveObjects
                 ];
                 $result['statistics']['invalid']++;
             }
+        }
+
+        // CRITICAL FIX: Add inverse relations handling to fallback processing!
+        
+        $allSavedObjects = [];
+        
+        // Collect all saved ObjectEntity instances (reconstruct from saved UUIDs)
+        foreach ($result['saved'] as $savedArray) {
+            if (isset($savedArray['uuid'])) {
+                try {
+                    $objEntity = $this->objectEntityMapper->find($savedArray['uuid']);
+                    if ($objEntity) {
+                        $allSavedObjects[] = $objEntity;
+                    }
+                } catch (\Exception $e) {
+                }
+            }
+        }
+        
+        // Apply inverse relations to all saved objects
+        if (!empty($allSavedObjects)) {
+            $this->handlePostSaveInverseRelations($allSavedObjects, $schemaCache);
         }
 
         return $result;
@@ -658,15 +656,28 @@ class SaveObjects
             
             // Check for inversedBy at property level (single object relations)
             $inversedBy = $propertyConfig['inversedBy'] ?? null;
-            $writeBack = $propertyConfig['writeBack'] ?? false;
+            $rawWriteBack = $propertyConfig['writeBack'] ?? false;
+            $writeBack = $this->castToBoolean($rawWriteBack);
+            
+            // Schema analysis: process writeBack boolean casting
             
             // Check for inversedBy in array items (array of object relations)
+            // CRITICAL FIX: Preserve property-level writeBack if it's true
             if (!$inversedBy && isset($items['inversedBy'])) {
                 $inversedBy = $items['inversedBy'];
-                $writeBack = $items['writeBack'] ?? false;
+                $rawItemsWriteBack = $items['writeBack'] ?? false;
+                $itemsWriteBack = $this->castToBoolean($rawItemsWriteBack);
+                
+                // Use the higher value: if property writeBack is true, keep it
+                $finalWriteBack = $writeBack || $itemsWriteBack;
+                
+                // Items logic: combine property and items writeBack values
+                
+                $writeBack = $finalWriteBack;
             }
             
             if ($inversedBy) {
+                
                 $analysis['inverseProperties'][$propertyName] = [
                     'inversedBy' => $inversedBy,
                     'writeBack' => $writeBack,
@@ -677,6 +688,32 @@ class SaveObjects
 
         return $analysis;
     }//end performComprehensiveSchemaAnalysis()
+
+
+    /**
+     * Cast mixed values to proper boolean
+     * 
+     * Handles string "true"/"false", integers 1/0, and actual booleans
+     *
+     * @param mixed $value The value to cast to boolean
+     * @return bool The boolean value
+     */
+    private function castToBoolean($value): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+        
+        if (is_string($value)) {
+            return strtolower(trim($value)) === 'true';
+        }
+        
+        if (is_numeric($value)) {
+            return (bool) $value;
+        }
+        
+        return (bool) $value;
+    }//end castToBoolean()
 
 
     /**
@@ -824,7 +861,6 @@ class SaveObjects
             }
         }
 
-        error_log('[SaveObjects] Cached schema analysis: processed '.$processedCount.' inverse relations, applied '.$appliedCount.' updates (Performance Optimization)');
     }//end handleBulkInverseRelationsWithAnalysis()
 
 
@@ -908,7 +944,6 @@ class SaveObjects
             
             // DEFENSIVE FIX: Ensure no 'data' key exists (legacy compatibility)
             if (isset($transformed['data'])) {
-                error_log('[SaveObjects] WARNING: Removing legacy "data" key from transformed object');
                 unset($transformed['data']);
             }
 
@@ -956,7 +991,6 @@ class SaveObjects
                     $data = is_string($objectData['object']) ? json_decode($objectData['object'], true) : $objectData['object'];
                 } elseif (isset($objectData['data'])) {
                     // Legacy support
-                    error_log('[SaveObjects] WARNING: Using deprecated "data" field in validation');
                     $data = is_string($objectData['data']) ? json_decode($objectData['data'], true) : $objectData['data'];
                 } else {
                     throw new \InvalidArgumentException('No object data found for validation');
@@ -1065,7 +1099,6 @@ class SaveObjects
             $existingObject->setObject($newObjectData['object']);
         } elseif (isset($newObjectData['data'])) {
             // Legacy support: 'data' should be 'object'
-            error_log('[SaveObjects] WARNING: Using deprecated "data" property, should be "object"');
             $existingObject->setObject($newObjectData['data']);
         }
         if (isset($newObjectData['schema'])) {
@@ -1099,9 +1132,20 @@ class SaveObjects
     {
         $savedObjects = [];
 
-        // Add all insert objects (convert from arrays to ObjectEntity)
+        // CRITICAL FIX: Don't use createFromArray() - it tries to insert objects that already exist!
+        // Instead, create ObjectEntity and hydrate without inserting
         foreach ($insertObjects as $objData) {
-            $savedObjects[] = $this->objectEntityMapper->createFromArray($objData);
+            $obj = new ObjectEntity();
+            
+            // Ensure we have the UUID from our saved operation
+            if (empty($objData['uuid'])) {
+                // Missing UUID in insertObjects data - skip this object
+                continue;
+            }
+            
+            $obj->hydrate($objData);
+            
+            $savedObjects[] = $obj;
         }
 
         // Add all update objects  
@@ -1130,7 +1174,6 @@ class SaveObjects
             return;
         }
 
-        error_log('[SaveObjects] Processing inverse relations for '.count($savedObjects).' saved objects');
         
         // PERFORMANCE FIX: Collect all related IDs first to avoid N+1 queries
         $allRelatedIds = [];
@@ -1174,69 +1217,120 @@ class SaveObjects
         $relatedObjectsMap = [];
         if (!empty($allRelatedIds)) {
             $uniqueRelatedIds = array_unique($allRelatedIds);
-            error_log('[SaveObjects] Bulk fetching '.count($uniqueRelatedIds).' related objects (prevented '.count($allRelatedIds).' individual queries)');
             
             try {
                 $relatedObjects = $this->objectEntityMapper->findAll(ids: $uniqueRelatedIds, includeDeleted: false);
                 foreach ($relatedObjects as $obj) {
                     $relatedObjectsMap[$obj->getUuid()] = $obj;
                 }
-                error_log('[SaveObjects] Bulk fetch completed: '.count($relatedObjects).' objects found');
             } catch (\Exception $e) {
-                error_log('[SaveObjects] Bulk fetch failed: '.$e->getMessage());
                 return; // Skip inverse relations processing if bulk fetch fails
             }
         }
 
-        // Second pass: process inverse relations using bulk-fetched objects
-        $bulkWriteBackUpdates = [];
+        // Second pass: process inverse relations with proper context
+        $writeBackOperations = [];
         foreach ($savedObjects as $index => $savedObject) {
             if (!isset($objectRelationsMap[$index])) {
                 continue;
             }
             
-            foreach ($objectRelationsMap[$index] as $relatedId) {
-                if (isset($relatedObjectsMap[$relatedId])) {
-                    $bulkWriteBackUpdates[] = $relatedObjectsMap[$relatedId];
+            $schema = $schemaCache[$savedObject->getSchema()] ?? null;
+            if (!$schema) {
+                continue;
+            }
+            
+            $analysis = $this->performComprehensiveSchemaAnalysis($schema);
+            $objectData = $savedObject->getObject();
+            
+            // Build writeBack operations with full context
+            foreach ($analysis['inverseProperties'] as $propertyName => $inverseConfig) {
+                if (!isset($objectData[$propertyName]) || !$inverseConfig['writeBack']) {
+                    continue;
+                }
+                
+                $relatedObjectIds = is_array($objectData[$propertyName]) ? $objectData[$propertyName] : [$objectData[$propertyName]];
+                
+                foreach ($relatedObjectIds as $relatedId) {
+                    if (!empty($relatedId) && isset($relatedObjectsMap[$relatedId])) {
+                        $writeBackOperations[] = [
+                            'targetObject' => $relatedObjectsMap[$relatedId],
+                            'sourceUuid' => $savedObject->getUuid(),
+                            'inverseProperty' => $inverseConfig['inversedBy'], // e.g., 'deelnames'
+                            'sourceProperty' => $propertyName, // e.g., 'deelnemers'
+                        ];
+                    }
                 }
             }
         }
 
-        // Execute bulk writeBack updates
-        if (!empty($bulkWriteBackUpdates)) {
-            error_log('[SaveObjects] Performing writeBack updates for '.count($bulkWriteBackUpdates).' related objects');
-            $this->performBulkWriteBackUpdates($bulkWriteBackUpdates);
+        // Execute writeBack operations with context
+        if (!empty($writeBackOperations)) {
+            $this->performBulkWriteBackUpdatesWithContext($writeBackOperations);
         }
     }//end handlePostSaveInverseRelations()
 
 
     /**
-     * Perform bulk writeBack updates with fallback handling
+     * Perform bulk writeBack updates with full context and actual modifications
      *
-     * PERFORMANCE OPTIMIZATION: Executes all writeBack operations in a single
-     * bulk database operation with fallback to individual updates.
+     * FIXED: Now actually modifies related objects with inverse properties
+     * before saving them to the database.
      *
-     * @param array $objects Array of objects requiring writeBack updates
+     * @param array $writeBackOperations Array of writeBack operations with context
      *
      * @return void
      */
-    private function performBulkWriteBackUpdates(array $objects): void
+    private function performBulkWriteBackUpdatesWithContext(array $writeBackOperations): void
     {
-        if (empty($objects)) {
+        if (empty($writeBackOperations)) {
             return;
         }
 
-        error_log('[SaveObjects] Performing bulk writeBack updates for '.count($objects).' objects');
 
-        try {
-            // Use bulk update operation
-            $this->objectEntityMapper->saveObjects([], $objects);
-            error_log('[SaveObjects] Bulk writeBack updates completed successfully');
-        } catch (\Exception $e) {
-            error_log('[SaveObjects] Bulk writeBack failed, falling back to individual updates: '.$e->getMessage());
-            $this->fallbackToIndividualWriteBackUpdates($objects);
+        $objectsToUpdate = [];
+        
+        foreach ($writeBackOperations as $operation) {
+            $targetObject = $operation['targetObject'];
+            $sourceUuid = $operation['sourceUuid'];
+            $inverseProperty = $operation['inverseProperty']; // e.g., 'deelnames'
+            $sourceProperty = $operation['sourceProperty']; // e.g., 'deelnemers'
+            
+            
+            // Get current object data
+            $objectData = $targetObject->getObject();
+            
+            // Initialize inverse property array if it doesn't exist
+            if (!isset($objectData[$inverseProperty])) {
+                $objectData[$inverseProperty] = [];
+            }
+            
+            // Ensure it's an array
+            if (!is_array($objectData[$inverseProperty])) {
+                $objectData[$inverseProperty] = [$objectData[$inverseProperty]];
+            }
+            
+            // Add source UUID to inverse property if not already present
+            if (!in_array($sourceUuid, $objectData[$inverseProperty])) {
+                $objectData[$inverseProperty][] = $sourceUuid;
+            } else {
+                continue;
+            }
+            
+            // Update the object with modified data
+            $targetObject->setObject($objectData);
+            $objectsToUpdate[] = $targetObject;
         }
-    }//end performBulkWriteBackUpdates()
+        
+        // Save all modified objects in bulk
+        if (!empty($objectsToUpdate)) {
+            try {
+                $this->objectEntityMapper->saveObjects([], $objectsToUpdate);
+            } catch (\Exception $e) {
+                $this->fallbackToIndividualWriteBackUpdates($objectsToUpdate);
+            }
+        }
+    }//end performBulkWriteBackUpdatesWithContext()
 
 
     /**
@@ -1252,7 +1346,6 @@ class SaveObjects
             try {
                 $this->objectEntityMapper->update($obj);
             } catch (\Exception $e) {
-                error_log('[SaveObjects] Individual writeBack update failed for '.$obj->getUuid().': '.$e->getMessage());
             }
         }
     }//end fallbackToIndividualWriteBackUpdates()
