@@ -503,7 +503,7 @@ class ImportService
                 $summary['errors'][] = [
                     'sheet'  => $sheetTitle,
                     'row'    => 1,
-                    'data'   => [],
+                    'object' => [],
                     'error'  => 'No valid headers found in sheet',
                 ];
                 return $summary;
@@ -516,7 +516,7 @@ class ImportService
                 $summary['errors'][] = [
                     'sheet'  => $sheetTitle,
                     'row'    => 1,
-                    'data'   => [],
+                    'object' => [],
                     'error'  => 'No data rows found in sheet',
                 ];
                 return $summary;
@@ -547,7 +547,7 @@ class ImportService
                     $rowErrors[] = [
                         'sheet' => $sheetTitle,
                         'row'   => $row,
-                        'data'  => $rowData ?? [],
+                        'object' => $rowData ?? [],
                         'error' => $e->getMessage(),
                     ];
                 }
@@ -561,15 +561,16 @@ class ImportService
                 $saveResult = $this->objectService->saveObjects($allObjects, $register, $schema, $rbac, $multi, $validation, $events);
                 
                 // Use the structured return from saveObjects
-                $summary['created'] = array_map(fn($obj) => $obj->getUuid(), $saveResult['saved'] ?? []);
-                $summary['updated'] = array_map(fn($obj) => $obj->getUuid(), $saveResult['updated'] ?? []);
+                // saveObjects returns serialized arrays, not ObjectEntity objects
+                $summary['created'] = array_map(fn($obj) => $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []);
+                $summary['updated'] = array_map(fn($obj) => $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []);
                 
                 // Handle validation errors if validation was enabled
                 if ($validation && !empty($saveResult['invalid'] ?? [])) {
                     foreach (($saveResult['invalid'] ?? []) as $invalidItem) {
                         $summary['errors'][] = [
                             'sheet' => $sheetTitle,
-                            'data'  => $invalidItem['object'] ?? $invalidItem,
+                            'object' => $invalidItem['object'] ?? $invalidItem,
                             'error' => $invalidItem['error'] ?? 'Validation failed',
                             'type'  => $invalidItem['type'] ?? 'ValidationException',
                         ];
@@ -596,7 +597,7 @@ class ImportService
             $summary['errors'][] = [
                 'sheet' => $sheetTitle ?? 'unknown',
                 'row'   => 'general',
-                'data'  => [],
+                'object' => [],
                 'error' => 'Sheet processing failed: ' . $e->getMessage(),
                 'type'  => 'ProcessingException',
                 'debug' => [
@@ -645,7 +646,7 @@ class ImportService
             if (empty($columnMapping)) {
                 $summary['errors'][] = [
                     'row'   => 1,
-                    'data'  => [],
+                    'object' => [],
                     'error' => 'No valid headers found in CSV file',
                 ];
                 return $summary;
@@ -657,7 +658,7 @@ class ImportService
             if ($highestRow <= 1) {
                 $summary['errors'][] = [
                     'row'   => 1,
-                    'data'  => [],
+                    'object' => [],
                     'error' => 'No data rows found in CSV file',
                 ];
                 return $summary;
@@ -687,7 +688,7 @@ class ImportService
                 } catch (\Exception $e) {
                     $rowErrors[] = [
                         'row'   => $row,
-                        'data'  => $rowData ?? [],
+                        'object' => $rowData ?? [],
                         'error' => $e->getMessage(),
                     ];
                 }
@@ -701,14 +702,15 @@ class ImportService
                 $saveResult = $this->objectService->saveObjects($allObjects, $register, $schema, $rbac, $multi, $validation, $events);
                 
                 // Use the structured return from saveObjects
-                $summary['created'] = array_map(fn($obj) => $obj->getUuid(), $saveResult['saved'] ?? []);
-                $summary['updated'] = array_map(fn($obj) => $obj->getUuid(), $saveResult['updated'] ?? []);
+                // saveObjects returns serialized arrays, not ObjectEntity objects
+                $summary['created'] = array_map(fn($obj) => $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []);
+                $summary['updated'] = array_map(fn($obj) => $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []);
                 
                 // Handle validation errors if validation was enabled
                 if ($validation && !empty($saveResult['invalid'] ?? [])) {
                     foreach (($saveResult['invalid'] ?? []) as $invalidItem) {
                         $summary['errors'][] = [
-                            'data' => $invalidItem['object'] ?? $invalidItem,
+                            'object' => $invalidItem['object'] ?? $invalidItem,
                             'error' => $invalidItem['error'] ?? 'Validation failed',
                             'type' => $invalidItem['type'] ?? 'ValidationException',
                         ];
@@ -823,8 +825,8 @@ class ImportService
 
                             $result = [
                                 'found'   => count($chunkResult['objects']),
-                                'created' => array_map(fn($obj) => $obj->getUuid(), $saveResult['saved'] ?? []),
-                                'updated' => array_map(fn($obj) => $obj->getUuid(), $saveResult['updated'] ?? []),
+                                'created' => array_map(fn($obj) => $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []),
+                                'updated' => array_map(fn($obj) => $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []),
                                 'errors'  => $chunkResult['errors'] ?? [],
                             ];
 
@@ -833,7 +835,7 @@ class ImportService
                                 foreach ($saveResult['invalid'] as $invalidItem) {
                                     $result['errors'][] = [
                                         'rows'  => $chunk['start'] . '-' . $chunk['end'],
-                                        'data'  => $invalidItem['object'] ?? $invalidItem,
+                                        'object' => $invalidItem['object'] ?? $invalidItem,
                                         'error' => $invalidItem['error'] ?? 'Validation failed',
                                         'type'  => $invalidItem['type'] ?? 'ValidationException',
                                     ];
@@ -1458,7 +1460,7 @@ class ImportService
             return [
                 'error' => [
                     'row'   => $rowIndex,
-                    'data'  => $rowData,
+                    'object' => $rowData,
                     'error' => $e->getMessage(),
                 ],
             ];

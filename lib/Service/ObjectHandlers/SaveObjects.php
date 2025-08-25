@@ -439,6 +439,18 @@ class SaveObjects
         // STEP 1: Transform objects for database format with metadata hydration
         error_log('[SaveObjects] Step 1: Transforming objects to database format');
         $transformedObjects = $this->transformObjectsToDatabaseFormatInPlace($objects, $schemaCache);
+        
+        // DEBUG: Log first transformed object structure to find 'data' issue
+        if (!empty($transformedObjects)) {
+            $firstObj = $transformedObjects[0];
+            error_log('[SaveObjects] DEBUG: First transformed object keys: ' . implode(', ', array_keys($firstObj)));
+            if (isset($firstObj['data'])) {
+                error_log('[SaveObjects] WARNING: Found "data" key in transformed object - this will cause setData() error');
+            }
+            if (isset($firstObj['object'])) {
+                error_log('[SaveObjects] OK: Found "object" key in transformed object');
+            }
+        }
 
         // STEP 2: Validate objects against schemas if validation enabled
         if ($validation === true) {
@@ -927,6 +939,12 @@ class SaveObjects
                 'created'      => $now->format('Y-m-d H:i:s'),
                 'updated'      => $now->format('Y-m-d H:i:s'),
             ];
+            
+            // DEFENSIVE FIX: Ensure no 'data' key exists (legacy compatibility)
+            if (isset($transformed['data'])) {
+                error_log('[SaveObjects] WARNING: Removing legacy "data" key from transformed object');
+                unset($transformed['data']);
+            }
 
             $transformedObjects[] = $transformed;
         }
@@ -1157,7 +1175,7 @@ class SaveObjects
                 continue;
             }
 
-            $objectData = json_decode($savedObject->getData(), true);
+            $objectData = $savedObject->getObject();
 
             // Process inverse relations for this object
             foreach ($analysis['inverseProperties'] as $propertyName => $inverseConfig) {

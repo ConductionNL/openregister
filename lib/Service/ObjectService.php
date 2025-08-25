@@ -2883,6 +2883,17 @@ class ObjectService
         // The existing object will be updated in-place, avoiding memory duplication
         // This is safe because we're in a bulk operation context where the original
         // objects are no longer needed after this transformation
+        
+        // CRITICAL FIX: Ensure correct property names before hydrating
+        // ObjectEntity expects 'object' property, not 'data'
+        if (isset($newObjectData['data']) && !isset($newObjectData['object'])) {
+            error_log('[ObjectService] WARNING: Converting deprecated "data" to "object" before hydrate');
+            $newObjectData['object'] = $newObjectData['data'];
+            unset($newObjectData['data']);
+        }
+        
+        error_log('[ObjectService] DEBUG: Hydrating object with keys: ' . implode(', ', array_keys($newObjectData)));
+        
         $existingObject->hydrate($newObjectData);
 
         return $existingObject;
