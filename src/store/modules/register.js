@@ -242,6 +242,40 @@ export const useRegisterStore = defineStore('register', {
 			return { response, data }
 
 		},
+		/**
+		 * Start a heartbeat mechanism to prevent gateway timeouts during long imports
+		 * @param {number} intervalMs - Heartbeat interval in milliseconds (default: 30 seconds)
+		 * @return {object} - Object with stop() method to stop the heartbeat
+		 */
+		startImportHeartbeat(intervalMs = 30000) {
+			console.log('RegisterStore: Starting import heartbeat every', intervalMs, 'ms')
+			
+			const heartbeatInterval = setInterval(async () => {
+				try {
+					// Send a lightweight request to keep the session alive
+					// Use a simple API endpoint that doesn't do heavy processing
+					await fetch('/index.php/apps/openregister/api/heartbeat', {
+						method: 'GET',
+						headers: {
+							'X-Requested-With': 'XMLHttpRequest',
+							'Cache-Control': 'no-cache'
+						}
+					})
+					console.log('RegisterStore: Heartbeat sent successfully')
+				} catch (error) {
+					// Don't throw on heartbeat errors, just log them
+					console.warn('RegisterStore: Heartbeat failed (non-critical):', error)
+				}
+			}, intervalMs)
+
+			return {
+				stop() {
+					console.log('RegisterStore: Stopping import heartbeat')
+					clearInterval(heartbeatInterval)
+				}
+			}
+		},
+
 		async importRegister(file, includeObjects = false, validation = false, events = false, rbac = true, multi = true, publish = false) {
 			if (!file) {
 				throw new Error('No file to import')
@@ -300,16 +334,29 @@ export const useRegisterStore = defineStore('register', {
 				formData.append('multi', multi ? '1' : '0')
 			}
 
+			// Start heartbeat to prevent gateway timeouts for large imports
+			const heartbeat = this.startImportHeartbeat(30000) // Every 30 seconds
+
 			try {
 				console.log('RegisterStore: Sending import request to:', endpoint)
+				
+				// Create controller for potential timeout handling
+				const controller = new AbortController()
+				const timeoutId = setTimeout(() => {
+					console.warn('RegisterStore: Import taking longer than expected (5 minutes)')
+					// Don't abort, but log a warning for debugging
+				}, 5 * 60 * 1000) // 5 minutes warning
+
 				const response = await fetch(
 					endpoint,
 					{
 						method: 'POST',
 						body: formData,
+						signal: controller.signal
 					},
 				)
 
+				clearTimeout(timeoutId)
 				const responseData = await response.json()
 
 				if (!response.ok) {
@@ -336,6 +383,9 @@ export const useRegisterStore = defineStore('register', {
 			} catch (error) {
 				console.error('RegisterStore: Error importing register:', error)
 				throw error // Pass through the original error message
+			} finally {
+				// Always stop the heartbeat when import completes (success or error)
+				heartbeat.stop()
 			}
 		},
 		clearRegisterItem() {
