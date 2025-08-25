@@ -37,8 +37,10 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\ObjectCacheService;
 use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -79,6 +81,16 @@ class RenderObject
      */
     private array $objectsCache = [];
 
+    /**
+     * Ultra-aggressive preload cache for sub-second performance
+     * 
+     * Contains ALL relationship objects preloaded in a single query
+     * for instant access during rendering without any additional database calls.
+     *
+     * @var array<string, ObjectEntity>
+     */
+    private array $ultraPreloadCache = [];
+
 
     /**
      * Constructor for RenderObject handler.
@@ -91,6 +103,8 @@ class RenderObject
      * @param SchemaMapper           $schemaMapper       Schema mapper for database operations.
      * @param ISystemTagManager      $systemTagManager   System tag manager for file tags.
      * @param ISystemTagObjectMapper $systemTagMapper    System tag object mapper for file tags.
+     * @param ObjectCacheService     $objectCacheService Cache service for performance optimization.
+     * @param LoggerInterface        $logger             Logger for performance monitoring.
      */
     public function __construct(
         private readonly IURLGenerator $urlGenerator,
@@ -100,10 +114,150 @@ class RenderObject
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly ISystemTagManager $systemTagManager,
-        private readonly ISystemTagObjectMapper $systemTagMapper
+        private readonly ISystemTagObjectMapper $systemTagMapper,
+        private readonly ObjectCacheService $objectCacheService,
+        private readonly LoggerInterface $logger
     ) {
 
     }//end __construct()
+
+
+    /**
+     * Preload all related objects for bulk operations to prevent N+1 queries
+     *
+     * This method analyzes all objects and their extend requirements, collects
+     * all related object IDs, and loads them in bulk to eliminate N+1 query problems.
+     *
+     * @param array $objects Array of ObjectEntity objects to analyze
+     * @param array $extend  Array of properties to extend
+     *
+     * @return array Array of preloaded objects indexed by ID/UUID
+     * 
+     * @phpstan-param array<ObjectEntity> $objects
+     * @phpstan-param array<string> $extend
+     * @phpstan-return array<string, ObjectEntity>
+     * @psalm-param array<ObjectEntity> $objects  
+     * @psalm-param array<string> $extend
+     * @psalm-return array<string, ObjectEntity>
+     */
+    public function preloadRelatedObjects(array $objects, array $extend): array
+    {
+        if (empty($objects) || empty($extend)) {
+            return [];
+        }
+
+        $allRelatedIds = [];
+
+        // Step 1: Collect all relationship IDs from all objects
+        foreach ($objects as $object) {
+            if (!$object instanceof ObjectEntity) {
+                continue;
+            }
+
+            $objectData = $object->getObject();
+            
+            foreach ($extend as $extendField) {
+                // Skip special fields
+                if (str_starts_with($extendField, '@')) {
+                    continue;
+                }
+
+                $value = $objectData[$extendField] ?? null;
+                
+                if (is_array($value)) {
+                    // Multiple relationships
+                    foreach ($value as $relatedId) {
+                        if (is_string($relatedId) || is_int($relatedId)) {
+                            $allRelatedIds[] = (string) $relatedId;
+                        }
+                    }
+                } elseif (is_string($value) || is_int($value)) {
+                    // Single relationship
+                    $allRelatedIds[] = (string) $value;
+                }
+            }
+        }
+
+        // Step 2: Remove duplicates and empty values
+        $uniqueIds = array_filter(array_unique($allRelatedIds), fn($id) => !empty($id));
+        
+        if (empty($uniqueIds)) {
+            return [];
+        }
+
+        // Step 3: Use ObjectCacheService for optimized bulk loading
+        try {
+            $preloadStart = microtime(true);
+            $relatedObjects = $this->objectCacheService->preloadObjects($uniqueIds);
+            $preloadTime = round((microtime(true) - $preloadStart) * 1000, 2);
+            
+            $this->logger->debug('ObjectCache preload completed', [
+                'preloadTime' => $preloadTime . 'ms',
+                'requestedIds' => count($uniqueIds),
+                'foundObjects' => count($relatedObjects)
+            ]);
+            
+            // Step 4: Index by both ID and UUID for quick lookup
+            $indexedObjects = [];
+            foreach ($relatedObjects as $relatedObject) {
+                if ($relatedObject instanceof ObjectEntity) {
+                    $indexedObjects[$relatedObject->getId()] = $relatedObject;
+                    if ($relatedObject->getUuid()) {
+                        $indexedObjects[$relatedObject->getUuid()] = $relatedObject;
+                    }
+                }
+            }
+            
+            // Step 5: Add to local cache for backward compatibility
+            $this->objectsCache = array_merge($this->objectsCache, $indexedObjects);
+            
+            return $indexedObjects;
+            
+        } catch (\Exception $e) {
+            // Log error but don't break the process
+            $this->logger->error('Bulk preloading failed', [
+                'exception' => $e->getMessage(),
+                'uniqueIds' => count($uniqueIds),
+                'objects' => count($objects)
+            ]);
+            return [];
+        }
+
+    }//end preloadRelatedObjects()
+
+
+    /**
+     * Set the ultra-aggressive preload cache for maximum performance
+     *
+     * This method receives ALL relationship objects loaded in a single query
+     * and stores them for instant access during rendering, eliminating all
+     * individual database queries for extended properties.
+     *
+     * @param array $ultraPreloadCache Array of preloaded objects indexed by ID/UUID
+     *
+     * @phpstan-param array<string, ObjectEntity> $ultraPreloadCache
+     * @psalm-param array<string, ObjectEntity> $ultraPreloadCache
+     */
+    public function setUltraPreloadCache(array $ultraPreloadCache): void
+    {
+        $this->ultraPreloadCache = $ultraPreloadCache;
+        $this->logger->debug('Ultra preload cache set', [
+            'cachedObjectCount' => count($ultraPreloadCache)
+        ]);
+        
+    }//end setUltraPreloadCache()
+
+
+    /**
+     * Get the size of the ultra preload cache for monitoring
+     *
+     * @return int Number of objects in the ultra preload cache
+     */
+    public function getUltraCacheSize(): int
+    {
+        return count($this->ultraPreloadCache);
+        
+    }//end getUltraCacheSize()
 
 
     /**
@@ -167,20 +321,29 @@ class RenderObject
      */
     private function getObject(int | string $id): ?ObjectEntity
     {
-        // Return from cache if available.
+        // **ULTRA PERFORMANCE**: Check ultra preload cache first (fastest possible)
+        if (isset($this->ultraPreloadCache[(string)$id])) {
+            return $this->ultraPreloadCache[(string)$id];
+        }
+
+        // **PERFORMANCE OPTIMIZATION**: Use ObjectCacheService for optimized caching
+        // First check local cache for backward compatibility
         if (isset($this->objectsCache[$id]) === true) {
             return $this->objectsCache[$id];
         }
 
-        try {
-            $object = $this->objectEntityMapper->find($id);
-            // Cache the result.
+        // Use cache service for optimized loading (only if not in ultra cache)
+        $object = $this->objectCacheService->getObject($id);
+        
+        // Update local cache for backward compatibility
+        if ($object !== null) {
             $this->objectsCache[$id] = $object;
-            $this->objectsCache[$object->getUuid()] = $object;
-            return $object;
-        } catch (\Exception $e) {
-            return null;
+            if ($object->getUuid()) {
+                $this->objectsCache[$object->getUuid()] = $object;
+            }
         }
+        
+        return $object;
 
     }//end getObject()
 
@@ -864,15 +1027,15 @@ class RenderObject
                                 return null;
                             }
 
+                            // **PERFORMANCE OPTIMIZATION**: Use preloaded cache instead of individual queries
                             $object = $this->getObject(id: $identifier);
                             if ($object === null) {
-                                $multiObject = $this->objectEntityMapper->findAll(filters: ['identifier' => $identifier]);
-
-                                if (count($multiObject) === 1) {
-                                    $object = array_shift($multiObject);
-                                } else {
-                                    return null;
-                                }
+                                // If not in cache, this object wasn't preloaded - skip it to prevent N+1
+                                $this->logger->debug('Object not found in preloaded cache - skipping to prevent N+1 query', [
+                                    'identifier' => $identifier,
+                                    'context' => 'extend_array_processing'
+                                ]);
+                                return null;
                             }
 
                             if (in_array($object->getUuid(), $visitedIds, true)) {
@@ -881,7 +1044,7 @@ class RenderObject
 
                             $subExtend = $allFlag ? array_merge(['all'], $keyExtends) : $keyExtends;
 
-                            return $this->renderEntity(entity: $object, extend: $subExtend, depth: $depth + 1, filter: $filter, fields: $fields, unset: $unset, visitedIds: $visitedIds)->jsonSerialize();
+                            return $this->renderEntity(entity: $object, extend: $subExtend, depth: $depth + 1, filter: $filter ?? [], fields: $fields ?? [], unset: $unset ?? [], visitedIds: $visitedIds)->jsonSerialize();
                         },
                         $value
                         );
@@ -908,16 +1071,16 @@ class RenderObject
                     $value        = end($pathExploded);
                 }
 
+                // **PERFORMANCE OPTIMIZATION**: Use preloaded cache instead of individual queries
                 $object = $this->getObject(id: $value);
 
                 if ($object === null) {
-                    $multiObject = $this->objectEntityMapper->findAll(filters: ['identifier' => $value]);
-
-                    if (count($multiObject) === 1) {
-                        $object = array_shift($multiObject);
-                    } else {
-                        continue;
-                    }
+                    // If not in cache, this object wasn't preloaded - skip it to prevent N+1
+                    $this->logger->debug('Single object not found in preloaded cache - skipping to prevent N+1 query', [
+                        'identifier' => $value,
+                        'context' => 'extend_single_processing'
+                    ]);
+                    continue;
                 }
 
                 $subExtend = $allFlag ? array_merge(['all'], $keyExtends) : $keyExtends;

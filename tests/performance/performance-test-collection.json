@@ -1,0 +1,274 @@
+{
+  "info": {
+    "name": "OpenRegister Performance Test Suite",
+    "description": "Performance regression testing for OpenRegister API endpoints with extend functionality",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost",
+      "type": "string"
+    },
+    {
+      "key": "username", 
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "admin", 
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "basic",
+    "basic": [
+      {
+        "key": "username",
+        "value": "{{username}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{password}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Performance Tests",
+      "item": [
+        {
+          "name": "Small Dataset - 10 items with extends",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Response time is acceptable (< 5000ms)', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response contains results', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('results');",
+                  "    pm.expect(jsonData.results).to.be.an('array');",
+                  "    pm.expect(jsonData.results.length).to.equal(10);",
+                  "});",
+                  "",
+                  "console.log('Response time: ' + pm.response.responseTime + 'ms');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/vng-gemma/element?_limit=10&_extend=aanbevolenStandaarden,verplichteStandaarden&gemmaType=referentiecomponent",
+              "host": ["{{baseUrl}}"],
+              "path": ["index.php", "apps", "openregister", "api", "objects", "vng-gemma", "element"],
+              "query": [
+                {
+                  "key": "_limit",
+                  "value": "10"
+                },
+                {
+                  "key": "_extend", 
+                  "value": "aanbevolenStandaarden,verplichteStandaarden"
+                },
+                {
+                  "key": "gemmaType",
+                  "value": "referentiecomponent"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Medium Dataset - 50 items with extends",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Response time is acceptable (< 15000ms)', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(15000);",
+                  "});",
+                  "",
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response contains results', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('results');",
+                  "    pm.expect(jsonData.results).to.be.an('array');",
+                  "    pm.expect(jsonData.results.length).to.equal(50);",
+                  "});",
+                  "",
+                  "console.log('Response time: ' + pm.response.responseTime + 'ms');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/vng-gemma/element?_limit=50&_extend=aanbevolenStandaarden,verplichteStandaarden&gemmaType=referentiecomponent",
+              "host": ["{{baseUrl}}"],
+              "path": ["index.php", "apps", "openregister", "api", "objects", "vng-gemma", "element"],
+              "query": [
+                {
+                  "key": "_limit",
+                  "value": "50"
+                },
+                {
+                  "key": "_extend",
+                  "value": "aanbevolenStandaarden,verplichteStandaarden"
+                },
+                {
+                  "key": "gemmaType",
+                  "value": "referentiecomponent"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Large Dataset - 100 items with extends",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Response time is acceptable (< 30000ms)', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(30000);",
+                  "});",
+                  "",
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response contains results', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('results');",
+                  "    pm.expect(jsonData.results).to.be.an('array');",
+                  "    pm.expect(jsonData.results.length).to.equal(100);",
+                  "});",
+                  "",
+                  "console.log('Response time: ' + pm.response.responseTime + 'ms');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/vng-gemma/element?_limit=100&_extend=aanbevolenStandaarden,verplichteStandaarden&gemmaType=referentiecomponent",
+              "host": ["{{baseUrl}}"],
+              "path": ["index.php", "apps", "openregister", "api", "objects", "vng-gemma", "element"],
+              "query": [
+                {
+                  "key": "_limit",
+                  "value": "100"
+                },
+                {
+                  "key": "_extend",
+                  "value": "aanbevolenStandaarden,verplichteStandaarden"
+                },
+                {
+                  "key": "gemmaType",
+                  "value": "referentiecomponent"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Basic API Test - No extends",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Response time is fast (< 2000ms)', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});",
+                  "",
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response contains results', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('results');",
+                  "    pm.expect(jsonData.results).to.be.an('array');",
+                  "});",
+                  "",
+                  "console.log('Response time: ' + pm.response.responseTime + 'ms');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/vng-gemma/element?_limit=20&gemmaType=referentiecomponent",
+              "host": ["{{baseUrl}}"],
+              "path": ["index.php", "apps", "openregister", "api", "objects", "vng-gemma", "element"],
+              "query": [
+                {
+                  "key": "_limit",
+                  "value": "20"
+                },
+                {
+                  "key": "gemmaType",
+                  "value": "referentiecomponent"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
