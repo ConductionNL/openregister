@@ -982,21 +982,17 @@ class ConfigurationService
                 $rawRegister = $objectData['@self']['register'] ?? null;
                 $rawSchema   = $objectData['@self']['schema'] ?? null;
                 $rawSlug     = $objectData['@self']['slug'] ?? null;
-                error_log('[Import] Raw object: register='.var_export($rawRegister, true).', schema='.var_export($rawSchema, true).', slug='.var_export($rawSlug, true));
 
                 // Only import objects with a slug
                 $slug = $rawSlug;
                 if (empty($slug)) {
-                    error_log('[Import] Skipping object: missing slug');
                     continue;
                 }
 
                 // Map register and schema
                 $registerId = $registerSlugToId[$rawRegister] ?? null;
                 $schemaId   = $schemaSlugToId[$rawSchema] ?? null;
-                error_log('[Import] Mapped IDs: registerId='.var_export($registerId, true).', schemaId='.var_export($schemaId, true));
                 if (empty($registerId) || empty($schemaId)) {
-                    error_log('[Import] Skipping object: missing registerId or schemaId');
                     continue;
                 }
 
@@ -1024,8 +1020,6 @@ class ConfigurationService
                         ]
                         );
                 // TEMP: Always log search filter to Docker logs for debugging
-                error_log('[Import] Searching for object: registerId='.var_export($registerId, true).', schemaId='.var_export($schemaId, true).', slug='.var_export($slug, true));
-                error_log('[Import] Search filter: '.var_export($search, true));
                 $results = $this->objectService->searchObjects($search, true, true);
                 $this->logger->warning(
                         'Import: search result',

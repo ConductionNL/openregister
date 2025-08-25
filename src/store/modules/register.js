@@ -242,7 +242,7 @@ export const useRegisterStore = defineStore('register', {
 			return { response, data }
 
 		},
-		async importRegister(file, includeObjects = false, validation = false, events = false, rbac = true, multi = true) {
+		async importRegister(file, includeObjects = false, validation = false, events = false, rbac = true, multi = true, publish = false) {
 			if (!file) {
 				throw new Error('No file to import')
 			}
@@ -276,6 +276,9 @@ export const useRegisterStore = defineStore('register', {
 			}
 			if (multi !== undefined) {
 				endpoint += `&multi=${multi ? '1' : '0'}`
+			}
+			if (publish !== undefined) {
+				endpoint += `&publish=${publish ? '1' : '0'}`
 			}
 
 			const formData = new FormData()

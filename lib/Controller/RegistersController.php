@@ -523,6 +523,7 @@ class RegistersController extends Controller
             $includeObjects = $this->parseBooleanParam('includeObjects', false);
             $validation     = $this->parseBooleanParam('validation', false);
             $events         = $this->parseBooleanParam('events', false);
+            $publish        = $this->parseBooleanParam('publish', false);
             // Find the register
             $register = $this->registerService->find($id);
             // Handle different import types
@@ -542,7 +543,8 @@ class RegistersController extends Controller
                         $validation,
                         $events,
                         $rbac,
-                        $multi
+                        $multi,
+                        $publish
                     );
                     break;
                 case 'csv':
@@ -575,7 +577,8 @@ class RegistersController extends Controller
                         $validation,
                         $events,
                         $rbac,
-                        $multi
+                        $multi,
+                        $publish
                     );
                     break;
                 case 'configuration':

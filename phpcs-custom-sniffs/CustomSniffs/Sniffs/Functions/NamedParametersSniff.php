@@ -107,7 +107,6 @@ class NamedParametersSniff implements Sniff
             // Skip built-in functions that commonly don't benefit from named parameters
             $skipFunctions = [
                 // Basic output functions
-                'echo', 'print', 'var_dump', 'print_r', 'die', 'exit',
                 
                 // Type checking functions
                 'empty', 'isset', 'is_null', 'is_array', 'is_string', 'is_int', 'is_bool',

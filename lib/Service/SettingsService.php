@@ -498,7 +498,6 @@ class SettingsService
                     $results['ownershipResults'] = $this->objectEntityMapper->bulkOwnerDeclaration($defaultOwner, $defaultOrganisation);
                 } catch (\Exception $e) {
                     $error = 'Failed to assign default owners/organizations: '.$e->getMessage();
-                    error_log('[SettingsService] '.$error);
                     $results['errors'][] = $error;
                 }
             } else {
@@ -532,7 +531,6 @@ class SettingsService
                 }
             } catch (\Exception $e) {
                 $error = 'Failed to set expiry dates: '.$e->getMessage();
-                error_log('[SettingsService] '.$error);
                 $results['errors'][] = $error;
             }//end try
 
