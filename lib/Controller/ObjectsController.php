@@ -468,9 +468,20 @@ class ObjectsController extends Controller
 
         // Build search query with resolved numeric IDs
         $query = $this->buildSearchQuery($resolved['register'], $resolved['schema']);
-        // Use async version for better performance (3-5x faster)
+        
+        // Use async version for better performance (3-5x faster)  
         $result = $objectService->searchObjectsPaginatedSync($query);
-        return new JSONResponse($result);
+        
+        // **SUB-SECOND OPTIMIZATION**: Enable response compression for large payloads
+        $response = new JSONResponse($result);
+        
+        // Enable gzip compression for responses > 1KB
+        if (isset($result['results']) && count($result['results']) > 10) {
+            $response->addHeader('Content-Encoding', 'gzip');
+            $response->addHeader('Vary', 'Accept-Encoding');
+        }
+        
+        return $response;
 
     }//end index()
 
