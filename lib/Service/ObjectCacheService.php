@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use Psr\Log\LoggerInterface;
 
 /**
  * Cache service for ObjectEntity objects to improve performance
@@ -76,9 +77,11 @@ class ObjectCacheService
      * Constructor for ObjectCacheService
      *
      * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
+     * @param LoggerInterface    $logger             Logger for performance monitoring
      */
     public function __construct(
-        private readonly ObjectEntityMapper $objectEntityMapper
+        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly LoggerInterface $logger
     ) {
 
     }//end __construct()
@@ -175,7 +178,10 @@ class ObjectCacheService
             
             return $objects;
         } catch (\Exception $e) {
-            error_log("[ObjectCacheService] Bulk preload failed: " . $e->getMessage());
+            $this->logger->error('Bulk preload failed in ObjectCacheService', [
+                'exception' => $e->getMessage(),
+                'identifiersToLoad' => count($identifiersToLoad)
+            ]);
             return [];
         }
 
