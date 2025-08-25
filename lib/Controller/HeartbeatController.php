@@ -62,3 +62,4 @@ class HeartbeatController extends Controller
 		]);
 	}
 }
+

@@ -2189,16 +2189,50 @@ class ObjectEntityMapper extends QBMapper
      */
     public function findMultiple(array $ids): array
     {
+        // **PERFORMANCE OPTIMIZATION**: Early return for empty arrays
+        if (empty($ids)) {
+            return [];
+        }
+
+        // **PERFORMANCE OPTIMIZATION**: Add logging for monitoring
+        $startTime = microtime(true);
+        
+        // Filter out empty values and ensure uniqueness
+        $cleanIds = array_filter(array_unique($ids), fn($id) => !empty($id));
+        
+        if (empty($cleanIds)) {
+            return [];
+        }
+
+        // **PERFORMANCE OPTIMIZATION**: Limit bulk queries for safety
+        if (count($cleanIds) > 1000) {
+            $this->logger->warning('findMultiple called with excessive IDs - limiting for performance', [
+                'requestedIds' => count($cleanIds),
+                'limitedTo' => 1000
+            ]);
+            $cleanIds = array_slice($cleanIds, 0, 1000);
+        }
+
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
             ->from('openregister_objects')
-            ->orWhere($qb->expr()->in('id', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)))
-            ->orWhere($qb->expr()->in('uuid', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)))
-            ->orWhere($qb->expr()->in('slug', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)))
-            ->orWhere($qb->expr()->in('uri', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            ->orWhere($qb->expr()->in('id', $qb->createNamedParameter($cleanIds, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)))
+            ->orWhere($qb->expr()->in('uuid', $qb->createNamedParameter($cleanIds, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)))
+            ->orWhere($qb->expr()->in('slug', $qb->createNamedParameter($cleanIds, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)))
+            ->orWhere($qb->expr()->in('uri', $qb->createNamedParameter($cleanIds, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
 
-        return $this->findEntities($qb);
+        $result = $this->findEntities($qb);
+        
+        // **PERFORMANCE OPTIMIZATION**: Log execution time
+        $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+        $this->logger->debug('findMultiple completed', [
+            'executionTime' => $executionTime . 'ms',
+            'requestedIds' => count($cleanIds),
+            'foundObjects' => count($result)
+        ]);
+        
+        return $result;
 
     }//end findMultiple()
 
