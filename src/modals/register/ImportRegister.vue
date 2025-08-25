@@ -7,10 +7,16 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 		name="import"
 		title="Import Data into Register"
 		size="large"
-		@close="closeModal">
-		<NcNoteCard v-if="success && importSummary" type="success">
+		:can-close="true"
+		@update:open="handleDialogClose">
+		<NcNoteCard v-if="success && importSummary && !hasImportErrors" type="success">
 			<p>Register imported successfully!</p>
 			<p><small>The register list is being refreshed in the background.</small></p>
+		</NcNoteCard>
+
+		<NcNoteCard v-if="success && importSummary && hasImportErrors" type="warning">
+			<p>Import completed with errors!</p>
+			<p><small>Some objects could not be imported. Check the details below.</small></p>
 		</NcNoteCard>
 
 		<div v-if="importResults" class="importResults">
@@ -426,6 +432,18 @@ export default {
 				schema,
 			}
 		},
+		/**
+		 * Check if there are any errors in the import results
+		 * @return {boolean} - Whether there are import errors
+		 */
+		hasImportErrors() {
+			if (!this.importResults) return false
+			
+			// Check if any sheet has errors
+			return Object.values(this.importResults).some(sheetSummary => 
+				sheetSummary.errors && sheetSummary.errors.length > 0
+			)
+		},
 	},
 	mounted() {
 		dashboardStore.preload()
@@ -520,6 +538,15 @@ export default {
 			this.importResults = null
 			this.expandedSheets = {} // Reset expanded state
 			this.expandedErrors = {} // Reset expanded errors state
+		},
+		/**
+		 * Handle dialog close event from X button
+		 * @param {boolean} isOpen - Whether the dialog is open
+		 */
+		handleDialogClose(isOpen) {
+			if (!isOpen) {
+				this.closeModal()
+			}
 		},
 		/**
 		 * Import the selected register file and handle the summary
