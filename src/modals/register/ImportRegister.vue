@@ -289,6 +289,16 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 						Apply multi-tenancy filtering during import. Recommended for multi-organization setups.
 					</template>
 				</NcCheckboxRadioSwitch>
+
+				<NcCheckboxRadioSwitch
+					:checked="publish"
+					type="switch"
+					@update:checked="publish = $event">
+					Auto-publish imported objects
+					<template #helper>
+						Automatically set the published date for all created and updated objects to the current timestamp.
+					</template>
+				</NcCheckboxRadioSwitch>
 			</div>
 		</div>
 
@@ -358,6 +368,7 @@ export default {
 			events: false, // Whether to enable events (default: false)
 			rbac: true, // Whether to enable RBAC (default: true)
 			multi: true, // Whether to enable multi-tenancy (default: true)
+			publish: false, // Whether to auto-publish imported objects (default: false)
 			allowedFileTypes: ['json', 'xlsx', 'xls', 'csv'], // Allowed file types
 			importSummary: null, // The import summary from the backend
 			importResults: null, // The import results for display
@@ -534,6 +545,7 @@ export default {
 			this.events = false // Reset to default
 			this.rbac = true // Reset to default
 			this.multi = true // Reset to default
+			this.publish = false // Reset to default
 			this.importSummary = null
 			this.importResults = null
 			this.expandedSheets = {} // Reset expanded state
@@ -566,7 +578,7 @@ export default {
 				console.info('ImportRegister: Calling registerStore.importRegister')
 				// Call importRegister - the register refresh will happen in the background
 				// This way the loading state is turned off as soon as the import is done
-				const result = await registerStore.importRegister(this.selectedFile, this.includeObjects, this.validation, this.events, this.rbac, this.multi)
+				const result = await registerStore.importRegister(this.selectedFile, this.includeObjects, this.validation, this.events, this.rbac, this.multi, this.publish)
 
 				console.info('ImportRegister: Import completed, setting success state')
 				// Store the import summary from the backend response

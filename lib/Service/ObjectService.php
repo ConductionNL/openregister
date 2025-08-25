@@ -2516,7 +2516,6 @@ class ObjectService
         bool $validation=false,
         bool $events=false
     ): array {
-        error_log('[ObjectService] Delegating bulk save to SaveObjects handler: '.count($objects).' objects');
 
         // Set register and schema context if provided
         if ($register !== null) {
@@ -2665,7 +2664,6 @@ class ObjectService
      */
     private function handlePostSaveInverseRelations(array $savedObjects, array $schemaCache): void
     {
-        error_log('[ObjectService] handlePostSaveInverseRelations started with '.count($savedObjects).' objects');
         $writeBackCount = 0;
         $bulkWriteBackUpdates = []; // PERFORMANCE OPTIMIZATION: Collect updates for bulk processing
 
@@ -2712,10 +2710,8 @@ class ObjectService
                             if (!isset($bulkWriteBackUpdates[$objectUuid])) {
                                 $bulkWriteBackUpdates[$objectUuid] = $savedObject;
                             }
-                            error_log('[ObjectService] Queued source object '.$savedObject->getUuid().' property '.$property.' for bulk writeBack update');
                         }
                     } catch (\Exception $e) {
-                        error_log('[ObjectService] WriteBack failed for object '.$savedObject->getUuid().': '.$e->getMessage());
                     }
                 }//end if
             }//end foreach
@@ -2726,8 +2722,6 @@ class ObjectService
             $this->performBulkWriteBackUpdates(array_values($bulkWriteBackUpdates));
         }
 
-        error_log('[ObjectService] Processed '.$writeBackCount.' writeBack operations');
-        error_log('[ObjectService] handlePostSaveInverseRelations completed');
 
     }//end handlePostSaveInverseRelations()
 
@@ -2887,12 +2881,10 @@ class ObjectService
         // CRITICAL FIX: Ensure correct property names before hydrating
         // ObjectEntity expects 'object' property, not 'data'
         if (isset($newObjectData['data']) && !isset($newObjectData['object'])) {
-            error_log('[ObjectService] WARNING: Converting deprecated "data" to "object" before hydrate');
             $newObjectData['object'] = $newObjectData['data'];
             unset($newObjectData['data']);
         }
         
-        error_log('[ObjectService] DEBUG: Hydrating object with keys: ' . implode(', ', array_keys($newObjectData)));
         
         $existingObject->hydrate($newObjectData);
 
