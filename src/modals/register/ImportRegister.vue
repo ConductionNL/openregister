@@ -164,6 +164,12 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 			<p>{{ error }}</p>
 		</NcNoteCard>
 
+		<!-- Heartbeat indicator for long imports -->
+		<NcNoteCard v-if="loading && isHeartbeatActive" type="info">
+			<p>🔄 Processing large file - keeping connection alive...</p>
+			<p><small>This may take several minutes for large datasets. The system is actively preventing timeouts.</small></p>
+		</NcNoteCard>
+
 		<div v-if="!success && !importResults" class="formContainer">
 			<input
 				ref="fileInput"
@@ -377,6 +383,7 @@ export default {
 			expandedSheets: {}, // To track expanded details for each sheet
 			expandedErrors: {}, // To track expanded error details for each sheet
 			sheetName: null, // Current sheet name for error details
+			isHeartbeatActive: false, // Whether heartbeat is currently running for timeout prevention
 		}
 	},
 	computed: {
@@ -550,6 +557,7 @@ export default {
 			this.importResults = null
 			this.expandedSheets = {} // Reset expanded state
 			this.expandedErrors = {} // Reset expanded errors state
+			this.isHeartbeatActive = false // Reset heartbeat state
 		},
 		/**
 		 * Handle dialog close event from X button
@@ -573,6 +581,13 @@ export default {
 			console.info('ImportRegister: Starting import, setting loading to true')
 			this.loading = true
 			this.error = null
+			
+			// Activate heartbeat indicator for large files (>500KB) to show timeout prevention
+			const isLargeFile = this.selectedFile.size > 500 * 1024 // 500KB threshold
+			if (isLargeFile) {
+				console.info('ImportRegister: Large file detected, activating heartbeat indicator')
+				this.isHeartbeatActive = true
+			}
 
 			try {
 				console.info('ImportRegister: Calling registerStore.importRegister')
@@ -597,6 +612,10 @@ export default {
 				console.error('ImportRegister: Import failed:', error)
 				this.error = error.message || 'Failed to import register'
 				this.loading = false
+			} finally {
+				// Always disable heartbeat indicator when import ends
+				this.isHeartbeatActive = false
+				console.info('ImportRegister: Heartbeat indicator deactivated')
 			}
 		},
 		/**
