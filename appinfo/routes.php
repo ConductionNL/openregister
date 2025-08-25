@@ -13,6 +13,8 @@ return [
         ['name' => 'settings#update', 'url' => '/api/settings', 'verb' => 'PUT'],
         ['name' => 'settings#rebase', 'url' => '/api/settings/rebase', 'verb' => 'POST'],
         ['name' => 'settings#stats', 'url' => '/api/settings/stats', 'verb' => 'GET'],
+        // Heartbeat - Keep-alive endpoint for long-running operations
+        ['name' => 'heartbeat#heartbeat', 'url' => '/api/heartbeat', 'verb' => 'GET'],
         // Dashbaord
         ['name' => 'dashboard#page', 'url' => '/', 'verb' => 'GET'],
         ['name' => 'dashboard#index', 'url' => '/api/dashboard', 'verb' => 'GET'],
