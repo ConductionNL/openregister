@@ -2206,7 +2206,10 @@ class ObjectEntityMapper extends QBMapper
 
         // **PERFORMANCE OPTIMIZATION**: Limit bulk queries for safety
         if (count($cleanIds) > 1000) {
-            error_log("[ObjectEntityMapper] findMultiple called with " . count($cleanIds) . " IDs - limiting to first 1000 for performance");
+            $this->logger->warning('findMultiple called with excessive IDs - limiting for performance', [
+                'requestedIds' => count($cleanIds),
+                'limitedTo' => 1000
+            ]);
             $cleanIds = array_slice($cleanIds, 0, 1000);
         }
 
@@ -2223,7 +2226,11 @@ class ObjectEntityMapper extends QBMapper
         
         // **PERFORMANCE OPTIMIZATION**: Log execution time
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
-        error_log("[ObjectEntityMapper] findMultiple completed in {$executionTime}ms for " . count($cleanIds) . " IDs, found " . count($result) . " objects");
+        $this->logger->debug('findMultiple completed', [
+            'executionTime' => $executionTime . 'ms',
+            'requestedIds' => count($cleanIds),
+            'foundObjects' => count($result)
+        ]);
         
         return $result;
 

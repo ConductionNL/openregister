@@ -51,6 +51,7 @@ use OCP\IUserSession;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCA\OpenRegister\Service\OrganisationService;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -146,6 +147,7 @@ class ObjectService
      * @param IGroupManager       $groupManager        Group manager for checking user groups.
      * @param IUserManager        $userManager         User manager for getting user objects.
      * @param OrganisationService $organisationService Service for organisation operations.
+     * @param LoggerInterface     $logger              Logger for performance monitoring.
      */
     public function __construct(
         private readonly DeleteObject $deleteHandler,
@@ -164,7 +166,8 @@ class ObjectService
         private readonly SearchTrailService $searchTrailService,
         private readonly IGroupManager $groupManager,
         private readonly IUserManager $userManager,
-        private readonly OrganisationService $organisationService
+        private readonly OrganisationService $organisationService,
+        private readonly LoggerInterface $logger
     ) {
 
     }//end __construct()
@@ -1553,16 +1556,33 @@ class ObjectService
             $unset = array_map('trim', explode(',', $unset));
         }
 
-        // **PERFORMANCE OPTIMIZATION**: Bulk preload all related objects to prevent N+1 queries
-        if (!empty($extend) && !empty($objects)) {
-            error_log("[ObjectService] Starting bulk preload for " . count($objects) . " objects with extends: " . implode(',', $extend));
+        // **PERFORMANCE OPTIMIZATION**: Smart bulk preload - only for larger datasets
+        // Skip expensive preloading for small requests to reduce overhead
+        $shouldPreload = !empty($extend) && !empty($objects) && 
+                        (count($objects) >= 10 || $this->isSlowEnvironment());
+                        
+        if ($shouldPreload) {
+            $this->logger->debug('Starting smart bulk preload for objects', [
+                'objectCount' => count($objects),
+                'extends' => implode(',', $extend),
+                'reason' => count($objects) >= 10 ? 'large_dataset' : 'slow_environment'
+            ]);
             $startPreload = microtime(true);
             
             // Preload all related objects in bulk (eliminates N+1 queries)
             $preloadedObjects = $this->renderHandler->preloadRelatedObjects($objects, $extend);
             
             $preloadTime = round((microtime(true) - $startPreload) * 1000, 2);
-            error_log("[ObjectService] Bulk preload completed in {$preloadTime}ms for " . count($preloadedObjects) . " related objects");
+            $this->logger->debug('Smart bulk preload completed', [
+                'executionTime' => $preloadTime . 'ms',
+                'preloadedCount' => count($preloadedObjects),
+                'objectCount' => count($objects)
+            ]);
+        } elseif (!empty($extend) && !empty($objects)) {
+            $this->logger->debug('Skipping bulk preload for small dataset', [
+                'objectCount' => count($objects),
+                'reason' => 'optimization_overhead_reduction'
+            ]);
         }
 
         // Render each object through the render handler (now uses cached preloaded objects)
@@ -4049,13 +4069,107 @@ class ObjectService
     }//end filterUuidsForPermissions()
 
 
+    /**
+     * Detect if we're running in a slow environment (e.g., AC environment)
+     *
+     * This method uses various heuristics to detect slower environments
+     * and enables more aggressive caching and preloading strategies.
+     *
+     * @return bool True if environment is detected as slow
+     *
+     * @phpstan-return bool
+     * @psalm-return   bool
+     */
+    private function isSlowEnvironment(): bool
+    {
+        // Check for environment variables that indicate AC environment
+        $isAcEnvironment = (
+            getenv('AC_ENVIRONMENT') === 'true' ||
+            getenv('SLOW_ENVIRONMENT') === 'true' ||
+            strpos($_SERVER['HTTP_HOST'] ?? '', '.ac.') !== false
+        );
+        
+        if ($isAcEnvironment) {
+            return true;
+        }
+        
+        // Use static cache to avoid repeated detection overhead
+        static $environmentScore = null;
+        
+        if ($environmentScore === null) {
+            $environmentScore = 0;
+            
+            // Check database response time (simple heuristic)
+            $start = microtime(true);
+            try {
+                $this->objectEntityMapper->countAll([], null, [], null, false, null, null, null, false, false);
+                $dbTime = (microtime(true) - $start) * 1000; // Convert to milliseconds
+                
+                // If a simple count takes more than 50ms, consider it slow
+                if ($dbTime > 50) {
+                    $environmentScore += 2;
+                }
+                
+                // Additional penalty for very slow responses
+                if ($dbTime > 200) {
+                    $environmentScore += 3;
+                }
+            } catch (\Exception $e) {
+                // If we can't measure, assume potentially slow
+                $environmentScore += 1;
+            }
+            
+            // Check memory constraints (lower memory often indicates constrained environments)
+            $memoryLimit = $this->getMemoryLimitInBytes();
+            if ($memoryLimit > 0 && $memoryLimit < 536870912) { // Less than 512MB
+                $environmentScore += 1;
+            }
+            
+            // Log detection result for monitoring
+            $this->logger->debug('Environment performance detection', [
+                'score' => $environmentScore,
+                'dbTime' => $dbTime ?? 'unknown',
+                'memoryLimit' => $memoryLimit,
+                'isSlow' => $environmentScore >= 2
+            ]);
+        }
+        
+        return $environmentScore >= 2;
+        
+    }//end isSlowEnvironment()
 
 
-
-
-
-
-
+    /**
+     * Convert memory limit string to bytes
+     *
+     * @return int Memory limit in bytes, or -1 if unlimited
+     */
+    private function getMemoryLimitInBytes(): int
+    {
+        $memoryLimit = ini_get('memory_limit');
+        
+        if ($memoryLimit === '-1') {
+            return -1; // Unlimited
+        }
+        
+        $value = (int) $memoryLimit;
+        $unit = strtolower(substr($memoryLimit, -1));
+        
+        switch ($unit) {
+            case 'g':
+                $value *= 1024 * 1024 * 1024;
+                break;
+            case 'm':
+                $value *= 1024 * 1024;
+                break;
+            case 'k':
+                $value *= 1024;
+                break;
+        }
+        
+        return $value;
+        
+    }//end getMemoryLimitInBytes()
 
 
 }//end class

@@ -148,7 +148,27 @@ class Application extends App implements IBootstrap
                 ObjectCacheService::class,
                 function ($container) {
                     return new ObjectCacheService(
-                    $container->get(ObjectEntityMapper::class)
+                    $container->get(ObjectEntityMapper::class),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register RenderObject with LoggerInterface dependency
+        $context->registerService(
+                RenderObject::class,
+                function ($container) {
+                    return new RenderObject(
+                    $container->get('OCP\IURLGenerator'),
+                    $container->get('OCA\OpenRegister\Db\FileMapper'),
+                    $container->get('OCA\OpenRegister\Service\FileService'),
+                    $container->get(ObjectEntityMapper::class),
+                    $container->get('OCA\OpenRegister\Db\RegisterMapper'),
+                    $container->get('OCA\OpenRegister\Db\SchemaMapper'),
+                    $container->get('OCP\SystemTag\ISystemTagManager'),
+                    $container->get('OCP\SystemTag\ISystemTagObjectMapper'),
+                    $container->get(ObjectCacheService::class),
+                    $container->get('Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -184,7 +204,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register ObjectService with IGroupManager and IUserManager dependencies
+        // Register ObjectService with IGroupManager, IUserManager and LoggerInterface dependencies
         $context->registerService(
                 ObjectService::class,
                 function ($container) {
@@ -205,7 +225,8 @@ class Application extends App implements IBootstrap
                     $container->get(SearchTrailService::class),
                     $container->get('OCP\IGroupManager'),
                     $container->get('OCP\IUserManager'),
-                    $container->get(OrganisationService::class)
+                    $container->get(OrganisationService::class),
+                    $container->get('Psr\Log\LoggerInterface')
                     );
                 }
                 );
