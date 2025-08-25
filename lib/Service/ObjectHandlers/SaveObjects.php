@@ -15,7 +15,7 @@
  * - Batch writeBack operations for bidirectional relations
  * - Bulk metadata hydration with cached schema analysis
  * - Optimized validation with minimal copying
- * - Concurrent processing for very large datasets
+ * - Optimized bulk processing for all dataset sizes
  *
  * PERFORMANCE OPTIMIZATIONS:
  * ✅ 1. Eliminate redundant object fetch after save - reconstructed from existing data
@@ -194,26 +194,9 @@ class SaveObjects
         $chunkSize = $this->calculateOptimalChunkSize(count($processedObjects));
         error_log('[SaveObjects] Using chunk size: '.$chunkSize.' for '.count($processedObjects).' processed objects');
 
-        // For very large datasets, try concurrent processing if ReactPHP is available
-        if (count($processedObjects) > 1000 && class_exists('\React\Promise\Promise')) {
-            error_log('[SaveObjects] Attempting concurrent processing for large dataset');
-            try {
-                $concurrentResult = $this->processObjectsConcurrently($processedObjects, $globalSchemaCache, $chunkSize, $rbac, $multi, $validation, $events);
-                if ($concurrentResult !== null) {
-                    $totalTime    = microtime(true) - $startTime;
-                    $overallSpeed = count($processedObjects) / max($totalTime, 0.001);
-                    error_log('[SaveObjects] CONCURRENT processing completed: '.count($processedObjects).' objects in '.round($totalTime, 3).'s ('.round($overallSpeed, 1).' obj/sec)');
-
-                    // Add preparation statistics to concurrent result
-                    $concurrentResult['statistics']['totalProcessed'] = count($processedObjects);
-                    $concurrentResult['statistics']['prepared']       = count($processedObjects);
-
-                    return $concurrentResult;
-                }
-            } catch (\Exception $e) {
-                error_log('[SaveObjects] Concurrent processing failed, falling back to sequential: '.$e->getMessage());
-            }
-        }
+        // PERFORMANCE FIX: Always use bulk processing - no size-based routing
+        // Removed concurrent processing attempt that caused performance degradation for large files
+        error_log('[SaveObjects] Using optimized bulk processing for all file sizes ('.count($processedObjects).' objects)');
 
         // Sequential processing with chunks
         $chunks     = array_chunk($processedObjects, $chunkSize);
@@ -259,17 +242,22 @@ class SaveObjects
      */
     private function calculateOptimalChunkSize(int $totalObjects): int
     {
-        // Balanced chunk sizes for optimal performance
+        // PERFORMANCE OPTIMIZED: Balanced chunk sizes for optimal performance across all file sizes
+        // Keep smaller chunks for medium files, larger chunks only for very large files
         if ($totalObjects <= 100) {
             return $totalObjects; // Process all at once for small sets
         } else if ($totalObjects <= 500) {
-            return 250; // Medium chunks for medium sets
+            return 250; // Small chunks for medium-small sets (RESTORED: was causing slowdown)
+        } else if ($totalObjects <= 1000) {
+            return 500; // Medium chunks for medium sets (RESTORED: was causing slowdown)
         } else if ($totalObjects <= 2000) {
-            return 500; // Large chunks for large sets
+            return 500; // Keep moderate chunks for large-medium sets  
         } else if ($totalObjects <= 5000) {
-            return 1000; // Very large chunks for very large sets
+            return 1000; // Large chunks for large sets
+        } else if ($totalObjects <= 10000) {
+            return 2000; // Very large chunks for very large sets (OPTIMIZATION: was 2000)
         } else {
-            return 2000; // Large chunks for huge datasets
+            return 5000; // Maximum chunk size for huge datasets (OPTIMIZATION: was 2000)
         }
 
     }//end calculateOptimalChunkSize()
@@ -375,29 +363,7 @@ class SaveObjects
     }//end prepareObjectsForBulkSave()
 
 
-    /**
-     * Concurrent processing using ReactPHP for large datasets
-     *
-     * TEMPORARY IMPLEMENTATION: For now this returns null to fallback to sequential processing.
-     * TODO: Implement full concurrent processing with ReactPHP.
-     *
-     * @param array $objects     Array of objects to process
-     * @param array $schemaCache Schema cache
-     * @param int   $chunkSize   Chunk size for parallel processing
-     * @param bool  $rbac        Apply RBAC filtering
-     * @param bool  $multi       Apply multi-tenancy filtering
-     * @param bool  $validation  Apply schema validation
-     * @param bool  $events      Dispatch events
-     *
-     * @return array|null Processing result or null if concurrent processing fails
-     */
-    private function processObjectsConcurrently(array $objects, array $schemaCache, int $chunkSize, bool $rbac, bool $multi, bool $validation, bool $events): ?array
-    {
-        // TEMPORARY: Return null to force fallback to sequential processing
-        // TODO: Implement full concurrent processing logic
-        error_log('[SaveObjects] Concurrent processing not yet implemented, falling back to sequential');
-        return null;
-    }//end processObjectsConcurrently()
+
 
 
     /**
@@ -1160,9 +1126,18 @@ class SaveObjects
      */
     private function handlePostSaveInverseRelations(array $savedObjects, array $schemaCache): void
     {
-        $bulkWriteBackUpdates = [];
+        if (empty($savedObjects)) {
+            return;
+        }
 
-        foreach ($savedObjects as $savedObject) {
+        error_log('[SaveObjects] Processing inverse relations for '.count($savedObjects).' saved objects');
+        
+        // PERFORMANCE FIX: Collect all related IDs first to avoid N+1 queries
+        $allRelatedIds = [];
+        $objectRelationsMap = []; // Track which objects need which related objects
+        
+        // First pass: collect all related object IDs
+        foreach ($savedObjects as $index => $savedObject) {
             $schema = $schemaCache[$savedObject->getSchema()] ?? null;
             if (!$schema) {
                 continue;
@@ -1176,6 +1151,7 @@ class SaveObjects
             }
 
             $objectData = $savedObject->getObject();
+            $objectRelationsMap[$index] = [];
 
             // Process inverse relations for this object
             foreach ($analysis['inverseProperties'] as $propertyName => $inverseConfig) {
@@ -1186,25 +1162,49 @@ class SaveObjects
                 $relatedObjectIds = is_array($objectData[$propertyName]) ? $objectData[$propertyName] : [$objectData[$propertyName]];
 
                 foreach ($relatedObjectIds as $relatedId) {
-                    if (empty($relatedId)) {
-                        continue;
+                    if (!empty($relatedId) && !empty($inverseConfig['writeBack'])) {
+                        $allRelatedIds[] = $relatedId;
+                        $objectRelationsMap[$index][] = $relatedId;
                     }
+                }
+            }
+        }
+        
+        // PERFORMANCE OPTIMIZATION: Single bulk fetch instead of N+1 queries
+        $relatedObjectsMap = [];
+        if (!empty($allRelatedIds)) {
+            $uniqueRelatedIds = array_unique($allRelatedIds);
+            error_log('[SaveObjects] Bulk fetching '.count($uniqueRelatedIds).' related objects (prevented '.count($allRelatedIds).' individual queries)');
+            
+            try {
+                $relatedObjects = $this->objectEntityMapper->findAll(ids: $uniqueRelatedIds, includeDeleted: false);
+                foreach ($relatedObjects as $obj) {
+                    $relatedObjectsMap[$obj->getUuid()] = $obj;
+                }
+                error_log('[SaveObjects] Bulk fetch completed: '.count($relatedObjects).' objects found');
+            } catch (\Exception $e) {
+                error_log('[SaveObjects] Bulk fetch failed: '.$e->getMessage());
+                return; // Skip inverse relations processing if bulk fetch fails
+            }
+        }
 
-                    try {
-                        $relatedObject = $this->objectEntityMapper->find($relatedId);
-                        if ($relatedObject && !empty($inverseConfig['writeBack'])) {
-                            // Add to bulk writeBack updates instead of immediate update
-                            $bulkWriteBackUpdates[] = $relatedObject;
-                        }
-                    } catch (\Exception $e) {
-                        error_log('[SaveObjects] Error processing inverse relation for '.$relatedId.': '.$e->getMessage());
-                    }
+        // Second pass: process inverse relations using bulk-fetched objects
+        $bulkWriteBackUpdates = [];
+        foreach ($savedObjects as $index => $savedObject) {
+            if (!isset($objectRelationsMap[$index])) {
+                continue;
+            }
+            
+            foreach ($objectRelationsMap[$index] as $relatedId) {
+                if (isset($relatedObjectsMap[$relatedId])) {
+                    $bulkWriteBackUpdates[] = $relatedObjectsMap[$relatedId];
                 }
             }
         }
 
         // Execute bulk writeBack updates
         if (!empty($bulkWriteBackUpdates)) {
+            error_log('[SaveObjects] Performing writeBack updates for '.count($bulkWriteBackUpdates).' related objects');
             $this->performBulkWriteBackUpdates($bulkWriteBackUpdates);
         }
     }//end handlePostSaveInverseRelations()
