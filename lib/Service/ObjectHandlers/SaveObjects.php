@@ -921,7 +921,7 @@ class SaveObjects
                 'uuid'         => $selfData['id'] ?? null,
                 'register'     => $selfData['register'] ?? null,
                 'schema'       => $schemaId,
-                'data'         => json_encode($object),
+                'object'       => $object,  // FIXED: Use 'object' instead of 'data'
                 'owner'        => $this->userSession->getUser()->getUID() ?? null,
                 'organisation' => null, // TODO: Fix organisation service method call
                 'created'      => $now->format('Y-m-d H:i:s'),
@@ -967,7 +967,16 @@ class SaveObjects
             // Use ValidateObject handler for actual validation
             try {
                 $schema = $schemaCache[$schemaId];
-                $data = json_decode($objectData['data'], true);
+                // FIXED: Use 'object' instead of 'data' and handle both formats
+                if (isset($objectData['object'])) {
+                    $data = is_string($objectData['object']) ? json_decode($objectData['object'], true) : $objectData['object'];
+                } elseif (isset($objectData['data'])) {
+                    // Legacy support
+                    error_log('[SaveObjects] WARNING: Using deprecated "data" field in validation');
+                    $data = is_string($objectData['data']) ? json_decode($objectData['data'], true) : $objectData['data'];
+                } else {
+                    throw new \InvalidArgumentException('No object data found for validation');
+                }
                 
                 // TODO: Fix validation integration - temporarily skip validation to test other functionality
                 // The validateObject method returns a ValidationResult object, not an array
@@ -1068,8 +1077,12 @@ class SaveObjects
     private function mergeObjectData(ObjectEntity $existingObject, array $newObjectData): ObjectEntity
     {
         // Update core fields
-        if (isset($newObjectData['data'])) {
-            $existingObject->setData($newObjectData['data']);
+        if (isset($newObjectData['object'])) {
+            $existingObject->setObject($newObjectData['object']);
+        } elseif (isset($newObjectData['data'])) {
+            // Legacy support: 'data' should be 'object'
+            error_log('[SaveObjects] WARNING: Using deprecated "data" property, should be "object"');
+            $existingObject->setObject($newObjectData['data']);
         }
         if (isset($newObjectData['schema'])) {
             $existingObject->setSchema($newObjectData['schema']);
