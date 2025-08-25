@@ -81,6 +81,16 @@ class RenderObject
      */
     private array $objectsCache = [];
 
+    /**
+     * Ultra-aggressive preload cache for sub-second performance
+     * 
+     * Contains ALL relationship objects preloaded in a single query
+     * for instant access during rendering without any additional database calls.
+     *
+     * @var array<string, ObjectEntity>
+     */
+    private array $ultraPreloadCache = [];
+
 
     /**
      * Constructor for RenderObject handler.
@@ -177,7 +187,15 @@ class RenderObject
 
         // Step 3: Use ObjectCacheService for optimized bulk loading
         try {
+            $preloadStart = microtime(true);
             $relatedObjects = $this->objectCacheService->preloadObjects($uniqueIds);
+            $preloadTime = round((microtime(true) - $preloadStart) * 1000, 2);
+            
+            $this->logger->debug('ObjectCache preload completed', [
+                'preloadTime' => $preloadTime . 'ms',
+                'requestedIds' => count($uniqueIds),
+                'foundObjects' => count($relatedObjects)
+            ]);
             
             // Step 4: Index by both ID and UUID for quick lookup
             $indexedObjects = [];
@@ -206,6 +224,40 @@ class RenderObject
         }
 
     }//end preloadRelatedObjects()
+
+
+    /**
+     * Set the ultra-aggressive preload cache for maximum performance
+     *
+     * This method receives ALL relationship objects loaded in a single query
+     * and stores them for instant access during rendering, eliminating all
+     * individual database queries for extended properties.
+     *
+     * @param array $ultraPreloadCache Array of preloaded objects indexed by ID/UUID
+     *
+     * @phpstan-param array<string, ObjectEntity> $ultraPreloadCache
+     * @psalm-param array<string, ObjectEntity> $ultraPreloadCache
+     */
+    public function setUltraPreloadCache(array $ultraPreloadCache): void
+    {
+        $this->ultraPreloadCache = $ultraPreloadCache;
+        $this->logger->debug('Ultra preload cache set', [
+            'cachedObjectCount' => count($ultraPreloadCache)
+        ]);
+        
+    }//end setUltraPreloadCache()
+
+
+    /**
+     * Get the size of the ultra preload cache for monitoring
+     *
+     * @return int Number of objects in the ultra preload cache
+     */
+    public function getUltraCacheSize(): int
+    {
+        return count($this->ultraPreloadCache);
+        
+    }//end getUltraCacheSize()
 
 
     /**
@@ -269,13 +321,18 @@ class RenderObject
      */
     private function getObject(int | string $id): ?ObjectEntity
     {
+        // **ULTRA PERFORMANCE**: Check ultra preload cache first (fastest possible)
+        if (isset($this->ultraPreloadCache[(string)$id])) {
+            return $this->ultraPreloadCache[(string)$id];
+        }
+
         // **PERFORMANCE OPTIMIZATION**: Use ObjectCacheService for optimized caching
         // First check local cache for backward compatibility
         if (isset($this->objectsCache[$id]) === true) {
             return $this->objectsCache[$id];
         }
 
-        // Use cache service for optimized loading
+        // Use cache service for optimized loading (only if not in ultra cache)
         $object = $this->objectCacheService->getObject($id);
         
         // Update local cache for backward compatibility
