@@ -7,10 +7,16 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 		name="import"
 		title="Import Data into Register"
 		size="large"
-		@close="closeModal">
-		<NcNoteCard v-if="success && importSummary" type="success">
+		:can-close="true"
+		@update:open="handleDialogClose">
+		<NcNoteCard v-if="success && importSummary && !hasImportErrors" type="success">
 			<p>Register imported successfully!</p>
 			<p><small>The register list is being refreshed in the background.</small></p>
+		</NcNoteCard>
+
+		<NcNoteCard v-if="success && importSummary && hasImportErrors" type="warning">
+			<p>Import completed with errors!</p>
+			<p><small>Some objects could not be imported. Check the details below.</small></p>
 		</NcNoteCard>
 
 		<div v-if="importResults" class="importResults">
@@ -48,7 +54,10 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 										<small class="errorText">{{ getInvalidCount(sheetSummary) }} objects failed validation</small>
 									</div>
 									<div v-else-if="sheetSummary.found === 0 && sheetSummary.errors && sheetSummary.errors.length > 0" class="errorInfo">
-										<small class="errorText">No data found - check schema matching</small>
+										<small class="errorText">No data found - check schema matching or cache issues</small>
+									</div>
+									<div v-if="isCacheRelatedError(sheetSummary)" class="cacheWarning">
+										<small class="warningText">⚠️ Cache-related error detected. Try refreshing the page or contact support.</small>
 									</div>
 									<div v-if="sheetSummary.found === 0 && sheetSummary.errors && sheetSummary.errors.length === 0" class="infoInfo">
 										<small class="infoText">Sheet appears empty or has no matching data</small>
@@ -116,10 +125,15 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 														{{ importError.row }}
 													</td>
 													<td class="errorType">
-														{{ importError.type }}
+														{{ importError.type || 'Unknown' }}
 													</td>
 													<td class="errorMessage">
 														{{ importError.error }}
+														<div v-if="importError.debug" class="errorDebugInfo">
+															<small>File: {{ importError.debug.file }}</small><br>
+															<small>Line: {{ importError.debug.line }}</small><br>
+															<small>Class: {{ importError.debug.class }}</small>
+														</div>
 													</td>
 													<td class="errorData">
 														<pre v-if="importError.data && Object.keys(importError.data).length > 0">{{ JSON.stringify(importError.data, null, 2) }}</pre>
@@ -418,6 +432,18 @@ export default {
 				schema,
 			}
 		},
+		/**
+		 * Check if there are any errors in the import results
+		 * @return {boolean} - Whether there are import errors
+		 */
+		hasImportErrors() {
+			if (!this.importResults) return false
+			
+			// Check if any sheet has errors
+			return Object.values(this.importResults).some(sheetSummary => 
+				sheetSummary.errors && sheetSummary.errors.length > 0
+			)
+		},
 	},
 	mounted() {
 		dashboardStore.preload()
@@ -512,6 +538,15 @@ export default {
 			this.importResults = null
 			this.expandedSheets = {} // Reset expanded state
 			this.expandedErrors = {} // Reset expanded errors state
+		},
+		/**
+		 * Handle dialog close event from X button
+		 * @param {boolean} isOpen - Whether the dialog is open
+		 */
+		handleDialogClose(isOpen) {
+			if (!isOpen) {
+				this.closeModal()
+			}
 		},
 		/**
 		 * Import the selected register file and handle the summary
@@ -620,6 +655,30 @@ export default {
 			// Count validation errors (objects that failed validation)
 			// Now that invalid objects contain their error info directly, we still count ValidationException types
 			return sheetSummary.errors.filter(error => error.type === 'ValidationException').length
+		},
+		/**
+		 * Check if the error might be cache-related
+		 * @param {object} sheetSummary - The sheet summary object
+		 * @return {boolean} - Whether cache issues might be causing problems
+		 */
+		isCacheRelatedError(sheetSummary) {
+			if (!sheetSummary.errors || !Array.isArray(sheetSummary.errors)) {
+				return false
+			}
+			
+			// Check for error messages that suggest cache issues
+			const cacheIndicators = [
+				'data is not a valid attribute',
+				'not a valid attribute',
+				'ProcessingException',
+				'Invalid property'
+			]
+			
+			return sheetSummary.errors.some(error => 
+				cacheIndicators.some(indicator => 
+					error.error && error.error.includes(indicator)
+				)
+			)
 		},
 	},
 }
@@ -1100,6 +1159,34 @@ export default {
 .errorData .noData {
 	color: var(--color-text-maxcontrast);
 	font-style: italic;
+}
+
+.errorDebugInfo {
+	margin-top: 0.5rem;
+	padding: 0.5rem;
+	background: var(--color-background-dark);
+	border-radius: var(--border-radius-small);
+	border: 1px solid var(--color-border);
+	font-family: monospace;
+}
+
+.errorDebugInfo small {
+	color: var(--color-text-maxcontrast);
+	font-size: 0.75rem;
+}
+
+.cacheWarning {
+	margin-top: 0.25rem;
+	padding: 0.5rem;
+	background: var(--color-warning-background);
+	border-radius: var(--border-radius-small);
+	border: 1px solid var(--color-warning);
+}
+
+.cacheWarning .warningText {
+	color: var(--color-warning-text);
+	font-size: 0.8rem;
+	font-weight: 600;
 }
 
 /* Responsive adjustments */

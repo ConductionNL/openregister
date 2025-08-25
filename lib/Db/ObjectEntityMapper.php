@@ -3407,6 +3407,12 @@ class ObjectEntityMapper extends QBMapper
         $firstObject = $insertObjects[0];
         $columns = array_keys($firstObject);
         error_log('[Bulk Insert] Columns: ' . implode(', ', $columns));
+        
+        // DEBUG: Check for problematic 'data' key
+        if (isset($firstObject['data'])) {
+            error_log('[Bulk Insert] ERROR: Found "data" key in object - this will cause setData() error!');
+            error_log('[Bulk Insert] First object structure: ' . json_encode(array_keys($firstObject)));
+        }
 
         // Calculate optimal batch size based on actual data size to prevent max_allowed_packet errors
         $batchSize = $this->calculateOptimalBatchSize($insertObjects, $columns);
@@ -3443,7 +3449,8 @@ class ObjectEntityMapper extends QBMapper
                     $value = $objectData[$column] ?? null;
 
                     // JSON encode the object field if it's an array
-                    if ($column === 'object' && is_array($value)) {
+                    // Also handle legacy 'data' field for backward compatibility
+                    if (($column === 'object' || $column === 'data') && is_array($value)) {
                         $value = json_encode($value);
                     }
 

@@ -301,3 +301,4 @@ function displaySummary(array $scores): void
 // Run the script
 main();
 
+

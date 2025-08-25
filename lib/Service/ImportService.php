@@ -98,6 +98,13 @@ class ImportService
      */
     private const MIN_CONCURRENT_CHUNK_SIZE = 5;
 
+    /**
+     * Instance cache for schema properties to avoid static cache issues
+     *
+     * @var array<string, array>
+     */
+    private array $schemaPropertiesCache = [];
+
 
     /**
      * Constructor for the ImportService
@@ -111,6 +118,9 @@ class ImportService
         $this->objectEntityMapper = $objectEntityMapper;
         $this->schemaMapper       = $schemaMapper;
         $this->objectService      = $objectService;
+        
+        // Initialize cache arrays to prevent issues
+        $this->schemaPropertiesCache = [];
 
     }//end __construct()
 
@@ -183,6 +193,10 @@ class ImportService
      */
     public function importFromExcel(string $filePath, ?Register $register=null, ?Schema $schema=null, int $chunkSize=self::DEFAULT_CHUNK_SIZE, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true): array
     {
+        // Clear caches at the start of each import to prevent stale data issues
+        $this->clearCaches();
+        error_log('[ImportService] Starting Excel import, caches cleared');
+        
         $reader = new Xlsx();
         $reader->setReadDataOnly(true);
         $spreadsheet = $reader->load($filePath);
@@ -257,6 +271,10 @@ class ImportService
      */
     public function importFromCsv(string $filePath, ?Register $register=null, ?Schema $schema=null, int $chunkSize=self::DEFAULT_CHUNK_SIZE, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true): array
     {
+        // Clear caches at the start of each import to prevent stale data issues
+        $this->clearCaches();
+        error_log('[ImportService] Starting CSV import, caches cleared');
+        
         // CSV can only handle a single schema.
         if ($schema === null) {
             throw new \InvalidArgumentException('CSV import requires a specific schema');
@@ -485,7 +503,7 @@ class ImportService
                 $summary['errors'][] = [
                     'sheet'  => $sheetTitle,
                     'row'    => 1,
-                    'data'   => [],
+                    'object' => [],
                     'error'  => 'No valid headers found in sheet',
                 ];
                 return $summary;
@@ -498,7 +516,7 @@ class ImportService
                 $summary['errors'][] = [
                     'sheet'  => $sheetTitle,
                     'row'    => 1,
-                    'data'   => [],
+                    'object' => [],
                     'error'  => 'No data rows found in sheet',
                 ];
                 return $summary;
@@ -529,7 +547,7 @@ class ImportService
                     $rowErrors[] = [
                         'sheet' => $sheetTitle,
                         'row'   => $row,
-                        'data'  => $rowData ?? [],
+                        'object' => $rowData ?? [],
                         'error' => $e->getMessage(),
                     ];
                 }
@@ -543,15 +561,16 @@ class ImportService
                 $saveResult = $this->objectService->saveObjects($allObjects, $register, $schema, $rbac, $multi, $validation, $events);
                 
                 // Use the structured return from saveObjects
-                $summary['created'] = array_map(fn($obj) => $obj->getUuid(), $saveResult['saved'] ?? []);
-                $summary['updated'] = array_map(fn($obj) => $obj->getUuid(), $saveResult['updated'] ?? []);
+                // saveObjects returns serialized arrays, not ObjectEntity objects
+                $summary['created'] = array_map(fn($obj) => $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []);
+                $summary['updated'] = array_map(fn($obj) => $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []);
                 
                 // Handle validation errors if validation was enabled
                 if ($validation && !empty($saveResult['invalid'] ?? [])) {
                     foreach (($saveResult['invalid'] ?? []) as $invalidItem) {
                         $summary['errors'][] = [
                             'sheet' => $sheetTitle,
-                            'data'  => $invalidItem['object'] ?? $invalidItem,
+                            'object' => $invalidItem['object'] ?? $invalidItem,
                             'error' => $invalidItem['error'] ?? 'Validation failed',
                             'type'  => $invalidItem['type'] ?? 'ValidationException',
                         ];
@@ -568,11 +587,24 @@ class ImportService
             error_log('[Excel Import] Clean architecture completed: ' . count($allObjects) . ' rows in ' . round($totalImportTime, 2) . 's (' . round($overallRowsPerSecond, 1) . ' rows/sec overall)');
 
         } catch (\Exception $e) {
+            // Enhanced error logging for debugging
+            error_log('[ImportService] Excel processing error: ' . $e->getMessage());
+            error_log('[ImportService] Error trace: ' . $e->getTraceAsString());
+            
+            // Clear caches in case of error to prevent corruption
+            $this->clearCaches();
+            
             $summary['errors'][] = [
                 'sheet' => $sheetTitle ?? 'unknown',
                 'row'   => 'general',
-                'data'  => [],
-                'error' => 'General processing error: ' . $e->getMessage(),
+                'object' => [],
+                'error' => 'Sheet processing failed: ' . $e->getMessage(),
+                'type'  => 'ProcessingException',
+                'debug' => [
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'class' => get_class($e)
+                ]
             ];
         }
 
@@ -614,7 +646,7 @@ class ImportService
             if (empty($columnMapping)) {
                 $summary['errors'][] = [
                     'row'   => 1,
-                    'data'  => [],
+                    'object' => [],
                     'error' => 'No valid headers found in CSV file',
                 ];
                 return $summary;
@@ -626,7 +658,7 @@ class ImportService
             if ($highestRow <= 1) {
                 $summary['errors'][] = [
                     'row'   => 1,
-                    'data'  => [],
+                    'object' => [],
                     'error' => 'No data rows found in CSV file',
                 ];
                 return $summary;
@@ -656,7 +688,7 @@ class ImportService
                 } catch (\Exception $e) {
                     $rowErrors[] = [
                         'row'   => $row,
-                        'data'  => $rowData ?? [],
+                        'object' => $rowData ?? [],
                         'error' => $e->getMessage(),
                     ];
                 }
@@ -670,14 +702,15 @@ class ImportService
                 $saveResult = $this->objectService->saveObjects($allObjects, $register, $schema, $rbac, $multi, $validation, $events);
                 
                 // Use the structured return from saveObjects
-                $summary['created'] = array_map(fn($obj) => $obj->getUuid(), $saveResult['saved'] ?? []);
-                $summary['updated'] = array_map(fn($obj) => $obj->getUuid(), $saveResult['updated'] ?? []);
+                // saveObjects returns serialized arrays, not ObjectEntity objects
+                $summary['created'] = array_map(fn($obj) => $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []);
+                $summary['updated'] = array_map(fn($obj) => $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []);
                 
                 // Handle validation errors if validation was enabled
                 if ($validation && !empty($saveResult['invalid'] ?? [])) {
                     foreach (($saveResult['invalid'] ?? []) as $invalidItem) {
                         $summary['errors'][] = [
-                            'data' => $invalidItem['object'] ?? $invalidItem,
+                            'object' => $invalidItem['object'] ?? $invalidItem,
                             'error' => $invalidItem['error'] ?? 'Validation failed',
                             'type' => $invalidItem['type'] ?? 'ValidationException',
                         ];
@@ -694,9 +727,21 @@ class ImportService
             error_log('[CSV Import] Clean architecture completed: ' . count($allObjects) . ' rows in ' . round($totalImportTime, 2) . 's (' . round($overallRowsPerSecond, 1) . ' rows/sec overall)');
 
         } catch (\Exception $e) {
+            // Enhanced error logging for debugging
             error_log('[CSV Import] Error processing CSV sheet: ' . $e->getMessage());
+            error_log('[CSV Import] Error trace: ' . $e->getTraceAsString());
+            
+            // Clear caches in case of error to prevent corruption
+            $this->clearCaches();
+            
             $summary['errors'][] = [
                 'error' => 'Sheet processing failed: ' . $e->getMessage(),
+                'type'  => 'ProcessingException',
+                'debug' => [
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'class' => get_class($e)
+                ]
             ];
         }
 
@@ -780,8 +825,8 @@ class ImportService
 
                             $result = [
                                 'found'   => count($chunkResult['objects']),
-                                'created' => array_map(fn($obj) => $obj->getUuid(), $saveResult['saved'] ?? []),
-                                'updated' => array_map(fn($obj) => $obj->getUuid(), $saveResult['updated'] ?? []),
+                                'created' => array_map(fn($obj) => $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []),
+                                'updated' => array_map(fn($obj) => $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []),
                                 'errors'  => $chunkResult['errors'] ?? [],
                             ];
 
@@ -790,7 +835,7 @@ class ImportService
                                 foreach ($saveResult['invalid'] as $invalidItem) {
                                     $result['errors'][] = [
                                         'rows'  => $chunk['start'] . '-' . $chunk['end'],
-                                        'data'  => $invalidItem['object'] ?? $invalidItem,
+                                        'object' => $invalidItem['object'] ?? $invalidItem,
                                         'error' => $invalidItem['error'] ?? 'Validation failed',
                                         'type'  => $invalidItem['type'] ?? 'ValidationException',
                                     ];
@@ -936,14 +981,14 @@ class ImportService
      */
     private function transformCsvRowToObject(array $rowData, Register $register, Schema $schema, int $rowIndex): ?array
     {
-        // Cache schema properties for performance (avoid repeated calls)
-        static $schemaPropertiesCache = [];
+        // Use instance cache instead of static to prevent issues between requests
         $schemaId = $schema->getId();
         
-        if (!isset($schemaPropertiesCache[$schemaId])) {
-            $schemaPropertiesCache[$schemaId] = $schema->getProperties();
+        if (!isset($this->schemaPropertiesCache[$schemaId])) {
+            $this->schemaPropertiesCache[$schemaId] = $schema->getProperties();
+            error_log('[ImportService] Cached schema properties for schema ID: ' . $schemaId);
         }
-        $schemaProperties = $schemaPropertiesCache[$schemaId];
+        $schemaProperties = $this->schemaPropertiesCache[$schemaId];
 
         // Pre-allocate arrays for better performance
         $objectData = [];
@@ -987,6 +1032,9 @@ class ImportService
 
         // Add @self array to object data
         $objectData['@self'] = $selfData;
+
+        // Validate that we're not accidentally creating invalid properties
+        $this->validateObjectProperties($objectData, $schemaId);
 
         return $objectData;
 
@@ -1412,7 +1460,7 @@ class ImportService
             return [
                 'error' => [
                     'row'   => $rowIndex,
-                    'data'  => $rowData,
+                    'object' => $rowData,
                     'error' => $e->getMessage(),
                 ],
             ];
@@ -1724,6 +1772,59 @@ class ImportService
         // Simple data - use base chunk size
         return $baseChunkSize;
     }//end calculateOptimalChunkSize()
+
+
+    /**
+     * Clear all internal caches to prevent issues between imports
+     *
+     * @return void
+     */
+    public function clearCaches(): void
+    {
+        $this->schemaPropertiesCache = [];
+        error_log('[ImportService] Cleared all internal caches');
+
+    }//end clearCaches()
+
+
+    /**
+     * Validate that object data only contains valid ObjectEntity properties
+     *
+     * @param array  $objectData The object data to validate
+     * @param string $schemaId   Schema ID for debugging
+     *
+     * @return void
+     */
+    private function validateObjectProperties(array $objectData, string $schemaId): void
+    {
+        // Valid ObjectEntity properties (excluding @self which is handled separately)
+        $validProperties = [
+            'uuid', 'slug', 'uri', 'version', 'register', 'schema', 'object',
+            'files', 'relations', 'locked', 'owner', 'authorization', 'folder',
+            'application', 'organisation', 'validation', 'deleted', 'geo',
+            'retention', 'size', 'schemaVersion', 'updated', 'created',
+            'published', 'depublished', 'name', 'description', 'summary',
+            'image', 'groups', 'expires', '@self'
+        ];
+
+        // Check for invalid properties (common mistakes)
+        $invalidProperties = ['data', 'content', 'body', 'payload'];
+        
+        foreach ($objectData as $key => $value) {
+            // Skip @self as it's handled separately
+            if ($key === '@self') {
+                continue;
+            }
+            
+            // Check for invalid properties that commonly cause issues
+            if (in_array($key, $invalidProperties)) {
+                error_log('[ImportService] INVALID PROPERTY DETECTED: "' . $key . '" in schema ' . $schemaId);
+                error_log('[ImportService] This may cause "' . $key . ' is not a valid attribute" errors');
+                error_log('[ImportService] Object data keys: ' . implode(', ', array_keys($objectData)));
+            }
+        }
+
+    }//end validateObjectProperties()
 
 
 }//end class
