@@ -41,6 +41,7 @@ use OCA\OpenRegister\Service\ObjectHandlers\ValidateObject;
 use OCA\OpenRegister\Service\ObjectHandlers\PublishObject;
 use OCA\OpenRegister\Service\ObjectHandlers\DepublishObject;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\ObjectCacheService;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
@@ -138,6 +139,16 @@ class Application extends App implements IBootstrap
                     $container->get('OCP\IUserManager'),
                     $container->get('OCP\IAppConfig'),
                     $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register ObjectCacheService for performance optimization
+        $context->registerService(
+                ObjectCacheService::class,
+                function ($container) {
+                    return new ObjectCacheService(
+                    $container->get(ObjectEntityMapper::class)
                     );
                 }
                 );
