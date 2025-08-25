@@ -1553,7 +1553,19 @@ class ObjectService
             $unset = array_map('trim', explode(',', $unset));
         }
 
-        // Render each object through the render handler
+        // **PERFORMANCE OPTIMIZATION**: Bulk preload all related objects to prevent N+1 queries
+        if (!empty($extend) && !empty($objects)) {
+            error_log("[ObjectService] Starting bulk preload for " . count($objects) . " objects with extends: " . implode(',', $extend));
+            $startPreload = microtime(true);
+            
+            // Preload all related objects in bulk (eliminates N+1 queries)
+            $preloadedObjects = $this->renderHandler->preloadRelatedObjects($objects, $extend);
+            
+            $preloadTime = round((microtime(true) - $startPreload) * 1000, 2);
+            error_log("[ObjectService] Bulk preload completed in {$preloadTime}ms for " . count($preloadedObjects) . " related objects");
+        }
+
+        // Render each object through the render handler (now uses cached preloaded objects)
         foreach ($objects as $key => $object) {
             $objects[$key] = $this->renderHandler->renderEntity(
              entity: $object,
