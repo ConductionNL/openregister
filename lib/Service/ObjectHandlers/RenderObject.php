@@ -1092,9 +1092,9 @@ class RenderObject
                         entity: $object,
                         extend: $subExtend,
                         depth: $depth + 1,
-                        filter: $filter,
-                        fields: $fields,
-                        unset: $unset,
+                        filter: $filter ?? [],
+                        fields: $fields ?? [],
+                        unset: $unset ?? [],
                         visitedIds: $visitedIds
                     )->jsonSerialize();
                 }
