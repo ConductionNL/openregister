@@ -1563,16 +1563,7 @@ class ObjectService
             $fields = array_map('trim', explode(',', $fields));
         }
         
-        // **SUB-SECOND OPTIMIZATION**: Auto-optimize fields for large datasets
-        // Reduce payload size by limiting fields for better performance
-        if (!$fields && count($objects) >= 50) {
-            // For large datasets, only include essential fields unless explicitly requested
-            $fields = ['id', '@self', 'name', 'summary', 'identifier'];
-            $this->logger->debug('Auto-optimized fields for large dataset', [
-                'objectCount' => count($objects),
-                'optimizedFields' => $fields
-            ]);
-        }
+
 
         // Extract filter configuration from query if present
         $filter = $query['_filter'] ?? null;
@@ -1636,10 +1627,11 @@ class ObjectService
         }
         
         $renderTime = round((microtime(true) - $startRender) * 1000, 2);
+        $objectCount = count($objects);
         $this->logger->debug('Ultra-fast rendering completed', [
             'renderTime' => $renderTime . 'ms',
-            'objectCount' => count($objects),
-            'avgPerObject' => round($renderTime / count($objects), 2) . 'ms',
+            'objectCount' => $objectCount,
+            'avgPerObject' => $objectCount > 0 ? round($renderTime / $objectCount, 2) . 'ms' : '0ms',
             'ultraCacheEnabled' => !empty($this->renderHandler->getUltraCacheSize())
         ]);
 
