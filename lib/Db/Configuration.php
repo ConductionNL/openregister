@@ -200,6 +200,32 @@ class Configuration extends Entity implements JsonSerializable
 
 
     /**
+     * Get the owner of the configuration (backwards compatibility - maps to app field)
+     *
+     * @return string|null Owner/App identifier
+     */
+    public function getOwner(): ?string
+    {
+        return $this->app;
+
+    }//end getOwner()
+
+
+    /**
+     * Set the owner of the configuration (backwards compatibility - maps to app field)
+     *
+     * @param string|null $owner Owner/App identifier
+     *
+     * @return void
+     */
+    public function setOwner(?string $owner): void
+    {
+        $this->app = $owner;
+
+    }//end setOwner()
+
+
+    /**
      * Get JSON fields from the entity
      *
      * Returns all fields that are of type 'json'
@@ -266,6 +292,7 @@ class Configuration extends Entity implements JsonSerializable
             'type'        => $this->type,
             'app'         => $this->app,
             'version'     => $this->version,
+            'owner'       => $this->app, // Backwards compatibility - maps to app field
             'registers'   => $this->registers,
             'schemas'     => $this->schemas,
             'objects'     => $this->objects,
