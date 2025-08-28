@@ -83,23 +83,23 @@ class Version1Date20250828120000 extends SimpleMigrationStep
         // 2. Critical composite indexes for common filter combinations
         $compositeIndexes = [
             // For base filtering (deleted + published state)
-            ['deleted', 'published'] => 'objects_deleted_published_idx',
-            ['deleted', 'published', 'depublished'] => 'objects_lifecycle_idx',
+            'objects_deleted_published_idx' => ['deleted', 'published'],
+            'objects_lifecycle_idx' => ['deleted', 'published', 'depublished'],
             
             // For register/schema filtering with lifecycle
-            ['register', 'schema', 'deleted'] => 'objects_register_schema_deleted_idx',
-            ['register', 'deleted', 'published'] => 'objects_register_lifecycle_idx',
-            ['schema', 'deleted', 'published'] => 'objects_schema_lifecycle_idx',
+            'objects_register_schema_deleted_idx' => ['register', 'schema', 'deleted'],
+            'objects_register_lifecycle_idx' => ['register', 'deleted', 'published'],
+            'objects_schema_lifecycle_idx' => ['schema', 'deleted', 'published'],
             
             // For organisation-based filtering
-            ['organisation', 'deleted', 'published'] => 'objects_org_lifecycle_idx',
+            'objects_org_lifecycle_idx' => ['organisation', 'deleted', 'published'],
             
             // For date range queries on faceting
-            ['created', 'deleted'] => 'objects_created_deleted_idx',
-            ['updated', 'deleted'] => 'objects_updated_deleted_idx',
+            'objects_created_deleted_idx' => ['created', 'deleted'],
+            'objects_updated_deleted_idx' => ['updated', 'deleted'],
         ];
 
-        foreach ($compositeIndexes as $columns => $indexName) {
+        foreach ($compositeIndexes as $indexName => $columns) {
             // Check all columns exist
             $allColumnsExist = true;
             foreach ($columns as $column) {

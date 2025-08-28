@@ -42,6 +42,8 @@ use OCA\OpenRegister\Service\ObjectHandlers\PublishObject;
 use OCA\OpenRegister\Service\ObjectHandlers\DepublishObject;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectCacheService;
+use OCA\OpenRegister\Service\ImportService;
+use OCA\OpenRegister\Service\ExportService;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
@@ -244,6 +246,34 @@ class Application extends App implements IBootstrap
                     $container->get('OCP\IUserManager'),
                     $container->get(OrganisationService::class),
                     $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register ImportService with IUserManager and IGroupManager dependencies
+        $context->registerService(
+                ImportService::class,
+                function ($container) {
+                    return new ImportService(
+                    $container->get(ObjectEntityMapper::class),
+                    $container->get(SchemaMapper::class),
+                    $container->get(ObjectService::class),
+                    $container->get('Psr\Log\LoggerInterface'),
+                    $container->get('OCP\IUserManager'),
+                    $container->get('OCP\IGroupManager')
+                    );
+                }
+                );
+
+        // Register ExportService with IUserManager and IGroupManager dependencies
+        $context->registerService(
+                ExportService::class,
+                function ($container) {
+                    return new ExportService(
+                    $container->get(ObjectEntityMapper::class),
+                    $container->get(RegisterMapper::class),
+                    $container->get('OCP\IUserManager'),
+                    $container->get('OCP\IGroupManager')
                     );
                 }
                 );

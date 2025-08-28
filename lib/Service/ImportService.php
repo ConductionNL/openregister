@@ -23,6 +23,9 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCP\IUserManager;
+use OCP\IGroupManager;
+use OCP\IUser;
 use PhpOffice\PhpSpreadsheet\Reader\Csv;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -113,6 +116,20 @@ class ImportService
      */
     private readonly LoggerInterface $logger;
 
+    /**
+     * User manager for checking user context
+     *
+     * @var IUserManager
+     */
+    private readonly IUserManager $userManager;
+
+    /**
+     * Group manager for checking admin group membership
+     *
+     * @var IGroupManager
+     */
+    private readonly IGroupManager $groupManager;
+
 
     /**
      * Constructor for the ImportService
@@ -121,18 +138,45 @@ class ImportService
      * @param SchemaMapper       $schemaMapper       The schema mapper
      * @param ObjectService      $objectService      The object service
      * @param LoggerInterface    $logger             The logger interface
+     * @param IUserManager       $userManager        The user manager
+     * @param IGroupManager      $groupManager       The group manager
      */
-    public function __construct(ObjectEntityMapper $objectEntityMapper, SchemaMapper $schemaMapper, ObjectService $objectService, LoggerInterface $logger)
+    public function __construct(ObjectEntityMapper $objectEntityMapper, SchemaMapper $schemaMapper, ObjectService $objectService, LoggerInterface $logger, IUserManager $userManager, IGroupManager $groupManager)
     {
         $this->objectEntityMapper = $objectEntityMapper;
         $this->schemaMapper       = $schemaMapper;
         $this->objectService      = $objectService;
         $this->logger             = $logger;
+        $this->userManager        = $userManager;
+        $this->groupManager       = $groupManager;
         
         // Initialize cache arrays to prevent issues
         $this->schemaPropertiesCache = [];
 
     }//end __construct()
+
+
+    /**
+     * Check if the given user is in the admin group
+     *
+     * @param IUser|null $user The user to check (null means anonymous/no user)
+     *
+     * @return bool True if user is admin, false otherwise
+     */
+    private function isUserAdmin(?IUser $user): bool
+    {
+        if ($user === null) {
+            return false; // Anonymous users are never admin
+        }
+
+        // Check if user is in admin group
+        $adminGroup = $this->groupManager->get('admin');
+        if ($adminGroup === null) {
+            return false; // Admin group doesn't exist
+        }
+
+        return $adminGroup->inGroup($user);
+    }//end isUserAdmin()
 
 
     /**
@@ -201,7 +245,7 @@ class ImportService
      * @phpstan-return array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      * @psalm-return   array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      */
-    public function importFromExcel(string $filePath, ?Register $register=null, ?Schema $schema=null, int $chunkSize=self::DEFAULT_CHUNK_SIZE, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false): array
+    public function importFromExcel(string $filePath, ?Register $register=null, ?Schema $schema=null, int $chunkSize=self::DEFAULT_CHUNK_SIZE, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false, ?IUser $currentUser=null): array
     {
         // Clear caches at the start of each import to prevent stale data issues
         $this->clearCaches();
@@ -212,12 +256,12 @@ class ImportService
 
         // If we have a register but no schema, process each sheet as a different schema.
         if ($register !== null && $schema === null) {
-            return $this->processMultiSchemaSpreadsheetAsync($spreadsheet, $register, $chunkSize, $validation, $events, $rbac, $multi, $publish);
+            return $this->processMultiSchemaSpreadsheetAsync($spreadsheet, $register, $chunkSize, $validation, $events, $rbac, $multi, $publish, $currentUser);
         }
 
         // Single schema processing - use batch processing for better performance
         $sheetTitle = $spreadsheet->getActiveSheet()->getTitle();
-        $sheetSummary = $this->processSpreadsheetBatch($spreadsheet, $register, $schema, $chunkSize, $validation, $events, $rbac, $multi, $publish);
+        $sheetSummary = $this->processSpreadsheetBatch($spreadsheet, $register, $schema, $chunkSize, $validation, $events, $rbac, $multi, $publish, $currentUser);
 
         // Add schema information to the summary (consistent with multi-sheet Excel import).
         if ($schema !== null) {
@@ -278,7 +322,7 @@ class ImportService
      * @phpstan-return array<string, array{created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      * @psalm-return   array<string, array{created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      */
-    public function importFromCsv(string $filePath, ?Register $register=null, ?Schema $schema=null, int $chunkSize=self::DEFAULT_CHUNK_SIZE, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false): array
+    public function importFromCsv(string $filePath, ?Register $register=null, ?Schema $schema=null, int $chunkSize=self::DEFAULT_CHUNK_SIZE, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false, ?IUser $currentUser=null): array
     {
         // Clear caches at the start of each import to prevent stale data issues
         $this->clearCaches();
@@ -297,7 +341,7 @@ class ImportService
 
         // Get the sheet title for CSV (usually just 'Worksheet' or similar).
         $sheetTitle = $spreadsheet->getActiveSheet()->getTitle();
-        $sheetSummary = $this->processCsvSheet($spreadsheet->getActiveSheet(), $register, $schema, $chunkSize, $validation, $events, $rbac, $multi, $publish);
+        $sheetSummary = $this->processCsvSheet($spreadsheet->getActiveSheet(), $register, $schema, $chunkSize, $validation, $events, $rbac, $multi, $publish, $currentUser);
 
         // Add schema information to the summary (consistent with Excel import).
         $sheetSummary['schema'] = [
@@ -326,7 +370,7 @@ class ImportService
      * @phpstan-return array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      * @psalm-return   array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      */
-    private function processMultiSchemaSpreadsheetAsync(Spreadsheet $spreadsheet, Register $register, int $chunkSize, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false): array
+    private function processMultiSchemaSpreadsheetAsync(Spreadsheet $spreadsheet, Register $register, int $chunkSize, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false, ?IUser $currentUser=null): array
     {
         $summary = [];
 
@@ -379,7 +423,7 @@ class ImportService
 
             // Set the worksheet as active and process using batch saving for better performance.
             $spreadsheet->setActiveSheetIndex($spreadsheet->getIndex($worksheet));
-            $sheetSummary = $this->processSpreadsheetBatch($spreadsheet, $register, $schema, $chunkSize, $validation, $events, $rbac, $multi, $publish);
+            $sheetSummary = $this->processSpreadsheetBatch($spreadsheet, $register, $schema, $chunkSize, $validation, $events, $rbac, $multi, $publish, $currentUser);
 
             // Merge the sheet summary with the existing summary (preserve debug info).
             $summary[$schemaSlug] = array_merge($summary[$schemaSlug], $sheetSummary);
@@ -489,7 +533,8 @@ class ImportService
         bool $events=false,
         bool $rbac=true,
         bool $multi=true,
-        bool $publish=false
+        bool $publish=false,
+        ?IUser $currentUser=null
     ): array {
         $summary = [
             'found'     => 0,
@@ -547,7 +592,7 @@ class ImportService
                     }
 
                     // Transform row data to object format
-                    $object = $this->transformExcelRowToObject($rowData, $register, $schema, $row);
+                    $object = $this->transformExcelRowToObject($rowData, $register, $schema, $row, $currentUser);
                     
                     if ($object !== null) {
                         $allObjects[] = $object;
@@ -650,7 +695,7 @@ class ImportService
      * @phpstan-return array<string, array{found: int, created: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      * @psalm-return   array<string, array{found: int, created: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      */
-    private function processCsvSheet(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, Register $register, Schema $schema, int $chunkSize, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false): array
+    private function processCsvSheet(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, Register $register, Schema $schema, int $chunkSize, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false, ?IUser $currentUser=null): array
     {
         $summary = [
             'found'     => 0,
@@ -702,7 +747,7 @@ class ImportService
                     }
 
                     // Transform row data to object format
-                    $object = $this->transformCsvRowToObject($rowData, $register, $schema, $row);
+                    $object = $this->transformCsvRowToObject($rowData, $register, $schema, $row, $currentUser);
                     
                     if ($object !== null) {
                         $allObjects[] = $object;
@@ -1028,7 +1073,7 @@ class ImportService
      *
      * @return array<string, mixed>|null Object data or null if transformation fails
      */
-    private function transformCsvRowToObject(array $rowData, Register $register, Schema $schema, int $rowIndex): ?array
+    private function transformCsvRowToObject(array $rowData, Register $register, Schema $schema, int $rowIndex, ?IUser $currentUser=null): ?array
     {
         // Use instance cache instead of static to prevent issues between requests
         $schemaId = $schema->getId();
@@ -1045,7 +1090,9 @@ class ImportService
             'schema'   => $schemaId,
         ];
 
-        // Single pass through row data with optimized conditions
+        // Single pass through row data with proper column filtering
+        $isAdmin = $this->isUserAdmin($currentUser);
+        
         foreach ($rowData as $key => $value) {
             // Skip empty values early
             if ($value === null || $value === '') {
@@ -1055,14 +1102,22 @@ class ImportService
             $firstChar = $key[0] ?? '';
             
             if ($firstChar === '_') {
-                // Ignore properties starting with _ (skip them)
+                // REQUIREMENT: Columns starting with _ are completely ignored
                 continue;
-            } else if ($firstChar === '@' && str_starts_with($key, '@self.')) {
-                // Move properties starting with @self. to @self array and remove the @self. prefix
-                $selfPropertyName = substr($key, 6);
+            } else if ($firstChar === '@') {
+                // REQUIREMENT: @ columns only processed if user is admin
+                if (!$isAdmin) {
+                    continue; // Skip @ columns for non-admin users
+                }
                 
-                // Transform special @self properties
-                $selfData[$selfPropertyName] = $this->transformSelfProperty($selfPropertyName, $value);
+                if (str_starts_with($key, '@self.')) {
+                    // Move properties starting with @self. to @self array and remove the @self. prefix
+                    $selfPropertyName = substr($key, 6);
+                    
+                    // Transform special @self properties
+                    $selfData[$selfPropertyName] = $this->transformSelfProperty($selfPropertyName, $value);
+                }
+                // Note: Other @ columns that don't start with @self. are ignored
             } else {
                 // Regular properties - transform based on schema if needed
                 if (isset($schemaProperties[$key])) {
@@ -1218,23 +1273,38 @@ class ImportService
      *
      * @return array<string, mixed>|null Object data or null if transformation fails
      */
-    private function transformExcelRowToObject(array $rowData, ?Register $register, ?Schema $schema, int $rowIndex): ?array
+    private function transformExcelRowToObject(array $rowData, ?Register $register, ?Schema $schema, int $rowIndex, ?IUser $currentUser=null): ?array
     {
         // Separate regular properties from system properties
         $objectData = [];
         $selfData = [];
 
+        // Check if current user is admin for column filtering
+        $isAdmin = $this->isUserAdmin($currentUser);
+        
         foreach ($rowData as $key => $value) {
+            // Skip empty values
+            if ($value === null || $value === '') {
+                continue;
+            }
+            
             if (str_starts_with($key, '_') === true) {
-                // Move properties starting with _ to @self array and remove the _
-                $selfPropertyName = substr($key, 1);
-                $selfData[$selfPropertyName] = $value;
-            } else if (str_starts_with($key, '@self.') === true) {
-                // Move properties starting with @self. to @self array and remove the @self. prefix
-                $selfPropertyName = substr($key, 6);
+                // REQUIREMENT: Columns starting with _ are completely ignored
+                continue;
+            } else if (str_starts_with($key, '@') === true) {
+                // REQUIREMENT: @ columns only processed if user is admin
+                if (!$isAdmin) {
+                    continue; // Skip @ columns for non-admin users
+                }
                 
-                // Transform special @self properties
-                $selfData[$selfPropertyName] = $this->transformSelfProperty($selfPropertyName, $value);
+                if (str_starts_with($key, '@self.') === true) {
+                    // Move properties starting with @self. to @self array and remove the @self. prefix
+                    $selfPropertyName = substr($key, 6);
+                    
+                    // Transform special @self properties
+                    $selfData[$selfPropertyName] = $this->transformSelfProperty($selfPropertyName, $value);
+                }
+                // Note: Other @ columns that don't start with @self. are ignored
             } else {
                 // Regular properties go to main object data
                 $objectData[$key] = $value;

@@ -38,6 +38,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\DB\Exception as DBException;
+use OCP\IUserSession;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
@@ -117,6 +118,7 @@ class RegistersController extends Controller
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly UploadService $uploadService,
         private readonly LoggerInterface $logger,
+        private readonly IUserSession $userSession,
         ConfigurationService $configurationService,
         AuditTrailMapper $auditTrailMapper,
         ExportService $exportService,
@@ -445,7 +447,7 @@ class RegistersController extends Controller
 
             switch ($format) {
                 case 'excel':
-                    $spreadsheet = $this->exportService->exportToExcel($register);
+                    $spreadsheet = $this->exportService->exportToExcel($register, null, [], $this->userSession->getUser());
                     $writer      = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
                     $filename    = sprintf('%s_%s.xlsx', $register->getSlug(), (new \DateTime())->format('Y-m-d_His'));
                     ob_start();
@@ -462,7 +464,7 @@ class RegistersController extends Controller
                     }
 
                     $schema   = $this->schemaMapper->find($schemaId);
-                    $csv      = $this->exportService->exportToCsv($register, $schema);
+                    $csv      = $this->exportService->exportToCsv($register, $schema, [], $this->userSession->getUser());
                     $filename = sprintf('%s_%s_%s.csv', $register->getSlug(), $schema->getSlug(), (new \DateTime())->format('Y-m-d_His'));
                     return new DataDownloadResponse($csv, $filename, 'text/csv');
                 case 'configuration':
@@ -556,7 +558,8 @@ class RegistersController extends Controller
                         $events,
                         $rbac,
                         $multi,
-                        $publish
+                        $publish,
+                        $this->userSession->getUser()
                     );
                     break;
                 case 'csv':
@@ -590,7 +593,8 @@ class RegistersController extends Controller
                         $events,
                         $rbac,
                         $multi,
-                        $publish
+                        $publish,
+                        $this->userSession->getUser()
                     );
                     break;
                 case 'configuration':
