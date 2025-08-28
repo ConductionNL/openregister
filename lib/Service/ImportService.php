@@ -339,6 +339,7 @@ class ImportService
                 'found'     => 0,
                 'created'   => [],
                 'updated'   => [],
+                'skipped'   => [],  // NEW: Smart deduplication skipped objects
                 'unchanged' => [],
                 'errors'    => [],
                 'schema'    => null,
@@ -494,6 +495,7 @@ class ImportService
             'found'     => 0,
             'created'   => [],
             'updated'   => [],
+            'skipped'   => [],  // NEW: Smart deduplication skipped objects
             'unchanged' => [],
             'errors'    => [],
         ];
@@ -575,10 +577,19 @@ class ImportService
                 
                 $saveResult = $this->objectService->saveObjects($allObjects, $register, $schema, $rbac, $multi, $validation, $events);
                 
-                // Use the structured return from saveObjects
+                // Use the structured return from saveObjects with smart deduplication
                 // saveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id
                 $summary['created'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []);
                 $summary['updated'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []);
+                
+                // NEW: Handle skipped objects from smart deduplication
+                $summary['skipped'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['skipped'] ?? []);
+                
+                // Add efficiency metrics from smart deduplication
+                $totalProcessed = count($summary['created']) + count($summary['updated']) + count($summary['skipped']);
+                if ($totalProcessed > 0 && count($summary['skipped']) > 0) {
+                    $summary['deduplication_efficiency'] = round((count($summary['skipped']) / $totalProcessed) * 100, 1) . '% operations avoided';
+                }
                 
                 // Handle validation errors if validation was enabled
                 if ($validation && !empty($saveResult['invalid'] ?? [])) {
@@ -645,6 +656,7 @@ class ImportService
             'found'     => 0,
             'created'   => [],
             'updated'   => [],
+            'skipped'   => [],  // NEW: Smart deduplication skipped objects
             'unchanged' => [],
             'errors'    => [],
         ];
@@ -738,10 +750,19 @@ class ImportService
                 
                 $saveResult = $this->objectService->saveObjects($allObjects, $register, $schema, $rbac, $multi, $validation, $events);
                 
-                // Use the structured return from saveObjects
+                // Use the structured return from saveObjects with smart deduplication
                 // saveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id
                 $summary['created'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []);
                 $summary['updated'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []);
+                
+                // NEW: Handle skipped objects from smart deduplication
+                $summary['skipped'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['skipped'] ?? []);
+                
+                // Add efficiency metrics from smart deduplication
+                $totalProcessed = count($summary['created']) + count($summary['updated']) + count($summary['skipped']);
+                if ($totalProcessed > 0 && count($summary['skipped']) > 0) {
+                    $summary['deduplication_efficiency'] = round((count($summary['skipped']) / $totalProcessed) * 100, 1) . '% operations avoided';
+                }
                 
                 // Handle validation errors if validation was enabled
                 if ($validation && !empty($saveResult['invalid'] ?? [])) {
