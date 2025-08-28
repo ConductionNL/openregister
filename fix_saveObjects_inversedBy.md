@@ -19,7 +19,7 @@ private function prepareObjectsForBulkSave(array $objects): array
     $startTime = microtime(true);
     $objectCount = count($objects);
     
-    error_log('[ObjectService] Starting bulk preparation for ' . $objectCount . ' objects');
+    $this->logger->debug('Starting bulk preparation', ['objectCount' => $objectCount]);
 
     if (empty($objects)) {
         return [];
@@ -63,7 +63,10 @@ private function prepareObjectsForBulkSave(array $objects): array
             $preparedObjects[$index] = $processedObject;
             
         } catch (\Exception $e) {
-            error_log('[ObjectService] Error preparing object at index ' . $index . ': ' . $e->getMessage());
+            $this->logger->error('Error preparing object for bulk save', [
+                'index' => $index,
+                'error' => $e->getMessage()
+            ]);
             $preparedObjects[$index] = $object; // Continue with original object
         }
     }
@@ -75,7 +78,11 @@ private function prepareObjectsForBulkSave(array $objects): array
     $duration = round(($endTime - $startTime) * 1000, 2);
     $successCount = count($preparedObjects);
     
-    error_log('[ObjectService] Bulk preparation completed: ' . $successCount . ' objects in ' . $duration . 'ms');
+    $this->logger->debug('Bulk preparation completed', [
+        'successCount' => $successCount,
+        'duration' => $duration,
+        'unit' => 'ms'
+    ]);
 
     return array_values($preparedObjects);
 }
@@ -153,7 +160,10 @@ private function handleBulkInverseRelations(array &$preparedObjects, array $sche
         }
     }
 
-    error_log('[ObjectService] Found ' . $processedCount . ' inverse relations to process for ' . count($inverseRelationMap) . ' target objects');
+    $this->logger->debug('Processing inverse relations', [
+        'processedCount' => $processedCount,
+        'targetObjects' => count($inverseRelationMap)
+    ]);
 
     // Apply inverse relations back to objects in the current batch
     $appliedCount = 0;
@@ -174,7 +184,9 @@ private function handleBulkInverseRelations(array &$preparedObjects, array $sche
         }
     }
 
-    error_log('[ObjectService] Applied ' . $appliedCount . ' inverse relation updates');
+    $this->logger->debug('Applied inverse relation updates', [
+        'appliedCount' => $appliedCount
+    ]);
 }
 ```
 
@@ -214,13 +226,18 @@ private function handlePostSaveInverseRelations(array $savedObjects, array $sche
                     $this->saveHandler->handleInverseRelationsWriteBack($savedObject, $schema, $objectData);
                     $writeBackCount++;
                 } catch (\Exception $e) {
-                    error_log('[ObjectService] WriteBack failed for object ' . $savedObject->getUuid() . ': ' . $e->getMessage());
+                    $this->logger->error('WriteBack failed for object', [
+                        'objectUuid' => $savedObject->getUuid(),
+                        'error' => $e->getMessage()
+                    ]);
                 }
             }
         }
     }
     
-    error_log('[ObjectService] Processed ' . $writeBackCount . ' writeBack operations');
+    $this->logger->debug('Processed writeBack operations', [
+        'writeBackCount' => $writeBackCount
+    ]);
 }
 ```
 

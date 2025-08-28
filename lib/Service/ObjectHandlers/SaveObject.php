@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Twig\Environment;
@@ -110,7 +111,12 @@ class SaveObject
      * @param FileService         $fileService         File service for managing files.
      * @param IUserSession        $userSession         User session service.
      * @param AuditTrailMapper    $auditTrailMapper    Audit trail mapper for logging changes.
+     * @param SchemaMapper        $schemaMapper        Schema mapper for schema operations.
+     * @param RegisterMapper      $registerMapper      Register mapper for register operations.
+     * @param IURLGenerator       $urlGenerator        URL generator service.
      * @param OrganisationService $organisationService Service for organisation operations.
+     * @param LoggerInterface     $logger              Logger interface for logging operations.
+     * @param ArrayLoader         $arrayLoader         Twig array loader for template rendering.
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
@@ -121,6 +127,7 @@ class SaveObject
         private readonly RegisterMapper $registerMapper,
         private readonly IURLGenerator $urlGenerator,
         private readonly OrganisationService $organisationService,
+        private readonly LoggerInterface $logger,
         ArrayLoader $arrayLoader,
     ) {
         $this->twig = new Environment($arrayLoader);
@@ -1545,29 +1552,41 @@ class SaveObject
         }
 
         // Extract and set published property if present
-        error_log("[SaveObject] Processing published field - selfData keys: " . implode(', ', array_keys($selfData)));
+        $this->logger->debug('Processing published field in SaveObject', [
+            'selfDataKeys' => array_keys($selfData)
+        ]);
+        
         if (array_key_exists('published', $selfData)) {
             $publishedValue = $selfData['published'];
             $isEmpty = empty($publishedValue);
-            error_log("[SaveObject] Published field found - value: " . var_export($publishedValue, true) . ", isEmpty: " . ($isEmpty ? 'true' : 'false'));
+            
+            $this->logger->debug('Published field found in object data', [
+                'publishedValue' => $publishedValue,
+                'isEmpty' => $isEmpty
+            ]);
             
             if (!empty($publishedValue)) {
                 try {
                     // Convert string to DateTime if it's a valid date string
                     if (is_string($publishedValue) === true) {
-                        error_log("[SaveObject] Setting published date: " . $publishedValue);
+                        $this->logger->debug('Setting published date on object entity', [
+                            'publishedValue' => $publishedValue
+                        ]);
                         $objectEntity->setPublished(new DateTime($publishedValue));
                     }
                 } catch (Exception $exception) {
-                    error_log("[SaveObject] Published date conversion failed: " . $exception->getMessage());
+                    $this->logger->warning('Failed to convert published date', [
+                        'publishedValue' => $publishedValue,
+                        'error' => $exception->getMessage()
+                    ]);
                     // Silently ignore invalid date formats
                 }
             } else {
-                error_log("[SaveObject] Published value is empty, setting to null");
+                $this->logger->debug('Published value is empty, setting to null');
                 $objectEntity->setPublished(null);
             }
         } else {
-            error_log("[SaveObject] No published field found, setting to null");
+            $this->logger->debug('No published field found in selfData, setting to null');
             $objectEntity->setPublished(null);
         }
 
