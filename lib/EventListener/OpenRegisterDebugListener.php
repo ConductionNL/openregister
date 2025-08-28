@@ -114,12 +114,16 @@ class OpenRegisterDebugListener implements IEventListener
             'source' => 'OpenRegister',
         ]);
         
-        // Also use error_log for immediate stdout visibility
-        error_log('🔍 OPENREGISTER_DEBUG_LISTENER: ' . $eventType . ' (' . $eventClass . ') at ' . date('Y-m-d H:i:s'));
+        // Log to structured logger for better integration
+        $this->logger->info('OpenRegister debug listener triggered', [
+            'eventType' => $eventType,
+            'eventClass' => $eventClass,
+            'timestamp' => date('Y-m-d H:i:s')
+        ]);
         
         if (!$this->debugEnabled) {
             $this->logger->warning('OpenRegister Debug: Debug disabled, skipping detailed logging');
-            error_log('OPENREGISTER_DEBUG_DISABLED: Debug logging disabled for ' . $eventType);
+            $this->logger->warning('Debug logging disabled for event', ['eventType' => $eventType]);
             return;
         }
 

@@ -310,9 +310,6 @@ class Application extends App implements IBootstrap
             'timestamp' => date('Y-m-d H:i:s')
         ]);
         
-        // Also use error_log for immediate visibility
-        error_log('OPENREGISTER_BOOT: Registering event listeners at ' . date('Y-m-d H:i:s'));
-        
         try {
             // Register OpenRegisterDebugListener for ALL custom OpenRegister events
             $eventDispatcher->addServiceListener(ObjectCreatedEvent::class, OpenRegisterDebugListener::class);
@@ -333,14 +330,12 @@ class Application extends App implements IBootstrap
             $eventDispatcher->addServiceListener(UserLoggedInEvent::class, TestEventListener::class);
             
             $logger->info('OpenRegister boot: Event listeners registered successfully');
-            error_log('OPENREGISTER_BOOT: Event listeners registered successfully');
             
         } catch (\Exception $e) {
             $logger->error('OpenRegister boot: Failed to register event listeners', [
                 'exception' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            error_log('OPENREGISTER_BOOT_ERROR: Failed to register event listeners - ' . $e->getMessage());
         }
 
     }//end boot()

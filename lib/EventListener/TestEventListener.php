@@ -88,8 +88,11 @@ class TestEventListener implements IEventListener
             'listenerClass' => self::class
         ]);
 
-        // Also use error_log for immediate visibility in system logs
-        error_log('🧪 OPENREGISTER_TEST_LISTENER_TRIGGERED: ' . get_class($event) . ' at ' . date('Y-m-d H:i:s'));
+        // Log event trigger for immediate visibility
+        $this->logger->info('OpenRegister test listener triggered', [
+            'eventClass' => get_class($event),
+            'timestamp' => date('Y-m-d H:i:s')
+        ]);
 
         // Handle UserLoggedInEvent specifically
         if ($event instanceof UserLoggedInEvent) {
@@ -104,8 +107,12 @@ class TestEventListener implements IEventListener
                 'app' => 'openregister'
             ]);
 
-            // Additional error_log for easy debugging
-            error_log('🧪 OPENREGISTER_USER_LOGIN: User ' . $user->getUID() . ' (' . $user->getDisplayName() . ') logged in at ' . date('Y-m-d H:i:s'));
+            // Log user login for debugging
+            $this->logger->info('OpenRegister user login detected', [
+                'userId' => $user->getUID(),
+                'displayName' => $user->getDisplayName(),
+                'timestamp' => date('Y-m-d H:i:s')
+            ]);
 
             // Test that we can access Nextcloud services
             try {

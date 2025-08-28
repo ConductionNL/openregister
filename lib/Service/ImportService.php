@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use PhpOffice\PhpSpreadsheet\Reader\Csv;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use Psr\Log\LoggerInterface;
 use React\Async\PromiseInterface;
 use React\Promise\Promise;
 use React\EventLoop\Loop;
@@ -105,6 +106,13 @@ class ImportService
      */
     private array $schemaPropertiesCache = [];
 
+    /**
+     * Logger interface for logging operations
+     *
+     * @var LoggerInterface
+     */
+    private readonly LoggerInterface $logger;
+
 
     /**
      * Constructor for the ImportService
@@ -112,12 +120,14 @@ class ImportService
      * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
      * @param SchemaMapper       $schemaMapper       The schema mapper
      * @param ObjectService      $objectService      The object service
+     * @param LoggerInterface    $logger             The logger interface
      */
-    public function __construct(ObjectEntityMapper $objectEntityMapper, SchemaMapper $schemaMapper, ObjectService $objectService)
+    public function __construct(ObjectEntityMapper $objectEntityMapper, SchemaMapper $schemaMapper, ObjectService $objectService, LoggerInterface $logger)
     {
         $this->objectEntityMapper = $objectEntityMapper;
         $this->schemaMapper       = $schemaMapper;
         $this->objectService      = $objectService;
+        $this->logger             = $logger;
         
         // Initialize cache arrays to prevent issues
         $this->schemaPropertiesCache = [];
@@ -701,21 +711,29 @@ class ImportService
 
             // Call saveObjects ONCE with all objects - let ObjectService handle performance optimization
             if (!empty($allObjects)) {
-                // DEBUG: Log publish processing
-                error_log("[ImportService] CSV - Processing " . count($allObjects) . " objects, publish parameter: " . ($publish ? 'true' : 'false'));
+                // Log publish processing for debugging
+                $this->logger->debug('CSV import processing objects', [
+                    'objectCount' => count($allObjects),
+                    'publish' => $publish
+                ]);
                 
                 // Add publish date to all objects if publish is enabled
                 if ($publish) {
                     $publishDate = (new \DateTime())->format('c'); // ISO 8601 format
-                    error_log("[ImportService] CSV - Adding publish date: " . $publishDate);
+                    $this->logger->debug('Adding publish date to CSV import objects', [
+                        'publishDate' => $publishDate,
+                        'objectCount' => count($allObjects)
+                    ]);
                     $allObjects = $this->addPublishedDateToObjects($allObjects, $publishDate);
                     
-                    // DEBUG: Check first object after adding publish date
+                    // Log first object structure for debugging
                     if (!empty($allObjects[0]['@self'])) {
-                        error_log("[ImportService] CSV - First object @self after publish: " . json_encode($allObjects[0]['@self']));
+                        $this->logger->debug('First object @self structure after adding publish date', [
+                            'selfData' => $allObjects[0]['@self']
+                        ]);
                     }
                 } else {
-                    error_log("[ImportService] CSV - Publish disabled, not adding publish dates");
+                    $this->logger->debug('Publish disabled for CSV import, not adding publish dates');
                 }
                 
                 $saveResult = $this->objectService->saveObjects($allObjects, $register, $schema, $rbac, $multi, $validation, $events);
