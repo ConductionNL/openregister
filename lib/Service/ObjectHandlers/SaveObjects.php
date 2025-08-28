@@ -140,18 +140,22 @@ class SaveObjects
         // Bulk save operation starting
 
         // Initialize result arrays for different outcomes
+        // TODO: Replace 'skipped' with 'unchanged' throughout codebase - "unchanged" is more descriptive
+        // and tells WHY an object was skipped (because content was unchanged)
         $result = [
             'saved'      => [],
             'updated'    => [],
-            'skipped'    => [],
+            'unchanged'  => [], // TODO: Rename from 'skipped' - more descriptive
             'invalid'    => [],
             'errors'     => [],
             'statistics' => [
                 'totalProcessed' => $totalObjects,
                 'saved'          => 0,
                 'updated'        => 0,
-                'skipped'        => 0,
+                'unchanged'      => 0, // TODO: Rename from 'skipped' - more descriptive
                 'invalid'        => 0,
+                'errors'         => 0,
+                'processingTimeMs' => 0,
             ],
         ];
 
@@ -198,30 +202,52 @@ class SaveObjects
         $chunks     = array_chunk($processedObjects, $chunkSize);
         $chunkCount = count($chunks);
 
+        // Loop through each chunk for sequential processing and collect detailed statistics
         foreach ($chunks as $chunkIndex => $objectsChunk) {
             $chunkStart = microtime(true);
 
+            // Process the current chunk and get the result
             $chunkResult = $this->processObjectsChunk($objectsChunk, $globalSchemaCache, $rbac, $multi, $validation, $events);
 
-            // Merge chunk results
+            // Merge chunk results for saved, updated, invalid, errors, and unchanged
             $result['saved']   = array_merge($result['saved'], $chunkResult['saved']);
             $result['updated'] = array_merge($result['updated'], $chunkResult['updated']);
             $result['invalid'] = array_merge($result['invalid'], $chunkResult['invalid']);
             $result['errors']  = array_merge($result['errors'], $chunkResult['errors']);
+            $result['unchanged'] = array_merge($result['unchanged'], $chunkResult['unchanged']); // TODO: Renamed from 'skipped'
 
-            $result['statistics']['saved']   += $chunkResult['statistics']['saved'];
-            $result['statistics']['updated'] += $chunkResult['statistics']['updated'];
-            $result['statistics']['invalid'] += $chunkResult['statistics']['invalid'];
+            // Update total statistics
+            $result['statistics']['saved']   += $chunkResult['statistics']['saved'] ?? 0;
+            $result['statistics']['updated'] += $chunkResult['statistics']['updated'] ?? 0;
+            $result['statistics']['invalid'] += $chunkResult['statistics']['invalid'] ?? 0;
+            $result['statistics']['errors']  += $chunkResult['statistics']['errors'] ?? 0;
+            $result['statistics']['unchanged'] += $chunkResult['statistics']['unchanged'] ?? 0; // TODO: Renamed from 'skipped'
 
+            // Calculate chunk processing time and speed
             $chunkTime  = microtime(true) - $chunkStart;
             $chunkSpeed = count($objectsChunk) / max($chunkTime, 0.001);
+
+            // Store per-chunk statistics for transparency and debugging
+            if (!isset($result['chunkStatistics'])) {
+                $result['chunkStatistics'] = [];
+            }
+            $result['chunkStatistics'][] = [
+                'chunkIndex'      => $chunkIndex,
+                'count'           => count($objectsChunk),
+                'saved'           => $chunkResult['statistics']['saved'] ?? 0,
+                'updated'         => $chunkResult['statistics']['updated'] ?? 0,
+                'unchanged'       => $chunkResult['statistics']['unchanged'] ?? 0, // TODO: Renamed from 'skipped'
+                'invalid'         => $chunkResult['statistics']['invalid'] ?? 0,
+                'processingTime'  => round($chunkTime * 1000, 2), // ms
+                'speed'           => round($chunkSpeed, 2), // objects/sec
+            ];
         }
 
         $totalTime    = microtime(true) - $startTime;
         $overallSpeed = count($processedObjects) / max($totalTime, 0.001);
 
-
         return $result;
+
 
     }//end saveObjects()
 
@@ -412,16 +438,16 @@ class SaveObjects
         
         $insertObjects = $deduplicationResult['create'];
         $updateObjects = $deduplicationResult['update'];
-        $skippedObjects = $deduplicationResult['skip'];
+        $unchangedObjects = $deduplicationResult['skip'];
         
-        // Update statistics for skipped objects
-        $result['statistics']['skipped'] = count($skippedObjects);
-        $result['skipped'] = array_map(function($obj) { 
+        // Update statistics for unchanged objects (skipped because content was unchanged)
+        $result['statistics']['unchanged'] = count($unchangedObjects);
+        $result['unchanged'] = array_map(function($obj) { 
             return is_array($obj) ? $obj : $obj->jsonSerialize(); 
-        }, $skippedObjects);
+        }, $unchangedObjects);
         
-        // Smart deduplication completed successfully
-        // Efficiency: $skippedCount skipped, $createCount created, $updateCount updated
+        // Smart deduplication completed successfully  
+        // Efficiency: objects unchanged (no update needed), created, and updated
 
 
         // STEP 5: Execute bulk database operations
@@ -468,7 +494,6 @@ class SaveObjects
                 }
             }
 
-
         } catch (\Exception $e) {
             
             // NO MORE FALLBACK: Let the exception bubble up to reveal the real problem!
@@ -499,6 +524,9 @@ class SaveObjects
 
         $endTime = microtime(true);
         $processingTime = round(($endTime - $startTime) * 1000, 2);
+
+        // Add processing time to the result for transparency and performance monitoring
+        $result['statistics']['processingTimeMs'] = $processingTime;
 
         return $result;
     }//end processObjectsChunk()
@@ -900,8 +928,8 @@ class SaveObjects
             // Auto-wire @self metadata with proper UUID generation
             $now = new \DateTime();
             $selfData['uuid'] = $selfData['id'] ?? $object['id'] ?? Uuid::v4()->toRfc4122();
-                         $selfData['register'] = $selfData['register'] ?? $object['register'] ?? null;
-                         $selfData['schema'] = $selfData['schema'] ?? $object['schema'] ?? null;
+            $selfData['register'] = $selfData['register'] ?? $object['register'] ?? null;
+            $selfData['schema'] = $selfData['schema'] ?? $object['schema'] ?? null;
             $selfData['owner'] = $selfData['owner'] ?? $this->userSession->getUser()->getUID();
             $selfData['organisation'] = $selfData['organisation'] ?? null; // TODO: Fix organisation service method call
             $selfData['created'] = $selfData['created'] ?? $now->format('Y-m-d H:i:s');
@@ -1166,17 +1194,51 @@ class SaveObjects
             } else {
                 // CASE 2 or 3: Object exists - compare hashes to decide SKIP vs UPDATE
                 // Use cleaned data (without @self) for accurate content comparison
-                $incomingHash = hash('sha256', json_encode($incomingData['object'] ?? []));
-                $existingHash = hash('sha256', json_encode($existingObject->getObject() ?? []));
+                // Extract the 'object' property from both incoming and existing data
+                $object1 = $incomingData['object'];
+                $object2 = $existingObject->getObject();
+
+                // Unset double values
+                unset($object1['@self'], $object1['id'], $object2['@self'], $object2['id']);
+
+                // @todo actualy we should calculate an object hash when saving an object
+                $incomingHash = hash('sha256', json_encode($object1 ?? []));
+                $existingHash = hash('sha256', json_encode($object2 ?? []));
+
+            
                 
                 if ($incomingHash === $existingHash) {
                     // CASE 2: SKIP - Content is identical, no update needed
                     $result['skip'][] = $existingObject;
                     
+                    
                 } else {
                     // CASE 3: UPDATE - Content has changed, update required
-                    $existingObject->setObject(array_merge($existingObject->getObject(), $incomingData['object']));
-                    $result['update'][] = $existingObject;
+                    // Fix: Replace object data instead of merging arrays
+                    if (isset($incomingData['object']) && is_array($incomingData['object']) && !empty($incomingData['object'])) {
+                        // Update with the new object data
+                        $existingObject->setObject($incomingData['object']);
+                        
+                        // Also update metadata fields if they exist in incoming data
+                        if (isset($incomingData['updated'])) {
+                            $existingObject->setUpdated(new \DateTime($incomingData['updated']));
+                        }
+                        if (isset($incomingData['owner'])) {
+                            $existingObject->setOwner($incomingData['owner']);
+                        }
+                        if (isset($incomingData['organisation'])) {
+                            $existingObject->setOrganisation($incomingData['organisation']);
+                        }
+                        if (isset($incomingData['published'])) {
+                            $existingObject->setPublished(new \DateTime($incomingData['published']));
+                        }
+                        $result['update'][] = $existingObject;
+
+
+                    } else {
+                        // If there's no valid object data, skip the update
+                        $result['skip'][] = $existingObject;
+                    }
                 }
             }
         }
