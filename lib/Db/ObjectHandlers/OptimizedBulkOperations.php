@@ -339,7 +339,40 @@ class OptimizedBulkOperations
     private function mapObjectColumnsToDatabase(array $objectColumns): array
     {
         // Database table structure from migration: id, uuid, version, register, schema, object, updated, created
-        $validDbColumns = ['uuid', 'version', 'register', 'schema', 'object', 'updated', 'created'];
+        $validDbColumns = [
+            'uuid', 
+            'version', 
+            'register', 
+            'schema', 
+            'object', 
+            'updated', 
+            'created',
+            'description',
+            'uri',
+            'files',
+            'relations',
+            'locked',
+            'owner',
+            'authorization',
+            'folder',
+            'deleted',
+            'organisation',
+            'application',
+            'validation',
+            'deleted',
+            'geo',
+            'retention',
+            'size',
+            'published',
+            'depublished',
+            'groups',
+            'name',
+            'image',
+            'schemaVersion',
+            'expires',
+            'slug',
+            'summary'
+        ];
         
         // Filter object columns to only include valid database columns
         $mappedColumns = [];
@@ -382,7 +415,7 @@ class OptimizedBulkOperations
     {
         switch ($dbColumn) {
             case 'uuid':
-                return $objectData['uuid'] ?? (string) \Symfony\Component\Uid\Uuid::v4();
+                return $objectData['id'] ?? (string) \Symfony\Component\Uid\Uuid::v4();
                 
             case 'version':
                 return $objectData['version'] ?? '0.0.1';
@@ -396,21 +429,62 @@ class OptimizedBulkOperations
                 return $objectData['@self']['schema'] ?? $objectData['schema'] ?? null;
                 
             case 'object':
-                // Store the entire object data as JSON, excluding @self metadata
-                $objectJson = $objectData;
-                unset($objectJson['@self']); // Remove metadata before storing
-                return json_encode($objectJson, \JSON_UNESCAPED_UNICODE);
+                // Store only the nested object data, not the entire structure
+                // The objectData structure should be: {id, register, schema, object: {actual_data...}}
+                // We only want to store the 'object' property contents in the database object column
+                return json_encode($objectData['object'] ?? [], \JSON_UNESCAPED_UNICODE);
                 
             case 'created':
-                return $objectData['created'] ?? date('Y-m-d H:i:s');
+                // Handle datetime fields that might be in ISO 8601 format, with fallback to current time
+                $value = $objectData[$dbColumn] ?? null;
+                if (!$value) {
+                    return date('Y-m-d H:i:s'); // Fallback to current datetime if no value provided
+                }
+                return $this->convertDateTimeToMySQLFormat($value);
                 
             case 'updated':
                 return date('Y-m-d H:i:s'); // Always update timestamp
+                
+            case 'published':
+            case 'depublished':
+                // Handle datetime fields that might be in ISO 8601 format
+                $value = $objectData[$dbColumn] ?? null;
+                if (!$value) {
+                    return null; // These fields can be null
+                }
+                return $this->convertDateTimeToMySQLFormat($value);
                 
             default:
                 return $objectData[$dbColumn] ?? null;
         }
     }//end extractColumnValue()
+
+
+    /**
+     * Convert datetime value to MySQL format
+     *
+     * Handles various datetime formats including ISO 8601 and converts them
+     * to the MySQL DATETIME format (YYYY-MM-DD HH:MM:SS).
+     *
+     * @param mixed $value The datetime value to convert
+     *
+     * @return string The datetime in MySQL format
+     */
+    private function convertDateTimeToMySQLFormat($value): string
+    {
+        if (!$value || !is_string($value)) {
+            return date('Y-m-d H:i:s'); // Fallback to current time
+        }
+
+        try {
+            // Convert ISO 8601 to MySQL datetime format
+            $dateTime = new \DateTime($value);
+            return $dateTime->format('Y-m-d H:i:s');
+        } catch (\Exception $e) {
+            // If parsing fails, return as-is (might already be in correct format)
+            return $value;
+        }
+    }//end convertDateTimeToMySQLFormat()
 
 
 }//end class

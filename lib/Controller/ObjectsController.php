@@ -245,86 +245,7 @@ class ObjectsController extends Controller
     }//end paginate()
 
 
-    /**
-     * Helper method to get query array from the current request for faceting-enabled methods
-     *
-     * This method builds a query structure compatible with the searchObjectsPaginated method
-     * which supports faceting, facetable field discovery, and all other search features.
-     *
-     * @param int|string|null $register Optional register identifier (should be resolved numeric ID)
-     * @param int|string|null $schema   Optional schema identifier (should be resolved numeric ID)
-     * @param array|null      $ids      Optional array of specific IDs to filter
-     *
-     * @return array Query array containing:
-     *               - @self: Metadata filters (register, schema, etc.)
-     *               - Direct keys: Object field filters
-     *               - _limit: Maximum number of items per page
-     *               - _offset: Number of items to skip
-     *               - _page: Current page number
-     *               - _order: Sort parameters
-     *               - _search: Search term
-     *               - _extend: Properties to extend
-     *               - _fields: Fields to include
-     *               - _filter/_unset: Fields to exclude
-     *               - _facets: Facet configuration
-     *               - _facetable: Include facetable field discovery
-     *               - _ids: Specific IDs to filter
-     */
-    private function buildSearchQuery(int | string | null $register=null, int | string | null $schema=null, ?array $ids=null): array
-    {
-        $params = $this->request->getParams();
 
-        // Remove system parameters that shouldn't be used as filters
-        unset($params['id'], $params['_route']);
-
-        // Build the query structure for searchObjectsPaginated
-        $query = [];
-
-        // Extract metadata filters into @self
-        $metadataFields = ['register', 'schema', 'uuid', 'organisation', 'owner', 'application', 'created', 'updated', 'published', 'depublished', 'deleted'];
-        $query['@self'] = [];
-
-        // Add register and schema to @self if provided (ensure they are integers)
-        if ($register !== null) {
-            $query['@self']['register'] = (int) $register;
-        }
-
-        if ($schema !== null) {
-            $query['@self']['schema'] = (int) $schema;
-        }
-
-        // Extract special underscore parameters
-        $specialParams = [];
-        $objectFilters = [];
-
-        foreach ($params as $key => $value) {
-            if (str_starts_with($key, '_')) {
-                $specialParams[$key] = $value;
-            } else if (in_array($key, $metadataFields)) {
-                // Only add to @self if not already set from function parameters
-                if (!isset($query['@self'][$key])) {
-                    $query['@self'][$key] = $value;
-                }
-            } else {
-                // This is an object field filter
-                $objectFilters[$key] = $value;
-            }
-        }
-
-        // Add object field filters directly to query
-        $query = array_merge($query, $objectFilters);
-
-        // Add IDs if provided
-        if ($ids !== null) {
-            $query['_ids'] = $ids;
-        }
-
-        // Add all special parameters (they'll be handled by searchObjectsPaginated)
-        $query = array_merge($query, $specialParams);
-
-        return $query;
-
-    }//end buildSearchQuery()
 
 
     /**
@@ -467,7 +388,7 @@ class ObjectsController extends Controller
         }
 
         // Build search query with resolved numeric IDs
-        $query = $this->buildSearchQuery($resolved['register'], $resolved['schema']);
+        $query = $objectService->buildSearchQuery($this->request->getParams(), $resolved['register'], $resolved['schema']);
         
         // Use async version for better performance (3-5x faster)  
         $result = $objectService->searchObjectsPaginatedSync($query);
@@ -517,7 +438,7 @@ class ObjectsController extends Controller
     public function objects(ObjectService $objectService): JSONResponse
     {
         // Build search query without register/schema constraints
-        $query = $this->buildSearchQuery();
+        $query = $objectService->buildSearchQuery($this->request->getParams());
 
         // Use async version for better performance (3-5x faster)
         $result = $objectService->searchObjectsPaginatedSync($query);
