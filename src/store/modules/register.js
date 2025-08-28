@@ -333,6 +333,9 @@ export const useRegisterStore = defineStore('register', {
 			if (multi !== undefined) {
 				formData.append('multi', multi ? '1' : '0')
 			}
+			if (publish !== undefined) {
+				formData.append('publish', publish ? '1' : '0')
+			}
 
 			// Start heartbeat to prevent gateway timeouts for large imports
 			const heartbeat = this.startImportHeartbeat(30000) // Every 30 seconds

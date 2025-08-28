@@ -701,10 +701,21 @@ class ImportService
 
             // Call saveObjects ONCE with all objects - let ObjectService handle performance optimization
             if (!empty($allObjects)) {
+                // DEBUG: Log publish processing
+                error_log("[ImportService] CSV - Processing " . count($allObjects) . " objects, publish parameter: " . ($publish ? 'true' : 'false'));
+                
                 // Add publish date to all objects if publish is enabled
                 if ($publish) {
                     $publishDate = (new \DateTime())->format('c'); // ISO 8601 format
+                    error_log("[ImportService] CSV - Adding publish date: " . $publishDate);
                     $allObjects = $this->addPublishedDateToObjects($allObjects, $publishDate);
+                    
+                    // DEBUG: Check first object after adding publish date
+                    if (!empty($allObjects[0]['@self'])) {
+                        error_log("[ImportService] CSV - First object @self after publish: " . json_encode($allObjects[0]['@self']));
+                    }
+                } else {
+                    error_log("[ImportService] CSV - Publish disabled, not adding publish dates");
                 }
                 
                 $saveResult = $this->objectService->saveObjects($allObjects, $register, $schema, $rbac, $multi, $validation, $events);
