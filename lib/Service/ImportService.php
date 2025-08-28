@@ -383,8 +383,7 @@ class ImportService
                 'found'     => 0,
                 'created'   => [],
                 'updated'   => [],
-                'skipped'   => [],  // NEW: Smart deduplication skipped objects
-                'unchanged' => [],
+                'unchanged' => [],  // TODO: Renamed from 'skipped' - more descriptive (objects skipped because content was unchanged)
                 'errors'    => [],
                 'schema'    => null,
                 'debug'     => [
@@ -540,7 +539,7 @@ class ImportService
             'found'     => 0,
             'created'   => [],
             'updated'   => [],
-            'skipped'   => [],  // NEW: Smart deduplication skipped objects
+            'unchanged' => [],  // TODO: Renamed from 'skipped' - more descriptive
             'unchanged' => [],
             'errors'    => [],
         ];
@@ -627,13 +626,13 @@ class ImportService
                 $summary['created'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []);
                 $summary['updated'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []);
                 
-                // NEW: Handle skipped objects from smart deduplication
-                $summary['skipped'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['skipped'] ?? []);
+                // TODO: Handle unchanged objects from smart deduplication (renamed from 'skipped')
+                $summary['unchanged'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['unchanged'] ?? []);
                 
                 // Add efficiency metrics from smart deduplication
-                $totalProcessed = count($summary['created']) + count($summary['updated']) + count($summary['skipped']);
-                if ($totalProcessed > 0 && count($summary['skipped']) > 0) {
-                    $summary['deduplication_efficiency'] = round((count($summary['skipped']) / $totalProcessed) * 100, 1) . '% operations avoided';
+                $totalProcessed = count($summary['created']) + count($summary['updated']) + count($summary['unchanged']);
+                if ($totalProcessed > 0 && count($summary['unchanged']) > 0) {
+                    $summary['deduplication_efficiency'] = round((count($summary['unchanged']) / $totalProcessed) * 100, 1) . '% operations avoided';
                 }
                 
                 // Handle validation errors if validation was enabled
@@ -701,7 +700,7 @@ class ImportService
             'found'     => 0,
             'created'   => [],
             'updated'   => [],
-            'skipped'   => [],  // NEW: Smart deduplication skipped objects
+            'unchanged' => [],  // TODO: Renamed from 'skipped' - more descriptive
             'unchanged' => [],
             'errors'    => [],
         ];
@@ -800,13 +799,13 @@ class ImportService
                 $summary['created'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []);
                 $summary['updated'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []);
                 
-                // NEW: Handle skipped objects from smart deduplication
-                $summary['skipped'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['skipped'] ?? []);
+                // TODO: Handle unchanged objects from smart deduplication (renamed from 'skipped')
+                $summary['unchanged'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['unchanged'] ?? []);
                 
                 // Add efficiency metrics from smart deduplication
-                $totalProcessed = count($summary['created']) + count($summary['updated']) + count($summary['skipped']);
-                if ($totalProcessed > 0 && count($summary['skipped']) > 0) {
-                    $summary['deduplication_efficiency'] = round((count($summary['skipped']) / $totalProcessed) * 100, 1) . '% operations avoided';
+                $totalProcessed = count($summary['created']) + count($summary['updated']) + count($summary['unchanged']);
+                if ($totalProcessed > 0 && count($summary['unchanged']) > 0) {
+                    $summary['deduplication_efficiency'] = round((count($summary['unchanged']) / $totalProcessed) * 100, 1) . '% operations avoided';
                 }
                 
                 // Handle validation errors if validation was enabled

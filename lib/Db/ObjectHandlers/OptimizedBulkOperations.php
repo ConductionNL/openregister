@@ -310,15 +310,17 @@ class OptimizedBulkOperations
             }
         }
 
-        // Convert update objects to array format
+        // Convert update objects to array format using the correct ObjectEntity methods
         foreach ($updateObjects as $updateObj) {
-            if (is_object($updateObj) && method_exists($updateObj, 'jsonSerialize')) {
-                $objectArray = $updateObj->jsonSerialize();
+            if (is_object($updateObj) && method_exists($updateObj, 'getObjectArray') && method_exists($updateObj, 'getObject')) {
+                // Use the proper ObjectEntity methods to get the correct structure directly
+                $newFormatArray = $updateObj->getObjectArray(); // Gets metadata at top level
+                $newFormatArray['object'] = $updateObj->getObject(); // Gets actual object data
                 
                 // Ensure updated timestamp
-                $objectArray['updated'] = date('Y-m-d H:i:s');
+                $newFormatArray['updated'] = date('Y-m-d H:i:s');
                 
-                $allObjects[] = $objectArray;
+                $allObjects[] = $newFormatArray;
             }
         }
 
@@ -359,7 +361,6 @@ class OptimizedBulkOperations
             'organisation',
             'application',
             'validation',
-            'deleted',
             'geo',
             'retention',
             'size',
@@ -453,6 +454,13 @@ class OptimizedBulkOperations
                     return null; // These fields can be null
                 }
                 return $this->convertDateTimeToMySQLFormat($value);
+                
+            case 'files':
+            case 'relations':
+            case 'locked':
+                // JSON columns that should default to empty arrays, not null
+                $value = $objectData[$dbColumn] ?? [];
+                return json_encode($value, \JSON_UNESCAPED_UNICODE);
                 
             default:
                 return $objectData[$dbColumn] ?? null;
