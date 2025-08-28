@@ -40,6 +40,7 @@ use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\DB\Exception as DBException;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCP\IRequest;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -99,6 +100,7 @@ class RegistersController extends Controller
      * @param RegisterService      $registerService      The register service
      * @param ObjectEntityMapper   $objectEntityMapper   The object entity mapper
      * @param UploadService        $uploadService        The upload service
+     * @param LoggerInterface      $logger               The logger interface
      * @param ConfigurationService $configurationService The configuration service
      * @param AuditTrailMapper     $auditTrailMapper     The audit trail mapper
      * @param ExportService        $exportService        The export service
@@ -114,6 +116,7 @@ class RegistersController extends Controller
         private readonly RegisterService $registerService,
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly UploadService $uploadService,
+        private readonly LoggerInterface $logger,
         ConfigurationService $configurationService,
         AuditTrailMapper $auditTrailMapper,
         ExportService $exportService,
@@ -525,8 +528,14 @@ class RegistersController extends Controller
             $events         = $this->parseBooleanParam('events', false);
             $publish        = $this->parseBooleanParam('publish', false);
             
-            // DEBUG: Log all parameters
-            error_log("[RegisterController] Import parameters - includeObjects: " . ($includeObjects ? 'true' : 'false') . ", validation: " . ($validation ? 'true' : 'false') . ", events: " . ($events ? 'true' : 'false') . ", publish: " . ($publish ? 'true' : 'false'));
+            // Log import parameters for debugging
+            $this->logger->debug('Import parameters received', [
+                'includeObjects' => $includeObjects,
+                'validation' => $validation,
+                'events' => $events,
+                'publish' => $publish,
+                'registerId' => $id
+            ]);
             // Find the register
             $register = $this->registerService->find($id);
             // Handle different import types
