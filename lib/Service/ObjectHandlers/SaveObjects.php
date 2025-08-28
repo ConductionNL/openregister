@@ -639,11 +639,13 @@ class SaveObjects
         ];
 
         // PERFORMANCE OPTIMIZATION: Analyze metadata field mappings once
+        // COMPREHENSIVE METADATA FIELD SUPPORT: Include all supported metadata fields
         $metadataFieldMap = [
             'name' => $config['objectNameField'] ?? null,
             'description' => $config['objectDescriptionField'] ?? null,
             'summary' => $config['objectSummaryField'] ?? null,
             'image' => $config['objectImageField'] ?? null,
+            'slug' => $config['objectSlugField'] ?? null,
         ];
         
         $analysis['metadataFields'] = array_filter($metadataFieldMap, function($field) {
@@ -741,9 +743,21 @@ class SaveObjects
 
         // MEMORY OPTIMIZATION: Use references to minimize memory allocation
         foreach ($analysis['metadataFields'] as $metaField => $sourceField) {
-            $value = $this->getValueFromPath($objectData, $sourceField);
-            if ($value !== null) {
-                $objectData['@self'][$metaField] = $value;
+            if ($metaField === 'slug' && !empty($sourceField)) {
+                // Special handling for slug - generate from source field value
+                $slugValue = $this->getValueFromPath($objectData, $sourceField);
+                if ($slugValue !== null) {
+                    $generatedSlug = $this->generateSlugFromValue((string) $slugValue);
+                    if ($generatedSlug) {
+                        $objectData['@self'][$metaField] = $generatedSlug;
+                    }
+                }
+            } else {
+                // Regular metadata field handling
+                $value = $this->getValueFromPath($objectData, $sourceField);
+                if ($value !== null) {
+                    $objectData['@self'][$metaField] = $value;
+                }
             }
         }
 
@@ -1349,6 +1363,64 @@ class SaveObjects
             }
         }
     }//end fallbackToIndividualWriteBackUpdates()
+
+
+    /**
+     * Generate a slug from a given value
+     *
+     * BULK OPTIMIZATION: Simplified slug generation without database uniqueness checks
+     * for performance. Individual saves can handle uniqueness if needed.
+     *
+     * @param string $value The value to convert to a slug
+     *
+     * @return string|null The generated slug or null if generation failed
+     */
+    private function generateSlugFromValue(string $value): ?string
+    {
+        try {
+            if (empty($value)) {
+                return null;
+            }
+
+            // Generate the base slug
+            $slug = $this->createSlug($value);
+
+            // For bulk operations, add timestamp for uniqueness without database checks
+            $timestamp = time();
+            $uniqueSlug = $slug . '-' . $timestamp;
+
+            return $uniqueSlug;
+        } catch (\Exception $e) {
+            return null;
+        }
+    }//end generateSlugFromValue()
+
+
+    /**
+     * Creates a URL-friendly slug from a string
+     *
+     * @param string $text The text to convert to a slug
+     *
+     * @return string The generated slug
+     */
+    private function createSlug(string $text): string
+    {
+        // Convert to lowercase
+        $text = strtolower($text);
+
+        // Replace non-alphanumeric characters with hyphens
+        $text = preg_replace('/[^a-z0-9]+/', '-', $text);
+
+        // Remove leading and trailing hyphens
+        $text = trim($text, '-');
+
+        // Ensure the slug is not empty
+        if (empty($text)) {
+            $text = 'object';
+        }
+
+        return $text;
+    }//end createSlug()
 
 
 }//end class

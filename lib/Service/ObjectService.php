@@ -2648,7 +2648,8 @@ class ObjectService
         
         // PERFORMANCE OPTIMIZATION: Early return if no metadata fields configured
         if (empty($config['objectNameField']) && empty($config['objectDescriptionField']) 
-            && empty($config['objectSummaryField']) && empty($config['objectImageField'])) {
+            && empty($config['objectSummaryField']) && empty($config['objectImageField'])
+            && empty($config['objectSlugField'])) {
             return $objectData;
         }
 
@@ -2659,18 +2660,32 @@ class ObjectService
 
         // PERFORMANCE OPTIMIZATION: Direct field assignment with early termination
         // Process metadata fields efficiently with minimal lookups
+        // COMPREHENSIVE METADATA FIELD SUPPORT: Include all supported metadata fields
         $metadataFields = [
             'name' => $config['objectNameField'] ?? null,
             'description' => $config['objectDescriptionField'] ?? null,
             'summary' => $config['objectSummaryField'] ?? null,
             'image' => $config['objectImageField'] ?? null,
+            'slug' => $config['objectSlugField'] ?? null,
         ];
 
         foreach ($metadataFields as $metaField => $sourceField) {
             if (!empty($sourceField)) {
-                $value = $this->getValueFromPath($objectData, $sourceField);
-                if ($value !== null) {
-                    $objectData['@self'][$metaField] = $value;
+                if ($metaField === 'slug') {
+                    // Special handling for slug - generate from source field value
+                    $slugValue = $this->getValueFromPath($objectData, $sourceField);
+                    if ($slugValue !== null) {
+                        $generatedSlug = $this->generateSlugFromValue((string) $slugValue);
+                        if ($generatedSlug) {
+                            $objectData['@self'][$metaField] = $generatedSlug;
+                        }
+                    }
+                } else {
+                    // Regular metadata field handling
+                    $value = $this->getValueFromPath($objectData, $sourceField);
+                    if ($value !== null) {
+                        $objectData['@self'][$metaField] = $value;
+                    }
                 }
             }
         }
@@ -2711,6 +2726,63 @@ class ObjectService
 
         return $current;
     }//end getValueFromPath()
+
+
+    /**
+     * Generate a slug from a given value
+     *
+     * METADATA ENHANCEMENT: Simplified slug generation for ObjectService metadata hydration
+     *
+     * @param string $value The value to convert to a slug
+     *
+     * @return string|null The generated slug or null if generation failed
+     */
+    private function generateSlugFromValue(string $value): ?string
+    {
+        try {
+            if (empty($value)) {
+                return null;
+            }
+
+            // Generate the base slug
+            $slug = $this->createSlugHelper($value);
+
+            // Add timestamp for uniqueness
+            $timestamp = time();
+            $uniqueSlug = $slug . '-' . $timestamp;
+
+            return $uniqueSlug;
+        } catch (\Exception $e) {
+            return null;
+        }
+    }//end generateSlugFromValue()
+
+
+    /**
+     * Creates a URL-friendly slug from a string
+     *
+     * @param string $text The text to convert to a slug
+     *
+     * @return string The generated slug
+     */
+    private function createSlugHelper(string $text): string
+    {
+        // Convert to lowercase
+        $text = strtolower($text);
+
+        // Replace non-alphanumeric characters with hyphens
+        $text = preg_replace('/[^a-z0-9]+/', '-', $text);
+
+        // Remove leading and trailing hyphens
+        $text = trim($text, '-');
+
+        // Ensure the slug is not empty
+        if (empty($text)) {
+            $text = 'object';
+        }
+
+        return $text;
+    }//end createSlugHelper()
 
 
 
