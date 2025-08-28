@@ -566,9 +566,9 @@ class SettingsService
      * Get statistics for the settings dashboard.
      *
      * This method provides warning counts for objects and logs that need attention,
-     * as well as total counts for all objects, audit trails, and search trails.
+     * as well as total counts for all tables using optimized SQL queries.
      *
-     * @return array Array containing warning counts and total counts
+     * @return array Array containing warning counts and total counts for all tables
      * @throws \RuntimeException If statistics retrieval fails
      */
     public function getStats(): array
@@ -580,127 +580,131 @@ class SettingsService
                     'objectsWithoutOrganisation' => 0,
                     'auditTrailsWithoutExpiry'   => 0,
                     'searchTrailsWithoutExpiry'  => 0,
+                    'expiredAuditTrails'         => 0,
+                    'expiredSearchTrails'        => 0,
+                    'expiredObjects'             => 0,
                 ],
                 'totals'      => [
-                    'totalObjects'      => 0,
-                    'totalAuditTrails'  => 0,
-                    'totalSearchTrails' => 0,
+                    'totalObjects'                 => 0,
+                    'totalAuditTrails'            => 0,
+                    'totalSearchTrails'           => 0,
+                    'totalConfigurations'         => 0,
+                    'totalDataAccessProfiles'     => 0,
+                    'totalOrganisations'          => 0,
+                    'totalRegisters'              => 0,
+                    'totalSchemas'                => 0,
+                    'totalSources'                => 0,
+                    'deletedObjects'              => 0,
+                ],
+                'sizes'       => [
+                    'totalObjectsSize'            => 0,
+                    'totalAuditTrailsSize'        => 0,
+                    'totalSearchTrailsSize'       => 0,
+                    'deletedObjectsSize'          => 0,
+                    'expiredAuditTrailsSize'      => 0,
+                    'expiredSearchTrailsSize'     => 0,
+                    'expiredObjectsSize'          => 0,
                 ],
                 'lastUpdated' => (new \DateTime())->format('c'),
             ];
 
-            // Get ObjectService from container to use countSearchObjects
-            $objectService = $this->container->get(ObjectService::class);
-
-            // Count objects without owner (bypass RBAC and multi-tenancy)
-            $stats['warnings']['objectsWithoutOwner'] = $objectService->countSearchObjects(
-                    [
-                        'owner' => ['IS NULL', ''],
-                    ],
-                    false,
-                    false
-                    );
-
-            // Count objects without organisation (bypass RBAC and multi-tenancy)
-            $stats['warnings']['objectsWithoutOrganisation'] = $objectService->countSearchObjects(
-                    [
-                        'organisation' => ['IS NULL', ''],
-                    ],
-                    false,
-                    false
-                    );
-
-            // Count total objects (bypass RBAC and multi-tenancy)
-            $stats['totals']['totalObjects'] = $objectService->countSearchObjects([], false, false);
-
-            // Get total size of all objects (bypass RBAC and multi-tenancy)
-            $stats['totals']['totalSize'] = $this->objectEntityMapper->sizeSearchObjects([], null, false, false);
-
-            // Count deleted objects (bypass RBAC and multi-tenancy)
-            $stats['totals']['deletedObjects'] = $objectService->countSearchObjects(
-                    [
-                        '_includeDeleted' => true,
-                        'deleted'         => ['IS NOT NULL'],
-                    ],
-                    false,
-                    false
-                    );
-
-            // Get size of deleted objects (bypass RBAC and multi-tenancy)
-            $stats['totals']['deletedSize'] = $this->objectEntityMapper->sizeSearchObjects(
-                    [
-                        '_includeDeleted' => true,
-                        'deleted'         => ['IS NOT NULL'],
-                    ],
-                    null,
-                    false,
-                    false
-                    );
-
-            // Count audit trails without expiry date
-            $stats['warnings']['auditTrailsWithoutExpiry'] = $this->auditTrailMapper->count(
-                    [
-                        'expires' => ['IS NULL', ''],
-                    ]
-                    );
-
-            // Count search trails without expiry date
-            $stats['warnings']['searchTrailsWithoutExpiry'] = $this->searchTrailMapper->count(
-                    [
-                        'expires' => ['IS NULL', ''],
-                    ]
-                    );
-
-            // Count total audit trails
-            $stats['totals']['totalAuditTrails'] = $this->auditTrailMapper->count();
-
-            // Get total size of audit trails
-            $stats['totals']['totalAuditTrailsSize'] = $this->auditTrailMapper->sizeAuditTrails([]);
-
-            // Count total search trails
-            $stats['totals']['totalSearchTrails'] = $this->searchTrailMapper->count([]);
-
-            // Get estimated total size of search trails
-            $stats['totals']['totalSearchTrailsSize'] = $this->searchTrailMapper->sizeSearchTrails([]);
-
-            // Count expired items (items past their expiry date) and get their sizes
-            // For expired audit trails, we need a custom query to check if expires < NOW()
+            // Get database connection for optimized queries
             $db = $this->container->get('OCP\IDBConnection');
 
-            $qb = $db->getQueryBuilder();
-            $qb->select($qb->func()->count('*'), $qb->createFunction('COALESCE(SUM(size), 0) as total_size'))
-                ->from('openregister_audit_trails')
-                ->where($qb->expr()->isNotNull('expires'))
-                ->andWhere($qb->expr()->lt('expires', $qb->createFunction('NOW()')));
-            $result    = $qb->executeQuery();
+            // **OPTIMIZED QUERIES**: Use direct SQL COUNT queries for maximum performance
+            
+            // 1. Objects table - comprehensive stats with single query
+            $objectsQuery = "
+                SELECT 
+                    COUNT(*) as total_objects,
+                    COALESCE(SUM(CAST(size AS UNSIGNED)), 0) as total_size,
+                    SUM(CASE WHEN owner IS NULL OR owner = '' THEN 1 ELSE 0 END) as without_owner,
+                    SUM(CASE WHEN organisation IS NULL OR organisation = '' THEN 1 ELSE 0 END) as without_organisation,
+                    SUM(CASE WHEN deleted IS NOT NULL THEN 1 ELSE 0 END) as deleted_count,
+                    SUM(CASE WHEN deleted IS NOT NULL THEN COALESCE(CAST(size AS UNSIGNED), 0) ELSE 0 END) as deleted_size,
+                    SUM(CASE WHEN expires IS NOT NULL AND expires < NOW() THEN 1 ELSE 0 END) as expired_count,
+                    SUM(CASE WHEN expires IS NOT NULL AND expires < NOW() THEN COALESCE(CAST(size AS UNSIGNED), 0) ELSE 0 END) as expired_size
+                FROM `*PREFIX*openregister_objects`
+            ";
+            
+            $result = $db->executeQuery($objectsQuery);
+            $objectsData = $result->fetch();
+            $result->closeCursor();
+            
+            $stats['totals']['totalObjects'] = (int) ($objectsData['total_objects'] ?? 0);
+            $stats['sizes']['totalObjectsSize'] = (int) ($objectsData['total_size'] ?? 0);
+            $stats['warnings']['objectsWithoutOwner'] = (int) ($objectsData['without_owner'] ?? 0);
+            $stats['warnings']['objectsWithoutOrganisation'] = (int) ($objectsData['without_organisation'] ?? 0);
+            $stats['totals']['deletedObjects'] = (int) ($objectsData['deleted_count'] ?? 0);
+            $stats['sizes']['deletedObjectsSize'] = (int) ($objectsData['deleted_size'] ?? 0);
+            $stats['warnings']['expiredObjects'] = (int) ($objectsData['expired_count'] ?? 0);
+            $stats['sizes']['expiredObjectsSize'] = (int) ($objectsData['expired_size'] ?? 0);
+
+            // 2. Audit trails table - comprehensive stats
+            $auditQuery = "
+                SELECT 
+                    COUNT(*) as total_count,
+                    COALESCE(SUM(size), 0) as total_size,
+                    SUM(CASE WHEN expires IS NULL OR expires = '' THEN 1 ELSE 0 END) as without_expiry,
+                    SUM(CASE WHEN expires IS NOT NULL AND expires < NOW() THEN 1 ELSE 0 END) as expired_count,
+                    SUM(CASE WHEN expires IS NOT NULL AND expires < NOW() THEN COALESCE(size, 0) ELSE 0 END) as expired_size
+                FROM `*PREFIX*openregister_audit_trails`
+            ";
+            
+            $result = $db->executeQuery($auditQuery);
             $auditData = $result->fetch();
-            $stats['warnings']['expiredAuditTrails']     = (int) ($auditData['COUNT(*)'] ?? 0);
-            $stats['warnings']['expiredAuditTrailsSize'] = (int) ($auditData['total_size'] ?? 0);
             $result->closeCursor();
+            
+            $stats['totals']['totalAuditTrails'] = (int) ($auditData['total_count'] ?? 0);
+            $stats['sizes']['totalAuditTrailsSize'] = (int) ($auditData['total_size'] ?? 0);
+            $stats['warnings']['auditTrailsWithoutExpiry'] = (int) ($auditData['without_expiry'] ?? 0);
+            $stats['warnings']['expiredAuditTrails'] = (int) ($auditData['expired_count'] ?? 0);
+            $stats['sizes']['expiredAuditTrailsSize'] = (int) ($auditData['expired_size'] ?? 0);
 
-            // Count expired search trails
-            $qb = $db->getQueryBuilder();
-            $qb->select($qb->func()->count('*'), $qb->createFunction('COALESCE(SUM(size), 0) as total_size'))
-                ->from('openregister_search_trails')
-                ->where($qb->expr()->isNotNull('expires'))
-                ->andWhere($qb->expr()->lt('expires', $qb->createFunction('NOW()')));
-            $result     = $qb->executeQuery();
+            // 3. Search trails table - comprehensive stats
+            $searchQuery = "
+                SELECT 
+                    COUNT(*) as total_count,
+                    COALESCE(SUM(size), 0) as total_size,
+                    SUM(CASE WHEN expires IS NULL OR expires = '' THEN 1 ELSE 0 END) as without_expiry,
+                    SUM(CASE WHEN expires IS NOT NULL AND expires < NOW() THEN 1 ELSE 0 END) as expired_count,
+                    SUM(CASE WHEN expires IS NOT NULL AND expires < NOW() THEN COALESCE(size, 0) ELSE 0 END) as expired_size
+                FROM `*PREFIX*openregister_search_trails`
+            ";
+            
+            $result = $db->executeQuery($searchQuery);
             $searchData = $result->fetch();
-            $stats['warnings']['expiredSearchTrails']     = (int) ($searchData['COUNT(*)'] ?? 0);
-            $stats['warnings']['expiredSearchTrailsSize'] = (int) ($searchData['total_size'] ?? 0);
             $result->closeCursor();
+            
+            $stats['totals']['totalSearchTrails'] = (int) ($searchData['total_count'] ?? 0);
+            $stats['sizes']['totalSearchTrailsSize'] = (int) ($searchData['total_size'] ?? 0);
+            $stats['warnings']['searchTrailsWithoutExpiry'] = (int) ($searchData['without_expiry'] ?? 0);
+            $stats['warnings']['expiredSearchTrails'] = (int) ($searchData['expired_count'] ?? 0);
+            $stats['sizes']['expiredSearchTrailsSize'] = (int) ($searchData['expired_size'] ?? 0);
 
-            // Count expired objects
-            $qb = $db->getQueryBuilder();
-            $qb->select($qb->func()->count('*'), $qb->createFunction('COALESCE(SUM(CAST(size AS UNSIGNED)), 0) as total_size'))
-                ->from('openregister_objects')
-                ->where($qb->expr()->isNotNull('expires'))
-                ->andWhere($qb->expr()->lt('expires', $qb->createFunction('NOW()')));
-            $result     = $qb->executeQuery();
-            $objectData = $result->fetch();
-            $stats['warnings']['expiredObjects']     = (int) ($objectData['COUNT(*)'] ?? 0);
-            $stats['warnings']['expiredObjectsSize'] = (int) ($objectData['total_size'] ?? 0);
-            $result->closeCursor();
+            // 4. All other tables - simple counts (these should be fast)
+            $simpleCountTables = [
+                'configurations' => '`*PREFIX*openregister_configurations`',
+                'dataAccessProfiles' => '`*PREFIX*openregister_data_access_profiles`',
+                'organisations' => '`*PREFIX*openregister_organisations`',
+                'registers' => '`*PREFIX*openregister_registers`',
+                'schemas' => '`*PREFIX*openregister_schemas`',
+                'sources' => '`*PREFIX*openregister_sources`',
+            ];
+
+            foreach ($simpleCountTables as $key => $tableName) {
+                try {
+                    $countQuery = "SELECT COUNT(*) as total FROM {$tableName}";
+                    $result = $db->executeQuery($countQuery);
+                    $count = $result->fetchColumn();
+                    $result->closeCursor();
+                    
+                    $stats['totals']['total' . ucfirst($key)] = (int) ($count ?? 0);
+                } catch (\Exception $e) {
+                    // Table might not exist, set to 0 and continue
+                    $stats['totals']['total' . ucfirst($key)] = 0;
+                }
+            }
 
             return $stats;
         } catch (\Exception $e) {

@@ -524,6 +524,9 @@ class RegistersController extends Controller
             $validation     = $this->parseBooleanParam('validation', false);
             $events         = $this->parseBooleanParam('events', false);
             $publish        = $this->parseBooleanParam('publish', false);
+            
+            // DEBUG: Log all parameters
+            error_log("[RegisterController] Import parameters - includeObjects: " . ($includeObjects ? 'true' : 'false') . ", validation: " . ($validation ? 'true' : 'false') . ", events: " . ($events ? 'true' : 'false') . ", publish: " . ($publish ? 'true' : 'false'));
             // Find the register
             $register = $this->registerService->find($id);
             // Handle different import types
