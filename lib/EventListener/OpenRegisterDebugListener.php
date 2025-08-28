@@ -298,7 +298,7 @@ class OpenRegisterDebugListener implements IEventListener
                 'schemaVersion' => $schema->getVersion(),
             ]);
         } else if ($event instanceof SchemaUpdatedEvent) {
-            $schema = $event->getSchema();
+            $schema = $event->getNewSchema();
             $data = array_merge($data, [
                 'eventType' => 'SchemaUpdated',
                 'schemaId' => $schema->getId(),
