@@ -325,9 +325,6 @@ class SaveObjects
                 // Handle pre-validation cascading for inversedBy properties
                 [$processedObject, $uuid] = $this->handlePreValidationCascading($object, $schema, $selfData['id']);
 
-                // MEMORY OPTIMIZATION: Use in-place metadata hydration to minimize memory usage
-                $this->hydrateObjectMetadataFromAnalysisInPlace($processedObject, $analysis);
-
                 $preparedObjects[$index] = $processedObject;
             } catch (\Exception $e) {
                 $preparedObjects[$index] = $object;
@@ -391,15 +388,6 @@ class SaveObjects
         // STEP 1: Transform objects for database format with metadata hydration
         $transformedObjects = $this->transformObjectsToDatabaseFormatInPlace($objects, $schemaCache);
         
-        // DEBUG: Log first transformed object structure to find 'data' issue
-        if (!empty($transformedObjects)) {
-            $firstObj = $transformedObjects[0];
-            if (isset($firstObj['data'])) {
-            }
-            if (isset($firstObj['object'])) {
-            }
-        }
-
         // STEP 2: Validate objects against schemas if validation enabled
         if ($validation === true) {
             $validatedObjects = $this->validateObjectsAgainstSchemaOptimized($transformedObjects, $schemaCache);
@@ -447,7 +435,6 @@ class SaveObjects
             if ($useOptimized) {
                 // MEMORY-FOR-SPEED: Use optimized bulk operations (can use 500MB+ memory)
                 // Performance: Processing with optimized operations for better speed
-                
                 $bulkResult = $this->objectEntityMapper->ultraFastBulkSave($insertObjects, $updateObjects);
             } else {
                 // FALLBACK: Use standard bulk processing
@@ -566,16 +553,14 @@ class SaveObjects
 
                 $register = $this->registerMapper->find($registerId);
                 $schema = isset($schemaCache[$schemaId]) ? $schemaCache[$schemaId] : $this->schemaMapper->find($schemaId);
-                
-                $objectData = $object;
-                unset($objectData['@self']);
+            
                 
                 $uuid = $selfData['id'] ?? null;
                 
                 $savedObject = $this->saveHandler->saveObject(
                     register: $register,
                     schema: $schema,
-                    data: $objectData,
+                    data: $object,
                     uuid: $uuid,
                     folderId: null,
                     rbac: $rbac,
@@ -741,50 +726,7 @@ class SaveObjects
     }//end castToBoolean()
 
 
-    /**
-     * Hydrate metadata fields from cached schema analysis with memory optimization
-     *
-     * MEMORY OPTIMIZATION: This method modifies object data in-place using pass-by-reference
-     * to eliminate unnecessary array copying and reduce memory allocation overhead.
-     *
-     * @param array &$objectData Object data array with @self metadata (modified in-place)
-     * @param array &$analysis   Pre-analyzed schema information
-     *
-     * @return void
-     */
-    private function hydrateObjectMetadataFromAnalysisInPlace(array &$objectData, array &$analysis): void
-    {
-        // MEMORY OPTIMIZATION: Early return if no metadata fields configured
-        if (empty($analysis['metadataFields'])) {
-            return;
-        }
-
-        // MEMORY OPTIMIZATION: Initialize @self by reference if not exists
-        if (!isset($objectData['@self'])) {
-            $objectData['@self'] = [];
-        }
-
-        // MEMORY OPTIMIZATION: Use references to minimize memory allocation
-        foreach ($analysis['metadataFields'] as $metaField => $sourceField) {
-            if ($metaField === 'slug' && !empty($sourceField)) {
-                // Special handling for slug - generate from source field value
-                $slugValue = $this->getValueFromPath($objectData, $sourceField);
-                if ($slugValue !== null) {
-                    $generatedSlug = $this->generateSlugFromValue((string) $slugValue);
-                    if ($generatedSlug) {
-                        $objectData['@self'][$metaField] = $generatedSlug;
-                    }
-                }
-            } else {
-                // Regular metadata field handling
-                $value = $this->getValueFromPath($objectData, $sourceField);
-                if ($value !== null) {
-                    $objectData['@self'][$metaField] = $value;
-                }
-            }
-        }
-
-    }//end hydrateObjectMetadataFromAnalysisInPlace()
+    
 
 
     /**
@@ -947,44 +889,30 @@ class SaveObjects
         $transformedObjects = [];
 
         foreach ($objects as &$object) {
+
             $selfData = $object['@self'] ?? [];
             $schemaId = $selfData['schema'] ?? null;
             
-            if (!$schemaId || !isset($schemaCache[$schemaId])) {
+            if (!$schemaId) {
                 continue;
-            }
+            }        
 
-            $schema = $schemaCache[$schemaId];
-            
-            // Perform comprehensive schema analysis for this schema if not cached
-            static $analysisCache = [];
-            if (!isset($analysisCache[$schemaId])) {
-                $analysisCache[$schemaId] = $this->performComprehensiveSchemaAnalysis($schema);
-            }
-            $analysis = $analysisCache[$schemaId];
-
-            // Hydrate metadata fields directly in object data
-            $this->hydrateObjectMetadataFromAnalysisInPlace($object, $analysis);
-
-            // Transform to database format
+            // Auto-wire @self metadata with proper UUID generation
             $now = new \DateTime();
-            $transformed = [
-                'uuid'         => $selfData['id'] ?? null,
-                'register'     => $selfData['register'] ?? null,
-                'schema'       => $schemaId,
-                'object'       => $object,  // FIXED: Use 'object' instead of 'data'
-                'owner'        => $this->userSession->getUser()->getUID() ?? null,
-                'organisation' => null, // TODO: Fix organisation service method call
-                'created'      => $now->format('Y-m-d H:i:s'),
-                'updated'      => $now->format('Y-m-d H:i:s'),
-            ];
-            
-            // DEFENSIVE FIX: Ensure no 'data' key exists (legacy compatibility)
-            if (isset($transformed['data'])) {
-                unset($transformed['data']);
-            }
+            $selfData['uuid'] = $selfData['id'] ?? $object['id'] ?? Uuid::v4()->toRfc4122();
+                         $selfData['register'] = $selfData['register'] ?? $object['register'] ?? null;
+                         $selfData['schema'] = $selfData['schema'] ?? $object['schema'] ?? null;
+            $selfData['owner'] = $selfData['owner'] ?? $this->userSession->getUser()->getUID();
+            $selfData['organisation'] = $selfData['organisation'] ?? null; // TODO: Fix organisation service method call
+            $selfData['created'] = $selfData['created'] ?? $now->format('Y-m-d H:i:s');
+            $selfData['updated'] = $selfData['updated'] ?? $now->format('Y-m-d H:i:s');
+           
+            // Remove @self from object data and nest it under 'object' property
+            unset($object['@self']);
+            unset($object['id']);
+            $selfData['object'] = $object ?? [];
 
-            $transformedObjects[] = $transformed;
+            $transformedObjects[] = $selfData;
         }
 
         return $transformedObjects;
@@ -1227,30 +1155,19 @@ class SaveObjects
         ];
         
         foreach ($transformedObjects as $incomingData) {
-            // CRITICAL: Extract @self metadata from incoming object for proper comparison
-            // This ensures @self data (timestamps, etc.) doesn't contaminate hash comparison
-            $incomingMetadata = $incomingData['@self'] ?? [];
-            $cleanIncomingData = $incomingData;
-            unset($cleanIncomingData['@self']); // Remove @self before hash comparison
             
             // Try to find existing object by any available identifier
             $existingObject = $this->findExistingObjectByAnyIdentifier($incomingData, $existingObjects);
             
             if ($existingObject === null) {
                 // CASE 1: CREATE - No existing object found
-                // Ensure UUID is present for new objects
-                if (empty($cleanIncomingData['uuid'])) {
-                    $cleanIncomingData['uuid'] = (string) \Symfony\Component\Uid\Uuid::v4();
-                }
-                // Re-add @self metadata for creation
-                $cleanIncomingData['@self'] = $incomingMetadata;
-                $result['create'][] = $cleanIncomingData;
+                $result['create'][] = $incomingData;
                 
             } else {
                 // CASE 2 or 3: Object exists - compare hashes to decide SKIP vs UPDATE
                 // Use cleaned data (without @self) for accurate content comparison
-                $incomingHash = $this->calculateObjectContentHash($cleanIncomingData);
-                $existingHash = $this->calculateObjectContentHash($existingObject->getObject() ?? []);
+                $incomingHash = hash('sha256', json_encode($incomingData['object'] ?? []));
+                $existingHash = hash('sha256', json_encode($existingObject->getObject() ?? []));
                 
                 if ($incomingHash === $existingHash) {
                     // CASE 2: SKIP - Content is identical, no update needed
@@ -1258,10 +1175,8 @@ class SaveObjects
                     
                 } else {
                     // CASE 3: UPDATE - Content has changed, update required
-                    // Re-add @self metadata for update processing
-                    $cleanIncomingData['@self'] = $incomingMetadata;
-                    $mergedObject = $this->mergeObjectData($existingObject, $cleanIncomingData);
-                    $result['update'][] = $mergedObject;
+                    $existingObject->setObject(array_merge($existingObject->getObject(), $incomingData['object']));
+                    $result['update'][] = $existingObject;
                 }
             }
         }
@@ -1306,44 +1221,6 @@ class SaveObjects
         return null;
     }//end findExistingObjectByAnyIdentifier()
 
-
-    /**
-     * Calculate content hash for object comparison
-     *
-     * This method creates a hash of the object's meaningful content to detect changes.
-     * It excludes metadata and timestamps that don't represent actual content changes.
-     *
-     * @param array $objectData Object data array
-     *
-     * @return string SHA-256 hash of object content
-     */
-    private function calculateObjectContentHash(array $objectData): string
-    {
-        // Create a clean copy for hashing (exclude metadata that shouldn't trigger updates)
-        $cleanData = $objectData;
-        
-        // Remove fields that don't represent content changes
-        $excludedFields = [
-            '@self',           // Metadata container (handled separately)
-            'updated',         // Timestamp (always changes)
-            'created',         // Creation timestamp
-            'published',       // Creation timestamp
-            'version',         // May be auto-incremented
-            '_lastModified',   // System metadata
-            '_etag',           // System metadata
-            'id'               // Database internal ID
-        ];
-        
-        foreach ($excludedFields as $field) {
-            unset($cleanData[$field]);
-        }
-        
-        // Sort the array to ensure consistent hashing regardless of key order
-        $this->ksortRecursive($cleanData);
-        
-        // Create hash from clean, sorted content
-        return hash('sha256', json_encode($cleanData, \JSON_UNESCAPED_UNICODE));
-    }//end calculateObjectContentHash()
 
 
     /**
