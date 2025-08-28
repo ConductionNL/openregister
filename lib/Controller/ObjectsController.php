@@ -281,7 +281,7 @@ class ObjectsController extends Controller
         $query = [];
 
         // Extract metadata filters into @self
-        $metadataFields = ['register', 'schema', 'uuid', 'created', 'updated', 'published', 'depublished', 'deleted'];
+        $metadataFields = ['register', 'schema', 'uuid', 'organisation', 'owner', 'application', 'created', 'updated', 'published', 'depublished', 'deleted'];
         $query['@self'] = [];
 
         // Add register and schema to @self if provided (ensure they are integers)

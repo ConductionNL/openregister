@@ -1856,7 +1856,6 @@ class ObjectEntityMapper extends QBMapper
         $entity = parent::insert($entity);
 
         // Dispatch creation event.
-
         $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent($entity));
 
         return $entity;
@@ -1927,7 +1926,6 @@ class ObjectEntityMapper extends QBMapper
         $entity = parent::update($entity);
 
         // Dispatch update event.
-
         $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent($entity, $oldObject));
 
         return $entity;
