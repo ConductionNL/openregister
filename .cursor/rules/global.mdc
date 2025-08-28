@@ -30,6 +30,11 @@ We are developing a nextcloud application that has a back and frontend, all our 
    - Always include `-u 'admin:admin'` for basic auth
    - Always include `-H 'OCS-APIREQUEST: true'` header
 
+
+3. **❌ DO NOT** user error_log
+   - Use psr logger instead 
+
+
 #### 1. REQUIRED: Test from within the Docker Container
 Execute curl commands from inside the Nextcloud Docker container:
 
