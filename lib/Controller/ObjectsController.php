@@ -1330,7 +1330,7 @@ class ObjectsController extends Controller
         // Handle different export types
         switch ($type) {
             case 'csv':
-                $csv = $this->exportService->exportToCsv($registerEntity, $schemaEntity, $filters);
+                $csv = $this->exportService->exportToCsv($registerEntity, $schemaEntity, $filters, $this->userSession->getUser());
 
                 // Generate filename
                 $filename = sprintf(
@@ -1348,7 +1348,7 @@ class ObjectsController extends Controller
 
             case 'excel':
             default:
-                $spreadsheet = $this->exportService->exportToExcel($registerEntity, $schemaEntity, $filters);
+                $spreadsheet = $this->exportService->exportToExcel($registerEntity, $schemaEntity, $filters, $this->userSession->getUser());
 
                 // Create Excel writer
                 $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
@@ -1414,12 +1414,14 @@ class ObjectsController extends Controller
                     $summary = $this->importService->importFromExcel(
                         $uploadedFile['tmp_name'],
                         $registerEntity,
-                        null,
-                    // Schema will be determined from sheet names
-                        5,
-                    // Use default chunk size
+                        null, // Schema will be determined from sheet names
+                        5, // Use default chunk size
                         $validation,
-                        $events
+                        $events,
+                        true, // rbac
+                        true, // multi
+                        false, // publish
+                        $this->userSession->getUser()
                     );
                     break;
 
