@@ -167,6 +167,7 @@
                 <element key="create_function" value="null"/>
                 <element key="var_dump" value="null"/>
                 <element key="die" value="null"/>
+                <element key="error_log" value="null"/>
             </property>
         </properties>
     </rule>

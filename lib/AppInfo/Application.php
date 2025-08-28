@@ -46,6 +46,23 @@ use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCP\EventDispatcher\IEventDispatcher;
+use OCA\OpenRegister\EventListener\OpenRegisterDebugListener;
+use OCA\OpenRegister\EventListener\TestEventListener;
+use OCP\User\Events\UserLoggedInEvent;
+use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Event\ObjectDeletedEvent;
+use OCA\OpenRegister\Event\ObjectLockedEvent;
+use OCA\OpenRegister\Event\ObjectRevertedEvent;
+use OCA\OpenRegister\Event\ObjectUnlockedEvent;
+use OCA\OpenRegister\Event\OrganisationCreatedEvent;
+use OCA\OpenRegister\Event\RegisterCreatedEvent;
+use OCA\OpenRegister\Event\RegisterDeletedEvent;
+use OCA\OpenRegister\Event\RegisterUpdatedEvent;
+use OCA\OpenRegister\Event\SchemaCreatedEvent;
+use OCA\OpenRegister\Event\SchemaDeletedEvent;
+use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 
 /**
  * Class Application
@@ -231,6 +248,45 @@ class Application extends App implements IBootstrap
                 }
                 );
 
+        // Register OpenRegisterDebugListener for comprehensive event debugging
+        $context->registerService(
+                OpenRegisterDebugListener::class,
+                function ($container) {
+                    return new OpenRegisterDebugListener(
+                    $container->get('Psr\Log\LoggerInterface'),
+                    true // Enable debug logging - set to false to disable
+                    );
+                }
+                );
+
+        // Register TestEventListener for verifying event system works
+        $context->registerService(
+                TestEventListener::class,
+                function ($container) {
+                    return new TestEventListener(
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register event listeners using context registration (like SoftwareCatalog)
+        $context->registerEventListener(ObjectCreatedEvent::class, OpenRegisterDebugListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, OpenRegisterDebugListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, OpenRegisterDebugListener::class);
+        $context->registerEventListener(ObjectLockedEvent::class, OpenRegisterDebugListener::class);
+        $context->registerEventListener(ObjectUnlockedEvent::class, OpenRegisterDebugListener::class);
+        $context->registerEventListener(ObjectRevertedEvent::class, OpenRegisterDebugListener::class);
+        $context->registerEventListener(OrganisationCreatedEvent::class, OpenRegisterDebugListener::class);
+        $context->registerEventListener(RegisterCreatedEvent::class, OpenRegisterDebugListener::class);
+        $context->registerEventListener(RegisterDeletedEvent::class, OpenRegisterDebugListener::class);
+        $context->registerEventListener(RegisterUpdatedEvent::class, OpenRegisterDebugListener::class);
+        $context->registerEventListener(SchemaCreatedEvent::class, OpenRegisterDebugListener::class);
+        $context->registerEventListener(SchemaDeletedEvent::class, OpenRegisterDebugListener::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, OpenRegisterDebugListener::class);
+
+        // Register TEST event listener for easily triggerable Nextcloud events
+        $context->registerEventListener(UserLoggedInEvent::class, TestEventListener::class);
+
     }//end register()
 
 
@@ -243,6 +299,49 @@ class Application extends App implements IBootstrap
      */
     public function boot(IBootContext $context): void
     {
+        // Register event listeners for testing and functionality
+        $container = $context->getAppContainer();
+        $eventDispatcher = $container->get(IEventDispatcher::class);
+        $logger = $container->get('Psr\Log\LoggerInterface');
+        
+        // Log boot process
+        $logger->info('OpenRegister boot: Registering event listeners', [
+            'app' => 'openregister',
+            'timestamp' => date('Y-m-d H:i:s')
+        ]);
+        
+        // Also use error_log for immediate visibility
+        error_log('OPENREGISTER_BOOT: Registering event listeners at ' . date('Y-m-d H:i:s'));
+        
+        try {
+            // Register OpenRegisterDebugListener for ALL custom OpenRegister events
+            $eventDispatcher->addServiceListener(ObjectCreatedEvent::class, OpenRegisterDebugListener::class);
+            $eventDispatcher->addServiceListener(ObjectDeletedEvent::class, OpenRegisterDebugListener::class);
+            $eventDispatcher->addServiceListener(ObjectLockedEvent::class, OpenRegisterDebugListener::class);
+            $eventDispatcher->addServiceListener(ObjectRevertedEvent::class, OpenRegisterDebugListener::class);
+            $eventDispatcher->addServiceListener(ObjectUnlockedEvent::class, OpenRegisterDebugListener::class);
+            $eventDispatcher->addServiceListener(ObjectUpdatedEvent::class, OpenRegisterDebugListener::class);
+            $eventDispatcher->addServiceListener(OrganisationCreatedEvent::class, OpenRegisterDebugListener::class);
+            $eventDispatcher->addServiceListener(RegisterCreatedEvent::class, OpenRegisterDebugListener::class);
+            $eventDispatcher->addServiceListener(RegisterDeletedEvent::class, OpenRegisterDebugListener::class);
+            $eventDispatcher->addServiceListener(RegisterUpdatedEvent::class, OpenRegisterDebugListener::class);
+            $eventDispatcher->addServiceListener(SchemaCreatedEvent::class, OpenRegisterDebugListener::class);
+            $eventDispatcher->addServiceListener(SchemaDeletedEvent::class, OpenRegisterDebugListener::class);
+            $eventDispatcher->addServiceListener(SchemaUpdatedEvent::class, OpenRegisterDebugListener::class);
+            
+            // Register test event listener for UserLoggedInEvent
+            $eventDispatcher->addServiceListener(UserLoggedInEvent::class, TestEventListener::class);
+            
+            $logger->info('OpenRegister boot: Event listeners registered successfully');
+            error_log('OPENREGISTER_BOOT: Event listeners registered successfully');
+            
+        } catch (\Exception $e) {
+            $logger->error('OpenRegister boot: Failed to register event listeners', [
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            error_log('OPENREGISTER_BOOT_ERROR: Failed to register event listeners - ' . $e->getMessage());
+        }
 
     }//end boot()
 

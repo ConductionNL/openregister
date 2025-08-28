@@ -1545,16 +1545,29 @@ class SaveObject
         }
 
         // Extract and set published property if present
-        if (array_key_exists('published', $selfData) && !empty($selfData['published'])) {
-            try {
-                // Convert string to DateTime if it's a valid date string
-                if (is_string($selfData['published']) === true) {
-                    $objectEntity->setPublished(new DateTime($selfData['published']));
+        error_log("[SaveObject] Processing published field - selfData keys: " . implode(', ', array_keys($selfData)));
+        if (array_key_exists('published', $selfData)) {
+            $publishedValue = $selfData['published'];
+            $isEmpty = empty($publishedValue);
+            error_log("[SaveObject] Published field found - value: " . var_export($publishedValue, true) . ", isEmpty: " . ($isEmpty ? 'true' : 'false'));
+            
+            if (!empty($publishedValue)) {
+                try {
+                    // Convert string to DateTime if it's a valid date string
+                    if (is_string($publishedValue) === true) {
+                        error_log("[SaveObject] Setting published date: " . $publishedValue);
+                        $objectEntity->setPublished(new DateTime($publishedValue));
+                    }
+                } catch (Exception $exception) {
+                    error_log("[SaveObject] Published date conversion failed: " . $exception->getMessage());
+                    // Silently ignore invalid date formats
                 }
-            } catch (Exception $exception) {
-                // Silently ignore invalid date formats
+            } else {
+                error_log("[SaveObject] Published value is empty, setting to null");
+                $objectEntity->setPublished(null);
             }
         } else {
+            error_log("[SaveObject] No published field found, setting to null");
             $objectEntity->setPublished(null);
         }
 

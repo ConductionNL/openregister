@@ -127,8 +127,8 @@
 											<td class="stats-table-value" :class="{ 'danger': (stats.warnings.expiredAuditTrails || 0) > 0 }">
 												{{ stats.warnings.expiredAuditTrails || 0 }}
 											</td>
-											<td class="stats-table-value" :class="{ 'danger': (stats.warnings.expiredAuditTrailsSize || 0) > 0 }">
-												{{ formatBytes(stats.warnings.expiredAuditTrailsSize || 0) }}
+											<td class="stats-table-value" :class="{ 'danger': (stats.sizes.expiredAuditTrailsSize || 0) > 0 }">
+												{{ formatBytes(stats.sizes.expiredAuditTrailsSize || 0) }}
 											</td>
 										</tr>
 										<tr class="stats-table-row">
@@ -138,8 +138,8 @@
 											<td class="stats-table-value" :class="{ 'danger': (stats.warnings.expiredSearchTrails || 0) > 0 }">
 												{{ stats.warnings.expiredSearchTrails || 0 }}
 											</td>
-											<td class="stats-table-value" :class="{ 'danger': (stats.warnings.expiredSearchTrailsSize || 0) > 0 }">
-												{{ formatBytes(stats.warnings.expiredSearchTrailsSize || 0) }}
+											<td class="stats-table-value" :class="{ 'danger': (stats.sizes.expiredSearchTrailsSize || 0) > 0 }">
+												{{ formatBytes(stats.sizes.expiredSearchTrailsSize || 0) }}
 											</td>
 										</tr>
 										<tr class="stats-table-row">
@@ -149,8 +149,8 @@
 											<td class="stats-table-value" :class="{ 'danger': (stats.warnings.expiredObjects || 0) > 0 }">
 												{{ stats.warnings.expiredObjects || 0 }}
 											</td>
-											<td class="stats-table-value" :class="{ 'danger': (stats.warnings.expiredObjectsSize || 0) > 0 }">
-												{{ formatBytes(stats.warnings.expiredObjectsSize || 0) }}
+											<td class="stats-table-value" :class="{ 'danger': (stats.sizes.expiredObjectsSize || 0) > 0 }">
+												{{ formatBytes(stats.sizes.expiredObjectsSize || 0) }}
 											</td>
 										</tr>
 									</tbody>
@@ -185,7 +185,7 @@
 												{{ stats.totals.totalObjects.toLocaleString() }}
 											</td>
 											<td class="stats-table-value total">
-												{{ formatBytes(stats.totals.totalSize) }}
+												{{ formatBytes(stats.sizes.totalObjectsSize) }}
 											</td>
 										</tr>
 										<tr class="stats-table-row">
@@ -196,7 +196,7 @@
 												{{ stats.totals.deletedObjects.toLocaleString() }}
 											</td>
 											<td class="stats-table-value total">
-												{{ formatBytes(stats.totals.deletedSize) }}
+												{{ formatBytes(stats.sizes.deletedObjectsSize) }}
 											</td>
 										</tr>
 										<tr class="stats-table-row">
@@ -207,7 +207,7 @@
 												{{ stats.totals.totalAuditTrails.toLocaleString() }}
 											</td>
 											<td class="stats-table-value total">
-												{{ formatBytes(stats.totals.totalAuditTrailsSize) }}
+												{{ formatBytes(stats.sizes.totalAuditTrailsSize) }}
 											</td>
 										</tr>
 										<tr class="stats-table-row">
@@ -218,7 +218,73 @@
 												{{ stats.totals.totalSearchTrails.toLocaleString() }}
 											</td>
 											<td class="stats-table-value total">
-												{{ formatBytes(stats.totals.totalSearchTrailsSize) }}
+												{{ formatBytes(stats.sizes.totalSearchTrailsSize) }}
+											</td>
+										</tr>
+										<tr class="stats-table-row">
+											<td class="stats-table-label">
+												Configurations
+											</td>
+											<td class="stats-table-value total">
+												{{ stats.totals.totalConfigurations.toLocaleString() }}
+											</td>
+											<td class="stats-table-value total">
+												-
+											</td>
+										</tr>
+										<tr class="stats-table-row">
+											<td class="stats-table-label">
+												Data Access Profiles
+											</td>
+											<td class="stats-table-value total">
+												{{ stats.totals.totalDataAccessProfiles.toLocaleString() }}
+											</td>
+											<td class="stats-table-value total">
+												-
+											</td>
+										</tr>
+										<tr class="stats-table-row">
+											<td class="stats-table-label">
+												Organisations
+											</td>
+											<td class="stats-table-value total">
+												{{ stats.totals.totalOrganisations.toLocaleString() }}
+											</td>
+											<td class="stats-table-value total">
+												-
+											</td>
+										</tr>
+										<tr class="stats-table-row">
+											<td class="stats-table-label">
+												Registers
+											</td>
+											<td class="stats-table-value total">
+												{{ stats.totals.totalRegisters.toLocaleString() }}
+											</td>
+											<td class="stats-table-value total">
+												-
+											</td>
+										</tr>
+										<tr class="stats-table-row">
+											<td class="stats-table-label">
+												Schemas
+											</td>
+											<td class="stats-table-value total">
+												{{ stats.totals.totalSchemas.toLocaleString() }}
+											</td>
+											<td class="stats-table-value total">
+												-
+											</td>
+										</tr>
+										<tr class="stats-table-row">
+											<td class="stats-table-label">
+												Sources
+											</td>
+											<td class="stats-table-value total">
+												{{ stats.totals.totalSources.toLocaleString() }}
+											</td>
+											<td class="stats-table-value total">
+												-
 											</td>
 										</tr>
 									</tbody>
@@ -842,19 +908,27 @@ export default defineComponent({
 					expiredAuditTrails: 0,
 					expiredSearchTrails: 0,
 					expiredObjects: 0,
-					expiredAuditTrailsSize: 0,
-					expiredSearchTrailsSize: 0,
-					expiredObjectsSize: 0,
 				},
 				totals: {
 					totalObjects: 0,
-					totalSize: 0,
-					deletedObjects: 0,
-					deletedSize: 0,
 					totalAuditTrails: 0,
-					totalAuditTrailsSize: 0,
 					totalSearchTrails: 0,
+					totalConfigurations: 0,
+					totalDataAccessProfiles: 0,
+					totalOrganisations: 0,
+					totalRegisters: 0,
+					totalSchemas: 0,
+					totalSources: 0,
+					deletedObjects: 0,
+				},
+				sizes: {
+					totalObjectsSize: 0,
+					totalAuditTrailsSize: 0,
 					totalSearchTrailsSize: 0,
+					deletedObjectsSize: 0,
+					expiredAuditTrailsSize: 0,
+					expiredSearchTrailsSize: 0,
+					expiredObjectsSize: 0,
 				},
 				lastUpdated: new Date(),
 			},
@@ -1342,6 +1416,7 @@ export default defineComponent({
 				this.stats = {
 					warnings: data.warnings || {},
 					totals: data.totals || {},
+					sizes: data.sizes || {},
 					lastUpdated: new Date(data.lastUpdated || Date.now()),
 				}
 
