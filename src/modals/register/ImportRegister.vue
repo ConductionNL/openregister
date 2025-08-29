@@ -30,7 +30,7 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 							<th>Found</th>
 							<th>Created</th>
 							<th>Updated</th>
-							<th title="Objects that were unchanged and skipped by smart deduplication">Skipped</th>
+							<th>Unchanged</th>
 							<th>Invalid</th>
 							<th>Errors</th>
 							<th>Total</th>
@@ -78,8 +78,8 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 								<td class="statCell updated">
 									{{ (sheetSummary.updated && sheetSummary.updated.length) || 0 }}
 								</td>
-								<td class="statCell skipped">
-									{{ (sheetSummary.skipped && sheetSummary.skipped.length) || 0 }}
+								<td class="statCell unchanged">
+									{{ (sheetSummary.unchanged && sheetSummary.unchanged.length) || 0 }}
 								</td>
 								<td class="statCell invalid">
 									{{ getInvalidCount(sheetSummary) }}
@@ -100,7 +100,7 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 									{{
 										((sheetSummary.created && sheetSummary.created.length) || 0) +
 											((sheetSummary.updated && sheetSummary.updated.length) || 0) +
-											((sheetSummary.skipped && sheetSummary.skipped.length) || 0) +
+											((sheetSummary.unchanged && sheetSummary.unchanged.length) || 0) +
 											getInvalidCount(sheetSummary) +
 											((sheetSummary.errors && sheetSummary.errors.length) || 0)
 									}}
@@ -916,7 +916,7 @@ export default {
 	color: var(--color-warning);
 }
 
-.statCell.skipped {
+.statCell.unchanged {
 	color: var(--color-text-maxcontrast);
 }
 
@@ -1042,7 +1042,7 @@ export default {
 	background: var(--color-warning-background);
 }
 
-.skippedRow {
+.unchangedRow {
 	background: var(--color-background-hover);
 }
 
@@ -1069,7 +1069,7 @@ export default {
 	color: white;
 }
 
-.actionBadge.skipped {
+.actionBadge.unchanged {
 	background: var(--color-text-maxcontrast);
 	color: white;
 }
