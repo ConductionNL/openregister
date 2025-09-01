@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\IUserManager;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -73,6 +74,13 @@ class ExportService
      */
     private readonly IGroupManager $groupManager;
 
+    /**
+     * Object service for optimized object operations
+     *
+     * @var ObjectService
+     */
+    private readonly ObjectService $objectService;
+
 
     /**
      * Constructor for the ExportService
@@ -81,13 +89,15 @@ class ExportService
      * @param RegisterMapper     $registerMapper     The register mapper
      * @param IUserManager       $userManager        The user manager
      * @param IGroupManager      $groupManager       The group manager
+     * @param ObjectService      $objectService      The object service
      */
-    public function __construct(ObjectEntityMapper $objectEntityMapper, RegisterMapper $registerMapper, IUserManager $userManager, IGroupManager $groupManager)
+    public function __construct(ObjectEntityMapper $objectEntityMapper, RegisterMapper $registerMapper, IUserManager $userManager, IGroupManager $groupManager, ObjectService $objectService)
     {
         $this->objectEntityMapper = $objectEntityMapper;
         $this->registerMapper     = $registerMapper;
         $this->userManager        = $userManager;
         $this->groupManager       = $groupManager;
+        $this->objectService      = $objectService;
 
     }//end __construct()
 
@@ -260,8 +270,44 @@ class ExportService
 
         $row++;
 
-        // Export data.
-        $objects = $this->objectEntityMapper->findAll();
+        // Export data using optimized ObjectEntityMapper query for raw ObjectEntity objects
+        // Build filters for ObjectEntityMapper->findAll() method 
+        $objectFilters = [];
+        
+        if ($register !== null) {
+            $objectFilters['register'] = $register->getId();
+        }
+        
+        if ($schema !== null) {
+            $objectFilters['schema'] = $schema->getId();
+        }
+        
+        // Apply additional filters
+        foreach ($filters as $key => $value) {
+            if (!str_starts_with($key, '@self.')) {
+                // These are JSON object property filters - not supported by findAll
+                // For now, we'll skip them to get basic functionality working
+                // TODO: Add support for JSON property filtering in ObjectEntityMapper
+                continue;
+            } else {
+                // Metadata filter - remove @self. prefix
+                $metaField = substr($key, 6);
+                $objectFilters[$metaField] = $value;
+            }
+        }
+        
+        // Use optimized findAll with proper filters - much faster than the old version
+        $objects = $this->objectEntityMapper->findAll(
+            filters: $objectFilters,
+            search: null,
+            ids: null,
+            uses: null,
+            published: false, // Export all objects, not just published ones
+            includeDeleted: false,
+            register: null, // Already in filters
+            schema: null    // Already in filters
+        );
+        
         foreach ($objects as $object) {
             foreach ($headers as $col => $header) {
                 $value = $this->getObjectValue(object: $object, header: $header);

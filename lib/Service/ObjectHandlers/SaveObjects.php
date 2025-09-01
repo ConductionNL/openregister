@@ -67,6 +67,7 @@ use OCA\OpenRegister\Service\ObjectHandlers\SaveObject;
 use OCA\OpenRegister\Service\ObjectHandlers\ValidateObject;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
 class SaveObjects
@@ -82,6 +83,7 @@ class SaveObjects
      * @param ValidateObject      $validateHandler     Handler for object validation
      * @param IUserSession        $userSession         User session for getting current user
      * @param OrganisationService $organisationService Service for organisation operations
+     * @param LoggerInterface     $logger              Logger for error and debug logging
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
@@ -90,7 +92,8 @@ class SaveObjects
         private readonly SaveObject $saveHandler,
         private readonly ValidateObject $validateHandler,
         private readonly IUserSession $userSession,
-        private readonly OrganisationService $organisationService
+        private readonly OrganisationService $organisationService,
+        private readonly LoggerInterface $logger
     ) {
 
     }//end __construct()
@@ -134,6 +137,25 @@ class SaveObjects
         bool $validation=false,
         bool $events=false
     ): array {
+        // FLEXIBLE VALIDATION: Support both single-schema and mixed-schema bulk operations
+        // For mixed-schema operations, individual objects must specify schema in @self data
+        // For single-schema operations, schema parameter can be provided for all objects
+        
+        $isMixedSchemaOperation = ($schema === null);
+        
+        if ($isMixedSchemaOperation) {
+            $this->logger->info('Starting mixed-schema bulk save operation', [
+                'totalObjects' => count($objects),
+                'defaultRegister' => $register ? $register->getId() : 'none'
+            ]);
+        } else {
+            $this->logger->info('Starting single-schema bulk save operation', [
+                'totalObjects' => count($objects),
+                'register' => $register ? $register->getId() : 'none',
+                'schema' => $schema->getId()
+            ]);
+        }
+
         $startTime    = microtime(true);
         $totalObjects = count($objects);
 
@@ -167,14 +189,22 @@ class SaveObjects
         // This ensures that inversedBy relationships and writeBack operations are handled correctly
         $processedObjects = [];
         $globalSchemaCache = []; // PERFORMANCE OPTIMIZATION: Single persistent schema cache
+        $preparationInvalidObjects = []; // Objects that failed during preparation
         try {
-            [$processedObjects, $globalSchemaCache] = $this->prepareObjectsForBulkSave($objects);
+            [$processedObjects, $globalSchemaCache, $preparationInvalidObjects] = $this->prepareObjectsForBulkSave($objects);
         } catch (\Exception $e) {
             $result['errors'][] = [
                 'error' => 'Failed to prepare objects for bulk save: '.$e->getMessage(),
                 'type'  => 'BulkPreparationException',
             ];
             return $result;
+        }
+        
+        // CRITICAL FIX: Include objects that failed during preparation in result
+        foreach ($preparationInvalidObjects as $invalidObj) {
+            $result['invalid'][] = $invalidObj;
+            $result['statistics']['invalid']++;
+            $result['statistics']['errors']++;
         }
 
         // Check if we have any processed objects
@@ -319,42 +349,93 @@ class SaveObjects
         }
 
         // Load and analyze all schemas in one pass
+        $invalidSchemaIds = []; // Track schemas that failed to load
         foreach ($schemaIds as $schemaId) {
             try {
                 $schema = $this->schemaMapper->find($schemaId);
                 $schemaCache[$schemaId] = $schema;
                 $schemaAnalysis[$schemaId] = $this->performComprehensiveSchemaAnalysis($schema);
             } catch (\Exception $e) {
+                $this->logger->error('Failed to load schema during bulk save preparation', [
+                    'schemaId' => $schemaId,
+                    'error' => $e->getMessage()
+                ]);
+                
+                // CRITICAL FIX: Don't kill entire batch - track invalid schemas for later filtering
+                $invalidSchemaIds[] = $schemaId;
             }
         }
 
         // Pre-process objects using cached schema analysis
+        $invalidObjects = []; // Track objects with invalid schemas
         foreach ($objects as $index => $object) {
             try {
                 $selfData = $object['@self'] ?? [];
                 $schemaId = $selfData['schema'] ?? null;
 
-                if (!$schemaId || !isset($schemaCache[$schemaId])) {
+                // Allow objects without schema ID to pass through - they'll be caught in transformation
+                if (!$schemaId) {
                     $preparedObjects[$index] = $object;
+                    continue;
+                }
+                
+                // CRITICAL FIX: Filter out objects with invalid schemas instead of killing entire batch
+                if (in_array($schemaId, $invalidSchemaIds)) {
+                    $invalidObjects[] = [
+                        'object' => $object,
+                        'error'  => "Schema ID {$schemaId} does not exist or could not be loaded",
+                        'index'  => $index,
+                        'type'   => 'InvalidSchemaException',
+                    ];
+                    continue;
+                }
+                
+                // Schema not in cache but also not in invalid list - this shouldn't happen
+                if (!isset($schemaCache[$schemaId])) {
+                    $this->logger->error('Schema not found in cache during object preparation', [
+                        'schemaId' => $schemaId,
+                        'objectIndex' => $index,
+                        'availableSchemas' => array_keys($schemaCache),
+                        'invalidSchemas' => $invalidSchemaIds
+                    ]);
+                    
+                    $invalidObjects[] = [
+                        'object' => $object,
+                        'error'  => "Schema {$schemaId} not found in cache during preparation",
+                        'index'  => $index,
+                        'type'   => 'SchemaCacheException',
+                    ];
                     continue;
                 }
 
                 $schema = $schemaCache[$schemaId];
                 $analysis = $schemaAnalysis[$schemaId];
 
-                // Generate UUID if not present
-                if (!isset($selfData['id']) || empty($selfData['id'])) {
-                    $selfData['id']  = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
+                // Accept any non-empty string as ID, generate UUID if not provided
+                $providedId = $selfData['id'] ?? null;
+                if (!$providedId || empty(trim($providedId))) {
+                    // No ID provided or empty - generate new UUID
+                    $selfData['id'] = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
                     $object['@self'] = $selfData;
                 }
+                // If ID is provided and non-empty, use it as-is (accept any string format)
 
                 // Handle pre-validation cascading for inversedBy properties
                 [$processedObject, $uuid] = $this->handlePreValidationCascading($object, $schema, $selfData['id']);
 
                 $preparedObjects[$index] = $processedObject;
             } catch (\Exception $e) {
+                $this->logger->warning('Failed to prepare object during bulk save', [
+                    'objectIndex' => $index,
+                    'objectUuid' => $object['@self']['uuid'] ?? 'unknown',
+                    'error' => $e->getMessage()
+                ]);
+                
+                // Use original object but continue processing
                 $preparedObjects[$index] = $object;
-                // Continue with original object
+                
+                // Note: We continue here because some preparation failures might be recoverable
+                // The actual save operation will catch and properly report if the object can't be saved
             }//end try
         }//end foreach
 
@@ -368,7 +449,8 @@ class SaveObjects
         $failureCount = $objectCount - $successCount;
 
 
-        return [array_values($preparedObjects), $schemaCache];
+        // Return prepared objects, schema cache, and any invalid objects found during preparation
+        return [array_values($preparedObjects), $schemaCache, $invalidObjects];
 
     }//end prepareObjectsForBulkSave()
 
@@ -402,17 +484,28 @@ class SaveObjects
         $result = [
             'saved'      => [],
             'updated'    => [],
+            'unchanged'  => [], // Ensure consistent result structure
             'invalid'    => [],
             'errors'     => [],
             'statistics' => [
-                'saved'   => 0,
-                'updated' => 0,
-                'invalid' => 0,
+                'saved'     => 0,
+                'updated'   => 0,
+                'unchanged' => 0, // Ensure consistent statistics structure
+                'invalid'   => 0,
+                'errors'    => 0, // Also add errors counter
             ],
         ];
 
         // STEP 1: Transform objects for database format with metadata hydration
-        $transformedObjects = $this->transformObjectsToDatabaseFormatInPlace($objects, $schemaCache);
+        $transformationResult = $this->transformObjectsToDatabaseFormatInPlace($objects, $schemaCache);
+        $transformedObjects = $transformationResult['valid'];
+        
+        // CRITICAL FIX: Include transformation errors in result
+        foreach ($transformationResult['invalid'] as $invalidObj) {
+            $result['invalid'][] = $invalidObj;
+            $result['statistics']['invalid']++;
+            $result['statistics']['errors']++;
+        }
         
         // STEP 2: Validate objects against schemas if validation enabled
         if ($validation === true) {
@@ -553,12 +646,15 @@ class SaveObjects
         $result = [
             'saved'      => [],
             'updated'    => [],
+            'unchanged'  => [], // Ensure consistent result structure
             'invalid'    => [],
             'errors'     => [],
             'statistics' => [
-                'saved'   => 0,
-                'updated' => 0,
-                'invalid' => 0,
+                'saved'     => 0,
+                'updated'   => 0,
+                'unchanged' => 0, // Ensure consistent statistics structure
+                'invalid'   => 0,
+                'errors'    => 0, // Also add errors counter
             ],
         ];
 
@@ -629,6 +725,18 @@ class SaveObjects
                         $allSavedObjects[] = $objEntity;
                     }
                 } catch (\Exception $e) {
+                    $this->logger->warning('Failed to reconstruct saved object for inverse relations', [
+                        'uuid' => $savedArray['uuid'],
+                        'error' => $e->getMessage()
+                    ]);
+                    
+                    // Add to result errors so external services can see the issue
+                    $result['errors'][] = [
+                        'error' => 'Failed to reconstruct saved object for post-processing: ' . $e->getMessage(),
+                        'uuid' => $savedArray['uuid'],
+                        'type' => 'ObjectReconstructionException'
+                    ];
+                    $result['statistics']['errors']++;
                 }
             }
         }
@@ -915,23 +1023,101 @@ class SaveObjects
     private function transformObjectsToDatabaseFormatInPlace(array &$objects, array $schemaCache): array
     {
         $transformedObjects = [];
+        $invalidObjects = [];
 
-        foreach ($objects as &$object) {
+        foreach ($objects as $index => &$object) {
 
             $selfData = $object['@self'] ?? [];
             $schemaId = $selfData['schema'] ?? null;
             
+            // CRITICAL FIX: Report missing schema as invalid instead of silently skipping
             if (!$schemaId) {
+                $invalidObjects[] = [
+                    'object' => $object,
+                    'error'  => 'Missing required schema ID in @self data',
+                    'index'  => $index,
+                    'type'   => 'MissingSchemaException',
+                ];
+                continue;
+            }
+            
+            // CRITICAL FIX: Also validate register ID is present
+            $registerId = $selfData['register'] ?? $object['register'] ?? null;
+            if (!$registerId) {
+                $invalidObjects[] = [
+                    'object' => $object,
+                    'error'  => 'Missing required register ID in @self data',
+                    'index'  => $index,
+                    'type'   => 'MissingRegisterException',
+                ];
                 continue;
             }        
 
-            // Auto-wire @self metadata with proper UUID generation
+            // Auto-wire @self metadata with proper UUID validation and generation
             $now = new \DateTime();
-            $selfData['uuid'] = $selfData['id'] ?? $object['id'] ?? Uuid::v4()->toRfc4122();
-            $selfData['register'] = $selfData['register'] ?? $object['register'] ?? null;
-            $selfData['schema'] = $selfData['schema'] ?? $object['schema'] ?? null;
-            $selfData['owner'] = $selfData['owner'] ?? $this->userSession->getUser()->getUID();
-            $selfData['organisation'] = $selfData['organisation'] ?? null; // TODO: Fix organisation service method call
+            
+            // Accept any non-empty string as ID, generate UUID if not provided
+            $providedId = $selfData['id'] ?? $object['id'] ?? null;
+            if ($providedId && !empty(trim($providedId))) {
+                // Accept any non-empty string as identifier
+                $selfData['uuid'] = $providedId;
+            } else {
+                // No ID provided or empty - generate new UUID
+                $selfData['uuid'] = Uuid::v4()->toRfc4122();
+            }
+            
+            // CRITICAL FIX: Use register and schema from method parameters if not provided in object data
+            $selfData['register'] = $selfData['register'] ?? $object['register'] ?? ($register ? $register->getId() : null);
+            $selfData['schema'] = $selfData['schema'] ?? $object['schema'] ?? ($schema ? $schema->getId() : null);
+            
+            // VALIDATION FIX: Validate that required register and schema are properly set
+            if (!$selfData['register']) {
+                $invalidObjects[] = [
+                    'object' => $object,
+                    'error'  => 'Register ID is required but not found in object data or method parameters',
+                    'index'  => $index,
+                    'type'   => 'MissingRegisterException',
+                ];
+                continue;
+            }
+            
+            if (!$selfData['schema']) {
+                $invalidObjects[] = [
+                    'object' => $object,
+                    'error'  => 'Schema ID is required but not found in object data or method parameters',
+                    'index'  => $index,
+                    'type'   => 'MissingSchemaException',
+                ];
+                continue;
+            }
+            
+            // VALIDATION FIX: Verify schema exists in cache (validates schema exists in database)
+            if (!isset($schemaCache[$selfData['schema']])) {
+                $invalidObjects[] = [
+                    'object' => $object,
+                    'error'  => "Schema ID {$selfData['schema']} does not exist or could not be loaded",
+                    'index'  => $index,
+                    'type'   => 'InvalidSchemaException',
+                ];
+                continue;
+            }
+            
+            // Set owner to current user if not provided (with null check)
+            if (!isset($selfData['owner']) || empty($selfData['owner'])) {
+                $currentUser = $this->userSession->getUser();
+                $selfData['owner'] = $currentUser ? $currentUser->getUID() : null;
+            }
+            
+            // Set organization using optimized OrganisationService method if not provided
+            if (!isset($selfData['organisation']) || empty($selfData['organisation'])) {
+                try {
+                    $selfData['organisation'] = $this->organisationService->getOrganisationForNewEntity();
+                } catch (\Exception $e) {
+                    // Log error but continue - organization can be null for some objects
+                    $selfData['organisation'] = null;
+                }
+            }
+            
             $selfData['created'] = $selfData['created'] ?? $now->format('Y-m-d H:i:s');
             $selfData['updated'] = $selfData['updated'] ?? $now->format('Y-m-d H:i:s');
            
@@ -943,7 +1129,11 @@ class SaveObjects
             $transformedObjects[] = $selfData;
         }
 
-        return $transformedObjects;
+        // Return both transformed objects and any invalid objects found during transformation
+        return [
+            'valid' => $transformedObjects,
+            'invalid' => $invalidObjects
+        ];
     }//end transformObjectsToDatabaseFormatInPlace()
 
 
@@ -1357,9 +1547,16 @@ class SaveObjects
         foreach ($insertObjects as $objData) {
             $obj = new ObjectEntity();
             
-            // Ensure we have the UUID from our saved operation
+            // CRITICAL FIX: Objects missing UUIDs after save indicate serious database issues - LOG ERROR!
             if (empty($objData['uuid'])) {
-                // Missing UUID in insertObjects data - skip this object
+                $this->logger->error('Object reconstruction failed: Missing UUID after bulk save operation', [
+                    'objectData' => $objData,
+                    'error' => 'UUID missing in saved object data',
+                    'context' => 'reconstructSavedObjects'
+                ]);
+                
+                // Continue to try to reconstruct other objects, but this indicates a serious issue
+                // The object was supposedly saved but has no UUID - should not happen
                 continue;
             }
             
@@ -1566,6 +1763,13 @@ class SaveObjects
             try {
                 $this->objectEntityMapper->update($obj);
             } catch (\Exception $e) {
+                $this->logger->error('Failed to update object in fallback write-back', [
+                    'objectUuid' => $obj->getUuid(),
+                    'error' => $e->getMessage()
+                ]);
+                
+                // For write-back failures, we log but don't fail the entire operation
+                // since the main object save was already successful
             }
         }
     }//end fallbackToIndividualWriteBackUpdates()

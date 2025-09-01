@@ -317,20 +317,40 @@ class BulkController extends Controller
                 );
             }
 
-            // Set register and schema context
-            $this->objectService->setRegister($register);
-            $this->objectService->setSchema($schema);
+            // FLEXIBLE SCHEMA HANDLING: Support both single-schema and mixed-schema operations
+            // Use schema=0 to indicate mixed-schema operations where objects specify their own schemas
+            
+            $isMixedSchemaOperation = ($schema === '0' || $schema === 0);
+            
+            if ($isMixedSchemaOperation) {
+                // Mixed-schema operation - don't set a specific schema context
+                $this->objectService->setRegister($register);
+                // Don't call setSchema() for mixed operations
+                
+                $savedObjects = $this->objectService->saveObjects(
+                    objects: $objects,
+                    register: $register,
+                    schema: null, // Allow objects to specify their own schemas
+                    rbac: true,
+                    multi: true,
+                    validation: true,
+                    events: false
+                );
+            } else {
+                // Single-schema operation - traditional behavior
+                $this->objectService->setRegister($register);
+                $this->objectService->setSchema($schema);
 
-            // Perform bulk save operation with register and schema context
-            $savedObjects = $this->objectService->saveObjects(
-                objects: $objects,
-                register: $register,
-                schema: $schema,
-                rbac: true,
-                multi: true,
-                validation: true,
-                events: false
-            );
+                $savedObjects = $this->objectService->saveObjects(
+                    objects: $objects,
+                    register: $register,
+                    schema: $schema,
+                    rbac: true,
+                    multi: true,
+                    validation: true,
+                    events: false
+                );
+            }
 
             return new JSONResponse(
                     [
