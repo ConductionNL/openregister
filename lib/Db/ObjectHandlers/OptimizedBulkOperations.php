@@ -116,13 +116,7 @@ class OptimizedBulkOperations
             $chunkUUIDs = $this->processUnifiedChunk($chunk, $chunkIndex + 1, $totalChunks);
             $processedUUIDs = array_merge($processedUUIDs, $chunkUUIDs);
 
-            $chunkTime = microtime(true) - $chunkStartTime;
-            $this->logger->debug("Processed chunk with optimized bulk operations", [
-                'chunk' => $chunkIndex + 1,
-                'objects' => count($chunk),
-                'time_seconds' => round($chunkTime, 3),
-                'objects_per_second' => round(count($chunk) / $chunkTime, 0)
-            ]);
+            // PERFORMANCE: Skip per-chunk logging overhead for large operations
 
             // MEMORY MANAGEMENT: Clear processed chunk data
             unset($chunk, $chunkUUIDs);
