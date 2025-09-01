@@ -563,42 +563,43 @@ class MariaDbSearchHandler
             $searchParam = $queryBuilder->createNamedParameter('%'.$cleanTerm.'%');
 
             // Create OR conditions for each searchable field
+            // PERFORMANCE OPTIMIZATION: Search indexed metadata columns first for best performance
             $termConditions = $queryBuilder->expr()->orX();
 
-            // Search in JSON object data
+            // PRIORITY 1: Search in indexed metadata fields (FASTEST - uses database indexes)
+            // These columns have indexes and provide the best search performance
+            $indexedFields = [
+                'o.name' => 'name',
+                'o.summary' => 'summary', 
+                'o.description' => 'description'
+            ];
+            
+            foreach ($indexedFields as $columnName => $fieldName) {
+                $termConditions->add(
+                    $queryBuilder->expr()->like(
+                        $queryBuilder->createFunction('LOWER('.$columnName.')'),
+                        $queryBuilder->createNamedParameter('%'.$cleanTerm.'%')
+                    )
+                );
+            }
+
+            // PRIORITY 2: Search in other metadata fields (MODERATE - no indexes but direct column access)
+            $otherMetadataFields = ['o.image'];
+            foreach ($otherMetadataFields as $columnName) {
+                $termConditions->add(
+                    $queryBuilder->expr()->like(
+                        $queryBuilder->createFunction('LOWER('.$columnName.')'),
+                        $queryBuilder->createNamedParameter('%'.$cleanTerm.'%')
+                    )
+                );
+            }
+
+            // PRIORITY 3: Search in JSON object data (SLOWEST - comprehensive fallback)
+            // Only use JSON_SEARCH as last resort for comprehensive coverage
             $jsonSearchFunction = "JSON_SEARCH(LOWER(`object`), 'all', ".$searchParam.")";
             $termConditions->add(
                 $queryBuilder->expr()->isNotNull(
                     $queryBuilder->createFunction($jsonSearchFunction)
-                )
-            );
-
-            // Search in metadata fields (name, description, summary, image)
-            $termConditions->add(
-                $queryBuilder->expr()->like(
-                    $queryBuilder->createFunction('LOWER(o.name)'),
-                    $queryBuilder->createNamedParameter('%'.$cleanTerm.'%')
-                )
-            );
-
-            $termConditions->add(
-                $queryBuilder->expr()->like(
-                    $queryBuilder->createFunction('LOWER(o.description)'),
-                    $queryBuilder->createNamedParameter('%'.$cleanTerm.'%')
-                )
-            );
-
-            $termConditions->add(
-                $queryBuilder->expr()->like(
-                    $queryBuilder->createFunction('LOWER(o.summary)'),
-                    $queryBuilder->createNamedParameter('%'.$cleanTerm.'%')
-                )
-            );
-
-            $termConditions->add(
-                $queryBuilder->expr()->like(
-                    $queryBuilder->createFunction('LOWER(o.image)'),
-                    $queryBuilder->createNamedParameter('%'.$cleanTerm.'%')
                 )
             );
 
