@@ -1498,6 +1498,93 @@ class ObjectService
      *
      * @return array<int, ObjectEntity>|int An array of ObjectEntity objects matching the criteria, or integer count if _count is true
      */
+    /**
+     * Build a search query from request parameters for faceting-enabled methods
+     *
+     * This method builds a query structure compatible with the searchObjectsPaginated method
+     * which supports faceting, facetable field discovery, and all other search features.
+     *
+     * @param array           $requestParams Request parameters from the controller
+     * @param int|string|null $register      Optional register identifier (should be resolved numeric ID)
+     * @param int|string|null $schema        Optional schema identifier (should be resolved numeric ID)
+     * @param array|null      $ids           Optional array of specific IDs to filter
+     *
+     * @return array Query array containing:
+     *               - @self: Metadata filters (register, schema, etc.)
+     *               - Direct keys: Object field filters
+     *               - _limit: Maximum number of items per page
+     *               - _offset: Number of items to skip
+     *               - _page: Current page number
+     *               - _order: Sort parameters
+     *               - _search: Search term
+     *               - _extend: Properties to extend
+     *               - _fields: Fields to include
+     *               - _filter/_unset: Fields to exclude
+     *               - _facets: Facet configuration
+     *               - _facetable: Include facetable field discovery
+     *               - _ids: Specific IDs to filter
+     *
+     * @phpstan-param  array<string, mixed> $requestParams
+     * @phpstan-return array<string, mixed>
+     * @psalm-param    array<string, mixed> $requestParams
+     * @psalm-return   array<string, mixed>
+     */
+    public function buildSearchQuery(array $requestParams, int | string | null $register=null, int | string | null $schema=null, ?array $ids=null): array
+    {
+        // Remove system parameters that shouldn't be used as filters
+        $params = $requestParams;
+        unset($params['id'], $params['_route']);
+
+        // Build the query structure for searchObjectsPaginated
+        $query = [];
+
+        // Extract metadata filters into @self
+        $metadataFields = ['register', 'schema', 'uuid', 'organisation', 'owner', 'application', 'created', 'updated', 'published', 'depublished', 'deleted'];
+        $query['@self'] = [];
+
+        // Add register and schema to @self if provided (ensure they are integers)
+        if ($register !== null) {
+            $query['@self']['register'] = (int) $register;
+        }
+
+        if ($schema !== null) {
+            $query['@self']['schema'] = (int) $schema;
+        }
+
+        // Extract special underscore parameters
+        $specialParams = [];
+        $objectFilters = [];
+
+        foreach ($params as $key => $value) {
+            if (str_starts_with($key, '_')) {
+                $specialParams[$key] = $value;
+            } else if (in_array($key, $metadataFields)) {
+                // Only add to @self if not already set from function parameters
+                if (!isset($query['@self'][$key])) {
+                    $query['@self'][$key] = $value;
+                }
+            } else {
+                // This is an object field filter
+                $objectFilters[$key] = $value;
+            }
+        }
+
+        // Add object field filters directly to query
+        $query = array_merge($query, $objectFilters);
+
+        // Add IDs if provided
+        if ($ids !== null) {
+            $query['_ids'] = $ids;
+        }
+
+        // Add all special parameters (they'll be handled by searchObjectsPaginated)
+        $query = array_merge($query, $specialParams);
+
+        return $query;
+
+    }//end buildSearchQuery()
+
+
     public function searchObjects(array $query=[], bool $rbac=true, bool $multi=true): array|int
     {
         // Get active organization context for multi-tenancy (only if multi is enabled)
@@ -2648,7 +2735,8 @@ class ObjectService
         
         // PERFORMANCE OPTIMIZATION: Early return if no metadata fields configured
         if (empty($config['objectNameField']) && empty($config['objectDescriptionField']) 
-            && empty($config['objectSummaryField']) && empty($config['objectImageField'])) {
+            && empty($config['objectSummaryField']) && empty($config['objectImageField'])
+            && empty($config['objectSlugField'])) {
             return $objectData;
         }
 
@@ -2659,18 +2747,32 @@ class ObjectService
 
         // PERFORMANCE OPTIMIZATION: Direct field assignment with early termination
         // Process metadata fields efficiently with minimal lookups
+        // COMPREHENSIVE METADATA FIELD SUPPORT: Include all supported metadata fields
         $metadataFields = [
             'name' => $config['objectNameField'] ?? null,
             'description' => $config['objectDescriptionField'] ?? null,
             'summary' => $config['objectSummaryField'] ?? null,
             'image' => $config['objectImageField'] ?? null,
+            'slug' => $config['objectSlugField'] ?? null,
         ];
 
         foreach ($metadataFields as $metaField => $sourceField) {
             if (!empty($sourceField)) {
-                $value = $this->getValueFromPath($objectData, $sourceField);
-                if ($value !== null) {
-                    $objectData['@self'][$metaField] = $value;
+                if ($metaField === 'slug') {
+                    // Special handling for slug - generate from source field value
+                    $slugValue = $this->getValueFromPath($objectData, $sourceField);
+                    if ($slugValue !== null) {
+                        $generatedSlug = $this->generateSlugFromValue((string) $slugValue);
+                        if ($generatedSlug) {
+                            $objectData['@self'][$metaField] = $generatedSlug;
+                        }
+                    }
+                } else {
+                    // Regular metadata field handling
+                    $value = $this->getValueFromPath($objectData, $sourceField);
+                    if ($value !== null) {
+                        $objectData['@self'][$metaField] = $value;
+                    }
                 }
             }
         }
@@ -2711,6 +2813,63 @@ class ObjectService
 
         return $current;
     }//end getValueFromPath()
+
+
+    /**
+     * Generate a slug from a given value
+     *
+     * METADATA ENHANCEMENT: Simplified slug generation for ObjectService metadata hydration
+     *
+     * @param string $value The value to convert to a slug
+     *
+     * @return string|null The generated slug or null if generation failed
+     */
+    private function generateSlugFromValue(string $value): ?string
+    {
+        try {
+            if (empty($value)) {
+                return null;
+            }
+
+            // Generate the base slug
+            $slug = $this->createSlugHelper($value);
+
+            // Add timestamp for uniqueness
+            $timestamp = time();
+            $uniqueSlug = $slug . '-' . $timestamp;
+
+            return $uniqueSlug;
+        } catch (\Exception $e) {
+            return null;
+        }
+    }//end generateSlugFromValue()
+
+
+    /**
+     * Creates a URL-friendly slug from a string
+     *
+     * @param string $text The text to convert to a slug
+     *
+     * @return string The generated slug
+     */
+    private function createSlugHelper(string $text): string
+    {
+        // Convert to lowercase
+        $text = strtolower($text);
+
+        // Replace non-alphanumeric characters with hyphens
+        $text = preg_replace('/[^a-z0-9]+/', '-', $text);
+
+        // Remove leading and trailing hyphens
+        $text = trim($text, '-');
+
+        // Ensure the slug is not empty
+        if (empty($text)) {
+            $text = 'object';
+        }
+
+        return $text;
+    }//end createSlugHelper()
 
 
 
