@@ -218,7 +218,8 @@ class Application extends App implements IBootstrap
                     $container->get(SaveObject::class),
                     $container->get(ValidateObject::class),
                     $container->get('OCP\IUserSession'),
-                    $container->get(OrganisationService::class)
+                    $container->get(OrganisationService::class),
+                    $container->get('Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -273,7 +274,8 @@ class Application extends App implements IBootstrap
                     $container->get(ObjectEntityMapper::class),
                     $container->get(RegisterMapper::class),
                     $container->get('OCP\IUserManager'),
-                    $container->get('OCP\IGroupManager')
+                    $container->get('OCP\IGroupManager'),
+                    $container->get(ObjectService::class)
                     );
                 }
                 );

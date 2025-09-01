@@ -1461,7 +1461,13 @@ class SaveObject
         try {
             $this->hydrateObjectMetadata($objectEntity, $schema);
         } catch (Exception $e) {
-            // Continue without hydration if it fails
+            // CRITICAL FIX: Hydration failures indicate schema/data mismatch - don't suppress!
+            throw new \Exception(
+                'Object metadata hydration failed: ' . $e->getMessage() . 
+                '. This indicates a mismatch between object data and schema configuration.',
+                0,
+                $e
+            );
         }
 
         // Set user information if available.
@@ -1481,7 +1487,13 @@ class SaveObject
         try {
             $objectEntity = $this->updateObjectRelations($objectEntity, $preparedData, $schema);
         } catch (Exception $e) {
-            // Continue without relations if it fails
+            // CRITICAL FIX: Relation processing failures indicate serious data integrity issues!
+            throw new \Exception(
+                'Object relations processing failed: ' . $e->getMessage() . 
+                '. This indicates invalid relation data or schema configuration problems.',
+                0,
+                $e
+            );
         }
 
         return $objectEntity;
@@ -1625,7 +1637,13 @@ class SaveObject
         try {
             $data = $this->sanitizeEmptyStringsForObjectProperties($data, $schema);
         } catch (Exception $e) {
-            // Continue without sanitization if it fails
+            // CRITICAL FIX: Sanitization failures indicate serious data problems - don't suppress!
+            throw new \Exception(
+                'Object data sanitization failed: ' . $e->getMessage() . 
+                '. This indicates invalid or corrupted object data that cannot be processed safely.',
+                0,
+                $e
+            );
         }
 
         // Apply cascading operations
