@@ -44,6 +44,8 @@ use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectCacheService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ExportService;
+use OCA\OpenRegister\Service\SchemaCacheService;
+use OCA\OpenRegister\Service\SchemaFacetCacheService;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
@@ -296,6 +298,30 @@ class Application extends App implements IBootstrap
                 TestEventListener::class,
                 function ($container) {
                     return new TestEventListener(
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register SchemaCacheService for improved schema performance
+        $context->registerService(
+                SchemaCacheService::class,
+                function ($container) {
+                    return new SchemaCacheService(
+                    $container->get('OCP\IDBConnection'),
+                    $container->get(SchemaMapper::class),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register SchemaFacetCacheService for predictable facet caching
+        $context->registerService(
+                SchemaFacetCacheService::class,
+                function ($container) {
+                    return new SchemaFacetCacheService(
+                    $container->get('OCP\IDBConnection'),
+                    $container->get(SchemaMapper::class),
                     $container->get('Psr\Log\LoggerInterface')
                     );
                 }
