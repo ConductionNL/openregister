@@ -305,12 +305,12 @@ class SaveObjects
             // STANDARD PATH: Mixed-schema operation - use full preparation logic
             try {
                 [$processedObjects, $globalSchemaCache, $preparationInvalidObjects] = $this->prepareObjectsForBulkSave($objects);
-            } catch (\Exception $e) {
-                $result['errors'][] = [
-                    'error' => 'Failed to prepare objects for bulk save: '.$e->getMessage(),
-                    'type'  => 'BulkPreparationException',
-                ];
-                return $result;
+        } catch (\Exception $e) {
+            $result['errors'][] = [
+                'error' => 'Failed to prepare objects for bulk save: '.$e->getMessage(),
+                'type'  => 'BulkPreparationException',
+            ];
+            return $result;
             }
         }
         
@@ -389,6 +389,23 @@ class SaveObjects
 
         $totalTime    = microtime(true) - $startTime;
         $overallSpeed = count($processedObjects) / max($totalTime, 0.001);
+
+        // ADD PERFORMANCE METRICS: Include timing and speed metrics like ImportService does
+        $result['performance'] = [
+            'totalTime'        => round($totalTime, 3),
+            'totalTimeMs'      => round($totalTime * 1000, 2),
+            'objectsPerSecond' => round($overallSpeed, 2),
+            'totalProcessed'   => count($processedObjects),
+            'totalRequested'   => $totalObjects,
+            'efficiency'       => count($processedObjects) > 0 ? round((count($processedObjects) / $totalObjects) * 100, 1) : 0,
+        ];
+        
+        // Add deduplication efficiency if we have unchanged objects
+        $unchangedCount = count($result['unchanged']);
+        if ($unchangedCount > 0) {
+            $totalProcessed = count($result['saved']) + count($result['updated']) + $unchangedCount;
+            $result['performance']['deduplicationEfficiency'] = round(($unchangedCount / $totalProcessed) * 100, 1) . '% operations avoided';
+        }
 
         return $result;
 
@@ -658,6 +675,8 @@ class SaveObjects
                 $selfData['created'] = $selfData['created'] ?? $nowString;
                 $selfData['updated'] = $selfData['updated'] ?? $nowString;
                 
+                // PERFORMANCE: Skip metadata extraction for now to restore 5.691s baseline
+                
                 // PERFORMANCE: Remove @self from object data and nest under 'object'
                 unset($object['@self'], $object['id']);
                 $selfData['object'] = $object;
@@ -776,7 +795,7 @@ class SaveObjects
         if ($isLargeImport) {
             $existingObjects = $this->findExistingObjectsOptimizedForLargeImport($extractedIds);
         } else {
-            $existingObjects = $this->findExistingObjectsByMultipleIds($extractedIds);
+        $existingObjects = $this->findExistingObjectsByMultipleIds($extractedIds);
         }
 
         // STEP 4: INTELLIGENT OBJECT CATEGORIZATION - Always check for updates/duplicates
@@ -802,7 +821,7 @@ class SaveObjects
             $totalObjects = count($insertObjects) + count($updateObjects);
             
             // ULTRA-PERFORMANCE: Always use fastest available operations for any bulk size
-            $bulkResult = $this->objectEntityMapper->ultraFastBulkSave($insertObjects, $updateObjects);
+                $bulkResult = $this->objectEntityMapper->ultraFastBulkSave($insertObjects, $updateObjects);
             
             // IMPORTANT: Only collect UUIDs that were actually saved (returned by bulk operations)
             if (is_array($bulkResult)) {
@@ -849,17 +868,17 @@ class SaveObjects
             $result['updated'] = array_map(fn($obj) => is_object($obj) ? $obj->getUuid() : ($obj['uuid'] ?? 'unknown'), $updateObjects);
         } else {
             // STANDARD: Full object reconstruction for smaller operations
-            $savedObjects = $this->reconstructSavedObjects($insertObjects, $updateObjects, $savedObjectIds, $existingObjects);
+        $savedObjects = $this->reconstructSavedObjects($insertObjects, $updateObjects, $savedObjectIds, $existingObjects);
+
+        // Separate into saved vs updated for response
+        foreach ($savedObjects as $obj) {
+            $uuid = $obj->getUuid();
+            $serialized = $obj->jsonSerialize();
             
-            // Separate into saved vs updated for response
-            foreach ($savedObjects as $obj) {
-                $uuid = $obj->getUuid();
-                $serialized = $obj->jsonSerialize();
-                
-                if (isset($existingObjects[$uuid])) {
-                    $result['updated'][] = $serialized;
-                } else {
-                    $result['saved'][] = $serialized;
+            if (isset($existingObjects[$uuid])) {
+                $result['updated'][] = $serialized;
+            } else {
+                $result['saved'][] = $serialized;
                 }
             }
         }
@@ -1283,32 +1302,8 @@ class SaveObjects
         foreach ($objects as $index => &$object) {
 
             $selfData = $object['@self'] ?? [];
-            $schemaId = $selfData['schema'] ?? null;
             
-            // CRITICAL FIX: Report missing schema as invalid instead of silently skipping
-            if (!$schemaId) {
-                $invalidObjects[] = [
-                    'object' => $object,
-                    'error'  => 'Missing required schema ID in @self data',
-                    'index'  => $index,
-                    'type'   => 'MissingSchemaException',
-                ];
-                continue;
-            }
-            
-            // CRITICAL FIX: Also validate register ID is present
-            $registerId = $selfData['register'] ?? $object['register'] ?? null;
-            if (!$registerId) {
-                $invalidObjects[] = [
-                    'object' => $object,
-                    'error'  => 'Missing required register ID in @self data',
-                    'index'  => $index,
-                    'type'   => 'MissingRegisterException',
-                ];
-                continue;
-            }        
-
-            // Auto-wire @self metadata with proper UUID validation and generation
+            // STEP 1: Auto-wire @self metadata FIRST (before validation)
             $now = new \DateTime();
             
             // Accept any non-empty string as ID, generate UUID if not provided
@@ -1325,23 +1320,28 @@ class SaveObjects
             $selfData['register'] = $selfData['register'] ?? $object['register'] ?? ($register ? $register->getId() : null);
             $selfData['schema'] = $selfData['schema'] ?? $object['schema'] ?? ($schema ? $schema->getId() : null);
             
-            // VALIDATION FIX: Validate that required register and schema are properly set
-            if (!$selfData['register']) {
-                $invalidObjects[] = [
-                    'object' => $object,
-                    'error'  => 'Register ID is required but not found in object data or method parameters',
-                    'index'  => $index,
-                    'type'   => 'MissingRegisterException',
-                ];
-                continue;
-            }
+            // STEP 2: VALIDATE after @self is properly populated
+            $schemaId = $selfData['schema'];
+            $registerId = $selfData['register'];
             
-            if (!$selfData['schema']) {
+            // CRITICAL FIX: Report missing schema as invalid instead of silently skipping
+            if (!$schemaId) {
                 $invalidObjects[] = [
                     'object' => $object,
-                    'error'  => 'Schema ID is required but not found in object data or method parameters',
+                    'error'  => 'Missing required schema ID in @self data',
                     'index'  => $index,
                     'type'   => 'MissingSchemaException',
+                ];
+                continue;
+            }        
+
+            // CRITICAL FIX: Also validate register ID is present
+            if (!$registerId) {
+                $invalidObjects[] = [
+                    'object' => $object,
+                    'error'  => 'Missing required register ID in @self data',
+                    'index'  => $index,
+                    'type'   => 'MissingRegisterException',
                 ];
                 continue;
             }
@@ -1375,6 +1375,19 @@ class SaveObjects
             
             $selfData['created'] = $selfData['created'] ?? $now->format('Y-m-d H:i:s');
             $selfData['updated'] = $selfData['updated'] ?? $now->format('Y-m-d H:i:s');
+            
+            // LIGHTWEIGHT METADATA EXTRACTION: Extract name, description, summary based on schema config
+            // Only extract if not already set and schema has the configuration
+            $config = $schemaCache[$schemaId]->getConfiguration();
+            if (!isset($selfData['name']) && isset($config['objectNameField'])) {
+                $selfData['name'] = $this->getValueFromPath($object, $config['objectNameField']);
+            }
+            if (!isset($selfData['description']) && isset($config['objectDescriptionField'])) {
+                $selfData['description'] = $this->getValueFromPath($object, $config['objectDescriptionField']);
+            }
+            if (!isset($selfData['summary']) && isset($config['objectSummaryField'])) {
+                $selfData['summary'] = $this->getValueFromPath($object, $config['objectSummaryField']);
+            }
            
             // Remove @self from object data and nest it under 'object' property
             unset($object['@self']);
@@ -1390,6 +1403,9 @@ class SaveObjects
             'invalid' => $invalidObjects
         ];
     }//end transformObjectsToDatabaseFormatInPlace()
+
+
+
 
 
     /**
@@ -1658,7 +1674,7 @@ class SaveObjects
         
         if ($isLargeImport) {
             // ULTRA-FAST PATH: Simplified categorization for large imports
-            foreach ($transformedObjects as $incomingData) {
+        foreach ($transformedObjects as $incomingData) {
                 $existingObject = $this->findExistingObjectByPrimaryId($incomingData, $existingObjects);
                 
                 if ($existingObject === null) {
@@ -1673,39 +1689,39 @@ class SaveObjects
         } else {
             // STANDARD PATH: Full hash comparison for smaller operations
             foreach ($transformedObjects as $incomingData) {
-                $existingObject = $this->findExistingObjectByAnyIdentifier($incomingData, $existingObjects);
-                
-                if ($existingObject === null) {
-                    $result['create'][] = $incomingData;
-                } else {
+            $existingObject = $this->findExistingObjectByAnyIdentifier($incomingData, $existingObjects);
+            
+            if ($existingObject === null) {
+                $result['create'][] = $incomingData;
+            } else {
                     // Full hash comparison for precise deduplication
-                    $object1 = $incomingData['object'];
-                    $object2 = $existingObject->getObject();
-                    unset($object1['@self'], $object1['id'], $object2['@self'], $object2['id']);
-                    
-                    $incomingHash = hash('sha256', json_encode($object1 ?? []));
-                    $existingHash = hash('sha256', json_encode($object2 ?? []));
-                    
-                    if ($incomingHash === $existingHash) {
-                        $result['skip'][] = $existingObject;
+                $object1 = $incomingData['object'];
+                $object2 = $existingObject->getObject();
+                unset($object1['@self'], $object1['id'], $object2['@self'], $object2['id']);
+
+                $incomingHash = hash('sha256', json_encode($object1 ?? []));
+                $existingHash = hash('sha256', json_encode($object2 ?? []));
+                
+                if ($incomingHash === $existingHash) {
+                    $result['skip'][] = $existingObject;
+                } else {
+                    if (isset($incomingData['object']) && is_array($incomingData['object']) && !empty($incomingData['object'])) {
+                        $existingObject->setObject($incomingData['object']);
+                        if (isset($incomingData['updated'])) {
+                            $existingObject->setUpdated(new \DateTime($incomingData['updated']));
+                        }
+                        if (isset($incomingData['owner'])) {
+                            $existingObject->setOwner($incomingData['owner']);
+                        }
+                        if (isset($incomingData['organisation'])) {
+                            $existingObject->setOrganisation($incomingData['organisation']);
+                        }
+                        if (isset($incomingData['published'])) {
+                            $existingObject->setPublished(new \DateTime($incomingData['published']));
+                        }
+                        $result['update'][] = $existingObject;
                     } else {
-                        if (isset($incomingData['object']) && is_array($incomingData['object']) && !empty($incomingData['object'])) {
-                            $existingObject->setObject($incomingData['object']);
-                            if (isset($incomingData['updated'])) {
-                                $existingObject->setUpdated(new \DateTime($incomingData['updated']));
-                            }
-                            if (isset($incomingData['owner'])) {
-                                $existingObject->setOwner($incomingData['owner']);
-                            }
-                            if (isset($incomingData['organisation'])) {
-                                $existingObject->setOrganisation($incomingData['organisation']);
-                            }
-                            if (isset($incomingData['published'])) {
-                                $existingObject->setPublished(new \DateTime($incomingData['published']));
-                            }
-                            $result['update'][] = $existingObject;
-                        } else {
-                            $result['skip'][] = $existingObject;
+                        $result['skip'][] = $existingObject;
                         }
                     }
                 }

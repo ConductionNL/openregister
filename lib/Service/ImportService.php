@@ -674,6 +674,19 @@ class ImportService
                 ]
             ];
         }
+        
+        // ADD PERFORMANCE METRICS: Include timing and speed metrics like SaveObjects does
+        $totalImportTime = microtime(true) - $startTime;
+        $overallRowsPerSecond = count($allObjects) / max($totalImportTime, 0.001);
+        
+        $summary['performance'] = [
+            'totalTime'        => round($totalImportTime, 3),
+            'totalTimeMs'      => round($totalImportTime * 1000, 2),
+            'objectsPerSecond' => round($overallRowsPerSecond, 2),
+            'totalProcessed'   => count($allObjects),
+            'totalFound'       => $summary['found'],
+            'efficiency'       => $summary['found'] > 0 ? round((count($allObjects) / $summary['found']) * 100, 1) : 0,
+        ];
 
         return $summary;
 
@@ -843,6 +856,19 @@ class ImportService
                 ]
             ];
         }
+        
+        // ADD PERFORMANCE METRICS: Include timing and speed metrics like SaveObjects does
+        $totalImportTime = microtime(true) - $startTime;
+        $overallRowsPerSecond = count($allObjects) / max($totalImportTime, 0.001);
+        
+        $summary['performance'] = [
+            'totalTime'        => round($totalImportTime, 3),
+            'totalTimeMs'      => round($totalImportTime * 1000, 2),
+            'objectsPerSecond' => round($overallRowsPerSecond, 2),
+            'totalProcessed'   => count($allObjects),
+            'totalFound'       => $summary['found'],
+            'efficiency'       => $summary['found'] > 0 ? round((count($allObjects) / $summary['found']) * 100, 1) : 0,
+        ];
 
         return $summary;
 

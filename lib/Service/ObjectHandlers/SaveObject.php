@@ -436,38 +436,171 @@ class SaveObject
      */
     public function hydrateObjectMetadata(ObjectEntity $entity, Schema $schema): void
     {
-        $config     = $schema->getConfiguration();
         $objectData = $entity->getObject();
-
-        if (isset($config['objectNameField']) === true) {
-            $name = $this->getValueFromPath($objectData, $config['objectNameField']);
-            if ($name !== null) {
-                $entity->setName($name);
-            }
-        }
-
-        if (isset($config['objectDescriptionField']) === true) {
-            $description = $this->getValueFromPath($objectData, $config['objectDescriptionField']);
-            if ($description !== null) {
-                $entity->setDescription($description);
-            }
-        }
-
-        if (isset($config['objectSummaryField']) === true) {
-            $summary = $this->getValueFromPath($objectData, $config['objectSummaryField']);
-            if ($summary !== null) {
-                $entity->setSummary($summary);
-            }
-        }
-
-        if (isset($config['objectImageField']) === true) {
-            $image = $this->getValueFromPath($objectData, $config['objectImageField']);
-            if ($image !== null) {
-                $entity->setImage($image);
-            }
-        }
+        $this->hydrateMetadata($objectData, $schema, $entity);
 
     }//end hydrateObjectMetadata()
+
+
+    /**
+     * Global metadata hydration method that works with both ObjectEntity and array data.
+     *
+     * This method extracts name, description, summary, and image from object data using schema 
+     * configuration fields, and also handles core metadata like owner, organisation, timestamps, 
+     * and UUID generation. It can work with both ObjectEntity objects and array data for bulk operations.
+     *
+     * PERFORMANCE: Uses cached services (OrganisationService caching, UserSession caching)
+     * so this method is safe to call in bulk operations without performance degradation.
+     *
+     * @param array                    $objectData Object data to extract metadata from
+     * @param Schema                   $schema     Schema containing configuration
+     * @param ObjectEntity|array|null  $target     Target to apply metadata to (ObjectEntity or array reference)
+     * @param bool                     $setCore    Whether to set core metadata (owner, organisation, timestamps, UUID)
+     *
+     * @return array|null Extracted metadata array (for array targets) or null (for ObjectEntity targets)
+     */
+    public function hydrateMetadata(array $objectData, Schema $schema, ObjectEntity|array|null &$target = null, bool $setCore = true): ?array
+    {
+        $config = $schema->getConfiguration();
+        $extractedMetadata = [];
+
+        // === EXTRACT CONTENT-BASED METADATA FROM OBJECT DATA ===
+        
+        // Extract name from configured field
+        if (isset($config['objectNameField'])) {
+            $name = $this->getValueFromPath($objectData, $config['objectNameField']);
+            if ($name !== null) {
+                $extractedMetadata['name'] = $name;
+                if ($target instanceof ObjectEntity) {
+                    $target->setName($name);
+                } elseif (is_array($target)) {
+                    $target['name'] = $name;
+                }
+            }
+        }
+
+        // Extract description from configured field
+        if (isset($config['objectDescriptionField'])) {
+            $description = $this->getValueFromPath($objectData, $config['objectDescriptionField']);
+            if ($description !== null) {
+                $extractedMetadata['description'] = $description;
+                if ($target instanceof ObjectEntity) {
+                    $target->setDescription($description);
+                } elseif (is_array($target)) {
+                    $target['description'] = $description;
+                }
+            }
+        }
+
+        // Extract summary from configured field
+        if (isset($config['objectSummaryField'])) {
+            $summary = $this->getValueFromPath($objectData, $config['objectSummaryField']);
+            if ($summary !== null) {
+                $extractedMetadata['summary'] = $summary;
+                if ($target instanceof ObjectEntity) {
+                    $target->setSummary($summary);
+                } elseif (is_array($target)) {
+                    $target['summary'] = $summary;
+                }
+            }
+        }
+
+        // Extract image from configured field
+        if (isset($config['objectImageField'])) {
+            $image = $this->getValueFromPath($objectData, $config['objectImageField']);
+            if ($image !== null) {
+                $extractedMetadata['image'] = $image;
+                if ($target instanceof ObjectEntity) {
+                    $target->setImage($image);
+                } elseif (is_array($target)) {
+                    $target['image'] = $image;
+                }
+            }
+        }
+
+        // === SET CORE METADATA IF REQUESTED AND MISSING ===
+        
+        if ($setCore) {
+            $now = new \DateTime();
+            $nowString = $now->format('Y-m-d H:i:s');
+            
+            // Set UUID if missing - fast local operation
+            if ($target instanceof ObjectEntity) {
+                if (!$target->getUuid()) {
+                    $uuid = Uuid::v4()->toRfc4122();
+                    $target->setUuid($uuid);
+                    $extractedMetadata['uuid'] = $uuid;
+                }
+            } elseif (is_array($target)) {
+                if (empty($target['uuid'])) {
+                    $uuid = Uuid::v4()->toRfc4122();
+                    $target['uuid'] = $uuid;
+                    $extractedMetadata['uuid'] = $uuid;
+                }
+            }
+            
+            // Set owner if missing - uses cached user session
+            $currentUser = $this->userSession->getUser();
+            $ownerUid = $currentUser ? $currentUser->getUID() : null;
+            
+            if ($target instanceof ObjectEntity) {
+                if (!$target->getOwner() && $ownerUid) {
+                    $target->setOwner($ownerUid);
+                    $extractedMetadata['owner'] = $ownerUid;
+                }
+            } elseif (is_array($target)) {
+                if (empty($target['owner']) && $ownerUid) {
+                    $target['owner'] = $ownerUid;
+                    $extractedMetadata['owner'] = $ownerUid;
+                }
+            }
+            
+            // Set organisation if missing - uses cached organisation service
+            try {
+                $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
+                
+                if ($target instanceof ObjectEntity) {
+                    if (!$target->getOrganisation() && $organisationUuid) {
+                        $target->setOrganisation($organisationUuid);
+                        $extractedMetadata['organisation'] = $organisationUuid;
+                    }
+                } elseif (is_array($target)) {
+                    if (empty($target['organisation']) && $organisationUuid) {
+                        $target['organisation'] = $organisationUuid;
+                        $extractedMetadata['organisation'] = $organisationUuid;
+                    }
+                }
+            } catch (\Exception $e) {
+                // Organisation service failed - continue without setting organisation
+                // This is acceptable as some objects may not require organisation
+            }
+            
+            // Set timestamps if missing - fast local operation
+            if ($target instanceof ObjectEntity) {
+                if (!$target->getCreated()) {
+                    $target->setCreated($now);
+                    $extractedMetadata['created'] = $nowString;
+                }
+                if (!$target->getUpdated()) {
+                    $target->setUpdated($now);
+                    $extractedMetadata['updated'] = $nowString;
+                }
+            } elseif (is_array($target)) {
+                if (empty($target['created'])) {
+                    $target['created'] = $nowString;
+                    $extractedMetadata['created'] = $nowString;
+                }
+                if (empty($target['updated'])) {
+                    $target['updated'] = $nowString;
+                    $extractedMetadata['updated'] = $nowString;
+                }
+            }
+        }
+
+        // Return extracted metadata for array targets, null for ObjectEntity targets
+        return is_array($target) ? $extractedMetadata : null;
+
+    }//end hydrateMetadata()
 
 
     /**
@@ -1457,9 +1590,10 @@ class SaveObject
         // Set the prepared data
         $objectEntity->setObject($preparedData);
 
-        // Hydrate name and description from schema configuration.
+        // UNIFIED METADATA HYDRATION: Use shared method for all metadata including core fields
+        // This replaces separate calls to hydrateObjectMetadata, setOwner, and setOrganisation
         try {
-            $this->hydrateObjectMetadata($objectEntity, $schema);
+            $this->hydrateMetadata($preparedData, $schema, $objectEntity, setCore: true);
         } catch (Exception $e) {
             // CRITICAL FIX: Hydration failures indicate schema/data mismatch - don't suppress!
             throw new \Exception(
@@ -1468,19 +1602,6 @@ class SaveObject
                 0,
                 $e
             );
-        }
-
-        // Set user information if available.
-        $user = $this->userSession->getUser();
-        if ($user !== null) {
-            $objectEntity->setOwner($user->getUID());
-        }
-
-        // Set organisation from active organisation if not already set
-        // Always respect user's active organisation regardless of multitenancy settings
-        if ($objectEntity->getOrganisation() === null || $objectEntity->getOrganisation() === '') {
-            $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
-            $objectEntity->setOrganisation($organisationUuid);
         }
 
         // Update object relations.
@@ -1535,8 +1656,9 @@ class SaveObject
         // Set the prepared data
         $existingObject->setObject($preparedData);
 
-        // Hydrate name and description from schema configuration.
-        $this->hydrateObjectMetadata($existingObject, $schema);
+        // UNIFIED METADATA HYDRATION: Use shared method for all metadata 
+        // For updates, only set core metadata if it's missing (don't override existing values)
+        $this->hydrateMetadata($preparedData, $schema, $existingObject, setCore: true);
 
         // Update object relations.
         $existingObject = $this->updateObjectRelations($existingObject, $preparedData, $schema);
