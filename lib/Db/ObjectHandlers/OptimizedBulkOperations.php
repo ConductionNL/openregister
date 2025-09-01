@@ -49,8 +49,8 @@ class OptimizedBulkOperations
     /** @var int Maximum SQL statement size in bytes (16MB) */
     private const MAX_QUERY_SIZE = 16777216;
     
-    /** @var int Optimal batch size for memory usage */
-    private const OPTIMAL_BATCH_SIZE = 1000;
+    /** @var int Optimal batch size for memory usage - increased for sub-1-second performance */
+    private const OPTIMAL_BATCH_SIZE = 10000;
     
     /** @var int Maximum parameters per query (MySQL limit) */
     private const MAX_PARAMETERS = 32000;
@@ -101,11 +101,13 @@ class OptimizedBulkOperations
         $chunks = array_chunk($allObjects, self::OPTIMAL_BATCH_SIZE);
         $totalChunks = count($chunks);
 
-        $this->logger->info("Starting optimized bulk operations", [
-            'total_objects' => count($allObjects),
-            'chunks' => $totalChunks,
-            'method' => 'ultraFastUnifiedBulkSave'
-        ]);
+        // PERFORMANCE: Minimal logging for large operations
+        if (count($allObjects) > 10000) {
+            $this->logger->info("Starting ultra-fast bulk operations", [
+                'total_objects' => count($allObjects),
+                'chunks' => $totalChunks
+            ]);
+        }
 
         foreach ($chunks as $chunkIndex => $chunk) {
             $chunkStartTime = microtime(true);
