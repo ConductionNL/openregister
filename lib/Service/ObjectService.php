@@ -408,7 +408,12 @@ class ObjectService
             $registers = $this->getCachedEntities('register', [$register], function($ids) {
                 return [$this->registerMapper->find($ids[0])];
             });
-            $register = $registers[0];
+            if (isset($registers[0]) && $registers[0] instanceof Register) {
+                $register = $registers[0];
+            } else {
+                // Fallback to direct database lookup if cache fails
+                $register = $this->registerMapper->find($register);
+            }
         }
 
         $this->currentRegister = $register;
@@ -431,7 +436,12 @@ class ObjectService
             $schemas = $this->getCachedEntities('schema', [$schema], function($ids) {
                 return [$this->schemaMapper->find($ids[0])];
             });
-            $schema = $schemas[0];
+            if (isset($schemas[0]) && $schemas[0] instanceof Schema) {
+                $schema = $schemas[0];
+            } else {
+                // Fallback to direct database lookup if cache fails
+                $schema = $this->schemaMapper->find($schema);
+            }
         }
 
         $this->currentSchema = $schema;
@@ -5152,7 +5162,38 @@ class ObjectService
 
         // Combine facetable fields from all relevant schemas
         foreach ($schemas as $schema) {
-            $schemaFacets = $schema->getFacets();
+            // **TYPE SAFETY**: Ensure we have a Schema object, not an array
+            if (is_array($schema)) {
+                // If cached as array, hydrate back to Schema object
+                try {
+                    $schemaObject = new Schema();
+                    $schemaObject->hydrate($schema);
+                    $schema = $schemaObject;
+                } catch (\Exception $e) {
+                    // Skip invalid schema data
+                    continue;
+                }
+            }
+            
+            if (!($schema instanceof Schema)) {
+                // Skip non-Schema objects
+                $this->logger->warning('Invalid schema object in facetable fields processing', [
+                    'type' => gettype($schema),
+                    'isArray' => is_array($schema)
+                ]);
+                continue;
+            }
+            
+            try {
+                $schemaFacets = $schema->getFacets();
+            } catch (\Exception $e) {
+                $this->logger->error('Failed to get facets from schema', [
+                    'error' => $e->getMessage(),
+                    'schemaType' => gettype($schema),
+                    'isSchemaInstance' => $schema instanceof Schema
+                ]);
+                continue;
+            }
             
             if ($schemaFacets !== null && isset($schemaFacets['object_fields'])) {
                 // Merge object fields from this schema
