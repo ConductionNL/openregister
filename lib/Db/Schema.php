@@ -1108,4 +1108,142 @@ class Schema extends Entity implements JsonSerializable
     }//end determineFacetType()
 
 
+    /**
+     * Regenerate facets from properties (for lazy facet generation)
+     *
+     * **PERFORMANCE OPTIMIZATION**: This method regenerates facet configurations
+     * when they're missing, ensuring the next user gets faster facetable discovery.
+     * This is called automatically when a schema without facets is encountered.
+     *
+     * @return void
+     */
+    public function regenerateFacetsFromProperties(): void
+    {
+        $properties = $this->getProperties() ?? [];
+        $facetConfig = [];
+        
+        // Add metadata facets (always available)
+        $facetConfig['@self'] = [
+            'register' => ['type' => 'terms'],
+            'schema' => ['type' => 'terms'], 
+            'created' => ['type' => 'date_histogram', 'interval' => 'month'],
+            'updated' => ['type' => 'date_histogram', 'interval' => 'month'],
+            'published' => ['type' => 'date_histogram', 'interval' => 'month'],
+            'owner' => ['type' => 'terms']
+        ];
+        
+        // Analyze properties for facetable fields
+        $objectFields = [];
+        foreach ($properties as $fieldName => $property) {
+            if (!is_array($property)) {
+                continue;
+            }
+            
+            $facetType = $this->determineFacetTypeForProperty($property, $fieldName);
+            if ($facetType !== null) {
+                $objectFields[$fieldName] = ['type' => $facetType];
+                
+                // Add interval for date histograms
+                if ($facetType === 'date_histogram') {
+                    $objectFields[$fieldName]['interval'] = 'month';
+                }
+            }
+        }
+        
+        if (!empty($objectFields)) {
+            $facetConfig['object_fields'] = $objectFields;
+        }
+        
+        // Store the facet configuration
+        $this->setFacets($facetConfig);
+        
+    }//end regenerateFacetsFromProperties()
+
+
+    /**
+     * Determine the appropriate facet type for a schema property
+     *
+     * @param array  $property  The property definition
+     * @param string $fieldName The field name
+     *
+     * @return string|null The facet type ('terms', 'date_histogram') or null if not facetable
+     */
+    private function determineFacetTypeForProperty(array $property, string $fieldName): ?string
+    {
+        // Check if explicitly marked as facetable
+        if (isset($property['facetable']) && 
+            ($property['facetable'] === true || $property['facetable'] === 'true' || 
+             (is_string($property['facetable']) && strtolower(trim($property['facetable'])) === 'true'))
+        ) {
+            return $this->determineFacetTypeFromPropertyType($property);
+        }
+        
+        // Auto-detect common facetable field names
+        $commonFacetableFields = [
+            'type', 'status', 'category', 'tags', 'label', 'group', 
+            'department', 'location', 'priority', 'state', 'classification',
+            'genre', 'brand', 'model', 'version', 'license', 'language'
+        ];
+        
+        $lowerFieldName = strtolower($fieldName);
+        if (in_array($lowerFieldName, $commonFacetableFields)) {
+            return $this->determineFacetTypeFromPropertyType($property);
+        }
+        
+        // Auto-detect enum properties (good for faceting)
+        if (isset($property['enum']) && is_array($property['enum']) && count($property['enum']) > 0) {
+            return 'terms';
+        }
+        
+        // Auto-detect date/datetime fields
+        $propertyType = $property['type'] ?? '';
+        if (in_array($propertyType, ['date', 'datetime', 'date-time'])) {
+            return 'date_histogram';
+        }
+        
+        // Check for date-like field names
+        $dateFields = ['created', 'updated', 'modified', 'date', 'time', 'timestamp'];
+        foreach ($dateFields as $dateField) {
+            if (str_contains($lowerFieldName, $dateField)) {
+                return 'date_histogram';
+            }
+        }
+        
+        return null;
+        
+    }//end determineFacetTypeForProperty()
+
+
+    /**
+     * Determine facet type from property type
+     *
+     * @param array $property The property definition
+     *
+     * @return string The facet type ('terms' or 'date_histogram')
+     */
+    private function determineFacetTypeFromPropertyType(array $property): string
+    {
+        $propertyType = $property['type'] ?? 'string';
+        
+        // Date/datetime properties use date_histogram
+        if (in_array($propertyType, ['date', 'datetime', 'date-time'])) {
+            return 'date_histogram';
+        }
+        
+        // Enum properties use terms
+        if (isset($property['enum']) && is_array($property['enum'])) {
+            return 'terms';
+        }
+        
+        // Boolean, integer, number with small ranges use terms
+        if (in_array($propertyType, ['boolean', 'integer', 'number'])) {
+            return 'terms';
+        }
+        
+        // Default to terms for other types
+        return 'terms';
+        
+    }//end determineFacetTypeFromPropertyType()
+
+
 }//end class
