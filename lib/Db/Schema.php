@@ -993,13 +993,30 @@ class Schema extends Entity implements JsonSerializable
     /**
      * Set the facet configuration
      *
-     * @param array|null $facets The facet configuration array
+     * **TYPE SAFETY**: Handle both array and JSON string inputs for database hydration
+     * The database stores facets as JSON strings, but we want to work with arrays in PHP.
+     *
+     * @param array|string|null $facets The facet configuration array or JSON string
      *
      * @return void
      */
-    public function setFacets(?array $facets): void
+    public function setFacets(array|string|null $facets): void
     {
-        $this->facets = $facets;
+        // **DATABASE COMPATIBILITY**: Handle JSON string from database
+        if (is_string($facets)) {
+            try {
+                $this->facets = json_decode($facets, true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    // Invalid JSON, set to null
+                    $this->facets = null;
+                }
+            } catch (\Exception $e) {
+                $this->facets = null;
+            }
+        } else {
+            $this->facets = $facets;
+        }
+        
         $this->markFieldUpdated('facets');
 
     }//end setFacets()
