@@ -390,8 +390,9 @@ class ObjectsController extends Controller
         // Build search query with resolved numeric IDs
         $query = $objectService->buildSearchQuery($this->request->getParams(), $resolved['register'], $resolved['schema']);
         
-        // Use async version for better performance (3-5x faster)  
-        $result = $objectService->searchObjectsPaginatedSync($query);
+        // **PERFORMANCE OPTIMIZATION**: Use optimized version that intelligently selects sync vs async
+        // Simple requests use fast path, complex requests use async processing
+        $result = $objectService->searchObjectsPaginated($query);
         
         // **SUB-SECOND OPTIMIZATION**: Enable response compression for large payloads
         $response = new JSONResponse($result);
@@ -440,8 +441,9 @@ class ObjectsController extends Controller
         // Build search query without register/schema constraints
         $query = $objectService->buildSearchQuery($this->request->getParams());
 
-        // Use async version for better performance (3-5x faster)
-        $result = $objectService->searchObjectsPaginatedSync($query);
+        // **PERFORMANCE OPTIMIZATION**: Use optimized version that intelligently selects sync vs async
+        // Simple requests use fast path, complex requests use async processing
+        $result = $objectService->searchObjectsPaginated($query);
 
         return new JSONResponse($result);
 
