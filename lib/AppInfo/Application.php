@@ -51,7 +51,7 @@ use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\EventDispatcher\IEventDispatcher;
-use OCA\OpenRegister\EventListener\OpenRegisterDebugListener;
+
 use OCA\OpenRegister\EventListener\TestEventListener;
 use OCP\User\Events\UserLoggedInEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
@@ -282,16 +282,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register OpenRegisterDebugListener for comprehensive event debugging
-        $context->registerService(
-                OpenRegisterDebugListener::class,
-                function ($container) {
-                    return new OpenRegisterDebugListener(
-                    $container->get('Psr\Log\LoggerInterface'),
-                    true // Enable debug logging - set to false to disable
-                    );
-                }
-                );
+
 
         // Register TestEventListener for verifying event system works
         $context->registerService(
@@ -327,20 +318,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register event listeners using context registration (like SoftwareCatalog)
-        $context->registerEventListener(ObjectCreatedEvent::class, OpenRegisterDebugListener::class);
-        $context->registerEventListener(ObjectUpdatedEvent::class, OpenRegisterDebugListener::class);
-        $context->registerEventListener(ObjectDeletedEvent::class, OpenRegisterDebugListener::class);
-        $context->registerEventListener(ObjectLockedEvent::class, OpenRegisterDebugListener::class);
-        $context->registerEventListener(ObjectUnlockedEvent::class, OpenRegisterDebugListener::class);
-        $context->registerEventListener(ObjectRevertedEvent::class, OpenRegisterDebugListener::class);
-        $context->registerEventListener(OrganisationCreatedEvent::class, OpenRegisterDebugListener::class);
-        $context->registerEventListener(RegisterCreatedEvent::class, OpenRegisterDebugListener::class);
-        $context->registerEventListener(RegisterDeletedEvent::class, OpenRegisterDebugListener::class);
-        $context->registerEventListener(RegisterUpdatedEvent::class, OpenRegisterDebugListener::class);
-        $context->registerEventListener(SchemaCreatedEvent::class, OpenRegisterDebugListener::class);
-        $context->registerEventListener(SchemaDeletedEvent::class, OpenRegisterDebugListener::class);
-        $context->registerEventListener(SchemaUpdatedEvent::class, OpenRegisterDebugListener::class);
+
 
         // Register TEST event listener for easily triggerable Nextcloud events
         $context->registerEventListener(UserLoggedInEvent::class, TestEventListener::class);
@@ -369,20 +347,7 @@ class Application extends App implements IBootstrap
         ]);
         
         try {
-            // Register OpenRegisterDebugListener for ALL custom OpenRegister events
-            $eventDispatcher->addServiceListener(ObjectCreatedEvent::class, OpenRegisterDebugListener::class);
-            $eventDispatcher->addServiceListener(ObjectDeletedEvent::class, OpenRegisterDebugListener::class);
-            $eventDispatcher->addServiceListener(ObjectLockedEvent::class, OpenRegisterDebugListener::class);
-            $eventDispatcher->addServiceListener(ObjectRevertedEvent::class, OpenRegisterDebugListener::class);
-            $eventDispatcher->addServiceListener(ObjectUnlockedEvent::class, OpenRegisterDebugListener::class);
-            $eventDispatcher->addServiceListener(ObjectUpdatedEvent::class, OpenRegisterDebugListener::class);
-            $eventDispatcher->addServiceListener(OrganisationCreatedEvent::class, OpenRegisterDebugListener::class);
-            $eventDispatcher->addServiceListener(RegisterCreatedEvent::class, OpenRegisterDebugListener::class);
-            $eventDispatcher->addServiceListener(RegisterDeletedEvent::class, OpenRegisterDebugListener::class);
-            $eventDispatcher->addServiceListener(RegisterUpdatedEvent::class, OpenRegisterDebugListener::class);
-            $eventDispatcher->addServiceListener(SchemaCreatedEvent::class, OpenRegisterDebugListener::class);
-            $eventDispatcher->addServiceListener(SchemaDeletedEvent::class, OpenRegisterDebugListener::class);
-            $eventDispatcher->addServiceListener(SchemaUpdatedEvent::class, OpenRegisterDebugListener::class);
+
             
             // Register test event listener for UserLoggedInEvent
             $eventDispatcher->addServiceListener(UserLoggedInEvent::class, TestEventListener::class);
