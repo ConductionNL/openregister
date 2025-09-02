@@ -4786,4 +4786,21 @@ class ObjectEntityMapper extends QBMapper
         }
     }//end setExpiryDate()
 
+
+    /**
+     * Get the database connection for advanced operations
+     *
+     * **PERFORMANCE OPTIMIZATION**: Exposes database connection for advanced
+     * handlers like HyperFacetHandler that need direct database access for
+     * optimized query execution.
+     *
+     * @return IDBConnection Database connection instance
+     */
+    public function getConnection(): IDBConnection
+    {
+        return $this->db;
+
+    }//end getConnection()
+
+
 }//end class
