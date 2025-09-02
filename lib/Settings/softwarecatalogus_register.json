@@ -2223,6 +2223,7 @@
                 "configuration": {
                     "objectNameField": "afnemer", 
                     "objectDescriptionField": "product",
+                    "objectSummaryField": "status",
                     "allowFiles": true,
                     "allowedTags": [
                         "DPIA",
