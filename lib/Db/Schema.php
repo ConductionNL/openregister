@@ -1109,58 +1109,6 @@ class Schema extends Entity implements JsonSerializable
 
 
     /**
-     * Regenerate facets from properties (for lazy facet generation)
-     *
-     * **PERFORMANCE OPTIMIZATION**: This method regenerates facet configurations
-     * when they're missing, ensuring the next user gets faster facetable discovery.
-     * This is called automatically when a schema without facets is encountered.
-     *
-     * @return void
-     */
-    public function regenerateFacetsFromProperties(): void
-    {
-        $properties = $this->getProperties() ?? [];
-        $facetConfig = [];
-        
-        // Add metadata facets (always available)
-        $facetConfig['@self'] = [
-            'register' => ['type' => 'terms'],
-            'schema' => ['type' => 'terms'], 
-            'created' => ['type' => 'date_histogram', 'interval' => 'month'],
-            'updated' => ['type' => 'date_histogram', 'interval' => 'month'],
-            'published' => ['type' => 'date_histogram', 'interval' => 'month'],
-            'owner' => ['type' => 'terms']
-        ];
-        
-        // Analyze properties for facetable fields
-        $objectFields = [];
-        foreach ($properties as $fieldName => $property) {
-            if (!is_array($property)) {
-                continue;
-            }
-            
-            $facetType = $this->determineFacetTypeForProperty($property, $fieldName);
-            if ($facetType !== null) {
-                $objectFields[$fieldName] = ['type' => $facetType];
-                
-                // Add interval for date histograms
-                if ($facetType === 'date_histogram') {
-                    $objectFields[$fieldName]['interval'] = 'month';
-                }
-            }
-        }
-        
-        if (!empty($objectFields)) {
-            $facetConfig['object_fields'] = $objectFields;
-        }
-        
-        // Store the facet configuration
-        $this->setFacets($facetConfig);
-        
-    }//end regenerateFacetsFromProperties()
-
-
-    /**
      * Determine the appropriate facet type for a schema property
      *
      * @param array  $property  The property definition
