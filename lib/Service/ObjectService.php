@@ -1181,7 +1181,10 @@ class ObjectService
     public function getRegisters(): array
     {
         // Get all registers.
-        $registers = $this->getCachedEntities('register', 'all', [$this->registerMapper, 'findAll']);
+        $registers = $this->getCachedEntities('register', 'all', function($ids) {
+            // **TYPE SAFETY**: Convert 'all' to proper null limit for RegisterMapper::findAll()
+            return $this->registerMapper->findAll(null); // null = no limit (get all)
+        });
 
         // Convert to arrays and extend schemas.
         $registers = array_map(
@@ -1771,12 +1774,50 @@ class ObjectService
 
         if (!empty($registerIds)) {
             $registerEntities = $this->getCachedEntities('register', $registerIds, [$this->registerMapper, 'findMultiple']);
-            $registers        = array_combine(array_map(fn($register) => $register->getId(), $registerEntities), $registerEntities);
+            
+            // **TYPE SAFETY**: Ensure we have Register objects, not arrays
+            $validRegisters = [];
+            foreach ($registerEntities as $register) {
+                if (is_array($register)) {
+                    // Hydrate array back to Register object
+                    try {
+                        $registerObj = new \OCA\OpenRegister\Db\Register();
+                        $registerObj->hydrate($register);
+                        $validRegisters[] = $registerObj;
+                    } catch (\Exception $e) {
+                        // Skip invalid register data
+                        continue;
+                    }
+                } elseif ($register instanceof \OCA\OpenRegister\Db\Register) {
+                    $validRegisters[] = $register;
+                }
+            }
+            
+            $registers = array_combine(array_map(fn($register) => $register->getId(), $validRegisters), $validRegisters);
         }
 
         if (!empty($schemaIds)) {
             $schemaEntities = $this->getCachedEntities('schema', $schemaIds, [$this->schemaMapper, 'findMultiple']);
-            $schemas        = array_combine(array_map(fn($schema) => $schema->getId(), $schemaEntities), $schemaEntities);
+            
+            // **TYPE SAFETY**: Ensure we have Schema objects, not arrays
+            $validSchemas = [];
+            foreach ($schemaEntities as $schema) {
+                if (is_array($schema)) {
+                    // Hydrate array back to Schema object
+                    try {
+                        $schemaObj = new \OCA\OpenRegister\Db\Schema();
+                        $schemaObj->hydrate($schema);
+                        $validSchemas[] = $schemaObj;
+                    } catch (\Exception $e) {
+                        // Skip invalid schema data
+                        continue;
+                    }
+                } elseif ($schema instanceof \OCA\OpenRegister\Db\Schema) {
+                    $validSchemas[] = $schema;
+                }
+            }
+            
+            $schemas = array_combine(array_map(fn($schema) => $schema->getId(), $validSchemas), $validSchemas);
         }
 
         // Extract extend configuration from query if present
@@ -5362,7 +5403,10 @@ class ObjectService
 
         // No specific schema filter - get all schemas (for global facetable discovery)
         // **PERFORMANCE OPTIMIZATION**: Cache all schemas when doing global queries
-        return $this->getCachedEntities('schema', 'all', [$this->schemaMapper, 'findAll']);
+        return $this->getCachedEntities('schema', 'all', function($ids) {
+            // **TYPE SAFETY**: Convert 'all' to proper null limit for SchemaMapper::findAll()
+            return $this->schemaMapper->findAll(null); // null = no limit (get all)
+        });
 
     }//end getSchemasForQuery()
 
