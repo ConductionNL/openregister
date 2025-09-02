@@ -594,14 +594,20 @@ class MariaDbSearchHandler
                 );
             }
 
-            // PRIORITY 3: Search in JSON object data (SLOWEST - comprehensive fallback)
-            // Only use JSON_SEARCH as last resort for comprehensive coverage
-            $jsonSearchFunction = "JSON_SEARCH(LOWER(`object`), 'all', ".$searchParam.")";
-            $termConditions->add(
-                $queryBuilder->expr()->isNotNull(
-                    $queryBuilder->createFunction($jsonSearchFunction)
-                )
-            );
+            // **PERFORMANCE OPTIMIZATION**: JSON search on object field DISABLED for performance
+            // JSON_SEARCH on large object fields is extremely expensive (can add 500ms+ per query)
+            // _search now only covers: name, description, summary for sub-500ms performance
+            // 
+            // If comprehensive JSON search is needed, use specific object field filters instead:
+            // e.g., ?fieldName=searchTerm rather than ?_search=searchTerm
+            //
+            // Original code (DISABLED for performance):
+            // $jsonSearchFunction = "JSON_SEARCH(LOWER(`object`), 'all', ".$searchParam.")";
+            // $termConditions->add(
+            //     $queryBuilder->expr()->isNotNull(
+            //         $queryBuilder->createFunction($jsonSearchFunction)
+            //     )
+            // );
 
             // Add the term conditions to the main OR group
             $orConditions->add($termConditions);
