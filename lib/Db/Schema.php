@@ -993,13 +993,30 @@ class Schema extends Entity implements JsonSerializable
     /**
      * Set the facet configuration
      *
-     * @param array|null $facets The facet configuration array
+     * **TYPE SAFETY**: Handle both array and JSON string inputs for database hydration
+     * The database stores facets as JSON strings, but we want to work with arrays in PHP.
+     *
+     * @param array|string|null $facets The facet configuration array or JSON string
      *
      * @return void
      */
-    public function setFacets(?array $facets): void
+    public function setFacets(array|string|null $facets): void
     {
-        $this->facets = $facets;
+        // **DATABASE COMPATIBILITY**: Handle JSON string from database
+        if (is_string($facets)) {
+            try {
+                $this->facets = json_decode($facets, true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    // Invalid JSON, set to null
+                    $this->facets = null;
+                }
+            } catch (\Exception $e) {
+                $this->facets = null;
+            }
+        } else {
+            $this->facets = $facets;
+        }
+        
         $this->markFieldUpdated('facets');
 
     }//end setFacets()
@@ -1106,58 +1123,6 @@ class Schema extends Entity implements JsonSerializable
         return 'terms';
 
     }//end determineFacetType()
-
-
-    /**
-     * Regenerate facets from properties (for lazy facet generation)
-     *
-     * **PERFORMANCE OPTIMIZATION**: This method regenerates facet configurations
-     * when they're missing, ensuring the next user gets faster facetable discovery.
-     * This is called automatically when a schema without facets is encountered.
-     *
-     * @return void
-     */
-    public function regenerateFacetsFromProperties(): void
-    {
-        $properties = $this->getProperties() ?? [];
-        $facetConfig = [];
-        
-        // Add metadata facets (always available)
-        $facetConfig['@self'] = [
-            'register' => ['type' => 'terms'],
-            'schema' => ['type' => 'terms'], 
-            'created' => ['type' => 'date_histogram', 'interval' => 'month'],
-            'updated' => ['type' => 'date_histogram', 'interval' => 'month'],
-            'published' => ['type' => 'date_histogram', 'interval' => 'month'],
-            'owner' => ['type' => 'terms']
-        ];
-        
-        // Analyze properties for facetable fields
-        $objectFields = [];
-        foreach ($properties as $fieldName => $property) {
-            if (!is_array($property)) {
-                continue;
-            }
-            
-            $facetType = $this->determineFacetTypeForProperty($property, $fieldName);
-            if ($facetType !== null) {
-                $objectFields[$fieldName] = ['type' => $facetType];
-                
-                // Add interval for date histograms
-                if ($facetType === 'date_histogram') {
-                    $objectFields[$fieldName]['interval'] = 'month';
-                }
-            }
-        }
-        
-        if (!empty($objectFields)) {
-            $facetConfig['object_fields'] = $objectFields;
-        }
-        
-        // Store the facet configuration
-        $this->setFacets($facetConfig);
-        
-    }//end regenerateFacetsFromProperties()
 
 
     /**
