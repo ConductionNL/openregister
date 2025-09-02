@@ -248,7 +248,8 @@ class Application extends App implements IBootstrap
                     $container->get('OCP\IGroupManager'),
                     $container->get('OCP\IUserManager'),
                     $container->get(OrganisationService::class),
-                    $container->get('Psr\Log\LoggerInterface')
+                    $container->get('Psr\Log\LoggerInterface'),
+                    $container->get('OCP\ICacheFactory')
                     );
                 }
                 );
