@@ -58,6 +58,8 @@ use OCP\IUserSession;
 use OCP\IUser;
 use OCP\ISession;
 use OCP\IRequest;
+use OCP\IConfig;
+use OCP\IGroupManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
@@ -135,9 +137,14 @@ class EntityOrganisationAssignmentTest extends TestCase
     private $request;
     
     /**
-     * @var IAppConfig|MockObject
+     * @var IConfig|MockObject
      */
     private $config;
+
+    /**
+     * @var IGroupManager|MockObject
+     */
+    private $groupManager;
     
     /**
      * @var FileService|MockObject
@@ -171,7 +178,8 @@ class EntityOrganisationAssignmentTest extends TestCase
         $this->userSession = $this->createMock(IUserSession::class);
         $this->session = $this->createMock(ISession::class);
         $this->request = $this->createMock(IRequest::class);
-        $this->config = $this->createMock(IAppConfig::class);
+        $this->config = $this->createMock(IConfig::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
         $this->fileService = $this->createMock(FileService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->mockUser = $this->createMock(IUser::class);
@@ -181,6 +189,8 @@ class EntityOrganisationAssignmentTest extends TestCase
             $this->organisationMapper,
             $this->userSession,
             $this->session,
+            $this->config,
+            $this->groupManager,
             $this->logger
         );
         

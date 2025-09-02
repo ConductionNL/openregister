@@ -26,6 +26,8 @@ use OCP\IDBConnection;
 use OCP\IUserSession;
 use OCP\IGroupManager;
 use OCP\IUserManager;
+use OCP\IAppConfig;
+use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 use DateTime;
 
@@ -88,6 +90,16 @@ class ObjectEntityMapperTest extends TestCase
     private $organisationService;
 
     /**
+     * @var \PHPUnit\Framework\MockObject\MockObject|IAppConfig
+     */
+    private $appConfig;
+
+    /**
+     * @var \PHPUnit\Framework\MockObject\MockObject|LoggerInterface
+     */
+    private $logger;
+
+    /**
      * Set up the test environment
      *
      * @return void
@@ -103,6 +115,8 @@ class ObjectEntityMapperTest extends TestCase
         $this->groupManager = $this->createMock(IGroupManager::class);
         $this->userManager = $this->createMock(IUserManager::class);
         $this->organisationService = $this->createMock(OrganisationService::class);
+        $this->appConfig = $this->createMock(IAppConfig::class);
+        $this->logger = $this->createMock(LoggerInterface::class);
         $this->mapper = new ObjectEntityMapper(
             $this->db,
             $this->jsonService,
@@ -111,7 +125,8 @@ class ObjectEntityMapperTest extends TestCase
             $this->schemaMapper,
             $this->groupManager,
             $this->userManager,
-            $this->organisationService
+            $this->appConfig,
+            $this->logger
         );
     }
 

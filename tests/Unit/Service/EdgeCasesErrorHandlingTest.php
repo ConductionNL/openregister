@@ -28,6 +28,8 @@ use OCP\IUserSession;
 use OCP\ISession;
 use OCP\IUser;
 use OCP\IRequest;
+use OCP\IConfig;
+use OCP\IGroupManager;
 use OCP\AppFramework\Http\JSONResponse;
 use Psr\Log\LoggerInterface;
 
@@ -40,6 +42,8 @@ class EdgeCasesErrorHandlingTest extends TestCase
     private ISession|MockObject $session;
     private IRequest|MockObject $request;
     private LoggerInterface|MockObject $logger;
+    private IConfig|MockObject $config;
+    private IGroupManager|MockObject $groupManager;
 
     protected function setUp(): void
     {
@@ -50,11 +54,15 @@ class EdgeCasesErrorHandlingTest extends TestCase
         $this->session = $this->createMock(ISession::class);
         $this->request = $this->createMock(IRequest::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+        $this->config = $this->createMock(IConfig::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
         
         $this->organisationService = new OrganisationService(
             $this->organisationMapper,
             $this->userSession,
             $this->session,
+            $this->config,
+            $this->groupManager,
             $this->logger
         );
         

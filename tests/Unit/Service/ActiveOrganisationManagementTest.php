@@ -48,6 +48,8 @@ use OCP\IUserSession;
 use OCP\IUser;
 use OCP\ISession;
 use OCP\IRequest;
+use OCP\IConfig;
+use OCP\IGroupManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use Psr\Log\LoggerInterface;
@@ -98,6 +100,16 @@ class ActiveOrganisationManagementTest extends TestCase
     private $mockUser;
 
     /**
+     * @var IConfig|MockObject
+     */
+    private $config;
+
+    /**
+     * @var IGroupManager|MockObject
+     */
+    private $groupManager;
+
+    /**
      * Set up test environment before each test
      *
      * @return void
@@ -113,12 +125,16 @@ class ActiveOrganisationManagementTest extends TestCase
         $this->request = $this->createMock(IRequest::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->mockUser = $this->createMock(IUser::class);
+        $this->config = $this->createMock(IConfig::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
         
         // Create service instance with mocked dependencies
         $this->organisationService = new OrganisationService(
             $this->organisationMapper,
             $this->userSession,
             $this->session,
+            $this->config,
+            $this->groupManager,
             $this->logger
         );
         
