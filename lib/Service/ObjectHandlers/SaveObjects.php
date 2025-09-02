@@ -666,6 +666,253 @@ class SaveObjects
 
 
     /**
+     * Extract metadata value with object reference resolution
+     *
+     * This method enhances the basic getValueFromPath functionality by resolving
+     * object references to their readable names. It handles cases where metadata
+     * fields point to related objects instead of direct string values.
+     *
+     * @param array  $object       The object data
+     * @param string $fieldPath    The field path in the schema configuration
+     * @param Schema $schema       The schema object for property definitions
+     * @param string $metadataType The type of metadata ('name', 'description', 'summary')
+     *
+     * @return string|null The resolved metadata value or null if not found
+     *
+     * @psalm-return   string|null
+     * @phpstan-return string|null
+     */
+    private function extractMetadataValue(array $object, string $fieldPath, Schema $schema, string $metadataType): ?string
+    {
+        error_log("[SaveObject] extractMetadataValue called for fieldPath: $fieldPath, metadataType: $metadataType");
+        
+        // First try to get the raw value using the existing method
+        $rawValue = $this->getValueFromPath($object, $fieldPath);
+        
+        error_log("[SaveObject] rawValue extracted: " . var_export($rawValue, true));
+        
+        if ($rawValue === null) {
+            error_log("[SaveObject] rawValue is null, returning null");
+            return null;
+        }
+        
+        // Check if this field is defined as an object reference in the schema
+        $schemaProperties = $schema->getProperties();
+        $fieldName = explode('.', $fieldPath)[0]; // Get the base field name
+        
+        error_log("[SaveObject] fieldName: $fieldName, schemaProperties available: " . var_export(array_keys($schemaProperties), true));
+        
+        if (!isset($schemaProperties[$fieldName])) {
+            // Field not in schema, return raw value
+            error_log("[SaveObject] Field $fieldName not in schema, returning rawValue: $rawValue");
+            return $rawValue;
+        }
+        
+        $propertyConfig = $schemaProperties[$fieldName];
+        error_log("[SaveObject] propertyConfig: " . var_export($propertyConfig, true));
+        
+        // Check if this is an object reference field
+        if (isset($propertyConfig['type']) && $propertyConfig['type'] === 'object' && isset($propertyConfig['$ref'])) {
+            // This is an object reference - try to resolve it to a readable name
+            error_log("[SaveObject] Field $fieldName is object reference, resolving...");
+            $resolved = $this->resolveObjectReference($object, $fieldPath, $propertyConfig, $metadataType);
+            error_log("[SaveObject] Resolved to: " . var_export($resolved, true));
+            return $resolved;
+        }
+        
+        // For direct string fields, return the raw value
+        error_log("[SaveObject] Field $fieldName is direct field, returning rawValue: $rawValue");
+        return $rawValue;
+
+    }//end extractMetadataValue()
+
+
+    /**
+     * Resolve object reference to readable name
+     *
+     * This method resolves object references in metadata fields to their readable
+     * names by looking up the referenced object and extracting its display name.
+     *
+     * @param array  $object         The parent object data
+     * @param string $fieldPath      The field path pointing to the object reference
+     * @param array  $propertyConfig The property configuration from schema
+     * @param string $metadataType   The type of metadata being resolved
+     *
+     * @return string|null The resolved readable name or fallback value
+     *
+     * @psalm-return   string|null
+     * @phpstan-return string|null
+     */
+    private function resolveObjectReference(array $object, string $fieldPath, array $propertyConfig, string $metadataType): ?string
+    {
+        try {
+            // Extract the object reference data
+            $referenceData = $this->getObjectReferenceData($object, $fieldPath);
+            
+            if ($referenceData === null) {
+                return null;
+            }
+            
+            // Try to extract UUID from the reference data
+            $uuid = $this->extractUuidFromReference($referenceData);
+            
+            if ($uuid === null) {
+                return null;
+            }
+            
+            // Try to resolve the object and get its name
+            $resolvedName = $this->getObjectName($uuid);
+            
+            if ($resolvedName !== null) {
+                return $resolvedName;
+            }
+            
+            // Fallback: return the UUID or a descriptive text
+            return $this->generateFallbackName($uuid, $metadataType, $propertyConfig);
+            
+        } catch (\Exception $e) {
+            // If resolution fails, return a fallback based on the field type
+            $fieldTitle = $propertyConfig['title'] ?? ucfirst($metadataType);
+            return "[$fieldTitle Reference]";
+        }
+
+    }//end resolveObjectReference()
+
+
+    /**
+     * Get object reference data from field path
+     *
+     * @param array  $object    The object data
+     * @param string $fieldPath The field path
+     *
+     * @return mixed|null The reference data or null if not found
+     *
+     * @psalm-return   mixed|null
+     * @phpstan-return mixed|null
+     */
+    private function getObjectReferenceData(array $object, string $fieldPath)
+    {
+        $keys    = explode('.', $fieldPath);
+        $current = $object;
+
+        foreach ($keys as $key) {
+            if (!is_array($current) || !isset($current[$key])) {
+                return null;
+            }
+            $current = $current[$key];
+        }
+
+        return $current;
+
+    }//end getObjectReferenceData()
+
+
+    /**
+     * Extract UUID from object reference data
+     *
+     * @param mixed $referenceData The reference data from the object
+     *
+     * @return string|null The extracted UUID or null if not found
+     *
+     * @psalm-return   string|null
+     * @phpstan-return string|null
+     */
+    private function extractUuidFromReference($referenceData): ?string
+    {
+        // Handle object format: {"value": "uuid"}
+        if (is_array($referenceData) && isset($referenceData['value'])) {
+            $uuid = $referenceData['value'];
+            if (is_string($uuid) && !empty($uuid)) {
+                return $uuid;
+            }
+        }
+        
+        // Handle direct UUID string
+        if (is_string($referenceData) && !empty($referenceData)) {
+            return $referenceData;
+        }
+        
+        return null;
+
+    }//end extractUuidFromReference()
+
+
+    /**
+     * Get readable name for an object by UUID
+     *
+     * @param string $uuid The UUID of the object to resolve
+     *
+     * @return string|null The object's name or null if not found
+     *
+     * @psalm-return   string|null
+     * @phpstan-return string|null
+     */
+    private function getObjectName(string $uuid): ?string
+    {
+        try {
+            // Try to find the object using the ObjectEntityMapper
+            $referencedObject = $this->objectEntityMapper->find($uuid);
+            
+            if ($referencedObject === null) {
+                return null;
+            }
+            
+            // Try to get the name from the object's data
+            $objectData = $referencedObject->getObject();
+            
+            // Look for common name fields in order of preference
+            $nameFields = ['naam', 'name', 'title', 'contractNummer', 'achternaam'];
+            
+            foreach ($nameFields as $field) {
+                if (isset($objectData[$field]) && !empty($objectData[$field])) {
+                    return (string) $objectData[$field];
+                }
+            }
+            
+            // Fallback to the object's stored name property
+            $storedName = $referencedObject->getName();
+            if (!empty($storedName) && $storedName !== $uuid) {
+                return $storedName;
+            }
+            
+            return null;
+            
+        } catch (\Exception $e) {
+            // If object lookup fails, return null to trigger fallback
+            return null;
+        }
+
+    }//end getObjectName()
+
+
+    /**
+     * Generate fallback name when object resolution fails
+     *
+     * @param string $uuid           The UUID that couldn't be resolved
+     * @param string $metadataType   The type of metadata
+     * @param array  $propertyConfig The property configuration
+     *
+     * @return string The fallback name
+     *
+     * @psalm-return   string
+     * @phpstan-return string
+     */
+    private function generateFallbackName(string $uuid, string $metadataType, array $propertyConfig): string
+    {
+        $fieldTitle = $propertyConfig['title'] ?? ucfirst($metadataType);
+        
+        // For name metadata, try to make it more descriptive
+        if ($metadataType === 'name') {
+            return "$fieldTitle " . substr($uuid, 0, 8);
+        }
+        
+        // For description/summary, use a more generic approach
+        return "[$fieldTitle: " . substr($uuid, 0, 8) . "]";
+
+    }//end generateFallbackName()
+
+
+    /**
      * Calculate optimal chunk size based on total objects for internal processing
      *
      * @param int $totalObjects Total number of objects to process
@@ -927,18 +1174,26 @@ class SaveObjects
                 $selfData['created'] = $selfData['created'] ?? $nowString;
                 $selfData['updated'] = $selfData['updated'] ?? $nowString;
                 
-                // LIGHTWEIGHT METADATA EXTRACTION: Extract name, description, summary based on schema config
-                // Only extract if not already set and schema has the configuration
+                // ENHANCED METADATA EXTRACTION: Extract name, description, summary based on schema config
+                // Support both direct string fields and object references
                 $config = $schemaObj->getConfiguration();
+                error_log("[SaveObject] Schema config: " . var_export($config, true));
+                error_log("[SaveObject] selfData before metadata extraction: " . var_export(['name' => $selfData['name'] ?? 'NOT_SET', 'description' => $selfData['description'] ?? 'NOT_SET', 'summary' => $selfData['summary'] ?? 'NOT_SET'], true));
+                
                 if (!isset($selfData['name']) && isset($config['objectNameField'])) {
-                    $selfData['name'] = $this->getValueFromPath($object, $config['objectNameField']);
+                    error_log("[SaveObject] Extracting name from field: " . $config['objectNameField']);
+                    $selfData['name'] = $this->extractMetadataValue($object, $config['objectNameField'], $schemaObj, 'name');
                 }
                 if (!isset($selfData['description']) && isset($config['objectDescriptionField'])) {
-                    $selfData['description'] = $this->getValueFromPath($object, $config['objectDescriptionField']);
+                    error_log("[SaveObject] Extracting description from field: " . $config['objectDescriptionField']);
+                    $selfData['description'] = $this->extractMetadataValue($object, $config['objectDescriptionField'], $schemaObj, 'description');
                 }
                 if (!isset($selfData['summary']) && isset($config['objectSummaryField'])) {
-                    $selfData['summary'] = $this->getValueFromPath($object, $config['objectSummaryField']);
+                    error_log("[SaveObject] Extracting summary from field: " . $config['objectSummaryField']);
+                    $selfData['summary'] = $this->extractMetadataValue($object, $config['objectSummaryField'], $schemaObj, 'summary');
                 }
+                
+                error_log("[SaveObject] selfData after metadata extraction: " . var_export(['name' => $selfData['name'] ?? 'STILL_NOT_SET', 'description' => $selfData['description'] ?? 'STILL_NOT_SET', 'summary' => $selfData['summary'] ?? 'STILL_NOT_SET'], true));
                 
                 // PERFORMANCE: Remove @self from object data and nest under 'object'
                 unset($object['@self'], $object['id']);
