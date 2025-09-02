@@ -119,30 +119,6 @@ class Version1Date20250902140000 extends SimpleMigrationStep
     }//end changeSchema()
 
 
-    /**
-     * Execute any additional performance optimizations
-     *
-     * @param IOutput $output
-     * @param Closure $schemaClosure The `\Closure` returns a `ISchemaWrapper`
-     * @param array   $options
-     *
-     * @return void
-     */
-    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-        // Get database connection for raw SQL optimizations
-        $connection = \OC::$server->getDatabaseConnection();
 
-        try {
-            // **PERFORMANCE OPTIMIZATION**: Analyze table statistics for query optimizer
-            $connection->executeStatement('ANALYZE TABLE `*PREFIX*openregister_objects`');
-            $output->info('Analyzed table statistics for query optimizer');
-        } catch (\Exception $e) {
-            $output->warning('Failed to analyze table statistics: ' . $e->getMessage());
-        }
-
-        // **PERFORMANCE TIP**: Log completion for monitoring
-        $output->info('Performance optimization migration completed successfully');
-    }//end postSchemaChange()
 
 }//end class
