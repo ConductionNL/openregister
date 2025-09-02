@@ -140,11 +140,29 @@ class ObjectService
     private ?IMemcache $distributedCache = null;
 
     /**
+     * Nextcloud entity cache for schemas and registers
+     *
+     * **PERFORMANCE OPTIMIZATION**: Cache frequently accessed schemas and registers
+     * to avoid repeated database queries. These entities are relatively static
+     * and perfect for caching.
+     *
+     * @var IMemcache|null
+     */
+    private ?IMemcache $entityCache = null;
+
+    /**
      * Cache expiry time in seconds (5 minutes for development, configurable for production)
      *
      * @var int
      */
     private const CACHE_TTL = 300;
+
+    /**
+     * Entity cache TTL (longer than response cache since schemas/registers change less frequently)
+     *
+     * @var int
+     */
+    private const ENTITY_CACHE_TTL = 900; // 15 minutes
 
 
     /**
@@ -194,13 +212,16 @@ class ObjectService
         // **PERFORMANCE OPTIMIZATION**: Initialize Nextcloud's distributed cache
         try {
             $this->distributedCache = $this->cacheFactory->createDistributed('openregister_search');
+            $this->entityCache = $this->cacheFactory->createDistributed('openregister_entities');
         } catch (\Exception $e) {
             // Fallback to local cache if distributed cache unavailable
             try {
                 $this->distributedCache = $this->cacheFactory->createLocal('openregister_search');
+                $this->entityCache = $this->cacheFactory->createLocal('openregister_entities');
             } catch (\Exception $e) {
                 // No caching available - will skip cache operations
                 $this->distributedCache = null;
+                $this->entityCache = null;
             }
         }
 
@@ -383,8 +404,11 @@ class ObjectService
     public function setRegister(Register | string | int $register): self
     {
         if (is_string($register) === true || is_int($register) === true) {
-            // Look up the register by ID or UUID.
-            $register = $this->registerMapper->find($register);
+            // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup
+            $registers = $this->getCachedEntities('register', [$register], function($ids) {
+                return [$this->registerMapper->find($ids[0])];
+            });
+            $register = $registers[0];
         }
 
         $this->currentRegister = $register;
@@ -403,8 +427,11 @@ class ObjectService
     public function setSchema(Schema | string | int $schema): self
     {
         if (is_string($schema) === true || is_int($schema) === true) {
-            // Look up the schema by ID or UUID.
-            $schema = $this->schemaMapper->find($schema);
+            // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup
+            $schemas = $this->getCachedEntities('schema', [$schema], function($ids) {
+                return [$this->schemaMapper->find($ids[0])];
+            });
+            $schema = $schemas[0];
         }
 
         $this->currentSchema = $schema;
@@ -786,13 +813,13 @@ class ObjectService
         // Check if '@self.schema' or '@self.register' is in extend but not in filters.
         if (isset($config['extend']) === true && in_array('@self.schema', (array) $config['extend'], true) === true && $schemas === null) {
             $schemaIds = array_unique(array_filter(array_map(fn($object) => $object->getSchema() ?? null, $objects)));
-            $schemas   = $this->schemaMapper->findMultiple(ids: $schemaIds);
+            $schemas   = $this->getCachedEntities('schema', $schemaIds, [$this->schemaMapper, 'findMultiple']);
             $schemas   = array_combine(array_map(fn($schema) => $schema->getId(), $schemas), $schemas);
         }
 
         if (isset($config['extend']) === true && in_array('@self.register', (array) $config['extend'], true) === true && $registers === null) {
             $registerIds = array_unique(array_filter(array_map(fn($object) => $object->getRegister() ?? null, $objects)));
-            $registers   = $this->registerMapper->findMultiple(ids:  $registerIds);
+            $registers   = $this->getCachedEntities('register', $registerIds, [$this->registerMapper, 'findMultiple']);
             $registers   = array_combine(array_map(fn($register) => $register->getId(), $registers), $registers);
         }
 
@@ -1144,7 +1171,7 @@ class ObjectService
     public function getRegisters(): array
     {
         // Get all registers.
-        $registers = $this->registerMapper->findAll();
+        $registers = $this->getCachedEntities('register', 'all', [$this->registerMapper, 'findAll']);
 
         // Convert to arrays and extend schemas.
         $registers = array_map(
@@ -1733,12 +1760,12 @@ class ObjectService
         $schemas   = null;
 
         if (!empty($registerIds)) {
-            $registerEntities = $this->registerMapper->findMultiple(ids: $registerIds);
+            $registerEntities = $this->getCachedEntities('register', $registerIds, [$this->registerMapper, 'findMultiple']);
             $registers        = array_combine(array_map(fn($register) => $register->getId(), $registerEntities), $registerEntities);
         }
 
         if (!empty($schemaIds)) {
-            $schemaEntities = $this->schemaMapper->findMultiple(ids: $schemaIds);
+            $schemaEntities = $this->getCachedEntities('schema', $schemaIds, [$this->schemaMapper, 'findMultiple']);
             $schemas        = array_combine(array_map(fn($schema) => $schema->getId(), $schemaEntities), $schemaEntities);
         }
 
@@ -5133,6 +5160,98 @@ class ObjectService
 
 
     /**
+     * Get cached entities (schemas or registers) with automatic database fallback
+     *
+     * **PERFORMANCE OPTIMIZATION**: Cache frequently accessed schemas and registers
+     * to avoid repeated database queries. Entities are cached with 15-minute TTL
+     * since they change less frequently than search results.
+     *
+     * @param string   $entityType   The entity type ('schema' or 'register')
+     * @param mixed    $ids          The ID(s) to fetch (array of IDs, single ID, or 'all')
+     * @param callable $fallbackFunc The database function to call if cache miss
+     *
+     * @return array The cached or freshly fetched entities
+     *
+     * @phpstan-param string $entityType
+     * @phpstan-param mixed $ids
+     * @phpstan-param callable $fallbackFunc
+     * @phpstan-return array<mixed>
+     * @psalm-param   string $entityType
+     * @psalm-param   mixed $ids
+     * @psalm-param   callable $fallbackFunc
+     * @psalm-return   array<mixed>
+     */
+    private function getCachedEntities(string $entityType, mixed $ids, callable $fallbackFunc): array
+    {
+        // Skip caching if entity cache is unavailable
+        if ($this->entityCache === null) {
+            return call_user_func($fallbackFunc, $ids);
+        }
+
+        // Generate cache key based on entity type and IDs
+        $cacheKey = $this->generateEntityCacheKey($entityType, $ids);
+        
+        // Try to get from cache first
+        try {
+            $cached = $this->entityCache->get($cacheKey);
+            if ($cached !== null) {
+                $this->logger->debug('Entity cache hit', [
+                    'entityType' => $entityType,
+                    'cacheKey' => $cacheKey,
+                    'cachedCount' => is_array($cached) ? count($cached) : 1
+                ]);
+                return $cached;
+            }
+        } catch (\Exception $e) {
+            // Cache get failed, continue to database
+        }
+
+        // Cache miss - fetch from database
+        $entities = call_user_func($fallbackFunc, $ids);
+        
+        // Store in cache for next time
+        try {
+            $this->entityCache->set($cacheKey, $entities, self::ENTITY_CACHE_TTL);
+            $this->logger->debug('Entity cached for future requests', [
+                'entityType' => $entityType,
+                'cacheKey' => $cacheKey,
+                'entityCount' => is_array($entities) ? count($entities) : 1,
+                'ttl' => self::ENTITY_CACHE_TTL
+            ]);
+        } catch (\Exception $e) {
+            // Cache set failed, continue without caching
+        }
+
+        return $entities;
+        
+    }//end getCachedEntities()
+
+
+    /**
+     * Generate cache key for entity caching
+     *
+     * @param string $entityType The entity type
+     * @param mixed  $ids        The IDs to cache
+     *
+     * @return string The cache key
+     */
+    private function generateEntityCacheKey(string $entityType, mixed $ids): string
+    {
+        if ($ids === 'all') {
+            return "entity_{$entityType}_all";
+        }
+        
+        if (is_array($ids)) {
+            sort($ids); // Ensure consistent cache keys regardless of ID order
+            return "entity_{$entityType}_" . md5(implode(',', $ids));
+        }
+        
+        return "entity_{$entityType}_{$ids}";
+        
+    }//end generateEntityCacheKey()
+
+
+    /**
      * Get schemas relevant to the query context
      *
      * @param array $baseQuery Base query filters
@@ -5152,10 +5271,12 @@ class ObjectService
         if ($schemaFilter !== null) {
             // Get specific schemas
             if (is_array($schemaFilter)) {
-                return $this->schemaMapper->findMultiple($schemaFilter);
+                return $this->getCachedEntities('schema', $schemaFilter, [$this->schemaMapper, 'findMultiple']);
             } else {
                 try {
-                    return [$this->schemaMapper->find($schemaFilter)];
+                    return $this->getCachedEntities('schema', [$schemaFilter], function($ids) {
+                        return [$this->schemaMapper->find($ids[0])];
+                    });
                 } catch (\Exception $e) {
                     return [];
                 }
@@ -5163,7 +5284,8 @@ class ObjectService
         }
 
         // No specific schema filter - get all schemas (for global facetable discovery)
-        return $this->schemaMapper->findAll();
+        // **PERFORMANCE OPTIMIZATION**: Cache all schemas when doing global queries
+        return $this->getCachedEntities('schema', 'all', [$this->schemaMapper, 'findAll']);
 
     }//end getSchemasForQuery()
 
