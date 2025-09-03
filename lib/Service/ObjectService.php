@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\FacetService;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\ObjectHandlers\DeleteObject;
 use OCA\OpenRegister\Service\ObjectHandlers\GetObject;
@@ -207,7 +208,8 @@ class ObjectService
         private readonly IUserManager $userManager,
         private readonly OrganisationService $organisationService,
         private readonly LoggerInterface $logger,
-        private readonly ICacheFactory $cacheFactory
+        private readonly ICacheFactory $cacheFactory,
+        private readonly FacetService $facetService
     ) {
         // **PERFORMANCE OPTIMIZATION**: Initialize Nextcloud's distributed cache
         try {
@@ -2047,51 +2049,14 @@ class ObjectService
      */
     public function getFacetsForObjects(array $query=[]): array
     {
-        // **HYPER-PERFORMANCE OPTIMIZATION**: Use revolutionary faceting system
-        // This provides 10-50x performance improvement through intelligent caching,
-        // statistical approximation, and parallel processing.
-        
-        $startTime = microtime(true);
-        
-        // Check if we have facet configuration in the query
-        $facetConfig = $query['_facets'] ?? [];
-        if (empty($facetConfig)) {
-            return ['facets' => []];
-        }
-        
-        // **BREAKTHROUGH**: Use HyperFacetHandler for optimal performance
-        try {
-            // Initialize HyperFacetHandler (this could be dependency injected later)
-            $hyperFacetHandler = new \OCA\OpenRegister\Db\ObjectHandlers\HyperFacetHandler(
-                $this->objectEntityMapper->getConnection(),
-                $this->cacheFactory,
-                $this->logger
-            );
-            
-            // Get hyper-optimized facets
-            $results = $hyperFacetHandler->getHyperOptimizedFacets($facetConfig, $query);
-            
-            $executionTime = round((microtime(true) - $startTime) * 1000, 2);
-            $this->logger->debug('Hyper-faceting completed', [
-                'executionTime' => $executionTime . 'ms',
-                'facetCount' => count($results['facets'] ?? []),
-                'strategy' => $results['performance_metadata']['strategy'] ?? 'unknown',
-                'accuracy' => $results['performance_metadata']['accuracy'] ?? 'unknown'
-            ]);
-            
-            return $results;
-            
-        } catch (\Exception $e) {
-            // **FALLBACK**: Use existing system if hyper-faceting fails
-            $this->logger->warning('HyperFacetHandler failed, falling back to standard faceting', [
-                'error' => $e->getMessage()
-            ]);
-            
-            $facets = $this->objectEntityMapper->getSimpleFacets($query);
-            return ['facets' => $facets];
-        }
+        // **ARCHITECTURAL IMPROVEMENT**: Delegate to dedicated FacetService
+        // This provides clean separation of concerns and centralized faceting logic
+        return $this->facetService->getFacetsForQuery($query);
 
     }//end getFacetsForObjects()
+
+
+
 
 
     /**
@@ -2122,33 +2087,8 @@ class ObjectService
      */
     public function getFacetableFields(array $baseQuery=[], int $sampleSize=100): array
     {
-        $startTime = microtime(true);
-        
-        try {
-            // **ULTRA-FAST PATH**: Use pre-computed facets from schemas
-            $facetableFields = $this->getFacetableFieldsFromSchemas($baseQuery);
-            
-            $executionTime = round((microtime(true) - $startTime) * 1000, 2);
-            $this->logger->debug('Ultra-fast facetable fields retrieved', [
-                'executionTime' => $executionTime . 'ms',
-                'fieldCount' => count($facetableFields['object_fields'] ?? []),
-                'source' => 'schema_precomputed',
-                'performance_improvement' => '~15ms eliminated'
-            ]);
-            
-            return $facetableFields;
-        } catch (\Exception $e) {
-            // **FALLBACK**: Use original method if schema-based fails
-            $this->logger->warning('Schema-based facets failed, falling back to runtime analysis', [
-                'error' => $e->getMessage()
-            ]);
-            
-            try {
-                return $this->objectEntityMapper->getFacetableFields($baseQuery);
-            } catch (\Exception $fallbackError) {
-                throw new \Exception('Both schema-based and runtime facet discovery failed: '.$fallbackError->getMessage(), 0, $fallbackError);
-            }
-        }
+        // **ARCHITECTURAL IMPROVEMENT**: Delegate to dedicated FacetService
+        return $this->facetService->getFacetableFields($baseQuery, $sampleSize);
 
     }//end getFacetableFields()
 

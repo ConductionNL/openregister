@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\CacheInvalidationService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -114,9 +115,10 @@ class SaveObject
      * @param SchemaMapper        $schemaMapper        Schema mapper for schema operations.
      * @param RegisterMapper      $registerMapper      Register mapper for register operations.
      * @param IURLGenerator       $urlGenerator        URL generator service.
-     * @param OrganisationService $organisationService Service for organisation operations.
-     * @param LoggerInterface     $logger              Logger interface for logging operations.
-     * @param ArrayLoader         $arrayLoader         Twig array loader for template rendering.
+     * @param OrganisationService        $organisationService        Service for organisation operations.
+     * @param CacheInvalidationService $cacheInvalidationService Cache invalidation service for CRUD operations.
+     * @param LoggerInterface          $logger                   Logger interface for logging operations.
+     * @param ArrayLoader              $arrayLoader              Twig array loader for template rendering.
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
@@ -127,6 +129,7 @@ class SaveObject
         private readonly RegisterMapper $registerMapper,
         private readonly IURLGenerator $urlGenerator,
         private readonly OrganisationService $organisationService,
+        private readonly CacheInvalidationService $cacheInvalidationService,
         private readonly LoggerInterface $logger,
         ArrayLoader $arrayLoader,
     ) {
@@ -1404,6 +1407,14 @@ class SaveObject
 
         // Update the object with the modified data (file IDs instead of content)
         $savedEntity->setObject($data);
+
+        // **CACHE INVALIDATION**: Clear collection and facet caches so new/updated objects appear immediately
+        $this->cacheInvalidationService->invalidateObjectCaches(
+            $savedEntity,
+            $uuid ? 'update' : 'create',
+            $savedEntity->getRegister(),
+            $savedEntity->getSchema()
+        );
 
         return $savedEntity;
 
