@@ -41,6 +41,8 @@ use OCA\OpenRegister\Service\ObjectHandlers\ValidateObject;
 use OCA\OpenRegister\Service\ObjectHandlers\PublishObject;
 use OCA\OpenRegister\Service\ObjectHandlers\DepublishObject;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FacetService;
+use OCA\OpenRegister\Service\CacheInvalidationService;
 use OCA\OpenRegister\Service\ObjectCacheService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ExportService;
@@ -175,6 +177,68 @@ class Application extends App implements IBootstrap
                 }
                 );
 
+        // Register FacetService for centralized faceting operations
+        $context->registerService(
+                FacetService::class,
+                function ($container) {
+                    return new FacetService(
+                    $container->get(ObjectEntityMapper::class),
+                    $container->get(SchemaMapper::class),
+                    $container->get(RegisterMapper::class),
+                    $container->get('OCP\ICacheFactory'),
+                    $container->get('OCP\IUserSession'),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register CacheInvalidationService for CRUD cache invalidation
+        $context->registerService(
+                CacheInvalidationService::class,
+                function ($container) {
+                    return new CacheInvalidationService(
+                    $container->get('OCP\ICacheFactory'),
+                    $container->get(SchemaCacheService::class),
+                    $container->get(SchemaFacetCacheService::class),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register SaveObject with CacheInvalidationService dependency
+        $context->registerService(
+                SaveObject::class,
+                function ($container) {
+                    return new SaveObject(
+                    $container->get(ObjectEntityMapper::class),
+                    $container->get(FileService::class),
+                    $container->get('OCP\IUserSession'),
+                    $container->get('OCA\OpenRegister\Db\AuditTrailMapper'),
+                    $container->get(SchemaMapper::class),
+                    $container->get(RegisterMapper::class),
+                    $container->get('OCP\IURLGenerator'),
+                    $container->get(OrganisationService::class),
+                    $container->get(CacheInvalidationService::class),
+                    $container->get('Psr\Log\LoggerInterface'),
+                    new \Twig\Loader\ArrayLoader([])
+                    );
+                }
+                );
+
+        // Register DeleteObject with CacheInvalidationService dependency
+        $context->registerService(
+                DeleteObject::class,
+                function ($container) {
+                    return new DeleteObject(
+                    $container->get(ObjectEntityMapper::class),
+                    $container->get(FileService::class),
+                    $container->get(CacheInvalidationService::class),
+                    $container->get('OCA\OpenRegister\Db\AuditTrailMapper'),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
         // Register RenderObject with LoggerInterface dependency
         $context->registerService(
                 RenderObject::class,
@@ -249,7 +313,8 @@ class Application extends App implements IBootstrap
                     $container->get('OCP\IUserManager'),
                     $container->get(OrganisationService::class),
                     $container->get('Psr\Log\LoggerInterface'),
-                    $container->get('OCP\ICacheFactory')
+                    $container->get('OCP\ICacheFactory'),
+                    $container->get(FacetService::class)
                     );
                 }
                 );

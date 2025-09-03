@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Service\DownloadService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\CacheInvalidationService;
 use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
@@ -55,8 +56,9 @@ class SchemasController extends Controller
      * @param ObjectEntityMapper  $objectEntityMapper  The object entity mapper
      * @param DownloadService     $downloadService     The download service
      * @param UploadService       $uploadService       The upload service
-     * @param AuditTrailMapper    $auditTrailMapper    The audit trail mapper
-     * @param OrganisationService $organisationService The organisation service
+     * @param AuditTrailMapper           $auditTrailMapper           The audit trail mapper
+     * @param OrganisationService        $organisationService        The organisation service
+     * @param CacheInvalidationService   $cacheInvalidationService   Cache invalidation service for schema operations
      *
      * @return void
      */
@@ -69,7 +71,8 @@ class SchemasController extends Controller
         private readonly DownloadService $downloadService,
         private readonly UploadService $uploadService,
         private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly OrganisationService $organisationService
+        private readonly OrganisationService $organisationService,
+        private readonly CacheInvalidationService $cacheInvalidationService
     ) {
         parent::__construct($appName, $request);
 
@@ -287,7 +290,12 @@ class SchemasController extends Controller
 
         try {
             // Update the schema with the provided data.
-            return new JSONResponse($this->schemaMapper->updateFromArray(id: $id, object: $data));
+            $updatedSchema = $this->schemaMapper->updateFromArray(id: $id, object: $data);
+            
+            // **CACHE INVALIDATION**: Clear all schema-related caches when schema is updated
+            $this->cacheInvalidationService->invalidateSchemaRelatedCaches($updatedSchema, 'update');
+            
+            return new JSONResponse($updatedSchema);
         } catch (DBException $e) {
             // Handle database constraint violations with user-friendly messages
             $constraintException = DatabaseConstraintException::fromDatabaseException($e, 'schema');
@@ -330,8 +338,12 @@ class SchemasController extends Controller
      */
     public function destroy(int $id): JSONResponse
     {
-        // Find the schema by ID and delete it.
-        $this->schemaMapper->delete($this->schemaMapper->find(id: $id));
+        // Find the schema by ID, delete it, and invalidate caches
+        $schemaToDelete = $this->schemaMapper->find(id: $id);
+        $this->schemaMapper->delete($schemaToDelete);
+        
+        // **CACHE INVALIDATION**: Clear all schema-related caches when schema is deleted
+        $this->cacheInvalidationService->invalidateSchemaRelatedCaches($schemaToDelete, 'delete');
 
         // Return an empty response.
         return new JSONResponse([]);
@@ -417,9 +429,15 @@ class SchemasController extends Controller
                     $schema->setOrganisation($organisationUuid);
                     $schema = $this->schemaMapper->update($schema);
                 }
+                
+                // **CACHE INVALIDATION**: Clear all schema-related caches when schema is created
+                $this->cacheInvalidationService->invalidateSchemaRelatedCaches($schema, 'create');
             } else {
                 // Update the existing schema.
                 $schema = $this->schemaMapper->update($schema);
+                
+                // **CACHE INVALIDATION**: Clear all schema-related caches when schema is updated
+                $this->cacheInvalidationService->invalidateSchemaRelatedCaches($schema, 'update');
             }
 
             return new JSONResponse($schema);
