@@ -74,6 +74,14 @@ class SchemaFacetCacheService
     private const DEFAULT_FACET_TTL = 1800;
     
     /**
+     * Maximum cache TTL for office environments (8 hours in seconds)
+     * 
+     * This prevents indefinite cache buildup while maintaining performance
+     * during business hours.
+     */
+    private const MAX_CACHE_TTL = 28800;
+    
+    /**
      * Supported facet types
      */
     private const FACET_TYPE_TERMS = 'terms';
@@ -244,17 +252,20 @@ class SchemaFacetCacheService
     /**
      * Invalidate all cached facets for a schema
      *
-     * This method should be called when a schema is updated to ensure
-     * facet cache consistency.
+     * **SCHEMA FACET INVALIDATION**: Called when schemas are created, updated, 
+     * or deleted to ensure facet cache consistency.
      *
-     * @param int $schemaId The schema ID to invalidate
+     * @param int    $schemaId The schema ID to invalidate
+     * @param string $operation The operation performed (create/update/delete)
      *
      * @return void
      *
      * @throws \OCP\DB\Exception If a database error occurs
      */
-    public function invalidateSchemaFacets(int $schemaId): void
+    public function invalidateForSchemaChange(int $schemaId, string $operation = 'update'): void
     {
+        $startTime = microtime(true);
+        
         // Remove from database cache
         $qb = $this->db->getQueryBuilder();
         $qb->delete(self::FACET_CACHE_TABLE)
@@ -262,37 +273,83 @@ class SchemaFacetCacheService
         $deletedCount = $qb->executeStatement();
         
         // Remove from memory cache
+        $memoryClearedCount = 0;
         $cacheKeys = array_keys(self::$facetConfigCache);
         foreach ($cacheKeys as $key) {
             if (str_contains($key, "_{$schemaId}")) {
                 unset(self::$facetConfigCache[$key]);
+                $memoryClearedCount++;
             }
         }
         
+        $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+        
         $this->logger->info('Schema facet cache invalidated', [
             'schemaId' => $schemaId,
-            'deletedEntries' => $deletedCount
+            'operation' => $operation,
+            'deletedDbEntries' => $deletedCount,
+            'clearedMemoryEntries' => $memoryClearedCount,
+            'executionTime' => $executionTime . 'ms'
         ]);
     }
 
+
     /**
-     * Clear all facet cache
+     * Invalidate all cached facets for a schema (legacy method)
+     *
+     * @deprecated Use invalidateForSchemaChange() instead
+     * @param int $schemaId The schema ID to invalidate
+     * @return void
+     * @throws \OCP\DB\Exception If a database error occurs
+     */
+    public function invalidateSchemaFacets(int $schemaId): void
+    {
+        $this->invalidateForSchemaChange($schemaId, 'update');
+    }
+
+    /**
+     * Clear all facet caches (Administrative Operation)
+     *
+     * **NUCLEAR OPTION**: Clears all facet caches for all schemas.
+     * Use with caution as it will impact performance until caches are rebuilt.
      *
      * @return void
      *
      * @throws \OCP\DB\Exception If a database error occurs
      */
-    public function clearAll(): void
+    public function clearAllCaches(): void
     {
+        $startTime = microtime(true);
+        
         // Clear database cache
         $qb = $this->db->getQueryBuilder();
         $qb->delete(self::FACET_CACHE_TABLE);
         $deletedCount = $qb->executeStatement();
         
         // Clear memory cache
+        $memoryCacheSize = count(self::$facetConfigCache);
         self::$facetConfigCache = [];
         
-        $this->logger->info('All facet cache cleared', ['deletedEntries' => $deletedCount]);
+        $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+        
+        $this->logger->info('All facet caches cleared', [
+            'deletedDbEntries' => $deletedCount,
+            'clearedMemoryEntries' => $memoryCacheSize,
+            'executionTime' => $executionTime . 'ms'
+        ]);
+    }
+
+
+    /**
+     * Clear all facet cache (legacy method)
+     *
+     * @deprecated Use clearAllCaches() instead
+     * @return void
+     * @throws \OCP\DB\Exception If a database error occurs
+     */
+    public function clearAll(): void
+    {
+        $this->clearAllCaches();
     }
 
     /**
@@ -302,8 +359,10 @@ class SchemaFacetCacheService
      *
      * @throws \OCP\DB\Exception If a database error occurs
      */
-    public function cleanExpired(): int
+    public function cleanExpiredEntries(): int
     {
+        $startTime = microtime(true);
+        
         $qb = $this->db->getQueryBuilder();
         $qb->delete(self::FACET_CACHE_TABLE)
            ->where($qb->expr()->isNotNull('expires'))
@@ -311,22 +370,42 @@ class SchemaFacetCacheService
         
         $deletedCount = $qb->executeStatement();
         
+        $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+        
         if ($deletedCount > 0) {
-            $this->logger->info('Cleaned expired facet cache entries', ['count' => $deletedCount]);
+            $this->logger->info('Cleaned expired facet cache entries', [
+                'count' => $deletedCount,
+                'executionTime' => $executionTime . 'ms'
+            ]);
         }
         
         return $deletedCount;
     }
 
+
     /**
-     * Get facet cache statistics
+     * Clean expired facet cache entries (legacy method)
      *
-     * @return array<string, mixed> Cache statistics
+     * @deprecated Use cleanExpiredEntries() instead
+     * @return int Number of expired entries removed
+     * @throws \OCP\DB\Exception If a database error occurs
+     */
+    public function cleanExpired(): int
+    {
+        return $this->cleanExpiredEntries();
+    }
+
+    /**
+     * Get comprehensive facet cache statistics
+     *
+     * @return array<string, mixed> Cache statistics including performance metrics
      *
      * @throws \OCP\DB\Exception If a database error occurs
      */
-    public function getStatistics(): array
+    public function getCacheStatistics(): array
     {
+        $startTime = microtime(true);
+        
         $qb = $this->db->getQueryBuilder();
         $qb->select($qb->func()->count('id', 'total_entries'))
            ->addSelect('facet_type')
@@ -340,6 +419,7 @@ class SchemaFacetCacheService
             'total_entries' => 0,
             'by_type' => [],
             'memory_cache_size' => count(self::$facetConfigCache),
+            'cache_table' => self::FACET_CACHE_TABLE
         ];
         
         foreach ($results as $result) {
@@ -347,7 +427,24 @@ class SchemaFacetCacheService
             $stats['by_type'][$result['facet_type']] = (int) $result['count'];
         }
         
+        $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+        $stats['query_time'] = $executionTime . 'ms';
+        $stats['timestamp'] = time();
+        
         return $stats;
+    }
+
+
+    /**
+     * Get facet cache statistics (legacy method)
+     *
+     * @deprecated Use getCacheStatistics() instead
+     * @return array<string, mixed> Cache statistics
+     * @throws \OCP\DB\Exception If a database error occurs
+     */
+    public function getStatistics(): array
+    {
+        return $this->getCacheStatistics();
     }
 
     /**
@@ -624,6 +721,9 @@ class SchemaFacetCacheService
         mixed $data, 
         int $ttl
     ): void {
+        // Enforce maximum cache TTL for office environments
+        $ttl = min($ttl, self::MAX_CACHE_TTL);
+        
         $now = new \DateTime();
         $expires = $ttl > 0 ? (clone $now)->add(new \DateInterval("PT{$ttl}S")) : null;
         

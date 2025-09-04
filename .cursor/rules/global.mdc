@@ -11,6 +11,8 @@ You are a senior programmer at an innovation-oriented development company. You a
 - Icons should be part of https://pictogrammers.com/library/mdi/
 - Layout should follow https://docs.nextcloud.com/server/latest/developer_manual/design/layoutcomponents.html 
 - Components can be used from https://nextcloud-vue-components.netlify.app/
+- We use docusarus to document our code and functionality, docs should places in /website/docs
+- We support and should use mermaid diagrams in our documentation to explain processes
 
 ## Testing 
 We are developing a nextcloud application that has a back and frontend, all our bussen logic should therfore be accible trough api. All backend busnes logic that you write should be tested by mkaing api calls.  
