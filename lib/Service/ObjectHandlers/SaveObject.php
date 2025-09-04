@@ -36,7 +36,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\OrganisationService;
-use OCA\OpenRegister\Service\CacheInvalidationService;
+use OCA\OpenRegister\Service\ObjectCacheService;
+use OCA\OpenRegister\Service\SchemaCacheService;
+use OCA\OpenRegister\Service\SchemaFacetCacheService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -116,7 +118,9 @@ class SaveObject
      * @param RegisterMapper      $registerMapper      Register mapper for register operations.
      * @param IURLGenerator       $urlGenerator        URL generator service.
      * @param OrganisationService        $organisationService        Service for organisation operations.
-     * @param CacheInvalidationService $cacheInvalidationService Cache invalidation service for CRUD operations.
+     * @param ObjectCacheService        $objectCacheService        Object cache service for entity and query caching.
+     * @param SchemaCacheService        $schemaCacheService        Schema cache service for schema entity caching.
+     * @param SchemaFacetCacheService   $schemaFacetCacheService   Schema facet cache service for facet caching.
      * @param LoggerInterface          $logger                   Logger interface for logging operations.
      * @param ArrayLoader              $arrayLoader              Twig array loader for template rendering.
      */
@@ -129,7 +133,9 @@ class SaveObject
         private readonly RegisterMapper $registerMapper,
         private readonly IURLGenerator $urlGenerator,
         private readonly OrganisationService $organisationService,
-        private readonly CacheInvalidationService $cacheInvalidationService,
+        private readonly ObjectCacheService $objectCacheService,
+        private readonly SchemaCacheService $schemaCacheService,
+        private readonly SchemaFacetCacheService $schemaFacetCacheService,
         private readonly LoggerInterface $logger,
         ArrayLoader $arrayLoader,
     ) {

@@ -32,7 +32,9 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\CacheInvalidationService;
+use OCA\OpenRegister\Service\ObjectCacheService;
+use OCA\OpenRegister\Service\SchemaCacheService;
+use OCA\OpenRegister\Service\SchemaFacetCacheService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use Psr\Log\LoggerInterface;
 
@@ -69,14 +71,18 @@ class DeleteObject
      *
      * @param ObjectEntityMapper        $objectEntityMapper        Object entity data mapper.
      * @param FileService               $fileService               File service for managing files.
-     * @param CacheInvalidationService  $cacheInvalidationService  Cache invalidation service for CRUD operations.
+     * @param ObjectCacheService        $objectCacheService        Object cache service for entity and query caching.
+     * @param SchemaCacheService        $schemaCacheService        Schema cache service for schema entity caching.
+     * @param SchemaFacetCacheService   $schemaFacetCacheService   Schema facet cache service for facet caching.
      * @param AuditTrailMapper          $auditTrailMapper          Audit trail mapper for logs.
      * @param LoggerInterface           $logger                    Logger for error handling.
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly FileService $fileService,
-        private readonly CacheInvalidationService $cacheInvalidationService,
+        private readonly ObjectCacheService $objectCacheService,
+        private readonly SchemaCacheService $schemaCacheService,
+        private readonly SchemaFacetCacheService $schemaFacetCacheService,
         AuditTrailMapper $auditTrailMapper,
         LoggerInterface $logger
     ) {
