@@ -2351,7 +2351,7 @@ class ObjectService
      *                              - next: URL for next page (if available)
      *                              - prev: URL for previous page (if available)
      */
-    public function searchObjectsPaginated(array $query=[]): array
+    public function searchObjectsPaginated(array $query=[], bool $rbac=false, bool $multi=false): array
     {
         // **PERFORMANCE DEBUGGING**: Start detailed timing
         $perfStart = microtime(true);
@@ -2435,7 +2435,7 @@ class ObjectService
             ]);
             
             // Use async version and return synchronous result
-            return $this->searchObjectsPaginatedSync($query);
+            return $this->searchObjectsPaginatedSync($query, rbac: $rbac, multi: $multi);
         }
 
         // **PERFORMANCE OPTIMIZATION**: Simple requests - minimal operations for sub-500ms performance
@@ -2481,7 +2481,7 @@ class ObjectService
 
         // **CRITICAL OPTIMIZATION**: Get search results and count in a single optimized call
         $searchStartTime = microtime(true);
-        $results = $this->searchObjects($paginatedQuery);
+        $results = $this->searchObjects($paginatedQuery, rbac: $rbac, multi: $multi);
         $searchTime = round((microtime(true) - $searchStartTime) * 1000, 2);
         
         // **PERFORMANCE OPTIMIZATION**: Use combined query to get count without additional database call
