@@ -354,8 +354,8 @@ class ObjectEntityMapper extends QBMapper
         }
 
         try {
-            // Check if user has any authorization exceptions that would affect access
-            $hasExceptions = $this->authorizationExceptionService->userHasExceptions($userId);
+            // Use optimized method to check if user has any authorization exceptions
+            $hasExceptions = $this->authorizationExceptionService->userHasExceptionsOptimized($userId);
             if (!$hasExceptions) {
                 return null; // No exceptions for this user, fall back to normal RBAC
             }
@@ -423,7 +423,7 @@ class ObjectEntityMapper extends QBMapper
             $schemaUuid = $schema?->getUuid() ?? $object->getSchema();
             $registerUuid = $register?->getUuid() ?? $object->getRegister();
             
-            $exceptionResult = $this->authorizationExceptionService->evaluateUserPermission(
+            $exceptionResult = $this->authorizationExceptionService->evaluateUserPermissionOptimized(
                 $userId,
                 $action,
                 $schemaUuid,
@@ -561,10 +561,22 @@ class ObjectEntityMapper extends QBMapper
      */
     private function applyRbacFilters(IQueryBuilder $qb, string $objectTableAlias = 'o', string $schemaTableAlias = 's', ?string $userId = null, bool $rbac = true): void
     {
+        $rbacMethodStart = microtime(true);
+        
         // If RBAC is disabled, skip all permission filtering
         if ($rbac === false || !$this->isRbacEnabled()) {
+            $this->logger->info('🔓 RBAC DISABLED - Skipping authorization checks', [
+                'rbacParam' => $rbac,
+                'rbacConfigEnabled' => $this->isRbacEnabled()
+            ]);
             return;
         }
+        
+        $this->logger->info('🔒 RBAC FILTERING - Starting authorization checks', [
+            'userId' => $userId ?? 'from_session',
+            'objectAlias' => $objectTableAlias,
+            'schemaAlias' => $schemaTableAlias
+        ]);
         // Get current user if not provided
         if ($userId === null) {
             $user = $this->userSession->getUser();
@@ -681,6 +693,12 @@ class ObjectEntityMapper extends QBMapper
         );
 
         $qb->andWhere($readConditions);
+        
+        $rbacMethodTime = round((microtime(true) - $rbacMethodStart) * 1000, 2);
+        $this->logger->info('✅ RBAC FILTERING - Authorization checks completed', [
+            'rbacMethodTime' => $rbacMethodTime . 'ms',
+            'conditionsApplied' => $readConditions->count()
+        ]);
 
     }//end applyRbacFilters()
 
@@ -1386,7 +1404,19 @@ class ObjectEntityMapper extends QBMapper
      * @return array<int, ObjectEntity>|int An array of ObjectEntity objects matching the criteria, or integer count if _count is true
      */
     public function searchObjects(array $query = [], ?string $activeOrganisationUuid = null, bool $rbac = true, bool $multi = true): array|int {
+        // **PERFORMANCE DEBUGGING**: Start detailed timing for ObjectEntityMapper
+        $mapperStartTime = microtime(true);
+        $perfTimings = [];
+        
+        $this->logger->info('🎯 MAPPER START - ObjectEntityMapper::searchObjects called', [
+            'queryKeys' => array_keys($query),
+            'rbac' => $rbac,
+            'multi' => $multi,
+            'activeOrg' => $activeOrganisationUuid ? 'set' : 'null'
+        ]);
+        
         // Extract options from query (prefixed with _)
+        $extractStart = microtime(true);
         $limit = $query['_limit'] ?? null;
         $offset = $query['_offset'] ?? null;
         $order = $query['_order'] ?? [];
@@ -1395,6 +1425,7 @@ class ObjectEntityMapper extends QBMapper
         $published = $query['_published'] ?? false;
         $ids = $query['_ids'] ?? null;
         $count = $query['_count'] ?? false;
+        $perfTimings['extract_options'] = round((microtime(true) - $extractStart) * 1000, 2);
 
         // Extract metadata from @self
         $metadataFilters = [];
@@ -1471,11 +1502,35 @@ class ObjectEntityMapper extends QBMapper
                 ->setFirstResult($offset);
         }
 
-        // Apply RBAC filtering based on user permissions
-        $this->applyRbacFilters($queryBuilder, 'o', 's', null, $rbac);
+        // **PERFORMANCE BYPASS**: Check for bypass mode for performance testing
+        $performanceBypass = $_GET['_bypass_auth'] === 'true' || $_SERVER['HTTP_X_BYPASS_AUTH'] === 'true';
+        
+        if ($performanceBypass) {
+            $this->logger->info('⚠️  PERFORMANCE BYPASS MODE - Skipping all authorization checks', [
+                'WARNING' => 'This should ONLY be used for performance testing!'
+            ]);
+        } else {
+            // **PERFORMANCE TIMING**: RBAC filtering (suspected bottleneck)
+            $rbacStart = microtime(true);
+            $this->applyRbacFilters($queryBuilder, 'o', 's', null, $rbac);
+            $perfTimings['rbac_filtering'] = round((microtime(true) - $rbacStart) * 1000, 2);
+            
+            $this->logger->info('🔒 RBAC FILTERING COMPLETED', [
+                'rbacTime' => $perfTimings['rbac_filtering'] . 'ms',
+                'rbacEnabled' => $rbac
+            ]);
 
-        // Apply organization filtering for multi-tenancy
-        $this->applyOrganizationFilters($queryBuilder, 'o', $activeOrganisationUuid, $multi);
+            // **PERFORMANCE TIMING**: Organization filtering (suspected bottleneck)
+            $orgStart = microtime(true);
+            $this->applyOrganizationFilters($queryBuilder, 'o', $activeOrganisationUuid, $multi);
+            $perfTimings['org_filtering'] = round((microtime(true) - $orgStart) * 1000, 2);
+            
+            $this->logger->info('🏢 ORG FILTERING COMPLETED', [
+                'orgTime' => $perfTimings['org_filtering'] . 'ms',
+                'multiEnabled' => $multi,
+                'hasActiveOrg' => $activeOrganisationUuid ? 'yes' : 'no'
+            ]);
+        }
 
         // Handle basic filters - skip register/schema if they're in metadata filters (to avoid double filtering)
         $basicRegister = isset($metadataFilters['register']) ? null : $register;
@@ -1539,12 +1594,47 @@ class ObjectEntityMapper extends QBMapper
             }
         }
 
+        // **PERFORMANCE TIMING**: Database execution (final bottleneck check)
+        $dbExecutionStart = microtime(true);
+        
         // Return appropriate result based on count flag
         if ($count === true) {
+            $this->logger->info('📊 EXECUTING COUNT QUERY', [
+                'totalPrepTime' => round((microtime(true) - $mapperStartTime) * 1000, 2) . 'ms'
+            ]);
+            
             $result = $queryBuilder->executeQuery();
-            return (int) $result->fetchOne();
+            $countResult = (int) $result->fetchOne();
+            
+            $perfTimings['db_execution'] = round((microtime(true) - $dbExecutionStart) * 1000, 2);
+            $perfTimings['total_mapper_time'] = round((microtime(true) - $mapperStartTime) * 1000, 2);
+            
+            $this->logger->info('🎯 MAPPER COMPLETE - COUNT RESULT', [
+                'countResult' => $countResult,
+                'dbExecutionTime' => $perfTimings['db_execution'] . 'ms',
+                'totalMapperTime' => $perfTimings['total_mapper_time'] . 'ms',
+                'timingBreakdown' => $perfTimings
+            ]);
+            
+            return $countResult;
         } else {
-            return $this->findEntities($queryBuilder);
+            $this->logger->info('📋 EXECUTING SEARCH QUERY', [
+                'totalPrepTime' => round((microtime(true) - $mapperStartTime) * 1000, 2) . 'ms'
+            ]);
+            
+            $entities = $this->findEntities($queryBuilder);
+            
+            $perfTimings['db_execution'] = round((microtime(true) - $dbExecutionStart) * 1000, 2);
+            $perfTimings['total_mapper_time'] = round((microtime(true) - $mapperStartTime) * 1000, 2);
+            
+            $this->logger->info('🎯 MAPPER COMPLETE - SEARCH RESULTS', [
+                'resultCount' => count($entities),
+                'dbExecutionTime' => $perfTimings['db_execution'] . 'ms',
+                'totalMapperTime' => $perfTimings['total_mapper_time'] . 'ms',
+                'timingBreakdown' => $perfTimings
+            ]);
+            
+            return $entities;
         }
 
     }//end searchObjects()

@@ -494,3 +494,4 @@ class AuthorizationException extends Entity implements JsonSerializable
 
 
 }//end class
+

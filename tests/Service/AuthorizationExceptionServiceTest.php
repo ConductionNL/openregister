@@ -402,3 +402,4 @@ class AuthorizationExceptionServiceTest extends TestCase
 
 
 }//end class
+
