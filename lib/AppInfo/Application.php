@@ -314,7 +314,8 @@ class Application extends App implements IBootstrap
                     $container->get(OrganisationService::class),
                     $container->get('Psr\Log\LoggerInterface'),
                     $container->get('OCP\ICacheFactory'),
-                    $container->get(FacetService::class)
+                    $container->get(FacetService::class),
+                    $container->get(CacheInvalidationService::class)
                     );
                 }
                 );
