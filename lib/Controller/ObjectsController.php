@@ -879,10 +879,8 @@ class ObjectsController extends Controller
             // If admin, disable RBAC
             $multi = !$isAdmin;
             // If admin, disable multitenancy
-            // Get the object before deletion for response (include soft-deleted objects)
-            $oldObject = $this->objectEntityMapper->find($id, null, null, true);
 
-            // Use ObjectService to delete the object (includes RBAC permission checks)
+            // Use ObjectService to delete the object (includes RBAC permission checks, audit trail, and soft delete)
             $deleteResult = $objectService->deleteObject($id, $rbac, $multi);
 
             if (!$deleteResult) {
@@ -890,20 +888,10 @@ class ObjectsController extends Controller
                 return new JSONResponse(['error' => 'Failed to delete object'], 500);
             }
 
-            // Clone the object to pass as the new state for response
-            $newObject = clone $oldObject;
-            $newObject->delete($this->userSession, $this->request->getParam(key: 'deletedReason'), $this->request->getParam(key: 'retentionPeriod'));
-
-            // Update the object in the mapper (soft delete)
-            $this->objectEntityMapper->update($newObject);
-
-            // Create an audit trail with both old and new states
-            $this->auditTrailMapper->createAuditTrail(old: $oldObject, new: $newObject);
-
             // Return 204 No Content for successful delete (REST convention)
             return new JSONResponse(null, 204);
         } catch (\Exception $exception) {
-            // Handle all exceptions (including RBAC permission errors)
+            // Handle all exceptions (including RBAC permission errors and object not found)
             return new JSONResponse(['error' => $exception->getMessage()], 403);
         }//end try
 

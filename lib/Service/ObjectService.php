@@ -2818,12 +2818,23 @@ class ObjectService
     /**
      * Optimize extend queries for performance
      *
-     * @param array $extend Original extend array
+     * @param array|string $extend Original extend data (array or comma-separated string)
      *
      * @return array Optimized extend array
      */
-    private function optimizeExtendQueries(array $extend): array
+    private function optimizeExtendQueries($extend): array
     {
+        // **BUGFIX**: Handle _extend as both string and array
+        if (is_string($extend)) {
+            if (trim($extend) === '') {
+                return [];
+            }
+            // Convert comma-separated string to array
+            $extend = array_filter(array_map('trim', explode(',', $extend)));
+        } elseif (!is_array($extend)) {
+            return [];
+        }
+        
         // **PERFORMANCE PRIORITY**: Keep only most critical relationships
         // Remove heavy relationships that take > 500ms each
         $heavyRelationships = [
