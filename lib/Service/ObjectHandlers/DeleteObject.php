@@ -124,7 +124,7 @@ class DeleteObject
 
         // **CACHE INVALIDATION**: Clear collection and facet caches so deleted objects disappear immediately
         if ($result) {
-            $this->cacheInvalidationService->invalidateObjectCaches(
+            $this->objectCacheService->invalidateForObjectChange(
                 $objectEntity,
                 'delete',
                 $objectEntity->getRegister(),

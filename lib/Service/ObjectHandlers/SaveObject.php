@@ -1415,7 +1415,7 @@ class SaveObject
         $savedEntity->setObject($data);
 
         // **CACHE INVALIDATION**: Clear collection and facet caches so new/updated objects appear immediately
-        $this->cacheInvalidationService->invalidateObjectCaches(
+        $this->objectCacheService->invalidateForObjectChange(
             $savedEntity,
             $uuid ? 'update' : 'create',
             $savedEntity->getRegister(),
