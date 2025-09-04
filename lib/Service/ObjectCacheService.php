@@ -522,6 +522,66 @@ class ObjectCacheService
 
 
     /**
+     * Clear all search caches related to a specific schema (across all users)
+     *
+     * **SCHEMA-WIDE INVALIDATION**: When objects in a schema change, we need to clear
+     * all cached search results that could include objects from that schema.
+     * This ensures colleagues see each other's changes immediately.
+     *
+     * @param int|null    $schemaId    Schema ID to invalidate
+     * @param int|null    $registerId  Register ID for additional context
+     * @param string      $operation   Operation performed ('create', 'update', 'delete')
+     * 
+     * @return void
+     */
+    private function clearSchemaRelatedCaches(?int $schemaId = null, ?int $registerId = null, string $operation = 'unknown'): void
+    {
+        $startTime = microtime(true);
+        $clearedCount = 0;
+        
+        // **STRATEGY 1**: Clear all in-memory search caches (fast)
+        $this->inMemoryQueryCache = [];
+        
+        // **STRATEGY 2**: Clear distributed cache entries that could contain objects from this schema
+        if ($this->queryCache !== null && $schemaId !== null) {
+            try {
+                // Since we can't easily pattern-match keys in distributed cache,
+                // we clear all search cache entries for now (nuclear approach)
+                // TODO: Implement more targeted cache clearing with schema-specific prefixes
+                $this->queryCache->clear();
+                
+                $this->logger->debug('Schema-related distributed caches cleared', [
+                    'schemaId' => $schemaId,
+                    'registerId' => $registerId,
+                    'operation' => $operation,
+                    'strategy' => 'nuclear_clear'
+                ]);
+            } catch (\Exception $e) {
+                $this->logger->warning('Failed to clear schema-related distributed caches', [
+                    'schemaId' => $schemaId,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        } else {
+            // Fallback: clear all search caches if no specific schema
+            $this->clearSearchCache();
+        }
+        
+        $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+        
+        $this->logger->info('Schema-related caches cleared for CUD operation', [
+            'schemaId' => $schemaId,
+            'registerId' => $registerId,
+            'operation' => $operation,
+            'executionTime' => $executionTime . 'ms',
+            'impact' => 'all_users_affected',
+            'strategy' => $schemaId ? 'schema_targeted' : 'global_fallback'
+        ]);
+
+    }//end clearSchemaRelatedCaches()
+
+
+    /**
      * Invalidate caches when objects are modified (CRUD operations)
      *
      * **MAIN CACHE INVALIDATION METHOD**: Called when objects are created, 
@@ -546,22 +606,25 @@ class ObjectCacheService
         if ($object !== null) {
             $registerId = $registerId ?? $object->getRegister();
             $schemaId = $schemaId ?? $object->getSchema();
+            $orgId = $object->getOrganisation(); // Track organization for future use
             
             // Clear individual object from cache
             $this->clearObjectFromCache($object);
         }
         
-        // Clear all search result caches since any object change can affect search results
-        $this->clearSearchCache();
+        // **SCHEMA-WIDE INVALIDATION**: Clear ALL search caches for this schema
+        // This ensures colleagues see each other's changes immediately
+        $this->clearSchemaRelatedCaches($schemaId, $registerId, $operation);
         
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
         
-        $this->logger->info('Object cache invalidated for CRUD operation', [
+        $this->logger->info('Schema-wide cache invalidated for CRUD operation', [
             'operation' => $operation,
             'registerId' => $registerId,
             'schemaId' => $schemaId,
             'objectId' => $object?->getId(),
-            'executionTime' => $executionTime . 'ms'
+            'executionTime' => $executionTime . 'ms',
+            'scope' => 'all_users_in_schema'
         ]);
         
     }//end invalidateForObjectChange()
