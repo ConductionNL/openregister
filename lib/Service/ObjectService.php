@@ -1736,7 +1736,20 @@ class ObjectService
             $result = $this->executeChunkedSearch($query, $activeOrganisationUuid, $rbac, $multi, $limit);
         } else {
             // Use the standard method for smaller queries
+            $this->logger->info('🔍 MAPPER CALL - Starting database search', [
+                'queryKeys' => array_keys($query),
+                'rbac' => $rbac,
+                'multi' => $multi,
+                'requestUri' => $_SERVER['REQUEST_URI'] ?? 'unknown'
+            ]);
+            
             $result = $this->objectEntityMapper->searchObjects($query, $activeOrganisationUuid, $rbac, $multi);
+            
+            $this->logger->info('✅ MAPPER CALL - Database search completed', [
+                'resultCount' => is_array($result) ? count($result) : 'non-array',
+                'mapperTime' => round((microtime(true) - $mapperStart) * 1000, 2) . 'ms',
+                'requestUri' => $_SERVER['REQUEST_URI'] ?? 'unknown'
+            ]);
         }
         
         $dbTime = round((microtime(true) - $dbStart) * 1000, 2);
@@ -2285,21 +2298,44 @@ class ObjectService
      */
     public function searchObjectsPaginated(array $query=[]): array
     {
+        // **PERFORMANCE DEBUGGING**: Start detailed timing
+        $perfStart = microtime(true);
+        $perfTimings = [];
+        
         // **CRITICAL PERFORMANCE OPTIMIZATION**: Check cache first for identical requests
         $cacheKey = $this->generateCacheKey($query, $this->externalAppId);
+        $cacheCheckStart = microtime(true);
         $cachedResponse = $this->getCachedResponse($cacheKey);
+        $perfTimings['cache_check'] = round((microtime(true) - $cacheCheckStart) * 1000, 2);
         
         if ($cachedResponse !== null) {
-            $this->logger->debug('Cache hit - returning cached response', [
+            $this->logger->info('🎯 CACHE HIT - Performance optimized response', [
                 'cacheKey' => substr($cacheKey, 0, 32) . '...',
                 'performanceGain' => 'massive_improvement',
-                'responseTime' => '<10ms'
+                'responseTime' => '<10ms',
+                'requestUri' => $_SERVER['REQUEST_URI'] ?? 'unknown',
+                'queryKeys' => array_keys($query),
+                'externalApp' => $this->externalAppId ?? 'none',
+                'cacheCheckTime' => $perfTimings['cache_check'] . 'ms'
             ]);
             return $cachedResponse;
         }
 
+        // **CACHE MISS LOGGING** - Important for debugging external app issues
+        $this->logger->info('❌ CACHE MISS - Will compute and cache response', [
+            'cacheKey' => substr($cacheKey, 0, 32) . '...',
+            'requestUri' => $_SERVER['REQUEST_URI'] ?? 'unknown',
+            'queryKeys' => array_keys($query),
+            'externalApp' => $this->externalAppId ?? 'none',
+            'userId' => $this->getCurrentUserId() ?? 'anonymous',
+            'cacheCheckTime' => $perfTimings['cache_check'] . 'ms'
+        ]);
+
         // **PERFORMANCE OPTIMIZATION**: Start timing execution and detect request complexity
         $startTime = microtime(true);
+        
+        // **MAPPER CALL TIMING**: Track how long the mapper takes
+        $mapperStart = microtime(true);
         
         // **PERFORMANCE DETECTION**: Determine if this is a complex request requiring async processing
         $hasFacets = !empty($query['_facets']);
@@ -5130,11 +5166,13 @@ class ObjectService
             }
             
             // **PERFORMANCE LOGGING**: Log external app cache strategy
-            $this->logger->debug('External app cache context determined', [
+            $this->logger->info('External app cache context determined', [
                 'strategy' => $appId ? 'explicit' : ($appContext ? 'detected' : 'fingerprint'),
                 'cacheUserId' => $userId,
                 'originalAppId' => $appId,
-                'detectedApp' => $appContext ?? 'none'
+                'detectedApp' => $appContext ?? 'none',
+                'queryParams' => array_keys($query),
+                'requestUri' => $_SERVER['REQUEST_URI'] ?? 'unknown'
             ]);
         }
         
