@@ -26,7 +26,8 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Service\DownloadService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
-use OCA\OpenRegister\Service\CacheInvalidationService;
+use OCA\OpenRegister\Service\SchemaCacheService;
+use OCA\OpenRegister\Service\SchemaFacetCacheService;
 use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
@@ -58,7 +59,8 @@ class SchemasController extends Controller
      * @param UploadService       $uploadService       The upload service
      * @param AuditTrailMapper           $auditTrailMapper           The audit trail mapper
      * @param OrganisationService        $organisationService        The organisation service
-     * @param CacheInvalidationService   $cacheInvalidationService   Cache invalidation service for schema operations
+     * @param SchemaCacheService         $schemaCacheService         Schema cache service for schema operations
+     * @param SchemaFacetCacheService    $schemaFacetCacheService    Schema facet cache service for facet operations
      *
      * @return void
      */
@@ -72,7 +74,8 @@ class SchemasController extends Controller
         private readonly UploadService $uploadService,
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly OrganisationService $organisationService,
-        private readonly CacheInvalidationService $cacheInvalidationService
+        private readonly SchemaCacheService $schemaCacheService,
+        private readonly SchemaFacetCacheService $schemaFacetCacheService
     ) {
         parent::__construct($appName, $request);
 
@@ -293,7 +296,8 @@ class SchemasController extends Controller
             $updatedSchema = $this->schemaMapper->updateFromArray(id: $id, object: $data);
             
             // **CACHE INVALIDATION**: Clear all schema-related caches when schema is updated
-            $this->cacheInvalidationService->invalidateSchemaRelatedCaches($updatedSchema, 'update');
+            $this->schemaCacheService->invalidateForSchemaChange($updatedSchema->getId(), 'update');
+            $this->schemaFacetCacheService->invalidateForSchemaChange($updatedSchema->getId(), 'update');
             
             return new JSONResponse($updatedSchema);
         } catch (DBException $e) {
@@ -343,7 +347,8 @@ class SchemasController extends Controller
         $this->schemaMapper->delete($schemaToDelete);
         
         // **CACHE INVALIDATION**: Clear all schema-related caches when schema is deleted
-        $this->cacheInvalidationService->invalidateSchemaRelatedCaches($schemaToDelete, 'delete');
+        $this->schemaCacheService->invalidateForSchemaChange($schemaToDelete->getId(), 'delete');
+        $this->schemaFacetCacheService->invalidateForSchemaChange($schemaToDelete->getId(), 'delete');
 
         // Return an empty response.
         return new JSONResponse([]);
@@ -431,13 +436,15 @@ class SchemasController extends Controller
                 }
                 
                 // **CACHE INVALIDATION**: Clear all schema-related caches when schema is created
-                $this->cacheInvalidationService->invalidateSchemaRelatedCaches($schema, 'create');
+                $this->schemaCacheService->invalidateForSchemaChange($schema->getId(), 'create');
+                $this->schemaFacetCacheService->invalidateForSchemaChange($schema->getId(), 'create');
             } else {
                 // Update the existing schema.
                 $schema = $this->schemaMapper->update($schema);
                 
                 // **CACHE INVALIDATION**: Clear all schema-related caches when schema is updated
-                $this->cacheInvalidationService->invalidateSchemaRelatedCaches($schema, 'update');
+                $this->schemaCacheService->invalidateForSchemaChange($schema->getId(), 'update');
+                $this->schemaFacetCacheService->invalidateForSchemaChange($schema->getId(), 'update');
             }
 
             return new JSONResponse($schema);

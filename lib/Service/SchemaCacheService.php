@@ -69,9 +69,17 @@ class SchemaCacheService
     private const CACHE_TABLE = 'openregister_schema_cache';
     
     /**
-     * Default cache TTL in seconds (1 hour)
+     * Default cache TTL in seconds (1 hour) 
      */
     private const DEFAULT_TTL = 3600;
+    
+    /**
+     * Maximum cache TTL for office environments (8 hours in seconds)
+     * 
+     * This prevents indefinite cache buildup while maintaining performance
+     * during business hours.
+     */
+    private const MAX_CACHE_TTL = 28800;
     
     /**
      * Cache keys for different types of cached data
@@ -326,22 +334,25 @@ class SchemaCacheService
     /**
      * Invalidate cache for a specific schema
      *
-     * This method should be called whenever a schema is updated to ensure
-     * cache consistency.
+     * **SCHEMA CACHE INVALIDATION**: Called when schemas are created, updated, 
+     * or deleted to ensure cache consistency.
      *
-     * @param int $schemaId The schema ID to invalidate
+     * @param int    $schemaId The schema ID to invalidate
+     * @param string $operation The operation performed (create/update/delete)
      *
      * @return void
      *
      * @throws \OCP\DB\Exception If a database error occurs
      */
-    public function invalidateSchema(int $schemaId): void
+    public function invalidateForSchemaChange(int $schemaId, string $operation = 'update'): void
     {
+        $startTime = microtime(true);
+        
         // Remove from database cache
         $qb = $this->db->getQueryBuilder();
         $qb->delete(self::CACHE_TABLE)
            ->where($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId)));
-        $qb->executeStatement();
+        $deletedEntries = $qb->executeStatement();
         
         // Remove from memory cache
         $cacheKeys = [
@@ -355,30 +366,73 @@ class SchemaCacheService
             unset(self::$memoryCache[$key]);
         }
         
-        $this->logger->info('Schema cache invalidated', ['schemaId' => $schemaId]);
+        $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+        
+        $this->logger->info('Schema cache invalidated', [
+            'schemaId' => $schemaId,
+            'operation' => $operation,
+            'deletedEntries' => $deletedEntries,
+            'executionTime' => $executionTime . 'ms'
+        ]);
+    }
+
+
+    /**
+     * Invalidate cache for a specific schema (legacy method)
+     *
+     * @deprecated Use invalidateForSchemaChange() instead
+     * @param int $schemaId The schema ID to invalidate
+     * @return void
+     * @throws \OCP\DB\Exception If a database error occurs
+     */
+    public function invalidateSchema(int $schemaId): void
+    {
+        $this->invalidateForSchemaChange($schemaId, 'update');
     }
 
     /**
-     * Clear all schema cache
+     * Clear all schema caches (Administrative Operation)
      *
-     * This method clears both database and memory caches for all schemas.
+     * **NUCLEAR OPTION**: This method clears both database and memory caches for all schemas.
      * Use with caution as it will impact performance until caches are rebuilt.
      *
      * @return void
      *
      * @throws \OCP\DB\Exception If a database error occurs
      */
-    public function clearAll(): void
+    public function clearAllCaches(): void
     {
+        $startTime = microtime(true);
+        
         // Clear database cache
         $qb = $this->db->getQueryBuilder();
         $qb->delete(self::CACHE_TABLE);
-        $qb->executeStatement();
+        $deletedEntries = $qb->executeStatement();
         
         // Clear memory cache
+        $memoryCacheSize = count(self::$memoryCache);
         self::$memoryCache = [];
         
-        $this->logger->info('All schema cache cleared');
+        $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+        
+        $this->logger->info('All schema caches cleared', [
+            'deletedDbEntries' => $deletedEntries,
+            'clearedMemoryEntries' => $memoryCacheSize,
+            'executionTime' => $executionTime . 'ms'
+        ]);
+    }
+
+
+    /**
+     * Clear all schema cache (legacy method)
+     *
+     * @deprecated Use clearAllCaches() instead
+     * @return void
+     * @throws \OCP\DB\Exception If a database error occurs
+     */
+    public function clearAll(): void
+    {
+        $this->clearAllCaches();
     }
 
     /**
@@ -391,8 +445,10 @@ class SchemaCacheService
      *
      * @throws \OCP\DB\Exception If a database error occurs
      */
-    public function cleanExpired(): int
+    public function cleanExpiredEntries(): int
     {
+        $startTime = microtime(true);
+        
         $qb = $this->db->getQueryBuilder();
         $qb->delete(self::CACHE_TABLE)
            ->where($qb->expr()->isNotNull('expires'))
@@ -400,22 +456,42 @@ class SchemaCacheService
         
         $deletedCount = $qb->executeStatement();
         
+        $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+        
         if ($deletedCount > 0) {
-            $this->logger->info('Cleaned expired schema cache entries', ['count' => $deletedCount]);
+            $this->logger->info('Cleaned expired schema cache entries', [
+                'count' => $deletedCount,
+                'executionTime' => $executionTime . 'ms'
+            ]);
         }
         
         return $deletedCount;
     }
 
+
     /**
-     * Get cache statistics
+     * Clean expired cache entries (legacy method)
      *
-     * @return array<string, mixed> Cache statistics
+     * @deprecated Use cleanExpiredEntries() instead
+     * @return int Number of expired entries removed
+     * @throws \OCP\DB\Exception If a database error occurs
+     */
+    public function cleanExpired(): int
+    {
+        return $this->cleanExpiredEntries();
+    }
+
+    /**
+     * Get comprehensive cache statistics
+     *
+     * @return array<string, mixed> Cache statistics including performance metrics
      *
      * @throws \OCP\DB\Exception If a database error occurs
      */
-    public function getStatistics(): array
+    public function getCacheStatistics(): array
     {
+        $startTime = microtime(true);
+        
         $qb = $this->db->getQueryBuilder();
         $qb->select($qb->func()->count('id', 'total_entries'))
            ->addSelect($qb->func()->count('expires', 'entries_with_ttl'))
@@ -423,12 +499,29 @@ class SchemaCacheService
         
         $result = $qb->executeQuery()->fetch();
         
+        $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+        
         return [
             'total_entries' => (int) $result['total_entries'],
             'entries_with_ttl' => (int) $result['entries_with_ttl'],
             'memory_cache_size' => count(self::$memoryCache),
             'cache_table' => self::CACHE_TABLE,
+            'query_time' => $executionTime . 'ms',
+            'timestamp' => time()
         ];
+    }
+
+
+    /**
+     * Get cache statistics (legacy method)
+     *
+     * @deprecated Use getCacheStatistics() instead
+     * @return array<string, mixed> Cache statistics
+     * @throws \OCP\DB\Exception If a database error occurs
+     */
+    public function getStatistics(): array
+    {
+        return $this->getCacheStatistics();
     }
 
     /**
@@ -494,6 +587,9 @@ class SchemaCacheService
      */
     private function setCachedData(int $schemaId, string $cacheKey, mixed $data, int $ttl): void
     {
+        // Enforce maximum cache TTL for office environments
+        $ttl = min($ttl, self::MAX_CACHE_TTL);
+        
         $now = new \DateTime();
         $expires = $ttl > 0 ? (clone $now)->add(new \DateInterval("PT{$ttl}S")) : null;
         

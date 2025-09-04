@@ -33,7 +33,9 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FacetService;
-use OCA\OpenRegister\Service\CacheInvalidationService;
+use OCA\OpenRegister\Service\ObjectCacheService;
+use OCA\OpenRegister\Service\SchemaCacheService;
+use OCA\OpenRegister\Service\SchemaFacetCacheService;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\ObjectHandlers\DeleteObject;
 use OCA\OpenRegister\Service\ObjectHandlers\GetObject;
@@ -199,7 +201,9 @@ class ObjectService
      * @param OrganisationService $organisationService Service for organisation operations.
      * @param LoggerInterface           $logger                    Logger for performance monitoring.
      * @param ICacheFactory             $cacheFactory              Nextcloud cache factory for distributed caching.
-     * @param CacheInvalidationService  $cacheInvalidationService  Cache invalidation service for bulk operations.
+     * @param ObjectCacheService        $objectCacheService        Object cache service for entity and query caching.
+     * @param SchemaCacheService        $schemaCacheService        Schema cache service for schema entity caching.
+     * @param SchemaFacetCacheService   $schemaFacetCacheService   Schema facet cache service for facet caching.
      */
     public function __construct(
         private readonly DeleteObject $deleteHandler,
@@ -222,7 +226,9 @@ class ObjectService
         private readonly LoggerInterface $logger,
         private readonly ICacheFactory $cacheFactory,
         private readonly FacetService $facetService,
-        private readonly CacheInvalidationService $cacheInvalidationService
+        private readonly ObjectCacheService $objectCacheService,
+        private readonly SchemaCacheService $schemaCacheService,
+        private readonly SchemaFacetCacheService $schemaFacetCacheService
     ) {
         // **PERFORMANCE OPTIMIZATION**: Initialize Nextcloud's distributed cache
         try {
@@ -3069,11 +3075,11 @@ class ObjectService
 
                 // **BULK CACHE COORDINATION**: Invalidate collection caches for affected contexts
                 // This ensures that GET collection calls immediately see the bulk imported objects
-                $this->cacheInvalidationService->invalidateObjectRelatedCaches(
-                    register: $this->currentRegister,
-                    schema: $this->currentSchema,
+                $this->objectCacheService->invalidateForObjectChange(
+                    object: null, // Bulk operation affects multiple objects
                     operation: 'bulk_save',
-                    objectCount: $totalAffected
+                    registerId: $this->currentRegister?->getId(),
+                    schemaId: $this->currentSchema?->getId()
                 );
 
                 $this->logger->debug('Bulk operation cache invalidation completed', [
@@ -4518,11 +4524,11 @@ class ObjectService
                     'operation' => 'bulk_delete'
                 ]);
 
-                $this->cacheInvalidationService->invalidateObjectRelatedCaches(
-                    register: null, // Affects multiple registers potentially
-                    schema: null,   // Affects multiple schemas potentially  
+                $this->objectCacheService->invalidateForObjectChange(
+                    object: null, // Bulk operation affects multiple objects
                     operation: 'bulk_delete',
-                    objectCount: count($deletedObjectIds)
+                    registerId: null, // Affects multiple registers potentially
+                    schemaId: null   // Affects multiple schemas potentially
                 );
 
                 $this->logger->debug('Bulk delete cache invalidation completed', [
@@ -4585,11 +4591,11 @@ class ObjectService
                     'operation' => 'bulk_publish'
                 ]);
 
-                $this->cacheInvalidationService->invalidateObjectRelatedCaches(
-                    register: null, // Affects multiple registers potentially
-                    schema: null,   // Affects multiple schemas potentially  
+                $this->objectCacheService->invalidateForObjectChange(
+                    object: null, // Bulk operation affects multiple objects
                     operation: 'bulk_publish',
-                    objectCount: count($publishedObjectIds)
+                    registerId: null, // Affects multiple registers potentially
+                    schemaId: null   // Affects multiple schemas potentially
                 );
 
                 $this->logger->debug('Bulk publish cache invalidation completed', [
@@ -4652,11 +4658,11 @@ class ObjectService
                     'operation' => 'bulk_depublish'
                 ]);
 
-                $this->cacheInvalidationService->invalidateObjectRelatedCaches(
-                    register: null, // Affects multiple registers potentially
-                    schema: null,   // Affects multiple schemas potentially  
+                $this->objectCacheService->invalidateForObjectChange(
+                    object: null, // Bulk operation affects multiple objects
                     operation: 'bulk_depublish',
-                    objectCount: count($depublishedObjectIds)
+                    registerId: null, // Affects multiple registers potentially
+                    schemaId: null   // Affects multiple schemas potentially
                 );
 
                 $this->logger->debug('Bulk depublish cache invalidation completed', [
