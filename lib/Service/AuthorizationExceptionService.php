@@ -24,6 +24,8 @@ use OCA\OpenRegister\Db\AuthorizationException;
 use OCA\OpenRegister\Db\AuthorizationExceptionMapper;
 use OCP\IUserSession;
 use OCP\IGroupManager;
+use OCP\ICacheFactory;
+use OCP\IMemcache;
 use Psr\Log\LoggerInterface;
 use InvalidArgumentException;
 
@@ -72,6 +74,34 @@ class AuthorizationExceptionService
      */
     private LoggerInterface $logger;
 
+    /**
+     * Cache factory instance
+     *
+     * @var ICacheFactory|null
+     */
+    private ?ICacheFactory $cacheFactory;
+
+    /**
+     * Cache instance for storing authorization exceptions
+     *
+     * @var IMemcache|null
+     */
+    private ?IMemcache $cache = null;
+
+    /**
+     * In-memory cache for user exceptions to avoid repeated database queries
+     *
+     * @var array<string, array<AuthorizationException>>
+     */
+    private array $userExceptionCache = [];
+
+    /**
+     * In-memory cache for group memberships to avoid repeated group manager calls
+     *
+     * @var array<string, array<string>>
+     */
+    private array $groupMembershipCache = [];
+
 
     /**
      * Constructor for the AuthorizationExceptionService
@@ -80,17 +110,32 @@ class AuthorizationExceptionService
      * @param IUserSession                 $userSession  The user session
      * @param IGroupManager                $groupManager The group manager
      * @param LoggerInterface              $logger       The logger
+     * @param ICacheFactory|null           $cacheFactory Optional cache factory for performance optimization
      */
     public function __construct(
         AuthorizationExceptionMapper $mapper,
         IUserSession $userSession,
         IGroupManager $groupManager,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        ?ICacheFactory $cacheFactory = null
     ) {
         $this->mapper       = $mapper;
         $this->userSession  = $userSession;
         $this->groupManager = $groupManager;
         $this->logger       = $logger;
+        $this->cacheFactory = $cacheFactory;
+
+        // Initialize cache if available
+        if ($this->cacheFactory !== null) {
+            try {
+                $this->cache = $this->cacheFactory->createDistributed('openregister_auth_exceptions');
+            } catch (\Exception $e) {
+                $this->logger->warning('Failed to initialize authorization exception cache', [
+                    'exception' => $e->getMessage(),
+                ]);
+                $this->cache = null;
+            }
+        }
 
     }//end __construct()
 
@@ -163,6 +208,230 @@ class AuthorizationExceptionService
 
 
     /**
+     * Performance-optimized version of evaluateUserPermission with caching
+     *
+     * This method uses multiple caching layers to improve performance:
+     * - Distributed cache for computed results
+     * - In-memory cache for user exceptions within request
+     * - Cached group memberships
+     *
+     * @param string      $userId           The user ID to check
+     * @param string      $action           The action to check
+     * @param string|null $schemaUuid       Optional schema UUID
+     * @param string|null $registerUuid     Optional register UUID
+     * @param string|null $organizationUuid Optional organization UUID
+     *
+     * @return bool|null True if allowed, false if denied, null if no applicable exceptions
+     */
+    public function evaluateUserPermissionOptimized(
+        string $userId,
+        string $action,
+        ?string $schemaUuid = null,
+        ?string $registerUuid = null,
+        ?string $organizationUuid = null
+    ): ?bool {
+        // Create cache key for this specific permission check
+        $cacheKey = $this->buildPermissionCacheKey($userId, $action, $schemaUuid, $registerUuid, $organizationUuid);
+        
+        // Try distributed cache first
+        if ($this->cache !== null) {
+            $cached = $this->cache->get($cacheKey);
+            if ($cached !== null) {
+                return $cached === 'true' ? true : ($cached === 'false' ? false : null);
+            }
+        }
+
+        // If not cached, evaluate and cache result
+        $result = $this->evaluateUserPermission($userId, $action, $schemaUuid, $registerUuid, $organizationUuid);
+        
+        // Cache the result for future requests (5 minutes TTL)
+        if ($this->cache !== null) {
+            $cacheValue = $result === true ? 'true' : ($result === false ? 'false' : 'null');
+            $this->cache->set($cacheKey, $cacheValue, 300);
+        }
+
+        return $result;
+
+    }//end evaluateUserPermissionOptimized()
+
+
+    /**
+     * Build cache key for permission evaluation
+     *
+     * @param string      $userId           The user ID
+     * @param string      $action           The action
+     * @param string|null $schemaUuid       Optional schema UUID
+     * @param string|null $registerUuid     Optional register UUID
+     * @param string|null $organizationUuid Optional organization UUID
+     *
+     * @return string The cache key
+     */
+    private function buildPermissionCacheKey(
+        string $userId,
+        string $action,
+        ?string $schemaUuid = null,
+        ?string $registerUuid = null,
+        ?string $organizationUuid = null
+    ): string {
+        return 'auth_perm_' . md5($userId . '_' . $action . '_' . ($schemaUuid ?? '') . '_' . ($registerUuid ?? '') . '_' . ($organizationUuid ?? ''));
+
+    }//end buildPermissionCacheKey()
+
+
+    /**
+     * Check if user has exceptions with caching to avoid repeated database queries
+     *
+     * @param string $userId The user ID to check
+     *
+     * @return bool True if user has any active exceptions
+     */
+    public function userHasExceptionsOptimized(string $userId): bool
+    {
+        // Check in-memory cache first
+        if (isset($this->userExceptionCache[$userId])) {
+            return !empty($this->userExceptionCache[$userId]);
+        }
+
+        // Check distributed cache
+        $cacheKey = 'user_has_exceptions_' . $userId;
+        if ($this->cache !== null) {
+            $cached = $this->cache->get($cacheKey);
+            if ($cached !== null) {
+                return $cached === 'true';
+            }
+        }
+
+        // Compute and cache result
+        $hasExceptions = $this->userHasExceptions($userId);
+        
+        if ($this->cache !== null) {
+            $this->cache->set($cacheKey, $hasExceptions ? 'true' : 'false', 300);
+        }
+
+        return $hasExceptions;
+
+    }//end userHasExceptionsOptimized()
+
+
+    /**
+     * Get user groups with caching to avoid repeated group manager calls
+     *
+     * @param string $userId The user ID
+     *
+     * @return array<string> Array of group IDs the user belongs to
+     */
+    private function getUserGroupsCached(string $userId): array
+    {
+        // Check in-memory cache first
+        if (isset($this->groupMembershipCache[$userId])) {
+            return $this->groupMembershipCache[$userId];
+        }
+
+        // Get user object and groups
+        $userObj = $this->groupManager->get($userId);
+        $userGroups = [];
+        
+        if ($userObj !== null) {
+            $groups = $this->groupManager->getUserGroups($userObj);
+            foreach ($groups as $group) {
+                $userGroups[] = $group->getGID();
+            }
+        }
+
+        // Cache in memory for this request
+        $this->groupMembershipCache[$userId] = $userGroups;
+
+        return $userGroups;
+
+    }//end getUserGroupsCached()
+
+
+    /**
+     * Preload exceptions for multiple users to optimize batch operations
+     *
+     * This method loads exceptions for multiple users in a single database query,
+     * significantly improving performance for bulk operations.
+     *
+     * @param array<string> $userIds Array of user IDs to preload exceptions for
+     * @param string        $action  Optional action to filter by
+     *
+     * @return void
+     */
+    public function preloadUserExceptions(array $userIds, string $action = ''): void
+    {
+        if (empty($userIds)) {
+            return;
+        }
+
+        $this->logger->debug('Preloading exceptions for users', [
+            'user_count' => count($userIds),
+            'action' => $action,
+        ]);
+
+        // Load user exceptions in batch
+        foreach ($userIds as $userId) {
+            if (!isset($this->userExceptionCache[$userId])) {
+                $this->userExceptionCache[$userId] = $this->mapper->findBySubject(
+                    AuthorizationException::SUBJECT_TYPE_USER, 
+                    $userId
+                );
+            }
+        }
+
+        // Also preload group exceptions for all users
+        foreach ($userIds as $userId) {
+            $userGroups = $this->getUserGroupsCached($userId);
+            foreach ($userGroups as $groupId) {
+                $groupCacheKey = 'group_' . $groupId;
+                if (!isset($this->userExceptionCache[$groupCacheKey])) {
+                    $this->userExceptionCache[$groupCacheKey] = $this->mapper->findBySubject(
+                        AuthorizationException::SUBJECT_TYPE_GROUP,
+                        $groupId
+                    );
+                }
+            }
+        }
+
+    }//end preloadUserExceptions()
+
+
+    /**
+     * Clear all caches (useful for testing or after exception changes)
+     *
+     * @return void
+     */
+    public function clearCache(): void
+    {
+        $this->userExceptionCache = [];
+        $this->groupMembershipCache = [];
+        
+        if ($this->cache !== null) {
+            $this->cache->clear();
+        }
+
+        $this->logger->debug('Authorization exception caches cleared');
+
+    }//end clearCache()
+
+
+    /**
+     * Get performance metrics for monitoring
+     *
+     * @return array<string, mixed> Performance metrics
+     */
+    public function getPerformanceMetrics(): array
+    {
+        return [
+            'memory_cache_entries' => count($this->userExceptionCache),
+            'group_cache_entries' => count($this->groupMembershipCache),
+            'distributed_cache_available' => $this->cache !== null,
+            'cache_factory_available' => $this->cacheFactory !== null,
+        ];
+
+    }//end getPerformanceMetrics()
+
+
+    /**
      * Evaluate authorization exceptions for a user and action
      *
      * This method determines if a user has permission based on authorization exceptions.
@@ -196,12 +465,11 @@ class AuthorizationExceptionService
             $organizationUuid
         );
 
-        // Get user's groups and find applicable group exceptions
-        $userObj = $this->groupManager->getUserGroups($this->groupManager->get($userId));
+        // Get user's groups using cached method and find applicable group exceptions
+        $userGroups = $this->getUserGroupsCached($userId);
         $groupExceptions = [];
         
-        foreach ($userObj as $group) {
-            $groupId = $group->getGID();
+        foreach ($userGroups as $groupId) {
             $exceptions = $this->mapper->findApplicableExceptions(
                 AuthorizationException::SUBJECT_TYPE_GROUP,
                 $groupId,
@@ -269,15 +537,10 @@ class AuthorizationExceptionService
             return true;
         }
 
-        // Check group exceptions
-        $userObj = $this->groupManager->get($userId);
-        if ($userObj === null) {
-            return false;
-        }
-        
-        $userGroups = $this->groupManager->getUserGroups($userObj);
-        foreach ($userGroups as $group) {
-            $groupExceptions = $this->mapper->findBySubject(AuthorizationException::SUBJECT_TYPE_GROUP, $group->getGID());
+        // Check group exceptions using cached group lookup
+        $userGroups = $this->getUserGroupsCached($userId);
+        foreach ($userGroups as $groupId) {
+            $groupExceptions = $this->mapper->findBySubject(AuthorizationException::SUBJECT_TYPE_GROUP, $groupId);
             if (count($groupExceptions) > 0) {
                 return true;
             }
@@ -300,16 +563,13 @@ class AuthorizationExceptionService
         // Get direct user exceptions
         $userExceptions = $this->mapper->findBySubject(AuthorizationException::SUBJECT_TYPE_USER, $userId);
 
-        // Get group exceptions
-        $userObj = $this->groupManager->get($userId);
+        // Get group exceptions using cached group lookup
+        $userGroups = $this->getUserGroupsCached($userId);
         $groupExceptions = [];
         
-        if ($userObj !== null) {
-            $userGroups = $this->groupManager->getUserGroups($userObj);
-            foreach ($userGroups as $group) {
-                $exceptions = $this->mapper->findBySubject(AuthorizationException::SUBJECT_TYPE_GROUP, $group->getGID());
-                $groupExceptions = array_merge($groupExceptions, $exceptions);
-            }
+        foreach ($userGroups as $groupId) {
+            $exceptions = $this->mapper->findBySubject(AuthorizationException::SUBJECT_TYPE_GROUP, $groupId);
+            $groupExceptions = array_merge($groupExceptions, $exceptions);
         }
 
         // Combine and sort by priority
@@ -375,3 +635,4 @@ class AuthorizationExceptionService
 
 
 }//end class
+

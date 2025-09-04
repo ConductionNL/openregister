@@ -280,3 +280,4 @@ class AuthorizationExceptionMapperTest extends TestCase
 
 
 }//end class
+
