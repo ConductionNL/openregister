@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FacetService;
+use OCA\OpenRegister\Service\CacheInvalidationService;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\ObjectHandlers\DeleteObject;
 use OCA\OpenRegister\Service\ObjectHandlers\GetObject;
@@ -152,6 +153,16 @@ class ObjectService
     private ?IMemcache $entityCache = null;
 
     /**
+     * External app identifier for cache isolation
+     *
+     * **EXTERNAL APP OPTIMIZATION**: Allows external apps to set their identifier
+     * for proper cache isolation and improved performance.
+     *
+     * @var string|null
+     */
+    private ?string $externalAppId = null;
+
+    /**
      * Cache expiry time in seconds (5 minutes for development, configurable for production)
      *
      * @var int
@@ -186,8 +197,9 @@ class ObjectService
      * @param IGroupManager       $groupManager        Group manager for checking user groups.
      * @param IUserManager        $userManager         User manager for getting user objects.
      * @param OrganisationService $organisationService Service for organisation operations.
-     * @param LoggerInterface     $logger              Logger for performance monitoring.
-     * @param ICacheFactory       $cacheFactory        Nextcloud cache factory for distributed caching.
+     * @param LoggerInterface           $logger                    Logger for performance monitoring.
+     * @param ICacheFactory             $cacheFactory              Nextcloud cache factory for distributed caching.
+     * @param CacheInvalidationService  $cacheInvalidationService  Cache invalidation service for bulk operations.
      */
     public function __construct(
         private readonly DeleteObject $deleteHandler,
@@ -209,7 +221,8 @@ class ObjectService
         private readonly OrganisationService $organisationService,
         private readonly LoggerInterface $logger,
         private readonly ICacheFactory $cacheFactory,
-        private readonly FacetService $facetService
+        private readonly FacetService $facetService,
+        private readonly CacheInvalidationService $cacheInvalidationService
     ) {
         // **PERFORMANCE OPTIMIZATION**: Initialize Nextcloud's distributed cache
         try {
@@ -228,6 +241,44 @@ class ObjectService
         }
 
     }//end __construct()
+
+
+    /**
+     * Set external app context for optimized caching
+     *
+     * **EXTERNAL APP OPTIMIZATION**: Allows external apps to identify themselves
+     * for proper cache isolation. This prevents cache thrashing between different
+     * external apps and significantly improves performance for programmatic access.
+     *
+     * **USAGE**: External apps should call this method before using ObjectService:
+     * ```php
+     * $objectService = \OC::$server->get(\OCA\OpenRegister\Service\ObjectService::class);
+     * $objectService->setExternalAppContext('myapp');
+     * $results = $objectService->searchObjectsPaginated($query);
+     * ```
+     *
+     * @param string $appId Unique identifier for the external app
+     *
+     * @return self For method chaining
+     *
+     * @phpstan-param  string $appId
+     * @phpstan-return self
+     * @psalm-param    string $appId
+     * @psalm-return   self
+     */
+    public function setExternalAppContext(string $appId): self
+    {
+        $this->externalAppId = $appId;
+        
+        $this->logger->debug('External app context set for cache isolation', [
+            'appId' => $appId,
+            'cacheNamespace' => "external_app_{$appId}",
+            'benefit' => 'improved_cache_performance'
+        ]);
+        
+        return $this;
+        
+    }//end setExternalAppContext()
 
 
     /**
@@ -2235,7 +2286,7 @@ class ObjectService
     public function searchObjectsPaginated(array $query=[]): array
     {
         // **CRITICAL PERFORMANCE OPTIMIZATION**: Check cache first for identical requests
-        $cacheKey = $this->generateCacheKey($query);
+        $cacheKey = $this->generateCacheKey($query, $this->externalAppId);
         $cachedResponse = $this->getCachedResponse($cacheKey);
         
         if ($cachedResponse !== null) {
@@ -2354,7 +2405,7 @@ class ObjectService
         // Log the search trail with actual execution time
         $this->logSearchTrail($query, count($results), $total, $executionTime, 'optimized');
 
-        // **PERFORMANCE OPTIMIZATION**: Cache the response for future identical requests
+        // **PERFORMANCE OPTIMIZATION**: Cache the response for future identical requests  
         $this->setCachedResponse($cacheKey, $paginatedResults);
 
         return $paginatedResults;
@@ -2953,7 +3004,7 @@ class ObjectService
 
         // ARCHITECTURAL DELEGATION: Use specialized SaveObjects handler for bulk operations
         // This provides better separation of concerns and optimized bulk processing
-        return $this->saveObjectsHandler->saveObjects(
+        $bulkResult = $this->saveObjectsHandler->saveObjects(
             objects: $objects,
             register: $this->currentRegister,
             schema: $this->currentSchema,
@@ -2962,6 +3013,47 @@ class ObjectService
             validation: $validation,
             events: $events
         );
+
+        // **BULK CACHE INVALIDATION**: Clear collection caches after successful bulk operations
+        // Bulk imports can create/update hundreds of objects, requiring cache invalidation
+        // to ensure collection queries immediately reflect the new/updated data
+        try {
+            $createdCount = $bulkResult['statistics']['objectsCreated'] ?? 0;
+            $updatedCount = $bulkResult['statistics']['objectsUpdated'] ?? 0;
+            $totalAffected = $createdCount + $updatedCount;
+
+            if ($totalAffected > 0) {
+                $this->logger->debug('Bulk operation cache invalidation starting', [
+                    'objectsCreated' => $createdCount,
+                    'objectsUpdated' => $updatedCount,
+                    'totalAffected' => $totalAffected,
+                    'register' => $this->currentRegister?->getId(),
+                    'schema' => $this->currentSchema?->getId()
+                ]);
+
+                // **BULK CACHE COORDINATION**: Invalidate collection caches for affected contexts
+                // This ensures that GET collection calls immediately see the bulk imported objects
+                $this->cacheInvalidationService->invalidateObjectRelatedCaches(
+                    register: $this->currentRegister,
+                    schema: $this->currentSchema,
+                    operation: 'bulk_save',
+                    objectCount: $totalAffected
+                );
+
+                $this->logger->debug('Bulk operation cache invalidation completed', [
+                    'totalAffected' => $totalAffected,
+                    'cacheInvalidation' => 'success'
+                ]);
+            }
+        } catch (\Exception $e) {
+            // Log cache invalidation errors but don't fail the bulk operation
+            $this->logger->warning('Bulk operation cache invalidation failed', [
+                'error' => $e->getMessage(),
+                'totalAffected' => $totalAffected ?? 0
+            ]);
+        }
+
+        return $bulkResult;
 
     }//end saveObjects()
 
@@ -4382,6 +4474,33 @@ class ObjectService
         // Use the mapper's bulk delete operation
         $deletedObjectIds = $this->objectEntityMapper->deleteObjects($filteredUuids);
 
+        // **BULK CACHE INVALIDATION**: Clear collection caches after bulk delete operations
+        if (!empty($deletedObjectIds)) {
+            try {
+                $this->logger->debug('Bulk delete cache invalidation starting', [
+                    'deletedCount' => count($deletedObjectIds),
+                    'operation' => 'bulk_delete'
+                ]);
+
+                $this->cacheInvalidationService->invalidateObjectRelatedCaches(
+                    register: null, // Affects multiple registers potentially
+                    schema: null,   // Affects multiple schemas potentially  
+                    operation: 'bulk_delete',
+                    objectCount: count($deletedObjectIds)
+                );
+
+                $this->logger->debug('Bulk delete cache invalidation completed', [
+                    'deletedCount' => count($deletedObjectIds),
+                    'cacheInvalidation' => 'success'
+                ]);
+            } catch (\Exception $e) {
+                $this->logger->warning('Bulk delete cache invalidation failed', [
+                    'error' => $e->getMessage(),
+                    'deletedCount' => count($deletedObjectIds)
+                ]);
+            }
+        }
+
         return $deletedObjectIds;
 
     }//end deleteObjects()
@@ -4422,6 +4541,33 @@ class ObjectService
         // Use the mapper's bulk publish operation
         $publishedObjectIds = $this->objectEntityMapper->publishObjects($filteredUuids, $datetime);
 
+        // **BULK CACHE INVALIDATION**: Clear collection caches after bulk publish operations
+        if (!empty($publishedObjectIds)) {
+            try {
+                $this->logger->debug('Bulk publish cache invalidation starting', [
+                    'publishedCount' => count($publishedObjectIds),
+                    'operation' => 'bulk_publish'
+                ]);
+
+                $this->cacheInvalidationService->invalidateObjectRelatedCaches(
+                    register: null, // Affects multiple registers potentially
+                    schema: null,   // Affects multiple schemas potentially  
+                    operation: 'bulk_publish',
+                    objectCount: count($publishedObjectIds)
+                );
+
+                $this->logger->debug('Bulk publish cache invalidation completed', [
+                    'publishedCount' => count($publishedObjectIds),
+                    'cacheInvalidation' => 'success'
+                ]);
+            } catch (\Exception $e) {
+                $this->logger->warning('Bulk publish cache invalidation failed', [
+                    'error' => $e->getMessage(),
+                    'publishedCount' => count($publishedObjectIds)
+                ]);
+            }
+        }
+
         return $publishedObjectIds;
 
     }//end publishObjects()
@@ -4461,6 +4607,33 @@ class ObjectService
 
         // Use the mapper's bulk depublish operation
         $depublishedObjectIds = $this->objectEntityMapper->depublishObjects($filteredUuids, $datetime);
+
+        // **BULK CACHE INVALIDATION**: Clear collection caches after bulk depublish operations
+        if (!empty($depublishedObjectIds)) {
+            try {
+                $this->logger->debug('Bulk depublish cache invalidation starting', [
+                    'depublishedCount' => count($depublishedObjectIds),
+                    'operation' => 'bulk_depublish'
+                ]);
+
+                $this->cacheInvalidationService->invalidateObjectRelatedCaches(
+                    register: null, // Affects multiple registers potentially
+                    schema: null,   // Affects multiple schemas potentially  
+                    operation: 'bulk_depublish',
+                    objectCount: count($depublishedObjectIds)
+                );
+
+                $this->logger->debug('Bulk depublish cache invalidation completed', [
+                    'depublishedCount' => count($depublishedObjectIds),
+                    'cacheInvalidation' => 'success'
+                ]);
+            } catch (\Exception $e) {
+                $this->logger->warning('Bulk depublish cache invalidation failed', [
+                    'error' => $e->getMessage(),
+                    'depublishedCount' => count($depublishedObjectIds)
+                ]);
+            }
+        }
 
         return $depublishedObjectIds;
 
@@ -4917,7 +5090,12 @@ class ObjectService
      * query parameters, user context, and organization context to enable
      * response caching for identical requests.
      *
-     * @param array $query The search query array
+     * **EXTERNAL APP OPTIMIZATION**: For external apps without user sessions,
+     * creates specific cache namespaces to prevent cache thrashing between
+     * different external apps and improve performance.
+     *
+     * @param array       $query   The search query array
+     * @param string|null $appId   Optional app ID for external app cache isolation
      *
      * @return string Unique cache key for the query
      *
@@ -4926,27 +5104,170 @@ class ObjectService
      * @phpstan-return string
      * @psalm-return   string
      */
-    private function generateCacheKey(array $query): string
+    private function generateCacheKey(array $query, ?string $appId = null): string
     {
         // Include user context and organization for cache isolation
         $user = $this->userSession->getUser();
-        $userId = $user ? $user->getUID() : 'anonymous';
+        $userId = $user ? $user->getUID() : null;
         $orgId = $this->getCurrentOrganisationId() ?? 'no-org';
+        
+        // **EXTERNAL APP OPTIMIZATION**: Enhanced anonymous user handling
+        if ($userId === null) {
+            // **PRIORITY 1**: Use explicitly set external app ID (best performance)
+            if ($appId !== null) {
+                $userId = "external_app_{$appId}";
+            } else {
+                // **PRIORITY 2**: Try to detect calling app from call stack
+                $appContext = $this->detectExternalAppContext();
+                if ($appContext !== null) {
+                    $userId = "external_app_{$appContext}";
+                } else {
+                    // **PRIORITY 3**: Query-based isolation for anonymous users
+                    // This prevents cache thrashing between different anonymous usage patterns
+                    $queryFingerprint = $this->generateQueryFingerprint($query);
+                    $userId = "anonymous_{$queryFingerprint}";
+                }
+            }
+            
+            // **PERFORMANCE LOGGING**: Log external app cache strategy
+            $this->logger->debug('External app cache context determined', [
+                'strategy' => $appId ? 'explicit' : ($appContext ? 'detected' : 'fingerprint'),
+                'cacheUserId' => $userId,
+                'originalAppId' => $appId,
+                'detectedApp' => $appContext ?? 'none'
+            ]);
+        }
         
         // Sort query to ensure consistent cache keys
         ksort($query);
         
-        // Create cache key with user and organization context
+        // Create cache key with enhanced user and organization context
         $keyData = [
             'query' => $query,
             'user' => $userId,
             'org' => $orgId,
-            'version' => '1.0' // Increment this to invalidate all caches when needed
+            'version' => '1.1' // Incremented for enhanced external app support
         ];
         
         return 'obj_search_' . md5(json_encode($keyData));
         
     }//end generateCacheKey()
+
+
+    /**
+     * Detect external app context from call stack for cache isolation
+     *
+     * **EXTERNAL APP OPTIMIZATION**: Analyzes the call stack to detect which
+     * external Nextcloud app is calling ObjectService, enabling app-specific
+     * cache namespaces that prevent cache thrashing between apps.
+     *
+     * @return string|null App identifier or null if not detectable
+     *
+     * @phpstan-return string|null
+     * @psalm-return   string|null
+     */
+    private function detectExternalAppContext(): ?string
+    {
+        try {
+            // **SMART DETECTION**: Analyze debug backtrace for calling app
+            $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10);
+            
+            foreach ($trace as $frame) {
+                if (isset($frame['file'])) {
+                    $filePath = $frame['file'];
+                    
+                    // Look for app patterns in the file path
+                    if (preg_match('#/apps/([^/]+)/#', $filePath, $matches)) {
+                        $detectedApp = $matches[1];
+                        
+                        // Skip if it's our own app
+                        if ($detectedApp !== 'openregister') {
+                            return $detectedApp;
+                        }
+                    }
+                    
+                    // Look for apps-extra patterns
+                    if (preg_match('#/apps-extra/([^/]+)/#', $filePath, $matches)) {
+                        $detectedApp = $matches[1];
+                        
+                        // Skip if it's our own app
+                        if ($detectedApp !== 'openregister') {
+                            return $detectedApp;
+                        }
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            // Detection failed, continue without app context
+        }
+        
+        return null;
+        
+    }//end detectExternalAppContext()
+
+
+    /**
+     * Generate a query fingerprint for anonymous cache isolation
+     *
+     * **CACHE ISOLATION**: Creates a fingerprint based on query patterns
+     * to prevent different usage patterns from sharing cache entries and
+     * causing performance degradation.
+     *
+     * @param array $query The search query array
+     *
+     * @return string Query pattern fingerprint
+     *
+     * @phpstan-param array<string, mixed> $query
+     * @psalm-param   array<string, mixed> $query
+     * @phpstan-return string
+     * @psalm-return   string
+     */
+    private function generateQueryFingerprint(array $query): string
+    {
+        // **PATTERN ANALYSIS**: Extract query characteristics for cache grouping
+        $characteristics = [];
+        
+        // Detect query complexity patterns
+        $characteristics['has_search'] = !empty($query['_search']);
+        $characteristics['has_facets'] = !empty($query['_facets']);
+        $characteristics['has_extend'] = !empty($query['_extend']);
+        $characteristics['has_filters'] = count(array_filter(array_keys($query), fn($k) => !str_starts_with($k, '_'))) > 0;
+        $characteristics['limit_range'] = $this->getLimitRange($query['_limit'] ?? 20);
+        
+        // Include register/schema context for isolation
+        if (isset($query['@self']['register'])) {
+            $characteristics['register'] = $query['@self']['register'];
+        }
+        if (isset($query['@self']['schema'])) {
+            $characteristics['schema'] = $query['@self']['schema'];
+        }
+        
+        // **FINGERPRINT GENERATION**: Create short fingerprint for cache key efficiency
+        return substr(md5(json_encode($characteristics)), 0, 8);
+        
+    }//end generateQueryFingerprint()
+
+
+    /**
+     * Get limit range for query fingerprinting
+     *
+     * @param int $limit Query limit value
+     *
+     * @return string Limit range category
+     */
+    private function getLimitRange(int $limit): string
+    {
+        if ($limit <= 10) {
+            return 'small';
+        } elseif ($limit <= 50) {
+            return 'medium';
+        } elseif ($limit <= 200) {
+            return 'large';
+        } else {
+            return 'xlarge';
+        }
+        
+    }//end getLimitRange()
 
 
     /**
