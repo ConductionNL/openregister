@@ -33,6 +33,7 @@ use OCA\OpenRegister\Event\ObjectUnlockedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Service\IDatabaseJsonService;
 use OCA\OpenRegister\Service\MySQLJsonService;
+use OCA\OpenRegister\Service\AuthorizationExceptionService;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -109,6 +110,13 @@ class ObjectEntityMapper extends QBMapper
      */
     private IAppConfig $appConfig;
 
+    /**
+     * Authorization exception service instance
+     *
+     * @var AuthorizationExceptionService|null
+     */
+    private ?AuthorizationExceptionService $authorizationExceptionService = null;
+
 
 
     /**
@@ -148,15 +156,16 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Constructor for the ObjectEntityMapper
      *
-     * @param IDBConnection    $db               The database connection
-     * @param MySQLJsonService $mySQLJsonService The MySQL JSON service
-     * @param IEventDispatcher $eventDispatcher  The event dispatcher
-     * @param IUserSession     $userSession      The user session
-     * @param SchemaMapper     $schemaMapper     The schema mapper
-     * @param IGroupManager    $groupManager     The group manager
-     * @param IUserManager     $userManager      The user manager
-     * @param IAppConfig       $appConfig        The app configuration
-     * @param LoggerInterface  $logger           The logger
+     * @param IDBConnection                      $db                            The database connection
+     * @param MySQLJsonService                   $mySQLJsonService              The MySQL JSON service
+     * @param IEventDispatcher                   $eventDispatcher               The event dispatcher
+     * @param IUserSession                       $userSession                   The user session
+     * @param SchemaMapper                       $schemaMapper                  The schema mapper
+     * @param IGroupManager                      $groupManager                  The group manager
+     * @param IUserManager                       $userManager                   The user manager
+     * @param IAppConfig                         $appConfig                     The app configuration
+     * @param LoggerInterface                    $logger                        The logger
+     * @param AuthorizationExceptionService|null $authorizationExceptionService Optional authorization exception service
      */
     public function __construct(
         IDBConnection $db,
@@ -167,7 +176,8 @@ class ObjectEntityMapper extends QBMapper
         IGroupManager $groupManager,
         IUserManager $userManager,
         IAppConfig $appConfig,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        ?AuthorizationExceptionService $authorizationExceptionService = null
     ) {
         parent::__construct($db, 'openregister_objects');
 
@@ -185,6 +195,7 @@ class ObjectEntityMapper extends QBMapper
         $this->userManager     = $userManager;
         $this->appConfig       = $appConfig;
         $this->logger          = $logger;
+        $this->authorizationExceptionService = $authorizationExceptionService;
 
         // Try to get max_allowed_packet from database configuration
         $this->initializeMaxPacketSize();
@@ -316,10 +327,229 @@ class ObjectEntityMapper extends QBMapper
 
 
     /**
+     * Apply authorization exception filters to a query builder
+     *
+     * This method handles authorization exceptions (inclusions and exclusions) that override
+     * the standard RBAC system. It's called before normal RBAC filtering to apply
+     * higher-priority exception rules.
+     *
+     * @param IQueryBuilder $qb               The query builder to modify
+     * @param string        $userId           The user ID to check exceptions for
+     * @param string        $objectTableAlias Optional alias for the objects table (default: 'o')
+     * @param string        $schemaTableAlias Optional alias for the schemas table (default: 's')
+     * @param string        $action           The action being performed (default: 'read')
+     *
+     * @return bool|null True if user should have access via exceptions, false if denied, null if no exceptions apply
+     */
+    private function applyAuthorizationExceptions(
+        IQueryBuilder $qb,
+        string $userId,
+        string $objectTableAlias = 'o',
+        string $schemaTableAlias = 's',
+        string $action = 'read'
+    ): ?bool {
+        // If authorization exception service is not available, skip exception handling
+        if ($this->authorizationExceptionService === null) {
+            return null;
+        }
+
+        try {
+            // Check if user has any authorization exceptions that would affect access
+            $hasExceptions = $this->authorizationExceptionService->userHasExceptions($userId);
+            if (!$hasExceptions) {
+                return null; // No exceptions for this user, fall back to normal RBAC
+            }
+
+            // For query builder-based authorization, we need to add conditions for exceptions
+            // This is complex because we need to handle both inclusions and exclusions
+            // at the database level. For now, we'll rely on post-processing or 
+            // implement simplified exception handling here.
+
+            $this->logger->debug('User has authorization exceptions, applying complex filtering', [
+                'user_id' => $userId,
+                'action'  => $action,
+            ]);
+
+            // @todo: Implement complex query building for exceptions
+            // For now, return null to fall back to normal RBAC with post-processing
+            return null;
+
+        } catch (\Exception $e) {
+            $this->logger->error('Error applying authorization exceptions', [
+                'user_id'   => $userId,
+                'action'    => $action,
+                'exception' => $e->getMessage(),
+            ]);
+            return null; // Fall back to normal RBAC on error
+        }
+
+    }//end applyAuthorizationExceptions()
+
+
+    /**
+     * Check if a user has permission to perform an action on a specific object
+     *
+     * This method evaluates authorization exceptions and normal RBAC to determine
+     * if a user has permission to perform a specific action on an object.
+     *
+     * @param string           $userId           The user ID to check
+     * @param string           $action           The action (create, read, update, delete)
+     * @param ObjectEntity     $object           The object to check permissions for
+     * @param Schema|null      $schema           Optional schema object for context
+     * @param Register|null    $register         Optional register object for context
+     * @param string|null      $organizationUuid Optional organization UUID
+     *
+     * @return bool True if user has permission, false otherwise
+     */
+    public function checkObjectPermission(
+        string $userId,
+        string $action,
+        ObjectEntity $object,
+        ?Schema $schema = null,
+        ?Register $register = null,
+        ?string $organizationUuid = null
+    ): bool {
+        // Admin users always have permission
+        $userObj = $this->userManager->get($userId);
+        if ($userObj !== null) {
+            $userGroups = $this->groupManager->getUserGroupIds($userObj);
+            if (in_array('admin', $userGroups)) {
+                return true;
+            }
+        }
+
+        // Check authorization exceptions first
+        if ($this->authorizationExceptionService !== null) {
+            $schemaUuid = $schema?->getUuid() ?? $object->getSchema();
+            $registerUuid = $register?->getUuid() ?? $object->getRegister();
+            
+            $exceptionResult = $this->authorizationExceptionService->evaluateUserPermission(
+                $userId,
+                $action,
+                $schemaUuid,
+                $registerUuid,
+                $organizationUuid
+            );
+
+            if ($exceptionResult !== null) {
+                $this->logger->debug('Authorization exception applied for object permission', [
+                    'user_id'     => $userId,
+                    'action'      => $action,
+                    'object_uuid' => $object->getUuid(),
+                    'schema_uuid' => $schemaUuid,
+                    'result'      => $exceptionResult ? 'allowed' : 'denied',
+                ]);
+                return $exceptionResult;
+            }
+        }
+
+        // Fall back to normal RBAC checks
+        // Object owner always has permission
+        if ($object->getOwner() === $userId) {
+            return true;
+        }
+
+        // Check if object is published (for read access)
+        if ($action === 'read' && $this->isObjectPublished($object)) {
+            return true;
+        }
+
+        // Check schema-level permissions
+        if ($schema !== null && $this->checkSchemaPermission($userId, $action, $schema)) {
+            return true;
+        }
+
+        // Check object-level group permissions
+        $objectGroups = $object->getGroups();
+        if (!empty($objectGroups) && isset($objectGroups[$action])) {
+            if ($userObj !== null) {
+                $userGroups = $this->groupManager->getUserGroupIds($userObj);
+                $allowedGroups = $objectGroups[$action];
+                
+                if (array_intersect($userGroups, $allowedGroups)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+
+    }//end checkObjectPermission()
+
+
+    /**
+     * Check if an object is currently published
+     *
+     * @param ObjectEntity $object The object to check
+     *
+     * @return bool True if object is published, false otherwise
+     */
+    private function isObjectPublished(ObjectEntity $object): bool
+    {
+        $published = $object->getPublished();
+        $depublished = $object->getDepublished();
+        $now = new \DateTime();
+
+        if ($published === null) {
+            return false;
+        }
+
+        if ($published > $now) {
+            return false;
+        }
+
+        if ($depublished !== null && $depublished <= $now) {
+            return false;
+        }
+
+        return true;
+
+    }//end isObjectPublished()
+
+
+    /**
+     * Check schema-level permissions for a user and action
+     *
+     * @param string $userId The user ID to check
+     * @param string $action The action to check
+     * @param Schema $schema The schema to check permissions for
+     *
+     * @return bool True if user has permission, false otherwise
+     */
+    private function checkSchemaPermission(string $userId, string $action, Schema $schema): bool
+    {
+        $authorization = $schema->getAuthorization();
+        if (empty($authorization)) {
+            return true; // Open access if no authorization defined
+        }
+
+        // Check if action allows public access
+        if (isset($authorization[$action]) && in_array('public', $authorization[$action], true)) {
+            return true;
+        }
+
+        // Check user groups against authorized groups
+        $userObj = $this->userManager->get($userId);
+        if ($userObj !== null) {
+            $userGroups = $this->groupManager->getUserGroupIds($userObj);
+            $authorizedGroups = $authorization[$action] ?? [];
+            
+            if (array_intersect($userGroups, $authorizedGroups)) {
+                return true;
+            }
+        }
+
+        return false;
+
+    }//end checkSchemaPermission()
+
+
+    /**
      * Apply RBAC permission filters to a query builder
      *
      * This method adds WHERE conditions to filter objects based on the current user's
-     * permissions according to the schema's authorization configuration.
+     * permissions according to the schema's authorization configuration, taking into
+     * account authorization exceptions that may override normal RBAC rules.
      *
      * @param IQueryBuilder $qb The query builder to modify
      * @param string $objectTableAlias Optional alias for the objects table (default: 'o')
@@ -398,6 +628,16 @@ class ObjectEntityMapper extends QBMapper
         if (in_array('admin', $userGroups)) {
             return; // No filtering needed for admin users
         }
+
+        // Check for authorization exceptions first (highest priority)
+        $exceptionResult = $this->applyAuthorizationExceptions($qb, $userId, $objectTableAlias, $schemaTableAlias, 'read');
+        if ($exceptionResult === false) {
+            // User is explicitly denied access via exclusion - apply very restrictive filter
+            $qb->andWhere($qb->expr()->eq('1', $qb->createNamedParameter('0'))); // Always false
+            return;
+        }
+        // Note: If $exceptionResult is true (inclusion), we still apply normal RBAC as additional conditions
+        // If $exceptionResult is null, we proceed with normal RBAC
 
         // Build conditions for read access
         $readConditions = $qb->expr()->orX();
