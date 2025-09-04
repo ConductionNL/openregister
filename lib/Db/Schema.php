@@ -751,6 +751,18 @@ class Schema extends Entity implements JsonSerializable
 
 
     /**
+     * Get the hard validation setting for the schema
+     *
+     * @return bool Whether hard validation is enabled
+     */
+    public function getHardValidation(): bool
+    {
+        return $this->hardValidation;
+
+    }//end getHardValidation()
+
+
+    /**
      * Set the icon for the schema
      *
      * @param string|null $icon The icon reference from Material Design Icons

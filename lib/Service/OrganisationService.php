@@ -432,9 +432,8 @@ class OrganisationService
             // If this was the active organisation, set another one as active
             $activeOrg = $this->getActiveOrganisation();
             if ($activeOrg && $activeOrg->getUuid() === $organisationUuid) {
-                // Clear active organisation from session
-                $activeKey = self::SESSION_ACTIVE_ORGANISATION.'_'.$userId;
-                $this->session->remove($activeKey);
+                // Clear active organisation from config
+                $this->config->deleteUserValue($userId, self::APP_NAME, self::CONFIG_ACTIVE_ORGANISATION);
 
                 // Set another organisation as active
                 $this->getActiveOrganisation();

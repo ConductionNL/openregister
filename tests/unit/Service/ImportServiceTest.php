@@ -8,11 +8,12 @@ use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\Entity\Register;
-use OCA\OpenRegister\Db\Entity\Schema;
-use OCA\OpenRegister\Db\Entity\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\ObjectEntity;
 use PHPUnit\Framework\TestCase;
 use React\Promise\PromiseInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * Test class for ImportService
@@ -30,6 +31,7 @@ class ImportServiceTest extends TestCase
     private ObjectService $objectService;
     private ObjectEntityMapper $objectEntityMapper;
     private SchemaMapper $schemaMapper;
+    private LoggerInterface $logger;
 
     protected function setUp(): void
     {
@@ -39,12 +41,14 @@ class ImportServiceTest extends TestCase
         $this->objectService = $this->createMock(ObjectService::class);
         $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
+        $this->logger = $this->createMock(LoggerInterface::class);
 
         // Create ImportService instance
         $this->importService = new ImportService(
             $this->objectEntityMapper,
             $this->schemaMapper,
-            $this->objectService
+            $this->objectService,
+            $this->logger
         );
     }
 
@@ -53,15 +57,16 @@ class ImportServiceTest extends TestCase
      */
     public function testImportFromCsvWithBatchSaving(): void
     {
+        // Skip test if PhpSpreadsheet is not available
+        if (!class_exists('PhpOffice\PhpSpreadsheet\Reader\Csv')) {
+            $this->markTestSkipped('PhpSpreadsheet library not available');
+            return;
+        }
+        
         // Create test data
         $register = $this->createMock(Register::class);
-        $register->method('getId')->willReturn(1);
-        $register->method('getTitle')->willReturn('Test Register');
 
         $schema = $this->createMock(Schema::class);
-        $schema->method('getId')->willReturn(1);
-        $schema->method('getTitle')->willReturn('Test Schema');
-        $schema->method('getSlug')->willReturn('test-schema');
         $schema->method('getProperties')->willReturn([
             'name' => ['type' => 'string'],
             'age' => ['type' => 'integer'],
@@ -70,10 +75,8 @@ class ImportServiceTest extends TestCase
 
         // Create mock saved objects
         $savedObject1 = $this->createMock(ObjectEntity::class);
-        $savedObject1->method('getUuid')->willReturn('uuid-1');
         
         $savedObject2 = $this->createMock(ObjectEntity::class);
-        $savedObject2->method('getUuid')->willReturn('uuid-2');
 
         // Mock ObjectService saveObjects method
         $this->objectService->expects($this->once())
@@ -140,14 +143,16 @@ class ImportServiceTest extends TestCase
      */
     public function testImportFromCsvWithErrors(): void
     {
+        // Skip test if PhpSpreadsheet is not available
+        if (!class_exists('PhpOffice\PhpSpreadsheet\Reader\Csv')) {
+            $this->markTestSkipped('PhpSpreadsheet library not available');
+            return;
+        }
+        
         // Create test data
         $register = $this->createMock(Register::class);
-        $register->method('getId')->willReturn(1);
 
         $schema = $this->createMock(Schema::class);
-        $schema->method('getId')->willReturn(1);
-        $schema->method('getTitle')->willReturn('Test Schema');
-        $schema->method('getSlug')->willReturn('test-schema');
         $schema->method('getProperties')->willReturn([]);
 
         // Mock ObjectService to throw an exception
@@ -194,14 +199,16 @@ class ImportServiceTest extends TestCase
      */
     public function testImportFromCsvWithEmptyFile(): void
     {
+        // Skip test if PhpSpreadsheet is not available
+        if (!class_exists('PhpOffice\PhpSpreadsheet\Reader\Csv')) {
+            $this->markTestSkipped('PhpSpreadsheet library not available');
+            return;
+        }
+        
         // Create test data
         $register = $this->createMock(Register::class);
-        $register->method('getId')->willReturn(1);
 
         $schema = $this->createMock(Schema::class);
-        $schema->method('getId')->willReturn(1);
-        $schema->method('getTitle')->willReturn('Test Schema');
-        $schema->method('getSlug')->willReturn('test-schema');
 
         // Create temporary CSV file with only headers
         $csvContent = "name,age,active\n";
@@ -267,19 +274,20 @@ class ImportServiceTest extends TestCase
      */
     public function testImportFromCsvAsync(): void
     {
+        // Skip test if PhpSpreadsheet is not available
+        if (!class_exists('PhpOffice\PhpSpreadsheet\Reader\Csv')) {
+            $this->markTestSkipped('PhpSpreadsheet library not available');
+            return;
+        }
+        
         // Create test data
         $register = $this->createMock(Register::class);
-        $register->method('getId')->willReturn(1);
 
         $schema = $this->createMock(Schema::class);
-        $schema->method('getId')->willReturn(1);
-        $schema->method('getTitle')->willReturn('Test Schema');
-        $schema->method('getSlug')->willReturn('test-schema');
         $schema->method('getProperties')->willReturn(['name' => ['type' => 'string']]);
 
         // Mock ObjectService
         $savedObject = $this->createMock(ObjectEntity::class);
-        $savedObject->method('getUuid')->willReturn('uuid-1');
 
         $this->objectService->expects($this->once())
             ->method('saveObjects')
@@ -319,15 +327,19 @@ class ImportServiceTest extends TestCase
      */
     public function testImportFromCsvCategorizesCreatedVsUpdated(): void
     {
+        // Skip test if PhpSpreadsheet is not available
+        if (!class_exists('PhpOffice\PhpSpreadsheet\Reader\Csv')) {
+            $this->markTestSkipped('PhpSpreadsheet library not available');
+            return;
+        }
+        
         // Mock ObjectService to return different objects for created vs updated
         $mockObjectService = $this->createMock(ObjectService::class);
         
         // Create mock objects - one with existing ID (update), one without (create)
         $existingObject = $this->createMock(ObjectEntity::class);
-        $existingObject->method('getUuid')->willReturn('existing-uuid-123');
         
         $newObject = $this->createMock(ObjectEntity::class);
-        $newObject->method('getUuid')->willReturn('new-uuid-456');
         
         // Mock saveObjects to return both objects
         $mockObjectService->method('saveObjects')
@@ -336,7 +348,8 @@ class ImportServiceTest extends TestCase
         $importService = new ImportService(
             $this->createMock(ObjectEntityMapper::class),
             $this->createMock(SchemaMapper::class),
-            $mockObjectService
+            $mockObjectService,
+            $this->createMock(LoggerInterface::class)
         );
         
         // Create a temporary CSV file with data

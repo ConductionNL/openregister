@@ -48,6 +48,8 @@ use OCP\IUserSession;
 use OCP\IUser;
 use OCP\ISession;
 use OCP\IRequest;
+use OCP\IConfig;
+use OCP\IGroupManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use Psr\Log\LoggerInterface;
@@ -83,6 +85,16 @@ class UserOrganisationRelationshipTest extends TestCase
     private $session;
     
     /**
+     * @var IConfig|MockObject
+     */
+    private $config;
+    
+    /**
+     * @var IGroupManager|MockObject
+     */
+    private $groupManager;
+    
+    /**
      * @var IRequest|MockObject
      */
     private $request;
@@ -110,6 +122,8 @@ class UserOrganisationRelationshipTest extends TestCase
         $this->organisationMapper = $this->createMock(OrganisationMapper::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->session = $this->createMock(ISession::class);
+        $this->config = $this->createMock(IConfig::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
         $this->request = $this->createMock(IRequest::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->mockUser = $this->createMock(IUser::class);
@@ -119,6 +133,8 @@ class UserOrganisationRelationshipTest extends TestCase
             $this->organisationMapper,
             $this->userSession,
             $this->session,
+            $this->config,
+            $this->groupManager,
             $this->logger
         );
         

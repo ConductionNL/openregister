@@ -46,7 +46,7 @@ class DataMigrationTest extends TestCase
         $this->organisationMapper = $this->createMock(OrganisationMapper::class);
         $this->output = $this->createMock(IOutput::class);
         
-        $this->migration = new Version1Date20250801000000();
+        $this->migration = new Version1Date20250801000000($this->connection);
     }
 
     /**
@@ -69,7 +69,7 @@ class DataMigrationTest extends TestCase
         $this->connection->method('getQueryBuilder')->willReturn($queryBuilder);
         
         // Act: Run migration
-        $schema = $this->createMock(DoctrineSchema::class);
+        $schema = $this->createMock(\OCP\DB\ISchemaWrapper::class);
         $this->migration->changeSchema($this->output, \Closure::fromCallable(function() use ($schema) {
             return $schema;
         }), []);

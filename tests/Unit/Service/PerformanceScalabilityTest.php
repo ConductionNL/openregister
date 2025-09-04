@@ -24,6 +24,8 @@ use OCA\OpenRegister\Db\Organisation;
 use OCP\IUserSession;
 use OCP\ISession;
 use OCP\IUser;
+use OCP\IConfig;
+use OCP\IGroupManager;
 use Psr\Log\LoggerInterface;
 
 class PerformanceScalabilityTest extends TestCase
@@ -32,6 +34,8 @@ class PerformanceScalabilityTest extends TestCase
     private OrganisationMapper|MockObject $organisationMapper;
     private IUserSession|MockObject $userSession;
     private ISession|MockObject $session;
+    private IConfig|MockObject $config;
+    private IGroupManager|MockObject $groupManager;
     private LoggerInterface|MockObject $logger;
 
     protected function setUp(): void
@@ -41,12 +45,16 @@ class PerformanceScalabilityTest extends TestCase
         $this->organisationMapper = $this->createMock(OrganisationMapper::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->session = $this->createMock(ISession::class);
+        $this->config = $this->createMock(IConfig::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         
         $this->organisationService = new OrganisationService(
             $this->organisationMapper,
             $this->userSession,
             $this->session,
+            $this->config,
+            $this->groupManager,
             $this->logger
         );
     }

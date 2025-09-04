@@ -18,7 +18,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Db;
 
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCP\DB\IDBConnection;
+use OCP\IDBConnection;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCA\OpenRegister\Service\SchemaPropertyValidatorService;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
@@ -45,8 +45,11 @@ class SchemaMapperTest extends TestCase
         $qb->method('select')->willReturnSelf();
         $qb->method('from')->willReturnSelf();
         $qb->method('groupBy')->willReturnSelf();
-        $qb->method('executeQuery')->willReturnSelf();
-        $qb->method('fetchAllAssociative')->willReturn([]);
+        
+        // Mock IResult for executeQuery
+        $result = $this->createMock(\OCP\DB\IResult::class);
+        $result->method('fetchAll')->willReturn([]);
+        $qb->method('executeQuery')->willReturn($result);
 
         $eventDispatcher = $this->createMock(IEventDispatcher::class);
         $validator = $this->createMock(SchemaPropertyValidatorService::class);
@@ -72,11 +75,14 @@ class SchemaMapperTest extends TestCase
         $qb->method('select')->willReturnSelf();
         $qb->method('from')->willReturnSelf();
         $qb->method('groupBy')->willReturnSelf();
-        $qb->method('executeQuery')->willReturnSelf();
-        $qb->method('fetchAllAssociative')->willReturn([
-            ['schema_id' => '1', 'count' => '2'],
-            ['schema_id' => '2', 'count' => '1'],
+        
+        // Mock IResult for executeQuery
+        $result = $this->createMock(\OCP\DB\IResult::class);
+        $result->method('fetchAll')->willReturn([
+            ['id' => '1', 'schemas' => '["1","1"]'],
+            ['id' => '2', 'schemas' => '["2"]'],
         ]);
+        $qb->method('executeQuery')->willReturn($result);
 
         $eventDispatcher = $this->createMock(IEventDispatcher::class);
         $validator = $this->createMock(SchemaPropertyValidatorService::class);
@@ -103,10 +109,13 @@ class SchemaMapperTest extends TestCase
         $qb->method('select')->willReturnSelf();
         $qb->method('from')->willReturnSelf();
         $qb->method('groupBy')->willReturnSelf();
-        $qb->method('executeQuery')->willReturnSelf();
-        $qb->method('fetchAllAssociative')->willReturn([
-            ['schema_id' => '1', 'count' => '3'],
+        
+        // Mock IResult for executeQuery
+        $result = $this->createMock(\OCP\DB\IResult::class);
+        $result->method('fetchAll')->willReturn([
+            ['id' => '1', 'schemas' => '["1","1","1"]'],
         ]);
+        $qb->method('executeQuery')->willReturn($result);
 
         $eventDispatcher = $this->createMock(IEventDispatcher::class);
         $validator = $this->createMock(SchemaPropertyValidatorService::class);
