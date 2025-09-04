@@ -64,36 +64,56 @@ class Version1Date20250904170000 extends SimpleMigrationStep
             // **CRITICAL PERFORMANCE INDEX 1**: Composite index for schema + register + published queries
             // This handles the most common query pattern: find objects by schema and register that are published
             if (!$table->hasIndex('idx_schema_register_published') && $table->hasColumn('register')) {
-                $table->addIndex(['schema', 'register', 'published'], 'idx_schema_register_published');
-                $output->info('✅ Added composite schema+register+published index');
+                try {
+                    $table->addIndex(['schema', 'register', 'published'], 'idx_schema_register_published');
+                    $output->info('✅ Added composite schema+register+published index');
+                } catch (\Exception $e) {
+                    $output->info('⚠️  Could not create schema+register+published index: ' . $e->getMessage());
+                }
             }
             
             // **CRITICAL PERFORMANCE INDEX 2**: Composite index for schema + organisation (multitenancy)
             // Handles tenant-specific queries which are very common
             if (!$table->hasIndex('idx_schema_organisation') && $table->hasColumn('schema') && $table->hasColumn('organisation')) {
-                $table->addIndex(['schema', 'organisation'], 'idx_schema_organisation');
-                $output->info('✅ Added schema+organisation index for multitenancy');
+                try {
+                    $table->addIndex(['schema', 'organisation'], 'idx_schema_organisation');
+                    $output->info('✅ Added schema+organisation index for multitenancy');
+                } catch (\Exception $e) {
+                    $output->info('⚠️  Could not create schema+organisation index: ' . $e->getMessage());
+                }
             }
             
             // **CRITICAL PERFORMANCE INDEX 3**: Composite index for register + published + created
             // Optimizes date-range queries on published objects
             if (!$table->hasIndex('idx_register_published_created') && $table->hasColumn('register')) {
-                $table->addIndex(['register', 'published', 'created'], 'idx_register_published_created');
-                $output->info('✅ Added register+published+created index for date queries');
+                try {
+                    $table->addIndex(['register', 'published', 'created'], 'idx_register_published_created');
+                    $output->info('✅ Added register+published+created index for date queries');
+                } catch (\Exception $e) {
+                    $output->info('⚠️  Could not create register+published+created index: ' . $e->getMessage());
+                }
             }
             
             // **EXTEND OPTIMIZATION INDEX 1**: UUID index for relationship loading
             // Critical for _extend operations that load related objects by UUID
             if (!$table->hasIndex('idx_uuid_schema') && $table->hasColumn('uuid') && $table->hasColumn('schema')) {
-                $table->addIndex(['uuid', 'schema'], 'idx_uuid_schema');
-                $output->info('✅ Added UUID+schema index for relationship loading');
+                try {
+                    $table->addIndex(['uuid', 'schema'], 'idx_uuid_schema');
+                    $output->info('✅ Added UUID+schema index for relationship loading');
+                } catch (\Exception $e) {
+                    $output->info('⚠️  Could not create UUID+schema index: ' . $e->getMessage());
+                }
             }
             
             // **EXTEND OPTIMIZATION INDEX 2**: Composite index for owner + schema
             // Optimizes RBAC queries that filter by owner and schema
             if (!$table->hasIndex('idx_owner_schema_published') && $table->hasColumn('owner') && $table->hasColumn('schema') && $table->hasColumn('published')) {
-                $table->addIndex(['owner', 'schema', 'published'], 'idx_owner_schema_published');
-                $output->info('✅ Added owner+schema+published index for RBAC');
+                try {
+                    $table->addIndex(['owner', 'schema', 'published'], 'idx_owner_schema_published');
+                    $output->info('✅ Added owner+schema+published index for RBAC');
+                } catch (\Exception $e) {
+                    $output->info('⚠️  Could not create owner+schema+published index: ' . $e->getMessage());
+                }
             }
             
             // **JSON QUERY OPTIMIZATION**: Index for JSON object field queries
@@ -101,9 +121,9 @@ class Version1Date20250904170000 extends SimpleMigrationStep
             try {
                 // For MySQL 8.0+ this would be a JSON functional index
                 // For older versions or other databases, we skip JSON indexing
-                if (!$table->hasIndex('idx_object_json')) {
-                    // Only add if the database supports it
-                    $table->addIndex(['object(255)'], 'idx_object_json');
+                if (!$table->hasIndex('idx_object_json') && $table->hasColumn('object')) {
+                    // Only add if the database supports it - with conservative length limit
+                    $table->addIndex(['object(191)'], 'idx_object_json'); // Reduced from 255 to 191 for utf8mb4
                     $output->info('✅ Added JSON object index for nested queries');
                 }
             } catch (\Exception $e) {
@@ -112,28 +132,42 @@ class Version1Date20250904170000 extends SimpleMigrationStep
             
             // **PERFORMANCE INDEX 4**: Deleted objects cleanup index
             // Optimizes cleanup operations and "active objects" queries
-            if (!$table->hasIndex('idx_deleted_schema')) {
-                $table->addIndex(['deleted', 'schema'], 'idx_deleted_schema');
-                $output->info('✅ Added deleted+schema index for cleanup operations');
+            if (!$table->hasIndex('idx_deleted_schema') && $table->hasColumn('deleted') && $table->hasColumn('schema')) {
+                try {
+                    $table->addIndex(['deleted', 'schema'], 'idx_deleted_schema');
+                    $output->info('✅ Added deleted+schema index for cleanup operations');
+                } catch (\Exception $e) {
+                    $output->info('⚠️  Could not create deleted+schema index: ' . $e->getMessage());
+                }
             }
             
             // **PERFORMANCE INDEX 5**: Updated timestamp index
             // Optimizes "recently updated" queries and cache invalidation
-            if (!$table->hasIndex('idx_updated_schema')) {
-                $table->addIndex(['updated', 'schema'], 'idx_updated_schema');
-                $output->info('✅ Added updated+schema index for cache invalidation');
+            if (!$table->hasIndex('idx_updated_schema') && $table->hasColumn('updated') && $table->hasColumn('schema')) {
+                try {
+                    $table->addIndex(['updated', 'schema'], 'idx_updated_schema');
+                    $output->info('✅ Added updated+schema index for cache invalidation');
+                } catch (\Exception $e) {
+                    $output->info('⚠️  Could not create updated+schema index: ' . $e->getMessage());
+                }
             }
             
-            // **FULL-TEXT SEARCH OPTIMIZATION**: Add full-text indexes where supported
+            // **FULL-TEXT SEARCH OPTIMIZATION**: Add individual text indexes (safer than composite)
             try {
-                // Add full-text search on name, summary, description
-                if (!$table->hasIndex('idx_fulltext_search')) {
-                    // This is database-specific - implement conservatively
-                    $table->addIndex(['name', 'summary'], 'idx_fulltext_search');
-                    $output->info('✅ Added full-text search index');
+                // Split into separate indexes to avoid MySQL key length limits
+                if (!$table->hasIndex('idx_name_search') && $table->hasColumn('name')) {
+                    // Index on name column with length limit for UTF8MB4 compatibility
+                    $table->addIndex(['name(191)'], 'idx_name_search'); // 191 chars * 4 bytes = 764 bytes (safe)
+                    $output->info('✅ Added name search index');
+                }
+                
+                if (!$table->hasIndex('idx_summary_search') && $table->hasColumn('summary')) {
+                    // Index on summary column with length limit
+                    $table->addIndex(['summary(191)'], 'idx_summary_search'); // 191 chars * 4 bytes = 764 bytes (safe)
+                    $output->info('✅ Added summary search index');
                 }
             } catch (\Exception $e) {
-                $output->info('⚠️  Full-text indexing configuration skipped for database compatibility');
+                $output->info('⚠️  Text search indexing configuration skipped: ' . $e->getMessage());
             }
         }
         
@@ -171,23 +205,36 @@ class Version1Date20250904170000 extends SimpleMigrationStep
         
         // Add composite indexes based on common relationship query patterns
         if ($tableName === 'openregister_object_relations') {
-            if (!$table->hasIndex('idx_source_target')) {
-                $table->addIndex(['source_id', 'target_id'], 'idx_source_target');
-                $output->info("✅ Optimized {$tableName} with source+target index");
+            if (!$table->hasIndex('idx_source_target') && $table->hasColumn('source_id') && $table->hasColumn('target_id')) {
+                try {
+                    $table->addIndex(['source_id', 'target_id'], 'idx_source_target');
+                    $output->info("✅ Optimized {$tableName} with source+target index");
+                } catch (\Exception $e) {
+                    $output->info("⚠️  Could not optimize {$tableName}: " . $e->getMessage());
+                }
             }
         }
         
         if ($tableName === 'openregister_schema_properties') {
-            if (!$table->hasIndex('idx_schema_property')) {
-                $table->addIndex(['schema_id', 'name'], 'idx_schema_property');
-                $output->info("✅ Optimized {$tableName} with schema+property index");
+            if (!$table->hasIndex('idx_schema_property') && $table->hasColumn('schema_id') && $table->hasColumn('name')) {
+                try {
+                    // Add length limit to name column to avoid key length issues
+                    $table->addIndex(['schema_id', 'name(191)'], 'idx_schema_property');
+                    $output->info("✅ Optimized {$tableName} with schema+property index");
+                } catch (\Exception $e) {
+                    $output->info("⚠️  Could not optimize {$tableName}: " . $e->getMessage());
+                }
             }
         }
         
         if ($tableName === 'openregister_register_schemas') {
-            if (!$table->hasIndex('idx_register_schema')) {
-                $table->addIndex(['register_id', 'schema_id'], 'idx_register_schema');
-                $output->info("✅ Optimized {$tableName} with register+schema index");
+            if (!$table->hasIndex('idx_register_schema') && $table->hasColumn('register_id') && $table->hasColumn('schema_id')) {
+                try {
+                    $table->addIndex(['register_id', 'schema_id'], 'idx_register_schema');
+                    $output->info("✅ Optimized {$tableName} with register+schema index");
+                } catch (\Exception $e) {
+                    $output->info("⚠️  Could not optimize {$tableName}: " . $e->getMessage());
+                }
             }
         }
     }
