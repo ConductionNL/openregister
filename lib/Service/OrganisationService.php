@@ -673,6 +673,17 @@ class OrganisationService
 
 
     /**
+     * Get organisation by UUID
+     *
+     * @param string $uuid Organisation UUID
+     * @return Organisation|null
+     */
+    public function getOrganisation(string $uuid): ?Organisation
+    {
+        return $this->organisationMapper->findByUuid($uuid);
+    }
+
+    /**
      * Get the organisation UUID to use for creating new entities
      * Uses the active organisation or falls back to default
      *
