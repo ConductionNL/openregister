@@ -4567,5 +4567,28 @@ class ObjectService
         
     }//end bulkLoadRelationships()
 
+    /**
+     * Enrich objects with properly formatted datetime fields
+     *
+     * @param array $objects Array of objects to enrich
+     * @return array Enriched objects with formatted datetime fields
+     */
+    public function enrichObjects(array $objects): array
+    {
+        foreach ($objects as &$object) {
+            // Format created datetime if it exists
+            if (isset($object['created']) && $object['created'] instanceof \DateTime) {
+                $object['created'] = $object['created']->format('Y-m-d H:i:s');
+            }
+            
+            // Format updated datetime if it exists
+            if (isset($object['updated']) && $object['updated'] instanceof \DateTime) {
+                $object['updated'] = $object['updated']->format('Y-m-d H:i:s');
+            }
+        }
+        
+        return $objects;
+    }//end enrichObjects()
+
 
 }//end class

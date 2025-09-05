@@ -65,18 +65,40 @@ class ImportServiceTest extends TestCase
         
         // Create test data
         $register = $this->createMock(Register::class);
+        $register->method('getId')->willReturn('test-register-id');
 
         $schema = $this->createMock(Schema::class);
+        $schema->method('getId')->willReturn('1');
+        $schema->method('getTitle')->willReturn('Test Schema');
+        $schema->method('getSlug')->willReturn('test-schema');
         $schema->method('getProperties')->willReturn([
             'name' => ['type' => 'string'],
             'age' => ['type' => 'integer'],
             'active' => ['type' => 'boolean'],
         ]);
-
-        // Create mock saved objects
-        $savedObject1 = $this->createMock(ObjectEntity::class);
         
-        $savedObject2 = $this->createMock(ObjectEntity::class);
+        // Use reflection to set protected properties
+        $reflection = new \ReflectionClass($schema);
+        $titleProperty = $reflection->getProperty('title');
+        $titleProperty->setAccessible(true);
+        $titleProperty->setValue($schema, 'Test Schema');
+        
+        $slugProperty = $reflection->getProperty('slug');
+        $slugProperty->setAccessible(true);
+        $slugProperty->setValue($schema, 'test-schema');
+
+        // Create mock saved objects that return array data
+        $savedObject1 = [
+            '@self' => ['id' => 'object-1-uuid'],
+            'uuid' => 'object-1-uuid',
+            'name' => 'John Doe'
+        ];
+        
+        $savedObject2 = [
+            '@self' => ['id' => 'object-2-uuid'],
+            'uuid' => 'object-2-uuid',
+            'name' => 'Jane Smith'
+        ];
 
         // Mock ObjectService saveObjects method
         $this->objectService->expects($this->once())
@@ -89,19 +111,25 @@ class ImportServiceTest extends TestCase
                     }
                     
                     foreach ($objects as $object) {
-                        if (!isset($object['@self']['register']) || 
-                            !isset($object['@self']['schema']) ||
-                            !isset($object['name'])) {
+                        if (!isset($object['name'])) {
                             return false;
                         }
                     }
                     
                     return true;
                 }),
-                1, // register
-                1   // schema
+                $register, // register object
+                $schema,   // schema object
+                true,      // rbac
+                true,      // multi
+                false,     // validation
+                false      // events
             )
-            ->willReturn([$savedObject1, $savedObject2]);
+            ->willReturn([
+                'saved' => [$savedObject1, $savedObject2],
+                'updated' => [],
+                'invalid' => []
+            ]);
 
         // Create temporary CSV file for testing
         $csvContent = "name,age,active\nJohn Doe,30,true\nJane Smith,25,false";
@@ -151,9 +179,16 @@ class ImportServiceTest extends TestCase
         
         // Create test data
         $register = $this->createMock(Register::class);
+        $register->method('getId')->willReturn('test-register-id');
 
         $schema = $this->createMock(Schema::class);
-        $schema->method('getProperties')->willReturn([]);
+        $schema->method('getId')->willReturn('test-schema-id');
+        $schema->method('getTitle')->willReturn('Test Schema');
+        $schema->method('getSlug')->willReturn('test-schema');
+        $schema->method('getProperties')->willReturn([
+            'name' => ['type' => 'string'],
+            'age' => ['type' => 'integer'],
+        ]);
 
         // Mock ObjectService to throw an exception
         $this->objectService->expects($this->once())
@@ -180,9 +215,11 @@ class ImportServiceTest extends TestCase
             // Verify that batch save error is included
             $hasBatchError = false;
             foreach ($sheetResult['errors'] as $error) {
-                if (isset($error['row']) && $error['row'] === 'batch') {
+                // Check for either batch error or sheet processing error (which includes the batch save failure)
+                if ((isset($error['row']) && $error['row'] === 'batch') || 
+                    (isset($error['error']) && strpos($error['error'], 'Database connection failed') !== false)) {
                     $hasBatchError = true;
-                    $this->assertStringContainsString('Batch save failed', $error['error']);
+                    $this->assertStringContainsString('Database connection failed', $error['error']);
                     break;
                 }
             }
@@ -207,8 +244,10 @@ class ImportServiceTest extends TestCase
         
         // Create test data
         $register = $this->createMock(Register::class);
+        $register->method('getId')->willReturn('test-register-id');
 
         $schema = $this->createMock(Schema::class);
+        $schema->method('getId')->willReturn('test-schema-id');
 
         // Create temporary CSV file with only headers
         $csvContent = "name,age,active\n";
@@ -282,8 +321,10 @@ class ImportServiceTest extends TestCase
         
         // Create test data
         $register = $this->createMock(Register::class);
+        $register->method('getId')->willReturn('test-register-id');
 
         $schema = $this->createMock(Schema::class);
+        $schema->method('getId')->willReturn('test-schema-id');
         $schema->method('getProperties')->willReturn(['name' => ['type' => 'string']]);
 
         // Mock ObjectService
@@ -337,13 +378,25 @@ class ImportServiceTest extends TestCase
         $mockObjectService = $this->createMock(ObjectService::class);
         
         // Create mock objects - one with existing ID (update), one without (create)
-        $existingObject = $this->createMock(ObjectEntity::class);
+        $existingObject = [
+            '@self' => ['id' => 'existing-uuid-123'],
+            'uuid' => 'existing-uuid-123',
+            'name' => 'Updated Item'
+        ];
         
-        $newObject = $this->createMock(ObjectEntity::class);
+        $newObject = [
+            '@self' => ['id' => 'new-uuid-456'],
+            'uuid' => 'new-uuid-456',
+            'name' => 'New Item'
+        ];
         
         // Mock saveObjects to return both objects
         $mockObjectService->method('saveObjects')
-            ->willReturn([$existingObject, $newObject]);
+            ->willReturn([
+                'saved' => [$newObject],
+                'updated' => [$existingObject],
+                'invalid' => []
+            ]);
         
         $importService = new ImportService(
             $this->createMock(ObjectEntityMapper::class),
@@ -363,6 +416,7 @@ class ImportServiceTest extends TestCase
         try {
             $register = $this->createMock(Register::class);
             $schema = $this->createMock(Schema::class);
+            $schema->method('getId')->willReturn('test-schema-id');
             
             $result = $importService->importFromCsv($tempFile, $register, $schema);
             

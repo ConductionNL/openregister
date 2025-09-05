@@ -684,11 +684,45 @@ class ObjectServiceTest extends TestCase
      * @return void
      */
     /**
-     * @skip Method enrichObjects does not exist in ObjectService
+     * Test that enrichObjects properly formats datetime fields
      */
     public function testEnrichObjectsFormatsDateTimeCorrectly(): void
     {
-        $this->markTestSkipped('Method enrichObjects does not exist in ObjectService');
+        // Create test objects with DateTime instances
+        $objects = [
+            [
+                'id' => 1,
+                'name' => 'Test Object 1',
+                'created' => new \DateTime('2024-01-01 10:00:00'),
+                'updated' => new \DateTime('2024-01-02 15:30:00')
+            ],
+            [
+                'id' => 2,
+                'name' => 'Test Object 2',
+                'created' => new \DateTime('2024-01-03 09:15:00'),
+                'updated' => new \DateTime('2024-01-04 14:45:00')
+            ]
+        ];
+
+        // Call the enrichObjects method
+        $enrichedObjects = $this->objectService->enrichObjects($objects);
+
+        // Assert that datetime fields are properly formatted
+        $this->assertCount(2, $enrichedObjects);
+        
+        // Check first object
+        $this->assertEquals('2024-01-01 10:00:00', $enrichedObjects[0]['created']);
+        $this->assertEquals('2024-01-02 15:30:00', $enrichedObjects[0]['updated']);
+        
+        // Check second object
+        $this->assertEquals('2024-01-03 09:15:00', $enrichedObjects[1]['created']);
+        $this->assertEquals('2024-01-04 14:45:00', $enrichedObjects[1]['updated']);
+        
+        // Verify other fields are unchanged
+        $this->assertEquals(1, $enrichedObjects[0]['id']);
+        $this->assertEquals('Test Object 1', $enrichedObjects[0]['name']);
+        $this->assertEquals(2, $enrichedObjects[1]['id']);
+        $this->assertEquals('Test Object 2', $enrichedObjects[1]['name']);
     }
 
     /**

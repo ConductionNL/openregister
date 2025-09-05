@@ -377,5 +377,16 @@ class Register extends Entity implements JsonSerializable
 
     }//end __toString()
 
+    /**
+     * Get the unique identifier for the register
+     * Override parent method since this class uses 'uuid' instead of 'id'
+     *
+     * @return string|null The unique identifier
+     */
+    public function getId(): ?string
+    {
+        return $this->uuid;
+    }//end getId()
+
 
 }//end class
