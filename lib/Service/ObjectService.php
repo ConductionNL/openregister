@@ -3509,6 +3509,7 @@ class ObjectService
             $this->setSchema($schema);
         }
 
+        
         // ARCHITECTURAL DELEGATION: Use specialized SaveObjects handler for bulk operations
         // This provides better separation of concerns and optimized bulk processing
         $bulkResult = $this->saveObjectsHandler->saveObjects(
