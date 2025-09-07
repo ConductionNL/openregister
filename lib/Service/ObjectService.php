@@ -3001,7 +3001,7 @@ class ObjectService
      *
      * @return PromiseInterface<array<string, mixed>> Promise that resolves to the same structure as searchObjectsPaginated
      */
-    public function searchObjectsPaginatedAsync(array $query=[]): PromiseInterface
+    public function searchObjectsPaginatedAsync(array $query=[], bool $rbac=false, bool $multi=false): PromiseInterface
     {
         // Start timing execution
         $startTime = microtime(true);
@@ -3069,10 +3069,10 @@ class ObjectService
 
         // 2. Search results (~10ms)
         $promises['search'] = new Promise(
-                function ($resolve, $reject) use ($paginatedQuery) {
+                function ($resolve, $reject) use ($paginatedQuery, $rbac, $multi) {
                     try {
                         $searchStart = microtime(true);
-                        $result = $this->searchObjects($paginatedQuery);
+                        $result = $this->searchObjects($paginatedQuery, $rbac, $multi);
                         $searchTime = round((microtime(true) - $searchStart) * 1000, 2);
                         $this->logger->debug('Search objects completed', [
                             'searchTime' => $searchTime . 'ms',
@@ -3100,9 +3100,9 @@ class ObjectService
 
         // 4. Count (~5ms)
         $promises['count'] = new Promise(
-                function ($resolve, $reject) use ($countQuery) {
+                function ($resolve, $reject) use ($countQuery, $rbac, $multi) {
                     try {
-                        $result = $this->countSearchObjects($countQuery);
+                        $result = $this->countSearchObjects($countQuery, $rbac, $multi);
                         $resolve($result);
                     } catch (\Throwable $e) {
                         $reject($e);
@@ -3194,10 +3194,10 @@ class ObjectService
      *
      * @return array<string, mixed> The same structure as searchObjectsPaginated
      */
-    public function searchObjectsPaginatedSync(array $query=[]): array
+    public function searchObjectsPaginatedSync(array $query=[], bool $rbac=false, bool $multi=false): array
     {
         // Execute the async version and wait for the result
-        $promise = $this->searchObjectsPaginatedAsync($query);
+        $promise = $this->searchObjectsPaginatedAsync($query, $rbac, $multi);
 
         // Use React's await functionality to get the result synchronously
         // Note: The async version already logs the search trail, so we don't need to log again
