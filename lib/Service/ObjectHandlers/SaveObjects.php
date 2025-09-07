@@ -242,6 +242,7 @@ class SaveObjects
         bool $validation=false,
         bool $events=false
     ): array {
+        
         // FLEXIBLE VALIDATION: Support both single-schema and mixed-schema bulk operations
         // For mixed-schema operations, individual objects must specify schema in @self data
         // For single-schema operations, schema parameter can be provided for all objects
@@ -292,6 +293,7 @@ class SaveObjects
         $preparationInvalidObjects = [];
         
         if (!$isMixedSchemaOperation && $schema !== null) {
+            
             // FAST PATH: Single-schema operation - avoid complex mixed-schema logic
             try {
                 [$processedObjects, $globalSchemaCache, $preparationInvalidObjects] = $this->prepareSingleSchemaObjectsOptimized($objects, $register, $schema);
@@ -303,6 +305,7 @@ class SaveObjects
                 return $result;
             }
         } else {
+            
             // STANDARD PATH: Mixed-schema operation - use full preparation logic
             try {
                 [$processedObjects, $globalSchemaCache, $preparationInvalidObjects] = $this->prepareObjectsForBulkSave($objects);
@@ -947,6 +950,12 @@ class SaveObjects
      * caching all schema-dependent information needed for the entire bulk operation. This eliminates
      * redundant schema loading and analysis throughout the preparation process.
      *
+     * METADATA MAPPING: Each object gets schema-based metadata hydration using SaveObject::hydrateObjectMetadata()
+     * to extract name, description, summary, etc. based on the object's specific schema configuration.
+     *
+     * @see website/docs/developers/import-flow.md for complete import flow documentation
+     * @see SaveObject::hydrateObjectMetadata() for metadata extraction details
+     *
      * @param array $objects Array of objects in serialized format
      *
      * @return array Array containing [prepared objects, schema cache]
@@ -1054,6 +1063,45 @@ class SaveObjects
                 }
                 // If ID is provided and non-empty, use it as-is (accept any string format)
 
+                // METADATA HYDRATION: Create temporary entity for metadata extraction
+                $tempEntity = new ObjectEntity();
+                $tempEntity->setObject($object);
+                $this->saveHandler->hydrateObjectMetadata($tempEntity, $schema);
+                
+                // Extract hydrated metadata back to object's @self data AND top level (for bulk SQL)
+                $selfData = $object['@self'] ?? [];
+                if ($tempEntity->getName() !== null) {
+                    $selfData['name'] = $tempEntity->getName();
+                    $object['name'] = $tempEntity->getName(); // TOP LEVEL for bulk SQL
+                }
+                if ($tempEntity->getDescription() !== null) {
+                    $selfData['description'] = $tempEntity->getDescription();
+                    $object['description'] = $tempEntity->getDescription(); // TOP LEVEL for bulk SQL
+                }
+                if ($tempEntity->getSummary() !== null) {
+                    $selfData['summary'] = $tempEntity->getSummary();
+                    $object['summary'] = $tempEntity->getSummary(); // TOP LEVEL for bulk SQL
+                }
+                if ($tempEntity->getImage() !== null) {
+                    $selfData['image'] = $tempEntity->getImage();
+                    $object['image'] = $tempEntity->getImage(); // TOP LEVEL for bulk SQL
+                }
+                if ($tempEntity->getSlug() !== null) {
+                    $selfData['slug'] = $tempEntity->getSlug();
+                    $object['slug'] = $tempEntity->getSlug(); // TOP LEVEL for bulk SQL
+                }
+                if ($tempEntity->getPublished() !== null) {
+                    $publishedFormatted = $tempEntity->getPublished()->format('Y-m-d H:i:s');
+                    $selfData['published'] = $publishedFormatted;
+                    $object['published'] = $publishedFormatted; // TOP LEVEL for bulk SQL
+                }
+                if ($tempEntity->getDepublished() !== null) {
+                    $depublishedFormatted = $tempEntity->getDepublished()->format('Y-m-d H:i:s');
+                    $selfData['depublished'] = $depublishedFormatted;
+                    $object['depublished'] = $depublishedFormatted; // TOP LEVEL for bulk SQL
+                }
+                $object['@self'] = $selfData;
+                
                 // Handle pre-validation cascading for inversedBy properties
                 [$processedObject, $uuid] = $this->handlePreValidationCascading($object, $schema, $selfData['id']);
 
@@ -1096,7 +1144,14 @@ class SaveObjects
      *
      * This is a highly optimized fast path for single-schema operations (like CSV imports)
      * that avoids the overhead of mixed-schema validation and processing.
+     * 
+     * METADATA MAPPING: This method applies schema-based metadata hydration using
+     * SaveObject::hydrateObjectMetadata() to extract name, description, summary, etc.
+     * from object data based on schema configuration.
      *
+     * @see website/docs/developers/import-flow.md for complete import flow documentation
+     * @see SaveObject::hydrateObjectMetadata() for metadata extraction details
+     * 
      * @param array                  $objects  Array of objects in serialized format
      * @param Register|string|int    $register Register context  
      * @param Schema|string|int      $schema   Schema context
@@ -1174,30 +1229,51 @@ class SaveObjects
                 $selfData['created'] = $selfData['created'] ?? $nowString;
                 $selfData['updated'] = $selfData['updated'] ?? $nowString;
                 
-                // ENHANCED METADATA EXTRACTION: Extract name, description, summary based on schema config
-                // Support both direct string fields and object references
-                $config = $schemaObj->getConfiguration();
-                error_log("[SaveObject] Schema config: " . var_export($config, true));
-                error_log("[SaveObject] selfData before metadata extraction: " . var_export(['name' => $selfData['name'] ?? 'NOT_SET', 'description' => $selfData['description'] ?? 'NOT_SET', 'summary' => $selfData['summary'] ?? 'NOT_SET'], true));
+                // Update object's @self data before hydration
+                $object['@self'] = $selfData;
                 
-                if (!isset($selfData['name']) && isset($config['objectNameField'])) {
-                    error_log("[SaveObject] Extracting name from field: " . $config['objectNameField']);
-                    $selfData['name'] = $this->extractMetadataValue($object, $config['objectNameField'], $schemaObj, 'name');
-                }
-                if (!isset($selfData['description']) && isset($config['objectDescriptionField'])) {
-                    error_log("[SaveObject] Extracting description from field: " . $config['objectDescriptionField']);
-                    $selfData['description'] = $this->extractMetadataValue($object, $config['objectDescriptionField'], $schemaObj, 'description');
-                }
-                if (!isset($selfData['summary']) && isset($config['objectSummaryField'])) {
-                    error_log("[SaveObject] Extracting summary from field: " . $config['objectSummaryField']);
-                    $selfData['summary'] = $this->extractMetadataValue($object, $config['objectSummaryField'], $schemaObj, 'summary');
-                }
+                // METADATA HYDRATION: Create temporary entity for metadata extraction
+                $tempEntity = new ObjectEntity();
+                $tempEntity->setObject($object);
                 
-                error_log("[SaveObject] selfData after metadata extraction: " . var_export(['name' => $selfData['name'] ?? 'STILL_NOT_SET', 'description' => $selfData['description'] ?? 'STILL_NOT_SET', 'summary' => $selfData['summary'] ?? 'STILL_NOT_SET'], true));
+                $this->saveHandler->hydrateObjectMetadata($tempEntity, $schemaObj);
+                
+                // Extract hydrated metadata back to @self data AND top level (for bulk SQL)
+                if ($tempEntity->getName() !== null) {
+                    $selfData['name'] = $tempEntity->getName();
+                    $object['name'] = $tempEntity->getName(); // TOP LEVEL for bulk SQL
+                }
+                if ($tempEntity->getDescription() !== null) {
+                    $selfData['description'] = $tempEntity->getDescription();
+                    $object['description'] = $tempEntity->getDescription(); // TOP LEVEL for bulk SQL
+                }
+                if ($tempEntity->getSummary() !== null) {
+                    $selfData['summary'] = $tempEntity->getSummary();
+                    $object['summary'] = $tempEntity->getSummary(); // TOP LEVEL for bulk SQL
+                }
+                if ($tempEntity->getImage() !== null) {
+                    $selfData['image'] = $tempEntity->getImage();
+                    $object['image'] = $tempEntity->getImage(); // TOP LEVEL for bulk SQL
+                }
+                if ($tempEntity->getSlug() !== null) {
+                    $selfData['slug'] = $tempEntity->getSlug();
+                    $object['slug'] = $tempEntity->getSlug(); // TOP LEVEL for bulk SQL
+                }
+                if ($tempEntity->getPublished() !== null) {
+                    $publishedFormatted = $tempEntity->getPublished()->format('Y-m-d H:i:s');
+                    $selfData['published'] = $publishedFormatted;
+                    $object['published'] = $publishedFormatted; // TOP LEVEL for bulk SQL
+                }
+                if ($tempEntity->getDepublished() !== null) {
+                    $depublishedFormatted = $tempEntity->getDepublished()->format('Y-m-d H:i:s');
+                    $selfData['depublished'] = $depublishedFormatted;
+                    $object['depublished'] = $depublishedFormatted; // TOP LEVEL for bulk SQL
+                }
                 
                 // PERFORMANCE: Remove @self from object data and nest under 'object'
                 unset($object['@self'], $object['id']);
                 $selfData['object'] = $object;
+                
                 
                 $preparedObjects[] = $selfData;
                 
@@ -1282,6 +1358,46 @@ class SaveObjects
         // STEP 1: Transform objects for database format with metadata hydration
         $transformationResult = $this->transformObjectsToDatabaseFormatInPlace($objects, $schemaCache);
         $transformedObjects = $transformationResult['valid'];
+
+        
+        // CRITICAL FIX: The metadata hydration should already be done in prepareSingleSchemaObjectsOptimized
+        // This redundant hydration might be causing issues - let's skip it for now
+        /*
+        foreach ($transformedObjects as &$objData) {
+            // Ensure metadata fields from object hydration are preserved
+            if (isset($objData['schema']) && isset($schemaCache[$objData['schema']])) {
+                $schema = $schemaCache[$objData['schema']];
+                $tempEntity = new ObjectEntity();
+                $tempEntity->setObject($objData['object'] ?? []);
+                
+                // Use SaveObject's enhanced metadata hydration
+                $this->saveHandler->hydrateObjectMetadata($tempEntity, $schema);
+                
+                // Ensure metadata fields are in objData for hydration after bulk save
+                if ($tempEntity->getName() !== null) {
+                    $objData['name'] = $tempEntity->getName();
+                }
+                if ($tempEntity->getDescription() !== null) {
+                    $objData['description'] = $tempEntity->getDescription();
+                }
+                if ($tempEntity->getSummary() !== null) {
+                    $objData['summary'] = $tempEntity->getSummary();
+                }
+                if ($tempEntity->getImage() !== null) {
+                    $objData['image'] = $tempEntity->getImage();
+                }
+                if ($tempEntity->getSlug() !== null) {
+                    $objData['slug'] = $tempEntity->getSlug();
+                }
+                if ($tempEntity->getPublished() !== null) {
+                    $objData['published'] = $tempEntity->getPublished()->format('Y-m-d H:i:s');
+                }
+                if ($tempEntity->getDepublished() !== null) {
+                    $objData['depublished'] = $tempEntity->getDepublished()->format('Y-m-d H:i:s');
+                }
+            }
+        }
+        */
         
         // PERFORMANCE OPTIMIZATION: Batch error processing
         if (!empty($transformationResult['invalid'])) {
@@ -1864,23 +1980,21 @@ class SaveObjects
             $selfData['created'] = $selfData['created'] ?? $now->format('Y-m-d H:i:s');
             $selfData['updated'] = $selfData['updated'] ?? $now->format('Y-m-d H:i:s');
             
-            // LIGHTWEIGHT METADATA EXTRACTION: Extract name, description, summary based on schema config
-            // Only extract if not already set and schema has the configuration
-            $currentSchemaId = $selfData['schema'];
-            if ($currentSchemaId && isset($schemaCache[$currentSchemaId])) {
-                $config = $schemaCache[$currentSchemaId]->getConfiguration();
-                if (!isset($selfData['name']) && isset($config['objectNameField'])) {
-                    $selfData['name'] = $this->getValueFromPath($object, $config['objectNameField']);
-                }
-                if (!isset($selfData['description']) && isset($config['objectDescriptionField'])) {
-                    $selfData['description'] = $this->getValueFromPath($object, $config['objectDescriptionField']);
-                }
-                if (!isset($selfData['summary']) && isset($config['objectSummaryField'])) {
-                    $selfData['summary'] = $this->getValueFromPath($object, $config['objectSummaryField']);
+            // METADATA EXTRACTION: Skip redundant extraction as prepareSingleSchemaObjectsOptimized already handles this
+            // with enhanced twig-like concatenation support. This redundant extraction was overwriting the
+            // properly extracted metadata with simpler getValueFromPath results.
+           
+            // CRITICAL FIX: Preserve metadata fields at top level for bulk SQL before nesting object data
+            // Extract metadata fields from top-level object data (added by metadata hydration) 
+            $metadataFields = ['name', 'description', 'summary', 'image', 'slug', 'published', 'depublished'];
+            foreach ($metadataFields as $field) {
+                if (isset($object[$field]) && $object[$field] !== null) {
+                    $selfData[$field] = $object[$field]; // Keep at top level for bulk SQL
+                    unset($object[$field]); // Remove from nested object data  
                 }
             }
-           
-            // Remove @self from object data and nest it under 'object' property
+            
+            // Remove @self from object data and nest remaining fields under 'object' property
             unset($object['@self']);
             unset($object['id']);
             $selfData['object'] = $object ?? [];
