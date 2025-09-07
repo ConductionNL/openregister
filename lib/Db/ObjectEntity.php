@@ -46,6 +46,11 @@ class ObjectEntity extends Entity implements JsonSerializable
     /**
      * URL-friendly identifier for the object.
      *
+     * This field can be automatically populated via schema metadata mapping configuration.
+     * Configure in schema: { "configuration": { "objectSlugField": "naam" } }
+     * The field value will be converted to a URL-friendly slug format.
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var string|null URL-friendly slug for the object, unique within register+schema combination
      */
     protected ?string $slug = null;
@@ -200,13 +205,23 @@ class ObjectEntity extends Entity implements JsonSerializable
     /**
      * Published timestamp.
      *
+     * This field can be automatically populated via schema metadata mapping configuration.
+     * Configure in schema: { "configuration": { "objectPublishedField": "publicatieDatum" } }
+     * Supports various datetime formats which will be parsed to DateTime objects.
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var DateTime|null Published timestamp
      */
     protected ?DateTime $published = null;
 
     /**
-     * Published timestamp.
+     * Depublished timestamp.
      *
+     * This field can be automatically populated via schema metadata mapping configuration.
+     * Configure in schema: { "configuration": { "objectDepublishedField": "einddatum" } }
+     * Supports various datetime formats which will be parsed to DateTime objects.
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var DateTime|null Depublished timestamp
      */
     protected ?DateTime $depublished = null;
@@ -223,6 +238,11 @@ class ObjectEntity extends Entity implements JsonSerializable
     /**
      * Name of the object.
      *
+     * This field is automatically populated via schema metadata mapping configuration.
+     * Configure in schema: { "configuration": { "objectNameField": "naam" } } or
+     * with twig-like concatenation: { "objectNameField": "{{ voornaam }} {{ achternaam }}" }
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var string|null Name of the object
      */
     protected ?string $name = null;
@@ -230,6 +250,11 @@ class ObjectEntity extends Entity implements JsonSerializable
     /**
      * Description of the object.
      *
+     * This field is automatically populated via schema metadata mapping configuration.
+     * Configure in schema: { "configuration": { "objectDescriptionField": "beschrijving" } }
+     * Supports dot notation for nested fields: "contact.beschrijving"
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var string|null Description of the object
      */
     protected ?string $description = null;
@@ -237,6 +262,11 @@ class ObjectEntity extends Entity implements JsonSerializable
     /**
      * Summary of the object.
      *
+     * This field is automatically populated via schema metadata mapping configuration.
+     * Configure in schema: { "configuration": { "objectSummaryField": "beschrijvingKort" } }
+     * Supports twig-like templates for combining fields.
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var string|null Summary of the object
      */
     protected ?string $summary = null;
@@ -244,6 +274,11 @@ class ObjectEntity extends Entity implements JsonSerializable
     /**
      * Image of the object.
      *
+     * This field is automatically populated via schema metadata mapping configuration.
+     * Configure in schema: { "configuration": { "objectImageField": "afbeelding" } }
+     * Can reference file fields or contain base64 encoded image data.
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var string|null Image of the object (base64 encoded or file reference)
      */
     protected ?string $image = null;
