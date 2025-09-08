@@ -1068,6 +1068,18 @@ class SaveObjects
                 $tempEntity->setObject($object);
                 $this->saveHandler->hydrateObjectMetadata($tempEntity, $schema);
                 
+                // AUTO-PUBLISH LOGIC: Set published date to now if autoPublish is enabled and no published date exists
+                $config = $schema->getConfiguration();
+                if (isset($config['autoPublish']) && $config['autoPublish'] === true) {
+                    if ($tempEntity->getPublished() === null) {
+                        $this->logger->debug('Auto-publishing object in bulk creation', [
+                            'schema' => $schema->getTitle(),
+                            'autoPublish' => true
+                        ]);
+                        $tempEntity->setPublished(new DateTime());
+                    }
+                }
+                
                 // Extract hydrated metadata back to object's @self data AND top level (for bulk SQL)
                 $selfData = $object['@self'] ?? [];
                 if ($tempEntity->getName() !== null) {
@@ -1238,6 +1250,18 @@ class SaveObjects
                 
                 $this->saveHandler->hydrateObjectMetadata($tempEntity, $schemaObj);
                 
+                // AUTO-PUBLISH LOGIC: Set published date to now if autoPublish is enabled and no published date exists
+                $config = $schemaObj->getConfiguration();
+                if (isset($config['autoPublish']) && $config['autoPublish'] === true) {
+                    if ($tempEntity->getPublished() === null) {
+                        $this->logger->debug('Auto-publishing object in bulk creation (single schema)', [
+                            'schema' => $schemaObj->getTitle(),
+                            'autoPublish' => true
+                        ]);
+                        $tempEntity->setPublished(new DateTime());
+                    }
+                }
+                
                 // Extract hydrated metadata back to @self data AND top level (for bulk SQL)
                 if ($tempEntity->getName() !== null) {
                     $selfData['name'] = $tempEntity->getName();
@@ -1372,6 +1396,18 @@ class SaveObjects
                 
                 // Use SaveObject's enhanced metadata hydration
                 $this->saveHandler->hydrateObjectMetadata($tempEntity, $schema);
+                
+                // AUTO-PUBLISH LOGIC: Set published date to now if autoPublish is enabled and no published date exists
+                $config = $schema->getConfiguration();
+                if (isset($config['autoPublish']) && $config['autoPublish'] === true) {
+                    if ($tempEntity->getPublished() === null) {
+                        $this->logger->debug('Auto-publishing object in bulk save (mixed schema)', [
+                            'schema' => $schema->getTitle(),
+                            'autoPublish' => true
+                        ]);
+                        $tempEntity->setPublished(new DateTime());
+                    }
+                }
                 
                 // Ensure metadata fields are in objData for hydration after bulk save
                 if ($tempEntity->getName() !== null) {

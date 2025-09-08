@@ -1668,6 +1668,25 @@ class SaveObject
             );
         }
 
+        // Auto-publish logic: Set published date to now if autoPublish is enabled in schema configuration
+        // and no published date has been set yet (either from field mapping or explicit data)
+        $config = $schema->getConfiguration();
+        if (isset($config['autoPublish']) && $config['autoPublish'] === true) {
+            if ($objectEntity->getPublished() === null) {
+                $this->logger->debug('Auto-publishing object on creation', [
+                    'uuid' => $objectEntity->getUuid(),
+                    'schema' => $schema->getTitle(),
+                    'autoPublish' => true
+                ]);
+                $objectEntity->setPublished(new DateTime());
+            } else {
+                $this->logger->debug('Object already has published date, skipping auto-publish', [
+                    'uuid' => $objectEntity->getUuid(),
+                    'publishedDate' => $objectEntity->getPublished()->format('Y-m-d H:i:s')
+                ]);
+            }
+        }
+
         // Set user information if available.
         $user = $this->userSession->getUser();
         if ($user !== null) {
