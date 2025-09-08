@@ -16,6 +16,7 @@ return [
         ['name' => 'settings#getCacheStats', 'url' => '/api/settings/cache', 'verb' => 'GET'],
         ['name' => 'settings#clearCache', 'url' => '/api/settings/cache', 'verb' => 'DELETE'],
         ['name' => 'settings#warmupNamesCache', 'url' => '/api/settings/cache/warmup-names', 'verb' => 'POST'],
+        ['name' => 'settings#testSolrConnection', 'url' => '/api/settings/solr/test', 'verb' => 'POST'],
         // Heartbeat - Keep-alive endpoint for long-running operations
         ['name' => 'heartbeat#heartbeat', 'url' => '/api/heartbeat', 'verb' => 'GET'],
         // Names - Ultra-fast object name lookup endpoints (specific routes first)

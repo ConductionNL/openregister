@@ -56,6 +56,7 @@
 
 namespace OCA\OpenRegister\Service\ObjectHandlers;
 
+use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;

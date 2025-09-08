@@ -1085,6 +1085,245 @@
 				appearance="dark" />
 		</NcSettingsSection>
 
+		<NcSettingsSection name="SOLR Search Configuration"
+			description="Configure Apache SOLR search engine for advanced search capabilities">
+			<div v-if="!loading" class="solr-options">
+				<!-- Save and Test Buttons -->
+				<div class="section-header-inline">
+					<span />
+					<div class="button-group">
+						<NcButton
+							type="secondary"
+							:disabled="loading || saving || testingConnection"
+							@click="testSolrConnection">
+							<template #icon>
+								<NcLoadingIcon v-if="testingConnection" :size="20" />
+								<TestTube v-else :size="20" />
+							</template>
+							Test Connection
+						</NcButton>
+						<NcButton
+							type="primary"
+							:disabled="loading || saving || testingConnection"
+							@click="saveSettings">
+							<template #icon>
+								<NcLoadingIcon v-if="saving" :size="20" />
+								<Save v-else :size="20" />
+							</template>
+							Save
+						</NcButton>
+					</div>
+				</div>
+
+				<!-- Section Description -->
+				<div class="section-description-full">
+					<p class="main-description">
+						Apache SOLR provides advanced search capabilities including full-text search, faceted search, filtering, and sorting.
+						When enabled, OpenRegister will index objects to SOLR for faster and more sophisticated search operations.
+						This is recommended for production environments with large datasets.
+					</p>
+					<p class="toggle-status">
+						<strong>Current Status:</strong>
+						<span :class="solrOptions.enabled ? 'status-enabled' : 'status-disabled'">
+							{{ solrOptions.enabled ? 'SOLR search enabled' : 'SOLR search disabled' }}
+						</span>
+					</p>
+					<div v-if="solrConnectionStatus" class="connection-status" :class="solrConnectionStatus.success ? 'status-success' : 'status-error'">
+						<p><strong>Connection Status:</strong> {{ solrConnectionStatus.message }}</p>
+						<div v-if="solrConnectionStatus.details && Object.keys(solrConnectionStatus.details).length > 0" class="connection-details">
+							<details>
+								<summary>Connection Details</summary>
+								<pre>{{ JSON.stringify(solrConnectionStatus.details, null, 2) }}</pre>
+							</details>
+						</div>
+					</div>
+				</div>
+
+				<!-- Enable SOLR Toggle -->
+				<div class="option-section">
+					<NcCheckboxRadioSwitch
+						:checked.sync="solrOptions.enabled"
+						:disabled="saving"
+						type="switch">
+						{{ solrOptions.enabled ? 'SOLR search enabled' : 'SOLR search disabled' }}
+					</NcCheckboxRadioSwitch>
+				</div>
+
+				<!-- SOLR Configuration -->
+				<div v-if="solrOptions.enabled" class="solr-configuration">
+					<h4>SOLR Server Configuration</h4>
+					<p class="option-description">
+						Configure connection settings for your SOLR server. Make sure SOLR is running and accessible before enabling.
+					</p>
+
+					<div class="solr-config-grid">
+						<div class="config-row">
+							<label class="config-label">
+								<strong>Host</strong>
+								<p class="config-description">SOLR server hostname or IP address</p>
+							</label>
+							<div class="config-input">
+								<input
+									v-model="solrOptions.host"
+									type="text"
+									:disabled="loading || saving"
+									placeholder="localhost"
+									class="solr-input-field">
+							</div>
+						</div>
+
+						<div class="config-row">
+							<label class="config-label">
+								<strong>Port</strong>
+								<p class="config-description">SOLR server port number</p>
+							</label>
+							<div class="config-input">
+								<input
+									v-model.number="solrOptions.port"
+									type="number"
+									:disabled="loading || saving"
+									placeholder="8983"
+									class="solr-input-field">
+							</div>
+						</div>
+
+						<div class="config-row">
+							<label class="config-label">
+								<strong>Scheme</strong>
+								<p class="config-description">Connection protocol</p>
+							</label>
+							<div class="config-input">
+								<NcSelect
+									v-model="solrOptions.scheme"
+									:options="schemeOptions"
+									input-label="Scheme"
+									:disabled="loading || saving" />
+							</div>
+						</div>
+
+						<div class="config-row">
+							<label class="config-label">
+								<strong>Path</strong>
+								<p class="config-description">SOLR base path (usually /solr)</p>
+							</label>
+							<div class="config-input">
+								<input
+									v-model="solrOptions.path"
+									type="text"
+									:disabled="loading || saving"
+									placeholder="/solr"
+									class="solr-input-field">
+							</div>
+						</div>
+
+						<div class="config-row">
+							<label class="config-label">
+								<strong>Core</strong>
+								<p class="config-description">SOLR core name for OpenRegister data</p>
+							</label>
+							<div class="config-input">
+								<input
+									v-model="solrOptions.core"
+									type="text"
+									:disabled="loading || saving"
+									placeholder="openregister"
+									class="solr-input-field">
+							</div>
+						</div>
+
+						<div class="config-row">
+							<label class="config-label">
+								<strong>Username</strong>
+								<p class="config-description">Username for SOLR authentication (optional)</p>
+							</label>
+							<div class="config-input">
+								<input
+									v-model="solrOptions.username"
+									type="text"
+									:disabled="loading || saving"
+									placeholder=""
+									class="solr-input-field">
+							</div>
+						</div>
+
+						<div class="config-row">
+							<label class="config-label">
+								<strong>Password</strong>
+								<p class="config-description">Password for SOLR authentication (optional)</p>
+							</label>
+							<div class="config-input">
+								<input
+									v-model="solrOptions.password"
+									type="password"
+									:disabled="loading || saving"
+									placeholder=""
+									class="solr-input-field">
+							</div>
+						</div>
+
+						<div class="config-row">
+							<label class="config-label">
+								<strong>Timeout (seconds)</strong>
+								<p class="config-description">Connection timeout in seconds</p>
+							</label>
+							<div class="config-input">
+								<input
+									v-model.number="solrOptions.timeout"
+									type="number"
+									:disabled="loading || saving"
+									placeholder="30"
+									class="solr-input-field">
+							</div>
+						</div>
+					</div>
+
+					<h4>Advanced Options</h4>
+					<div class="advanced-options">
+						<NcCheckboxRadioSwitch
+							:checked.sync="solrOptions.autoCommit"
+							:disabled="saving"
+							type="switch">
+							{{ solrOptions.autoCommit ? 'Auto-commit enabled' : 'Auto-commit disabled' }}
+						</NcCheckboxRadioSwitch>
+						<p class="option-description">
+							Automatically commit changes to SOLR index
+						</p>
+
+						<div class="config-row">
+							<label class="config-label">
+								<strong>Commit Within (ms)</strong>
+								<p class="config-description">Maximum time to wait before committing changes</p>
+							</label>
+							<div class="config-input">
+								<input
+									v-model.number="solrOptions.commitWithin"
+									type="number"
+									:disabled="loading || saving"
+									placeholder="1000"
+									class="solr-input-field">
+							</div>
+						</div>
+
+						<NcCheckboxRadioSwitch
+							:checked.sync="solrOptions.enableLogging"
+							:disabled="saving"
+							type="switch">
+							{{ solrOptions.enableLogging ? 'SOLR logging enabled' : 'SOLR logging disabled' }}
+						</NcCheckboxRadioSwitch>
+						<p class="option-description">
+							Enable detailed logging for SOLR operations (recommended for debugging)
+						</p>
+					</div>
+				</div>
+			</div>
+
+			<!-- Loading State -->
+			<NcLoadingIcon v-else
+				class="loading-icon"
+				:size="64"
+				appearance="dark" />
+		</NcSettingsSection>
+
 		<!-- Rebase Confirmation Dialog -->
 		<NcDialog
 			v-if="showRebaseConfirmation"
@@ -1141,6 +1380,7 @@ import {
 import Save from 'vue-material-design-icons/ContentSave.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
+import TestTube from 'vue-material-design-icons/TestTube.vue'
 
 /**
  * @class Settings
@@ -1167,6 +1407,7 @@ export default defineComponent({
 		Save,
 		Refresh,
 		Delete,
+		TestTube,
 	},
 
 	/**
@@ -1289,6 +1530,22 @@ export default defineComponent({
 				},
 				lastUpdated: new Date(),
 			},
+			solrOptions: {
+				enabled: false,
+				host: 'localhost',
+				port: 8983,
+				path: '/solr',
+				core: 'openregister',
+				scheme: { label: 'HTTP', value: 'http' },
+				username: '',
+				password: '',
+				timeout: 30,
+				autoCommit: true,
+				commitWithin: 1000,
+				enableLogging: true,
+			},
+			solrConnectionStatus: null,
+			testingConnection: false,
 		}
 	},
 
@@ -1414,6 +1671,18 @@ export default defineComponent({
 		hitRateClass() {
 			return this.getHitRateClass(this.cacheStats.overview.overallHitRate)
 		},
+
+		/**
+		 * Available scheme options for SOLR connection
+		 *
+		 * @return {Array<object>} Array of scheme options
+		 */
+		schemeOptions() {
+			return [
+				{ label: 'HTTP', value: 'http' },
+				{ label: 'HTTPS', value: 'https' },
+			]
+		},
 	},
 
 	watch: {
@@ -1511,6 +1780,24 @@ export default defineComponent({
 					}
 				}
 
+				// SOLR settings
+				if (data.solr) {
+					this.solrOptions = {
+						enabled: data.solr.enabled || false,
+						host: data.solr.host || 'localhost',
+						port: data.solr.port || 8983,
+						path: data.solr.path || '/solr',
+						core: data.solr.core || 'openregister',
+						scheme: this.findOptionByValue(this.schemeOptions, data.solr.scheme) || { label: 'HTTP', value: 'http' },
+						username: data.solr.username || '',
+						password: data.solr.password || '',
+						timeout: data.solr.timeout || 30,
+						autoCommit: data.solr.autoCommit !== undefined ? data.solr.autoCommit : true,
+						commitWithin: data.solr.commitWithin || 1000,
+						enableLogging: data.solr.enableLogging !== undefined ? data.solr.enableLogging : true,
+					}
+				}
+
 			} catch (error) {
 				console.error('Failed to load settings:', error)
 			} finally {
@@ -1601,6 +1888,20 @@ export default defineComponent({
 						updateLogRetention: this.retentionOptions.updateLogRetention,
 						deleteLogRetention: this.retentionOptions.deleteLogRetention,
 					},
+					solr: {
+						enabled: this.solrOptions.enabled,
+						host: this.solrOptions.host,
+						port: this.solrOptions.port,
+						path: this.solrOptions.path,
+						core: this.solrOptions.core,
+						scheme: this.solrOptions.scheme?.value || 'http',
+						username: this.solrOptions.username,
+						password: this.solrOptions.password,
+						timeout: this.solrOptions.timeout,
+						autoCommit: this.solrOptions.autoCommit,
+						commitWithin: this.solrOptions.commitWithin,
+						enableLogging: this.solrOptions.enableLogging,
+					},
 				}
 
 				const response = await fetch('/index.php/apps/openregister/api/settings', {
@@ -1649,6 +1950,24 @@ export default defineComponent({
 						readLogRetention: result.retention.readLogRetention,
 						updateLogRetention: result.retention.updateLogRetention,
 						deleteLogRetention: result.retention.deleteLogRetention,
+					}
+				}
+
+				// Update SOLR settings
+				if (result.solr) {
+					this.solrOptions = {
+						enabled: result.solr.enabled || false,
+						host: result.solr.host || 'localhost',
+						port: result.solr.port || 8983,
+						path: result.solr.path || '/solr',
+						core: result.solr.core || 'openregister',
+						scheme: this.findOptionByValue(this.schemeOptions, result.solr.scheme) || { label: 'HTTP', value: 'http' },
+						username: result.solr.username || '',
+						password: result.solr.password || '',
+						timeout: result.solr.timeout || 30,
+						autoCommit: result.solr.autoCommit !== undefined ? result.solr.autoCommit : true,
+						commitWithin: result.solr.commitWithin || 1000,
+						enableLogging: result.solr.enableLogging !== undefined ? result.solr.enableLogging : true,
 					}
 				}
 
@@ -1951,6 +2270,66 @@ export default defineComponent({
 				console.error('Failed to clear cache:', error)
 			} finally {
 				this.clearingCache = false
+			}
+		},
+
+		/**
+		 * Test SOLR connection with current settings
+		 *
+		 * @async
+		 * @return {Promise<void>}
+		 */
+		async testSolrConnection() {
+			this.testingConnection = true
+			this.solrConnectionStatus = null
+
+			try {
+				const response = await fetch('/index.php/apps/openregister/api/settings/solr/test', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({
+						solr: {
+							enabled: this.solrOptions.enabled,
+							host: this.solrOptions.host,
+							port: this.solrOptions.port,
+							path: this.solrOptions.path,
+							core: this.solrOptions.core,
+							scheme: this.solrOptions.scheme?.value || 'http',
+							username: this.solrOptions.username,
+							password: this.solrOptions.password,
+							timeout: this.solrOptions.timeout,
+							autoCommit: this.solrOptions.autoCommit,
+							commitWithin: this.solrOptions.commitWithin,
+							enableLogging: this.solrOptions.enableLogging,
+						},
+					}),
+				})
+
+				const result = await response.json()
+
+				if (result.error) {
+					console.error('Failed to test SOLR connection:', result.error)
+					this.solrConnectionStatus = {
+						success: false,
+						message: result.error,
+						details: {}
+					}
+					return
+				}
+
+				this.solrConnectionStatus = result
+
+			} catch (error) {
+				console.error('Failed to test SOLR connection:', error)
+				this.solrConnectionStatus = {
+					success: false,
+					message: 'Connection test failed: ' + error.message,
+					details: {}
+				}
+			} finally {
+				this.testingConnection = false
 			}
 		},
 	},
@@ -2730,6 +3109,148 @@ h4 {
 	.group-select {
 		flex: 1;
 		min-width: auto;
+	}
+}
+
+/* SOLR Configuration Styles */
+.solr-options {
+	max-width: none;
+}
+
+.solr-configuration {
+	margin-top: 1.5rem;
+}
+
+.solr-config-grid {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 1rem;
+	margin-top: 1rem;
+	padding: 1rem;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius-large);
+	background-color: var(--color-background-hover);
+}
+
+.config-row {
+	display: grid;
+	grid-template-columns: 1fr 2fr;
+	gap: 1rem;
+	align-items: start;
+	padding: 0.75rem 0;
+	border-bottom: 1px solid var(--color-border-light);
+}
+
+.config-row:last-child {
+	border-bottom: none;
+}
+
+.config-label {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+}
+
+.config-label strong {
+	font-size: 0.9rem;
+	font-weight: 600;
+	color: var(--color-text-dark);
+}
+
+.config-description {
+	margin: 0;
+	font-size: 0.8rem;
+	color: var(--color-text-lighter);
+	line-height: 1.3;
+}
+
+.config-input {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+}
+
+.solr-input-field {
+	width: 100%;
+	padding: 0.5rem;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	background-color: var(--color-main-background);
+	color: var(--color-main-text);
+	font-size: 0.9rem;
+}
+
+.solr-input-field:focus {
+	outline: none;
+	border-color: var(--color-primary);
+	box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+.solr-input-field:disabled {
+	background-color: var(--color-background-darker);
+	color: var(--color-text-lighter);
+	cursor: not-allowed;
+}
+
+.advanced-options {
+	margin-top: 1rem;
+	padding: 1rem;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius-large);
+	background-color: var(--color-background-hover);
+}
+
+.connection-status {
+	margin: 1rem 0;
+	padding: 0.75rem;
+	border-radius: var(--border-radius);
+	border-left: 4px solid;
+}
+
+.connection-status.status-success {
+	border-left-color: var(--color-success);
+	background-color: var(--color-success-light, #d4edda);
+	color: var(--color-success-dark, #155724);
+}
+
+.connection-status.status-error {
+	border-left-color: var(--color-error);
+	background-color: var(--color-error-light, #f8d7da);
+	color: var(--color-error-dark, #721c24);
+}
+
+.connection-details {
+	margin-top: 0.5rem;
+}
+
+.connection-details details {
+	cursor: pointer;
+}
+
+.connection-details summary {
+	font-weight: 600;
+	margin-bottom: 0.5rem;
+}
+
+.connection-details pre {
+	background-color: var(--color-background-dark);
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	padding: 0.75rem;
+	overflow-x: auto;
+	font-size: 0.8rem;
+	line-height: 1.4;
+	max-height: 200px;
+}
+
+@media (max-width: 768px) {
+	.config-row {
+		grid-template-columns: 1fr;
+		gap: 0.5rem;
+	}
+
+	.config-label {
+		margin-bottom: 0.5rem;
 	}
 }
 </style>
