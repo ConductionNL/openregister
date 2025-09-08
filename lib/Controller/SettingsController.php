@@ -229,4 +229,76 @@ class SettingsController extends Controller
     }//end stats()
 
 
+    /**
+     * Get comprehensive cache statistics and performance metrics.
+     *
+     * This method provides detailed insights into cache usage, performance, memory consumption,
+     * hit/miss rates, and object name cache statistics for admin monitoring.
+     *
+     * @return JSONResponse JSON response containing cache statistics data.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function getCacheStats(): JSONResponse
+    {
+        try {
+            $result = $this->settingsService->getCacheStats();
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+
+    }//end getCacheStats()
+
+
+    /**
+     * Clear cache with granular control.
+     *
+     * This method supports clearing different types of caches: 'all', 'object', 'schema', 'facet', 'distributed', 'names'.
+     * It accepts a JSON body with 'type' parameter to specify which cache to clear.
+     *
+     * @return JSONResponse JSON response containing cache clearing results.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function clearCache(): JSONResponse
+    {
+        try {
+            $data = $this->request->getParams();
+            $type = $data['type'] ?? 'all';
+            
+            $result = $this->settingsService->clearCache($type);
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+
+    }//end clearCache()
+
+
+    /**
+     * Warmup object names cache manually.
+     *
+     * This method triggers manual cache warmup for object names to improve performance 
+     * after system maintenance or during off-peak hours.
+     *
+     * @return JSONResponse JSON response containing warmup operation results.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function warmupNamesCache(): JSONResponse
+    {
+        try {
+            $result = $this->settingsService->warmupNamesCache();
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+
+    }//end warmupNamesCache()
+
+
 }//end class
