@@ -13,8 +13,17 @@ return [
         ['name' => 'settings#update', 'url' => '/api/settings', 'verb' => 'PUT'],
         ['name' => 'settings#rebase', 'url' => '/api/settings/rebase', 'verb' => 'POST'],
         ['name' => 'settings#stats', 'url' => '/api/settings/stats', 'verb' => 'GET'],
+        ['name' => 'settings#getCacheStats', 'url' => '/api/settings/cache', 'verb' => 'GET'],
+        ['name' => 'settings#clearCache', 'url' => '/api/settings/cache', 'verb' => 'DELETE'],
+        ['name' => 'settings#warmupNamesCache', 'url' => '/api/settings/cache/warmup-names', 'verb' => 'POST'],
         // Heartbeat - Keep-alive endpoint for long-running operations
         ['name' => 'heartbeat#heartbeat', 'url' => '/api/heartbeat', 'verb' => 'GET'],
+        // Names - Ultra-fast object name lookup endpoints (specific routes first)
+        ['name' => 'names#stats', 'url' => '/api/names/stats', 'verb' => 'GET'],
+        ['name' => 'names#warmup', 'url' => '/api/names/warmup', 'verb' => 'POST'],
+        ['name' => 'names#index', 'url' => '/api/names', 'verb' => 'GET'],
+        ['name' => 'names#create', 'url' => '/api/names', 'verb' => 'POST'],
+        ['name' => 'names#show', 'url' => '/api/names/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         // Dashbaord
         ['name' => 'dashboard#page', 'url' => '/', 'verb' => 'GET'],
         ['name' => 'dashboard#index', 'url' => '/api/dashboard', 'verb' => 'GET'],

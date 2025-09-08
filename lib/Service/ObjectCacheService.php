@@ -79,11 +79,28 @@ class ObjectCacheService
     private const MAX_CACHE_TTL = 28800;
 
     /**
+     * In-memory cache of object names indexed by ID/UUID
+     * 
+     * Provides ultra-fast name lookups for frontend rendering without
+     * requiring full object data retrieval.
+     *
+     * @var array<string, string>
+     */
+    private array $nameCache = [];
+
+    /**
+     * Distributed cache for object names
+     *
+     * @var IMemcache|null
+     */
+    private ?IMemcache $nameDistributedCache = null;
+
+    /**
      * Cache hit statistics
      *
-     * @var array{hits: int, misses: int, preloads: int, query_hits: int, query_misses: int}
+     * @var array{hits: int, misses: int, preloads: int, query_hits: int, query_misses: int, name_hits: int, name_misses: int, name_warmups: int}
      */
-    private array $stats = ['hits' => 0, 'misses' => 0, 'preloads' => 0, 'query_hits' => 0, 'query_misses' => 0];
+    private array $stats = ['hits' => 0, 'misses' => 0, 'preloads' => 0, 'query_hits' => 0, 'query_misses' => 0, 'name_hits' => 0, 'name_misses' => 0, 'name_warmups' => 0];
 
     /**
      * Distributed cache for query results
@@ -125,8 +142,9 @@ class ObjectCacheService
         if ($cacheFactory !== null) {
             try {
                 $this->queryCache = $cacheFactory->createDistributed('openregister_query_results');
+                $this->nameDistributedCache = $cacheFactory->createDistributed('openregister_object_names');
             } catch (\Exception $e) {
-                $this->logger->warning('Failed to initialize query result cache', [
+                $this->logger->warning('Failed to initialize distributed caches', [
                     'error' => $e->getMessage()
                 ]);
             }
@@ -334,10 +352,10 @@ class ObjectCacheService
      *
      * Returns information about cache performance for monitoring and optimization.
      *
-     * @return array{hits: int, misses: int, preloads: int, query_hits: int, query_misses: int, hit_rate: float, query_hit_rate: float, cache_size: int, query_cache_size: int}
+     * @return array{hits: int, misses: int, preloads: int, query_hits: int, query_misses: int, name_hits: int, name_misses: int, name_warmups: int, hit_rate: float, query_hit_rate: float, name_hit_rate: float, cache_size: int, query_cache_size: int, name_cache_size: int}
      *
-     * @phpstan-return array{hits: int, misses: int, preloads: int, query_hits: int, query_misses: int, hit_rate: float, query_hit_rate: float, cache_size: int, query_cache_size: int}
-     * @psalm-return   array{hits: int, misses: int, preloads: int, query_hits: int, query_misses: int, hit_rate: float, query_hit_rate: float, cache_size: int, query_cache_size: int}
+     * @phpstan-return array{hits: int, misses: int, preloads: int, query_hits: int, query_misses: int, name_hits: int, name_misses: int, name_warmups: int, hit_rate: float, query_hit_rate: float, name_hit_rate: float, cache_size: int, query_cache_size: int, name_cache_size: int}
+     * @psalm-return   array{hits: int, misses: int, preloads: int, query_hits: int, query_misses: int, name_hits: int, name_misses: int, name_warmups: int, hit_rate: float, query_hit_rate: float, name_hit_rate: float, cache_size: int, query_cache_size: int, name_cache_size: int}
      */
     public function getStats(): array
     {
@@ -346,14 +364,19 @@ class ObjectCacheService
         
         $totalQueryRequests = $this->stats['query_hits'] + $this->stats['query_misses'];
         $queryHitRate       = $totalQueryRequests > 0 ? ($this->stats['query_hits'] / $totalQueryRequests) * 100 : 0;
+        
+        $totalNameRequests = $this->stats['name_hits'] + $this->stats['name_misses'];
+        $nameHitRate       = $totalNameRequests > 0 ? ($this->stats['name_hits'] / $totalNameRequests) * 100 : 0;
 
         return array_merge(
                 $this->stats,
                 [
                     'hit_rate'         => round($hitRate, 2),
                     'query_hit_rate'   => round($queryHitRate, 2),
+                    'name_hit_rate'    => round($nameHitRate, 2),
                     'cache_size'       => count($this->objectCache),
                     'query_cache_size' => count($this->inMemoryQueryCache),
+                    'name_cache_size'  => count($this->nameCache),
                 ]
                 );
 
@@ -610,6 +633,19 @@ class ObjectCacheService
             
             // Clear individual object from cache
             $this->clearObjectFromCache($object);
+            
+            // Update name cache for the modified object
+            if ($operation === 'update' || $operation === 'create') {
+                $name = $object->getName() ?? $object->getUuid();
+                $this->setObjectName($object->getUuid(), $name);
+                if ($object->getId() && (string)$object->getId() !== $object->getUuid()) {
+                    $this->setObjectName($object->getId(), $name);
+                }
+            } elseif ($operation === 'delete') {
+                // Remove from name cache
+                unset($this->nameCache[$object->getUuid()]);
+                unset($this->nameCache[(string)$object->getId()]);
+            }
         }
         
         // **SCHEMA-WIDE INVALIDATION**: Clear ALL search caches for this schema
@@ -732,7 +768,7 @@ class ObjectCacheService
     /**
      * Clear all caches (Administrative Operation)
      *
-     * **NUCLEAR OPTION**: Removes all cached objects, search results, and resets statistics.
+     * **NUCLEAR OPTION**: Removes all cached objects, search results, name caches, and resets statistics.
      * Use sparingly - typically for administrative operations or major system changes.
      *
      * @return void
@@ -744,7 +780,8 @@ class ObjectCacheService
         $this->objectCache       = [];
         $this->relationshipCache = [];
         $this->inMemoryQueryCache = [];
-        $this->stats = ['hits' => 0, 'misses' => 0, 'preloads' => 0, 'query_hits' => 0, 'query_misses' => 0];
+        $this->nameCache = [];
+        $this->stats = ['hits' => 0, 'misses' => 0, 'preloads' => 0, 'query_hits' => 0, 'query_misses' => 0, 'name_hits' => 0, 'name_misses' => 0, 'name_warmups' => 0];
         
         // Clear distributed query cache
         if ($this->queryCache !== null) {
@@ -757,9 +794,20 @@ class ObjectCacheService
             }
         }
         
+        // Clear distributed name cache
+        if ($this->nameDistributedCache !== null) {
+            try {
+                $this->nameDistributedCache->clear();
+            } catch (\Exception $e) {
+                $this->logger->warning('Failed to clear distributed name cache', [
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+        
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
         
-        $this->logger->info('All object caches cleared', [
+        $this->logger->info('All object caches cleared (including name cache)', [
             'executionTime' => $executionTime . 'ms'
         ]);
 
@@ -777,6 +825,331 @@ class ObjectCacheService
         $this->clearAllCaches();
 
     }//end clearCache()
+
+
+    // ========================================
+    // OBJECT NAME CACHE METHODS
+    // ========================================
+
+    /**
+     * Set object name in cache
+     *
+     * Stores the name of an object in both in-memory and distributed caches
+     * for ultra-fast frontend rendering without full object retrieval.
+     *
+     * @param string|int $identifier Object ID or UUID
+     * @param string     $name       Object name to cache
+     * @param int        $ttl        Cache TTL in seconds (default: 1 hour)
+     *
+     * @return void
+     */
+    public function setObjectName(string|int $identifier, string $name, int $ttl = 3600): void
+    {
+        $key = (string) $identifier;
+        
+        // Enforce maximum cache TTL
+        $ttl = min($ttl, self::MAX_CACHE_TTL);
+        
+        // Store in in-memory cache
+        $this->nameCache[$key] = $name;
+        
+        // Store in distributed cache if available
+        if ($this->nameDistributedCache !== null) {
+            try {
+                $this->nameDistributedCache->set('name_' . $key, $name, $ttl);
+            } catch (\Exception $e) {
+                $this->logger->warning('Failed to cache object name in distributed cache', [
+                    'identifier' => $key,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+        
+        $this->logger->debug('💾 OBJECT NAME CACHED', [
+            'identifier' => $key,
+            'name' => $name,
+            'ttl' => $ttl . 's'
+        ]);
+
+    }//end setObjectName()
+
+
+    /**
+     * Get single object name from cache or database
+     *
+     * Provides ultra-fast name lookup for frontend rendering.
+     * Falls back to database if not cached.
+     *
+     * @param string|int $identifier Object ID or UUID
+     *
+     * @return string|null Object name or null if not found
+     */
+    public function getSingleObjectName(string|int $identifier): ?string
+    {
+        $key = (string) $identifier;
+        
+        // Check in-memory cache first (fastest)
+        if (isset($this->nameCache[$key])) {
+            $this->stats['name_hits']++;
+            $this->logger->debug('🚀 NAME CACHE HIT (in-memory)', ['identifier' => $key]);
+            return $this->nameCache[$key];
+        }
+        
+        // Check distributed cache
+        if ($this->nameDistributedCache !== null) {
+            try {
+                $cachedName = $this->nameDistributedCache->get('name_' . $key);
+                if ($cachedName !== null) {
+                    // Store in in-memory cache for faster future access
+                    $this->nameCache[$key] = $cachedName;
+                    $this->stats['name_hits']++;
+                    $this->logger->debug('⚡ NAME CACHE HIT (distributed)', ['identifier' => $key]);
+                    return $cachedName;
+                }
+            } catch (\Exception $e) {
+                $this->logger->warning('Failed to get object name from distributed cache', [
+                    'identifier' => $key,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+        
+        // Cache miss - load from database
+        $this->stats['name_misses']++;
+        $this->logger->debug('❌ NAME CACHE MISS', ['identifier' => $key]);
+        
+        try {
+            $object = $this->objectEntityMapper->find($identifier);
+            if ($object !== null) {
+                $name = $object->getName() ?? $object->getUuid();
+                $this->setObjectName($identifier, $name);
+                return $name;
+            }
+        } catch (\Exception $e) {
+            $this->logger->debug('Failed to load object for name lookup', [
+                'identifier' => $key,
+                'error' => $e->getMessage()
+            ]);
+        }
+        
+        return null;
+
+    }//end getSingleObjectName()
+
+
+    /**
+     * Get multiple object names from cache or database
+     *
+     * Efficiently retrieves names for multiple objects using bulk operations
+     * to minimize database queries.
+     *
+     * @param array $identifiers Array of object IDs/UUIDs
+     *
+     * @return array<string, string> Array mapping identifier => name
+     *
+     * @phpstan-param array<string|int> $identifiers
+     * @phpstan-return array<string, string>
+     * @psalm-param array<string|int> $identifiers
+     * @psalm-return array<string, string>
+     */
+    public function getMultipleObjectNames(array $identifiers): array
+    {
+        if (empty($identifiers)) {
+            return [];
+        }
+        
+        $results = [];
+        $missingIdentifiers = [];
+        
+        // Check in-memory cache for all identifiers
+        foreach ($identifiers as $identifier) {
+            $key = (string) $identifier;
+            if (isset($this->nameCache[$key])) {
+                $results[$key] = $this->nameCache[$key];
+                $this->stats['name_hits']++;
+            } else {
+                $missingIdentifiers[] = $key;
+            }
+        }
+        
+        // Check distributed cache for missing identifiers
+        if (!empty($missingIdentifiers) && $this->nameDistributedCache !== null) {
+            $distributedResults = [];
+            foreach ($missingIdentifiers as $key) {
+                try {
+                    $cachedName = $this->nameDistributedCache->get('name_' . $key);
+                    if ($cachedName !== null) {
+                        $distributedResults[$key] = $cachedName;
+                        $this->nameCache[$key] = $cachedName; // Store in memory
+                        $this->stats['name_hits']++;
+                    }
+                } catch (\Exception $e) {
+                    // Continue processing other identifiers
+                }
+            }
+            $results = array_merge($results, $distributedResults);
+            $missingIdentifiers = array_diff($missingIdentifiers, array_keys($distributedResults));
+        }
+        
+        // Load remaining missing names from database
+        if (!empty($missingIdentifiers)) {
+            $this->stats['name_misses'] += count($missingIdentifiers);
+            
+            try {
+                $objects = $this->objectEntityMapper->findMultiple($missingIdentifiers);
+                
+                foreach ($objects as $object) {
+                    $name = $object->getName() ?? $object->getUuid();
+                    $key = $object->getUuid();
+                    $results[$key] = $name;
+                    
+                    // Cache for future use
+                    $this->setObjectName($key, $name);
+                    
+                    // Also cache by ID if different from UUID
+                    if ($object->getId() && (string)$object->getId() !== $key) {
+                        $results[(string)$object->getId()] = $name;
+                        $this->setObjectName($object->getId(), $name);
+                    }
+                }
+            } catch (\Exception $e) {
+                $this->logger->error('Failed to bulk load object names', [
+                    'identifiers' => count($missingIdentifiers),
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+        
+        $this->logger->debug('📦 BULK NAME LOOKUP COMPLETED', [
+            'requested' => count($identifiers),
+            'found' => count($results),
+            'cache_hits' => count($identifiers) - count($missingIdentifiers),
+            'db_loads' => count($missingIdentifiers)
+        ]);
+        
+        return $results;
+
+    }//end getMultipleObjectNames()
+
+
+    /**
+     * Get all object names with cache warmup
+     *
+     * Returns all object names in the system. Triggers cache warmup
+     * to ensure optimal performance for subsequent name lookups.
+     *
+     * @param bool $forceWarmup Whether to force cache warmup even if cache exists
+     *
+     * @return array<string, string> Array mapping identifier => name
+     *
+     * @phpstan-return array<string, string>
+     * @psalm-return array<string, string>
+     */
+    public function getAllObjectNames(bool $forceWarmup = false): array
+    {
+        $startTime = microtime(true);
+        
+        // Check if we should trigger warmup
+        $shouldWarmup = $forceWarmup || empty($this->nameCache);
+        
+        if ($shouldWarmup) {
+            $this->warmupNameCache();
+        }
+        
+        // Return all cached names
+        $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+        
+        $this->logger->info('📋 ALL OBJECT NAMES RETRIEVED', [
+            'count' => count($this->nameCache),
+            'warmup_triggered' => $shouldWarmup,
+            'execution_time' => $executionTime . 'ms'
+        ]);
+        
+        return $this->nameCache;
+
+    }//end getAllObjectNames()
+
+
+    /**
+     * Warmup name cache by preloading all object names
+     *
+     * Loads all object names from the database into cache to ensure
+     * optimal performance for name lookup operations.
+     *
+     * @return int Number of names loaded into cache
+     */
+    public function warmupNameCache(): int
+    {
+        $startTime = microtime(true);
+        $this->stats['name_warmups']++;
+        
+        try {
+            // Load all objects with minimal data (ID, UUID, name)
+            $objects = $this->objectEntityMapper->findAll();
+            
+            $loadedCount = 0;
+            foreach ($objects as $object) {
+                $name = $object->getName() ?? $object->getUuid();
+                
+                // Cache by UUID
+                if ($object->getUuid()) {
+                    $this->nameCache[$object->getUuid()] = $name;
+                    $loadedCount++;
+                }
+                
+                // Also cache by ID if different
+                if ($object->getId() && (string)$object->getId() !== $object->getUuid()) {
+                    $this->nameCache[(string)$object->getId()] = $name;
+                }
+            }
+            
+            $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+            
+            $this->logger->info('🔥 NAME CACHE WARMED UP', [
+                'objects_processed' => count($objects),
+                'names_cached' => $loadedCount,
+                'execution_time' => $executionTime . 'ms'
+            ]);
+            
+            return $loadedCount;
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Name cache warmup failed', [
+                'error' => $e->getMessage()
+            ]);
+            return 0;
+        }
+
+    }//end warmupNameCache()
+
+
+    /**
+     * Clear object name caches
+     *
+     * Removes all cached object names from both in-memory and distributed caches.
+     * Called when objects are modified to ensure name consistency.
+     *
+     * @return void
+     */
+    public function clearNameCache(): void
+    {
+        // Clear in-memory name cache
+        $this->nameCache = [];
+        
+        // Clear distributed name cache
+        if ($this->nameDistributedCache !== null) {
+            try {
+                $this->nameDistributedCache->clear();
+            } catch (\Exception $e) {
+                $this->logger->warning('Failed to clear distributed name cache', [
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+        
+        $this->logger->debug('🧹 OBJECT NAME CACHE CLEARED');
+
+    }//end clearNameCache()
 
 
 }//end class
