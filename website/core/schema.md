@@ -54,6 +54,13 @@ These configuration options define which object properties should be used for co
   - Supports various datetime formats
   - Controls when objects are no longer publicly visible
 
+- **autoPublish**: (boolean) Automatically set published date on object creation
+  - When set to 'true', objects will be automatically published (published date set to now) when created
+  - Only applies to new objects - existing objects being updated are not affected
+  - If an object already has a published date (from field mapping or explicit data), auto-publish is skipped
+  - Works for both individual object creation and bulk imports
+  - Default: 'false' (disabled)
+
 ##### Twig-like Template Syntax
 For combining multiple fields, use the template syntax:
 
@@ -79,7 +86,8 @@ For combining multiple fields, use the template syntax:
     "objectImageField": "afbeelding",
     "objectSlugField": "naam",
     "objectPublishedField": "publicatieDatum",
-    "objectDepublishedField": "einddatum"
+    "objectDepublishedField": "einddatum",
+    "autoPublish": true
   }
 }
 ```
