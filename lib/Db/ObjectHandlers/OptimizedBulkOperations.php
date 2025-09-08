@@ -193,20 +193,50 @@ class OptimizedBulkOperations
 
         // EXECUTE: Single massive SQL operation instead of thousands of individual ones
         try {
+            // TIMING: Get database time BEFORE operation for accurate classification
+            $stmt = $this->db->prepare("SELECT NOW() as operation_start");
+            $stmt->execute();
+            $operationStartTime = $stmt->fetchColumn();
+            
             $stmt = $this->db->prepare($sql);
             $result = $stmt->execute($parameters);
             
             // DEBUG: Log the actual SQL and some parameters to verify what's being executed
             $sampleParams = array_slice($parameters, 0, min(10, count($parameters)), true);
             
-            $this->logger->info("BULK SAVE DEBUG: Executed unified bulk operation", [
+            // ENHANCED STATISTICS: Calculate created vs updated objects from affected rows
+            // MySQL INSERT...ON DUPLICATE KEY UPDATE returns:
+            // - 1 for each new row inserted (created)  
+            // - 2 for each existing row updated
+            // - 0 for unchanged rows
+            $totalObjects = count($objects);
+            $affectedRows = $result;
+            
+            // Estimate created vs updated (rough calculation)
+            // If affected_rows == totalObjects, all were created
+            // If affected_rows == totalObjects * 2, all were updated
+            // Mixed operations will be between these values
+            $estimatedCreated = 0;
+            $estimatedUpdated = 0;
+            
+            if ($affectedRows <= $totalObjects) {
+                // Mostly creates, some might be unchanged
+                $estimatedCreated = $affectedRows;
+                $estimatedUpdated = 0;
+            } else if ($affectedRows <= $totalObjects * 2) {
+                // Mixed creates and updates
+                // This is an approximation - exact counts would require separate queries
+                $estimatedCreated = max(0, $totalObjects * 2 - $affectedRows);
+                $estimatedUpdated = $affectedRows - $estimatedCreated;
+            }
+            
+            $this->logger->info("BULK SAVE: Executed unified bulk operation with statistics", [
                 'chunk' => $chunkNumber,
-                'objects_in_chunk' => count($objects),
+                'objects_processed' => $totalObjects,
+                'affected_rows' => $affectedRows,
+                'estimated_created' => $estimatedCreated,
+                'estimated_updated' => $estimatedUpdated,
                 'sql_size_kb' => round(strlen($sql) / 1024, 2),
-                'parameters' => count($parameters),
-                'affected_rows' => $result,
-                'sample_sql' => substr($sql, 0, 200) . '...',
-                'sample_parameters' => $sampleParams,
                 'table_name' => $tableName
             ]);
             
@@ -219,10 +249,74 @@ class OptimizedBulkOperations
             throw $e;
         }
 
+        // ENHANCED RETURN: Query back complete objects for precise create/update classification
+        $completeObjects = [];
+        
+        try {
+            // Query all affected objects to get complete data with timestamps AND operation timing for classification
+            $uuids = array_filter($processedUUIDs); // Remove empty UUIDs
+            if (!empty($uuids)) {
+                $placeholders = implode(',', array_fill(0, count($uuids), '?'));
+                $selectSql = "
+                    SELECT *,
+                           '{$operationStartTime}' as operation_start_time,
+                           CASE 
+                               WHEN created >= '{$operationStartTime}' THEN 'created'
+                               WHEN updated >= '{$operationStartTime}' THEN 'updated' 
+                               ELSE 'unchanged'
+                           END as object_status,
+                           
+                           -- DEBUG COLUMNS: Show field states for debugging
+                           CONCAT_WS('|',
+                               CONCAT('name:', COALESCE(LEFT(\`name\`, 20), 'NULL')),
+                               CONCAT('desc:', COALESCE(LEFT(\`description\`, 20), 'NULL')), 
+                               CONCAT('owner:', COALESCE(\`owner\`, 'NULL')),
+                               CONCAT('org:', COALESCE(\`organisation\`, 'NULL')),
+                               CONCAT('reg:', COALESCE(\`register\`, 'NULL')),
+                               CONCAT('sch:', COALESCE(\`schema\`, 'NULL'))
+                           ) as field_summary,
+                           
+                           -- Show JSON field states
+                           CONCAT_WS('|',
+                               CONCAT('files_len:', CHAR_LENGTH(COALESCE(\`files\`, '{}'))),
+                               CONCAT('relations_len:', CHAR_LENGTH(COALESCE(\`relations\`, '{}'))),
+                               CONCAT('object_len:', CHAR_LENGTH(COALESCE(\`object\`, '{}')))
+                           ) as json_field_summary,
+                           
+                           -- Timestamp analysis
+                           CONCAT_WS('|',
+                               CONCAT('created_vs_op:', CASE WHEN created >= '{$operationStartTime}' THEN 'NEWER' ELSE 'OLDER' END),
+                               CONCAT('updated_vs_op:', CASE WHEN updated >= '{$operationStartTime}' THEN 'NEWER' ELSE 'OLDER' END),
+                               CONCAT('created_eq_updated:', CASE WHEN created = updated THEN 'SAME' ELSE 'DIFF' END)
+                           ) as timestamp_analysis
+                    FROM {$tableName} 
+                    WHERE uuid IN ({$placeholders})
+                ";
+                
+                $stmt = $this->db->prepare($selectSql);
+                $stmt->execute(array_values($uuids));
+                $completeObjects = $stmt->fetchAll();
+                
+                $this->logger->info("BULK SAVE: Retrieved complete objects for classification", [
+                    'chunk' => $chunkNumber,
+                    'uuids_requested' => count($uuids),
+                    'objects_returned' => count($completeObjects)
+                ]);
+            }
+        } catch (\Exception $e) {
+            $this->logger->warning("Failed to retrieve complete objects after bulk save", [
+                'error' => $e->getMessage(),
+                'falling_back_to_uuid_array' => true
+            ]);
+            // Fallback to UUID array if complete object retrieval fails
+        }
+        
         // MEMORY CLEANUP: Clear large variables
         unset($parameters, $sql);
         
-        return array_filter($processedUUIDs); // Remove empty UUIDs
+        // ENHANCED RETURN: Return complete objects with timestamps for precise classification
+        // If complete objects available, return them; otherwise fallback to UUID array
+        return !empty($completeObjects) ? $completeObjects : array_filter($processedUUIDs);
     }//end processUnifiedChunk()
 
 
@@ -268,8 +362,34 @@ class OptimizedBulkOperations
         $updateClauses = [];
         
         foreach ($columns as $column) {
-            if ($column !== 'id' && $column !== 'uuid') { // Don't update primary key or UUID
-                $updateClauses[] = "`{$column}` = VALUES(`{$column}`)";
+            if ($column !== 'id' && $column !== 'uuid' && $column !== 'created') { 
+                // 🔒 IMMUTABLE: Never update primary keys (id, uuid) or creation timestamp (created)
+                
+                if ($column === 'updated') {
+                    // SMART UPDATE: Only update timestamp if actual data changed
+                    $databaseManagedFields = ['id', 'uuid', 'created', 'updated'];
+                    $dataColumns = array_diff($columns, $databaseManagedFields);
+                    $changeChecks = [];
+                    
+                    foreach ($dataColumns as $dataCol) {
+                        if ($dataCol === 'object') {
+                            // SPECIAL HANDLING: JSON comparison for object data
+                            $changeChecks[] = "JSON_EXTRACT(`{$dataCol}`, '$') != JSON_EXTRACT(VALUES(`{$dataCol}`), '$')";
+                        } elseif (in_array($dataCol, ['files', 'relations', 'authorization', 'validation', 'geo', 'retention', 'groups'])) {
+                            // JSON fields comparison
+                            $changeChecks[] = "COALESCE(`{$dataCol}`, '{}') != COALESCE(VALUES(`{$dataCol}`), '{}')";
+                        } else {
+                            // Regular field comparison with NULL handling
+                            $changeChecks[] = "COALESCE(`{$dataCol}`, '') != COALESCE(VALUES(`{$dataCol}`), '')";
+                        }
+                    }
+                    
+                    $changeCondition = implode(' OR ', $changeChecks);
+                    $updateClauses[] = "`updated` = CASE WHEN ({$changeCondition}) THEN NOW() ELSE `updated` END";
+                } else {
+                    // Regular field updates
+                    $updateClauses[] = "`{$column}` = VALUES(`{$column}`)";
+                }
             }
         }
         
@@ -297,16 +417,11 @@ class OptimizedBulkOperations
         // Add insert objects (already in array format)
         foreach ($insertObjects as $insertObj) {
             if (is_array($insertObj)) {
-                // Ensure required fields
+                // Ensure required UUID field only
                 if (!isset($insertObj['uuid'])) {
                     $insertObj['uuid'] = (string) \Symfony\Component\Uid\Uuid::v4();
                 }
-                if (!isset($insertObj['created'])) {
-                    $insertObj['created'] = date('Y-m-d H:i:s');
-                }
-                if (!isset($insertObj['updated'])) {
-                    $insertObj['updated'] = date('Y-m-d H:i:s');
-                }
+                // DATABASE-MANAGED: created and updated are handled by database, don't set to avoid false changes
                 
                 $allObjects[] = $insertObj;
             }
@@ -319,8 +434,18 @@ class OptimizedBulkOperations
                 $newFormatArray = $updateObj->getObjectArray(); // Gets metadata at top level
                 $newFormatArray['object'] = $updateObj->getObject(); // Gets actual object data
                 
-                // Ensure updated timestamp
-                $newFormatArray['updated'] = date('Y-m-d H:i:s');
+                // CRITICAL FIX: Ensure UUID is at top level for proper return value handling
+                // The UUID might be in getObject() data, so extract it to top level
+                if (method_exists($updateObj, 'getUuid') && $updateObj->getUuid()) {
+                    $newFormatArray['uuid'] = $updateObj->getUuid();
+                } elseif (isset($newFormatArray['object']['uuid'])) {
+                    $newFormatArray['uuid'] = $newFormatArray['object']['uuid'];
+                } elseif (isset($newFormatArray['object']['id'])) {
+                    // Fallback: use id field as uuid if no uuid field exists
+                    $newFormatArray['uuid'] = $newFormatArray['object']['id'];
+                }
+                
+                // DATABASE-MANAGED: updated timestamp handled by database ON UPDATE clause
                 
                 $allObjects[] = $newFormatArray;
             }
@@ -381,9 +506,11 @@ class OptimizedBulkOperations
         $mappedColumns = [];
         
         foreach ($validDbColumns as $dbColumn) {
-            if (in_array($dbColumn, $objectColumns) || $dbColumn === 'updated' || $dbColumn === 'created') {
+            // Include column if it's in object data or if it's a required metadata field
+            if (in_array($dbColumn, $objectColumns)) {
                 $mappedColumns[] = $dbColumn;
             }
+            // DATABASE-MANAGED: Don't force include created/updated - let database handle defaults
         }
         
         // Ensure required columns are present
@@ -394,13 +521,8 @@ class OptimizedBulkOperations
             }
         }
         
-        // Always ensure timestamps
-        if (!in_array('created', $mappedColumns)) {
-            $mappedColumns[] = 'created';
-        }
-        if (!in_array('updated', $mappedColumns)) {
-            $mappedColumns[] = 'updated';
-        }
+        // DATABASE-MANAGED: Let MySQL handle created/updated with DEFAULT and ON UPDATE clauses
+        // Don't force these columns into INSERT - let database use column defaults
         
         return $mappedColumns;
     }//end mapObjectColumnsToDatabase()
@@ -418,7 +540,9 @@ class OptimizedBulkOperations
     {
         switch ($dbColumn) {
             case 'uuid':
-                return $objectData['id'] ?? (string) \Symfony\Component\Uid\Uuid::v4();
+                // CRITICAL FIX: Look for UUID in correct field
+                // Data preparation sets UUID in 'uuid' field, not 'id' field
+                return $objectData['uuid'] ?? $objectData['id'] ?? (string) \Symfony\Component\Uid\Uuid::v4();
                 
             case 'version':
                 return $objectData['version'] ?? '0.0.1';
@@ -438,15 +562,22 @@ class OptimizedBulkOperations
                 return json_encode($objectData['object'] ?? [], \JSON_UNESCAPED_UNICODE);
                 
             case 'created':
-                // Handle datetime fields that might be in ISO 8601 format, with fallback to current time
+                // DATABASE-MANAGED: Let database set DEFAULT CURRENT_TIMESTAMP on new records
+                // Only set if explicitly provided (for migrations or special cases)
                 $value = $objectData[$dbColumn] ?? null;
-                if (!$value) {
-                    return date('Y-m-d H:i:s'); // Fallback to current datetime if no value provided
+                if ($value) {
+                    return $this->convertDateTimeToMySQLFormat($value);
                 }
-                return $this->convertDateTimeToMySQLFormat($value);
+                return null; // Let database handle with DEFAULT CURRENT_TIMESTAMP
                 
             case 'updated':
-                return date('Y-m-d H:i:s'); // Always update timestamp
+                // DATABASE-MANAGED: Let database set ON UPDATE CURRENT_TIMESTAMP  
+                // Only set if explicitly provided (for migrations or special cases)
+                $value = $objectData[$dbColumn] ?? null;
+                if ($value) {
+                    return $this->convertDateTimeToMySQLFormat($value);
+                }
+                return null; // Let database handle with ON UPDATE CURRENT_TIMESTAMP
                 
             case 'published':
             case 'depublished':
