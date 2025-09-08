@@ -47,6 +47,7 @@ use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\SchemaCacheService;
 use OCA\OpenRegister\Service\SchemaFacetCacheService;
+use OCA\OpenRegister\Search\ObjectsProvider;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
@@ -380,7 +381,21 @@ class Application extends App implements IBootstrap
                 }
                 );
 
+        // Register ObjectsProvider for Nextcloud search integration
+        $context->registerService(
+                ObjectsProvider::class,
+                function ($container) {
+                    return new ObjectsProvider(
+                    $container->get('OCP\IL10N'),
+                    $container->get('OCP\IURLGenerator'),
+                    $container->get(ObjectService::class),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
 
+        // Register ObjectsProvider as a search provider for Nextcloud search
+        $context->registerSearchProvider(ObjectsProvider::class);
 
         // Register TEST event listener for easily triggerable Nextcloud events
         $context->registerEventListener(UserLoggedInEvent::class, TestEventListener::class);

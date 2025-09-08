@@ -301,4 +301,48 @@ class SettingsController extends Controller
     }//end warmupNamesCache()
 
 
+    /**
+     * Test SOLR connection with provided settings
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse The test results
+     */
+    public function testSolrConnection(): JSONResponse
+    {
+        try {
+            // Get the request data
+            $data = json_decode($this->request->getContent(), true);
+            
+            if (!isset($data['solr'])) {
+                return new JSONResponse(['error' => 'No SOLR configuration provided'], 400);
+            }
+
+            // Temporarily update SOLR settings for testing
+            $currentConfig = $this->settingsService->getSolrSettings();
+            $testConfig = array_merge($currentConfig, $data['solr']);
+            
+            // Save test settings temporarily
+            $this->settingsService->updateSettings(['solr' => $testConfig]);
+            
+            // Run the connection test
+            $result = $this->settingsService->testSolrConnection();
+            
+            // Restore original settings
+            $this->settingsService->updateSettings(['solr' => $currentConfig]);
+            
+            return new JSONResponse($result);
+            
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Connection test failed: ' . $e->getMessage(),
+                'details' => ['exception' => $e->getMessage()]
+            ], 500);
+        }
+
+    }//end testSolrConnection()
+
+
 }//end class
