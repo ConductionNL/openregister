@@ -351,18 +351,7 @@ class SaveObjects
         $chunks     = array_chunk($processedObjects, $chunkSize);
         $chunkCount = count($chunks);
         
-        // Use optimized processing for large imports (4+ chunks)
-        if ($chunkCount >= 4 && count($processedObjects) > 2000) {
-            $this->logger->info('Using optimized chunk processing for large import', [
-                'totalObjects' => count($processedObjects),
-                'chunks' => $chunkCount,
-                'chunkSize' => $chunkSize
-            ]);
-            
-            return $this->processOptimizedChunks($chunks, $globalSchemaCache, $rbac, $multi, $validation, $events, $result);
-        }
-
-        // Sequential processing for smaller imports
+        // SINGLE PATH PROCESSING - Process all chunks the same way regardless of size
         foreach ($chunks as $chunkIndex => $objectsChunk) {
             $chunkStart = microtime(true);
 
@@ -429,219 +418,6 @@ class SaveObjects
     }//end saveObjects()
 
 
-    /**
-     * Process chunks with ultra-high performance optimizations
-     *
-     * ULTRA-PERFORMANCE PROCESSING: Uses aggressive optimizations for maximum throughput
-     * including memory management, reduced logging, and streamlined operations.
-     *
-     * @param array $chunks          Array of object chunks to process
-     * @param array $globalSchemaCache Pre-built schema cache
-     * @param bool  $rbac            Apply RBAC filtering
-     * @param bool  $multi           Apply multi-tenancy filtering  
-     * @param bool  $validation      Apply schema validation
-     * @param bool  $events          Dispatch events
-     * @param array $result          Base result array to merge into
-     *
-     * @return array Complete processing results with merged chunk data
-     */
-    private function processOptimizedChunks(array $chunks, array $globalSchemaCache, bool $rbac, bool $multi, bool $validation, bool $events, array $result): array
-    {
-        $startTime = microtime(true);
-        
-        try {
-            // ULTRA-PERFORMANCE: Process chunks with minimal overhead
-            $chunkResults = [];
-            $totalProcessed = 0;
-            
-            foreach ($chunks as $chunkIndex => $chunk) {
-                $chunkStart = microtime(true);
-                
-                // Process chunk with ultra-performance optimizations
-                $chunkResult = $this->processObjectsChunk($chunk, $globalSchemaCache, $rbac, $multi, $validation, $events);
-                
-                // Add timing information
-                $chunkTime = microtime(true) - $chunkStart;
-                $chunkSpeed = count($chunk) / max($chunkTime, 0.001);
-                $totalProcessed += count($chunk);
-                
-                $chunkResult['chunkMetadata'] = [
-                    'chunkIndex'      => $chunkIndex,
-                    'count'           => count($chunk),
-                    'processingTime'  => round($chunkTime * 1000, 2), // ms
-                    'speed'           => round($chunkSpeed, 2), // objects/sec
-                    'optimized'       => true
-                ];
-                
-                $chunkResults[] = $chunkResult;
-                
-                // PERFORMANCE: Force garbage collection every few chunks to prevent memory bloat
-                if ($chunkIndex % 5 === 0) {
-                    gc_collect_cycles();
-                }
-            }
-            
-            // Merge all chunk results efficiently
-            foreach ($chunkResults as $chunkResult) {
-                // Merge chunk results
-                $result['saved']   = array_merge($result['saved'], $chunkResult['saved'] ?? []);
-                $result['updated'] = array_merge($result['updated'], $chunkResult['updated'] ?? []);
-                $result['invalid'] = array_merge($result['invalid'], $chunkResult['invalid'] ?? []);
-                $result['errors']  = array_merge($result['errors'], $chunkResult['errors'] ?? []);
-                $result['unchanged'] = array_merge($result['unchanged'], $chunkResult['unchanged'] ?? []);
-
-                // Update total statistics
-                $result['statistics']['saved']   += $chunkResult['statistics']['saved'] ?? 0;
-                $result['statistics']['updated'] += $chunkResult['statistics']['updated'] ?? 0;
-                $result['statistics']['invalid'] += $chunkResult['statistics']['invalid'] ?? 0;
-                $result['statistics']['errors']  += $chunkResult['statistics']['errors'] ?? 0;
-                $result['statistics']['unchanged'] += $chunkResult['statistics']['unchanged'] ?? 0;
-
-                // Store per-chunk statistics
-                if (!isset($result['chunkStatistics'])) {
-                    $result['chunkStatistics'] = [];
-                }
-                
-                if (isset($chunkResult['chunkMetadata'])) {
-                    $metadata = $chunkResult['chunkMetadata'];
-                    $result['chunkStatistics'][] = [
-                        'chunkIndex'      => $metadata['chunkIndex'],
-                        'count'           => $metadata['count'],
-                        'saved'           => $chunkResult['statistics']['saved'] ?? 0,
-                        'updated'         => $chunkResult['statistics']['updated'] ?? 0,
-                        'unchanged'       => $chunkResult['statistics']['unchanged'] ?? 0,
-                        'invalid'         => $chunkResult['statistics']['invalid'] ?? 0,
-                        'processingTime'  => $metadata['processingTime'],
-                        'speed'           => $metadata['speed'],
-                        'optimized'       => $metadata['optimized']
-                    ];
-                }
-            }
-            
-        } catch (\Exception $e) {
-            // If optimized processing fails, fall back to sequential
-            $this->logger->warning('Optimized chunk processing failed, falling back to sequential', [
-                'error' => $e->getMessage()
-            ]);
-            return $this->processChunksSequentially($chunks, $globalSchemaCache, $rbac, $multi, $validation, $events, $result);
-        }
-        
-        $totalTime = microtime(true) - $startTime;
-        $finalTotalProcessed = count($result['saved']) + count($result['updated']) + count($result['unchanged']);
-        $overallSpeed = $finalTotalProcessed / max($totalTime, 0.001);
-
-        // Add performance metrics
-        $result['performance'] = [
-            'totalTime'        => round($totalTime, 3),
-            'totalTimeMs'      => round($totalTime * 1000, 2),
-            'objectsPerSecond' => round($overallSpeed, 2),
-            'totalProcessed'   => $finalTotalProcessed,
-            'optimizedChunks'  => count($chunks),
-            'processingMode'   => 'ultra-optimized',
-            'efficiency'       => $finalTotalProcessed > 0 ? 
-                round((($result['statistics']['saved'] + $result['statistics']['updated']) / $finalTotalProcessed) * 100, 1) : 0,
-        ];
-        
-        return $result;
-    }//end processOptimizedChunks()
-    
-    
-    /**
-     * Process chunks in optimized batches when fork is not available
-     *
-     * @param array $chunks Array of object chunks to process
-     * @param array $globalSchemaCache Pre-built schema cache
-     * @param bool  $rbac Apply RBAC filtering
-     * @param bool  $multi Apply multi-tenancy filtering  
-     * @param bool  $validation Apply schema validation
-     * @param bool  $events Dispatch events
-     * @param array $result Base result array to merge into
-     *
-     * @return array Complete processing results
-     */
-    private function processChunksInBatches(array $chunks, array $globalSchemaCache, bool $rbac, bool $multi, bool $validation, bool $events, array $result): array
-    {
-        // Optimized sequential processing with larger batch sizes
-        return $this->processChunksSequentially($chunks, $globalSchemaCache, $rbac, $multi, $validation, $events, $result);
-    }//end processChunksInBatches()
-    
-    
-    /**
-     * Process chunks sequentially (fallback method)
-     *
-     * @param array $chunks Array of object chunks to process
-     * @param array $globalSchemaCache Pre-built schema cache
-     * @param bool  $rbac Apply RBAC filtering
-     * @param bool  $multi Apply multi-tenancy filtering  
-     * @param bool  $validation Apply schema validation
-     * @param bool  $events Dispatch events
-     * @param array $result Base result array to merge into
-     *
-     * @return array Complete processing results
-     */
-    private function processChunksSequentially(array $chunks, array $globalSchemaCache, bool $rbac, bool $multi, bool $validation, bool $events, array $result): array
-    {
-        $startTime = microtime(true);
-        
-        foreach ($chunks as $chunkIndex => $objectsChunk) {
-            $chunkStart = microtime(true);
-
-            // Process the current chunk and get the result
-            $chunkResult = $this->processObjectsChunk($objectsChunk, $globalSchemaCache, $rbac, $multi, $validation, $events);
-
-            // Merge chunk results
-            $result['saved']   = array_merge($result['saved'], $chunkResult['saved']);
-            $result['updated'] = array_merge($result['updated'], $chunkResult['updated']);
-            $result['invalid'] = array_merge($result['invalid'], $chunkResult['invalid']);
-            $result['errors']  = array_merge($result['errors'], $chunkResult['errors']);
-            $result['unchanged'] = array_merge($result['unchanged'], $chunkResult['unchanged']);
-
-            // Update total statistics
-            $result['statistics']['saved']   += $chunkResult['statistics']['saved'] ?? 0;
-            $result['statistics']['updated'] += $chunkResult['statistics']['updated'] ?? 0;
-            $result['statistics']['invalid'] += $chunkResult['statistics']['invalid'] ?? 0;
-            $result['statistics']['errors']  += $chunkResult['statistics']['errors'] ?? 0;
-            $result['statistics']['unchanged'] += $chunkResult['statistics']['unchanged'] ?? 0;
-
-            // Calculate chunk processing time and speed
-            $chunkTime  = microtime(true) - $chunkStart;
-            $chunkSpeed = count($objectsChunk) / max($chunkTime, 0.001);
-
-            // Store per-chunk statistics
-            if (!isset($result['chunkStatistics'])) {
-                $result['chunkStatistics'] = [];
-            }
-            $result['chunkStatistics'][] = [
-                'chunkIndex'      => $chunkIndex,
-                'count'           => count($objectsChunk),
-                'saved'           => $chunkResult['statistics']['saved'] ?? 0,
-                'updated'         => $chunkResult['statistics']['updated'] ?? 0,
-                'unchanged'       => $chunkResult['statistics']['unchanged'] ?? 0,
-                'invalid'         => $chunkResult['statistics']['invalid'] ?? 0,
-                'processingTime'  => round($chunkTime * 1000, 2), // ms
-                'speed'           => round($chunkSpeed, 2), // objects/sec
-                'concurrent'      => false
-            ];
-        }
-        
-        $totalTime = microtime(true) - $startTime;
-        $totalProcessed = count($result['saved']) + count($result['updated']) + count($result['unchanged']);
-        $overallSpeed = $totalProcessed / max($totalTime, 0.001);
-
-        // Add performance metrics
-        $result['performance'] = [
-            'totalTime'        => round($totalTime, 3),
-            'totalTimeMs'      => round($totalTime * 1000, 2),
-            'objectsPerSecond' => round($overallSpeed, 2),
-            'totalProcessed'   => $totalProcessed,
-            'concurrentChunks' => count($chunks),
-            'processingMode'   => 'sequential',
-            'efficiency'       => $totalProcessed > 0 ? 
-                round((($result['statistics']['saved'] + $result['statistics']['updated']) / $totalProcessed) * 100, 1) : 0,
-        ];
-        
-        return $result;
-    }//end processChunksSequentially()
 
 
     /**
@@ -1069,13 +845,15 @@ class SaveObjects
                 $tempEntity->setObject($object);
                 $this->saveHandler->hydrateObjectMetadata($tempEntity, $schema);
                 
-                // AUTO-PUBLISH LOGIC: Set published date to now if autoPublish is enabled and no published date exists
+                // AUTO-PUBLISH LOGIC: Only set published for NEW objects (avoid triggering false changes for existing objects)
                 $config = $schema->getConfiguration();
-                if (isset($config['autoPublish']) && $config['autoPublish'] === true) {
+                $isNewObject = empty($selfData['id']) || !isset($selfData['id']);
+                if (isset($config['autoPublish']) && $config['autoPublish'] === true && $isNewObject) {
                     if ($tempEntity->getPublished() === null) {
-                        $this->logger->debug('Auto-publishing object in bulk creation', [
+                        $this->logger->debug('Auto-publishing NEW object in bulk creation', [
                             'schema' => $schema->getTitle(),
-                            'autoPublish' => true
+                            'autoPublish' => true,
+                            'isNewObject' => true
                         ]);
                         $tempEntity->setPublished(new DateTime());
                     }
@@ -1241,8 +1019,7 @@ class SaveObjects
                 // PERFORMANCE: Use pre-calculated metadata values
                 $selfData['owner'] = $selfData['owner'] ?? $defaultOwner;
                 $selfData['organisation'] = $selfData['organisation'] ?? $defaultOrganisation;
-                $selfData['created'] = $selfData['created'] ?? $nowString;
-                $selfData['updated'] = $selfData['updated'] ?? $nowString;
+                // DATABASE-MANAGED: created and updated are handled by database, don't set here to avoid false changes
                 
                 // Update object's @self data before hydration
                 $object['@self'] = $selfData;
@@ -1253,13 +1030,16 @@ class SaveObjects
                 
                 $this->saveHandler->hydrateObjectMetadata($tempEntity, $schemaObj);
                 
-                // AUTO-PUBLISH LOGIC: Set published date to now if autoPublish is enabled and no published date exists
+                // AUTO-PUBLISH LOGIC: Only set published for NEW objects (avoid triggering false changes for existing objects)
+                // Note: For updates to existing objects, published status should be preserved unless explicitly changed
                 $config = $schemaObj->getConfiguration();
-                if (isset($config['autoPublish']) && $config['autoPublish'] === true) {
+                $isNewObject = empty($selfData['uuid']) || !isset($selfData['uuid']);
+                if (isset($config['autoPublish']) && $config['autoPublish'] === true && $isNewObject) {
                     if ($tempEntity->getPublished() === null) {
-                        $this->logger->debug('Auto-publishing object in bulk creation (single schema)', [
+                        $this->logger->debug('Auto-publishing NEW object in bulk creation (single schema)', [
                             'schema' => $schemaObj->getTitle(),
-                            'autoPublish' => true
+                            'autoPublish' => true,
+                            'isNewObject' => true
                         ]);
                         $tempEntity->setPublished(new DateTime());
                     }
@@ -1297,9 +1077,42 @@ class SaveObjects
                     $object['depublished'] = $depublishedFormatted; // TOP LEVEL for bulk SQL
                 }
                 
-                // PERFORMANCE: Remove @self from object data and nest under 'object'
-                unset($object['@self'], $object['id']);
-                $selfData['object'] = $object;
+                // DEBUG: Log actual data structure to understand what we're receiving
+                $this->logger->info("[SaveObjects] DEBUG - Single schema object structure", [
+                    'available_keys' => array_keys($object),
+                    'has_@self' => isset($object['@self']),
+                    '@self_keys' => isset($object['@self']) ? array_keys($object['@self']) : 'none',
+                    'has_object_property' => isset($object['object']),
+                    'sample_data' => array_slice($object, 0, 3, true) // First 3 key-value pairs for structure
+                ]);
+                
+                // TEMPORARY FIX: Extract business data properly based on actual structure
+                
+                if (isset($object['object']) && is_array($object['object'])) {
+                    // NEW STRUCTURE: object property contains business data
+                    $businessData = $object['object'];
+                    $this->logger->info("[SaveObjects] Using object property for business data");
+                } else {
+                    // LEGACY STRUCTURE: Remove metadata fields to isolate business data
+                    $businessData = $object;
+                    $metadataFields = ['@self', 'name', 'description', 'summary', 'image', 'slug', 
+                                     'published', 'depublished', 'register', 'schema', 'organisation', 
+                                     'uuid', 'owner', 'created', 'updated', 'id'];
+                    
+                    foreach ($metadataFields as $field) {
+                        unset($businessData[$field]);
+                    }
+                    
+                    // CRITICAL DEBUG: Log what we're removing and what remains
+                    $this->logger->info("[SaveObjects] Metadata removal applied", [
+                        'removed_fields' => array_intersect($metadataFields, array_keys($object)),
+                        'remaining_keys' => array_keys($businessData),
+                        'business_data_sample' => array_slice($businessData, 0, 3, true)
+                    ]);
+                }
+                
+                // Store the clean business data in the database object column
+                $selfData['object'] = $businessData;
                 
                 
                 $preparedObjects[] = $selfData;
@@ -1314,13 +1127,8 @@ class SaveObjects
             }
         }
         
-        // ULTRA-PERFORMANCE: Skip complex inverse relations for import operations
-        // For pure data imports, skip expensive relation processing for maximum speed
-        $isLargeImport = count($objects) > 5000;
-        if (!$isLargeImport) {
-            // PERFORMANCE OPTIMIZATION: Use cached analysis for bulk inverse relations (only for smaller operations)
-            $this->handleBulkInverseRelationsWithAnalysis($preparedObjects, $schemaAnalysis);
-        }
+        // INVERSE RELATIONS PROCESSING - Handle bulk inverse relations 
+        $this->handleBulkInverseRelationsWithAnalysis($preparedObjects, $schemaAnalysis);
         
         $endTime = microtime(true);
         $duration = round(($endTime - $startTime) * 1000, 2);
@@ -1342,14 +1150,14 @@ class SaveObjects
 
 
     /**
-     * Process a chunk of objects with optimized bulk operations
+     * Process a chunk of objects with ultra-performance bulk operations
      *
-     * PERFORMANCE OPTIMIZED: This method implements true bulk processing with:
-     * - Single bulk database operation for INSERT/UPDATE
-     * - Pre-validated and transformed objects
-     * - Schema analysis cache reuse
+     * SPECIALIZED FOR LARGE IMPORTS (30K+): This method implements maximum performance bulk processing:
+     * - Ultra-fast bulk database operations
+     * - Minimal validation overhead  
+     * - Optimized deduplication
      * - Memory-efficient processing
-     * - Batched inverse relations handling
+     * - Streamlined response format
      *
      * @param array $objects     Array of pre-processed objects ready for database operations
      * @param array $schemaCache Pre-built schema cache for performance optimization
@@ -1363,9 +1171,7 @@ class SaveObjects
     private function processObjectsChunk(array $objects, array $schemaCache, bool $rbac, bool $multi, bool $validation, bool $events): array
     {
         $startTime = microtime(true);
-        
-        // ULTRA-PERFORMANCE: Determine if this is a large import operation
-        $isLargeImport = count($objects) > 5000;
+        $operationStartTimestamp = date('Y-m-d H:i:s', (int)$startTime);
 
         $result = [
             'saved'      => [],
@@ -1446,8 +1252,8 @@ class SaveObjects
             $result['statistics']['errors'] += $invalidCount;
         }
         
-        // STEP 2: ULTRA-PERFORMANCE - Skip validation for large imports (ImportService pre-validates)
-        if ($validation === true && !$isLargeImport) {
+        // STEP 2: OPTIMIZED VALIDATION - Apply when requested (ImportService can control this)
+        if ($validation === true) {
             $validatedObjects = $this->validateObjectsAgainstSchemaOptimized($transformedObjects, $schemaCache);
             // Move invalid objects to result and remove from processing
             foreach ($validatedObjects['invalid'] as $invalidObj) {
@@ -1461,22 +1267,20 @@ class SaveObjects
             return $result;
         }
 
-        // STEP 3: OPTIMIZED DEDUPLICATION - Always maintain data integrity
-        $extractedIds = $this->extractAllObjectIdentifiers($transformedObjects);
+        // REVOLUTIONARY APPROACH: Skip database lookup entirely and use single-call processing
+        // All objects go directly to bulk save operation which handles create vs update automatically
+        // Classification is computed by database using SQL CASE WHEN with operation timing for maximum precision
         
-        // PERFORMANCE OPTIMIZATION: Use optimized bulk lookup for large imports
-        if ($isLargeImport) {
-            $existingObjects = $this->findExistingObjectsOptimizedForLargeImport($extractedIds);
-        } else {
-        $existingObjects = $this->findExistingObjectsByMultipleIds($extractedIds);
-        }
-
-        // STEP 4: INTELLIGENT OBJECT CATEGORIZATION - Always check for updates/duplicates
-        $deduplicationResult = $this->categorizeObjectsWithHashComparison($transformedObjects, $existingObjects, $isLargeImport);
+        $this->logger->info("[SaveObjects] Using single-call bulk processing (no pre-lookup needed)", [
+            'objects_to_process' => count($transformedObjects),
+            'approach' => 'INSERT...ON DUPLICATE KEY UPDATE with database-computed classification'
+        ]);
         
-        $insertObjects = $deduplicationResult['create'];
-        $updateObjects = $deduplicationResult['update'];
-        $unchangedObjects = $deduplicationResult['skip'];
+        // STEP 3: DIRECT BULK PROCESSING - No categorization needed upfront  
+        // All objects are treated as "potential inserts" - MySQL will handle duplicates
+        $insertObjects = $transformedObjects; // All objects go to bulk save
+        $updateObjects = []; // Empty - classification happens after bulk save
+        $unchangedObjects = []; // Will be populated from timestamp analysis
         
         // Update statistics for unchanged objects (skipped because content was unchanged)
         $result['statistics']['unchanged'] = count($unchangedObjects);
@@ -1485,41 +1289,112 @@ class SaveObjects
         }, $unchangedObjects);
 
 
-        // STEP 5: Execute bulk database operations
+        // STEP 5: ULTRA-FAST BULK DATABASE OPERATIONS
         $savedObjectIds = [];
         
         try {
+            // Bulk save operation
             
-            // ULTRA-PERFORMANCE: Always use optimized bulk operations for large datasets
-            $totalObjects = count($insertObjects) + count($updateObjects);
-            
-            // ULTRA-PERFORMANCE: Always use fastest available operations for any bulk size
+            // MAXIMUM PERFORMANCE: Always use ultra-fast bulk operations for large imports
                 $bulkResult = $this->objectEntityMapper->ultraFastBulkSave($insertObjects, $updateObjects);
-            
-            // IMPORTANT: Only collect UUIDs that were actually saved (returned by bulk operations)
-            if (is_array($bulkResult)) {
-                $savedObjectIds = $bulkResult;
                 
-                // Count actual saves vs updates based on what was returned
-                foreach ($insertObjects as $objData) {
-                    if (in_array($objData['uuid'], $bulkResult)) {
-                        $result['statistics']['saved']++;
+            // Bulk save completed successfully
+            
+            // ENHANCED PROCESSING: Handle complete objects with timestamp-based classification
+            $savedObjectIds = [];
+            $createdObjects = [];
+            $updatedObjects = [];
+            $unchangedObjects = [];
+            $reconstructedObjects = [];
+            
+            if (is_array($bulkResult)) {
+                // Check if we got complete objects (new approach) or just UUIDs (fallback)
+                $firstItem = reset($bulkResult);
+                
+                if (is_array($firstItem) && isset($firstItem['created'], $firstItem['updated'])) {
+                    // NEW APPROACH: Complete objects with database-computed classification returned
+                    $this->logger->info("[SaveObjects] Processing complete objects with database-computed classification");
+                    
+                    foreach ($bulkResult as $completeObject) {
+                        $savedObjectIds[] = $completeObject['uuid'];
+                        
+                        // DATABASE-COMPUTED CLASSIFICATION: Use the object_status calculated by database
+                        $objectStatus = $completeObject['object_status'] ?? 'unknown';
+                        
+                        switch ($objectStatus) {
+                            case 'created':
+                                // 🆕 CREATED: Object was created during this operation (database-computed)
+                                $createdObjects[] = $completeObject;
+                                $result['statistics']['saved']++;
+                                break;
+                                
+                            case 'updated':
+                                // 📝 UPDATED: Existing object was modified during this operation (database-computed)
+                                $updatedObjects[] = $completeObject;
+                                $result['statistics']['updated']++;
+                                break;
+                                
+                            case 'unchanged':
+                                // ⏸️ UNCHANGED: Existing object was not modified (database-computed)
+                                $unchangedObjects[] = $completeObject;
+                                $result['statistics']['unchanged']++;
+                                break;
+                                
+                            default:
+                                // Fallback for unexpected status
+                                $this->logger->warning("Unexpected object status: {$objectStatus}", [
+                                    'uuid' => $completeObject['uuid'],
+                                    'object_status' => $objectStatus
+                                ]);
+                                $unchangedObjects[] = $completeObject;
+                                $result['statistics']['unchanged']++;
+                        }
+                        
+                        // Convert to ObjectEntity for consistent response format
+                        $objEntity = new ObjectEntity();
+                        $objEntity->hydrate($completeObject);
+                        $reconstructedObjects[] = $objEntity;
                     }
-                }
-                foreach ($updateObjects as $obj) {
-                    if (in_array($obj->getUuid(), $bulkResult)) {
-                        $result['statistics']['updated']++;
+                    
+                    // DEBUG LOGGING: Show field analysis for first few objects
+                    $debugSamples = [];
+                    foreach (array_slice($bulkResult, 0, 3) as $sample) {
+                        $debugSamples[] = [
+                            'uuid' => substr($sample['uuid'] ?? 'unknown', 0, 8),
+                            'object_status' => $sample['object_status'] ?? 'unknown',
+                            'field_summary' => $sample['field_summary'] ?? 'missing',
+                            'json_field_summary' => $sample['json_field_summary'] ?? 'missing',
+                            'timestamp_analysis' => $sample['timestamp_analysis'] ?? 'missing'
+                        ];
+                    }
+                    
+                    $this->logger->info("[SaveObjects] Database-computed classification completed", [
+                        'total_processed' => count($bulkResult),
+                        'created_objects' => count($createdObjects),
+                        'updated_objects' => count($updatedObjects),
+                        'unchanged_objects' => count($unchangedObjects),
+                        'classification_method' => 'database_computed_sql',
+                        'debug_samples' => $debugSamples
+                    ]);
+                    
+                } else {
+                    // FALLBACK: UUID array returned (legacy behavior)
+                    $this->logger->info("[SaveObjects] Processing UUID array (legacy mode)");
+                    $savedObjectIds = $bulkResult;
+                    
+                    // Fallback counting (less precise)
+                    foreach ($insertObjects as $objData) {
+                        if (in_array($objData['uuid'], $bulkResult)) {
+                            $result['statistics']['saved']++;
+                        }
                     }
                 }
             } else {
-                // Fallback: assume all were processed if return format is unexpected
+                // Fallback for unexpected return format
+                $this->logger->warning("[SaveObjects] Unexpected bulk result format, using fallback");
                 foreach ($insertObjects as $objData) {
                     $savedObjectIds[] = $objData['uuid'];
                     $result['statistics']['saved']++;
-                }
-                foreach ($updateObjects as $obj) {
-                    $savedObjectIds[] = $obj->getUuid();
-                    $result['statistics']['updated']++;
                 }
             }
 
@@ -1529,35 +1404,42 @@ class SaveObjects
             throw new \Exception('Bulk object save operation failed: ' . $e->getMessage(), 0, $e);
         }
 
-        // STEP 6: ULTRA-PERFORMANCE - Minimal response for large imports
-        if ($isLargeImport) {
-            // ULTRA-PERFORMANCE: Skip all object reconstruction and serialization for large imports
-            // ImportService only needs counts, not full object data
-            $result['statistics']['saved'] = count($insertObjects);
-            $result['statistics']['updated'] = count($updateObjects);
+        // STEP 6: ENHANCED OBJECT RESPONSE - Use pre-classified objects or reconstruct
+        if (!empty($reconstructedObjects)) {
+            // NEW APPROACH: Use already reconstructed objects from timestamp classification
+            $savedObjects = $reconstructedObjects;
             
-            // MINIMAL RESPONSE: Only IDs for API compatibility
-            $result['saved'] = array_map(fn($obj) => $obj['uuid'] ?? 'unknown', $insertObjects);
-            $result['updated'] = array_map(fn($obj) => is_object($obj) ? $obj->getUuid() : ($obj['uuid'] ?? 'unknown'), $updateObjects);
-        } else {
-            // STANDARD: Full object reconstruction for smaller operations
-        $savedObjects = $this->reconstructSavedObjects($insertObjects, $updateObjects, $savedObjectIds, $existingObjects);
-
-        // Separate into saved vs updated for response
-        foreach ($savedObjects as $obj) {
-            $uuid = $obj->getUuid();
-            $serialized = $obj->jsonSerialize();
-            
-            if (isset($existingObjects[$uuid])) {
-                $result['updated'][] = $serialized;
-            } else {
-                $result['saved'][] = $serialized;
-                }
+            // Objects are already classified, add to appropriate response arrays
+            foreach ($createdObjects as $createdObj) {
+                $result['saved'][] = is_array($createdObj) ? $createdObj : $createdObj;
             }
+            foreach ($updatedObjects as $updatedObj) {
+                $result['updated'][] = is_array($updatedObj) ? $updatedObj : $updatedObj;
+            }
+            foreach ($unchangedObjects as $unchangedObj) {
+                $result['unchanged'][] = is_array($unchangedObj) ? $unchangedObj : $unchangedObj;
+            }
+            
+            $this->logger->info("[SaveObjects] Using database-computed pre-classified objects for response", [
+                'saved_objects' => count($result['saved']),
+                'updated_objects' => count($result['updated']),
+                'unchanged_objects' => count($result['unchanged'])
+            ]);
+            
+        } else {
+            // FALLBACK: Use traditional object reconstruction
+            $savedObjects = $this->reconstructSavedObjects($insertObjects, $updateObjects, $savedObjectIds, []);
+            
+            // Fallback classification (less precise)
+            foreach ($savedObjects as $obj) {
+                $result['saved'][] = $obj->jsonSerialize();
+            }
+            
+            $this->logger->info("[SaveObjects] Using fallback object reconstruction");
         }
 
-        // STEP 7: Handle inverse relations in bulk for writeBack operations (skip for large imports)
-        if (!$isLargeImport && !empty($savedObjects)) {
+        // STEP 7: INVERSE RELATIONS PROCESSING - Handle writeBack operations
+        if (!empty($savedObjects)) {
             $this->handlePostSaveInverseRelations($savedObjects, $schemaCache);
         }
 
@@ -2021,27 +1903,52 @@ class SaveObjects
                 }
             }
             
-            $selfData['created'] = $selfData['created'] ?? $now->format('c');
-            $selfData['updated'] = $selfData['updated'] ?? $now->format('c');
+            // DATABASE-MANAGED: created and updated are handled by database DEFAULT and ON UPDATE clauses
             
             // METADATA EXTRACTION: Skip redundant extraction as prepareSingleSchemaObjectsOptimized already handles this
             // with enhanced twig-like concatenation support. This redundant extraction was overwriting the
             // properly extracted metadata with simpler getValueFromPath results.
            
-            // CRITICAL FIX: Preserve metadata fields at top level for bulk SQL before nesting object data
-            // Extract metadata fields from top-level object data (added by metadata hydration) 
-            $metadataFields = ['name', 'description', 'summary', 'image', 'slug', 'published', 'depublished'];
-            foreach ($metadataFields as $field) {
-                if (isset($object[$field]) && $object[$field] !== null) {
-                    $selfData[$field] = $object[$field]; // Keep at top level for bulk SQL
-                    unset($object[$field]); // Remove from nested object data  
+            // DEBUG: Log mixed schema object structure
+            $this->logger->info("[SaveObjects] DEBUG - Mixed schema object structure", [
+                'available_keys' => array_keys($object),
+                'has_object_property' => isset($object['object']),
+                'sample_data' => array_slice($object, 0, 3, true)
+            ]);
+            
+            // TEMPORARY FIX: Extract business data properly based on actual structure
+            if (isset($object['object']) && is_array($object['object'])) {
+                // NEW STRUCTURE: object property contains business data
+                $businessData = $object['object'];
+                $this->logger->info("[SaveObjects] Using object property for business data (mixed)");
+            } else {
+                // LEGACY STRUCTURE: Remove metadata fields to isolate business data
+                $businessData = $object;
+                $metadataFields = ['@self', 'name', 'description', 'summary', 'image', 'slug', 
+                                 'published', 'depublished', 'register', 'schema', 'organisation', 
+                                 'uuid', 'owner', 'created', 'updated', 'id'];
+                
+                foreach ($metadataFields as $field) {
+                    unset($businessData[$field]);
                 }
+                
+                // CRITICAL DEBUG: Log what we're removing and what remains
+                $this->logger->info("[SaveObjects] Metadata removal applied (mixed)", [
+                    'removed_fields' => array_intersect($metadataFields, array_keys($object)),
+                    'remaining_keys' => array_keys($businessData),
+                    'business_data_sample' => array_slice($businessData, 0, 3, true)
+                ]);
             }
             
-            // Remove @self from object data and nest remaining fields under 'object' property
-            unset($object['@self']);
-            unset($object['id']);
-            $selfData['object'] = $object ?? [];
+            // RELATIONS EXTRACTION: Scan the business data for relations (UUIDs and URLs)
+            if (isset($schemaCache[$selfData['schema']])) {
+                $schema = $schemaCache[$selfData['schema']];
+                $relations = $this->scanForRelations($businessData, '', $schema);
+                $selfData['relations'] = $relations;
+            }
+            
+            // Store the clean business data in the database object column
+            $selfData['object'] = $businessData;
 
             $transformedObjects[] = $selfData;
         }
@@ -2159,6 +2066,22 @@ class SaveObjects
             // Primary UUID identifier
             if (!empty($objectData['uuid'])) {
                 $identifiers['uuids'][] = $objectData['uuid'];
+                
+                // DEBUG: Log UUID extraction for first few objects
+                if ($index < 3) {
+                    $this->logger->info("[SaveObjects] DEBUG - extractAllObjectIdentifiers", [
+                        'object_index' => $index,
+                        'uuid' => $objectData['uuid']
+                    ]);
+                }
+            } else {
+                // DEBUG: Log missing UUIDs
+                if ($index < 3) {
+                    $this->logger->warning("[SaveObjects] DEBUG - extractAllObjectIdentifiers MISSING UUID", [
+                        'object_index' => $index,
+                        'available_keys' => array_keys($objectData)
+                    ]);
+                }
             }
             
             // Slug identifier from @self metadata
@@ -2298,19 +2221,20 @@ class SaveObjects
 
 
     /**
-     * ULTRA-PERFORMANCE: Optimized object categorization for large imports
+     * OPTIMIZED: Object categorization with comprehensive deduplication
      *
-     * This method provides two performance paths:
-     * - Fast path for large imports with minimal hash comparison overhead
-     * - Standard path for smaller operations with full deduplication
+     * Single path that handles all import sizes with full functionality:
+     * - Comprehensive identifier matching
+     * - Hash comparison for precise deduplication
+     * - Full metadata and relation support
      *
      * @param array $transformedObjects Array of incoming object data
      * @param array $existingObjects    Array of existing objects indexed by identifiers
-     * @param bool  $isLargeImport      Whether this is a large import operation
+     * @param bool  $unused             Kept for compatibility, no longer used
      *
      * @return array Categorized objects: ['create' => [], 'update' => [], 'skip' => []]
      */
-    private function categorizeObjectsWithHashComparison(array $transformedObjects, array $existingObjects, bool $isLargeImport = false): array
+    private function categorizeObjectsWithHashComparison(array $transformedObjects, array $existingObjects, bool $unused = false): array
     {
         $result = [
             'create' => [],
@@ -2318,38 +2242,16 @@ class SaveObjects
             'skip' => []
         ];
         
-        if ($isLargeImport) {
-            // ULTRA-FAST PATH: Simplified categorization for large imports
-        foreach ($transformedObjects as $incomingData) {
-                $existingObject = $this->findExistingObjectByPrimaryId($incomingData, $existingObjects);
-                
-                if ($existingObject === null) {
-                    $result['create'][] = $incomingData;
-                } else {
-                    // PERFORMANCE: Simple update without expensive hash comparison
-                    $existingObject->setObject($incomingData['object'] ?? []);
-                    $existingObject->setUpdated(new \DateTime($incomingData['updated'] ?? 'now'));
-                    
-                    // CRITICAL FIX: Update register and schema to support object migration between registers/schemas
-                    if (isset($incomingData['register']) && $incomingData['register'] !== $existingObject->getRegister()) {
-                        $existingObject->setRegister($incomingData['register']);
-                    }
-                    if (isset($incomingData['schema']) && $incomingData['schema'] !== $existingObject->getSchema()) {
-                        $existingObject->setSchema($incomingData['schema']);
-                    }
-                    
-                    $result['update'][] = $existingObject;
-                }
-            }
-        } else {
-            // STANDARD PATH: Full hash comparison for smaller operations
-            foreach ($transformedObjects as $incomingData) {
+        // SINGLE PATH: Full comprehensive processing for all import sizes
+        foreach ($transformedObjects as $index => $incomingData) {
             $existingObject = $this->findExistingObjectByAnyIdentifier($incomingData, $existingObjects);
+            
+            // Continue with categorization logic
             
             if ($existingObject === null) {
                 $result['create'][] = $incomingData;
             } else {
-                    // Full hash comparison for precise deduplication
+                // Full hash comparison for precise deduplication
                 $object1 = $incomingData['object'];
                 $object2 = $existingObject->getObject();
                 unset($object1['@self'], $object1['id'], $object2['@self'], $object2['id']);
@@ -2386,7 +2288,6 @@ class SaveObjects
                         $result['update'][] = $existingObject;
                     } else {
                         $result['skip'][] = $existingObject;
-                        }
                     }
                 }
             }
@@ -2813,75 +2714,120 @@ class SaveObjects
 
 
     /**
-     * Determine whether to use optimized bulk operations based on system resources
+     * Scans an object for relations (UUIDs and URLs) and returns them in dot notation
      *
-     * PERFORMANCE DECISION: This method analyzes memory usage and object count
-     * to decide whether to use memory-intensive optimized operations that can
-     * provide 10-20x performance improvements.
+     * This method checks schema properties for relation types:
+     * - Properties with type 'text' and format 'uuid', 'uri', or 'url'
+     * - Properties with type 'object' that contain string values (always treated as relations)
+     * - Properties with type 'array' of objects that contain string values
      *
-     * @param array $insertObjects Array of objects to insert
-     * @param array $updateObjects Array of objects to update
+     * This is ported from SaveObject.php to provide consistent relation handling
+     * for bulk operations.
      *
-     * @return bool True if optimized operations should be used
+     * @param array       $data   The object data to scan
+     * @param string      $prefix The current prefix for dot notation (used in recursion)
+     * @param Schema|null $schema The schema to check property definitions against
+     *
+     * @return array Array of relations with dot notation paths as keys and UUIDs/URLs as values
      */
-    private function shouldUseOptimizedBulkOperations(array $insertObjects, array $updateObjects): bool
+    private function scanForRelations(array $data, string $prefix='', ?Schema $schema=null): array
     {
-        $totalObjects = count($insertObjects) + count($updateObjects);
-        
-        // Always use optimized operations for small batches (no memory risk)
-        if ($totalObjects < 100) {
-            return true;
-        }
-        
-        // Check available memory
-        $memoryLimitBytes = $this->parseMemoryLimit(ini_get('memory_limit'));
-        $currentMemoryUsage = memory_get_usage(true);
-        $availableMemory = $memoryLimitBytes - $currentMemoryUsage;
-        
-        // Estimate memory needed for optimized operations (rough calculation)
-        $estimatedMemoryNeeded = $totalObjects * 2048; // 2KB per object average
-        
-        // Use optimized if we have enough memory and significant object count
-        $hasEnoughMemory = $availableMemory > ($estimatedMemoryNeeded * 2); // 2x safety margin
-        $worthOptimizing = $totalObjects > 50; // Only optimize for meaningful batches
-        
-        $decision = $hasEnoughMemory && $worthOptimizing;
-        
-        // Optimization decision made based on memory and object count
-        
-        return $decision;
-    }//end shouldUseOptimizedBulkOperations()
+        $relations = [];
+
+        try {
+            // Get schema properties if available
+            $schemaProperties = null;
+            if ($schema !== null) {
+                try {
+                    $schemaProperties = $schema->getProperties();
+                } catch (\Exception $e) {
+                    // Continue without schema properties if parsing fails
+                }
+            }
+
+            foreach ($data as $key => $value) {
+                // Skip if key is not a string or is empty
+                if (!is_string($key) || empty($key)) {
+                    continue;
+                }
+
+                $currentPath = $prefix ? $prefix.'.'.$key : $key;
+
+                if (is_array($value) && !empty($value)) {
+                    // Check if this is an array property in the schema
+                    $propertyConfig   = $schemaProperties[$key] ?? null;
+                    $isArrayOfObjects = $propertyConfig &&
+                                      ($propertyConfig['type'] ?? '') === 'array' &&
+                                      isset($propertyConfig['items']['type']) &&
+                                      $propertyConfig['items']['type'] === 'object';
+
+                    if ($isArrayOfObjects) {
+                        // For arrays of objects, scan each item for relations
+                        foreach ($value as $index => $item) {
+                            if (is_array($item)) {
+                                $itemRelations = $this->scanForRelations(
+                                    $item,
+                                    $currentPath.'.'.$index,
+                                    $schema
+                                );
+                                $relations     = array_merge($relations, $itemRelations);
+                            } else if (is_string($item) && !empty($item)) {
+                                // String values in object arrays are always treated as relations
+                                $relations[$currentPath.'.'.$index] = $item;
+                            }
+                        }
+                    } else {
+                        // Recursively scan nested arrays
+                        $relations = array_merge($relations, $this->scanForRelations($value, $currentPath, $schema));
+                    }
+                } else if (is_string($value) && !empty($value) && trim($value) !== '') {
+                    $shouldTreatAsRelation = false;
+
+                    // Check schema property configuration first
+                    if ($schemaProperties && isset($schemaProperties[$key])) {
+                        $propertyConfig = $schemaProperties[$key];
+                        $propertyType   = $propertyConfig['type'] ?? '';
+                        $propertyFormat = $propertyConfig['format'] ?? '';
+
+                        // Check for explicit relation types
+                        if ($propertyType === 'text' && in_array($propertyFormat, ['uuid', 'uri', 'url'])) {
+                            $shouldTreatAsRelation = true;
+                        } else if ($propertyType === 'object') {
+                            // Object properties with string values are always relations
+                            $shouldTreatAsRelation = true;
+                        }
+                    }
+
+                    // If not determined by schema, check for patterns
+                    if (!$shouldTreatAsRelation) {
+                        // Check for UUID pattern
+                        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value)) {
+                            $shouldTreatAsRelation = true;
+                        }
+                        // Check for URL pattern
+                        else if (filter_var($value, FILTER_VALIDATE_URL)) {
+                            $shouldTreatAsRelation = true;
+                        }
+                    }
+
+                    if ($shouldTreatAsRelation) {
+                        $relations[$currentPath] = $value;
+                    }
+                }//end if
+            }//end foreach
+        } catch (\Exception $e) {
+            // Error scanning for relations - log but continue
+            $this->logger->warning('Error scanning object for relations', [
+                'error' => $e->getMessage(),
+                'objectData' => is_array($data) ? array_keys($data) : 'not_array'
+            ]);
+        }//end try
+
+        return $relations;
+
+    }//end scanForRelations()
 
 
-    /**
-     * Parse PHP memory limit string to bytes
-     *
-     * @param string $memoryLimit Memory limit string (e.g., '2G', '512M')
-     *
-     * @return int Memory limit in bytes
-     */
-    private function parseMemoryLimit(string $memoryLimit): int
-    {
-        $memoryLimit = trim($memoryLimit);
-        
-        if ($memoryLimit === '-1') {
-            return \PHP_INT_MAX; // No limit
-        }
-        
-        $unit = strtolower(substr($memoryLimit, -1));
-        $value = (int) substr($memoryLimit, 0, -1);
-        
-        switch ($unit) {
-            case 'g':
-                return $value * 1073741824; // 1024^3
-            case 'm':
-                return $value * 1048576; // 1024^2  
-            case 'k':
-                return $value * 1024;
-            default:
-                return (int) $memoryLimit; // Assume bytes
-        }
-    }//end parseMemoryLimit()
 
 
 }//end class
