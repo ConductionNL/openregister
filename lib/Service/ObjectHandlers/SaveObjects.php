@@ -1228,12 +1228,14 @@ class SaveObjects
                 $selfData['register'] = $selfData['register'] ?? $registerId;
                 $selfData['schema'] = $selfData['schema'] ?? $schemaId;
                 
-                // PERFORMANCE: Accept any non-empty string as ID, generate UUID if needed
-                $providedId = $selfData['id'] ?? $object['id'] ?? null;
+                // PERFORMANCE: Accept any non-empty string as ID, prioritize CSV 'id' column
+                $providedId = $object['id'] ?? $selfData['id'] ?? null;
                 if ($providedId && !empty(trim($providedId))) {
                     $selfData['uuid'] = $providedId;
+                    $selfData['id'] = $providedId; // Also set in @self for consistency
                 } else {
                     $selfData['uuid'] = Uuid::v4()->toRfc4122();
+                    $selfData['id'] = $selfData['uuid']; // Set @self.id to generated UUID
                 }
                 
                 // PERFORMANCE: Use pre-calculated metadata values
@@ -1952,14 +1954,19 @@ class SaveObjects
             // Auto-wire @self metadata with proper UUID validation and generation
             $now = new \DateTime();
             
-            // Accept any non-empty string as ID, generate UUID if not provided
-            $providedId = $selfData['id'] ?? $object['id'] ?? null;
+            // Accept any non-empty string as ID, prioritize CSV 'id' column over @self.id
+            $providedId = $object['id'] ?? $selfData['id'] ?? null;
+            error_log("[SaveObjects] Processing object - @self.id = " . ($selfData['id'] ?? 'null') . ", object.id = " . ($object['id'] ?? 'null') . ", providedId = " . ($providedId ?? 'null'));
             if ($providedId && !empty(trim($providedId))) {
                 // Accept any non-empty string as identifier
                 $selfData['uuid'] = $providedId;
+                $selfData['id'] = $providedId; // Also set in @self for consistency
+                error_log("[SaveObjects] Using provided ID as UUID: " . $providedId);
             } else {
                 // No ID provided or empty - generate new UUID
                 $selfData['uuid'] = Uuid::v4()->toRfc4122();
+                $selfData['id'] = $selfData['uuid']; // Set @self.id to generated UUID
+                error_log("[SaveObjects] Generated new UUID: " . $selfData['uuid']);
             }
             
             // CRITICAL FIX: Use register and schema from method parameters if not provided in object data

@@ -667,7 +667,20 @@ class ObjectService
         $tempObject = new ObjectEntity();
         $tempObject->setRegister($this->currentRegister->getId());
         $tempObject->setSchema($this->currentSchema->getId());
-        $tempObject->setUuid(Uuid::v4()->toRfc4122());
+        
+        // Check if an ID is provided in the object data before generating new UUID
+        $providedId = null;
+        if (is_array($object)) {
+            $providedId = $object['@self']['id'] ?? $object['id'] ?? null;
+        }
+        
+        if ($providedId && !empty(trim($providedId))) {
+            // Use provided ID as UUID
+            $tempObject->setUuid($providedId);
+        } else {
+            // Generate new UUID if no ID provided
+            $tempObject->setUuid(Uuid::v4()->toRfc4122());
+        }
 
         // Set organisation from active organisation (always respect user's active organisation)
         $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
@@ -1079,6 +1092,14 @@ class ObjectService
 
             $object = $object->getObject();
             // Get the object data array
+        }
+
+        // Check if an ID is provided in the object data and use it as UUID if no UUID was explicitly passed
+        if ($uuid === null && is_array($object)) {
+            $providedId = $object['@self']['id'] ?? $object['id'] ?? null;
+            if ($providedId && !empty(trim($providedId))) {
+                $uuid = $providedId;
+            }
         }
 
         // Determine if this is a CREATE or UPDATE operation and check permissions
