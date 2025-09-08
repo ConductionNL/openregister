@@ -871,6 +871,7 @@ class Schema extends Entity implements JsonSerializable
             'allowedTags',
             'unique',
             'facetCacheTtl',
+            'autoPublish',
         ];
 
         foreach ($configuration as $key => $value) {
@@ -896,6 +897,15 @@ class Schema extends Entity implements JsonSerializable
                     // This should be a boolean
                     if ($value !== null && !is_bool($value)) {
                         throw new \InvalidArgumentException("Configuration 'allowFiles' must be a boolean or null");
+                    }
+
+                    $validatedConfig[$key] = $value;
+                    break;
+
+                case 'autoPublish':
+                    // This should be a boolean
+                    if ($value !== null && !is_bool($value)) {
+                        throw new \InvalidArgumentException("Configuration 'autoPublish' must be a boolean or null");
                     }
 
                     $validatedConfig[$key] = $value;
