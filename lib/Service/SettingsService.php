@@ -275,6 +275,41 @@ class SettingsService
                 ];
             }//end if
 
+            // SOLR Search Configuration
+            $solrConfig = $this->config->getValueString($this->appName, 'solr', '');
+            if (empty($solrConfig)) {
+                $data['solr'] = [
+                    'enabled'        => false,
+                    'host'           => 'localhost',
+                    'port'           => 8983,
+                    'path'           => '/solr',
+                    'core'           => 'openregister',
+                    'scheme'         => 'http',
+                    'username'       => '',
+                    'password'       => '',
+                    'timeout'        => 30,
+                    'autoCommit'     => true,
+                    'commitWithin'   => 1000,
+                    'enableLogging'  => true,
+                ];
+            } else {
+                $solrData     = json_decode($solrConfig, true);
+                $data['solr'] = [
+                    'enabled'        => $solrData['enabled'] ?? false,
+                    'host'           => $solrData['host'] ?? 'localhost',
+                    'port'           => $solrData['port'] ?? 8983,
+                    'path'           => $solrData['path'] ?? '/solr',
+                    'core'           => $solrData['core'] ?? 'openregister',
+                    'scheme'         => $solrData['scheme'] ?? 'http',
+                    'username'       => $solrData['username'] ?? '',
+                    'password'       => $solrData['password'] ?? '',
+                    'timeout'        => $solrData['timeout'] ?? 30,
+                    'autoCommit'     => $solrData['autoCommit'] ?? true,
+                    'commitWithin'   => $solrData['commitWithin'] ?? 1000,
+                    'enableLogging'  => $solrData['enableLogging'] ?? true,
+                ];
+            }//end if
+
             return $data;
         } catch (\Exception $e) {
             throw new \RuntimeException('Failed to retrieve settings: '.$e->getMessage());
@@ -400,6 +435,26 @@ class SettingsService
                     'deleteLogRetention'     => $retentionData['deleteLogRetention'] ?? 2592000000,
                 ];
                 $this->config->setValueString($this->appName, 'retention', json_encode($retentionConfig));
+            }
+
+            // Handle SOLR settings
+            if (isset($data['solr'])) {
+                $solrData   = $data['solr'];
+                $solrConfig = [
+                    'enabled'        => $solrData['enabled'] ?? false,
+                    'host'           => $solrData['host'] ?? 'localhost',
+                    'port'           => (int) ($solrData['port'] ?? 8983),
+                    'path'           => $solrData['path'] ?? '/solr',
+                    'core'           => $solrData['core'] ?? 'openregister',
+                    'scheme'         => $solrData['scheme'] ?? 'http',
+                    'username'       => $solrData['username'] ?? '',
+                    'password'       => $solrData['password'] ?? '',
+                    'timeout'        => (int) ($solrData['timeout'] ?? 30),
+                    'autoCommit'     => $solrData['autoCommit'] ?? true,
+                    'commitWithin'   => (int) ($solrData['commitWithin'] ?? 1000),
+                    'enableLogging'  => $solrData['enableLogging'] ?? true,
+                ];
+                $this->config->setValueString($this->appName, 'solr', json_encode($solrConfig));
             }
 
             // Return the updated settings
@@ -1106,6 +1161,150 @@ class SettingsService
             ];
         }
     }
+
+
+    /**
+     * Get SOLR configuration settings
+     *
+     * @return array SOLR configuration array
+     *
+     * @throws \RuntimeException If SOLR settings retrieval fails
+     */
+    public function getSolrSettings(): array
+    {
+        try {
+            $solrConfig = $this->config->getValueString($this->appName, 'solr', '');
+            if (empty($solrConfig)) {
+                return [
+                    'enabled'        => false,
+                    'host'           => 'localhost',
+                    'port'           => 8983,
+                    'path'           => '/solr',
+                    'core'           => 'openregister',
+                    'scheme'         => 'http',
+                    'username'       => '',
+                    'password'       => '',
+                    'timeout'        => 30,
+                    'autoCommit'     => true,
+                    'commitWithin'   => 1000,
+                    'enableLogging'  => true,
+                ];
+            }
+
+            return json_decode($solrConfig, true);
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to retrieve SOLR settings: '.$e->getMessage());
+        }
+
+    }//end getSolrSettings()
+
+
+    /**
+     * Test SOLR connection with current settings
+     *
+     * @return array Connection test results with status and details
+     */
+    public function testSolrConnection(): array
+    {
+        try {
+            $solrSettings = $this->getSolrSettings();
+            
+            if (!$solrSettings['enabled']) {
+                return [
+                    'success' => false,
+                    'message' => 'SOLR is disabled in settings',
+                    'details' => []
+                ];
+            }
+
+            // Build SOLR URL
+            $baseUrl = sprintf(
+                '%s://%s:%d%s/%s',
+                $solrSettings['scheme'],
+                $solrSettings['host'],
+                $solrSettings['port'],
+                $solrSettings['path'],
+                $solrSettings['core']
+            );
+
+            // Test ping endpoint
+            $pingUrl = $baseUrl . '/admin/ping';
+            
+            // Create HTTP context with timeout
+            $context = stream_context_create([
+                'http' => [
+                    'method'  => 'GET',
+                    'timeout' => $solrSettings['timeout'],
+                    'header'  => [
+                        'Accept: application/json',
+                        'Content-Type: application/json'
+                    ]
+                ]
+            ]);
+
+            // Add authentication if configured
+            if (!empty($solrSettings['username']) && !empty($solrSettings['password'])) {
+                $auth = base64_encode($solrSettings['username'] . ':' . $solrSettings['password']);
+                $context['http']['header'][] = 'Authorization: Basic ' . $auth;
+            }
+
+            // Attempt connection
+            $startTime = microtime(true);
+            $response = @file_get_contents($pingUrl, false, $context);
+            $responseTime = (microtime(true) - $startTime) * 1000; // Convert to milliseconds
+            
+            if ($response === false) {
+                return [
+                    'success' => false,
+                    'message' => 'Failed to connect to SOLR server',
+                    'details' => [
+                        'url' => $pingUrl,
+                        'timeout' => $solrSettings['timeout'],
+                        'error' => error_get_last()['message'] ?? 'Unknown connection error'
+                    ]
+                ];
+            }
+
+            // Parse response
+            $data = json_decode($response, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return [
+                    'success' => false,
+                    'message' => 'Invalid JSON response from SOLR',
+                    'details' => [
+                        'response' => substr($response, 0, 500),
+                        'json_error' => json_last_error_msg()
+                    ]
+                ];
+            }
+
+            // Check if ping was successful
+            $isHealthy = isset($data['status']) && $data['status'] === 'OK';
+            
+            return [
+                'success' => $isHealthy,
+                'message' => $isHealthy ? 'SOLR connection successful' : 'SOLR ping failed',
+                'details' => [
+                    'url' => $pingUrl,
+                    'response_time_ms' => round($responseTime, 2),
+                    'status' => $data['status'] ?? 'unknown',
+                    'core_status' => $data['core'] ?? null,
+                    'solr_version' => $data['responseHeader']['zkConnected'] ?? null
+                ]
+            ];
+
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'SOLR connection test failed with exception',
+                'details' => [
+                    'exception' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]
+            ];
+        }
+
+    }//end testSolrConnection()
 
 
 }//end class
