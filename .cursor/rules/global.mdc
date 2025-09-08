@@ -78,7 +78,71 @@ curl -u 'admin:admin' \
      'http://localhost/index.php/apps/openregister/api/search-trails/statistics'
 ```
 
-We alwasy test first form the command line, but when the test is completed we should create a newman test in order to protect the functionality against feuture changes. 
+We alwasy test first form the command line, but when the test is completed we should create a newman test in order to protect the functionality against feuture changes.
+
+### Testing Bulk Import Functionality
+
+**Test Normal Object Creation:**
+```bash
+# Test single object creation to verify API is working
+docker exec -u 33 master-nextcloud-1 curl -s -u 'admin:admin' \
+  -X POST \
+  -H 'Content-Type: application/json' \
+  -H 'OCS-APIREQUEST: true' \
+  'http://localhost/index.php/apps/openregister/api/objects/19/105' \
+  -d '{
+    "naam": "Test Organisation",
+    "website": "https://test.example.com",
+    "type": "Test"
+  }' | jq -r '{uuid: .id, name: .naam, published: ."@self".published}'
+```
+
+**Test Bulk Import with organisatie.csv:**
+```bash
+# Get object count before import
+before_count=$(docker exec -u 33 master-nextcloud-1 curl -s -u 'admin:admin' \
+  -H 'Content-Type: application/json' \
+  'http://localhost/index.php/apps/openregister/api/objects?register=19&schema=105' | jq -r '.total // 0')
+echo "Objects before: $before_count"
+
+# Perform bulk import using repository CSV file
+docker exec -u 33 master-nextcloud-1 curl -s -u 'admin:admin' \
+  -X POST \
+  -H 'OCS-APIREQUEST: true' \
+  'http://localhost/index.php/apps/openregister/api/import/19/105' \
+  -F "file=@/var/www/html/apps-extra/openregister/lib/Settings/organisatie.csv"
+
+# Check object count after import
+after_count=$(docker exec -u 33 master-nextcloud-1 curl -s -u 'admin:admin' \
+  -H 'Content-Type: application/json' \
+  'http://localhost/index.php/apps/openregister/api/objects?register=19&schema=105' | jq -r '.total // 0')
+echo "Objects after: $after_count"
+echo "Imported: $(($after_count - $before_count))"
+```
+
+**Verify Import in Database:**
+```bash
+# Check if objects were actually saved to database
+docker exec -u 33 master-nextcloud-1 mysql -h master-database-mysql-1 -u nextcloud -pnextcloud nextcloud -e "
+SELECT COUNT(*) as total_objects 
+FROM oc_openregister_objects 
+WHERE register = 19 AND schema = 105;
+"
+
+# Check recent objects with auto-publish status
+docker exec -u 33 master-nextcloud-1 mysql -h master-database-mysql-1 -u nextcloud -pnextcloud nextcloud -e "
+SELECT 
+    LEFT(id, 8) as short_id,
+    name,
+    published IS NOT NULL as auto_published,
+    created,
+    published
+FROM oc_openregister_objects 
+WHERE register = 19 AND schema = 105 
+ORDER BY created DESC 
+LIMIT 5;
+"
+``` 
 
 ### Debugging API Endpoint Issues
 
@@ -134,14 +198,75 @@ public function statistics(): JSONResponse
 }
 ```
 
-#### 5. Test Database Connectivity
-Verify database queries work properly:
+#### 5. Database Configuration & Testing
+
+**Get Database Configuration from Nextcloud:**
 ```bash
-# Test database connection in container (replace 'master-nextcloud-1' with your container name)
+# Extract database configuration from Nextcloud config
+docker exec -u 33 master-nextcloud-1 php -r "
+\$config = include '/var/www/html/config/config.php';
+echo 'DB_HOST=' . \$config['dbhost'] . PHP_EOL;
+echo 'DB_NAME=' . \$config['dbname'] . PHP_EOL;  
+echo 'DB_USER=' . \$config['dbuser'] . PHP_EOL;
+echo 'DB_PASSWORD=' . \$config['dbpassword'] . PHP_EOL;
+echo 'DB_PREFIX=' . (\$config['dbtableprefix'] ?? 'oc_') . PHP_EOL;
+"
+```
+
+**Common Docker Development Setup:**
+```bash
+# Typical development database configuration:
+DB_HOST=master-database-mysql-1
+DB_NAME=nextcloud
+DB_USER=nextcloud
+DB_PASSWORD=nextcloud
+DB_PREFIX=oc_
+
+# OpenRegister specific tables:
+# - oc_openregister_objects
+# - oc_openregister_schemas  
+# - oc_openregister_registers
+# - oc_openregister_sources
+# - oc_openregister_organisations
+```
+
+**Direct Database Access:**
+```bash
+# Connect to database directly from container
+docker exec -u 33 master-nextcloud-1 mysql -h master-database-mysql-1 -u nextcloud -pnextcloud nextcloud
+
+# Query object counts by register/schema
+docker exec -u 33 master-nextcloud-1 mysql -h master-database-mysql-1 -u nextcloud -pnextcloud nextcloud -e "
+SELECT 
+    register,
+    schema,
+    COUNT(*) as count 
+FROM oc_openregister_objects 
+GROUP BY register, schema 
+ORDER BY register, schema;
+"
+
+# Check for recently created objects
+docker exec -u 33 master-nextcloud-1 mysql -h master-database-mysql-1 -u nextcloud -pnextcloud nextcloud -e "
+SELECT 
+    id,
+    name,
+    published,
+    created 
+FROM oc_openregister_objects 
+WHERE register = 19 AND schema = 105 
+ORDER BY created DESC 
+LIMIT 10;
+"
+```
+
+**Test Database Connectivity:**
+```bash
+# Test database connection and query
 docker exec -u 33 master-nextcloud-1 php -r "
 \$config = include '/var/www/html/config/config.php';
 \$pdo = new PDO('mysql:host=' . \$config['dbhost'] . ';dbname=' . \$config['dbname'], \$config['dbuser'], \$config['dbpassword']);
-var_dump(\$pdo->query('SELECT COUNT(*) FROM oc_search_trails')->fetchColumn());
+var_dump(\$pdo->query('SELECT COUNT(*) FROM oc_openregister_objects')->fetchColumn());
 "
 ```
 
