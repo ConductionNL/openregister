@@ -1104,12 +1104,12 @@ class SaveObjects
                     $object['slug'] = $tempEntity->getSlug(); // TOP LEVEL for bulk SQL
                 }
                 if ($tempEntity->getPublished() !== null) {
-                    $publishedFormatted = $tempEntity->getPublished()->format('Y-m-d H:i:s');
+                    $publishedFormatted = $tempEntity->getPublished()->format('c');
                     $selfData['published'] = $publishedFormatted;
                     $object['published'] = $publishedFormatted; // TOP LEVEL for bulk SQL
                 }
                 if ($tempEntity->getDepublished() !== null) {
-                    $depublishedFormatted = $tempEntity->getDepublished()->format('Y-m-d H:i:s');
+                    $depublishedFormatted = $tempEntity->getDepublished()->format('c');
                     $selfData['depublished'] = $depublishedFormatted;
                     $object['depublished'] = $depublishedFormatted; // TOP LEVEL for bulk SQL
                 }
@@ -1214,7 +1214,7 @@ class SaveObjects
         }
         
         $now = new \DateTime();
-        $nowString = $now->format('Y-m-d H:i:s');
+        $nowString = $now->format('c');
         
         // PERFORMANCE OPTIMIZATION: Process all objects with pre-calculated values
         $preparedObjects = [];
@@ -1285,12 +1285,12 @@ class SaveObjects
                     $object['slug'] = $tempEntity->getSlug(); // TOP LEVEL for bulk SQL
                 }
                 if ($tempEntity->getPublished() !== null) {
-                    $publishedFormatted = $tempEntity->getPublished()->format('Y-m-d H:i:s');
+                    $publishedFormatted = $tempEntity->getPublished()->format('c');
                     $selfData['published'] = $publishedFormatted;
                     $object['published'] = $publishedFormatted; // TOP LEVEL for bulk SQL
                 }
                 if ($tempEntity->getDepublished() !== null) {
-                    $depublishedFormatted = $tempEntity->getDepublished()->format('Y-m-d H:i:s');
+                    $depublishedFormatted = $tempEntity->getDepublished()->format('c');
                     $selfData['depublished'] = $depublishedFormatted;
                     $object['depublished'] = $depublishedFormatted; // TOP LEVEL for bulk SQL
                 }
@@ -1427,10 +1427,10 @@ class SaveObjects
                     $objData['slug'] = $tempEntity->getSlug();
                 }
                 if ($tempEntity->getPublished() !== null) {
-                    $objData['published'] = $tempEntity->getPublished()->format('Y-m-d H:i:s');
+                    $objData['published'] = $tempEntity->getPublished()->format('c');
                 }
                 if ($tempEntity->getDepublished() !== null) {
-                    $objData['depublished'] = $tempEntity->getDepublished()->format('Y-m-d H:i:s');
+                    $objData['depublished'] = $tempEntity->getDepublished()->format('c');
                 }
             }
         }
@@ -2014,8 +2014,8 @@ class SaveObjects
                 }
             }
             
-            $selfData['created'] = $selfData['created'] ?? $now->format('Y-m-d H:i:s');
-            $selfData['updated'] = $selfData['updated'] ?? $now->format('Y-m-d H:i:s');
+            $selfData['created'] = $selfData['created'] ?? $now->format('c');
+            $selfData['updated'] = $selfData['updated'] ?? $now->format('c');
             
             // METADATA EXTRACTION: Skip redundant extraction as prepareSingleSchemaObjectsOptimized already handles this
             // with enhanced twig-like concatenation support. This redundant extraction was overwriting the
