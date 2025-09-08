@@ -731,6 +731,7 @@ class SettingsService
      *
      * Provides detailed insights into cache usage, performance, memory consumption,
      * hit/miss rates, and per-user cache statistics for admin monitoring.
+     * Now includes object name cache statistics for enhanced monitoring.
      *
      * @return array Comprehensive cache statistics
      * @throws \RuntimeException If cache statistics retrieval fails
@@ -738,6 +739,9 @@ class SettingsService
     public function getCacheStats(): array
     {
         try {
+            // Get all cache service stats including object names
+            $objectStats = $this->objectCacheService->getStats();
+            
             $stats = [
                 'overview' => [
                     'totalCacheSize' => 0,
@@ -747,9 +751,17 @@ class SettingsService
                     'cacheEfficiency' => 0.0,
                 ],
                 'services' => [
-                    'object' => $this->objectCacheService->getStats(),
-                    'schema' => $this->schemaCacheService->getStats(),
-                    'facet' => $this->schemaFacetCacheService->getStats(),
+                    'object' => $objectStats,
+                    'schema' => $this->schemaCacheService->getCacheStatistics(),
+                    'facet' => $this->schemaFacetCacheService->getCacheStatistics(),
+                ],
+                'names' => [
+                    'cache_size' => $objectStats['name_cache_size'] ?? 0,
+                    'hit_rate' => $objectStats['name_hit_rate'] ?? 0.0,
+                    'hits' => $objectStats['name_hits'] ?? 0,
+                    'misses' => $objectStats['name_misses'] ?? 0,
+                    'warmups' => $objectStats['name_warmups'] ?? 0,
+                    'enabled' => true,
                 ],
                 'distributed' => $this->getDistributedCacheStats(),
                 'performance' => $this->getCachePerformanceMetrics(),
@@ -768,6 +780,11 @@ class SettingsService
                 $totalRequests += $serviceStats['requests'] ?? 0;
                 $totalSize += $serviceStats['memoryUsage'] ?? 0;
             }
+
+            // Include name cache stats in totals
+            $totalEntries += $stats['names']['cache_size'];
+            $totalHits += $stats['names']['hits'];
+            $totalRequests += ($stats['names']['hits'] + $stats['names']['misses']);
 
             $stats['overview']['totalCacheEntries'] = $totalEntries;
             $stats['overview']['totalCacheSize'] = $totalSize;
@@ -827,7 +844,7 @@ class SettingsService
     /**
      * Clear cache with granular control
      *
-     * @param string      $type     Cache type: 'all', 'object', 'schema', 'facet', 'distributed'
+     * @param string      $type     Cache type: 'all', 'object', 'schema', 'facet', 'distributed', 'names'
      * @param string|null $userId   Specific user ID to clear cache for (if supported)
      * @param array       $options  Additional options for cache clearing
      *
@@ -852,6 +869,7 @@ class SettingsService
                     $results['results']['schema'] = $this->clearSchemaCache($userId);
                     $results['results']['facet'] = $this->clearFacetCache($userId);
                     $results['results']['distributed'] = $this->clearDistributedCache($userId);
+                    $results['results']['names'] = $this->clearNamesCache();
                     break;
 
                 case 'object':
@@ -868,6 +886,10 @@ class SettingsService
 
                 case 'distributed':
                     $results['results']['distributed'] = $this->clearDistributedCache($userId);
+                    break;
+
+                case 'names':
+                    $results['results']['names'] = $this->clearNamesCache();
                     break;
 
                 default:
@@ -917,6 +939,85 @@ class SettingsService
     }
 
     /**
+     * Clear object names cache specifically
+     *
+     * @return array Clear operation results
+     */
+    private function clearNamesCache(): array
+    {
+        try {
+            $beforeStats = $this->objectCacheService->getStats();
+            $beforeNameCacheSize = $beforeStats['name_cache_size'] ?? 0;
+            
+            $this->objectCacheService->clearNameCache();
+            
+            $afterStats = $this->objectCacheService->getStats();
+            $afterNameCacheSize = $afterStats['name_cache_size'] ?? 0;
+
+            return [
+                'service' => 'names',
+                'cleared' => $beforeNameCacheSize - $afterNameCacheSize,
+                'before' => [
+                    'name_cache_size' => $beforeNameCacheSize,
+                    'name_hits' => $beforeStats['name_hits'] ?? 0,
+                    'name_misses' => $beforeStats['name_misses'] ?? 0,
+                ],
+                'after' => [
+                    'name_cache_size' => $afterNameCacheSize,
+                    'name_hits' => $afterStats['name_hits'] ?? 0,
+                    'name_misses' => $afterStats['name_misses'] ?? 0,
+                ],
+                'success' => true,
+            ];
+        } catch (\Exception $e) {
+            return [
+                'service' => 'names',
+                'cleared' => 0,
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Warmup object names cache manually
+     *
+     * @return array Warmup operation results
+     */
+    public function warmupNamesCache(): array
+    {
+        try {
+            $startTime = microtime(true);
+            $beforeStats = $this->objectCacheService->getStats();
+            
+            $loadedCount = $this->objectCacheService->warmupNameCache();
+            
+            $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+            $afterStats = $this->objectCacheService->getStats();
+
+            return [
+                'success' => true,
+                'loaded_names' => $loadedCount,
+                'execution_time' => $executionTime . 'ms',
+                'before' => [
+                    'name_cache_size' => $beforeStats['name_cache_size'] ?? 0,
+                    'name_warmups' => $beforeStats['name_warmups'] ?? 0,
+                ],
+                'after' => [
+                    'name_cache_size' => $afterStats['name_cache_size'] ?? 0,
+                    'name_warmups' => $afterStats['name_warmups'] ?? 0,
+                ],
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => 'Cache warmup failed: ' . $e->getMessage(),
+                'loaded_names' => 0,
+            ];
+        }
+    }
+
+    /**
      * Clear schema cache service
      *
      * @param string|null $userId Specific user ID
@@ -926,9 +1027,9 @@ class SettingsService
     private function clearSchemaCache(?string $userId = null): array
     {
         try {
-            $beforeStats = $this->schemaCacheService->getStats();
-            $this->schemaCacheService->clearCache();
-            $afterStats = $this->schemaCacheService->getStats();
+            $beforeStats = $this->schemaCacheService->getCacheStatistics();
+            $this->schemaCacheService->clearAllCaches();
+            $afterStats = $this->schemaCacheService->getCacheStatistics();
 
             return [
                 'service' => 'schema',
@@ -957,9 +1058,9 @@ class SettingsService
     private function clearFacetCache(?string $userId = null): array
     {
         try {
-            $beforeStats = $this->schemaFacetCacheService->getStats();
-            $this->schemaFacetCacheService->clearCache();
-            $afterStats = $this->schemaFacetCacheService->getStats();
+            $beforeStats = $this->schemaFacetCacheService->getCacheStatistics();
+            $this->schemaFacetCacheService->clearAllCaches();
+            $afterStats = $this->schemaFacetCacheService->getCacheStatistics();
 
             return [
                 'service' => 'facet',

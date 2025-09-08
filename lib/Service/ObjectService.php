@@ -2503,6 +2503,15 @@ class ObjectService
             'limit'   => $limit,
             'offset'  => $offset,
         ];
+        
+        // **RELATED DATA EXTRACTION**: Support for _related and _relatedNames query parameters
+        $includeRelated = filter_var($query['_related'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $includeRelatedNames = filter_var($query['_relatedNames'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        
+        if ($includeRelated || $includeRelatedNames) {
+            $relatedData = $this->extractRelatedData($results, $includeRelated, $includeRelatedNames);
+            $paginatedResults = array_merge($paginatedResults, $relatedData);
+        }
 
         // **PERFORMANCE OPTIMIZATION**: Only add facets if explicitly requested (empty facets object for backward compatibility)
         $paginatedResults['facets'] = ['facets' => []];
@@ -4533,6 +4542,80 @@ class ObjectService
         }//end try
 
     }//end createRelatedObject()
+
+
+    /**
+     * Extract related data for frontend optimization
+     *
+     * Processes search results to extract related object IDs and their names
+     * for efficient frontend rendering without additional API calls.
+     *
+     * @param array $results           Array of search results
+     * @param bool  $includeRelated    Whether to include aggregated related IDs
+     * @param bool  $includeRelatedNames Whether to include related ID => name mappings
+     *
+     * @return array Related data to merge with paginated results
+     */
+    private function extractRelatedData(array $results, bool $includeRelated, bool $includeRelatedNames): array
+    {
+        $startTime = microtime(true);
+        $relatedData = [];
+        
+        if (empty($results)) {
+            return $relatedData;
+        }
+        
+        $allRelatedIds = [];
+        
+        // Extract all related IDs from result objects
+        foreach ($results as $result) {
+            if (!$result instanceof ObjectEntity) {
+                continue;
+            }
+            
+            $objectData = $result->getObject();
+            
+            // Look for relationship fields in the object data
+            foreach ($objectData as $key => $value) {
+                if (is_array($value)) {
+                    // Handle array of IDs
+                    foreach ($value as $relatedId) {
+                        if (is_string($relatedId) && $this->isUuid($relatedId)) {
+                            $allRelatedIds[] = $relatedId;
+                        }
+                    }
+                } elseif (is_string($value) && $this->isUuid($value)) {
+                    // Handle single ID
+                    $allRelatedIds[] = $value;
+                }
+            }
+        }
+        
+        // Remove duplicates and filter valid UUIDs
+        $allRelatedIds = array_unique($allRelatedIds);
+        
+        if ($includeRelated) {
+            $relatedData['related'] = array_values($allRelatedIds);
+        }
+        
+        if ($includeRelatedNames && !empty($allRelatedIds)) {
+            // Get names for all related objects using the object cache service
+            $relatedNames = $this->objectCacheService->getMultipleObjectNames($allRelatedIds);
+            $relatedData['relatedNames'] = $relatedNames;
+        }
+        
+        $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+        
+        $this->logger->debug('🔗 RELATED DATA EXTRACTED', [
+            'related_ids_found' => count($allRelatedIds),
+            'include_related' => $includeRelated,
+            'include_related_names' => $includeRelatedNames,
+            'execution_time' => $executionTime . 'ms'
+        ]);
+        
+        return $relatedData;
+
+    }//end extractRelatedData()
 
 
     /**
