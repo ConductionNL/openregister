@@ -345,4 +345,245 @@ class SettingsController extends Controller
     }//end testSolrConnection()
 
 
+    /**
+     * Get SOLR settings only
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse SOLR configuration
+     */
+    public function getSolrSettings(): JSONResponse
+    {
+        try {
+            $data = $this->settingsService->getSolrSettingsOnly();
+            return new JSONResponse($data);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Update SOLR settings only
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Updated SOLR configuration
+     */
+    public function updateSolrSettings(): JSONResponse
+    {
+        try {
+            $data = $this->request->getParams();
+            $result = $this->settingsService->updateSolrSettingsOnly($data);
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Warmup SOLR index
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Warmup operation results
+     */
+    public function warmupSolrIndex(): JSONResponse
+    {
+        try {
+            $result = $this->settingsService->warmupSolrIndex();
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get comprehensive SOLR dashboard statistics
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse SOLR dashboard metrics and statistics
+     */
+    public function getSolrDashboardStats(): JSONResponse
+    {
+        try {
+            $stats = $this->settingsService->getSolrDashboardStats();
+            return new JSONResponse($stats);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Perform SOLR management operations
+     *
+     * @param string $operation Operation to perform (commit, optimize, clear)
+     *
+     * @return JSONResponse Operation results
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function manageSolr(string $operation): JSONResponse
+    {
+        try {
+            $result = $this->settingsService->manageSolr($operation);
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Test SOLR connection and get status
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Connection test results
+     */
+    public function testSolrConnection(): JSONResponse
+    {
+        try {
+            $result = $this->settingsService->testSolrConnection();
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get RBAC settings only
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse RBAC configuration
+     */
+    public function getRbacSettings(): JSONResponse
+    {
+        try {
+            $data = $this->settingsService->getRbacSettingsOnly();
+            return new JSONResponse($data);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Update RBAC settings only
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Updated RBAC configuration
+     */
+    public function updateRbacSettings(): JSONResponse
+    {
+        try {
+            $data = $this->request->getParams();
+            $result = $this->settingsService->updateRbacSettingsOnly($data);
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get Multitenancy settings only
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Multitenancy configuration
+     */
+    public function getMultitenancySettings(): JSONResponse
+    {
+        try {
+            $data = $this->settingsService->getMultitenancySettingsOnly();
+            return new JSONResponse($data);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Update Multitenancy settings only
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Updated Multitenancy configuration
+     */
+    public function updateMultitenancySettings(): JSONResponse
+    {
+        try {
+            $data = $this->request->getParams();
+            $result = $this->settingsService->updateMultitenancySettingsOnly($data);
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get Retention settings only
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Retention configuration
+     */
+    public function getRetentionSettings(): JSONResponse
+    {
+        try {
+            $data = $this->settingsService->getRetentionSettingsOnly();
+            return new JSONResponse($data);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Update Retention settings only
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Updated Retention configuration
+     */
+    public function updateRetentionSettings(): JSONResponse
+    {
+        try {
+            $data = $this->request->getParams();
+            $result = $this->settingsService->updateRetentionSettingsOnly($data);
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get version information only
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Version information
+     */
+    public function getVersionInfo(): JSONResponse
+    {
+        try {
+            $data = $this->settingsService->getVersionInfoOnly();
+            return new JSONResponse($data);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+
 }//end class
