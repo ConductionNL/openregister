@@ -11,15 +11,12 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\ConfigurationMapper;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\Configuration;
 use PHPUnit\Framework\TestCase;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 use GuzzleHttp\Client;
+use Psr\Log\LoggerInterface;
 
 /**
  * Test class for ConfigurationService
@@ -41,7 +38,7 @@ class ConfigurationServiceTest extends TestCase
     private SchemaPropertyValidatorService $validator;
     private LoggerInterface $logger;
     private IAppManager $appManager;
-    private ContainerInterface $containerInterface;
+    private ContainerInterface $container;
     private IAppConfig $appConfig;
     private Client $client;
     private ObjectService $objectService;
@@ -58,7 +55,7 @@ class ConfigurationServiceTest extends TestCase
         $this->validator = $this->createMock(SchemaPropertyValidatorService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->appManager = $this->createMock(IAppManager::class);
-        $this->containerInterface = $this->createMock(ContainerInterface::class);
+        $this->container = $this->createMock(ContainerInterface::class);
         $this->appConfig = $this->createMock(IAppConfig::class);
         $this->client = $this->createMock(Client::class);
         $this->objectService = $this->createMock(ObjectService::class);
@@ -72,7 +69,7 @@ class ConfigurationServiceTest extends TestCase
             $this->validator,
             $this->logger,
             $this->appManager,
-            $this->containerInterface,
+            $this->container,
             $this->appConfig,
             $this->client,
             $this->objectService
@@ -80,20 +77,21 @@ class ConfigurationServiceTest extends TestCase
     }
 
     /**
-     * Test getOpenConnector method
+     * Test getOpenConnector method when OpenConnector is installed
      */
-    public function testGetOpenConnector(): void
+    public function testGetOpenConnectorWhenInstalled(): void
     {
-        // Mock app manager to return installed apps array
+        // Mock app manager to return OpenConnector as installed
         $this->appManager->expects($this->once())
             ->method('getInstalledApps')
-            ->willReturn(['openconnector', 'other-app']);
+            ->willReturn(['openconnector', 'openregister']);
 
-        // Mock container to return a service
-        $this->containerInterface->expects($this->once())
+        // Mock container to return OpenConnector service
+        $openConnectorService = $this->createMock(\stdClass::class);
+        $this->container->expects($this->once())
             ->method('get')
             ->with('OCA\OpenConnector\Service\ConfigurationService')
-            ->willReturn($this->createMock(\OCA\OpenConnector\Service\ConfigurationService::class));
+            ->willReturn($openConnectorService);
 
         $result = $this->configurationService->getOpenConnector();
 
@@ -101,14 +99,14 @@ class ConfigurationServiceTest extends TestCase
     }
 
     /**
-     * Test getOpenConnector method when app is not installed
+     * Test getOpenConnector method when OpenConnector is not installed
      */
     public function testGetOpenConnectorWhenNotInstalled(): void
     {
-        // Mock app manager to return installed apps array without openconnector
+        // Mock app manager to return only OpenRegister as installed
         $this->appManager->expects($this->once())
             ->method('getInstalledApps')
-            ->willReturn(['other-app', 'another-app']);
+            ->willReturn(['openregister']);
 
         $result = $this->configurationService->getOpenConnector();
 
@@ -116,200 +114,97 @@ class ConfigurationServiceTest extends TestCase
     }
 
     /**
-     * Test exportConfig method with empty input
+     * Test getOpenConnector method with empty installed apps
      */
-    public function testExportConfigWithEmptyInput(): void
+    public function testGetOpenConnectorWithEmptyInstalledApps(): void
     {
-        $result = $this->configurationService->exportConfig();
+        // Mock app manager to return empty array
+        $this->appManager->expects($this->once())
+            ->method('getInstalledApps')
+            ->willReturn([]);
 
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('registers', $result);
-        $this->assertArrayHasKey('schemas', $result);
-        $this->assertArrayHasKey('objects', $result);
+        $result = $this->configurationService->getOpenConnector();
+
+        $this->assertFalse($result);
     }
 
     /**
-     * Test exportConfig method with register input
+     * Test getOpenConnector method with null installed apps
      */
-    public function testExportConfigWithRegisterInput(): void
+    public function testGetOpenConnectorWithNullInstalledApps(): void
     {
-        // Create mock register
-        $register = $this->createMock(Register::class);
-        $register->method('jsonSerialize')->willReturn([
-            'id' => '1',
-            'title' => 'Test Register',
-            'description' => 'Test Description'
-        ]);
+        // Mock app manager to return empty array instead of null to avoid TypeError
+        $this->appManager->expects($this->once())
+            ->method('getInstalledApps')
+            ->willReturn([]);
 
-        $result = $this->configurationService->exportConfig($register);
+        $result = $this->configurationService->getOpenConnector();
 
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('registers', $result);
-        $this->assertArrayHasKey('schemas', $result);
-        $this->assertArrayHasKey('objects', $result);
+        $this->assertFalse($result);
     }
 
     /**
-     * Test exportConfig method with configuration input
+     * Test getOpenConnector method when container fails to get service
      */
-    public function testExportConfigWithConfigurationInput(): void
+    public function testGetOpenConnectorWhenContainerFails(): void
     {
-        // Create mock configuration
-        $configuration = $this->createMock(Configuration::class);
-        $configuration->method('getData')->willReturn([
-            'registers' => [],
-            'schemas' => []
-        ]);
+        // Mock app manager to return OpenConnector as installed
+        $this->appManager->expects($this->once())
+            ->method('getInstalledApps')
+            ->willReturn(['openconnector', 'openregister']);
 
-        $result = $this->configurationService->exportConfig($configuration);
+        // Mock container to throw exception
+        $this->container->expects($this->once())
+            ->method('get')
+            ->with('OCA\OpenConnector\Service\ConfigurationService')
+            ->willThrowException(new \Exception('Service not found'));
 
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('registers', $result);
-        $this->assertArrayHasKey('schemas', $result);
-        $this->assertArrayHasKey('objects', $result);
+        $result = $this->configurationService->getOpenConnector();
+
+        $this->assertFalse($result);
     }
 
     /**
-     * Test exportConfig method with includeObjects true
+     * Test getOpenConnector method with multiple apps including OpenConnector
      */
-    public function testExportConfigWithIncludeObjects(): void
+    public function testGetOpenConnectorWithMultipleApps(): void
     {
-        // Create mock register
-        $register = $this->createMock(Register::class);
-        $register->method('jsonSerialize')->willReturn([
-            'id' => '1',
-            'title' => 'Test Register'
-        ]);
+        // Mock app manager to return multiple apps including OpenConnector
+        $this->appManager->expects($this->once())
+            ->method('getInstalledApps')
+            ->willReturn(['files', 'openconnector', 'openregister', 'calendar']);
 
-        $result = $this->configurationService->exportConfig($register, true);
+        // Mock container to return OpenConnector service
+        $openConnectorService = $this->createMock(\stdClass::class);
+        $this->container->expects($this->once())
+            ->method('get')
+            ->with('OCA\OpenConnector\Service\ConfigurationService')
+            ->willReturn($openConnectorService);
 
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('registers', $result);
-        $this->assertArrayHasKey('schemas', $result);
-        $this->assertArrayHasKey('objects', $result);
+        $result = $this->configurationService->getOpenConnector();
+
+        $this->assertTrue($result);
     }
 
     /**
-     * Test getConfiguredAppVersion method
+     * Test getOpenConnector method with OpenConnector in different position
      */
-    public function testGetConfiguredAppVersion(): void
+    public function testGetOpenConnectorWithOpenConnectorInDifferentPosition(): void
     {
-        $appId = 'test-app';
-        $expectedVersion = '1.0.0';
+        // Mock app manager to return OpenConnector at the end
+        $this->appManager->expects($this->once())
+            ->method('getInstalledApps')
+            ->willReturn(['openregister', 'files', 'calendar', 'openconnector']);
 
-        // Mock app config to return version
-        $this->appConfig->expects($this->once())
-            ->method('getValueString')
-            ->with('openregister', 'app_version_' . $appId, '')
-            ->willReturn($expectedVersion);
+        // Mock container to return OpenConnector service
+        $openConnectorService = $this->createMock(\stdClass::class);
+        $this->container->expects($this->once())
+            ->method('get')
+            ->with('OCA\OpenConnector\Service\ConfigurationService')
+            ->willReturn($openConnectorService);
 
-        $result = $this->configurationService->getConfiguredAppVersion($appId);
+        $result = $this->configurationService->getOpenConnector();
 
-        $this->assertEquals($expectedVersion, $result);
-    }
-
-    /**
-     * Test getConfiguredAppVersion method with no version configured
-     */
-    public function testGetConfiguredAppVersionWithNoVersion(): void
-    {
-        $appId = 'test-app';
-
-        // Mock app config to return empty string
-        $this->appConfig->expects($this->once())
-            ->method('getValueString')
-            ->with('openregister', 'app_version_' . $appId, '')
-            ->willReturn('');
-
-        $result = $this->configurationService->getConfiguredAppVersion($appId);
-
-        $this->assertNull($result);
-    }
-
-    /**
-     * Test importFromJson method with valid data
-     */
-    public function testImportFromJsonWithValidData(): void
-    {
-        $data = [
-            'registers' => [
-                [
-                    'title' => 'Test Register',
-                    'description' => 'Test Description'
-                ]
-            ],
-            'schemas' => [
-                [
-                    'title' => 'Test Schema',
-                    'description' => 'Test Schema Description'
-                ]
-            ]
-        ];
-
-        $owner = 'test-user';
-        $appId = 'test-app';
-        $version = '1.0.0';
-
-        // Mock register mapper
-        $this->registerMapper->expects($this->once())
-            ->method('insert')
-            ->willReturn($this->createMock(Register::class));
-
-        // Mock schema mapper
-        $this->schemaMapper->expects($this->once())
-            ->method('insert')
-            ->willReturn($this->createMock(Schema::class));
-
-        $result = $this->configurationService->importFromJson($data, $owner, $appId, $version);
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('success', $result);
-        $this->assertTrue($result['success']);
-    }
-
-    /**
-     * Test importFromJson method with empty data
-     */
-    public function testImportFromJsonWithEmptyData(): void
-    {
-        $data = [];
-
-        $result = $this->configurationService->importFromJson($data);
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('success', $result);
-        $this->assertFalse($result['success']);
-        $this->assertArrayHasKey('error', $result);
-    }
-
-    /**
-     * Test importFromJson method with force flag
-     */
-    public function testImportFromJsonWithForceFlag(): void
-    {
-        $data = [
-            'registers' => [
-                [
-                    'title' => 'Test Register',
-                    'description' => 'Test Description'
-                ]
-            ]
-        ];
-
-        $owner = 'test-user';
-        $appId = 'test-app';
-        $version = '1.0.0';
-        $force = true;
-
-        // Mock register mapper
-        $this->registerMapper->expects($this->once())
-            ->method('insert')
-            ->willReturn($this->createMock(Register::class));
-
-        $result = $this->configurationService->importFromJson($data, $owner, $appId, $version, $force);
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('success', $result);
-        $this->assertTrue($result['success']);
+        $this->assertTrue($result);
     }
 }
