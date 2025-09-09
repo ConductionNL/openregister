@@ -8,15 +8,38 @@ return [
         'Configurations' => ['url' => 'api/configurations'],
     ],
     'routes' => [
-        // Settings
+        // Settings - Legacy endpoints (kept for compatibility)
         ['name' => 'settings#index', 'url' => '/api/settings', 'verb' => 'GET'],
         ['name' => 'settings#update', 'url' => '/api/settings', 'verb' => 'PUT'],
         ['name' => 'settings#rebase', 'url' => '/api/settings/rebase', 'verb' => 'POST'],
         ['name' => 'settings#stats', 'url' => '/api/settings/stats', 'verb' => 'GET'],
+        
+        // Settings - Focused endpoints for better performance
+        ['name' => 'settings#getSolrSettings', 'url' => '/api/settings/solr', 'verb' => 'GET'],
+        ['name' => 'settings#updateSolrSettings', 'url' => '/api/settings/solr', 'verb' => 'PUT'],
+        ['name' => 'settings#testSolrConnection', 'url' => '/api/settings/solr/test', 'verb' => 'POST'],
+        ['name' => 'settings#warmupSolrIndex', 'url' => '/api/settings/solr/warmup', 'verb' => 'POST'],
+        
+        // SOLR Dashboard Management endpoints
+        ['name' => 'settings#getSolrDashboardStats', 'url' => '/api/solr/dashboard/stats', 'verb' => 'GET'],
+        ['name' => 'settings#manageSolr', 'url' => '/api/solr/manage/{operation}', 'verb' => 'POST'],
+        ['name' => 'settings#testSolrConnection', 'url' => '/api/solr/test', 'verb' => 'GET'],
+        
+        ['name' => 'settings#getRbacSettings', 'url' => '/api/settings/rbac', 'verb' => 'GET'],
+        ['name' => 'settings#updateRbacSettings', 'url' => '/api/settings/rbac', 'verb' => 'PUT'],
+        
+        ['name' => 'settings#getMultitenancySettings', 'url' => '/api/settings/multitenancy', 'verb' => 'GET'],
+        ['name' => 'settings#updateMultitenancySettings', 'url' => '/api/settings/multitenancy', 'verb' => 'PUT'],
+        
+        ['name' => 'settings#getRetentionSettings', 'url' => '/api/settings/retention', 'verb' => 'GET'],
+        ['name' => 'settings#updateRetentionSettings', 'url' => '/api/settings/retention', 'verb' => 'PUT'],
+        
+        ['name' => 'settings#getVersionInfo', 'url' => '/api/settings/version', 'verb' => 'GET'],
+        
+        // Cache management
         ['name' => 'settings#getCacheStats', 'url' => '/api/settings/cache', 'verb' => 'GET'],
         ['name' => 'settings#clearCache', 'url' => '/api/settings/cache', 'verb' => 'DELETE'],
         ['name' => 'settings#warmupNamesCache', 'url' => '/api/settings/cache/warmup-names', 'verb' => 'POST'],
-        ['name' => 'settings#testSolrConnection', 'url' => '/api/settings/solr/test', 'verb' => 'POST'],
         // Heartbeat - Keep-alive endpoint for long-running operations
         ['name' => 'heartbeat#heartbeat', 'url' => '/api/heartbeat', 'verb' => 'GET'],
         // Names - Ultra-fast object name lookup endpoints (specific routes first)

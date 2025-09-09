@@ -95,6 +95,44 @@ class ObjectsProvider implements IFilteringProvider
 
 
     /**
+     * Returns the unique identifier for this search provider
+     *
+     * @return string Unique identifier for the search provider
+     */
+    public function getId(): string
+    {
+        return 'openregister_objects';
+
+    }//end getId()
+
+
+    /**
+     * Returns the human-readable name for this search provider
+     *
+     * @return string Display name for the search provider
+     */
+    public function getName(): string
+    {
+        return $this->l10n->t('Open Register Objects');
+
+    }//end getName()
+
+
+    /**
+     * Returns the order/priority of this search provider
+     *
+     * Lower values appear first in search results
+     *
+     * @return int Order priority (0-100, lower = higher priority)
+     */
+    public function getOrder(): int
+    {
+        return 10;
+
+    }//end getOrder()
+
+
+    /**
      * Returns the list of supported filters for the search provider
      *
      * @return string[] List of supported filter names
