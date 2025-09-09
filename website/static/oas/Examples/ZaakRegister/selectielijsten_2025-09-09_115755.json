@@ -1,0 +1,119 @@
+{
+    "components": {
+        "mappings": [],
+        "sources": [],
+        "rules": [],
+        "endpoints": [],
+        "synchronizations": [],
+        "jobs": [],
+        "registers": {
+            "selectielijsten": {
+                "slug": "selectielijsten",
+                "title": "Selectielijsten",
+                "version": "0.0.2",
+                "description": "",
+                "schemas": [
+                    "procestype"
+                ],
+                "source": "",
+                "tablePrefix": "",
+                "folder": "",
+                "updated": "2025-06-11T08:44:42+00:00",
+                "created": "2025-06-11T08:43:59+00:00",
+                "owner": null,
+                "application": null,
+                "organisation": null,
+                "authorization": null,
+                "groups": null,
+                "deleted": null
+            }
+        },
+        "schemas": {
+            "procestype": {
+                "uri": null,
+                "slug": "procestype",
+                "title": "Procestype",
+                "description": "Procestype voor validatie van selectielijsten",
+                "version": "0.0.2",
+                "summary": "",
+                "icon": null,
+                "required": [
+                    "jaar",
+                    "naam",
+                    "nummer",
+                    "omschrijving",
+                    "procesobject",
+                    "toelichting",
+                    "url"
+                ],
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true,
+                        "title": "url"
+                    },
+                    "nummer": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": -2147483648,
+                        "title": "Procestypenummer",
+                        "description": "Nummer van de selectielijstcategorie"
+                    },
+                    "jaar": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": -2147483648,
+                        "description": "Het jaartal waartoe dit ProcesType behoort",
+                        "title": "jaar"
+                    },
+                    "naam": {
+                        "type": "string",
+                        "title": "Procestypenaam",
+                        "description": "Benaming van het procestype",
+                        "maxLength": 100
+                    },
+                    "omschrijving": {
+                        "type": "string",
+                        "title": "Procestypeomschrijving",
+                        "description": "Omschrijving van het procestype",
+                        "maxLength": 300
+                    },
+                    "toelichting": {
+                        "type": "string",
+                        "title": "Procestypetoelichting",
+                        "description": "Toelichting van het procestype"
+                    },
+                    "procesobject": {
+                        "type": "string",
+                        "description": "Object waar de uitvoering van het proces op van toepassing is en waarvan de bestaans- of geldigheidsduur eventueel van belang is bij het bepalen van de start van de bewaartermijn",
+                        "title": "procesobject",
+                        "maxLength": 80
+                    }
+                },
+                "archive": [],
+                "source": "",
+                "hardValidation": false,
+                "immutable": false,
+                "updated": "2025-06-11T08:44:28+00:00",
+                "created": "2025-06-11T08:44:28+00:00",
+                "maxDepth": 0,
+                "owner": null,
+                "application": null,
+                "organisation": null,
+                "groups": null,
+                "authorization": null,
+                "deleted": null,
+                "configuration": null
+            }
+        },
+        "objects": []
+    },
+    "openapi": "3.0.0",
+    "info": {
+        "id": 7,
+        "title": "Selectielijsten",
+        "description": "",
+        "version": "0.0.2"
+    }
+}
