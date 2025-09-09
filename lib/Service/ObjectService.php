@@ -275,15 +275,15 @@ class ObjectService
     public function setExternalAppContext(string $appId): self
     {
         $this->externalAppId = $appId;
-        
+
         $this->logger->debug('External app context set for cache isolation', [
             'appId' => $appId,
             'cacheNamespace' => "external_app_{$appId}",
             'benefit' => 'improved_cache_performance'
         ]);
-        
+
         return $this;
-        
+
     }//end setExternalAppContext()
 
 
@@ -1722,7 +1722,7 @@ class ObjectService
     {
         // **CRITICAL PERFORMANCE OPTIMIZATION**: Detect simple vs complex rendering needs
         $hasExtend = !empty($query['_extend'] ?? []);
-        $hasFields = !empty($query['_fields'] ?? null);  
+        $hasFields = !empty($query['_fields'] ?? null);
         $hasFilter = !empty($query['_filter'] ?? null);
         $hasUnset = !empty($query['_unset'] ?? null);
         $hasComplexRendering = $hasExtend || $hasFields || $hasFilter || $hasUnset;
@@ -1733,7 +1733,7 @@ class ObjectService
         // **PERFORMANCE OPTIMIZATION**: Use chunked queries for very large result sets
         $limit = $query['_limit'] ?? 20;
         $dbStart = microtime(true);
-        
+
         if ($limit >= 200) {
             $this->logger->debug('Using chunked database query for large dataset', [
                 'requestedLimit' => $limit,
@@ -1748,16 +1748,16 @@ class ObjectService
                 'multi' => $multi,
                 'requestUri' => $_SERVER['REQUEST_URI'] ?? 'unknown'
             ]);
-            
+
             $result = $this->objectEntityMapper->searchObjects($query, $activeOrganisationUuid, $rbac, $multi);
-            
+
             $this->logger->info('✅ MAPPER CALL - Database search completed', [
                 'resultCount' => is_array($result) ? count($result) : 'non-array',
                 'mapperTime' => round((microtime(true) - $mapperStart) * 1000, 2) . 'ms',
                 'requestUri' => $_SERVER['REQUEST_URI'] ?? 'unknown'
             ]);
         }
-        
+
         $dbTime = round((microtime(true) - $dbStart) * 1000, 2);
         $this->logger->debug('Database query completed', [
             'dbTime' => $dbTime . 'ms',
@@ -1780,14 +1780,14 @@ class ObjectService
                 'objectCount' => count($objects),
                 'skipOperations' => ['schema_loading', 'register_loading', 'relationship_preloading', 'complex_rendering']
             ]);
-            
+
             // **MINIMAL RENDERING**: Direct object transformation without database calls
             $startSimpleRender = microtime(true);
-            
+
             foreach ($objects as $key => $object) {
                 // **ULTRA-FAST**: Get object data and add minimal @self metadata
                 $objectData = $object->getObject();
-                
+
                 // Add essential @self metadata without additional database queries
                 $objectData['@self'] = [
                     'id' => $object->getId(),
@@ -1797,7 +1797,7 @@ class ObjectService
                     'created' => $object->getCreated()?->format('Y-m-d\TH:i:s\Z'),
                     'updated' => $object->getUpdated()?->format('Y-m-d\TH:i:s\Z'),
                 ];
-                
+
                 // Add optional metadata if available (no database lookups)
                 if ($object->getOwner()) {
                     $objectData['@self']['owner'] = $object->getOwner();
@@ -1811,11 +1811,11 @@ class ObjectService
                 if ($object->getDepublished()) {
                     $objectData['@self']['depublished'] = $object->getDepublished()->format('Y-m-d\TH:i:s\Z');
                 }
-                
+
                 $object->setObject($objectData);
                 $objects[$key] = $object;
             }
-            
+
             $simpleRenderTime = round((microtime(true) - $startSimpleRender) * 1000, 2);
             $this->logger->debug('Ultra-fast rendering completed', [
                 'renderTime' => $simpleRenderTime . 'ms',
@@ -1823,7 +1823,7 @@ class ObjectService
                 'avgPerObject' => count($objects) > 0 ? round($simpleRenderTime / count($objects), 2) . 'ms' : '0ms',
                 'pathType' => 'ultra-fast-minimal'
             ]);
-            
+
             return $objects;
         }
 
@@ -1846,7 +1846,7 @@ class ObjectService
 
         if (!empty($registerIds)) {
             $registerEntities = $this->getCachedEntities('register', $registerIds, [$this->registerMapper, 'findMultiple']);
-            
+
             // **TYPE SAFETY**: Ensure we have Register objects, not arrays
             $validRegisters = [];
             foreach ($registerEntities as $register) {
@@ -1864,13 +1864,13 @@ class ObjectService
                     $validRegisters[] = $register;
                 }
             }
-            
+
             $registers = array_combine(array_map(fn($register) => $register->getId(), $validRegisters), $validRegisters);
         }
 
         if (!empty($schemaIds)) {
             $schemaEntities = $this->getCachedEntities('schema', $schemaIds, [$this->schemaMapper, 'findMultiple']);
-            
+
             // **TYPE SAFETY**: Ensure we have Schema objects, not arrays
             $validSchemas = [];
             foreach ($schemaEntities as $schema) {
@@ -1888,7 +1888,7 @@ class ObjectService
                     $validSchemas[] = $schema;
                 }
             }
-            
+
             $schemas = array_combine(array_map(fn($schema) => $schema->getId(), $validSchemas), $validSchemas);
         }
 
@@ -1903,7 +1903,7 @@ class ObjectService
         if (is_string($fields)) {
             $fields = array_map('trim', explode(',', $fields));
         }
-        
+
 
 
         // Extract filter configuration from query if present
@@ -1921,19 +1921,19 @@ class ObjectService
         // **PERFORMANCE OPTIMIZATION**: Smart relationship loading with limits to prevent 30s+ load times
         if (!empty($extend) && !empty($objects)) {
             $startUltraPreload = microtime(true);
-            
+
             // **CIRCUIT BREAKER**: Add limits to prevent massive relationship loading that causes 30s+ timeouts
             $maxObjects = min(count($objects), 50); // Limit to 50 objects max
             $maxRelationships = 200; // Limit to 200 total relationships max
             $maxExtends = min(count($extend), 5); // Limit to 5 extend properties max
-            
+
             $limitedObjects = array_slice($objects, 0, $maxObjects);
             $limitedExtends = array_slice($extend, 0, $maxExtends);
-            
+
             // Extract relationship IDs with aggressive limits
             $allRelationshipIds = $this->extractAllRelationshipIds($limitedObjects, $limitedExtends);
             $allRelationshipIds = array_slice($allRelationshipIds, 0, $maxRelationships);
-            
+
             if (!empty($allRelationshipIds)) {
                 $this->logger->info('🚀 PERFORMANCE: Smart relationship loading with limits', [
                     'originalObjects' => count($objects),
@@ -1944,14 +1944,14 @@ class ObjectService
                     'maxRelationshipIds' => $maxRelationships,
                     'extends' => implode(',', $limitedExtends)
                 ]);
-                
+
                 // **PARALLEL LOADING**: Load relationships in parallel instead of sequential batches
                 // This can provide 60-70% improvement without changing the API
                 $relatedObjectsMap = $this->bulkLoadRelationshipsParallel($allRelationshipIds);
-                
+
                 // Store in render handler for instant access during rendering
                 $this->renderHandler->setUltraPreloadCache($relatedObjectsMap);
-                
+
                 $ultraPreloadTime = round((microtime(true) - $startUltraPreload) * 1000, 2);
                 $this->logger->info('✅ Smart relationship loading completed', [
                     'ultraPreloadTime' => $ultraPreloadTime . 'ms',
@@ -1959,7 +1959,7 @@ class ObjectService
                     'objectsToRender' => count($objects),
                     'efficiency' => 'optimized_for_sub_second_performance'
                 ]);
-                
+
                 // **PERFORMANCE ALERT**: Warn if still taking too long
                 if ($ultraPreloadTime > 1000) {
                     $this->logger->warning('⚠️  PERFORMANCE WARNING: Relationship loading still slow', [
@@ -1981,11 +1981,11 @@ class ObjectService
         // **PERFORMANCE OPTIMIZATION**: Smart rendering with circuit breakers to prevent 30s+ timeouts
         $startRender = microtime(true);
         $maxRenderTime = 3000; // 3 second timeout for rendering
-        
+
         // **PERFORMANCE DETECTION**: Check if this is a potentially slow operation
         $objectCount = count($objects);
         $isLargeDataset = $objectCount > 20 || !empty($extend);
-        
+
         if ($isLargeDataset) {
             $this->logger->info('📊 PERFORMANCE: Large dataset detected, using circuit breakers', [
                 'objectCount' => $objectCount,
@@ -1994,7 +1994,7 @@ class ObjectService
                 'expectedImpact' => 'prevent_2min_timeouts'
             ]);
         }
-        
+
         foreach ($objects as $key => $object) {
             // **CIRCUIT BREAKER**: Stop rendering if taking too long to prevent frontend timeouts
             $renderElapsed = round((microtime(true) - $startRender) * 1000, 2);
@@ -2006,11 +2006,11 @@ class ObjectService
                     'remainingObjects' => $objectCount - $key,
                     'reason' => 'prevent_2min_timeout'
                 ]);
-                
+
                 // Return partial results to prevent total failure
                 break;
             }
-            
+
             $objects[$key] = $this->renderHandler->renderEntity(
              entity: $object,
              extend: $limitedExtends ?? $extend, // Use limited extends if available
@@ -2023,7 +2023,7 @@ class ObjectService
              multi: $multi
             );
         }
-        
+
         $renderTime = round((microtime(true) - $startRender) * 1000, 2);
         $objectCount = count($objects);
         $this->logger->debug('Ultra-fast rendering completed', [
@@ -2187,7 +2187,7 @@ class ObjectService
      *
      * Benefits:
      * - ~15ms eliminated per request (from ~15ms to <1ms)
-     * - Consistent facet configurations across requests  
+     * - Consistent facet configurations across requests
      * - No runtime schema analysis overhead
      * - Cached and reusable facet definitions
      *
@@ -2356,13 +2356,13 @@ class ObjectService
         // **PERFORMANCE DEBUGGING**: Start detailed timing
         $perfStart = microtime(true);
         $perfTimings = [];
-        
+
         // **50% PERFORMANCE BOOST**: Early query optimization and request routing
         $this->optimizeRequestForPerformance($query, $perfTimings);
-        
+
         // **CACHE BYPASS**: Check for _cache=false parameter for testing/debugging
         $cacheDisabled = ($query['_cache'] ?? true) === false || ($query['_cache'] ?? true) === 'false';
-        
+
         if ($cacheDisabled) {
             $this->logger->info('🚫 CACHE BYPASS: _cache=false parameter detected', [
                 'requestUri' => $_SERVER['REQUEST_URI'] ?? 'unknown',
@@ -2373,7 +2373,7 @@ class ObjectService
 
         // **PERFORMANCE MONITORING**: Check for _performance=true parameter
         $includePerformance = ($query['_performance'] ?? false) === true || ($query['_performance'] ?? false) === 'true';
-        
+
         if ($includePerformance) {
             $this->logger->info('📊 PERFORMANCE MONITORING: _performance=true parameter detected', [
                 'requestUri' => $_SERVER['REQUEST_URI'] ?? 'unknown',
@@ -2381,7 +2381,7 @@ class ObjectService
                 'note' => 'Response will include detailed performance metrics'
             ]);
         }
-        
+
         // **CRITICAL PERFORMANCE OPTIMIZATION**: Check cache first for identical requests (unless bypassed)
         $cachedResponse = null;
         if (!$cacheDisabled) {
@@ -2392,7 +2392,7 @@ class ObjectService
         } else {
             $perfTimings['cache_check'] = 0; // No cache check performed
         }
-        
+
         if ($cachedResponse !== null) {
             $this->logger->info('🎯 CACHE HIT - Performance optimized response', [
                 'cacheKey' => substr($cacheKey, 0, 32) . '...',
@@ -2417,15 +2417,15 @@ class ObjectService
 
         // **PERFORMANCE OPTIMIZATION**: Start timing execution and detect request complexity
         $startTime = microtime(true);
-        
+
         // **MAPPER CALL TIMING**: Track how long the mapper takes
         $mapperStart = microtime(true);
-        
+
         // **PERFORMANCE DETECTION**: Determine if this is a complex request requiring async processing
         $hasFacets = !empty($query['_facets']);
         $hasFacetable = ($query['_facetable'] ?? false) === true || ($query['_facetable'] ?? false) === 'true';
         $isComplexRequest = $hasFacets || $hasFacetable;
-        
+
         // **PERFORMANCE OPTIMIZATION**: For complex requests, use async version for better performance
         if ($isComplexRequest) {
             $this->logger->debug('Complex request detected, using async processing', [
@@ -2433,7 +2433,7 @@ class ObjectService
                 'hasFacetable' => $hasFacetable,
                 'facetCount' => $hasFacets ? count($query['_facets']) : 0
             ]);
-            
+
             // Use async version and return synchronous result
             return $this->searchObjectsPaginatedSync($query, rbac: $rbac, multi: $multi);
         }
@@ -2466,7 +2466,7 @@ class ObjectService
         $page   = $page ?? 1;
         $offset = $offset ?? 0;
         $limit  = max(1, (int) $limit);
-        
+
         // **PERFORMANCE OPTIMIZATION**: Prepare optimized queries
         $paginatedQuery = array_merge(
                 $query,
@@ -2483,7 +2483,7 @@ class ObjectService
         $searchStartTime = microtime(true);
         $results = $this->searchObjects($paginatedQuery, rbac: $rbac, multi: $multi);
         $searchTime = round((microtime(true) - $searchStartTime) * 1000, 2);
-        
+
         // **PERFORMANCE OPTIMIZATION**: Use combined query to get count without additional database call
         $countStartTime = microtime(true);
         $countQuery = $query;
@@ -2503,11 +2503,11 @@ class ObjectService
             'limit'   => $limit,
             'offset'  => $offset,
         ];
-        
+
         // **RELATED DATA EXTRACTION**: Support for _related and _relatedNames query parameters
         $includeRelated = filter_var($query['_related'] ?? false, FILTER_VALIDATE_BOOLEAN);
         $includeRelatedNames = filter_var($query['_relatedNames'] ?? false, FILTER_VALIDATE_BOOLEAN);
-        
+
         if ($includeRelated || $includeRelatedNames) {
             $relatedData = $this->extractRelatedData($results, $includeRelated, $includeRelatedNames);
             $paginatedResults = array_merge($paginatedResults, $relatedData);
@@ -2516,16 +2516,16 @@ class ObjectService
         // **PERFORMANCE OPTIMIZATION**: Only add facets if explicitly requested (empty facets object for backward compatibility)
         $paginatedResults['facets'] = ['facets' => []];
 
-        // **PERFORMANCE OPTIMIZATION**: Add next/prev page URLs efficiently  
+        // **PERFORMANCE OPTIMIZATION**: Add next/prev page URLs efficiently
         $this->addPaginationUrls($paginatedResults, $page, $pages);
 
         // Calculate execution time in milliseconds
         $executionTime = (microtime(true) - $startTime) * 1000;
-        
+
         // **PERFORMANCE LOGGING**: Log performance metrics for simple requests
         $this->logger->debug('Simple search completed', [
             'totalTime' => round($executionTime, 2) . 'ms',
-            'searchTime' => $searchTime . 'ms', 
+            'searchTime' => $searchTime . 'ms',
             'countTime' => $countTime . 'ms',
             'resultCount' => count($results),
             'target' => '<500ms'
@@ -2544,7 +2544,7 @@ class ObjectService
         // **PERFORMANCE MONITORING**: Include performance metrics if requested
         if ($includePerformance) {
             $totalTime = round((microtime(true) - $perfStart) * 1000, 2);
-            
+
             $paginatedResults['_performance'] = [
                 'totalTime' => $totalTime,
                 'breakdown' => [
@@ -2597,7 +2597,7 @@ class ObjectService
     private function getPerformanceRecommendations(float $totalTime, array $perfTimings, array $query): array
     {
         $recommendations = [];
-        
+
         // Time-based recommendations
         if ($totalTime > 2000) {
             $recommendations[] = [
@@ -2729,7 +2729,7 @@ class ObjectService
     private function optimizeRequestForPerformance(array &$query, array &$perfTimings): void
     {
         $optimizeStart = microtime(true);
-        
+
         // **OPTIMIZATION 1**: Fast path for simple requests
         $isSimpleRequest = $this->isSimpleRequest($query);
         if ($isSimpleRequest) {
@@ -2739,7 +2739,7 @@ class ObjectService
                 'estimatedSaving' => '200-300ms'
             ]);
         }
-        
+
         // **OPTIMIZATION 2**: Limit destructive extend operations
         if (!empty($query['_extend'])) {
             // **BUGFIX**: Handle _extend as both string and array for count
@@ -2748,15 +2748,15 @@ class ObjectService
             } else {
                 $originalExtendCount = count(array_filter(array_map('trim', explode(',', $query['_extend']))));
             }
-            
+
             $query['_extend'] = $this->optimizeExtendQueries($query['_extend']);
-            
+
             if (is_array($query['_extend'])) {
                 $newExtendCount = count($query['_extend']);
             } else {
                 $newExtendCount = count(array_filter(array_map('trim', explode(',', $query['_extend']))));
             }
-            
+
             if ($newExtendCount < $originalExtendCount) {
                 $this->logger->info('⚡ EXTEND OPTIMIZATION: Reduced extend complexity', [
                     'original' => $originalExtendCount,
@@ -2765,7 +2765,7 @@ class ObjectService
                 ]);
             }
         }
-        
+
         // **OPTIMIZATION 3**: Smart limit adjustment for performance
         $originalLimit = $query['_limit'] ?? 20;
         $query['_limit'] = $this->optimizeLimit($originalLimit);
@@ -2776,10 +2776,10 @@ class ObjectService
                 'reason' => 'performance_target_500ms'
             ]);
         }
-        
+
         // **OPTIMIZATION 4**: Preload critical entities for cache warmup
         $this->preloadCriticalEntities($query);
-        
+
         $perfTimings['request_optimization'] = round((microtime(true) - $optimizeStart) * 1000, 2);
     }
 
@@ -2797,7 +2797,7 @@ class ObjectService
         // - No facets or facetable queries
         // - Small result set (limit <= 50)
         // - No complex filters (< 3 filter criteria)
-        
+
         // **BUGFIX**: Handle _extend as both string and array
         $extendCount = 0;
         if (!empty($query['_extend'])) {
@@ -2811,7 +2811,7 @@ class ObjectService
         $hasComplexExtend = $extendCount > 2;
         $hasFacets = !empty($query['_facets']) || ($query['_facetable'] ?? false);
         $hasLargeLimit = ($query['_limit'] ?? 20) > 50;
-        
+
         // Count filter criteria (excluding system parameters)
         $filterCount = 0;
         foreach ($query as $key => $value) {
@@ -2820,7 +2820,7 @@ class ObjectService
             }
         }
         $hasComplexFilters = $filterCount > 3;
-        
+
         return !($hasComplexExtend || $hasFacets || $hasLargeLimit || $hasComplexFilters);
     }
 
@@ -2843,26 +2843,26 @@ class ObjectService
         } elseif (!is_array($extend)) {
             return [];
         }
-        
+
         // **PERFORMANCE PRIORITY**: Keep only most critical relationships
         // Remove heavy relationships that take > 500ms each
         $heavyRelationships = [
             '@self.auditTrails',
-            '@self.searchTrails', 
+            '@self.searchTrails',
             '@self.attachments.content',
             'organization.users',
             'schema.properties.validations'
         ];
-        
+
         $optimized = array_filter($extend, function($relationship) use ($heavyRelationships) {
             return !in_array($relationship, $heavyRelationships);
         });
-        
+
         // **SMART LIMITING**: Keep maximum 3 extend relationships for sub-500ms performance
         if (count($optimized) > 3) {
             $optimized = array_slice($optimized, 0, 3);
         }
-        
+
         return array_values($optimized);
     }
 
@@ -2877,12 +2877,12 @@ class ObjectService
     {
         // **PERFORMANCE TARGET**: Ensure we can hit 500ms
         // Larger result sets exponentially increase processing time
-        if ($originalLimit > 100) {
+        if ($originalLimit > 500) {
             return 50; // Cap at 50 for performance
-        } elseif ($originalLimit > 50) {
+        } elseif ($originalLimit > 500) {
             return 25; // Reduce high limits
         }
-        
+
         return $originalLimit; // Keep reasonable limits as-is
     }
 
@@ -2896,7 +2896,7 @@ class ObjectService
     private function preloadCriticalEntities(array $query): void
     {
         $preloadStart = microtime(true);
-        
+
         try {
             // **CACHE WARMUP**: Preload register and schema if not already cached
             if (isset($query['@self']['register'])) {
@@ -2904,13 +2904,13 @@ class ObjectService
                     return [$this->registerMapper->find($ids[0])];
                 });
             }
-            
+
             if (isset($query['@self']['schema'])) {
                 $this->getCachedEntities('schema', [$query['@self']['schema']], function($ids) {
                     return [$this->schemaMapper->find($ids[0])];
                 });
             }
-            
+
             $preloadTime = round((microtime(true) - $preloadStart) * 1000, 2);
             if ($preloadTime > 0) {
                 $this->logger->debug('🔥 CACHE WARMUP: Critical entities preloaded', [
@@ -3518,7 +3518,7 @@ class ObjectService
             $this->setSchema($schema);
         }
 
-        
+
         // ARCHITECTURAL DELEGATION: Use specialized SaveObjects handler for bulk operations
         // This provides better separation of concerns and optimized bulk processing
         $bulkResult = $this->saveObjectsHandler->saveObjects(
@@ -3597,16 +3597,16 @@ class ObjectService
      * @return array Modified object data with hydrated @self metadata
      *
      * @psalm-param   array $objectData
-     * @phpstan-param array $objectData  
+     * @phpstan-param array $objectData
      * @psalm-return   array
      * @phpstan-return array
      */
     private function hydrateObjectMetadataFromData(array $objectData, Schema $schema): array
     {
         $config = $schema->getConfiguration();
-        
+
         // PERFORMANCE OPTIMIZATION: Early return if no metadata fields configured
-        if (empty($config['objectNameField']) && empty($config['objectDescriptionField']) 
+        if (empty($config['objectNameField']) && empty($config['objectDescriptionField'])
             && empty($config['objectSummaryField']) && empty($config['objectImageField'])
             && empty($config['objectSlugField'])) {
             return $objectData;
@@ -3983,15 +3983,15 @@ class ObjectService
         // The existing object will be updated in-place, avoiding memory duplication
         // This is safe because we're in a bulk operation context where the original
         // objects are no longer needed after this transformation
-        
+
         // CRITICAL FIX: Ensure correct property names before hydrating
         // ObjectEntity expects 'object' property, not 'data'
         if (isset($newObjectData['data']) && !isset($newObjectData['object'])) {
             $newObjectData['object'] = $newObjectData['data'];
             unset($newObjectData['data']);
         }
-        
-        
+
+
         $existingObject->hydrate($newObjectData);
 
         return $existingObject;
@@ -4560,21 +4560,21 @@ class ObjectService
     {
         $startTime = microtime(true);
         $relatedData = [];
-        
+
         if (empty($results)) {
             return $relatedData;
         }
-        
+
         $allRelatedIds = [];
-        
+
         // Extract all related IDs from result objects
         foreach ($results as $result) {
             if (!$result instanceof ObjectEntity) {
                 continue;
             }
-            
+
             $objectData = $result->getObject();
-            
+
             // Look for relationship fields in the object data
             foreach ($objectData as $key => $value) {
                 if (is_array($value)) {
@@ -4590,29 +4590,29 @@ class ObjectService
                 }
             }
         }
-        
+
         // Remove duplicates and filter valid UUIDs
         $allRelatedIds = array_unique($allRelatedIds);
-        
+
         if ($includeRelated) {
             $relatedData['related'] = array_values($allRelatedIds);
         }
-        
+
         if ($includeRelatedNames && !empty($allRelatedIds)) {
             // Get names for all related objects using the object cache service
             $relatedNames = $this->objectCacheService->getMultipleObjectNames($allRelatedIds);
             $relatedData['relatedNames'] = $relatedNames;
         }
-        
+
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
-        
+
         $this->logger->debug('🔗 RELATED DATA EXTRACTED', [
             'related_ids_found' => count($allRelatedIds),
             'include_related' => $includeRelated,
             'include_related_names' => $includeRelatedNames,
             'execution_time' => $executionTime . 'ms'
         ]);
-        
+
         return $relatedData;
 
     }//end extractRelatedData()
@@ -5317,28 +5317,28 @@ class ObjectService
             getenv('SLOW_ENVIRONMENT') === 'true' ||
             strpos($_SERVER['HTTP_HOST'] ?? '', '.ac.') !== false
         );
-        
+
         if ($isAcEnvironment) {
             return true;
         }
-        
+
         // Use static cache to avoid repeated detection overhead
         static $environmentScore = null;
-        
+
         if ($environmentScore === null) {
             $environmentScore = 0;
-            
+
             // Check database response time (simple heuristic)
             $start = microtime(true);
             try {
                 $this->objectEntityMapper->countAll([], null, [], null, false, null, null, null, false, false);
                 $dbTime = (microtime(true) - $start) * 1000; // Convert to milliseconds
-                
+
                 // If a simple count takes more than 50ms, consider it slow
                 if ($dbTime > 50) {
                     $environmentScore += 2;
                 }
-                
+
                 // Additional penalty for very slow responses
                 if ($dbTime > 200) {
                     $environmentScore += 3;
@@ -5347,13 +5347,13 @@ class ObjectService
                 // If we can't measure, assume potentially slow
                 $environmentScore += 1;
             }
-            
+
             // Check memory constraints (lower memory often indicates constrained environments)
             $memoryLimit = $this->getMemoryLimitInBytes();
             if ($memoryLimit > 0 && $memoryLimit < 536870912) { // Less than 512MB
                 $environmentScore += 1;
             }
-            
+
             // Log detection result for monitoring
             $this->logger->debug('Environment performance detection', [
                 'score' => $environmentScore,
@@ -5362,9 +5362,9 @@ class ObjectService
                 'isSlow' => $environmentScore >= 2
             ]);
         }
-        
+
         return $environmentScore >= 2;
-        
+
     }//end isSlowEnvironment()
 
 
@@ -5376,14 +5376,14 @@ class ObjectService
     private function getMemoryLimitInBytes(): int
     {
         $memoryLimit = ini_get('memory_limit');
-        
+
         if ($memoryLimit === '-1') {
             return -1; // Unlimited
         }
-        
+
         $value = (int) $memoryLimit;
         $unit = strtolower(substr($memoryLimit, -1));
-        
+
         switch ($unit) {
             case 'g':
                 $value *= 1024 * 1024 * 1024;
@@ -5395,9 +5395,9 @@ class ObjectService
                 $value *= 1024;
                 break;
         }
-        
+
         return $value;
-        
+
     }//end getMemoryLimitInBytes()
 
 
@@ -5411,27 +5411,27 @@ class ObjectService
      * @param array  $objects   Array of ObjectEntity objects to render
      * @param array  $extend    Array of properties to extend
      * @param ?array $filter    Filter configuration
-     * @param ?array $fields    Fields configuration 
+     * @param ?array $fields    Fields configuration
      * @param ?array $unset     Unset configuration
      * @param ?array $registers Registers context array
-     * @param ?array $schemas   Schemas context array  
+     * @param ?array $schemas   Schemas context array
      * @param bool   $rbac      Whether to apply RBAC checks
      * @param bool   $multi     Whether to apply multitenancy filtering
      *
      * @return array Array of rendered ObjectEntity objects
      *
      * @phpstan-param array<ObjectEntity> $objects
-     * @phpstan-param array<string> $extend  
+     * @phpstan-param array<string> $extend
      * @phpstan-param array<string>|null $filter
      * @phpstan-param array<string>|null $fields
      * @phpstan-param array<string>|null $unset
      * @phpstan-param array<int, Register>|null $registers
      * @phpstan-param array<int, Schema>|null $schemas
      * @phpstan-return array<ObjectEntity>
-     * 
+     *
      * @psalm-param array<ObjectEntity> $objects
      * @psalm-param array<string> $extend
-     * @psalm-param array<string>|null $filter  
+     * @psalm-param array<string>|null $filter
      * @psalm-param array<string>|null $fields
      * @psalm-param array<string>|null $unset
      * @psalm-param array<int, Register>|null $registers
@@ -5450,20 +5450,20 @@ class ObjectService
         bool $multi
     ): array {
         $totalObjects = count($objects);
-        
+
         // Determine optimal batch size based on dataset and resources
         $batchSize = $this->calculateOptimalBatchSize($totalObjects);
-        
+
         $this->logger->debug('Parallel rendering configuration', [
             'totalObjects' => $totalObjects,
             'batchSize' => $batchSize,
             'batchCount' => ceil($totalObjects / $batchSize)
         ]);
-        
+
         // Split objects into batches for parallel processing
         $batches = array_chunk($objects, $batchSize, true);
         $promises = [];
-        
+
         // Create promises for each batch
         foreach ($batches as $batchIndex => $batch) {
             $promises[$batchIndex] = new Promise(
@@ -5471,7 +5471,7 @@ class ObjectService
                     try {
                         $startBatch = microtime(true);
                         $renderedBatch = [];
-                        
+
                         // Render each object in this batch
                         foreach ($batch as $key => $object) {
                             $renderedBatch[$key] = $this->renderHandler->renderEntity(
@@ -5486,14 +5486,14 @@ class ObjectService
                                 multi: $multi
                             );
                         }
-                        
+
                         $batchTime = round((microtime(true) - $startBatch) * 1000, 2);
                         $this->logger->debug('Batch rendering completed', [
                             'batchIndex' => $batchIndex,
                             'objectsInBatch' => count($batch),
                             'executionTime' => $batchTime . 'ms'
                         ]);
-                        
+
                         $resolve($renderedBatch);
                     } catch (\Throwable $e) {
                         $this->logger->error('Batch rendering failed', [
@@ -5505,18 +5505,18 @@ class ObjectService
                 }
             );
         }
-        
+
         // Execute all batches in parallel and merge results
         $results = \React\Async\await(\React\Promise\all($promises));
-        
+
         // Merge all batch results back into a single array, preserving keys
         $renderedObjects = [];
         foreach ($results as $batchResults) {
             $renderedObjects = array_merge($renderedObjects, $batchResults);
         }
-        
+
         return $renderedObjects;
-        
+
     }//end renderObjectsInParallel()
 
 
@@ -5533,7 +5533,7 @@ class ObjectService
      *
      * @phpstan-param int $totalObjects
      * @phpstan-return int
-     * @psalm-param int $totalObjects  
+     * @psalm-param int $totalObjects
      * @psalm-return int
      */
     private function calculateOptimalBatchSize(int $totalObjects): int
@@ -5548,11 +5548,11 @@ class ObjectService
         } else {
             return 100; // Very large datasets: maximum efficiency batches
         }
-        
+
         // Note: PHP's ReactPHP doesn't provide true parallelism (due to GIL-like behavior)
         // but it does provide excellent concurrency for I/O bound operations
         // which is what we have with database queries and object processing
-        
+
     }//end calculateOptimalBatchSize()
 
 
@@ -5566,7 +5566,7 @@ class ObjectService
      * @param array       $query                 The search query array
      * @param string|null $activeOrganisationUuid Active organisation UUID for filtering
      * @param bool        $rbac                  Whether to apply RBAC checks
-     * @param bool        $multi                 Whether to apply multitenancy filtering  
+     * @param bool        $multi                 Whether to apply multitenancy filtering
      * @param int         $totalLimit            Total number of records requested
      *
      * @return array Array of ObjectEntity objects
@@ -5587,32 +5587,32 @@ class ObjectService
         $allResults = [];
         $offset = $query['_offset'] ?? 0;
         $processed = 0;
-        
+
         $this->logger->debug('Starting chunked search execution', [
             'totalLimit' => $totalLimit,
             'chunkSize' => $chunkSize,
             'startOffset' => $offset,
             'expectedChunks' => ceil($totalLimit / $chunkSize)
         ]);
-        
+
         while ($processed < $totalLimit) {
             $currentChunkSize = min($chunkSize, $totalLimit - $processed);
             $currentOffset = $offset + $processed;
-            
+
             // Create chunk-specific query
             $chunkQuery = array_merge($query, [
                 '_limit' => $currentChunkSize,
                 '_offset' => $currentOffset
             ]);
-            
+
             $this->logger->debug('Processing search chunk', [
                 'chunkNumber' => floor($processed / $chunkSize) + 1,
                 'chunkSize' => $currentChunkSize,
                 'chunkOffset' => $currentOffset
             ]);
-            
+
             $startChunk = microtime(true);
-            
+
             // Execute chunk query
             $chunkResults = $this->objectEntityMapper->searchObjects(
                 $chunkQuery,
@@ -5620,37 +5620,37 @@ class ObjectService
                 $rbac,
                 $multi
             );
-            
+
             $chunkTime = round((microtime(true) - $startChunk) * 1000, 2);
             $this->logger->debug('Search chunk completed', [
                 'chunkResults' => count($chunkResults),
                 'chunkTime' => $chunkTime . 'ms',
                 'totalProcessed' => $processed + count($chunkResults)
             ]);
-            
+
             // If no results returned, we've reached the end
             if (empty($chunkResults)) {
                 break;
             }
-            
+
             // Add results to collection
             $allResults = array_merge($allResults, $chunkResults);
             $processed += count($chunkResults);
-            
+
             // If we got fewer results than requested, we've reached the end
             if (count($chunkResults) < $currentChunkSize) {
                 break;
             }
         }
-        
+
         $this->logger->debug('Chunked search completed', [
             'totalResults' => count($allResults),
             'totalChunks' => floor($processed / $chunkSize) + (($processed % $chunkSize) > 0 ? 1 : 0),
             'requestedLimit' => $totalLimit
         ]);
-        
+
         return $allResults;
-        
+
     }//end executeChunkedSearch()
 
 
@@ -5670,7 +5670,7 @@ class ObjectService
                 // Cache clear failed, continue
             }
         }
-        
+
     }//end clearResponseCache()
 
 
@@ -5701,7 +5701,7 @@ class ObjectService
         $user = $this->userSession->getUser();
         $userId = $user ? $user->getUID() : null;
         $orgId = $this->getCurrentOrganisationId() ?? 'no-org';
-        
+
         // **EXTERNAL APP OPTIMIZATION**: Enhanced anonymous user handling
         if ($userId === null) {
             // **PRIORITY 1**: Use explicitly set external app ID (best performance)
@@ -5719,7 +5719,7 @@ class ObjectService
                     $userId = "anonymous_{$queryFingerprint}";
                 }
             }
-            
+
             // **PERFORMANCE LOGGING**: Log external app cache strategy
             $this->logger->info('External app cache context determined', [
                 'strategy' => $appId ? 'explicit' : ($appContext ? 'detected' : 'fingerprint'),
@@ -5730,14 +5730,14 @@ class ObjectService
                 'requestUri' => $_SERVER['REQUEST_URI'] ?? 'unknown'
             ]);
         }
-        
+
         // **CACHE NORMALIZATION**: Normalize register/schema identifiers to prevent duplicate caching
         // URLs like objects/19/108 and objects/voorzieningen/contactpersoon should share the same cache
         $normalizedQuery = $this->normalizeQueryForCaching($query);
-        
+
         // Sort query to ensure consistent cache keys
         ksort($normalizedQuery);
-        
+
         // Create cache key with enhanced user and organization context
         $keyData = [
             'query' => $normalizedQuery,
@@ -5745,9 +5745,9 @@ class ObjectService
             'org' => $orgId,
             'version' => '1.2' // Incremented for cache normalization fix
         ];
-        
+
         return 'obj_search_' . md5(json_encode($keyData));
-        
+
     }//end generateCacheKey()
 
 
@@ -5755,7 +5755,7 @@ class ObjectService
      * Normalize query for caching to ensure consistent cache keys
      *
      * This method converts register/schema slugs to IDs so that URLs like:
-     * - objects/19/108 
+     * - objects/19/108
      * - objects/voorzieningen/contactpersoon
      * Generate the SAME cache key when they represent the same data.
      *
@@ -5771,18 +5771,18 @@ class ObjectService
     private function normalizeQueryForCaching(array $query): array
     {
         $normalized = $query;
-        
+
         try {
             // **REGISTER NORMALIZATION**: Convert register slug to ID
             if (isset($normalized['@self']['register']) && is_string($normalized['@self']['register'])) {
                 $registerValue = $normalized['@self']['register'];
-                
+
                 // If it's not numeric, try to find the register (find method supports slug/uuid/id)
                 if (!is_numeric($registerValue)) {
                     try {
                         $register = $this->registerMapper->find($registerValue);
                         $normalized['@self']['register'] = $register->getId();
-                        
+
                         $this->logger->debug('🔄 CACHE NORMALIZATION: Register slug → ID', [
                             'slug' => $registerValue,
                             'id' => $register->getId(),
@@ -5797,17 +5797,17 @@ class ObjectService
                     }
                 }
             }
-            
-            // **SCHEMA NORMALIZATION**: Convert schema slug to ID  
+
+            // **SCHEMA NORMALIZATION**: Convert schema slug to ID
             if (isset($normalized['@self']['schema']) && is_string($normalized['@self']['schema'])) {
                 $schemaValue = $normalized['@self']['schema'];
-                
+
                 // If it's not numeric, try to find the schema (find method supports slug/uuid/id)
                 if (!is_numeric($schemaValue)) {
                     try {
                         $schema = $this->schemaMapper->find($schemaValue);
                         $normalized['@self']['schema'] = $schema->getId();
-                        
+
                         $this->logger->debug('🔄 CACHE NORMALIZATION: Schema slug → ID', [
                             'slug' => $schemaValue,
                             'id' => $schema->getId(),
@@ -5822,7 +5822,7 @@ class ObjectService
                     }
                 }
             }
-            
+
             // **PATH-BASED NORMALIZATION**: Handle URL path parameters
             // This covers cases where register/schema come from URL path like /objects/voorzieningen/contactpersoon
             if (isset($_SERVER['REQUEST_URI'])) {
@@ -5830,7 +5830,7 @@ class ObjectService
                 if (preg_match($pathPattern, $_SERVER['REQUEST_URI'], $matches)) {
                     $pathRegister = $matches[1] ?? null;
                     $pathSchema = $matches[2] ?? null;
-                    
+
                     // Normalize path register if it's a slug
                     if ($pathRegister && !is_numeric($pathRegister)) {
                         try {
@@ -5847,7 +5847,7 @@ class ObjectService
                     } elseif ($pathRegister && is_numeric($pathRegister)) {
                         $normalized['_path_register_id'] = (int)$pathRegister;
                     }
-                    
+
                     // Normalize path schema if it's a slug
                     if ($pathSchema && !is_numeric($pathSchema)) {
                         try {
@@ -5866,7 +5866,7 @@ class ObjectService
                     }
                 }
             }
-            
+
         } catch (\Exception $e) {
             // If normalization fails completely, use original query
             $this->logger->warning('Cache normalization failed, using original query', [
@@ -5875,9 +5875,9 @@ class ObjectService
             ]);
             return $query;
         }
-        
+
         return $normalized;
-        
+
     }//end normalizeQueryForCaching()
 
 
@@ -5898,25 +5898,25 @@ class ObjectService
         try {
             // **SMART DETECTION**: Analyze debug backtrace for calling app
             $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10);
-            
+
             foreach ($trace as $frame) {
                 if (isset($frame['file'])) {
                     $filePath = $frame['file'];
-                    
+
                     // Look for app patterns in the file path
                     if (preg_match('#/apps/([^/]+)/#', $filePath, $matches)) {
                         $detectedApp = $matches[1];
-                        
+
                         // Skip if it's our own app
                         if ($detectedApp !== 'openregister') {
                             return $detectedApp;
                         }
                     }
-                    
+
                     // Look for apps-extra patterns
                     if (preg_match('#/apps-extra/([^/]+)/#', $filePath, $matches)) {
                         $detectedApp = $matches[1];
-                        
+
                         // Skip if it's our own app
                         if ($detectedApp !== 'openregister') {
                             return $detectedApp;
@@ -5927,9 +5927,9 @@ class ObjectService
         } catch (\Exception $e) {
             // Detection failed, continue without app context
         }
-        
+
         return null;
-        
+
     }//end detectExternalAppContext()
 
 
@@ -5953,17 +5953,17 @@ class ObjectService
     {
         // **CACHE NORMALIZATION**: Use normalized query for consistent fingerprints
         $normalizedQuery = $this->normalizeQueryForCaching($query);
-        
+
         // **PATTERN ANALYSIS**: Extract query characteristics for cache grouping
         $characteristics = [];
-        
+
         // Detect query complexity patterns
         $characteristics['has_search'] = !empty($normalizedQuery['_search']);
         $characteristics['has_facets'] = !empty($normalizedQuery['_facets']);
         $characteristics['has_extend'] = !empty($normalizedQuery['_extend']);
         $characteristics['has_filters'] = count(array_filter(array_keys($normalizedQuery), fn($k) => !str_starts_with($k, '_'))) > 0;
         $characteristics['limit_range'] = $this->getLimitRange($normalizedQuery['_limit'] ?? 20);
-        
+
         // **NORMALIZED CONTEXT**: Use normalized register/schema IDs for consistent fingerprints
         if (isset($normalizedQuery['@self']['register'])) {
             $characteristics['register'] = $normalizedQuery['@self']['register'];
@@ -5971,7 +5971,7 @@ class ObjectService
         if (isset($normalizedQuery['@self']['schema'])) {
             $characteristics['schema'] = $normalizedQuery['@self']['schema'];
         }
-        
+
         // Include normalized path info if available
         if (isset($normalizedQuery['_path_register_id'])) {
             $characteristics['path_register'] = $normalizedQuery['_path_register_id'];
@@ -5979,10 +5979,10 @@ class ObjectService
         if (isset($normalizedQuery['_path_schema_id'])) {
             $characteristics['path_schema'] = $normalizedQuery['_path_schema_id'];
         }
-        
+
         // **FINGERPRINT GENERATION**: Create short fingerprint for cache key efficiency
         return substr(md5(json_encode($characteristics)), 0, 8);
-        
+
     }//end generateQueryFingerprint()
 
 
@@ -6004,7 +6004,7 @@ class ObjectService
         } else {
             return 'xlarge';
         }
-        
+
     }//end getLimitRange()
 
 
@@ -6026,19 +6026,19 @@ class ObjectService
         if ($this->distributedCache === null) {
             return null;
         }
-        
+
         try {
             $cached = $this->distributedCache->get($cacheKey);
-            
+
             if ($cached !== null && is_array($cached)) {
                 return $cached;
             }
         } catch (\Exception $e) {
             // Cache access failed, continue without cache
         }
-        
+
         return null;
-        
+
     }//end getCachedResponse()
 
 
@@ -6063,14 +6063,14 @@ class ObjectService
         if ($this->distributedCache === null) {
             return;
         }
-        
+
         try {
             // **NEXTCLOUD OPTIMIZATION**: Use distributed cache with automatic TTL
             $this->distributedCache->set($cacheKey, $data, self::CACHE_TTL);
         } catch (\Exception $e) {
             // Cache write failed, continue without caching
         }
-        
+
     }//end setCachedResponse()
 
 
@@ -6089,7 +6089,7 @@ class ObjectService
      * @phpstan-param array<string> $extend
      * @phpstan-return array<string>
      * @psalm-param array<ObjectEntity> $objects
-     * @psalm-param array<string> $extend  
+     * @psalm-param array<string> $extend
      * @psalm-return array<string>
      */
     private function extractAllRelationshipIds(array $objects, array $extend): array
@@ -6097,7 +6097,7 @@ class ObjectService
         $allIds = [];
         $maxIds = 200; // **CIRCUIT BREAKER**: Hard limit to prevent massive relationship loading
         $extractedCount = 0;
-        
+
         foreach ($objects as $objectIndex => $object) {
             // **PERFORMANCE BYPASS**: Stop early if we've extracted enough
             if ($extractedCount >= $maxIds) {
@@ -6110,29 +6110,29 @@ class ObjectService
                 ]);
                 break;
             }
-            
+
             $objectData = $object->getObject();
-            
+
             foreach ($extend as $extendProperty) {
                 if (isset($objectData[$extendProperty])) {
                     $value = $objectData[$extendProperty];
-                    
+
                     if (is_array($value)) {
                         // **PERFORMANCE LIMIT**: Limit array relationships per object
                         $limitedArray = array_slice($value, 0, 10); // Max 10 relationships per array
-                        
+
                         foreach ($limitedArray as $id) {
                             if (!empty($id) && is_string($id)) {
                                 $allIds[] = $id;
                                 $extractedCount++;
-                                
+
                                 // **CIRCUIT BREAKER**: Stop if we hit the limit
                                 if ($extractedCount >= $maxIds) {
                                     break 3; // Break out of all loops
                                 }
                             }
                         }
-                        
+
                         // Log if we had to limit the array
                         if (count($value) > 10) {
                             $this->logger->debug('🔪 PERFORMANCE: Limited relationship array', [
@@ -6142,12 +6142,12 @@ class ObjectService
                                 'reason' => 'prevent_timeout'
                             ]);
                         }
-                        
+
                     } elseif (is_string($value) && !empty($value)) {
                         // Handle single relationship ID
                         $allIds[] = $value;
                         $extractedCount++;
-                        
+
                         // **CIRCUIT BREAKER**: Stop if we hit the limit
                         if ($extractedCount >= $maxIds) {
                             break 2; // Break out of both loops
@@ -6156,19 +6156,19 @@ class ObjectService
                 }
             }
         }
-        
+
         // Remove duplicates and return unique IDs
         $uniqueIds = array_unique($allIds);
-        
+
         $this->logger->info('🔍 RELATIONSHIP EXTRACTION: Completed with limits', [
             'totalExtracted' => count($allIds),
             'uniqueIds' => count($uniqueIds),
             'maxAllowed' => $maxIds,
             'efficiency' => 'limited_for_performance'
         ]);
-        
+
         return $uniqueIds;
-        
+
     }//end extractAllRelationshipIds()
 
 
@@ -6192,25 +6192,25 @@ class ObjectService
         if (empty($relationshipIds)) {
             return [];
         }
-        
+
         // **PERFORMANCE OPTIMIZATION**: Batch processing to prevent massive queries that cause 30s+ timeouts
         $batchSize = 25; // Small batches for consistent performance
         $maxTime = 2000; // 2 second timeout per batch
         $lookupMap = [];
         $startTime = microtime(true);
-        
+
         $batches = array_chunk($relationshipIds, $batchSize);
-        
+
         $this->logger->info('🔄 BATCHED LOADING: Processing relationship batches', [
             'totalIds' => count($relationshipIds),
             'batchCount' => count($batches),
             'batchSize' => $batchSize,
             'maxTimePerBatch' => $maxTime . 'ms'
         ]);
-        
+
         foreach ($batches as $batchIndex => $batch) {
             $batchStart = microtime(true);
-            
+
             // **CIRCUIT BREAKER**: Stop if we've been running too long
             $elapsedTime = round((microtime(true) - $startTime) * 1000, 2);
             if ($elapsedTime > 5000) { // 5 second total timeout
@@ -6222,11 +6222,11 @@ class ObjectService
                 ]);
                 break;
             }
-            
+
             try {
                 // Load this batch with timeout protection
                 $relatedObjects = $this->objectEntityMapper->findMultiple($batch);
-                
+
                 // Add to lookup map
                 foreach ($relatedObjects as $object) {
                     if ($object instanceof ObjectEntity) {
@@ -6234,21 +6234,21 @@ class ObjectService
                         if ($object->getId()) {
                             $lookupMap[(string)$object->getId()] = $object;
                         }
-                        
+
                         // Index by UUID
                         if ($object->getUuid()) {
                             $lookupMap[$object->getUuid()] = $object;
                         }
-                        
+
                         // Index by slug if available
                         if ($object->getSlug()) {
                             $lookupMap[$object->getSlug()] = $object;
                         }
                     }
                 }
-                
+
                 $batchTime = round((microtime(true) - $batchStart) * 1000, 2);
-                
+
                 // **PERFORMANCE MONITORING**: Log slow batches
                 if ($batchTime > 500) {
                     $this->logger->warning('⚠️  SLOW BATCH: Relationship batch taking too long', [
@@ -6258,7 +6258,7 @@ class ObjectService
                         'loadedInBatch' => count($relatedObjects)
                     ]);
                 }
-                
+
             } catch (\Exception $e) {
                 $this->logger->error('❌ BATCH ERROR: Failed to load relationship batch', [
                     'batchIndex' => $batchIndex,
@@ -6269,14 +6269,14 @@ class ObjectService
                 continue;
             }
         }
-        
+
         $totalTime = round((microtime(true) - $startTime) * 1000, 2);
         $this->logger->info('✅ BATCHED LOADING: Completed', [
             'totalTime' => $totalTime . 'ms',
             'loadedObjects' => count($lookupMap),
             'efficiency' => count($lookupMap) > 0 ? round($totalTime / count($lookupMap), 2) . 'ms/object' : 'no_objects'
         ]);
-        
+
         return $lookupMap;
     }
 
@@ -6290,7 +6290,7 @@ class ObjectService
     private function bulkLoadRelationships(array $relationshipIds): array
     {
         return $this->bulkLoadRelationshipsBatched($relationshipIds);
-        
+
     }//end bulkLoadRelationships()
 
 
@@ -6314,14 +6314,14 @@ class ObjectService
         if (empty($relationshipIds)) {
             return [];
         }
-        
+
         $startTime = microtime(true);
         $chunkSize = 50; // Optimal chunk size for parallel processing
         $maxParallelChunks = 4; // Limit parallel connections to avoid overwhelming DB
-        
+
         $chunks = array_chunk($relationshipIds, $chunkSize);
         $lookupMap = [];
-        
+
         $this->logger->info('🚀 PARALLEL LOADING: Starting parallel relationship loading', [
             'totalIds' => count($relationshipIds),
             'chunkCount' => count($chunks),
@@ -6329,22 +6329,22 @@ class ObjectService
             'maxParallel' => $maxParallelChunks,
             'expectedImprovement' => '60-70%'
         ]);
-        
+
         // **PARALLEL STRATEGY**: Process chunks in parallel groups
         $chunkGroups = array_chunk($chunks, $maxParallelChunks);
-        
+
         foreach ($chunkGroups as $groupIndex => $chunkGroup) {
             $groupStart = microtime(true);
             $promises = [];
             $results = [];
-            
+
             // **SIMULATE PARALLEL PROCESSING**: Launch all chunks in the group simultaneously
             foreach ($chunkGroup as $chunkIndex => $chunk) {
                 try {
                     // **OPTIMIZED QUERY**: Use selective fields to reduce data transfer
                     $chunkResults = $this->loadRelationshipChunkOptimized($chunk);
                     $results[$chunkIndex] = $chunkResults;
-                    
+
                 } catch (\Exception $e) {
                     $this->logger->error('❌ PARALLEL ERROR: Chunk failed', [
                         'groupIndex' => $groupIndex,
@@ -6355,7 +6355,7 @@ class ObjectService
                     $results[$chunkIndex] = [];
                 }
             }
-            
+
             // **MERGE RESULTS**: Combine all chunk results into lookup map
             foreach ($results as $chunkResults) {
                 foreach ($chunkResults as $object) {
@@ -6364,12 +6364,12 @@ class ObjectService
                         if ($object->getId()) {
                             $lookupMap[(string)$object->getId()] = $object;
                         }
-                        
+
                         // Index by UUID
                         if ($object->getUuid()) {
                             $lookupMap[$object->getUuid()] = $object;
                         }
-                        
+
                         // Index by slug if available
                         if ($object->getSlug()) {
                             $lookupMap[$object->getSlug()] = $object;
@@ -6377,7 +6377,7 @@ class ObjectService
                     }
                 }
             }
-            
+
             $groupTime = round((microtime(true) - $groupStart) * 1000, 2);
             $this->logger->debug('✅ PARALLEL GROUP: Completed', [
                 'groupIndex' => $groupIndex,
@@ -6386,7 +6386,7 @@ class ObjectService
                 'objectsLoaded' => array_sum(array_map('count', $results))
             ]);
         }
-        
+
         $totalTime = round((microtime(true) - $startTime) * 1000, 2);
         $this->logger->info('🎯 PARALLEL LOADING: Completed', [
             'totalTime' => $totalTime . 'ms',
@@ -6394,9 +6394,9 @@ class ObjectService
             'efficiency' => count($lookupMap) > 0 ? round($totalTime / count($lookupMap), 2) . 'ms/object' : 'no_objects',
             'improvementVsSequential' => '~60-70%'
         ]);
-        
+
         return $lookupMap;
-        
+
     }//end bulkLoadRelationshipsParallel()
 
 
@@ -6420,25 +6420,25 @@ class ObjectService
         if (empty($relationshipIds)) {
             return [];
         }
-        
+
         // **ULTRA-SELECTIVE LOADING**: Load only absolutely essential fields for 500ms target
         $qb = $this->objectEntityMapper->getDB()->getQueryBuilder();
-        
+
         $qb->select(
             'o.id',
-            'o.uuid', 
+            'o.uuid',
             'o.slug',
             'o.name',
             // **500MS OPTIMIZATION**: Minimal fields for relationships - description/summary often large
             $qb->createFunction('
-                CASE 
+                CASE
                     WHEN LENGTH(o.description) <= 200 THEN o.description
                     ELSE CONCAT(SUBSTRING(o.description, 1, 200), "...")
                 END AS description'
             ),
             $qb->createFunction('
-                CASE 
-                    WHEN LENGTH(o.summary) <= 100 THEN o.summary  
+                CASE
+                    WHEN LENGTH(o.summary) <= 100 THEN o.summary
                     ELSE CONCAT(SUBSTRING(o.summary, 1, 100), "...")
                 END AS summary'
             ),
@@ -6448,7 +6448,7 @@ class ObjectService
             'o.updated',
             // **500MS OPTIMIZATION**: Ultra-aggressive JSON truncation for relationships
             $qb->createFunction('
-                CASE 
+                CASE
                     WHEN LENGTH(o.object) <= 500 THEN o.object
                     ELSE CONCAT("{\"_lightweight\": true, \"id\": ", o.id, ", \"name\": \"", COALESCE(o.name, "Unknown"), "\"}")
                 END AS object'
@@ -6458,10 +6458,10 @@ class ObjectService
         ->where($qb->expr()->in('o.id', $qb->createNamedParameter($relationshipIds, \OCP\DB\IQueryBuilder::PARAM_STR_ARRAY)))
         ->orWhere($qb->expr()->in('o.uuid', $qb->createNamedParameter($relationshipIds, \OCP\DB\IQueryBuilder::PARAM_STR_ARRAY)))
         ->orWhere($qb->expr()->in('o.slug', $qb->createNamedParameter($relationshipIds, \OCP\DB\IQueryBuilder::PARAM_STR_ARRAY)));
-        
+
         $results = [];
         $stmt = $qb->execute();
-        
+
         while ($row = $stmt->fetch()) {
             try {
                 // **500MS OPTIMIZATION**: Ultra-lightweight object creation for relationships
@@ -6469,7 +6469,7 @@ class ObjectService
                 if ($object !== null) {
                     $results[] = $object;
                 }
-                
+
             } catch (\Exception $e) {
                 $this->logger->debug('Skipped invalid relationship object', [
                     'id' => $row['id'] ?? 'unknown',
@@ -6477,11 +6477,11 @@ class ObjectService
                 ]);
             }
         }
-        
+
         $stmt->closeCursor();
-        
+
         return $results;
-        
+
     }//end loadRelationshipChunkOptimized()
 
 
@@ -6505,7 +6505,7 @@ class ObjectService
         try {
             // **500MS OPTIMIZATION**: Direct property setting instead of full hydration
             $object = new ObjectEntity();
-            
+
             // Set only essential properties directly (bypasses hydration overhead)
             if (isset($row['id'])) {
                 $object->setId((int)$row['id']);
@@ -6537,11 +6537,11 @@ class ObjectService
             if (isset($row['updated'])) {
                 $object->setUpdated($row['updated']);
             }
-            
+
             // **500MS OPTIMIZATION**: Minimal JSON processing for object data
             if (isset($row['object'])) {
                 $objectData = $row['object'];
-                
+
                 // If it's already a lightweight placeholder, use as-is
                 if (strpos($objectData, '"_lightweight":true') !== false) {
                     $object->setObject(json_decode($objectData, true) ?? []);
@@ -6560,14 +6560,14 @@ class ObjectService
                     }
                 }
             }
-            
+
             return $object;
-            
+
         } catch (\Exception $e) {
             // Return null for failed lightweight creation
             return null;
         }
-        
+
     }//end createLightweightObjectEntity()
 
 
@@ -6591,7 +6591,7 @@ class ObjectService
     {
         // Get schemas relevant to the query context
         $schemas = $this->getSchemasForQuery($baseQuery);
-        
+
         $facetableFields = [
             '@self' => $this->getMetadataFacetableFields(),
             'object_fields' => []
@@ -6611,7 +6611,7 @@ class ObjectService
                     continue;
                 }
             }
-            
+
             if (!($schema instanceof Schema)) {
                 // Skip non-Schema objects
                 $this->logger->warning('Invalid schema object in facetable fields processing', [
@@ -6620,7 +6620,7 @@ class ObjectService
                 ]);
                 continue;
             }
-            
+
             try {
                 $schemaFacets = $schema->getFacets();
             } catch (\Exception $e) {
@@ -6631,7 +6631,7 @@ class ObjectService
                 ]);
                 continue;
             }
-            
+
             if ($schemaFacets !== null && isset($schemaFacets['object_fields'])) {
                 // Merge object fields from this schema
                 $facetableFields['object_fields'] = array_merge(
@@ -6644,13 +6644,13 @@ class ObjectService
                     'schemaId' => $schema->getId(),
                     'schemaSlug' => $schema->getSlug()
                 ]);
-                
+
                 $schema->regenerateFacetsFromProperties();
-                
+
                 // Save the schema with generated facets
                 try {
                     $this->schemaMapper->update($schema);
-                    
+
                     // Get the newly generated facets
                     $schemaFacets = $schema->getFacets();
                     if ($schemaFacets !== null && isset($schemaFacets['object_fields'])) {
@@ -6704,7 +6704,7 @@ class ObjectService
 
         // Generate cache key based on entity type and IDs
         $cacheKey = $this->generateEntityCacheKey($entityType, $ids);
-        
+
         // Try to get from cache first
         try {
             $cached = $this->entityCache->get($cacheKey);
@@ -6722,7 +6722,7 @@ class ObjectService
 
         // Cache miss - fetch from database
         $entities = call_user_func($fallbackFunc, $ids);
-        
+
         // Store in cache for next time
         try {
             $this->entityCache->set($cacheKey, $entities, self::ENTITY_CACHE_TTL);
@@ -6737,7 +6737,7 @@ class ObjectService
         }
 
         return $entities;
-        
+
     }//end getCachedEntities()
 
 
@@ -6754,14 +6754,14 @@ class ObjectService
         if ($ids === 'all') {
             return "entity_{$entityType}_all";
         }
-        
+
         if (is_array($ids)) {
             sort($ids); // Ensure consistent cache keys regardless of ID order
             return "entity_{$entityType}_" . md5(implode(',', $ids));
         }
-        
+
         return "entity_{$entityType}_{$ids}";
-        
+
     }//end generateEntityCacheKey()
 
 
@@ -6781,7 +6781,7 @@ class ObjectService
     {
         // Check if specific schemas are filtered in the query
         $schemaFilter = $baseQuery['@self']['schema'] ?? null;
-        
+
         if ($schemaFilter !== null) {
             // Get specific schemas
             if (is_array($schemaFilter)) {
@@ -6825,7 +6825,7 @@ class ObjectService
                 'data_type' => 'integer'
             ],
             'schema' => [
-                'type' => 'terms', 
+                'type' => 'terms',
                 'title' => 'Schema',
                 'description' => 'Schema that defines the object structure',
                 'data_type' => 'integer'
@@ -6840,7 +6840,7 @@ class ObjectService
             ],
             'updated' => [
                 'type' => 'date_histogram',
-                'title' => 'Updated Date', 
+                'title' => 'Updated Date',
                 'description' => 'When the object was last modified',
                 'data_type' => 'datetime',
                 'default_interval' => 'month',
