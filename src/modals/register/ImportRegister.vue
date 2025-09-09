@@ -602,13 +602,7 @@ export default {
 				console.info('ImportRegister: Calling registerStore.importRegister')
 				// Call importRegister with heartbeat status monitoring
 				const result = await registerStore.importRegister(
-					this.selectedFile, 
-					this.includeObjects, 
-					this.validation, 
-					this.events, 
-					this.rbac, 
-					this.multi, 
-					this.publish,
+					this.selectedFile,
 					// Heartbeat status callback
 					(status) => {
 						this.heartbeatStatus = status

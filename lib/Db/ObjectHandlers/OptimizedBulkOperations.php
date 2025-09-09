@@ -192,123 +192,91 @@ class OptimizedBulkOperations
         }
 
         // EXECUTE: Single massive SQL operation instead of thousands of individual ones
-        try {
-            // TIMING: Get database time BEFORE operation for accurate classification
-            $stmt = $this->db->prepare("SELECT NOW() as operation_start");
-            $stmt->execute();
-            $operationStartTime = $stmt->fetchColumn();
-            
-            $stmt = $this->db->prepare($sql);
-            $result = $stmt->execute($parameters);
-            
-            // DEBUG: Log the actual SQL and some parameters to verify what's being executed
-            $sampleParams = array_slice($parameters, 0, min(10, count($parameters)), true);
-            
-            // ENHANCED STATISTICS: Calculate created vs updated objects from affected rows
-            // MySQL INSERT...ON DUPLICATE KEY UPDATE returns:
-            // - 1 for each new row inserted (created)  
-            // - 2 for each existing row updated
-            // - 0 for unchanged rows
-            $totalObjects = count($objects);
-            $affectedRows = $result;
-            
-            // Estimate created vs updated (rough calculation)
-            // If affected_rows == totalObjects, all were created
-            // If affected_rows == totalObjects * 2, all were updated
-            // Mixed operations will be between these values
-            $estimatedCreated = 0;
+        // REMOVED ERROR SUPPRESSION: Let any database errors bubble up immediately
+        
+        // TIMING: Get database time BEFORE operation for accurate classification
+        $stmt = $this->db->prepare("SELECT NOW() as operation_start");
+        $stmt->execute();
+        $operationStartTime = $stmt->fetchColumn();
+        
+        $stmt = $this->db->prepare($sql);
+        $result = $stmt->execute($parameters);
+        
+        // DEBUG: Bulk SQL execution completed successfully
+        
+        // DEBUG: Log the actual SQL and some parameters to verify what's being executed
+        $sampleParams = array_slice($parameters, 0, min(10, count($parameters)), true);
+        
+        // ENHANCED STATISTICS: Calculate created vs updated objects from affected rows
+        // MySQL INSERT...ON DUPLICATE KEY UPDATE returns:
+        // - 1 for each new row inserted (created)  
+        // - 2 for each existing row updated
+        // - 0 for unchanged rows
+        $totalObjects = count($objects);
+        $affectedRows = $result;
+        
+        // Estimate created vs updated (rough calculation)
+        // If affected_rows == totalObjects, all were created
+        // If affected_rows == totalObjects * 2, all were updated
+        // Mixed operations will be between these values
+        $estimatedCreated = 0;
+        $estimatedUpdated = 0;
+        
+        if ($affectedRows <= $totalObjects) {
+            // Mostly creates, some might be unchanged
+            $estimatedCreated = $affectedRows;
             $estimatedUpdated = 0;
-            
-            if ($affectedRows <= $totalObjects) {
-                // Mostly creates, some might be unchanged
-                $estimatedCreated = $affectedRows;
-                $estimatedUpdated = 0;
-            } else if ($affectedRows <= $totalObjects * 2) {
-                // Mixed creates and updates
-                // This is an approximation - exact counts would require separate queries
-                $estimatedCreated = max(0, $totalObjects * 2 - $affectedRows);
-                $estimatedUpdated = $affectedRows - $estimatedCreated;
-            }
-            
-            $this->logger->info("BULK SAVE: Executed unified bulk operation with statistics", [
-                'chunk' => $chunkNumber,
-                'objects_processed' => $totalObjects,
-                'affected_rows' => $affectedRows,
-                'estimated_created' => $estimatedCreated,
-                'estimated_updated' => $estimatedUpdated,
-                'sql_size_kb' => round(strlen($sql) / 1024, 2),
-                'table_name' => $tableName
-            ]);
-            
-        } catch (\Exception $e) {
-            $this->logger->error("Unified bulk operation failed", [
-                'chunk' => $chunkNumber,
-                'error' => $e->getMessage(),
-                'objects' => count($objects)
-            ]);
-            throw $e;
+        } else if ($affectedRows <= $totalObjects * 2) {
+            // Mixed creates and updates
+            // This is an approximation - exact counts would require separate queries
+            $estimatedCreated = max(0, $totalObjects * 2 - $affectedRows);
+            $estimatedUpdated = $affectedRows - $estimatedCreated;
         }
+        
+        $this->logger->info("BULK SAVE: Executed unified bulk operation with statistics", [
+            'chunk' => $chunkNumber,
+            'objects_processed' => $totalObjects,
+            'affected_rows' => $affectedRows,
+            'estimated_created' => $estimatedCreated,
+            'estimated_updated' => $estimatedUpdated,
+            'sql_size_kb' => round(strlen($sql) / 1024, 2),
+            'table_name' => $tableName,
+            'sample_params' => $sampleParams,
+            'sql_preview' => substr($sql, 0, 200)
+        ]);
 
         // ENHANCED RETURN: Query back complete objects for precise create/update classification
         $completeObjects = [];
         
-        try {
-            // Query all affected objects to get complete data with timestamps AND operation timing for classification
-            $uuids = array_filter($processedUUIDs); // Remove empty UUIDs
-            if (!empty($uuids)) {
-                $placeholders = implode(',', array_fill(0, count($uuids), '?'));
-                $selectSql = "
-                    SELECT *,
-                           '{$operationStartTime}' as operation_start_time,
-                           CASE 
-                               WHEN created >= '{$operationStartTime}' THEN 'created'
-                               WHEN updated >= '{$operationStartTime}' THEN 'updated' 
-                               ELSE 'unchanged'
-                           END as object_status,
-                           
-                           -- DEBUG COLUMNS: Show field states for debugging
-                           CONCAT_WS('|',
-                               CONCAT('name:', COALESCE(LEFT(\`name\`, 20), 'NULL')),
-                               CONCAT('desc:', COALESCE(LEFT(\`description\`, 20), 'NULL')), 
-                               CONCAT('owner:', COALESCE(\`owner\`, 'NULL')),
-                               CONCAT('org:', COALESCE(\`organisation\`, 'NULL')),
-                               CONCAT('reg:', COALESCE(\`register\`, 'NULL')),
-                               CONCAT('sch:', COALESCE(\`schema\`, 'NULL'))
-                           ) as field_summary,
-                           
-                           -- Show JSON field states
-                           CONCAT_WS('|',
-                               CONCAT('files_len:', CHAR_LENGTH(COALESCE(\`files\`, '{}'))),
-                               CONCAT('relations_len:', CHAR_LENGTH(COALESCE(\`relations\`, '{}'))),
-                               CONCAT('object_len:', CHAR_LENGTH(COALESCE(\`object\`, '{}')))
-                           ) as json_field_summary,
-                           
-                           -- Timestamp analysis
-                           CONCAT_WS('|',
-                               CONCAT('created_vs_op:', CASE WHEN created >= '{$operationStartTime}' THEN 'NEWER' ELSE 'OLDER' END),
-                               CONCAT('updated_vs_op:', CASE WHEN updated >= '{$operationStartTime}' THEN 'NEWER' ELSE 'OLDER' END),
-                               CONCAT('created_eq_updated:', CASE WHEN created = updated THEN 'SAME' ELSE 'DIFF' END)
-                           ) as timestamp_analysis
-                    FROM {$tableName} 
-                    WHERE uuid IN ({$placeholders})
-                ";
-                
-                $stmt = $this->db->prepare($selectSql);
-                $stmt->execute(array_values($uuids));
-                $completeObjects = $stmt->fetchAll();
-                
-                $this->logger->info("BULK SAVE: Retrieved complete objects for classification", [
-                    'chunk' => $chunkNumber,
-                    'uuids_requested' => count($uuids),
-                    'objects_returned' => count($completeObjects)
-                ]);
-            }
-        } catch (\Exception $e) {
-            $this->logger->warning("Failed to retrieve complete objects after bulk save", [
-                'error' => $e->getMessage(),
-                'falling_back_to_uuid_array' => true
+        // REMOVED ERROR SUPPRESSION: Let SELECT query errors bubble up immediately
+        // Query all affected objects to get complete data with timestamps AND operation timing for classification
+        $uuids = array_filter($processedUUIDs); // Remove empty UUIDs
+        if (!empty($uuids)) {
+            $placeholders = implode(',', array_fill(0, count($uuids), '?'));
+            $selectSql = "
+                SELECT *,
+                       '{$operationStartTime}' as operation_start_time,
+                       CASE 
+                           WHEN created >= '{$operationStartTime}' THEN 'created'
+                           WHEN updated >= '{$operationStartTime}' THEN 'updated' 
+                           ELSE 'unchanged'
+                       END as object_status
+                FROM {$tableName} 
+                WHERE uuid IN ({$placeholders})
+            ";
+            
+            $stmt = $this->db->prepare($selectSql);
+            $stmt->execute(array_values($uuids));
+            $completeObjects = $stmt->fetchAll();
+            
+            // DEBUG: SELECT query completed
+            
+            $this->logger->info("BULK SAVE: Retrieved complete objects for classification", [
+                'chunk' => $chunkNumber,
+                'uuids_requested' => count($uuids),
+                'objects_returned' => count($completeObjects),
+                'select_sql_preview' => substr($selectSql, 0, 200)
             ]);
-            // Fallback to UUID array if complete object retrieval fails
         }
         
         // MEMORY CLEANUP: Clear large variables
@@ -316,7 +284,11 @@ class OptimizedBulkOperations
         
         // ENHANCED RETURN: Return complete objects with timestamps for precise classification
         // If complete objects available, return them; otherwise fallback to UUID array
-        return !empty($completeObjects) ? $completeObjects : array_filter($processedUUIDs);
+        $finalResult = !empty($completeObjects) ? $completeObjects : array_filter($processedUUIDs);
+        
+        // DEBUG: Returning bulk operation results
+        
+        return $finalResult;
     }//end processUnifiedChunk()
 
 
@@ -521,6 +493,14 @@ class OptimizedBulkOperations
             }
         }
         
+        // METADATA COLUMNS: Always include metadata columns that we extract from object data
+        $metadataColumns = ['name']; // We extract name from nested object.naam field
+        foreach ($metadataColumns as $metadataCol) {
+            if (!in_array($metadataCol, $mappedColumns)) {
+                $mappedColumns[] = $metadataCol;
+            }
+        }
+        
         // DATABASE-MANAGED: Let MySQL handle created/updated with DEFAULT and ON UPDATE clauses
         // Don't force these columns into INSERT - let database use column defaults
         
@@ -545,7 +525,7 @@ class OptimizedBulkOperations
                 return $objectData['uuid'] ?? $objectData['id'] ?? (string) \Symfony\Component\Uid\Uuid::v4();
                 
             case 'version':
-                return $objectData['version'] ?? '0.0.1';
+                return $objectData['@self']['version'] ?? '0.0.1';
                 
             case 'register':
                 // Extract from @self metadata or use register field
@@ -559,7 +539,22 @@ class OptimizedBulkOperations
                 // Store only the nested object data, not the entire structure
                 // The objectData structure should be: {id, register, schema, object: {actual_data...}}
                 // We only want to store the 'object' property contents in the database object column
-                return json_encode($objectData['object'] ?? [], \JSON_UNESCAPED_UNICODE);
+                
+                // VALIDATION: object property MUST be set and MUST be an array
+                if (!isset($objectData['object'])) {
+                    throw new \InvalidArgumentException("Object data is missing required 'object' property. Available keys: " . json_encode(array_keys($objectData)));
+                }
+                
+                $objectContent = $objectData['object'];
+                
+                // VALIDATION: object content must be an array, not a string or other type
+                if (!is_array($objectContent)) {
+                    error_log("[BULK OBJECT ERROR] Expected array but got " . gettype($objectContent) . ": " . var_export($objectContent, true));
+                    throw new \InvalidArgumentException("Object content must be an array, got " . gettype($objectContent) . ". This suggests double JSON encoding or malformed CSV parsing.");
+                }
+                
+                // Normal case - array data needs JSON encoding  
+                return json_encode($objectContent, \JSON_UNESCAPED_UNICODE);
                 
             case 'created':
                 // DATABASE-MANAGED: Let database set DEFAULT CURRENT_TIMESTAMP on new records
@@ -587,6 +582,15 @@ class OptimizedBulkOperations
                     return null; // These fields can be null
                 }
                 return $this->convertDateTimeToMySQLFormat($value);
+                
+            case 'name':
+                // SIMPLE METADATA EXTRACTION: Look for 'naam' in object data
+                $objectContent = $objectData['object'] ?? [];
+                if (is_array($objectContent) && isset($objectContent['naam'])) {
+                    return $objectContent['naam'];
+                }
+                // Fallback to direct field or existing name
+                return $objectData['name'] ?? null;
                 
             case 'files':
             case 'relations':
@@ -617,14 +621,10 @@ class OptimizedBulkOperations
             return date('Y-m-d H:i:s'); // Fallback to current time
         }
 
-        try {
-            // Convert ISO 8601 to MySQL datetime format
-            $dateTime = new \DateTime($value);
-            return $dateTime->format('Y-m-d H:i:s');
-        } catch (\Exception $e) {
-            // If parsing fails, return as-is (might already be in correct format)
-            return $value;
-        }
+        // NO ERROR SUPPRESSION: Let datetime parsing errors bubble up immediately!
+        // Convert ISO 8601 to MySQL datetime format
+        $dateTime = new \DateTime($value);
+        return $dateTime->format('Y-m-d H:i:s');
     }//end convertDateTimeToMySQLFormat()
 
 

@@ -3818,7 +3818,7 @@ class ObjectEntityMapper extends QBMapper
 
 
         // Use the proper table name method to avoid prefix issues @todo: make dynamic
-        $tableName = 'oc_openregister_objects';
+        $tableName = 'openregister_objects';
 
         // Get the first object to determine column structure
         $firstObject = $insertObjects[0];
@@ -3995,7 +3995,7 @@ class ObjectEntityMapper extends QBMapper
         }
 
         // Use the proper table name method to avoid prefix issues @todo: make dynamic
-        $tableName = 'oc_openregister_objects';
+        $tableName = 'openregister_objects';
         $updatedIds = [];
 
         // Process each object individually for better compatibility
@@ -4069,7 +4069,7 @@ class ObjectEntityMapper extends QBMapper
         });
 
         // PERFORMANCE: Pre-build prepared statement SQL
-        $tableName = 'oc_openregister_objects';
+        $tableName = 'openregister_objects';
         $setParts = [];
         foreach ($updateableColumns as $column) {
             $setParts[] = "`{$column}` = :param_{$column}";
@@ -4170,7 +4170,7 @@ class ObjectEntityMapper extends QBMapper
         }
 
         $startTime = microtime(true);
-        $tableName = 'oc_openregister_objects';
+        $tableName = 'openregister_objects';
         $firstObject = $insertObjects[0];
         $columns = array_keys($firstObject);
         
@@ -4871,7 +4871,7 @@ class ObjectEntityMapper extends QBMapper
 
 
         $processedIds = [];
-        $tableName = 'oc_openregister_objects';
+        $tableName = 'openregister_objects';
 
         foreach ($largeObjects as $index => $objectData) {
             try {
