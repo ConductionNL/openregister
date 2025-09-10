@@ -528,6 +528,16 @@ class GuzzleSolrService
             'published' => $object->getPublished() ? $object->getPublished()->format('Y-m-d\TH:i:s\Z') : null,
             'depublished' => $object->getDepublished() ? $object->getDepublished()->format('Y-m-d\TH:i:s\Z') : null,
             
+            // Additional metadata fields for comprehensive indexing
+            'owner' => $object->getOwner(),
+            'locked' => $object->getLocked(),
+            'authorization' => $object->getAuthorization() ? json_encode($object->getAuthorization()) : null,
+            'deleted' => $object->getDeleted() ? json_encode($object->getDeleted()) : null,
+            'validation' => $object->getValidation() ? json_encode($object->getValidation()) : null,
+            'groups' => $object->getGroups() ? json_encode($object->getGroups()) : null,
+            'folder' => $object->getFolder(),
+            'application' => $object->getApplication(),
+            
             // Full-text search content
             '_text_' => $this->extractTextContent($object, $objectData ?: []),
         ];

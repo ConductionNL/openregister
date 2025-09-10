@@ -83,7 +83,6 @@ class SettingsService
      * @param AuditTrailMapper        $auditTrailMapper       Audit trail mapper for database operations.
      * @param SearchTrailMapper       $searchTrailMapper      Search trail mapper for database operations.
      * @param ObjectEntityMapper      $objectEntityMapper     Object entity mapper for database operations.
-     * @param ObjectCacheService      $objectCacheService     Object cache service for cache management.
      * @param SchemaCacheService      $schemaCacheService     Schema cache service for cache management.
      * @param SchemaFacetCacheService $schemaFacetCacheService Schema facet cache service for cache management.
      * @param ICacheFactory           $cacheFactory           Cache factory for distributed cache access.
@@ -100,7 +99,6 @@ class SettingsService
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly SearchTrailMapper $searchTrailMapper,
         private readonly ObjectEntityMapper $objectEntityMapper,
-        private readonly ObjectCacheService $objectCacheService,
         private readonly SchemaCacheService $schemaCacheService,
         private readonly SchemaFacetCacheService $schemaFacetCacheService,
         private readonly ICacheFactory $cacheFactory
@@ -807,7 +805,8 @@ class SettingsService
             // Get object cache stats (only if ObjectCacheService provides them)
             $objectStats = [];
             try {
-                $objectStats = $this->objectCacheService->getStats();
+                $objectCacheService = $this->container->get(ObjectCacheService::class);
+                $objectStats = $objectCacheService->getStats();
             } catch (\Exception $e) {
                 // If no object cache stats available, use defaults
                 $objectStats = [
@@ -1027,9 +1026,10 @@ class SettingsService
     private function clearObjectCache(?string $userId = null): array
     {
         try {
-            $beforeStats = $this->objectCacheService->getStats();
-            $this->objectCacheService->clearCache();
-            $afterStats = $this->objectCacheService->getStats();
+            $objectCacheService = $this->container->get(ObjectCacheService::class);
+            $beforeStats = $objectCacheService->getStats();
+            $objectCacheService->clearCache();
+            $afterStats = $objectCacheService->getStats();
 
             return [
                 'service' => 'object',
@@ -1056,12 +1056,13 @@ class SettingsService
     private function clearNamesCache(): array
     {
         try {
-            $beforeStats = $this->objectCacheService->getStats();
+            $objectCacheService = $this->container->get(ObjectCacheService::class);
+            $beforeStats = $objectCacheService->getStats();
             $beforeNameCacheSize = $beforeStats['name_cache_size'] ?? 0;
             
-            $this->objectCacheService->clearNameCache();
+            $objectCacheService->clearNameCache();
             
-            $afterStats = $this->objectCacheService->getStats();
+            $afterStats = $objectCacheService->getStats();
             $afterNameCacheSize = $afterStats['name_cache_size'] ?? 0;
 
             return [
@@ -1098,12 +1099,13 @@ class SettingsService
     {
         try {
             $startTime = microtime(true);
-            $beforeStats = $this->objectCacheService->getStats();
+            $objectCacheService = $this->container->get(ObjectCacheService::class);
+            $beforeStats = $objectCacheService->getStats();
             
-            $loadedCount = $this->objectCacheService->warmupNameCache();
+            $loadedCount = $objectCacheService->warmupNameCache();
             
             $executionTime = round((microtime(true) - $startTime) * 1000, 2);
-            $afterStats = $this->objectCacheService->getStats();
+            $afterStats = $objectCacheService->getStats();
 
             return [
                 'success' => true,
