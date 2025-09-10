@@ -471,9 +471,16 @@ class SaveObject
         // Name field mapping
         if (isset($config['objectNameField']) === true) {
             $name = $this->extractMetadataValue($objectData, $config['objectNameField']);
+            error_log("[BULK METADATA] Extracted name: " . var_export($name, true) . " from field: " . $config['objectNameField']);
+            error_log("[BULK METADATA] Object data sample: " . json_encode(array_slice($objectData, 0, 5, true)));
             if ($name !== null && trim($name) !== '') {
                 $entity->setName(trim($name));
+                error_log("[BULK METADATA] Successfully set entity name to: " . trim($name));
+            } else {
+                error_log("[BULK METADATA] WARNING: Name is null or empty!");
             }
+        } else {
+            error_log("[BULK METADATA] ERROR: objectNameField not configured in schema!");
         }
 
         // Description field mapping

@@ -564,17 +564,11 @@ class RegistersController extends Controller
                     break;
                 case 'csv':
                     // Import from CSV and get summary (now returns sheet-based format)
-                    // For CSV, schema can be specified in the request
+                    // For CSV, schema MUST be specified in the request
                     $schemaId = $this->request->getParam('schema');
 
                     if (!$schemaId) {
-                        // If no schema specified, use the first schema from the register
-                        $schemas = $register->getSchemas();
-                        if (empty($schemas)) {
-                            return new JSONResponse(['error' => 'No schema found for register'], 400);
-                        }
-
-                        $schemaId = is_array($schemas) ? reset($schemas) : $schemas;
+                        return new JSONResponse(['error' => 'Schema parameter is required for CSV imports. Please specify ?schema=105 in your request.'], 400);
                     }
 
                     $schema = $this->schemaMapper->find($schemaId);

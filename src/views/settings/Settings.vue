@@ -308,6 +308,9 @@
 				appearance="dark" />
 		</NcSettingsSection>
 
+		<!-- SOLR Search Management Dashboard -->
+		<SolrDashboard />
+		
 		<NcSettingsSection name="Cache Management"
 			description="Monitor and manage API caching for optimal performance">
 			<div v-if="!loadingCache" class="cache-section">
@@ -327,7 +330,7 @@
 						</NcButton>
 						<NcButton
 							type="error"
-							:disabled="loading || clearingCache || loadingCache"
+							:disabled="loading || clearingCache || loadingCache || cacheStats.unavailable"
 							@click="showClearCacheDialog">
 							<template #icon>
 								<NcLoadingIcon v-if="clearingCache" :size="20" />
@@ -338,7 +341,27 @@
 					</div>
 				</div>
 
-				<div class="cache-content">
+				<!-- Cache Unavailable Message -->
+				<div v-if="cacheStats.unavailable" class="cache-unavailable">
+					<div class="unavailable-message">
+						<h4>⚠️ Cache Statistics Unavailable</h4>
+						<p>Cache monitoring is not available. This can happen when:</p>
+						<ul>
+							<li>Cache systems are not properly configured</li>
+							<li>Statistics collection is disabled for performance reasons</li>
+							<li>Cache backends don't support statistics</li>
+						</ul>
+						<div v-if="cacheStats.errorMessage" class="error-details">
+							<strong>Technical Details:</strong> {{ cacheStats.errorMessage }}
+						</div>
+						<p class="performance-note">
+							<strong>Note:</strong> This is normal behavior as storing cache metadata in database tables would cause performance issues.
+							Cache systems are working but detailed statistics are not collected.
+						</p>
+					</div>
+				</div>
+
+				<div v-else class="cache-content">
 					<!-- Cache Overview -->
 					<div class="cache-overview">
 						<div class="cache-overview-cards">
@@ -1094,13 +1117,23 @@
 					<div class="button-group">
 						<NcButton
 							type="secondary"
-							:disabled="loading || saving || testingConnection"
+							:disabled="loading || saving || testingConnection || warmingUpSolr"
 							@click="testSolrConnection">
 							<template #icon>
 								<NcLoadingIcon v-if="testingConnection" :size="20" />
 								<TestTube v-else :size="20" />
 							</template>
 							Test Connection
+						</NcButton>
+						<NcButton
+							type="secondary"
+							:disabled="loading || saving || testingConnection || warmingUpSolr || !solrOptions.enabled"
+							@click="warmupSolrIndex">
+							<template #icon>
+								<NcLoadingIcon v-if="warmingUpSolr" :size="20" />
+								<Refresh v-else :size="20" />
+							</template>
+							{{ warmingUpSolr ? 'Warming up...' : 'Warmup Index' }}
 						</NcButton>
 						<NcButton
 							type="primary"
@@ -1381,6 +1414,7 @@ import Save from 'vue-material-design-icons/ContentSave.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import TestTube from 'vue-material-design-icons/TestTube.vue'
+import SolrDashboard from './SolrDashboard.vue'
 
 /**
  * @class Settings
@@ -1408,6 +1442,7 @@ export default defineComponent({
 		Refresh,
 		Delete,
 		TestTube,
+		SolrDashboard,
 	},
 
 	/**
@@ -1529,6 +1564,8 @@ export default defineComponent({
 					currentTrend: 'unknown',
 				},
 				lastUpdated: new Date(),
+				unavailable: true,
+				errorMessage: 'Loading...',
 			},
 			solrOptions: {
 				enabled: false,
@@ -1546,6 +1583,7 @@ export default defineComponent({
 			},
 			solrConnectionStatus: null,
 			testingConnection: false,
+			warmingUpSolr: false,
 		}
 	},
 
@@ -1725,7 +1763,7 @@ export default defineComponent({
 
 	methods: {
 		/**
-		 * Loads all settings from the backend
+		 * Loads all settings from the backend using focused endpoints
 		 *
 		 * @async
 		 * @return {Promise<void>}
@@ -1735,66 +1773,92 @@ export default defineComponent({
 			this.loadingVersionInfo = true
 
 			try {
-				const response = await fetch('/index.php/apps/openregister/api/settings')
-				const data = await response.json()
+				// Load all settings in parallel using focused endpoints
+				const [versionResponse, rbacResponse, multitenancyResponse, retentionResponse, solrResponse] = await Promise.all([
+					fetch('/index.php/apps/openregister/api/settings/version'),
+					fetch('/index.php/apps/openregister/api/settings/rbac'),
+					fetch('/index.php/apps/openregister/api/settings/multitenancy'),
+					fetch('/index.php/apps/openregister/api/settings/retention'),
+					fetch('/index.php/apps/openregister/api/settings/solr')
+				])
 
-				if (data.error) {
-					console.error('Failed to load settings:', data.error)
-					return
-				}
-
-				// Version information
-				this.versionInfo = data.version
-
-				// Available options
-				this.availableGroups = data.availableGroups
-				this.availableTenants = data.availableTenants
-				this.availableUsers = data.availableUsers
-
-				// RBAC settings
-				this.rbacOptions = {
-					enableRBAC: data.rbac.enabled,
-					anonymousGroup: this.findOptionByValue(this.groupOptions, data.rbac.anonymousGroup),
-					defaultNewUserGroup: this.findOptionByValue(this.groupOptions, data.rbac.defaultNewUserGroup),
-					defaultObjectOwner: this.findOptionByValue(this.userOptions, data.rbac.defaultObjectOwner),
-					adminOverride: data.rbac.adminOverride,
-				}
-
-				// Multitenancy settings
-				this.multitenancyOptions = {
-					enableMultitenancy: data.multitenancy.enabled,
-					defaultUserTenant: this.findOptionByValue(this.tenantOptions, data.multitenancy.defaultUserTenant),
-					defaultObjectTenant: this.findOptionByValue(this.tenantOptions, data.multitenancy.defaultObjectTenant),
-				}
-
-				// Retention settings
-				if (data.retention) {
-					this.retentionOptions = {
-						objectArchiveRetention: data.retention.objectArchiveRetention || 31536000000,
-						objectDeleteRetention: data.retention.objectDeleteRetention || 63072000000,
-						searchTrailRetention: data.retention.searchTrailRetention || 2592000000,
-						createLogRetention: data.retention.createLogRetention || 2592000000,
-						readLogRetention: data.retention.readLogRetention || 86400000,
-						updateLogRetention: data.retention.updateLogRetention || 604800000,
-						deleteLogRetention: data.retention.deleteLogRetention || 2592000000,
+				// Process version information
+				if (versionResponse.ok) {
+					const versionData = await versionResponse.json()
+					if (versionData && !versionData.error) {
+						this.versionInfo = versionData
 					}
 				}
 
-				// SOLR settings
-				if (data.solr) {
-					this.solrOptions = {
-						enabled: data.solr.enabled || false,
-						host: data.solr.host || 'localhost',
-						port: data.solr.port || 8983,
-						path: data.solr.path || '/solr',
-						core: data.solr.core || 'openregister',
-						scheme: this.findOptionByValue(this.schemeOptions, data.solr.scheme) || { label: 'HTTP', value: 'http' },
-						username: data.solr.username || '',
-						password: data.solr.password || '',
-						timeout: data.solr.timeout || 30,
-						autoCommit: data.solr.autoCommit !== undefined ? data.solr.autoCommit : true,
-						commitWithin: data.solr.commitWithin || 1000,
-						enableLogging: data.solr.enableLogging !== undefined ? data.solr.enableLogging : true,
+				// Process RBAC settings
+				if (rbacResponse.ok) {
+					const rbacData = await rbacResponse.json()
+					if (rbacData && !rbacData.error) {
+						// Available options
+						this.availableGroups = rbacData.availableGroups || {}
+						this.availableUsers = rbacData.availableUsers || {}
+
+						// RBAC settings
+						this.rbacOptions = {
+							enableRBAC: rbacData.enabled || false,
+							anonymousGroup: this.findOptionByValue(this.groupOptions, rbacData.anonymousGroup),
+							defaultNewUserGroup: this.findOptionByValue(this.groupOptions, rbacData.defaultNewUserGroup),
+							defaultObjectOwner: this.findOptionByValue(this.userOptions, rbacData.defaultObjectOwner),
+							adminOverride: rbacData.adminOverride !== undefined ? rbacData.adminOverride : true,
+						}
+					}
+				}
+
+				// Process Multitenancy settings
+				if (multitenancyResponse.ok) {
+					const multitenancyData = await multitenancyResponse.json()
+					if (multitenancyData && !multitenancyData.error) {
+						// Available tenants
+						this.availableTenants = multitenancyData.availableTenants || {}
+
+						// Multitenancy settings
+						this.multitenancyOptions = {
+							enableMultitenancy: multitenancyData.enabled || false,
+							defaultUserTenant: this.findOptionByValue(this.tenantOptions, multitenancyData.defaultUserTenant),
+							defaultObjectTenant: this.findOptionByValue(this.tenantOptions, multitenancyData.defaultObjectTenant),
+						}
+					}
+				}
+
+				// Process Retention settings
+				if (retentionResponse.ok) {
+					const retentionData = await retentionResponse.json()
+					if (retentionData && !retentionData.error) {
+						this.retentionOptions = {
+							objectArchiveRetention: retentionData.objectArchiveRetention || 31536000000,
+							objectDeleteRetention: retentionData.objectDeleteRetention || 63072000000,
+							searchTrailRetention: retentionData.searchTrailRetention || 2592000000,
+							createLogRetention: retentionData.createLogRetention || 2592000000,
+							readLogRetention: retentionData.readLogRetention || 86400000,
+							updateLogRetention: retentionData.updateLogRetention || 604800000,
+							deleteLogRetention: retentionData.deleteLogRetention || 2592000000,
+						}
+					}
+				}
+
+				// Process SOLR settings
+				if (solrResponse.ok) {
+					const solrData = await solrResponse.json()
+					if (solrData && !solrData.error) {
+						this.solrOptions = {
+							enabled: solrData.enabled || false,
+							host: solrData.host || 'solr',
+							port: solrData.port || 8983,
+							path: solrData.path || '/solr',
+							core: solrData.core || 'openregister',
+							scheme: this.findOptionByValue(this.schemeOptions, solrData.scheme) || { label: 'HTTP', value: 'http' },
+							username: solrData.username || '',
+							password: solrData.password || '',
+							timeout: solrData.timeout || 30,
+							autoCommit: solrData.autoCommit !== undefined ? solrData.autoCommit : true,
+							commitWithin: solrData.commitWithin || 1000,
+							enableLogging: solrData.enableLogging !== undefined ? solrData.enableLogging : true,
+						}
 					}
 				}
 
@@ -1857,7 +1921,7 @@ export default defineComponent({
 		},
 
 		/**
-		 * Saves all settings to the backend
+		 * Saves all settings to the backend using focused endpoints
 		 *
 		 * @async
 		 * @return {Promise<void>}
@@ -1866,109 +1930,144 @@ export default defineComponent({
 			this.saving = true
 
 			try {
-				const settingsData = {
-					rbac: {
-						enabled: this.rbacOptions.enableRBAC,
-						anonymousGroup: this.rbacOptions.anonymousGroup?.value || 'public',
-						defaultNewUserGroup: this.rbacOptions.defaultNewUserGroup?.value || 'viewer',
-						defaultObjectOwner: this.rbacOptions.defaultObjectOwner?.value || '',
-						adminOverride: this.rbacOptions.adminOverride,
-					},
-					multitenancy: {
-						enabled: this.multitenancyOptions.enableMultitenancy,
-						defaultUserTenant: this.multitenancyOptions.defaultUserTenant?.value || '',
-						defaultObjectTenant: this.multitenancyOptions.defaultObjectTenant?.value || '',
-					},
-					retention: {
-						objectArchiveRetention: this.retentionOptions.objectArchiveRetention,
-						objectDeleteRetention: this.retentionOptions.objectDeleteRetention,
-						searchTrailRetention: this.retentionOptions.searchTrailRetention,
-						createLogRetention: this.retentionOptions.createLogRetention,
-						readLogRetention: this.retentionOptions.readLogRetention,
-						updateLogRetention: this.retentionOptions.updateLogRetention,
-						deleteLogRetention: this.retentionOptions.deleteLogRetention,
-					},
-					solr: {
-						enabled: this.solrOptions.enabled,
-						host: this.solrOptions.host,
-						port: this.solrOptions.port,
-						path: this.solrOptions.path,
-						core: this.solrOptions.core,
-						scheme: this.solrOptions.scheme?.value || 'http',
-						username: this.solrOptions.username,
-						password: this.solrOptions.password,
-						timeout: this.solrOptions.timeout,
-						autoCommit: this.solrOptions.autoCommit,
-						commitWithin: this.solrOptions.commitWithin,
-						enableLogging: this.solrOptions.enableLogging,
-					},
+				// Prepare data for each focused endpoint
+				const rbacData = {
+					enabled: this.rbacOptions.enableRBAC,
+					anonymousGroup: this.rbacOptions.anonymousGroup?.value || 'public',
+					defaultNewUserGroup: this.rbacOptions.defaultNewUserGroup?.value || 'viewer',
+					defaultObjectOwner: this.rbacOptions.defaultObjectOwner?.value || '',
+					adminOverride: this.rbacOptions.adminOverride,
 				}
 
-				const response = await fetch('/index.php/apps/openregister/api/settings', {
-					method: 'PUT',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify(settingsData),
-				})
-
-				const result = await response.json()
-
-				if (result.error) {
-					console.error('Failed to save settings:', result.error)
-					return
+				const multitenancyData = {
+					enabled: this.multitenancyOptions.enableMultitenancy,
+					defaultUserTenant: this.multitenancyOptions.defaultUserTenant?.value || '',
+					defaultObjectTenant: this.multitenancyOptions.defaultObjectTenant?.value || '',
 				}
 
-				// Update local state with server response
-				this.availableGroups = result.availableGroups
-				this.availableTenants = result.availableTenants
-				this.availableUsers = result.availableUsers
-
-				// Update RBAC settings
-				this.rbacOptions = {
-					enableRBAC: result.rbac.enabled,
-					anonymousGroup: this.findOptionByValue(this.groupOptions, result.rbac.anonymousGroup),
-					defaultNewUserGroup: this.findOptionByValue(this.groupOptions, result.rbac.defaultNewUserGroup),
-					defaultObjectOwner: this.findOptionByValue(this.userOptions, result.rbac.defaultObjectOwner),
-					adminOverride: result.rbac.adminOverride,
+				const retentionData = {
+					objectArchiveRetention: this.retentionOptions.objectArchiveRetention,
+					objectDeleteRetention: this.retentionOptions.objectDeleteRetention,
+					searchTrailRetention: this.retentionOptions.searchTrailRetention,
+					createLogRetention: this.retentionOptions.createLogRetention,
+					readLogRetention: this.retentionOptions.readLogRetention,
+					updateLogRetention: this.retentionOptions.updateLogRetention,
+					deleteLogRetention: this.retentionOptions.deleteLogRetention,
 				}
 
-				// Update Multitenancy settings
-				this.multitenancyOptions = {
-					enableMultitenancy: result.multitenancy.enabled,
-					defaultUserTenant: this.findOptionByValue(this.tenantOptions, result.multitenancy.defaultUserTenant),
-					defaultObjectTenant: this.findOptionByValue(this.tenantOptions, result.multitenancy.defaultObjectTenant),
+				const solrData = {
+					enabled: this.solrOptions.enabled,
+					host: this.solrOptions.host,
+					port: this.solrOptions.port,
+					path: this.solrOptions.path,
+					core: this.solrOptions.core,
+					scheme: this.solrOptions.scheme?.value || 'http',
+					username: this.solrOptions.username,
+					password: this.solrOptions.password,
+					timeout: this.solrOptions.timeout,
+					autoCommit: this.solrOptions.autoCommit,
+					commitWithin: this.solrOptions.commitWithin,
+					enableLogging: this.solrOptions.enableLogging,
 				}
 
-				// Update Retention settings
-				if (result.retention) {
-					this.retentionOptions = {
-						objectArchiveRetention: result.retention.objectArchiveRetention,
-						objectDeleteRetention: result.retention.objectDeleteRetention,
-						searchTrailRetention: result.retention.searchTrailRetention,
-						createLogRetention: result.retention.createLogRetention,
-						readLogRetention: result.retention.readLogRetention,
-						updateLogRetention: result.retention.updateLogRetention,
-						deleteLogRetention: result.retention.deleteLogRetention,
+				// Save all settings in parallel using focused endpoints
+				const [rbacResponse, multitenancyResponse, retentionResponse, solrResponse] = await Promise.all([
+					fetch('/index.php/apps/openregister/api/settings/rbac', {
+						method: 'PUT',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify(rbacData),
+					}),
+					fetch('/index.php/apps/openregister/api/settings/multitenancy', {
+						method: 'PUT',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify(multitenancyData),
+					}),
+					fetch('/index.php/apps/openregister/api/settings/retention', {
+						method: 'PUT',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify(retentionData),
+					}),
+					fetch('/index.php/apps/openregister/api/settings/solr', {
+						method: 'PUT',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify(solrData),
+					}),
+				])
+
+				// Process RBAC response
+				if (rbacResponse.ok) {
+					const rbacResult = await rbacResponse.json()
+					if (rbacResult && !rbacResult.error) {
+						this.availableGroups = rbacResult.availableGroups || this.availableGroups
+						this.availableUsers = rbacResult.availableUsers || this.availableUsers
+						
+						this.rbacOptions = {
+							enableRBAC: rbacResult.enabled,
+							anonymousGroup: this.findOptionByValue(this.groupOptions, rbacResult.anonymousGroup),
+							defaultNewUserGroup: this.findOptionByValue(this.groupOptions, rbacResult.defaultNewUserGroup),
+							defaultObjectOwner: this.findOptionByValue(this.userOptions, rbacResult.defaultObjectOwner),
+							adminOverride: rbacResult.adminOverride,
+						}
 					}
+				} else {
+					console.error('Failed to save RBAC settings:', await rbacResponse.text())
 				}
 
-				// Update SOLR settings
-				if (result.solr) {
-					this.solrOptions = {
-						enabled: result.solr.enabled || false,
-						host: result.solr.host || 'localhost',
-						port: result.solr.port || 8983,
-						path: result.solr.path || '/solr',
-						core: result.solr.core || 'openregister',
-						scheme: this.findOptionByValue(this.schemeOptions, result.solr.scheme) || { label: 'HTTP', value: 'http' },
-						username: result.solr.username || '',
-						password: result.solr.password || '',
-						timeout: result.solr.timeout || 30,
-						autoCommit: result.solr.autoCommit !== undefined ? result.solr.autoCommit : true,
-						commitWithin: result.solr.commitWithin || 1000,
-						enableLogging: result.solr.enableLogging !== undefined ? result.solr.enableLogging : true,
+				// Process Multitenancy response
+				if (multitenancyResponse.ok) {
+					const multitenancyResult = await multitenancyResponse.json()
+					if (multitenancyResult && !multitenancyResult.error) {
+						this.availableTenants = multitenancyResult.availableTenants || this.availableTenants
+						
+						this.multitenancyOptions = {
+							enableMultitenancy: multitenancyResult.enabled,
+							defaultUserTenant: this.findOptionByValue(this.tenantOptions, multitenancyResult.defaultUserTenant),
+							defaultObjectTenant: this.findOptionByValue(this.tenantOptions, multitenancyResult.defaultObjectTenant),
+						}
 					}
+				} else {
+					console.error('Failed to save Multitenancy settings:', await multitenancyResponse.text())
+				}
+
+				// Process Retention response
+				if (retentionResponse.ok) {
+					const retentionResult = await retentionResponse.json()
+					if (retentionResult && !retentionResult.error) {
+						this.retentionOptions = {
+							objectArchiveRetention: retentionResult.objectArchiveRetention,
+							objectDeleteRetention: retentionResult.objectDeleteRetention,
+							searchTrailRetention: retentionResult.searchTrailRetention,
+							createLogRetention: retentionResult.createLogRetention,
+							readLogRetention: retentionResult.readLogRetention,
+							updateLogRetention: retentionResult.updateLogRetention,
+							deleteLogRetention: retentionResult.deleteLogRetention,
+						}
+					}
+				} else {
+					console.error('Failed to save Retention settings:', await retentionResponse.text())
+				}
+
+				// Process SOLR response
+				if (solrResponse.ok) {
+					const solrResult = await solrResponse.json()
+					if (solrResult && !solrResult.error) {
+						this.solrOptions = {
+							enabled: solrResult.enabled || false,
+							host: solrResult.host || 'solr',
+							port: solrResult.port || 8983,
+							path: solrResult.path || '/solr',
+							core: solrResult.core || 'openregister',
+							scheme: this.findOptionByValue(this.schemeOptions, solrResult.scheme) || { label: 'HTTP', value: 'http' },
+							username: solrResult.username || '',
+							password: solrResult.password || '',
+							timeout: solrResult.timeout || 30,
+							autoCommit: solrResult.autoCommit !== undefined ? solrResult.autoCommit : true,
+							commitWithin: solrResult.commitWithin || 1000,
+							enableLogging: solrResult.enableLogging !== undefined ? solrResult.enableLogging : true,
+						}
+					}
+				} else {
+					console.error('Failed to save SOLR settings:', await solrResponse.text())
 				}
 
 			} catch (error) {
@@ -2129,7 +2228,7 @@ export default defineComponent({
 		},
 
 		/**
-		 * Load cache statistics from the backend
+		 * Load cache statistics from the backend (gracefully handle missing data)
 		 *
 		 * @async
 		 * @return {Promise<void>}
@@ -2142,7 +2241,32 @@ export default defineComponent({
 				const data = await response.json()
 
 				if (data.error) {
-					console.error('Failed to load cache stats:', data.error)
+					console.warn('Cache statistics not available:', data.error)
+					// Set default values when cache stats unavailable
+					this.cacheStats = {
+						overview: {
+							totalCacheSize: 0,
+							totalCacheEntries: 0,
+							overallHitRate: 0.0,
+							averageResponseTime: 0.0,
+							cacheEfficiency: 0.0,
+						},
+						services: {
+							object: { entries: 0, hits: 0, requests: 0, memoryUsage: 0 },
+							schema: { entries: 0, hits: 0, requests: 0, memoryUsage: 0 },
+							facet: { entries: 0, hits: 0, requests: 0, memoryUsage: 0 },
+						},
+						distributed: { type: 'none', backend: 'Unknown', available: false },
+						performance: { 
+							averageHitTime: 0, 
+							averageMissTime: 0, 
+							performanceGain: 0, 
+							optimalHitRate: 85.0 
+						},
+						lastUpdated: new Date(),
+						unavailable: true,
+						errorMessage: data.error,
+					}
 					return
 				}
 
@@ -2152,10 +2276,15 @@ export default defineComponent({
 					distributed: data.distributed || this.cacheStats.distributed,
 					performance: data.performance || this.cacheStats.performance,
 					lastUpdated: new Date(data.lastUpdated || Date.now()),
+					unavailable: false,
+					errorMessage: null,
 				}
 
 			} catch (error) {
-				console.error('Failed to load cache stats:', error)
+				console.warn('Failed to load cache stats:', error)
+				// Set safe defaults on network error
+				this.cacheStats.unavailable = true
+				this.cacheStats.errorMessage = 'Network error loading cache statistics'
 			} finally {
 				this.loadingCache = false
 			}
@@ -2330,6 +2459,39 @@ export default defineComponent({
 				}
 			} finally {
 				this.testingConnection = false
+			}
+		},
+
+		/**
+		 * Warmup SOLR index with current data
+		 *
+		 * @async
+		 * @return {Promise<void>}
+		 */
+		async warmupSolrIndex() {
+			this.warmingUpSolr = true
+
+			try {
+				const response = await fetch('/index.php/apps/openregister/api/settings/solr/warmup', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				})
+
+				const result = await response.json()
+
+				if (result.error) {
+					console.error('Failed to warmup SOLR index:', result.error)
+					return
+				}
+
+				console.log('SOLR warmup completed successfully:', result)
+
+			} catch (error) {
+				console.error('Failed to warmup SOLR index:', error)
+			} finally {
+				this.warmingUpSolr = false
 			}
 		},
 	},
@@ -2888,6 +3050,57 @@ h4 {
 /* Cache Section Styles */
 .cache-section {
 	max-width: none;
+}
+
+.cache-unavailable {
+	margin: 2rem 0;
+	padding: 1.5rem;
+	border: 1px solid var(--color-warning);
+	border-radius: var(--border-radius-large);
+	background-color: var(--color-warning-light, #fff3cd);
+}
+
+.unavailable-message h4 {
+	color: var(--color-warning-dark, #856404);
+	margin: 0 0 1rem 0;
+	font-size: 1.1rem;
+}
+
+.unavailable-message p {
+	color: var(--color-text-dark);
+	line-height: 1.5;
+	margin-bottom: 1rem;
+}
+
+.unavailable-message ul {
+	margin: 1rem 0;
+	padding-left: 1.5rem;
+	color: var(--color-text-light);
+}
+
+.unavailable-message li {
+	margin-bottom: 0.5rem;
+	line-height: 1.4;
+}
+
+.error-details {
+	background-color: var(--color-background-hover);
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	padding: 0.75rem;
+	margin: 1rem 0;
+	font-family: monospace;
+	font-size: 0.9rem;
+	word-break: break-word;
+}
+
+.performance-note {
+	background-color: var(--color-primary-light, #e3f2fd);
+	border-left: 4px solid var(--color-primary);
+	padding: 0.75rem;
+	margin: 1rem 0 0 0;
+	font-style: italic;
+	color: var(--color-primary-dark, #1565c0);
 }
 
 .cache-content {
