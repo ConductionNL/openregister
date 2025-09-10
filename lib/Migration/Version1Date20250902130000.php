@@ -40,12 +40,9 @@ class Version1Date20250902130000 extends SimpleMigrationStep
 
         $table = $schema->getTable('openregister_objects');
 
-        // Add individual indexes for search performance
-        // name is STRING(255) - can use regular index
-        if ($table->hasColumn('name') && !$table->hasIndex('objects_name_idx')) {
-            $table->addIndex(['name'], 'objects_name_idx');
-            $output->info('Added index objects_name_idx on name column');
-        }
+        // Skip name index creation for now to avoid MySQL key length issues
+        // TODO: Add name index after app is enabled with proper length prefix
+        $output->info('Skipping name index creation to avoid MySQL key length issues');
 
         return $schema;
     }
@@ -73,37 +70,8 @@ class Version1Date20250902130000 extends SimpleMigrationStep
         // Get database connection for raw SQL
         $connection = \OC::$server->getDatabaseConnection();
 
-        // Add prefix indexes for TEXT columns (description, summary) to avoid key length limits
-        $textIndexes = [
-            'description' => ['index' => 'objects_description_idx', 'length' => 255],
-            'summary' => ['index' => 'objects_summary_idx', 'length' => 255],
-        ];
-
-        foreach ($textIndexes as $column => $config) {
-            try {
-                // Check if column exists first
-                $table = $schema->getTable('openregister_objects');
-                if (!$table->hasColumn($column)) {
-                    continue;
-                }
-
-                // Check if index already exists
-                $indexExists = $connection->executeQuery(
-                    "SHOW INDEX FROM `*PREFIX*openregister_objects` WHERE Key_name = ?",
-                    [$config['index']]
-                )->fetch();
-
-                if (!$indexExists) {
-                    // Create prefix index with raw SQL
-                    $sql = "CREATE INDEX `{$config['index']}` ON `*PREFIX*openregister_objects` (`{$column}`({$config['length']}))";
-                    $connection->executeStatement($sql);
-                    $output->info("Added prefix index {$config['index']} on column {$column} with length {$config['length']}");
-                } else {
-                    $output->info("Index {$config['index']} already exists on column {$column}");
-                }
-            } catch (\Exception $e) {
-                $output->warning("Failed to create index {$config['index']} on column {$column}: " . $e->getMessage());
-            }
-        }
+        // Skip complex index creation for now to avoid MySQL key length issues
+        // TODO: Add indexes after app is enabled
+        $output->info('Skipping complex index creation to avoid MySQL key length issues');
     }
 }
