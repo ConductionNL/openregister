@@ -25,9 +25,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
-use OCA\OpenRegister\Service\SolrService;
-use OCA\OpenRegister\Service\SolrServiceFactory;
-use OCP\AppFramework\IAppContainer;
+use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCP\ICacheFactory;
 use OCP\IMemcache;
 use OCP\IUserSession;
@@ -130,16 +128,16 @@ class ObjectCacheService
     /**
      * Constructor for ObjectCacheService
      *
-     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
-     * @param LoggerInterface    $logger             Logger for performance monitoring
-     * @param SolrService|null   $solrService        SOLR service (deprecated - use factory instead for performance)
-     * @param ICacheFactory|null $cacheFactory       Cache factory for query result caching
-     * @param IUserSession|null  $userSession        User session for cache key generation
+     * @param ObjectEntityMapper    $objectEntityMapper The object entity mapper
+     * @param LoggerInterface       $logger             Logger for performance monitoring
+     * @param GuzzleSolrService|null $guzzleSolrService Lightweight SOLR service using Guzzle HTTP
+     * @param ICacheFactory|null    $cacheFactory       Cache factory for query result caching
+     * @param IUserSession|null     $userSession        User session for cache key generation
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly LoggerInterface $logger,
-        private readonly ?SolrService $solrService = null,
+        private readonly ?GuzzleSolrService $guzzleSolrService = null,
         ?ICacheFactory $cacheFactory = null,
         ?IUserSession $userSession = null
     ) {
@@ -163,28 +161,17 @@ class ObjectCacheService
 
 
     /**
-     * Get SolrService instance using performance-optimized factory pattern
+     * Get GuzzleSolrService instance using direct DI injection
      *
-     * This method avoids the DI registration performance issues by using
-     * the SolrServiceFactory pattern. Returns null if SOLR is unavailable
-     * or disabled, allowing for graceful degradation.
+     * Since Guzzle is lightweight, we can use direct DI registration without
+     * performance issues. Returns null if SOLR is unavailable or disabled.
      *
-     * @return SolrService|null SOLR service instance or null
+     * @return GuzzleSolrService|null SOLR service instance or null
      */
-    private function getSolrService(): ?SolrService
+    private function getSolrService(): ?GuzzleSolrService
     {
-        try {
-            // Use factory pattern to avoid DI performance issues
-            $container = \OC::$server->getRegisteredAppContainer('openregister');
-            return SolrServiceFactory::createSolrService($container);
-        } catch (\Exception $e) {
-            $this->logger->debug('SolrService factory creation failed', [
-                'error' => $e->getMessage()
-            ]);
-            
-            // Fallback to direct service if available (legacy support)
-            return $this->solrService;
-        }
+        // Since Guzzle is lightweight, we use direct DI injection (no factory needed!)
+        return $this->guzzleSolrService;
     }//end getSolrService()
 
 
@@ -248,7 +235,22 @@ class ObjectCacheService
     {
         // Get SOLR service using factory pattern (performance optimized)
         $solrService = $this->getSolrService();
+        
+        $this->logger->info('🔥 DEBUGGING: indexObjectInSolr called', [
+            'app' => 'openregister',
+            'object_id' => $object->getId(),
+            'object_uuid' => $object->getUuid(),
+            'object_name' => $object->getName(),
+            'solr_service_available' => $solrService !== null,
+            'solr_is_available' => $solrService ? $solrService->isAvailable() : false
+        ]);
+        
         if ($solrService === null || !$solrService->isAvailable()) {
+            $this->logger->warning('🔥 DEBUGGING: SOLR service unavailable, skipping indexing', [
+                'app' => 'openregister',
+                'solr_service' => $solrService !== null ? 'not null' : 'null',
+                'is_available' => $solrService ? $solrService->isAvailable() : 'N/A'
+            ]);
             return true; // Graceful degradation
         }
 
@@ -957,10 +959,11 @@ class ObjectCacheService
             // Clear individual object from cache
             $this->clearObjectFromCache($object);
             
-            // **SOLR INTEGRATION**: Index or remove from SOLR based on operation
-            if ($operation === 'create' || $operation === 'update') {
-                // Index the object in SOLR (async, non-blocking)
-                $this->indexObjectInSolr($object, false);
+        // **SOLR INTEGRATION**: Index or remove from SOLR based on operation
+        
+        if ($operation === 'create' || $operation === 'update') {
+            // Index the object in SOLR (async, non-blocking)
+            $this->indexObjectInSolr($object, false);
                 
                 // Update name cache for the modified object
                 $name = $object->getName() ?? $object->getUuid();

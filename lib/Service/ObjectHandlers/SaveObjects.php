@@ -450,15 +450,10 @@ class SaveObjects
      */
     private function extractMetadataValue(array $object, string $fieldPath, Schema $schema, string $metadataType): ?string
     {
-        error_log("[SaveObject] extractMetadataValue called for fieldPath: $fieldPath, metadataType: $metadataType");
-        
         // First try to get the raw value using the existing method
         $rawValue = $this->getValueFromPath($object, $fieldPath);
         
-        error_log("[SaveObject] rawValue extracted: " . var_export($rawValue, true));
-        
         if ($rawValue === null) {
-            error_log("[SaveObject] rawValue is null, returning null");
             return null;
         }
         
@@ -466,28 +461,21 @@ class SaveObjects
         $schemaProperties = $schema->getProperties();
         $fieldName = explode('.', $fieldPath)[0]; // Get the base field name
         
-        error_log("[SaveObject] fieldName: $fieldName, schemaProperties available: " . var_export(array_keys($schemaProperties), true));
-        
         if (!isset($schemaProperties[$fieldName])) {
             // Field not in schema, return raw value
-            error_log("[SaveObject] Field $fieldName not in schema, returning rawValue: $rawValue");
             return $rawValue;
         }
         
         $propertyConfig = $schemaProperties[$fieldName];
-        error_log("[SaveObject] propertyConfig: " . var_export($propertyConfig, true));
         
         // Check if this is an object reference field
         if (isset($propertyConfig['type']) && $propertyConfig['type'] === 'object' && isset($propertyConfig['$ref'])) {
             // This is an object reference - try to resolve it to a readable name
-            error_log("[SaveObject] Field $fieldName is object reference, resolving...");
             $resolved = $this->resolveObjectReference($object, $fieldPath, $propertyConfig, $metadataType);
-            error_log("[SaveObject] Resolved to: " . var_export($resolved, true));
             return $resolved;
         }
         
         // For direct string fields, return the raw value
-        error_log("[SaveObject] Field $fieldName is direct field, returning rawValue: $rawValue");
         return $rawValue;
 
     }//end extractMetadataValue()
@@ -1746,17 +1734,14 @@ class SaveObjects
             
             // Accept any non-empty string as ID, prioritize CSV 'id' column over @self.id
             $providedId = $object['id'] ?? $selfData['id'] ?? null;
-            error_log("[SaveObjects] Processing object - @self.id = " . ($selfData['id'] ?? 'null') . ", object.id = " . ($object['id'] ?? 'null') . ", providedId = " . ($providedId ?? 'null'));
             if ($providedId && !empty(trim($providedId))) {
                 // Accept any non-empty string as identifier
                 $selfData['uuid'] = $providedId;
                 $selfData['id'] = $providedId; // Also set in @self for consistency
-                error_log("[SaveObjects] Using provided ID as UUID: " . $providedId);
             } else {
                 // No ID provided or empty - generate new UUID
                 $selfData['uuid'] = Uuid::v4()->toRfc4122();
                 $selfData['id'] = $selfData['uuid']; // Set @self.id to generated UUID
-                error_log("[SaveObjects] Generated new UUID: " . $selfData['uuid']);
             }
             
             // CRITICAL FIX: Use register and schema from method parameters if not provided in object data
