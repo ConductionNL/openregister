@@ -168,8 +168,8 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register SolrService for advanced search capabilities (temporarily disabled - causes performance issues)
-        // TODO: Re-enable with proper lazy initialization
+        // Register SolrService for advanced search capabilities (disabled due to performance issues)
+        // Issue: Even with lazy loading, DI registration causes performance problems
         /*
         $context->registerService(
                 SolrService::class,
@@ -191,7 +191,7 @@ class Application extends App implements IBootstrap
                     return new ObjectCacheService(
                     $container->get(ObjectEntityMapper::class),
                     $container->get('Psr\Log\LoggerInterface'),
-                    null, // SolrService temporarily disabled
+                    null, // SolrService disabled due to performance issues
                     $container->get('OCP\ICacheFactory'),
                     $container->get('OCP\IUserSession')
                     );

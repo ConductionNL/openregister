@@ -80,6 +80,7 @@
 		"react/event-loop": "^1.5",
 		"react/promise": "^3.2",
 		"solarium/solarium": "^6.3",
+		"symfony/event-dispatcher": "^6.4",
 		"symfony/uid": "^6.4",
 		"symfony/yaml": "^6.4",
 		"twig/twig": "^3.18"

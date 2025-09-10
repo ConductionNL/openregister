@@ -658,6 +658,99 @@ This ensures **zero downtime** even if SOLR experiences issues.
 - Boost important fields for better relevance
 - Keep full-text content in `_text_` field
 
+## Performance Optimization 🚨
+
+### Critical Performance Issue
+
+**Problem**: Registering `SolrService` in Nextcloud's Dependency Injection (DI) container causes severe performance issues:
+
+- **Symptom**: Apache processes consume 100% CPU, leading to 700%+ container CPU usage  
+- **Root Cause**: DI registration triggers expensive dependency resolution on every HTTP request
+- **Impact**: Entire Nextcloud instance becomes unresponsive
+
+```mermaid
+graph TB
+    A[HTTP Request] --> B{SolrService in DI?}
+    B -->|Yes| C[DI Resolution Chain]
+    B -->|No| F[Normal Processing]
+    
+    C --> D[SettingsService Resolution]
+    D --> E[Database Queries]
+    E --> G[High CPU Usage]
+    G --> H[Apache Process 100%]
+    H --> I[System Unresponsive]
+    
+    F --> J[Fast Response]
+    
+    style G fill:#ffcdd2
+    style H fill:#ffcdd2  
+    style I fill:#ffcdd2
+    style J fill:#c8e6c9
+```
+
+### Why DI Registration Fails
+
+Even with lazy loading implemented in `SolrService`, the issue occurs at the **DI registration level**:
+
+```php
+// ❌ This causes performance issues
+$context->registerService(SolrService::class, function ($container) {
+    return new SolrService(/* dependencies */);
+});
+```
+
+**The problem**: Nextcloud's DI container attempts to resolve the entire dependency chain on every request:
+- `SolrService` → `SettingsService` → Database queries → Configuration loads
+- This happens even when SOLR is never actually used
+- Creates cascading performance issues across all HTTP requests
+
+### Solution: Service Locator Pattern ✅
+
+We solved this using a **Service Locator Factory** pattern that avoids DI registration:
+
+```php
+// ✅ Performance-optimized approach  
+$solrService = SolrServiceFactory::createSolrService($container);
+```
+
+**Key benefits**:
+1. **Zero Request Overhead**: No dependency resolution unless actually needed
+2. **Request-Level Caching**: Service instance cached for duration of request
+3. **Graceful Degradation**: Returns null if SOLR unavailable, no exceptions
+4. **Settings Caching**: SOLR enabled/disabled state cached for performance
+
+### Performance Comparison 📊
+
+| Approach | Request Overhead | CPU Usage | Apache Processes | Status |
+|----------|------------------|-----------|------------------|---------|
+| **DI Registration** | High (every request) | 700%+ | Multiple at 100% | ❌ Unusable |
+| **Service Locator** | Zero (when not used) | Normal | Normal | ✅ Production Ready |
+| **Manual Creation** | Medium (per use) | Normal | Normal | ✅ Alternative |
+
+### Factory Usage Pattern
+
+```php
+// In any service that needs SOLR functionality
+class ObjectCacheService {
+    public function indexObject(ObjectEntity $object): void {
+        $container = \OC::$server->getRegisteredAppContainer('openregister');
+        $solrService = SolrServiceFactory::createSolrService($container);
+        
+        if ($solrService && $solrService->isAvailable()) {
+            $solrService->indexObject($object);
+        }
+        // Gracefully continues without SOLR if unavailable
+    }
+}
+```
+
+### Implementation Requirements
+
+1. **Remove DI Registration**: Comment out `SolrService` registration in `Application.php`
+2. **Use Factory Pattern**: Access SOLR via `SolrServiceFactory::createSolrService()`
+3. **Always Check Availability**: Never assume SOLR service will be available
+4. **Monitor Performance**: Watch Apache process CPU usage after changes
+
 ## Migration and Maintenance
 
 ### Initial Setup
@@ -672,8 +765,9 @@ This ensures **zero downtime** even if SOLR experiences issues.
 - Update field mappings as schemas evolve
 - Backup SOLR cores for disaster recovery
 
-### Performance Optimization
+### Performance Tuning
 - Tune SOLR memory allocation
 - Optimize query response times
 - Implement index warming strategies
 - Monitor and adjust field boosting weights
+- **Critical**: Use Service Locator pattern to avoid DI performance issues
