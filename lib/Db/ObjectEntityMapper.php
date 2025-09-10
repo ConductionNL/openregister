@@ -1488,7 +1488,7 @@ class ObjectEntityMapper extends QBMapper
         $queryBuilder = $this->db->getQueryBuilder();
 
         // **PERFORMANCE BYPASS**: Check for bypass mode for performance testing (moved up for logic flow)
-        $performanceBypass = $_GET['_bypass_auth'] === 'true' || $_SERVER['HTTP_X_BYPASS_AUTH'] === 'true';
+        $performanceBypass = ($_GET['_bypass_auth'] ?? '') === 'true' || ($_SERVER['HTTP_X_BYPASS_AUTH'] ?? '') === 'true';
 
         // **PERFORMANCE OPTIMIZATION**: Detect simple vs complex requests early
         $hasExtend = !empty($query['_extend'] ?? []);

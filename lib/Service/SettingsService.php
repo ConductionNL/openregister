@@ -1794,6 +1794,21 @@ class SettingsService
      * @return array Multitenancy configuration with available tenants
      * @throws \RuntimeException If Multitenancy settings retrieval fails
      */
+    /**
+     * Get multitenancy settings (alias for getMultitenancySettingsOnly)
+     *
+     * @return array Multitenancy configuration settings
+     */
+    public function getMultitenancySettings(): array
+    {
+        return $this->getMultitenancySettingsOnly();
+    }
+
+    /**
+     * Get multitenancy settings only (detailed implementation)
+     *
+     * @return array Multitenancy configuration settings
+     */
     public function getMultitenancySettingsOnly(): array
     {
         try {

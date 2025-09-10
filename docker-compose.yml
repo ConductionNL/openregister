@@ -5,6 +5,7 @@ volumes:
   db:
   config:
   solr:
+  zookeeper:
 
 services:
   db:
@@ -19,6 +20,20 @@ services:
       - MYSQL_DATABASE=nextcloud
       - MYSQL_USER=nextcloud
 
+  # ZooKeeper for SolrCloud coordination
+  zookeeper:
+    image: zookeeper:3.8
+    container_name: openregister-zookeeper
+    restart: always
+    environment:
+      - ZOO_MY_ID=1
+      - ZOO_SERVERS=server.1=0.0.0.0:2888:3888;2181
+    volumes:
+      - zookeeper:/data
+    ports:
+      - "2181:2181"
+
+  # SOLR in SolrCloud mode
   solr:
     image: solr:9-slim
     container_name: openregister-solr
@@ -29,11 +44,22 @@ services:
       - solr:/var/solr
     environment:
       - SOLR_HEAP=512m
+      - ZK_HOST=zookeeper:2181
+    depends_on:
+      - zookeeper
     command:
-      - solr-precreate
-      - openregister
+      - bash
+      - -c
+      - |
+        # Wait for ZooKeeper to be ready
+        echo "Waiting for ZooKeeper..."
+        while ! nc -z zookeeper 2181; do sleep 1; done
+        echo "ZooKeeper is ready!"
+        
+        # Start SOLR in SolrCloud mode
+        solr-foreground -c -z zookeeper:2181
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8983/solr/openregister/admin/ping || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8983/solr/admin/info/system || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

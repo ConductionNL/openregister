@@ -31,6 +31,7 @@ use Solarium\Exception\HttpException;
 use Solarium\QueryType\Select\Query\Query as SelectQuery;
 use Solarium\QueryType\Update\Query\Query as UpdateQuery;
 use Symfony\Component\EventDispatcher\EventDispatcher;
+use OCA\OpenRegister\Setup\SolrSetup;
 
 /**
  * SOLR service for advanced search and indexing capabilities
@@ -154,13 +155,8 @@ class SolrService
      */
     private function getTenantSpecificCoreName(string $baseCoreName): string
     {
-        // For single-tenant setups or if multitenancy is disabled, use base core
-        $multitenancySettings = $this->settingsService->getMultitenancySettings();
-        if (!$multitenancySettings['enabled']) {
-            return $baseCoreName;
-        }
-        
-        // Generate tenant-specific core name for multi-tenant isolation
+        // Always use tenant-specific core names for proper isolation
+        // This provides consistent multi-tenant architecture even for single-tenant deployments
         return $baseCoreName . '_' . $this->tenantId;
     }
 
@@ -186,24 +182,24 @@ class SolrService
             // Check if core already exists using admin API
             $adminQuery = $this->client->createApi('admin');
             $coreAdminQuery = $adminQuery->createStatus();
-            $coreAdminQuery->setCore($coreNam);
+            $coreAdminQuery->setCore($coreName);
             
             $result = $this->client->execute($coreAdminQuery);
             
             // If core exists, return true
-            if ($result->getStatus() === 0 && isset($result->getData()['status'][$coreNam])) {
-                $this->logger->info("Solr core '{$coreNam}' already exists", [
+            if ($result->getStatus() === 0 && isset($result->getData()['status'][$coreName])) {
+                $this->logger->info("Solr core '{$coreName}' already exists", [
                     'tenant_id' => $this->tenantId
                 ]);
                 return true;
             }
             
             // Core doesn't exist, attempt to create it
-            return $this->createTenantCore($coreNam);
+            return $this->createTenantCore($coreName);
             
         } catch (\Exception $e) {
             $this->logger->error('Failed to check/create Solr core', [
-                'core' => $coreNam,
+                'core' => $coreName,
                 'tenant_id' => $this->tenantId,
                 'error' => $e->getMessage()
             ]);
@@ -217,10 +213,10 @@ class SolrService
      * Creates a new core using the base OpenRegister schema and configuration.
      * Copies configuration from the base core to ensure consistent functionality.
      *
-     * @param string $coreNam Name of the core to create
+     * @param string $coreName Name of the core to create
      * @return bool True if core was created successfully
      */
-    private function createTenantCore(string $coreNam): bool
+    private function createTenantCore(string $coreName): bool
     {
         try {
             $adminQuery = $this->client->createApi('admin');
@@ -229,19 +225,19 @@ class SolrService
             // Use the base core name for template configuration
             $baseCoreName = $this->solrConfig['core'];
             
-            $createCoreQuery->setCore($coreNam);
+            $createCoreQuery->setCore($coreName);
             $createCoreQuery->setConfigSet($baseCoreName); // Use base core as template
             
             $result = $this->client->execute($createCoreQuery);
             
             if ($result->getStatus() === 0) {
-                $this->logger->info("Successfully created Solr core '{$coreNam}' for tenant", [
+                $this->logger->info("Successfully created Solr core '{$coreName}' for tenant", [
                     'tenant_id' => $this->tenantId,
                     'base_core' => $baseCoreName
                 ]);
                 return true;
             } else {
-                $this->logger->error("Failed to create Solr core '{$coreNam}'", [
+                $this->logger->error("Failed to create Solr core '{$coreName}'", [
                     'tenant_id' => $this->tenantId,
                     'status' => $result->getStatus(),
                     'data' => $result->getData()
@@ -251,8 +247,38 @@ class SolrService
             
         } catch (\Exception $e) {
             $this->logger->error('Exception while creating Solr core', [
-                'core' => $coreNam,
+                'core' => $coreName,
                 'tenant_id' => $this->tenantId,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Run SOLR setup to ensure proper multi-tenant configuration
+     *
+     * Sets up SOLR with the necessary configSets and base cores for
+     * multi-tenant architecture. Should be run once during app initialization.
+     *
+     * @return bool True if setup completed successfully
+     */
+    public function runSolrSetup(): bool
+    {
+        try {
+            // Ensure we have SOLR configuration loaded
+            $solrSettings = $this->settingsService->getSolrSettings();
+            
+            if (!$solrSettings['enabled']) {
+                $this->logger->info('SOLR is disabled, skipping setup');
+                return false;
+            }
+            
+            // Pass the loaded settings to setup
+            $setup = new SolrSetup($solrSettings, $this->logger);
+            return $setup->setupSolr();
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to run SOLR setup', [
                 'error' => $e->getMessage()
             ]);
             return false;
@@ -299,6 +325,7 @@ class SolrService
             
             // Build SOLR endpoint configuration with tenant-specific core
             $endpointConfig = [
+                'key' => 'default',
                 'scheme' => $this->solrConfig['scheme'],
                 'host' => $this->solrConfig['host'],
                 'port' => $this->solrConfig['port'],
@@ -318,24 +345,20 @@ class SolrService
             $eventDispatcher = new EventDispatcher();
             $this->client = new Client($adapter, $eventDispatcher);
             
-            // Create and configure endpoint (correct parameter order)
-            $this->client->createEndpoint($endpointConfig, true);
+            // Create and configure endpoint with proper key assignment  
+            $endpoint = $this->client->createEndpoint($endpointConfig);
+            $this->client->setDefaultEndpoint($endpoint);
             
-            // Ensure tenant-specific core exists (for multi-tenant setups)
-            if (isset($tenantSpecificCore) && $tenantSpecificCore !== $baseCoreName) {
-                $coreCreated = $this->ensureTenantCoreExists($tenantSpecificCore);
-                if (!$coreCreated) {
-                    $this->logger->warning('Failed to create tenant core, falling back to base core', [
-                        'tenant_core' => $tenantSpecificCore,
-                        'base_core' => $baseCoreName,
-                        'tenant_id' => $this->tenantId
-                    ]);
-                    
-                    // Fallback to base core if tenant core creation fails
-                    $endpointConfig['core'] = $baseCoreName;
-                    $this->client = new Client($adapter, $eventDispatcher);
-                    $this->client->createEndpoint($endpointConfig, true);
-                }
+            // Always ensure tenant-specific core exists (multi-tenant architecture)
+            $coreCreated = $this->ensureTenantCoreExists($tenantSpecificCore);
+            if (!$coreCreated) {
+                $this->logger->error('Failed to create required tenant core, SOLR will not function properly', [
+                    'tenant_core' => $tenantSpecificCore,
+                    'tenant_id' => $this->tenantId
+                ]);
+                
+                // Don't fallback - we always require tenant-specific cores
+                throw new \Exception("Required tenant core '{$tenantSpecificCore}' could not be created");
             }
             
             $this->logger->info('SOLR client initialized successfully', [
