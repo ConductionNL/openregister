@@ -26,6 +26,7 @@ use OCP\IRequest;
 use Psr\Container\ContainerInterface;
 use OCP\App\IAppManager;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\SolrServiceFactory;
 
 /**
  * Controller for handling settings-related operations in the OpenRegister.
@@ -300,6 +301,104 @@ class SettingsController extends Controller
 
     }//end warmupNamesCache()
 
+
+    /**
+     * Run SOLR setup to prepare for multi-tenant architecture
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse The SOLR setup results
+     */
+    public function setupSolr(): JSONResponse
+    {
+        try {
+            // Get SOLR service via factory to avoid DI performance issues
+            $container = \OC::$server->getRegisteredAppContainer('openregister');
+            $solrService = SolrServiceFactory::createSolrService($container);
+            
+            if ($solrService === null) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'SOLR service not available'
+                ], 400);
+            }
+            
+            // Run SOLR setup
+            $setupResult = $solrService->runSolrSetup();
+            
+            if ($setupResult) {
+                return new JSONResponse([
+                    'success' => true,
+                    'message' => 'SOLR setup completed successfully'
+                ]);
+            } else {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'SOLR setup failed - check logs for details'
+                ], 500);
+            }
+            
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'SOLR setup error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Test SOLR setup directly (bypassing SolrService)
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse The SOLR setup test results
+     */
+    public function testSolrSetup(): JSONResponse
+    {
+        try {
+            // Get SOLR settings directly
+            $solrSettings = $this->settingsService->getSolrSettings();
+            
+            if (!$solrSettings['enabled']) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'SOLR is disabled'
+                ], 400);
+            }
+            
+            // Create SolrSetup directly with known settings
+            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
+            $setup = new \OCA\OpenRegister\Setup\SolrSetup($solrSettings, $logger);
+            
+            // Run setup
+            $result = $setup->setupSolr();
+            
+            if ($result) {
+                return new JSONResponse([
+                    'success' => true,
+                    'message' => 'SOLR setup completed successfully',
+                    'config' => [
+                        'host' => $solrSettings['host'],
+                        'port' => $solrSettings['port'],
+                        'scheme' => $solrSettings['scheme']
+                    ]
+                ]);
+            } else {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'SOLR setup failed - check logs'
+                ], 500);
+            }
+            
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'SOLR setup error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 
     /**
      * Test SOLR connection with provided settings

@@ -1770,6 +1770,8 @@ class ObjectService
                 'requestUri' => $_SERVER['REQUEST_URI'] ?? 'unknown'
             ]);
 
+            // **MAPPER CALL TIMING**: Track how long the mapper takes
+            $mapperStart = microtime(true);
             $result = $this->objectEntityMapper->searchObjects($query, $activeOrganisationUuid, $rbac, $multi);
 
             $this->logger->info('✅ MAPPER CALL - Database search completed', [
