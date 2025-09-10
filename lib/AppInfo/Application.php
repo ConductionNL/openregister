@@ -45,6 +45,8 @@ use OCA\OpenRegister\Service\FacetService;
 use OCA\OpenRegister\Service\ObjectCacheService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ExportService;
+use OCA\OpenRegister\Service\SolrService;
+use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\SchemaCacheService;
 use OCA\OpenRegister\Service\SchemaFacetCacheService;
 use OCA\OpenRegister\Search\ObjectsProvider;
@@ -166,6 +168,22 @@ class Application extends App implements IBootstrap
                 }
                 );
 
+        // Register SolrService for advanced search capabilities (temporarily disabled - causes performance issues)
+        // TODO: Re-enable with proper lazy initialization
+        /*
+        $context->registerService(
+                SolrService::class,
+                function ($container) {
+                    return new SolrService(
+                    $container->get(SettingsService::class),
+                    $container->get('Psr\Log\LoggerInterface'),
+                    $container->get(ObjectEntityMapper::class),
+                    $container->get('OCP\IConfig')
+                    );
+                }
+                );
+        */
+
         // Register ObjectCacheService for performance optimization
         $context->registerService(
                 ObjectCacheService::class,
@@ -173,6 +191,7 @@ class Application extends App implements IBootstrap
                     return new ObjectCacheService(
                     $container->get(ObjectEntityMapper::class),
                     $container->get('Psr\Log\LoggerInterface'),
+                    null, // SolrService temporarily disabled
                     $container->get('OCP\ICacheFactory'),
                     $container->get('OCP\IUserSession')
                     );

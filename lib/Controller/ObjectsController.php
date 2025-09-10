@@ -578,7 +578,7 @@ class ObjectsController extends Controller
             $object,
             fn ($key) => !str_starts_with($key, '_')
                 && !str_starts_with($key, '@')
-                && !in_array($key, ['id', 'uuid', 'register', 'schema']),
+                && !in_array($key, ['uuid', 'register', 'schema']),
             ARRAY_FILTER_USE_KEY
         );
 
@@ -657,7 +657,7 @@ class ObjectsController extends Controller
             $object,
             fn ($key) => !str_starts_with($key, '_')
                 && !str_starts_with($key, '@')
-                && !in_array($key, ['id', 'uuid', 'register', 'schema']),
+                && !in_array($key, ['uuid', 'register', 'schema']),
             ARRAY_FILTER_USE_KEY
         );
 
@@ -777,7 +777,7 @@ class ObjectsController extends Controller
             $patchData,
             fn ($key) => !str_starts_with($key, '_')
                 && !str_starts_with($key, '@')
-                && !in_array($key, ['id', 'uuid', 'register', 'schema']),
+                && !in_array($key, ['uuid', 'register', 'schema']),
             ARRAY_FILTER_USE_KEY
         );
 

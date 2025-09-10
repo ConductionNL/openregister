@@ -316,7 +316,7 @@ export const useRegisterStore = defineStore('register', {
 			}
 		},
 
-		async importRegister(file, includeObjects = false, validation = false, events = false, rbac = true, multi = true, publish = false, heartbeatCallback = null) {
+		async importRegister(file, heartbeatCallback = null) {
 			if (!file) {
 				throw new Error('No file to import')
 			}
@@ -334,47 +334,16 @@ export const useRegisterStore = defineStore('register', {
 			const schemaStore = useSchemaStore()
 			const schemaId = (fileExtension === 'csv' && schemaStore.schemaItem) ? schemaStore.schemaItem.id : null
 
-			// Build endpoint with all parameters
-			let endpoint = `/index.php/apps/openregister/api/registers/${registerId}/import?includeObjects=${includeObjects ? '1' : '0'}`
+			// Build basic endpoint
+			let endpoint = `/index.php/apps/openregister/api/registers/${registerId}/import`
 			if (schemaId) {
-				endpoint += `&schema=${schemaId}`
-			}
-			if (validation !== undefined) {
-				endpoint += `&validation=${validation ? '1' : '0'}`
-			}
-			if (events !== undefined) {
-				endpoint += `&events=${events ? '1' : '0'}`
-			}
-			if (rbac !== undefined) {
-				endpoint += `&rbac=${rbac ? '1' : '0'}`
-			}
-			if (multi !== undefined) {
-				endpoint += `&multi=${multi ? '1' : '0'}`
-			}
-			if (publish !== undefined) {
-				endpoint += `&publish=${publish ? '1' : '0'}`
+				endpoint += `?schema=${schemaId}`
 			}
 
 			const formData = new FormData()
 			formData.append('file', file)
-			formData.append('includeObjects', includeObjects ? '1' : '0')
 			if (schemaId) {
 				formData.append('schema', schemaId)
-			}
-			if (validation !== undefined) {
-				formData.append('validation', validation ? '1' : '0')
-			}
-			if (events !== undefined) {
-				formData.append('events', events ? '1' : '0')
-			}
-			if (rbac !== undefined) {
-				formData.append('rbac', rbac ? '1' : '0')
-			}
-			if (multi !== undefined) {
-				formData.append('multi', multi ? '1' : '0')
-			}
-			if (publish !== undefined) {
-				formData.append('publish', publish ? '1' : '0')
 			}
 
 			// Start heartbeat to prevent gateway timeouts for large imports

@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Service\SolrService;
 use OCP\ICacheFactory;
 use OCP\IMemcache;
 use OCP\IUserSession;
@@ -129,12 +130,14 @@ class ObjectCacheService
      *
      * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
      * @param LoggerInterface    $logger             Logger for performance monitoring
+     * @param SolrService|null   $solrService        SOLR service for advanced search indexing
      * @param ICacheFactory|null $cacheFactory       Cache factory for query result caching
      * @param IUserSession|null  $userSession        User session for cache key generation
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly LoggerInterface $logger,
+        private readonly ?SolrService $solrService = null,
         ?ICacheFactory $cacheFactory = null,
         ?IUserSession $userSession = null
     ) {
@@ -195,6 +198,296 @@ class ObjectCacheService
         }
 
     }//end getObject()
+
+
+    // ========================================
+    // SOLR INTEGRATION METHODS
+    // ========================================
+
+    /**
+     * Index object in SOLR when available
+     *
+     * Creates a SOLR document from ObjectEntity matching the ObjectEntity structure.
+     * Metadata fields (name, description, etc.) are at root level, with flexible
+     * object data in a nested 'object' field.
+     *
+     * @param ObjectEntity $object Object to index in SOLR
+     * @param bool         $commit Whether to commit immediately
+     *
+     * @return bool True if indexing was successful or SOLR unavailable
+     */
+    private function indexObjectInSolr(ObjectEntity $object, bool $commit = false): bool
+    {
+        // Skip if SOLR service is not available
+        if ($this->solrService === null || !$this->solrService->isAvailable()) {
+            return true; // Graceful degradation
+        }
+
+        try {
+            // Create SOLR document matching ObjectEntity structure
+            $solrDocument = $this->createSolrDocumentFromObject($object);
+            
+            // Index in SOLR
+            $result = $this->solrService->indexObject($object, $commit);
+            
+            if ($result) {
+                $this->logger->debug('🔍 OBJECT INDEXED IN SOLR', [
+                    'object_id' => $object->getId(),
+                    'uuid' => $object->getUuid(),
+                    'schema' => $object->getSchema(),
+                    'register' => $object->getRegister()
+                ]);
+            }
+            
+            return $result;
+            
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to index object in SOLR', [
+                'object_id' => $object->getId(),
+                'error' => $e->getMessage()
+            ]);
+            return true; // Don't fail the whole operation for SOLR issues
+        }
+    }
+
+    /**
+     * Remove object from SOLR index
+     *
+     * @param ObjectEntity $object Object to remove from SOLR
+     * @param bool         $commit Whether to commit immediately
+     *
+     * @return bool True if removal was successful or SOLR unavailable
+     */
+    private function removeObjectFromSolr(ObjectEntity $object, bool $commit = false): bool
+    {
+        // Skip if SOLR service is not available
+        if ($this->solrService === null || !$this->solrService->isAvailable()) {
+            return true; // Graceful degradation
+        }
+
+        try {
+            $result = $this->solrService->deleteObject($object->getUuid(), $commit);
+            
+            if ($result) {
+                $this->logger->debug('🗑️  OBJECT REMOVED FROM SOLR', [
+                    'object_id' => $object->getId(),
+                    'uuid' => $object->getUuid()
+                ]);
+            }
+            
+            return $result;
+            
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to remove object from SOLR', [
+                'object_id' => $object->getId(),
+                'error' => $e->getMessage()
+            ]);
+            return true; // Don't fail the whole operation for SOLR issues
+        }
+    }
+
+    /**
+     * Create SOLR document from ObjectEntity
+     *
+     * This method creates a SOLR document structure that matches the ObjectEntity
+     * architecture, with metadata fields at root level and flexible object data.
+     *
+     * @param ObjectEntity $object Object to convert to SOLR document
+     *
+     * @return array SOLR document array
+     */
+    private function createSolrDocumentFromObject(ObjectEntity $object): array
+    {
+        // Get object data
+        $objectData = $object->getObject();
+        $objectArray = $object->getObjectArray();
+        
+        // Base SOLR document matching ObjectEntity structure
+        $document = [
+            // Core identifiers (always present)
+            'id' => $object->getUuid(),
+            'object_id_i' => $object->getId(),
+            'uuid_s' => $object->getUuid(),
+            
+            // Context fields
+            'register_id_i' => (int) $object->getRegister(),
+            'schema_id_i' => (int) $object->getSchema(),
+            'schema_version_s' => $object->getSchemaVersion(),
+            
+            // Ownership and organization
+            'owner_s' => $object->getOwner(),
+            'organisation_s' => $object->getOrganisation(),
+            'application_s' => $object->getApplication(),
+            
+            // Metadata fields (extracted from object data or entity)
+            'name_s' => $object->getName(),
+            'name_txt' => $object->getName(), // For full-text search
+            'description_s' => $object->getDescription(),
+            'description_txt' => $object->getDescription(),
+            'summary_s' => $object->getSummary(),
+            'summary_txt' => $object->getSummary(),
+            'image_s' => $object->getImage(),
+            
+            // URL and navigation
+            'slug_s' => $object->getSlug(),
+            'uri_s' => $object->getUri(),
+            'folder_s' => $object->getFolder(),
+            
+            // Timestamps
+            'created_dt' => $object->getCreated()?->format('Y-m-d\\TH:i:s\\Z'),
+            'updated_dt' => $object->getUpdated()?->format('Y-m-d\\TH:i:s\\Z'),
+            'published_dt' => $object->getPublished()?->format('Y-m-d\\TH:i:s\\Z'),
+            'depublished_dt' => $object->getDepublished()?->format('Y-m-d\\TH:i:s\\Z'),
+            'expires_dt' => $object->getExpires()?->format('Y-m-d\\TH:i:s\\Z'),
+            
+            // Status fields
+            'version_s' => $object->getVersion(),
+            'size_s' => $object->getSize(),
+            
+            // Arrays and complex data
+            'files_ss' => $object->getFiles(),
+            'relations_ss' => $object->getRelations(),
+            'groups_ss' => $object->getGroups(),
+            
+            // The flexible object data (JSON stored as text for SOLR)
+            'object_txt' => json_encode($objectData, JSON_UNESCAPED_UNICODE),
+            
+            // Full-text search catch-all field
+            '_text_' => $this->buildFullTextContent($object, $objectData)
+        ];
+        
+        // Add dynamic fields from object data
+        $document = array_merge($document, $this->extractDynamicFieldsFromObject($objectData));
+        
+        // Remove null values to keep SOLR document clean
+        return array_filter($document, function($value) {
+            return $value !== null && $value !== '' && $value !== [];
+        });
+    }
+
+    /**
+     * Extract dynamic fields from object data for SOLR indexing
+     *
+     * Converts object properties into SOLR dynamic fields with appropriate suffixes.
+     *
+     * @param array $objectData Object data to extract fields from
+     * @param string $prefix    Field prefix for nested objects
+     *
+     * @return array Dynamic SOLR fields
+     */
+    private function extractDynamicFieldsFromObject(array $objectData, string $prefix = ''): array
+    {
+        $dynamicFields = [];
+        
+        foreach ($objectData as $key => $value) {
+            // Skip meta fields and null values
+            if ($key === '@self' || $key === 'id' || $value === null) {
+                continue;
+            }
+            
+            $fieldName = $prefix . $key;
+            
+            if (is_array($value)) {
+                if (isset($value[0])) {
+                    // Multi-value array
+                    $dynamicFields[$fieldName . '_ss'] = $value;
+                    // Also add as text for searching
+                    $dynamicFields[$fieldName . '_txt'] = implode(' ', array_filter($value, 'is_string'));
+                } else {
+                    // Nested object - recurse with dot notation
+                    $nestedFields = $this->extractDynamicFieldsFromObject($value, $fieldName . '_');
+                    $dynamicFields = array_merge($dynamicFields, $nestedFields);
+                }
+            } elseif (is_string($value)) {
+                $dynamicFields[$fieldName . '_s'] = $value;
+                $dynamicFields[$fieldName . '_txt'] = $value;
+            } elseif (is_int($value) || is_float($value)) {
+                $suffix = is_int($value) ? '_i' : '_f';
+                $dynamicFields[$fieldName . $suffix] = $value;
+            } elseif (is_bool($value)) {
+                $dynamicFields[$fieldName . '_b'] = $value;
+            } elseif ($this->isDateString($value)) {
+                $dynamicFields[$fieldName . '_dt'] = $this->formatDateForSolr($value);
+            }
+        }
+        
+        return $dynamicFields;
+    }
+
+    /**
+     * Build full-text content for SOLR catch-all field
+     *
+     * @param ObjectEntity $object     Object entity
+     * @param array        $objectData Object data
+     *
+     * @return string Full-text content for searching
+     */
+    private function buildFullTextContent(ObjectEntity $object, array $objectData): string
+    {
+        $textContent = [];
+        
+        // Add metadata fields
+        $textContent[] = $object->getName();
+        $textContent[] = $object->getDescription();
+        $textContent[] = $object->getSummary();
+        
+        // Extract text from object data recursively
+        $this->extractTextFromArray($objectData, $textContent);
+        
+        return implode(' ', array_filter($textContent));
+    }
+
+    /**
+     * Extract text content from array recursively
+     *
+     * @param array $data        Array to extract text from
+     * @param array &$textContent Reference to text content array
+     *
+     * @return void
+     */
+    private function extractTextFromArray(array $data, array &$textContent): void
+    {
+        foreach ($data as $key => $value) {
+            if (is_string($value)) {
+                $textContent[] = $value;
+            } elseif (is_array($value)) {
+                $this->extractTextFromArray($value, $textContent);
+            }
+        }
+    }
+
+    /**
+     * Check if a string represents a date
+     *
+     * @param mixed $value Value to check
+     *
+     * @return bool True if value is a date string
+     */
+    private function isDateString($value): bool
+    {
+        if (!is_string($value)) {
+            return false;
+        }
+        
+        return (bool) strtotime($value);
+    }
+
+    /**
+     * Format date string for SOLR
+     *
+     * @param string $dateString Date string to format
+     *
+     * @return string|null Formatted date or null
+     */
+    private function formatDateForSolr(string $dateString): ?string
+    {
+        $timestamp = strtotime($dateString);
+        if ($timestamp === false) {
+            return null;
+        }
+        
+        return date('Y-m-d\\TH:i:s\\Z', $timestamp);
+    }
 
 
     /**
@@ -634,14 +927,21 @@ class ObjectCacheService
             // Clear individual object from cache
             $this->clearObjectFromCache($object);
             
-            // Update name cache for the modified object
-            if ($operation === 'update' || $operation === 'create') {
+            // **SOLR INTEGRATION**: Index or remove from SOLR based on operation
+            if ($operation === 'create' || $operation === 'update') {
+                // Index the object in SOLR (async, non-blocking)
+                $this->indexObjectInSolr($object, false);
+                
+                // Update name cache for the modified object
                 $name = $object->getName() ?? $object->getUuid();
                 $this->setObjectName($object->getUuid(), $name);
                 if ($object->getId() && (string)$object->getId() !== $object->getUuid()) {
                     $this->setObjectName($object->getId(), $name);
                 }
             } elseif ($operation === 'delete') {
+                // Remove from SOLR index
+                $this->removeObjectFromSolr($object, false);
+                
                 // Remove from name cache
                 unset($this->nameCache[$object->getUuid()]);
                 unset($this->nameCache[(string)$object->getId()]);
@@ -1150,6 +1450,369 @@ class ObjectCacheService
         $this->logger->debug('🧹 OBJECT NAME CACHE CLEARED');
 
     }//end clearNameCache()
+
+
+    // ========================================
+    // SOLR BULK OPERATIONS
+    // ========================================
+
+    /**
+     * Warm up SOLR index with all objects (bulk operation)
+     *
+     * Efficiently indexes all objects in the database to SOLR in batches,
+     * optimized for handling 200K+ objects with performance monitoring.
+     *
+     * @param int|null    $registerId   Optional register filter
+     * @param int|null    $schemaId     Optional schema filter
+     * @param int         $batchSize    Number of objects to process per batch
+     * @param int         $commitEvery  Commit to SOLR every N batches
+     *
+     * @return array Performance statistics
+     */
+    public function warmupSolrIndex(?int $registerId = null, ?int $schemaId = null, int $batchSize = 500, int $commitEvery = 10): array
+    {
+        // Skip if SOLR service is not available
+        if ($this->solrService === null || !$this->solrService->isAvailable()) {
+            return [
+                'success' => false,
+                'message' => 'SOLR service is not available',
+                'stats' => []
+            ];
+        }
+
+        $startTime = microtime(true);
+        $totalProcessed = 0;
+        $totalIndexed = 0;
+        $totalErrors = 0;
+        $batchCount = 0;
+        
+        $this->logger->info('🔥 STARTING SOLR INDEX WARMUP', [
+            'registerId' => $registerId,
+            'schemaId' => $schemaId,
+            'batchSize' => $batchSize,
+            'commitEvery' => $commitEvery
+        ]);
+
+        try {
+            // Get total count for progress tracking
+            $totalCount = $this->objectEntityMapper->getTotalCount($registerId, $schemaId);
+            
+            $this->logger->info('📊 SOLR WARMUP: Total objects to process', [
+                'totalCount' => $totalCount,
+                'estimatedDuration' => round(($totalCount / $batchSize) * 2) . 's'
+            ]);
+
+            $offset = 0;
+            
+            while (true) {
+                $batchStartTime = microtime(true);
+                
+                // Load batch of objects
+                $objects = $this->objectEntityMapper->findInBatches(
+                    $offset, 
+                    $batchSize, 
+                    $registerId, 
+                    $schemaId
+                );
+                
+                if (empty($objects)) {
+                    break; // No more objects
+                }
+                
+                $batchCount++;
+                $batchIndexed = 0;
+                $batchErrors = 0;
+                
+                // Prepare batch of SOLR documents
+                $solrDocuments = [];
+                foreach ($objects as $object) {
+                    try {
+                        $solrDocument = $this->createSolrDocumentFromObject($object);
+                        $solrDocuments[] = $solrDocument;
+                        $batchIndexed++;
+                    } catch (\Exception $e) {
+                        $batchErrors++;
+                        $this->logger->warning('Failed to create SOLR document', [
+                            'object_id' => $object->getId(),
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+                
+                // Bulk index documents in SOLR
+                if (!empty($solrDocuments)) {
+                    $bulkResult = $this->solrService->bulkIndex($solrDocuments, false);
+                    if (!$bulkResult) {
+                        $batchErrors += count($solrDocuments);
+                        $this->logger->warning('Bulk index failed for batch', [
+                            'batchCount' => $batchCount,
+                            'documentsCount' => count($solrDocuments)
+                        ]);
+                    }
+                }
+                
+                // Commit periodically for memory management
+                if ($batchCount % $commitEvery === 0) {
+                    $this->solrService->commit();
+                    $this->logger->debug('💾 SOLR COMMIT', [
+                        'batchesProcessed' => $batchCount,
+                        'objectsProcessed' => $totalProcessed + count($objects)
+                    ]);
+                }
+                
+                $totalProcessed += count($objects);
+                $totalIndexed += $batchIndexed;
+                $totalErrors += $batchErrors;
+                $offset += $batchSize;
+                
+                $batchDuration = microtime(true) - $batchStartTime;
+                $progressPercent = round(($totalProcessed / $totalCount) * 100, 1);
+                
+                // Log progress every 10 batches
+                if ($batchCount % 10 === 0) {
+                    $this->logger->info('📈 SOLR WARMUP PROGRESS', [
+                        'batchCount' => $batchCount,
+                        'processed' => $totalProcessed,
+                        'total' => $totalCount,
+                        'progress' => $progressPercent . '%',
+                        'indexed' => $totalIndexed,
+                        'errors' => $totalErrors,
+                        'batchDuration' => round($batchDuration * 1000) . 'ms',
+                        'avgObjectsPerSecond' => round(count($objects) / $batchDuration)
+                    ]);
+                }
+                
+                // Memory management
+                if ($batchCount % 50 === 0) {
+                    $this->logger->debug('🧹 MEMORY CLEANUP', [
+                        'memoryUsage' => round(memory_get_usage() / 1024 / 1024, 2) . 'MB',
+                        'peakMemory' => round(memory_get_peak_usage() / 1024 / 1024, 2) . 'MB'
+                    ]);
+                }
+                
+                // Prevent memory exhaustion
+                unset($objects, $solrDocuments);
+            }
+            
+            // Final commit
+            $this->solrService->commit();
+            
+            $totalDuration = microtime(true) - $startTime;
+            $avgObjectsPerSecond = $totalProcessed > 0 ? round($totalProcessed / $totalDuration) : 0;
+            
+            $stats = [
+                'success' => true,
+                'totalProcessed' => $totalProcessed,
+                'totalIndexed' => $totalIndexed,
+                'totalErrors' => $totalErrors,
+                'batchCount' => $batchCount,
+                'duration' => round($totalDuration, 2),
+                'avgObjectsPerSecond' => $avgObjectsPerSecond,
+                'memoryPeak' => round(memory_get_peak_usage() / 1024 / 1024, 2) . 'MB',
+                'errorRate' => $totalProcessed > 0 ? round(($totalErrors / $totalProcessed) * 100, 2) . '%' : '0%'
+            ];
+            
+            $this->logger->info('✅ SOLR INDEX WARMUP COMPLETED', $stats);
+            
+            return ['success' => true, 'stats' => $stats];
+            
+        } catch (\Exception $e) {
+            $duration = microtime(true) - $startTime;
+            
+            $this->logger->error('❌ SOLR WARMUP FAILED', [
+                'error' => $e->getMessage(),
+                'processed' => $totalProcessed,
+                'duration' => round($duration, 2),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+                'stats' => [
+                    'totalProcessed' => $totalProcessed,
+                    'totalIndexed' => $totalIndexed,
+                    'totalErrors' => $totalErrors,
+                    'duration' => round($duration, 2)
+                ]
+            ];
+        }
+    }
+
+    /**
+     * Clear entire SOLR index for a register/schema
+     *
+     * @param int|null $registerId Optional register filter
+     * @param int|null $schemaId   Optional schema filter
+     *
+     * @return bool True if clearing was successful
+     */
+    public function clearSolrIndex(?int $registerId = null, ?int $schemaId = null): bool
+    {
+        // Skip if SOLR service is not available
+        if ($this->solrService === null || !$this->solrService->isAvailable()) {
+            return true; // Graceful degradation
+        }
+
+        try {
+            // Build query to clear specific register/schema or all
+            $query = '*:*'; // Default: clear all
+            
+            if ($registerId !== null && $schemaId !== null) {
+                $query = 'register_id_i:' . $registerId . ' AND schema_id_i:' . $schemaId;
+            } elseif ($registerId !== null) {
+                $query = 'register_id_i:' . $registerId;
+            } elseif ($schemaId !== null) {
+                $query = 'schema_id_i:' . $schemaId;
+            }
+            
+            $result = $this->solrService->deleteByQuery($query, true);
+            
+            $this->logger->info('🗑️  SOLR INDEX CLEARED', [
+                'registerId' => $registerId,
+                'schemaId' => $schemaId,
+                'query' => $query,
+                'success' => $result
+            ]);
+            
+            return $result;
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to clear SOLR index', [
+                'registerId' => $registerId,
+                'schemaId' => $schemaId,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Get comprehensive SOLR dashboard statistics
+     *
+     * @return array Dashboard statistics from SolrService
+     */
+    public function getSolrDashboardStats(): array
+    {
+        if ($this->solrService === null) {
+            throw new \RuntimeException('SOLR service is not available');
+        }
+        
+        return $this->solrService->getDashboardStats();
+    }
+
+    /**
+     * Commit SOLR index
+     *
+     * @return array Commit operation results
+     */
+    public function commitSolr(): array
+    {
+        if ($this->solrService === null) {
+            return ['success' => false, 'error' => 'SOLR service is not available'];
+        }
+        
+        try {
+            $result = $this->solrService->commit();
+            return [
+                'success' => $result,
+                'timestamp' => date('c'),
+                'message' => $result ? 'Commit successful' : 'Commit failed'
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'timestamp' => date('c')
+            ];
+        }
+    }
+
+    /**
+     * Optimize SOLR index
+     *
+     * @return array Optimize operation results
+     */
+    public function optimizeSolr(): array
+    {
+        if ($this->solrService === null) {
+            return ['success' => false, 'error' => 'SOLR service is not available'];
+        }
+        
+        try {
+            $result = $this->solrService->optimize();
+            return [
+                'success' => $result,
+                'timestamp' => date('c'),
+                'message' => $result ? 'Optimization successful' : 'Optimization failed'
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'timestamp' => date('c')
+            ];
+        }
+    }
+
+    /**
+     * Clear SOLR index completely for dashboard
+     *
+     * @return array Clear operation results
+     */
+    public function clearSolrIndexForDashboard(): array
+    {
+        if ($this->solrService === null) {
+            return ['success' => false, 'error' => 'SOLR service is not available'];
+        }
+        
+        try {
+            $result = $this->solrService->clearIndex();
+            return [
+                'success' => $result,
+                'timestamp' => date('c'),
+                'message' => $result ? 'Index cleared successfully' : 'Index clear failed'
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'timestamp' => date('c')
+            ];
+        }
+    }
+
+    /**
+     * Test SOLR connection
+     *
+     * @return array Connection test results
+     */
+    public function testSolrConnection(): array
+    {
+        if ($this->solrService === null) {
+            return [
+                'success' => false,
+                'message' => 'SOLR service is not available',
+                'details' => []
+            ];
+        }
+        
+        return $this->solrService->testConnection();
+    }
+
+    /**
+     * Get SOLR service statistics
+     *
+     * @return array SOLR statistics
+     */
+    public function getSolrStats(): array
+    {
+        if ($this->solrService === null) {
+            return ['available' => false];
+        }
+        
+        return $this->solrService->getStats();
+    }
 
 
 }//end class

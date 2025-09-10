@@ -667,7 +667,20 @@ class ObjectService
         $tempObject = new ObjectEntity();
         $tempObject->setRegister($this->currentRegister->getId());
         $tempObject->setSchema($this->currentSchema->getId());
-        $tempObject->setUuid(Uuid::v4()->toRfc4122());
+        
+        // Check if an ID is provided in the object data before generating new UUID
+        $providedId = null;
+        if (is_array($object)) {
+            $providedId = $object['@self']['id'] ?? $object['id'] ?? null;
+        }
+        
+        if ($providedId && !empty(trim($providedId))) {
+            // Use provided ID as UUID
+            $tempObject->setUuid($providedId);
+        } else {
+            // Generate new UUID if no ID provided
+            $tempObject->setUuid(Uuid::v4()->toRfc4122());
+        }
 
         // Set organisation from active organisation (always respect user's active organisation)
         $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
@@ -1079,6 +1092,14 @@ class ObjectService
 
             $object = $object->getObject();
             // Get the object data array
+        }
+
+        // Check if an ID is provided in the object data and use it as UUID if no UUID was explicitly passed
+        if ($uuid === null && is_array($object)) {
+            $providedId = $object['@self']['id'] ?? $object['id'] ?? null;
+            if ($providedId && !empty(trim($providedId))) {
+                $uuid = $providedId;
+            }
         }
 
         // Determine if this is a CREATE or UPDATE operation and check permissions
@@ -2900,14 +2921,42 @@ class ObjectService
         try {
             // **CACHE WARMUP**: Preload register and schema if not already cached
             if (isset($query['@self']['register'])) {
-                $this->getCachedEntities('register', [$query['@self']['register']], function($ids) {
-                    return [$this->registerMapper->find($ids[0])];
+                $registerValue = $query['@self']['register'];
+                // Handle both single values and arrays
+                $registerIds = is_array($registerValue) ? $registerValue : [$registerValue];
+                $this->getCachedEntities('register', $registerIds, function($ids) {
+                    $results = [];
+                    foreach ($ids as $id) {
+                        if (is_string($id) || is_int($id)) {
+                            try {
+                                $results[] = $this->registerMapper->find($id);
+                            } catch (\Exception $e) {
+                                // Log and skip invalid IDs
+                                $this->logger->warning('Failed to preload register', ['id' => $id, 'error' => $e->getMessage()]);
+                            }
+                        }
+                    }
+                    return $results;
                 });
             }
 
             if (isset($query['@self']['schema'])) {
-                $this->getCachedEntities('schema', [$query['@self']['schema']], function($ids) {
-                    return [$this->schemaMapper->find($ids[0])];
+                $schemaValue = $query['@self']['schema'];
+                // Handle both single values and arrays
+                $schemaIds = is_array($schemaValue) ? $schemaValue : [$schemaValue];
+                $this->getCachedEntities('schema', $schemaIds, function($ids) {
+                    $results = [];
+                    foreach ($ids as $id) {
+                        if (is_string($id) || is_int($id)) {
+                            try {
+                                $results[] = $this->schemaMapper->find($id);
+                            } catch (\Exception $e) {
+                                // Log and skip invalid IDs
+                                $this->logger->warning('Failed to preload schema', ['id' => $id, 'error' => $e->getMessage()]);
+                            }
+                        }
+                    }
+                    return $results;
                 });
             }
 
@@ -5773,8 +5822,8 @@ class ObjectService
         $normalized = $query;
 
         try {
-            // **REGISTER NORMALIZATION**: Convert register slug to ID
-            if (isset($normalized['@self']['register']) && is_string($normalized['@self']['register'])) {
+            // **REGISTER NORMALIZATION**: Convert register slug to ID (handle both single values and arrays)
+            if (isset($normalized['@self']['register'])) {
                 $registerValue = $normalized['@self']['register'];
 
                 // If it's not numeric, try to find the register (find method supports slug/uuid/id)
@@ -5795,6 +5844,34 @@ class ObjectService
                             'error' => $e->getMessage()
                         ]);
                     }
+                } elseif (is_array($registerValue)) {
+                    // Array of values - convert each slug to ID if not numeric
+                    $normalizedRegisters = [];
+                    foreach ($registerValue as $singleRegisterValue) {
+                        if (is_string($singleRegisterValue) && !is_numeric($singleRegisterValue)) {
+                            try {
+                                $register = $this->registerMapper->find($singleRegisterValue);
+                                $normalizedRegisters[] = $register->getId();
+                                
+                                $this->logger->debug('🔄 CACHE NORMALIZATION: Register slug → ID (array)', [
+                                    'slug' => $singleRegisterValue,
+                                    'id' => $register->getId(),
+                                    'benefit' => 'consistent_cache_keys'
+                                ]);
+                            } catch (\Exception $e) {
+                                // Keep original value if lookup fails
+                                $normalizedRegisters[] = $singleRegisterValue;
+                                $this->logger->debug('Cache normalization: Could not resolve register slug in array', [
+                                    'slug' => $singleRegisterValue,
+                                    'error' => $e->getMessage()
+                                ]);
+                            }
+                        } else {
+                            // Keep numeric or non-string values as-is
+                            $normalizedRegisters[] = $singleRegisterValue;
+                        }
+                    }
+                    $normalized['@self']['register'] = $normalizedRegisters;
                 }
             }
 
@@ -5820,6 +5897,34 @@ class ObjectService
                             'error' => $e->getMessage()
                         ]);
                     }
+                } elseif (is_array($schemaValue)) {
+                    // Array of values - convert each slug to ID if not numeric
+                    $normalizedSchemas = [];
+                    foreach ($schemaValue as $singleSchemaValue) {
+                        if (is_string($singleSchemaValue) && !is_numeric($singleSchemaValue)) {
+                            try {
+                                $schema = $this->schemaMapper->find($singleSchemaValue);
+                                $normalizedSchemas[] = $schema->getId();
+                                
+                                $this->logger->debug('🔄 CACHE NORMALIZATION: Schema slug → ID (array)', [
+                                    'slug' => $singleSchemaValue,
+                                    'id' => $schema->getId(),
+                                    'benefit' => 'consistent_cache_keys'
+                                ]);
+                            } catch (\Exception $e) {
+                                // Keep original value if lookup fails
+                                $normalizedSchemas[] = $singleSchemaValue;
+                                $this->logger->debug('Cache normalization: Could not resolve schema slug in array', [
+                                    'slug' => $singleSchemaValue,
+                                    'error' => $e->getMessage()
+                                ]);
+                            }
+                        } else {
+                            // Keep numeric or non-string values as-is
+                            $normalizedSchemas[] = $singleSchemaValue;
+                        }
+                    }
+                    $normalized['@self']['schema'] = $normalizedSchemas;
                 }
             }
 
