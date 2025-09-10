@@ -104,43 +104,9 @@ class Version1Date20250903170000 extends SimpleMigrationStep
         // Skip problematic text field indexes that would exceed key size limit
         $output->info("Skipping 'name', 'summary', 'description' indexes due to MySQL key size limits");
 
-        // **CRITICAL COMPOSITE INDEXES** for complex queries
-        // Note: Using raw SQL with length prefixes to avoid MySQL key size limits
-
-        // Get database connection for raw SQL
-        $connection = \OC::$server->getDatabaseConnection();
-        $tablePrefix = $connection->getPrefix();
-        $tableName = $tablePrefix . 'openregister_objects';
-
-        // 1. Most common search pattern: register + schema (core filtering)
-        try {
-            $sql = "CREATE INDEX objects_reg_schema_idx ON {$tableName} (register(100), `schema`(100))";
-            $connection->executeStatement($sql);
-            $output->info('Added REG+SCHEMA index: register + schema (with length prefixes)');
-            $changed = true;
-        } catch (\Exception $e) {
-            $output->info('REG+SCHEMA index may already exist: ' . $e->getMessage());
-        }
-
-        // 2. Publication status with basic context
-        try {
-            $sql = "CREATE INDEX objects_published_idx ON {$tableName} (published, `schema`(100))";
-            $connection->executeStatement($sql);
-            $output->info('Added PUBLISHED index: published + schema (with length prefixes)');
-            $changed = true;
-        } catch (\Exception $e) {
-            $output->info('PUBLISHED index may already exist: ' . $e->getMessage());
-        }
-
-        // 3. Organization filtering (multi-tenancy)
-        try {
-            $sql = "CREATE INDEX objects_org_reg_idx ON {$tableName} (organisation(100), register(100))";
-            $connection->executeStatement($sql);
-            $output->info('Added ORG+REG index: organisation + register (with length prefixes)');
-            $changed = true;
-        } catch (\Exception $e) {
-            $output->info('ORG+REG index may already exist: ' . $e->getMessage());
-        }
+        // Skip complex index creation for now to avoid MySQL key length issues
+        // TODO: Add indexes after app is enabled
+        $output->info('Skipping complex index creation to avoid MySQL key length issues');
 
         // Skip other complex indexes that may cause key size issues
         $output->info('Skipping complex multi-column indexes to avoid MySQL key size limits');

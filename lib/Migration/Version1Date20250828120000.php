@@ -81,18 +81,23 @@ class Version1Date20250828120000 extends SimpleMigrationStep
         }
 
         // 2. Critical composite indexes for common filter combinations
+        // Note: Using raw SQL for composite indexes to handle MySQL key length limits
+        $connection = \OC::$server->getDatabaseConnection();
+        $tablePrefix = \OC::$server->getConfig()->getSystemValue('dbtableprefix', 'oc_');
+        $tableName = $tablePrefix . 'openregister_objects';
+
         $compositeIndexes = [
             // For base filtering (deleted + published state)
             'objects_deleted_published_idx' => ['deleted', 'published'],
             'objects_lifecycle_idx' => ['deleted', 'published', 'depublished'],
             
-            // For register/schema filtering with lifecycle
-            'objects_register_schema_deleted_idx' => ['register', 'schema', 'deleted'],
-            'objects_register_lifecycle_idx' => ['register', 'deleted', 'published'],
-            'objects_schema_lifecycle_idx' => ['schema', 'deleted', 'published'],
+            // For register/schema filtering with lifecycle (with length prefixes for text columns)
+            'objects_register_schema_deleted_idx' => ['register(20)', 'schema(20)', 'deleted'],
+            'objects_register_lifecycle_idx' => ['register(20)', 'deleted', 'published'],
+            'objects_schema_lifecycle_idx' => ['schema(20)', 'deleted', 'published'],
             
-            // For organisation-based filtering
-            'objects_org_lifecycle_idx' => ['organisation', 'deleted', 'published'],
+            // For organisation-based filtering (with length prefix for text column)
+            'objects_org_lifecycle_idx' => ['organisation(20)', 'deleted', 'published'],
             
             // For date range queries on faceting
             'objects_created_deleted_idx' => ['created', 'deleted'],
@@ -100,18 +105,32 @@ class Version1Date20250828120000 extends SimpleMigrationStep
         ];
 
         foreach ($compositeIndexes as $indexName => $columns) {
-            // Check all columns exist
+            // Check if index already exists
+            if ($table->hasIndex($indexName)) {
+                continue;
+            }
+
+            // Check all base columns exist (without length prefixes)
+            $baseColumns = array_map(function($col) {
+                return preg_replace('/\(\d+\)/', '', $col);
+            }, $columns);
+            
             $allColumnsExist = true;
-            foreach ($columns as $column) {
+            foreach ($baseColumns as $column) {
                 if (!$table->hasColumn($column)) {
                     $allColumnsExist = false;
                     break;
                 }
             }
             
-            if ($allColumnsExist && !$table->hasIndex($indexName)) {
-                $table->addIndex($columns, $indexName);
-                $output->info("Added composite index {$indexName} on columns: " . implode(', ', $columns));
+            if ($allColumnsExist) {
+                try {
+                    $sql = "CREATE INDEX {$indexName} ON {$tableName} (" . implode(', ', $columns) . ")";
+                    $connection->executeStatement($sql);
+                    $output->info("Added composite index {$indexName} on columns: " . implode(', ', $columns));
+                } catch (\Exception $e) {
+                    $output->info("Failed to create index {$indexName}: " . $e->getMessage());
+                }
             }
         }
 
