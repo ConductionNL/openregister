@@ -743,10 +743,6 @@ class ImportService
                 $this->logger->debug('Publish disabled for CSV import, not adding publish dates');
             }
             
-            // DEBUG: Log first object before saveObjects call
-            if (!empty($allObjects[0]['@self'])) {
-                error_log("[ImportService] processCsvSheet: First object before saveObjects: " . json_encode($allObjects[0]['@self']));
-            }
             
             $saveResult = $this->objectService->saveObjects($allObjects, $register, $schema, $rbac, $multi, $validation, $events);
             
@@ -1057,17 +1053,10 @@ class ImportService
         // Add ID if present in the data (for updates) - check once at the end
         if (!empty($rowData['id'])) {
             $selfData['id'] = $rowData['id'];
-            // DEBUG: Log ID preservation
-            error_log("[ImportService] transformCsvRowToObject: Setting @self.id = " . $rowData['id']);
-        } else {
-            error_log("[ImportService] transformCsvRowToObject: No ID found in rowData, keys: " . implode(', ', array_keys($rowData)));
         }
 
         // Add @self array to object data
         $objectData['@self'] = $selfData;
-        
-        // DEBUG: Log final object structure
-        error_log("[ImportService] transformCsvRowToObject: Final object @self = " . json_encode($objectData['@self']));
 
         // Validate that we're not accidentally creating invalid properties
         $this->validateObjectProperties($objectData, $schemaId);

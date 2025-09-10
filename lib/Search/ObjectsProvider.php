@@ -123,9 +123,12 @@ class ObjectsProvider implements IFilteringProvider
      *
      * Lower values appear first in search results
      *
-     * @return int Order priority (0-100, lower = higher priority)
+     * @param string $route The route/context for which to get the order
+     * @param array $routeParameters Parameters for the route
+     *
+     * @return int|null Order priority (0-100, lower = higher priority) or null for default
      */
-    public function getOrder(): int
+    public function getOrder(string $route, array $routeParameters): ?int
     {
         return 10;
 

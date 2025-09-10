@@ -161,45 +161,38 @@ class SolrService
     }
 
     /**
-     * Ensure tenant-specific Solr core exists, create if necessary
+     * Ensure tenant-specific Solr collection exists, create if necessary (SolrCloud)
      *
-     * Automatically creates Solr cores for new tenants using the base core as a template.
-     * This ensures seamless multi-tenant operation without manual core management.
+     * Automatically creates SolrCloud collections for new tenants using the base collection as a template.
+     * This ensures seamless multi-tenant operation without manual collection management.
      *
-     * @param string $coreNam Core name to check/create
-     * @return bool True if core exists or was created successfully
+     * @param string $collectionName Collection name to check/create
+     * @return bool True if collection exists or was created successfully
      */
-    private function ensureTenantCoreExists(string $coreNam): bool
+    private function ensureTenantCollectionExists(string $collectionName): bool
     {
         $this->ensureClientInitialized();
         
         if (!$this->client) {
-            $this->logger->warning('Cannot check core existence: Solr client not initialized');
+            $this->logger->warning('Cannot check collection existence: Solr client not initialized');
             return false;
         }
         
         try {
-            // Check if core already exists using admin API
-            $adminQuery = $this->client->createApi('admin');
-            $coreAdminQuery = $adminQuery->createStatus();
-            $coreAdminQuery->setCore($coreName);
-            
-            $result = $this->client->execute($coreAdminQuery);
-            
-            // If core exists, return true
-            if ($result->getStatus() === 0 && isset($result->getData()['status'][$coreName])) {
-                $this->logger->info("Solr core '{$coreName}' already exists", [
+            // Check if collection already exists using Collections API (SolrCloud)
+            if ($this->collectionExists($collectionName)) {
+                $this->logger->info("Solr collection '{$collectionName}' already exists", [
                     'tenant_id' => $this->tenantId
                 ]);
                 return true;
             }
             
-            // Core doesn't exist, attempt to create it
-            return $this->createTenantCore($coreName);
+            // Collection doesn't exist, attempt to create it
+            return $this->createTenantCollection($collectionName);
             
         } catch (\Exception $e) {
-            $this->logger->error('Failed to check/create Solr core', [
-                'core' => $coreName,
+            $this->logger->error('Failed to check/create Solr collection', [
+                'collection' => $collectionName,
                 'tenant_id' => $this->tenantId,
                 'error' => $e->getMessage()
             ]);
@@ -208,46 +201,40 @@ class SolrService
     }
 
     /**
-     * Create a new Solr core for a tenant
+     * Create a new Solr collection for a tenant (SolrCloud)
      *
-     * Creates a new core using the base OpenRegister schema and configuration.
-     * Copies configuration from the base core to ensure consistent functionality.
+     * Creates a new collection using the base OpenRegister configSet.
+     * Uses the same configSet as the base collection for consistent functionality.
      *
-     * @param string $coreName Name of the core to create
-     * @return bool True if core was created successfully
+     * @param string $collectionName Name of the collection to create
+     * @return bool True if collection was created successfully
      */
-    private function createTenantCore(string $coreName): bool
+    private function createTenantCollection(string $collectionName): bool
     {
         try {
-            $adminQuery = $this->client->createApi('admin');
-            $createCoreQuery = $adminQuery->createCreate();
+            // Use the base configSet name (same as base collection)
+            $baseConfigSet = 'openregister'; // This should match the configSet name from SolrSetup
             
-            // Use the base core name for template configuration
-            $baseCoreName = $this->solrConfig['core'];
+            // Create collection using Collections API
+            $success = $this->createCollection($collectionName, $baseConfigSet);
             
-            $createCoreQuery->setCore($coreName);
-            $createCoreQuery->setConfigSet($baseCoreName); // Use base core as template
-            
-            $result = $this->client->execute($createCoreQuery);
-            
-            if ($result->getStatus() === 0) {
-                $this->logger->info("Successfully created Solr core '{$coreName}' for tenant", [
+            if ($success) {
+                $this->logger->info("Successfully created Solr collection '{$collectionName}' for tenant", [
                     'tenant_id' => $this->tenantId,
-                    'base_core' => $baseCoreName
+                    'configSet' => $baseConfigSet
                 ]);
                 return true;
             } else {
-                $this->logger->error("Failed to create Solr core '{$coreName}'", [
+                $this->logger->error("Failed to create Solr collection '{$collectionName}'", [
                     'tenant_id' => $this->tenantId,
-                    'status' => $result->getStatus(),
-                    'data' => $result->getData()
+                    'configSet' => $baseConfigSet
                 ]);
                 return false;
             }
             
         } catch (\Exception $e) {
-            $this->logger->error('Exception while creating Solr core', [
-                'core' => $coreName,
+            $this->logger->error('Exception while creating Solr collection', [
+                'collection' => $collectionName,
                 'tenant_id' => $this->tenantId,
                 'error' => $e->getMessage()
             ]);
@@ -323,14 +310,48 @@ class SolrService
             $baseCoreName = $this->solrConfig['core'];
             $tenantSpecificCore = $this->getTenantSpecificCoreName($baseCoreName);
             
-            // Build SOLR endpoint configuration with tenant-specific core
+            // Initialize client first (required for collection management)
+            $adapter = new Curl();
+            $eventDispatcher = new EventDispatcher();
+            $this->client = new Client($adapter, $eventDispatcher);
+            
+            // Default to base collection initially
+            $coreToUse = $baseCoreName;
+            
+            // SOLR CLOUD: Ensure tenant-specific collection exists (proper multi-tenant architecture)
+            $tenantSpecificCollection = $this->getTenantSpecificCoreName($baseCoreName);
+            $collectionCreated = $this->ensureTenantCollectionExists($tenantSpecificCollection);
+            
+            if (!$collectionCreated) {
+                $this->logger->error('Failed to create required tenant collection, falling back to base collection', [
+                    'tenant_collection' => $tenantSpecificCollection,
+                    'tenant_id' => $this->tenantId,
+                    'fallback_collection' => $baseCoreName
+                ]);
+                
+                // FALLBACK: Use base collection instead of failing completely
+                $this->logger->warning('Using base collection as fallback for tenant isolation', [
+                    'tenant_id' => $this->tenantId,
+                    'base_collection' => $baseCoreName,
+                    'intended_collection' => $tenantSpecificCollection
+                ]);
+            } else {
+                // SUCCESS: Use tenant-specific collection
+                $coreToUse = $tenantSpecificCollection;
+                $this->logger->info('Using tenant-specific collection for proper isolation', [
+                    'tenant_id' => $this->tenantId,
+                    'collection' => $tenantSpecificCollection
+                ]);
+            }
+            
+            // Build SOLR endpoint configuration with determined collection
             $endpointConfig = [
                 'key' => 'default',
                 'scheme' => $this->solrConfig['scheme'],
                 'host' => $this->solrConfig['host'],
                 'port' => $this->solrConfig['port'],
                 'path' => $this->solrConfig['path'],
-                'core' => $tenantSpecificCore,
+                'core' => $coreToUse,
                 'timeout' => $this->solrConfig['timeout'],
             ];
             
@@ -340,31 +361,15 @@ class SolrService
                 $endpointConfig['password'] = $this->solrConfig['password'];
             }
             
-            // Initialize client with required arguments (Solarium 6.3+ pattern)
-            $adapter = new Curl();
-            $eventDispatcher = new EventDispatcher();
-            $this->client = new Client($adapter, $eventDispatcher);
-            
-            // Create and configure endpoint with proper key assignment  
+            // Create and configure endpoint
             $endpoint = $this->client->createEndpoint($endpointConfig);
             $this->client->setDefaultEndpoint($endpoint);
-            
-            // Always ensure tenant-specific core exists (multi-tenant architecture)
-            $coreCreated = $this->ensureTenantCoreExists($tenantSpecificCore);
-            if (!$coreCreated) {
-                $this->logger->error('Failed to create required tenant core, SOLR will not function properly', [
-                    'tenant_core' => $tenantSpecificCore,
-                    'tenant_id' => $this->tenantId
-                ]);
-                
-                // Don't fallback - we always require tenant-specific cores
-                throw new \Exception("Required tenant core '{$tenantSpecificCore}' could not be created");
-            }
             
             $this->logger->info('SOLR client initialized successfully', [
                 'host' => $this->solrConfig['host'],
                 'port' => $this->solrConfig['port'],
-                'core' => $this->solrConfig['core'],
+                'base_collection' => $this->solrConfig['core'],
+                'active_collection' => $coreToUse,
                 'tenant' => $this->tenantId
             ]);
             

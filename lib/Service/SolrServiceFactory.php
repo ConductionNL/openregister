@@ -15,7 +15,7 @@
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCP\Http\Client\IClientService;
 use OCP\IConfig;
 use OCP\AppFramework\IAppContainer;
 use Psr\Log\LoggerInterface;
@@ -31,11 +31,11 @@ use Psr\Log\LoggerInterface;
 class SolrServiceFactory
 {
     /**
-     * Cached SolrService instance for current request
+     * Cached GuzzleSolrService instance for current request
      *
-     * @var SolrService|null
+     * @var GuzzleSolrService|null
      */
-    private static ?SolrService $cachedInstance = null;
+    private static ?GuzzleSolrService $cachedInstance = null;
 
     /**
      * Flag to track if SOLR is enabled (cached for performance)
@@ -45,17 +45,16 @@ class SolrServiceFactory
     private static ?bool $solrEnabled = null;
 
     /**
-     * Create or retrieve SolrService instance
+     * Create or retrieve GuzzleSolrService instance
      *
-     * This method provides high-performance access to SolrService without
-     * the expensive DI registration overhead that causes Apache processes
-     * to consume high CPU.
+     * This method provides high-performance access to SOLR using lightweight Guzzle HTTP client
+     * instead of the memory-intensive Solarium library.
      *
      * @param IAppContainer $container Application container for service resolution
      *
-     * @return SolrService|null SolrService instance or null if disabled/unavailable
+     * @return GuzzleSolrService|null GuzzleSolrService instance or null if disabled/unavailable
      */
-    public static function createSolrService(IAppContainer $container): ?SolrService
+    public static function createSolrService(IAppContainer $container): ?GuzzleSolrService
     {
         // Return cached instance if available
         if (self::$cachedInstance !== null) {
@@ -71,22 +70,22 @@ class SolrServiceFactory
             // Manual service instantiation (avoiding DI registration performance issues)
             $settingsService = $container->get(SettingsService::class);
             $logger = $container->get(LoggerInterface::class);
-            $objectMapper = $container->get(ObjectEntityMapper::class);
+            $clientService = $container->get(IClientService::class);
             $config = $container->get(IConfig::class);
 
-            // Create SolrService with correct parameter order
-            self::$cachedInstance = new SolrService(
-                $settingsService,  // First parameter: SettingsService
-                $logger,           // Second parameter: LoggerInterface
-                $objectMapper,     // Third parameter: ObjectEntityMapper
-                $config           // Fourth parameter: IConfig
+            // Create GuzzleSolrService with lightweight HTTP client
+            self::$cachedInstance = new GuzzleSolrService(
+                $settingsService,  // Settings service for configuration
+                $logger,           // Logger for debugging and monitoring
+                $clientService,    // HTTP client service for SOLR requests
+                $config           // Nextcloud configuration
             );
 
             return self::$cachedInstance;
         } catch (\Exception $e) {
             // Log error but don't break the application
             $logger = $container->get(LoggerInterface::class);
-            $logger->warning('SolrServiceFactory: Failed to create SolrService', [
+            $logger->warning('SolrServiceFactory: Failed to create GuzzleSolrService', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -134,14 +133,14 @@ class SolrServiceFactory
     /**
      * Get performance-optimized SOLR service for ObjectCacheService
      *
-     * This method provides a safe way to get SolrService without the
+     * This method provides a safe way to get GuzzleSolrService without the
      * performance issues that occur with DI registration.
      *
      * @param IAppContainer $container Application container
      *
-     * @return SolrService|null SolrService instance or null for graceful degradation
+     * @return GuzzleSolrService|null GuzzleSolrService instance or null for graceful degradation
      */
-    public static function getSolrServiceForCaching(IAppContainer $container): ?SolrService
+    public static function getSolrServiceForCaching(IAppContainer $container): ?GuzzleSolrService
     {
         return self::createSolrService($container);
     }

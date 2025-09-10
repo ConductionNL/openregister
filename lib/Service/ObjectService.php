@@ -1173,6 +1173,7 @@ class ObjectService
         // For new objects without UUID, let SaveObject generate the UUID and handle folder creation
         // Save the object using the current register and schema.
         // Let SaveObject handle the UUID logic completely
+        
         $savedObject = $this->saveHandler->saveObject(
             $this->currentRegister,
             $this->currentSchema,

@@ -46,8 +46,12 @@ use OCA\OpenRegister\Service\ObjectCacheService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\SolrService;
+use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Setup\SolrSetup;
 use OCA\OpenRegister\Service\SchemaCacheService;
+use OCA\OpenRegister\Command\SolrDebugCommand;
+use OCA\OpenRegister\Command\SolrManagementCommand;
 use OCA\OpenRegister\Service\SchemaFacetCacheService;
 use OCA\OpenRegister\Search\ObjectsProvider;
 use OCP\AppFramework\App;
@@ -184,14 +188,14 @@ class Application extends App implements IBootstrap
                 );
         */
 
-        // Register ObjectCacheService for performance optimization
+        // Register ObjectCacheService for performance optimization with lightweight SOLR
         $context->registerService(
                 ObjectCacheService::class,
                 function ($container) {
                     return new ObjectCacheService(
                     $container->get(ObjectEntityMapper::class),
                     $container->get('Psr\Log\LoggerInterface'),
-                    null, // SolrService disabled due to performance issues
+                    $container->get(GuzzleSolrService::class), // Lightweight SOLR service enabled!
                     $container->get('OCP\ICacheFactory'),
                     $container->get('OCP\IUserSession')
                     );
@@ -415,6 +419,44 @@ class Application extends App implements IBootstrap
 
         // Register ObjectsProvider as a search provider for Nextcloud search
         $context->registerSearchProvider(ObjectsProvider::class);
+
+        // Register SolrDebugCommand for SOLR debugging
+        $context->registerService(
+                SolrDebugCommand::class,
+                function ($container) {
+                    return new SolrDebugCommand(
+                    $container->get(SettingsService::class),
+                    $container->get('Psr\Log\LoggerInterface'),
+                    $container->get('OCP\IConfig')
+                    );
+                }
+                );
+
+        // Register lightweight GuzzleSolrService directly (no factory needed!)
+        $context->registerService(
+                GuzzleSolrService::class,
+                function ($container) {
+                    return new GuzzleSolrService(
+                    $container->get(SettingsService::class),
+                    $container->get('Psr\Log\LoggerInterface'),
+                    $container->get('OCP\Http\Client\IClientService'),
+                    $container->get('OCP\IConfig')
+                    );
+                }
+                );
+
+        // Register SolrManagementCommand for production SOLR operations
+        $context->registerService(
+                SolrManagementCommand::class,
+                function ($container) {
+                    return new SolrManagementCommand(
+                    $container->get(SettingsService::class),
+                    $container->get('Psr\Log\LoggerInterface'),
+                    $container->get(GuzzleSolrService::class),
+                    $container->get('OCP\IConfig')
+                    );
+                }
+                );
 
         // Register TEST event listener for easily triggerable Nextcloud events
         $context->registerEventListener(UserLoggedInEvent::class, TestEventListener::class);

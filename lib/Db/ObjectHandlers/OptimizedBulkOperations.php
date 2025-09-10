@@ -549,7 +549,6 @@ class OptimizedBulkOperations
                 
                 // VALIDATION: object content must be an array, not a string or other type
                 if (!is_array($objectContent)) {
-                    error_log("[BULK OBJECT ERROR] Expected array but got " . gettype($objectContent) . ": " . var_export($objectContent, true));
                     throw new \InvalidArgumentException("Object content must be an array, got " . gettype($objectContent) . ". This suggests double JSON encoding or malformed CSV parsing.");
                 }
                 
