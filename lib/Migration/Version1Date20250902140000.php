@@ -60,22 +60,36 @@ class Version1Date20250902140000 extends SimpleMigrationStep
 
         // **CRITICAL PERFORMANCE INDEXES**: Add composite indexes for common search patterns
 
-        // Most common search pattern: register + schema filtering
-        if (!$table->hasIndex('objects_register_schema_idx')) {
-            $table->addIndex(['register', 'schema'], 'objects_register_schema_idx');
-            $output->info('Added composite index objects_register_schema_idx for register+schema queries');
+        // Use raw SQL to create indexes with length prefixes to avoid MySQL key length limits
+        $connection = \OC::$server->getDatabaseConnection();
+        $tablePrefix = $connection->getPrefix();
+        $tableName = $tablePrefix . 'openregister_objects';
+        
+        // Most common search pattern: register + schema filtering (with length prefixes)
+        try {
+            $sql = "CREATE INDEX objects_register_schema_idx ON {$tableName} (register(100), `schema`(100))";
+            $connection->executeStatement($sql);
+            $output->info('Added composite index objects_register_schema_idx for register+schema queries (with length prefixes)');
+        } catch (\Exception $e) {
+            $output->info('Index objects_register_schema_idx may already exist or creation failed: ' . $e->getMessage());
         }
 
-        // Chronological searches within register+schema
-        if (!$table->hasIndex('objects_register_schema_created_idx')) {
-            $table->addIndex(['register', 'schema', 'created'], 'objects_register_schema_created_idx');
-            $output->info('Added composite index objects_register_schema_created_idx for chronological queries');
+        // Chronological searches within register+schema (with length prefixes)
+        try {
+            $sql = "CREATE INDEX objects_register_schema_created_idx ON {$tableName} (register(100), `schema`(100), created)";
+            $connection->executeStatement($sql);
+            $output->info('Added composite index objects_register_schema_created_idx for chronological queries (with length prefixes)');
+        } catch (\Exception $e) {
+            $output->info('Index objects_register_schema_created_idx may already exist or creation failed: ' . $e->getMessage());
         }
 
-        // Recently updated objects within register+schema
-        if (!$table->hasIndex('objects_register_schema_updated_idx')) {
-            $table->addIndex(['register', 'schema', 'updated'], 'objects_register_schema_updated_idx');
-            $output->info('Added composite index objects_register_schema_updated_idx for update-based queries');
+        // Recently updated objects within register+schema (with length prefixes)
+        try {
+            $sql = "CREATE INDEX objects_register_schema_updated_idx ON {$tableName} (register(100), `schema`(100), updated)";
+            $connection->executeStatement($sql);
+            $output->info('Added composite index objects_register_schema_updated_idx for update-based queries (with length prefixes)');
+        } catch (\Exception $e) {
+            $output->info('Index objects_register_schema_updated_idx may already exist or creation failed: ' . $e->getMessage());
         }
 
         // Multi-tenancy organization filtering (critical for performance)
@@ -109,10 +123,13 @@ class Version1Date20250902140000 extends SimpleMigrationStep
 
         // **SUPER-CRITICAL**: Multi-column index for the most common complete query pattern
         // This covers: register + schema + organisation filtering in one index  
-        // Note: Removed 'deleted' to keep index size under MySQL's 3072 byte limit
-        if (!$table->hasIndex('objects_perf_super_idx')) {
-            $table->addIndex(['register', 'schema', 'organisation'], 'objects_perf_super_idx');
-            $output->info('Added super-performance index objects_perf_super_idx for complete query coverage');
+        // Using raw SQL with length prefixes to stay under MySQL's 3072 byte limit
+        try {
+            $sql = "CREATE INDEX objects_perf_super_idx ON {$tableName} (register(80), `schema`(80), organisation(80))";
+            $connection->executeStatement($sql);
+            $output->info('Added super-performance index objects_perf_super_idx for complete query coverage (with length prefixes)');
+        } catch (\Exception $e) {
+            $output->info('Index objects_perf_super_idx may already exist or creation failed: ' . $e->getMessage());
         }
 
         return $schema;

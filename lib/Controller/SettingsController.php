@@ -439,24 +439,6 @@ class SettingsController extends Controller
     }
 
     /**
-     * Test SOLR connection and get status
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse Connection test results
-     */
-    public function testSolrConnection(): JSONResponse
-    {
-        try {
-            $result = $this->settingsService->testSolrConnection();
-            return new JSONResponse($result);
-        } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
-        }
-    }
-
-    /**
      * Get RBAC settings only
      *
      * @NoAdminRequired

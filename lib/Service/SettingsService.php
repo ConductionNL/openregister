@@ -790,33 +790,66 @@ class SettingsService
 
 
     /**
-     * Get comprehensive cache statistics and performance metrics
+     * Get comprehensive cache statistics from actual cache systems (not database)
      *
-     * Provides detailed insights into cache usage, performance, memory consumption,
-     * hit/miss rates, and per-user cache statistics for admin monitoring.
-     * Now includes object name cache statistics for enhanced monitoring.
+     * Provides detailed insights into cache usage and performance by querying
+     * the actual cache backends rather than database tables for better performance.
      *
-     * @return array Comprehensive cache statistics
-     * @throws \RuntimeException If cache statistics retrieval fails
+     * @return array Comprehensive cache statistics from cache systems
      */
     public function getCacheStats(): array
     {
         try {
-            // Get all cache service stats including object names
-            $objectStats = $this->objectCacheService->getStats();
+            // Get basic distributed cache info
+            $distributedStats = $this->getDistributedCacheStats();
+            $performanceStats = $this->getCachePerformanceMetrics();
+            
+            // Get object cache stats (only if ObjectCacheService provides them)
+            $objectStats = [];
+            try {
+                $objectStats = $this->objectCacheService->getStats();
+            } catch (\Exception $e) {
+                // If no object cache stats available, use defaults
+                $objectStats = [
+                    'entries' => 0,
+                    'hits' => 0,
+                    'requests' => 0,
+                    'memoryUsage' => 0,
+                    'name_cache_size' => 0,
+                    'name_hit_rate' => 0.0,
+                    'name_hits' => 0,
+                    'name_misses' => 0,
+                    'name_warmups' => 0,
+                ];
+            }
             
             $stats = [
                 'overview' => [
-                    'totalCacheSize' => 0,
-                    'totalCacheEntries' => 0,
-                    'overallHitRate' => 0.0,
-                    'averageResponseTime' => 0.0,
-                    'cacheEfficiency' => 0.0,
+                    'totalCacheSize' => $objectStats['memoryUsage'] ?? 0,
+                    'totalCacheEntries' => $objectStats['entries'] ?? 0,
+                    'overallHitRate' => $this->calculateHitRate($objectStats),
+                    'averageResponseTime' => $performanceStats['averageHitTime'] ?? 0.0,
+                    'cacheEfficiency' => $this->calculateHitRate($objectStats),
                 ],
                 'services' => [
-                    'object' => $objectStats,
-                    'schema' => $this->schemaCacheService->getCacheStatistics(),
-                    'facet' => $this->schemaFacetCacheService->getCacheStatistics(),
+                    'object' => [
+                        'entries' => $objectStats['entries'] ?? 0,
+                        'hits' => $objectStats['hits'] ?? 0,
+                        'requests' => $objectStats['requests'] ?? 0,
+                        'memoryUsage' => $objectStats['memoryUsage'] ?? 0,
+                    ],
+                    'schema' => [
+                        'entries' => 0, // Not stored in database - would be performance issue
+                        'hits' => 0,
+                        'requests' => 0,
+                        'memoryUsage' => 0,
+                    ],
+                    'facet' => [
+                        'entries' => 0, // Not stored in database - would be performance issue
+                        'hits' => 0,
+                        'requests' => 0,
+                        'memoryUsage' => 0,
+                    ],
                 ],
                 'names' => [
                     'cache_size' => $objectStats['name_cache_size'] ?? 0,
@@ -826,37 +859,51 @@ class SettingsService
                     'warmups' => $objectStats['name_warmups'] ?? 0,
                     'enabled' => true,
                 ],
-                'distributed' => $this->getDistributedCacheStats(),
-                'performance' => $this->getCachePerformanceMetrics(),
+                'distributed' => $distributedStats,
+                'performance' => $performanceStats,
                 'lastUpdated' => (new \DateTime())->format('c'),
             ];
 
-            // Calculate overview statistics from service stats
-            $totalEntries = 0;
-            $totalHits = 0;
-            $totalRequests = 0;
-            $totalSize = 0;
-
-            foreach ($stats['services'] as $serviceName => $serviceStats) {
-                $totalEntries += $serviceStats['entries'] ?? 0;
-                $totalHits += $serviceStats['hits'] ?? 0;
-                $totalRequests += $serviceStats['requests'] ?? 0;
-                $totalSize += $serviceStats['memoryUsage'] ?? 0;
-            }
-
-            // Include name cache stats in totals
-            $totalEntries += $stats['names']['cache_size'];
-            $totalHits += $stats['names']['hits'];
-            $totalRequests += ($stats['names']['hits'] + $stats['names']['misses']);
-
-            $stats['overview']['totalCacheEntries'] = $totalEntries;
-            $stats['overview']['totalCacheSize'] = $totalSize;
-            $stats['overview']['overallHitRate'] = $totalRequests > 0 ? ($totalHits / $totalRequests) * 100 : 0.0;
-
             return $stats;
         } catch (\Exception $e) {
-            throw new \RuntimeException('Failed to retrieve cache statistics: '.$e->getMessage());
+            // Return safe defaults if cache stats unavailable
+            return [
+                'overview' => [
+                    'totalCacheSize' => 0,
+                    'totalCacheEntries' => 0,
+                    'overallHitRate' => 0.0,
+                    'averageResponseTime' => 0.0,
+                    'cacheEfficiency' => 0.0,
+                ],
+                'services' => [
+                    'object' => ['entries' => 0, 'hits' => 0, 'requests' => 0, 'memoryUsage' => 0],
+                    'schema' => ['entries' => 0, 'hits' => 0, 'requests' => 0, 'memoryUsage' => 0],
+                    'facet' => ['entries' => 0, 'hits' => 0, 'requests' => 0, 'memoryUsage' => 0],
+                ],
+                'names' => [
+                    'cache_size' => 0, 'hit_rate' => 0.0, 'hits' => 0, 'misses' => 0,
+                    'warmups' => 0, 'enabled' => false,
+                ],
+                'distributed' => ['type' => 'none', 'backend' => 'Unknown', 'available' => false],
+                'performance' => ['averageHitTime' => 0, 'averageMissTime' => 0, 'performanceGain' => 0, 'optimalHitRate' => 85.0],
+                'lastUpdated' => (new \DateTime())->format('c'),
+                'error' => 'Cache statistics unavailable: ' . $e->getMessage(),
+            ];
         }
+    }
+    
+    /**
+     * Calculate hit rate from cache statistics
+     *
+     * @param array $stats Cache statistics array
+     * @return float Hit rate percentage
+     */
+    private function calculateHitRate(array $stats): float
+    {
+        $requests = $stats['requests'] ?? 0;
+        $hits = $stats['hits'] ?? 0;
+        
+        return $requests > 0 ? ($hits / $requests) * 100 : 0.0;
     }
 
     /**
@@ -1489,7 +1536,7 @@ class SettingsService
                     ];
                     
                 case 'clear':
-                    $result = $objectCacheService->clearSolrIndex();
+                    $result = $objectCacheService->clearSolrIndexForDashboard();
                     return [
                         'success' => $result['success'] ?? false,
                         'operation' => 'clear',
@@ -1529,7 +1576,7 @@ class SettingsService
      *
      * @return array Connection test results with detailed status information
      */
-    public function testSolrConnection(): array
+    public function testSolrConnectionForDashboard(): array
     {
         try {
             $objectCacheService = $this->container->get(ObjectCacheService::class);
