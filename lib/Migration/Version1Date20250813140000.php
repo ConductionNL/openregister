@@ -75,11 +75,17 @@ class Version1Date20250813140000 extends SimpleMigrationStep
             $output->info('Added slug column to openregister_objects table');
         }
 
-        // Add unique constraint for slug+register+schema combination
-        $uniqueIndexName = 'unique_slug_register_schema';
-        if ($table->hasIndex($uniqueIndexName) === false) {
-            $table->addUniqueIndex(['slug', 'register', 'schema'], $uniqueIndexName);
-            $output->info('Added unique constraint for slug+register+schema combination');
+        // Add unique constraint for slug+register+schema combination with length prefixes
+        $connection = \OC::$server->getDatabaseConnection();
+        $tablePrefix = $connection->getPrefix();
+        $tableName = $tablePrefix . 'openregister_objects';
+        
+        try {
+            $sql = "CREATE UNIQUE INDEX unique_slug_register_schema ON {$tableName} (slug(100), register(100), `schema`(100))";
+            $connection->executeStatement($sql);
+            $output->info('Added unique constraint for slug+register+schema combination (with length prefixes)');
+        } catch (\Exception $e) {
+            $output->info('Unique constraint unique_slug_register_schema may already exist or creation failed: ' . $e->getMessage());
         }
 
         return $schema;

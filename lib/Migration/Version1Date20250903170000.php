@@ -105,27 +105,41 @@ class Version1Date20250903170000 extends SimpleMigrationStep
         $output->info("Skipping 'name', 'summary', 'description' indexes due to MySQL key size limits");
 
         // **CRITICAL COMPOSITE INDEXES** for complex queries
-        // Note: Limiting to most important indexes to avoid MySQL key size limits
+        // Note: Using raw SQL with length prefixes to avoid MySQL key size limits
+
+        // Get database connection for raw SQL
+        $connection = \OC::$server->getDatabaseConnection();
+        $tablePrefix = $connection->getPrefix();
+        $tableName = $tablePrefix . 'openregister_objects';
 
         // 1. Most common search pattern: register + schema (core filtering)
-        if (!$table->hasIndex('objects_reg_schema_idx')) {
-            $table->addIndex(['register', 'schema'], 'objects_reg_schema_idx');
-            $output->info('Added REG+SCHEMA index: register + schema');
+        try {
+            $sql = "CREATE INDEX objects_reg_schema_idx ON {$tableName} (register(100), `schema`(100))";
+            $connection->executeStatement($sql);
+            $output->info('Added REG+SCHEMA index: register + schema (with length prefixes)');
             $changed = true;
+        } catch (\Exception $e) {
+            $output->info('REG+SCHEMA index may already exist: ' . $e->getMessage());
         }
 
         // 2. Publication status with basic context
-        if (!$table->hasIndex('objects_published_idx')) {
-            $table->addIndex(['published', 'schema'], 'objects_published_idx');
-            $output->info('Added PUBLISHED index: published + schema');
+        try {
+            $sql = "CREATE INDEX objects_published_idx ON {$tableName} (published, `schema`(100))";
+            $connection->executeStatement($sql);
+            $output->info('Added PUBLISHED index: published + schema (with length prefixes)');
             $changed = true;
+        } catch (\Exception $e) {
+            $output->info('PUBLISHED index may already exist: ' . $e->getMessage());
         }
 
         // 3. Organization filtering (multi-tenancy)
-        if (!$table->hasIndex('objects_org_reg_idx')) {
-            $table->addIndex(['organisation', 'register'], 'objects_org_reg_idx');
-            $output->info('Added ORG+REG index: organisation + register');
+        try {
+            $sql = "CREATE INDEX objects_org_reg_idx ON {$tableName} (organisation(100), register(100))";
+            $connection->executeStatement($sql);
+            $output->info('Added ORG+REG index: organisation + register (with length prefixes)');
             $changed = true;
+        } catch (\Exception $e) {
+            $output->info('ORG+REG index may already exist: ' . $e->getMessage());
         }
 
         // Skip other complex indexes that may cause key size issues

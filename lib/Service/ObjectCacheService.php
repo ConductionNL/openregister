@@ -1756,11 +1756,11 @@ class ObjectCacheService
     }
 
     /**
-     * Clear SOLR index completely
+     * Clear SOLR index completely for dashboard
      *
      * @return array Clear operation results
      */
-    public function clearSolrIndex(): array
+    public function clearSolrIndexForDashboard(): array
     {
         if ($this->solrService === null) {
             return ['success' => false, 'error' => 'SOLR service is not available'];

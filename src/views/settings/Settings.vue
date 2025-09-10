@@ -330,7 +330,7 @@
 						</NcButton>
 						<NcButton
 							type="error"
-							:disabled="loading || clearingCache || loadingCache"
+							:disabled="loading || clearingCache || loadingCache || cacheStats.unavailable"
 							@click="showClearCacheDialog">
 							<template #icon>
 								<NcLoadingIcon v-if="clearingCache" :size="20" />
@@ -341,7 +341,27 @@
 					</div>
 				</div>
 
-				<div class="cache-content">
+				<!-- Cache Unavailable Message -->
+				<div v-if="cacheStats.unavailable" class="cache-unavailable">
+					<div class="unavailable-message">
+						<h4>⚠️ Cache Statistics Unavailable</h4>
+						<p>Cache monitoring is not available. This can happen when:</p>
+						<ul>
+							<li>Cache systems are not properly configured</li>
+							<li>Statistics collection is disabled for performance reasons</li>
+							<li>Cache backends don't support statistics</li>
+						</ul>
+						<div v-if="cacheStats.errorMessage" class="error-details">
+							<strong>Technical Details:</strong> {{ cacheStats.errorMessage }}
+						</div>
+						<p class="performance-note">
+							<strong>Note:</strong> This is normal behavior as storing cache metadata in database tables would cause performance issues.
+							Cache systems are working but detailed statistics are not collected.
+						</p>
+					</div>
+				</div>
+
+				<div v-else class="cache-content">
 					<!-- Cache Overview -->
 					<div class="cache-overview">
 						<div class="cache-overview-cards">
@@ -1544,6 +1564,8 @@ export default defineComponent({
 					currentTrend: 'unknown',
 				},
 				lastUpdated: new Date(),
+				unavailable: true,
+				errorMessage: 'Loading...',
 			},
 			solrOptions: {
 				enabled: false,
@@ -2206,7 +2228,7 @@ export default defineComponent({
 		},
 
 		/**
-		 * Load cache statistics from the backend
+		 * Load cache statistics from the backend (gracefully handle missing data)
 		 *
 		 * @async
 		 * @return {Promise<void>}
@@ -2219,7 +2241,32 @@ export default defineComponent({
 				const data = await response.json()
 
 				if (data.error) {
-					console.error('Failed to load cache stats:', data.error)
+					console.warn('Cache statistics not available:', data.error)
+					// Set default values when cache stats unavailable
+					this.cacheStats = {
+						overview: {
+							totalCacheSize: 0,
+							totalCacheEntries: 0,
+							overallHitRate: 0.0,
+							averageResponseTime: 0.0,
+							cacheEfficiency: 0.0,
+						},
+						services: {
+							object: { entries: 0, hits: 0, requests: 0, memoryUsage: 0 },
+							schema: { entries: 0, hits: 0, requests: 0, memoryUsage: 0 },
+							facet: { entries: 0, hits: 0, requests: 0, memoryUsage: 0 },
+						},
+						distributed: { type: 'none', backend: 'Unknown', available: false },
+						performance: { 
+							averageHitTime: 0, 
+							averageMissTime: 0, 
+							performanceGain: 0, 
+							optimalHitRate: 85.0 
+						},
+						lastUpdated: new Date(),
+						unavailable: true,
+						errorMessage: data.error,
+					}
 					return
 				}
 
@@ -2229,10 +2276,15 @@ export default defineComponent({
 					distributed: data.distributed || this.cacheStats.distributed,
 					performance: data.performance || this.cacheStats.performance,
 					lastUpdated: new Date(data.lastUpdated || Date.now()),
+					unavailable: false,
+					errorMessage: null,
 				}
 
 			} catch (error) {
-				console.error('Failed to load cache stats:', error)
+				console.warn('Failed to load cache stats:', error)
+				// Set safe defaults on network error
+				this.cacheStats.unavailable = true
+				this.cacheStats.errorMessage = 'Network error loading cache statistics'
 			} finally {
 				this.loadingCache = false
 			}
@@ -2998,6 +3050,57 @@ h4 {
 /* Cache Section Styles */
 .cache-section {
 	max-width: none;
+}
+
+.cache-unavailable {
+	margin: 2rem 0;
+	padding: 1.5rem;
+	border: 1px solid var(--color-warning);
+	border-radius: var(--border-radius-large);
+	background-color: var(--color-warning-light, #fff3cd);
+}
+
+.unavailable-message h4 {
+	color: var(--color-warning-dark, #856404);
+	margin: 0 0 1rem 0;
+	font-size: 1.1rem;
+}
+
+.unavailable-message p {
+	color: var(--color-text-dark);
+	line-height: 1.5;
+	margin-bottom: 1rem;
+}
+
+.unavailable-message ul {
+	margin: 1rem 0;
+	padding-left: 1.5rem;
+	color: var(--color-text-light);
+}
+
+.unavailable-message li {
+	margin-bottom: 0.5rem;
+	line-height: 1.4;
+}
+
+.error-details {
+	background-color: var(--color-background-hover);
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	padding: 0.75rem;
+	margin: 1rem 0;
+	font-family: monospace;
+	font-size: 0.9rem;
+	word-break: break-word;
+}
+
+.performance-note {
+	background-color: var(--color-primary-light, #e3f2fd);
+	border-left: 4px solid var(--color-primary);
+	padding: 0.75rem;
+	margin: 1rem 0 0 0;
+	font-style: italic;
+	color: var(--color-primary-dark, #1565c0);
 }
 
 .cache-content {
