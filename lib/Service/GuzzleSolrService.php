@@ -1470,6 +1470,8 @@ class GuzzleSolrService
             $batchCount = 0;
             $offset = 0;
             
+            $this->logger->info('Starting bulk index from database');
+            
             do {
                 // Calculate current batch size (respect maxObjects limit)
                 $currentBatchSize = $batchSize;
@@ -1481,29 +1483,63 @@ class GuzzleSolrService
                     $currentBatchSize = min($batchSize, $remaining);
                 }
                 
-                // Fetch objects from database
+                // Fetch objects from database - force database source
                 $query = [
                     '_limit' => $currentBatchSize,
-                    '_offset' => $offset
+                    '_offset' => $offset,
+                    '_source' => 'database'  // Force database to avoid Solr recursion
                 ];
                 
-                $result = $objectService->searchObjectsPaginatedDatabase($query, false, false);
+                $this->logger->debug('Fetching batch {batch} with query', [
+                    'batch' => $batchCount + 1,
+                    'query' => $query
+                ]);
+                
+                $result = $objectService->searchObjectsPaginated($query, false, false);
                 $objects = $result['results'] ?? [];
                 
+                $this->logger->debug('Fetched {count} objects from database', [
+                    'count' => count($objects)
+                ]);
+                
                 if (empty($objects)) {
+                    $this->logger->debug('No more objects found, breaking pagination loop');
                     break; // No more objects
                 }
                 
                 // Index this batch to Solr
-                $documents = [];
+                $indexed = 0;
                 foreach ($objects as $object) {
                     if ($object instanceof ObjectEntity) {
-                        $documents[] = $this->createSolrDocument($object);
+                        $this->logger->debug('Indexing ObjectEntity: {id}', [
+                            'id' => $object->getId()
+                        ]);
+                        $this->indexObject($object, false);
+                        $indexed++;
+                    } else if (is_array($object)) {
+                        $objectId = $object['id'] ?? 'unknown';
+                        $this->logger->debug('Converting array to ObjectEntity: {id}', [
+                            'id' => $objectId
+                        ]);
+                        // Convert array to ObjectEntity if needed
+                        $entity = new ObjectEntity();
+                        $entity->fromArray($object);
+                        $this->indexObject($entity, false);
+                        $indexed++;
                     }
                 }
                 
-                if (!empty($documents)) {
-                    $this->indexDocuments($documents);
+                $this->logger->info('Indexed {indexed} objects in batch {batch}', [
+                    'indexed' => $indexed,
+                    'batch' => $batchCount + 1
+                ]);
+                
+                // Commit after each batch
+                if (!empty($objects)) {
+                    $this->commit();
+                    $this->logger->debug('Committed batch {batch} to Solr', [
+                        'batch' => $batchCount + 1
+                    ]);
                 }
                 
                 $batchCount++;
