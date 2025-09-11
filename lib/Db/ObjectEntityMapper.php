@@ -1497,8 +1497,8 @@ class ObjectEntityMapper extends QBMapper
 
         // Build base query - different for count vs search
         if ($count === true) {
-            // For count queries, use COUNT(o.*) and skip pagination
-            $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(o.*)'), 'count')
+            // For count queries, use COUNT(*) and skip pagination
+            $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count')
                 ->from('openregister_objects', 'o');
                 
             // **PERFORMANCE OPTIMIZATION**: Only join schema table if RBAC is needed (15-20% improvement)

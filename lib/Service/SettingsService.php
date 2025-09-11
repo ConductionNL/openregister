@@ -28,7 +28,7 @@ use OC_App;
 use OCA\OpenRegister\AppInfo\Application;
 use OCP\IGroupManager;
 use OCP\IUserManager;
-use OCA\OpenRegister\Service\SolrServiceFactory;
+use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\SearchTrailMapper;
@@ -1366,17 +1366,20 @@ class SettingsService
 
 
     /**
-     * Warmup SOLR index with current object data using bulk indexing
+     * Complete SOLR warmup: mirror schemas and index objects from the database
      *
-     * This method triggers a comprehensive warmup of the SOLR search index using
-     * bulk indexing for better performance with large datasets.
+     * This method performs comprehensive SOLR index warmup by:
+     * 1. Mirroring all OpenRegister schemas to SOLR for proper field typing
+     * 2. Bulk indexing objects from the database using schema-aware mapping
+     * 3. Performing cache warmup queries
+     * 4. Committing and optimizing the index
      *
-     * @param int $batchSize Number of objects to process per batch (default 1000)
+     * @param int $batchSize Number of objects to process per batch (default 1000, parameter kept for API compatibility)
      * @param int $maxObjects Maximum number of objects to index (0 = all)
      * @return array Warmup operation results with statistics and status
      * @throws \RuntimeException If SOLR warmup fails
      */
-    public function warmupSolrIndex(int $batchSize = 1000, int $maxObjects = 0): array
+    public function warmupSolrIndex(int $batchSize = 2000, int $maxObjects = 0, string $mode = 'serial', bool $collectErrors = false): array
     {
         try {
             $solrSettings = $this->getSolrSettings();
@@ -1394,8 +1397,8 @@ class SettingsService
                 ];
             }
 
-            // Get SolrService for bulk indexing
-            $solrService = SolrServiceFactory::createSolrService($this->container);
+            // Get SolrService for bulk indexing via direct DI
+            $solrService = $this->container->get(GuzzleSolrService::class);
             
             if ($solrService === null) {
                 return [
@@ -1412,53 +1415,99 @@ class SettingsService
             
             $startTime = microtime(true);
             
-            // Starting SOLR bulk index warmup
+            // Get all schemas for schema mirroring
+            $schemas = [];
+            try {
+                $schemaMapper = $this->container->get('OCA\OpenRegister\Db\SchemaMapper');
+                $schemas = $schemaMapper->findAll();
+            } catch (\Exception $e) {
+                // Continue without schema mirroring if schema mapper is not available
+                $this->logger->warning('Schema mapper not available for warmup', ['error' => $e->getMessage()]);
+            }
             
-            // Perform SOLR bulk index warmup
-            $warmupResult = $solrService->bulkIndexFromDatabase($batchSize, $maxObjects);
+            // **COMPLETE WARMUP**: Mirror schemas + index objects + cache warmup
+            $warmupResult = $solrService->warmupIndex($schemas, $maxObjects, $mode, $collectErrors);
             
             $totalDuration = microtime(true) - $startTime;
             
             if ($warmupResult['success']) {
-                $statistics = $warmupResult['statistics'] ?? [];
+                $operations = $warmupResult['operations'] ?? [];
+                $indexed = $operations['objects_indexed'] ?? 0;
+                $schemasProcessed = $operations['schemas_processed'] ?? 0;
+                $fieldsCreated = $operations['fields_created'] ?? 0;
+                $objectsPerSecond = $totalDuration > 0 ? round($indexed / $totalDuration, 2) : 0;
+                
                 return [
                     'success' => true,
-                    'message' => 'SOLR index warmup completed successfully',
+                    'message' => 'SOLR complete warmup finished successfully',
                     'stats' => [
-                        'totalProcessed' => $statistics['total_processed'] ?? 0,
-                        'totalIndexed' => ($statistics['total_processed'] ?? 0) - ($statistics['total_errors'] ?? 0),
-                        'totalErrors' => $statistics['total_errors'] ?? 0,
+                        'totalProcessed' => $indexed,
+                        'totalIndexed' => $indexed,
+                        'totalErrors' => $operations['indexing_errors'] ?? 0,
+                        'totalObjectsFound' => $warmupResult['total_objects_found'] ?? 0,
+                        'batchesProcessed' => $warmupResult['batches_processed'] ?? 0,
+                        'maxObjectsLimit' => $warmupResult['max_objects_limit'] ?? $maxObjects,
                         'duration' => round($totalDuration, 2),
-                        'objectsPerSecond' => $statistics['objects_per_second'] ?? 0,
-                        'successRate' => $statistics['success_rate'] ?? 0,
-                        'batchSize' => $statistics['batch_size'] ?? $batchSize
+                        'objectsPerSecond' => $objectsPerSecond,
+                        'successRate' => $indexed > 0 ? round((($indexed - ($operations['indexing_errors'] ?? 0)) / $indexed) * 100, 2) : 100.0,
+                        'schemasProcessed' => $schemasProcessed,
+                        'fieldsCreated' => $fieldsCreated,
+                        'operations' => $operations
                     ]
                 ];
             } else {
                 return [
                     'success' => false,
-                    'message' => $warmupResult['message'] ?? 'SOLR warmup failed',
+                    'message' => $warmupResult['error'] ?? 'SOLR complete warmup failed',
                     'stats' => [
                         'totalProcessed' => 0,
                         'totalIndexed' => 0,
-                        'totalErrors' => 0,
-                        'duration' => round($totalDuration, 2)
+                        'totalErrors' => 1,
+                        'duration' => round($totalDuration, 2),
+                        'operations' => $warmupResult['operations'] ?? []
                     ]
                 ];
             }
 
         } catch (\Exception $e) {
-            return [
-                'success' => false,
-                'message' => 'SOLR warmup failed with exception: ' . $e->getMessage(),
-                'stats' => [
-                    'totalProcessed' => 0,
-                    'totalIndexed' => 0,
-                    'totalErrors' => 0,
-                    'duration' => 0,
-                    'error' => $e->getMessage()
-                ]
-            ];
+            $this->logger->error('SOLR warmup failed with exception', [
+                'error' => $e->getMessage(),
+                'class' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            
+            // **ERROR COLLECTION MODE**: Return errors in response if collectErrors is true
+            if ($collectErrors) {
+                return [
+                    'success' => false,
+                    'message' => 'SOLR warmup failed with errors (collected mode)',
+                    'stats' => [
+                        'totalProcessed' => 0,
+                        'totalIndexed' => 0,
+                        'totalErrors' => 1,
+                        'duration' => microtime(true) - ($startTime ?? microtime(true)),
+                        'error_collection_mode' => true
+                    ],
+                    'errors' => [
+                        [
+                            'type' => 'warmup_exception',
+                            'message' => $e->getMessage(),
+                            'class' => get_class($e),
+                            'file' => $e->getFile(),
+                            'line' => $e->getLine(),
+                            'timestamp' => date('c')
+                        ]
+                    ]
+                ];
+            }
+            
+            // **ERROR VISIBILITY**: Re-throw exception to expose errors in controller (default behavior)
+            throw new \RuntimeException(
+                'SOLR warmup failed: ' . $e->getMessage(),
+                0,
+                $e
+            );
         }
 
     }//end warmupSolrIndex()

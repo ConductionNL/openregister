@@ -246,39 +246,34 @@ class ObjectCacheService
         ]);
         
         if ($solrService === null || !$solrService->isAvailable()) {
-            $this->logger->warning('🔥 DEBUGGING: SOLR service unavailable, skipping indexing', [
-                'app' => 'openregister',
-                'solr_service' => $solrService !== null ? 'not null' : 'null',
-                'is_available' => $solrService ? $solrService->isAvailable() : 'N/A'
+            $this->logger->debug('SOLR service unavailable, skipping indexing', [
+                'object_id' => $object->getId(),
+                'solr_service_available' => $solrService !== null,
+                'solr_is_available' => $solrService ? $solrService->isAvailable() : false
             ]);
             return true; // Graceful degradation
         }
 
-        try {
-            // Create SOLR document matching ObjectEntity structure
-            $solrDocument = $this->createSolrDocumentFromObject($object);
-            
-            // Index in SOLR
-            $result = $solrService->indexObject($object, $commit);
-            
-            if ($result) {
-                $this->logger->debug('🔍 OBJECT INDEXED IN SOLR', [
-                    'object_id' => $object->getId(),
-                    'uuid' => $object->getUuid(),
-                    'schema' => $object->getSchema(),
-                    'register' => $object->getRegister()
-                ]);
-            }
-            
-            return $result;
-            
-        } catch (\Exception $e) {
-            $this->logger->warning('Failed to index object in SOLR', [
+        // Index in SOLR
+        $result = $solrService->indexObject($object, $commit);
+        
+        if ($result) {
+            $this->logger->debug('🔍 OBJECT INDEXED IN SOLR', [
                 'object_id' => $object->getId(),
-                'error' => $e->getMessage()
+                'uuid' => $object->getUuid(),
+                'schema' => $object->getSchema(),
+                'register' => $object->getRegister()
             ]);
-            return true; // Don't fail the whole operation for SOLR issues
+        } else {
+            $this->logger->error('SOLR object indexing failed', [
+                'object_id' => $object->getId(),
+                'uuid' => $object->getUuid(),
+                'schema' => $object->getSchema(),
+                'register' => $object->getRegister()
+            ]);
         }
+        
+        return $result;
     }
 
     /**
