@@ -25,6 +25,41 @@ graph TB
 
 ## Architecture
 
+### Schema Mirroring and Lifecycle Management
+
+OpenRegister automatically maintains Solr field mappings that mirror your schema definitions. This ensures search functionality stays synchronized with your data model.
+
+#### Automatic Field Mapping
+- **Dynamic Fields**: Object properties are prefixed based on type ('_s' for strings, '_i' for integers)
+- **Metadata Fields**: System fields like 'owner', 'published', 'created' are automatically indexed
+- **Schema Changes**: Field mappings update automatically when schemas are modified
+- **Event-Driven**: Uses Nextcloud event system for real-time synchronization
+
+```mermaid
+graph TB
+    A[Schema Created/Updated] --> B[SchemaEvent Dispatched]
+    B --> C[SolrEventListener]
+    C --> D{Fields Changed?}
+    D -->|Yes| E[Trigger Reindex]
+    D -->|No| F[No Action]
+    E --> G[Update Field Mappings]
+    G --> H[Reindex Objects]
+    
+    style C fill:#e1f5fe
+    style E fill:#fff3e0
+    style H fill:#e8f5e8
+```
+
+#### Supported Field Types
+| OpenRegister Type | Solr Suffix | Description | Searchable | Facetable |
+|-------------------|-------------|-------------|------------|-----------|
+| string | '_s' | Exact string matching | ✅ | ✅ |
+| text | '_t' | Full-text searchable | ✅ | ❌ |
+| integer | '_i' | Numeric values | ✅ | ✅ |
+| number | '_f' | Float values | ✅ | ✅ |
+| boolean | '_b' | True/false values | ✅ | ✅ |
+| date | (datetime) | ISO 8601 format | ✅ | ✅ |
+
 ### Multi-Tenant SOLR Setup
 
 OpenRegister supports multiple deployment strategies for SOLR:
@@ -172,6 +207,76 @@ Object data is indexed using SOLR's dynamic field feature:
 - **_text_**: Catch-all full-text field
 
 ## Search Capabilities
+
+### Faceted Search (Single-Call Implementation)
+
+OpenRegister provides powerful faceted search capabilities that return both search results and facet counts in a **single API call**, eliminating the need for separate requests.
+
+#### How Faceted Search Works
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API
+    participant Solr
+    
+    Client->>API: Search Request with Facets
+    API->>Solr: Single Query with facet=true
+    Solr->>API: Results + Facet Counts
+    API->>Client: Combined Response
+    
+    Note over Client,Solr: No additional API calls needed!
+```
+
+#### Available Facet Fields
+| Field | Type | Description | Use Case |
+|-------|------|-------------|----------|
+| 'or_type_s' | String | Object type/category | Filter by content type |
+| 'register_id' | Integer | Register identifier | Filter by data source |
+| 'schema_id' | Integer | Schema identifier | Filter by data structure |
+| 'owner' | String | Object owner | Filter by creator |
+| 'organisation_id' | String | Organization UUID | Multi-tenant filtering |
+| 'created' | Date | Creation date | Date range filtering |
+| 'published' | Date | Publication date | Published content only |
+
+#### Single-Call Faceted Search Example
+
+**Request:**
+```bash
+curl "http://localhost:8003/solr/openregister_nc_f0e53393/select?
+  q=*:*
+  &wt=json
+  &rows=10
+  &facet=true
+  &facet.field=or_type_s
+  &facet.field=register_id
+  &facet.field=owner"
+```
+
+**Response Structure:**
+```json
+{
+  "response": {
+    "numFound": 150,
+    "docs": [
+      {"id": "uuid-1", "or_naam_s": "Organization 1", "or_type_s": "Municipality"},
+      {"id": "uuid-2", "or_naam_s": "Organization 2", "or_type_s": "Province"}
+    ]
+  },
+  "facet_counts": {
+    "facet_fields": {
+      "or_type_s": ["Municipality", 45, "Province", 23, "Waterschap", 12],
+      "register_id": ["19", 150],
+      "owner": ["admin", 89, "user1", 61]
+    }
+  }
+}
+```
+
+#### Advanced Faceting Features
+- **Range Facets**: Date and numeric range grouping
+- **Query Facets**: Custom query-based facets
+- **Hierarchical Facets**: Nested category structures
+- **Facet Filtering**: Combine search with facet constraints
 
 ### Full-Text Search
 

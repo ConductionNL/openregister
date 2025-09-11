@@ -1983,4 +1983,447 @@ class SolrService
             return $dateString;
         }
     }
+
+    /**
+     * Search objects with pagination using OpenRegister query format
+     * 
+     * This method translates OpenRegister query parameters into Solr queries
+     * and converts results back to ObjectEntity format for compatibility
+     *
+     * @param array $query OpenRegister-style query parameters
+     * @param bool $rbac Apply role-based access control (currently not implemented in Solr)
+     * @param bool $multi Multi-tenant support (currently not implemented in Solr) 
+     * @return array Paginated results in OpenRegister format
+     * @throws \Exception When Solr is not available or query fails
+     */
+    public function searchObjectsPaginated(array $query = [], bool $rbac = false, bool $multi = false): array
+    {
+        if (!$this->isAvailable()) {
+            throw new \Exception('Solr service is not available');
+        }
+
+        $this->ensureClientInitialized();
+        
+        // Translate OpenRegister query to Solr query
+        $solrQuery = $this->translateOpenRegisterQuery($query);
+        
+        $this->logger->debug('[SolrService] Translated query', [
+            'original' => $query,
+            'solr' => $solrQuery
+        ]);
+        
+        // Execute Solr search
+        $solrResults = $this->searchObjects($solrQuery);
+        
+        // Convert Solr results back to OpenRegister format
+        $openRegisterResults = $this->convertSolrResultsToOpenRegisterFormat($solrResults, $query);
+        
+        $this->logger->debug('[SolrService] Search completed', [
+            'found' => $openRegisterResults['total'] ?? 0,
+            'returned' => count($openRegisterResults['results'] ?? [])
+        ]);
+        
+        return $openRegisterResults;
+    }
+
+    /**
+     * Translate OpenRegister query parameters to Solr query format
+     *
+     * @param array $query OpenRegister query parameters
+     * @return array Solr query parameters
+     */
+    private function translateOpenRegisterQuery(array $query): array
+    {
+        $solrQuery = [
+            'q' => '*:*',
+            'start' => 0,
+            'rows' => 20,
+            'sort' => 'self_created desc',
+            'facet' => true,
+            'facet.field' => []
+        ];
+
+        // Handle search query
+        if (!empty($query['_search'])) {
+            $searchTerm = $this->escapeSolrValue($query['_search']);
+            $solrQuery['q'] = "_text_:($searchTerm) OR naam:($searchTerm) OR description:($searchTerm)";
+        }
+
+        // Handle pagination
+        if (isset($query['_page'])) {
+            $page = max(1, (int)$query['_page']);
+            $limit = isset($query['_limit']) ? max(1, (int)$query['_limit']) : 20;
+            $solrQuery['start'] = ($page - 1) * $limit;
+            $solrQuery['rows'] = $limit;
+        } elseif (isset($query['_limit'])) {
+            $solrQuery['rows'] = max(1, (int)$query['_limit']);
+        }
+
+        // Handle sorting
+        if (!empty($query['_order'])) {
+            $solrQuery['sort'] = $this->translateSortField($query['_order']);
+        }
+
+        // Handle filters
+        $filterQueries = [];
+        
+        foreach ($query as $key => $value) {
+            if (str_starts_with($key, '_')) {
+                continue; // Skip internal parameters
+            }
+            
+            $solrField = $this->translateFilterField($key);
+            
+            if (is_array($value)) {
+                // Handle array values (OR condition)
+                $conditions = array_map(fn($v) => $solrField . ':"' . $this->escapeSolrValue($v) . '"', $value);
+                $filterQueries[] = '(' . implode(' OR ', $conditions) . ')';
+            } else {
+                // Handle single values
+                $filterQueries[] = $solrField . ':"' . $this->escapeSolrValue($value) . '"';
+            }
+        }
+
+        if (!empty($filterQueries)) {
+            $solrQuery['fq'] = $filterQueries;
+        }
+
+        // Add faceting for common fields
+        $solrQuery['facet.field'] = [
+            'self_register',
+            'self_schema', 
+            'self_organisation',
+            'self_owner',
+            'type_s',
+            'naam_s'
+        ];
+
+        return $solrQuery;
+    }
+
+    /**
+     * Translate OpenRegister field names to Solr field names for filtering
+     *
+     * @param string $field OpenRegister field name
+     * @return string Solr field name
+     */
+    private function translateFilterField(string $field): string
+    {
+        // Handle @self.* fields (metadata)
+        if (str_starts_with($field, '@self.')) {
+            $metadataField = substr($field, 6); // Remove '@self.'
+            return 'self_' . $metadataField;
+        }
+        
+        // Handle special field mappings
+        $fieldMappings = [
+            'register' => 'self_register',
+            'schema' => 'self_schema',
+            'organisation' => 'self_organisation',
+            'owner' => 'self_owner',
+            'created' => 'self_created',
+            'updated' => 'self_updated',
+            'published' => 'self_published'
+        ];
+
+        if (isset($fieldMappings[$field])) {
+            return $fieldMappings[$field];
+        }
+
+        // For object properties, use the field name directly (now stored at root)
+        return $field;
+    }
+
+    /**
+     * Translate OpenRegister sort field to Solr sort format
+     *
+     * @param array|string $order Sort specification
+     * @return string Solr sort string
+     */
+    private function translateSortField(array|string $order): string
+    {
+        if (is_string($order)) {
+            $field = $this->translateFilterField($order);
+            return $field . ' asc';
+        }
+
+        if (is_array($order)) {
+            $sortParts = [];
+            foreach ($order as $field => $direction) {
+                $solrField = $this->translateFilterField($field);
+                $solrDirection = strtolower($direction) === 'desc' ? 'desc' : 'asc';
+                $sortParts[] = $solrField . ' ' . $solrDirection;
+            }
+            return implode(', ', $sortParts);
+        }
+
+        return 'self_created desc'; // Default sort
+    }
+
+    /**
+     * Convert Solr search results back to OpenRegister format
+     *
+     * @param array $solrResults Solr search results
+     * @param array $originalQuery Original OpenRegister query for context
+     * @return array OpenRegister-formatted results
+     */
+    private function convertSolrResultsToOpenRegisterFormat(array $solrResults, array $originalQuery): array
+    {
+        $results = [];
+        $documents = $solrResults['documents'] ?? [];
+        
+        foreach ($documents as $doc) {
+            // Reconstruct object from Solr document
+            $objectEntity = $this->reconstructObjectFromSolrDocument($doc);
+            if ($objectEntity) {
+                $results[] = $objectEntity;
+            }
+        }
+
+        // Build pagination info
+        $total = $solrResults['numFound'] ?? count($results);
+        $page = isset($originalQuery['_page']) ? (int)$originalQuery['_page'] : 1;
+        $limit = isset($originalQuery['_limit']) ? (int)$originalQuery['_limit'] : 20;
+        $pages = $limit > 0 ? ceil($total / $limit) : 1;
+
+        return [
+            'results' => $results,
+            'total' => $total,
+            'page' => $page,
+            'pages' => $pages,
+            'limit' => $limit,
+            'facets' => $solrResults['facets'] ?? [],
+            'aggregations' => $solrResults['facets'] ?? [] // Alias for compatibility
+        ];
+    }
+
+    /**
+     * Bulk index objects from database to Solr for environment warmup
+     * 
+     * This method processes objects in batches to avoid memory issues
+     * and provides progress tracking for large datasets
+     *
+     * @param int $batchSize Number of objects to process per batch (default 1000)
+     * @param int $maxObjects Maximum number of objects to index (0 = all)
+     * @return array Results with statistics and progress information
+     * @throws \Exception When Solr is not available or indexing fails
+     */
+    public function bulkIndexFromDatabase(int $batchSize = 1000, int $maxObjects = 0): array
+    {
+        if (!$this->isAvailable()) {
+            throw new \Exception('Solr service is not available');
+        }
+
+        $this->ensureClientInitialized();
+        
+        $this->logger->info('[SolrService] Starting bulk index from database', [
+            'batch_size' => $batchSize,
+            'max_objects' => $maxObjects
+        ]);
+
+        $totalProcessed = 0;
+        $totalErrors = 0;
+        $startTime = microtime(true);
+        $lastCommitTime = $startTime;
+        
+        try {
+            // Get total object count for progress tracking
+            $totalCount = $this->objectMapper->getTotalCount();
+            
+            if ($maxObjects > 0 && $maxObjects < $totalCount) {
+                $totalCount = $maxObjects;
+            }
+            
+            $this->logger->info('[SolrService] Found objects to index', ['total' => $totalCount]);
+            
+            $offset = 0;
+            
+            while (($maxObjects === 0 || $totalProcessed < $maxObjects) && $offset < $totalCount) {
+                $currentBatchSize = $batchSize;
+                if ($maxObjects > 0 && ($totalProcessed + $batchSize) > $maxObjects) {
+                    $currentBatchSize = $maxObjects - $totalProcessed;
+                }
+                
+                // Get batch of objects
+                $objects = $this->objectMapper->findAllInRange($offset, $currentBatchSize);
+                
+                if (empty($objects)) {
+                    break;
+                }
+                
+                $this->logger->debug('[SolrService] Processing batch', [
+                    'offset' => $offset,
+                    'batch_size' => count($objects),
+                    'progress' => round(($totalProcessed / $totalCount) * 100, 2) . '%'
+                ]);
+                
+                // Index this batch
+                $batchResult = $this->bulkIndexObjects($objects, false); // Don't commit each batch
+                
+                $totalProcessed += count($objects);
+                $totalErrors += $batchResult['errors'] ?? 0;
+                
+                // Commit every 5 batches or at the end
+                $currentTime = microtime(true);
+                if (($currentTime - $lastCommitTime) > 30 || // Every 30 seconds
+                    $totalProcessed >= $totalCount || 
+                    ($totalProcessed % ($batchSize * 5)) === 0) {
+                    
+                    $this->commit();
+                    $lastCommitTime = $currentTime;
+                    
+                    $this->logger->info('[SolrService] Committed batch progress', [
+                        'processed' => $totalProcessed,
+                        'total' => $totalCount,
+                        'errors' => $totalErrors,
+                        'progress' => round(($totalProcessed / $totalCount) * 100, 2) . '%'
+                    ]);
+                }
+                
+                $offset += $currentBatchSize;
+                
+                // Memory cleanup
+                unset($objects, $batchResult);
+                if (function_exists('gc_collect_cycles')) {
+                    gc_collect_cycles();
+                }
+            }
+            
+            // Final commit
+            $this->commit();
+            
+            $endTime = microtime(true);
+            $duration = $endTime - $startTime;
+            
+            $result = [
+                'success' => true,
+                'message' => 'Bulk indexing completed successfully',
+                'statistics' => [
+                    'total_processed' => $totalProcessed,
+                    'total_errors' => $totalErrors,
+                    'success_rate' => $totalProcessed > 0 ? round((($totalProcessed - $totalErrors) / $totalProcessed) * 100, 2) : 0,
+                    'duration_seconds' => round($duration, 2),
+                    'objects_per_second' => $duration > 0 ? round($totalProcessed / $duration, 2) : 0,
+                    'batch_size' => $batchSize
+                ]
+            ];
+            
+            $this->logger->info('[SolrService] Bulk indexing completed', $result['statistics']);
+            
+            return $result;
+            
+        } catch (\Exception $e) {
+            $this->logger->error('[SolrService] Bulk indexing failed', [
+                'error' => $e->getMessage(),
+                'processed' => $totalProcessed,
+                'errors' => $totalErrors
+            ]);
+            
+            throw new \Exception('Bulk indexing failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Reconstruct ObjectEntity from Solr document
+     *
+     * @param array $doc Solr document
+     * @return ObjectEntity|null Reconstructed object or null if invalid
+     */
+    private function reconstructObjectFromSolrDocument(array $doc): ?ObjectEntity
+    {
+        try {
+            // Extract metadata from self_ fields
+            $objectId = $doc['self_object_id'][0] ?? null;
+            $uuid = $doc['self_uuid'][0] ?? null;
+            $register = $doc['self_register'][0] ?? null;
+            $schema = $doc['self_schema'][0] ?? null;
+            
+            if (!$objectId || !$register || !$schema) {
+                $this->logger->warning('[SolrService] Invalid document missing required fields', [
+                    'doc_id' => $doc['id'] ?? 'unknown',
+                    'object_id' => $objectId,
+                    'register' => $register,
+                    'schema' => $schema
+                ]);
+                return null;
+            }
+
+            // Create ObjectEntity instance
+            $entity = new \OCA\OpenRegister\Db\ObjectEntity();
+            $entity->setId($objectId);
+            $entity->setUuid($uuid);
+            $entity->setRegister($register);
+            $entity->setSchema($schema);
+            
+            // Set metadata fields
+            $entity->setOrganisation($doc['self_organisation'][0] ?? null);
+            $entity->setName($doc['self_name'][0] ?? null);
+            $entity->setDescription($doc['self_description'][0] ?? null);
+            $entity->setSummary($doc['self_summary'][0] ?? null);
+            $entity->setImage($doc['self_image'][0] ?? null);
+            $entity->setSlug($doc['self_slug'][0] ?? null);
+            $entity->setUri($doc['self_uri'][0] ?? null);
+            $entity->setVersion($doc['self_version'][0] ?? null);
+            $entity->setSize($doc['self_size'][0] ?? null);
+            $entity->setOwner($doc['self_owner'][0] ?? null);
+            $entity->setLocked($doc['self_locked'][0] ?? null);
+            $entity->setFolder($doc['self_folder'][0] ?? null);
+            $entity->setApplication($doc['self_application'][0] ?? null);
+            
+            // Set datetime fields
+            if (isset($doc['self_created'][0])) {
+                $entity->setCreated(new \DateTime($doc['self_created'][0]));
+            }
+            if (isset($doc['self_updated'][0])) {
+                $entity->setUpdated(new \DateTime($doc['self_updated'][0]));
+            }
+            if (isset($doc['self_published'][0])) {
+                $entity->setPublished(new \DateTime($doc['self_published'][0]));
+            }
+            if (isset($doc['self_depublished'][0])) {
+                $entity->setDepublished(new \DateTime($doc['self_depublished'][0]));
+            }
+            
+            // Reconstruct object data from JSON or individual fields
+            $objectData = [];
+            if (isset($doc['self_object'][0])) {
+                $objectData = json_decode($doc['self_object'][0], true) ?: [];
+            } else {
+                // Fallback: extract object properties from root level fields
+                foreach ($doc as $key => $value) {
+                    if (!str_starts_with($key, 'self_') && 
+                        !in_array($key, ['id', 'tenant_id', '_text_', '_version_', '_root_'])) {
+                        // Remove Solr type suffixes
+                        $cleanKey = preg_replace('/_(s|t|i|f|b)$/', '', $key);
+                        $objectData[$cleanKey] = is_array($value) ? $value[0] : $value;
+                    }
+                }
+            }
+            
+            $entity->setObject($objectData);
+            
+            // Set complex fields from JSON
+            if (isset($doc['self_authorization'][0])) {
+                $entity->setAuthorization(json_decode($doc['self_authorization'][0], true));
+            }
+            if (isset($doc['self_deleted'][0])) {
+                $entity->setDeleted(json_decode($doc['self_deleted'][0], true));
+            }
+            if (isset($doc['self_validation'][0])) {
+                $entity->setValidation(json_decode($doc['self_validation'][0], true));
+            }
+            if (isset($doc['self_groups'][0])) {
+                $entity->setGroups(json_decode($doc['self_groups'][0], true));
+            }
+
+            return $entity;
+            
+        } catch (\Exception $e) {
+            $this->logger->error('[SolrService] Failed to reconstruct object from Solr document', [
+                'doc_id' => $doc['id'] ?? 'unknown',
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
+    }
 }

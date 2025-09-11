@@ -501,6 +501,11 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectCreatedEvent::class, SolrEventListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, SolrEventListener::class);
         $context->registerEventListener(ObjectDeletedEvent::class, SolrEventListener::class);
+        
+        // Register Solr event listeners for schema lifecycle management
+        $context->registerEventListener(SchemaCreatedEvent::class, SolrEventListener::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, SolrEventListener::class);
+        $context->registerEventListener(SchemaDeletedEvent::class, SolrEventListener::class);
 
     }//end register()
 
