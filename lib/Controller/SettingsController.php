@@ -26,7 +26,7 @@ use OCP\IRequest;
 use Psr\Container\ContainerInterface;
 use OCP\App\IAppManager;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\SolrServiceFactory;
+use OCA\OpenRegister\Service\GuzzleSolrService;
 
 /**
  * Controller for handling settings-related operations in the OpenRegister.
@@ -313,9 +313,9 @@ class SettingsController extends Controller
     public function setupSolr(): JSONResponse
     {
         try {
-            // Get SOLR service via factory to avoid DI performance issues
+            // Get SOLR service via direct DI injection
             $container = \OC::$server->getRegisteredAppContainer('openregister');
-            $solrService = SolrServiceFactory::createSolrService($container);
+            $solrService = $container->get(GuzzleSolrService::class);
             
             if ($solrService === null) {
                 return new JSONResponse([
@@ -492,10 +492,49 @@ class SettingsController extends Controller
     public function warmupSolrIndex(): JSONResponse
     {
         try {
-            $result = $this->settingsService->warmupSolrIndex();
+            // Get request parameters from JSON body or query parameters
+            $maxObjects = $this->request->getParam('maxObjects', 0);
+            $batchSize = $this->request->getParam('batchSize', 1000);
+            $mode = $this->request->getParam('mode', 'serial'); // New mode parameter
+            $collectErrors = $this->request->getParam('collectErrors', false); // New error collection parameter
+            
+            // Try to get from JSON body if not in query params
+            if ($maxObjects === 0) {
+                $input = file_get_contents('php://input');
+                if ($input) {
+                    $data = json_decode($input, true);
+                    if ($data) {
+                        $maxObjects = $data['maxObjects'] ?? 0;
+                        $batchSize = $data['batchSize'] ?? 1000;
+                        $mode = $data['mode'] ?? 'serial';
+                        $collectErrors = $data['collectErrors'] ?? false;
+                    }
+                }
+            }
+            
+            // Convert string boolean to actual boolean
+            if (is_string($collectErrors)) {
+                $collectErrors = filter_var($collectErrors, FILTER_VALIDATE_BOOLEAN);
+            }
+            
+            // Validate mode parameter
+            if (!in_array($mode, ['serial', 'parallel'])) {
+                return new JSONResponse([
+                    'error' => 'Invalid mode parameter. Must be "serial" or "parallel"'
+                ], 400);
+            }
+            
+            $result = $this->settingsService->warmupSolrIndex($batchSize, $maxObjects, $mode, $collectErrors);
             return new JSONResponse($result);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
+            // **ERROR VISIBILITY**: Let exceptions bubble up with full details
+            return new JSONResponse([
+                'error' => $e->getMessage(),
+                'exception_class' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
         }
     }
 
@@ -663,6 +702,35 @@ class SettingsController extends Controller
             return new JSONResponse($data);
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Test schema-aware SOLR mapping by indexing sample objects
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Test results
+     */
+    public function testSchemaMapping(): JSONResponse
+    {
+        try {
+            $solrService = $this->solrServiceFactory->createService();
+            
+            // Get required dependencies from container
+            $objectMapper = $this->container->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+            $schemaMapper = $this->container->get(\OCA\OpenRegister\Db\SchemaMapper::class);
+            
+            // Run the test
+            $results = $solrService->testSchemaAwareMapping($objectMapper, $schemaMapper);
+            
+            return new JSONResponse($results);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 

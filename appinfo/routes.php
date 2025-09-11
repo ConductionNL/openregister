@@ -19,6 +19,7 @@ return [
         ['name' => 'settings#updateSolrSettings', 'url' => '/api/settings/solr', 'verb' => 'PUT'],
         ['name' => 'settings#testSolrConnection', 'url' => '/api/settings/solr/test', 'verb' => 'POST'],
         ['name' => 'settings#warmupSolrIndex', 'url' => '/api/settings/solr/warmup', 'verb' => 'POST'],
+        ['name' => 'settings#testSchemaMapping', 'url' => '/api/settings/solr/test-schema-mapping', 'verb' => 'POST'],
         
         // SOLR Dashboard Management endpoints
         ['name' => 'settings#getSolrDashboardStats', 'url' => '/api/solr/dashboard/stats', 'verb' => 'GET'],

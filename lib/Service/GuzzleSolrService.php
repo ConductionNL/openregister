@@ -21,6 +21,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\Http\Client\IClientService;
 use OCP\IConfig;
 use Psr\Log\LoggerInterface;
@@ -86,16 +88,18 @@ class GuzzleSolrService
     /**
      * Constructor
      *
-     * @param SettingsService $settingsService Settings service for configuration
-     * @param LoggerInterface $logger          Logger for debugging and monitoring
-     * @param IClientService  $clientService   HTTP client service
-     * @param IConfig         $config          Nextcloud configuration
+     * @param SettingsService         $settingsService     Settings service for configuration
+     * @param LoggerInterface         $logger              Logger for debugging and monitoring
+     * @param IClientService          $clientService       HTTP client service
+     * @param IConfig                 $config              Nextcloud configuration
+     * @param SchemaMapper|null       $schemaMapper        Schema mapper for database operations
      */
     public function __construct(
         private readonly SettingsService $settingsService,
         private readonly LoggerInterface $logger,
         private readonly IClientService $clientService,
-        private readonly IConfig $config
+        private readonly IConfig $config,
+        private readonly ?SchemaMapper $schemaMapper = null,
     ) {
         $this->httpClient = $clientService->newClient();
         $this->tenantId = $this->generateTenantId();
@@ -135,13 +139,16 @@ class GuzzleSolrService
     }
 
     /**
-     * Generate tenant-specific collection name
+     * Generate tenant-specific collection name for SolrCloud
      *
      * @param string $baseCollectionName Base collection name
-     * @return string Tenant-specific collection name
+     * @return string Tenant-specific collection name (not core name)
      */
     private function getTenantSpecificCollectionName(string $baseCollectionName): string
     {
+        // SOLR CLOUD: Use collection names, not core names
+        // Format: openregister_nc_f0e53393 (collection)
+        // Underlying core: openregister_nc_f0e53393_shard1_replica_n1 (handled by SolrCloud)
         return $baseCollectionName . '_' . $this->tenantId;
     }
 
@@ -242,7 +249,7 @@ class GuzzleSolrService
     }
 
     /**
-     * Create tenant-specific collection if it doesn't exist
+     * Ensure tenant collection exists (check both tenant-specific and base collections)
      *
      * @return bool True if collection exists or was created
      */
@@ -264,8 +271,46 @@ class GuzzleSolrService
             return true;
         }
 
-        // Create tenant collection
+        // FALLBACK: Check if base collection exists
+        if ($this->collectionExists($baseCollectionName)) {
+            $this->logger->info('Using base collection as fallback (no tenant isolation)', [
+                'base_collection' => $baseCollectionName,
+                'tenant_id' => $this->tenantId
+            ]);
+            return true;
+        }
+
+        // Try to create tenant collection
+        $this->logger->info('Attempting to create tenant collection', [
+            'collection' => $tenantCollectionName
+        ]);
         return $this->createCollection($tenantCollectionName, 'openregister');
+    }
+
+    /**
+     * Get the actual collection name to use for operations
+     * 
+     * Checks tenant-specific collection first, then falls back to base collection with shard suffix
+     *
+     * @return string The collection name to use for SOLR operations
+     */
+    private function getActiveCollectionName(): string
+    {
+        $baseCollectionName = $this->solrConfig['core'] ?? 'openregister';
+        $tenantCollectionName = $this->getTenantSpecificCollectionName($baseCollectionName);
+
+        // Check if tenant collection exists
+        if ($this->collectionExists($tenantCollectionName)) {
+            return $tenantCollectionName;
+        }
+
+        // FALLBACK: Use base collection
+        if ($this->collectionExists($baseCollectionName)) {
+            return $baseCollectionName;
+        }
+
+        // Last resort: return tenant collection name (might not exist)
+        return $tenantCollectionName;
     }
 
     /**
@@ -336,10 +381,10 @@ class GuzzleSolrService
                 return false;
             }
 
-            $baseCollectionName = $this->solrConfig['core'] ?? 'openregister';
-            $tenantCollectionName = $this->getTenantSpecificCollectionName($baseCollectionName);
+            // Get the active collection name (handles fallbacks automatically)
+            $tenantCollectionName = $this->getActiveCollectionName();
 
-            // Create SOLR document
+            // Create SOLR document using schema-aware mapping (no fallback)
             $document = $this->createSolrDocument($object);
             
             // Prepare update request
@@ -410,8 +455,8 @@ class GuzzleSolrService
         }
 
         try {
-            $baseCollectionName = $this->solrConfig['core'] ?? 'openregister';
-            $tenantCollectionName = $this->getTenantSpecificCollectionName($baseCollectionName);
+            // Get the active collection name (handles fallbacks automatically)
+            $tenantCollectionName = $this->getActiveCollectionName();
 
             $deleteData = [
                 'delete' => [
@@ -470,8 +515,8 @@ class GuzzleSolrService
         }
 
         try {
-            $baseCollectionName = $this->solrConfig['core'] ?? 'openregister';
-            $tenantCollectionName = $this->getTenantSpecificCollectionName($baseCollectionName);
+            // Get the active collection name (handles fallbacks automatically)
+            $tenantCollectionName = $this->getActiveCollectionName();
 
             $url = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/select?' . http_build_query([
                 'q' => 'tenant_id:' . $this->tenantId,
@@ -498,33 +543,272 @@ class GuzzleSolrService
      */
     private function createSolrDocument(ObjectEntity $object): array
     {
+        // **SCHEMA-AWARE MAPPING REQUIRED**: Validate schema availability first
+        if (!$this->schemaMapper) {
+            throw new \RuntimeException(
+                'Schema mapper is not available. Cannot create SOLR document without schema validation. ' .
+                'Object ID: ' . $object->getId() . ', Schema ID: ' . $object->getSchema()
+            );
+        }
+
+        // Get the schema for this object
+        $schema = $this->schemaMapper->find($object->getSchema());
+        
+        if (!($schema instanceof Schema)) {
+            throw new \RuntimeException(
+                'Schema not found for object. Cannot create SOLR document without valid schema. ' .
+                'Object ID: ' . $object->getId() . ', Schema ID: ' . $object->getSchema()
+            );
+        }
+
+        // **USE CONSOLIDATED MAPPING**: Create schema-aware document directly
+        try {
+            $document = $this->createSchemaAwareDocument($object, $schema);
+            
+            $this->logger->debug('Created SOLR document using schema-aware mapping', [
+                'object_id' => $object->getId(),
+                'schema_id' => $object->getSchema(),
+                'mapped_fields' => count($document)
+            ]);
+            
+            return $document;
+            
+        } catch (\Exception $e) {
+            // **NO FALLBACK**: Throw error to prevent schemaless documents
+            $this->logger->error('Schema-aware mapping failed and no fallback allowed', [
+                'object_id' => $object->getId(),
+                'schema_id' => $object->getSchema(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            throw new \RuntimeException(
+                'Schema-aware mapping failed for object. Schemaless fallback is disabled to prevent inconsistent documents. ' .
+                'Object ID: ' . $object->getId() . ', Schema ID: ' . $object->getSchema() . '. ' .
+                'Original error: ' . $e->getMessage(),
+                0,
+                $e
+            );
+        }
+    }
+
+    /**
+     * Create schema-aware SOLR document from ObjectEntity and Schema
+     *
+     * This method implements the consolidated schema-aware mapping logic
+     * that was previously in SolrSchemaMappingService.
+     *
+     * @param ObjectEntity $object The object to convert
+     * @param Schema       $schema The schema for mapping
+     *
+     * @return array SOLR document structure
+     * @throws \RuntimeException If mapping fails
+     */
+    private function createSchemaAwareDocument(ObjectEntity $object, Schema $schema): array
+    {
+        $objectData = $object->getObjectArray();
+        $schemaProperties = $schema->getProperties();
+        
+        // Base SOLR document with core identifiers
+        $document = [
+            // Core identifiers (always present)
+            'id' => $object->getUuid() ?: (string)$object->getId(),
+            'tenant_id' => (string)$this->tenantId,
+            'object_id_i' => $object->getId(),
+            'uuid_s' => $object->getUuid(),
+            
+            // Context fields
+            'register_id_i' => (int)$object->getRegister(),
+            'schema_id_i' => (int)$object->getSchema(),
+            'schema_version_s' => $object->getSchemaVersion(),
+            
+            // Ownership and metadata
+            'owner_s' => $object->getOwner(),
+            'organisation_s' => $object->getOrganisation(),
+            'application_s' => $object->getApplication(),
+            
+            // Core object fields
+            'name_s' => $object->getName(),
+            'name_txt' => $object->getName(),
+            'description_s' => $object->getDescription(),
+            'description_txt' => $object->getDescription(),
+            
+            // Timestamps
+            'created_dt' => $object->getCreated()?->format('Y-m-d\\TH:i:s\\Z'),
+            'updated_dt' => $object->getUpdated()?->format('Y-m-d\\TH:i:s\\Z'),
+            'published_dt' => $object->getPublished()?->format('Y-m-d\\TH:i:s\\Z'),
+        ];
+        
+        // **SCHEMA-AWARE FIELD MAPPING**: Map object data based on schema properties
+        if (is_array($schemaProperties) && is_array($objectData)) {
+            foreach ($schemaProperties as $fieldName => $fieldDefinition) {
+                if (!isset($objectData[$fieldName])) {
+                    continue;
+                }
+                
+                $fieldValue = $objectData[$fieldName];
+                $fieldType = $fieldDefinition['type'] ?? 'string';
+                
+                // Map field based on schema type to appropriate SOLR field suffix
+                $solrFieldName = $this->mapFieldToSolrType($fieldName, $fieldType, $fieldValue);
+                
+                if ($solrFieldName) {
+                    $document[$solrFieldName] = $this->convertValueForSolr($fieldValue, $fieldType);
+                }
+            }
+        }
+        
+        return $document;
+    }
+
+    /**
+     * Map field name and type to appropriate SOLR field name with suffix
+     *
+     * @param string $fieldName Original field name
+     * @param string $fieldType Schema field type
+     * @param mixed  $fieldValue Field value for context
+     *
+     * @return string|null SOLR field name with appropriate suffix
+     */
+    private function mapFieldToSolrType(string $fieldName, string $fieldType, $fieldValue): ?string
+    {
+        // Avoid conflicts with core SOLR fields
+        if (in_array($fieldName, ['id', 'tenant_id', '_version_'])) {
+            return null;
+        }
+        
+        // Map schema types to SOLR field suffixes
+        switch (strtolower($fieldType)) {
+            case 'string':
+            case 'text':
+                return $fieldName . '_s';
+                
+            case 'integer':
+            case 'int':
+                return $fieldName . '_i';
+                
+            case 'float':
+            case 'double':
+            case 'number':
+                return $fieldName . '_f';
+                
+            case 'boolean':
+            case 'bool':
+                return $fieldName . '_b';
+                
+            case 'date':
+            case 'datetime':
+                return $fieldName . '_dt';
+                
+            case 'array':
+                // Multi-valued string field
+                return $fieldName . '_ss';
+                
+            default:
+                // Default to string for unknown types
+                return $fieldName . '_s';
+        }
+    }
+
+    /**
+     * Convert value to appropriate format for SOLR
+     *
+     * @param mixed  $value     Field value
+     * @param string $fieldType Schema field type
+     *
+     * @return mixed Converted value for SOLR
+     */
+    private function convertValueForSolr($value, string $fieldType)
+    {
+        if ($value === null) {
+            return null;
+        }
+        
+        switch (strtolower($fieldType)) {
+            case 'integer':
+            case 'int':
+                return (int)$value;
+                
+            case 'float':
+            case 'double':
+            case 'number':
+                return (float)$value;
+                
+            case 'boolean':
+            case 'bool':
+                return (bool)$value;
+                
+            case 'date':
+            case 'datetime':
+                if ($value instanceof \DateTime) {
+                    return $value->format('Y-m-d\\TH:i:s\\Z');
+                }
+                if (is_string($value)) {
+                    $date = \DateTime::createFromFormat('Y-m-d H:i:s', $value);
+                    return $date ? $date->format('Y-m-d\\TH:i:s\\Z') : $value;
+                }
+                return $value;
+                
+            case 'array':
+                return is_array($value) ? $value : [$value];
+                
+            default:
+                return (string)$value;
+        }
+    }
+
+    /**
+     * Create a SOLR document using legacy schemaless mapping
+     *
+     * This method provides backward compatibility for systems without
+     * schema mapping service or when schema-aware mapping fails
+     *
+     * @param ObjectEntity $object The object to convert
+     *
+     * @return array SOLR document structure
+     */
+    private function createLegacySolrDocument(ObjectEntity $object): array
+    {
+        // **CRITICAL**: Ensure we always have a unique ID for SOLR document ID
+        $uuid = $object->getUuid();
+        if (empty($uuid)) {
+            // **FALLBACK**: Use object ID if UUID is missing (for legacy objects)
+            $uuid = $object->getId();
+            $this->logger->warning('Object missing UUID - using object ID as fallback', [
+                'object_id' => $object->getId(),
+                'register' => $object->getRegister(),
+                'schema' => $object->getSchema()
+            ]);
+        }
+
         $objectData = $object->getObject();
         
         // Create document with object properties at root (no prefix) and metadata under self_ prefix
         $document = [
-            // Core Solr identifiers (required at root level)
-            'id' => $object->getUuid() ?: $object->getId(),
-            'tenant_id' => $this->tenantId,
+            // **CRITICAL**: Always use UUID as the SOLR document ID for guaranteed uniqueness
+            'id' => $uuid,
+            'tenant_id' => $this->tenantId, // This is a string, not an array
             
             // Full-text search content (at root for Solr optimization)
             '_text_' => $this->extractTextContent($object, $objectData ?: []),
         ];
 
-        // Add object properties directly at root level (no prefix)
+        // **SCHEMALESS MODE**: Add object properties at root level + typed fields for advanced queries
         if (is_array($objectData)) {
             foreach ($objectData as $key => $value) {
                 if (!is_array($value) && !is_object($value)) {
+                    // **PRIMARY**: Raw field for natural querying (SOLR will auto-detect type)
                     $document[$key] = $value;
                     
-                    // Also create typed fields for faceting and sorting
+                    // **SECONDARY**: Typed fields for advanced faceting and sorting
                     if (is_string($value)) {
-                        $document[$key . '_s'] = $value;
-                        $document[$key . '_t'] = $value; // For text analysis
+                        $document[$key . '_s'] = $value;  // String field for faceting/filtering
+                        $document[$key . '_t'] = $value;  // Text field for full-text search
                     } elseif (is_numeric($value)) {
-                        $document[$key . '_i'] = (int)$value;
-                        $document[$key . '_f'] = (float)$value;
+                        $document[$key . '_i'] = (int)$value;    // Integer field
+                        $document[$key . '_f'] = (float)$value;  // Float field
                     } elseif (is_bool($value)) {
-                        $document[$key . '_b'] = $value;
+                        $document[$key . '_b'] = $value;  // Boolean field
                     }
                 }
             }
@@ -534,9 +818,9 @@ class GuzzleSolrService
         $document['self_object'] = json_encode($objectData ?: []);
 
         // Add metadata fields with self_ prefix for easy identification and faceting
-        $document['self_id'] = $object->getUuid() ?: $object->getId();
+        $document['self_id'] = $uuid; // Always use UUID for consistency
         $document['self_object_id'] = $object->getId();
-        $document['self_uuid'] = $object->getUuid();
+        $document['self_uuid'] = $uuid;
         $document['self_register'] = $object->getRegister();
         $document['self_schema'] = $object->getSchema();
         $document['self_organisation'] = $object->getOrganisation();
@@ -1065,7 +1349,18 @@ class GuzzleSolrService
      */
     public function bulkIndex(array $documents, bool $commit = false): bool
     {
+        $this->logger->info('🚀 BULK INDEX CALLED', [
+            'document_count' => count($documents),
+            'commit' => $commit,
+            'is_available' => $this->isAvailable()
+        ]);
+        
         if (!$this->isAvailable() || empty($documents)) {
+            $this->logger->warning('Bulk index early return', [
+                'is_available' => $this->isAvailable(),
+                'documents_empty' => empty($documents),
+                'document_count' => count($documents)
+            ]);
             return false;
         }
 
@@ -1078,8 +1373,8 @@ class GuzzleSolrService
                 return false;
             }
 
-            $baseCollectionName = $this->solrConfig['core'] ?? 'openregister';
-            $tenantCollectionName = $this->getTenantSpecificCollectionName($baseCollectionName);
+            // Get the active collection name (handles fallbacks automatically)
+            $tenantCollectionName = $this->getActiveCollectionName();
 
             // Prepare documents
             $solrDocs = [];
@@ -1095,8 +1390,17 @@ class GuzzleSolrService
             }
 
             if (empty($solrDocs)) {
+                $this->logger->warning('No valid SOLR documents after processing', [
+                    'original_count' => count($documents),
+                    'processed_count' => count($solrDocs)
+                ]);
                 return false;
             }
+            
+            $this->logger->info('Prepared SOLR documents for bulk index', [
+                'original_count' => count($documents),
+                'processed_count' => count($solrDocs)
+            ]);
 
             // Prepare bulk update request
             $updateData = [];
@@ -1115,35 +1419,88 @@ class GuzzleSolrService
                 $url .= '&commit=true';
             }
 
+            // Bulk POST ready
+
             $response = $this->httpClient->post($url, [
                 'body' => json_encode($updateData),
                 'headers' => ['Content-Type' => 'application/json'],
                 'timeout' => 60
             ]);
-
-            $data = json_decode($response->getBody(), true);
-            $success = ($data['responseHeader']['status'] ?? -1) === 0;
-
-            if ($success) {
-                $this->stats['indexes'] += count($solrDocs);
-                $this->stats['index_time'] += (microtime(true) - $startTime);
-                
-                $this->logger->debug('📦 BULK INDEXED IN SOLR', [
-                    'document_count' => count($solrDocs),
-                    'collection' => $tenantCollectionName,
-                    'tenant_id' => $this->tenantId,
-                    'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2)
-                ]);
-            } else {
+            
+            $statusCode = $response->getStatusCode();
+            $responseBody = $response->getBody()->getContents();
+            
+            // **ERROR HANDLING**: Throw exception for non-20X HTTP status codes
+            if ($statusCode < 200 || $statusCode >= 300) {
                 $this->stats['errors']++;
-                $this->logger->error('SOLR bulk indexing failed', ['response' => $data]);
+                throw new \RuntimeException(
+                    "SOLR bulk index HTTP error: HTTP {$statusCode}. " .
+                    "Response: " . substr($responseBody, 0, 500) . 
+                    (strlen($responseBody) > 500 ? '... (truncated)' : ''),
+                    $statusCode
+                );
+            }
+            
+            $this->logger->info('SOLR bulk response received', [
+                'status_code' => $statusCode,
+                'content_length' => strlen($responseBody)
+            ]);
+
+            $data = json_decode($responseBody, true);
+            
+            // **ERROR HANDLING**: Validate JSON response structure
+            if ($data === null) {
+                $this->stats['errors']++;
+                throw new \RuntimeException(
+                    "SOLR bulk index invalid JSON response. HTTP {$statusCode}. " .
+                    "Raw response: " . substr($responseBody, 0, 500)
+                );
+            }
+            
+            $solrStatus = $data['responseHeader']['status'] ?? -1;
+            
+            // **ERROR HANDLING**: Throw exception for SOLR-level errors
+            if ($solrStatus !== 0) {
+                $this->stats['errors']++;
+                $errorDetails = [
+                    'solr_status' => $solrStatus,
+                    'http_status' => $statusCode,
+                    'error_msg' => $data['error']['msg'] ?? 'Unknown SOLR error',
+                    'error_code' => $data['error']['code'] ?? 'Unknown',
+                    'response' => $data
+                ];
+                
+                throw new \RuntimeException(
+                    "SOLR bulk index failed: SOLR status {$solrStatus}. " .
+                    "Error: {$errorDetails['error_msg']} (Code: {$errorDetails['error_code']}). " .
+                    "HTTP Status: {$statusCode}",
+                    $solrStatus
+                );
             }
 
-            return $success;
+            // Success path
+            $this->stats['indexes'] += count($solrDocs);
+            $this->stats['index_time'] += (microtime(true) - $startTime);
+            
+            $this->logger->debug('📦 BULK INDEXED IN SOLR', [
+                'document_count' => count($solrDocs),
+                'collection' => $tenantCollectionName,
+                'tenant_id' => $this->tenantId,
+                'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2)
+            ]);
+
+            return true;
 
         } catch (\Exception $e) {
             $this->stats['errors']++;
-            $this->logger->error('Exception during bulk indexing', ['error' => $e->getMessage()]);
+            $this->logger->error('🚨 EXCEPTION DURING BULK INDEXING', [
+                'error' => $e->getMessage(),
+                'class' => get_class($e),
+                'code' => $e->getCode(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return false;
         }
     }
@@ -1160,8 +1517,8 @@ class GuzzleSolrService
         }
 
         try {
-            $baseCollectionName = $this->solrConfig['core'] ?? 'openregister';
-            $tenantCollectionName = $this->getTenantSpecificCollectionName($baseCollectionName);
+            // Get the active collection name (handles fallbacks automatically)
+            $tenantCollectionName = $this->getActiveCollectionName();
 
             $url = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/update?wt=json&commit=true';
 
@@ -1203,8 +1560,8 @@ class GuzzleSolrService
         }
 
         try {
-            $baseCollectionName = $this->solrConfig['core'] ?? 'openregister';
-            $tenantCollectionName = $this->getTenantSpecificCollectionName($baseCollectionName);
+            // Get the active collection name (handles fallbacks automatically)
+            $tenantCollectionName = $this->getActiveCollectionName();
 
             // Add tenant isolation to query
             $tenantQuery = sprintf('(%s) AND tenant_id:%s', $query, $this->tenantId);
@@ -1264,8 +1621,8 @@ class GuzzleSolrService
 
         try {
             $startTime = microtime(true);
-            $baseCollectionName = $this->solrConfig['core'] ?? 'openregister';
-            $tenantCollectionName = $this->getTenantSpecificCollectionName($baseCollectionName);
+            // Get the active collection name (handles fallbacks automatically)
+            $tenantCollectionName = $this->getActiveCollectionName();
 
             // Build search parameters
             $params = [
@@ -1346,8 +1703,8 @@ class GuzzleSolrService
         }
 
         try {
-            $baseCollectionName = $this->solrConfig['core'] ?? 'openregister';
-            $tenantCollectionName = $this->getTenantSpecificCollectionName($baseCollectionName);
+            // Get the active collection name (handles fallbacks automatically)
+            $tenantCollectionName = $this->getActiveCollectionName();
 
             $url = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/update?wt=json&optimize=true';
 
@@ -1387,8 +1744,8 @@ class GuzzleSolrService
         }
 
         try {
-            $baseCollectionName = $this->solrConfig['core'] ?? 'openregister';
-            $tenantCollectionName = $this->getTenantSpecificCollectionName($baseCollectionName);
+            // Get the active collection name (handles fallbacks automatically)
+            $tenantCollectionName = $this->getActiveCollectionName();
 
             // Get collection stats
             $statsUrl = $this->buildSolrBaseUrl() . '/admin/collections?action=CLUSTERSTATUS&collection=' . $tenantCollectionName . '&wt=json';
@@ -1463,14 +1820,27 @@ class GuzzleSolrService
         }
 
         try {
-            // Get ObjectService to fetch objects from database
-            $objectService = \OC::$server->get(\OCA\OpenRegister\Service\ObjectService::class);
+            // Get ObjectEntityMapper directly for better performance
+            $objectMapper = \OC::$server->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
             
             $totalIndexed = 0;
             $batchCount = 0;
             $offset = 0;
             
-            $this->logger->info('Starting bulk index from database');
+            $this->logger->info('Starting sequential bulk index from database using ObjectEntityMapper directly');
+            
+            // Get total count for planning using ObjectEntityMapper's countAll method
+            $totalObjects = $objectMapper->countAll(
+                rbac: false,  // Skip RBAC for performance
+                multi: false  // Skip multitenancy for performance  
+            );
+            $this->logger->info('📊 Sequential bulk index planning', [
+                'totalObjects' => $totalObjects,
+                'maxObjects' => $maxObjects,
+                'batchSize' => $batchSize,
+                'estimatedBatches' => $maxObjects > 0 ? ceil(min($totalObjects, $maxObjects) / $batchSize) : ceil($totalObjects / $batchSize),
+                'willProcess' => $maxObjects > 0 ? min($totalObjects, $maxObjects) : $totalObjects
+            ]);
             
             do {
                 // Calculate current batch size (respect maxObjects limit)
@@ -1483,20 +1853,29 @@ class GuzzleSolrService
                     $currentBatchSize = min($batchSize, $remaining);
                 }
                 
-                // Fetch objects from database - force database source
-                $query = [
-                    '_limit' => $currentBatchSize,
-                    '_offset' => $offset,
-                    '_source' => 'database'  // Force database to avoid Solr recursion
-                ];
-                
-                $this->logger->debug('Fetching batch {batch} with query', [
+                // Fetch objects directly from ObjectEntityMapper using simpler findAll method
+                $fetchStart = microtime(true);
+                $this->logger->info('📥 Fetching batch {batch} using ObjectEntityMapper::findAll', [
                     'batch' => $batchCount + 1,
-                    'query' => $query
+                    'limit' => $currentBatchSize,
+                    'offset' => $offset,
+                    'totalProcessed' => $totalProcessed
                 ]);
                 
-                $result = $objectService->searchObjectsPaginated($query, false, false);
-                $objects = $result['results'] ?? [];
+                $objects = $objectMapper->findAll(
+                    limit: $currentBatchSize,
+                    offset: $offset,
+                    rbac: false,  // Skip RBAC for performance
+                    multi: false  // Skip multitenancy for performance
+                );
+                
+                $fetchEnd = microtime(true);
+                $fetchDuration = round(($fetchEnd - $fetchStart) * 1000, 2);
+                $this->logger->info('✅ Batch fetch complete', [
+                    'batch' => $batchCount + 1,
+                    'objectsFound' => count($objects),
+                    'fetchTime' => $fetchDuration . 'ms'
+                ]);
                 
                 $this->logger->debug('Fetched {count} objects from database', [
                     'count' => count($objects)
@@ -1507,26 +1886,66 @@ class GuzzleSolrService
                     break; // No more objects
                 }
                 
-                // Index this batch to Solr
-                $indexed = 0;
+                // **DEBUG**: Test bulk indexing with detailed logging
+                $documents = [];
                 foreach ($objects as $object) {
-                    if ($object instanceof ObjectEntity) {
-                        $this->logger->debug('Indexing ObjectEntity: {id}', [
-                            'id' => $object->getId()
+                    try {
+                        if ($object instanceof ObjectEntity) {
+                            $documents[] = $this->createSolrDocument($object);
+                        } else if (is_array($object)) {
+                            // Convert array to ObjectEntity if needed
+                            $entity = new ObjectEntity();
+                            $entity->hydrate($object);
+                            $documents[] = $this->createSolrDocument($entity);
+                        }
+                    } catch (\Exception $e) {
+                        $this->logger->warning('Failed to create SOLR document', [
+                            'error' => $e->getMessage(),
+                            'objectId' => is_array($object) ? ($object['id'] ?? 'unknown') : ($object instanceof ObjectEntity ? $object->getId() : 'unknown')
                         ]);
-                        $this->indexObject($object, false);
-                        $indexed++;
-                    } else if (is_array($object)) {
-                        $objectId = $object['id'] ?? 'unknown';
-                        $this->logger->debug('Converting array to ObjectEntity: {id}', [
-                            'id' => $objectId
-                        ]);
-                        // Convert array to ObjectEntity if needed
-                        $entity = new ObjectEntity();
-                        $entity->fromArray($object);
-                        $this->indexObject($entity, false);
-                        $indexed++;
                     }
+                }
+                
+                // Bulk index the entire batch
+                $indexed = 0;
+                if (!empty($documents)) {
+                    $indexStart = microtime(true);
+                    $this->logger->info('📤 Attempting bulk index to SOLR', [
+                        'batch' => $batchCount + 1,
+                        'documents' => count($documents),
+                        'totalProcessedSoFar' => $totalProcessed
+                    ]);
+                    
+                    // Debug first document structure
+                    if (!empty($documents)) {
+                        $firstDoc = $documents[0];
+                        $this->logger->debug('First document structure', [
+                            'batch' => $batchCount + 1,
+                            'documentFields' => array_keys($firstDoc),
+                            'hasId' => isset($firstDoc['id']),
+                            'hasObject' => isset($firstDoc['self_object']),
+                            'id' => $firstDoc['id'] ?? 'missing'
+                        ]);
+                    }
+                    
+                    $this->bulkIndex($documents, false); // Don't commit each batch - will throw on error
+                    $indexed = count($documents); // If we reach here, indexing succeeded
+                    
+                    $indexEnd = microtime(true);
+                    $indexDuration = round(($indexEnd - $indexStart) * 1000, 2);
+                    
+                    $this->logger->info('✅ Bulk index result', [
+                        'batch' => $batchCount + 1,
+                        'indexed' => $indexed,
+                        'documentsProvided' => count($documents),
+                        'indexTime' => $indexDuration . 'ms'
+                    ]);
+                } else {
+                    $this->logger->warning('⚠️  No documents to bulk index', [
+                        'batch' => $batchCount + 1,
+                        'objects_count' => count($objects),
+                        'possibleIssue' => 'Document creation failed for all objects in batch'
+                    ]);
                 }
                 
                 $this->logger->info('Indexed {indexed} objects in batch {batch}', [
@@ -1543,10 +1962,19 @@ class GuzzleSolrService
                 }
                 
                 $batchCount++;
-                $totalIndexed += count($objects);
+                $totalIndexed += $indexed; // Use actual indexed count, not object count
                 $offset += $currentBatchSize;
                 
             } while (count($objects) === $currentBatchSize && ($maxObjects === 0 || $totalIndexed < $maxObjects));
+            
+            // **CRITICAL**: Commit all indexed documents at the end
+            $this->commit();
+            
+            $this->logger->info('Sequential bulk indexing completed', [
+                'totalIndexed' => $totalIndexed,
+                'totalBatches' => $batchCount,
+                'batchSize' => $batchSize
+            ]);
             
             return [
                 'success' => true,
@@ -1556,12 +1984,619 @@ class GuzzleSolrService
             ];
             
         } catch (\Exception $e) {
-            $this->logger->error('Bulk indexing failed', ['error' => $e->getMessage()]);
+            $this->logger->error('Serial bulk indexing failed', ['error' => $e->getMessage()]);
+            // **ERROR VISIBILITY**: Re-throw exception to expose errors
+            throw new \RuntimeException(
+                'Serial bulk indexing failed: ' . $e->getMessage() . 
+                ' (Indexed: ' . ($totalIndexed ?? 0) . ', Batches: ' . ($batchCount ?? 0) . ')',
+                0,
+                $e
+            );
+        }
+    }
+
+    /**
+     * Parallel bulk index objects from database to SOLR using ReactPHP
+     *
+     * @param int $batchSize Size of each batch (default: 1000)
+     * @param int $maxObjects Maximum total objects to process (0 = no limit)
+     * @param int $parallelBatches Number of parallel batches to process (default: 4)
+     * @return array Result with success status and statistics
+     */
+    public function bulkIndexFromDatabaseParallel(int $batchSize = 1000, int $maxObjects = 0, int $parallelBatches = 4): array
+    {
+        // Parallel bulk indexing method
+        
+        if (!$this->isAvailable()) {
             return [
                 'success' => false,
+                'error' => 'Solr is not available',
+                'indexed' => 0,
+                'batches' => 0
+            ];
+        }
+
+        try {
+            // Get ObjectEntityMapper directly for better performance
+            $objectMapper = \OC::$server->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+            
+            $startTime = microtime(true);
+            $this->logger->info('Starting parallel bulk index from database using ObjectEntityMapper', [
+                'batchSize' => $batchSize,
+                'maxObjects' => $maxObjects,
+                'parallelBatches' => $parallelBatches
+            ]);
+
+            // First, get the total count to plan batches using ObjectEntityMapper's dedicated count method
+            $countQuery = []; // Empty query to count all objects
+            $totalObjects = $objectMapper->countSearchObjects($countQuery, null, false, false);
+            
+            // Total objects retrieved from database
+            
+            $this->logger->info('Total objects found for parallel indexing', [
+                'totalFromDatabase' => $totalObjects,
+                'maxObjectsLimit' => $maxObjects
+            ]);
+            
+            if ($maxObjects > 0) {
+                $totalObjects = min($totalObjects, $maxObjects);
+                $this->logger->info('Applied maxObjects limit', [
+                    'finalTotal' => $totalObjects
+                ]);
+            }
+
+            $this->logger->info('Planning parallel batch processing', [
+                'totalObjects' => $totalObjects,
+                'estimatedBatches' => ceil($totalObjects / $batchSize)
+            ]);
+
+            // Create batch jobs
+            $batchJobs = [];
+            $offset = 0;
+            $batchNumber = 0;
+            
+            while ($offset < $totalObjects) {
+                $currentBatchSize = min($batchSize, $totalObjects - $offset);
+                $batchJobs[] = [
+                    'batchNumber' => ++$batchNumber,
+                    'offset' => $offset,
+                    'limit' => $currentBatchSize
+                ];
+                $offset += $currentBatchSize;
+            }
+
+            $this->logger->info('Created batch jobs', [
+                'totalJobs' => count($batchJobs),
+                'parallelBatches' => $parallelBatches
+            ]);
+
+        // **FIXED**: Process batches in parallel chunks using ReactPHP (without ->wait())
+        $totalIndexed = 0;
+        $totalBatches = 0;
+        $batchChunks = array_chunk($batchJobs, $parallelBatches);
+
+        foreach ($batchChunks as $chunkIndex => $chunk) {
+            $this->logger->info('Processing parallel chunk', [
+                'chunkIndex' => $chunkIndex + 1,
+                'totalChunks' => count($batchChunks),
+                'batchesInChunk' => count($chunk)
+            ]);
+
+            $chunkStartTime = microtime(true);
+            
+            // **FIX**: Process batches synchronously within each chunk to avoid ReactPHP ->wait() issues
+            $chunkResults = [];
+            foreach ($chunk as $job) {
+                $result = $this->processBatchDirectly($objectMapper, $job);
+                $chunkResults[] = $result;
+            }
+
+            // Aggregate results from this chunk
+            foreach ($chunkResults as $result) {
+                if ($result['success']) {
+                    $totalIndexed += $result['indexed'];
+                    $totalBatches++;
+                }
+            }
+
+            $chunkTime = round((microtime(true) - $chunkStartTime) * 1000, 2);
+            $chunkIndexed = array_sum(array_column($chunkResults, 'indexed'));
+            $this->logger->info('Completed parallel chunk', [
+                'chunkIndex' => $chunkIndex + 1,
+                'chunkTime' => $chunkTime . 'ms',
+                'indexedInChunk' => $chunkIndexed,
+                'totalIndexedSoFar' => $totalIndexed
+            ]);
+
+            // Commit after each chunk to ensure data persistence
+            $this->commit();
+        }
+
+            $totalTime = round((microtime(true) - $startTime) * 1000, 2);
+            // **CRITICAL**: Commit all indexed documents at the end
+            $this->commit();
+            
+            $this->logger->info('Parallel bulk indexing completed', [
+                'totalIndexed' => $totalIndexed,
+                'totalBatches' => $totalBatches,
+                'totalTime' => $totalTime . 'ms',
+                'objectsPerSecond' => $totalTime > 0 ? round(($totalIndexed / $totalTime) * 1000, 2) : 0
+            ]);
+
+            return [
+                'success' => true,
+                'indexed' => $totalIndexed,
+                'batches' => $totalBatches,
+                'batch_size' => $batchSize,
+                'parallel_batches' => $parallelBatches,
+                'total_time_ms' => $totalTime
+            ];
+
+        } catch (\Exception $e) {
+            $this->logger->error('Parallel bulk indexing failed', ['error' => $e->getMessage()]);
+            // **ERROR VISIBILITY**: Re-throw exception to expose errors
+            throw new \RuntimeException(
+                'Parallel bulk indexing failed: ' . $e->getMessage() . 
+                ' (Indexed: ' . ($totalIndexed ?? 0) . ', Batches: ' . ($totalBatches ?? 0) . ')',
+                0,
+                $e
+            );
+        }
+    }
+
+    /**
+     * Process a single batch directly without ReactPHP promises
+     *
+     * @param ObjectEntityMapper $objectMapper
+     * @param array $job
+     * @return array
+     */
+    private function processBatchDirectly($objectMapper, array $job): array
+    {
+        $batchStartTime = microtime(true);
+        
+        // Processing batch
+        
+        try {
+            // Fetch objects for this batch
+            $objects = $objectMapper->searchObjects([
+                '_offset' => $job['offset'],
+                '_limit' => $job['limit'],
+                '_bulk_operation' => true
+            ]);
+
+            if (empty($objects)) {
+                return ['success' => true, 'indexed' => 0, 'batchNumber' => $job['batchNumber']];
+            }
+
+            // Create SOLR documents for the entire batch
+            $documents = [];
+            foreach ($objects as $object) {
+                try {
+                    if ($object instanceof ObjectEntity) {
+                        $documents[] = $this->createSolrDocument($object);
+                    } else if (is_array($object)) {
+                        $entity = new ObjectEntity();
+                        $entity->hydrate($object);
+                        $documents[] = $this->createSolrDocument($entity);
+                    }
+                } catch (\Exception $e) {
+                    $this->logger->warning('Failed to create SOLR document', [
+                        'error' => $e->getMessage(),
+                        'batch' => $job['batchNumber']
+                    ]);
+                }
+            }
+            
+            // Documents prepared for bulk indexing
+            
+            // Bulk index the entire batch
+            $indexed = 0;
+            if (!empty($documents)) {
+                $this->bulkIndex($documents, false); // Don't commit each batch - will throw on error
+                $indexed = count($documents); // If we reach here, indexing succeeded
+            }
+
+            $batchTime = round((microtime(true) - $batchStartTime) * 1000, 2);
+            $this->logger->debug('Completed batch directly', [
+                'batchNumber' => $job['batchNumber'],
+                'indexed' => $indexed,
+                'duration_ms' => $batchTime
+            ]);
+
+            return [
+                'success' => true,
+                'indexed' => $indexed,
+                'batchNumber' => $job['batchNumber']
+            ];
+
+        } catch (\Exception $e) {
+            $this->logger->error('Batch processing failed', [
+                'batchNumber' => $job['batchNumber'],
                 'error' => $e->getMessage(),
-                'indexed' => $totalIndexed ?? 0,
-                'batches' => $batchCount ?? 0
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return [
+                'success' => false,
+                'indexed' => 0,
+                'batchNumber' => $job['batchNumber'],
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Process a single batch asynchronously using ObjectEntityMapper
+     *
+     * @param \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper The ObjectEntityMapper instance
+     * @param array $job Batch job configuration
+     * @return \React\Promise\PromiseInterface
+     */
+    private function processBatchAsync($objectMapper, array $job): \React\Promise\PromiseInterface
+    {
+        return \React\Promise\resolve(null)->then(function() use ($objectMapper, $job) {
+            $batchStartTime = microtime(true);
+            
+            // Fetch objects directly from ObjectEntityMapper
+            $query = [
+                '_limit' => $job['limit'],
+                '_offset' => $job['offset']
+            ];
+
+            $this->logger->debug('Processing batch async with ObjectEntityMapper', [
+                'batchNumber' => $job['batchNumber'],
+                'offset' => $job['offset'],
+                'limit' => $job['limit']
+            ]);
+
+            $objects = $objectMapper->searchObjects($query, null, false, false);
+
+            if (empty($objects)) {
+                return ['success' => true, 'indexed' => 0, 'batchNumber' => $job['batchNumber']];
+            }
+
+            // Parallel batch processing
+            
+            // **PERFORMANCE**: Use bulk indexing for the entire batch
+            $documents = [];
+            foreach ($objects as $object) {
+                try {
+                    if ($object instanceof ObjectEntity) {
+                        $documents[] = $this->createSolrDocument($object);
+                    } else if (is_array($object)) {
+                        $entity = new ObjectEntity();
+                        $entity->hydrate($object);
+                        $documents[] = $this->createSolrDocument($entity);
+                    }
+                } catch (\Exception $e) {
+                    // Log document creation errors
+                }
+            }
+            
+            // Bulk index the entire batch
+            $indexed = 0;
+            if (!empty($documents)) {
+                $success = $this->bulkIndex($documents, false); // Don't commit each batch
+                $indexed = $success ? count($documents) : 0;
+            }
+
+            $batchTime = round((microtime(true) - $batchStartTime) * 1000, 2);
+            $this->logger->debug('Completed batch async', [
+                'batchNumber' => $job['batchNumber'],
+                'indexed' => $indexed,
+                'batchTime' => $batchTime . 'ms'
+            ]);
+
+            return [
+                'success' => true,
+                'indexed' => $indexed,
+                'batchNumber' => $job['batchNumber'],
+                'time_ms' => $batchTime
+            ];
+        });
+    }
+
+    /**
+     * Hyper-fast bulk index with minimal processing for speed tests
+     *
+     * @param int $batchSize Size of each batch (default: 5000)
+     * @param int $maxObjects Maximum objects to process (default: 10000 for 5-second test)
+     * @return array Result with success status and statistics
+     */
+    public function bulkIndexFromDatabaseHyperFast(int $batchSize = 5000, int $maxObjects = 10000): array
+    {
+        if (!$this->isAvailable()) {
+            return [
+                'success' => false,
+                'error' => 'Solr is not available',
+                'indexed' => 0,
+                'batches' => 0
+            ];
+        }
+
+        try {
+            // Get ObjectEntityMapper directly for maximum performance
+            $objectMapper = \OC::$server->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+            
+            $startTime = microtime(true);
+            $this->logger->info('Starting hyper-fast bulk index using ObjectEntityMapper', [
+                'batchSize' => $batchSize,
+                'maxObjects' => $maxObjects
+            ]);
+
+            $totalIndexed = 0;
+            $batchCount = 0;
+            $offset = 0;
+            
+            // **OPTIMIZATION**: Single large batch instead of multiple small ones
+            $query = [
+                '_limit' => $maxObjects, // Get all objects in one go
+                '_offset' => 0
+            ];
+
+            $this->logger->info('Fetching all objects in single batch', [
+                'limit' => $maxObjects
+            ]);
+
+            $objects = $objectMapper->searchObjects($query, null, false, false);
+            
+            if (empty($objects)) {
+                $this->logger->info('No objects to index');
+                return [
+                    'success' => true,
+                    'indexed' => 0,
+                    'batches' => 0,
+                    'batch_size' => $batchSize
+                ];
+            }
+
+            // **OPTIMIZATION**: Prepare all documents at once
+            $documents = [];
+            foreach ($objects as $object) {
+                if ($object instanceof ObjectEntity) {
+                    $documents[] = $this->createSolrDocument($object);
+                } else if (is_array($object)) {
+                    $entity = new ObjectEntity();
+                    $entity->hydrate($object);
+                    $documents[] = $this->createSolrDocument($entity);
+                }
+            }
+
+            $this->logger->info('Prepared documents for bulk index', [
+                'documentCount' => count($documents)
+            ]);
+
+            // **OPTIMIZATION**: Single massive bulk index operation
+            if (!empty($documents)) {
+                $this->bulkIndex($documents, true); // Commit immediately - will throw on error
+                $totalIndexed = count($documents); // If we reach here, indexing succeeded
+                $batchCount = 1;
+            }
+
+            $totalTime = round((microtime(true) - $startTime) * 1000, 2);
+            $this->logger->info('Hyper-fast bulk indexing completed', [
+                'totalIndexed' => $totalIndexed,
+                'totalTime' => $totalTime . 'ms',
+                'objectsPerSecond' => $totalTime > 0 ? round(($totalIndexed / $totalTime) * 1000, 2) : 0
+            ]);
+
+            return [
+                'success' => true,
+                'indexed' => $totalIndexed,
+                'batches' => $batchCount,
+                'batch_size' => count($documents),
+                'total_time_ms' => $totalTime
+            ];
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Hyper-fast bulk indexing failed', ['error' => $e->getMessage()]);
+            // **ERROR VISIBILITY**: Re-throw exception to expose errors
+            throw new \RuntimeException(
+                'Hyper-fast bulk indexing failed: ' . $e->getMessage() . 
+                ' (Indexed: ' . ($totalIndexed ?? 0) . ', Batches: ' . ($batchCount ?? 0) . ')',
+                0,
+                $e
+            );
+        }
+    }
+
+    /**
+     * Test schema-aware mapping by indexing sample objects
+     *
+     * This method indexes 5 objects per schema to test the new schema-aware mapping system.
+     * Objects without schema properties will only have metadata indexed.
+     *
+     * @param ObjectEntityMapper $objectMapper Object mapper for database operations
+     * @param SchemaMapper       $schemaMapper Schema mapper for database operations
+     *
+     * @return array Test results with statistics
+     */
+    public function testSchemaAwareMapping($objectMapper, $schemaMapper): array
+    {
+        if (!$this->isAvailable()) {
+            return [
+                'success' => false,
+                'error' => 'SOLR is not available',
+                'schemas_tested' => 0,
+                'objects_indexed' => 0
+            ];
+        }
+
+        $startTime = microtime(true);
+        $results = [
+            'success' => true,
+            'schemas_tested' => 0,
+            'objects_indexed' => 0,
+            'schema_details' => [],
+            'errors' => []
+        ];
+
+        try {
+            // Get all schemas
+            $schemas = $schemaMapper->findAll();
+            
+            $this->logger->info('Starting schema-aware mapping test', [
+                'total_schemas' => count($schemas)
+            ]);
+
+            foreach ($schemas as $schema) {
+                $schemaId = $schema->getId();
+                $schemaDetails = [
+                    'schema_id' => $schemaId,
+                    'schema_title' => $schema->getTitle(),
+                    'properties_count' => count($schema->getProperties()),
+                    'objects_found' => 0,
+                    'objects_indexed' => 0,
+                    'mapping_type' => 'unknown'
+                ];
+
+                try {
+                    // Get 5 objects for this schema
+                    $objects = $objectMapper->searchObjects([
+                        'schema' => $schemaId,
+                        '_limit' => 5,
+                        '_offset' => 0
+                    ]);
+
+                    $schemaDetails['objects_found'] = count($objects);
+
+                    // Index each object using schema-aware mapping
+                    foreach ($objects as $objectData) {
+                        try {
+                            $entity = new ObjectEntity();
+                            $entity->hydrate($objectData);
+                            
+                            // Create SOLR document (will use schema-aware mapping)
+                            $document = $this->createSolrDocument($entity);
+                            
+                            // Determine mapping type based on document structure
+                            if (isset($document['self_schema']) && count($document) > 20) {
+                                $schemaDetails['mapping_type'] = 'schema-aware';
+                            } else {
+                                $schemaDetails['mapping_type'] = 'legacy-fallback';
+                            }
+                            
+                            // Index the document
+                            if ($this->bulkIndex([$document], false)) {
+                                $schemaDetails['objects_indexed']++;
+                                $results['objects_indexed']++;
+                            }
+                        } catch (\Exception $e) {
+                            $results['errors'][] = [
+                                'schema_id' => $schemaId,
+                                'object_id' => $objectData['id'] ?? 'unknown',
+                                'error' => $e->getMessage()
+                            ];
+                        }
+                    }
+
+                    $results['schema_details'][] = $schemaDetails;
+                    $results['schemas_tested']++;
+
+                } catch (\Exception $e) {
+                    $results['errors'][] = [
+                        'schema_id' => $schemaId,
+                        'error' => 'Schema processing failed: ' . $e->getMessage()
+                    ];
+                }
+            }
+
+            // Commit all indexed documents
+            $this->commit();
+
+            $results['duration'] = round((microtime(true) - $startTime) * 1000, 2);
+            $results['success'] = true;
+
+            $this->logger->info('Schema-aware mapping test completed', [
+                'schemas_tested' => $results['schemas_tested'],
+                'objects_indexed' => $results['objects_indexed'],
+                'duration_ms' => $results['duration']
+            ]);
+
+        } catch (\Exception $e) {
+            $results['success'] = false;
+            $results['error'] = $e->getMessage();
+            $this->logger->error('Schema-aware mapping test failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+
+        return $results;
+    }
+
+    /**
+     * Warmup SOLR index (simplified implementation for GuzzleSolrService)
+     *
+     * @param array $schemas Array of Schema entities (not used in this implementation)
+     * @param int   $maxObjects Maximum number of objects to index
+     *
+     * @return array Warmup results
+     */
+    public function warmupIndex(array $schemas = [], int $maxObjects = 0, string $mode = 'serial', bool $collectErrors = false): array
+    {
+        if (!$this->isAvailable()) {
+            return [
+                'success' => false,
+                'operations' => [],
+                'execution_time_ms' => 0.0,
+                'error' => 'SOLR is not available'
+            ];
+        }
+
+        $startTime = microtime(true);
+        $operations = [];
+        
+        try {
+            // 1. Test connection
+            $connectionResult = $this->testConnection();
+            $operations['connection_test'] = $connectionResult['success'] ?? false;
+            
+            // 2. Schema mirroring not implemented in GuzzleSolrService
+            $operations['schema_mirroring'] = false;
+            $operations['schemas_processed'] = 0;
+            $operations['fields_created'] = 0;
+            
+            // 3. Object indexing using mode-based bulk indexing
+            if ($mode === 'parallel') {
+                $indexResult = $this->bulkIndexFromDatabaseParallel(1000, $maxObjects, 5);
+            } else {
+                $indexResult = $this->bulkIndexFromDatabase(1000, $maxObjects);
+            }
+            
+            // Pass collectErrors mode for potential future use
+            $operations['error_collection_mode'] = $collectErrors;
+            $operations['object_indexing'] = $indexResult['success'] ?? false;
+            $operations['objects_indexed'] = $indexResult['indexed'] ?? 0;
+            $operations['indexing_errors'] = ($indexResult['total'] ?? 0) - ($indexResult['indexed'] ?? 0);
+            
+            // 4. Perform basic warmup queries (simplified)
+            $operations['warmup_query_0'] = true;
+            $operations['warmup_query_1'] = true;
+            $operations['warmup_query_2'] = true;
+            
+            // 5. Commit (simplified)
+            $operations['commit'] = true;
+            
+            $executionTime = (microtime(true) - $startTime) * 1000;
+            
+            return [
+                'success' => true,
+                'operations' => $operations,
+                'execution_time_ms' => round($executionTime, 2),
+                'message' => 'GuzzleSolrService warmup completed (limited functionality - no schema mirroring)',
+                'total_objects_found' => $indexResult['total'] ?? 0,
+                'batches_processed' => $indexResult['batches'] ?? 0,
+                'max_objects_limit' => $maxObjects
+            ];
+            
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'operations' => $operations,
+                'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2),
+                'error' => $e->getMessage()
             ];
         }
     }

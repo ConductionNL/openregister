@@ -64,12 +64,18 @@ class SolrEventListener implements IEventListener
      */
     public function handle(Event $event): void
     {
+        // DEBUG: Check if we're getting called at all
+        $this->logger->debug('SolrEventListener handling event', ['event_type' => get_class($event)]);
+        
         try {
             if ($event instanceof ObjectCreatedEvent) {
+                $this->logger->debug('Handling ObjectCreatedEvent', ['object_id' => $event->getObject()->getId()]);
                 $this->handleObjectCreated($event);
             } elseif ($event instanceof ObjectUpdatedEvent) {
+                $this->logger->debug('Handling ObjectUpdatedEvent', ['object_id' => $event->getNewObject()->getId()]);
                 $this->handleObjectUpdated($event);
             } elseif ($event instanceof ObjectDeletedEvent) {
+                $this->logger->debug('Handling ObjectDeletedEvent', ['object_id' => $event->getObject()->getId()]);
                 $this->handleObjectDeleted($event);
             } elseif ($event instanceof SchemaCreatedEvent) {
                 $this->handleSchemaCreated($event);
@@ -78,6 +84,7 @@ class SolrEventListener implements IEventListener
             } elseif ($event instanceof SchemaDeletedEvent) {
                 $this->handleSchemaDeleted($event);
             } else {
+                var_dump("🔥 Unhandled event: " . get_class($event));
                 // Log unhandled events for debugging
                 $this->logger->debug('SolrEventListener: Received unhandled event', [
                     'eventClass' => get_class($event),
@@ -85,6 +92,7 @@ class SolrEventListener implements IEventListener
                 ]);
             }
         } catch (\Exception $e) {
+            var_dump("🔥 ERROR in SolrEventListener: " . $e->getMessage());
             // Log errors but don't break the application flow
             $this->logger->error('SolrEventListener: Error handling event', [
                 'eventClass' => get_class($event),

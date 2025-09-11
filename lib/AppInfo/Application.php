@@ -464,7 +464,8 @@ class Application extends App implements IBootstrap
                     $container->get(SettingsService::class),
                     $container->get('Psr\Log\LoggerInterface'),
                     $container->get('OCP\Http\Client\IClientService'),
-                    $container->get('OCP\IConfig')
+                    $container->get('OCP\IConfig'),
+                    $container->get(SchemaMapper::class) // Add SchemaMapper for schema-aware mapping
                     );
                 }
                 );

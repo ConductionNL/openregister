@@ -17,7 +17,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\SolrServiceFactory;
+use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCA\OpenRegister\Setup\SolrSetup;
 use OCP\IConfig;
 use Psr\Log\LoggerInterface;
@@ -223,9 +223,9 @@ class SolrDebugCommand extends Command
         $output->writeln('<info>🔗 Testing SOLR Connection</info>');
         
         try {
-            // Use factory to create SOLR service (now using GuzzleSolrService)
+            // Get SOLR service via direct DI injection
             $container = \OC::$server->getRegisteredAppContainer('openregister');
-            $solrService = SolrServiceFactory::createSolrService($container);
+            $solrService = $container->get(GuzzleSolrService::class);
 
             if (!$solrService) {
                 $output->writeln('<error>❌ Failed to create SOLR service</error>');
