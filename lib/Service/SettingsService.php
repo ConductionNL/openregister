@@ -1476,7 +1476,10 @@ class SettingsService
     {
         try {
             $objectCacheService = $this->container->get(ObjectCacheService::class);
-            return $objectCacheService->getSolrDashboardStats();
+            $rawStats = $objectCacheService->getSolrDashboardStats();
+            
+            // Transform the raw stats into the expected dashboard structure
+            return $this->transformSolrStatsToDashboard($rawStats);
         } catch (\Exception $e) {
             // Return default dashboard structure if SOLR is not available
             return [
@@ -1524,6 +1527,154 @@ class SettingsService
             ];
         }
     }//end getSolrDashboardStats()
+
+    /**
+     * Transform raw SOLR stats into dashboard structure
+     *
+     * @param array $rawStats Raw statistics from SOLR service
+     * @return array Transformed dashboard statistics
+     */
+    private function transformSolrStatsToDashboard(array $rawStats): array
+    {
+        // If SOLR is not available, return error structure
+        if (!($rawStats['available'] ?? false)) {
+            return [
+                'overview' => [
+                    'available' => false,
+                    'connection_status' => 'unavailable',
+                    'response_time_ms' => 0,
+                    'total_documents' => 0,
+                    'index_size' => '0 B',
+                    'last_commit' => null,
+                ],
+                'cores' => [
+                    'active_core' => 'unknown',
+                    'core_status' => 'inactive',
+                    'tenant_id' => 'unknown',
+                    'endpoint_url' => 'N/A',
+                ],
+                'performance' => [
+                    'total_searches' => 0,
+                    'total_indexes' => 0,
+                    'total_deletes' => 0,
+                    'avg_search_time_ms' => 0,
+                    'avg_index_time_ms' => 0,
+                    'total_search_time' => 0,
+                    'total_index_time' => 0,
+                    'operations_per_sec' => 0,
+                    'error_rate' => 0,
+                ],
+                'health' => [
+                    'status' => 'unavailable',
+                    'uptime' => 'N/A',
+                    'memory_usage' => ['used' => 'N/A', 'max' => 'N/A', 'percentage' => 0],
+                    'disk_usage' => ['used' => 'N/A', 'available' => 'N/A', 'percentage' => 0],
+                    'warnings' => [$rawStats['error'] ?? 'SOLR service is not available or not configured'],
+                    'last_optimization' => null,
+                ],
+                'operations' => [
+                    'recent_activity' => [],
+                    'queue_status' => ['pending_operations' => 0, 'processing' => false, 'last_processed' => null],
+                    'commit_frequency' => ['auto_commit' => false, 'commit_within' => 0, 'last_commit' => null],
+                    'optimization_needed' => false,
+                ],
+                'generated_at' => date('c'),
+                'error' => $rawStats['error'] ?? 'SOLR service unavailable'
+            ];
+        }
+
+        // Transform available SOLR stats into dashboard structure
+        $serviceStats = $rawStats['service_stats'] ?? [];
+        $totalOps = ($serviceStats['searches'] ?? 0) + ($serviceStats['indexes'] ?? 0) + ($serviceStats['deletes'] ?? 0);
+        $totalTime = ($serviceStats['search_time'] ?? 0) + ($serviceStats['index_time'] ?? 0);
+        $opsPerSec = $totalTime > 0 ? round($totalOps / ($totalTime / 1000), 2) : 0;
+        $errorRate = $totalOps > 0 ? round(($serviceStats['errors'] ?? 0) / $totalOps * 100, 2) : 0;
+
+        return [
+            'overview' => [
+                'available' => true,
+                'connection_status' => $rawStats['health'] ?? 'unknown',
+                'response_time_ms' => 0, // Not available in raw stats
+                'total_documents' => $rawStats['document_count'] ?? 0,
+                'index_size' => $this->formatBytesForDashboard(($rawStats['index_size'] ?? 0) * 1024), // Assuming KB
+                'last_commit' => $rawStats['last_modified'] ?? null,
+            ],
+            'cores' => [
+                'active_core' => $rawStats['collection'] ?? 'unknown',
+                'core_status' => $rawStats['available'] ? 'active' : 'inactive',
+                'tenant_id' => $rawStats['tenant_id'] ?? 'unknown',
+                'endpoint_url' => $this->buildSolrEndpointUrl($rawStats),
+            ],
+            'performance' => [
+                'total_searches' => $serviceStats['searches'] ?? 0,
+                'total_indexes' => $serviceStats['indexes'] ?? 0,
+                'total_deletes' => $serviceStats['deletes'] ?? 0,
+                'avg_search_time_ms' => ($serviceStats['searches'] ?? 0) > 0 ? round(($serviceStats['search_time'] ?? 0) / ($serviceStats['searches'] ?? 1), 2) : 0,
+                'avg_index_time_ms' => ($serviceStats['indexes'] ?? 0) > 0 ? round(($serviceStats['index_time'] ?? 0) / ($serviceStats['indexes'] ?? 1), 2) : 0,
+                'total_search_time' => $serviceStats['search_time'] ?? 0,
+                'total_index_time' => $serviceStats['index_time'] ?? 0,
+                'operations_per_sec' => $opsPerSec,
+                'error_rate' => $errorRate,
+            ],
+            'health' => [
+                'status' => $rawStats['health'] ?? 'unknown',
+                'uptime' => 'N/A', // Not available in raw stats
+                'memory_usage' => ['used' => 'N/A', 'max' => 'N/A', 'percentage' => 0],
+                'disk_usage' => ['used' => 'N/A', 'available' => 'N/A', 'percentage' => 0],
+                'warnings' => [],
+                'last_optimization' => null,
+            ],
+            'operations' => [
+                'recent_activity' => [],
+                'queue_status' => ['pending_operations' => 0, 'processing' => false, 'last_processed' => null],
+                'commit_frequency' => ['auto_commit' => true, 'commit_within' => 1000, 'last_commit' => $rawStats['last_modified'] ?? null],
+                'optimization_needed' => false,
+            ],
+            'generated_at' => date('c'),
+        ];
+    }
+
+    /**
+     * Build SOLR endpoint URL from raw stats
+     *
+     * @param array $rawStats Raw SOLR statistics
+     * @return string SOLR endpoint URL
+     */
+    private function buildSolrEndpointUrl(array $rawStats): string
+    {
+        try {
+            $solrSettings = $this->getSolrSettingsOnly();
+            return sprintf(
+                '%s://%s:%d%s/%s',
+                $solrSettings['scheme'],
+                $solrSettings['host'],
+                $solrSettings['port'],
+                $solrSettings['path'],
+                $rawStats['collection'] ?? $solrSettings['core']
+            );
+        } catch (\Exception $e) {
+            return 'N/A';
+        }
+    }
+
+    /**
+     * Format bytes to human readable format for dashboard
+     *
+     * @param int $bytes Number of bytes
+     * @return string Formatted byte string
+     */
+    private function formatBytesForDashboard(int $bytes): string
+    {
+        if ($bytes <= 0) {
+            return '0 B';
+        }
+
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $factor = floor(log($bytes, 1024));
+        $factor = min($factor, count($units) - 1);
+
+        return round($bytes / pow(1024, $factor), 2) . ' ' . $units[$factor];
+    }
 
     /**
      * Perform SOLR management operations
