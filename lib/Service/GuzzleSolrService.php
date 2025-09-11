@@ -666,6 +666,13 @@ class GuzzleSolrService
         // **SCHEMA-AWARE FIELD MAPPING**: Map object data based on schema properties
         
         if (is_array($schemaProperties) && is_array($objectData)) {
+            // **DEBUG**: Log what we're mapping
+            $this->logger->debug('Schema-aware mapping', [
+                'object_id' => $object->getId(),
+                'schema_properties' => array_keys($schemaProperties),
+                'object_data_keys' => array_keys($objectData)
+            ]);
+            
             foreach ($schemaProperties as $fieldName => $fieldDefinition) {
                 if (!isset($objectData[$fieldName])) {
                     continue;
@@ -674,13 +681,47 @@ class GuzzleSolrService
                 $fieldValue = $objectData[$fieldName];
                 $fieldType = $fieldDefinition['type'] ?? 'string';
                 
+                // **FILTER COMPLEX DATA**: Skip arrays and objects - they don't belong in SOLR as individual fields
+                if (is_array($fieldValue) || is_object($fieldValue)) {
+                    $this->logger->debug('Skipping complex field value', [
+                        'field' => $fieldName,
+                        'type' => gettype($fieldValue),
+                        'reason' => 'Arrays and objects are not suitable for SOLR field indexing'
+                    ]);
+                    continue;
+                }
+                
+                // **FILTER NON-SCALAR VALUES**: Only index scalar values (string, int, float, bool, null)
+                if (!is_scalar($fieldValue) && $fieldValue !== null) {
+                    $this->logger->debug('Skipping non-scalar field value', [
+                        'field' => $fieldName,
+                        'type' => gettype($fieldValue),
+                        'reason' => 'Only scalar values can be indexed in SOLR'
+                    ]);
+                    continue;
+                }
+                
                 // Map field based on schema type to appropriate SOLR field name
                 $solrFieldName = $this->mapFieldToSolrType($fieldName, $fieldType, $fieldValue);
                 
                 if ($solrFieldName) {
                     $document[$solrFieldName] = $this->convertValueForSolr($fieldValue, $fieldType);
+                    $this->logger->debug('Mapped field', [
+                        'original' => $fieldName,
+                        'solr_field' => $solrFieldName,
+                        'value_type' => gettype($fieldValue)
+                    ]);
                 }
             }
+        } else {
+            // **DEBUG**: Log when schema mapping fails
+            $this->logger->warning('Schema-aware mapping skipped', [
+                'object_id' => $object->getId(),
+                'schema_properties_type' => gettype($schemaProperties),
+                'object_data_type' => gettype($objectData),
+                'schema_properties_empty' => empty($schemaProperties),
+                'object_data_empty' => empty($objectData)
+            ]);
         }
         
         // Remove null values to prevent SOLR errors
@@ -1545,11 +1586,32 @@ class GuzzleSolrService
                 $statusCode = $response->getStatusCode();
                 $responseBody = (string)$response->getBody();
             } catch (\Exception $httpException) {
+                // Extract full response body from Guzzle ClientException
+                $fullResponseBody = '';
+                if ($httpException instanceof \GuzzleHttp\Exception\ClientException) {
+                    $response = $httpException->getResponse();
+                    if ($response) {
+                        $fullResponseBody = (string)$response->getBody();
+                    }
+                }
+                
                 $this->logger->error('SOLR HTTP call failed', [
                     'error' => $httpException->getMessage(),
                     'class' => get_class($httpException),
-                    'code' => $httpException->getCode()
+                    'code' => $httpException->getCode(),
+                    'full_response' => $fullResponseBody
                 ]);
+                
+                // Create enhanced exception with full SOLR response
+                if (!empty($fullResponseBody)) {
+                    throw new \RuntimeException(
+                        'SOLR bulk index failed: ' . $httpException->getMessage() . 
+                        '. Full SOLR Response: ' . $fullResponseBody,
+                        $httpException->getCode(),
+                        $httpException
+                    );
+                }
+                
                 throw $httpException;
             }
             
@@ -1567,8 +1629,7 @@ class GuzzleSolrService
                 $this->stats['errors']++;
                 throw new \RuntimeException(
                     "SOLR bulk index HTTP error: HTTP {$statusCode}. " .
-                    "Response: " . substr($responseBody, 0, 500) . 
-                    (strlen($responseBody) > 500 ? '... (truncated)' : ''),
+                    "Full Response: " . $responseBody,
                     $statusCode
                 );
             }
@@ -1585,7 +1646,7 @@ class GuzzleSolrService
                 $this->stats['errors']++;
                 throw new \RuntimeException(
                     "SOLR bulk index invalid JSON response. HTTP {$statusCode}. " .
-                    "Raw response: " . substr($responseBody, 0, 500)
+                    "Full Raw Response: " . $responseBody
                 );
             }
             
