@@ -179,7 +179,7 @@
 								<h5>Overall Status</h5>
 								<div class="health-status">
 									<span class="status-indicator" :class="getHealthStatusClass(solrStats.health.status)"></span>
-									<span class="status-text">{{ solrStats.health.status.toUpperCase() }}</span>
+									<span class="status-text">{{ (solrStats.health.status || 'unknown').toUpperCase() }}</span>
 								</div>
 								<div class="health-details">
 									<div class="health-detail">
@@ -238,10 +238,10 @@
 							<div class="operations-card">
 								<h5>Recent Activity</h5>
 								<div class="activity-list">
-									<div v-for="activity in solrStats.operations.recent_activity" :key="activity.type" class="activity-item">
+									<div v-for="(activity, index) in solrStats.operations.recent_activity" :key="index" class="activity-item">
 										<span class="activity-icon">{{ getActivityIcon(activity.type) }}</span>
 										<div class="activity-content">
-											<span class="activity-type">{{ activity.type.charAt(0).toUpperCase() + activity.type.slice(1) }}</span>
+											<span class="activity-type">{{ (activity.type || '').charAt(0).toUpperCase() + (activity.type || '').slice(1) }}</span>
 											<span class="activity-count">{{ activity.count }} operations</span>
 											<span class="activity-time">{{ formatDate(activity.timestamp) }}</span>
 										</div>

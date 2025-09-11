@@ -23,6 +23,9 @@ namespace OCA\OpenRegister\EventListener;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
+use OCA\OpenRegister\Event\SchemaCreatedEvent;
+use OCA\OpenRegister\Event\SchemaUpdatedEvent;
+use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Service\ObjectCacheService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -68,6 +71,12 @@ class SolrEventListener implements IEventListener
                 $this->handleObjectUpdated($event);
             } elseif ($event instanceof ObjectDeletedEvent) {
                 $this->handleObjectDeleted($event);
+            } elseif ($event instanceof SchemaCreatedEvent) {
+                $this->handleSchemaCreated($event);
+            } elseif ($event instanceof SchemaUpdatedEvent) {
+                $this->handleSchemaUpdated($event);
+            } elseif ($event instanceof SchemaDeletedEvent) {
+                $this->handleSchemaDeleted($event);
             } else {
                 // Log unhandled events for debugging
                 $this->logger->debug('SolrEventListener: Received unhandled event', [
@@ -152,5 +161,113 @@ class SolrEventListener implements IEventListener
 
         // Trigger Solr removal for the deleted object
         $this->objectCacheService->invalidateForObjectChange($object, 'delete');
+    }
+
+    /**
+     * Handle schema creation event
+     *
+     * @param SchemaCreatedEvent $event The schema creation event
+     *
+     * @return void
+     */
+    private function handleSchemaCreated(SchemaCreatedEvent $event): void
+    {
+        $schema = $event->getSchema();
+        
+        $this->logger->info('SolrEventListener: Schema created, updating Solr field mappings', [
+            'schemaId' => $schema->getId(),
+            'schemaTitle' => $schema->getTitle(),
+            'app' => 'openregister'
+        ]);
+
+        // Schema creation might require Solr field mapping updates
+        // This could trigger a reindex of objects using this schema
+        $this->triggerSchemaReindex($schema->getId());
+    }
+
+    /**
+     * Handle schema update event
+     *
+     * @param SchemaUpdatedEvent $event The schema update event
+     *
+     * @return void
+     */
+    private function handleSchemaUpdated(SchemaUpdatedEvent $event): void
+    {
+        $newSchema = $event->getNewSchema();
+        $oldSchema = $event->getOldSchema();
+        
+        $this->logger->info('SolrEventListener: Schema updated, checking for field mapping changes', [
+            'schemaId' => $newSchema->getId(),
+            'schemaTitle' => $newSchema->getTitle(),
+            'app' => 'openregister'
+        ]);
+
+        // Compare schema properties to see if field mappings changed
+        if ($this->schemaFieldsChanged($oldSchema, $newSchema)) {
+            $this->logger->info('SolrEventListener: Schema fields changed, triggering reindex', [
+                'schemaId' => $newSchema->getId(),
+                'app' => 'openregister'
+            ]);
+            
+            // Trigger reindex of all objects using this schema
+            $this->triggerSchemaReindex($newSchema->getId());
+        }
+    }
+
+    /**
+     * Handle schema deletion event
+     *
+     * @param SchemaDeletedEvent $event The schema deletion event
+     *
+     * @return void
+     */
+    private function handleSchemaDeleted(SchemaDeletedEvent $event): void
+    {
+        $schema = $event->getSchema();
+        
+        $this->logger->info('SolrEventListener: Schema deleted, cleaning up Solr entries', [
+            'schemaId' => $schema->getId(),
+            'schemaTitle' => $schema->getTitle(),
+            'app' => 'openregister'
+        ]);
+
+        // When a schema is deleted, we should remove all objects using this schema from Solr
+        // This is handled automatically when objects are deleted, but we log it for tracking
+    }
+
+    /**
+     * Check if schema fields changed between versions
+     *
+     * @param \OCA\OpenRegister\Db\Schema $oldSchema Old schema version
+     * @param \OCA\OpenRegister\Db\Schema $newSchema New schema version
+     *
+     * @return bool True if fields changed and reindex is needed
+     */
+    private function schemaFieldsChanged($oldSchema, $newSchema): bool
+    {
+        // Compare the properties JSON to detect field changes
+        $oldProperties = $oldSchema->getProperties();
+        $newProperties = $newSchema->getProperties();
+        
+        return $oldProperties !== $newProperties;
+    }
+
+    /**
+     * Trigger reindex of all objects using a specific schema
+     *
+     * @param int $schemaId Schema ID to reindex
+     *
+     * @return void
+     */
+    private function triggerSchemaReindex(int $schemaId): void
+    {
+        // This could be implemented to trigger a background job
+        // for reindexing all objects with the updated schema
+        $this->logger->info('SolrEventListener: Schema reindex requested', [
+            'schemaId' => $schemaId,
+            'app' => 'openregister',
+            'note' => 'Background reindex should be implemented here'
+        ]);
     }
 }

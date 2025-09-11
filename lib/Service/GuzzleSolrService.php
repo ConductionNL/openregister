@@ -500,55 +500,427 @@ class GuzzleSolrService
     {
         $objectData = $object->getObject();
         
+        // Create document with object properties at root (no prefix) and metadata under self_ prefix
         $document = [
-            // Core identifiers
+            // Core Solr identifiers (required at root level)
             'id' => $object->getUuid() ?: $object->getId(),
             'tenant_id' => $this->tenantId,
-            'object_id' => $object->getId(),
-            'uuid' => $object->getUuid(),
             
-            // Organizational fields
-            'register_id' => $object->getRegister(),
-            'schema_id' => $object->getSchema(),
-            'organisation_id' => $object->getOrganisation(),
-            
-            // Metadata fields matching ObjectEntity serialization
-            'name' => $object->getName(),
-            'description' => $object->getDescription(),
-            'summary' => $object->getSummary(),
-            'image' => $object->getImage(),
-            'slug' => $object->getSlug(),
-            'uri' => $object->getUri(),
-            'version' => $object->getVersion(),
-            'size' => $object->getSize(),
-            
-            // DateTime fields (matching ObjectEntity getObjectArray format)
-            'created' => $object->getCreated() ? $object->getCreated()->format('Y-m-d\TH:i:s\Z') : null,
-            'updated' => $object->getUpdated() ? $object->getUpdated()->format('Y-m-d\TH:i:s\Z') : null,
-            'published' => $object->getPublished() ? $object->getPublished()->format('Y-m-d\TH:i:s\Z') : null,
-            'depublished' => $object->getDepublished() ? $object->getDepublished()->format('Y-m-d\TH:i:s\Z') : null,
-            
-            // Additional metadata fields for comprehensive indexing
-            'owner' => $object->getOwner(),
-            'locked' => $object->getLocked(),
-            'authorization' => $object->getAuthorization() ? json_encode($object->getAuthorization()) : null,
-            'deleted' => $object->getDeleted() ? json_encode($object->getDeleted()) : null,
-            'validation' => $object->getValidation() ? json_encode($object->getValidation()) : null,
-            'groups' => $object->getGroups() ? json_encode($object->getGroups()) : null,
-            'folder' => $object->getFolder(),
-            'application' => $object->getApplication(),
-            
-            // Full-text search content
+            // Full-text search content (at root for Solr optimization)
             '_text_' => $this->extractTextContent($object, $objectData ?: []),
         ];
 
-        // Add dynamic fields from object data
+        // Add object properties directly at root level (no prefix)
         if (is_array($objectData)) {
-            $document = array_merge($document, $this->extractDynamicFields($objectData));
+            foreach ($objectData as $key => $value) {
+                if (!is_array($value) && !is_object($value)) {
+                    $document[$key] = $value;
+                    
+                    // Also create typed fields for faceting and sorting
+                    if (is_string($value)) {
+                        $document[$key . '_s'] = $value;
+                        $document[$key . '_t'] = $value; // For text analysis
+                    } elseif (is_numeric($value)) {
+                        $document[$key . '_i'] = (int)$value;
+                        $document[$key . '_f'] = (float)$value;
+                    } elseif (is_bool($value)) {
+                        $document[$key . '_b'] = $value;
+                    }
+                }
+            }
         }
+
+        // Store complete object data as JSON for exact reconstruction
+        $document['self_object'] = json_encode($objectData ?: []);
+
+        // Add metadata fields with self_ prefix for easy identification and faceting
+        $document['self_id'] = $object->getUuid() ?: $object->getId();
+        $document['self_object_id'] = $object->getId();
+        $document['self_uuid'] = $object->getUuid();
+        $document['self_register'] = $object->getRegister();
+        $document['self_schema'] = $object->getSchema();
+        $document['self_organisation'] = $object->getOrganisation();
+        $document['self_name'] = $object->getName();
+        $document['self_description'] = $object->getDescription();
+        $document['self_summary'] = $object->getSummary();
+        $document['self_image'] = $object->getImage();
+        $document['self_slug'] = $object->getSlug();
+        $document['self_uri'] = $object->getUri();
+        $document['self_version'] = $object->getVersion();
+        $document['self_size'] = $object->getSize();
+        $document['self_owner'] = $object->getOwner();
+        $document['self_locked'] = $object->getLocked();
+        $document['self_folder'] = $object->getFolder();
+        $document['self_application'] = $object->getApplication();
+        
+        // DateTime fields
+        $document['self_created'] = $object->getCreated() ? $object->getCreated()->format('Y-m-d\TH:i:s\Z') : null;
+        $document['self_updated'] = $object->getUpdated() ? $object->getUpdated()->format('Y-m-d\TH:i:s\Z') : null;
+        $document['self_published'] = $object->getPublished() ? $object->getPublished()->format('Y-m-d\TH:i:s\Z') : null;
+        $document['self_depublished'] = $object->getDepublished() ? $object->getDepublished()->format('Y-m-d\TH:i:s\Z') : null;
+        
+        // Complex fields as JSON
+        $document['self_authorization'] = $object->getAuthorization() ? json_encode($object->getAuthorization()) : null;
+        $document['self_deleted'] = $object->getDeleted() ? json_encode($object->getDeleted()) : null;
+        $document['self_validation'] = $object->getValidation() ? json_encode($object->getValidation()) : null;
+        $document['self_groups'] = $object->getGroups() ? json_encode($object->getGroups()) : null;
 
         // Remove null values
         return array_filter($document, fn($value) => $value !== null && $value !== '');
+    }
+
+    /**
+     * Search objects with pagination using OpenRegister query format
+     * 
+     * This method translates OpenRegister query parameters into Solr queries
+     * and converts results back to ObjectEntity format for compatibility
+     *
+     * @param array $query OpenRegister-style query parameters
+     * @param bool $rbac Apply role-based access control (currently not implemented in Solr)
+     * @param bool $multi Multi-tenant support (currently not implemented in Solr) 
+     * @return array Paginated results in OpenRegister format
+     * @throws \Exception When Solr is not available or query fails
+     */
+    public function searchObjectsPaginated(array $query = [], bool $rbac = false, bool $multi = false): array
+    {
+        if (!$this->isAvailable()) {
+            throw new \Exception('Solr service is not available');
+        }
+
+        // Translate OpenRegister query to Solr query
+        $solrQuery = $this->translateOpenRegisterQuery($query);
+        
+        $this->logger->debug('[GuzzleSolrService] Translated query', [
+            'original' => $query,
+            'solr' => $solrQuery
+        ]);
+        
+        // Execute Solr search using existing searchObjects method
+        $solrResults = $this->searchObjects($solrQuery);
+        
+        // Convert Solr results back to OpenRegister format
+        $openRegisterResults = $this->convertSolrResultsToOpenRegisterFormat($solrResults, $query);
+        
+        $this->logger->debug('[GuzzleSolrService] Search completed', [
+            'found' => $openRegisterResults['total'] ?? 0,
+            'returned' => count($openRegisterResults['results'] ?? [])
+        ]);
+        
+        return $openRegisterResults;
+    }
+
+    /**
+     * Translate OpenRegister query parameters to Solr query format
+     *
+     * @param array $query OpenRegister query parameters
+     * @return array Solr query parameters
+     */
+    private function translateOpenRegisterQuery(array $query): array
+    {
+        $solrQuery = [
+            'q' => '*:*',
+            'offset' => 0,
+            'limit' => 20,
+            'sort' => 'self_created desc',
+            'facets' => [],
+            'filters' => []
+        ];
+
+        // Handle search query
+        if (!empty($query['_search'])) {
+            $searchTerm = $this->escapeSolrValue($query['_search']);
+            $solrQuery['q'] = "_text_:($searchTerm) OR naam:($searchTerm) OR description:($searchTerm)";
+        }
+
+        // Handle pagination
+        if (isset($query['_page'])) {
+            $page = max(1, (int)$query['_page']);
+            $limit = isset($query['_limit']) ? max(1, (int)$query['_limit']) : 20;
+            $solrQuery['offset'] = ($page - 1) * $limit;
+            $solrQuery['limit'] = $limit;
+        } elseif (isset($query['_limit'])) {
+            $solrQuery['limit'] = max(1, (int)$query['_limit']);
+        }
+
+        // Handle sorting
+        if (!empty($query['_order'])) {
+            $solrQuery['sort'] = $this->translateSortField($query['_order']);
+        }
+
+        // Handle filters
+        $filterQueries = [];
+        
+        foreach ($query as $key => $value) {
+            if (str_starts_with($key, '_')) {
+                continue; // Skip internal parameters
+            }
+            
+            // Handle @self metadata filters
+            if ($key === '@self' && is_array($value)) {
+                foreach ($value as $metaKey => $metaValue) {
+                    $solrField = 'self_' . $metaKey;
+                    if (is_numeric($metaValue)) {
+                        $filterQueries[] = $solrField . ':' . $metaValue;
+                    } else {
+                        $filterQueries[] = $solrField . ':"' . $this->escapeSolrValue((string)$metaValue) . '"';
+                    }
+                }
+                continue;
+            }
+            
+            $solrField = $this->translateFilterField($key);
+            
+            if (is_array($value)) {
+                // Handle array values (OR condition)
+                $conditions = array_map(function($v) use ($solrField) {
+                    if (is_numeric($v)) {
+                        return $solrField . ':' . $v;
+                    }
+                    return $solrField . ':"' . $this->escapeSolrValue((string)$v) . '"';
+                }, $value);
+                $filterQueries[] = '(' . implode(' OR ', $conditions) . ')';
+            } else {
+                // Handle single values
+                if (is_numeric($value)) {
+                    $filterQueries[] = $solrField . ':' . $value;
+                } else {
+                    $filterQueries[] = $solrField . ':"' . $this->escapeSolrValue((string)$value) . '"';
+                }
+            }
+        }
+
+        if (!empty($filterQueries)) {
+            $solrQuery['filters'] = $filterQueries;
+        }
+
+        // Add faceting for common fields
+        $solrQuery['facets'] = [
+            'self_register',
+            'self_schema', 
+            'self_organisation',
+            'self_owner',
+            'type_s',
+            'naam_s'
+        ];
+
+        return $solrQuery;
+    }
+
+    /**
+     * Translate OpenRegister field names to Solr field names for filtering
+     *
+     * @param string $field OpenRegister field name
+     * @return string Solr field name
+     */
+    private function translateFilterField(string $field): string
+    {
+        // Handle @self.* fields (metadata)
+        if (str_starts_with($field, '@self.')) {
+            $metadataField = substr($field, 6); // Remove '@self.'
+            return 'self_' . $metadataField;
+        }
+        
+        // Handle special field mappings
+        $fieldMappings = [
+            'register' => 'self_register',
+            'schema' => 'self_schema',
+            'organisation' => 'self_organisation',
+            'owner' => 'self_owner',
+            'created' => 'self_created',
+            'updated' => 'self_updated',
+            'published' => 'self_published'
+        ];
+
+        if (isset($fieldMappings[$field])) {
+            return $fieldMappings[$field];
+        }
+
+        // For object properties, use the field name directly (now stored at root)
+        return $field;
+    }
+
+    /**
+     * Translate OpenRegister sort field to Solr sort format
+     *
+     * @param array|string $order Sort specification
+     * @return string Solr sort string
+     */
+    private function translateSortField(array|string $order): string
+    {
+        if (is_string($order)) {
+            $field = $this->translateFilterField($order);
+            return $field . ' asc';
+        }
+
+        if (is_array($order)) {
+            $sortParts = [];
+            foreach ($order as $field => $direction) {
+                $solrField = $this->translateFilterField($field);
+                $solrDirection = strtolower($direction) === 'desc' ? 'desc' : 'asc';
+                $sortParts[] = $solrField . ' ' . $solrDirection;
+            }
+            return implode(', ', $sortParts);
+        }
+
+        return 'self_created desc'; // Default sort
+    }
+
+    /**
+     * Convert Solr search results back to OpenRegister format
+     *
+     * @param array $solrResults Solr search results
+     * @param array $originalQuery Original OpenRegister query for context
+     * @return array OpenRegister-formatted results
+     */
+    private function convertSolrResultsToOpenRegisterFormat(array $solrResults, array $originalQuery): array
+    {
+        $results = [];
+        
+        // Check if search was successful
+        if (!($solrResults['success'] ?? false)) {
+            $this->logger->warning('[GuzzleSolrService] Search failed', [
+                'error' => $solrResults['error'] ?? 'Unknown error'
+            ]);
+            return [
+                'results' => [],
+                'total' => 0,
+                'page' => 1,
+                'pages' => 1,
+                'limit' => 20,
+                'facets' => [],
+                'aggregations' => []
+            ];
+        }
+        
+        $documents = $solrResults['data'] ?? [];
+        
+        foreach ($documents as $doc) {
+            // Reconstruct object from Solr document
+            $objectEntity = $this->reconstructObjectFromSolrDocument($doc);
+            if ($objectEntity) {
+                $results[] = $objectEntity;
+            }
+        }
+
+        // Build pagination info
+        $total = $solrResults['total'] ?? count($results);
+        $page = isset($originalQuery['_page']) ? (int)$originalQuery['_page'] : 1;
+        $limit = isset($originalQuery['_limit']) ? (int)$originalQuery['_limit'] : 20;
+        $pages = $limit > 0 ? ceil($total / $limit) : 1;
+
+        return [
+            'results' => $results,
+            'total' => $total,
+            'page' => $page,
+            'pages' => $pages,
+            'limit' => $limit,
+            'facets' => $solrResults['facets'] ?? [],
+            'aggregations' => $solrResults['facets'] ?? [] // Alias for compatibility
+        ];
+    }
+
+    /**
+     * Reconstruct ObjectEntity from Solr document
+     *
+     * @param array $doc Solr document
+     * @return ObjectEntity|null Reconstructed object or null if invalid
+     */
+    private function reconstructObjectFromSolrDocument(array $doc): ?ObjectEntity
+    {
+        try {
+            // Extract metadata from self_ fields
+            $objectId = $doc['self_object_id'][0] ?? null;
+            $uuid = $doc['self_uuid'][0] ?? null;
+            $register = $doc['self_register'][0] ?? null;
+            $schema = $doc['self_schema'][0] ?? null;
+            
+            if (!$objectId || !$register || !$schema) {
+                $this->logger->warning('[GuzzleSolrService] Invalid document missing required fields', [
+                    'doc_id' => $doc['id'] ?? 'unknown',
+                    'object_id' => $objectId,
+                    'register' => $register,
+                    'schema' => $schema
+                ]);
+                return null;
+            }
+
+            // Create ObjectEntity instance
+            $entity = new \OCA\OpenRegister\Db\ObjectEntity();
+            $entity->setId($objectId);
+            $entity->setUuid($uuid);
+            $entity->setRegister($register);
+            $entity->setSchema($schema);
+            
+            // Set metadata fields
+            $entity->setOrganisation($doc['self_organisation'][0] ?? null);
+            $entity->setName($doc['self_name'][0] ?? null);
+            $entity->setDescription($doc['self_description'][0] ?? null);
+            $entity->setSummary($doc['self_summary'][0] ?? null);
+            $entity->setImage($doc['self_image'][0] ?? null);
+            $entity->setSlug($doc['self_slug'][0] ?? null);
+            $entity->setUri($doc['self_uri'][0] ?? null);
+            $entity->setVersion($doc['self_version'][0] ?? null);
+            $entity->setSize($doc['self_size'][0] ?? null);
+            $entity->setOwner($doc['self_owner'][0] ?? null);
+            $entity->setLocked($doc['self_locked'][0] ?? null);
+            $entity->setFolder($doc['self_folder'][0] ?? null);
+            $entity->setApplication($doc['self_application'][0] ?? null);
+            
+            // Set datetime fields
+            if (isset($doc['self_created'][0])) {
+                $entity->setCreated(new \DateTime($doc['self_created'][0]));
+            }
+            if (isset($doc['self_updated'][0])) {
+                $entity->setUpdated(new \DateTime($doc['self_updated'][0]));
+            }
+            if (isset($doc['self_published'][0])) {
+                $entity->setPublished(new \DateTime($doc['self_published'][0]));
+            }
+            if (isset($doc['self_depublished'][0])) {
+                $entity->setDepublished(new \DateTime($doc['self_depublished'][0]));
+            }
+            
+            // Reconstruct object data from JSON or individual fields
+            $objectData = [];
+            if (isset($doc['self_object'][0])) {
+                $objectData = json_decode($doc['self_object'][0], true) ?: [];
+            } else {
+                // Fallback: extract object properties from root level fields
+                foreach ($doc as $key => $value) {
+                    if (!str_starts_with($key, 'self_') && 
+                        !in_array($key, ['id', 'tenant_id', '_text_', '_version_', '_root_'])) {
+                        // Remove Solr type suffixes
+                        $cleanKey = preg_replace('/_(s|t|i|f|b)$/', '', $key);
+                        $objectData[$cleanKey] = is_array($value) ? $value[0] : $value;
+                    }
+                }
+            }
+            
+            $entity->setObject($objectData);
+            
+            // Set complex fields from JSON
+            if (isset($doc['self_authorization'][0])) {
+                $entity->setAuthorization(json_decode($doc['self_authorization'][0], true));
+            }
+            if (isset($doc['self_deleted'][0])) {
+                $entity->setDeleted(json_decode($doc['self_deleted'][0], true));
+            }
+            if (isset($doc['self_validation'][0])) {
+                $entity->setValidation(json_decode($doc['self_validation'][0], true));
+            }
+            if (isset($doc['self_groups'][0])) {
+                $entity->setGroups(json_decode($doc['self_groups'][0], true));
+            }
+
+            return $entity;
+            
+        } catch (\Exception $e) {
+            $this->logger->error('[GuzzleSolrService] Failed to reconstruct object from Solr document', [
+                'doc_id' => $doc['id'] ?? 'unknown',
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
     }
 
     /**

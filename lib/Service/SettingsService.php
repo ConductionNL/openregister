@@ -28,6 +28,7 @@ use OC_App;
 use OCA\OpenRegister\AppInfo\Application;
 use OCP\IGroupManager;
 use OCP\IUserManager;
+use OCA\OpenRegister\Service\SolrServiceFactory;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\SearchTrailMapper;
@@ -1365,15 +1366,17 @@ class SettingsService
 
 
     /**
-     * Warmup SOLR index with current object data
+     * Warmup SOLR index with current object data using bulk indexing
      *
-     * This method triggers a full reindexing of all objects in SOLR,
-     * which is useful after configuration changes or to rebuild the search index.
+     * This method triggers a comprehensive warmup of the SOLR search index using
+     * bulk indexing for better performance with large datasets.
      *
+     * @param int $batchSize Number of objects to process per batch (default 1000)
+     * @param int $maxObjects Maximum number of objects to index (0 = all)
      * @return array Warmup operation results with statistics and status
      * @throws \RuntimeException If SOLR warmup fails
      */
-    public function warmupSolrIndex(): array
+    public function warmupSolrIndex(int $batchSize = 1000, int $maxObjects = 0): array
     {
         try {
             $solrSettings = $this->getSolrSettings();
@@ -1391,29 +1394,54 @@ class SettingsService
                 ];
             }
 
-            // Get the ObjectCacheService to perform the warmup
-            $objectCacheService = $this->container->get(ObjectCacheService::class);
+            // Get SolrService for bulk indexing
+            $solrService = SolrServiceFactory::createSolrService($this->container);
+            
+            if ($solrService === null) {
+                return [
+                    'success' => false,
+                    'message' => 'SOLR service not available',
+                    'stats' => [
+                        'totalProcessed' => 0,
+                        'totalIndexed' => 0,
+                        'totalErrors' => 0,
+                        'duration' => 0
+                    ]
+                ];
+            }
             
             $startTime = microtime(true);
             
-            // Perform SOLR index warmup
-            $warmupResult = $objectCacheService->warmupSolrIndex();
+            $this->logger->info('[SettingsService] Starting SOLR bulk index warmup', [
+                'batch_size' => $batchSize,
+                'max_objects' => $maxObjects
+            ]);
+            
+            // Perform SOLR bulk index warmup
+            $warmupResult = $solrService->bulkIndexFromDatabase($batchSize, $maxObjects);
             
             $totalDuration = microtime(true) - $startTime;
             
             if ($warmupResult['success']) {
+                $statistics = $warmupResult['statistics'] ?? [];
                 return [
                     'success' => true,
                     'message' => 'SOLR index warmup completed successfully',
-                    'stats' => array_merge($warmupResult['stats'], [
-                        'totalDuration' => round($totalDuration, 2)
-                    ])
+                    'stats' => [
+                        'totalProcessed' => $statistics['total_processed'] ?? 0,
+                        'totalIndexed' => ($statistics['total_processed'] ?? 0) - ($statistics['total_errors'] ?? 0),
+                        'totalErrors' => $statistics['total_errors'] ?? 0,
+                        'duration' => round($totalDuration, 2),
+                        'objectsPerSecond' => $statistics['objects_per_second'] ?? 0,
+                        'successRate' => $statistics['success_rate'] ?? 0,
+                        'batchSize' => $statistics['batch_size'] ?? $batchSize
+                    ]
                 ];
             } else {
                 return [
                     'success' => false,
                     'message' => $warmupResult['message'] ?? 'SOLR warmup failed',
-                    'stats' => $warmupResult['stats'] ?? [
+                    'stats' => [
                         'totalProcessed' => 0,
                         'totalIndexed' => 0,
                         'totalErrors' => 0,
