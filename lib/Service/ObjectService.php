@@ -55,6 +55,9 @@ use OCP\IUserSession;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\SolrServiceFactory;
+use OCP\AppFramework\IAppContainer;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use OCP\IMemcache;
@@ -228,7 +231,9 @@ class ObjectService
         private readonly FacetService $facetService,
         private readonly ObjectCacheService $objectCacheService,
         private readonly SchemaCacheService $schemaCacheService,
-        private readonly SchemaFacetCacheService $schemaFacetCacheService
+        private readonly SchemaFacetCacheService $schemaFacetCacheService,
+        private readonly SettingsService $settingsService,
+        private readonly IAppContainer $container
     ) {
         // **PERFORMANCE OPTIMIZATION**: Initialize Nextcloud's distributed cache
         try {
@@ -2376,6 +2381,51 @@ class ObjectService
      *                              - prev: URL for previous page (if available)
      */
     public function searchObjectsPaginated(array $query=[], bool $rbac=false, bool $multi=false): array
+    {
+        // **INTELLIGENT SOURCE SELECTION**: Simple if statement for optimal performance
+        $requestedSource = $query['_source'] ?? null;
+        
+        // Use Solr if explicitly requested OR if no source specified and Solr is enabled
+        if ($requestedSource === 'index' || $requestedSource === 'solr' || 
+            ($requestedSource === null && $this->isSolrAvailable())) {
+            try {
+                $solrService = SolrServiceFactory::createSolrService($this->container);
+                if ($solrService !== null && $solrService->isAvailable()) {
+                    $result = $solrService->searchObjectsPaginated($query, $rbac, $multi);
+                    $result['_source'] = 'index';
+                    return $result;
+                }
+            } catch (\Exception $e) {
+                $this->logger->warning('Solr search failed, falling back to database', [
+                    'error' => $e->getMessage(),
+                    'query_fingerprint' => substr(md5(json_encode($query)), 0, 8)
+                ]);
+            }
+        }
+        
+        // Use database (either requested or fallback)
+        $result = $this->searchObjectsPaginatedDatabase($query, $rbac, $multi);
+        $result['_source'] = 'database';
+        return $result;
+    }
+
+    /**
+     * Check if Solr is available for use
+     */
+    private function isSolrAvailable(): bool
+    {
+        try {
+            $solrSettings = $this->settingsService->getSolrSettings();
+            return $solrSettings['enabled'] ?? false;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Original database search logic - extracted to avoid code duplication
+     */
+    private function searchObjectsPaginatedDatabase(array $query=[], bool $rbac=false, bool $multi=false): array
     {
         // **PERFORMANCE DEBUGGING**: Start detailed timing
         $perfStart = microtime(true);

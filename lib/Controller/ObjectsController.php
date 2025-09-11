@@ -28,7 +28,6 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\SearchService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -47,7 +46,6 @@ use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
-use OCA\OpenRegister\Service\SolrServiceFactory;
 use OCP\AppFramework\Http\DataDownloadResponse;
 /**
  * Class ObjectsController
@@ -134,6 +132,8 @@ class ObjectsController extends Controller
         return in_array('admin', $userGroups);
 
     }//end isCurrentUserAdmin()
+
+
 
 
     /**
@@ -391,8 +391,7 @@ class ObjectsController extends Controller
         // Build search query with resolved numeric IDs
         $query = $objectService->buildSearchQuery($this->request->getParams(), $resolved['register'], $resolved['schema']);
         
-        // **PERFORMANCE OPTIMIZATION**: Use optimized version that intelligently selects sync vs async
-        // Simple requests use fast path, complex requests use async processing
+        // **INTELLIGENT SOURCE SELECTION**: ObjectService automatically chooses optimal source
         $result = $objectService->searchObjectsPaginated($query);
         
         // **SUB-SECOND OPTIMIZATION**: Enable response compression for large payloads
@@ -409,81 +408,6 @@ class ObjectsController extends Controller
     }//end index()
 
 
-    /**
-     * TEMPORARY: Test Solr search functionality with OpenRegister query format
-     *
-     * This method provides a temporary endpoint to test the new Solr searchObjectsPaginated
-     * functionality using the same query format as the regular ObjectService search.
-     * This allows for direct comparison between database and Solr search results.
-     *
-     * @param string $register Register identifier (slug or ID)
-     * @param string $schema Schema identifier (slug or ID) 
-     * @param ObjectService $objectService The object service for ID resolution
-     *
-     * @return JSONResponse A JSON response containing Solr search results
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     */
-    public function searchSolr(string $register, string $schema, ObjectService $objectService): JSONResponse
-    {
-        try {
-            // Resolve slugs to numeric IDs consistently
-            $resolved = $this->resolveRegisterSchemaIds($register, $schema, $objectService);
-        } catch (\OCA\OpenRegister\Exception\RegisterNotFoundException | \OCA\OpenRegister\Exception\SchemaNotFoundException $e) {
-            return new JSONResponse(['message' => $e->getMessage()], 404);
-        }
-
-        // Get SolrService
-        $solrService = SolrServiceFactory::createSolrService($this->container);
-        
-        if ($solrService === null) {
-            return new JSONResponse([
-                'error' => 'Solr service not available',
-                'message' => 'Solr is not configured or enabled'
-            ], 503);
-        }
-
-        try {
-            // Build search query with resolved numeric IDs (same as regular search)
-            $query = $objectService->buildSearchQuery($this->request->getParams(), $resolved['register'], $resolved['schema']);
-            
-            // Search using Solr
-            $result = $solrService->searchObjectsPaginated($query);
-            
-            // Add debug information
-            $result['debug'] = [
-                'source' => 'solr',
-                'register_id' => $resolved['register'],
-                'schema_id' => $resolved['schema'],
-                'query_translated' => true,
-                'timestamp' => date('c')
-            ];
-            
-            $response = new JSONResponse($result);
-            
-            // Enable gzip compression for responses > 1KB
-            if (isset($result['results']) && count($result['results']) > 10) {
-                $response->addHeader('Content-Encoding', 'gzip');
-                $response->addHeader('Vary', 'Accept-Encoding');
-            }
-            
-            return $response;
-            
-        } catch (\Exception $e) {
-            return new JSONResponse([
-                'error' => 'Solr search failed',
-                'message' => $e->getMessage(),
-                'debug' => [
-                    'source' => 'solr',
-                    'register_id' => $resolved['register'] ?? null,
-                    'schema_id' => $resolved['schema'] ?? null,
-                    'timestamp' => date('c')
-                ]
-            ], 500);
-        }
-
-    }//end searchSolr()
 
 
     /**
@@ -519,8 +443,7 @@ class ObjectsController extends Controller
         // Build search query without register/schema constraints
         $query = $objectService->buildSearchQuery($this->request->getParams());
 
-        // **PERFORMANCE OPTIMIZATION**: Use optimized version that intelligently selects sync vs async
-        // Simple requests use fast path, complex requests use async processing
+        // **INTELLIGENT SOURCE SELECTION**: ObjectService automatically chooses optimal source
         $result = $objectService->searchObjectsPaginated($query);
 
         return new JSONResponse($result);
