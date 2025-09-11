@@ -63,7 +63,7 @@ class SolrSchemaService
      * @var array<string>
      */
     private const RESERVED_FIELDS = [
-        'id', 'uuid', 'tenant_id', '_text_', '_version_'
+        'id', 'uuid', 'self_tenant', '_text_', '_version_'
     ];
 
     /**
@@ -238,16 +238,16 @@ class SolrSchemaService
     }
 
     /**
-     * Generate SOLR field name with app prefix and appropriate suffix
+     * Generate SOLR field name with consistent self_ prefix (no suffixes needed)
      *
-     * **Multi-App Field Naming Convention**:
-     * - OpenRegister: `or_naam_s`, `or_beschrijving_t`
-     * - Other apps: `{prefix}_{field}_{type}`
-     * - Reserved fields: `id`, `uuid`, `tenant_id` (no prefix)
+     * **Updated Field Naming Convention**:
+     * - Object data fields: Direct mapping (e.g., `naam`, `beschrijving`)
+     * - Metadata fields: `self_` prefix (e.g., `self_name`, `self_description`)
+     * - Reserved fields: `id`, `uuid`, `self_tenant` (no additional prefix)
      *
      * @param string $fieldName       OpenRegister field name
      * @param array  $fieldDefinition Field definition from schema
-     * @return string SOLR field name with app prefix and suffix
+     * @return string SOLR field name with consistent naming
      */
     private function generateSolrFieldName(string $fieldName, array $fieldDefinition): string
     {
@@ -256,14 +256,11 @@ class SolrSchemaService
             return $fieldName;
         }
 
-        $type = $fieldDefinition['type'] ?? 'string';
-        $suffix = $this->fieldTypeMappings[$type] ?? '_s';
-        
         // Clean field name (SOLR field names have restrictions)
         $cleanName = preg_replace('/[^a-zA-Z0-9_]/', '_', $fieldName);
         
-        // Apply multi-app naming: {app_prefix}_{field}_{type_suffix}
-        return self::APP_PREFIX . '_' . $cleanName . $suffix;
+        // Use direct field names for object data (no prefixes or suffixes needed with explicit schema)
+        return $cleanName;
     }
 
     /**
@@ -302,7 +299,7 @@ class SolrSchemaService
     }
 
     /**
-     * Apply SOLR fields to the tenant collection
+     * Apply SOLR fields to the tenant collection using Schema API
      *
      * @param array $solrFields SOLR field definitions
      * @param bool  $force      Force update existing fields
@@ -310,28 +307,106 @@ class SolrSchemaService
      */
     private function applySolrFields(array $solrFields, bool $force = false): bool
     {
-        // This would use SOLR Schema API to add fields
-        // For now, we'll log what would be done
-        
-        $this->logger->info('🔧 Would apply SOLR fields', [
+        $this->logger->info('🔧 Applying SOLR fields via Schema API', [
             'app' => 'openregister',
             'field_count' => count($solrFields),
             'fields' => array_keys($solrFields),
             'force' => $force
         ]);
 
-        // TODO: Implement actual SOLR Schema API calls
-        // POST /solr/{collection}/schema
-        // {
-        //   "add-field": {
-        //     "name": "naam_s",
-        //     "type": "string", 
-        //     "stored": true,
-        //     "indexed": true
-        //   }
-        // }
+        $successCount = 0;
+        foreach ($solrFields as $fieldName => $fieldConfig) {
+            try {
+                if ($this->addOrUpdateSolrField($fieldName, $fieldConfig, $force)) {
+                    $successCount++;
+                    $this->logger->debug('✅ Applied SOLR field', [
+                        'field' => $fieldName,
+                        'type' => $fieldConfig['type']
+                    ]);
+                }
+            } catch (\Exception $e) {
+                $this->logger->error('❌ Failed to apply SOLR field', [
+                    'field' => $fieldName,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
 
-        return true;
+        $this->logger->info('Schema field application completed', [
+            'successful' => $successCount,
+            'total' => count($solrFields)
+        ]);
+
+        return $successCount === count($solrFields);
+    }
+
+    /**
+     * Add or update a single SOLR field using Schema API
+     *
+     * @param string $fieldName   Field name
+     * @param array  $fieldConfig Field configuration
+     * @param bool   $force       Force update existing fields
+     * @return bool Success status
+     */
+    private function addOrUpdateSolrField(string $fieldName, array $fieldConfig, bool $force = false): bool
+    {
+        // Get SOLR settings
+        $solrConfig = $this->settingsService->getSolrSettings();
+        $baseCollectionName = $solrConfig['core'] ?? 'openregister';
+        
+        $url = sprintf('%s://%s:%d%s/%s/schema',
+            $solrConfig['scheme'] ?? 'http',
+            $solrConfig['host'] ?? 'localhost',
+            $solrConfig['port'] ?? 8983,
+            $solrConfig['path'] ?? '/solr',
+            $baseCollectionName
+        );
+
+        // Try to add field first
+        $payload = [
+            'add-field' => array_merge(['name' => $fieldName], $fieldConfig)
+        ];
+
+        if ($this->makeSolrSchemaRequest($url, $payload)) {
+            return true;
+        }
+
+        // If add failed and force is enabled, try to replace
+        if ($force) {
+            $payload = [
+                'replace-field' => array_merge(['name' => $fieldName], $fieldConfig)
+            ];
+            return $this->makeSolrSchemaRequest($url, $payload);
+        }
+
+        return false;
+    }
+
+    /**
+     * Make HTTP request to SOLR Schema API
+     *
+     * @param string $url     SOLR schema endpoint URL
+     * @param array  $payload Request payload
+     * @return bool Success status
+     */
+    private function makeSolrSchemaRequest(string $url, array $payload): bool
+    {
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'POST',
+                'header' => 'Content-Type: application/json',
+                'content' => json_encode($payload),
+                'timeout' => 30
+            ]
+        ]);
+
+        $response = @file_get_contents($url, false, $context);
+        if ($response === false) {
+            return false;
+        }
+
+        $data = json_decode($response, true);
+        return ($data['responseHeader']['status'] ?? -1) === 0;
     }
 
     /**

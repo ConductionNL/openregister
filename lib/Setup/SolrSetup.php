@@ -103,13 +103,18 @@ class SolrSetup
                 throw new \RuntimeException('Failed to create base collection');
             }
 
-            // Step 4: Validate setup
-            if (!$this->validateSetup()) {
-                throw new \RuntimeException('Setup validation failed');
-            }
+        // Step 4: Configure schema fields for ObjectEntity metadata
+        if (!$this->configureSchemaFields()) {
+            throw new \RuntimeException('Failed to configure schema fields');
+        }
 
-            $this->logger->info('SOLR setup completed successfully (SolrCloud mode)');
-            return true;
+        // Step 5: Validate setup
+        if (!$this->validateSetup()) {
+            throw new \RuntimeException('Setup validation failed');
+        }
+
+        $this->logger->info('SOLR setup completed successfully (SolrCloud mode)');
+        return true;
 
         } catch (\Exception $e) {
             $this->logger->error('SOLR setup failed', [
@@ -406,6 +411,325 @@ class SolrSetup
             'response' => $data
         ]);
         return false;
+    }
+
+    /**
+     * Configure SOLR schema fields for OpenRegister ObjectEntity metadata
+     *
+     * This method sets up all the necessary field types and fields based on the
+     * ObjectEntity class metadata fields, ensuring proper data types and indexing.
+     *
+     * @return bool True if schema configuration was successful
+     */
+    private function configureSchemaFields(): bool
+    {
+        $this->logger->info('Configuring SOLR schema fields for ObjectEntity metadata');
+
+        // Define field type mappings for ObjectEntity properties
+        $fieldDefinitions = $this->getObjectEntityFieldDefinitions();
+
+        $success = true;
+        foreach ($fieldDefinitions as $fieldName => $fieldConfig) {
+            if (!$this->addOrUpdateSchemaField($fieldName, $fieldConfig)) {
+                $this->logger->error('Failed to configure field', ['field' => $fieldName]);
+                $success = false;
+            }
+        }
+
+        if ($success) {
+            $this->logger->info('Schema field configuration completed successfully');
+        }
+
+        return $success;
+    }
+
+    /**
+     * Get field definitions for ObjectEntity metadata fields
+     *
+     * Based on ObjectEntity.php properties, this method returns the proper
+     * SOLR field type configuration for each metadata field using self_ prefixes
+     * and clean field names (no suffixes needed when explicitly defined).
+     *
+     * @return array Field definitions with SOLR type configuration
+     */
+    private function getObjectEntityFieldDefinitions(): array
+    {
+        return [
+            // **CRITICAL**: Core tenant field with self_ prefix (consistent naming)
+            'self_tenant' => [
+                'type' => 'string',
+                'stored' => true,
+                'indexed' => true,
+                'multiValued' => false,
+                'required' => true
+            ],
+
+            // Metadata fields with self_ prefix (consistent with legacy mapping)
+            'self_object_id' => [
+                'type' => 'pint',
+                'stored' => true,
+                'indexed' => true,
+                'multiValued' => false
+            ],
+            'self_uuid' => [
+                'type' => 'string',
+                'stored' => true,
+                'indexed' => true,
+                'multiValued' => false
+            ],
+
+            // Context fields  
+            'self_register' => [
+                'type' => 'pint',
+                'stored' => true,
+                'indexed' => true,
+                'multiValued' => false
+            ],
+            'self_schema' => [
+                'type' => 'pint',
+                'stored' => true,
+                'indexed' => true,
+                'multiValued' => false
+            ],
+            'self_schema_version' => [
+                'type' => 'string',
+                'stored' => true,
+                'indexed' => true,
+                'multiValued' => false
+            ],
+
+            // Ownership and metadata
+            'self_owner' => [
+                'type' => 'string',
+                'stored' => true,
+                'indexed' => true,
+                'multiValued' => false
+            ],
+            'self_organisation' => [
+                'type' => 'string',
+                'stored' => true,
+                'indexed' => true,
+                'multiValued' => false
+            ],
+            'self_application' => [
+                'type' => 'string',
+                'stored' => true,
+                'indexed' => true,
+                'multiValued' => false
+            ],
+
+            // Core object fields (no suffixes needed when explicitly defined)
+            'self_name' => [
+                'type' => 'string',
+                'stored' => true,
+                'indexed' => true,
+                'multiValued' => false
+            ],
+            'self_description' => [
+                'type' => 'text_general',
+                'stored' => true,
+                'indexed' => true,
+                'multiValued' => false
+            ],
+            'self_summary' => [
+                'type' => 'text_general',
+                'stored' => true,
+                'indexed' => true,
+                'multiValued' => false
+            ],
+            'self_image' => [
+                'type' => 'string',
+                'stored' => true,
+                'indexed' => false,
+                'multiValued' => false
+            ],
+            'self_slug' => [
+                'type' => 'string',
+                'stored' => true,
+                'indexed' => true,
+                'multiValued' => false
+            ],
+            'self_uri' => [
+                'type' => 'string',
+                'stored' => true,
+                'indexed' => true,
+                'multiValued' => false
+            ],
+            'self_version' => [
+                'type' => 'string',
+                'stored' => true,
+                'indexed' => true,
+                'multiValued' => false
+            ],
+            'self_size' => [
+                'type' => 'string',
+                'stored' => true,
+                'indexed' => false,
+                'multiValued' => false
+            ],
+            'self_folder' => [
+                'type' => 'string',
+                'stored' => true,
+                'indexed' => true,
+                'multiValued' => false
+            ],
+
+            // Timestamps (SOLR date format)
+            'self_created' => [
+                'type' => 'pdate',
+                'stored' => true,
+                'indexed' => true,
+                'multiValued' => false
+            ],
+            'self_updated' => [
+                'type' => 'pdate',
+                'stored' => true,
+                'indexed' => true,
+                'multiValued' => false
+            ],
+            'self_published' => [
+                'type' => 'pdate',
+                'stored' => true,
+                'indexed' => true,
+                'multiValued' => false
+            ],
+            'self_depublished' => [
+                'type' => 'pdate',
+                'stored' => true,
+                'indexed' => true,
+                'multiValued' => false
+            ],
+
+            // **NEW**: UUID relation fields for clean object relationships
+            'self_relations' => [
+                'type' => 'string',
+                'stored' => true,
+                'indexed' => true,
+                'multiValued' => true
+            ],
+            'self_files' => [
+                'type' => 'string',
+                'stored' => true,
+                'indexed' => true,
+                'multiValued' => true
+            ],
+            'self_parent_uuid' => [
+                'type' => 'string',
+                'stored' => true,
+                'indexed' => true,
+                'multiValued' => false
+            ],
+        ];
+    }
+
+    /**
+     * Add or update a field in the SOLR schema
+     *
+     * @param string $fieldName Name of the field to add/update
+     * @param array $fieldConfig Field configuration (type, stored, indexed, etc.)
+     * @return bool True if field was added/updated successfully
+     */
+    private function addOrUpdateSchemaField(string $fieldName, array $fieldConfig): bool
+    {
+        // Try to add the field first (will fail if it already exists)
+        if ($this->addSchemaField($fieldName, $fieldConfig)) {
+            return true;
+        }
+
+        // If add failed, try to replace the existing field
+        return $this->replaceSchemaField($fieldName, $fieldConfig);
+    }
+
+    /**
+     * Add a new field to the SOLR schema
+     *
+     * @param string $fieldName Name of the field to add
+     * @param array $fieldConfig Field configuration
+     * @return bool True if field was added successfully
+     */
+    private function addSchemaField(string $fieldName, array $fieldConfig): bool
+    {
+        $baseCollectionName = $this->solrConfig['core'] ?? 'openregister';
+        $url = sprintf('%s://%s:%d%s/%s/schema',
+            $this->solrConfig['scheme'],
+            $this->solrConfig['host'],
+            $this->solrConfig['port'],
+            $this->solrConfig['path'],
+            $baseCollectionName
+        );
+
+        $payload = [
+            'add-field' => array_merge(['name' => $fieldName], $fieldConfig)
+        ];
+
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'POST',
+                'header' => 'Content-Type: application/json',
+                'content' => json_encode($payload),
+                'timeout' => 30
+            ]
+        ]);
+
+        $response = @file_get_contents($url, false, $context);
+        if ($response === false) {
+            return false;
+        }
+
+        $data = json_decode($response, true);
+        $success = ($data['responseHeader']['status'] ?? -1) === 0;
+
+        if ($success) {
+            $this->logger->debug('Added schema field', ['field' => $fieldName]);
+        }
+
+        return $success;
+    }
+
+    /**
+     * Replace an existing field in the SOLR schema
+     *
+     * @param string $fieldName Name of the field to replace
+     * @param array $fieldConfig Field configuration
+     * @return bool True if field was replaced successfully
+     */
+    private function replaceSchemaField(string $fieldName, array $fieldConfig): bool
+    {
+        $baseCollectionName = $this->solrConfig['core'] ?? 'openregister';
+        $url = sprintf('%s://%s:%d%s/%s/schema',
+            $this->solrConfig['scheme'],
+            $this->solrConfig['host'],
+            $this->solrConfig['port'],
+            $this->solrConfig['path'],
+            $baseCollectionName
+        );
+
+        $payload = [
+            'replace-field' => array_merge(['name' => $fieldName], $fieldConfig)
+        ];
+
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'POST',
+                'header' => 'Content-Type: application/json',
+                'content' => json_encode($payload),
+                'timeout' => 30
+            ]
+        ]);
+
+        $response = @file_get_contents($url, false, $context);
+        if ($response === false) {
+            return false;
+        }
+
+        $data = json_decode($response, true);
+        $success = ($data['responseHeader']['status'] ?? -1) === 0;
+
+        if ($success) {
+            $this->logger->debug('Replaced schema field', ['field' => $fieldName]);
+        }
+
+        return $success;
     }
 
     /**

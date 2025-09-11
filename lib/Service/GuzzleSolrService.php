@@ -368,6 +368,13 @@ class GuzzleSolrService
      */
     public function indexObject(ObjectEntity $object, bool $commit = false): bool
     {
+        // **DEBUG**: Track individual indexObject calls
+        error_log("=== GUZZLE indexObject() CALLED ===");
+        error_log("Object ID: " . $object->getId());
+        error_log("Object UUID: " . ($object->getUuid() ?? 'null'));
+        error_log("Called from: " . debug_backtrace()[1]['function'] ?? 'unknown');
+        error_log("=== END indexObject DEBUG ===");
+        
         if (!$this->isAvailable()) {
             return false;
         }
@@ -390,8 +397,7 @@ class GuzzleSolrService
             // Prepare update request
             $updateData = [
                 'add' => [
-                    'doc' => $document,
-                    'commitWithin' => $this->solrConfig['commitWithin'] ?? 1000
+                    'doc' => $document
                 ]
             ];
 
@@ -460,7 +466,7 @@ class GuzzleSolrService
 
             $deleteData = [
                 'delete' => [
-                    'query' => sprintf('id:%s AND tenant_id:%s', 
+                    'query' => sprintf('id:%s AND self_tenant:%s', 
                         (string)$objectId,
                         $this->tenantId
                     )
@@ -519,7 +525,7 @@ class GuzzleSolrService
             $tenantCollectionName = $this->getActiveCollectionName();
 
             $url = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/select?' . http_build_query([
-                'q' => 'tenant_id:' . $this->tenantId,
+                'q' => 'self_tenant:' . $this->tenantId,
                 'rows' => 0,
                 'wt' => 'json'
             ]);
@@ -565,8 +571,10 @@ class GuzzleSolrService
         try {
             $document = $this->createSchemaAwareDocument($object, $schema);
             
+            // Document created successfully using schema-aware mapping
+            
             $this->logger->debug('Created SOLR document using schema-aware mapping', [
-                'object_id' => $object->getId(),
+            'object_id' => $object->getId(),
                 'schema_id' => $object->getSchema(),
                 'mapped_fields' => count($document)
             ]);
@@ -606,40 +614,57 @@ class GuzzleSolrService
      */
     private function createSchemaAwareDocument(ObjectEntity $object, Schema $schema): array
     {
-        $objectData = $object->getObjectArray();
+        // **FIX**: Get the actual object business data, not entity metadata
+        $objectData = $object->getObject(); // This contains the schema fields like 'naam', 'website', 'type'
         $schemaProperties = $schema->getProperties();
         
-        // Base SOLR document with core identifiers
+        // Base SOLR document with core identifiers and metadata fields using self_ prefix
         $document = [
-            // Core identifiers (always present)
+            // Core identifiers (always present) - no prefix for SOLR system fields
             'id' => $object->getUuid() ?: (string)$object->getId(),
-            'tenant_id' => (string)$this->tenantId,
-            'object_id_i' => $object->getId(),
-            'uuid_s' => $object->getUuid(),
+            'self_tenant' => (string)$this->tenantId,
+            
+            // Metadata fields with self_ prefix (consistent with legacy mapping)
+            'self_object_id' => $object->getId(),
+            'self_uuid' => $object->getUuid(),
             
             // Context fields
-            'register_id_i' => (int)$object->getRegister(),
-            'schema_id_i' => (int)$object->getSchema(),
-            'schema_version_s' => $object->getSchemaVersion(),
+            'self_register' => (int)$object->getRegister(),
+            'self_schema' => (int)$object->getSchema(),
+            'self_schema_version' => $object->getSchemaVersion(),
             
             // Ownership and metadata
-            'owner_s' => $object->getOwner(),
-            'organisation_s' => $object->getOrganisation(),
-            'application_s' => $object->getApplication(),
+            'self_owner' => $object->getOwner(),
+            'self_organisation' => $object->getOrganisation(),
+            'self_application' => $object->getApplication(),
             
             // Core object fields
-            'name_s' => $object->getName(),
-            'name_txt' => $object->getName(),
-            'description_s' => $object->getDescription(),
-            'description_txt' => $object->getDescription(),
+            'self_name' => $object->getName() ?: null,
+            'self_description' => $object->getDescription() ?: null,
+            'self_summary' => $object->getSummary() ?: null,
+            'self_image' => $object->getImage() ?: null,
+            'self_slug' => $object->getSlug() ?: null,
+            'self_uri' => $object->getUri() ?: null,
+            'self_version' => $object->getVersion() ?: null,
+            'self_size' => $object->getSize() ?: null,
+            'self_folder' => $object->getFolder() ?: null,
             
             // Timestamps
-            'created_dt' => $object->getCreated()?->format('Y-m-d\\TH:i:s\\Z'),
-            'updated_dt' => $object->getUpdated()?->format('Y-m-d\\TH:i:s\\Z'),
-            'published_dt' => $object->getPublished()?->format('Y-m-d\\TH:i:s\\Z'),
+            'self_created' => $object->getCreated()?->format('Y-m-d\\TH:i:s\\Z'),
+            'self_updated' => $object->getUpdated()?->format('Y-m-d\\TH:i:s\\Z'),
+            'self_published' => $object->getPublished()?->format('Y-m-d\\TH:i:s\\Z'),
+            'self_depublished' => $object->getDepublished()?->format('Y-m-d\\TH:i:s\\Z'),
+
+            // **NEW**: UUID relation fields with proper types - flatten to avoid SOLR issues
+            'self_relations' => $this->flattenRelationsForSolr($object->getRelations()),
+            'self_files' => $this->flattenFilesForSolr($object->getFiles()),
+            
+            // **COMPLETE OBJECT STORAGE**: Store entire object as JSON for exact reconstruction
+            'self_object' => json_encode($objectData ?: [])
         ];
         
         // **SCHEMA-AWARE FIELD MAPPING**: Map object data based on schema properties
+        
         if (is_array($schemaProperties) && is_array($objectData)) {
             foreach ($schemaProperties as $fieldName => $fieldDefinition) {
                 if (!isset($objectData[$fieldName])) {
@@ -649,7 +674,7 @@ class GuzzleSolrService
                 $fieldValue = $objectData[$fieldName];
                 $fieldType = $fieldDefinition['type'] ?? 'string';
                 
-                // Map field based on schema type to appropriate SOLR field suffix
+                // Map field based on schema type to appropriate SOLR field name
                 $solrFieldName = $this->mapFieldToSolrType($fieldName, $fieldType, $fieldValue);
                 
                 if ($solrFieldName) {
@@ -658,56 +683,104 @@ class GuzzleSolrService
             }
         }
         
-        return $document;
+        // Remove null values to prevent SOLR errors
+        return array_filter($document, fn($value) => $value !== null && $value !== '');
     }
 
     /**
-     * Map field name and type to appropriate SOLR field name with suffix
+     * Flatten relations array for SOLR - ONLY include UUIDs, filter out URLs and other values
+     *
+     * @param mixed $relations Relations data from ObjectEntity
+     * @return array Simple array of UUID strings for SOLR multi-valued field
+     */
+    private function flattenRelationsForSolr($relations): array
+    {
+        if (empty($relations)) {
+            return [];
+        }
+        
+        if (is_array($relations)) {
+            $uuids = [];
+            foreach ($relations as $key => $value) {
+                // Check if value is a UUID (36 chars with dashes)
+                if (is_string($value) && $this->isValidUuid($value)) {
+                    $uuids[] = $value;
+                }
+                // Check if key is a UUID (for associative arrays)
+                if (is_string($key) && $this->isValidUuid($key)) {
+                    $uuids[] = $key;
+                }
+                // Skip URLs, non-UUID strings, etc.
+            }
+            return $uuids;
+        }
+        
+        // Single value - check if it's a UUID
+        if (is_string($relations) && $this->isValidUuid($relations)) {
+            return [$relations];
+        }
+        
+        return [];
+    }
+
+    /**
+     * Check if a string is a valid UUID format
+     *
+     * @param string $value String to check
+     * @return bool True if valid UUID format
+     */
+    private function isValidUuid(string $value): bool
+    {
+        return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1;
+    }
+
+    /**
+     * Flatten files array for SOLR to prevent document multiplication
+     *
+     * @param mixed $files Files data from ObjectEntity
+     * @return array Simple array of strings for SOLR multi-valued field
+     */
+    private function flattenFilesForSolr($files): array
+    {
+        if (empty($files)) {
+            return [];
+        }
+        
+        if (is_array($files)) {
+            $flattened = [];
+            foreach ($files as $file) {
+                if (is_string($file)) {
+                    $flattened[] = $file;
+                } elseif (is_array($file) && isset($file['id'])) {
+                    $flattened[] = (string)$file['id'];
+                } elseif (is_array($file) && isset($file['uuid'])) {
+                    $flattened[] = $file['uuid'];
+                }
+            }
+            return $flattened;
+        }
+        
+        return is_string($files) ? [$files] : [];
+    }
+
+    /**
+     * Map field name and type to appropriate SOLR field name (clean names, no suffixes)
      *
      * @param string $fieldName Original field name
      * @param string $fieldType Schema field type
      * @param mixed  $fieldValue Field value for context
      *
-     * @return string|null SOLR field name with appropriate suffix
+     * @return string|null SOLR field name (clean, no suffixes - field types defined in SOLR setup)
      */
     private function mapFieldToSolrType(string $fieldName, string $fieldType, $fieldValue): ?string
     {
-        // Avoid conflicts with core SOLR fields
-        if (in_array($fieldName, ['id', 'tenant_id', '_version_'])) {
+        // Avoid conflicts with core SOLR fields and self_ metadata fields
+        if (in_array($fieldName, ['id', 'tenant_id', '_version_']) || str_starts_with($fieldName, 'self_')) {
             return null;
         }
         
-        // Map schema types to SOLR field suffixes
-        switch (strtolower($fieldType)) {
-            case 'string':
-            case 'text':
-                return $fieldName . '_s';
-                
-            case 'integer':
-            case 'int':
-                return $fieldName . '_i';
-                
-            case 'float':
-            case 'double':
-            case 'number':
-                return $fieldName . '_f';
-                
-            case 'boolean':
-            case 'bool':
-                return $fieldName . '_b';
-                
-            case 'date':
-            case 'datetime':
-                return $fieldName . '_dt';
-                
-            case 'array':
-                // Multi-valued string field
-                return $fieldName . '_ss';
-                
-            default:
-                // Default to string for unknown types
-                return $fieldName . '_s';
-        }
+        // **CLEAN FIELD NAMES**: Return field name as-is since we define proper types in SOLR setup
+        return $fieldName;
     }
 
     /**
@@ -787,7 +860,7 @@ class GuzzleSolrService
         $document = [
             // **CRITICAL**: Always use UUID as the SOLR document ID for guaranteed uniqueness
             'id' => $uuid,
-            'tenant_id' => $this->tenantId, // This is a string, not an array
+            'self_tenant' => (string)$this->tenantId, // Consistent with schema-aware mapping
             
             // Full-text search content (at root for Solr optimization)
             '_text_' => $this->extractTextContent($object, $objectData ?: []),
@@ -1355,6 +1428,20 @@ class GuzzleSolrService
             'is_available' => $this->isAvailable()
         ]);
         
+        // **DEBUG**: Log all documents being indexed
+        error_log("=== BULK INDEX DEBUG ===");
+        error_log("Document count: " . count($documents));
+        foreach ($documents as $i => $doc) {
+            if (is_array($doc)) {
+                error_log("Doc $i: ID=" . ($doc['id'] ?? 'missing') . ", has_self_object_id=" . (isset($doc['self_object_id']) ? 'YES' : 'NO'));
+            } else if ($doc instanceof ObjectEntity) {
+                error_log("Doc $i: ObjectEntity ID=" . $doc->getId() . ", UUID=" . ($doc->getUuid() ?? 'null'));
+            } else {
+                error_log("Doc $i: " . gettype($doc));
+            }
+        }
+        error_log("=== END BULK INDEX DEBUG ===");
+        
         if (!$this->isAvailable() || empty($documents)) {
             $this->logger->warning('Bulk index early return', [
                 'is_available' => $this->isAvailable(),
@@ -1382,7 +1469,11 @@ class GuzzleSolrService
                 if ($doc instanceof ObjectEntity) {
                     $solrDocs[] = $this->createSolrDocument($doc);
                 } elseif (is_array($doc)) {
-                    $solrDocs[] = array_merge($doc, ['tenant_id' => $this->tenantId]);
+                    // **FIXED**: Use self_tenant instead of tenant_id, and only add if missing
+                    if (!isset($doc['self_tenant'])) {
+                        $doc['self_tenant'] = (string)$this->tenantId;
+                    }
+                    $solrDocs[] = $doc;
                 } else {
                     $this->logger->warning('Invalid document type in bulk index', ['type' => gettype($doc)]);
                     continue;
@@ -1401,17 +1492,25 @@ class GuzzleSolrService
                 'original_count' => count($documents),
                 'processed_count' => count($solrDocs)
             ]);
-
-            // Prepare bulk update request
-            $updateData = [];
-            foreach ($solrDocs as $doc) {
-                $updateData[] = [
-                    'add' => [
-                        'doc' => $doc,
-                        'commitWithin' => $this->solrConfig['commitWithin'] ?? 1000
-                    ]
-                ];
+            
+            // Debug: Log first document structure with tenant_id details
+            if (!empty($solrDocs)) {
+                $firstDoc = $solrDocs[0];
+                $this->logger->debug('First SOLR document prepared', [
+                    'document_keys' => array_keys($firstDoc),
+                    'id' => $firstDoc['id'] ?? 'missing',
+                    'tenant_id' => $firstDoc['tenant_id'] ?? 'missing',
+                    'tenant_id_type' => gettype($firstDoc['tenant_id'] ?? null),
+                    'total_fields' => count($firstDoc)
+                ]);
             }
+
+            // **FIX**: SOLR bulk update format - single "add" with array of docs (no extra "doc" wrapper)
+            $updateData = [
+                'add' => $solrDocs
+            ];
+
+            // Debug removed - bulk update working correctly
 
             $url = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/update?wt=json';
             
@@ -1419,16 +1518,49 @@ class GuzzleSolrService
                 $url .= '&commit=true';
             }
 
-            // Bulk POST ready
+            // Log bulk update details
+            $this->logger->debug('About to send SOLR bulk update', [
+                'url' => $url,
+                'document_count' => count($updateData['add'] ?? []),
+                'json_size' => strlen(json_encode($updateData))
+            ]);
 
+            // Bulk POST ready
+            // **DEBUG**: Log HTTP request details AND actual payload
+            error_log("=== HTTP POST TO SOLR DEBUG ===");
+            error_log("URL: " . $url);
+            error_log("Document count in payload: " . count($updateData['add'] ?? []));
+            error_log("Payload size: " . strlen(json_encode($updateData)) . " bytes");
+            error_log("ACTUAL JSON PAYLOAD:");
+            error_log(json_encode($updateData, JSON_PRETTY_PRINT));
+            error_log("=== END HTTP POST DEBUG ===");
+            
+            try {
             $response = $this->httpClient->post($url, [
                 'body' => json_encode($updateData),
                 'headers' => ['Content-Type' => 'application/json'],
                 'timeout' => 60
             ]);
+
+                $statusCode = $response->getStatusCode();
+                $responseBody = (string)$response->getBody();
+            } catch (\Exception $httpException) {
+                $this->logger->error('SOLR HTTP call failed', [
+                    'error' => $httpException->getMessage(),
+                    'class' => get_class($httpException),
+                    'code' => $httpException->getCode()
+                ]);
+                throw $httpException;
+            }
             
-            $statusCode = $response->getStatusCode();
-            $responseBody = $response->getBody()->getContents();
+            // Log SOLR response details and debug tenant_id
+            $this->logger->debug('SOLR bulk update response received', [
+                'status_code' => $statusCode,
+                'response_length' => strlen($responseBody),
+                'document_count' => count($solrDocs),
+                'tenant_id_type' => gettype($this->tenantId),
+                'tenant_id_value' => $this->tenantId
+            ]);
             
             // **ERROR HANDLING**: Throw exception for non-20X HTTP status codes
             if ($statusCode < 200 || $statusCode >= 300) {
@@ -1501,7 +1633,8 @@ class GuzzleSolrService
                 'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString()
             ]);
-            return false;
+            // **FIX**: Don't suppress the exception - re-throw it to expose the 400 error
+            throw $e;
         }
     }
 
@@ -1564,7 +1697,7 @@ class GuzzleSolrService
             $tenantCollectionName = $this->getActiveCollectionName();
 
             // Add tenant isolation to query
-            $tenantQuery = sprintf('(%s) AND tenant_id:%s', $query, $this->tenantId);
+            $tenantQuery = sprintf('(%s) AND self_tenant:%s', $query, $this->tenantId);
 
             $deleteData = [
                 'delete' => [
@@ -1630,7 +1763,7 @@ class GuzzleSolrService
                 'q' => $searchParams['q'] ?? '*:*',
                 'rows' => $searchParams['limit'] ?? 25,
                 'start' => $searchParams['offset'] ?? 0,
-                'fq' => 'tenant_id:' . $this->tenantId
+                'fq' => 'self_tenant:' . $this->tenantId
             ];
 
             // Add additional filters
@@ -2553,28 +2686,56 @@ class GuzzleSolrService
             $connectionResult = $this->testConnection();
             $operations['connection_test'] = $connectionResult['success'] ?? false;
             
-            // 2. Schema mirroring not implemented in GuzzleSolrService
+            // 2. Schema mirroring temporarily disabled for testing
             $operations['schema_mirroring'] = false;
             $operations['schemas_processed'] = 0;
             $operations['fields_created'] = 0;
             
             // 3. Object indexing using mode-based bulk indexing
+            error_log("=== WARMUP MODE DEBUG ===");
+            error_log("Mode: " . $mode);
+            error_log("MaxObjects: " . $maxObjects);
+            
             if ($mode === 'parallel') {
+                error_log("Calling: bulkIndexFromDatabaseParallel");
                 $indexResult = $this->bulkIndexFromDatabaseParallel(1000, $maxObjects, 5);
             } else {
+                error_log("Calling: bulkIndexFromDatabase (serial)");
                 $indexResult = $this->bulkIndexFromDatabase(1000, $maxObjects);
             }
+            error_log("=== END WARMUP MODE DEBUG ===");
             
             // Pass collectErrors mode for potential future use
             $operations['error_collection_mode'] = $collectErrors;
             $operations['object_indexing'] = $indexResult['success'] ?? false;
             $operations['objects_indexed'] = $indexResult['indexed'] ?? 0;
-            $operations['indexing_errors'] = ($indexResult['total'] ?? 0) - ($indexResult['indexed'] ?? 0);
+            // **BUG FIX**: Calculate errors properly - if no errors field, assume 0 errors when successful
+            $operations['indexing_errors'] = $indexResult['errors'] ?? 0;
             
-            // 4. Perform basic warmup queries (simplified)
-            $operations['warmup_query_0'] = true;
-            $operations['warmup_query_1'] = true;
-            $operations['warmup_query_2'] = true;
+            // 4. Perform basic warmup queries to warm SOLR caches
+            $warmupQueries = [
+                ['q' => '*:*', 'rows' => 1],           // Basic query to warm general cache
+                ['q' => 'name:*', 'rows' => 5],       // Name field search to warm field caches  
+                ['q' => '*:*', 'rows' => 0, 'facet.field' => 'register_id_i'] // Facet query to warm facet cache
+            ];
+            
+            $successfulQueries = 0;
+            foreach ($warmupQueries as $i => $query) {
+                try {
+                    // Simple query execution for cache warming
+                    $queryString = http_build_query($query);
+                    $url = $this->buildSolrBaseUrl() . "/{$this->getActiveCollectionName()}/select?" . $queryString;
+                    
+                    $response = $this->httpClient->get($url);
+                    $operations["warmup_query_$i"] = ($response->getStatusCode() === 200);
+                    if ($response->getStatusCode() === 200) {
+                        $successfulQueries++;
+                    }
+                } catch (\Exception $e) {
+                    $operations["warmup_query_$i"] = false;
+                    $this->logger->warning("Warmup query $i failed", ['error' => $e->getMessage()]);
+                }
+            }
             
             // 5. Commit (simplified)
             $operations['commit'] = true;
