@@ -5,15 +5,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Service\RegisterService;
+use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\ObjectEntity;
 use PHPUnit\Framework\TestCase;
-use OCP\IUser;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -30,9 +26,8 @@ class RegisterServiceTest extends TestCase
 {
     private RegisterService $registerService;
     private RegisterMapper $registerMapper;
-    private SchemaMapper $schemaMapper;
-    private ObjectEntityMapper $objectEntityMapper;
-    private IUserSession $userSession;
+    private FileService $fileService;
+    private OrganisationService $organisationService;
     private LoggerInterface $logger;
 
     protected function setUp(): void
@@ -41,25 +36,96 @@ class RegisterServiceTest extends TestCase
 
         // Create mock dependencies
         $this->registerMapper = $this->createMock(RegisterMapper::class);
-        $this->schemaMapper = $this->createMock(SchemaMapper::class);
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
-        $this->userSession = $this->createMock(IUserSession::class);
+        $this->fileService = $this->createMock(FileService::class);
+        $this->organisationService = $this->createMock(OrganisationService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
         // Create RegisterService instance
         $this->registerService = new RegisterService(
             $this->registerMapper,
-            $this->schemaMapper,
-            $this->objectEntityMapper,
-            $this->userSession,
-            $this->logger
+            $this->fileService,
+            $this->logger,
+            $this->organisationService
         );
     }
 
     /**
-     * Test createRegister method with valid data
+     * Test find method
      */
-    public function testCreateRegisterWithValidData(): void
+    public function testFind(): void
+    {
+        $id = 'test-id';
+        $extend = ['test'];
+
+        // Create mock register
+        $register = $this->createMock(Register::class);
+
+        // Mock register mapper
+        $this->registerMapper->expects($this->once())
+            ->method('find')
+            ->with($id, $extend)
+            ->willReturn($register);
+
+        $result = $this->registerService->find($id, $extend);
+
+        $this->assertEquals($register, $result);
+    }
+
+    /**
+     * Test findMultiple method
+     */
+    public function testFindMultiple(): void
+    {
+        $ids = ['id1', 'id2'];
+
+        // Create mock registers
+        $register1 = $this->createMock(Register::class);
+        $register2 = $this->createMock(Register::class);
+        $registers = [$register1, $register2];
+
+        // Mock register mapper
+        $this->registerMapper->expects($this->once())
+            ->method('findMultiple')
+            ->with($ids)
+            ->willReturn($registers);
+
+        $result = $this->registerService->findMultiple($ids);
+
+        $this->assertEquals($registers, $result);
+    }
+
+    /**
+     * Test findAll method
+     */
+    public function testFindAll(): void
+    {
+        $limit = 10;
+        $offset = 0;
+        $filters = ['test' => 'value'];
+        $searchConditions = ['search'];
+        $searchParams = ['param'];
+        $extend = ['extend'];
+
+        // Create mock registers
+        $register1 = $this->createMock(Register::class);
+        $register2 = $this->createMock(Register::class);
+        $registers = [$register1, $register2];
+
+        // Mock register mapper
+        $this->registerMapper->expects($this->once())
+            ->method('findAll')
+            ->with($limit, $offset, $filters, $searchConditions, $searchParams, $extend)
+            ->willReturn($registers);
+
+        $result = $this->registerService->findAll($limit, $offset, $filters, $searchConditions, $searchParams, $extend);
+
+        $this->assertEquals($registers, $result);
+    }
+
+    /**
+     * Test createFromArray method with valid data
+     */
+    public function testCreateFromArrayWithValidData(): void
     {
         $registerData = [
             'title' => 'Test Register',
@@ -67,105 +133,17 @@ class RegisterServiceTest extends TestCase
             'version' => '1.0.0'
         ];
 
-        $userId = 'testuser';
-
-        // Create mock user
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn($userId);
-
         // Create mock register
-        $register = $this->createMock(Register::class);
-        $register->method('setTitle')->with('Test Register');
-        $register->method('setDescription')->with('Test Description');
-        $register->method('setVersion')->with('1.0.0');
-        $register->method('setUserId')->with($userId);
-
-        // Mock user session
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn($user);
+        $register = $this->getMockBuilder(Register::class)
+            ->addMethods(['getOrganisation', 'setOrganisation'])
+            ->getMock();
+        $register->method('getOrganisation')->willReturn(null);
+        $register->method('setOrganisation')->willReturn($register);
 
         // Mock register mapper
         $this->registerMapper->expects($this->once())
-            ->method('insert')
-            ->willReturn($register);
-
-        $result = $this->registerService->createRegister($registerData);
-
-        $this->assertEquals($register, $result);
-    }
-
-    /**
-     * Test createRegister method with no user session
-     */
-    public function testCreateRegisterWithNoUserSession(): void
-    {
-        $registerData = [
-            'title' => 'Test Register',
-            'description' => 'Test Description'
-        ];
-
-        // Mock user session to return null
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn(null);
-
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('User session required');
-
-        $this->registerService->createRegister($registerData);
-    }
-
-    /**
-     * Test createRegister method with missing required fields
-     */
-    public function testCreateRegisterWithMissingRequiredFields(): void
-    {
-        $registerData = [
-            'description' => 'Test Description'
-            // Missing 'title' which is required
-        ];
-
-        $userId = 'testuser';
-
-        // Create mock user
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn($userId);
-
-        // Mock user session
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn($user);
-
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Title is required');
-
-        $this->registerService->createRegister($registerData);
-    }
-
-    /**
-     * Test updateRegister method with valid data
-     */
-    public function testUpdateRegisterWithValidData(): void
-    {
-        $registerId = 'test-register-id';
-        $registerData = [
-            'title' => 'Updated Register',
-            'description' => 'Updated Description',
-            'version' => '2.0.0'
-        ];
-
-        // Create mock register
-        $register = $this->createMock(Register::class);
-        $register->method('getId')->willReturn($registerId);
-        $register->method('setTitle')->with('Updated Register');
-        $register->method('setDescription')->with('Updated Description');
-        $register->method('setVersion')->with('2.0.0');
-
-        // Mock register mapper
-        $this->registerMapper->expects($this->once())
-            ->method('find')
-            ->with($registerId)
+            ->method('createFromArray')
+            ->with($registerData)
             ->willReturn($register);
 
         $this->registerMapper->expects($this->once())
@@ -173,368 +151,187 @@ class RegisterServiceTest extends TestCase
             ->with($register)
             ->willReturn($register);
 
-        $result = $this->registerService->updateRegister($registerId, $registerData);
+        // Mock organisation service
+        $this->organisationService->expects($this->once())
+            ->method('getOrganisationForNewEntity')
+            ->willReturn('test-org-uuid');
+
+        $result = $this->registerService->createFromArray($registerData);
 
         $this->assertEquals($register, $result);
     }
 
     /**
-     * Test updateRegister method with non-existent register
+     * Test createFromArray method with no organisation
      */
-    public function testUpdateRegisterWithNonExistentRegister(): void
+    public function testCreateFromArrayWithNoOrganisation(): void
     {
-        $registerId = 'non-existent-id';
         $registerData = [
-            'title' => 'Updated Register'
+            'title' => 'Test Register',
+            'description' => 'Test Description'
         ];
 
-        // Mock register mapper to throw exception
-        $this->registerMapper->expects($this->once())
-            ->method('find')
-            ->with($registerId)
-            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Register not found'));
-
-        $this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
-        $this->expectExceptionMessage('Register not found');
-
-        $this->registerService->updateRegister($registerId, $registerData);
-    }
-
-    /**
-     * Test deleteRegister method with existing register
-     */
-    public function testDeleteRegisterWithExistingRegister(): void
-    {
-        $registerId = 'test-register-id';
-
         // Create mock register
-        $register = $this->createMock(Register::class);
-        $register->method('getId')->willReturn($registerId);
+        $register = $this->getMockBuilder(Register::class)
+            ->addMethods(['getOrganisation', 'setOrganisation'])
+            ->getMock();
+        $register->method('getOrganisation')->willReturn(null);
+        $register->method('setOrganisation')->willReturn($register);
 
         // Mock register mapper
         $this->registerMapper->expects($this->once())
-            ->method('find')
-            ->with($registerId)
+            ->method('createFromArray')
+            ->with($registerData)
             ->willReturn($register);
 
+        $this->registerMapper->expects($this->once())
+            ->method('update')
+            ->with($register)
+            ->willReturn($register);
+
+        // Mock organisation service
+        $this->organisationService->expects($this->once())
+            ->method('getOrganisationForNewEntity')
+            ->willReturn('test-org-uuid');
+
+        $result = $this->registerService->createFromArray($registerData);
+
+        $this->assertEquals($register, $result);
+    }
+
+    /**
+     * Test updateFromArray method
+     */
+    public function testUpdateFromArray(): void
+    {
+        $id = 1;
+        $registerData = [
+            'title' => 'Updated Register',
+            'description' => 'Updated Description'
+        ];
+
+        // Create mock register
+        $register = $this->createMock(Register::class);
+
+        // Mock register mapper
+        $this->registerMapper->expects($this->once())
+            ->method('updateFromArray')
+            ->with($id, $registerData)
+            ->willReturn($register);
+
+        $result = $this->registerService->updateFromArray($id, $registerData);
+
+        $this->assertEquals($register, $result);
+    }
+
+    /**
+     * Test delete method
+     */
+    public function testDelete(): void
+    {
+        // Create mock register
+        $register = $this->createMock(Register::class);
+
+        // Mock register mapper
         $this->registerMapper->expects($this->once())
             ->method('delete')
             ->with($register)
             ->willReturn($register);
 
-        $result = $this->registerService->deleteRegister($registerId);
+        $result = $this->registerService->delete($register);
 
         $this->assertEquals($register, $result);
     }
 
     /**
-     * Test deleteRegister method with non-existent register
+     * Test getSchemasByRegisterId method
      */
-    public function testDeleteRegisterWithNonExistentRegister(): void
+    public function testGetSchemasByRegisterId(): void
     {
-        $registerId = 'non-existent-id';
-
-        // Mock register mapper to throw exception
-        $this->registerMapper->expects($this->once())
-            ->method('find')
-            ->with($registerId)
-            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Register not found'));
-
-        $this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
-        $this->expectExceptionMessage('Register not found');
-
-        $this->registerService->deleteRegister($registerId);
-    }
-
-    /**
-     * Test getRegister method with existing register
-     */
-    public function testGetRegisterWithExistingRegister(): void
-    {
-        $registerId = 'test-register-id';
-
-        // Create mock register
-        $register = $this->createMock(Register::class);
-        $register->method('getId')->willReturn($registerId);
-        $register->method('getTitle')->willReturn('Test Register');
+        $registerId = 1;
+        $schemas = ['schema1', 'schema2'];
 
         // Mock register mapper
         $this->registerMapper->expects($this->once())
-            ->method('find')
+            ->method('getSchemasByRegisterId')
             ->with($registerId)
-            ->willReturn($register);
+            ->willReturn($schemas);
 
-        $result = $this->registerService->getRegister($registerId);
+        $result = $this->registerService->getSchemasByRegisterId($registerId);
 
-        $this->assertEquals($register, $result);
+        $this->assertEquals($schemas, $result);
     }
 
     /**
-     * Test getRegister method with non-existent register
+     * Test getFirstRegisterWithSchema method
      */
-    public function testGetRegisterWithNonExistentRegister(): void
+    public function testGetFirstRegisterWithSchema(): void
     {
-        $registerId = 'non-existent-id';
-
-        // Mock register mapper to throw exception
-        $this->registerMapper->expects($this->once())
-            ->method('find')
-            ->with($registerId)
-            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Register not found'));
-
-        $this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
-        $this->expectExceptionMessage('Register not found');
-
-        $this->registerService->getRegister($registerId);
-    }
-
-    /**
-     * Test getAllRegisters method
-     */
-    public function testGetAllRegisters(): void
-    {
-        $limit = 10;
-        $offset = 0;
-
-        // Create mock registers
-        $register1 = $this->createMock(Register::class);
-        $register1->method('getId')->willReturn('1');
-        $register1->method('getTitle')->willReturn('Register 1');
-
-        $register2 = $this->createMock(Register::class);
-        $register2->method('getId')->willReturn('2');
-        $register2->method('getTitle')->willReturn('Register 2');
-
-        $registers = [$register1, $register2];
+        $schemaId = 1;
+        $registerId = 2;
 
         // Mock register mapper
         $this->registerMapper->expects($this->once())
-            ->method('findAll')
-            ->with($limit, $offset)
-            ->willReturn($registers);
+            ->method('getFirstRegisterWithSchema')
+            ->with($schemaId)
+            ->willReturn($registerId);
 
-        $result = $this->registerService->getAllRegisters($limit, $offset);
+        $result = $this->registerService->getFirstRegisterWithSchema($schemaId);
 
-        $this->assertEquals($registers, $result);
+        $this->assertEquals($registerId, $result);
     }
 
     /**
-     * Test getAllRegisters method with default parameters
+     * Test hasSchemaWithTitle method
      */
-    public function testGetAllRegistersWithDefaultParameters(): void
+    public function testHasSchemaWithTitle(): void
     {
-        // Create mock registers
-        $registers = [$this->createMock(Register::class)];
-
-        // Mock register mapper with default parameters
-        $this->registerMapper->expects($this->once())
-            ->method('findAll')
-            ->with(20, 0) // default limit and offset
-            ->willReturn($registers);
-
-        $result = $this->registerService->getAllRegisters();
-
-        $this->assertEquals($registers, $result);
-    }
-
-    /**
-     * Test getRegistersByUser method
-     */
-    public function testGetRegistersByUser(): void
-    {
-        $userId = 'testuser';
-        $limit = 10;
-        $offset = 0;
-
-        // Create mock user
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn($userId);
-
-        // Create mock registers
-        $register1 = $this->createMock(Register::class);
-        $register1->method('getId')->willReturn('1');
-
-        $register2 = $this->createMock(Register::class);
-        $register2->method('getId')->willReturn('2');
-
-        $registers = [$register1, $register2];
-
-        // Mock user session
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn($user);
+        $registerId = 1;
+        $schemaTitle = 'Test Schema';
+        $schema = $this->createMock(\OCA\OpenRegister\Db\Schema::class);
 
         // Mock register mapper
         $this->registerMapper->expects($this->once())
-            ->method('findAllByUser')
-            ->with($userId, $limit, $offset)
-            ->willReturn($registers);
+            ->method('hasSchemaWithTitle')
+            ->with($registerId, $schemaTitle)
+            ->willReturn($schema);
 
-        $result = $this->registerService->getRegistersByUser($limit, $offset);
+        $result = $this->registerService->hasSchemaWithTitle($registerId, $schemaTitle);
 
-        $this->assertEquals($registers, $result);
+        $this->assertEquals($schema, $result);
     }
 
     /**
-     * Test getRegistersByUser method with no user session
+     * Test getIdToSlugMap method
      */
-    public function testGetRegistersByUserWithNoUserSession(): void
+    public function testGetIdToSlugMap(): void
     {
-        // Mock user session to return null
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn(null);
-
-        $result = $this->registerService->getRegistersByUser();
-
-        $this->assertIsArray($result);
-        $this->assertCount(0, $result);
-    }
-
-    /**
-     * Test getRegisterStatistics method
-     */
-    public function testGetRegisterStatistics(): void
-    {
-        $registerId = 'test-register-id';
-
-        // Create mock statistics
-        $statistics = [
-            'total_schemas' => 5,
-            'total_objects' => 100,
-            'total_size' => 1024000,
-            'last_updated' => '2024-01-01T00:00:00Z'
-        ];
+        $map = ['1' => 'slug1', '2' => 'slug2'];
 
         // Mock register mapper
         $this->registerMapper->expects($this->once())
-            ->method('getStatistics')
-            ->with($registerId)
-            ->willReturn($statistics);
+            ->method('getIdToSlugMap')
+            ->willReturn($map);
 
-        $result = $this->registerService->getRegisterStatistics($registerId);
+        $result = $this->registerService->getIdToSlugMap();
 
-        $this->assertEquals($statistics, $result);
+        $this->assertEquals($map, $result);
     }
 
     /**
-     * Test getRegisterStatistics method with non-existent register
+     * Test getSlugToIdMap method
      */
-    public function testGetRegisterStatisticsWithNonExistentRegister(): void
+    public function testGetSlugToIdMap(): void
     {
-        $registerId = 'non-existent-id';
-
-        // Mock register mapper to throw exception
-        $this->registerMapper->expects($this->once())
-            ->method('getStatistics')
-            ->with($registerId)
-            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Register not found'));
-
-        $this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
-        $this->expectExceptionMessage('Register not found');
-
-        $this->registerService->getRegisterStatistics($registerId);
-    }
-
-    /**
-     * Test searchRegisters method
-     */
-    public function testSearchRegisters(): void
-    {
-        $query = 'test register';
-        $limit = 10;
-        $offset = 0;
-
-        // Create mock registers
-        $register1 = $this->createMock(Register::class);
-        $register1->method('getId')->willReturn('1');
-        $register1->method('getTitle')->willReturn('Test Register 1');
-
-        $register2 = $this->createMock(Register::class);
-        $register2->method('getId')->willReturn('2');
-        $register2->method('getTitle')->willReturn('Test Register 2');
-
-        $registers = [$register1, $register2];
+        $map = ['slug1' => '1', 'slug2' => '2'];
 
         // Mock register mapper
         $this->registerMapper->expects($this->once())
-            ->method('search')
-            ->with($query, $limit, $offset)
-            ->willReturn($registers);
+            ->method('getSlugToIdMap')
+            ->willReturn($map);
 
-        $result = $this->registerService->searchRegisters($query, $limit, $offset);
+        $result = $this->registerService->getSlugToIdMap();
 
-        $this->assertEquals($registers, $result);
-    }
-
-    /**
-     * Test searchRegisters method with empty query
-     */
-    public function testSearchRegistersWithEmptyQuery(): void
-    {
-        $query = '';
-        $limit = 10;
-        $offset = 0;
-
-        $result = $this->registerService->searchRegisters($query, $limit, $offset);
-
-        $this->assertIsArray($result);
-        $this->assertCount(0, $result);
-    }
-
-    /**
-     * Test validateRegisterData method with valid data
-     */
-    public function testValidateRegisterDataWithValidData(): void
-    {
-        $registerData = [
-            'title' => 'Test Register',
-            'description' => 'Test Description',
-            'version' => '1.0.0'
-        ];
-
-        $result = $this->registerService->validateRegisterData($registerData);
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('valid', $result);
-        $this->assertArrayHasKey('errors', $result);
-        $this->assertTrue($result['valid']);
-        $this->assertCount(0, $result['errors']);
-    }
-
-    /**
-     * Test validateRegisterData method with invalid data
-     */
-    public function testValidateRegisterDataWithInvalidData(): void
-    {
-        $registerData = [
-            'description' => 'Test Description',
-            'version' => 'invalid-version'
-            // Missing 'title' which is required
-        ];
-
-        $result = $this->registerService->validateRegisterData($registerData);
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('valid', $result);
-        $this->assertArrayHasKey('errors', $result);
-        $this->assertFalse($result['valid']);
-        $this->assertGreaterThan(0, count($result['errors']));
-    }
-
-    /**
-     * Test validateRegisterData method with empty data
-     */
-    public function testValidateRegisterDataWithEmptyData(): void
-    {
-        $registerData = [];
-
-        $result = $this->registerService->validateRegisterData($registerData);
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('valid', $result);
-        $this->assertArrayHasKey('errors', $result);
-        $this->assertFalse($result['valid']);
-        $this->assertGreaterThan(0, count($result['errors']));
+        $this->assertEquals($map, $result);
     }
 }

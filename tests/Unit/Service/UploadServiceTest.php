@@ -7,17 +7,11 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Service\UploadService;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\ObjectEntity;
 use PHPUnit\Framework\TestCase;
-use OCP\Files\File;
-use OCP\Files\Folder;
-use OCP\Files\IRootFolder;
-use OCP\IUser;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
+use OCP\AppFramework\Http\JSONResponse;
+use GuzzleHttp\Client;
 
 /**
  * Test class for UploadService
@@ -32,523 +26,191 @@ use Psr\Log\LoggerInterface;
 class UploadServiceTest extends TestCase
 {
     private UploadService $uploadService;
-    private RegisterMapper $registerMapper;
+    private Client $client;
     private SchemaMapper $schemaMapper;
-    private ObjectEntityMapper $objectEntityMapper;
-    private IRootFolder $rootFolder;
-    private IUserSession $userSession;
-    private LoggerInterface $logger;
+    private RegisterMapper $registerMapper;
 
     protected function setUp(): void
     {
         parent::setUp();
 
         // Create mock dependencies
-        $this->registerMapper = $this->createMock(RegisterMapper::class);
+        $this->client = $this->createMock(Client::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
-        $this->rootFolder = $this->createMock(IRootFolder::class);
-        $this->userSession = $this->createMock(IUserSession::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
+        $this->registerMapper = $this->createMock(RegisterMapper::class);
 
         // Create UploadService instance
         $this->uploadService = new UploadService(
-            $this->registerMapper,
+            $this->client,
             $this->schemaMapper,
-            $this->objectEntityMapper,
-            $this->rootFolder,
-            $this->userSession,
-            $this->logger
+            $this->registerMapper
         );
     }
 
     /**
-     * Test uploadFile method with valid file
+     * Test getUploadedJson method with valid data
      */
-    public function testUploadFileWithValidFile(): void
+    public function testGetUploadedJsonWithValidData(): void
     {
-        $registerId = 'test-register';
-        $schemaId = 'test-schema';
-        $objectId = 'test-object';
-        $fileContent = 'Test file content';
+        $data = [
+            'url' => 'https://example.com/data.json',
+            'register' => 'test-register'
+        ];
 
-        // Create mock user
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('testuser');
+        // Mock HTTP client response
+        $response = $this->createMock(\Psr\Http\Message\ResponseInterface::class);
+        $stream = $this->createMock(\Psr\Http\Message\StreamInterface::class);
+        $stream->method('getContents')->willReturn('{"test": "data"}');
+        $response->method('getBody')->willReturn($stream);
+        $response->method('getStatusCode')->willReturn(200);
+        $response->method('getHeaderLine')->willReturn('application/json');
 
-        // Create mock folder structure
-        $userFolder = $this->createMock(Folder::class);
-        $registerFolder = $this->createMock(Folder::class);
-        $schemaFolder = $this->createMock(Folder::class);
-        $objectFolder = $this->createMock(Folder::class);
+        $this->client->expects($this->once())
+            ->method('request')
+            ->with('GET', 'https://example.com/data.json')
+            ->willReturn($response);
 
-        // Create mock file
-        $uploadedFile = $this->createMock(File::class);
-        $uploadedFile->method('getName')->willReturn('test.txt');
-        $uploadedFile->method('getContent')->willReturn($fileContent);
-        $uploadedFile->method('getMimeType')->willReturn('text/plain');
-
-        // Mock user session
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn($user);
-
-        // Mock root folder
-        $this->rootFolder->expects($this->once())
-            ->method('getUserFolder')
-            ->with('testuser')
-            ->willReturn($userFolder);
-
-        // Mock folder hierarchy
-        $userFolder->expects($this->once())
-            ->method('nodeExists')
-            ->with('Open Registers')
-            ->willReturn(true);
-
-        $userFolder->expects($this->once())
-            ->method('get')
-            ->with('Open Registers')
-            ->willReturn($registerFolder);
-
-        $registerFolder->expects($this->once())
-            ->method('nodeExists')
-            ->with($registerId)
-            ->willReturn(true);
-
-        $registerFolder->expects($this->once())
-            ->method('get')
-            ->with($registerId)
-            ->willReturn($schemaFolder);
-
-        $schemaFolder->expects($this->once())
-            ->method('nodeExists')
-            ->with($schemaId)
-            ->willReturn(true);
-
-        $schemaFolder->expects($this->once())
-            ->method('get')
-            ->with($schemaId)
-            ->willReturn($objectFolder);
-
-        $objectFolder->expects($this->once())
-            ->method('nodeExists')
-            ->with($objectId)
-            ->willReturn(true);
-
-        $objectFolder->expects($this->once())
-            ->method('get')
-            ->with($objectId)
-            ->willReturn($objectFolder);
-
-        // Mock file creation
-        $objectFolder->expects($this->once())
-            ->method('newFile')
-            ->with('test.txt')
-            ->willReturn($uploadedFile);
-
-        $result = $this->uploadService->uploadFile($uploadedFile, $registerId, $schemaId, $objectId);
+        $result = $this->uploadService->getUploadedJson($data);
 
         $this->assertIsArray($result);
-        $this->assertArrayHasKey('success', $result);
-        $this->assertArrayHasKey('file', $result);
-        $this->assertTrue($result['success']);
-        $this->assertEquals($uploadedFile, $result['file']);
+        $this->assertArrayHasKey('test', $result);
+        $this->assertEquals('data', $result['test']);
     }
 
     /**
-     * Test uploadFile method with non-existent folder structure
+     * Test getUploadedJson method with invalid URL
      */
-    public function testUploadFileWithNonExistentFolders(): void
+    public function testGetUploadedJsonWithInvalidUrl(): void
     {
-        $registerId = 'test-register';
-        $schemaId = 'test-schema';
-        $objectId = 'test-object';
+        $data = [
+            'url' => 'invalid-url',
+            'register' => 'test-register'
+        ];
 
-        // Create mock user
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('testuser');
+        // Mock HTTP client to throw exception
+        $this->client->expects($this->once())
+            ->method('request')
+            ->with('GET', 'invalid-url')
+            ->willThrowException(new \GuzzleHttp\Exception\BadResponseException('Bad response', new \GuzzleHttp\Psr7\Request('GET', 'invalid-url'), $this->createMock(\Psr\Http\Message\ResponseInterface::class)));
 
-        // Create mock folder structure
-        $userFolder = $this->createMock(Folder::class);
-        $registerFolder = $this->createMock(Folder::class);
-        $schemaFolder = $this->createMock(Folder::class);
-        $objectFolder = $this->createMock(Folder::class);
+        $result = $this->uploadService->getUploadedJson($data);
 
-        // Create mock file
-        $uploadedFile = $this->createMock(File::class);
-        $uploadedFile->method('getName')->willReturn('test.txt');
-
-        // Mock user session
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn($user);
-
-        // Mock root folder
-        $this->rootFolder->expects($this->once())
-            ->method('getUserFolder')
-            ->with('testuser')
-            ->willReturn($userFolder);
-
-        // Mock folder hierarchy - create missing folders
-        $userFolder->expects($this->once())
-            ->method('nodeExists')
-            ->with('Open Registers')
-            ->willReturn(false);
-
-        $userFolder->expects($this->once())
-            ->method('newFolder')
-            ->with('Open Registers')
-            ->willReturn($registerFolder);
-
-        $registerFolder->expects($this->once())
-            ->method('nodeExists')
-            ->with($registerId)
-            ->willReturn(false);
-
-        $registerFolder->expects($this->once())
-            ->method('newFolder')
-            ->with($registerId)
-            ->willReturn($schemaFolder);
-
-        $schemaFolder->expects($this->once())
-            ->method('nodeExists')
-            ->with($schemaId)
-            ->willReturn(false);
-
-        $schemaFolder->expects($this->once())
-            ->method('newFolder')
-            ->with($schemaId)
-            ->willReturn($objectFolder);
-
-        $objectFolder->expects($this->once())
-            ->method('nodeExists')
-            ->with($objectId)
-            ->willReturn(false);
-
-        $objectFolder->expects($this->once())
-            ->method('newFolder')
-            ->with($objectId)
-            ->willReturn($objectFolder);
-
-        // Mock file creation
-        $objectFolder->expects($this->once())
-            ->method('newFile')
-            ->with('test.txt')
-            ->willReturn($uploadedFile);
-
-        $result = $this->uploadService->uploadFile($uploadedFile, $registerId, $schemaId, $objectId);
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('success', $result);
-        $this->assertTrue($result['success']);
+        $this->assertInstanceOf(JSONResponse::class, $result);
     }
 
     /**
-     * Test uploadFile method with no user session
+     * Test getUploadedJson method with HTTP error
      */
-    public function testUploadFileWithNoUserSession(): void
+    public function testGetUploadedJsonWithHttpError(): void
     {
-        $registerId = 'test-register';
-        $schemaId = 'test-schema';
-        $objectId = 'test-object';
+        $data = [
+            'url' => 'https://example.com/error.json',
+            'register' => 'test-register'
+        ];
 
-        // Create mock file
-        $uploadedFile = $this->createMock(File::class);
+        // Mock HTTP client to throw exception
+        $this->client->expects($this->once())
+            ->method('request')
+            ->with('GET', 'https://example.com/error.json')
+            ->willThrowException(new \GuzzleHttp\Exception\BadResponseException('Bad response', $this->createMock(\Psr\Http\Message\RequestInterface::class), $this->createMock(\Psr\Http\Message\ResponseInterface::class)));
 
-        // Mock user session to return null
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn(null);
+        $result = $this->uploadService->getUploadedJson($data);
 
-        $result = $this->uploadService->uploadFile($uploadedFile, $registerId, $schemaId, $objectId);
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('success', $result);
-        $this->assertArrayHasKey('error', $result);
-        $this->assertFalse($result['success']);
-        $this->assertEquals('No user session found', $result['error']);
+        $this->assertInstanceOf(JSONResponse::class, $result);
     }
 
     /**
-     * Test uploadFile method with file upload error
+     * Test handleRegisterSchemas method
      */
-    public function testUploadFileWithUploadError(): void
+    public function testHandleRegisterSchemas(): void
     {
-        $registerId = 'test-register';
-        $schemaId = 'test-schema';
-        $objectId = 'test-object';
+        // Create mock register
+        $register = $this->createMock(Register::class);
+        $register->method('__toString')->willReturn('1');
+        $register->method('getId')->willReturn('1');
 
-        // Create mock user
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('testuser');
+        $phpArray = [
+            'components' => [
+                'schemas' => [
+                    'TestSchema' => [
+                        'title' => 'Test Schema',
+                        'description' => 'Test Description',
+                        'properties' => [
+                            'name' => ['type' => 'string'],
+                            'age' => ['type' => 'integer']
+                        ]
+                    ]
+                ]
+            ]
+        ];
 
-        // Create mock folder structure
-        $userFolder = $this->createMock(Folder::class);
-        $registerFolder = $this->createMock(Folder::class);
-        $schemaFolder = $this->createMock(Folder::class);
-        $objectFolder = $this->createMock(Folder::class);
+        // Create mock schema
+        $schema = $this->createMock(Schema::class);
+        $schema->method('__toString')->willReturn('1');
+        $schema->method('getTitle')->willReturn('Test Schema');
+        $schema->method('hydrate')->willReturn($schema);
 
-        // Create mock file
-        $uploadedFile = $this->createMock(File::class);
-        $uploadedFile->method('getName')->willReturn('test.txt');
+        // Mock register mapper
+        $this->registerMapper->expects($this->once())
+            ->method('hasSchemaWithTitle')
+            ->with('1', 'TestSchema')
+            ->willReturn($schema);
 
-        // Mock user session
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn($user);
+        // Mock schema mapper
+        $this->schemaMapper->expects($this->once())
+            ->method('update')
+            ->with($schema)
+            ->willReturn($schema);
 
-        // Mock root folder
-        $this->rootFolder->expects($this->once())
-            ->method('getUserFolder')
-            ->with('testuser')
-            ->willReturn($userFolder);
+        // Mock register mapper update
+        $this->registerMapper->expects($this->once())
+            ->method('update')
+            ->with($register)
+            ->willReturn($register);
 
-        // Mock folder hierarchy
-        $userFolder->expects($this->once())
-            ->method('nodeExists')
-            ->with('Open Registers')
-            ->willReturn(true);
+        $result = $this->uploadService->handleRegisterSchemas($register, $phpArray);
 
-        $userFolder->expects($this->once())
-            ->method('get')
-            ->with('Open Registers')
-            ->willReturn($registerFolder);
-
-        $registerFolder->expects($this->once())
-            ->method('nodeExists')
-            ->with($registerId)
-            ->willReturn(true);
-
-        $registerFolder->expects($this->once())
-            ->method('get')
-            ->with($registerId)
-            ->willReturn($schemaFolder);
-
-        $schemaFolder->expects($this->once())
-            ->method('nodeExists')
-            ->with($schemaId)
-            ->willReturn(true);
-
-        $schemaFolder->expects($this->once())
-            ->method('get')
-            ->with($schemaId)
-            ->willReturn($objectFolder);
-
-        $objectFolder->expects($this->once())
-            ->method('nodeExists')
-            ->with($objectId)
-            ->willReturn(true);
-
-        $objectFolder->expects($this->once())
-            ->method('get')
-            ->with($objectId)
-            ->willReturn($objectFolder);
-
-        // Mock file creation to throw exception
-        $objectFolder->expects($this->once())
-            ->method('newFile')
-            ->with('test.txt')
-            ->willThrowException(new \Exception('File upload failed'));
-
-        $result = $this->uploadService->uploadFile($uploadedFile, $registerId, $schemaId, $objectId);
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('success', $result);
-        $this->assertArrayHasKey('error', $result);
-        $this->assertFalse($result['success']);
-        $this->assertEquals('File upload failed', $result['error']);
+        $this->assertInstanceOf(Register::class, $result);
+        $this->assertEquals($register, $result);
     }
 
     /**
-     * Test validateFile method with valid file
+     * Test handleRegisterSchemas method with empty schemas
      */
-    public function testValidateFileWithValidFile(): void
+    public function testHandleRegisterSchemasWithEmptySchemas(): void
     {
-        // Create mock file
-        $file = $this->createMock(File::class);
-        $file->method('getName')->willReturn('test.txt');
-        $file->method('getMimeType')->willReturn('text/plain');
-        $file->method('getSize')->willReturn(1024);
+        // Create mock register
+        $register = $this->createMock(Register::class);
 
-        $result = $this->uploadService->validateFile($file);
+        $phpArray = [
+            'components' => [
+                'schemas' => []
+            ]
+        ];
 
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('valid', $result);
-        $this->assertTrue($result['valid']);
+        $result = $this->uploadService->handleRegisterSchemas($register, $phpArray);
+
+        $this->assertInstanceOf(Register::class, $result);
+        $this->assertEquals($register, $result);
     }
 
     /**
-     * Test validateFile method with invalid file type
+     * Test handleRegisterSchemas method with no schemas key
      */
-    public function testValidateFileWithInvalidFileType(): void
+    public function testHandleRegisterSchemasWithNoSchemasKey(): void
     {
-        // Create mock file with invalid type
-        $file = $this->createMock(File::class);
-        $file->method('getName')->willReturn('test.exe');
-        $file->method('getMimeType')->willReturn('application/x-executable');
-        $file->method('getSize')->willReturn(1024);
+        // Create mock register
+        $register = $this->createMock(Register::class);
 
-        $result = $this->uploadService->validateFile($file);
+        $phpArray = [
+            'components' => [
+                'schemas' => []
+            ]
+        ];
 
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('valid', $result);
-        $this->assertArrayHasKey('error', $result);
-        $this->assertFalse($result['valid']);
-        $this->assertStringContainsString('File type not allowed', $result['error']);
-    }
+        $result = $this->uploadService->handleRegisterSchemas($register, $phpArray);
 
-    /**
-     * Test validateFile method with file too large
-     */
-    public function testValidateFileWithFileTooLarge(): void
-    {
-        // Create mock file that's too large
-        $file = $this->createMock(File::class);
-        $file->method('getName')->willReturn('test.txt');
-        $file->method('getMimeType')->willReturn('text/plain');
-        $file->method('getSize')->willReturn(100 * 1024 * 1024); // 100MB
-
-        $result = $this->uploadService->validateFile($file);
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('valid', $result);
-        $this->assertArrayHasKey('error', $result);
-        $this->assertFalse($result['valid']);
-        $this->assertStringContainsString('File too large', $result['error']);
-    }
-
-    /**
-     * Test getUploadedFiles method
-     */
-    public function testGetUploadedFiles(): void
-    {
-        $registerId = 'test-register';
-        $schemaId = 'test-schema';
-        $objectId = 'test-object';
-
-        // Create mock user
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('testuser');
-
-        // Create mock folder structure
-        $userFolder = $this->createMock(Folder::class);
-        $registerFolder = $this->createMock(Folder::class);
-        $schemaFolder = $this->createMock(Folder::class);
-        $objectFolder = $this->createMock(Folder::class);
-
-        // Create mock files
-        $file1 = $this->createMock(File::class);
-        $file1->method('getName')->willReturn('file1.txt');
-        $file1->method('getMimeType')->willReturn('text/plain');
-        $file1->method('getSize')->willReturn(1024);
-
-        $file2 = $this->createMock(File::class);
-        $file2->method('getName')->willReturn('file2.pdf');
-        $file2->method('getMimeType')->willReturn('application/pdf');
-        $file2->method('getSize')->willReturn(2048);
-
-        $files = [$file1, $file2];
-
-        // Mock user session
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn($user);
-
-        // Mock root folder
-        $this->rootFolder->expects($this->once())
-            ->method('getUserFolder')
-            ->with('testuser')
-            ->willReturn($userFolder);
-
-        // Mock folder hierarchy
-        $userFolder->expects($this->once())
-            ->method('nodeExists')
-            ->with('Open Registers')
-            ->willReturn(true);
-
-        $userFolder->expects($this->once())
-            ->method('get')
-            ->with('Open Registers')
-            ->willReturn($registerFolder);
-
-        $registerFolder->expects($this->once())
-            ->method('nodeExists')
-            ->with($registerId)
-            ->willReturn(true);
-
-        $registerFolder->expects($this->once())
-            ->method('get')
-            ->with($registerId)
-            ->willReturn($schemaFolder);
-
-        $schemaFolder->expects($this->once())
-            ->method('nodeExists')
-            ->with($schemaId)
-            ->willReturn(true);
-
-        $schemaFolder->expects($this->once())
-            ->method('get')
-            ->with($schemaId)
-            ->willReturn($objectFolder);
-
-        $objectFolder->expects($this->once())
-            ->method('nodeExists')
-            ->with($objectId)
-            ->willReturn(true);
-
-        $objectFolder->expects($this->once())
-            ->method('get')
-            ->with($objectId)
-            ->willReturn($objectFolder);
-
-        // Mock getting files
-        $objectFolder->expects($this->once())
-            ->method('getDirectoryListing')
-            ->willReturn($files);
-
-        $result = $this->uploadService->getUploadedFiles($registerId, $schemaId, $objectId);
-
-        $this->assertIsArray($result);
-        $this->assertCount(2, $result);
-        $this->assertEquals($files, $result);
-    }
-
-    /**
-     * Test getUploadedFiles method with non-existent folder
-     */
-    public function testGetUploadedFilesWithNonExistentFolder(): void
-    {
-        $registerId = 'test-register';
-        $schemaId = 'test-schema';
-        $objectId = 'test-object';
-
-        // Create mock user
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('testuser');
-
-        // Create mock folder structure
-        $userFolder = $this->createMock(Folder::class);
-
-        // Mock user session
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn($user);
-
-        // Mock root folder
-        $this->rootFolder->expects($this->once())
-            ->method('getUserFolder')
-            ->with('testuser')
-            ->willReturn($userFolder);
-
-        // Mock folder hierarchy - folder doesn't exist
-        $userFolder->expects($this->once())
-            ->method('nodeExists')
-            ->with('Open Registers')
-            ->willReturn(false);
-
-        $result = $this->uploadService->getUploadedFiles($registerId, $schemaId, $objectId);
-
-        $this->assertIsArray($result);
-        $this->assertCount(0, $result);
+        $this->assertInstanceOf(Register::class, $result);
+        $this->assertEquals($register, $result);
     }
 }

@@ -50,7 +50,7 @@ class ObjectCacheServiceTest extends TestCase
 
         // Create mock object
         $object = $this->createMock(ObjectEntity::class);
-        $object->id = $identifier;
+        $object->method('__toString')->willReturn($identifier);
 
         // First call should fetch from database and cache
         $this->objectEntityMapper->expects($this->once())
@@ -95,7 +95,7 @@ class ObjectCacheServiceTest extends TestCase
 
         // Create mock object
         $object = $this->createMock(ObjectEntity::class);
-        $object->id = $identifier;
+        $object->method('__toString')->willReturn((string)$identifier);
 
         // Mock object entity mapper
         $this->objectEntityMapper->expects($this->once())
@@ -117,13 +117,13 @@ class ObjectCacheServiceTest extends TestCase
 
         // Create mock objects
         $object1 = $this->createMock(ObjectEntity::class);
-        $object1->id = 'obj1';
+        $object1->method('__toString')->willReturn('obj1');
 
         $object2 = $this->createMock(ObjectEntity::class);
-        $object2->id = 'obj2';
+        $object2->method('__toString')->willReturn('obj2');
 
         $object3 = $this->createMock(ObjectEntity::class);
-        $object3->id = 'obj3';
+        $object3->method('__toString')->willReturn('obj3');
 
         $objects = [$object1, $object2, $object3];
 
@@ -204,11 +204,11 @@ class ObjectCacheServiceTest extends TestCase
     {
         // Create mock objects
         $object1 = $this->createMock(ObjectEntity::class);
-        $object1->id = 'obj1';
+        $object1->method('__toString')->willReturn('obj1');
         $object1->method('getObject')->willReturn(['register' => 'reg1', 'schema' => 'schema1']);
 
         $object2 = $this->createMock(ObjectEntity::class);
-        $object2->id = 'obj2';
+        $object2->method('__toString')->willReturn('obj2');
         $object2->method('getObject')->willReturn(['register' => 'reg2', 'schema' => 'schema2']);
 
         $objects = [$object1, $object2];
@@ -246,7 +246,7 @@ class ObjectCacheServiceTest extends TestCase
     {
         // Create mock objects
         $object1 = $this->createMock(ObjectEntity::class);
-        $object1->id = 'obj1';
+        $object1->method('__toString')->willReturn('obj1');
 
         $objects = [$object1];
         $extend = [];

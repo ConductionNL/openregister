@@ -479,6 +479,10 @@ class SearchService
      */
     public function parseQueryString(string $queryString=''): array
     {
+        if (empty($queryString)) {
+            return [];
+        }
+        
         $pairs = explode(separator: '&', string: $queryString);
         $vars  = [];
 
@@ -491,17 +495,13 @@ class SearchService
                 $value = urldecode(string: $kvpair[1]);
             }
 
+            $bracketPos = strpos(haystack: $key, needle: '[');
+            $nameKey = ($bracketPos !== false) ? substr(string: $key, offset: 0, length: $bracketPos) : $key;
+            
             $this->recursiveRequestQueryKey(
                 vars: $vars,
                 name: $key,
-                nameKey: substr(
-                    string: $key,
-                    offset: 0,
-                    length: (strpos(
-                        haystack: $key,
-                        needle: '['
-                    ))
-                ),
+                nameKey: $nameKey,
                 value: $value
             );
         }//end foreach

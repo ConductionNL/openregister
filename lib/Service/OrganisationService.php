@@ -483,6 +483,7 @@ class OrganisationService
             $organisation->setUuid($uuid);
         }
 
+        $userId = null;
         if ($user !== null) {
             $userId = $user->getUID();
             if ($addCurrentUser) {
@@ -497,7 +498,7 @@ class OrganisationService
         $saved = $this->organisationMapper->save($organisation);
 
         // Clear cached organisations to force refresh
-        if ($addCurrentUser) {
+        if ($addCurrentUser && $userId !== null) {
             $cacheKey = self::SESSION_USER_ORGANISATIONS.'_'.$userId;
             $this->session->remove($cacheKey);
         }
@@ -505,7 +506,7 @@ class OrganisationService
         $this->logger->info(
                 'Created new organisation',
                 [
-                    'organisationUuid' => $saved->getUuid(),
+                    'organisationUuid' => (string)$saved,
                     'name'             => $name,
                     'owner'            => $userId,
                     'adminUsersAdded'  => $this->getAdminGroupUsers(),

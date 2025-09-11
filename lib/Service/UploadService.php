@@ -63,7 +63,7 @@ class UploadService
         private readonly SchemaMapper $schemaMapper,
         private readonly RegisterMapper $registerMapper,
     ) {
-        $this->client = new Client([]);
+        // Use the injected client instead of creating a new one
 
     }//end __construct()
 
@@ -103,7 +103,10 @@ class UploadService
         }
 
         if (empty($data['url']) === false) {
-            $phpArray           = $this->getJSONfromURL($data['url']);
+            $phpArray = $this->getJSONfromURL($data['url']);
+            if ($phpArray instanceof JSONResponse) {
+                return $phpArray;
+            }
             $phpArray['source'] = $data['url'];
             return $phpArray;
         }
@@ -135,7 +138,7 @@ class UploadService
     {
         try {
             $response = $this->client->request('GET', $url);
-        } catch (GuzzleHttp\Exception\BadResponseException $e) {
+        } catch (\Exception $e) {
             return new JSONResponse(data: ['error' => 'Failed to do a GET api-call on url: '.$url.' '.$e->getMessage()], statusCode: 400);
         }
 

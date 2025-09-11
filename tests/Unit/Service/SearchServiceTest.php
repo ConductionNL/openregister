@@ -5,16 +5,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Service\SearchService;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 use PHPUnit\Framework\TestCase;
-use OCP\Search\ISearchQuery;
-use OCP\Search\SearchResult;
-use OCP\Search\SearchResultEntry;
+use OCP\IURLGenerator;
 
 /**
  * Test class for SearchService
@@ -29,410 +21,200 @@ use OCP\Search\SearchResultEntry;
 class SearchServiceTest extends TestCase
 {
     private SearchService $searchService;
-    private ObjectEntityMapper $objectEntityMapper;
-    private RegisterMapper $registerMapper;
-    private SchemaMapper $schemaMapper;
+    private IURLGenerator $urlGenerator;
 
     protected function setUp(): void
     {
         parent::setUp();
 
         // Create mock dependencies
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
-        $this->registerMapper = $this->createMock(RegisterMapper::class);
-        $this->schemaMapper = $this->createMock(SchemaMapper::class);
+        $this->urlGenerator = $this->createMock(IURLGenerator::class);
 
         // Create SearchService instance
         $this->searchService = new SearchService(
-            $this->objectEntityMapper,
-            $this->registerMapper,
-            $this->schemaMapper
+            $this->urlGenerator
         );
     }
 
     /**
-     * Test search method with valid query
+     * Test mergeFacets method
      */
-    public function testSearchWithValidQuery(): void
+    public function testMergeFacets(): void
     {
-        $query = 'test search';
-        $limit = 10;
-        $offset = 0;
+        $existingAggregation = [
+            ['_id' => 'facet1', 'count' => 5],
+            ['_id' => 'facet2', 'count' => 3]
+        ];
+        
+        $newAggregation = [
+            ['_id' => 'facet1', 'count' => 2],
+            ['_id' => 'facet3', 'count' => 4]
+        ];
 
-        // Create mock objects
-        $object1 = $this->createMock(ObjectEntity::class);
-        $object1->method('getId')->willReturn('1');
-        $object1->method('getTitle')->willReturn('Test Object 1');
-        $object1->method('getRegister')->willReturn('test-register');
-        $object1->method('getSchema')->willReturn('test-schema');
-
-        $object2 = $this->createMock(ObjectEntity::class);
-        $object2->method('getId')->willReturn('2');
-        $object2->method('getTitle')->willReturn('Test Object 2');
-        $object2->method('getRegister')->willReturn('test-register');
-        $object2->method('getSchema')->willReturn('test-schema');
-
-        $objects = [$object1, $object2];
-
-        // Mock object entity mapper
-        $this->objectEntityMapper->expects($this->once())
-            ->method('search')
-            ->with($query, $limit, $offset)
-            ->willReturn($objects);
-
-        $result = $this->searchService->search($query, $limit, $offset);
+        $result = $this->searchService->mergeFacets($existingAggregation, $newAggregation);
 
         $this->assertIsArray($result);
-        $this->assertCount(2, $result);
-        $this->assertArrayHasKey('objects', $result);
-        $this->assertArrayHasKey('total', $result);
-        $this->assertEquals($objects, $result['objects']);
+        $this->assertCount(3, $result);
+        
+        // Check that facet1 count is merged (5 + 2 = 7)
+        $facet1 = array_filter($result, fn($item) => $item['_id'] === 'facet1');
+        $this->assertCount(1, $facet1);
+        $this->assertEquals(7, reset($facet1)['count']);
     }
 
     /**
-     * Test search method with empty query
+     * Test sortResultArray method
      */
-    public function testSearchWithEmptyQuery(): void
+    public function testSortResultArray(): void
     {
-        $query = '';
-        $limit = 10;
-        $offset = 0;
+        $a = ['_score' => 0.8, 'title' => 'A'];
+        $b = ['_score' => 0.9, 'title' => 'B'];
 
-        $result = $this->searchService->search($query, $limit, $offset);
+        $result = $this->searchService->sortResultArray($a, $b);
 
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('objects', $result);
-        $this->assertArrayHasKey('total', $result);
-        $this->assertCount(0, $result['objects']);
-        $this->assertEquals(0, $result['total']);
+        $this->assertIsInt($result);
+        // Higher score should come first (descending order)
+        $this->assertLessThan(0, $result);
     }
 
     /**
-     * Test search method with no results
+     * Test createMongoDBSearchFilter method
      */
-    public function testSearchWithNoResults(): void
+    public function testCreateMongoDBSearchFilter(): void
     {
-        $query = 'nonexistent';
-        $limit = 10;
-        $offset = 0;
-
-        // Mock object entity mapper to return empty array
-        $this->objectEntityMapper->expects($this->once())
-            ->method('search')
-            ->with($query, $limit, $offset)
-            ->willReturn([]);
-
-        $result = $this->searchService->search($query, $limit, $offset);
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('objects', $result);
-        $this->assertArrayHasKey('total', $result);
-        $this->assertCount(0, $result['objects']);
-        $this->assertEquals(0, $result['total']);
-    }
-
-    /**
-     * Test search method with default parameters
-     */
-    public function testSearchWithDefaultParameters(): void
-    {
-        $query = 'test search';
-
-        // Create mock objects
-        $objects = [$this->createMock(ObjectEntity::class)];
-
-        // Mock object entity mapper with default parameters
-        $this->objectEntityMapper->expects($this->once())
-            ->method('search')
-            ->with($query, 20, 0) // default limit and offset
-            ->willReturn($objects);
-
-        $result = $this->searchService->search($query);
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('objects', $result);
-        $this->assertArrayHasKey('total', $result);
-    }
-
-    /**
-     * Test searchByRegister method
-     */
-    public function testSearchByRegister(): void
-    {
-        $query = 'test search';
-        $registerId = 'test-register';
-        $limit = 10;
-        $offset = 0;
-
-        // Create mock objects
-        $object1 = $this->createMock(ObjectEntity::class);
-        $object1->method('getId')->willReturn('1');
-        $object1->method('getTitle')->willReturn('Test Object 1');
-
-        $objects = [$object1];
-
-        // Mock object entity mapper
-        $this->objectEntityMapper->expects($this->once())
-            ->method('searchByRegister')
-            ->with($query, $registerId, $limit, $offset)
-            ->willReturn($objects);
-
-        $result = $this->searchService->searchByRegister($query, $registerId, $limit, $offset);
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('objects', $result);
-        $this->assertArrayHasKey('total', $result);
-        $this->assertEquals($objects, $result['objects']);
-    }
-
-    /**
-     * Test searchBySchema method
-     */
-    public function testSearchBySchema(): void
-    {
-        $query = 'test search';
-        $registerId = 'test-register';
-        $schemaId = 'test-schema';
-        $limit = 10;
-        $offset = 0;
-
-        // Create mock objects
-        $object1 = $this->createMock(ObjectEntity::class);
-        $object1->method('getId')->willReturn('1');
-        $object1->method('getTitle')->willReturn('Test Object 1');
-
-        $objects = [$object1];
-
-        // Mock object entity mapper
-        $this->objectEntityMapper->expects($this->once())
-            ->method('searchBySchema')
-            ->with($query, $registerId, $schemaId, $limit, $offset)
-            ->willReturn($objects);
-
-        $result = $this->searchService->searchBySchema($query, $registerId, $schemaId, $limit, $offset);
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('objects', $result);
-        $this->assertArrayHasKey('total', $result);
-        $this->assertEquals($objects, $result['objects']);
-    }
-
-    /**
-     * Test searchRegisters method
-     */
-    public function testSearchRegisters(): void
-    {
-        $query = 'test register';
-        $limit = 10;
-        $offset = 0;
-
-        // Create mock registers
-        $register1 = $this->createMock(Register::class);
-        $register1->method('getId')->willReturn('1');
-        $register1->method('getTitle')->willReturn('Test Register 1');
-
-        $register2 = $this->createMock(Register::class);
-        $register2->method('getId')->willReturn('2');
-        $register2->method('getTitle')->willReturn('Test Register 2');
-
-        $registers = [$register1, $register2];
-
-        // Mock register mapper
-        $this->registerMapper->expects($this->once())
-            ->method('search')
-            ->with($query, $limit, $offset)
-            ->willReturn($registers);
-
-        $result = $this->searchService->searchRegisters($query, $limit, $offset);
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('registers', $result);
-        $this->assertArrayHasKey('total', $result);
-        $this->assertEquals($registers, $result['registers']);
-    }
-
-    /**
-     * Test searchSchemas method
-     */
-    public function testSearchSchemas(): void
-    {
-        $query = 'test schema';
-        $registerId = 'test-register';
-        $limit = 10;
-        $offset = 0;
-
-        // Create mock schemas
-        $schema1 = $this->createMock(Schema::class);
-        $schema1->method('getId')->willReturn('1');
-        $schema1->method('getTitle')->willReturn('Test Schema 1');
-
-        $schema2 = $this->createMock(Schema::class);
-        $schema2->method('getId')->willReturn('2');
-        $schema2->method('getTitle')->willReturn('Test Schema 2');
-
-        $schemas = [$schema1, $schema2];
-
-        // Mock schema mapper
-        $this->schemaMapper->expects($this->once())
-            ->method('search')
-            ->with($query, $registerId, $limit, $offset)
-            ->willReturn($schemas);
-
-        $result = $this->searchService->searchSchemas($query, $registerId, $limit, $offset);
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('schemas', $result);
-        $this->assertArrayHasKey('total', $result);
-        $this->assertEquals($schemas, $result['schemas']);
-    }
-
-    /**
-     * Test searchWithFilters method
-     */
-    public function testSearchWithFilters(): void
-    {
-        $query = 'test search';
         $filters = [
-            'register' => 'test-register',
-            'schema' => 'test-schema',
+            'title' => 'test',
+            'status' => 'published',
+            'date' => '2024-01-01'
+        ];
+        
+        $fieldsToSearch = ['title', 'description'];
+
+        $result = $this->searchService->createMongoDBSearchFilter($filters, $fieldsToSearch);
+
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('title', $result);
+    }
+
+    /**
+     * Test createMySQLSearchConditions method
+     */
+    public function testCreateMySQLSearchConditions(): void
+    {
+        $filters = [
+            '_search' => 'test',
             'status' => 'published'
         ];
-        $limit = 10;
-        $offset = 0;
+        
+        $fieldsToSearch = ['title', 'description'];
 
-        // Create mock objects
-        $object1 = $this->createMock(ObjectEntity::class);
-        $object1->method('getId')->willReturn('1');
-        $object1->method('getTitle')->willReturn('Test Object 1');
-
-        $objects = [$object1];
-
-        // Mock object entity mapper
-        $this->objectEntityMapper->expects($this->once())
-            ->method('searchWithFilters')
-            ->with($query, $filters, $limit, $offset)
-            ->willReturn($objects);
-
-        $result = $this->searchService->searchWithFilters($query, $filters, $limit, $offset);
+        $result = $this->searchService->createMySQLSearchConditions($filters, $fieldsToSearch);
 
         $this->assertIsArray($result);
-        $this->assertArrayHasKey('objects', $result);
-        $this->assertArrayHasKey('total', $result);
-        $this->assertEquals($objects, $result['objects']);
+        $this->assertNotEmpty($result);
     }
 
     /**
-     * Test searchWithFilters method with empty filters
+     * Test unsetSpecialQueryParams method
      */
-    public function testSearchWithFiltersWithEmptyFilters(): void
+    public function testUnsetSpecialQueryParams(): void
     {
-        $query = 'test search';
-        $filters = [];
-        $limit = 10;
-        $offset = 0;
-
-        // Create mock objects
-        $objects = [$this->createMock(ObjectEntity::class)];
-
-        // Mock object entity mapper
-        $this->objectEntityMapper->expects($this->once())
-            ->method('searchWithFilters')
-            ->with($query, $filters, $limit, $offset)
-            ->willReturn($objects);
-
-        $result = $this->searchService->searchWithFilters($query, $filters, $limit, $offset);
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('objects', $result);
-        $this->assertArrayHasKey('total', $result);
-    }
-
-    /**
-     * Test getSearchSuggestions method
-     */
-    public function testGetSearchSuggestions(): void
-    {
-        $query = 'test';
-        $limit = 5;
-
-        // Create mock suggestions
-        $suggestions = [
-            'test object',
-            'test register',
-            'test schema',
-            'test data',
-            'test item'
+        $filters = [
+            'title' => 'test',
+            '.limit' => 10,
+            '.page' => 1,
+            '.sort' => 'title',
+            '_search' => 'query'
         ];
 
-        // Mock object entity mapper
-        $this->objectEntityMapper->expects($this->once())
-            ->method('getSearchSuggestions')
-            ->with($query, $limit)
-            ->willReturn($suggestions);
-
-        $result = $this->searchService->getSearchSuggestions($query, $limit);
+        $result = $this->searchService->unsetSpecialQueryParams($filters);
 
         $this->assertIsArray($result);
-        $this->assertEquals($suggestions, $result);
+        $this->assertArrayHasKey('.limit', $result);
+        $this->assertArrayHasKey('.page', $result);
+        $this->assertArrayHasKey('.sort', $result);
+        $this->assertArrayNotHasKey('_search', $result);
+        $this->assertArrayHasKey('title', $result);
     }
 
     /**
-     * Test getSearchSuggestions method with default limit
+     * Test createMySQLSearchParams method
      */
-    public function testGetSearchSuggestionsWithDefaultLimit(): void
+    public function testCreateMySQLSearchParams(): void
     {
-        $query = 'test';
-
-        // Create mock suggestions
-        $suggestions = ['test object', 'test register'];
-
-        // Mock object entity mapper with default limit
-        $this->objectEntityMapper->expects($this->once())
-            ->method('getSearchSuggestions')
-            ->with($query, 10) // default limit
-            ->willReturn($suggestions);
-
-        $result = $this->searchService->getSearchSuggestions($query);
-
-        $this->assertIsArray($result);
-        $this->assertEquals($suggestions, $result);
-    }
-
-    /**
-     * Test getSearchSuggestions method with empty query
-     */
-    public function testGetSearchSuggestionsWithEmptyQuery(): void
-    {
-        $query = '';
-
-        $result = $this->searchService->getSearchSuggestions($query);
-
-        $this->assertIsArray($result);
-        $this->assertCount(0, $result);
-    }
-
-    /**
-     * Test getSearchStatistics method
-     */
-    public function testGetSearchStatistics(): void
-    {
-        // Create mock statistics
-        $statistics = [
-            'total_objects' => 1000,
-            'total_registers' => 50,
-            'total_schemas' => 200,
-            'search_count_today' => 25,
-            'popular_queries' => ['test', 'data', 'object']
+        $filters = [
+            'title' => 'test',
+            'status' => 'published',
+            '_search' => 'query'
         ];
 
-        // Mock object entity mapper
-        $this->objectEntityMapper->expects($this->once())
-            ->method('getSearchStatistics')
-            ->willReturn($statistics);
-
-        $result = $this->searchService->getSearchStatistics();
+        $result = $this->searchService->createMySQLSearchParams($filters);
 
         $this->assertIsArray($result);
-        $this->assertEquals($statistics, $result);
+        $this->assertNotEmpty($result);
+        $this->assertArrayHasKey('search', $result);
+    }
+
+    /**
+     * Test createSortForMySQL method
+     */
+    public function testCreateSortForMySQL(): void
+    {
+        $filters = [
+            'title' => 'test',
+            '_order' => ['title' => 'ASC', 'status' => 'DESC']
+        ];
+
+        $result = $this->searchService->createSortForMySQL($filters);
+
+        $this->assertIsArray($result);
+        $this->assertNotEmpty($result);
+        $this->assertArrayHasKey('title', $result);
+        $this->assertArrayHasKey('status', $result);
+    }
+
+    /**
+     * Test createSortForMongoDB method
+     */
+    public function testCreateSortForMongoDB(): void
+    {
+        $filters = [
+            'title' => 'test',
+            '_order' => ['title' => 'ASC', 'status' => 'DESC']
+        ];
+
+        $result = $this->searchService->createSortForMongoDB($filters);
+
+        $this->assertIsArray($result);
+        $this->assertNotEmpty($result);
+        $this->assertArrayHasKey('title', $result);
+        $this->assertArrayHasKey('status', $result);
+    }
+
+    /**
+     * Test parseQueryString method
+     */
+    public function testParseQueryString(): void
+    {
+        $queryString = 'title=test&status=published';
+
+        $result = $this->searchService->parseQueryString($queryString);
+
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('title', $result);
+        $this->assertArrayHasKey('status', $result);
+        $this->assertEquals('test', $result['title']);
+        $this->assertEquals('published', $result['status']);
+    }
+
+    /**
+     * Test parseQueryString method with empty string
+     */
+    public function testParseQueryStringWithEmptyString(): void
+    {
+        $result = $this->searchService->parseQueryString('');
+
+        $this->assertIsArray($result);
+        $this->assertEmpty($result);
     }
 }

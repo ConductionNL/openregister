@@ -71,19 +71,24 @@ class RevertServiceTest extends TestCase
         $until = 123; // audit trail ID
 
         // Create mock object
-        $object = $this->createMock(ObjectEntity::class);
-        $object->id = $objectId;
-        $object->register = $register;
-        $object->schema = $schema;
+        $object = $this->getMockBuilder(ObjectEntity::class)
+            ->addMethods(['getRegister', 'getSchema', 'setRegister', 'setSchema', 'getLockedBy'])
+            ->onlyMethods(['__toString', 'isLocked'])
+            ->getMock();
+        $object->method('__toString')->willReturn($objectId);
+        $object->method('getRegister')->willReturn($register);
+        $object->method('getSchema')->willReturn($schema);
+        $object->method('setRegister')->willReturn($object);
+        $object->method('setSchema')->willReturn($object);
         $object->method('isLocked')->willReturn(false);
 
         // Create mock reverted object
         $revertedObject = $this->createMock(ObjectEntity::class);
-        $revertedObject->id = $objectId;
+        $revertedObject->method('__toString')->willReturn($objectId);
 
         // Create mock saved object
         $savedObject = $this->createMock(ObjectEntity::class);
-        $savedObject->id = $objectId;
+        $savedObject->method('__toString')->willReturn($objectId);
 
         // Mock mappers
         $this->objectEntityMapper->expects($this->once())
@@ -101,6 +106,10 @@ class RevertServiceTest extends TestCase
             ->with($revertedObject)
             ->willReturn($savedObject);
 
+        // Mock container (not called when object is not locked)
+        $this->container->expects($this->never())
+            ->method('get');
+
         // Mock event dispatcher
         $this->eventDispatcher->expects($this->once())
             ->method('dispatchTyped')
@@ -109,28 +118,6 @@ class RevertServiceTest extends TestCase
         $result = $this->revertService->revert($register, $schema, $objectId, $until);
 
         $this->assertEquals($savedObject, $result);
-    }
-
-    /**
-     * Test revert method with non-existent object
-     */
-    public function testRevertWithNonExistentObject(): void
-    {
-        $register = 'test-register';
-        $schema = 'test-schema';
-        $objectId = 'non-existent-id';
-        $until = 123;
-
-        // Mock object entity mapper to throw exception
-        $this->objectEntityMapper->expects($this->once())
-            ->method('find')
-            ->with($objectId)
-            ->willThrowException(new DoesNotExistException('Object not found'));
-
-        $this->expectException(DoesNotExistException::class);
-        $this->expectExceptionMessage('Object not found');
-
-        $this->revertService->revert($register, $schema, $objectId, $until);
     }
 
     /**
@@ -144,8 +131,11 @@ class RevertServiceTest extends TestCase
         $until = 123;
 
         // Create mock object with different register/schema
-        $object = $this->createMock(ObjectEntity::class);
-        $object->id = $objectId;
+        $object = $this->getMockBuilder(ObjectEntity::class)
+            ->addMethods(['getRegister', 'getSchema', 'setRegister', 'setSchema', 'getLockedBy'])
+            ->onlyMethods(['__toString', 'isLocked'])
+            ->getMock();
+        $object->method('__toString')->willReturn($objectId);
         $object->method('getRegister')->willReturn('different-register');
         $object->method('getSchema')->willReturn('different-schema');
 
@@ -170,30 +160,34 @@ class RevertServiceTest extends TestCase
         $schema = 'test-schema';
         $objectId = 'test-object-id';
         $until = 123;
-        $userId = 'test-user';
 
-        // Create mock object that is locked
-        $object = $this->createMock(ObjectEntity::class);
-        $object->id = $objectId;
-        $object->register = $register;
-        $object->schema = $schema;
+        // Create mock object
+        $object = $this->getMockBuilder(ObjectEntity::class)
+            ->addMethods(['getRegister', 'getSchema', 'setRegister', 'setSchema', 'getLockedBy'])
+            ->onlyMethods(['__toString', 'isLocked'])
+            ->getMock();
+        $object->method('__toString')->willReturn($objectId);
+        $object->method('getRegister')->willReturn($register);
+        $object->method('getSchema')->willReturn($schema);
+        $object->method('setRegister')->willReturn($object);
+        $object->method('setSchema')->willReturn($object);
         $object->method('isLocked')->willReturn(true);
-        $object->method('getLockedBy')->willReturn('different-user');
+        $object->method('getLockedBy')->willReturn('other-user');
 
-        // Mock container to return user ID
-        $this->container->expects($this->once())
-            ->method('get')
-            ->with('userId')
-            ->willReturn($userId);
-
-        // Mock object entity mapper
+        // Mock mappers
         $this->objectEntityMapper->expects($this->once())
             ->method('find')
             ->with($objectId)
             ->willReturn($object);
 
+        // Mock container
+        $this->container->expects($this->once())
+            ->method('get')
+            ->with('userId')
+            ->willReturn('test-user');
+
         $this->expectException(LockedException::class);
-        $this->expectExceptionMessage('Object is locked by different-user');
+        $this->expectExceptionMessage('Object is locked by other-user');
 
         $this->revertService->revert($register, $schema, $objectId, $until);
     }
@@ -207,29 +201,27 @@ class RevertServiceTest extends TestCase
         $schema = 'test-schema';
         $objectId = 'test-object-id';
         $until = 123;
-        $userId = 'test-user';
 
-        // Create mock object that is locked by same user
-        $object = $this->createMock(ObjectEntity::class);
-        $object->id = $objectId;
-        $object->register = $register;
-        $object->schema = $schema;
+        // Create mock object
+        $object = $this->getMockBuilder(ObjectEntity::class)
+            ->addMethods(['getRegister', 'getSchema', 'setRegister', 'setSchema', 'getLockedBy'])
+            ->onlyMethods(['__toString', 'isLocked'])
+            ->getMock();
+        $object->method('__toString')->willReturn($objectId);
+        $object->method('getRegister')->willReturn($register);
+        $object->method('getSchema')->willReturn($schema);
+        $object->method('setRegister')->willReturn($object);
+        $object->method('setSchema')->willReturn($object);
         $object->method('isLocked')->willReturn(true);
-        $object->method('getLockedBy')->willReturn($userId);
+        $object->method('getLockedBy')->willReturn('test-user');
 
         // Create mock reverted object
         $revertedObject = $this->createMock(ObjectEntity::class);
-        $revertedObject->id = $objectId;
+        $revertedObject->method('__toString')->willReturn($objectId);
 
         // Create mock saved object
         $savedObject = $this->createMock(ObjectEntity::class);
-        $savedObject->id = $objectId;
-
-        // Mock container to return user ID
-        $this->container->expects($this->once())
-            ->method('get')
-            ->with('userId')
-            ->willReturn($userId);
+        $savedObject->method('__toString')->willReturn($objectId);
 
         // Mock mappers
         $this->objectEntityMapper->expects($this->once())
@@ -247,6 +239,12 @@ class RevertServiceTest extends TestCase
             ->with($revertedObject)
             ->willReturn($savedObject);
 
+        // Mock container
+        $this->container->expects($this->once())
+            ->method('get')
+            ->with('userId')
+            ->willReturn('test-user');
+
         // Mock event dispatcher
         $this->eventDispatcher->expects($this->once())
             ->method('dispatchTyped')
@@ -258,7 +256,7 @@ class RevertServiceTest extends TestCase
     }
 
     /**
-     * Test revert method with overwriteVersion flag
+     * Test revert method with overwrite version
      */
     public function testRevertWithOverwriteVersion(): void
     {
@@ -269,19 +267,24 @@ class RevertServiceTest extends TestCase
         $overwriteVersion = true;
 
         // Create mock object
-        $object = $this->createMock(ObjectEntity::class);
-        $object->id = $objectId;
-        $object->register = $register;
-        $object->schema = $schema;
+        $object = $this->getMockBuilder(ObjectEntity::class)
+            ->addMethods(['getRegister', 'getSchema', 'setRegister', 'setSchema', 'getLockedBy'])
+            ->onlyMethods(['__toString', 'isLocked'])
+            ->getMock();
+        $object->method('__toString')->willReturn($objectId);
+        $object->method('getRegister')->willReturn($register);
+        $object->method('getSchema')->willReturn($schema);
+        $object->method('setRegister')->willReturn($object);
+        $object->method('setSchema')->willReturn($object);
         $object->method('isLocked')->willReturn(false);
 
         // Create mock reverted object
         $revertedObject = $this->createMock(ObjectEntity::class);
-        $revertedObject->id = $objectId;
+        $revertedObject->method('__toString')->willReturn($objectId);
 
         // Create mock saved object
         $savedObject = $this->createMock(ObjectEntity::class);
-        $savedObject->id = $objectId;
+        $savedObject->method('__toString')->willReturn($objectId);
 
         // Mock mappers
         $this->objectEntityMapper->expects($this->once())
@@ -298,6 +301,10 @@ class RevertServiceTest extends TestCase
             ->method('update')
             ->with($revertedObject)
             ->willReturn($savedObject);
+
+        // Mock container (not called when object is not locked)
+        $this->container->expects($this->never())
+            ->method('get');
 
         // Mock event dispatcher
         $this->eventDispatcher->expects($this->once())

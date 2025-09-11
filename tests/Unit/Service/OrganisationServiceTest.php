@@ -65,8 +65,6 @@ class OrganisationServiceTest extends TestCase
     {
         // Create mock organisation
         $organisation = $this->createMock(Organisation::class);
-        $organisation->method('getId')->willReturn('1');
-        $organisation->method('getName')->willReturn('Default Organisation');
 
         // Mock organisation mapper to return existing organisation
         $this->organisationMapper->expects($this->once())
@@ -85,8 +83,18 @@ class OrganisationServiceTest extends TestCase
     {
         // Create mock organisation
         $organisation = $this->createMock(Organisation::class);
-        $organisation->method('getId')->willReturn('1');
-        $organisation->method('getName')->willReturn('Default Organisation');
+        $organisation->method('__toString')->willReturn('test-uuid');
+        $organisation->method('hasUser')->willReturn(false);
+        $organisation->method('addUser')->willReturn($organisation);
+
+        // Mock group manager to return admin users
+        $adminGroup = $this->createMock(\OCP\IGroup::class);
+        $adminUser1 = $this->createMock(\OCP\IUser::class);
+        $adminUser1->method('getUID')->willReturn('admin1');
+        $adminUser2 = $this->createMock(\OCP\IUser::class);
+        $adminUser2->method('getUID')->willReturn('admin2');
+        $adminGroup->method('getUsers')->willReturn([$adminUser1, $adminUser2]);
+        $this->groupManager->method('get')->with('admin')->willReturn($adminGroup);
 
         // Mock organisation mapper to throw exception (no default exists)
         $this->organisationMapper->expects($this->once())
@@ -95,7 +103,7 @@ class OrganisationServiceTest extends TestCase
 
         // Mock organisation mapper to create new organisation
         $this->organisationMapper->expects($this->once())
-            ->method('insert')
+            ->method('createDefault')
             ->willReturn($organisation);
 
         $result = $this->organisationService->ensureDefaultOrganisation();
@@ -114,12 +122,7 @@ class OrganisationServiceTest extends TestCase
 
         // Create mock organisations
         $organisation1 = $this->createMock(Organisation::class);
-        $organisation1->method('getId')->willReturn('1');
-        $organisation1->method('getName')->willReturn('Organisation 1');
-
         $organisation2 = $this->createMock(Organisation::class);
-        $organisation2->method('getId')->willReturn('2');
-        $organisation2->method('getName')->willReturn('Organisation 2');
 
         $organisations = [$organisation1, $organisation2];
 
@@ -130,7 +133,7 @@ class OrganisationServiceTest extends TestCase
 
         // Mock organisation mapper
         $this->organisationMapper->expects($this->once())
-            ->method('findByUser')
+            ->method('findByUserId')
             ->with('test-user')
             ->willReturn($organisations);
 
@@ -166,18 +169,16 @@ class OrganisationServiceTest extends TestCase
 
         // Create mock organisation
         $organisation = $this->createMock(Organisation::class);
-        $organisation->method('getId')->willReturn('1');
-        $organisation->method('getName')->willReturn('Active Organisation');
 
         // Mock user session
-        $this->userSession->expects($this->once())
+        $this->userSession->expects($this->exactly(2))
             ->method('getUser')
             ->willReturn($user);
 
         // Mock config to return organisation UUID
         $this->config->expects($this->once())
             ->method('getUserValue')
-            ->with('test-user', 'openregister', 'active_organisation_uuid', '')
+            ->with('test-user', 'openregister', 'active_organisation', '')
             ->willReturn('org-uuid-123');
 
         // Mock organisation mapper
@@ -185,6 +186,12 @@ class OrganisationServiceTest extends TestCase
             ->method('findByUuid')
             ->with('org-uuid-123')
             ->willReturn($organisation);
+
+        // Mock getUserOrganisations to return the same organisation
+        $this->organisationMapper->expects($this->once())
+            ->method('findByUserId')
+            ->with('test-user')
+            ->willReturn([$organisation]);
 
         $result = $this->organisationService->getActiveOrganisation();
 
@@ -201,19 +208,42 @@ class OrganisationServiceTest extends TestCase
         $user->method('getUID')->willReturn('test-user');
 
         // Mock user session
-        $this->userSession->expects($this->once())
+        $this->userSession->expects($this->exactly(2))
             ->method('getUser')
             ->willReturn($user);
 
         // Mock config to return empty string
         $this->config->expects($this->once())
             ->method('getUserValue')
-            ->with('test-user', 'openregister', 'active_organisation_uuid', '')
+            ->with('test-user', 'openregister', 'active_organisation', '')
             ->willReturn('');
+
+        // Mock getUserOrganisations to return empty array
+        $this->organisationMapper->expects($this->once())
+            ->method('findByUserId')
+            ->with('test-user')
+            ->willReturn([]);
+
+        // Mock ensureDefaultOrganisation to return null
+        $this->organisationService = $this->getMockBuilder(OrganisationService::class)
+            ->setConstructorArgs([
+                $this->organisationMapper,
+                $this->userSession,
+                $this->session,
+                $this->config,
+                $this->groupManager,
+                $this->logger
+            ])
+            ->onlyMethods(['ensureDefaultOrganisation'])
+            ->getMock();
+        
+        $this->organisationService->expects($this->once())
+            ->method('ensureDefaultOrganisation')
+            ->willReturn($this->createMock(Organisation::class));
 
         $result = $this->organisationService->getActiveOrganisation();
 
-        $this->assertNull($result);
+        $this->assertInstanceOf(Organisation::class, $result);
     }
 
     /**
@@ -225,15 +255,25 @@ class OrganisationServiceTest extends TestCase
         $user = $this->createMock(IUser::class);
         $user->method('getUID')->willReturn('test-user');
 
+        // Create mock organisation
+        $organisation = $this->createMock(Organisation::class);
+        $organisation->method('hasUser')->with('test-user')->willReturn(true);
+
         // Mock user session
         $this->userSession->expects($this->once())
             ->method('getUser')
             ->willReturn($user);
 
+        // Mock organisation mapper
+        $this->organisationMapper->expects($this->once())
+            ->method('findByUuid')
+            ->with('org-uuid-123')
+            ->willReturn($organisation);
+
         // Mock config to set user value
         $this->config->expects($this->once())
             ->method('setUserValue')
-            ->with('test-user', 'openregister', 'active_organisation_uuid', 'org-uuid-123')
+            ->with('test-user', 'openregister', 'active_organisation', 'org-uuid-123')
             ->willReturn(true);
 
         $result = $this->organisationService->setActiveOrganisation('org-uuid-123');
@@ -251,9 +291,10 @@ class OrganisationServiceTest extends TestCase
             ->method('getUser')
             ->willReturn(null);
 
-        $result = $this->organisationService->setActiveOrganisation('org-uuid-123');
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('No user logged in');
 
-        $this->assertFalse($result);
+        $this->organisationService->setActiveOrganisation('org-uuid-123');
     }
 
     /**
@@ -267,8 +308,6 @@ class OrganisationServiceTest extends TestCase
 
         // Create mock organisation
         $organisation = $this->createMock(Organisation::class);
-        $organisation->method('getId')->willReturn('1');
-        $organisation->method('getName')->willReturn('New Organisation');
 
         // Mock user session
         $this->userSession->expects($this->once())
@@ -277,8 +316,14 @@ class OrganisationServiceTest extends TestCase
 
         // Mock organisation mapper
         $this->organisationMapper->expects($this->once())
-            ->method('insert')
+            ->method('save')
             ->willReturn($organisation);
+
+        // Mock group manager for admin users
+        $this->groupManager->expects($this->exactly(2))
+            ->method('get')
+            ->with('admin')
+            ->willReturn($this->createMock(\OCP\IGroup::class));
 
         $result = $this->organisationService->createOrganisation('New Organisation', 'Description');
 
@@ -295,10 +340,20 @@ class OrganisationServiceTest extends TestCase
             ->method('getUser')
             ->willReturn(null);
 
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('User must be logged in to create organisation');
+        // Mock group manager for admin users
+        $this->groupManager->expects($this->exactly(2))
+            ->method('get')
+            ->with('admin')
+            ->willReturn($this->createMock(\OCP\IGroup::class));
 
-        $this->organisationService->createOrganisation('New Organisation', 'Description');
+        // Mock organisation mapper
+        $this->organisationMapper->expects($this->once())
+            ->method('save')
+            ->willReturn($this->createMock(Organisation::class));
+
+        $result = $this->organisationService->createOrganisation('New Organisation', 'Description');
+
+        $this->assertInstanceOf(Organisation::class, $result);
     }
 
     /**
@@ -312,7 +367,7 @@ class OrganisationServiceTest extends TestCase
 
         // Create mock organisation
         $organisation = $this->createMock(Organisation::class);
-        $organisation->method('getId')->willReturn('1');
+        $organisation->method('hasUser')->with('test-user')->willReturn(true);
 
         // Mock user session
         $this->userSession->expects($this->once())
@@ -324,11 +379,6 @@ class OrganisationServiceTest extends TestCase
             ->method('findByUuid')
             ->with('org-uuid-123')
             ->willReturn($organisation);
-
-        $this->organisationMapper->expects($this->once())
-            ->method('hasUserAccess')
-            ->with('test-user', 'org-uuid-123')
-            ->willReturn(true);
 
         $result = $this->organisationService->hasAccessToOrganisation('org-uuid-123');
 
@@ -346,7 +396,7 @@ class OrganisationServiceTest extends TestCase
 
         // Create mock organisation
         $organisation = $this->createMock(Organisation::class);
-        $organisation->method('getId')->willReturn('1');
+        $organisation->method('hasUser')->with('test-user')->willReturn(false);
 
         // Mock user session
         $this->userSession->expects($this->once())
@@ -359,11 +409,6 @@ class OrganisationServiceTest extends TestCase
             ->with('org-uuid-123')
             ->willReturn($organisation);
 
-        $this->organisationMapper->expects($this->once())
-            ->method('hasUserAccess')
-            ->with('test-user', 'org-uuid-123')
-            ->willReturn(false);
-
         $result = $this->organisationService->hasAccessToOrganisation('org-uuid-123');
 
         $this->assertFalse($result);
@@ -374,6 +419,15 @@ class OrganisationServiceTest extends TestCase
      */
     public function testClearCache(): void
     {
+        // Create mock user
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('test-user');
+
+        // Mock user session
+        $this->userSession->expects($this->once())
+            ->method('getUser')
+            ->willReturn($user);
+
         $result = $this->organisationService->clearCache();
 
         $this->assertTrue($result);
@@ -384,6 +438,15 @@ class OrganisationServiceTest extends TestCase
      */
     public function testClearCacheWithPersistentClear(): void
     {
+        // Create mock user
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('test-user');
+
+        // Mock user session
+        $this->userSession->expects($this->once())
+            ->method('getUser')
+            ->willReturn($user);
+
         $result = $this->organisationService->clearCache(true);
 
         $this->assertTrue($result);

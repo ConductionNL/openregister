@@ -5,11 +5,18 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Db\SettingsMapper;
-use OCA\OpenRegister\Db\Settings;
+use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\SearchTrailMapper;
+use OCA\OpenRegister\Db\ObjectEntityMapper;
 use PHPUnit\Framework\TestCase;
-use OCP\IUser;
-use OCP\IUserSession;
+use OCP\IAppConfig;
+use OCP\IRequest;
+use OCP\AppFramework\IAppContainer;
+use OCP\AppFramework\App;
+use OCP\App\IAppManager;
+use OCP\IGroupManager;
+use OCP\IUserManager;
 
 /**
  * Test class for SettingsService
@@ -24,465 +31,386 @@ use OCP\IUserSession;
 class SettingsServiceTest extends TestCase
 {
     private SettingsService $settingsService;
-    private SettingsMapper $settingsMapper;
-    private IUserSession $userSession;
+    private IAppConfig $config;
+    private IRequest $request;
+    private IAppContainer $container;
+    private IAppManager $appManager;
+    private IGroupManager $groupManager;
+    private IUserManager $userManager;
+    private OrganisationMapper $organisationMapper;
+    private AuditTrailMapper $auditTrailMapper;
+    private SearchTrailMapper $searchTrailMapper;
+    private ObjectEntityMapper $objectEntityMapper;
 
     protected function setUp(): void
     {
         parent::setUp();
 
         // Create mock dependencies
-        $this->settingsMapper = $this->createMock(SettingsMapper::class);
-        $this->userSession = $this->createMock(IUserSession::class);
+        $this->config = $this->createMock(IAppConfig::class);
+        $this->request = $this->createMock(IRequest::class);
+        $this->container = $this->createMock(IAppContainer::class);
+        $this->appManager = $this->createMock(IAppManager::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
+        $this->userManager = $this->createMock(IUserManager::class);
+        $this->organisationMapper = $this->createMock(OrganisationMapper::class);
+        $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
+        $this->searchTrailMapper = $this->createMock(SearchTrailMapper::class);
+        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
 
         // Create SettingsService instance
         $this->settingsService = new SettingsService(
-            $this->settingsMapper,
-            $this->userSession
+            $this->config,
+            $this->request,
+            $this->container,
+            $this->appManager,
+            $this->groupManager,
+            $this->userManager,
+            $this->organisationMapper,
+            $this->auditTrailMapper,
+            $this->searchTrailMapper,
+            $this->objectEntityMapper
         );
     }
 
     /**
-     * Test getSetting method with existing setting
+     * Test isOpenRegisterInstalled method
      */
-    public function testGetSettingWithExistingSetting(): void
+    public function testIsOpenRegisterInstalled(): void
     {
-        $key = 'test_setting';
-        $value = 'test_value';
-        $userId = 'testuser';
-
-        // Create mock user
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn($userId);
-
-        // Create mock settings entity
-        $settings = $this->createMock(Settings::class);
-        $settings->method('getValue')->willReturn($value);
-
-        // Mock user session
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn($user);
-
-        // Mock settings mapper
-        $this->settingsMapper->expects($this->once())
-            ->method('findByKeyAndUser')
-            ->with($key, $userId)
-            ->willReturn($settings);
-
-        $result = $this->settingsService->getSetting($key);
-
-        $this->assertEquals($value, $result);
-    }
-
-    /**
-     * Test getSetting method with non-existent setting
-     */
-    public function testGetSettingWithNonExistentSetting(): void
-    {
-        $key = 'non_existent_setting';
-        $userId = 'testuser';
-
-        // Create mock user
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn($userId);
-
-        // Mock user session
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn($user);
-
-        // Mock settings mapper to throw exception
-        $this->settingsMapper->expects($this->once())
-            ->method('findByKeyAndUser')
-            ->with($key, $userId)
-            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Setting not found'));
-
-        $result = $this->settingsService->getSetting($key);
-
-        $this->assertNull($result);
-    }
-
-    /**
-     * Test getSetting method with no user session
-     */
-    public function testGetSettingWithNoUserSession(): void
-    {
-        $key = 'test_setting';
-
-        // Mock user session to return null
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn(null);
-
-        $result = $this->settingsService->getSetting($key);
-
-        $this->assertNull($result);
-    }
-
-    /**
-     * Test getSetting method with default value
-     */
-    public function testGetSettingWithDefaultValue(): void
-    {
-        $key = 'test_setting';
-        $defaultValue = 'default_value';
-        $userId = 'testuser';
-
-        // Create mock user
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn($userId);
-
-        // Mock user session
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn($user);
-
-        // Mock settings mapper to throw exception
-        $this->settingsMapper->expects($this->once())
-            ->method('findByKeyAndUser')
-            ->with($key, $userId)
-            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Setting not found'));
-
-        $result = $this->settingsService->getSetting($key, $defaultValue);
-
-        $this->assertEquals($defaultValue, $result);
-    }
-
-    /**
-     * Test setSetting method with valid data
-     */
-    public function testSetSettingWithValidData(): void
-    {
-        $key = 'test_setting';
-        $value = 'test_value';
-        $userId = 'testuser';
-
-        // Create mock user
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn($userId);
-
-        // Create mock settings entity
-        $settings = $this->createMock(Settings::class);
-        $settings->method('setKey')->with($key);
-        $settings->method('setValue')->with($value);
-        $settings->method('setUserId')->with($userId);
-
-        // Mock user session
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn($user);
-
-        // Mock settings mapper
-        $this->settingsMapper->expects($this->once())
-            ->method('findByKeyAndUser')
-            ->with($key, $userId)
-            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Setting not found'));
-
-        $this->settingsMapper->expects($this->once())
-            ->method('insert')
-            ->willReturn($settings);
-
-        $result = $this->settingsService->setSetting($key, $value);
-
-        $this->assertEquals($settings, $result);
-    }
-
-    /**
-     * Test setSetting method with existing setting (update)
-     */
-    public function testSetSettingWithExistingSetting(): void
-    {
-        $key = 'test_setting';
-        $value = 'updated_value';
-        $userId = 'testuser';
-
-        // Create mock user
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn($userId);
-
-        // Create mock settings entity
-        $settings = $this->createMock(Settings::class);
-        $settings->method('setValue')->with($value);
-
-        // Mock user session
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn($user);
-
-        // Mock settings mapper
-        $this->settingsMapper->expects($this->once())
-            ->method('findByKeyAndUser')
-            ->with($key, $userId)
-            ->willReturn($settings);
-
-        $this->settingsMapper->expects($this->once())
-            ->method('update')
-            ->with($settings)
-            ->willReturn($settings);
-
-        $result = $this->settingsService->setSetting($key, $value);
-
-        $this->assertEquals($settings, $result);
-    }
-
-    /**
-     * Test setSetting method with no user session
-     */
-    public function testSetSettingWithNoUserSession(): void
-    {
-        $key = 'test_setting';
-        $value = 'test_value';
-
-        // Mock user session to return null
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn(null);
-
-        $result = $this->settingsService->setSetting($key, $value);
-
-        $this->assertNull($result);
-    }
-
-    /**
-     * Test deleteSetting method with existing setting
-     */
-    public function testDeleteSettingWithExistingSetting(): void
-    {
-        $key = 'test_setting';
-        $userId = 'testuser';
-
-        // Create mock user
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn($userId);
-
-        // Create mock settings entity
-        $settings = $this->createMock(Settings::class);
-
-        // Mock user session
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn($user);
-
-        // Mock settings mapper
-        $this->settingsMapper->expects($this->once())
-            ->method('findByKeyAndUser')
-            ->with($key, $userId)
-            ->willReturn($settings);
-
-        $this->settingsMapper->expects($this->once())
-            ->method('delete')
-            ->with($settings)
-            ->willReturn($settings);
-
-        $result = $this->settingsService->deleteSetting($key);
-
-        $this->assertEquals($settings, $result);
-    }
-
-    /**
-     * Test deleteSetting method with non-existent setting
-     */
-    public function testDeleteSettingWithNonExistentSetting(): void
-    {
-        $key = 'non_existent_setting';
-        $userId = 'testuser';
-
-        // Create mock user
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn($userId);
-
-        // Mock user session
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn($user);
-
-        // Mock settings mapper to throw exception
-        $this->settingsMapper->expects($this->once())
-            ->method('findByKeyAndUser')
-            ->with($key, $userId)
-            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Setting not found'));
-
-        $result = $this->settingsService->deleteSetting($key);
-
-        $this->assertNull($result);
-    }
-
-    /**
-     * Test deleteSetting method with no user session
-     */
-    public function testDeleteSettingWithNoUserSession(): void
-    {
-        $key = 'test_setting';
-
-        // Mock user session to return null
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn(null);
-
-        $result = $this->settingsService->deleteSetting($key);
-
-        $this->assertNull($result);
-    }
-
-    /**
-     * Test getAllSettings method
-     */
-    public function testGetAllSettings(): void
-    {
-        $userId = 'testuser';
-
-        // Create mock user
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn($userId);
-
-        // Create mock settings entities
-        $settings1 = $this->createMock(Settings::class);
-        $settings1->method('getKey')->willReturn('setting1');
-        $settings1->method('getValue')->willReturn('value1');
-
-        $settings2 = $this->createMock(Settings::class);
-        $settings2->method('getKey')->willReturn('setting2');
-        $settings2->method('getValue')->willReturn('value2');
-
-        $settingsArray = [$settings1, $settings2];
-
-        // Mock user session
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn($user);
-
-        // Mock settings mapper
-        $this->settingsMapper->expects($this->once())
-            ->method('findAllByUser')
-            ->with($userId)
-            ->willReturn($settingsArray);
-
-        $result = $this->settingsService->getAllSettings();
-
-        $this->assertIsArray($result);
-        $this->assertCount(2, $result);
-        $this->assertEquals('value1', $result['setting1']);
-        $this->assertEquals('value2', $result['setting2']);
-    }
-
-    /**
-     * Test getAllSettings method with no user session
-     */
-    public function testGetAllSettingsWithNoUserSession(): void
-    {
-        // Mock user session to return null
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn(null);
-
-        $result = $this->settingsService->getAllSettings();
-
-        $this->assertIsArray($result);
-        $this->assertCount(0, $result);
-    }
-
-    /**
-     * Test getAllSettings method with no settings
-     */
-    public function testGetAllSettingsWithNoSettings(): void
-    {
-        $userId = 'testuser';
-
-        // Create mock user
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn($userId);
-
-        // Mock user session
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn($user);
-
-        // Mock settings mapper to return empty array
-        $this->settingsMapper->expects($this->once())
-            ->method('findAllByUser')
-            ->with($userId)
-            ->willReturn([]);
-
-        $result = $this->settingsService->getAllSettings();
-
-        $this->assertIsArray($result);
-        $this->assertCount(0, $result);
-    }
-
-    /**
-     * Test hasSetting method with existing setting
-     */
-    public function testHasSettingWithExistingSetting(): void
-    {
-        $key = 'test_setting';
-        $userId = 'testuser';
-
-        // Create mock user
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn($userId);
-
-        // Create mock settings entity
-        $settings = $this->createMock(Settings::class);
-
-        // Mock user session
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn($user);
-
-        // Mock settings mapper
-        $this->settingsMapper->expects($this->once())
-            ->method('findByKeyAndUser')
-            ->with($key, $userId)
-            ->willReturn($settings);
-
-        $result = $this->settingsService->hasSetting($key);
+        // Mock app manager
+        $this->appManager->expects($this->once())
+            ->method('isInstalled')
+            ->with('openregister')
+            ->willReturn(true);
+        
+        $this->appManager->expects($this->once())
+            ->method('getAppVersion')
+            ->with('openregister')
+            ->willReturn('1.0.0');
+
+        $result = $this->settingsService->isOpenRegisterInstalled();
 
         $this->assertTrue($result);
     }
 
     /**
-     * Test hasSetting method with non-existent setting
+     * Test isOpenRegisterInstalled method with minimum version
      */
-    public function testHasSettingWithNonExistentSetting(): void
+    public function testIsOpenRegisterInstalledWithMinVersion(): void
     {
-        $key = 'non_existent_setting';
-        $userId = 'testuser';
+        $minVersion = '1.0.0';
 
-        // Create mock user
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn($userId);
+        // Mock app manager
+        $this->appManager->expects($this->any())
+            ->method('isInstalled')
+            ->willReturn(true);
+        $this->appManager->expects($this->any())
+            ->method('getAppVersion')
+            ->willReturn('2.0.0');
 
-        // Mock user session
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn($user);
+        $result = $this->settingsService->isOpenRegisterInstalled($minVersion);
 
-        // Mock settings mapper to throw exception
-        $this->settingsMapper->expects($this->once())
-            ->method('findByKeyAndUser')
-            ->with($key, $userId)
-            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Setting not found'));
-
-        $result = $this->settingsService->hasSetting($key);
-
-        $this->assertFalse($result);
+        $this->assertTrue($result);
     }
 
     /**
-     * Test hasSetting method with no user session
+     * Test isOpenRegisterEnabled method
      */
-    public function testHasSettingWithNoUserSession(): void
+    public function testIsOpenRegisterEnabled(): void
     {
-        $key = 'test_setting';
+        // Mock app manager
+        $this->appManager->expects($this->any())
+            ->method('isInstalled')
+            ->willReturn(true);
 
-        // Mock user session to return null
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn(null);
+        $result = $this->settingsService->isOpenRegisterEnabled();
 
-        $result = $this->settingsService->hasSetting($key);
+        $this->assertTrue($result);
+    }
 
-        $this->assertFalse($result);
+    /**
+     * Test isRbacEnabled method
+     */
+    public function testIsRbacEnabled(): void
+    {
+        // Mock config
+        $this->config->expects($this->once())
+            ->method('getValueString')
+            ->with('openregister', 'rbac', '')
+            ->willReturn('{"enabled":true}');
+
+        $result = $this->settingsService->isRbacEnabled();
+
+        $this->assertTrue($result);
+    }
+
+    /**
+     * Test isMultiTenancyEnabled method
+     */
+    public function testIsMultiTenancyEnabled(): void
+    {
+        // Mock config
+        $this->config->expects($this->once())
+            ->method('getValueString')
+            ->with('openregister', 'multitenancy', '')
+            ->willReturn('{"enabled":true}');
+
+        $result = $this->settingsService->isMultiTenancyEnabled();
+
+        $this->assertTrue($result);
+    }
+
+    /**
+     * Test getSettings method
+     */
+    public function testGetSettings(): void
+    {
+        // Mock config values
+        $this->config->expects($this->any())
+            ->method('getValueString')
+            ->willReturnCallback(function($app, $key, $default) {
+                $values = [
+                    'rbac' => '{"enabled":true,"anonymousGroup":"public","defaultNewUserGroup":"viewer","defaultObjectOwner":"","adminOverride":true}',
+                    'multitenancy' => '{"enabled":false,"defaultUserTenant":"","defaultObjectTenant":""}',
+                    'retention' => '{"objectArchiveRetention":31536000000,"objectDeleteRetention":63072000000,"searchTrailRetention":2592000000,"createLogRetention":2592000000,"readLogRetention":86400000,"updateLogRetention":604800000,"deleteLogRetention":2592000000}',
+                    'auto_publish_attachments' => 'true',
+                    'auto_publish_objects' => 'false',
+                    'use_old_style_publishing_view' => 'true'
+                ];
+                return $values[$key] ?? $default;
+            });
+
+        // Mock group manager
+        $mockGroup = $this->createMock(\OCP\IGroup::class);
+        $mockGroup->expects($this->any())
+            ->method('getGID')
+            ->willReturn('test-group');
+        $mockGroup->expects($this->any())
+            ->method('getDisplayName')
+            ->willReturn('Test Group');
+        
+        $this->groupManager->expects($this->any())
+            ->method('search')
+            ->willReturn([$mockGroup]);
+
+        // Mock organisation mapper
+        $mockOrganisation = $this->getMockBuilder(\OCA\OpenRegister\Db\Organisation::class)
+            ->addMethods(['getUuid', 'getName'])
+            ->getMock();
+        $mockOrganisation->expects($this->any())
+            ->method('getUuid')
+            ->willReturn('test-uuid');
+        $mockOrganisation->expects($this->any())
+            ->method('getName')
+            ->willReturn('Test Organisation');
+        
+        $this->organisationMapper->expects($this->any())
+            ->method('findAllWithUserCount')
+            ->willReturn([$mockOrganisation]);
+
+        // Mock user manager
+        $mockUser = $this->createMock(\OCP\IUser::class);
+        $mockUser->expects($this->any())
+            ->method('getUID')
+            ->willReturn('test-user');
+        $mockUser->expects($this->any())
+            ->method('getDisplayName')
+            ->willReturn('Test User');
+        
+        $this->userManager->expects($this->any())
+            ->method('search')
+            ->willReturn([$mockUser]);
+
+        $result = $this->settingsService->getSettings();
+
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('rbac', $result);
+        $this->assertArrayHasKey('multitenancy', $result);
+        $this->assertArrayHasKey('retention', $result);
+        $this->assertArrayHasKey('availableGroups', $result);
+        $this->assertArrayHasKey('availableTenants', $result);
+        $this->assertArrayHasKey('availableUsers', $result);
+    }
+
+    /**
+     * Test updateSettings method
+     */
+    public function testUpdateSettings(): void
+    {
+        $data = [
+            'rbac' => [
+                'enabled' => true,
+                'anonymousGroup' => 'public',
+                'defaultNewUserGroup' => 'viewer',
+                'defaultObjectOwner' => '',
+                'adminOverride' => true
+            ],
+            'multitenancy' => [
+                'enabled' => false,
+                'defaultUserTenant' => '',
+                'defaultObjectTenant' => ''
+            ]
+        ];
+
+        // Mock config
+        $this->config->expects($this->any())
+            ->method('getValueString')
+            ->willReturnCallback(function($app, $key, $default) {
+                $values = [
+                    'rbac' => '{"enabled":true,"anonymousGroup":"public","defaultNewUserGroup":"viewer","defaultObjectOwner":"","adminOverride":true}',
+                    'multitenancy' => '{"enabled":false,"defaultUserTenant":"","defaultObjectTenant":""}',
+                    'retention' => '{"objectArchiveRetention":31536000000,"objectDeleteRetention":63072000000,"searchTrailRetention":2592000000,"createLogRetention":2592000000,"readLogRetention":86400000,"updateLogRetention":604800000,"deleteLogRetention":2592000000}',
+                    'auto_publish_attachments' => 'true',
+                    'auto_publish_objects' => 'false',
+                    'use_old_style_publishing_view' => 'true'
+                ];
+                return $values[$key] ?? $default;
+            });
+        
+        $this->config->expects($this->exactly(2))
+            ->method('setValueString')
+            ->willReturn(true);
+
+        // Mock group manager
+        $mockGroup = $this->createMock(\OCP\IGroup::class);
+        $mockGroup->expects($this->any())
+            ->method('getGID')
+            ->willReturn('test-group');
+        $mockGroup->expects($this->any())
+            ->method('getDisplayName')
+            ->willReturn('Test Group');
+        
+        $this->groupManager->expects($this->any())
+            ->method('search')
+            ->willReturn([$mockGroup]);
+
+        // Mock organisation mapper
+        $mockOrganisation = $this->getMockBuilder(\OCA\OpenRegister\Db\Organisation::class)
+            ->addMethods(['getUuid', 'getName'])
+            ->getMock();
+        $mockOrganisation->expects($this->any())
+            ->method('getUuid')
+            ->willReturn('test-uuid');
+        $mockOrganisation->expects($this->any())
+            ->method('getName')
+            ->willReturn('Test Organisation');
+        
+        $this->organisationMapper->expects($this->any())
+            ->method('findAllWithUserCount')
+            ->willReturn([$mockOrganisation]);
+
+        // Mock user manager
+        $mockUser = $this->createMock(\OCP\IUser::class);
+        $mockUser->expects($this->any())
+            ->method('getUID')
+            ->willReturn('test-user');
+        $mockUser->expects($this->any())
+            ->method('getDisplayName')
+            ->willReturn('Test User');
+        
+        $this->userManager->expects($this->any())
+            ->method('search')
+            ->willReturn([$mockUser]);
+
+        $result = $this->settingsService->updateSettings($data);
+
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('rbac', $result);
+        $this->assertArrayHasKey('multitenancy', $result);
+    }
+
+    /**
+     * Test getPublishingOptions method
+     */
+    public function testGetPublishingOptions(): void
+    {
+        // Mock config values
+        $this->config->expects($this->any())
+            ->method('getValueString')
+            ->willReturnCallback(function($app, $key, $default) {
+                $values = [
+                    'publishing' => '{"enabled":true,"auto_approve":false}',
+                    'auto_publish_attachments' => 'true',
+                    'auto_publish_objects' => 'false',
+                    'use_old_style_publishing_view' => 'true'
+                ];
+                return $values[$key] ?? $default;
+            });
+
+        $result = $this->settingsService->getPublishingOptions();
+
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('auto_publish_attachments', $result);
+        $this->assertArrayHasKey('auto_publish_objects', $result);
+        $this->assertArrayHasKey('use_old_style_publishing_view', $result);
+    }
+
+    /**
+     * Test updatePublishingOptions method
+     */
+    public function testUpdatePublishingOptions(): void
+    {
+        $options = [
+            'auto_publish_attachments' => 'true',
+            'auto_publish_objects' => 'false'
+        ];
+
+        // Mock config
+        $this->config->expects($this->exactly(2))
+            ->method('setValueString')
+            ->willReturn(true);
+        
+        $this->config->expects($this->exactly(2))
+            ->method('getValueString')
+            ->willReturn('true');
+
+        $result = $this->settingsService->updatePublishingOptions($options);
+
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('auto_publish_attachments', $result);
+        $this->assertArrayHasKey('auto_publish_objects', $result);
+    }
+
+    /**
+     * Test getStats method
+     */
+    public function testGetStats(): void
+    {
+        // Mock database connection
+        $db = $this->createMock(\OCP\IDBConnection::class);
+        $this->container->expects($this->once())
+            ->method('get')
+            ->with('OCP\IDBConnection')
+            ->willReturn($db);
+
+        // Mock database query result
+        $mockResult = $this->createMock(\OCP\DB\IResult::class);
+        $mockResult->expects($this->any())
+            ->method('fetch')
+            ->willReturn([
+                'total_objects' => 10,
+                'total_size' => 1024,
+                'without_owner' => 2,
+                'without_organisation' => 1,
+                'deleted_count' => 0,
+                'deleted_size' => 0,
+                'expired_count' => 0,
+                'expired_size' => 0
+            ]);
+        $mockResult->expects($this->any())
+            ->method('closeCursor')
+            ->willReturn(true);
+
+        $db->expects($this->any())
+            ->method('executeQuery')
+            ->willReturn($mockResult);
+
+        $result = $this->settingsService->getStats();
+
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('warnings', $result);
+        $this->assertArrayHasKey('totals', $result);
+        $this->assertArrayHasKey('sizes', $result);
     }
 }
