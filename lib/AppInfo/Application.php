@@ -345,7 +345,9 @@ class Application extends App implements IBootstrap
                     $container->get(FacetService::class),
                     $container->get(ObjectCacheService::class),
                     $container->get(SchemaCacheService::class),
-                    $container->get(SchemaFacetCacheService::class)
+                    $container->get(SchemaFacetCacheService::class),
+                    $container->get(SettingsService::class),
+                    $container
                     );
                 }
                 );
