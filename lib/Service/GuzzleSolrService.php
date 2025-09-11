@@ -1442,4 +1442,91 @@ class GuzzleSolrService
             'memory_usage' => 'lightweight'
         ]);
     }
+
+    /**
+     * Bulk index objects from database to Solr in batches
+     *
+     * @param int $batchSize Number of objects to process per batch (default: 1000)
+     * @param int $maxObjects Maximum total objects to process (0 = no limit)
+     *
+     * @return array Results of the bulk indexing operation
+     */
+    public function bulkIndexFromDatabase(int $batchSize = 1000, int $maxObjects = 0): array
+    {
+        if (!$this->isAvailable()) {
+            return [
+                'success' => false,
+                'error' => 'Solr is not available',
+                'indexed' => 0,
+                'batches' => 0
+            ];
+        }
+
+        try {
+            // Get ObjectService to fetch objects from database
+            $objectService = \OC::$server->get(\OCA\OpenRegister\Service\ObjectService::class);
+            
+            $totalIndexed = 0;
+            $batchCount = 0;
+            $offset = 0;
+            
+            do {
+                // Calculate current batch size (respect maxObjects limit)
+                $currentBatchSize = $batchSize;
+                if ($maxObjects > 0) {
+                    $remaining = $maxObjects - $totalIndexed;
+                    if ($remaining <= 0) {
+                        break;
+                    }
+                    $currentBatchSize = min($batchSize, $remaining);
+                }
+                
+                // Fetch objects from database
+                $query = [
+                    '_limit' => $currentBatchSize,
+                    '_offset' => $offset
+                ];
+                
+                $result = $objectService->searchObjectsPaginatedDatabase($query, false, false);
+                $objects = $result['results'] ?? [];
+                
+                if (empty($objects)) {
+                    break; // No more objects
+                }
+                
+                // Index this batch to Solr
+                $documents = [];
+                foreach ($objects as $object) {
+                    if ($object instanceof ObjectEntity) {
+                        $documents[] = $this->createSolrDocument($object);
+                    }
+                }
+                
+                if (!empty($documents)) {
+                    $this->indexDocuments($documents);
+                }
+                
+                $batchCount++;
+                $totalIndexed += count($objects);
+                $offset += $currentBatchSize;
+                
+            } while (count($objects) === $currentBatchSize && ($maxObjects === 0 || $totalIndexed < $maxObjects));
+            
+            return [
+                'success' => true,
+                'indexed' => $totalIndexed,
+                'batches' => $batchCount,
+                'batch_size' => $batchSize
+            ];
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Bulk indexing failed', ['error' => $e->getMessage()]);
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'indexed' => $totalIndexed ?? 0,
+                'batches' => $batchCount ?? 0
+            ];
+        }
+    }
 }

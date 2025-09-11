@@ -28,7 +28,6 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SchemaCacheService;
 use OCA\OpenRegister\Service\SchemaFacetCacheService;
-use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -110,7 +109,6 @@ class SchemasController extends Controller
      * This method returns a JSON response containing an array of all schemas in the system.
      *
      * @param ObjectService $objectService The object service
-     * @param SearchService $searchService The search service
      *
      * @return JSONResponse A JSON response containing the list of schemas
      *
@@ -119,8 +117,7 @@ class SchemasController extends Controller
      * @NoCSRFRequired
      */
     public function index(
-        ObjectService $objectService,
-        SearchService $searchService
+        ObjectService $objectService
     ): JSONResponse {
         // Get request parameters for filtering and searching.
         $filters = $this->request->getParam(key: 'filters', default: []);

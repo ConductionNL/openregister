@@ -1412,10 +1412,7 @@ class SettingsService
             
             $startTime = microtime(true);
             
-            $this->logger->info('[SettingsService] Starting SOLR bulk index warmup', [
-                'batch_size' => $batchSize,
-                'max_objects' => $maxObjects
-            ]);
+            // Starting SOLR bulk index warmup
             
             // Perform SOLR bulk index warmup
             $warmupResult = $solrService->bulkIndexFromDatabase($batchSize, $maxObjects);
