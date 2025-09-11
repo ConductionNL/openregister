@@ -69,6 +69,11 @@ class SolrEventListener implements IEventListener
         
         try {
             if ($event instanceof ObjectCreatedEvent) {
+                error_log("=== SOLR EVENT LISTENER DEBUG ===");
+                error_log("Event: ObjectCreatedEvent");
+                error_log("Object ID: " . $event->getObject()->getId());
+                error_log("Object UUID: " . ($event->getObject()->getUuid() ?? 'null'));
+                error_log("=== END EVENT DEBUG ===");
                 $this->logger->debug('Handling ObjectCreatedEvent', ['object_id' => $event->getObject()->getId()]);
                 $this->handleObjectCreated($event);
             } elseif ($event instanceof ObjectUpdatedEvent) {

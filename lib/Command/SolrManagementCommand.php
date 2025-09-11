@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Command;
 use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCA\OpenRegister\Service\SolrSchemaService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Setup\SolrSetup;
 use OCP\IConfig;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
@@ -201,20 +202,40 @@ class SolrManagementCommand extends Command
             $output->writeln('   Mode: <comment>' . ($connectionResult['details']['mode'] ?? 'unknown') . '</comment>');
             $output->writeln('');
 
-            // Run SOLR setup through GuzzleSolrService
-            $output->writeln('📋 Running initial SOLR setup...');
-            // Note: For now we'll use direct collection creation since we have a lightweight setup
-            $output->writeln('✅ Base SOLR infrastructure ready (using GuzzleSolrService)');
-
-            // Ensure tenant collection
-            $output->writeln('🏠 Creating tenant-specific collection...');
-            if ($this->solrService->ensureTenantCollection()) {
-                $output->writeln('✅ Tenant collection ready');
+            // Run comprehensive SOLR setup with corrected schema configuration
+            $output->writeln('📋 Running comprehensive SOLR setup with corrected schema configuration...');
+            $output->writeln('   • Using self_ prefixes for metadata fields');
+            $output->writeln('   • Clean field names (no suffixes) with explicit types');
+            $output->writeln('   • Single-valued tenant_id field');
+            $output->writeln('');
+            
+            // Get SOLR configuration
+            $solrConfig = $this->settingsService->getSolrSettings();
+            
+            // Initialize SolrSetup with proper configuration
+            $solrSetup = new SolrSetup($solrConfig, $this->logger);
+            
+            // Run complete setup including schema field configuration
+            if ($solrSetup->setupSolr()) {
+                $output->writeln('✅ Base SOLR infrastructure and schema configured');
+                $output->writeln('   • ConfigSet: <comment>openregister</comment>');
+                $output->writeln('   • Base collection: <comment>openregister</comment>');
+                $output->writeln('   • Schema fields: <comment>22 ObjectEntity metadata fields</comment>');
+                $output->writeln('');
                 
-                $docCount = $this->solrService->getDocumentCount();
-                $output->writeln('   Document count: <comment>' . $docCount . '</comment>');
+                // Ensure tenant collection
+                $output->writeln('🏠 Verifying tenant-specific collection...');
+                if ($this->solrService->ensureTenantCollection()) {
+                    $output->writeln('✅ Tenant collection ready with proper schema');
+                    
+                    $docCount = $this->solrService->getDocumentCount();
+                    $output->writeln('   Document count: <comment>' . $docCount . '</comment>');
+                } else {
+                    $output->writeln('<error>❌ Failed to create tenant collection</error>');
+                    return self::FAILURE;
+                }
             } else {
-                $output->writeln('<error>❌ Failed to create tenant collection</error>');
+                $output->writeln('<error>❌ SOLR setup failed - check logs for details</error>');
                 return self::FAILURE;
             }
 
