@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\SolrSchemaService;
 use OCP\Http\Client\IClientService;
 use OCP\IConfig;
 use Psr\Log\LoggerInterface;
@@ -70,6 +71,12 @@ class GuzzleSolrService
      * @var string
      */
     private string $tenantId;
+
+    /** @var array|null Cached SOLR field types to avoid repeated API calls */
+    private ?array $cachedSolrFieldTypes = null;
+    
+    /** @var array|null Cached schema data to avoid repeated processing */
+    private ?array $cachedSchemaData = null;
 
     /**
      * Service statistics
@@ -542,12 +549,13 @@ class GuzzleSolrService
     }
 
     /**
-     * Create SOLR document from ObjectEntity
+     * Create SOLR document from ObjectEntity with field validation
      *
      * @param ObjectEntity $object Object to convert
+     * @param array $solrFieldTypes Optional SOLR field types for validation
      * @return array SOLR document
      */
-    private function createSolrDocument(ObjectEntity $object): array
+    private function createSolrDocument(ObjectEntity $object, array $solrFieldTypes = []): array
     {
         // **SCHEMA-AWARE MAPPING REQUIRED**: Validate schema availability first
         if (!$this->schemaMapper) {
@@ -569,7 +577,7 @@ class GuzzleSolrService
 
         // **USE CONSOLIDATED MAPPING**: Create schema-aware document directly
         try {
-            $document = $this->createSchemaAwareDocument($object, $schema);
+            $document = $this->createSchemaAwareDocument($object, $schema, $solrFieldTypes);
             
             // Document created successfully using schema-aware mapping
             
@@ -612,7 +620,7 @@ class GuzzleSolrService
      * @return array SOLR document structure
      * @throws \RuntimeException If mapping fails
      */
-    private function createSchemaAwareDocument(ObjectEntity $object, Schema $schema): array
+    private function createSchemaAwareDocument(ObjectEntity $object, Schema $schema, array $solrFieldTypes = []): array
     {
         // **FIX**: Get the actual object business data, not entity metadata
         $objectData = $object->getObject(); // This contains the schema fields like 'naam', 'website', 'type'
@@ -701,16 +709,41 @@ class GuzzleSolrService
                     continue;
                 }
                 
-                // Map field based on schema type to appropriate SOLR field name
-                $solrFieldName = $this->mapFieldToSolrType($fieldName, $fieldType, $fieldValue);
-                
-                if ($solrFieldName) {
-                    $document[$solrFieldName] = $this->convertValueForSolr($fieldValue, $fieldType);
-                    $this->logger->debug('Mapped field', [
-                        'original' => $fieldName,
-                        'solr_field' => $solrFieldName,
-                        'value_type' => gettype($fieldValue)
+                // **HOTFIX**: Temporarily skip 'versie' field to prevent NumberFormatException
+                // TODO: Fix versie field type conflict - it's defined as integer in SOLR but contains decimal strings like '9.1'
+                if ($fieldName === 'versie') {
+                    $this->logger->debug('HOTFIX: Skipped versie field to prevent type mismatch', [
+                        'field' => $fieldName,
+                        'value' => $fieldValue,
+                        'reason' => 'Temporary fix for integer/decimal type conflict'
                     ]);
+                    continue;
+                }
+                
+                        // Map field based on schema type to appropriate SOLR field name
+                        $solrFieldName = $this->mapFieldToSolrType($fieldName, $fieldType, $fieldValue);
+                        
+                        if ($solrFieldName) {
+                            $convertedValue = $this->convertValueForSolr($fieldValue, $fieldType);
+                            
+                            // **FIELD VALIDATION**: Check if field exists in SOLR and type is compatible
+                            if ($convertedValue !== null && $this->validateFieldForSolr($solrFieldName, $convertedValue, $solrFieldTypes)) {
+                                $document[$solrFieldName] = $convertedValue;
+                        $this->logger->debug('Mapped field', [
+                            'original' => $fieldName,
+                            'solr_field' => $solrFieldName,
+                            'original_value' => $fieldValue,
+                            'converted_value' => $convertedValue,
+                            'value_type' => gettype($convertedValue)
+                        ]);
+                    } else {
+                        $this->logger->debug('Skipped field with null converted value', [
+                            'original' => $fieldName,
+                            'solr_field' => $solrFieldName,
+                            'original_value' => $fieldValue,
+                            'field_type' => $fieldType
+                        ]);
+                    }
                 }
             }
         } else {
@@ -841,12 +874,30 @@ class GuzzleSolrService
         switch (strtolower($fieldType)) {
             case 'integer':
             case 'int':
-                return (int)$value;
+                // **SAFE NUMERIC CONVERSION**: Handle non-numeric strings gracefully
+                if (is_numeric($value)) {
+                    return (int)$value;
+                }
+                // Skip non-numeric values for integer fields
+                $this->logger->debug('Skipping non-numeric value for integer field', [
+                    'value' => $value,
+                    'field_type' => $fieldType
+                ]);
+                return null;
                 
             case 'float':
             case 'double':
             case 'number':
-                return (float)$value;
+                // **SAFE NUMERIC CONVERSION**: Handle non-numeric strings gracefully
+                if (is_numeric($value)) {
+                    return (float)$value;
+                }
+                // Skip non-numeric values for float fields
+                $this->logger->debug('Skipping non-numeric value for float field', [
+                    'value' => $value,
+                    'field_type' => $fieldType
+                ]);
+                return null;
                 
             case 'boolean':
             case 'bool':
@@ -2002,7 +2053,7 @@ class GuzzleSolrService
      *
      * @return array Results of the bulk indexing operation
      */
-    public function bulkIndexFromDatabase(int $batchSize = 1000, int $maxObjects = 0): array
+    public function bulkIndexFromDatabase(int $batchSize = 1000, int $maxObjects = 0, array $solrFieldTypes = []): array
     {
         if (!$this->isAvailable()) {
             return [
@@ -2085,12 +2136,12 @@ class GuzzleSolrService
                 foreach ($objects as $object) {
                     try {
                         if ($object instanceof ObjectEntity) {
-                            $documents[] = $this->createSolrDocument($object);
+                            $documents[] = $this->createSolrDocument($object, $solrFieldTypes);
                         } else if (is_array($object)) {
                             // Convert array to ObjectEntity if needed
                             $entity = new ObjectEntity();
                             $entity->hydrate($object);
-                            $documents[] = $this->createSolrDocument($entity);
+                            $documents[] = $this->createSolrDocument($entity, $solrFieldTypes);
                         }
                     } catch (\Exception $e) {
                         $this->logger->warning('Failed to create SOLR document', [
@@ -2197,7 +2248,7 @@ class GuzzleSolrService
      * @param int $parallelBatches Number of parallel batches to process (default: 4)
      * @return array Result with success status and statistics
      */
-    public function bulkIndexFromDatabaseParallel(int $batchSize = 1000, int $maxObjects = 0, int $parallelBatches = 4): array
+    public function bulkIndexFromDatabaseParallel(int $batchSize = 1000, int $maxObjects = 0, int $parallelBatches = 4, array $solrFieldTypes = []): array
     {
         // Parallel bulk indexing method
         
@@ -2721,6 +2772,53 @@ class GuzzleSolrService
     }
 
     /**
+     * Get all current SOLR field types for validation
+     *
+     * @return array Field name => field type mapping
+     */
+    private function getSolrFieldTypes(bool $forceRefresh = false): array
+    {
+        // Return cached version if available and not forcing refresh
+        if (!$forceRefresh && $this->cachedSolrFieldTypes !== null) {
+            $this->logger->debug('🚀 Using cached SOLR field types', [
+                'cached_field_count' => count($this->cachedSolrFieldTypes)
+            ]);
+            return $this->cachedSolrFieldTypes;
+        }
+        
+        try {
+            $tenantCollectionName = $this->getActiveCollectionName();
+            $url = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/schema/fields?wt=json';
+            $response = $this->httpClient->get($url);
+            $data = json_decode((string)$response->getBody(), true);
+            
+            $fieldTypes = [];
+            if (isset($data['fields']) && is_array($data['fields'])) {
+                foreach ($data['fields'] as $field) {
+                    $fieldTypes[$field['name']] = $field['type'];
+                }
+            }
+            
+            // Cache the field types
+            $this->cachedSolrFieldTypes = $fieldTypes;
+            
+            $this->logger->info('🔍 Retrieved and cached SOLR field types for validation', [
+                'field_count' => count($fieldTypes),
+                'sample_fields' => array_slice($fieldTypes, 0, 5, true),
+                'versie_field_type' => $fieldTypes['versie'] ?? 'NOT_FOUND'
+            ]);
+            
+            return $fieldTypes;
+            
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to retrieve SOLR field types', [
+                'error' => $e->getMessage()
+            ]);
+            return [];
+        }
+    }
+
+    /**
      * Warmup SOLR index (simplified implementation for GuzzleSolrService)
      *
      * @param array $schemas Array of Schema entities (not used in this implementation)
@@ -2747,22 +2845,62 @@ class GuzzleSolrService
             $connectionResult = $this->testConnection();
             $operations['connection_test'] = $connectionResult['success'] ?? false;
             
-            // 2. Schema mirroring temporarily disabled for testing
-            $operations['schema_mirroring'] = false;
-            $operations['schemas_processed'] = 0;
-            $operations['fields_created'] = 0;
+            // 2. Schema mirroring with intelligent conflict resolution
+            if (!empty($schemas)) {
+                $stageStart = microtime(true);
+                
+                $this->logger->info('🔄 Starting schema mirroring with conflict resolution', [
+                    'schema_count' => count($schemas)
+                ]);
+                
+                // Lazy-load SolrSchemaService to avoid circular dependency
+                $solrSchemaService = \OC::$server->get(SolrSchemaService::class);
+                $mirrorResult = $solrSchemaService->mirrorSchemas(true); // Force update for testing
+                $operations['schema_mirroring'] = $mirrorResult['success'] ?? false;
+                $operations['schemas_processed'] = $mirrorResult['stats']['schemas_processed'] ?? 0;
+                $operations['fields_created'] = $mirrorResult['stats']['fields_created'] ?? 0;
+                $operations['conflicts_resolved'] = $mirrorResult['stats']['conflicts_resolved'] ?? 0;
+                
+                // 2.5. Collect current SOLR field types for validation (force refresh after schema changes)
+                $solrFieldTypes = $this->getSolrFieldTypes(true);
+                $operations['field_types_collected'] = count($solrFieldTypes);
+                
+                if ($mirrorResult['success']) {
+                    $this->logger->info('✅ Schema mirroring completed successfully', [
+                        'schemas_processed' => $operations['schemas_processed'],
+                        'fields_created' => $operations['fields_created'],
+                        'conflicts_resolved' => $operations['conflicts_resolved']
+                    ]);
+                } else {
+                    $this->logger->error('❌ Schema mirroring failed', [
+                        'error' => $mirrorResult['error'] ?? 'Unknown error'
+                    ]);
+                }
+                
+                $stageEnd = microtime(true);
+                $timing['schema_mirroring'] = round(($stageEnd - $stageStart) * 1000, 2) . 'ms';
+            } else {
+                $operations['schema_mirroring'] = false;
+                $operations['schemas_processed'] = 0;
+                $operations['fields_created'] = 0;
+                $operations['conflicts_resolved'] = 0;
+                $timing['schema_mirroring'] = '0ms (no schemas provided)';
+            }
             
             // 3. Object indexing using mode-based bulk indexing
             error_log("=== WARMUP MODE DEBUG ===");
             error_log("Mode: " . $mode);
             error_log("MaxObjects: " . $maxObjects);
             
-            if ($mode === 'parallel') {
+            if ($mode === 'hyper') {
+                error_log("Calling: bulkIndexFromDatabaseOptimized (hyper mode)");
+                $indexResult = $this->bulkIndexFromDatabaseOptimized(2000, $maxObjects, $solrFieldTypes ?? []);
+            } elseif ($mode === 'parallel') {
                 error_log("Calling: bulkIndexFromDatabaseParallel");
-                $indexResult = $this->bulkIndexFromDatabaseParallel(1000, $maxObjects, 5);
+                $indexResult = $this->bulkIndexFromDatabaseParallel(1000, $maxObjects, 5, $solrFieldTypes ?? []);
             } else {
                 error_log("Calling: bulkIndexFromDatabase (serial)");
-                $indexResult = $this->bulkIndexFromDatabase(1000, $maxObjects);
+                $indexResult = $this->bulkIndexFromDatabase(1000, $maxObjects, $solrFieldTypes ?? []);
             }
             error_log("=== END WARMUP MODE DEBUG ===");
             
@@ -2819,6 +2957,209 @@ class GuzzleSolrService
                 'operations' => $operations,
                 'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2),
                 'error' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Validate field against SOLR schema to prevent type mismatches
+     *
+     * @param string $fieldName The SOLR field name
+     * @param mixed $fieldValue The value to be indexed
+     * @param array $solrFieldTypes Current SOLR field types
+     * @return bool True if field is safe to index
+     */
+    private function validateFieldForSolr(string $fieldName, $fieldValue, array $solrFieldTypes): bool
+    {
+        // If no field types provided, allow all (fallback to original behavior)
+        if (empty($solrFieldTypes)) {
+            return true;
+        }
+
+        // If field doesn't exist in SOLR, it will be auto-created (allow)
+        if (!isset($solrFieldTypes[$fieldName])) {
+            $this->logger->debug('Field not in SOLR schema, will be auto-created', [
+                'field' => $fieldName,
+                'value' => $fieldValue,
+                'type' => gettype($fieldValue)
+            ]);
+            return true;
+        }
+
+        $solrFieldType = $solrFieldTypes[$fieldName];
+        
+        // **CRITICAL VALIDATION**: Check for type compatibility
+        $isCompatible = $this->isValueCompatibleWithSolrType($fieldValue, $solrFieldType);
+        
+        if (!$isCompatible) {
+            $this->logger->warning('🛡️ Field validation prevented type mismatch', [
+                'field' => $fieldName,
+                'value' => $fieldValue,
+                'value_type' => gettype($fieldValue),
+                'solr_field_type' => $solrFieldType,
+                'action' => 'SKIPPED'
+            ]);
+            return false;
+        }
+
+        $this->logger->debug('✅ Field validation passed', [
+            'field' => $fieldName,
+            'value' => $fieldValue,
+            'solr_type' => $solrFieldType
+        ]);
+        
+        return true;
+    }
+
+    /**
+     * Check if a value is compatible with a SOLR field type
+     *
+     * @param mixed $value The value to check
+     * @param string $solrFieldType The SOLR field type (e.g., 'plongs', 'string', 'text_general')
+     * @return bool True if compatible
+     */
+    private function isValueCompatibleWithSolrType($value, string $solrFieldType): bool
+    {
+        // Handle null values (generally allowed)
+        if ($value === null) {
+            return true;
+        }
+
+        return match ($solrFieldType) {
+            // Numeric types - only allow numeric values
+            'pint', 'plong', 'plongs', 'pfloat', 'pdouble' => is_numeric($value),
+            
+            // String types - allow anything (can be converted to string)
+            'string', 'text_general', 'text_en' => true,
+            
+            // Boolean types - allow boolean or boolean-like values
+            'boolean' => is_bool($value) || in_array(strtolower($value), ['true', 'false', '1', '0']),
+            
+            // Date types - allow date strings or objects
+            'pdate', 'pdates' => is_string($value) || ($value instanceof \DateTime),
+            
+            // Default: allow for unknown types
+            default => true
+        };
+    }
+    
+    /**
+     * Clear all cached data to force refresh
+     */
+    public function clearCache(): void
+    {
+        $this->cachedSolrFieldTypes = null;
+        $this->cachedSchemaData = null;
+        $this->logger->debug('🧹 Cleared SOLR service caches');
+    }
+    
+    /**
+     * Optimized bulk indexing with performance improvements
+     *
+     * @param int $batchSize Number of objects per batch
+     * @param int $maxObjects Maximum objects to process (0 = no limit)
+     * @param array $solrFieldTypes Pre-fetched SOLR field types for validation
+     * @return array Results with performance metrics
+     */
+    public function bulkIndexFromDatabaseOptimized(int $batchSize = 1000, int $maxObjects = 0, array $solrFieldTypes = []): array
+    {
+        $startTime = microtime(true);
+        $totalIndexed = 0;
+        $totalErrors = 0;
+        $batchCount = 0;
+        
+        try {
+            // Get total count efficiently
+            $totalObjects = $this->objectEntityMapper->countAll();
+            $actualLimit = $maxObjects > 0 ? min($maxObjects, $totalObjects) : $totalObjects;
+            
+            $this->logger->info('🚀 Starting optimized bulk indexing', [
+                'total_objects' => $totalObjects,
+                'actual_limit' => $actualLimit,
+                'batch_size' => $batchSize,
+                'field_types_cached' => !empty($solrFieldTypes)
+            ]);
+            
+            // Process in optimized chunks
+            for ($offset = 0; $offset < $actualLimit; $offset += $batchSize) {
+                $currentBatchSize = min($batchSize, $actualLimit - $offset);
+                $batchCount++;
+                
+                // Fetch objects efficiently
+                $objects = $this->objectEntityMapper->findAll($currentBatchSize, $offset);
+                
+                if (empty($objects)) {
+                    break;
+                }
+                
+                // Create SOLR documents with field validation
+                $documents = [];
+                foreach ($objects as $object) {
+                    try {
+                        $document = $this->createSolrDocument($object, $solrFieldTypes);
+                        if (!empty($document)) {
+                            $documents[] = $document;
+                        }
+                    } catch (\Exception $e) {
+                        $totalErrors++;
+                        $this->logger->warning('Failed to create document', [
+                            'object_id' => $object->getId(),
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+                
+                // Bulk index the batch
+                if (!empty($documents)) {
+                    $indexResult = $this->bulkIndex($documents, false); // No commit per batch
+                    if ($indexResult) {
+                        $totalIndexed += count($documents);
+                    } else {
+                        $totalErrors += count($documents);
+                    }
+                }
+                
+                // Log progress every 10 batches
+                if ($batchCount % 10 === 0) {
+                    $elapsed = microtime(true) - $startTime;
+                    $rate = $totalIndexed / $elapsed;
+                    $this->logger->info('📊 Bulk indexing progress', [
+                        'batches_processed' => $batchCount,
+                        'objects_indexed' => $totalIndexed,
+                        'elapsed_seconds' => round($elapsed, 2),
+                        'objects_per_second' => round($rate, 2)
+                    ]);
+                }
+            }
+            
+            // Final commit
+            $this->commit();
+            
+            $totalTime = microtime(true) - $startTime;
+            $rate = $totalIndexed / $totalTime;
+            
+            return [
+                'success' => true,
+                'indexed' => $totalIndexed,
+                'errors' => $totalErrors,
+                'batches' => $batchCount,
+                'total_time_seconds' => round($totalTime, 3),
+                'objects_per_second' => round($rate, 2),
+                'total_objects_found' => $totalObjects,
+                'actual_limit' => $actualLimit
+            ];
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Optimized bulk indexing failed', [
+                'error' => $e->getMessage(),
+                'indexed_so_far' => $totalIndexed
+            ]);
+            
+            return [
+                'success' => false,
+                'indexed' => $totalIndexed,
+                'errors' => $totalErrors + 1,
+                'error_message' => $e->getMessage()
             ];
         }
     }
