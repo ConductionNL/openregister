@@ -19,10 +19,13 @@ return [
         ['name' => 'settings#updateSolrSettings', 'url' => '/api/settings/solr', 'verb' => 'PUT'],
         ['name' => 'settings#testSolrConnection', 'url' => '/api/settings/solr/test', 'verb' => 'POST'],
         ['name' => 'settings#warmupSolrIndex', 'url' => '/api/settings/solr/warmup', 'verb' => 'POST'],
+        ['name' => 'settings#testSchemaMapping', 'url' => '/api/settings/solr/test-schema-mapping', 'verb' => 'POST'],
         
         // SOLR Dashboard Management endpoints
         ['name' => 'settings#getSolrDashboardStats', 'url' => '/api/solr/dashboard/stats', 'verb' => 'GET'],
         ['name' => 'settings#manageSolr', 'url' => '/api/solr/manage/{operation}', 'verb' => 'POST'],
+    ['name' => 'settings#setupSolr', 'url' => '/api/solr/setup', 'verb' => 'POST'],
+    ['name' => 'settings#testSolrSetup', 'url' => '/api/solr/test-setup', 'verb' => 'POST'],
         
         ['name' => 'settings#getRbacSettings', 'url' => '/api/settings/rbac', 'verb' => 'GET'],
         ['name' => 'settings#updateRbacSettings', 'url' => '/api/settings/rbac', 'verb' => 'PUT'],
@@ -64,6 +67,7 @@ return [
         ['name' => 'objects#objects', 'url' => '/api/objects', 'verb' => 'GET'],
         // ['name' => 'objects#import', 'url' => '/api/objects/{register}/import', 'verb' => 'POST'], // DISABLED: Use registers import endpoint instead
         ['name' => 'objects#index', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'GET'],
+        
         ['name' => 'objects#create', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'POST'],
         ['name' => 'objects#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
         ['name' => 'objects#show', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],

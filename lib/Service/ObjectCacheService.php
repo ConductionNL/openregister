@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
-use OCA\OpenRegister\Service\SolrService;
+use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCP\ICacheFactory;
 use OCP\IMemcache;
 use OCP\IUserSession;
@@ -128,16 +128,16 @@ class ObjectCacheService
     /**
      * Constructor for ObjectCacheService
      *
-     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
-     * @param LoggerInterface    $logger             Logger for performance monitoring
-     * @param SolrService|null   $solrService        SOLR service for advanced search indexing
-     * @param ICacheFactory|null $cacheFactory       Cache factory for query result caching
-     * @param IUserSession|null  $userSession        User session for cache key generation
+     * @param ObjectEntityMapper    $objectEntityMapper The object entity mapper
+     * @param LoggerInterface       $logger             Logger for performance monitoring
+     * @param GuzzleSolrService|null $guzzleSolrService Lightweight SOLR service using Guzzle HTTP
+     * @param ICacheFactory|null    $cacheFactory       Cache factory for query result caching
+     * @param IUserSession|null     $userSession        User session for cache key generation
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly LoggerInterface $logger,
-        private readonly ?SolrService $solrService = null,
+        private readonly ?GuzzleSolrService $guzzleSolrService = null,
         ?ICacheFactory $cacheFactory = null,
         ?IUserSession $userSession = null
     ) {
@@ -158,6 +158,21 @@ class ObjectCacheService
         };
 
     }//end __construct()
+
+
+    /**
+     * Get GuzzleSolrService instance using direct DI injection
+     *
+     * Since Guzzle is lightweight, we can use direct DI registration without
+     * performance issues. Returns null if SOLR is unavailable or disabled.
+     *
+     * @return GuzzleSolrService|null SOLR service instance or null
+     */
+    private function getSolrService(): ?GuzzleSolrService
+    {
+        // Since Guzzle is lightweight, we use direct DI injection (no factory needed!)
+        return $this->guzzleSolrService;
+    }//end getSolrService()
 
 
     /**
@@ -218,36 +233,47 @@ class ObjectCacheService
      */
     private function indexObjectInSolr(ObjectEntity $object, bool $commit = false): bool
     {
-        // Skip if SOLR service is not available
-        if ($this->solrService === null || !$this->solrService->isAvailable()) {
+        // Get SOLR service using factory pattern (performance optimized)
+        $solrService = $this->getSolrService();
+        
+        $this->logger->info('🔥 DEBUGGING: indexObjectInSolr called', [
+            'app' => 'openregister',
+            'object_id' => $object->getId(),
+            'object_uuid' => $object->getUuid(),
+            'object_name' => $object->getName(),
+            'solr_service_available' => $solrService !== null,
+            'solr_is_available' => $solrService ? $solrService->isAvailable() : false
+        ]);
+        
+        if ($solrService === null || !$solrService->isAvailable()) {
+            $this->logger->debug('SOLR service unavailable, skipping indexing', [
+                'object_id' => $object->getId(),
+                'solr_service_available' => $solrService !== null,
+                'solr_is_available' => $solrService ? $solrService->isAvailable() : false
+            ]);
             return true; // Graceful degradation
         }
 
-        try {
-            // Create SOLR document matching ObjectEntity structure
-            $solrDocument = $this->createSolrDocumentFromObject($object);
-            
-            // Index in SOLR
-            $result = $this->solrService->indexObject($object, $commit);
-            
-            if ($result) {
-                $this->logger->debug('🔍 OBJECT INDEXED IN SOLR', [
-                    'object_id' => $object->getId(),
-                    'uuid' => $object->getUuid(),
-                    'schema' => $object->getSchema(),
-                    'register' => $object->getRegister()
-                ]);
-            }
-            
-            return $result;
-            
-        } catch (\Exception $e) {
-            $this->logger->warning('Failed to index object in SOLR', [
+        // Index in SOLR
+        $result = $solrService->indexObject($object, $commit);
+        
+        if ($result) {
+            $this->logger->debug('🔍 OBJECT INDEXED IN SOLR', [
                 'object_id' => $object->getId(),
-                'error' => $e->getMessage()
+                'uuid' => $object->getUuid(),
+                'schema' => $object->getSchema(),
+                'register' => $object->getRegister()
             ]);
-            return true; // Don't fail the whole operation for SOLR issues
+        } else {
+            $this->logger->error('SOLR object indexing failed', [
+                'object_id' => $object->getId(),
+                'uuid' => $object->getUuid(),
+                'schema' => $object->getSchema(),
+                'register' => $object->getRegister()
+            ]);
         }
+        
+        return $result;
     }
 
     /**
@@ -260,13 +286,14 @@ class ObjectCacheService
      */
     private function removeObjectFromSolr(ObjectEntity $object, bool $commit = false): bool
     {
-        // Skip if SOLR service is not available
-        if ($this->solrService === null || !$this->solrService->isAvailable()) {
+        // Get SOLR service using factory pattern (performance optimized)
+        $solrService = $this->getSolrService();
+        if ($solrService === null || !$solrService->isAvailable()) {
             return true; // Graceful degradation
         }
 
         try {
-            $result = $this->solrService->deleteObject($object->getUuid(), $commit);
+            $result = $solrService->deleteObject($object->getUuid(), $commit);
             
             if ($result) {
                 $this->logger->debug('🗑️  OBJECT REMOVED FROM SOLR', [
@@ -927,10 +954,11 @@ class ObjectCacheService
             // Clear individual object from cache
             $this->clearObjectFromCache($object);
             
-            // **SOLR INTEGRATION**: Index or remove from SOLR based on operation
-            if ($operation === 'create' || $operation === 'update') {
-                // Index the object in SOLR (async, non-blocking)
-                $this->indexObjectInSolr($object, false);
+        // **SOLR INTEGRATION**: Index or remove from SOLR based on operation
+        
+        if ($operation === 'create' || $operation === 'update') {
+            // Index the object in SOLR (async, non-blocking)
+            $this->indexObjectInSolr($object, false);
                 
                 // Update name cache for the modified object
                 $name = $object->getName() ?? $object->getUuid();
@@ -1471,8 +1499,9 @@ class ObjectCacheService
      */
     public function warmupSolrIndex(?int $registerId = null, ?int $schemaId = null, int $batchSize = 500, int $commitEvery = 10): array
     {
-        // Skip if SOLR service is not available
-        if ($this->solrService === null || !$this->solrService->isAvailable()) {
+        // Get SOLR service using factory pattern (performance optimized)
+        $solrService = $this->getSolrService();
+        if ($solrService === null || !$solrService->isAvailable()) {
             return [
                 'success' => false,
                 'message' => 'SOLR service is not available',
@@ -1541,7 +1570,7 @@ class ObjectCacheService
                 
                 // Bulk index documents in SOLR
                 if (!empty($solrDocuments)) {
-                    $bulkResult = $this->solrService->bulkIndex($solrDocuments, false);
+                    $bulkResult = $solrService->bulkIndex($solrDocuments, false);
                     if (!$bulkResult) {
                         $batchErrors += count($solrDocuments);
                         $this->logger->warning('Bulk index failed for batch', [
@@ -1553,7 +1582,7 @@ class ObjectCacheService
                 
                 // Commit periodically for memory management
                 if ($batchCount % $commitEvery === 0) {
-                    $this->solrService->commit();
+                    $solrService->commit();
                     $this->logger->debug('💾 SOLR COMMIT', [
                         'batchesProcessed' => $batchCount,
                         'objectsProcessed' => $totalProcessed + count($objects)
@@ -1595,7 +1624,7 @@ class ObjectCacheService
             }
             
             // Final commit
-            $this->solrService->commit();
+            $solrService->commit();
             
             $totalDuration = microtime(true) - $startTime;
             $avgObjectsPerSecond = $totalProcessed > 0 ? round($totalProcessed / $totalDuration) : 0;
@@ -1649,8 +1678,9 @@ class ObjectCacheService
      */
     public function clearSolrIndex(?int $registerId = null, ?int $schemaId = null): bool
     {
-        // Skip if SOLR service is not available
-        if ($this->solrService === null || !$this->solrService->isAvailable()) {
+        // Get SOLR service using factory pattern (performance optimized)
+        $solrService = $this->getSolrService();
+        if ($solrService === null || !$solrService->isAvailable()) {
             return true; // Graceful degradation
         }
 
@@ -1666,7 +1696,7 @@ class ObjectCacheService
                 $query = 'schema_id_i:' . $schemaId;
             }
             
-            $result = $this->solrService->deleteByQuery($query, true);
+            $result = $solrService->deleteByQuery($query, true);
             
             $this->logger->info('🗑️  SOLR INDEX CLEARED', [
                 'registerId' => $registerId,
@@ -1694,11 +1724,12 @@ class ObjectCacheService
      */
     public function getSolrDashboardStats(): array
     {
-        if ($this->solrService === null) {
+        $solrService = $this->getSolrService();
+        if ($solrService === null) {
             throw new \RuntimeException('SOLR service is not available');
         }
         
-        return $this->solrService->getDashboardStats();
+        return $solrService->getDashboardStats();
     }
 
     /**
@@ -1708,12 +1739,13 @@ class ObjectCacheService
      */
     public function commitSolr(): array
     {
-        if ($this->solrService === null) {
+        $solrService = $this->getSolrService();
+        if ($solrService === null) {
             return ['success' => false, 'error' => 'SOLR service is not available'];
         }
         
         try {
-            $result = $this->solrService->commit();
+            $result = $solrService->commit();
             return [
                 'success' => $result,
                 'timestamp' => date('c'),
@@ -1735,12 +1767,13 @@ class ObjectCacheService
      */
     public function optimizeSolr(): array
     {
-        if ($this->solrService === null) {
+        $solrService = $this->getSolrService();
+        if ($solrService === null) {
             return ['success' => false, 'error' => 'SOLR service is not available'];
         }
         
         try {
-            $result = $this->solrService->optimize();
+            $result = $solrService->optimize();
             return [
                 'success' => $result,
                 'timestamp' => date('c'),
@@ -1762,12 +1795,13 @@ class ObjectCacheService
      */
     public function clearSolrIndexForDashboard(): array
     {
-        if ($this->solrService === null) {
+        $solrService = $this->getSolrService();
+        if ($solrService === null) {
             return ['success' => false, 'error' => 'SOLR service is not available'];
         }
         
         try {
-            $result = $this->solrService->clearIndex();
+            $result = $solrService->clearIndex();
             return [
                 'success' => $result,
                 'timestamp' => date('c'),
@@ -1789,7 +1823,8 @@ class ObjectCacheService
      */
     public function testSolrConnection(): array
     {
-        if ($this->solrService === null) {
+        $solrService = $this->getSolrService();
+        if ($solrService === null) {
             return [
                 'success' => false,
                 'message' => 'SOLR service is not available',
@@ -1797,7 +1832,7 @@ class ObjectCacheService
             ];
         }
         
-        return $this->solrService->testConnection();
+        return $solrService->testConnection();
     }
 
     /**
@@ -1807,11 +1842,12 @@ class ObjectCacheService
      */
     public function getSolrStats(): array
     {
-        if ($this->solrService === null) {
+        $solrService = $this->getSolrService();
+        if ($solrService === null) {
             return ['available' => false];
         }
         
-        return $this->solrService->getStats();
+        return $solrService->getStats();
     }
 
 

@@ -46,8 +46,13 @@ use OCA\OpenRegister\Service\ObjectCacheService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\SolrService;
+use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\SolrSchemaService;
+use OCA\OpenRegister\Setup\SolrSetup;
 use OCA\OpenRegister\Service\SchemaCacheService;
+use OCA\OpenRegister\Command\SolrDebugCommand;
+use OCA\OpenRegister\Command\SolrManagementCommand;
 use OCA\OpenRegister\Service\SchemaFacetCacheService;
 use OCA\OpenRegister\Search\ObjectsProvider;
 use OCP\AppFramework\App;
@@ -57,6 +62,7 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\EventDispatcher\IEventDispatcher;
 
 use OCA\OpenRegister\EventListener\TestEventListener;
+use OCA\OpenRegister\EventListener\SolrEventListener;
 use OCP\User\Events\UserLoggedInEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
@@ -168,8 +174,8 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register SolrService for advanced search capabilities (temporarily disabled - causes performance issues)
-        // TODO: Re-enable with proper lazy initialization
+        // Register SolrService for advanced search capabilities (disabled due to performance issues)
+        // Issue: Even with lazy loading, DI registration causes performance problems
         /*
         $context->registerService(
                 SolrService::class,
@@ -184,14 +190,23 @@ class Application extends App implements IBootstrap
                 );
         */
 
-        // Register ObjectCacheService for performance optimization
+        // Register ObjectCacheService for performance optimization with lightweight SOLR
         $context->registerService(
                 ObjectCacheService::class,
                 function ($container) {
+                    // Break circular dependency by lazy-loading GuzzleSolrService
+                    $solrService = null;
+                    try {
+                        $solrService = $container->get(GuzzleSolrService::class);
+                    } catch (\Exception $e) {
+                        // If GuzzleSolrService is not available, continue without it
+                        $solrService = null;
+                    }
+                    
                     return new ObjectCacheService(
                     $container->get(ObjectEntityMapper::class),
                     $container->get('Psr\Log\LoggerInterface'),
-                    null, // SolrService temporarily disabled
+                    $solrService, // Lightweight SOLR service enabled!
                     $container->get('OCP\ICacheFactory'),
                     $container->get('OCP\IUserSession')
                     );
@@ -330,7 +345,9 @@ class Application extends App implements IBootstrap
                     $container->get(FacetService::class),
                     $container->get(ObjectCacheService::class),
                     $container->get(SchemaCacheService::class),
-                    $container->get(SchemaFacetCacheService::class)
+                    $container->get(SchemaFacetCacheService::class),
+                    $container->get(SettingsService::class),
+                    $container
                     );
                 }
                 );
@@ -376,6 +393,17 @@ class Application extends App implements IBootstrap
                 }
                 );
 
+        // Register SolrEventListener for automatic Solr indexing
+        $context->registerService(
+                SolrEventListener::class,
+                function ($container) {
+                    return new SolrEventListener(
+                    $container->get(ObjectCacheService::class),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
         // Register SchemaCacheService for improved schema performance
         $context->registerService(
                 SchemaCacheService::class,
@@ -416,8 +444,71 @@ class Application extends App implements IBootstrap
         // Register ObjectsProvider as a search provider for Nextcloud search
         $context->registerSearchProvider(ObjectsProvider::class);
 
+        // Register SolrDebugCommand for SOLR debugging
+        $context->registerService(
+                SolrDebugCommand::class,
+                function ($container) {
+                    return new SolrDebugCommand(
+                    $container->get(SettingsService::class),
+                    $container->get('Psr\Log\LoggerInterface'),
+                    $container->get('OCP\IConfig')
+                    );
+                }
+                );
+
+        // Register lightweight GuzzleSolrService directly (no factory needed!)
+        $context->registerService(
+                GuzzleSolrService::class,
+                function ($container) {
+                    return new GuzzleSolrService(
+                    $container->get(SettingsService::class),
+                    $container->get('Psr\Log\LoggerInterface'),
+                    $container->get('OCP\Http\Client\IClientService'),
+                    $container->get('OCP\IConfig'),
+                    $container->get(SchemaMapper::class) // Add SchemaMapper for schema-aware mapping
+                    );
+                }
+                );
+
+        // Register SolrSchemaService for SOLR schema operations
+        $context->registerService(
+                SolrSchemaService::class,
+                function ($container) {
+                    return new SolrSchemaService(
+                    $container->get(SchemaMapper::class),
+                    $container->get(GuzzleSolrService::class),
+                    $container->get(SettingsService::class),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register SolrManagementCommand for production SOLR operations
+        $context->registerService(
+                SolrManagementCommand::class,
+                function ($container) {
+                    return new SolrManagementCommand(
+                    $container->get(SettingsService::class),
+                    $container->get('Psr\Log\LoggerInterface'),
+                    $container->get(GuzzleSolrService::class),
+                    $container->get(SolrSchemaService::class),
+                    $container->get('OCP\IConfig')
+                    );
+                }
+                );
+
         // Register TEST event listener for easily triggerable Nextcloud events
         $context->registerEventListener(UserLoggedInEvent::class, TestEventListener::class);
+
+        // Register Solr event listeners for automatic indexing
+        $context->registerEventListener(ObjectCreatedEvent::class, SolrEventListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, SolrEventListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, SolrEventListener::class);
+        
+        // Register Solr event listeners for schema lifecycle management
+        $context->registerEventListener(SchemaCreatedEvent::class, SolrEventListener::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, SolrEventListener::class);
+        $context->registerEventListener(SchemaDeletedEvent::class, SolrEventListener::class);
 
     }//end register()
 

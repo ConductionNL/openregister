@@ -28,7 +28,6 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\SearchService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -133,6 +132,8 @@ class ObjectsController extends Controller
         return in_array('admin', $userGroups);
 
     }//end isCurrentUserAdmin()
+
+
 
 
     /**
@@ -390,8 +391,7 @@ class ObjectsController extends Controller
         // Build search query with resolved numeric IDs
         $query = $objectService->buildSearchQuery($this->request->getParams(), $resolved['register'], $resolved['schema']);
         
-        // **PERFORMANCE OPTIMIZATION**: Use optimized version that intelligently selects sync vs async
-        // Simple requests use fast path, complex requests use async processing
+        // **INTELLIGENT SOURCE SELECTION**: ObjectService automatically chooses optimal source
         $result = $objectService->searchObjectsPaginated($query);
         
         // **SUB-SECOND OPTIMIZATION**: Enable response compression for large payloads
@@ -406,6 +406,8 @@ class ObjectsController extends Controller
         return $response;
 
     }//end index()
+
+
 
 
     /**
@@ -441,8 +443,7 @@ class ObjectsController extends Controller
         // Build search query without register/schema constraints
         $query = $objectService->buildSearchQuery($this->request->getParams());
 
-        // **PERFORMANCE OPTIMIZATION**: Use optimized version that intelligently selects sync vs async
-        // Simple requests use fast path, complex requests use async processing
+        // **INTELLIGENT SOURCE SELECTION**: ObjectService automatically chooses optimal source
         $result = $objectService->searchObjectsPaginated($query);
 
         return new JSONResponse($result);

@@ -1128,12 +1128,12 @@
 						<NcButton
 							type="secondary"
 							:disabled="loading || saving || testingConnection || warmingUpSolr || !solrOptions.enabled"
-							@click="warmupSolrIndex">
+							@click="showWarmupConfigDialog">
 							<template #icon>
 								<NcLoadingIcon v-if="warmingUpSolr" :size="20" />
 								<Refresh v-else :size="20" />
 							</template>
-							{{ warmingUpSolr ? 'Warming up...' : 'Warmup Index' }}
+							{{ warmingUpSolr ? 'Warming up...' : 'Configure Warmup' }}
 						</NcButton>
 						<NcButton
 							type="primary"
@@ -1397,6 +1397,113 @@
 				</div>
 			</div>
 		</NcDialog>
+
+		<!-- SOLR Warmup Configuration Dialog -->
+		<NcDialog
+			v-if="showWarmupDialog"
+			name="SOLR Warmup Configuration"
+			:can-close="!warmingUpSolr"
+			@closing="hideWarmupDialog">
+			<div class="warmup-dialog">
+				<div class="warmup-header">
+					<h3>🔥 SOLR Index Warmup</h3>
+					<p class="warmup-description">
+						Configure warmup parameters for SOLR index initialization. This process will mirror schemas and index objects into SOLR for enhanced search performance.
+					</p>
+				</div>
+
+				<div class="warmup-form">
+					<div class="form-section">
+						<h4>Execution Mode</h4>
+						<NcCheckboxRadioSwitch
+							v-model="warmupConfig.mode"
+							name="warmup_mode"
+							value="serial"
+							type="radio">
+							Serial Mode (Safer, slower)
+						</NcCheckboxRadioSwitch>
+						<NcCheckboxRadioSwitch
+							v-model="warmupConfig.mode"
+							name="warmup_mode"
+							value="parallel"
+							type="radio">
+							Parallel Mode (Faster, more resource intensive)
+						</NcCheckboxRadioSwitch>
+						<p class="form-description">
+							Serial mode processes objects sequentially, while parallel mode uses multiple concurrent batches for faster processing.
+						</p>
+					</div>
+
+					<div class="form-section">
+						<h4>Object Limits</h4>
+						<div class="form-row">
+							<label class="form-label">
+								<strong>Max Objects</strong>
+								<p class="form-field-description">Maximum number of objects to index (0 = all objects)</p>
+							</label>
+							<div class="form-input">
+								<input
+									v-model.number="warmupConfig.maxObjects"
+									type="number"
+									:disabled="warmingUpSolr"
+									placeholder="0"
+									min="0"
+									class="warmup-input-field">
+							</div>
+						</div>
+
+						<div class="form-row">
+							<label class="form-label">
+								<strong>Batch Size</strong>
+								<p class="form-field-description">Number of objects to process per batch</p>
+							</label>
+							<div class="form-input">
+								<input
+									v-model.number="warmupConfig.batchSize"
+									type="number"
+									:disabled="warmingUpSolr"
+									placeholder="1000"
+									min="1"
+									max="5000"
+									class="warmup-input-field">
+							</div>
+						</div>
+					</div>
+
+					<div class="form-section">
+						<h4>Error Handling</h4>
+						<NcCheckboxRadioSwitch
+							v-model="warmupConfig.collectErrors"
+							:disabled="warmingUpSolr"
+							type="switch">
+							{{ warmupConfig.collectErrors ? 'Collect errors in response' : 'Stop on first error' }}
+						</NcCheckboxRadioSwitch>
+						<p class="form-description">
+							When enabled, errors will be collected and returned in the response instead of stopping the warmup process.
+							This is useful for debugging but may mask critical issues.
+						</p>
+					</div>
+				</div>
+
+				<div class="dialog-actions">
+					<NcButton
+						:disabled="warmingUpSolr"
+						@click="hideWarmupDialog">
+						Cancel
+					</NcButton>
+					<NcButton
+						type="primary"
+						:disabled="warmingUpSolr || !solrOptions.enabled"
+						@click="performWarmup">
+						<template #icon>
+							<NcLoadingIcon v-if="warmingUpSolr" :size="20" />
+							<Refresh v-else :size="20" />
+						</template>
+						{{ warmingUpSolr ? 'Warming up...' : 'Start Warmup' }}
+					</NcButton>
+				</div>
+			</div>
+		</NcDialog>
 	</div>
 </template>
 
@@ -1584,6 +1691,13 @@ export default defineComponent({
 			solrConnectionStatus: null,
 			testingConnection: false,
 			warmingUpSolr: false,
+			showWarmupDialog: false,
+			warmupConfig: {
+				mode: 'serial',
+				maxObjects: 0,
+				batchSize: 1000,
+				collectErrors: false,
+			},
 		}
 	},
 
@@ -2463,12 +2577,30 @@ export default defineComponent({
 		},
 
 		/**
-		 * Warmup SOLR index with current data
+		 * Show warmup configuration dialog
+		 *
+		 * @return {void}
+		 */
+		showWarmupConfigDialog() {
+			this.showWarmupDialog = true
+		},
+
+		/**
+		 * Hide warmup configuration dialog
+		 *
+		 * @return {void}
+		 */
+		hideWarmupDialog() {
+			this.showWarmupDialog = false
+		},
+
+		/**
+		 * Perform SOLR warmup with configured parameters
 		 *
 		 * @async
 		 * @return {Promise<void>}
 		 */
-		async warmupSolrIndex() {
+		async performWarmup() {
 			this.warmingUpSolr = true
 
 			try {
@@ -2477,22 +2609,57 @@ export default defineComponent({
 					headers: {
 						'Content-Type': 'application/json',
 					},
+					body: JSON.stringify({
+						mode: this.warmupConfig.mode,
+						maxObjects: this.warmupConfig.maxObjects,
+						batchSize: this.warmupConfig.batchSize,
+						collectErrors: this.warmupConfig.collectErrors,
+					}),
 				})
 
 				const result = await response.json()
 
 				if (result.error) {
 					console.error('Failed to warmup SOLR index:', result.error)
+					// Show error details if available
+					if (result.errors && Array.isArray(result.errors)) {
+						console.error('Collected errors:', result.errors)
+					}
 					return
 				}
 
 				console.log('SOLR warmup completed successfully:', result)
+
+				// Show success details
+				if (result.stats) {
+					console.log('Warmup statistics:', result.stats)
+				}
+
+				// Hide the dialog on success
+				this.hideWarmupDialog()
 
 			} catch (error) {
 				console.error('Failed to warmup SOLR index:', error)
 			} finally {
 				this.warmingUpSolr = false
 			}
+		},
+
+		/**
+		 * Warmup SOLR index with current data (legacy method for backward compatibility)
+		 *
+		 * @async
+		 * @return {Promise<void>}
+		 */
+		async warmupSolrIndex() {
+			// Use default configuration for direct calls
+			this.warmupConfig = {
+				mode: 'serial',
+				maxObjects: 0,
+				batchSize: 1000,
+				collectErrors: false,
+			}
+			await this.performWarmup()
 		},
 	},
 })
@@ -3463,6 +3630,129 @@ h4 {
 	}
 
 	.config-label {
+		margin-bottom: 0.5rem;
+	}
+}
+
+/* Warmup Dialog Styles */
+.warmup-dialog {
+	padding: 1.5rem;
+	max-width: 700px;
+	width: 100%;
+}
+
+.warmup-header {
+	margin-bottom: 1.5rem;
+}
+
+.warmup-header h3 {
+	color: var(--color-primary);
+	margin-bottom: 1rem;
+	font-size: 1.2rem;
+}
+
+.warmup-description {
+	color: var(--color-text-light);
+	line-height: 1.5;
+	margin: 0;
+}
+
+.warmup-form {
+	margin-bottom: 1.5rem;
+}
+
+.form-section {
+	margin-bottom: 2rem;
+	padding: 1rem;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius-large);
+	background-color: var(--color-background-hover);
+}
+
+.form-section h4 {
+	margin: 0 0 1rem 0;
+	font-weight: bold;
+	color: var(--color-text-dark);
+}
+
+.form-description {
+	margin: 0.75rem 0 0 0;
+	font-size: 0.9rem;
+	color: var(--color-text-lighter);
+	line-height: 1.4;
+}
+
+.form-row {
+	display: grid;
+	grid-template-columns: 1fr 200px;
+	gap: 1rem;
+	align-items: start;
+	margin-bottom: 1rem;
+}
+
+.form-row:last-child {
+	margin-bottom: 0;
+}
+
+.form-label {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+}
+
+.form-label strong {
+	font-size: 0.9rem;
+	font-weight: 600;
+	color: var(--color-text-dark);
+}
+
+.form-field-description {
+	margin: 0;
+	font-size: 0.8rem;
+	color: var(--color-text-lighter);
+	line-height: 1.3;
+}
+
+.form-input {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+}
+
+.warmup-input-field {
+	width: 100%;
+	padding: 0.5rem;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	background-color: var(--color-main-background);
+	color: var(--color-main-text);
+	font-size: 0.9rem;
+}
+
+.warmup-input-field:focus {
+	outline: none;
+	border-color: var(--color-primary);
+	box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+.warmup-input-field:disabled {
+	background-color: var(--color-background-darker);
+	color: var(--color-text-lighter);
+	cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+	.warmup-dialog {
+		padding: 1rem;
+		max-width: 100%;
+	}
+
+	.form-row {
+		grid-template-columns: 1fr;
+		gap: 0.5rem;
+	}
+
+	.form-label {
 		margin-bottom: 0.5rem;
 	}
 }

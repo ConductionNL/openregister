@@ -55,6 +55,9 @@ use OCP\IUserSession;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\GuzzleSolrService;
+use OCP\AppFramework\IAppContainer;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use OCP\IMemcache;
@@ -132,27 +135,7 @@ class ObjectService
      */
     private ?ObjectEntity $currentObject = null;
 
-    /**
-     * Nextcloud distributed cache instance for ultra-fast repeated requests
-     *
-     * **PERFORMANCE OPTIMIZATION**: Use Nextcloud's ICache for distributed caching
-     * that supports Redis/Memcached in production environments and provides
-     * automatic cache invalidation and memory management.
-     *
-     * @var IMemcache|null
-     */
-    private ?IMemcache $distributedCache = null;
-
-    /**
-     * Nextcloud entity cache for schemas and registers
-     *
-     * **PERFORMANCE OPTIMIZATION**: Cache frequently accessed schemas and registers
-     * to avoid repeated database queries. These entities are relatively static
-     * and perfect for caching.
-     *
-     * @var IMemcache|null
-     */
-    private ?IMemcache $entityCache = null;
+    // **REMOVED**: Distributed caching mechanisms removed since SOLR is now our index
 
     /**
      * External app identifier for cache isolation
@@ -164,19 +147,7 @@ class ObjectService
      */
     private ?string $externalAppId = null;
 
-    /**
-     * Cache expiry time in seconds (5 minutes for development, configurable for production)
-     *
-     * @var int
-     */
-    private const CACHE_TTL = 300;
-
-    /**
-     * Entity cache TTL (longer than response cache since schemas/registers change less frequently)
-     *
-     * @var int
-     */
-    private const ENTITY_CACHE_TTL = 900; // 15 minutes
+    // **REMOVED**: Cache TTL constants removed since SOLR is now our index
 
 
     /**
@@ -228,23 +199,11 @@ class ObjectService
         private readonly FacetService $facetService,
         private readonly ObjectCacheService $objectCacheService,
         private readonly SchemaCacheService $schemaCacheService,
-        private readonly SchemaFacetCacheService $schemaFacetCacheService
+        private readonly SchemaFacetCacheService $schemaFacetCacheService,
+        private readonly SettingsService $settingsService,
+        private readonly IAppContainer $container
     ) {
-        // **PERFORMANCE OPTIMIZATION**: Initialize Nextcloud's distributed cache
-        try {
-            $this->distributedCache = $this->cacheFactory->createDistributed('openregister_search');
-            $this->entityCache = $this->cacheFactory->createDistributed('openregister_entities');
-        } catch (\Exception $e) {
-            // Fallback to local cache if distributed cache unavailable
-            try {
-                $this->distributedCache = $this->cacheFactory->createLocal('openregister_search');
-                $this->entityCache = $this->cacheFactory->createLocal('openregister_entities');
-            } catch (\Exception $e) {
-                // No caching available - will skip cache operations
-                $this->distributedCache = null;
-                $this->entityCache = null;
-            }
-        }
+        // **REMOVED**: Cache initialization removed since SOLR is now our index
 
     }//end __construct()
 
@@ -1173,6 +1132,7 @@ class ObjectService
         // For new objects without UUID, let SaveObject generate the UUID and handle folder creation
         // Save the object using the current register and schema.
         // Let SaveObject handle the UUID logic completely
+        
         $savedObject = $this->saveHandler->saveObject(
             $this->currentRegister,
             $this->currentSchema,
@@ -1770,6 +1730,8 @@ class ObjectService
                 'requestUri' => $_SERVER['REQUEST_URI'] ?? 'unknown'
             ]);
 
+            // **MAPPER CALL TIMING**: Track how long the mapper takes
+            $mapperStart = microtime(true);
             $result = $this->objectEntityMapper->searchObjects($query, $activeOrganisationUuid, $rbac, $multi);
 
             $this->logger->info('✅ MAPPER CALL - Database search completed', [
@@ -2374,6 +2336,51 @@ class ObjectService
      */
     public function searchObjectsPaginated(array $query=[], bool $rbac=false, bool $multi=false): array
     {
+        // **INTELLIGENT SOURCE SELECTION**: Simple if statement for optimal performance
+        $requestedSource = $query['_source'] ?? null;
+        
+        // Use Solr if explicitly requested OR if no source specified and Solr is enabled
+        if ($requestedSource === 'index' || $requestedSource === 'solr' || 
+            ($requestedSource === null && $this->isSolrAvailable())) {
+            try {
+                $solrService = $this->container->get(GuzzleSolrService::class);
+                if ($solrService !== null && $solrService->isAvailable()) {
+                    $result = $solrService->searchObjectsPaginated($query, $rbac, $multi);
+                    $result['_source'] = 'index';
+                    return $result;
+                }
+            } catch (\Exception $e) {
+                $this->logger->warning('Solr search failed, falling back to database', [
+                    'error' => $e->getMessage(),
+                    'query_fingerprint' => substr(md5(json_encode($query)), 0, 8)
+                ]);
+            }
+        }
+        
+        // Use database (either requested or fallback)
+        $result = $this->searchObjectsPaginatedDatabase($query, $rbac, $multi);
+        $result['_source'] = 'database';
+        return $result;
+    }
+
+    /**
+     * Check if Solr is available for use
+     */
+    private function isSolrAvailable(): bool
+    {
+        try {
+            $solrSettings = $this->settingsService->getSolrSettings();
+            return $solrSettings['enabled'] ?? false;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Original database search logic - extracted to avoid code duplication
+     */
+    private function searchObjectsPaginatedDatabase(array $query=[], bool $rbac=false, bool $multi=false): array
+    {
         // **PERFORMANCE DEBUGGING**: Start detailed timing
         $perfStart = microtime(true);
         $perfTimings = [];
@@ -2381,16 +2388,9 @@ class ObjectService
         // **50% PERFORMANCE BOOST**: Early query optimization and request routing
         $this->optimizeRequestForPerformance($query, $perfTimings);
 
-        // **CACHE BYPASS**: Check for _cache=false parameter for testing/debugging
-        $cacheDisabled = ($query['_cache'] ?? true) === false || ($query['_cache'] ?? true) === 'false';
+        // **REMOVED**: Cache bypass logic removed since SOLR is now our index
 
-        if ($cacheDisabled) {
-            $this->logger->info('🚫 CACHE BYPASS: _cache=false parameter detected', [
-                'requestUri' => $_SERVER['REQUEST_URI'] ?? 'unknown',
-                'purpose' => 'testing_or_debugging',
-                'note' => 'This will always fetch fresh data from database'
-            ]);
-        }
+        // **REMOVED**: Cache disabled check removed since SOLR is now our index
 
         // **PERFORMANCE MONITORING**: Check for _performance=true parameter
         $includePerformance = ($query['_performance'] ?? false) === true || ($query['_performance'] ?? false) === 'true';
@@ -2403,38 +2403,7 @@ class ObjectService
             ]);
         }
 
-        // **CRITICAL PERFORMANCE OPTIMIZATION**: Check cache first for identical requests (unless bypassed)
-        $cachedResponse = null;
-        if (!$cacheDisabled) {
-            $cacheKey = $this->generateCacheKey($query, $this->externalAppId);
-            $cacheCheckStart = microtime(true);
-            $cachedResponse = $this->getCachedResponse($cacheKey);
-            $perfTimings['cache_check'] = round((microtime(true) - $cacheCheckStart) * 1000, 2);
-        } else {
-            $perfTimings['cache_check'] = 0; // No cache check performed
-        }
-
-        if ($cachedResponse !== null) {
-            $this->logger->info('🎯 CACHE HIT - Performance optimized response', [
-                'cacheKey' => substr($cacheKey, 0, 32) . '...',
-                'performanceGain' => 'massive_improvement',
-                'responseTime' => '<10ms',
-                'requestUri' => $_SERVER['REQUEST_URI'] ?? 'unknown',
-                'externalApp' => $this->externalAppId ?? 'none',
-                'cacheCheckTime' => $perfTimings['cache_check'] . 'ms'
-            ]);
-            return $cachedResponse;
-        }
-
-        // **CACHE MISS LOGGING** - Important for debugging external app issues
-        $this->logger->info('❌ CACHE MISS - Will compute and cache response', [
-            'cacheKey' => substr($cacheKey, 0, 32) . '...',
-            'requestUri' => $_SERVER['REQUEST_URI'] ?? 'unknown',
-            'queryKeys' => array_keys($query),
-            'externalApp' => $this->externalAppId ?? 'none',
-            'userId' => $this->getCurrentUserId() ?? 'anonymous',
-            'cacheCheckTime' => $perfTimings['cache_check'] . 'ms'
-        ]);
+        // **REMOVED**: Cache checking and response logic removed since SOLR is now our index
 
         // **PERFORMANCE OPTIMIZATION**: Start timing execution and detect request complexity
         $startTime = microtime(true);
@@ -2479,7 +2448,7 @@ class ObjectService
         }
 
         // Calculate page from offset if not provided
-        if ($page === null && $offset !== null) {
+        if ($page === null && $offset !== null && $limit > 0) {
             $page = floor($offset / $limit) + 1;
         }
 
@@ -2555,12 +2524,7 @@ class ObjectService
         // Log the search trail with actual execution time
         $this->logSearchTrail($query, count($results), $total, $executionTime, 'optimized');
 
-        // **PERFORMANCE OPTIMIZATION**: Cache the response for future identical requests (unless bypassed)
-        if (!$cacheDisabled && isset($cacheKey)) {
-            $this->setCachedResponse($cacheKey, $paginatedResults);
-        } elseif ($cacheDisabled) {
-            $this->logger->debug('Cache storage skipped due to _cache=false parameter');
-        }
+        // **REMOVED**: Cache storage logic removed since SOLR is now our index
 
         // **PERFORMANCE MONITORING**: Include performance metrics if requested
         if ($includePerformance) {
@@ -2787,14 +2751,21 @@ class ObjectService
             }
         }
 
-        // **OPTIMIZATION 3**: Smart limit adjustment for performance
-        $originalLimit = $query['_limit'] ?? 20;
-        $query['_limit'] = $this->optimizeLimit($originalLimit);
-        if ($query['_limit'] != $originalLimit) {
-            $this->logger->debug('📊 LIMIT OPTIMIZATION: Adjusted for performance', [
-                'original' => $originalLimit,
-                'optimized' => $query['_limit'],
-                'reason' => 'performance_target_500ms'
+        // **OPTIMIZATION 3**: Smart limit adjustment for performance (skip for bulk operations)
+        if (!($query['_bulk_operation'] ?? false)) {
+            $originalLimit = $query['_limit'] ?? 20;
+            $query['_limit'] = $this->optimizeLimit($originalLimit);
+            if ($query['_limit'] != $originalLimit) {
+                $this->logger->debug('📊 LIMIT OPTIMIZATION: Adjusted for performance', [
+                    'original' => $originalLimit,
+                    'optimized' => $query['_limit'],
+                    'reason' => 'performance_target_500ms'
+                ]);
+            }
+        } else {
+            $this->logger->debug('📊 LIMIT OPTIMIZATION: Skipped for bulk operation', [
+                'limit' => $query['_limit'] ?? 20,
+                'reason' => 'bulk_operation_bypass'
             ]);
         }
 
@@ -3078,7 +3049,7 @@ class ObjectService
         }
 
         // Calculate page from offset if not provided
-        if ($page === null && $offset !== null) {
+        if ($page === null && $offset !== null && $limit > 0) {
             $page = floor($offset / $limit) + 1;
         }
 
@@ -5710,94 +5681,10 @@ class ObjectService
      *
      * @return void
      */
-    public function clearResponseCache(): void
-    {
-        if ($this->distributedCache !== null) {
-            try {
-                $this->distributedCache->clear();
-            } catch (\Exception $e) {
-                // Cache clear failed, continue
-            }
-        }
-
-    }//end clearResponseCache()
+    // **REMOVED**: clearResponseCache method removed since SOLR is now our index
 
 
-    /**
-     * Generate a cache key for a search query
-     *
-     * **PERFORMANCE OPTIMIZATION**: Creates a deterministic cache key based on
-     * query parameters, user context, and organization context to enable
-     * response caching for identical requests.
-     *
-     * **EXTERNAL APP OPTIMIZATION**: For external apps without user sessions,
-     * creates specific cache namespaces to prevent cache thrashing between
-     * different external apps and improve performance.
-     *
-     * @param array       $query   The search query array
-     * @param string|null $appId   Optional app ID for external app cache isolation
-     *
-     * @return string Unique cache key for the query
-     *
-     * @phpstan-param array<string, mixed> $query
-     * @psalm-param   array<string, mixed> $query
-     * @phpstan-return string
-     * @psalm-return   string
-     */
-    private function generateCacheKey(array $query, ?string $appId = null): string
-    {
-        // Include user context and organization for cache isolation
-        $user = $this->userSession->getUser();
-        $userId = $user ? $user->getUID() : null;
-        $orgId = $this->getCurrentOrganisationId() ?? 'no-org';
-
-        // **EXTERNAL APP OPTIMIZATION**: Enhanced anonymous user handling
-        if ($userId === null) {
-            // **PRIORITY 1**: Use explicitly set external app ID (best performance)
-            if ($appId !== null) {
-                $userId = "external_app_{$appId}";
-            } else {
-                // **PRIORITY 2**: Try to detect calling app from call stack
-                $appContext = $this->detectExternalAppContext();
-                if ($appContext !== null) {
-                    $userId = "external_app_{$appContext}";
-                } else {
-                    // **PRIORITY 3**: Query-based isolation for anonymous users
-                    // This prevents cache thrashing between different anonymous usage patterns
-                    $queryFingerprint = $this->generateQueryFingerprint($query);
-                    $userId = "anonymous_{$queryFingerprint}";
-                }
-            }
-
-            // **PERFORMANCE LOGGING**: Log external app cache strategy
-            $this->logger->info('External app cache context determined', [
-                'strategy' => $appId ? 'explicit' : ($appContext ? 'detected' : 'fingerprint'),
-                'cacheUserId' => $userId,
-                'originalAppId' => $appId,
-                'detectedApp' => $appContext ?? 'none',
-                'queryParams' => array_keys($query),
-                'requestUri' => $_SERVER['REQUEST_URI'] ?? 'unknown'
-            ]);
-        }
-
-        // **CACHE NORMALIZATION**: Normalize register/schema identifiers to prevent duplicate caching
-        // URLs like objects/19/108 and objects/voorzieningen/contactpersoon should share the same cache
-        $normalizedQuery = $this->normalizeQueryForCaching($query);
-
-        // Sort query to ensure consistent cache keys
-        ksort($normalizedQuery);
-
-        // Create cache key with enhanced user and organization context
-        $keyData = [
-            'query' => $normalizedQuery,
-            'user' => $userId,
-            'org' => $orgId,
-            'version' => '1.2' // Incremented for cache normalization fix
-        ];
-
-        return 'obj_search_' . md5(json_encode($keyData));
-
-    }//end generateCacheKey()
+    // **REMOVED**: generateCacheKey method removed since SOLR is now our index
 
 
     /**

@@ -62,4 +62,9 @@ Create a [feature request](https://github.com/OpenRegister/.github/issues/new/ch
 		<admin>OCA\OpenRegister\Settings\OpenRegisterAdmin</admin>
 		<admin-section>OCA\OpenRegister\Sections\OpenRegisterAdmin</admin-section>
 	</settings>
+
+	<commands>
+		<command>OCA\OpenRegister\Command\SolrDebugCommand</command>
+		<command>OCA\OpenRegister\Command\SolrManagementCommand</command>
+	</commands>
 </info>

@@ -25,7 +25,6 @@ use OCA\OpenRegister\Db\RegisterMapper;
 
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RegisterService;
-use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Service\UploadService;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -165,7 +164,6 @@ class RegistersController extends Controller
      * This method returns a JSON response containing an array of all registers in the system.
      *
      * @param ObjectService $objectService The object service
-     * @param SearchService $searchService The search service
      *
      * @return JSONResponse A JSON response containing the list of registers
      *
@@ -174,8 +172,7 @@ class RegistersController extends Controller
      * @NoCSRFRequired
      */
     public function index(
-        ObjectService $objectService,
-        SearchService $searchService
+        ObjectService $objectService
     ): JSONResponse {
         // Get request parameters for filtering and searching.
         $filters = $this->request->getParam(key: 'filters', default: []);
