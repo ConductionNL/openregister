@@ -466,6 +466,7 @@ class Application extends App implements IBootstrap
                     $container->get('OCP\Http\Client\IClientService'),
                     $container->get('OCP\IConfig'),
                     $container->get(SchemaMapper::class) // Add SchemaMapper for schema-aware mapping
+                    // SolrSchemaService will be resolved lazily to avoid circular dependency
                     );
                 }
                 );
@@ -478,7 +479,8 @@ class Application extends App implements IBootstrap
                     $container->get(SchemaMapper::class),
                     $container->get(GuzzleSolrService::class),
                     $container->get(SettingsService::class),
-                    $container->get('Psr\Log\LoggerInterface')
+                    $container->get('Psr\Log\LoggerInterface'),
+                    $container->get('OCP\IConfig')
                     );
                 }
                 );
