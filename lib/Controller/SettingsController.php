@@ -26,6 +26,7 @@ use OCP\IRequest;
 use Psr\Container\ContainerInterface;
 use OCP\App\IAppManager;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\GuzzleSolrService;
 
 /**
  * Controller for handling settings-related operations in the OpenRegister.
@@ -302,6 +303,104 @@ class SettingsController extends Controller
 
 
     /**
+     * Run SOLR setup to prepare for multi-tenant architecture
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse The SOLR setup results
+     */
+    public function setupSolr(): JSONResponse
+    {
+        try {
+            // Get SOLR service via direct DI injection
+            $container = \OC::$server->getRegisteredAppContainer('openregister');
+            $solrService = $container->get(GuzzleSolrService::class);
+            
+            if ($solrService === null) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'SOLR service not available'
+                ], 400);
+            }
+            
+            // Run SOLR setup
+            $setupResult = $solrService->runSolrSetup();
+            
+            if ($setupResult) {
+                return new JSONResponse([
+                    'success' => true,
+                    'message' => 'SOLR setup completed successfully'
+                ]);
+            } else {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'SOLR setup failed - check logs for details'
+                ], 500);
+            }
+            
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'SOLR setup error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Test SOLR setup directly (bypassing SolrService)
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse The SOLR setup test results
+     */
+    public function testSolrSetup(): JSONResponse
+    {
+        try {
+            // Get SOLR settings directly
+            $solrSettings = $this->settingsService->getSolrSettings();
+            
+            if (!$solrSettings['enabled']) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'SOLR is disabled'
+                ], 400);
+            }
+            
+            // Create SolrSetup directly with known settings
+            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
+            $setup = new \OCA\OpenRegister\Setup\SolrSetup($solrSettings, $logger);
+            
+            // Run setup
+            $result = $setup->setupSolr();
+            
+            if ($result) {
+                return new JSONResponse([
+                    'success' => true,
+                    'message' => 'SOLR setup completed successfully',
+                    'config' => [
+                        'host' => $solrSettings['host'],
+                        'port' => $solrSettings['port'],
+                        'scheme' => $solrSettings['scheme']
+                    ]
+                ]);
+            } else {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'SOLR setup failed - check logs'
+                ], 500);
+            }
+            
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'SOLR setup error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Test SOLR connection with provided settings
      *
      * @NoAdminRequired
@@ -393,10 +492,49 @@ class SettingsController extends Controller
     public function warmupSolrIndex(): JSONResponse
     {
         try {
-            $result = $this->settingsService->warmupSolrIndex();
+            // Get request parameters from JSON body or query parameters
+            $maxObjects = $this->request->getParam('maxObjects', 0);
+            $batchSize = $this->request->getParam('batchSize', 1000);
+            $mode = $this->request->getParam('mode', 'serial'); // New mode parameter
+            $collectErrors = $this->request->getParam('collectErrors', false); // New error collection parameter
+            
+            // Try to get from JSON body if not in query params
+            if ($maxObjects === 0) {
+                $input = file_get_contents('php://input');
+                if ($input) {
+                    $data = json_decode($input, true);
+                    if ($data) {
+                        $maxObjects = $data['maxObjects'] ?? 0;
+                        $batchSize = $data['batchSize'] ?? 1000;
+                        $mode = $data['mode'] ?? 'serial';
+                        $collectErrors = $data['collectErrors'] ?? false;
+                    }
+                }
+            }
+            
+            // Convert string boolean to actual boolean
+            if (is_string($collectErrors)) {
+                $collectErrors = filter_var($collectErrors, FILTER_VALIDATE_BOOLEAN);
+            }
+            
+            // Validate mode parameter
+            if (!in_array($mode, ['serial', 'parallel'])) {
+                return new JSONResponse([
+                    'error' => 'Invalid mode parameter. Must be "serial" or "parallel"'
+                ], 400);
+            }
+            
+            $result = $this->settingsService->warmupSolrIndex($batchSize, $maxObjects, $mode, $collectErrors);
             return new JSONResponse($result);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
+            // **ERROR VISIBILITY**: Let exceptions bubble up with full details
+            return new JSONResponse([
+                'error' => $e->getMessage(),
+                'exception_class' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
         }
     }
 
@@ -564,6 +702,35 @@ class SettingsController extends Controller
             return new JSONResponse($data);
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Test schema-aware SOLR mapping by indexing sample objects
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Test results
+     */
+    public function testSchemaMapping(): JSONResponse
+    {
+        try {
+            $solrService = $this->solrServiceFactory->createService();
+            
+            // Get required dependencies from container
+            $objectMapper = $this->container->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+            $schemaMapper = $this->container->get(\OCA\OpenRegister\Db\SchemaMapper::class);
+            
+            // Run the test
+            $results = $solrService->testSchemaAwareMapping($objectMapper, $schemaMapper);
+            
+            return new JSONResponse($results);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 

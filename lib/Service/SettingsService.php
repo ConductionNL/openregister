@@ -28,6 +28,7 @@ use OC_App;
 use OCA\OpenRegister\AppInfo\Application;
 use OCP\IGroupManager;
 use OCP\IUserManager;
+use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\SearchTrailMapper;
@@ -83,7 +84,6 @@ class SettingsService
      * @param AuditTrailMapper        $auditTrailMapper       Audit trail mapper for database operations.
      * @param SearchTrailMapper       $searchTrailMapper      Search trail mapper for database operations.
      * @param ObjectEntityMapper      $objectEntityMapper     Object entity mapper for database operations.
-     * @param ObjectCacheService      $objectCacheService     Object cache service for cache management.
      * @param SchemaCacheService      $schemaCacheService     Schema cache service for cache management.
      * @param SchemaFacetCacheService $schemaFacetCacheService Schema facet cache service for cache management.
      * @param ICacheFactory           $cacheFactory           Cache factory for distributed cache access.
@@ -100,7 +100,6 @@ class SettingsService
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly SearchTrailMapper $searchTrailMapper,
         private readonly ObjectEntityMapper $objectEntityMapper,
-        private readonly ObjectCacheService $objectCacheService,
         private readonly SchemaCacheService $schemaCacheService,
         private readonly SchemaFacetCacheService $schemaFacetCacheService,
         private readonly ICacheFactory $cacheFactory
@@ -807,7 +806,8 @@ class SettingsService
             // Get object cache stats (only if ObjectCacheService provides them)
             $objectStats = [];
             try {
-                $objectStats = $this->objectCacheService->getStats();
+                $objectCacheService = $this->container->get(ObjectCacheService::class);
+                $objectStats = $objectCacheService->getStats();
             } catch (\Exception $e) {
                 // If no object cache stats available, use defaults
                 $objectStats = [
@@ -1027,9 +1027,10 @@ class SettingsService
     private function clearObjectCache(?string $userId = null): array
     {
         try {
-            $beforeStats = $this->objectCacheService->getStats();
-            $this->objectCacheService->clearCache();
-            $afterStats = $this->objectCacheService->getStats();
+            $objectCacheService = $this->container->get(ObjectCacheService::class);
+            $beforeStats = $objectCacheService->getStats();
+            $objectCacheService->clearCache();
+            $afterStats = $objectCacheService->getStats();
 
             return [
                 'service' => 'object',
@@ -1056,12 +1057,13 @@ class SettingsService
     private function clearNamesCache(): array
     {
         try {
-            $beforeStats = $this->objectCacheService->getStats();
+            $objectCacheService = $this->container->get(ObjectCacheService::class);
+            $beforeStats = $objectCacheService->getStats();
             $beforeNameCacheSize = $beforeStats['name_cache_size'] ?? 0;
             
-            $this->objectCacheService->clearNameCache();
+            $objectCacheService->clearNameCache();
             
-            $afterStats = $this->objectCacheService->getStats();
+            $afterStats = $objectCacheService->getStats();
             $afterNameCacheSize = $afterStats['name_cache_size'] ?? 0;
 
             return [
@@ -1098,12 +1100,13 @@ class SettingsService
     {
         try {
             $startTime = microtime(true);
-            $beforeStats = $this->objectCacheService->getStats();
+            $objectCacheService = $this->container->get(ObjectCacheService::class);
+            $beforeStats = $objectCacheService->getStats();
             
-            $loadedCount = $this->objectCacheService->warmupNameCache();
+            $loadedCount = $objectCacheService->warmupNameCache();
             
             $executionTime = round((microtime(true) - $startTime) * 1000, 2);
-            $afterStats = $this->objectCacheService->getStats();
+            $afterStats = $objectCacheService->getStats();
 
             return [
                 'success' => true,
@@ -1363,15 +1366,20 @@ class SettingsService
 
 
     /**
-     * Warmup SOLR index with current object data
+     * Complete SOLR warmup: mirror schemas and index objects from the database
      *
-     * This method triggers a full reindexing of all objects in SOLR,
-     * which is useful after configuration changes or to rebuild the search index.
+     * This method performs comprehensive SOLR index warmup by:
+     * 1. Mirroring all OpenRegister schemas to SOLR for proper field typing
+     * 2. Bulk indexing objects from the database using schema-aware mapping
+     * 3. Performing cache warmup queries
+     * 4. Committing and optimizing the index
      *
+     * @param int $batchSize Number of objects to process per batch (default 1000, parameter kept for API compatibility)
+     * @param int $maxObjects Maximum number of objects to index (0 = all)
      * @return array Warmup operation results with statistics and status
      * @throws \RuntimeException If SOLR warmup fails
      */
-    public function warmupSolrIndex(): array
+    public function warmupSolrIndex(int $batchSize = 2000, int $maxObjects = 0, string $mode = 'serial', bool $collectErrors = false): array
     {
         try {
             $solrSettings = $this->getSolrSettings();
@@ -1389,49 +1397,117 @@ class SettingsService
                 ];
             }
 
-            // Get the ObjectCacheService to perform the warmup
-            $objectCacheService = $this->container->get(ObjectCacheService::class);
+            // Get SolrService for bulk indexing via direct DI
+            $solrService = $this->container->get(GuzzleSolrService::class);
+            
+            if ($solrService === null) {
+                return [
+                    'success' => false,
+                    'message' => 'SOLR service not available',
+                    'stats' => [
+                        'totalProcessed' => 0,
+                        'totalIndexed' => 0,
+                        'totalErrors' => 0,
+                        'duration' => 0
+                    ]
+                ];
+            }
             
             $startTime = microtime(true);
             
-            // Perform SOLR index warmup
-            $warmupResult = $objectCacheService->warmupSolrIndex();
+            // Get all schemas for schema mirroring
+            $schemas = [];
+            try {
+                $schemaMapper = $this->container->get('OCA\OpenRegister\Db\SchemaMapper');
+                $schemas = $schemaMapper->findAll();
+            } catch (\Exception $e) {
+                // Continue without schema mirroring if schema mapper is not available
+                $this->logger->warning('Schema mapper not available for warmup', ['error' => $e->getMessage()]);
+            }
+            
+            // **COMPLETE WARMUP**: Mirror schemas + index objects + cache warmup
+            $warmupResult = $solrService->warmupIndex($schemas, $maxObjects, $mode, $collectErrors);
             
             $totalDuration = microtime(true) - $startTime;
             
             if ($warmupResult['success']) {
+                $operations = $warmupResult['operations'] ?? [];
+                $indexed = $operations['objects_indexed'] ?? 0;
+                $schemasProcessed = $operations['schemas_processed'] ?? 0;
+                $fieldsCreated = $operations['fields_created'] ?? 0;
+                $objectsPerSecond = $totalDuration > 0 ? round($indexed / $totalDuration, 2) : 0;
+                
                 return [
                     'success' => true,
-                    'message' => 'SOLR index warmup completed successfully',
-                    'stats' => array_merge($warmupResult['stats'], [
-                        'totalDuration' => round($totalDuration, 2)
-                    ])
+                    'message' => 'SOLR complete warmup finished successfully',
+                    'stats' => [
+                        'totalProcessed' => $indexed,
+                        'totalIndexed' => $indexed,
+                        'totalErrors' => $operations['indexing_errors'] ?? 0,
+                        'totalObjectsFound' => $warmupResult['total_objects_found'] ?? 0,
+                        'batchesProcessed' => $warmupResult['batches_processed'] ?? 0,
+                        'maxObjectsLimit' => $warmupResult['max_objects_limit'] ?? $maxObjects,
+                        'duration' => round($totalDuration, 2),
+                        'objectsPerSecond' => $objectsPerSecond,
+                        'successRate' => $indexed > 0 ? round((($indexed - ($operations['indexing_errors'] ?? 0)) / $indexed) * 100, 2) : 100.0,
+                        'schemasProcessed' => $schemasProcessed,
+                        'fieldsCreated' => $fieldsCreated,
+                        'operations' => $operations
+                    ]
                 ];
             } else {
                 return [
                     'success' => false,
-                    'message' => $warmupResult['message'] ?? 'SOLR warmup failed',
-                    'stats' => $warmupResult['stats'] ?? [
+                    'message' => $warmupResult['error'] ?? 'SOLR complete warmup failed',
+                    'stats' => [
                         'totalProcessed' => 0,
                         'totalIndexed' => 0,
-                        'totalErrors' => 0,
-                        'duration' => round($totalDuration, 2)
+                        'totalErrors' => 1,
+                        'duration' => round($totalDuration, 2),
+                        'operations' => $warmupResult['operations'] ?? []
                     ]
                 ];
             }
 
         } catch (\Exception $e) {
-            return [
-                'success' => false,
-                'message' => 'SOLR warmup failed with exception: ' . $e->getMessage(),
-                'stats' => [
-                    'totalProcessed' => 0,
-                    'totalIndexed' => 0,
-                    'totalErrors' => 0,
-                    'duration' => 0,
-                    'error' => $e->getMessage()
-                ]
-            ];
+            $this->logger->error('SOLR warmup failed with exception', [
+                'error' => $e->getMessage(),
+                'class' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            
+            // **ERROR COLLECTION MODE**: Return errors in response if collectErrors is true
+            if ($collectErrors) {
+                return [
+                    'success' => false,
+                    'message' => 'SOLR warmup failed with errors (collected mode)',
+                    'stats' => [
+                        'totalProcessed' => 0,
+                        'totalIndexed' => 0,
+                        'totalErrors' => 1,
+                        'duration' => microtime(true) - ($startTime ?? microtime(true)),
+                        'error_collection_mode' => true
+                    ],
+                    'errors' => [
+                        [
+                            'type' => 'warmup_exception',
+                            'message' => $e->getMessage(),
+                            'class' => get_class($e),
+                            'file' => $e->getFile(),
+                            'line' => $e->getLine(),
+                            'timestamp' => date('c')
+                        ]
+                    ]
+                ];
+            }
+            
+            // **ERROR VISIBILITY**: Re-throw exception to expose errors in controller (default behavior)
+            throw new \RuntimeException(
+                'SOLR warmup failed: ' . $e->getMessage(),
+                0,
+                $e
+            );
         }
 
     }//end warmupSolrIndex()
@@ -1449,7 +1525,10 @@ class SettingsService
     {
         try {
             $objectCacheService = $this->container->get(ObjectCacheService::class);
-            return $objectCacheService->getSolrDashboardStats();
+            $rawStats = $objectCacheService->getSolrDashboardStats();
+            
+            // Transform the raw stats into the expected dashboard structure
+            return $this->transformSolrStatsToDashboard($rawStats);
         } catch (\Exception $e) {
             // Return default dashboard structure if SOLR is not available
             return [
@@ -1497,6 +1576,154 @@ class SettingsService
             ];
         }
     }//end getSolrDashboardStats()
+
+    /**
+     * Transform raw SOLR stats into dashboard structure
+     *
+     * @param array $rawStats Raw statistics from SOLR service
+     * @return array Transformed dashboard statistics
+     */
+    private function transformSolrStatsToDashboard(array $rawStats): array
+    {
+        // If SOLR is not available, return error structure
+        if (!($rawStats['available'] ?? false)) {
+            return [
+                'overview' => [
+                    'available' => false,
+                    'connection_status' => 'unavailable',
+                    'response_time_ms' => 0,
+                    'total_documents' => 0,
+                    'index_size' => '0 B',
+                    'last_commit' => null,
+                ],
+                'cores' => [
+                    'active_core' => 'unknown',
+                    'core_status' => 'inactive',
+                    'tenant_id' => 'unknown',
+                    'endpoint_url' => 'N/A',
+                ],
+                'performance' => [
+                    'total_searches' => 0,
+                    'total_indexes' => 0,
+                    'total_deletes' => 0,
+                    'avg_search_time_ms' => 0,
+                    'avg_index_time_ms' => 0,
+                    'total_search_time' => 0,
+                    'total_index_time' => 0,
+                    'operations_per_sec' => 0,
+                    'error_rate' => 0,
+                ],
+                'health' => [
+                    'status' => 'unavailable',
+                    'uptime' => 'N/A',
+                    'memory_usage' => ['used' => 'N/A', 'max' => 'N/A', 'percentage' => 0],
+                    'disk_usage' => ['used' => 'N/A', 'available' => 'N/A', 'percentage' => 0],
+                    'warnings' => [$rawStats['error'] ?? 'SOLR service is not available or not configured'],
+                    'last_optimization' => null,
+                ],
+                'operations' => [
+                    'recent_activity' => [],
+                    'queue_status' => ['pending_operations' => 0, 'processing' => false, 'last_processed' => null],
+                    'commit_frequency' => ['auto_commit' => false, 'commit_within' => 0, 'last_commit' => null],
+                    'optimization_needed' => false,
+                ],
+                'generated_at' => date('c'),
+                'error' => $rawStats['error'] ?? 'SOLR service unavailable'
+            ];
+        }
+
+        // Transform available SOLR stats into dashboard structure
+        $serviceStats = $rawStats['service_stats'] ?? [];
+        $totalOps = ($serviceStats['searches'] ?? 0) + ($serviceStats['indexes'] ?? 0) + ($serviceStats['deletes'] ?? 0);
+        $totalTime = ($serviceStats['search_time'] ?? 0) + ($serviceStats['index_time'] ?? 0);
+        $opsPerSec = $totalTime > 0 ? round($totalOps / ($totalTime / 1000), 2) : 0;
+        $errorRate = $totalOps > 0 ? round(($serviceStats['errors'] ?? 0) / $totalOps * 100, 2) : 0;
+
+        return [
+            'overview' => [
+                'available' => true,
+                'connection_status' => $rawStats['health'] ?? 'unknown',
+                'response_time_ms' => 0, // Not available in raw stats
+                'total_documents' => $rawStats['document_count'] ?? 0,
+                'index_size' => $this->formatBytesForDashboard(($rawStats['index_size'] ?? 0) * 1024), // Assuming KB
+                'last_commit' => $rawStats['last_modified'] ?? null,
+            ],
+            'cores' => [
+                'active_core' => $rawStats['collection'] ?? 'unknown',
+                'core_status' => $rawStats['available'] ? 'active' : 'inactive',
+                'tenant_id' => $rawStats['tenant_id'] ?? 'unknown',
+                'endpoint_url' => $this->buildSolrEndpointUrl($rawStats),
+            ],
+            'performance' => [
+                'total_searches' => $serviceStats['searches'] ?? 0,
+                'total_indexes' => $serviceStats['indexes'] ?? 0,
+                'total_deletes' => $serviceStats['deletes'] ?? 0,
+                'avg_search_time_ms' => ($serviceStats['searches'] ?? 0) > 0 ? round(($serviceStats['search_time'] ?? 0) / ($serviceStats['searches'] ?? 1), 2) : 0,
+                'avg_index_time_ms' => ($serviceStats['indexes'] ?? 0) > 0 ? round(($serviceStats['index_time'] ?? 0) / ($serviceStats['indexes'] ?? 1), 2) : 0,
+                'total_search_time' => $serviceStats['search_time'] ?? 0,
+                'total_index_time' => $serviceStats['index_time'] ?? 0,
+                'operations_per_sec' => $opsPerSec,
+                'error_rate' => $errorRate,
+            ],
+            'health' => [
+                'status' => $rawStats['health'] ?? 'unknown',
+                'uptime' => 'N/A', // Not available in raw stats
+                'memory_usage' => ['used' => 'N/A', 'max' => 'N/A', 'percentage' => 0],
+                'disk_usage' => ['used' => 'N/A', 'available' => 'N/A', 'percentage' => 0],
+                'warnings' => [],
+                'last_optimization' => null,
+            ],
+            'operations' => [
+                'recent_activity' => [],
+                'queue_status' => ['pending_operations' => 0, 'processing' => false, 'last_processed' => null],
+                'commit_frequency' => ['auto_commit' => true, 'commit_within' => 1000, 'last_commit' => $rawStats['last_modified'] ?? null],
+                'optimization_needed' => false,
+            ],
+            'generated_at' => date('c'),
+        ];
+    }
+
+    /**
+     * Build SOLR endpoint URL from raw stats
+     *
+     * @param array $rawStats Raw SOLR statistics
+     * @return string SOLR endpoint URL
+     */
+    private function buildSolrEndpointUrl(array $rawStats): string
+    {
+        try {
+            $solrSettings = $this->getSolrSettingsOnly();
+            return sprintf(
+                '%s://%s:%d%s/%s',
+                $solrSettings['scheme'],
+                $solrSettings['host'],
+                $solrSettings['port'],
+                $solrSettings['path'],
+                $rawStats['collection'] ?? $solrSettings['core']
+            );
+        } catch (\Exception $e) {
+            return 'N/A';
+        }
+    }
+
+    /**
+     * Format bytes to human readable format for dashboard
+     *
+     * @param int $bytes Number of bytes
+     * @return string Formatted byte string
+     */
+    private function formatBytesForDashboard(int $bytes): string
+    {
+        if ($bytes <= 0) {
+            return '0 B';
+        }
+
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $factor = floor(log($bytes, 1024));
+        $factor = min($factor, count($units) - 1);
+
+        return round($bytes / pow(1024, $factor), 2) . ' ' . $units[$factor];
+    }
 
     /**
      * Perform SOLR management operations
@@ -1793,6 +2020,21 @@ class SettingsService
      *
      * @return array Multitenancy configuration with available tenants
      * @throws \RuntimeException If Multitenancy settings retrieval fails
+     */
+    /**
+     * Get multitenancy settings (alias for getMultitenancySettingsOnly)
+     *
+     * @return array Multitenancy configuration settings
+     */
+    public function getMultitenancySettings(): array
+    {
+        return $this->getMultitenancySettingsOnly();
+    }
+
+    /**
+     * Get multitenancy settings only (detailed implementation)
+     *
+     * @return array Multitenancy configuration settings
      */
     public function getMultitenancySettingsOnly(): array
     {

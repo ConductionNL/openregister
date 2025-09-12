@@ -1488,7 +1488,7 @@ class ObjectEntityMapper extends QBMapper
         $queryBuilder = $this->db->getQueryBuilder();
 
         // **PERFORMANCE BYPASS**: Check for bypass mode for performance testing (moved up for logic flow)
-        $performanceBypass = $_GET['_bypass_auth'] === 'true' || $_SERVER['HTTP_X_BYPASS_AUTH'] === 'true';
+        $performanceBypass = ($_GET['_bypass_auth'] ?? '') === 'true' || ($_SERVER['HTTP_X_BYPASS_AUTH'] ?? '') === 'true';
 
         // **PERFORMANCE OPTIMIZATION**: Detect simple vs complex requests early
         $hasExtend = !empty($query['_extend'] ?? []);
@@ -1497,8 +1497,8 @@ class ObjectEntityMapper extends QBMapper
 
         // Build base query - different for count vs search
         if ($count === true) {
-            // For count queries, use COUNT(o.*) and skip pagination
-            $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(o.*)'), 'count')
+            // For count queries, use COUNT(*) and skip pagination
+            $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count')
                 ->from('openregister_objects', 'o');
                 
             // **PERFORMANCE OPTIMIZATION**: Only join schema table if RBAC is needed (15-20% improvement)

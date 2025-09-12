@@ -179,7 +179,7 @@
 								<h5>Overall Status</h5>
 								<div class="health-status">
 									<span class="status-indicator" :class="getHealthStatusClass(solrStats.health.status)"></span>
-									<span class="status-text">{{ solrStats.health.status.toUpperCase() }}</span>
+									<span class="status-text">{{ (solrStats.health.status || 'unknown').toUpperCase() }}</span>
 								</div>
 								<div class="health-details">
 									<div class="health-detail">
@@ -197,11 +197,11 @@
 								<h5>Memory Usage</h5>
 								<div class="resource-usage">
 									<div class="usage-bar">
-										<div class="usage-fill" :style="{ width: solrStats.health.memory_usage.percentage + '%' }"></div>
+										<div class="usage-fill" :style="{ width: (solrStats.health.memory_usage?.percentage || 0) + '%' }"></div>
 									</div>
 									<div class="usage-details">
-										<span>{{ solrStats.health.memory_usage.used }} / {{ solrStats.health.memory_usage.max }}</span>
-										<span class="usage-percentage">{{ solrStats.health.memory_usage.percentage }}%</span>
+										<span>{{ solrStats.health.memory_usage?.used || 'N/A' }} / {{ solrStats.health.memory_usage?.max || 'N/A' }}</span>
+										<span class="usage-percentage">{{ solrStats.health.memory_usage?.percentage || 0 }}%</span>
 									</div>
 								</div>
 							</div>
@@ -210,18 +210,18 @@
 								<h5>Disk Usage</h5>
 								<div class="resource-usage">
 									<div class="usage-bar">
-										<div class="usage-fill disk-usage" :style="{ width: solrStats.health.disk_usage.percentage + '%' }"></div>
+										<div class="usage-fill disk-usage" :style="{ width: (solrStats.health.disk_usage?.percentage || 0) + '%' }"></div>
 									</div>
 									<div class="usage-details">
-										<span>{{ solrStats.health.disk_usage.used }} / {{ solrStats.health.disk_usage.used + ' + ' + solrStats.health.disk_usage.available }}</span>
-										<span class="usage-percentage">{{ solrStats.health.disk_usage.percentage }}%</span>
+										<span>{{ solrStats.health.disk_usage?.used || 'N/A' }} / {{ (solrStats.health.disk_usage?.used || 'N/A') + ' + ' + (solrStats.health.disk_usage?.available || 'N/A') }}</span>
+										<span class="usage-percentage">{{ solrStats.health.disk_usage?.percentage || 0 }}%</span>
 									</div>
 								</div>
 							</div>
 						</div>
 
 						<!-- Health Warnings -->
-						<div v-if="solrStats.health.warnings.length > 0" class="health-warnings">
+						<div v-if="solrStats.health.warnings && solrStats.health.warnings.length > 0" class="health-warnings">
 							<h6>⚠️ Warnings</h6>
 							<ul class="warning-list">
 								<li v-for="warning in solrStats.health.warnings" :key="warning" class="warning-item">
@@ -238,10 +238,10 @@
 							<div class="operations-card">
 								<h5>Recent Activity</h5>
 								<div class="activity-list">
-									<div v-for="activity in solrStats.operations.recent_activity" :key="activity.type" class="activity-item">
+									<div v-for="(activity, index) in (solrStats.operations.recent_activity || [])" :key="index" class="activity-item">
 										<span class="activity-icon">{{ getActivityIcon(activity.type) }}</span>
 										<div class="activity-content">
-											<span class="activity-type">{{ activity.type.charAt(0).toUpperCase() + activity.type.slice(1) }}</span>
+											<span class="activity-type">{{ (activity.type || '').charAt(0).toUpperCase() + (activity.type || '').slice(1) }}</span>
 											<span class="activity-count">{{ activity.count }} operations</span>
 											<span class="activity-time">{{ formatDate(activity.timestamp) }}</span>
 										</div>
