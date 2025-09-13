@@ -1664,6 +1664,8 @@ class ObjectService
         if ($schema !== null) {
             $query['@self']['schema'] = (int) $schema;
         }
+        
+        // Query structure built successfully
 
         // Extract special underscore parameters
         $specialParams = [];
@@ -6689,46 +6691,8 @@ class ObjectService
      */
     private function getCachedEntities(string $entityType, mixed $ids, callable $fallbackFunc): array
     {
-        // Skip caching if entity cache is unavailable
-        if ($this->entityCache === null) {
-            return call_user_func($fallbackFunc, $ids);
-        }
-
-        // Generate cache key based on entity type and IDs
-        $cacheKey = $this->generateEntityCacheKey($entityType, $ids);
-
-        // Try to get from cache first
-        try {
-            $cached = $this->entityCache->get($cacheKey);
-            if ($cached !== null) {
-                $this->logger->debug('Entity cache hit', [
-                    'entityType' => $entityType,
-                    'cacheKey' => $cacheKey,
-                    'cachedCount' => is_array($cached) ? count($cached) : 1
-                ]);
-                return $cached;
-            }
-        } catch (\Exception $e) {
-            // Cache get failed, continue to database
-        }
-
-        // Cache miss - fetch from database
-        $entities = call_user_func($fallbackFunc, $ids);
-
-        // Store in cache for next time
-        try {
-            $this->entityCache->set($cacheKey, $entities, self::ENTITY_CACHE_TTL);
-            $this->logger->debug('Entity cached for future requests', [
-                'entityType' => $entityType,
-                'cacheKey' => $cacheKey,
-                'entityCount' => is_array($entities) ? count($entities) : 1,
-                'ttl' => self::ENTITY_CACHE_TTL
-            ]);
-        } catch (\Exception $e) {
-            // Cache set failed, continue without caching
-        }
-
-        return $entities;
+        // Entity caching is disabled - always use fallback function
+        return call_user_func($fallbackFunc, $ids);
 
     }//end getCachedEntities()
 
