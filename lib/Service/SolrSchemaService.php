@@ -68,6 +68,61 @@ class SolrSchemaService
     ];
 
     /**
+     * Core metadata fields that should be defined in SOLR schema
+     *
+     * @var array<string, string> Field name => SOLR field type
+     */
+    private const CORE_METADATA_FIELDS = [
+        // Object metadata
+        'self_object_id' => 'pint',
+        'self_uuid' => 'string',
+        'self_tenant' => 'string',
+        
+        // Register metadata
+        'self_register' => 'pint',
+        'self_register_id' => 'pint',
+        'self_register_uuid' => 'string',
+        'self_register_slug' => 'string',
+        
+        // Schema metadata
+        'self_schema' => 'pint',
+        'self_schema_id' => 'pint', 
+        'self_schema_uuid' => 'string',
+        'self_schema_slug' => 'string',
+        
+        // Other core fields
+        'self_organisation' => 'string',
+        'self_owner' => 'string',
+        'self_application' => 'string',
+        'self_name' => 'string',
+        'self_description' => 'text_general',
+        'self_summary' => 'text_general',
+        'self_image' => 'string',
+        'self_slug' => 'string',
+        'self_uri' => 'string',
+        'self_version' => 'string',
+        'self_size' => 'plong',
+        'self_folder' => 'string',
+        'self_locked' => 'boolean',
+        'self_schema_version' => 'string',
+        
+        // Timestamps
+        'self_created' => 'pdate',
+        'self_updated' => 'pdate',
+        'self_published' => 'pdate',
+        'self_depublished' => 'pdate',
+        
+        // Complex fields
+        'self_object' => 'text_general', // JSON storage
+        'self_relations' => 'strings',   // Multi-valued UUIDs
+        'self_files' => 'strings',       // Multi-valued file references
+        'self_authorization' => 'text_general', // JSON
+        'self_deleted' => 'text_general',       // JSON
+        'self_validation' => 'text_general',    // JSON
+        'self_groups' => 'text_general'         // JSON
+    ];
+
+    /**
      * Field type mappings from OpenRegister to SOLR
      *
      * @var array<string, string>
@@ -144,7 +199,11 @@ class SolrSchemaService
             $resolvedFields = $this->analyzeAndResolveFieldConflicts($schemas);
             $stats['conflicts_resolved'] = $resolvedFields['conflicts_resolved'];
             
-            // STEP 2: Apply resolved field definitions to SOLR
+            // STEP 2: Ensure core metadata fields exist in SOLR schema
+            $this->ensureCoreMetadataFields($force);
+            $stats['core_fields_created'] = count(self::CORE_METADATA_FIELDS);
+            
+            // STEP 3: Apply resolved field definitions to SOLR
             if (!empty($resolvedFields['fields'])) {
                 $this->applySolrFields($resolvedFields['fields'], $force);
                 $stats['fields_created'] = count($resolvedFields['fields']);
@@ -500,6 +559,55 @@ class SolrSchemaService
     }
 
     /**
+     * Ensure core metadata fields exist in SOLR schema
+     *
+     * These are the essential fields needed for object indexing including
+     * register and schema metadata (UUID, slug, etc.)
+     *
+     * @param bool $force Force update existing fields
+     * @return bool Success status
+     */
+    private function ensureCoreMetadataFields(bool $force = false): bool
+    {
+        $this->logger->info('🔧 Ensuring core metadata fields in SOLR schema', [
+            'field_count' => count(self::CORE_METADATA_FIELDS),
+            'force' => $force
+        ]);
+
+        $successCount = 0;
+        foreach (self::CORE_METADATA_FIELDS as $fieldName => $fieldType) {
+            try {
+                $fieldConfig = [
+                    'type' => $fieldType,
+                    'stored' => true,
+                    'indexed' => true,
+                    'multiValued' => in_array($fieldType, ['strings']) // Multi-valued for array fields
+                ];
+
+                if ($this->addOrUpdateSolrField($fieldName, $fieldConfig, $force)) {
+                    $successCount++;
+                    $this->logger->debug('✅ Core metadata field ensured', [
+                        'field' => $fieldName,
+                        'type' => $fieldType
+                    ]);
+                }
+            } catch (\Exception $e) {
+                $this->logger->error('❌ Failed to ensure core metadata field', [
+                    'field' => $fieldName,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        $this->logger->info('Core metadata fields processing completed', [
+            'successful' => $successCount,
+            'total' => count(self::CORE_METADATA_FIELDS)
+        ]);
+
+        return $successCount === count(self::CORE_METADATA_FIELDS);
+    }
+
+    /**
      * Apply SOLR fields to the tenant collection using Schema API
      *
      * @param array $solrFields SOLR field definitions
@@ -526,11 +634,11 @@ class SolrSchemaService
                     ]);
                     // DEBUG: Special logging for versie field
                     if ($fieldName === 'versie') {
-                        error_log("=== VERSIE FIELD CREATED ===");
-                        error_log("Field: $fieldName");
-                        error_log("Type: " . $fieldConfig['type']);
-                        error_log("Config: " . json_encode($fieldConfig));
-                        error_log("=== END VERSIE DEBUG ===");
+                        $this->logger->debug('=== VERSIE FIELD CREATED ===');
+                        $this->logger->debug('Field: ' . $fieldName);
+                        $this->logger->debug('Type: ' . $fieldConfig['type']);
+                        $this->logger->debug('Config: ' . json_encode($fieldConfig));
+                        $this->logger->debug('=== END VERSIE DEBUG ===');
                     }
                 }
             } catch (\Exception $e) {

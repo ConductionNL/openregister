@@ -173,7 +173,7 @@ $start = microtime(true);
 $results = $objectService->searchObjectsPaginated($query);
 $duration = microtime(true) - $start;
 
-error_log("OpenCatalogi query performance: {$duration} seconds");
+$this->logger->debug('OpenCatalogi query performance: ' . $duration . ' seconds');
 ```
 
 ---
