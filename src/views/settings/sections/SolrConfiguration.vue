@@ -491,20 +491,112 @@
 				</div>
 
 				<div v-else-if="setupResults" class="setup-results">
+					<!-- Overall Status Header -->
 					<div class="results-header">
-						<div :class="setupResults.success ? 'success-icon' : 'error-icon'">
-							{{ setupResults.success ? '✅' : '❌' }}
+						<div class="status-badge" :class="setupResults.success ? 'success' : 'error'">
+							<span class="status-icon">{{ setupResults.success ? '✅' : '❌' }}</span>
+							<div class="status-text">
+								<h3>{{ setupResults.success ? 'SOLR Setup Completed!' : 'SOLR Setup Failed' }}</h3>
+								<p>{{ setupResults.message }}</p>
+								<div v-if="setupResults.timestamp" class="timestamp">
+									<span>⏱️ {{ setupResults.timestamp }}</span>
+									<span v-if="setupResults.mode" class="mode-badge">{{ setupResults.mode }}</span>
+								</div>
+							</div>
 						</div>
-						<h4>{{ setupResults.success ? 'SOLR Setup Completed!' : 'SOLR Setup Failed' }}</h4>
-						<p class="results-description">{{ setupResults.message }}</p>
 					</div>
 
-					<div v-if="setupResults.details" class="setup-details">
-						<h5>Setup Details</h5>
-						<div class="details-content">
-							<div v-for="(value, key) in setupResults.details" :key="key" class="detail-item">
-								<span class="detail-label">{{ formatDetailLabel(key) }}:</span>
-								<span class="detail-value">{{ formatDetailValue(value) }}</span>
+					<!-- Setup Steps Progress -->
+					<div v-if="setupResults.steps" class="setup-steps">
+						<h4>🔧 Setup Process</h4>
+						<div class="steps-timeline">
+							<div v-for="step in setupResults.steps" :key="step.step" class="step-item">
+								<div class="step-indicator">
+									<span class="step-number">{{ step.step }}</span>
+									<span class="step-status" :class="step.status">
+										{{ step.status === 'completed' ? '✅' : step.status === 'failed' ? '❌' : '⏳' }}
+									</span>
+								</div>
+								<div class="step-content">
+									<h5>{{ step.name }}</h5>
+									<p class="step-description">{{ step.description }}</p>
+									<div v-if="step.details" class="step-details">
+										<div v-for="(value, key) in step.details" :key="key" class="step-detail">
+											<span class="detail-label">{{ formatDetailLabel(key) }}:</span>
+											<span class="detail-value">{{ formatDetailValue(value) }}</span>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Infrastructure Overview -->
+					<div v-if="setupResults.infrastructure" class="infrastructure-overview">
+						<h4>🏗️ Infrastructure Created</h4>
+						<div class="infrastructure-grid">
+							<div class="infra-card configsets">
+								<div class="infra-header">
+									<span class="infra-icon">⚙️</span>
+									<h5>ConfigSets</h5>
+								</div>
+								<div class="infra-content">
+									<div class="infra-stat">
+										<span class="stat-number">{{ setupResults.infrastructure.configsets_created?.length || 0 }}</span>
+										<span class="stat-label">Created</span>
+									</div>
+									<div v-if="setupResults.infrastructure.configsets_created" class="infra-list">
+										<span v-for="configset in setupResults.infrastructure.configsets_created" :key="configset" class="list-item">
+											{{ configset }}
+										</span>
+									</div>
+								</div>
+							</div>
+
+							<div class="infra-card collections">
+								<div class="infra-header">
+									<span class="infra-icon">📚</span>
+									<h5>Collections</h5>
+								</div>
+								<div class="infra-content">
+									<div class="infra-stat">
+										<span class="stat-number">{{ setupResults.infrastructure.collections_created?.length || 0 }}</span>
+										<span class="stat-label">Created</span>
+									</div>
+									<div v-if="setupResults.infrastructure.collections_created" class="infra-list">
+										<span v-for="collection in setupResults.infrastructure.collections_created" :key="collection" class="list-item">
+											{{ collection }}
+										</span>
+									</div>
+								</div>
+							</div>
+
+							<div class="infra-card schema">
+								<div class="infra-header">
+									<span class="infra-icon">🔍</span>
+									<h5>Schema Fields</h5>
+								</div>
+								<div class="infra-content">
+									<div class="infra-stat">
+										<span class="stat-number">{{ setupResults.infrastructure.schema_fields || 0 }}</span>
+										<span class="stat-label">Fields</span>
+									</div>
+									<div class="infra-features">
+										<span v-if="setupResults.infrastructure.multi_tenant_ready" class="feature-badge success">🏠 Multi-Tenant</span>
+										<span v-if="setupResults.infrastructure.cloud_mode" class="feature-badge success">☁️ Cloud Mode</span>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Next Steps -->
+					<div v-if="setupResults.next_steps" class="next-steps">
+						<h4>🚀 What's Next?</h4>
+						<div class="next-steps-list">
+							<div v-for="(step, index) in setupResults.next_steps" :key="index" class="next-step-item">
+								<span class="next-step-icon">{{ index + 1 }}</span>
+								<span class="next-step-text">{{ step }}</span>
 							</div>
 						</div>
 					</div>
@@ -1089,5 +1181,295 @@ export default {
 	font-size: 12px;
 	opacity: 0.9;
 	font-weight: 500;
+}
+
+/* Enhanced Setup Dialog Styles */
+.setup-dialog {
+	padding: 24px;
+	max-width: 900px;
+}
+
+.setup-loading {
+	text-align: center;
+	padding: 40px 20px;
+}
+
+.setup-results {
+	max-height: 700px;
+	overflow-y: auto;
+}
+
+.timestamp {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-top: 8px;
+	font-size: 12px;
+	opacity: 0.8;
+}
+
+.mode-badge {
+	background: rgba(255, 255, 255, 0.2);
+	padding: 2px 8px;
+	border-radius: 12px;
+	font-size: 11px;
+	font-weight: 500;
+}
+
+/* Setup Steps Timeline */
+.setup-steps {
+	margin: 24px 0;
+}
+
+.setup-steps h4 {
+	margin: 0 0 16px 0;
+	color: var(--color-main-text);
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.steps-timeline {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.step-item {
+	display: flex;
+	align-items: flex-start;
+	gap: 16px;
+	padding: 16px;
+	background: var(--color-background-hover);
+	border-radius: 12px;
+	border-left: 4px solid var(--color-success);
+}
+
+.step-indicator {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+	flex-shrink: 0;
+}
+
+.step-number {
+	width: 32px;
+	height: 32px;
+	background: var(--color-primary);
+	color: white;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: bold;
+	font-size: 14px;
+}
+
+.step-status {
+	font-size: 16px;
+}
+
+.step-content {
+	flex: 1;
+}
+
+.step-content h5 {
+	margin: 0 0 4px 0;
+	color: var(--color-main-text);
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.step-description {
+	margin: 0 0 12px 0;
+	color: var(--color-text-maxcontrast);
+	font-size: 13px;
+}
+
+.step-details {
+	display: grid;
+	gap: 6px;
+}
+
+.step-detail {
+	display: flex;
+	justify-content: space-between;
+	padding: 6px 12px;
+	background: var(--color-background-dark);
+	border-radius: 6px;
+	font-size: 12px;
+}
+
+.step-detail .detail-label {
+	font-weight: 500;
+	color: var(--color-main-text);
+}
+
+.step-detail .detail-value {
+	color: var(--color-text-maxcontrast);
+	font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+/* Infrastructure Overview */
+.infrastructure-overview {
+	margin: 24px 0;
+}
+
+.infrastructure-overview h4 {
+	margin: 0 0 16px 0;
+	color: var(--color-main-text);
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.infrastructure-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+	gap: 16px;
+}
+
+.infra-card {
+	background: var(--color-background-hover);
+	border-radius: 12px;
+	padding: 16px;
+	border: 1px solid var(--color-border);
+	transition: transform 0.2s ease;
+}
+
+.infra-card:hover {
+	transform: translateY(-2px);
+}
+
+.infra-card.configsets {
+	border-left: 4px solid #FF9800;
+}
+
+.infra-card.collections {
+	border-left: 4px solid #4CAF50;
+}
+
+.infra-card.schema {
+	border-left: 4px solid #2196F3;
+}
+
+.infra-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 12px;
+}
+
+.infra-icon {
+	font-size: 18px;
+}
+
+.infra-header h5 {
+	margin: 0;
+	color: var(--color-main-text);
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.infra-content {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.infra-stat {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+}
+
+.infra-stat .stat-number {
+	font-size: 24px;
+	font-weight: bold;
+	color: var(--color-primary);
+}
+
+.infra-stat .stat-label {
+	font-size: 12px;
+	color: var(--color-text-maxcontrast);
+}
+
+.infra-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+}
+
+.list-item {
+	background: var(--color-background-dark);
+	padding: 4px 8px;
+	border-radius: 4px;
+	font-size: 11px;
+	color: var(--color-text-maxcontrast);
+	font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.infra-features {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.feature-badge {
+	padding: 4px 8px;
+	border-radius: 12px;
+	font-size: 11px;
+	font-weight: 500;
+}
+
+.feature-badge.success {
+	background: rgba(76, 175, 80, 0.1);
+	color: var(--color-success);
+	border: 1px solid rgba(76, 175, 80, 0.2);
+}
+
+/* Next Steps */
+.next-steps {
+	margin: 24px 0;
+}
+
+.next-steps h4 {
+	margin: 0 0 16px 0;
+	color: var(--color-main-text);
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.next-steps-list {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.next-step-item {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 16px;
+	background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-primary) 100%);
+	color: white;
+	border-radius: 8px;
+	font-size: 14px;
+}
+
+.next-step-icon {
+	width: 24px;
+	height: 24px;
+	background: rgba(255, 255, 255, 0.2);
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: bold;
+	font-size: 12px;
+	flex-shrink: 0;
+}
+
+.next-step-text {
+	flex: 1;
 }
 </style>
