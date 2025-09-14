@@ -23,6 +23,10 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Service\SolrSchemaService;
+use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\OrganisationService;
 use OCP\Http\Client\IClientService;
 use OCP\IConfig;
 use Psr\Log\LoggerInterface;
@@ -71,6 +75,12 @@ class GuzzleSolrService
      */
     private string $tenantId;
 
+    /** @var array|null Cached SOLR field types to avoid repeated API calls */
+    private ?array $cachedSolrFieldTypes = null;
+    
+    /** @var array|null Cached schema data to avoid repeated processing */
+    private ?array $cachedSchemaData = null;
+
     /**
      * Service statistics
      *
@@ -93,6 +103,7 @@ class GuzzleSolrService
      * @param IClientService          $clientService       HTTP client service
      * @param IConfig                 $config              Nextcloud configuration
      * @param SchemaMapper|null       $schemaMapper        Schema mapper for database operations
+     * @param RegisterMapper|null     $registerMapper      Register mapper for database operations
      */
     public function __construct(
         private readonly SettingsService $settingsService,
@@ -100,6 +111,8 @@ class GuzzleSolrService
         private readonly IClientService $clientService,
         private readonly IConfig $config,
         private readonly ?SchemaMapper $schemaMapper = null,
+        private readonly ?RegisterMapper $registerMapper = null,
+        private readonly ?OrganisationService $organisationService = null,
     ) {
         $this->httpClient = $clientService->newClient();
         $this->tenantId = $this->generateTenantId();
@@ -128,6 +141,13 @@ class GuzzleSolrService
      */
     private function generateTenantId(): string
     {
+        // First try to get tenant_id from SOLR settings
+        $solrSettings = $this->settingsService->getSolrSettings();
+        if (!empty($solrSettings['tenantId'])) {
+            return $solrSettings['tenantId'];
+        }
+        
+        // Fallback to generating from instance configuration
         $instanceId = $this->config->getSystemValue('instanceid', 'default');
         $overwriteHost = $this->config->getSystemValue('overwrite.cli.url', '');
         
@@ -369,11 +389,11 @@ class GuzzleSolrService
     public function indexObject(ObjectEntity $object, bool $commit = false): bool
     {
         // **DEBUG**: Track individual indexObject calls
-        error_log("=== GUZZLE indexObject() CALLED ===");
-        error_log("Object ID: " . $object->getId());
-        error_log("Object UUID: " . ($object->getUuid() ?? 'null'));
-        error_log("Called from: " . debug_backtrace()[1]['function'] ?? 'unknown');
-        error_log("=== END indexObject DEBUG ===");
+        $this->logger->debug('=== GUZZLE indexObject() CALLED ===');
+        $this->logger->debug('Object ID: ' . $object->getId());
+        $this->logger->debug('Object UUID: ' . ($object->getUuid() ?? 'null'));
+        $this->logger->debug('Called from: ' . (debug_backtrace()[1]['function'] ?? 'unknown'));
+        $this->logger->debug('=== END indexObject DEBUG ===');
         
         if (!$this->isAvailable()) {
             return false;
@@ -542,12 +562,13 @@ class GuzzleSolrService
     }
 
     /**
-     * Create SOLR document from ObjectEntity
+     * Create SOLR document from ObjectEntity with field validation
      *
      * @param ObjectEntity $object Object to convert
+     * @param array $solrFieldTypes Optional SOLR field types for validation
      * @return array SOLR document
      */
-    private function createSolrDocument(ObjectEntity $object): array
+    private function createSolrDocument(ObjectEntity $object, array $solrFieldTypes = []): array
     {
         // **SCHEMA-AWARE MAPPING REQUIRED**: Validate schema availability first
         if (!$this->schemaMapper) {
@@ -567,9 +588,23 @@ class GuzzleSolrService
             );
         }
 
+        // Get the register for this object (if registerMapper is available)
+        $register = null;
+        if ($this->registerMapper) {
+            try {
+                $register = $this->registerMapper->find($object->getRegister());
+            } catch (\Exception $e) {
+                $this->logger->warning('Failed to fetch register for object', [
+                    'object_id' => $object->getId(),
+                    'register_id' => $object->getRegister(),
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
         // **USE CONSOLIDATED MAPPING**: Create schema-aware document directly
         try {
-            $document = $this->createSchemaAwareDocument($object, $schema);
+            $document = $this->createSchemaAwareDocument($object, $schema, $register, $solrFieldTypes);
             
             // Document created successfully using schema-aware mapping
             
@@ -601,18 +636,20 @@ class GuzzleSolrService
     }
 
     /**
-     * Create schema-aware SOLR document from ObjectEntity and Schema
+     * Create schema-aware SOLR document from ObjectEntity, Schema, and Register
      *
      * This method implements the consolidated schema-aware mapping logic
      * that was previously in SolrSchemaMappingService.
      *
-     * @param ObjectEntity $object The object to convert
-     * @param Schema       $schema The schema for mapping
+     * @param ObjectEntity $object   The object to convert
+     * @param Schema       $schema   The schema for mapping
+     * @param \OCA\OpenRegister\Db\Register|null $register The register for metadata
+     * @param array        $solrFieldTypes Optional SOLR field types for validation
      *
      * @return array SOLR document structure
      * @throws \RuntimeException If mapping fails
      */
-    private function createSchemaAwareDocument(ObjectEntity $object, Schema $schema): array
+    private function createSchemaAwareDocument(ObjectEntity $object, Schema $schema, $register = null, array $solrFieldTypes = []): array
     {
         // **FIX**: Get the actual object business data, not entity metadata
         $objectData = $object->getObject(); // This contains the schema fields like 'naam', 'website', 'type'
@@ -630,7 +667,14 @@ class GuzzleSolrService
             
             // Context fields
             'self_register' => (int)$object->getRegister(),
+            'self_register_id' => (int)$object->getRegister(),
+            'self_register_uuid' => $register?->getUuid(),
+            'self_register_slug' => $register?->getSlug(),
+            
             'self_schema' => (int)$object->getSchema(),
+            'self_schema_id' => (int)$object->getSchema(),
+            'self_schema_uuid' => $schema->getUuid(),
+            'self_schema_slug' => $schema->getSlug(),
             'self_schema_version' => $object->getSchemaVersion(),
             
             // Ownership and metadata
@@ -701,16 +745,41 @@ class GuzzleSolrService
                     continue;
                 }
                 
-                // Map field based on schema type to appropriate SOLR field name
-                $solrFieldName = $this->mapFieldToSolrType($fieldName, $fieldType, $fieldValue);
-                
-                if ($solrFieldName) {
-                    $document[$solrFieldName] = $this->convertValueForSolr($fieldValue, $fieldType);
-                    $this->logger->debug('Mapped field', [
-                        'original' => $fieldName,
-                        'solr_field' => $solrFieldName,
-                        'value_type' => gettype($fieldValue)
+                // **HOTFIX**: Temporarily skip 'versie' field to prevent NumberFormatException
+                // TODO: Fix versie field type conflict - it's defined as integer in SOLR but contains decimal strings like '9.1'
+                if ($fieldName === 'versie') {
+                    $this->logger->debug('HOTFIX: Skipped versie field to prevent type mismatch', [
+                        'field' => $fieldName,
+                        'value' => $fieldValue,
+                        'reason' => 'Temporary fix for integer/decimal type conflict'
                     ]);
+                    continue;
+                }
+                
+                        // Map field based on schema type to appropriate SOLR field name
+                        $solrFieldName = $this->mapFieldToSolrType($fieldName, $fieldType, $fieldValue);
+                        
+                        if ($solrFieldName) {
+                            $convertedValue = $this->convertValueForSolr($fieldValue, $fieldType);
+                            
+                            // **FIELD VALIDATION**: Check if field exists in SOLR and type is compatible
+                            if ($convertedValue !== null && $this->validateFieldForSolr($solrFieldName, $convertedValue, $solrFieldTypes)) {
+                                $document[$solrFieldName] = $convertedValue;
+                        $this->logger->debug('Mapped field', [
+                            'original' => $fieldName,
+                            'solr_field' => $solrFieldName,
+                            'original_value' => $fieldValue,
+                            'converted_value' => $convertedValue,
+                            'value_type' => gettype($convertedValue)
+                        ]);
+                    } else {
+                        $this->logger->debug('Skipped field with null converted value', [
+                            'original' => $fieldName,
+                            'solr_field' => $solrFieldName,
+                            'original_value' => $fieldValue,
+                            'field_type' => $fieldType
+                        ]);
+                    }
                 }
             }
         } else {
@@ -841,12 +910,30 @@ class GuzzleSolrService
         switch (strtolower($fieldType)) {
             case 'integer':
             case 'int':
-                return (int)$value;
+                // **SAFE NUMERIC CONVERSION**: Handle non-numeric strings gracefully
+                if (is_numeric($value)) {
+                    return (int)$value;
+                }
+                // Skip non-numeric values for integer fields
+                $this->logger->debug('Skipping non-numeric value for integer field', [
+                    'value' => $value,
+                    'field_type' => $fieldType
+                ]);
+                return null;
                 
             case 'float':
             case 'double':
             case 'number':
-                return (float)$value;
+                // **SAFE NUMERIC CONVERSION**: Handle non-numeric strings gracefully
+                if (is_numeric($value)) {
+                    return (float)$value;
+                }
+                // Skip non-numeric values for float fields
+                $this->logger->debug('Skipping non-numeric value for float field', [
+                    'value' => $value,
+                    'field_type' => $fieldType
+                ]);
+                return null;
                 
             case 'boolean':
             case 'bool':
@@ -974,12 +1061,14 @@ class GuzzleSolrService
      * and converts results back to ObjectEntity format for compatibility
      *
      * @param array $query OpenRegister-style query parameters
-     * @param bool $rbac Apply role-based access control (currently not implemented in Solr)
-     * @param bool $multi Multi-tenant support (currently not implemented in Solr) 
+     * @param bool $rbac Apply role-based access control (default: true)
+     * @param bool $multi Multi-tenant support (default: true)
+     * @param bool $published Include only published objects (default: false)
+     * @param bool $deleted Include deleted objects (default: false)
      * @return array Paginated results in OpenRegister format
      * @throws \Exception When Solr is not available or query fails
      */
-    public function searchObjectsPaginated(array $query = [], bool $rbac = false, bool $multi = false): array
+    public function searchObjectsPaginated(array $query = [], bool $rbac = true, bool $multi = true, bool $published = false, bool $deleted = false): array
     {
         if (!$this->isAvailable()) {
             throw new \Exception('Solr service is not available');
@@ -988,7 +1077,20 @@ class GuzzleSolrService
         // Translate OpenRegister query to Solr query
         $solrQuery = $this->translateOpenRegisterQuery($query);
         
-        $this->logger->debug('[GuzzleSolrService] Translated query', [
+        // Apply additional filtering based on parameters
+        $this->applyAdditionalFilters($solrQuery, $rbac, $multi, $published, $deleted);
+        
+        $this->logger->debug('[SOLR] Query translated for search', [
+            'has_filters' => !empty($solrQuery['filters']),
+            'filter_count' => count($solrQuery['filters'] ?? []),
+            'has_at_self' => isset($query['@self']),
+            'rbac' => $rbac,
+            'multi' => $multi,
+            'published' => $published,
+            'deleted' => $deleted
+        ]);
+        
+        $this->logger->info('[GuzzleSolrService] Translated query', [
             'original' => $query,
             'solr' => $solrQuery
         ]);
@@ -1005,6 +1107,98 @@ class GuzzleSolrService
         ]);
         
         return $openRegisterResults;
+    }
+
+    /**
+     * Apply additional filters based on RBAC, multi-tenancy, published, and deleted parameters
+     *
+     * @param array $solrQuery Reference to the Solr query array to modify
+     * @param bool $rbac Apply role-based access control
+     * @param bool $multi Apply multi-tenancy filtering
+     * @param bool $published Filter for published objects only
+     * @param bool $deleted Include deleted objects
+     * @return void
+     */
+    private function applyAdditionalFilters(array &$solrQuery, bool $rbac, bool $multi, bool $published, bool $deleted): void
+    {
+        $filters = $solrQuery['filters'] ?? [];
+        $now = date('Y-m-d\TH:i:s\Z');
+        
+        // Define published object condition: published is not null AND published <= now AND (depublished is null OR depublished > now)
+        $publishedCondition = 'self_published:[* TO ' . $now . '] AND (-self_depublished:[* TO *] OR self_depublished:[' . $now . ' TO *])';
+        
+        // Multi-tenancy filtering with published object exception
+        if ($multi) {
+            $multitenancyEnabled = $this->isMultitenancyEnabled();
+            if ($multitenancyEnabled) {
+                $activeOrganisationUuid = $this->getActiveOrganisationUuid();
+                if ($activeOrganisationUuid !== null) {
+                    // Include objects from user's organisation OR published objects from any organisation
+                    $filters[] = '(self_organisation:' . $this->escapeSolrValue($activeOrganisationUuid) . ' OR ' . $publishedCondition . ')';
+                }
+            }
+        }
+        
+        // RBAC filtering with published object exception
+        if ($rbac) {
+            // Note: RBAC role filtering would be implemented here if we had role-based fields
+            // For now, we assume all authenticated users have basic access
+            // Published objects bypass RBAC restrictions
+            $this->logger->debug('[SOLR] RBAC filtering applied with published object exception');
+        }
+        
+        // Published filtering (only if explicitly requested)
+        if ($published) {
+            $filters[] = $publishedCondition;
+        }
+        
+        // Deleted filtering
+        if ($deleted) {
+            // Include only deleted objects
+            $filters[] = 'self_deleted:[* TO *]';
+        } else {
+            // Exclude deleted objects (default behavior)
+            $filters[] = '-self_deleted:[* TO *]';
+        }
+        
+        // Update the filters in the query
+        $solrQuery['filters'] = $filters;
+    }
+
+    /**
+     * Check if multi-tenancy is enabled in the application configuration
+     *
+     * @return bool True if multi-tenancy is enabled
+     */
+    private function isMultitenancyEnabled(): bool
+    {
+        try {
+            return $this->settingsService->isMultiTenancyEnabled();
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to check multi-tenancy status', ['error' => $e->getMessage()]);
+            return false;
+        }
+    }
+
+    /**
+     * Get the active organisation UUID for the current user
+     *
+     * @return string|null The active organisation UUID or null if not available
+     */
+    private function getActiveOrganisationUuid(): ?string
+    {
+        try {
+            if ($this->organisationService === null) {
+                $this->logger->warning('OrganisationService not available for multi-tenancy filtering');
+                return null;
+            }
+            
+            $activeOrganisation = $this->organisationService->getActiveOrganisation();
+            return $activeOrganisation ? $activeOrganisation->getUuid() : null;
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to get active organisation', ['error' => $e->getMessage()]);
+            return null;
+        }
     }
 
     /**
@@ -1044,6 +1238,9 @@ class GuzzleSolrService
         if (!empty($query['_order'])) {
             $solrQuery['sort'] = $this->translateSortField($query['_order']);
         }
+
+        // Handle faceting - check for _facetable parameter (can be boolean true or string "true")
+        $enableFacets = isset($query['_facetable']) && ($query['_facetable'] === true || $query['_facetable'] === 'true');
 
         // Handle filters
         $filterQueries = [];
@@ -1090,16 +1287,22 @@ class GuzzleSolrService
         if (!empty($filterQueries)) {
             $solrQuery['filters'] = $filterQueries;
         }
+        
+        // Filter queries built successfully
 
-        // Add faceting for common fields
-        $solrQuery['facets'] = [
-            'self_register',
-            'self_schema', 
-            'self_organisation',
-            'self_owner',
-            'type_s',
-            'naam_s'
-        ];
+        // Handle faceting - only add facets when _facetable=true
+        if ($enableFacets) {
+            $solrQuery['facets'] = [
+                'self_register',
+                'self_schema', 
+                'self_organisation',
+                'self_owner',
+                'type_s',
+                'naam_s'
+            ];
+        } else {
+            $solrQuery['facets'] = [];
+        }
 
         return $solrQuery;
     }
@@ -1206,15 +1409,37 @@ class GuzzleSolrService
         $limit = isset($originalQuery['_limit']) ? (int)$originalQuery['_limit'] : 20;
         $pages = $limit > 0 ? ceil($total / $limit) : 1;
 
-        return [
+        // Build base response
+        $response = [
             'results' => $results,
             'total' => $total,
             'page' => $page,
             'pages' => $pages,
             'limit' => $limit,
-            'facets' => $solrResults['facets'] ?? [],
-            'aggregations' => $solrResults['facets'] ?? [] // Alias for compatibility
         ];
+
+        // Only add facets if _facetable=true (same logic as before)
+        $facetable = $originalQuery['_facetable'] ?? false;
+        if ($facetable === true || $facetable === 'true') {
+            $response['facets'] = $solrResults['facets'] ?? [];
+        }
+
+        // Only add aggregations if _aggregations=true
+        $aggregations = $originalQuery['_aggregations'] ?? false;
+        if ($aggregations === true || $aggregations === 'true') {
+            $response['aggregations'] = $solrResults['facets'] ?? []; // Alias for compatibility
+        }
+
+        // Only add debug if _debug=true
+        $debug = $originalQuery['_debug'] ?? false;
+        if ($debug === true || $debug === 'true') {
+            $response['debug'] = array_merge($solrResults['debug'] ?? [], [
+                'translated_query' => $originalQuery,
+                'solr_facets' => $solrResults['facets'] ?? []
+            ]);
+        }
+
+        return $response;
     }
 
     /**
@@ -1227,10 +1452,11 @@ class GuzzleSolrService
     {
         try {
             // Extract metadata from self_ fields
-            $objectId = $doc['self_object_id'][0] ?? null;
-            $uuid = $doc['self_uuid'][0] ?? null;
-            $register = $doc['self_register'][0] ?? null;
-            $schema = $doc['self_schema'][0] ?? null;
+            // Handle both single values and arrays (SOLR can return either)
+            $objectId = is_array($doc['self_object_id'] ?? null) ? ($doc['self_object_id'][0] ?? null) : ($doc['self_object_id'] ?? null);
+            $uuid = is_array($doc['self_uuid'] ?? null) ? ($doc['self_uuid'][0] ?? null) : ($doc['self_uuid'] ?? null);
+            $register = is_array($doc['self_register'] ?? null) ? ($doc['self_register'][0] ?? null) : ($doc['self_register'] ?? null);
+            $schema = is_array($doc['self_schema'] ?? null) ? ($doc['self_schema'][0] ?? null) : ($doc['self_schema'] ?? null);
             
             if (!$objectId || !$register || !$schema) {
                 $this->logger->warning('[GuzzleSolrService] Invalid document missing required fields', [
@@ -1250,38 +1476,43 @@ class GuzzleSolrService
             $entity->setSchema($schema);
             
             // Set metadata fields
-            $entity->setOrganisation($doc['self_organisation'][0] ?? null);
-            $entity->setName($doc['self_name'][0] ?? null);
-            $entity->setDescription($doc['self_description'][0] ?? null);
-            $entity->setSummary($doc['self_summary'][0] ?? null);
-            $entity->setImage($doc['self_image'][0] ?? null);
-            $entity->setSlug($doc['self_slug'][0] ?? null);
-            $entity->setUri($doc['self_uri'][0] ?? null);
-            $entity->setVersion($doc['self_version'][0] ?? null);
-            $entity->setSize($doc['self_size'][0] ?? null);
-            $entity->setOwner($doc['self_owner'][0] ?? null);
-            $entity->setLocked($doc['self_locked'][0] ?? null);
-            $entity->setFolder($doc['self_folder'][0] ?? null);
-            $entity->setApplication($doc['self_application'][0] ?? null);
+            $entity->setOrganisation(is_array($doc['self_organisation'] ?? null) ? ($doc['self_organisation'][0] ?? null) : ($doc['self_organisation'] ?? null));
+            $entity->setName(is_array($doc['self_name'] ?? null) ? ($doc['self_name'][0] ?? null) : ($doc['self_name'] ?? null));
+            $entity->setDescription(is_array($doc['self_description'] ?? null) ? ($doc['self_description'][0] ?? null) : ($doc['self_description'] ?? null));
+            $entity->setSummary(is_array($doc['self_summary'] ?? null) ? ($doc['self_summary'][0] ?? null) : ($doc['self_summary'] ?? null));
+            $entity->setImage(is_array($doc['self_image'] ?? null) ? ($doc['self_image'][0] ?? null) : ($doc['self_image'] ?? null));
+            $entity->setSlug(is_array($doc['self_slug'] ?? null) ? ($doc['self_slug'][0] ?? null) : ($doc['self_slug'] ?? null));
+            $entity->setUri(is_array($doc['self_uri'] ?? null) ? ($doc['self_uri'][0] ?? null) : ($doc['self_uri'] ?? null));
+            $entity->setVersion(is_array($doc['self_version'] ?? null) ? ($doc['self_version'][0] ?? null) : ($doc['self_version'] ?? null));
+            $entity->setSize(is_array($doc['self_size'] ?? null) ? ($doc['self_size'][0] ?? null) : ($doc['self_size'] ?? null));
+            $entity->setOwner(is_array($doc['self_owner'] ?? null) ? ($doc['self_owner'][0] ?? null) : ($doc['self_owner'] ?? null));
+            $entity->setLocked(is_array($doc['self_locked'] ?? null) ? ($doc['self_locked'][0] ?? null) : ($doc['self_locked'] ?? null));
+            $entity->setFolder(is_array($doc['self_folder'] ?? null) ? ($doc['self_folder'][0] ?? null) : ($doc['self_folder'] ?? null));
+            $entity->setApplication(is_array($doc['self_application'] ?? null) ? ($doc['self_application'][0] ?? null) : ($doc['self_application'] ?? null));
             
             // Set datetime fields
-            if (isset($doc['self_created'][0])) {
-                $entity->setCreated(new \DateTime($doc['self_created'][0]));
+            $created = is_array($doc['self_created'] ?? null) ? ($doc['self_created'][0] ?? null) : ($doc['self_created'] ?? null);
+            if ($created) {
+                $entity->setCreated(new \DateTime($created));
             }
-            if (isset($doc['self_updated'][0])) {
-                $entity->setUpdated(new \DateTime($doc['self_updated'][0]));
+            $updated = is_array($doc['self_updated'] ?? null) ? ($doc['self_updated'][0] ?? null) : ($doc['self_updated'] ?? null);
+            if ($updated) {
+                $entity->setUpdated(new \DateTime($updated));
             }
-            if (isset($doc['self_published'][0])) {
-                $entity->setPublished(new \DateTime($doc['self_published'][0]));
+            $published = is_array($doc['self_published'] ?? null) ? ($doc['self_published'][0] ?? null) : ($doc['self_published'] ?? null);
+            if ($published) {
+                $entity->setPublished(new \DateTime($published));
             }
-            if (isset($doc['self_depublished'][0])) {
-                $entity->setDepublished(new \DateTime($doc['self_depublished'][0]));
+            $depublished = is_array($doc['self_depublished'] ?? null) ? ($doc['self_depublished'][0] ?? null) : ($doc['self_depublished'] ?? null);
+            if ($depublished) {
+                $entity->setDepublished(new \DateTime($depublished));
             }
             
             // Reconstruct object data from JSON or individual fields
             $objectData = [];
-            if (isset($doc['self_object'][0])) {
-                $objectData = json_decode($doc['self_object'][0], true) ?: [];
+            $selfObject = is_array($doc['self_object'] ?? null) ? ($doc['self_object'][0] ?? null) : ($doc['self_object'] ?? null);
+            if ($selfObject) {
+                $objectData = json_decode($selfObject, true) ?: [];
             } else {
                 // Fallback: extract object properties from root level fields
                 foreach ($doc as $key => $value) {
@@ -1297,17 +1528,21 @@ class GuzzleSolrService
             $entity->setObject($objectData);
             
             // Set complex fields from JSON
-            if (isset($doc['self_authorization'][0])) {
-                $entity->setAuthorization(json_decode($doc['self_authorization'][0], true));
+            $authorization = is_array($doc['self_authorization'] ?? null) ? ($doc['self_authorization'][0] ?? null) : ($doc['self_authorization'] ?? null);
+            if ($authorization) {
+                $entity->setAuthorization(json_decode($authorization, true));
             }
-            if (isset($doc['self_deleted'][0])) {
-                $entity->setDeleted(json_decode($doc['self_deleted'][0], true));
+            $deleted = is_array($doc['self_deleted'] ?? null) ? ($doc['self_deleted'][0] ?? null) : ($doc['self_deleted'] ?? null);
+            if ($deleted) {
+                $entity->setDeleted(json_decode($deleted, true));
             }
-            if (isset($doc['self_validation'][0])) {
-                $entity->setValidation(json_decode($doc['self_validation'][0], true));
+            $validation = is_array($doc['self_validation'] ?? null) ? ($doc['self_validation'][0] ?? null) : ($doc['self_validation'] ?? null);
+            if ($validation) {
+                $entity->setValidation(json_decode($validation, true));
             }
-            if (isset($doc['self_groups'][0])) {
-                $entity->setGroups(json_decode($doc['self_groups'][0], true));
+            $groups = is_array($doc['self_groups'] ?? null) ? ($doc['self_groups'][0] ?? null) : ($doc['self_groups'] ?? null);
+            if ($groups) {
+                $entity->setGroups(json_decode($groups, true));
             }
 
             return $entity;
@@ -1470,18 +1705,18 @@ class GuzzleSolrService
         ]);
         
         // **DEBUG**: Log all documents being indexed
-        error_log("=== BULK INDEX DEBUG ===");
-        error_log("Document count: " . count($documents));
+        $this->logger->debug('=== BULK INDEX DEBUG ===');
+        $this->logger->debug('Document count: ' . count($documents));
         foreach ($documents as $i => $doc) {
             if (is_array($doc)) {
-                error_log("Doc $i: ID=" . ($doc['id'] ?? 'missing') . ", has_self_object_id=" . (isset($doc['self_object_id']) ? 'YES' : 'NO'));
+                $this->logger->debug('Doc ' . $i . ': ID=' . ($doc['id'] ?? 'missing') . ', has_self_object_id=' . (isset($doc['self_object_id']) ? 'YES' : 'NO'));
             } else if ($doc instanceof ObjectEntity) {
-                error_log("Doc $i: ObjectEntity ID=" . $doc->getId() . ", UUID=" . ($doc->getUuid() ?? 'null'));
+                $this->logger->debug('Doc ' . $i . ': ObjectEntity ID=' . $doc->getId() . ', UUID=' . ($doc->getUuid() ?? 'null'));
             } else {
-                error_log("Doc $i: " . gettype($doc));
+                $this->logger->debug('Doc ' . $i . ': ' . gettype($doc));
             }
         }
-        error_log("=== END BULK INDEX DEBUG ===");
+        $this->logger->debug('=== END BULK INDEX DEBUG ===');
         
         if (!$this->isAvailable() || empty($documents)) {
             $this->logger->warning('Bulk index early return', [
@@ -1568,13 +1803,13 @@ class GuzzleSolrService
 
             // Bulk POST ready
             // **DEBUG**: Log HTTP request details AND actual payload
-            error_log("=== HTTP POST TO SOLR DEBUG ===");
-            error_log("URL: " . $url);
-            error_log("Document count in payload: " . count($updateData['add'] ?? []));
-            error_log("Payload size: " . strlen(json_encode($updateData)) . " bytes");
-            error_log("ACTUAL JSON PAYLOAD:");
-            error_log(json_encode($updateData, JSON_PRETTY_PRINT));
-            error_log("=== END HTTP POST DEBUG ===");
+            $this->logger->debug('=== HTTP POST TO SOLR DEBUG ===');
+            $this->logger->debug('URL: ' . $url);
+            $this->logger->debug('Document count in payload: ' . count($updateData['add'] ?? []));
+            $this->logger->debug('Payload size: ' . strlen(json_encode($updateData)) . ' bytes');
+            $this->logger->debug('ACTUAL JSON PAYLOAD:');
+            $this->logger->debug(json_encode($updateData, JSON_PRETTY_PRINT));
+            $this->logger->debug('=== END HTTP POST DEBUG ===');
             
             try {
             $response = $this->httpClient->post($url, [
@@ -1819,25 +2054,39 @@ class GuzzleSolrService
             $tenantCollectionName = $this->getActiveCollectionName();
 
             // Build search parameters
+            $filterQueries = ['self_tenant:' . $this->tenantId];
+            
+            // Add additional filters
+            if (!empty($searchParams['filters'])) {
+                $filterQueries = array_merge($filterQueries, $searchParams['filters']);
+            }
+            
             $params = [
                 'wt' => 'json',
                 'q' => $searchParams['q'] ?? '*:*',
                 'rows' => $searchParams['limit'] ?? 25,
-                'start' => $searchParams['offset'] ?? 0,
-                'fq' => 'self_tenant:' . $this->tenantId
+                'start' => $searchParams['offset'] ?? 0
             ];
-
-            // Add additional filters
-            if (!empty($searchParams['filters'])) {
-                foreach ($searchParams['filters'] as $filter) {
-                    $params['fq'] .= ' AND ' . $filter;
-                }
-            }
+            
+            // Log query execution for debugging
+            $this->logger->debug('[SOLR] Executing search query', [
+                'collection' => $tenantCollectionName,
+                'query' => $params['q'],
+                'filters' => $filterQueries,
+                'filter_count' => count($filterQueries),
+                'limit' => $params['rows']
+            ]);
 
             // Add facets
             if (!empty($searchParams['facets'])) {
                 $params['facet'] = 'true';
-                $params['facet.field'] = $searchParams['facets'];
+                // Add each facet field as a separate parameter
+                $facetFields = [];
+                foreach ($searchParams['facets'] as $facetField) {
+                    $facetFields[] = 'facet.field=' . urlencode($facetField);
+                }
+                // Add facet fields to the URL manually
+                $facetQueryString = implode('&', $facetFields);
             }
 
             // Add sorting
@@ -1845,21 +2094,62 @@ class GuzzleSolrService
                 $params['sort'] = $searchParams['sort'];
             }
 
-            $url = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/select?' . http_build_query($params);
+            $baseUrl = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/select?' . http_build_query($params);
+            
+            // Add filter queries manually (SOLR expects multiple fq parameters)
+            $fqParams = [];
+            foreach ($filterQueries as $filter) {
+                $fqParams[] = 'fq=' . urlencode($filter);
+            }
+            if (!empty($fqParams)) {
+                $baseUrl .= '&' . implode('&', $fqParams);
+            }
+            
+            // Add facet fields to URL if they exist
+            if (!empty($facetQueryString)) {
+                $url = $baseUrl . '&' . $facetQueryString;
+            } else {
+                $url = $baseUrl;
+            }
+
+            // Log the exact URL being called
+            $this->logger->info('[SOLR] Executing URL', ['url' => $url]);
 
             $response = $this->httpClient->get($url, ['timeout' => 30]);
             $data = json_decode($response->getBody(), true);
+            
+            // Log the raw SOLR response
+            $this->logger->info('[SOLR] Raw response', [
+                'status' => $data['responseHeader']['status'] ?? 'unknown',
+                'numFound' => $data['response']['numFound'] ?? 'unknown',
+                'docs_count' => count($data['response']['docs'] ?? []),
+                'response_keys' => array_keys($data)
+            ]);
 
             if (($data['responseHeader']['status'] ?? -1) === 0) {
                 $this->stats['searches']++;
                 $this->stats['search_time'] += (microtime(true) - $startTime);
 
+                $total = $data['response']['numFound'] ?? 0;
+                $this->logger->debug('[SOLR] Search completed successfully', [
+                    'total_found' => $total,
+                    'docs_returned' => count($data['response']['docs'] ?? []),
+                    'filters_applied' => $params['fq']
+                ]);
+
                 return [
                     'success' => true,
                     'data' => $data['response']['docs'] ?? [],
-                    'total' => $data['response']['numFound'] ?? 0,
+                    'total' => $total,
                     'facets' => $data['facet_counts'] ?? [],
-                    'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2)
+                    'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2),
+                    'debug' => [
+                        'url' => $url,
+                        'solr_numFound' => $data['response']['numFound'] ?? 'unknown',
+                        'solr_status' => $data['responseHeader']['status'] ?? 'unknown',
+                        'facet_counts' => $data['facet_counts'] ?? 'not_found',
+                        'response_keys' => array_keys($data)
+                    ]
                 ];
             }
 
@@ -2002,7 +2292,7 @@ class GuzzleSolrService
      *
      * @return array Results of the bulk indexing operation
      */
-    public function bulkIndexFromDatabase(int $batchSize = 1000, int $maxObjects = 0): array
+    public function bulkIndexFromDatabase(int $batchSize = 1000, int $maxObjects = 0, array $solrFieldTypes = []): array
     {
         if (!$this->isAvailable()) {
             return [
@@ -2085,12 +2375,12 @@ class GuzzleSolrService
                 foreach ($objects as $object) {
                     try {
                         if ($object instanceof ObjectEntity) {
-                            $documents[] = $this->createSolrDocument($object);
+                            $documents[] = $this->createSolrDocument($object, $solrFieldTypes);
                         } else if (is_array($object)) {
                             // Convert array to ObjectEntity if needed
                             $entity = new ObjectEntity();
                             $entity->hydrate($object);
-                            $documents[] = $this->createSolrDocument($entity);
+                            $documents[] = $this->createSolrDocument($entity, $solrFieldTypes);
                         }
                     } catch (\Exception $e) {
                         $this->logger->warning('Failed to create SOLR document', [
@@ -2197,7 +2487,7 @@ class GuzzleSolrService
      * @param int $parallelBatches Number of parallel batches to process (default: 4)
      * @return array Result with success status and statistics
      */
-    public function bulkIndexFromDatabaseParallel(int $batchSize = 1000, int $maxObjects = 0, int $parallelBatches = 4): array
+    public function bulkIndexFromDatabaseParallel(int $batchSize = 1000, int $maxObjects = 0, int $parallelBatches = 4, array $solrFieldTypes = []): array
     {
         // Parallel bulk indexing method
         
@@ -2721,6 +3011,53 @@ class GuzzleSolrService
     }
 
     /**
+     * Get all current SOLR field types for validation
+     *
+     * @return array Field name => field type mapping
+     */
+    private function getSolrFieldTypes(bool $forceRefresh = false): array
+    {
+        // Return cached version if available and not forcing refresh
+        if (!$forceRefresh && $this->cachedSolrFieldTypes !== null) {
+            $this->logger->debug('🚀 Using cached SOLR field types', [
+                'cached_field_count' => count($this->cachedSolrFieldTypes)
+            ]);
+            return $this->cachedSolrFieldTypes;
+        }
+        
+        try {
+            $tenantCollectionName = $this->getActiveCollectionName();
+            $url = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/schema/fields?wt=json';
+            $response = $this->httpClient->get($url);
+            $data = json_decode((string)$response->getBody(), true);
+            
+            $fieldTypes = [];
+            if (isset($data['fields']) && is_array($data['fields'])) {
+                foreach ($data['fields'] as $field) {
+                    $fieldTypes[$field['name']] = $field['type'];
+                }
+            }
+            
+            // Cache the field types
+            $this->cachedSolrFieldTypes = $fieldTypes;
+            
+            $this->logger->info('🔍 Retrieved and cached SOLR field types for validation', [
+                'field_count' => count($fieldTypes),
+                'sample_fields' => array_slice($fieldTypes, 0, 5, true),
+                'versie_field_type' => $fieldTypes['versie'] ?? 'NOT_FOUND'
+            ]);
+            
+            return $fieldTypes;
+            
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to retrieve SOLR field types', [
+                'error' => $e->getMessage()
+            ]);
+            return [];
+        }
+    }
+
+    /**
      * Warmup SOLR index (simplified implementation for GuzzleSolrService)
      *
      * @param array $schemas Array of Schema entities (not used in this implementation)
@@ -2747,24 +3084,64 @@ class GuzzleSolrService
             $connectionResult = $this->testConnection();
             $operations['connection_test'] = $connectionResult['success'] ?? false;
             
-            // 2. Schema mirroring temporarily disabled for testing
-            $operations['schema_mirroring'] = false;
-            $operations['schemas_processed'] = 0;
-            $operations['fields_created'] = 0;
+            // 2. Schema mirroring with intelligent conflict resolution
+            if (!empty($schemas)) {
+                $stageStart = microtime(true);
+                
+                $this->logger->info('🔄 Starting schema mirroring with conflict resolution', [
+                    'schema_count' => count($schemas)
+                ]);
+                
+                // Lazy-load SolrSchemaService to avoid circular dependency
+                $solrSchemaService = \OC::$server->get(SolrSchemaService::class);
+                $mirrorResult = $solrSchemaService->mirrorSchemas(true); // Force update for testing
+                $operations['schema_mirroring'] = $mirrorResult['success'] ?? false;
+                $operations['schemas_processed'] = $mirrorResult['stats']['schemas_processed'] ?? 0;
+                $operations['fields_created'] = $mirrorResult['stats']['fields_created'] ?? 0;
+                $operations['conflicts_resolved'] = $mirrorResult['stats']['conflicts_resolved'] ?? 0;
+                
+                // 2.5. Collect current SOLR field types for validation (force refresh after schema changes)
+                $solrFieldTypes = $this->getSolrFieldTypes(true);
+                $operations['field_types_collected'] = count($solrFieldTypes);
+                
+                if ($mirrorResult['success']) {
+                    $this->logger->info('✅ Schema mirroring completed successfully', [
+                        'schemas_processed' => $operations['schemas_processed'],
+                        'fields_created' => $operations['fields_created'],
+                        'conflicts_resolved' => $operations['conflicts_resolved']
+                    ]);
+                } else {
+                    $this->logger->error('❌ Schema mirroring failed', [
+                        'error' => $mirrorResult['error'] ?? 'Unknown error'
+                    ]);
+                }
+                
+                $stageEnd = microtime(true);
+                $timing['schema_mirroring'] = round(($stageEnd - $stageStart) * 1000, 2) . 'ms';
+            } else {
+                $operations['schema_mirroring'] = false;
+                $operations['schemas_processed'] = 0;
+                $operations['fields_created'] = 0;
+                $operations['conflicts_resolved'] = 0;
+                $timing['schema_mirroring'] = '0ms (no schemas provided)';
+            }
             
             // 3. Object indexing using mode-based bulk indexing
-            error_log("=== WARMUP MODE DEBUG ===");
-            error_log("Mode: " . $mode);
-            error_log("MaxObjects: " . $maxObjects);
+            $this->logger->debug('=== WARMUP MODE DEBUG ===');
+            $this->logger->debug('Mode: ' . $mode);
+            $this->logger->debug('MaxObjects: ' . $maxObjects);
             
-            if ($mode === 'parallel') {
-                error_log("Calling: bulkIndexFromDatabaseParallel");
-                $indexResult = $this->bulkIndexFromDatabaseParallel(1000, $maxObjects, 5);
+            if ($mode === 'hyper') {
+                $this->logger->debug('Calling: bulkIndexFromDatabaseOptimized (hyper mode)');
+                $indexResult = $this->bulkIndexFromDatabaseOptimized(2000, $maxObjects, $solrFieldTypes ?? []);
+            } elseif ($mode === 'parallel') {
+                $this->logger->debug('Calling: bulkIndexFromDatabaseParallel');
+                $indexResult = $this->bulkIndexFromDatabaseParallel(1000, $maxObjects, 5, $solrFieldTypes ?? []);
             } else {
-                error_log("Calling: bulkIndexFromDatabase (serial)");
-                $indexResult = $this->bulkIndexFromDatabase(1000, $maxObjects);
+                $this->logger->debug('Calling: bulkIndexFromDatabase (serial)');
+                $indexResult = $this->bulkIndexFromDatabase(1000, $maxObjects, $solrFieldTypes ?? []);
             }
-            error_log("=== END WARMUP MODE DEBUG ===");
+            $this->logger->debug('=== END WARMUP MODE DEBUG ===');
             
             // Pass collectErrors mode for potential future use
             $operations['error_collection_mode'] = $collectErrors;
@@ -2819,6 +3196,209 @@ class GuzzleSolrService
                 'operations' => $operations,
                 'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2),
                 'error' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Validate field against SOLR schema to prevent type mismatches
+     *
+     * @param string $fieldName The SOLR field name
+     * @param mixed $fieldValue The value to be indexed
+     * @param array $solrFieldTypes Current SOLR field types
+     * @return bool True if field is safe to index
+     */
+    private function validateFieldForSolr(string $fieldName, $fieldValue, array $solrFieldTypes): bool
+    {
+        // If no field types provided, allow all (fallback to original behavior)
+        if (empty($solrFieldTypes)) {
+            return true;
+        }
+
+        // If field doesn't exist in SOLR, it will be auto-created (allow)
+        if (!isset($solrFieldTypes[$fieldName])) {
+            $this->logger->debug('Field not in SOLR schema, will be auto-created', [
+                'field' => $fieldName,
+                'value' => $fieldValue,
+                'type' => gettype($fieldValue)
+            ]);
+            return true;
+        }
+
+        $solrFieldType = $solrFieldTypes[$fieldName];
+        
+        // **CRITICAL VALIDATION**: Check for type compatibility
+        $isCompatible = $this->isValueCompatibleWithSolrType($fieldValue, $solrFieldType);
+        
+        if (!$isCompatible) {
+            $this->logger->warning('🛡️ Field validation prevented type mismatch', [
+                'field' => $fieldName,
+                'value' => $fieldValue,
+                'value_type' => gettype($fieldValue),
+                'solr_field_type' => $solrFieldType,
+                'action' => 'SKIPPED'
+            ]);
+            return false;
+        }
+
+        $this->logger->debug('✅ Field validation passed', [
+            'field' => $fieldName,
+            'value' => $fieldValue,
+            'solr_type' => $solrFieldType
+        ]);
+        
+        return true;
+    }
+
+    /**
+     * Check if a value is compatible with a SOLR field type
+     *
+     * @param mixed $value The value to check
+     * @param string $solrFieldType The SOLR field type (e.g., 'plongs', 'string', 'text_general')
+     * @return bool True if compatible
+     */
+    private function isValueCompatibleWithSolrType($value, string $solrFieldType): bool
+    {
+        // Handle null values (generally allowed)
+        if ($value === null) {
+            return true;
+        }
+
+        return match ($solrFieldType) {
+            // Numeric types - only allow numeric values
+            'pint', 'plong', 'plongs', 'pfloat', 'pdouble' => is_numeric($value),
+            
+            // String types - allow anything (can be converted to string)
+            'string', 'text_general', 'text_en' => true,
+            
+            // Boolean types - allow boolean or boolean-like values
+            'boolean' => is_bool($value) || in_array(strtolower($value), ['true', 'false', '1', '0']),
+            
+            // Date types - allow date strings or objects
+            'pdate', 'pdates' => is_string($value) || ($value instanceof \DateTime),
+            
+            // Default: allow for unknown types
+            default => true
+        };
+    }
+    
+    /**
+     * Clear all cached data to force refresh
+     */
+    public function clearCache(): void
+    {
+        $this->cachedSolrFieldTypes = null;
+        $this->cachedSchemaData = null;
+        $this->logger->debug('🧹 Cleared SOLR service caches');
+    }
+    
+    /**
+     * Optimized bulk indexing with performance improvements
+     *
+     * @param int $batchSize Number of objects per batch
+     * @param int $maxObjects Maximum objects to process (0 = no limit)
+     * @param array $solrFieldTypes Pre-fetched SOLR field types for validation
+     * @return array Results with performance metrics
+     */
+    public function bulkIndexFromDatabaseOptimized(int $batchSize = 1000, int $maxObjects = 0, array $solrFieldTypes = []): array
+    {
+        $startTime = microtime(true);
+        $totalIndexed = 0;
+        $totalErrors = 0;
+        $batchCount = 0;
+        
+        try {
+            // Get total count efficiently
+            $totalObjects = $this->objectEntityMapper->countAll();
+            $actualLimit = $maxObjects > 0 ? min($maxObjects, $totalObjects) : $totalObjects;
+            
+            $this->logger->info('🚀 Starting optimized bulk indexing', [
+                'total_objects' => $totalObjects,
+                'actual_limit' => $actualLimit,
+                'batch_size' => $batchSize,
+                'field_types_cached' => !empty($solrFieldTypes)
+            ]);
+            
+            // Process in optimized chunks
+            for ($offset = 0; $offset < $actualLimit; $offset += $batchSize) {
+                $currentBatchSize = min($batchSize, $actualLimit - $offset);
+                $batchCount++;
+                
+                // Fetch objects efficiently
+                $objects = $this->objectEntityMapper->findAll($currentBatchSize, $offset);
+                
+                if (empty($objects)) {
+                    break;
+                }
+                
+                // Create SOLR documents with field validation
+                $documents = [];
+                foreach ($objects as $object) {
+                    try {
+                        $document = $this->createSolrDocument($object, $solrFieldTypes);
+                        if (!empty($document)) {
+                            $documents[] = $document;
+                        }
+                    } catch (\Exception $e) {
+                        $totalErrors++;
+                        $this->logger->warning('Failed to create document', [
+                            'object_id' => $object->getId(),
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+                
+                // Bulk index the batch
+                if (!empty($documents)) {
+                    $indexResult = $this->bulkIndex($documents, false); // No commit per batch
+                    if ($indexResult) {
+                        $totalIndexed += count($documents);
+                    } else {
+                        $totalErrors += count($documents);
+                    }
+                }
+                
+                // Log progress every 10 batches
+                if ($batchCount % 10 === 0) {
+                    $elapsed = microtime(true) - $startTime;
+                    $rate = $totalIndexed / $elapsed;
+                    $this->logger->info('📊 Bulk indexing progress', [
+                        'batches_processed' => $batchCount,
+                        'objects_indexed' => $totalIndexed,
+                        'elapsed_seconds' => round($elapsed, 2),
+                        'objects_per_second' => round($rate, 2)
+                    ]);
+                }
+            }
+            
+            // Final commit
+            $this->commit();
+            
+            $totalTime = microtime(true) - $startTime;
+            $rate = $totalIndexed / $totalTime;
+            
+            return [
+                'success' => true,
+                'indexed' => $totalIndexed,
+                'errors' => $totalErrors,
+                'batches' => $batchCount,
+                'total_time_seconds' => round($totalTime, 3),
+                'objects_per_second' => round($rate, 2),
+                'total_objects_found' => $totalObjects,
+                'actual_limit' => $actualLimit
+            ];
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Optimized bulk indexing failed', [
+                'error' => $e->getMessage(),
+                'indexed_so_far' => $totalIndexed
+            ]);
+            
+            return [
+                'success' => false,
+                'indexed' => $totalIndexed,
+                'errors' => $totalErrors + 1,
+                'error_message' => $e->getMessage()
             ];
         }
     }

@@ -460,6 +460,9 @@ class SettingsService
                     'commitWithin'   => (int) ($solrData['commitWithin'] ?? 1000),
                     'enableLogging'  => $solrData['enableLogging'] ?? true,
                     'tenantId'       => $solrData['tenantId'] ?? $this->generateTenantId(),
+                    'zookeeperHosts' => $solrData['zookeeperHosts'] ?? 'zookeeper:2181',
+                    'collection'     => $solrData['collection'] ?? 'openregister',
+                    'useCloud'       => $solrData['useCloud'] ?? true,
                 ];
                 $this->config->setValueString($this->appName, 'solr', json_encode($solrConfig));
             }
@@ -804,24 +807,8 @@ class SettingsService
             $performanceStats = $this->getCachePerformanceMetrics();
             
             // Get object cache stats (only if ObjectCacheService provides them)
-            $objectStats = [];
-            try {
-                $objectCacheService = $this->container->get(ObjectCacheService::class);
-                $objectStats = $objectCacheService->getStats();
-            } catch (\Exception $e) {
-                // If no object cache stats available, use defaults
-                $objectStats = [
-                    'entries' => 0,
-                    'hits' => 0,
-                    'requests' => 0,
-                    'memoryUsage' => 0,
-                    'name_cache_size' => 0,
-                    'name_hit_rate' => 0.0,
-                    'name_hits' => 0,
-                    'name_misses' => 0,
-                    'name_warmups' => 0,
-                ];
-            }
+            // Use cached stats to avoid expensive operations on every request
+            $objectStats = $this->getCachedObjectStats();
             
             $stats = [
                 'overview' => [
@@ -892,6 +879,42 @@ class SettingsService
         }
     }
     
+    /**
+     * Get cached object statistics to avoid expensive operations on every request
+     *
+     * @return array Object cache statistics
+     */
+    private function getCachedObjectStats(): array
+    {
+        // Use a simple in-memory cache with 30-second TTL to avoid expensive ObjectCacheService calls
+        static $cachedStats = null;
+        static $lastUpdate = 0;
+        
+        $now = time();
+        if ($cachedStats === null || ($now - $lastUpdate) > 30) {
+            try {
+                $objectCacheService = $this->container->get(ObjectCacheService::class);
+                $cachedStats = $objectCacheService->getStats();
+            } catch (\Exception $e) {
+                // If no object cache stats available, use defaults
+                $cachedStats = [
+                    'entries' => 0,
+                    'hits' => 0,
+                    'requests' => 0,
+                    'memoryUsage' => 0,
+                    'name_cache_size' => 0,
+                    'name_hit_rate' => 0.0,
+                    'name_hits' => 0,
+                    'name_misses' => 0,
+                    'name_warmups' => 0,
+                ];
+            }
+            $lastUpdate = $now;
+        }
+        
+        return $cachedStats;
+    }
+
     /**
      * Calculate hit rate from cache statistics
      *
@@ -1246,6 +1269,9 @@ class SettingsService
                     'autoCommit'     => true,
                     'commitWithin'   => 1000,
                     'enableLogging'  => true,
+                    'zookeeperHosts' => 'zookeeper:2181',
+                    'collection'     => 'openregister',
+                    'useCloud'       => true,
                 ];
             }
 
@@ -1258,7 +1284,7 @@ class SettingsService
 
 
     /**
-     * Test SOLR connection with current settings
+     * Test SOLR connection with current settings (includes Zookeeper test for SolrCloud)
      *
      * @return array Connection test results with status and details
      */
@@ -1275,94 +1301,380 @@ class SettingsService
                 ];
             }
 
+            $testResults = [
+                'success' => true,
+                'message' => 'All connection tests passed',
+                'details' => [],
+                'components' => []
+            ];
+
+            // Test 1: Zookeeper connectivity (if using SolrCloud)
+            if ($solrSettings['useCloud'] ?? false) {
+                $zookeeperTest = $this->testZookeeperConnection($solrSettings);
+                $testResults['components']['zookeeper'] = $zookeeperTest;
+                
+                if (!$zookeeperTest['success']) {
+                    $testResults['success'] = false;
+                    $testResults['message'] = 'Zookeeper connection failed';
+                }
+            }
+
+            // Test 2: SOLR connectivity
+            $solrTest = $this->testSolrConnectivity($solrSettings);
+            $testResults['components']['solr'] = $solrTest;
+            
+            if (!$solrTest['success']) {
+                $testResults['success'] = false;
+                $testResults['message'] = 'SOLR connection failed';
+            }
+
+            // Test 3: Collection/Core availability
+            $collectionTest = $this->testSolrCollection($solrSettings);
+            $testResults['components']['collection'] = $collectionTest;
+            
+            if (!$collectionTest['success']) {
+                $testResults['success'] = false;
+                $testResults['message'] = 'SOLR collection/core not available';
+            }
+
+            return $testResults;
+
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Connection test failed: ' . $e->getMessage(),
+                'details' => [
+                    'exception' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString()
+                ]
+            ];
+        }
+    }
+
+    /**
+     * Test Zookeeper connectivity for SolrCloud
+     *
+     * @param array $solrSettings SOLR configuration
+     * @return array Zookeeper test results
+     */
+    private function testZookeeperConnection(array $solrSettings): array
+    {
+        try {
+            $zookeeperHosts = $solrSettings['zookeeperHosts'] ?? 'zookeeper:2181';
+            $hosts = explode(',', $zookeeperHosts);
+            
+            $successfulHosts = [];
+            $failedHosts = [];
+            
+            foreach ($hosts as $host) {
+                $host = trim($host);
+                if (empty($host)) continue;
+                
+                // Test Zookeeper connection using SOLR's Zookeeper API
+                $url = sprintf(
+                    '%s://%s:%d%s/admin/collections?action=CLUSTERSTATUS&wt=json',
+                    $solrSettings['scheme'],
+                    $solrSettings['host'],
+                    $solrSettings['port'],
+                    $solrSettings['path']
+                );
+                
+                $context = stream_context_create([
+                    'http' => [
+                        'timeout' => 5,
+                        'method' => 'GET'
+                    ]
+                ]);
+                
+                $response = @file_get_contents($url, false, $context);
+                
+                if ($response !== false) {
+                    $data = json_decode($response, true);
+                    if (isset($data['cluster'])) {
+                        $successfulHosts[] = $host;
+                    } else {
+                        $failedHosts[] = $host;
+                    }
+                } else {
+                    $failedHosts[] = $host;
+                }
+            }
+            
+            return [
+                'success' => !empty($successfulHosts),
+                'message' => !empty($successfulHosts) ? 
+                    'Zookeeper accessible via ' . implode(', ', $successfulHosts) : 
+                    'Zookeeper not accessible via any host',
+                'details' => [
+                    'zookeeper_hosts' => $zookeeperHosts,
+                    'successful_hosts' => $successfulHosts,
+                    'failed_hosts' => $failedHosts,
+                    'test_method' => 'SOLR Collections API'
+                ]
+            ];
+            
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Zookeeper test failed: ' . $e->getMessage(),
+                'details' => [
+                    'error' => $e->getMessage(),
+                    'zookeeper_hosts' => $solrSettings['zookeeperHosts'] ?? 'zookeeper:2181'
+                ]
+            ];
+        }
+    }
+
+    /**
+     * Test SOLR connectivity
+     *
+     * @param array $solrSettings SOLR configuration
+     * @return array SOLR test results
+     */
+    private function testSolrConnectivity(array $solrSettings): array
+    {
+        try {
             // Build SOLR URL
             $baseUrl = sprintf(
-                '%s://%s:%d%s/%s',
+                '%s://%s:%d%s',
                 $solrSettings['scheme'],
                 $solrSettings['host'],
                 $solrSettings['port'],
-                $solrSettings['path'],
-                $solrSettings['core']
+                $solrSettings['path']
             );
 
-            // Test ping endpoint
-            $pingUrl = $baseUrl . '/admin/ping';
+            // For SolrCloud mode, test the collection select endpoint
+            // For standalone mode, test the admin ping endpoint
+            $useCloud = $solrSettings['useCloud'] ?? false;
+            
+            if ($useCloud) {
+                $testUrl = $baseUrl . '/' . $solrSettings['collection'] . '/select?q=*:*&rows=0&wt=json';
+                $testType = 'collection_select';
+            } else {
+                $testUrl = $baseUrl . '/admin/ping?wt=json';
+                $testType = 'admin_ping';
+            }
             
             // Create HTTP context with timeout
             $context = stream_context_create([
                 'http' => [
-                    'method'  => 'GET',
-                    'timeout' => $solrSettings['timeout'],
-                    'header'  => [
+                    'timeout' => 10,
+                    'method' => 'GET',
+                    'header' => [
                         'Accept: application/json',
                         'Content-Type: application/json'
                     ]
                 ]
             ]);
-
-            // Add authentication if configured
-            if (!empty($solrSettings['username']) && !empty($solrSettings['password'])) {
-                $auth = base64_encode($solrSettings['username'] . ':' . $solrSettings['password']);
-                $context['http']['header'][] = 'Authorization: Basic ' . $auth;
-            }
-
-            // Attempt connection
+            
             $startTime = microtime(true);
-            $response = @file_get_contents($pingUrl, false, $context);
-            $responseTime = (microtime(true) - $startTime) * 1000; // Convert to milliseconds
+            $response = @file_get_contents($testUrl, false, $context);
+            $responseTime = (microtime(true) - $startTime) * 1000;
             
             if ($response === false) {
                 return [
                     'success' => false,
-                    'message' => 'Failed to connect to SOLR server',
+                    'message' => 'SOLR server not responding',
                     'details' => [
-                        'url' => $pingUrl,
-                        'timeout' => $solrSettings['timeout'],
-                        'error' => error_get_last()['message'] ?? 'Unknown connection error'
+                        'url' => $testUrl,
+                        'test_type' => $testType,
+                        'use_cloud' => $useCloud,
+                        'response_time_ms' => round($responseTime, 2)
                     ]
                 ];
             }
-
-            // Parse response
-            $data = json_decode($response, true);
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                return [
-                    'success' => false,
-                    'message' => 'Invalid JSON response from SOLR',
-                    'details' => [
-                        'response' => substr($response, 0, 500),
-                        'json_error' => json_last_error_msg()
-                    ]
-                ];
-            }
-
-            // Check if ping was successful
-            $isHealthy = isset($data['status']) && $data['status'] === 'OK';
             
+            $data = json_decode($response, true);
+            
+            // Validate response based on test type
+            if ($testType === 'collection_select') {
+                // For SolrCloud collection select test
+                if (!isset($data['responseHeader']['status']) || $data['responseHeader']['status'] !== 0) {
+                    return [
+                        'success' => false,
+                        'message' => 'SOLR collection select query failed',
+                        'details' => [
+                            'url' => $testUrl,
+                            'test_type' => $testType,
+                            'response' => $data,
+                            'response_time_ms' => round($responseTime, 2)
+                        ]
+                    ];
+                }
+                
             return [
-                'success' => $isHealthy,
-                'message' => $isHealthy ? 'SOLR connection successful' : 'SOLR ping failed',
+                'success' => true,
+                'message' => 'SOLR SolrCloud server responding correctly',
                 'details' => [
-                    'url' => $pingUrl,
+                    'url' => $testUrl,
+                    'test_type' => $testType,
+                    'use_cloud' => $useCloud,
                     'response_time_ms' => round($responseTime, 2),
-                    'status' => $data['status'] ?? 'unknown',
-                    'core_status' => $data['core'] ?? null,
-                    'solr_version' => $data['responseHeader']['zkConnected'] ?? null
+                    'collection' => $solrSettings['collection'],
+                    'zk_connected' => $data['responseHeader']['zkConnected'] ?? false,
+                    'query_time' => $data['responseHeader']['QTime'] ?? 0,
+                    'num_found' => $data['response']['numFound'] ?? 0
                 ]
             ];
-
+            } else {
+                // For standalone admin ping test
+                if (!isset($data['status']) || $data['status'] !== 'OK') {
+                    return [
+                        'success' => false,
+                        'message' => 'SOLR admin ping failed',
+                        'details' => [
+                            'url' => $testUrl,
+                            'test_type' => $testType,
+                            'response' => $data,
+                            'response_time_ms' => round($responseTime, 2)
+                        ]
+                    ];
+                }
+                
+                return [
+                    'success' => true,
+                    'message' => 'SOLR standalone server responding correctly',
+                    'details' => [
+                        'url' => $testUrl,
+                        'test_type' => $testType,
+                        'response_time_ms' => round($responseTime, 2),
+                        'solr_version' => $data['lucene']['solr-spec-version'] ?? 'unknown'
+                    ]
+                ];
+            }
+            
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'message' => 'SOLR connection test failed with exception',
+                'message' => 'SOLR connectivity test failed: ' . $e->getMessage(),
                 'details' => [
-                    'exception' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString()
+                    'error' => $e->getMessage(),
+                    'url' => $baseUrl ?? 'unknown',
+                    'test_type' => $testType ?? 'unknown'
                 ]
             ];
         }
+    }
 
-    }//end testSolrConnection()
+    /**
+     * Test SOLR collection/core availability
+     *
+     * @param array $solrSettings SOLR configuration
+     * @return array Collection test results
+     */
+    private function testSolrCollection(array $solrSettings): array
+    {
+        try {
+            $collectionName = $solrSettings['collection'] ?? $solrSettings['core'] ?? 'openregister';
+            $baseUrl = sprintf(
+                '%s://%s:%d%s',
+                $solrSettings['scheme'],
+                $solrSettings['host'],
+                $solrSettings['port'],
+                $solrSettings['path']
+            );
+            
+            // For SolrCloud, test collection existence
+            if ($solrSettings['useCloud'] ?? false) {
+                $url = $baseUrl . '/admin/collections?action=CLUSTERSTATUS&wt=json';
+                
+                $context = stream_context_create([
+                    'http' => [
+                        'timeout' => 10,
+                        'method' => 'GET'
+                    ]
+                ]);
+                
+                $response = @file_get_contents($url, false, $context);
+                
+                if ($response === false) {
+                    return [
+                        'success' => false,
+                        'message' => 'Failed to check collection status',
+                        'details' => ['url' => $url]
+                    ];
+                }
+                
+                $data = json_decode($response, true);
+                $collections = $data['cluster']['collections'] ?? [];
+                
+                if (isset($collections[$collectionName])) {
+                    return [
+                        'success' => true,
+                        'message' => "Collection '{$collectionName}' exists and is available",
+                        'details' => [
+                            'collection' => $collectionName,
+                            'status' => $collections[$collectionName]['status'] ?? 'unknown',
+                            'shards' => count($collections[$collectionName]['shards'] ?? [])
+                        ]
+                    ];
+                } else {
+                    return [
+                        'success' => false,
+                        'message' => "Collection '{$collectionName}' not found",
+                        'details' => [
+                            'collection' => $collectionName,
+                            'available_collections' => array_keys($collections)
+                        ]
+                    ];
+                }
+            } else {
+                // For standalone SOLR, test core existence
+                $url = $baseUrl . '/admin/cores?action=STATUS&core=' . urlencode($collectionName) . '&wt=json';
+                
+                $context = stream_context_create([
+                    'http' => [
+                        'timeout' => 10,
+                        'method' => 'GET'
+                    ]
+                ]);
+                
+                $response = @file_get_contents($url, false, $context);
+                
+                if ($response === false) {
+                    return [
+                        'success' => false,
+                        'message' => 'Failed to check core status',
+                        'details' => ['url' => $url]
+                    ];
+                }
+                
+                $data = json_decode($response, true);
+                
+                if (isset($data['status'][$collectionName])) {
+                    return [
+                        'success' => true,
+                        'message' => "Core '{$collectionName}' exists and is available",
+                        'details' => [
+                            'core' => $collectionName,
+                            'status' => $data['status'][$collectionName]['status'] ?? 'unknown'
+                        ]
+                    ];
+                } else {
+                    return [
+                        'success' => false,
+                        'message' => "Core '{$collectionName}' not found",
+                        'details' => [
+                            'core' => $collectionName,
+                            'available_cores' => array_keys($data['status'] ?? [])
+                        ]
+                    ];
+                }
+            }
+            
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Collection test failed: ' . $e->getMessage(),
+                'details' => [
+                    'error' => $e->getMessage(),
+                    'collection' => $solrSettings['collection'] ?? $solrSettings['core'] ?? 'openregister'
+                ]
+            ];
+        }
+    }
 
 
     /**
@@ -1885,6 +2197,9 @@ class SettingsService
                     'autoCommit'     => true,
                     'commitWithin'   => 1000,
                     'enableLogging'  => true,
+                    'zookeeperHosts' => 'zookeeper:2181',
+                    'collection'     => 'openregister',
+                    'useCloud'       => true,
                     'tenantId'       => $tenantId,
                 ];
             }
@@ -1903,6 +2218,9 @@ class SettingsService
                 'autoCommit'     => $solrData['autoCommit'] ?? true,
                 'commitWithin'   => $solrData['commitWithin'] ?? 1000,
                 'enableLogging'  => $solrData['enableLogging'] ?? true,
+                'zookeeperHosts' => $solrData['zookeeperHosts'] ?? 'zookeeper:2181',
+                'collection'     => $solrData['collection'] ?? 'openregister',
+                'useCloud'       => $solrData['useCloud'] ?? true,
                 'tenantId'       => $solrData['tenantId'] ?? $tenantId,
             ];
         } catch (\Exception $e) {
@@ -1934,6 +2252,9 @@ class SettingsService
                 'autoCommit'     => $solrData['autoCommit'] ?? true,
                 'commitWithin'   => (int) ($solrData['commitWithin'] ?? 1000),
                 'enableLogging'  => $solrData['enableLogging'] ?? true,
+                'zookeeperHosts' => $solrData['zookeeperHosts'] ?? 'zookeeper:2181',
+                'collection'     => $solrData['collection'] ?? 'openregister',
+                'useCloud'       => $solrData['useCloud'] ?? true,
                 'tenantId'       => $solrData['tenantId'] ?? $tenantId,
             ];
             

@@ -556,35 +556,35 @@
 					<div class="cache-type-selection">
 						<h4>Cache Type:</h4>
 						<NcCheckboxRadioSwitch
-							v-model="clearCacheType"
+							:checked.sync="clearCacheType"
 							name="cache_type"
 							value="all"
 							type="radio">
 							Clear All Cache (Recommended)
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
-							v-model="clearCacheType"
+							:checked.sync="clearCacheType"
 							name="cache_type"
 							value="object"
 							type="radio">
 							Object Cache Only
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
-							v-model="clearCacheType"
+							:checked.sync="clearCacheType"
 							name="cache_type"
 							value="schema"
 							type="radio">
 							Schema Cache Only
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
-							v-model="clearCacheType"
+							:checked.sync="clearCacheType"
 							name="cache_type"
 							value="facet"
 							type="radio">
 							Facet Cache Only
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
-							v-model="clearCacheType"
+							:checked.sync="clearCacheType"
 							name="cache_type"
 							value="distributed"
 							type="radio">
@@ -1116,8 +1116,18 @@
 					<span />
 					<div class="button-group">
 						<NcButton
+							type="primary"
+							:disabled="loading || saving || testingConnection || warmingUpSolr || settingUpSolr"
+							@click="setupSolr">
+							<template #icon>
+								<NcLoadingIcon v-if="settingUpSolr" :size="20" />
+								<Settings v-else :size="20" />
+							</template>
+							{{ settingUpSolr ? 'Setting up...' : 'Setup SOLR' }}
+						</NcButton>
+						<NcButton
 							type="secondary"
-							:disabled="loading || saving || testingConnection || warmingUpSolr"
+							:disabled="loading || saving || testingConnection || warmingUpSolr || settingUpSolr"
 							@click="testSolrConnection">
 							<template #icon>
 								<NcLoadingIcon v-if="testingConnection" :size="20" />
@@ -1126,18 +1136,8 @@
 							Test Connection
 						</NcButton>
 						<NcButton
-							type="secondary"
-							:disabled="loading || saving || testingConnection || warmingUpSolr || !solrOptions.enabled"
-							@click="showWarmupConfigDialog">
-							<template #icon>
-								<NcLoadingIcon v-if="warmingUpSolr" :size="20" />
-								<Refresh v-else :size="20" />
-							</template>
-							{{ warmingUpSolr ? 'Warming up...' : 'Configure Warmup' }}
-						</NcButton>
-						<NcButton
 							type="primary"
-							:disabled="loading || saving || testingConnection"
+							:disabled="loading || saving || testingConnection || settingUpSolr"
 							@click="saveSettings">
 							<template #icon>
 								<NcLoadingIcon v-if="saving" :size="20" />
@@ -1308,10 +1308,65 @@
 									class="solr-input-field">
 							</div>
 						</div>
+
+						<div class="config-row">
+							<label class="config-label">
+								<strong>Zookeeper Hosts</strong>
+								<p class="config-description">Zookeeper connection string for SolrCloud</p>
+							</label>
+							<div class="config-input">
+								<input
+									v-model="solrOptions.zookeeperHosts"
+									type="text"
+									:disabled="loading || saving"
+									placeholder="zookeeper:2181"
+									class="solr-input-field">
+							</div>
+						</div>
+
+						<div class="config-row">
+							<label class="config-label">
+								<strong>Collection</strong>
+								<p class="config-description">SolrCloud collection name</p>
+							</label>
+							<div class="config-input">
+								<input
+									v-model="solrOptions.collection"
+									type="text"
+									:disabled="loading || saving"
+									placeholder="openregister"
+									class="solr-input-field">
+							</div>
+						</div>
+
+						<div class="config-row">
+							<label class="config-label">
+								<strong>Tenant ID</strong>
+								<p class="config-description">Unique identifier for multi-tenant isolation (auto-generated if empty)</p>
+							</label>
+							<div class="config-input">
+								<input
+									v-model="solrOptions.tenantId"
+									type="text"
+									:disabled="loading || saving"
+									placeholder="Auto-generated from Nextcloud instance"
+									class="solr-input-field">
+							</div>
+						</div>
 					</div>
 
 					<h4>Advanced Options</h4>
 					<div class="advanced-options">
+						<NcCheckboxRadioSwitch
+							:checked.sync="solrOptions.useCloud"
+							:disabled="saving"
+							type="switch">
+							{{ solrOptions.useCloud ? 'SolrCloud mode enabled' : 'Standalone SOLR mode' }}
+						</NcCheckboxRadioSwitch>
+						<p class="option-description">
+							Use SolrCloud with Zookeeper for distributed search
+						</p>
+
 						<NcCheckboxRadioSwitch
 							:checked.sync="solrOptions.autoCommit"
 							:disabled="saving"
@@ -1416,14 +1471,14 @@
 					<div class="form-section">
 						<h4>Execution Mode</h4>
 						<NcCheckboxRadioSwitch
-							v-model="warmupConfig.mode"
+							:checked.sync="warmupConfig.mode"
 							name="warmup_mode"
 							value="serial"
 							type="radio">
 							Serial Mode (Safer, slower)
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
-							v-model="warmupConfig.mode"
+							:checked.sync="warmupConfig.mode"
 							name="warmup_mode"
 							value="parallel"
 							type="radio">
@@ -1520,6 +1575,7 @@ import {
 import Save from 'vue-material-design-icons/ContentSave.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
+import Settings from 'vue-material-design-icons/ApplicationSettings.vue'
 import TestTube from 'vue-material-design-icons/TestTube.vue'
 import SolrDashboard from './SolrDashboard.vue'
 
@@ -1548,6 +1604,7 @@ export default defineComponent({
 		Save,
 		Refresh,
 		Delete,
+		Settings,
 		TestTube,
 		SolrDashboard,
 	},
@@ -1561,6 +1618,7 @@ export default defineComponent({
 		return {
 			loading: true,
 			saving: false,
+			updatingFromBackend: false,
 			rebasing: false,
 			showRebaseConfirmation: false,
 			loadingVersionInfo: true,
@@ -1676,7 +1734,7 @@ export default defineComponent({
 			},
 			solrOptions: {
 				enabled: false,
-				host: 'localhost',
+				host: 'solr',
 				port: 8983,
 				path: '/solr',
 				core: 'openregister',
@@ -1687,9 +1745,14 @@ export default defineComponent({
 				autoCommit: true,
 				commitWithin: 1000,
 				enableLogging: true,
+				zookeeperHosts: 'zookeeper:2181',
+				collection: 'openregister',
+				useCloud: true,
+				tenantId: '',
 			},
 			solrConnectionStatus: null,
 			testingConnection: false,
+			settingUpSolr: false,
 			warmingUpSolr: false,
 			showWarmupDialog: false,
 			warmupConfig: {
@@ -1841,28 +1904,43 @@ export default defineComponent({
 		/**
 		 * Auto-save when RBAC is enabled/disabled
 		 */
-		'rbacOptions.enableRBAC'() {
-			if (!this.loading) {
-				this.saveSettings()
-			}
+		'rbacOptions.enableRBAC': {
+			handler(newVal, oldVal) {
+				// Only save if value actually changed and we're not loading/saving/updating from backend
+				if (newVal !== oldVal && !this.loading && !this.saving && !this.updatingFromBackend) {
+					this.saveSettings()
+				}
+			},
+			immediate: false,
+			deep: false
 		},
 
 		/**
 		 * Auto-save when Multitenancy is enabled/disabled
 		 */
-		'multitenancyOptions.enableMultitenancy'() {
-			if (!this.loading) {
-				this.saveSettings()
-			}
+		'multitenancyOptions.enableMultitenancy': {
+			handler(newVal, oldVal) {
+				// Only save if value actually changed and we're not loading/saving/updating from backend
+				if (newVal !== oldVal && !this.loading && !this.saving && !this.updatingFromBackend) {
+					this.saveSettings()
+				}
+			},
+			immediate: false,
+			deep: false
 		},
 
 		/**
 		 * Auto-save when Admin Override is changed
 		 */
-		'rbacOptions.adminOverride'() {
-			if (!this.loading) {
-				this.saveSettings()
-			}
+		'rbacOptions.adminOverride': {
+			handler(newVal, oldVal) {
+				// Only save if value actually changed and we're not loading/saving/updating from backend
+				if (newVal !== oldVal && !this.loading && !this.saving && !this.updatingFromBackend) {
+					this.saveSettings()
+				}
+			},
+			immediate: false,
+			deep: false
 		},
 	},
 
@@ -1883,6 +1961,11 @@ export default defineComponent({
 		 * @return {Promise<void>}
 		 */
 		async loadSettings() {
+			// Prevent multiple simultaneous calls
+			if (this.loading) {
+				return
+			}
+			
 			this.loading = true
 			this.loadingVersionInfo = true
 
@@ -1908,6 +1991,7 @@ export default defineComponent({
 				if (rbacResponse.ok) {
 					const rbacData = await rbacResponse.json()
 					if (rbacData && !rbacData.error) {
+						this.updatingFromBackend = true
 						// Available options
 						this.availableGroups = rbacData.availableGroups || {}
 						this.availableUsers = rbacData.availableUsers || {}
@@ -1920,6 +2004,7 @@ export default defineComponent({
 							defaultObjectOwner: this.findOptionByValue(this.userOptions, rbacData.defaultObjectOwner),
 							adminOverride: rbacData.adminOverride !== undefined ? rbacData.adminOverride : true,
 						}
+						this.updatingFromBackend = false
 					}
 				}
 
@@ -1927,6 +2012,7 @@ export default defineComponent({
 				if (multitenancyResponse.ok) {
 					const multitenancyData = await multitenancyResponse.json()
 					if (multitenancyData && !multitenancyData.error) {
+						this.updatingFromBackend = true
 						// Available tenants
 						this.availableTenants = multitenancyData.availableTenants || {}
 
@@ -1936,6 +2022,7 @@ export default defineComponent({
 							defaultUserTenant: this.findOptionByValue(this.tenantOptions, multitenancyData.defaultUserTenant),
 							defaultObjectTenant: this.findOptionByValue(this.tenantOptions, multitenancyData.defaultObjectTenant),
 						}
+						this.updatingFromBackend = false
 					}
 				}
 
@@ -1972,6 +2059,10 @@ export default defineComponent({
 							autoCommit: solrData.autoCommit !== undefined ? solrData.autoCommit : true,
 							commitWithin: solrData.commitWithin || 1000,
 							enableLogging: solrData.enableLogging !== undefined ? solrData.enableLogging : true,
+							zookeeperHosts: solrData.zookeeperHosts || 'zookeeper:2181',
+							collection: solrData.collection || 'openregister',
+							useCloud: solrData.useCloud !== undefined ? solrData.useCloud : true,
+							tenantId: solrData.tenantId || '',
 						}
 					}
 				}
@@ -2082,6 +2173,10 @@ export default defineComponent({
 					autoCommit: this.solrOptions.autoCommit,
 					commitWithin: this.solrOptions.commitWithin,
 					enableLogging: this.solrOptions.enableLogging,
+					zookeeperHosts: this.solrOptions.zookeeperHosts,
+					collection: this.solrOptions.collection,
+					useCloud: this.solrOptions.useCloud,
+					tenantId: this.solrOptions.tenantId,
 				}
 
 				// Save all settings in parallel using focused endpoints
@@ -2112,6 +2207,7 @@ export default defineComponent({
 				if (rbacResponse.ok) {
 					const rbacResult = await rbacResponse.json()
 					if (rbacResult && !rbacResult.error) {
+						this.updatingFromBackend = true
 						this.availableGroups = rbacResult.availableGroups || this.availableGroups
 						this.availableUsers = rbacResult.availableUsers || this.availableUsers
 						
@@ -2122,6 +2218,7 @@ export default defineComponent({
 							defaultObjectOwner: this.findOptionByValue(this.userOptions, rbacResult.defaultObjectOwner),
 							adminOverride: rbacResult.adminOverride,
 						}
+						this.updatingFromBackend = false
 					}
 				} else {
 					console.error('Failed to save RBAC settings:', await rbacResponse.text())
@@ -2131,6 +2228,7 @@ export default defineComponent({
 				if (multitenancyResponse.ok) {
 					const multitenancyResult = await multitenancyResponse.json()
 					if (multitenancyResult && !multitenancyResult.error) {
+						this.updatingFromBackend = true
 						this.availableTenants = multitenancyResult.availableTenants || this.availableTenants
 						
 						this.multitenancyOptions = {
@@ -2138,6 +2236,7 @@ export default defineComponent({
 							defaultUserTenant: this.findOptionByValue(this.tenantOptions, multitenancyResult.defaultUserTenant),
 							defaultObjectTenant: this.findOptionByValue(this.tenantOptions, multitenancyResult.defaultObjectTenant),
 						}
+						this.updatingFromBackend = false
 					}
 				} else {
 					console.error('Failed to save Multitenancy settings:', await multitenancyResponse.text())
@@ -2178,6 +2277,10 @@ export default defineComponent({
 							autoCommit: solrResult.autoCommit !== undefined ? solrResult.autoCommit : true,
 							commitWithin: solrResult.commitWithin || 1000,
 							enableLogging: solrResult.enableLogging !== undefined ? solrResult.enableLogging : true,
+							zookeeperHosts: solrResult.zookeeperHosts || 'zookeeper:2181',
+							collection: solrResult.collection || 'openregister',
+							useCloud: solrResult.useCloud !== undefined ? solrResult.useCloud : true,
+							tenantId: solrResult.tenantId || '',
 						}
 					}
 				} else {
@@ -2273,6 +2376,11 @@ export default defineComponent({
 		 * @return {Promise<void>}
 		 */
 		async loadStats() {
+			// Prevent multiple simultaneous calls
+			if (this.loadingStats) {
+				return
+			}
+			
 			this.loadingStats = true
 
 			try {
@@ -2348,6 +2456,11 @@ export default defineComponent({
 		 * @return {Promise<void>}
 		 */
 		async loadCacheStats() {
+			// Prevent multiple simultaneous calls
+			if (this.loadingCache) {
+				return
+			}
+			
 			this.loadingCache = true
 
 			try {
@@ -2546,6 +2659,10 @@ export default defineComponent({
 							autoCommit: this.solrOptions.autoCommit,
 							commitWithin: this.solrOptions.commitWithin,
 							enableLogging: this.solrOptions.enableLogging,
+							zookeeperHosts: this.solrOptions.zookeeperHosts,
+							collection: this.solrOptions.collection,
+							useCloud: this.solrOptions.useCloud,
+							tenantId: this.solrOptions.tenantId,
 						},
 					}),
 				})
@@ -2573,6 +2690,60 @@ export default defineComponent({
 				}
 			} finally {
 				this.testingConnection = false
+			}
+		},
+
+		/**
+		 * Setup SOLR with current configuration
+		 *
+		 * @async
+		 * @return {Promise<void>}
+		 */
+		async setupSolr() {
+			this.settingUpSolr = true
+			this.solrConnectionStatus = null
+
+			try {
+				const response = await fetch('/index.php/apps/openregister/api/solr/setup', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				})
+
+				const result = await response.json()
+
+				if (result.success) {
+					this.solrConnectionStatus = {
+						success: true,
+						message: result.message || 'SOLR setup completed successfully',
+						details: result.details || {}
+					}
+					
+					// Show success notification
+					this.$toast.success('SOLR setup completed successfully!')
+				} else {
+					this.solrConnectionStatus = {
+						success: false,
+						message: result.message || 'SOLR setup failed',
+						details: result.details || {}
+					}
+					
+					// Show error notification
+					this.$toast.error('SOLR setup failed: ' + (result.message || 'Unknown error'))
+				}
+			} catch (error) {
+				console.error('SOLR setup error:', error)
+				this.solrConnectionStatus = {
+					success: false,
+					message: 'SOLR setup error: ' + error.message,
+					details: {}
+				}
+				
+				// Show error notification
+				this.$toast.error('SOLR setup error: ' + error.message)
+			} finally {
+				this.settingUpSolr = false
 			}
 		},
 

@@ -315,7 +315,7 @@ class SettingsController extends Controller
         try {
             // Get SOLR service via direct DI injection
             $container = \OC::$server->getRegisteredAppContainer('openregister');
-            $solrService = $container->get(GuzzleSolrService::class);
+            $solrService = $container->get(\OCA\OpenRegister\Service\SolrService::class);
             
             if ($solrService === null) {
                 return new JSONResponse([
@@ -411,8 +411,8 @@ class SettingsController extends Controller
     public function testSolrConnection(): JSONResponse
     {
         try {
-            // Get the request data
-            $data = json_decode($this->request->getContent(), true);
+            // Get the request data using proper Nextcloud method
+            $data = $this->request->getParams();
             
             if (!isset($data['solr'])) {
                 return new JSONResponse(['error' => 'No SOLR configuration provided'], 400);
