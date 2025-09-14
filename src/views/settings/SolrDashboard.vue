@@ -351,7 +351,8 @@
 			v-if="showWarmupDialog"
 			name="SOLR Warmup Configuration"
 			:can-close="!warmingUp"
-			@closing="hideWarmupDialog">
+			@closing="hideWarmupDialog"
+			:size="'large'">
 			<div class="warmup-dialog">
 				<div class="warmup-header">
 					<h3>🔥 SOLR Index Warmup</h3>
@@ -502,6 +503,51 @@
 
 					<div class="form-section">
 						<h4>Processing Limits</h4>
+						
+						<!-- Object Count Prediction -->
+						<div class="object-prediction">
+							<div class="prediction-header">
+								<h5>📊 Object Count Prediction</h5>
+								<div v-if="objectStats.loading" class="loading-indicator">
+									<NcLoadingIcon :size="16" />
+									<span>Loading object count...</span>
+								</div>
+							</div>
+							<div v-if="!objectStats.loading && objectStats.totalObjects > 0" class="prediction-content">
+								<div class="prediction-stats">
+									<div class="stat-item">
+										<span class="stat-label">Total Objects in Database:</span>
+										<span class="stat-value">{{ objectStats.totalObjects.toLocaleString() }}</span>
+									</div>
+									<div class="stat-item">
+										<span class="stat-label">Objects to Process:</span>
+										<span class="stat-value">
+											{{ warmupConfig.maxObjects === 0 ? objectStats.totalObjects.toLocaleString() : Math.min(warmupConfig.maxObjects, objectStats.totalObjects).toLocaleString() }}
+											<span v-if="warmupConfig.maxObjects > 0 && warmupConfig.maxObjects < objectStats.totalObjects" class="limited-indicator">
+												(limited by max objects setting)
+											</span>
+										</span>
+									</div>
+									<div class="stat-item">
+										<span class="stat-label">Estimated Batches:</span>
+										<span class="stat-value">
+											{{ Math.ceil((warmupConfig.maxObjects === 0 ? objectStats.totalObjects : Math.min(warmupConfig.maxObjects, objectStats.totalObjects)) / warmupConfig.batchSize) }}
+										</span>
+									</div>
+									<div class="stat-item">
+										<span class="stat-label">Estimated Duration:</span>
+										<span class="stat-value">
+											{{ estimateWarmupDuration() }}
+										</span>
+									</div>
+								</div>
+							</div>
+							<div v-else-if="!objectStats.loading" class="prediction-error">
+								<span class="error-icon">⚠️</span>
+								<span>Unable to load object count. Warmup will process all available objects.</span>
+							</div>
+						</div>
+
 						<div class="form-row">
 							<label class="form-label">
 								<strong>Max Objects (0 = all)</strong>
@@ -621,6 +667,10 @@ export default {
 			},
 			warmupResults: null,
 			warmupCompleted: false,
+			objectStats: {
+				totalObjects: 0,
+				loading: false
+			},
 			
 			solrStats: {
 				overview: {
@@ -750,6 +800,29 @@ export default {
 		 */
 		showWarmupConfigDialog() {
 			this.showWarmupDialog = true
+			this.loadObjectStats()
+		},
+
+		/**
+		 * Load object statistics for warmup prediction
+		 *
+		 * @async
+		 * @return {Promise<void>}
+		 */
+		async loadObjectStats() {
+			this.objectStats.loading = true
+			
+			try {
+				const response = await this.$http.get('/apps/openregister/api/settings/stats')
+				if (response.data && response.data.totals) {
+					this.objectStats.totalObjects = response.data.totals.totalObjects || 0
+				}
+			} catch (error) {
+				console.error('Failed to load object stats:', error)
+				this.objectStats.totalObjects = 0
+			} finally {
+				this.objectStats.loading = false
+			}
 		},
 
 		/**
@@ -771,6 +844,39 @@ export default {
 			this.warmupCompleted = false
 			this.warmupResults = null
 			this.warmingUp = false
+		},
+
+		/**
+		 * Estimate warmup duration based on configuration
+		 *
+		 * @return {string} Estimated duration in human-readable format
+		 */
+		estimateWarmupDuration() {
+			if (this.objectStats.totalObjects === 0) {
+				return 'Unknown'
+			}
+
+			const totalObjects = this.warmupConfig.maxObjects === 0 
+				? this.objectStats.totalObjects 
+				: Math.min(this.warmupConfig.maxObjects, this.objectStats.totalObjects)
+			
+			const batches = Math.ceil(totalObjects / this.warmupConfig.batchSize)
+			
+			// Rough estimates based on mode and batch size
+			// Serial: ~2-5 seconds per batch, Parallel: ~1-2 seconds per batch
+			const secondsPerBatch = this.warmupConfig.mode === 'serial' ? 3 : 1.5
+			const totalSeconds = batches * secondsPerBatch
+			
+			if (totalSeconds < 60) {
+				return `~${Math.ceil(totalSeconds)} seconds`
+			} else if (totalSeconds < 3600) {
+				const minutes = Math.ceil(totalSeconds / 60)
+				return `~${minutes} minute${minutes !== 1 ? 's' : ''}`
+			} else {
+				const hours = Math.floor(totalSeconds / 3600)
+				const minutes = Math.ceil((totalSeconds % 3600) / 60)
+				return `~${hours}h ${minutes}m`
+			}
 		},
 
 		/**
@@ -1627,8 +1733,8 @@ export default {
 
 /* Warmup Dialog Styles */
 .warmup-dialog {
-	padding: 1.5rem;
-	max-width: 900px;
+	padding: 2rem;
+	max-width: 1200px;
 	width: 100%;
 	max-height: 90vh;
 	overflow-y: auto;
@@ -1951,5 +2057,91 @@ export default {
 .stat-value.error {
 	color: var(--color-error);
 	font-weight: 600;
+}
+
+/* Object Prediction Styles */
+.object-prediction {
+	margin-bottom: 1.5rem;
+	padding: 1rem;
+	background: var(--color-background-hover);
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+}
+
+.prediction-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 1rem;
+}
+
+.prediction-header h5 {
+	margin: 0;
+	color: var(--color-text);
+	font-size: 1rem;
+	font-weight: 600;
+}
+
+.loading-indicator {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	color: var(--color-text-light);
+	font-size: 0.9rem;
+}
+
+.prediction-content {
+	/* Content styles are handled by existing .prediction-stats */
+}
+
+.prediction-stats {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 0.75rem;
+}
+
+.prediction-stats .stat-item {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	padding: 0.75rem;
+	background: var(--color-background);
+	border: 1px solid var(--color-border);
+	border-radius: 6px;
+}
+
+.prediction-stats .stat-label {
+	color: var(--color-text-light);
+	font-size: 0.85rem;
+	font-weight: 500;
+}
+
+.prediction-stats .stat-value {
+	color: var(--color-text);
+	font-weight: 600;
+	font-size: 0.9rem;
+}
+
+.limited-indicator {
+	color: var(--color-text-light);
+	font-size: 0.8rem;
+	font-weight: normal;
+	font-style: italic;
+}
+
+.prediction-error {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.75rem;
+	background: var(--color-warning-light);
+	border: 1px solid var(--color-warning);
+	border-radius: 6px;
+	color: var(--color-warning-text);
+	font-size: 0.9rem;
+}
+
+.error-icon {
+	font-size: 1rem;
 }
 </style>
