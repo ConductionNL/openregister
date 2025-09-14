@@ -2,7 +2,7 @@
 	<div>
 		<NcSettingsSection name="SOLR Search Management"
 			description="Monitor and manage SOLR search performance and operations">
-			<div v-if="!loadingStats" class="solr-section">
+			<div v-if="!loadingStats && !solrError" class="solr-section">
 				<!-- Action Buttons -->
 				<div class="section-header-inline">
 					<span />
@@ -314,6 +314,34 @@
 				</div>
 			</div>
 			
+			<!-- Error State -->
+			<div v-else-if="solrError" class="error-container">
+				<div class="error-icon">⚠️</div>
+				<h3>SOLR Connection Error</h3>
+				<p class="error-message">{{ solrErrorMessage }}</p>
+				<p class="error-description">
+					SOLR search engine is currently unavailable. This could be due to:
+				</p>
+				<ul class="error-reasons">
+					<li>SOLR service is not running</li>
+					<li>Network connectivity issues</li>
+					<li>SOLR configuration problems</li>
+					<li>Authentication or permission issues</li>
+				</ul>
+				<div class="error-actions">
+					<NcButton
+						type="primary"
+						:disabled="loadingStats"
+						@click="retryConnection">
+						<template #icon>
+							<NcLoadingIcon v-if="loadingStats" :size="20" />
+							<Refresh v-else :size="20" />
+						</template>
+						Retry Connection
+					</NcButton>
+				</div>
+			</div>
+
 			<!-- Loading State -->
 			<div v-else class="loading-container">
 				<NcLoadingIcon :size="64" />
@@ -655,6 +683,8 @@ export default {
 		return {
 			loading: false,
 			loadingStats: false,
+			solrError: false,
+			solrErrorMessage: '',
 			warmingUp: false,
 			operating: false, // tracks current operation: 'commit', 'optimize', 'clear'
 			showClearDialog: false,
@@ -774,23 +804,47 @@ export default {
 		 */
 		async loadSolrStats() {
 			this.loadingStats = true
+			this.solrError = false
+			this.solrErrorMessage = ''
 
 			try {
 				const response = await fetch('/index.php/apps/openregister/api/solr/dashboard/stats')
+				
+				if (!response.ok) {
+					throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+				}
+				
 				const data = await response.json()
 
 				if (data.error) {
+					this.solrError = true
+					this.solrErrorMessage = data.error
 					console.error('Failed to load SOLR stats:', data.error)
 					return
 				}
 
+				// Successfully loaded stats - clear any previous errors
+				this.solrError = false
+				this.solrErrorMessage = ''
 				this.solrStats = { ...this.solrStats, ...data }
 
 			} catch (error) {
+				this.solrError = true
+				this.solrErrorMessage = error.message || 'SOLR not available'
 				console.error('Failed to load SOLR stats:', error)
 			} finally {
 				this.loadingStats = false
 			}
+		},
+
+		/**
+		 * Retry SOLR connection
+		 *
+		 * @async
+		 * @return {Promise<void>}
+		 */
+		async retryConnection() {
+			await this.loadSolrStats()
 		},
 
 		/**
@@ -1714,6 +1768,58 @@ export default {
 	margin: 0;
 	color: var(--color-text-maxcontrast);
 	font-size: 14px;
+}
+
+/* Error State */
+.error-container {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 60px 20px;
+	text-align: center;
+	max-width: 600px;
+	margin: 0 auto;
+}
+
+.error-icon {
+	font-size: 4rem;
+	margin-bottom: 1rem;
+}
+
+.error-container h3 {
+	color: var(--color-error);
+	margin: 0 0 1rem 0;
+	font-size: 1.5rem;
+}
+
+.error-message {
+	color: var(--color-error);
+	font-weight: 500;
+	margin: 0 0 1rem 0;
+	font-size: 1rem;
+}
+
+.error-description {
+	color: var(--color-text-light);
+	margin: 0 0 1rem 0;
+	line-height: 1.5;
+}
+
+.error-reasons {
+	text-align: left;
+	color: var(--color-text-maxcontrast);
+	margin: 0 0 2rem 0;
+	padding-left: 1.5rem;
+}
+
+.error-reasons li {
+	margin: 0.5rem 0;
+	line-height: 1.4;
+}
+
+.error-actions {
+	margin-top: 1rem;
 }
 
 /* Loading State */
