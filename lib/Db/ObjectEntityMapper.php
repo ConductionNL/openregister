@@ -800,24 +800,24 @@ class ObjectEntityMapper extends QBMapper
             $qb->expr()->eq($organizationColumn, $qb->createNamedParameter($activeOrganisationUuid))
         );
 
+        // Include published objects from any organization (publicly available)
+        $now = (new \DateTime())->format('Y-m-d H:i:s');
+        $orgConditions->add(
+            $qb->expr()->andX(
+                $qb->expr()->isNotNull("{$objectTableAlias}.published"),
+                $qb->expr()->lte("{$objectTableAlias}.published", $qb->createNamedParameter($now)),
+                $qb->expr()->orX(
+                    $qb->expr()->isNull("{$objectTableAlias}.depublished"),
+                    $qb->expr()->gt("{$objectTableAlias}.depublished", $qb->createNamedParameter($now))
+                )
+            )
+        );
+
         // ONLY if this is the system-wide default organization, include additional objects
         if ($isSystemDefaultOrg) {
             // Include objects with NULL organization (legacy data)
             $orgConditions->add(
                 $qb->expr()->isNull($organizationColumn)
-            );
-
-            // Include published objects (for backwards compatibility with the system default org)
-            $now = (new \DateTime())->format('Y-m-d H:i:s');
-            $orgConditions->add(
-                $qb->expr()->andX(
-                    $qb->expr()->isNotNull("{$objectTableAlias}.published"),
-                    $qb->expr()->lte("{$objectTableAlias}.published", $qb->createNamedParameter($now)),
-                    $qb->expr()->orX(
-                        $qb->expr()->isNull("{$objectTableAlias}.depublished"),
-                        $qb->expr()->gt("{$objectTableAlias}.depublished", $qb->createNamedParameter($now))
-                    )
-                )
             );
         }
 

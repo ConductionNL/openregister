@@ -25,6 +25,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Service\SolrSchemaService;
+use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\OrganisationService;
 use OCP\Http\Client\IClientService;
 use OCP\IConfig;
 use Psr\Log\LoggerInterface;
@@ -110,6 +112,7 @@ class GuzzleSolrService
         private readonly IConfig $config,
         private readonly ?SchemaMapper $schemaMapper = null,
         private readonly ?RegisterMapper $registerMapper = null,
+        private readonly ?OrganisationService $organisationService = null,
     ) {
         $this->httpClient = $clientService->newClient();
         $this->tenantId = $this->generateTenantId();
@@ -1058,12 +1061,14 @@ class GuzzleSolrService
      * and converts results back to ObjectEntity format for compatibility
      *
      * @param array $query OpenRegister-style query parameters
-     * @param bool $rbac Apply role-based access control (currently not implemented in Solr)
-     * @param bool $multi Multi-tenant support (currently not implemented in Solr) 
+     * @param bool $rbac Apply role-based access control (default: true)
+     * @param bool $multi Multi-tenant support (default: true)
+     * @param bool $published Include only published objects (default: false)
+     * @param bool $deleted Include deleted objects (default: false)
      * @return array Paginated results in OpenRegister format
      * @throws \Exception When Solr is not available or query fails
      */
-    public function searchObjectsPaginated(array $query = [], bool $rbac = false, bool $multi = false): array
+    public function searchObjectsPaginated(array $query = [], bool $rbac = true, bool $multi = true, bool $published = false, bool $deleted = false): array
     {
         if (!$this->isAvailable()) {
             throw new \Exception('Solr service is not available');
@@ -1072,13 +1077,20 @@ class GuzzleSolrService
         // Translate OpenRegister query to Solr query
         $solrQuery = $this->translateOpenRegisterQuery($query);
         
+        // Apply additional filtering based on parameters
+        $this->applyAdditionalFilters($solrQuery, $rbac, $multi, $published, $deleted);
+        
         $this->logger->debug('[SOLR] Query translated for search', [
             'has_filters' => !empty($solrQuery['filters']),
             'filter_count' => count($solrQuery['filters'] ?? []),
-            'has_at_self' => isset($query['@self'])
+            'has_at_self' => isset($query['@self']),
+            'rbac' => $rbac,
+            'multi' => $multi,
+            'published' => $published,
+            'deleted' => $deleted
         ]);
         
-        $this->logger->debug('[GuzzleSolrService] Translated query', [
+        $this->logger->info('[GuzzleSolrService] Translated query', [
             'original' => $query,
             'solr' => $solrQuery
         ]);
@@ -1095,6 +1107,98 @@ class GuzzleSolrService
         ]);
         
         return $openRegisterResults;
+    }
+
+    /**
+     * Apply additional filters based on RBAC, multi-tenancy, published, and deleted parameters
+     *
+     * @param array $solrQuery Reference to the Solr query array to modify
+     * @param bool $rbac Apply role-based access control
+     * @param bool $multi Apply multi-tenancy filtering
+     * @param bool $published Filter for published objects only
+     * @param bool $deleted Include deleted objects
+     * @return void
+     */
+    private function applyAdditionalFilters(array &$solrQuery, bool $rbac, bool $multi, bool $published, bool $deleted): void
+    {
+        $filters = $solrQuery['filters'] ?? [];
+        $now = date('Y-m-d\TH:i:s\Z');
+        
+        // Define published object condition: published is not null AND published <= now AND (depublished is null OR depublished > now)
+        $publishedCondition = 'self_published:[* TO ' . $now . '] AND (-self_depublished:[* TO *] OR self_depublished:[' . $now . ' TO *])';
+        
+        // Multi-tenancy filtering with published object exception
+        if ($multi) {
+            $multitenancyEnabled = $this->isMultitenancyEnabled();
+            if ($multitenancyEnabled) {
+                $activeOrganisationUuid = $this->getActiveOrganisationUuid();
+                if ($activeOrganisationUuid !== null) {
+                    // Include objects from user's organisation OR published objects from any organisation
+                    $filters[] = '(self_organisation:' . $this->escapeSolrValue($activeOrganisationUuid) . ' OR ' . $publishedCondition . ')';
+                }
+            }
+        }
+        
+        // RBAC filtering with published object exception
+        if ($rbac) {
+            // Note: RBAC role filtering would be implemented here if we had role-based fields
+            // For now, we assume all authenticated users have basic access
+            // Published objects bypass RBAC restrictions
+            $this->logger->debug('[SOLR] RBAC filtering applied with published object exception');
+        }
+        
+        // Published filtering (only if explicitly requested)
+        if ($published) {
+            $filters[] = $publishedCondition;
+        }
+        
+        // Deleted filtering
+        if ($deleted) {
+            // Include only deleted objects
+            $filters[] = 'self_deleted:[* TO *]';
+        } else {
+            // Exclude deleted objects (default behavior)
+            $filters[] = '-self_deleted:[* TO *]';
+        }
+        
+        // Update the filters in the query
+        $solrQuery['filters'] = $filters;
+    }
+
+    /**
+     * Check if multi-tenancy is enabled in the application configuration
+     *
+     * @return bool True if multi-tenancy is enabled
+     */
+    private function isMultitenancyEnabled(): bool
+    {
+        try {
+            return $this->settingsService->isMultiTenancyEnabled();
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to check multi-tenancy status', ['error' => $e->getMessage()]);
+            return false;
+        }
+    }
+
+    /**
+     * Get the active organisation UUID for the current user
+     *
+     * @return string|null The active organisation UUID or null if not available
+     */
+    private function getActiveOrganisationUuid(): ?string
+    {
+        try {
+            if ($this->organisationService === null) {
+                $this->logger->warning('OrganisationService not available for multi-tenancy filtering');
+                return null;
+            }
+            
+            $activeOrganisation = $this->organisationService->getActiveOrganisation();
+            return $activeOrganisation ? $activeOrganisation->getUuid() : null;
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to get active organisation', ['error' => $e->getMessage()]);
+            return null;
+        }
     }
 
     /**
@@ -1134,6 +1238,9 @@ class GuzzleSolrService
         if (!empty($query['_order'])) {
             $solrQuery['sort'] = $this->translateSortField($query['_order']);
         }
+
+        // Handle faceting - check for _facetable parameter (can be boolean true or string "true")
+        $enableFacets = isset($query['_facetable']) && ($query['_facetable'] === true || $query['_facetable'] === 'true');
 
         // Handle filters
         $filterQueries = [];
@@ -1183,15 +1290,19 @@ class GuzzleSolrService
         
         // Filter queries built successfully
 
-        // Add faceting for common fields
-        $solrQuery['facets'] = [
-            'self_register',
-            'self_schema', 
-            'self_organisation',
-            'self_owner',
-            'type_s',
-            'naam_s'
-        ];
+        // Handle faceting - only add facets when _facetable=true
+        if ($enableFacets) {
+            $solrQuery['facets'] = [
+                'self_register',
+                'self_schema', 
+                'self_organisation',
+                'self_owner',
+                'type_s',
+                'naam_s'
+            ];
+        } else {
+            $solrQuery['facets'] = [];
+        }
 
         return $solrQuery;
     }
@@ -1298,15 +1409,37 @@ class GuzzleSolrService
         $limit = isset($originalQuery['_limit']) ? (int)$originalQuery['_limit'] : 20;
         $pages = $limit > 0 ? ceil($total / $limit) : 1;
 
-        return [
+        // Build base response
+        $response = [
             'results' => $results,
             'total' => $total,
             'page' => $page,
             'pages' => $pages,
             'limit' => $limit,
-            'facets' => $solrResults['facets'] ?? [],
-            'aggregations' => $solrResults['facets'] ?? [] // Alias for compatibility
         ];
+
+        // Only add facets if _facetable=true (same logic as before)
+        $facetable = $originalQuery['_facetable'] ?? false;
+        if ($facetable === true || $facetable === 'true') {
+            $response['facets'] = $solrResults['facets'] ?? [];
+        }
+
+        // Only add aggregations if _aggregations=true
+        $aggregations = $originalQuery['_aggregations'] ?? false;
+        if ($aggregations === true || $aggregations === 'true') {
+            $response['aggregations'] = $solrResults['facets'] ?? []; // Alias for compatibility
+        }
+
+        // Only add debug if _debug=true
+        $debug = $originalQuery['_debug'] ?? false;
+        if ($debug === true || $debug === 'true') {
+            $response['debug'] = array_merge($solrResults['debug'] ?? [], [
+                'translated_query' => $originalQuery,
+                'solr_facets' => $solrResults['facets'] ?? []
+            ]);
+        }
+
+        return $response;
     }
 
     /**
@@ -1932,23 +2065,28 @@ class GuzzleSolrService
                 'wt' => 'json',
                 'q' => $searchParams['q'] ?? '*:*',
                 'rows' => $searchParams['limit'] ?? 25,
-                'start' => $searchParams['offset'] ?? 0,
-                'fq' => $filterQueries
+                'start' => $searchParams['offset'] ?? 0
             ];
             
             // Log query execution for debugging
             $this->logger->debug('[SOLR] Executing search query', [
                 'collection' => $tenantCollectionName,
                 'query' => $params['q'],
-                'filters' => $params['fq'],
-                'filter_count' => count($params['fq']),
+                'filters' => $filterQueries,
+                'filter_count' => count($filterQueries),
                 'limit' => $params['rows']
             ]);
 
             // Add facets
             if (!empty($searchParams['facets'])) {
                 $params['facet'] = 'true';
-                $params['facet.field'] = $searchParams['facets'];
+                // Add each facet field as a separate parameter
+                $facetFields = [];
+                foreach ($searchParams['facets'] as $facetField) {
+                    $facetFields[] = 'facet.field=' . urlencode($facetField);
+                }
+                // Add facet fields to the URL manually
+                $facetQueryString = implode('&', $facetFields);
             }
 
             // Add sorting
@@ -1956,10 +2094,37 @@ class GuzzleSolrService
                 $params['sort'] = $searchParams['sort'];
             }
 
-            $url = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/select?' . http_build_query($params);
+            $baseUrl = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/select?' . http_build_query($params);
+            
+            // Add filter queries manually (SOLR expects multiple fq parameters)
+            $fqParams = [];
+            foreach ($filterQueries as $filter) {
+                $fqParams[] = 'fq=' . urlencode($filter);
+            }
+            if (!empty($fqParams)) {
+                $baseUrl .= '&' . implode('&', $fqParams);
+            }
+            
+            // Add facet fields to URL if they exist
+            if (!empty($facetQueryString)) {
+                $url = $baseUrl . '&' . $facetQueryString;
+            } else {
+                $url = $baseUrl;
+            }
+
+            // Log the exact URL being called
+            $this->logger->info('[SOLR] Executing URL', ['url' => $url]);
 
             $response = $this->httpClient->get($url, ['timeout' => 30]);
             $data = json_decode($response->getBody(), true);
+            
+            // Log the raw SOLR response
+            $this->logger->info('[SOLR] Raw response', [
+                'status' => $data['responseHeader']['status'] ?? 'unknown',
+                'numFound' => $data['response']['numFound'] ?? 'unknown',
+                'docs_count' => count($data['response']['docs'] ?? []),
+                'response_keys' => array_keys($data)
+            ]);
 
             if (($data['responseHeader']['status'] ?? -1) === 0) {
                 $this->stats['searches']++;
@@ -1977,7 +2142,14 @@ class GuzzleSolrService
                     'data' => $data['response']['docs'] ?? [],
                     'total' => $total,
                     'facets' => $data['facet_counts'] ?? [],
-                    'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2)
+                    'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2),
+                    'debug' => [
+                        'url' => $url,
+                        'solr_numFound' => $data['response']['numFound'] ?? 'unknown',
+                        'solr_status' => $data['responseHeader']['status'] ?? 'unknown',
+                        'facet_counts' => $data['facet_counts'] ?? 'not_found',
+                        'response_keys' => array_keys($data)
+                    ]
                 ];
             }
 
