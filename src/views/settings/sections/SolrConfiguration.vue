@@ -315,38 +315,138 @@
 				</div>
 
 				<div v-else-if="testResults" class="test-results">
+					<!-- Overall Status Header -->
 					<div class="results-header">
-						<div :class="testResults.success ? 'success-icon' : 'error-icon'">
-							{{ testResults.success ? '✅' : '❌' }}
+						<div class="status-badge" :class="testResults.success ? 'success' : 'error'">
+							<span class="status-icon">{{ testResults.success ? '✅' : '❌' }}</span>
+							<div class="status-text">
+								<h3>{{ testResults.success ? 'Connection Test Successful!' : 'Connection Test Failed' }}</h3>
+								<p>{{ testResults.message }}</p>
+							</div>
 						</div>
-						<h4>{{ testResults.success ? 'Connection Test Successful!' : 'Connection Test Failed' }}</h4>
-						<p class="results-description">{{ testResults.message }}</p>
 					</div>
 
-					<div v-if="testResults.components" class="components-results">
-						<h5>Component Test Results</h5>
-						<div class="component-grid">
-							<div
-								v-for="(component, name) in testResults.components"
-								:key="name"
-								class="component-card"
-								:class="component.success ? 'success' : 'error'">
-								<div class="component-header">
-									<span class="component-icon">{{ component.success ? '✅' : '❌' }}</span>
-									<h6>{{ formatComponentName(name) }}</h6>
+					<!-- Component Results Grid -->
+					<div v-if="testResults.components" class="components-grid">
+						<!-- Zookeeper Component -->
+						<div v-if="testResults.components.zookeeper" class="component-card zookeeper">
+							<div class="component-header">
+								<div class="component-icon">
+									<span class="icon-bg">🔗</span>
+									<span class="status-indicator" :class="testResults.components.zookeeper.success ? 'success' : 'error'">
+										{{ testResults.components.zookeeper.success ? '✅' : '❌' }}
+									</span>
 								</div>
-								<p class="component-message">{{ component.message }}</p>
-								
-								<div v-if="component.details" class="component-details">
-									<details>
-										<summary>View Details</summary>
-										<div class="details-content">
-											<div v-for="(value, key) in component.details" :key="key" class="detail-item">
-												<span class="detail-label">{{ formatDetailLabel(key) }}:</span>
-												<span class="detail-value">{{ formatDetailValue(value) }}</span>
-											</div>
-										</div>
-									</details>
+								<div class="component-info">
+									<h4>Zookeeper Coordination</h4>
+									<p class="component-status">{{ testResults.components.zookeeper.message }}</p>
+								</div>
+							</div>
+							<div v-if="testResults.components.zookeeper.details" class="component-metrics">
+								<div class="metric">
+									<span class="metric-label">Hosts</span>
+									<span class="metric-value">{{ testResults.components.zookeeper.details.zookeeper_hosts }}</span>
+								</div>
+								<div class="metric">
+									<span class="metric-label">Method</span>
+									<span class="metric-value">{{ testResults.components.zookeeper.details.test_method }}</span>
+								</div>
+								<div v-if="testResults.components.zookeeper.details.successful_hosts?.length" class="metric success">
+									<span class="metric-label">✅ Connected</span>
+									<span class="metric-value">{{ testResults.components.zookeeper.details.successful_hosts.length }} host(s)</span>
+								</div>
+								<div v-if="testResults.components.zookeeper.details.failed_hosts?.length" class="metric error">
+									<span class="metric-label">❌ Failed</span>
+									<span class="metric-value">{{ testResults.components.zookeeper.details.failed_hosts.length }} host(s)</span>
+								</div>
+							</div>
+						</div>
+
+						<!-- SOLR Component -->
+						<div v-if="testResults.components.solr" class="component-card solr">
+							<div class="component-header">
+								<div class="component-icon">
+									<span class="icon-bg">🔍</span>
+									<span class="status-indicator" :class="testResults.components.solr.success ? 'success' : 'error'">
+										{{ testResults.components.solr.success ? '✅' : '❌' }}
+									</span>
+								</div>
+								<div class="component-info">
+									<h4>SOLR Search Engine</h4>
+									<p class="component-status">{{ testResults.components.solr.message }}</p>
+								</div>
+							</div>
+							<div v-if="testResults.components.solr.details" class="component-metrics">
+								<div class="metric highlight">
+									<span class="metric-label">⚡ Response Time</span>
+									<span class="metric-value">{{ testResults.components.solr.details.response_time_ms }}ms</span>
+								</div>
+								<div class="metric">
+									<span class="metric-label">📄 Documents</span>
+									<span class="metric-value">{{ testResults.components.solr.details.num_found?.toLocaleString() || 'N/A' }}</span>
+								</div>
+								<div class="metric">
+									<span class="metric-label">🔗 ZK Connected</span>
+									<span class="metric-value">{{ testResults.components.solr.details.zk_connected ? 'Yes' : 'No' }}</span>
+								</div>
+								<div class="metric">
+									<span class="metric-label">☁️ Cloud Mode</span>
+									<span class="metric-value">{{ testResults.components.solr.details.use_cloud ? 'Enabled' : 'Disabled' }}</span>
+								</div>
+								<div class="metric technical">
+									<span class="metric-label">🌐 Query URL</span>
+									<span class="metric-value technical-url">{{ testResults.components.solr.details.url }}</span>
+								</div>
+							</div>
+						</div>
+
+						<!-- Collection Component -->
+						<div v-if="testResults.components.collection" class="component-card collection">
+							<div class="component-header">
+								<div class="component-icon">
+									<span class="icon-bg">📚</span>
+									<span class="status-indicator" :class="testResults.components.collection.success ? 'success' : 'error'">
+										{{ testResults.components.collection.success ? '✅' : '❌' }}
+									</span>
+								</div>
+								<div class="component-info">
+									<h4>Collection Management</h4>
+									<p class="component-status">{{ testResults.components.collection.message }}</p>
+								</div>
+							</div>
+							<div v-if="testResults.components.collection.details" class="component-metrics">
+								<div class="metric">
+									<span class="metric-label">📁 Collection</span>
+									<span class="metric-value">{{ testResults.components.collection.details.collection }}</span>
+								</div>
+								<div class="metric">
+									<span class="metric-label">🗂️ Shards</span>
+									<span class="metric-value">{{ testResults.components.collection.details.shards || 'Unknown' }}</span>
+								</div>
+								<div class="metric">
+									<span class="metric-label">📊 Status</span>
+									<span class="metric-value">{{ testResults.components.collection.details.status || 'Active' }}</span>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Summary Stats -->
+					<div v-if="testResults.success" class="test-summary">
+						<div class="summary-card">
+							<h5>🎯 Test Summary</h5>
+							<div class="summary-stats">
+								<div class="stat">
+									<span class="stat-number">{{ Object.keys(testResults.components || {}).length }}</span>
+									<span class="stat-label">Components Tested</span>
+								</div>
+								<div class="stat">
+									<span class="stat-number">{{ Object.values(testResults.components || {}).filter(c => c.success).length }}</span>
+									<span class="stat-label">Passed</span>
+								</div>
+								<div class="stat">
+									<span class="stat-number">{{ testResults.components?.solr?.details?.response_time_ms || 'N/A' }}ms</span>
+									<span class="stat-label">Avg Response</span>
 								</div>
 							</div>
 						</div>
@@ -518,8 +618,8 @@ export default {
 			await this.settingsStore.setupSolr()
 		},
 
-		async testSolrConnection(testConfig = null) {
-			await this.settingsStore.testSolrConnection(testConfig)
+		async testSolrConnection() {
+			await this.settingsStore.testSolrConnection()
 		},
 
 		async saveSettings() {
@@ -746,5 +846,248 @@ export default {
 	.button-group {
 		justify-content: center;
 	}
+}
+
+/* Enhanced Test Dialog Styles */
+.test-dialog {
+	padding: 24px;
+	max-width: 900px;
+}
+
+.test-loading {
+	text-align: center;
+	padding: 40px 20px;
+}
+
+.loading-spinner {
+	margin-bottom: 20px;
+}
+
+.loading-description {
+	color: var(--color-text-maxcontrast);
+	font-size: 14px;
+}
+
+.test-results {
+	max-height: 700px;
+	overflow-y: auto;
+}
+
+/* Enhanced Results Header */
+.results-header {
+	margin-bottom: 24px;
+}
+
+.status-badge {
+	display: flex;
+	align-items: center;
+	padding: 20px 24px;
+	border-radius: 12px;
+	border: 2px solid;
+	background: linear-gradient(135deg, var(--color-background-hover) 0%, var(--color-background-dark) 100%);
+}
+
+.status-badge.success {
+	border-color: var(--color-success);
+	background: linear-gradient(135deg, rgba(46, 125, 50, 0.1) 0%, rgba(76, 175, 80, 0.05) 100%);
+}
+
+.status-badge.error {
+	border-color: var(--color-error);
+	background: linear-gradient(135deg, rgba(211, 47, 47, 0.1) 0%, rgba(244, 67, 54, 0.05) 100%);
+}
+
+.status-icon {
+	font-size: 32px;
+	margin-right: 16px;
+}
+
+.status-text h3 {
+	margin: 0 0 4px 0;
+	color: var(--color-main-text);
+	font-size: 18px;
+	font-weight: 600;
+}
+
+.status-text p {
+	margin: 0;
+	color: var(--color-text-maxcontrast);
+	font-size: 14px;
+}
+
+/* Enhanced Components Grid */
+.components-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+	gap: 20px;
+	margin-bottom: 24px;
+}
+
+.component-card {
+	border: 1px solid var(--color-border);
+	border-radius: 12px;
+	padding: 20px;
+	background: var(--color-background-hover);
+	transition: all 0.2s ease;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.component-card:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.component-card.zookeeper {
+	border-left: 4px solid #FF9800;
+}
+
+.component-card.solr {
+	border-left: 4px solid #2196F3;
+}
+
+.component-card.collection {
+	border-left: 4px solid #4CAF50;
+}
+
+.component-header {
+	display: flex;
+	align-items: flex-start;
+	margin-bottom: 16px;
+}
+
+.component-icon {
+	position: relative;
+	margin-right: 12px;
+	flex-shrink: 0;
+}
+
+.icon-bg {
+	font-size: 24px;
+	display: inline-block;
+	padding: 8px;
+	border-radius: 8px;
+	background: var(--color-background-dark);
+}
+
+.status-indicator {
+	position: absolute;
+	top: -4px;
+	right: -4px;
+	font-size: 14px;
+	background: var(--color-background-hover);
+	border-radius: 50%;
+	padding: 2px;
+	border: 2px solid var(--color-background-hover);
+}
+
+.component-info h4 {
+	margin: 0 0 4px 0;
+	color: var(--color-main-text);
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.component-status {
+	margin: 0;
+	color: var(--color-text-maxcontrast);
+	font-size: 13px;
+}
+
+/* Enhanced Metrics */
+.component-metrics {
+	display: grid;
+	gap: 8px;
+}
+
+.metric {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 8px 12px;
+	background: var(--color-background-dark);
+	border-radius: 6px;
+	font-size: 13px;
+}
+
+.metric.highlight {
+	background: linear-gradient(135deg, rgba(33, 150, 243, 0.1) 0%, rgba(33, 150, 243, 0.05) 100%);
+	border: 1px solid rgba(33, 150, 243, 0.2);
+}
+
+.metric.success {
+	background: linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(76, 175, 80, 0.05) 100%);
+	border: 1px solid rgba(76, 175, 80, 0.2);
+}
+
+.metric.error {
+	background: linear-gradient(135deg, rgba(244, 67, 54, 0.1) 0%, rgba(244, 67, 54, 0.05) 100%);
+	border: 1px solid rgba(244, 67, 54, 0.2);
+}
+
+.metric.technical {
+	background: var(--color-background-darker);
+}
+
+.metric-label {
+	font-weight: 500;
+	color: var(--color-main-text);
+	flex-shrink: 0;
+}
+
+.metric-value {
+	color: var(--color-text-maxcontrast);
+	font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+	font-size: 12px;
+	text-align: right;
+	margin-left: 12px;
+}
+
+.technical-url {
+	font-size: 11px;
+	word-break: break-all;
+	opacity: 0.8;
+}
+
+/* Test Summary */
+.test-summary {
+	margin-top: 24px;
+}
+
+.summary-card {
+	background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-primary) 100%);
+	color: white;
+	padding: 20px;
+	border-radius: 12px;
+	text-align: center;
+}
+
+.summary-card h5 {
+	margin: 0 0 16px 0;
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.summary-stats {
+	display: flex;
+	justify-content: space-around;
+	gap: 16px;
+}
+
+.stat {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.stat-number {
+	font-size: 24px;
+	font-weight: bold;
+	margin-bottom: 4px;
+}
+
+.stat-label {
+	font-size: 12px;
+	opacity: 0.9;
+	font-weight: 500;
 }
 </style>
