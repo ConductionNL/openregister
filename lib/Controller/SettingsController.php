@@ -231,6 +231,24 @@ class SettingsController extends Controller
 
 
     /**
+     * Get statistics for the settings dashboard (alias for stats method).
+     *
+     * This method provides warning counts for objects and logs that need attention,
+     * as well as total counts for all objects, audit trails, and search trails.
+     *
+     * @return JSONResponse JSON response containing statistics data.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function getStatistics(): JSONResponse
+    {
+        return $this->stats();
+
+    }//end getStatistics()
+
+
+    /**
      * Get comprehensive cache statistics and performance metrics.
      *
      * This method provides detailed insights into cache usage, performance, memory consumption,
