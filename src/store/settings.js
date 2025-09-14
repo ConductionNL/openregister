@@ -186,11 +186,7 @@ export const useSettingsStore = defineStore('settings', {
 		showRebaseConfirmation: false,
 		
 		// Connection status
-		solrConnectionStatus: {
-			success: false,
-			message: '',
-			details: {},
-		},
+		solrConnectionStatus: null,
 	}),
 
 	getters: {
