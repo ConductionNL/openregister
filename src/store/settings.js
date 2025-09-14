@@ -40,6 +40,10 @@ export const useSettingsStore = defineStore('settings', {
 		testingConnection: false,
 		warmingUpSolr: false,
 		settingUpSolr: false,
+		showTestDialog: false,
+		showSetupDialog: false,
+		testResults: null,
+		setupResults: null,
 		
 		// Cache states
 		clearingCache: false,
@@ -319,17 +323,17 @@ export const useSettingsStore = defineStore('settings', {
 		},
 
 		/**
-		 * Test SOLR connection
+		 * Test SOLR connection using currently configured settings
 		 */
-		async testSolrConnection(testConfig = null) {
+		async testSolrConnection() {
 			this.testingConnection = true
+			this.showTestDialog = true
 			try {
-				const config = testConfig || { solr: this.solrOptions }
 				const response = await axios.post(
-					generateUrl('/apps/openregister/api/settings/solr/test'),
-					config
+					generateUrl('/apps/openregister/api/settings/solr/test')
 				)
 				
+				this.testResults = response.data
 				this.solrConnectionStatus = response.data
 				return response.data
 			} catch (error) {
@@ -339,6 +343,7 @@ export const useSettingsStore = defineStore('settings', {
 					message: 'Connection test failed: ' + error.message,
 					details: { error: error.message }
 				}
+				this.testResults = errorData
 				this.solrConnectionStatus = errorData
 				return errorData
 			} finally {
@@ -351,8 +356,11 @@ export const useSettingsStore = defineStore('settings', {
 		 */
 		async setupSolr() {
 			this.settingUpSolr = true
+			this.showSetupDialog = true
 			try {
 				const response = await axios.post(generateUrl('/apps/openregister/api/solr/setup'))
+				
+				this.setupResults = response.data
 				
 				if (response.data.success) {
 					showSuccess('SOLR setup completed successfully')
@@ -363,6 +371,12 @@ export const useSettingsStore = defineStore('settings', {
 				return response.data
 			} catch (error) {
 				console.error('SOLR setup failed:', error)
+				const errorData = {
+					success: false,
+					message: 'SOLR setup failed: ' + error.message,
+					details: { error: error.message }
+				}
+				this.setupResults = errorData
 				showError('SOLR setup failed: ' + error.message)
 				throw error
 			} finally {
@@ -802,6 +816,34 @@ export const useSettingsStore = defineStore('settings', {
 		async performClearCache() {
 			await this.clearCache(this.clearCacheType)
 			this.hideClearCacheDialog()
+		},
+
+		/**
+		 * Hide test dialog
+		 */
+		hideTestDialog() {
+			this.showTestDialog = false
+		},
+
+		/**
+		 * Retry test connection
+		 */
+		retryTest() {
+			this.testSolrConnection()
+		},
+
+		/**
+		 * Hide setup dialog
+		 */
+		hideSetupDialog() {
+			this.showSetupDialog = false
+		},
+
+		/**
+		 * Retry SOLR setup
+		 */
+		retrySetup() {
+			this.setupSolr()
 		},
 	},
 })

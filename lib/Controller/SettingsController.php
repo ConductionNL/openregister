@@ -429,25 +429,8 @@ class SettingsController extends Controller
     public function testSolrConnection(): JSONResponse
     {
         try {
-            // Get the request data using proper Nextcloud method
-            $data = $this->request->getParams();
-            
-            if (!isset($data['solr'])) {
-                return new JSONResponse(['error' => 'No SOLR configuration provided'], 400);
-            }
-
-            // Temporarily update SOLR settings for testing
-            $currentConfig = $this->settingsService->getSolrSettings();
-            $testConfig = array_merge($currentConfig, $data['solr']);
-            
-            // Save test settings temporarily
-            $this->settingsService->updateSettings(['solr' => $testConfig]);
-            
-            // Run the connection test
+            // Test the currently configured SOLR settings
             $result = $this->settingsService->testSolrConnection();
-            
-            // Restore original settings
-            $this->settingsService->updateSettings(['solr' => $currentConfig]);
             
             return new JSONResponse($result);
             
