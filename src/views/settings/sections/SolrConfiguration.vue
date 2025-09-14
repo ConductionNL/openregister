@@ -52,7 +52,7 @@
 						{{ solrOptions.enabled ? 'SOLR search enabled' : 'SOLR search disabled' }}
 					</span>
 				</p>
-				<div v-if="solrConnectionStatus" class="connection-status" :class="solrConnectionStatus.success ? 'status-success' : 'status-error'">
+				<div v-if="solrConnectionStatus && solrConnectionStatus.message" class="connection-status" :class="solrConnectionStatus.success ? 'status-success' : 'status-error'">
 					<p><strong>Connection Status:</strong> {{ solrConnectionStatus.message }}</p>
 					<div v-if="solrConnectionStatus.details && Object.keys(solrConnectionStatus.details).length > 0" class="connection-details">
 						<details>
