@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCP\IConfig;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -67,6 +68,61 @@ class SolrSchemaService
     ];
 
     /**
+     * Core metadata fields that should be defined in SOLR schema
+     *
+     * @var array<string, string> Field name => SOLR field type
+     */
+    private const CORE_METADATA_FIELDS = [
+        // Object metadata
+        'self_object_id' => 'pint',
+        'self_uuid' => 'string',
+        'self_tenant' => 'string',
+        
+        // Register metadata
+        'self_register' => 'pint',
+        'self_register_id' => 'pint',
+        'self_register_uuid' => 'string',
+        'self_register_slug' => 'string',
+        
+        // Schema metadata
+        'self_schema' => 'pint',
+        'self_schema_id' => 'pint', 
+        'self_schema_uuid' => 'string',
+        'self_schema_slug' => 'string',
+        
+        // Other core fields
+        'self_organisation' => 'string',
+        'self_owner' => 'string',
+        'self_application' => 'string',
+        'self_name' => 'string',
+        'self_description' => 'text_general',
+        'self_summary' => 'text_general',
+        'self_image' => 'string',
+        'self_slug' => 'string',
+        'self_uri' => 'string',
+        'self_version' => 'string',
+        'self_size' => 'plong',
+        'self_folder' => 'string',
+        'self_locked' => 'boolean',
+        'self_schema_version' => 'string',
+        
+        // Timestamps
+        'self_created' => 'pdate',
+        'self_updated' => 'pdate',
+        'self_published' => 'pdate',
+        'self_depublished' => 'pdate',
+        
+        // Complex fields
+        'self_object' => 'text_general', // JSON storage
+        'self_relations' => 'strings',   // Multi-valued UUIDs
+        'self_files' => 'strings',       // Multi-valued file references
+        'self_authorization' => 'text_general', // JSON
+        'self_deleted' => 'text_general',       // JSON
+        'self_validation' => 'text_general',    // JSON
+        'self_groups' => 'text_general'         // JSON
+    ];
+
+    /**
      * Field type mappings from OpenRegister to SOLR
      *
      * @var array<string, string>
@@ -94,15 +150,17 @@ class SolrSchemaService
         private readonly SchemaMapper $schemaMapper,
         private readonly GuzzleSolrService $solrService,
         private readonly SettingsService $settingsService,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly IConfig $config
     ) {
     }
 
     /**
-     * Mirror all OpenRegister schemas to SOLR for current tenant
+     * Mirror all OpenRegister schemas to SOLR for current tenant with intelligent conflict resolution
      *
-     * This method analyzes the tenant's OpenRegister schemas and creates
-     * corresponding SOLR field definitions in the tenant's collection.
+     * **SMART CONFLICT RESOLUTION**: Analyzes all schemas first to detect field type conflicts
+     * and chooses the most permissive type (string > text > float > integer > boolean).
+     * This prevents errors like "versie" being integer in one schema and string in another.
      *
      * @param bool $force Force recreation of existing fields
      * @return array Result with success status and statistics
@@ -114,15 +172,16 @@ class SolrSchemaService
             'schemas_processed' => 0,
             'fields_created' => 0,
             'fields_updated' => 0,
+            'conflicts_resolved' => 0,
             'errors' => 0
         ];
 
         try {
-            // Get tenant information
-            $tenantId = $this->settingsService->getTenantId();
-            $organisationId = $this->settingsService->getOrganisationId();
+            // Generate tenant information
+            $tenantId = $this->generateTenantId();
+            $organisationId = null; // For now, process all schemas regardless of organization
             
-            $this->logger->info('🔄 Starting schema mirroring', [
+            $this->logger->info('🔄 Starting intelligent schema mirroring with conflict resolution', [
                 'app' => 'openregister',
                 'tenant_id' => $tenantId,
                 'organisation_id' => $organisationId
@@ -133,35 +192,39 @@ class SolrSchemaService
                 throw new \Exception('Failed to ensure tenant collection exists');
             }
 
-            // Get all schemas for this organization
-            $schemas = $this->schemaMapper->findAll(null, null, [$organisationId]);
+            // Get all schemas (process all schemas regardless of organization for conflict resolution)
+            $schemas = $this->schemaMapper->findAll();
             
-            foreach ($schemas as $schema) {
-                try {
-                    $this->mirrorSingleSchema($schema, $force);
-                    $stats['schemas_processed']++;
-                } catch (\Exception $e) {
-                    $this->logger->error('Failed to mirror schema', [
-                        'app' => 'openregister',
-                        'schema_id' => $schema->getId(),
-                        'error' => $e->getMessage()
-                    ]);
-                    $stats['errors']++;
-                }
+            // STEP 1: Analyze all schemas to detect field conflicts and resolve them
+            $resolvedFields = $this->analyzeAndResolveFieldConflicts($schemas);
+            $stats['conflicts_resolved'] = $resolvedFields['conflicts_resolved'];
+            
+            // STEP 2: Ensure core metadata fields exist in SOLR schema
+            $this->ensureCoreMetadataFields($force);
+            $stats['core_fields_created'] = count(self::CORE_METADATA_FIELDS);
+            
+            // STEP 3: Apply resolved field definitions to SOLR
+            if (!empty($resolvedFields['fields'])) {
+                $this->applySolrFields($resolvedFields['fields'], $force);
+                $stats['fields_created'] = count($resolvedFields['fields']);
             }
+            
+            $stats['schemas_processed'] = count($schemas);
 
             $executionTime = round((microtime(true) - $startTime) * 1000, 2);
             
-            $this->logger->info('✅ Schema mirroring completed', [
+            $this->logger->info('✅ Intelligent schema mirroring completed', [
                 'app' => 'openregister',
                 'stats' => $stats,
-                'execution_time_ms' => $executionTime
+                'execution_time_ms' => $executionTime,
+                'resolved_conflicts' => $resolvedFields['conflict_details'] ?? []
             ]);
 
             return [
                 'success' => true,
                 'stats' => $stats,
-                'execution_time_ms' => $executionTime
+                'execution_time_ms' => $executionTime,
+                'resolved_conflicts' => $resolvedFields['conflict_details'] ?? []
             ];
 
         } catch (\Exception $e) {
@@ -177,6 +240,203 @@ class SolrSchemaService
                 'stats' => $stats
             ];
         }
+    }
+
+    /**
+     * Analyze all schemas and resolve field type conflicts with intelligent type selection
+     *
+     * **CONFLICT RESOLUTION STRATEGY**:
+     * When the same field exists in multiple schemas with different types, we choose the
+     * most permissive type that can accommodate all values:
+     * 
+     * **Type Priority (Most → Least Permissive)**:
+     * 1. `string` - Can store any value (numbers, text, booleans as strings)
+     * 2. `text` - Can store any text content with full-text search
+     * 3. `float` - Can store integers and decimals  
+     * 4. `integer` - Can only store whole numbers
+     * 5. `boolean` - Can only store true/false
+     *
+     * **Example**: Field `versie` appears as:
+     * - Schema 132: `versie` = "string" (values: "onbekend", "v2.0")
+     * - Schema 67: `versie` = "integer" (values: 123, 456)
+     * - **Resolution**: `versie` = "string" (can store both text and numbers)
+     *
+     * @param array $schemas Array of Schema entities to analyze
+     * @return array Resolved field definitions with conflict details
+     */
+    private function analyzeAndResolveFieldConflicts(array $schemas): array
+    {
+        $fieldDefinitions = []; // [fieldName => [type => count, schemas => [schema_ids]]]
+        $resolvedFields = [];
+        $conflictDetails = [];
+        $conflictsResolved = 0;
+
+        $this->logger->info('🔍 Analyzing field conflicts across schemas', [
+            'total_schemas' => count($schemas)
+        ]);
+
+        // STEP 1: Collect all field definitions from all schemas
+        foreach ($schemas as $schema) {
+            $schemaId = $schema->getId();
+            $schemaTitle = $schema->getTitle();
+            $schemaProperties = $schema->getProperties();
+            
+            if (empty($schemaProperties)) {
+                continue;
+            }
+
+            // $schemaProperties is already an array from getProperties()
+            $properties = $schemaProperties;
+            if (!is_array($properties)) {
+                $this->logger->warning('Invalid schema properties', [
+                    'schema_id' => $schemaId,
+                    'schema_title' => $schemaTitle,
+                    'properties_type' => gettype($properties)
+                ]);
+                continue;
+            }
+
+            // Collect field definitions
+            foreach ($properties as $fieldName => $fieldDefinition) {
+                $fieldType = $fieldDefinition['type'] ?? 'string';
+                
+                // Skip reserved fields and metadata fields
+                if (in_array($fieldName, self::RESERVED_FIELDS) || str_starts_with($fieldName, 'self_')) {
+                    continue;
+                }
+
+                // Initialize field tracking
+                if (!isset($fieldDefinitions[$fieldName])) {
+                    $fieldDefinitions[$fieldName] = [
+                        'types' => [],
+                        'schemas' => [],
+                        'definitions' => []
+                    ];
+                }
+
+                // Track this field type and schema
+                if (!isset($fieldDefinitions[$fieldName]['types'][$fieldType])) {
+                    $fieldDefinitions[$fieldName]['types'][$fieldType] = 0;
+                }
+                $fieldDefinitions[$fieldName]['types'][$fieldType]++;
+                $fieldDefinitions[$fieldName]['schemas'][] = ['id' => $schemaId, 'title' => $schemaTitle];
+                $fieldDefinitions[$fieldName]['definitions'][] = $fieldDefinition;
+            }
+        }
+
+        // STEP 2: Resolve conflicts by choosing most permissive type
+        foreach ($fieldDefinitions as $fieldName => $fieldInfo) {
+            $types = array_keys($fieldInfo['types']);
+            
+            if (count($types) > 1) {
+                // CONFLICT DETECTED - resolve with most permissive type
+                $resolvedType = $this->getMostPermissiveType($types);
+                $conflictDetails[] = [
+                    'field' => $fieldName,
+                    'conflicting_types' => $fieldInfo['types'],
+                    'resolved_type' => $resolvedType,
+                    'schemas' => $fieldInfo['schemas']
+                ];
+                $conflictsResolved++;
+                
+                $this->logger->info('🔧 Field conflict resolved', [
+                    'field' => $fieldName,
+                    'conflicting_types' => $types,
+                    'resolved_type' => $resolvedType,
+                    'affected_schemas' => count($fieldInfo['schemas'])
+                ]);
+            } else {
+                // No conflict - use the single type
+                $resolvedType = $types[0];
+            }
+
+            // Create SOLR field definition with resolved type
+            $solrFieldName = $this->generateSolrFieldName($fieldName, $fieldInfo['definitions'][0]);
+            $solrFieldType = $this->determineSolrFieldType(['type' => $resolvedType] + $fieldInfo['definitions'][0]);
+            
+            if ($solrFieldName && $solrFieldType) {
+                $resolvedFields[$solrFieldName] = [
+                    'type' => $solrFieldType,
+                    'stored' => true,
+                    'indexed' => true,
+                    'multiValued' => $this->isMultiValued($fieldInfo['definitions'][0]),
+                    'facetable' => $fieldInfo['definitions'][0]['facetable'] ?? true
+                ];
+            }
+        }
+
+        $this->logger->info('✅ Field conflict analysis completed', [
+            'total_fields' => count($fieldDefinitions),
+            'conflicts_detected' => $conflictsResolved,
+            'resolved_fields' => count($resolvedFields)
+        ]);
+
+        return [
+            'fields' => $resolvedFields,
+            'conflicts_resolved' => $conflictsResolved,
+            'conflict_details' => $conflictDetails
+        ];
+    }
+
+    /**
+     * Determine the most permissive type from a list of conflicting types
+     *
+     * **Type Permissiveness Hierarchy** (most permissive first):
+     * 1. `string` - Universal container (can hold any value as text)
+     * 2. `text` - Text with full-text search capabilities  
+     * 3. `float`/`double`/`number` - Can hold integers and decimals
+     * 4. `integer`/`int` - Can only hold whole numbers
+     * 5. `boolean` - Can only hold true/false values
+     *
+     * @param array $types List of conflicting field types
+     * @return string Most permissive type that can accommodate all values
+     */
+    private function getMostPermissiveType(array $types): string
+    {
+        // Define type hierarchy from most to least permissive
+        $typeHierarchy = [
+            'string' => 100,
+            'text' => 90,
+            'float' => 80,
+            'double' => 80,
+            'number' => 80,
+            'integer' => 70,
+            'int' => 70,
+            'boolean' => 60,
+            'bool' => 60
+        ];
+
+        $maxPermissiveness = 0;
+        $mostPermissiveType = 'string'; // Default fallback
+
+        foreach ($types as $type) {
+            $permissiveness = $typeHierarchy[strtolower($type)] ?? 50; // Unknown types get low priority
+            if ($permissiveness > $maxPermissiveness) {
+                $maxPermissiveness = $permissiveness;
+                $mostPermissiveType = $type;
+            }
+        }
+
+        return $mostPermissiveType;
+    }
+
+    /**
+     * Generate tenant ID for multi-tenant SOLR collections
+     *
+     * Uses the same logic as GuzzleSolrService for consistency.
+     *
+     * @return string Tenant identifier for SOLR collection naming
+     */
+    private function generateTenantId(): string
+    {
+        $instanceId = $this->config->getSystemValue('instanceid', 'default');
+        $overwriteHost = $this->config->getSystemValue('overwrite.cli.url', '');
+        
+        if (!empty($overwriteHost)) {
+            return 'nc_' . hash('crc32', $overwriteHost);
+        }
+        
+        return 'nc_' . substr($instanceId, 0, 8);
     }
 
     /**
@@ -299,6 +559,55 @@ class SolrSchemaService
     }
 
     /**
+     * Ensure core metadata fields exist in SOLR schema
+     *
+     * These are the essential fields needed for object indexing including
+     * register and schema metadata (UUID, slug, etc.)
+     *
+     * @param bool $force Force update existing fields
+     * @return bool Success status
+     */
+    private function ensureCoreMetadataFields(bool $force = false): bool
+    {
+        $this->logger->info('🔧 Ensuring core metadata fields in SOLR schema', [
+            'field_count' => count(self::CORE_METADATA_FIELDS),
+            'force' => $force
+        ]);
+
+        $successCount = 0;
+        foreach (self::CORE_METADATA_FIELDS as $fieldName => $fieldType) {
+            try {
+                $fieldConfig = [
+                    'type' => $fieldType,
+                    'stored' => true,
+                    'indexed' => true,
+                    'multiValued' => in_array($fieldType, ['strings']) // Multi-valued for array fields
+                ];
+
+                if ($this->addOrUpdateSolrField($fieldName, $fieldConfig, $force)) {
+                    $successCount++;
+                    $this->logger->debug('✅ Core metadata field ensured', [
+                        'field' => $fieldName,
+                        'type' => $fieldType
+                    ]);
+                }
+            } catch (\Exception $e) {
+                $this->logger->error('❌ Failed to ensure core metadata field', [
+                    'field' => $fieldName,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        $this->logger->info('Core metadata fields processing completed', [
+            'successful' => $successCount,
+            'total' => count(self::CORE_METADATA_FIELDS)
+        ]);
+
+        return $successCount === count(self::CORE_METADATA_FIELDS);
+    }
+
+    /**
      * Apply SOLR fields to the tenant collection using Schema API
      *
      * @param array $solrFields SOLR field definitions
@@ -319,10 +628,18 @@ class SolrSchemaService
             try {
                 if ($this->addOrUpdateSolrField($fieldName, $fieldConfig, $force)) {
                     $successCount++;
-                    $this->logger->debug('✅ Applied SOLR field', [
+                    $this->logger->info('✅ Applied SOLR field', [
                         'field' => $fieldName,
                         'type' => $fieldConfig['type']
                     ]);
+                    // DEBUG: Special logging for versie field
+                    if ($fieldName === 'versie') {
+                        $this->logger->debug('=== VERSIE FIELD CREATED ===');
+                        $this->logger->debug('Field: ' . $fieldName);
+                        $this->logger->debug('Type: ' . $fieldConfig['type']);
+                        $this->logger->debug('Config: ' . json_encode($fieldConfig));
+                        $this->logger->debug('=== END VERSIE DEBUG ===');
+                    }
                 }
             } catch (\Exception $e) {
                 $this->logger->error('❌ Failed to apply SOLR field', [

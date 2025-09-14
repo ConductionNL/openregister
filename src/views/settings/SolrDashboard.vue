@@ -20,7 +20,7 @@
 						<NcButton
 							type="primary"
 							:disabled="loading || warmingUp"
-							@click="warmupIndex">
+							@click="showWarmupConfigDialog">
 							<template #icon>
 								<NcLoadingIcon v-if="warmingUp" :size="20" />
 								<Fire v-else :size="20" />
@@ -345,11 +345,290 @@
 				</NcButton>
 			</template>
 		</NcDialog>
+
+		<!-- SOLR Warmup Configuration Dialog -->
+		<NcDialog
+			v-if="showWarmupDialog"
+			name="SOLR Warmup Configuration"
+			:can-close="!warmingUp"
+			@closing="hideWarmupDialog"
+			:size="'large'">
+			<div class="warmup-dialog">
+				<div class="warmup-header">
+					<h3>🔥 SOLR Index Warmup</h3>
+					<p class="warmup-description">
+						Configure warmup parameters for SOLR index initialization. This process will mirror schemas and index objects into SOLR for enhanced search performance.
+					</p>
+				</div>
+
+				<!-- Loading State -->
+				<div v-if="warmingUp" class="warmup-loading">
+					<div class="loading-spinner">
+						<NcLoadingIcon :size="40" />
+					</div>
+					<h4>Warming up SOLR Index...</h4>
+					<p class="loading-description">
+						Please wait while the SOLR index is being warmed up. This process may take several minutes depending on the amount of data.
+					</p>
+					<div class="loading-details">
+						<p><strong>Mode:</strong> {{ warmupConfig.mode === 'serial' ? 'Serial' : 'Parallel' }}</p>
+						<p><strong>Max Objects:</strong> {{ warmupConfig.maxObjects === 0 ? 'All' : warmupConfig.maxObjects }}</p>
+						<p><strong>Batch Size:</strong> {{ warmupConfig.batchSize }}</p>
+					</div>
+				</div>
+
+				<!-- Results State -->
+				<div v-else-if="warmupCompleted && warmupResults" class="warmup-results">
+					<div class="results-header">
+						<div class="success-icon">✅</div>
+						<h4>Warmup Completed Successfully!</h4>
+						<p class="results-description">
+							The SOLR index has been successfully warmed up with the configured parameters.
+						</p>
+					</div>
+
+					<div class="results-summary">
+						<h5>Configuration Used</h5>
+						<div class="results-details">
+							<p><strong>Mode:</strong> {{ warmupConfig.mode === 'serial' ? 'Serial' : 'Parallel' }}</p>
+							<p><strong>Max Objects:</strong> {{ warmupConfig.maxObjects === 0 ? 'All' : warmupConfig.maxObjects }}</p>
+							<p><strong>Batch Size:</strong> {{ warmupConfig.batchSize }}</p>
+							<p><strong>Error Handling:</strong> {{ warmupConfig.collectErrors ? 'Collect errors' : 'Stop on first error' }}</p>
+						</div>
+					</div>
+
+					<div v-if="warmupResults.stats" class="results-stats">
+						<h5>Warmup Statistics</h5>
+						
+						<!-- Performance Overview -->
+						<div class="stats-section">
+							<h6>Performance Overview</h6>
+							<div class="stats-grid">
+								<div v-if="warmupResults.stats.totalProcessed !== undefined" class="stat-item">
+									<span class="stat-label">Objects Processed:</span>
+									<span class="stat-value">{{ warmupResults.stats.totalProcessed.toLocaleString() }}</span>
+								</div>
+								<div v-if="warmupResults.stats.totalIndexed !== undefined" class="stat-item">
+									<span class="stat-label">Objects Indexed:</span>
+									<span class="stat-value">{{ warmupResults.stats.totalIndexed.toLocaleString() }}</span>
+								</div>
+								<div v-if="warmupResults.stats.totalErrors !== undefined" class="stat-item">
+									<span class="stat-label">Errors:</span>
+									<span class="stat-value" :class="{ 'error': warmupResults.stats.totalErrors > 0 }">{{ warmupResults.stats.totalErrors }}</span>
+								</div>
+								<div v-if="warmupResults.stats.totalObjectsFound !== undefined" class="stat-item">
+									<span class="stat-label">Objects Found:</span>
+									<span class="stat-value">{{ warmupResults.stats.totalObjectsFound.toLocaleString() }}</span>
+								</div>
+								<div v-if="warmupResults.stats.batchesProcessed !== undefined" class="stat-item">
+									<span class="stat-label">Batches Processed:</span>
+									<span class="stat-value">{{ warmupResults.stats.batchesProcessed }}</span>
+								</div>
+								<div v-if="warmupResults.stats.duration !== undefined" class="stat-item">
+									<span class="stat-label">Duration:</span>
+									<span class="stat-value">{{ formatDuration(warmupResults.stats.duration) }}</span>
+								</div>
+								<div v-if="warmupResults.stats.objectsPerSecond !== undefined" class="stat-item">
+									<span class="stat-label">Objects/Second:</span>
+									<span class="stat-value">{{ warmupResults.stats.objectsPerSecond.toFixed(1) }}</span>
+								</div>
+								<div v-if="warmupResults.stats.successRate !== undefined" class="stat-item">
+									<span class="stat-label">Success Rate:</span>
+									<span class="stat-value" :class="getSuccessRateClass(warmupResults.stats.successRate)">{{ warmupResults.stats.successRate.toFixed(1) }}%</span>
+								</div>
+							</div>
+						</div>
+
+						<!-- Schema Processing -->
+						<div v-if="warmupResults.stats.schemasProcessed !== undefined || warmupResults.stats.fieldsCreated !== undefined" class="stats-section">
+							<h6>Schema Processing</h6>
+							<div class="stats-grid">
+								<div v-if="warmupResults.stats.schemasProcessed !== undefined" class="stat-item">
+									<span class="stat-label">Schemas Processed:</span>
+									<span class="stat-value">{{ warmupResults.stats.schemasProcessed }}</span>
+								</div>
+								<div v-if="warmupResults.stats.fieldsCreated !== undefined" class="stat-item">
+									<span class="stat-label">Fields Created:</span>
+									<span class="stat-value">{{ warmupResults.stats.fieldsCreated }}</span>
+								</div>
+							</div>
+						</div>
+
+						<!-- Operations Status -->
+						<div v-if="warmupResults.stats.operations" class="stats-section">
+							<h6>Operations Status</h6>
+							<div class="operations-grid">
+								<div v-for="(status, operation) in warmupResults.stats.operations" :key="operation" class="operation-item">
+									<span class="operation-label">{{ formatOperationName(operation) }}:</span>
+									<span class="operation-status" :class="getOperationStatusClass(status)">
+										{{ status === true ? '✓ Success' : status === false ? '✗ Failed' : status }}
+									</span>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div v-if="warmupResults.errors && warmupResults.errors.length > 0" class="results-errors">
+						<h5>Errors Encountered</h5>
+						<div class="error-list">
+							<div v-for="(error, index) in warmupResults.errors" :key="index" class="error-item">
+								<strong>Error {{ index + 1 }}:</strong> {{ error }}
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Configuration Form -->
+				<div v-else class="warmup-form">
+					<div class="form-section">
+						<h4>Execution Mode</h4>
+						<NcCheckboxRadioSwitch
+							:checked.sync="warmupConfig.mode"
+							name="warmup_mode"
+							value="serial"
+							type="radio">
+							Serial Mode (Safer, slower)
+						</NcCheckboxRadioSwitch>
+						<NcCheckboxRadioSwitch
+							:checked.sync="warmupConfig.mode"
+							name="warmup_mode"
+							value="parallel"
+							type="radio">
+							Parallel Mode (Faster, more resource intensive)
+						</NcCheckboxRadioSwitch>
+						<p class="form-description">
+							Serial mode processes objects one by one, while parallel mode processes multiple objects simultaneously for faster completion.
+						</p>
+					</div>
+
+					<div class="form-section">
+						<h4>Processing Limits</h4>
+						
+						<!-- Object Count Prediction -->
+						<div class="object-prediction">
+							<div class="prediction-header">
+								<h5>📊 Object Count Prediction</h5>
+								<div v-if="objectStats.loading" class="loading-indicator">
+									<NcLoadingIcon :size="16" />
+									<span>Loading object count...</span>
+								</div>
+							</div>
+							<div v-if="!objectStats.loading && objectStats.totalObjects > 0" class="prediction-content">
+								<div class="prediction-stats">
+									<div class="stat-item">
+										<span class="stat-label">Total Objects in Database:</span>
+										<span class="stat-value">{{ objectStats.totalObjects.toLocaleString() }}</span>
+									</div>
+									<div class="stat-item">
+										<span class="stat-label">Objects to Process:</span>
+										<span class="stat-value">
+											{{ warmupConfig.maxObjects === 0 ? objectStats.totalObjects.toLocaleString() : Math.min(warmupConfig.maxObjects, objectStats.totalObjects).toLocaleString() }}
+											<span v-if="warmupConfig.maxObjects > 0 && warmupConfig.maxObjects < objectStats.totalObjects" class="limited-indicator">
+												(limited by max objects setting)
+											</span>
+										</span>
+									</div>
+									<div class="stat-item">
+										<span class="stat-label">Estimated Batches:</span>
+										<span class="stat-value">
+											{{ Math.ceil((warmupConfig.maxObjects === 0 ? objectStats.totalObjects : Math.min(warmupConfig.maxObjects, objectStats.totalObjects)) / warmupConfig.batchSize) }}
+										</span>
+									</div>
+									<div class="stat-item">
+										<span class="stat-label">Estimated Duration:</span>
+										<span class="stat-value">
+											{{ estimateWarmupDuration() }}
+										</span>
+									</div>
+								</div>
+							</div>
+							<div v-else-if="!objectStats.loading" class="prediction-error">
+								<span class="error-icon">⚠️</span>
+								<span>Unable to load object count. Warmup will process all available objects.</span>
+							</div>
+						</div>
+
+						<div class="form-row">
+							<label class="form-label">
+								<strong>Max Objects (0 = all)</strong>
+								<p class="form-description">Maximum number of objects to process. Set to 0 to process all objects.</p>
+							</label>
+							<div class="form-input">
+								<input
+									v-model.number="warmupConfig.maxObjects"
+									type="number"
+									:disabled="warmingUp"
+									placeholder="0"
+									min="0"
+									class="warmup-input-field">
+							</div>
+						</div>
+
+						<div class="form-row">
+							<label class="form-label">
+								<strong>Batch Size</strong>
+								<p class="form-description">Number of objects to process in each batch (1-5000).</p>
+							</label>
+							<div class="form-input">
+								<input
+									v-model.number="warmupConfig.batchSize"
+									type="number"
+									:disabled="warmingUp"
+									placeholder="1000"
+									min="1"
+									max="5000"
+									class="warmup-input-field">
+							</div>
+						</div>
+					</div>
+
+					<div class="form-section">
+						<h4>Error Handling</h4>
+						<NcCheckboxRadioSwitch
+							v-model="warmupConfig.collectErrors"
+							:disabled="warmingUp"
+							type="switch">
+							{{ warmupConfig.collectErrors ? 'Collect errors in response' : 'Stop on first error' }}
+						</NcCheckboxRadioSwitch>
+						<p class="form-description">
+							When enabled, errors will be collected and returned in the response instead of stopping the warmup process.
+							This is useful for debugging but may mask critical issues.
+						</p>
+					</div>
+				</div>
+
+				<div class="dialog-actions">
+					<NcButton
+						:disabled="warmingUp"
+						@click="hideWarmupDialog">
+						{{ warmingUp ? 'Close' : (warmupCompleted ? 'Close' : 'Cancel') }}
+					</NcButton>
+					<NcButton
+						v-if="!warmingUp && !warmupCompleted"
+						type="primary"
+						@click="performWarmup">
+						<template #icon>
+							<Fire :size="20" />
+						</template>
+						Start Warmup
+					</NcButton>
+					<NcButton
+						v-if="warmupCompleted"
+						type="secondary"
+						@click="resetWarmupDialog">
+						<template #icon>
+							<Refresh :size="20" />
+						</template>
+						Run Again
+					</NcButton>
+				</div>
+			</div>
+		</NcDialog>
 	</div>
 </template>
 
 <script>
-import { NcSettingsSection, NcButton, NcLoadingIcon, NcDialog } from '@nextcloud/vue'
+import { NcSettingsSection, NcButton, NcLoadingIcon, NcDialog, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Fire from 'vue-material-design-icons/Fire.vue'
 import Check from 'vue-material-design-icons/Check.vue'
@@ -364,6 +643,7 @@ export default {
 		NcButton,
 		NcLoadingIcon,
 		NcDialog,
+		NcCheckboxRadioSwitch,
 		Refresh,
 		Fire,
 		Check,
@@ -378,6 +658,19 @@ export default {
 			warmingUp: false,
 			operating: false, // tracks current operation: 'commit', 'optimize', 'clear'
 			showClearDialog: false,
+			showWarmupDialog: false,
+			warmupConfig: {
+				mode: 'serial',
+				maxObjects: 0,
+				batchSize: 1000,
+				collectErrors: false,
+			},
+			warmupResults: null,
+			warmupCompleted: false,
+			objectStats: {
+				totalObjects: 0,
+				loading: false
+			},
 			
 			solrStats: {
 				overview: {
@@ -501,12 +794,166 @@ export default {
 		},
 
 		/**
-		 * Warmup SOLR index
+		 * Show warmup configuration dialog
+		 *
+		 * @return {void}
+		 */
+		showWarmupConfigDialog() {
+			this.showWarmupDialog = true
+			this.loadObjectStats()
+		},
+
+		/**
+		 * Load object statistics for warmup prediction
 		 *
 		 * @async
 		 * @return {Promise<void>}
 		 */
-		async warmupIndex() {
+		async loadObjectStats() {
+			this.objectStats.loading = true
+			
+			try {
+				const response = await this.$http.get('/apps/openregister/api/settings/stats')
+				if (response.data && response.data.totals) {
+					this.objectStats.totalObjects = response.data.totals.totalObjects || 0
+				}
+			} catch (error) {
+				console.error('Failed to load object stats:', error)
+				this.objectStats.totalObjects = 0
+			} finally {
+				this.objectStats.loading = false
+			}
+		},
+
+		/**
+		 * Hide warmup configuration dialog
+		 *
+		 * @return {void}
+		 */
+		hideWarmupDialog() {
+			this.showWarmupDialog = false
+			this.resetWarmupDialog()
+		},
+
+		/**
+		 * Reset warmup dialog state
+		 *
+		 * @return {void}
+		 */
+		resetWarmupDialog() {
+			this.warmupCompleted = false
+			this.warmupResults = null
+			this.warmingUp = false
+		},
+
+		/**
+		 * Estimate warmup duration based on configuration
+		 *
+		 * @return {string} Estimated duration in human-readable format
+		 */
+		estimateWarmupDuration() {
+			if (this.objectStats.totalObjects === 0) {
+				return 'Unknown'
+			}
+
+			const totalObjects = this.warmupConfig.maxObjects === 0 
+				? this.objectStats.totalObjects 
+				: Math.min(this.warmupConfig.maxObjects, this.objectStats.totalObjects)
+			
+			const batches = Math.ceil(totalObjects / this.warmupConfig.batchSize)
+			
+			// Rough estimates based on mode and batch size
+			// Serial: ~2-5 seconds per batch, Parallel: ~1-2 seconds per batch
+			const secondsPerBatch = this.warmupConfig.mode === 'serial' ? 3 : 1.5
+			const totalSeconds = batches * secondsPerBatch
+			
+			if (totalSeconds < 60) {
+				return `~${Math.ceil(totalSeconds)} seconds`
+			} else if (totalSeconds < 3600) {
+				const minutes = Math.ceil(totalSeconds / 60)
+				return `~${minutes} minute${minutes !== 1 ? 's' : ''}`
+			} else {
+				const hours = Math.floor(totalSeconds / 3600)
+				const minutes = Math.ceil((totalSeconds % 3600) / 60)
+				return `~${hours}h ${minutes}m`
+			}
+		},
+
+		/**
+		 * Format duration in seconds to human readable format
+		 *
+		 * @param {number} seconds Duration in seconds
+		 * @return {string} Formatted duration
+		 */
+		formatDuration(seconds) {
+			if (seconds < 1) {
+				return `${(seconds * 1000).toFixed(0)}ms`
+			} else if (seconds < 60) {
+				return `${seconds.toFixed(2)}s`
+			} else {
+				const minutes = Math.floor(seconds / 60)
+				const remainingSeconds = seconds % 60
+				return `${minutes}m ${remainingSeconds.toFixed(1)}s`
+			}
+		},
+
+		/**
+		 * Get CSS class for success rate
+		 *
+		 * @param {number} successRate Success rate percentage
+		 * @return {string} CSS class
+		 */
+		getSuccessRateClass(successRate) {
+			if (successRate >= 95) return 'success'
+			if (successRate >= 80) return 'warning'
+			return 'error'
+		},
+
+		/**
+		 * Format operation name for display
+		 *
+		 * @param {string} operation Operation key
+		 * @return {string} Formatted operation name
+		 */
+		formatOperationName(operation) {
+			const names = {
+				'connection_test': 'Connection Test',
+				'schema_mirroring': 'Schema Mirroring',
+				'schemas_processed': 'Schemas Processed',
+				'fields_created': 'Fields Created',
+				'conflicts_resolved': 'Conflicts Resolved',
+				'error_collection_mode': 'Error Collection Mode',
+				'object_indexing': 'Object Indexing',
+				'objects_indexed': 'Objects Indexed',
+				'indexing_errors': 'Indexing Errors',
+				'warmup_query_0': 'Warmup Query 1',
+				'warmup_query_1': 'Warmup Query 2',
+				'warmup_query_2': 'Warmup Query 3',
+				'commit': 'Commit Operation'
+			}
+			return names[operation] || operation.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+		},
+
+		/**
+		 * Get CSS class for operation status
+		 *
+		 * @param {boolean|string|number} status Operation status
+		 * @return {string} CSS class
+		 */
+		getOperationStatusClass(status) {
+			if (status === true) return 'success'
+			if (status === false) return 'error'
+			if (typeof status === 'number' && status > 0) return 'success'
+			return 'neutral'
+		},
+
+		/**
+		 * Perform SOLR warmup with configured parameters
+		 *
+		 * @async
+		 * @return {Promise<void>}
+		 */
+		async performWarmup() {
 			this.warmingUp = true
 
 			try {
@@ -515,23 +962,61 @@ export default {
 					headers: {
 						'Content-Type': 'application/json',
 					},
+					body: JSON.stringify({
+						mode: this.warmupConfig.mode,
+						maxObjects: this.warmupConfig.maxObjects,
+						batchSize: this.warmupConfig.batchSize,
+						collectErrors: this.warmupConfig.collectErrors,
+					}),
 				})
 
 				const result = await response.json()
 
 				if (result.error) {
-					console.error('Failed to warmup index:', result.error)
+					console.error('Failed to warmup SOLR index:', result.error)
+					// Show error details if available
+					if (result.errors && Array.isArray(result.errors)) {
+						console.error('Collected errors:', result.errors)
+					}
 					return
+				}
+
+				console.log('SOLR warmup completed successfully:', result)
+
+				// Store results and mark as completed
+				this.warmupResults = result
+				this.warmupCompleted = true
+
+				// Show success details
+				if (result.stats) {
+					console.log('Warmup statistics:', result.stats)
 				}
 
 				// Refresh stats after warmup
 				await this.loadSolrStats()
 
 			} catch (error) {
-				console.error('Failed to warmup index:', error)
+				console.error('Failed to warmup SOLR index:', error)
 			} finally {
 				this.warmingUp = false
 			}
+		},
+
+		/**
+		 * Warmup SOLR index (legacy method for backward compatibility)
+		 *
+		 * @async
+		 * @return {Promise<void>}
+		 */
+		async warmupIndex() {
+			// Use default configuration for direct calls
+			this.warmupConfig = {
+				mode: 'serial',
+				maxObjects: 0,
+				batchSize: 1000,
+				collectErrors: false,
+			}
+			await this.performWarmup()
 		},
 
 		/**
@@ -1244,5 +1729,419 @@ export default {
 .loading-container p {
 	margin: 16px 0 0 0;
 	color: var(--color-text-maxcontrast);
+}
+
+/* Warmup Dialog Styles */
+.warmup-dialog {
+	padding: 2rem;
+	max-width: 1200px;
+	width: 100%;
+	max-height: 90vh;
+	overflow-y: auto;
+}
+
+.warmup-header {
+	margin-bottom: 1.5rem;
+}
+
+.warmup-header h3 {
+	color: var(--color-primary);
+	margin-bottom: 1rem;
+	font-size: 1.2rem;
+}
+
+.warmup-description {
+	color: var(--color-text-light);
+	line-height: 1.5;
+	margin: 0;
+}
+
+.warmup-form {
+	margin-bottom: 1.5rem;
+}
+
+.form-section {
+	margin-bottom: 1.5rem;
+	padding-bottom: 1rem;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.form-section:last-child {
+	border-bottom: none;
+	margin-bottom: 0;
+}
+
+.form-section h4 {
+	margin: 0 0 1rem 0;
+	color: var(--color-text);
+	font-size: 1rem;
+}
+
+.form-row {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	margin-bottom: 1rem;
+}
+
+.form-label {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+}
+
+.form-label strong {
+	color: var(--color-text);
+	font-weight: 500;
+}
+
+.form-description {
+	color: var(--color-text-light);
+	font-size: 0.9rem;
+	margin: 0;
+	line-height: 1.4;
+}
+
+.form-input {
+	display: flex;
+	align-items: center;
+	gap: 0.25rem;
+}
+
+.warmup-input-field {
+	width: 100%;
+	padding: 0.5rem;
+	border: 1px solid var(--color-border);
+	border-radius: 4px;
+	background: var(--color-background);
+	color: var(--color-text);
+	font-size: 0.9rem;
+}
+
+.dialog-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 0.5rem;
+}
+
+/* Warmup Loading State */
+.warmup-loading {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	padding: 2rem 1rem;
+}
+
+.loading-spinner {
+	margin-bottom: 1.5rem;
+	color: var(--color-primary);
+}
+
+.warmup-loading h4 {
+	margin: 0 0 1rem 0;
+	color: var(--color-text);
+	font-size: 1.1rem;
+}
+
+.loading-description {
+	color: var(--color-text-light);
+	line-height: 1.5;
+	margin: 0 0 1.5rem 0;
+	max-width: 400px;
+}
+
+.loading-details {
+	background: var(--color-background-dark);
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+	padding: 1rem;
+	text-align: left;
+	max-width: 300px;
+	width: 100%;
+}
+
+.loading-details p {
+	margin: 0.5rem 0;
+	color: var(--color-text);
+	font-size: 0.9rem;
+}
+
+.loading-details p:first-child {
+	margin-top: 0;
+}
+
+.loading-details p:last-child {
+	margin-bottom: 0;
+}
+
+/* Warmup Results State */
+.warmup-results {
+	padding: 1.5rem;
+}
+
+.results-header {
+	text-align: center;
+	margin-bottom: 2rem;
+}
+
+.success-icon {
+	font-size: 3rem;
+	margin-bottom: 1rem;
+}
+
+.results-header h4 {
+	margin: 0 0 1rem 0;
+	color: var(--color-success);
+	font-size: 1.2rem;
+}
+
+.results-description {
+	color: var(--color-text-light);
+	line-height: 1.5;
+	margin: 0;
+}
+
+.results-summary,
+.results-stats,
+.results-errors {
+	background: var(--color-background-dark);
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+	padding: 1.5rem;
+	margin-bottom: 1.5rem;
+}
+
+.results-summary:last-child,
+.results-stats:last-child,
+.results-errors:last-child {
+	margin-bottom: 0;
+}
+
+.results-summary h5,
+.results-stats h5,
+.results-errors h5 {
+	margin: 0 0 1rem 0;
+	color: var(--color-text);
+	font-size: 1rem;
+	font-weight: 600;
+}
+
+.results-details {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.results-details p {
+	margin: 0;
+	color: var(--color-text);
+	font-size: 0.9rem;
+}
+
+.stats-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 1rem;
+}
+
+.stat-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 0.75rem;
+	background: var(--color-background);
+	border-radius: 6px;
+	border: 1px solid var(--color-border);
+}
+
+.stat-label {
+	color: var(--color-text-light);
+	font-size: 0.9rem;
+	font-weight: 500;
+}
+
+.stat-value {
+	color: var(--color-text);
+	font-weight: 600;
+	font-size: 0.9rem;
+}
+
+.stat-value.error {
+	color: var(--color-error);
+}
+
+.error-list {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+}
+
+.error-item {
+	padding: 0.75rem;
+	background: var(--color-error-light);
+	border: 1px solid var(--color-error);
+	border-radius: 6px;
+	color: var(--color-error-text);
+	font-size: 0.9rem;
+	line-height: 1.4;
+}
+
+/* Enhanced Statistics Styles */
+.stats-section {
+	margin-bottom: 1.5rem;
+	padding: 1rem;
+	background: var(--color-background-hover);
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+}
+
+.stats-section h6 {
+	margin: 0 0 1rem 0;
+	color: var(--color-text-dark);
+	font-size: 0.9rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.operations-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+	gap: 0.75rem;
+}
+
+.operation-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 0.5rem 0.75rem;
+	background: var(--color-background);
+	border-radius: 6px;
+	border: 1px solid var(--color-border);
+}
+
+.operation-label {
+	color: var(--color-text-light);
+	font-size: 0.85rem;
+	font-weight: 500;
+}
+
+.operation-status {
+	font-size: 0.85rem;
+	font-weight: 600;
+}
+
+.operation-status.success {
+	color: var(--color-success);
+}
+
+.operation-status.error {
+	color: var(--color-error);
+}
+
+.operation-status.neutral {
+	color: var(--color-text-lighter);
+}
+
+.stat-value.success {
+	color: var(--color-success);
+	font-weight: 600;
+}
+
+.stat-value.warning {
+	color: var(--color-warning);
+	font-weight: 600;
+}
+
+.stat-value.error {
+	color: var(--color-error);
+	font-weight: 600;
+}
+
+/* Object Prediction Styles */
+.object-prediction {
+	margin-bottom: 1.5rem;
+	padding: 1rem;
+	background: var(--color-background-hover);
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+}
+
+.prediction-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 1rem;
+}
+
+.prediction-header h5 {
+	margin: 0;
+	color: var(--color-text);
+	font-size: 1rem;
+	font-weight: 600;
+}
+
+.loading-indicator {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	color: var(--color-text-light);
+	font-size: 0.9rem;
+}
+
+.prediction-content {
+	/* Content styles are handled by existing .prediction-stats */
+}
+
+.prediction-stats {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 0.75rem;
+}
+
+.prediction-stats .stat-item {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	padding: 0.75rem;
+	background: var(--color-background);
+	border: 1px solid var(--color-border);
+	border-radius: 6px;
+}
+
+.prediction-stats .stat-label {
+	color: var(--color-text-light);
+	font-size: 0.85rem;
+	font-weight: 500;
+}
+
+.prediction-stats .stat-value {
+	color: var(--color-text);
+	font-weight: 600;
+	font-size: 0.9rem;
+}
+
+.limited-indicator {
+	color: var(--color-text-light);
+	font-size: 0.8rem;
+	font-weight: normal;
+	font-style: italic;
+}
+
+.prediction-error {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.75rem;
+	background: var(--color-warning-light);
+	border: 1px solid var(--color-warning);
+	border-radius: 6px;
+	color: var(--color-warning-text);
+	font-size: 0.9rem;
+}
+
+.error-icon {
+	font-size: 1rem;
 }
 </style>

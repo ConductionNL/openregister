@@ -366,6 +366,9 @@ class ObjectsController extends Controller
      * - Search: _search
      * - Rendering: _extend, _fields, _filter/_unset
      * - Faceting: _facets (facet configuration), _facetable (facetable field discovery)
+     * - Aggregations: _aggregations (enable aggregations in response - SOLR only)
+     * - Debug: _debug (enable debug information in response - SOLR only)
+     * - Source: _source (force search source: 'database' or 'index'/'solr')
      * - Sorting: _order
      *
      * @param string        $register      The register slug or identifier
@@ -391,8 +394,15 @@ class ObjectsController extends Controller
         // Build search query with resolved numeric IDs
         $query = $objectService->buildSearchQuery($this->request->getParams(), $resolved['register'], $resolved['schema']);
         
+        // Extract filtering parameters from request
+        $params = $this->request->getParams();
+        $rbac = filter_var($params['rbac'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $multi = filter_var($params['multi'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $published = filter_var($params['published'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $deleted = filter_var($params['deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        
         // **INTELLIGENT SOURCE SELECTION**: ObjectService automatically chooses optimal source
-        $result = $objectService->searchObjectsPaginated($query);
+        $result = $objectService->searchObjectsPaginated($query, $rbac, $multi, $published, $deleted);
         
         // **SUB-SECOND OPTIMIZATION**: Enable response compression for large payloads
         $response = new JSONResponse($result);
@@ -428,6 +438,9 @@ class ObjectsController extends Controller
      * - Search: _search
      * - Rendering: _extend, _fields, _filter/_unset
      * - Faceting: _facets (facet configuration), _facetable (facetable field discovery)
+     * - Aggregations: _aggregations (enable aggregations in response - SOLR only)
+     * - Debug: _debug (enable debug information in response - SOLR only)
+     * - Source: _source (force search source: 'database' or 'index'/'solr')
      * - Sorting: _order
      *
      * @param ObjectService $objectService The object service

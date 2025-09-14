@@ -133,7 +133,13 @@ class SolrService
      */
     private function generateTenantId(): string
     {
-        // Use instance URL or generate from instance salt
+        // First try to get tenant_id from SOLR settings
+        $solrSettings = $this->settingsService->getSolrSettings();
+        if (!empty($solrSettings['tenantId'])) {
+            return $solrSettings['tenantId'];
+        }
+        
+        // Fallback to generating from instance configuration
         $instanceId = $this->config->getSystemValue('instanceid', 'default');
         $overwriteHost = $this->config->getSystemValue('overwrite.cli.url', '');
         

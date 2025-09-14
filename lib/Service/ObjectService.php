@@ -1647,7 +1647,7 @@ class ObjectService
     {
         // Remove system parameters that shouldn't be used as filters
         $params = $requestParams;
-        unset($params['id'], $params['_route']);
+        unset($params['id'], $params['_route'], $params['rbac'], $params['multi'], $params['published'], $params['deleted']);
 
         // Build the query structure for searchObjectsPaginated
         $query = [];
@@ -1664,6 +1664,8 @@ class ObjectService
         if ($schema !== null) {
             $query['@self']['schema'] = (int) $schema;
         }
+        
+        // Query structure built successfully
 
         // Extract special underscore parameters
         $specialParams = [];
@@ -2334,7 +2336,7 @@ class ObjectService
      *                              - next: URL for next page (if available)
      *                              - prev: URL for previous page (if available)
      */
-    public function searchObjectsPaginated(array $query=[], bool $rbac=false, bool $multi=false): array
+    public function searchObjectsPaginated(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false): array
     {
         // **INTELLIGENT SOURCE SELECTION**: Simple if statement for optimal performance
         $requestedSource = $query['_source'] ?? null;
@@ -2345,7 +2347,7 @@ class ObjectService
             try {
                 $solrService = $this->container->get(GuzzleSolrService::class);
                 if ($solrService !== null && $solrService->isAvailable()) {
-                    $result = $solrService->searchObjectsPaginated($query, $rbac, $multi);
+                    $result = $solrService->searchObjectsPaginated($query, $rbac, $multi, $published, $deleted);
                     $result['_source'] = 'index';
                     return $result;
                 }
@@ -2358,7 +2360,7 @@ class ObjectService
         }
         
         // Use database (either requested or fallback)
-        $result = $this->searchObjectsPaginatedDatabase($query, $rbac, $multi);
+        $result = $this->searchObjectsPaginatedDatabase($query, $rbac, $multi, $published, $deleted);
         $result['_source'] = 'database';
         return $result;
     }
@@ -2379,8 +2381,20 @@ class ObjectService
     /**
      * Original database search logic - extracted to avoid code duplication
      */
-    private function searchObjectsPaginatedDatabase(array $query=[], bool $rbac=false, bool $multi=false): array
+    private function searchObjectsPaginatedDatabase(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false): array
     {
+        // **VALIDATION**: Check for SOLR-only features in database mode
+        $facetable = $query['_facetable'] ?? false;
+        $aggregations = $query['_aggregations'] ?? false;
+        
+        if (($facetable === true || $facetable === 'true') || 
+            ($aggregations === true || $aggregations === 'true')) {
+            throw new \InvalidArgumentException(
+                'Facets and aggregations are only available when using SOLR search engine. ' .
+                'Please use _source=index parameter to enable SOLR search, or remove _facetable/_aggregations parameters.'
+            );
+        }
+
         // **PERFORMANCE DEBUGGING**: Start detailed timing
         $perfStart = microtime(true);
         $perfTimings = [];
@@ -2425,7 +2439,7 @@ class ObjectService
             ]);
 
             // Use async version and return synchronous result
-            return $this->searchObjectsPaginatedSync($query, rbac: $rbac, multi: $multi);
+            return $this->searchObjectsPaginatedSync($query, rbac: $rbac, multi: $multi, published: $published, deleted: $deleted);
         }
 
         // **PERFORMANCE OPTIMIZATION**: Simple requests - minimal operations for sub-500ms performance
@@ -3030,7 +3044,7 @@ class ObjectService
      *
      * @return PromiseInterface<array<string, mixed>> Promise that resolves to the same structure as searchObjectsPaginated
      */
-    public function searchObjectsPaginatedAsync(array $query=[], bool $rbac=false, bool $multi=false): PromiseInterface
+    public function searchObjectsPaginatedAsync(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false): PromiseInterface
     {
         // Start timing execution
         $startTime = microtime(true);
@@ -3223,10 +3237,10 @@ class ObjectService
      *
      * @return array<string, mixed> The same structure as searchObjectsPaginated
      */
-    public function searchObjectsPaginatedSync(array $query=[], bool $rbac=false, bool $multi=false): array
+    public function searchObjectsPaginatedSync(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false): array
     {
         // Execute the async version and wait for the result
-        $promise = $this->searchObjectsPaginatedAsync($query, $rbac, $multi);
+        $promise = $this->searchObjectsPaginatedAsync($query, $rbac, $multi, $published, $deleted);
 
         // Use React's await functionality to get the result synchronously
         // Note: The async version already logs the search trail, so we don't need to log again
@@ -6689,46 +6703,8 @@ class ObjectService
      */
     private function getCachedEntities(string $entityType, mixed $ids, callable $fallbackFunc): array
     {
-        // Skip caching if entity cache is unavailable
-        if ($this->entityCache === null) {
-            return call_user_func($fallbackFunc, $ids);
-        }
-
-        // Generate cache key based on entity type and IDs
-        $cacheKey = $this->generateEntityCacheKey($entityType, $ids);
-
-        // Try to get from cache first
-        try {
-            $cached = $this->entityCache->get($cacheKey);
-            if ($cached !== null) {
-                $this->logger->debug('Entity cache hit', [
-                    'entityType' => $entityType,
-                    'cacheKey' => $cacheKey,
-                    'cachedCount' => is_array($cached) ? count($cached) : 1
-                ]);
-                return $cached;
-            }
-        } catch (\Exception $e) {
-            // Cache get failed, continue to database
-        }
-
-        // Cache miss - fetch from database
-        $entities = call_user_func($fallbackFunc, $ids);
-
-        // Store in cache for next time
-        try {
-            $this->entityCache->set($cacheKey, $entities, self::ENTITY_CACHE_TTL);
-            $this->logger->debug('Entity cached for future requests', [
-                'entityType' => $entityType,
-                'cacheKey' => $cacheKey,
-                'entityCount' => is_array($entities) ? count($entities) : 1,
-                'ttl' => self::ENTITY_CACHE_TTL
-            ]);
-        } catch (\Exception $e) {
-            // Cache set failed, continue without caching
-        }
-
-        return $entities;
+        // Entity caching is disabled - always use fallback function
+        return call_user_func($fallbackFunc, $ids);
 
     }//end getCachedEntities()
 
