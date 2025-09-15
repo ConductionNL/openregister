@@ -2123,14 +2123,24 @@ class SettingsService
     {
         try {
             $solrSettings = $this->getSolrSettingsOnly();
-            return sprintf(
-                '%s://%s:%d%s/%s',
-                $solrSettings['scheme'],
-                $solrSettings['host'],
-                $solrSettings['port'],
-                $solrSettings['path'],
-                $rawStats['collection'] ?? $solrSettings['core']
-            );
+            $host = $solrSettings['host'];
+            $port = $solrSettings['port'];
+            $scheme = $solrSettings['scheme'];
+            $path = $solrSettings['path'];
+            $collection = $rawStats['collection'] ?? $solrSettings['core'];
+            
+            // Apply same Kubernetes-aware URL building logic as other methods
+            if (strpos($host, '.svc.cluster.local') !== false) {
+                // Kubernetes service - don't append port
+                return sprintf('%s://%s%s/%s', $scheme, $host, $path, $collection);
+            } else {
+                // Regular hostname - only append port if explicitly provided and not 0
+                if ($port !== null && $port !== '' && $port !== 0) {
+                    return sprintf('%s://%s:%d%s/%s', $scheme, $host, $port, $path, $collection);
+                } else {
+                    return sprintf('%s://%s%s/%s', $scheme, $host, $path, $collection);
+                }
+            }
         } catch (\Exception $e) {
             return 'N/A';
         }
