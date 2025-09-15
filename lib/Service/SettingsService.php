@@ -1291,65 +1291,10 @@ class SettingsService
     public function testSolrConnection(): array
     {
         try {
-            $solrSettings = $this->getSolrSettings();
+            // Delegate to GuzzleSolrService for consistent configuration and URL handling
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            return $guzzleSolrService->testConnection();
             
-            if (!$solrSettings['enabled']) {
-                return [
-                    'success' => false,
-                    'message' => 'SOLR is disabled in settings',
-                    'details' => []
-                ];
-            }
-
-            $testResults = [
-                'success' => true,
-                'message' => 'All connection tests passed',
-                'details' => [],
-                'components' => []
-            ];
-
-            // Test 1: Zookeeper connectivity (if using SolrCloud)
-            if ($solrSettings['useCloud'] ?? false) {
-                $zookeeperTest = $this->testZookeeperConnection($solrSettings);
-                $testResults['components']['zookeeper'] = $zookeeperTest;
-                
-                if (!$zookeeperTest['success']) {
-                    $testResults['success'] = false;
-                    $testResults['message'] = 'Zookeeper connection failed';
-                }
-            }
-
-            // Test 2: SOLR connectivity
-            $solrTest = $this->testSolrConnectivity($solrSettings);
-            $testResults['components']['solr'] = $solrTest;
-            
-            if (!$solrTest['success']) {
-                $testResults['success'] = false;
-                $testResults['message'] = 'SOLR connection failed';
-            }
-
-            // Test 3: Collection/Core availability
-            $collectionTest = $this->testSolrCollection($solrSettings);
-            $testResults['components']['collection'] = $collectionTest;
-            
-            if (!$collectionTest['success']) {
-                $testResults['success'] = false;
-                $testResults['message'] = 'SOLR collection/core not available';
-            }
-
-            // Test 4: Collection query test (if collection exists)
-            if ($collectionTest['success']) {
-                $queryTest = $this->testSolrQuery($solrSettings);
-                $testResults['components']['query'] = $queryTest;
-                
-                if (!$queryTest['success']) {
-                    // Don't fail overall test if query fails but collection exists
-                    $testResults['message'] = 'SOLR collection exists but query test failed';
-                }
-            }
-
-            return $testResults;
-
         } catch (\Exception $e) {
             return [
                 'success' => false,
@@ -1359,7 +1304,8 @@ class SettingsService
                     'file' => $e->getFile(),
                     'line' => $e->getLine(),
                     'trace' => $e->getTraceAsString()
-                ]
+                ],
+                'components' => []
             ];
         }
     }

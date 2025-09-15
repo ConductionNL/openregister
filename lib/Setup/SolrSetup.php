@@ -133,28 +133,64 @@ class SolrSetup
 
         try {
             // Step 1: Verify SOLR connectivity
+            $this->logger->info('Step 1/5: Verifying SOLR server connectivity');
             if (!$this->verifySolrConnectivity()) {
-                throw new \RuntimeException('Cannot connect to SOLR server');
+                throw new \RuntimeException(
+                    'Cannot connect to SOLR server. Please check: ' .
+                    '1) SOLR server is running, ' .
+                    '2) Host/port configuration is correct (' . ($this->solrConfig['host'] ?? 'unknown') . ':' . ($this->solrConfig['port'] ?? 'unknown') . '), ' .
+                    '3) Network connectivity between application and SOLR server, ' .
+                    '4) SOLR server is not overloaded or blocking connections. ' .
+                    'Check application logs for detailed connection error messages.'
+                );
             }
 
             // Step 2: Ensure base configSet exists
+            $this->logger->info('Step 2/5: Ensuring base configSet exists');
             if (!$this->ensureBaseConfigSet()) {
-                throw new \RuntimeException('Failed to create base configSet');
+                throw new \RuntimeException(
+                    'Failed to create base configSet "openregister". This could be due to: ' .
+                    '1) SOLR server lacks write permissions for config directory, ' .
+                    '2) Template configSet "_default" does not exist, ' .
+                    '3) SOLR is not running in SolrCloud mode, ' .
+                    '4) ZooKeeper connectivity issues in SolrCloud setup. ' .
+                    'Check SOLR admin UI at http://' . ($this->solrConfig['host'] ?? 'localhost') . ':' . ($this->solrConfig['port'] ?? '8983') . '/solr/#/~configs ' .
+                    'and verify available configSets. Check application logs for detailed error messages.'
+                );
             }
 
             // Step 3: Ensure base collection exists (used as template)
+            $this->logger->info('Step 3/5: Ensuring base collection exists');
             if (!$this->ensureBaseCollectionExists()) {
-                throw new \RuntimeException('Failed to create base collection');
+                throw new \RuntimeException(
+                    'Failed to create base collection "openregister". This could be due to: ' .
+                    '1) ConfigSet "openregister" was not created in previous step, ' .
+                    '2) SOLR lacks permissions to create collections, ' .
+                    '3) ZooKeeper coordination issues in SolrCloud, ' .
+                    '4) Insufficient disk space or memory on SOLR server. ' .
+                    'Check SOLR admin UI at http://' . ($this->solrConfig['host'] ?? 'localhost') . ':' . ($this->solrConfig['port'] ?? '8983') . '/solr/#/~collections ' .
+                    'and verify collection status. Check application logs for detailed error messages.'
+                );
             }
 
-        // Step 4: Configure schema fields for ObjectEntity metadata (placeholder)
-        $this->logger->info('Schema field configuration completed (placeholder)');
+            // Step 4: Configure schema fields for ObjectEntity metadata (placeholder)
+            $this->logger->info('Step 4/5: Configuring schema fields for ObjectEntity metadata');
+            // TODO: Implement schema field configuration
+            $this->logger->info('Schema field configuration completed (placeholder - implement schema field setup)');
 
-        // Step 5: Validate setup (placeholder)  
-        $this->logger->info('Setup validation completed (placeholder)');
+            // Step 5: Validate setup (placeholder)  
+            $this->logger->info('Step 5/5: Validating SOLR setup');
+            // TODO: Implement setup validation
+            $this->logger->info('Setup validation completed (placeholder - implement validation checks)');
 
-        $this->logger->info('SOLR setup completed successfully (SolrCloud mode)');
-        return true;
+            $this->logger->info('✅ SOLR setup completed successfully (SolrCloud mode)', [
+                'configSet_created' => 'openregister',
+                'collection_created' => 'openregister',
+                'solr_host' => $this->solrConfig['host'] ?? 'localhost',
+                'solr_port' => $this->solrConfig['port'] ?? '8983',
+                'admin_ui_url' => 'http://' . ($this->solrConfig['host'] ?? 'localhost') . ':' . ($this->solrConfig['port'] ?? '8983') . '/solr/'
+            ]);
+            return true;
 
         } catch (\Exception $e) {
             $this->logger->error('SOLR setup failed', [
@@ -232,15 +268,45 @@ class SolrSetup
     {
         $url = $this->buildSolrUrl('/admin/configs?action=LIST&wt=json');
 
+        $this->logger->debug('Checking if configSet exists', [
+            'configSet' => $configSetName,
+            'url' => $url
+        ]);
+
         $response = @file_get_contents($url);
         if ($response === false) {
+            $lastError = error_get_last();
+            $this->logger->warning('Failed to check configSet existence - HTTP request failed', [
+                'configSet' => $configSetName,
+                'url' => $url,
+                'error' => $lastError['message'] ?? 'Unknown HTTP error',
+                'assumption' => 'Assuming configSet does not exist'
+            ]);
             return false;
         }
 
         $data = json_decode($response, true);
+        if ($data === null) {
+            $this->logger->warning('Failed to check configSet existence - Invalid JSON response', [
+                'configSet' => $configSetName,
+                'url' => $url,
+                'raw_response' => $response,
+                'json_error' => json_last_error_msg(),
+                'assumption' => 'Assuming configSet does not exist'
+            ]);
+            return false;
+        }
+
         $configSets = $data['configSets'] ?? [];
+        $exists = in_array($configSetName, $configSets);
         
-        return in_array($configSetName, $configSets);
+        $this->logger->debug('ConfigSet existence check completed', [
+            'configSet' => $configSetName,
+            'exists' => $exists,
+            'available_configSets' => $configSets
+        ]);
+        
+        return $exists;
     }
 
     /**
@@ -257,26 +323,84 @@ class SolrSetup
             urlencode($templateConfigSetName)
         ));
 
-        $response = @file_get_contents($url);
+        $this->logger->info('Attempting to create SOLR configSet', [
+            'configSet' => $newConfigSetName,
+            'template' => $templateConfigSetName,
+            'url' => $url
+        ]);
+
+        // Create HTTP context with timeout and error handling
+        $context = stream_context_create([
+            'http' => [
+                'timeout' => 30,
+                'method' => 'GET',
+                'header' => [
+                    'Accept: application/json',
+                    'Content-Type: application/json'
+                ]
+            ]
+        ]);
+
+        $response = @file_get_contents($url, false, $context);
         if ($response === false) {
-            $this->logger->error('Failed to create configSet', [
+            $lastError = error_get_last();
+            $this->logger->error('Failed to create configSet - HTTP request failed', [
                 'configSet' => $newConfigSetName,
-                'template' => $templateConfigSetName
+                'template' => $templateConfigSetName,
+                'url' => $url,
+                'error' => $lastError['message'] ?? 'Unknown HTTP error',
+                'possible_causes' => [
+                    'SOLR server not reachable at configured URL',
+                    'Network connectivity issues',
+                    'SOLR server not responding',
+                    'Invalid SOLR configuration (host/port/path)',
+                    'SOLR server overloaded or timeout'
+                ]
             ]);
             return false;
         }
 
         $data = json_decode($response, true);
-        if (($data['responseHeader']['status'] ?? -1) === 0) {
+        if ($data === null) {
+            $this->logger->error('Failed to create configSet - Invalid JSON response', [
+                'configSet' => $newConfigSetName,
+                'template' => $templateConfigSetName,
+                'url' => $url,
+                'raw_response' => $response,
+                'json_error' => json_last_error_msg()
+            ]);
+            return false;
+        }
+
+        $status = $data['responseHeader']['status'] ?? -1;
+        if ($status === 0) {
             $this->logger->info('ConfigSet created successfully', [
                 'configSet' => $newConfigSetName
             ]);
             return true;
         }
 
-        $this->logger->error('ConfigSet creation failed', [
+        // Extract detailed error information from SOLR response
+        $errorMsg = $data['error']['msg'] ?? 'Unknown SOLR error';
+        $errorCode = $data['error']['code'] ?? $status;
+        $errorDetails = $data['error']['metadata'] ?? [];
+
+        $this->logger->error('ConfigSet creation failed - SOLR returned error', [
             'configSet' => $newConfigSetName,
-            'response' => $data
+            'template' => $templateConfigSetName,
+            'url' => $url,
+            'solr_status' => $status,
+            'solr_error_message' => $errorMsg,
+            'solr_error_code' => $errorCode,
+            'solr_error_details' => $errorDetails,
+            'full_response' => $data,
+            'troubleshooting_tips' => [
+                'Verify template configSet exists: ' . $templateConfigSetName,
+                'Check SOLR admin UI for existing configSets',
+                'Ensure SOLR has write permissions for config directory',
+                'Verify SOLR is running in SolrCloud mode if using collections',
+                'Check SOLR logs for additional error details'
+            ]
         ]);
         return false;
     }
