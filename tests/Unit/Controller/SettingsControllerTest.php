@@ -227,10 +227,247 @@ class SettingsControllerTest extends TestCase
     }
 
     /**
+     * Test cache statistics endpoint
+     * 
+     * @return void
+     */
+    public function testGetCacheStatsReturnsValidStructure(): void
+    {
+        $mockCacheStats = [
+            'enabled' => true,
+            'hit_rate' => 0.85,
+            'size' => '250MB',
+            'entries' => 15000
+        ];
+
+        $this->settingsService
+            ->method('getCacheStats')
+            ->willReturn($mockCacheStats);
+
+        $response = $this->controller->getCacheStats();
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $data = $response->getData();
+        $this->assertArrayHasKey('enabled', $data);
+        $this->assertArrayHasKey('hit_rate', $data);
+    }
+
+    /**
+     * Test cache clearing endpoint
+     * 
+     * @return void
+     */
+    public function testClearCacheReturnsSuccess(): void
+    {
+        $this->settingsService
+            ->method('clearCache')
+            ->willReturn(true);
+
+        $response = $this->controller->clearCache();
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $data = $response->getData();
+        $this->assertArrayHasKey('success', $data);
+        $this->assertTrue($data['success']);
+    }
+
+    /**
+     * Test RBAC settings endpoints
+     * 
+     * @return void
+     */
+    public function testRbacSettingsEndpoints(): void
+    {
+        $mockRbacSettings = [
+            'enabled' => true,
+            'default_permissions' => 'read',
+            'admin_bypass' => false
+        ];
+
+        $this->settingsService
+            ->method('getRbacSettings')
+            ->willReturn($mockRbacSettings);
+
+        $this->settingsService
+            ->method('updateRbacSettings')
+            ->willReturn(true);
+
+        // Test GET
+        $response = $this->controller->getRbacSettings();
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $data = $response->getData();
+        $this->assertArrayHasKey('enabled', $data);
+
+        // Test PUT
+        $response = $this->controller->updateRbacSettings();
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $data = $response->getData();
+        $this->assertArrayHasKey('success', $data);
+    }
+
+    /**
+     * Test multitenancy settings endpoints
+     * 
+     * @return void
+     */
+    public function testMultitenancySettingsEndpoints(): void
+    {
+        $mockSettings = [
+            'enabled' => false,
+            'tenant_isolation' => 'strict',
+            'shared_resources' => []
+        ];
+
+        $this->settingsService
+            ->method('getMultitenancySettings')
+            ->willReturn($mockSettings);
+
+        $this->settingsService
+            ->method('updateMultitenancySettings')
+            ->willReturn(true);
+
+        // Test GET
+        $response = $this->controller->getMultitenancySettings();
+        $this->assertInstanceOf(JSONResponse::class, $response);
+
+        // Test PUT
+        $response = $this->controller->updateMultitenancySettings();
+        $this->assertInstanceOf(JSONResponse::class, $response);
+    }
+
+    /**
+     * Test retention settings endpoints
+     * 
+     * @return void
+     */
+    public function testRetentionSettingsEndpoints(): void
+    {
+        $mockSettings = [
+            'enabled' => true,
+            'default_retention_days' => 365,
+            'cleanup_schedule' => 'daily'
+        ];
+
+        $this->settingsService
+            ->method('getRetentionSettings')
+            ->willReturn($mockSettings);
+
+        $this->settingsService
+            ->method('updateRetentionSettings')
+            ->willReturn(true);
+
+        // Test GET
+        $response = $this->controller->getRetentionSettings();
+        $this->assertInstanceOf(JSONResponse::class, $response);
+
+        // Test PUT
+        $response = $this->controller->updateRetentionSettings();
+        $this->assertInstanceOf(JSONResponse::class, $response);
+    }
+
+    /**
+     * Test version info endpoint
+     * 
+     * @return void
+     */
+    public function testGetVersionInfoReturnsValidStructure(): void
+    {
+        $mockVersionInfo = [
+            'version' => '2.1.0',
+            'build' => 'abc123',
+            'environment' => 'production',
+            'php_version' => '8.1.0',
+            'nextcloud_version' => '30.0.4'
+        ];
+
+        $this->settingsService
+            ->method('getVersionInfo')
+            ->willReturn($mockVersionInfo);
+
+        $response = $this->controller->getVersionInfo();
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $data = $response->getData();
+        $this->assertArrayHasKey('version', $data);
+        $this->assertArrayHasKey('environment', $data);
+    }
+
+    /**
+     * Test SOLR dashboard stats endpoint
+     * 
+     * @return void
+     */
+    public function testGetSolrDashboardStatsReturnsValidStructure(): void
+    {
+        $mockStats = [
+            'status' => 'healthy',
+            'documents' => 15000,
+            'index_size' => '2.5GB',
+            'query_time_avg' => 45.2
+        ];
+
+        $this->settingsService
+            ->method('getSolrDashboardStats')
+            ->willReturn($mockStats);
+
+        $response = $this->controller->getSolrDashboardStats();
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $data = $response->getData();
+        $this->assertArrayHasKey('status', $data);
+        $this->assertArrayHasKey('documents', $data);
+    }
+
+    /**
+     * Test SOLR warmup endpoint
+     * 
+     * @return void
+     */
+    public function testWarmupSolrIndexReturnsSuccess(): void
+    {
+        $this->settingsService
+            ->method('warmupSolrIndex')
+            ->willReturn(true);
+
+        $response = $this->controller->warmupSolrIndex();
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $data = $response->getData();
+        $this->assertArrayHasKey('success', $data);
+        $this->assertTrue($data['success']);
+    }
+
+    /**
+     * Test schema mapping test endpoint
+     * 
+     * @return void
+     */
+    public function testTestSchemaMappingReturnsValidStructure(): void
+    {
+        $mockResult = [
+            'success' => true,
+            'mappings_tested' => 25,
+            'errors' => [],
+            'warnings' => []
+        ];
+
+        $this->settingsService
+            ->method('testSchemaMapping')
+            ->willReturn($mockResult);
+
+        $response = $this->controller->testSchemaMapping();
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $data = $response->getData();
+        $this->assertArrayHasKey('success', $data);
+        $this->assertArrayHasKey('mappings_tested', $data);
+    }
+
+    /**
      * Test that all controller methods return JSONResponse objects
      * 
-     * This ensures API consistency and prevents raw PHP output that could
-     * break frontend JSON parsing.
+     * This comprehensive test ensures API consistency across ALL endpoints
+     * and prevents raw PHP output that could break frontend JSON parsing.
      * 
      * @return void
      */
@@ -239,37 +476,91 @@ class SettingsControllerTest extends TestCase
         // Mock all service methods to return valid data
         $this->settingsService->method('testSolrConnection')->willReturn(['success' => true]);
         $this->settingsService->method('setupSolr')->willReturn(true);
+        $this->settingsService->method('testSolrSetup')->willReturn(['success' => true]);
         $this->settingsService->method('getSolrSettings')->willReturn(['host' => 'localhost']);
+        $this->settingsService->method('updateSolrSettings')->willReturn(true);
+        $this->settingsService->method('getSolrDashboardStats')->willReturn(['status' => 'ok']);
+        $this->settingsService->method('warmupSolrIndex')->willReturn(true);
+        $this->settingsService->method('testSchemaMapping')->willReturn(['success' => true]);
         $this->settingsService->method('getStatistics')->willReturn(['total' => 0]);
-        $this->settingsService->method('getCacheSettings')->willReturn(['enabled' => true]);
+        $this->settingsService->method('getCacheStats')->willReturn(['enabled' => true]);
+        $this->settingsService->method('clearCache')->willReturn(true);
+        $this->settingsService->method('warmupNamesCache')->willReturn(true);
         $this->settingsService->method('getRbacSettings')->willReturn(['enabled' => false]);
+        $this->settingsService->method('updateRbacSettings')->willReturn(true);
+        $this->settingsService->method('getMultitenancySettings')->willReturn(['enabled' => false]);
+        $this->settingsService->method('updateMultitenancySettings')->willReturn(true);
+        $this->settingsService->method('getRetentionSettings')->willReturn(['enabled' => true]);
+        $this->settingsService->method('updateRetentionSettings')->willReturn(true);
+        $this->settingsService->method('getVersionInfo')->willReturn(['version' => '1.0.0']);
+        $this->settingsService->method('load')->willReturn(['settings' => []]);
+        $this->settingsService->method('update')->willReturn(true);
+        $this->settingsService->method('updatePublishingOptions')->willReturn(true);
+        $this->settingsService->method('rebase')->willReturn(true);
 
-        // Test all major endpoints
+        // Test all major endpoints (based on routes.php)
         $endpoints = [
-            'testSolrConnection',
-            'setupSolr', 
-            'getSolrSettings',
+            // Core settings
+            'load',
+            'update', 
+            'updatePublishingOptions',
+            'rebase',
+            'stats',
             'getStatistics',
-            'getCacheSettings',
-            'getRbacSettings'
+            
+            // SOLR endpoints
+            'testSolrConnection',
+            'setupSolr',
+            'testSolrSetup',
+            'getSolrSettings',
+            'updateSolrSettings',
+            'getSolrDashboardStats',
+            'warmupSolrIndex',
+            'testSchemaMapping',
+            
+            // Cache endpoints
+            'getCacheStats',
+            'clearCache',
+            'warmupNamesCache',
+            
+            // RBAC endpoints
+            'getRbacSettings',
+            'updateRbacSettings',
+            
+            // Multitenancy endpoints
+            'getMultitenancySettings',
+            'updateMultitenancySettings',
+            
+            // Retention endpoints
+            'getRetentionSettings',
+            'updateRetentionSettings',
+            
+            // Version info
+            'getVersionInfo'
         ];
 
         foreach ($endpoints as $method) {
             if (method_exists($this->controller, $method)) {
-                $response = $this->controller->$method();
-                $this->assertInstanceOf(
-                    JSONResponse::class, 
-                    $response, 
-                    "Method {$method} should return JSONResponse"
-                );
-                
-                // Verify response data is serializable (no objects, resources, etc.)
-                $data = $response->getData();
-                $this->assertIsArray($data, "Method {$method} should return array data");
-                
-                // Verify JSON encoding works (would catch circular references, etc.)
-                $json = json_encode($data);
-                $this->assertNotFalse($json, "Method {$method} data should be JSON encodable");
+                try {
+                    $response = $this->controller->$method();
+                    
+                    $this->assertInstanceOf(
+                        JSONResponse::class, 
+                        $response, 
+                        "Method {$method} should return JSONResponse"
+                    );
+                    
+                    // Verify response data is serializable (no objects, resources, etc.)
+                    $data = $response->getData();
+                    $this->assertIsArray($data, "Method {$method} should return array data");
+                    
+                    // Verify JSON encoding works (would catch circular references, etc.)
+                    $json = json_encode($data);
+                    $this->assertNotFalse($json, "Method {$method} data should be JSON encodable");
+                    
+                } catch (\Exception $e) {
+                    $this->fail("Method {$method} threw exception: " . $e->getMessage());
+                }
             }
         }
     }
