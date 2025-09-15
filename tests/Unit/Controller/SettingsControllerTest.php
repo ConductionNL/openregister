@@ -149,7 +149,7 @@ class SettingsControllerTest extends TestCase
     }
 
     /**
-     * Test SOLR setup handles failures gracefully
+     * Test SOLR setup handles failures gracefully with detailed error reporting
      * 
      * @return void
      */
@@ -160,6 +160,16 @@ class SettingsControllerTest extends TestCase
             ->method('setupSolr')
             ->willReturn(false);
 
+        // Mock getSolrSettings to return test configuration
+        $this->settingsService
+            ->method('getSolrSettings')
+            ->willReturn([
+                'host' => 'con-solr-solrcloud-common.solr.svc.cluster.local',
+                'port' => '0',
+                'scheme' => 'http',
+                'path' => '/solr'
+            ]);
+
         $response = $this->controller->setupSolr();
 
         $this->assertInstanceOf(JSONResponse::class, $response);
@@ -169,6 +179,151 @@ class SettingsControllerTest extends TestCase
         $this->assertArrayHasKey('success', $data);
         $this->assertArrayHasKey('message', $data);
         $this->assertFalse($data['success']);
+        
+        // Verify enhanced error reporting structure
+        $this->assertArrayHasKey('error_details', $data);
+        $this->assertArrayHasKey('possible_causes', $data['error_details']);
+        $this->assertArrayHasKey('configuration_used', $data['error_details']);
+        $this->assertArrayHasKey('troubleshooting_steps', $data['error_details']);
+        
+        // Verify port 0 is not included in generated URLs
+        $generatedUrl = $data['error_details']['configuration_used']['generated_url'];
+        $this->assertStringNotContainsString(':0', $generatedUrl, 'Generated URL should not contain port 0');
+        
+        // Verify Kubernetes service name handling
+        $this->assertStringContainsString('con-solr-solrcloud-common.solr.svc.cluster.local', $generatedUrl);
+        $this->assertStringNotContainsString(':0', $generatedUrl);
+    }
+
+    /**
+     * Test SOLR setup error reporting with regular hostname (non-Kubernetes)
+     * 
+     * @return void
+     */
+    public function testSolrSetupErrorReportingWithRegularHostname(): void
+    {
+        // Mock setup failure
+        $this->settingsService
+            ->method('setupSolr')
+            ->willReturn(false);
+
+        // Mock getSolrSettings with regular hostname and explicit port
+        $this->settingsService
+            ->method('getSolrSettings')
+            ->willReturn([
+                'host' => 'solr.example.com',
+                'port' => '8983',
+                'scheme' => 'http',
+                'path' => '/solr'
+            ]);
+
+        $response = $this->controller->setupSolr();
+
+        $data = $response->getData();
+        
+        // Verify port is included for regular hostnames
+        $generatedUrl = $data['error_details']['configuration_used']['generated_url'];
+        $this->assertStringContainsString(':8983', $generatedUrl, 'Generated URL should contain explicit port for regular hostnames');
+        $this->assertStringContainsString('solr.example.com:8983', $generatedUrl);
+    }
+
+    /**
+     * Test SOLR setup error reporting with port 0 scenario
+     * 
+     * @return void
+     */
+    public function testSolrSetupErrorReportingWithPortZero(): void
+    {
+        // Mock setup failure
+        $this->settingsService
+            ->method('setupSolr')
+            ->willReturn(false);
+
+        // Mock getSolrSettings with port 0 (the problematic case)
+        $this->settingsService
+            ->method('getSolrSettings')
+            ->willReturn([
+                'host' => 'localhost',
+                'port' => 0,
+                'scheme' => 'http',
+                'path' => '/solr'
+            ]);
+
+        $response = $this->controller->setupSolr();
+
+        $data = $response->getData();
+        
+        // Verify port 0 is not included in URLs
+        $generatedUrl = $data['error_details']['configuration_used']['generated_url'];
+        $this->assertStringNotContainsString(':0', $generatedUrl, 'Generated URL should not contain port 0');
+        $this->assertStringContainsString('http://localhost/solr/admin/configs', $generatedUrl);
+        
+        // Verify troubleshooting steps mention port configuration
+        $troubleshootingSteps = $data['error_details']['troubleshooting_steps'];
+        $this->assertIsArray($troubleshootingSteps);
+        $portCheckFound = false;
+        foreach ($troubleshootingSteps as $step) {
+            if (strpos($step, 'port') !== false) {
+                $portCheckFound = true;
+                break;
+            }
+        }
+        $this->assertTrue($portCheckFound, 'Troubleshooting steps should mention port configuration');
+    }
+
+    /**
+     * Test SOLR setup error reporting includes all required troubleshooting information
+     * 
+     * @return void
+     */
+    public function testSolrSetupErrorReportingComprehensiveness(): void
+    {
+        // Mock setup failure
+        $this->settingsService
+            ->method('setupSolr')
+            ->willReturn(false);
+
+        // Mock getSolrSettings
+        $this->settingsService
+            ->method('getSolrSettings')
+            ->willReturn([
+                'host' => 'solr-test',
+                'port' => '8983',
+                'scheme' => 'https',
+                'path' => '/custom-solr'
+            ]);
+
+        $response = $this->controller->setupSolr();
+
+        $data = $response->getData();
+        $errorDetails = $data['error_details'];
+        
+        // Verify all required error detail sections are present
+        $requiredSections = ['primary_error', 'possible_causes', 'configuration_used', 'troubleshooting_steps', 'last_system_error'];
+        foreach ($requiredSections as $section) {
+            $this->assertArrayHasKey($section, $errorDetails, "Error details should contain '{$section}' section");
+        }
+        
+        // Verify possible causes include key scenarios
+        $possibleCauses = $errorDetails['possible_causes'];
+        $this->assertIsArray($possibleCauses);
+        $this->assertGreaterThan(3, count($possibleCauses), 'Should provide multiple possible causes');
+        
+        // Check for specific important causes
+        $causesText = implode(' ', $possibleCauses);
+        $this->assertStringContainsString('permissions', $causesText, 'Should mention permission issues');
+        $this->assertStringContainsString('SolrCloud', $causesText, 'Should mention SolrCloud mode issues');
+        $this->assertStringContainsString('connectivity', $causesText, 'Should mention connectivity issues');
+        
+        // Verify configuration details are accurate
+        $configUsed = $errorDetails['configuration_used'];
+        $this->assertEquals('solr-test', $configUsed['host']);
+        $this->assertEquals('8983', $configUsed['port']);
+        $this->assertEquals('https', $configUsed['scheme']);
+        $this->assertEquals('/custom-solr', $configUsed['path']);
+        
+        // Verify generated URL uses provided configuration
+        $this->assertStringContainsString('https://solr-test:8983/custom-solr', $configUsed['generated_url']);
     }
 
     /**
