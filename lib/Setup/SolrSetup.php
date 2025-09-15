@@ -70,6 +70,50 @@ class SolrSetup
     }
 
     /**
+     * Build SOLR URL with proper Kubernetes service name support
+     *
+     * @param string $path The SOLR API path (e.g., '/admin/info/system')
+     * @return string Complete SOLR URL
+     */
+    private function buildSolrUrl(string $path): string
+    {
+        $host = $this->solrConfig['host'] ?? 'localhost';
+        $port = $this->solrConfig['port'] ?? null;
+        $scheme = $this->solrConfig['scheme'] ?? 'http';
+        $basePath = $this->solrConfig['path'] ?? '/solr';
+        
+        // Check if it's a Kubernetes service name (contains .svc.cluster.local)
+        if (strpos($host, '.svc.cluster.local') !== false) {
+            // Kubernetes service - don't append port, it's handled by the service
+            return sprintf('%s://%s%s%s',
+                $scheme,
+                $host,
+                $basePath,
+                $path
+            );
+        } else {
+            // Regular hostname - only append port if explicitly provided
+            if ($port !== null && $port !== '') {
+                return sprintf('%s://%s:%d%s%s',
+                    $scheme,
+                    $host,
+                    $port,
+                    $basePath,
+                    $path
+                );
+            } else {
+                // No port provided - let the service handle it
+                return sprintf('%s://%s%s%s',
+                    $scheme,
+                    $host,
+                    $basePath,
+                    $path
+                );
+            }
+        }
+    }
+
+    /**
      * Run complete SOLR setup for OpenRegister multi-tenant architecture
      *
      * Performs all necessary setup operations for SolrCloud:
@@ -129,12 +173,7 @@ class SolrSetup
      */
     private function verifySolrConnectivity(): bool
     {
-        $url = sprintf('%s://%s:%d%s/admin/info/system?wt=json',
-            $this->solrConfig['scheme'],
-            $this->solrConfig['host'],
-            $this->solrConfig['port'],
-            $this->solrConfig['path']
-        );
+        $url = $this->buildSolrUrl('/admin/info/system?wt=json');
 
         $context = stream_context_create([
             'http' => [
@@ -191,12 +230,7 @@ class SolrSetup
      */
     private function configSetExists(string $configSetName): bool
     {
-        $url = sprintf('%s://%s:%d%s/admin/configs?action=LIST&wt=json',
-            $this->solrConfig['scheme'],
-            $this->solrConfig['host'],
-            $this->solrConfig['port'],
-            $this->solrConfig['path']
-        );
+        $url = $this->buildSolrUrl('/admin/configs?action=LIST&wt=json');
 
         $response = @file_get_contents($url);
         if ($response === false) {
@@ -218,14 +252,10 @@ class SolrSetup
      */
     private function createConfigSet(string $newConfigSetName, string $templateConfigSetName): bool
     {
-        $url = sprintf('%s://%s:%d%s/admin/configs?action=CREATE&name=%s&baseConfigSet=%s&wt=json',
-            $this->solrConfig['scheme'],
-            $this->solrConfig['host'],
-            $this->solrConfig['port'],
-            $this->solrConfig['path'],
+        $url = $this->buildSolrUrl(sprintf('/admin/configs?action=CREATE&name=%s&baseConfigSet=%s&wt=json',
             urlencode($newConfigSetName),
             urlencode($templateConfigSetName)
-        );
+        ));
 
         $response = @file_get_contents($url);
         if ($response === false) {
@@ -279,12 +309,7 @@ class SolrSetup
      */
     private function collectionExists(string $collectionName): bool
     {
-        $url = sprintf('%s://%s:%d%s/admin/collections?action=CLUSTERSTATUS&wt=json',
-            $this->solrConfig['scheme'],
-            $this->solrConfig['host'],
-            $this->solrConfig['port'],
-            $this->solrConfig['path']
-        );
+        $url = $this->buildSolrUrl('/admin/collections?action=CLUSTERSTATUS&wt=json');
 
         $response = @file_get_contents($url);
         if ($response === false) {
@@ -306,14 +331,10 @@ class SolrSetup
      */
     private function createCollection(string $collectionName, string $configSetName): bool
     {
-        $url = sprintf('%s://%s:%d%s/admin/collections?action=CREATE&name=%s&collection.configName=%s&numShards=1&replicationFactor=1&wt=json',
-            $this->solrConfig['scheme'],
-            $this->solrConfig['host'],
-            $this->solrConfig['port'],
-            $this->solrConfig['path'],
+        $url = $this->buildSolrUrl(sprintf('/admin/collections?action=CREATE&name=%s&collection.configName=%s&numShards=1&replicationFactor=1&wt=json',
             urlencode($collectionName),
             urlencode($configSetName)
-        );
+        ));
 
         $response = @file_get_contents($url);
         if ($response === false) {
@@ -348,13 +369,9 @@ class SolrSetup
      */
     private function coreExists(string $coreName): bool
     {
-        $url = sprintf('%s://%s:%d%s/admin/cores?action=STATUS&core=%s&wt=json',
-            $this->solrConfig['scheme'],
-            $this->solrConfig['host'],
-            $this->solrConfig['port'],
-            $this->solrConfig['path'],
+        $url = $this->buildSolrUrl(sprintf('/admin/cores?action=STATUS&core=%s&wt=json',
             urlencode($coreName)
-        );
+        ));
 
         $response = @file_get_contents($url);
         if ($response === false) {
@@ -376,14 +393,10 @@ class SolrSetup
      */
     private function createCore(string $coreName, string $configSetName): bool
     {
-        $url = sprintf('%s://%s:%d%s/admin/cores?action=CREATE&name=%s&configSet=%s&wt=json',
-            $this->solrConfig['scheme'],
-            $this->solrConfig['host'],
-            $this->solrConfig['port'],
-            $this->solrConfig['path'],
+        $url = $this->buildSolrUrl(sprintf('/admin/cores?action=CREATE&name=%s&configSet=%s&wt=json',
             urlencode($coreName),
             urlencode($configSetName)
-        );
+        ));
 
         $response = @file_get_contents($url);
         if ($response === false) {
@@ -647,13 +660,7 @@ class SolrSetup
     private function addSchemaField(string $fieldName, array $fieldConfig): bool
     {
         $baseCollectionName = $this->solrConfig['core'] ?? 'openregister';
-        $url = sprintf('%s://%s:%d%s/%s/schema',
-            $this->solrConfig['scheme'],
-            $this->solrConfig['host'],
-            $this->solrConfig['port'],
-            $this->solrConfig['path'],
-            $baseCollectionName
-        );
+        $url = $this->buildSolrUrl('/' . $baseCollectionName . '/schema');
 
         $payload = [
             'add-field' => array_merge(['name' => $fieldName], $fieldConfig)
@@ -693,13 +700,7 @@ class SolrSetup
     private function replaceSchemaField(string $fieldName, array $fieldConfig): bool
     {
         $baseCollectionName = $this->solrConfig['core'] ?? 'openregister';
-        $url = sprintf('%s://%s:%d%s/%s/schema',
-            $this->solrConfig['scheme'],
-            $this->solrConfig['host'],
-            $this->solrConfig['port'],
-            $this->solrConfig['path'],
-            $baseCollectionName
-        );
+        $url = $this->buildSolrUrl('/' . $baseCollectionName . '/schema');
 
         $payload = [
             'replace-field' => array_merge(['name' => $fieldName], $fieldConfig)
@@ -771,13 +772,9 @@ class SolrSetup
      */
     private function testCollectionQuery(string $collectionName): bool
     {
-        $url = sprintf('%s://%s:%d%s/%s/select?q=*:*&rows=0&wt=json',
-            $this->solrConfig['scheme'],
-            $this->solrConfig['host'],
-            $this->solrConfig['port'],
-            $this->solrConfig['path'],
+        $url = $this->buildSolrUrl(sprintf('/%s/select?q=*:*&rows=0&wt=json',
             urlencode($collectionName)
-        );
+        ));
 
         $response = @file_get_contents($url);
         if ($response === false) {
@@ -798,13 +795,9 @@ class SolrSetup
      */
     private function testCoreQuery(string $coreName): bool
     {
-        $url = sprintf('%s://%s:%d%s/%s/select?q=*:*&rows=0&wt=json',
-            $this->solrConfig['scheme'],
-            $this->solrConfig['host'],
-            $this->solrConfig['port'],
-            $this->solrConfig['path'],
+        $url = $this->buildSolrUrl(sprintf('/%s/select?q=*:*&rows=0&wt=json',
             urlencode($coreName)
-        );
+        ));
 
         $response = @file_get_contents($url);
         if ($response === false) {
