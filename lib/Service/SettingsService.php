@@ -1450,14 +1450,28 @@ class SettingsService
             // Handle optional port - default to 8983 if not provided
             $port = !empty($solrSettings['port']) ? $solrSettings['port'] : 8983;
             
-            // Build SOLR URL
-            $baseUrl = sprintf(
-                '%s://%s:%d%s',
-                $solrSettings['scheme'],
-                $solrSettings['host'],
-                $port,
-                $solrSettings['path']
-            );
+            // Build SOLR URL - handle Kubernetes service names properly
+            $host = $solrSettings['host'];
+            
+            // Check if it's a Kubernetes service name (contains .svc.cluster.local)
+            if (strpos($host, '.svc.cluster.local') !== false) {
+                // Kubernetes service - don't append port, it's handled by the service
+                $baseUrl = sprintf(
+                    '%s://%s%s',
+                    $solrSettings['scheme'],
+                    $host,
+                    $solrSettings['path']
+                );
+            } else {
+                // Regular hostname - append port
+                $baseUrl = sprintf(
+                    '%s://%s:%d%s',
+                    $solrSettings['scheme'],
+                    $host,
+                    $port,
+                    $solrSettings['path']
+                );
+            }
 
             // Test basic SOLR connectivity with admin endpoints
             // Try multiple common SOLR admin endpoints for maximum compatibility
@@ -1614,13 +1628,28 @@ class SettingsService
             // Handle optional port - default to 8983 if not provided
             $port = !empty($solrSettings['port']) ? $solrSettings['port'] : 8983;
             
-            $baseUrl = sprintf(
-                '%s://%s:%d%s',
-                $solrSettings['scheme'],
-                $solrSettings['host'],
-                $port,
-                $solrSettings['path']
-            );
+            // Build SOLR URL - handle Kubernetes service names properly
+            $host = $solrSettings['host'];
+            
+            // Check if it's a Kubernetes service name (contains .svc.cluster.local)
+            if (strpos($host, '.svc.cluster.local') !== false) {
+                // Kubernetes service - don't append port, it's handled by the service
+                $baseUrl = sprintf(
+                    '%s://%s%s',
+                    $solrSettings['scheme'],
+                    $host,
+                    $solrSettings['path']
+                );
+            } else {
+                // Regular hostname - append port
+                $baseUrl = sprintf(
+                    '%s://%s:%d%s',
+                    $solrSettings['scheme'],
+                    $host,
+                    $port,
+                    $solrSettings['path']
+                );
+            }
             
             // For SolrCloud, test collection existence
             if ($solrSettings['useCloud'] ?? false) {
@@ -1736,13 +1765,28 @@ class SettingsService
             // Handle optional port - default to 8983 if not provided
             $port = !empty($solrSettings['port']) ? $solrSettings['port'] : 8983;
             
-            $baseUrl = sprintf(
-                '%s://%s:%d%s',
-                $solrSettings['scheme'],
-                $solrSettings['host'],
-                $port,
-                $solrSettings['path']
-            );
+            // Build SOLR URL - handle Kubernetes service names properly
+            $host = $solrSettings['host'];
+            
+            // Check if it's a Kubernetes service name (contains .svc.cluster.local)
+            if (strpos($host, '.svc.cluster.local') !== false) {
+                // Kubernetes service - don't append port, it's handled by the service
+                $baseUrl = sprintf(
+                    '%s://%s%s',
+                    $solrSettings['scheme'],
+                    $host,
+                    $solrSettings['path']
+                );
+            } else {
+                // Regular hostname - append port
+                $baseUrl = sprintf(
+                    '%s://%s:%d%s',
+                    $solrSettings['scheme'],
+                    $host,
+                    $port,
+                    $solrSettings['path']
+                );
+            }
             
             // Test collection select query
             $testUrl = $baseUrl . '/' . $collectionName . '/select?q=*:*&rows=0&wt=json';
