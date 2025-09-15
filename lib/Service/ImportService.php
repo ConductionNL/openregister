@@ -23,9 +23,11 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\BackgroundJob\SolrWarmupJob;
 use OCP\IUserManager;
 use OCP\IGroupManager;
 use OCP\IUser;
+use OCP\BackgroundJob\IJobList;
 use PhpOffice\PhpSpreadsheet\Reader\Csv;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -130,6 +132,13 @@ class ImportService
      */
     private readonly IGroupManager $groupManager;
 
+    /**
+     * Background job list for scheduling SOLR warmup jobs
+     *
+     * @var IJobList
+     */
+    private readonly IJobList $jobList;
+
 
     /**
      * Constructor for the ImportService
@@ -140,8 +149,9 @@ class ImportService
      * @param LoggerInterface    $logger             The logger interface
      * @param IUserManager       $userManager        The user manager
      * @param IGroupManager      $groupManager       The group manager
+     * @param IJobList           $jobList            The background job list
      */
-    public function __construct(ObjectEntityMapper $objectEntityMapper, SchemaMapper $schemaMapper, ObjectService $objectService, LoggerInterface $logger, IUserManager $userManager, IGroupManager $groupManager)
+    public function __construct(ObjectEntityMapper $objectEntityMapper, SchemaMapper $schemaMapper, ObjectService $objectService, LoggerInterface $logger, IUserManager $userManager, IGroupManager $groupManager, IJobList $jobList)
     {
         $this->objectEntityMapper = $objectEntityMapper;
         $this->schemaMapper       = $schemaMapper;
@@ -149,6 +159,7 @@ class ImportService
         $this->logger             = $logger;
         $this->userManager        = $userManager;
         $this->groupManager       = $groupManager;
+        $this->jobList            = $jobList;
         
         // Initialize cache arrays to prevent issues
         $this->schemaPropertiesCache = [];
@@ -269,8 +280,12 @@ class ImportService
             ];
         }
 
+        // Schedule SOLR warmup job after successful Excel import
+        $finalResult = [$sheetTitle => $sheetSummary];
+        $this->scheduleSmartSolrWarmup($finalResult);
+
         // Return in sheet-based format for consistency.
-        return [$sheetTitle => $sheetSummary];
+        return $finalResult;
 
     }//end importFromExcel()
 
@@ -344,8 +359,12 @@ class ImportService
             'slug'  => $schema->getSlug(),
         ];
 
+        // Schedule SOLR warmup job after successful CSV import
+        $finalResult = [$sheetTitle => $sheetSummary];
+        $this->scheduleSmartSolrWarmup($finalResult);
+
         // Return in sheet-based format for consistency.
-        return [$sheetTitle => $sheetSummary];
+        return $finalResult;
 
     }//end importFromCsv()
 
@@ -421,6 +440,9 @@ class ImportService
             // Merge the sheet summary with the existing summary (preserve debug info).
             $summary[$schemaSlug] = array_merge($summary[$schemaSlug], $sheetSummary);
         }//end foreach
+
+        // Schedule SOLR warmup job after successful multi-schema import
+        $this->scheduleSmartSolrWarmup($summary);
 
         return $summary;
 
@@ -1827,6 +1849,142 @@ class ImportService
     }//end addPublishedDateToObjects()
 
 
+    /**
+     * Schedule SOLR warmup job after successful import
+     *
+     * This method schedules a one-time background job to warm up the SOLR index
+     * after import operations complete. The warmup runs in the background to avoid
+     * impacting import performance while ensuring optimal search performance.
+     *
+     * @param array  $importSummary Summary of the import operation
+     * @param int    $delaySeconds  Delay before running the warmup (default: 30 seconds)
+     * @param string $mode          Warmup mode - 'serial', 'parallel', or 'hyper' (default: 'serial')
+     * @param int    $maxObjects    Maximum objects to index during warmup (default: 5000)
+     * @return bool True if job was scheduled successfully
+     */
+    public function scheduleSolrWarmup(
+        array $importSummary,
+        int $delaySeconds = 30,
+        string $mode = 'serial',
+        int $maxObjects = 5000
+    ): bool {
+        try {
+            // Calculate total objects imported across all sheets
+            $totalImported = $this->calculateTotalImported($importSummary);
+            
+            if ($totalImported === 0) {
+                $this->logger->info('Skipping SOLR warmup - no objects were imported');
+                return false;
+            }
+
+            // Prepare job arguments
+            $jobArguments = [
+                'maxObjects' => $maxObjects,
+                'mode' => $mode,
+                'collectErrors' => false, // Keep it fast for post-import warmup
+                'triggeredBy' => 'import_completion',
+                'importSummary' => [
+                    'totalImported' => $totalImported,
+                    'sheetsProcessed' => count($importSummary),
+                    'importTimestamp' => date('c')
+                ]
+            ];
+
+            // Schedule the job with delay
+            $executeAfter = time() + $delaySeconds;
+            $this->jobList->add(SolrWarmupJob::class, $jobArguments, $executeAfter);
+
+            $this->logger->info('🔥 SOLR Warmup Job Scheduled', [
+                'total_imported' => $totalImported,
+                'warmup_mode' => $mode,
+                'max_objects' => $maxObjects,
+                'delay_seconds' => $delaySeconds,
+                'execute_after' => date('Y-m-d H:i:s', $executeAfter),
+                'triggered_by' => 'import_completion'
+            ]);
+
+            return true;
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to schedule SOLR warmup job', [
+                'error' => $e->getMessage(),
+                'import_summary' => $importSummary
+            ]);
+
+            return false;
+        }
+    }//end scheduleSolrWarmup()
+
+    /**
+     * Calculate total objects imported from import summary
+     *
+     * @param array $importSummary Import summary from Excel/CSV import
+     * @return int Total number of objects imported
+     */
+    private function calculateTotalImported(array $importSummary): int
+    {
+        $total = 0;
+
+        foreach ($importSummary as $sheetName => $sheetSummary) {
+            if (is_array($sheetSummary)) {
+                $created = count($sheetSummary['created'] ?? []);
+                $updated = count($sheetSummary['updated'] ?? []);
+                $total += $created + $updated;
+            }
+        }
+
+        return $total;
+    }//end calculateTotalImported()
+
+    /**
+     * Determine optimal warmup mode based on import size
+     *
+     * @param int $totalImported Total objects imported
+     * @return string Recommended warmup mode
+     */
+    public function getRecommendedWarmupMode(int $totalImported): string
+    {
+        if ($totalImported > 10000) {
+            return 'hyper'; // Fast mode for large imports
+        } elseif ($totalImported > 1000) {
+            return 'parallel'; // Balanced mode for medium imports
+        } else {
+            return 'serial'; // Safe mode for small imports
+        }
+    }//end getRecommendedWarmupMode()
+
+    /**
+     * Schedule SOLR warmup with smart configuration based on import results
+     *
+     * This is a convenience method that automatically determines the best warmup
+     * configuration based on the import results.
+     *
+     * @param array $importSummary Import summary
+     * @param bool  $immediate     Whether to run immediately (default: false, 30s delay)
+     * @return bool True if job was scheduled successfully
+     */
+    public function scheduleSmartSolrWarmup(array $importSummary, bool $immediate = false): bool
+    {
+        $totalImported = $this->calculateTotalImported($importSummary);
+        
+        if ($totalImported === 0) {
+            return false;
+        }
+
+        // Smart configuration based on import size
+        $mode = $this->getRecommendedWarmupMode($totalImported);
+        $maxObjects = min($totalImported * 2, 15000); // Index up to 2x imported objects, max 15k
+        $delay = $immediate ? 0 : 30; // 30 second delay by default
+
+        $this->logger->info('Scheduling smart SOLR warmup', [
+            'total_imported' => $totalImported,
+            'recommended_mode' => $mode,
+            'max_objects' => $maxObjects,
+            'delay_seconds' => $delay
+        ]);
+
+        return $this->scheduleSolrWarmup($importSummary, $delay, $mode, $maxObjects);
+    }//end scheduleSmartSolrWarmup()
 
 
 }//end class

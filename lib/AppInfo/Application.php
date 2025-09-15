@@ -55,6 +55,8 @@ use OCA\OpenRegister\Command\SolrDebugCommand;
 use OCA\OpenRegister\Command\SolrManagementCommand;
 use OCA\OpenRegister\Service\SchemaFacetCacheService;
 use OCA\OpenRegister\Search\ObjectsProvider;
+use OCA\OpenRegister\BackgroundJob\SolrWarmupJob;
+use OCA\OpenRegister\BackgroundJob\SolrNightlyWarmupJob;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
@@ -352,7 +354,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register ImportService with IUserManager and IGroupManager dependencies
+        // Register ImportService with IUserManager, IGroupManager, and IJobList dependencies
         $context->registerService(
                 ImportService::class,
                 function ($container) {
@@ -362,7 +364,8 @@ class Application extends App implements IBootstrap
                     $container->get(ObjectService::class),
                     $container->get('Psr\Log\LoggerInterface'),
                     $container->get('OCP\IUserManager'),
-                    $container->get('OCP\IGroupManager')
+                    $container->get('OCP\IGroupManager'),
+                    $container->get('OCP\BackgroundJob\IJobList')
                     );
                 }
                 );
@@ -543,8 +546,22 @@ class Application extends App implements IBootstrap
             
             $logger->info('OpenRegister boot: Event listeners registered successfully');
             
+            // Register recurring SOLR nightly warmup job
+            $jobList = $container->get('OCP\BackgroundJob\IJobList');
+            
+            // Check if the nightly warmup job is already registered
+            if (!$jobList->has(SolrNightlyWarmupJob::class, null)) {
+                $jobList->add(SolrNightlyWarmupJob::class);
+                $logger->info('🌙 SOLR Nightly Warmup Job registered successfully', [
+                    'job_class' => SolrNightlyWarmupJob::class,
+                    'interval' => '24 hours (daily at 00:00)'
+                ]);
+            } else {
+                $logger->debug('SOLR Nightly Warmup Job already registered');
+            }
+            
         } catch (\Exception $e) {
-            $logger->error('OpenRegister boot: Failed to register event listeners', [
+            $logger->error('OpenRegister boot: Failed to register event listeners and background jobs', [
                 'exception' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
