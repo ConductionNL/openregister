@@ -1447,9 +1447,6 @@ class SettingsService
     private function testSolrConnectivity(array $solrSettings): array
     {
         try {
-            // Handle optional port - default to 8983 if not provided
-            $port = !empty($solrSettings['port']) ? $solrSettings['port'] : 8983;
-            
             // Build SOLR URL - handle Kubernetes service names properly
             $host = $solrSettings['host'];
             
@@ -1463,7 +1460,8 @@ class SettingsService
                     $solrSettings['path']
                 );
             } else {
-                // Regular hostname - append port
+                // Regular hostname - append port (default to 8983 if not provided)
+                $port = !empty($solrSettings['port']) ? $solrSettings['port'] : 8983;
                 $baseUrl = sprintf(
                     '%s://%s:%d%s',
                     $solrSettings['scheme'],
@@ -1625,9 +1623,6 @@ class SettingsService
         try {
             $collectionName = $solrSettings['collection'] ?? $solrSettings['core'] ?? 'openregister';
             
-            // Handle optional port - default to 8983 if not provided
-            $port = !empty($solrSettings['port']) ? $solrSettings['port'] : 8983;
-            
             // Build SOLR URL - handle Kubernetes service names properly
             $host = $solrSettings['host'];
             
@@ -1641,7 +1636,8 @@ class SettingsService
                     $solrSettings['path']
                 );
             } else {
-                // Regular hostname - append port
+                // Regular hostname - append port (default to 8983 if not provided)
+                $port = !empty($solrSettings['port']) ? $solrSettings['port'] : 8983;
                 $baseUrl = sprintf(
                     '%s://%s:%d%s',
                     $solrSettings['scheme'],
@@ -1762,9 +1758,6 @@ class SettingsService
         try {
             $collectionName = $solrSettings['collection'] ?? $solrSettings['core'] ?? 'openregister';
             
-            // Handle optional port - default to 8983 if not provided
-            $port = !empty($solrSettings['port']) ? $solrSettings['port'] : 8983;
-            
             // Build SOLR URL - handle Kubernetes service names properly
             $host = $solrSettings['host'];
             
@@ -1778,7 +1771,8 @@ class SettingsService
                     $solrSettings['path']
                 );
             } else {
-                // Regular hostname - append port
+                // Regular hostname - append port (default to 8983 if not provided)
+                $port = !empty($solrSettings['port']) ? $solrSettings['port'] : 8983;
                 $baseUrl = sprintf(
                     '%s://%s:%d%s',
                     $solrSettings['scheme'],

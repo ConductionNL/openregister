@@ -180,7 +180,7 @@ class GuzzleSolrService
     private function buildSolrBaseUrl(): string
     {
         $host = $this->solrConfig['host'] ?? 'localhost';
-        $port = $this->solrConfig['port'] ?? 8983;
+        $port = $this->solrConfig['port'] ?? null; // Don't default port here
         
         // Check if it's a Kubernetes service name (contains .svc.cluster.local)
         if (strpos($host, '.svc.cluster.local') !== false) {
@@ -192,14 +192,24 @@ class GuzzleSolrService
                 $this->solrConfig['path'] ?? '/solr'
             );
         } else {
-            // Regular hostname - append port
-            return sprintf(
-                '%s://%s:%d%s',
-                $this->solrConfig['scheme'] ?? 'http',
-                $host,
-                $port,
-                $this->solrConfig['path'] ?? '/solr'
-            );
+            // Regular hostname - only append port if explicitly provided
+            if ($port !== null && $port !== '') {
+                return sprintf(
+                    '%s://%s:%d%s',
+                    $this->solrConfig['scheme'] ?? 'http',
+                    $host,
+                    $port,
+                    $this->solrConfig['path'] ?? '/solr'
+                );
+            } else {
+                // No port provided - use default port behavior (let the service handle it)
+                return sprintf(
+                    '%s://%s%s',
+                    $this->solrConfig['scheme'] ?? 'http',
+                    $host,
+                    $this->solrConfig['path'] ?? '/solr'
+                );
+            }
         }
     }
 
