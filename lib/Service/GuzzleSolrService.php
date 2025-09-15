@@ -1085,41 +1085,6 @@ class GuzzleSolrService
         ];
     }
 
-        // Translate OpenRegister query to Solr query
-        $solrQuery = $this->translateOpenRegisterQuery($query);
-        
-        // Apply additional filtering based on parameters
-        $this->applyAdditionalFilters($solrQuery, $rbac, $multi, $published, $deleted);
-        
-        $this->logger->debug('[SOLR] Query translated for search', [
-            'has_filters' => !empty($solrQuery['filters']),
-            'filter_count' => count($solrQuery['filters'] ?? []),
-            'has_at_self' => isset($query['@self']),
-            'rbac' => $rbac,
-            'multi' => $multi,
-            'published' => $published,
-            'deleted' => $deleted
-        ]);
-        
-        $this->logger->info('[GuzzleSolrService] Translated query', [
-            'original' => $query,
-            'solr' => $solrQuery
-        ]);
-        
-        // Execute Solr search using existing searchObjects method
-        $solrResults = $this->searchObjects($solrQuery);
-        
-        // Convert Solr results back to OpenRegister format
-        $openRegisterResults = $this->convertSolrResultsToOpenRegisterFormat($solrResults, $query);
-        
-        $this->logger->debug('[GuzzleSolrService] Search completed', [
-            'found' => $openRegisterResults['total'] ?? 0,
-            'returned' => count($openRegisterResults['results'] ?? [])
-        ]);
-        
-        return $openRegisterResults;
-    }
-
     /**
      * Apply additional filters based on RBAC, multi-tenancy, published, and deleted parameters
      *
