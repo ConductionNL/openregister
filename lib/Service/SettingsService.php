@@ -1337,6 +1337,17 @@ class SettingsService
                 $testResults['message'] = 'SOLR collection/core not available';
             }
 
+            // Test 4: Collection query test (if collection exists)
+            if ($collectionTest['success']) {
+                $queryTest = $this->testSolrQuery($solrSettings);
+                $testResults['components']['query'] = $queryTest;
+                
+                if (!$queryTest['success']) {
+                    // Don't fail overall test if query fails but collection exists
+                    $testResults['message'] = 'SOLR collection exists but query test failed';
+                }
+            }
+
             return $testResults;
 
         } catch (\Exception $e) {
@@ -1436,26 +1447,29 @@ class SettingsService
     private function testSolrConnectivity(array $solrSettings): array
     {
         try {
+            // Handle optional port - default to 8983 if not provided
+            $port = !empty($solrSettings['port']) ? $solrSettings['port'] : 8983;
+            
             // Build SOLR URL
             $baseUrl = sprintf(
                 '%s://%s:%d%s',
                 $solrSettings['scheme'],
                 $solrSettings['host'],
-                $solrSettings['port'],
+                $port,
                 $solrSettings['path']
             );
 
-            // For SolrCloud mode, test the collection select endpoint
-            // For standalone mode, test the admin ping endpoint
-            $useCloud = $solrSettings['useCloud'] ?? false;
+            // Test basic SOLR connectivity with admin endpoints
+            // Try multiple common SOLR admin endpoints for maximum compatibility
+            $testEndpoints = [
+                '/admin/ping?wt=json',
+                '/solr/admin/ping?wt=json',
+                '/admin/info/system?wt=json'
+            ];
             
-            if ($useCloud) {
-                $testUrl = $baseUrl . '/' . $solrSettings['collection'] . '/select?q=*:*&rows=0&wt=json';
-                $testType = 'collection_select';
-            } else {
-                $testUrl = $baseUrl . '/admin/ping?wt=json';
-                $testType = 'admin_ping';
-            }
+            $testUrl = null;
+            $testType = 'admin_ping';
+            $lastError = null;
             
             // Create HTTP context with timeout
             $context = stream_context_create([
@@ -1469,18 +1483,34 @@ class SettingsService
                 ]
             ]);
             
-            $startTime = microtime(true);
-            $response = @file_get_contents($testUrl, false, $context);
-            $responseTime = (microtime(true) - $startTime) * 1000;
+            // Try each endpoint until one works
+            $response = false;
+            $responseTime = 0;
+            
+            foreach ($testEndpoints as $endpoint) {
+                $testUrl = $baseUrl . $endpoint;
+                $startTime = microtime(true);
+                $response = @file_get_contents($testUrl, false, $context);
+                $responseTime = (microtime(true) - $startTime) * 1000;
+                
+                if ($response !== false) {
+                    // Found a working endpoint
+                    break;
+                } else {
+                    $lastError = "Failed to connect to: " . $testUrl;
+                }
+            }
             
             if ($response === false) {
                 return [
                     'success' => false,
-                    'message' => 'SOLR server not responding',
+                    'message' => 'SOLR server not responding on any admin endpoint',
                     'details' => [
-                        'url' => $testUrl,
+                        'tested_endpoints' => array_map(function($endpoint) use ($baseUrl) {
+                            return $baseUrl . $endpoint;
+                        }, $testEndpoints),
+                        'last_error' => $lastError,
                         'test_type' => $testType,
-                        'use_cloud' => $useCloud,
                         'response_time_ms' => round($responseTime, 2)
                     ]
                 ];
@@ -1488,13 +1518,26 @@ class SettingsService
             
             $data = json_decode($response, true);
             
-            // Validate response based on test type
-            if ($testType === 'collection_select') {
-                // For SolrCloud collection select test
-                if (!isset($data['responseHeader']['status']) || $data['responseHeader']['status'] !== 0) {
+            // Validate admin response - be flexible about response format
+            if ($testType === 'admin_ping') {
+                // Check for successful response - different endpoints have different formats
+                $isValidResponse = false;
+                
+                if (isset($data['status']) && $data['status'] === 'OK') {
+                    // Standard ping response
+                    $isValidResponse = true;
+                } elseif (isset($data['responseHeader']['status']) && $data['responseHeader']['status'] === 0) {
+                    // System info response
+                    $isValidResponse = true;
+                } elseif (is_array($data) && !empty($data)) {
+                    // Any valid JSON response indicates SOLR is responding
+                    $isValidResponse = true;
+                }
+                
+                if (!$isValidResponse) {
                     return [
                         'success' => false,
-                        'message' => 'SOLR collection select query failed',
+                        'message' => 'SOLR admin endpoint returned invalid response',
                         'details' => [
                             'url' => $testUrl,
                             'test_type' => $testType,
@@ -1506,16 +1549,15 @@ class SettingsService
                 
             return [
                 'success' => true,
-                'message' => 'SOLR SolrCloud server responding correctly',
+                'message' => 'SOLR server responding correctly',
                 'details' => [
                     'url' => $testUrl,
                     'test_type' => $testType,
-                    'use_cloud' => $useCloud,
                     'response_time_ms' => round($responseTime, 2),
-                    'collection' => $solrSettings['collection'],
-                    'zk_connected' => $data['responseHeader']['zkConnected'] ?? false,
-                    'query_time' => $data['responseHeader']['QTime'] ?? 0,
-                    'num_found' => $data['response']['numFound'] ?? 0
+                    'solr_status' => $data['status'] ?? 'OK',
+                    'use_cloud' => $solrSettings['useCloud'] ?? false,
+                    'server_info' => $data['responseHeader'] ?? [],
+                    'working_endpoint' => str_replace($baseUrl, '', $testUrl)
                 ]
             ];
             } else {
@@ -1568,11 +1610,15 @@ class SettingsService
     {
         try {
             $collectionName = $solrSettings['collection'] ?? $solrSettings['core'] ?? 'openregister';
+            
+            // Handle optional port - default to 8983 if not provided
+            $port = !empty($solrSettings['port']) ? $solrSettings['port'] : 8983;
+            
             $baseUrl = sprintf(
                 '%s://%s:%d%s',
                 $solrSettings['scheme'],
                 $solrSettings['host'],
-                $solrSettings['port'],
+                $port,
                 $solrSettings['path']
             );
             
@@ -1668,6 +1714,94 @@ class SettingsService
             return [
                 'success' => false,
                 'message' => 'Collection test failed: ' . $e->getMessage(),
+                'details' => [
+                    'error' => $e->getMessage(),
+                    'collection' => $solrSettings['collection'] ?? $solrSettings['core'] ?? 'openregister'
+                ]
+            ];
+        }
+    }
+
+    /**
+     * Test SOLR collection query functionality
+     *
+     * @param array $solrSettings SOLR configuration
+     * @return array Query test results
+     */
+    private function testSolrQuery(array $solrSettings): array
+    {
+        try {
+            $collectionName = $solrSettings['collection'] ?? $solrSettings['core'] ?? 'openregister';
+            
+            // Handle optional port - default to 8983 if not provided
+            $port = !empty($solrSettings['port']) ? $solrSettings['port'] : 8983;
+            
+            $baseUrl = sprintf(
+                '%s://%s:%d%s',
+                $solrSettings['scheme'],
+                $solrSettings['host'],
+                $port,
+                $solrSettings['path']
+            );
+            
+            // Test collection select query
+            $testUrl = $baseUrl . '/' . $collectionName . '/select?q=*:*&rows=0&wt=json';
+            
+            $context = stream_context_create([
+                'http' => [
+                    'timeout' => 10,
+                    'method' => 'GET'
+                ]
+            ]);
+            
+            $startTime = microtime(true);
+            $response = @file_get_contents($testUrl, false, $context);
+            $responseTime = (microtime(true) - $startTime) * 1000;
+            
+            if ($response === false) {
+                return [
+                    'success' => false,
+                    'message' => 'Collection query failed',
+                    'details' => [
+                        'url' => $testUrl,
+                        'collection' => $collectionName,
+                        'response_time_ms' => round($responseTime, 2)
+                    ]
+                ];
+            }
+            
+            $data = json_decode($response, true);
+            
+            // Check for successful query response
+            if (!isset($data['responseHeader']['status']) || $data['responseHeader']['status'] !== 0) {
+                return [
+                    'success' => false,
+                    'message' => 'Collection query returned error',
+                    'details' => [
+                        'url' => $testUrl,
+                        'collection' => $collectionName,
+                        'response' => $data,
+                        'response_time_ms' => round($responseTime, 2)
+                    ]
+                ];
+            }
+            
+            return [
+                'success' => true,
+                'message' => 'Collection query successful',
+                'details' => [
+                    'url' => $testUrl,
+                    'collection' => $collectionName,
+                    'response_time_ms' => round($responseTime, 2),
+                    'num_found' => $data['response']['numFound'] ?? 0,
+                    'query_time' => $data['responseHeader']['QTime'] ?? 0
+                ]
+            ];
+            
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Query test failed: ' . $e->getMessage(),
                 'details' => [
                     'error' => $e->getMessage(),
                     'collection' => $solrSettings['collection'] ?? $solrSettings['core'] ?? 'openregister'

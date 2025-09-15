@@ -28,7 +28,9 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\ObjectCacheService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
@@ -92,13 +94,17 @@ class NamesController extends Controller
      * }
      * ```
      *
+     * @NoAdminRequired
      * @NoCSRFRequired
+     * @PublicPage
      *
      * @return JSONResponse Object names with performance metadata
      *
      * @throws \Exception If name lookup fails
      */
+    #[NoAdminRequired]
     #[NoCSRFRequired]
+    #[PublicPage]
     public function index(): JSONResponse
     {
         $startTime = microtime(true);
@@ -190,13 +196,17 @@ class NamesController extends Controller
      * }
      * ```
      *
+     * @NoAdminRequired
      * @NoCSRFRequired
+     * @PublicPage
      *
      * @return JSONResponse Object names with performance metadata
      *
      * @throws \Exception If name lookup fails
      */
+    #[NoAdminRequired]
     #[NoCSRFRequired]
+    #[PublicPage]
     public function create(): JSONResponse
     {
         $startTime = microtime(true);
@@ -273,7 +283,9 @@ class NamesController extends Controller
      * }
      * ```
      *
+     * @NoAdminRequired
      * @NoCSRFRequired
+     * @PublicPage
      *
      * @param string $id Object ID or UUID to get name for
      *
@@ -281,7 +293,9 @@ class NamesController extends Controller
      *
      * @throws \Exception If name lookup fails
      */
+    #[NoAdminRequired]
     #[NoCSRFRequired]
+    #[PublicPage]
     public function show(string $id): JSONResponse
     {
         $startTime = microtime(true);
@@ -341,11 +355,15 @@ class NamesController extends Controller
      * **ADMINISTRATIVE ENDPOINT**: Provides cache performance insights
      * for monitoring and optimization.
      *
+     * @NoAdminRequired
      * @NoCSRFRequired
+     * @PublicPage
      *
      * @return JSONResponse Cache statistics and performance data
      */
+    #[NoAdminRequired]
     #[NoCSRFRequired]
+    #[PublicPage]
     public function stats(): JSONResponse
     {
         try {
@@ -380,11 +398,15 @@ class NamesController extends Controller
      * **ADMINISTRATIVE ENDPOINT**: Triggers manual cache warmup
      * for improved performance after system maintenance.
      *
+     * @NoAdminRequired
      * @NoCSRFRequired
+     * @PublicPage
      *
      * @return JSONResponse Warmup results with performance data
      */
+    #[NoAdminRequired]
     #[NoCSRFRequired]
+    #[PublicPage]
     public function warmup(): JSONResponse
     {
         $startTime = microtime(true);

@@ -99,14 +99,14 @@
 					<div class="config-row">
 						<label class="config-label">
 							<strong>Port</strong>
-							<p class="config-description">SOLR server port number</p>
+							<p class="config-description">SOLR server port number (optional, defaults to 8983)</p>
 						</label>
 						<div class="config-input">
 							<input
 								v-model.number="solrOptions.port"
 								type="number"
 								:disabled="loading || saving"
-								placeholder="8983"
+								placeholder="8983 (default)"
 								class="solr-input-field">
 						</div>
 					</div>
@@ -211,6 +211,21 @@
 								type="text"
 								:disabled="loading || saving"
 								placeholder="zookeeper:2181"
+								class="solr-input-field">
+						</div>
+					</div>
+
+					<div class="config-row">
+						<label class="config-label">
+							<strong>Zookeeper Port</strong>
+							<p class="config-description">Zookeeper port number (optional, defaults to 2181)</p>
+						</label>
+						<div class="config-input">
+							<input
+								v-model.number="solrOptions.zookeeperPort"
+								type="number"
+								:disabled="loading || saving"
+								placeholder="2181 (default)"
 								class="solr-input-field">
 						</div>
 					</div>
@@ -429,6 +444,36 @@
 								</div>
 							</div>
 						</div>
+
+						<!-- Query Component -->
+						<div v-if="testResults.components.query" class="component-card query">
+							<div class="component-header">
+								<div class="component-icon">
+									<span class="icon-bg">🔍</span>
+									<span class="status-indicator" :class="testResults.components.query.success ? 'success' : 'error'">
+										{{ testResults.components.query.success ? '✅' : '❌' }}
+									</span>
+								</div>
+								<div class="component-info">
+									<h4>Collection Query Test</h4>
+									<p class="component-status">{{ testResults.components.query.message }}</p>
+								</div>
+							</div>
+							<div v-if="testResults.components.query.details" class="component-metrics">
+								<div class="metric highlight">
+									<span class="metric-label">⚡ Query Time</span>
+									<span class="metric-value">{{ testResults.components.query.details.query_time }}ms</span>
+								</div>
+								<div class="metric">
+									<span class="metric-label">📄 Documents</span>
+									<span class="metric-value">{{ testResults.components.query.details.num_found?.toLocaleString() || 'N/A' }}</span>
+								</div>
+								<div class="metric technical">
+									<span class="metric-label">🌐 Query URL</span>
+									<span class="metric-value technical-url">{{ testResults.components.query.details.url }}</span>
+								</div>
+							</div>
+						</div>
 					</div>
 
 					<!-- Summary Stats -->
@@ -447,6 +492,42 @@
 								<div class="stat">
 									<span class="stat-number">{{ testResults.components?.solr?.details?.response_time_ms || 'N/A' }}ms</span>
 									<span class="stat-label">Avg Response</span>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Kubernetes Services Discovery -->
+					<div class="kubernetes-services">
+						<div class="services-card">
+							<h5>🌐 Kubernetes Services Discovery</h5>
+							<p class="services-description">
+								Common Kubernetes service patterns for SOLR and Zookeeper in your cluster:
+							</p>
+							<div class="service-suggestions">
+								<div class="service-group">
+									<h6>🔍 SOLR Services</h6>
+									<div class="service-examples">
+										<code>con-solr-solrcloud-common.solr.svc.cluster.local</code>
+										<code>solr-headless.solr.svc.cluster.local</code>
+										<code>solr-service.default.svc.cluster.local</code>
+									</div>
+								</div>
+								<div class="service-group">
+									<h6>🔗 Zookeeper Services</h6>
+									<div class="service-examples">
+										<code>con-zookeeper-solrcloud-common.zookeeper.svc.cluster.local</code>
+										<code>zookeeper-headless.zookeeper.svc.cluster.local</code>
+										<code>zookeeper-service.default.svc.cluster.local</code>
+									</div>
+								</div>
+								<div class="service-group">
+									<h6>💡 Service Discovery Tips</h6>
+									<div class="service-tips">
+										<p>• Use <code>kubectl get services -n &lt;namespace&gt;</code> to list services</p>
+										<p>• Format: <code>&lt;service-name&gt;.&lt;namespace&gt;.svc.cluster.local</code></p>
+										<p>• Default namespace services: <code>&lt;service-name&gt;.default.svc.cluster.local</code></p>
+									</div>
 								</div>
 							</div>
 						</div>
@@ -1041,6 +1122,10 @@ export default {
 	border-left: 4px solid #4CAF50;
 }
 
+.component-card.query {
+	border-left: 4px solid #9C27B0;
+}
+
 .component-header {
 	display: flex;
 	align-items: flex-start;
@@ -1181,6 +1266,92 @@ export default {
 	font-size: 12px;
 	opacity: 0.9;
 	font-weight: 500;
+}
+
+/* Kubernetes Services Discovery Styles */
+.kubernetes-services {
+	margin-top: 24px;
+}
+
+.services-card {
+	background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+	border: 1px solid #dee2e6;
+	border-radius: 12px;
+	padding: 20px;
+}
+
+.services-card h5 {
+	margin: 0 0 12px 0;
+	color: #495057;
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.services-description {
+	margin: 0 0 16px 0;
+	color: #6c757d;
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+.service-suggestions {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.service-group h6 {
+	margin: 0 0 8px 0;
+	color: #495057;
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.service-examples {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.service-examples code {
+	background: #f8f9fa;
+	border: 1px solid #dee2e6;
+	border-radius: 4px;
+	padding: 6px 8px;
+	font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+	font-size: 12px;
+	color: #495057;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.service-examples code:hover {
+	background: #e9ecef;
+	border-color: #ced4da;
+	transform: translateX(2px);
+}
+
+.service-tips {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.service-tips p {
+	margin: 0;
+	font-size: 13px;
+	color: #6c757d;
+	line-height: 1.4;
+}
+
+.service-tips code {
+	background: #f8f9fa;
+	border: 1px solid #dee2e6;
+	border-radius: 3px;
+	padding: 2px 4px;
+	font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+	font-size: 11px;
+	color: #495057;
 }
 
 /* Enhanced Setup Dialog Styles */
