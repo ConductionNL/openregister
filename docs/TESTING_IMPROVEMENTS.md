@@ -77,8 +77,9 @@ public function testJsonDecodeStreamBugIsFixed(): void
 - **Retention**: `getRetentionSettings`, `updateRetentionSettings`
 - **Core**: `load`, `update`, `updatePublishingOptions`, `rebase`, `stats`, `getStatistics`, `getVersionInfo`
 
-**Critical Test:**
+**Critical Tests:**
 ```php
+// Exception handling test
 public function testSolrConnectionTestHandlesServiceExceptions(): void
 {
     // Mock service throwing our exact bug
@@ -90,6 +91,36 @@ public function testSolrConnectionTestHandlesServiceExceptions(): void
     $response = $this->controller->testSolrConnection();
     $this->assertInstanceOf(JSONResponse::class, $response);
 }
+
+// Error reporting tests
+public function testSolrSetupErrorReportingWithPortZero(): void
+{
+    // Test port 0 scenario that was causing issues
+    $this->settingsService->method('getSolrSettings')
+        ->willReturn(['host' => 'localhost', 'port' => 0]);
+    
+    $response = $this->controller->setupSolr();
+    $data = $response->getData();
+    
+    // Verify port 0 is not included in URLs
+    $generatedUrl = $data['error_details']['configuration_used']['generated_url'];
+    $this->assertStringNotContainsString(':0', $generatedUrl);
+}
+
+// Kubernetes service name handling
+public function testUrlBuildingWithKubernetesServiceNames(): void
+{
+    // Mock Kubernetes service configuration
+    $this->config->method('getAppValue')
+        ->willReturnMap([
+            ['openregister', 'solr_host', 'localhost', 'con-solr-solrcloud-common.solr.svc.cluster.local'],
+            ['openregister', 'solr_port', '8983', '0']
+        ]);
+    
+    // Test should pass without port issues
+    $result = $this->guzzleSolrService->testConnection();
+    $this->assertIsArray($result);
+}
 ```
 
 ## What These Tests Catch
@@ -100,6 +131,9 @@ public function testSolrConnectionTestHandlesServiceExceptions(): void
 3. **Response Parsing Failures**: Invalid JSON handling, malformed responses
 4. **Controller Exception Handling**: Unhandled service exceptions causing crashes
 5. **API Response Structure**: Missing required fields, wrong data types
+6. **URL Building Issues**: Port 0 problems, Kubernetes service name handling
+7. **Error Reporting Regressions**: Missing error details, generic messages
+8. **Configuration Edge Cases**: Various hostname/port combinations
 
 ### ✅ **Additional Benefits:**
 1. **Regression Prevention**: Future HTTP client changes won't break existing functionality

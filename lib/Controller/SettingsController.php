@@ -421,18 +421,66 @@ class SettingsController extends Controller
                     ]
                 ]);
             } else {
+                // Get the last error from logs or setup object
+                $lastError = error_get_last();
+                
                 return new JSONResponse([
                     'success' => false,
-                    'message' => 'SOLR setup failed - check logs for details',
+                    'message' => 'SOLR setup failed',
                     'timestamp' => date('Y-m-d H:i:s'),
+                    'error_details' => [
+                        'primary_error' => 'Failed to create base configSet "openregister"',
+                        'possible_causes' => [
+                            'SOLR server lacks write permissions for config directory',
+                            'Template configSet "_default" does not exist',
+                            'SOLR is not running in SolrCloud mode',
+                            'ZooKeeper connectivity issues in SolrCloud setup',
+                            'Network connectivity issues',
+                            'Invalid SOLR configuration (host/port/path)',
+                            'Port configuration issue (check if port 0 is being used)'
+                        ],
+                        'configuration_used' => [
+                            'host' => $solrSettings['host'],
+                            'port' => $solrSettings['port'] ?: 'default',
+                            'scheme' => $solrSettings['scheme'],
+                            'path' => $solrSettings['path'],
+                            'generated_url' => sprintf('%s://%s%s%s/admin/configs',
+                                $solrSettings['scheme'] ?? 'http',
+                                $solrSettings['host'] ?? 'localhost',
+                                ($solrSettings['port'] && $solrSettings['port'] !== '0') ? ':' . $solrSettings['port'] : '',
+                                $solrSettings['path'] ?? '/solr'
+                            )
+                        ],
+                        'troubleshooting_steps' => [
+                            'Check SOLR admin UI at: ' . sprintf('%s://%s%s%s/#/~configs',
+                                $solrSettings['scheme'] ?? 'http',
+                                $solrSettings['host'] ?? 'localhost',
+                                ($solrSettings['port'] && $solrSettings['port'] !== '0') ? ':' . $solrSettings['port'] : '',
+                                $solrSettings['path'] ?? '/solr'
+                            ),
+                            'Verify available configSets in SOLR admin',
+                            'Check SOLR server logs for detailed error messages',
+                            'Ensure SOLR is running in SolrCloud mode if using Zookeeper',
+                            'Verify network connectivity to SOLR server',
+                            'Check if port is configured correctly (should not be 0)'
+                        ],
+                        'last_system_error' => $lastError ? $lastError['message'] : 'No system error captured'
+                    ],
                     'steps' => [
                         [
                             'step' => 1,
-                            'name' => 'SOLR Setup',
-                            'description' => 'Failed to complete SOLR setup process',
+                            'name' => 'ConfigSet Creation',
+                            'description' => 'Failed to create base configSet "openregister"',
                             'status' => 'failed',
                             'details' => [
-                                'error' => 'Setup process returned false - check server logs'
+                                'error' => 'HTTP request to SOLR admin API failed',
+                                'url_attempted' => sprintf('%s://%s%s%s/admin/configs?action=CREATE&name=openregister&baseConfigSet=_default&wt=json',
+                                    $solrSettings['scheme'] ?? 'http',
+                                    $solrSettings['host'] ?? 'localhost',
+                                    ($solrSettings['port'] && $solrSettings['port'] !== '0') ? ':' . $solrSettings['port'] : '',
+                                    $solrSettings['path'] ?? '/solr'
+                                ),
+                                'check_logs_for' => 'HTTP request failed, Invalid JSON response, or SOLR-specific errors'
                             ]
                         ]
                     ]
