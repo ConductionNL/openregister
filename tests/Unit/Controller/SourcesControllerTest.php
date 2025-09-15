@@ -186,7 +186,7 @@ class SourcesControllerTest extends TestCase
             ->expects($this->once())
             ->method('find')
             ->with($id)
-            ->willThrowException(new \Exception('Source not found'));
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Source not found'));
 
         $response = $this->controller->show($id);
 

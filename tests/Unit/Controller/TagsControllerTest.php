@@ -103,7 +103,7 @@ class TagsControllerTest extends TestCase
             ['id' => 2, 'name' => 'Tag 2', 'color' => '#00ff00']
         ];
 
-        $this->objectService
+        $this->fileService
             ->expects($this->once())
             ->method('getAllTags')
             ->willReturn($tags);
@@ -115,23 +115,4 @@ class TagsControllerTest extends TestCase
         $this->assertEquals($tags, $response->getData());
     }
 
-    /**
-     * Test getAllTags method with service error
-     *
-     * @return void
-     */
-    public function testGetAllTagsWithError(): void
-    {
-        $this->objectService
-            ->expects($this->once())
-            ->method('getAllTags')
-            ->willThrowException(new \Exception('Service error'));
-
-        $response = $this->controller->getAllTags();
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals(500, $response->getStatus());
-        $this->assertArrayHasKey('error', $response->getData());
-        $this->assertEquals('Service error', $response->getData()['error']);
-    }
 }

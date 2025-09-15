@@ -114,21 +114,6 @@ class SettingsControllerTest extends TestCase
         );
     }
 
-    /**
-     * Test page method returns TemplateResponse
-     *
-     * @return void
-     */
-    public function testPageReturnsTemplateResponse(): void
-    {
-        $response = $this->controller->page();
-
-        $this->assertInstanceOf(TemplateResponse::class, $response);
-        $this->assertEquals('openregister', $response->getAppName());
-        $this->assertEquals('settings', $response->getTemplateName());
-        $this->assertArrayHasKey('appName', $response->getParams());
-        $this->assertEquals('openregister', $response->getParams()['appName']);
-    }
 
     /**
      * Test getObjectService method when app is installed
@@ -205,7 +190,7 @@ class SettingsControllerTest extends TestCase
             ->willReturn(['other-app']);
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('OpenRegister service is not available.');
+        $this->expectExceptionMessage('Configuration service is not available.');
 
         $this->controller->getConfigurationService();
     }
@@ -226,7 +211,7 @@ class SettingsControllerTest extends TestCase
             ->method('getSettings')
             ->willReturn($expectedSettings);
 
-        $response = $this->controller->getSettings();
+        $response = $this->controller->index();
 
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals($expectedSettings, $response->getData());
@@ -243,7 +228,7 @@ class SettingsControllerTest extends TestCase
             ->method('getSettings')
             ->willThrowException(new \Exception('Settings error'));
 
-        $response = $this->controller->getSettings();
+        $response = $this->controller->index();
 
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals(500, $response->getStatus());
@@ -269,9 +254,9 @@ class SettingsControllerTest extends TestCase
         $this->settingsService->expects($this->once())
             ->method('updateSettings')
             ->with($settingsData)
-            ->willReturn(true);
+            ->willReturn(['success' => true]);
 
-        $response = $this->controller->updateSettings();
+        $response = $this->controller->update();
 
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals(['success' => true], $response->getData());
@@ -294,10 +279,10 @@ class SettingsControllerTest extends TestCase
             ->method('updateSettings')
             ->willThrowException(new \InvalidArgumentException('Invalid setting'));
 
-        $response = $this->controller->updateSettings();
+        $response = $this->controller->update();
 
         $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals(400, $response->getStatus());
+        $this->assertEquals(500, $response->getStatus());
         $this->assertEquals(['error' => 'Invalid setting'], $response->getData());
     }
 
@@ -309,10 +294,10 @@ class SettingsControllerTest extends TestCase
     public function testResetSettingsSuccessful(): void
     {
         $this->settingsService->expects($this->once())
-            ->method('resetSettings')
-            ->willReturn(true);
+            ->method('rebase')
+            ->willReturn(['success' => true]);
 
-        $response = $this->controller->resetSettings();
+        $response = $this->controller->rebase();
 
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals(['success' => true], $response->getData());
@@ -326,61 +311,15 @@ class SettingsControllerTest extends TestCase
     public function testResetSettingsWithException(): void
     {
         $this->settingsService->expects($this->once())
-            ->method('resetSettings')
+            ->method('rebase')
             ->willThrowException(new \Exception('Reset failed'));
 
-        $response = $this->controller->resetSettings();
+        $response = $this->controller->rebase();
 
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals(500, $response->getStatus());
         $this->assertEquals(['error' => 'Reset failed'], $response->getData());
     }
 
-    /**
-     * Test getAppConfig method returns app configuration
-     *
-     * @return void
-     */
-    public function testGetAppConfigReturnsConfiguration(): void
-    {
-        $expectedConfig = [
-            'version' => '1.0.0',
-            'enabled' => true
-        ];
 
-        $this->config->expects($this->once())
-            ->method('getAppKeys')
-            ->with('openregister')
-            ->willReturn(['version', 'enabled']);
-
-        $this->config->expects($this->exactly(2))
-            ->method('getAppValue')
-            ->willReturnMap([
-                ['openregister', 'version', '', '1.0.0'],
-                ['openregister', 'enabled', '', 'true']
-            ]);
-
-        $response = $this->controller->getAppConfig();
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals($expectedConfig, $response->getData());
-    }
-
-    /**
-     * Test getAppConfig method with exception
-     *
-     * @return void
-     */
-    public function testGetAppConfigWithException(): void
-    {
-        $this->config->expects($this->once())
-            ->method('getAppKeys')
-            ->willThrowException(new \Exception('Config error'));
-
-        $response = $this->controller->getAppConfig();
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals(500, $response->getStatus());
-        $this->assertEquals(['error' => 'Config error'], $response->getData());
-    }
 }

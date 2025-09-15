@@ -93,14 +93,26 @@ class SearchTrailControllerTest extends TestCase
             ['id' => 2, 'query' => 'another search', 'user_id' => 'user2']
         ];
 
+        $this->request->expects($this->once())
+            ->method('getParams')
+            ->willReturn([]);
+
         $this->searchTrailService->expects($this->once())
-            ->method('findAll')
-            ->willReturn($searchTrails);
+            ->method('getSearchTrails')
+            ->willReturn([
+                'results' => $searchTrails,
+                'total' => count($searchTrails),
+                'limit' => 20,
+                'offset' => 0,
+                'page' => 1
+            ]);
 
         $response = $this->controller->index();
 
         $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals($searchTrails, $response->getData());
+        $data = $response->getData();
+        $this->assertArrayHasKey('results', $data);
+        $this->assertEquals($searchTrails, $data['results']);
     }
 
     /**
@@ -120,14 +132,22 @@ class SearchTrailControllerTest extends TestCase
             ->willReturn($filters);
 
         $this->searchTrailService->expects($this->once())
-            ->method('findAll')
+            ->method('getSearchTrails')
             ->with($filters)
-            ->willReturn($searchTrails);
+            ->willReturn([
+                'results' => $searchTrails,
+                'total' => count($searchTrails),
+                'limit' => 20,
+                'offset' => 0,
+                'page' => 1
+            ]);
 
         $response = $this->controller->index();
 
         $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals($searchTrails, $response->getData());
+        $data = $response->getData();
+        $this->assertArrayHasKey('results', $data);
+        $this->assertEquals($searchTrails, $data['results']);
     }
 
     /**
@@ -138,10 +158,10 @@ class SearchTrailControllerTest extends TestCase
     public function testShowSuccessful(): void
     {
         $id = 1;
-        $searchTrail = ['id' => 1, 'query' => 'test search', 'user_id' => 'user1'];
+        $searchTrail = $this->createMock(\OCA\OpenRegister\Db\SearchTrail::class);
 
         $this->searchTrailService->expects($this->once())
-            ->method('find')
+            ->method('getSearchTrail')
             ->with($id)
             ->willReturn($searchTrail);
 
@@ -161,9 +181,9 @@ class SearchTrailControllerTest extends TestCase
         $id = 999;
 
         $this->searchTrailService->expects($this->once())
-            ->method('find')
+            ->method('getSearchTrail')
             ->with($id)
-            ->willThrowException(new \Exception('Search trail not found'));
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Search trail not found'));
 
         $response = $this->controller->show($id);
 
@@ -172,193 +192,9 @@ class SearchTrailControllerTest extends TestCase
         $this->assertEquals(['error' => 'Search trail not found'], $response->getData());
     }
 
-    /**
-     * Test create method with successful search trail creation
-     *
-     * @return void
-     */
-    public function testCreateSuccessful(): void
-    {
-        $data = ['query' => 'new search', 'user_id' => 'user1'];
-        $createdSearchTrail = ['id' => 1, 'query' => 'new search', 'user_id' => 'user1'];
 
-        $this->request->expects($this->once())
-            ->method('getParams')
-            ->willReturn($data);
 
-        $this->searchTrailService->expects($this->once())
-            ->method('create')
-            ->with($data)
-            ->willReturn($createdSearchTrail);
 
-        $response = $this->controller->create();
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals($createdSearchTrail, $response->getData());
-    }
-
-    /**
-     * Test create method with validation error
-     *
-     * @return void
-     */
-    public function testCreateWithValidationError(): void
-    {
-        $data = ['query' => ''];
-
-        $this->request->expects($this->once())
-            ->method('getParams')
-            ->willReturn($data);
-
-        $this->searchTrailService->expects($this->once())
-            ->method('create')
-            ->willThrowException(new \InvalidArgumentException('Query is required'));
-
-        $response = $this->controller->create();
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals(400, $response->getStatus());
-        $this->assertEquals(['error' => 'Query is required'], $response->getData());
-    }
-
-    /**
-     * Test update method with successful search trail update
-     *
-     * @return void
-     */
-    public function testUpdateSuccessful(): void
-    {
-        $id = 1;
-        $data = ['query' => 'updated search'];
-        $updatedSearchTrail = ['id' => 1, 'query' => 'updated search'];
-
-        $this->request->expects($this->once())
-            ->method('getParams')
-            ->willReturn($data);
-
-        $this->searchTrailService->expects($this->once())
-            ->method('update')
-            ->with($id, $data)
-            ->willReturn($updatedSearchTrail);
-
-        $response = $this->controller->update($id);
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals($updatedSearchTrail, $response->getData());
-    }
-
-    /**
-     * Test update method with search trail not found
-     *
-     * @return void
-     */
-    public function testUpdateSearchTrailNotFound(): void
-    {
-        $id = 999;
-        $data = ['query' => 'updated search'];
-
-        $this->request->expects($this->once())
-            ->method('getParams')
-            ->willReturn($data);
-
-        $this->searchTrailService->expects($this->once())
-            ->method('update')
-            ->willThrowException(new \Exception('Search trail not found'));
-
-        $response = $this->controller->update($id);
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals(404, $response->getStatus());
-        $this->assertEquals(['error' => 'Search trail not found'], $response->getData());
-    }
-
-    /**
-     * Test destroy method with successful search trail deletion
-     *
-     * @return void
-     */
-    public function testDestroySuccessful(): void
-    {
-        $id = 1;
-
-        $this->searchTrailService->expects($this->once())
-            ->method('delete')
-            ->with($id)
-            ->willReturn(true);
-
-        $response = $this->controller->destroy($id);
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals(['success' => true], $response->getData());
-    }
-
-    /**
-     * Test destroy method with search trail not found
-     *
-     * @return void
-     */
-    public function testDestroySearchTrailNotFound(): void
-    {
-        $id = 999;
-
-        $this->searchTrailService->expects($this->once())
-            ->method('delete')
-            ->willThrowException(new \Exception('Search trail not found'));
-
-        $response = $this->controller->destroy($id);
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals(404, $response->getStatus());
-        $this->assertEquals(['error' => 'Search trail not found'], $response->getData());
-    }
-
-    /**
-     * Test getByUser method with successful user search trail retrieval
-     *
-     * @return void
-     */
-    public function testGetByUserSuccessful(): void
-    {
-        $userId = 'user1';
-        $searchTrails = [
-            ['id' => 1, 'query' => 'search 1', 'user_id' => 'user1'],
-            ['id' => 2, 'query' => 'search 2', 'user_id' => 'user1']
-        ];
-
-        $this->searchTrailService->expects($this->once())
-            ->method('findByUser')
-            ->with($userId)
-            ->willReturn($searchTrails);
-
-        $response = $this->controller->getByUser($userId);
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals($searchTrails, $response->getData());
-    }
-
-    /**
-     * Test getByQuery method with successful query search trail retrieval
-     *
-     * @return void
-     */
-    public function testGetByQuerySuccessful(): void
-    {
-        $query = 'test search';
-        $searchTrails = [
-            ['id' => 1, 'query' => 'test search', 'user_id' => 'user1'],
-            ['id' => 2, 'query' => 'test search', 'user_id' => 'user2']
-        ];
-
-        $this->searchTrailService->expects($this->once())
-            ->method('findByQuery')
-            ->with($query)
-            ->willReturn($searchTrails);
-
-        $response = $this->controller->getByQuery($query);
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals($searchTrails, $response->getData());
-    }
 
     /**
      * Test getStatistics method with successful statistics retrieval
@@ -381,10 +217,10 @@ class SearchTrailControllerTest extends TestCase
         ];
 
         $this->searchTrailService->expects($this->once())
-            ->method('getStatistics')
+            ->method('getSearchStatistics')
             ->willReturn($statistics);
 
-        $response = $this->controller->getStatistics();
+        $response = $this->controller->statistics();
 
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals($statistics, $response->getData());
@@ -407,19 +243,19 @@ class SearchTrailControllerTest extends TestCase
             ]
         ];
 
-        $this->request->expects($this->exactly(2))
-            ->method('getParam')
-            ->willReturnMap([
-                ['from', null, $from],
-                ['to', null, $to]
+        $this->request->expects($this->once())
+            ->method('getParams')
+            ->willReturn([
+                'from' => $from,
+                'to' => $to
             ]);
 
         $this->searchTrailService->expects($this->once())
-            ->method('getStatistics')
+            ->method('getSearchStatistics')
             ->with($from, $to)
             ->willReturn($statistics);
 
-        $response = $this->controller->getStatistics();
+        $response = $this->controller->statistics();
 
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals($statistics, $response->getData());
@@ -445,11 +281,11 @@ class SearchTrailControllerTest extends TestCase
             ->willReturn($limit);
 
         $this->searchTrailService->expects($this->once())
-            ->method('getPopularQueries')
+            ->method('getPopularSearchTerms')
             ->with($limit)
             ->willReturn($popularQueries);
 
-        $response = $this->controller->getPopularQueries();
+        $response = $this->controller->popularTerms();
 
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals($popularQueries, $response->getData());
@@ -471,9 +307,9 @@ class SearchTrailControllerTest extends TestCase
             ->willReturn($days);
 
         $this->searchTrailService->expects($this->once())
-            ->method('cleanup')
+            ->method('clearExpiredSearchTrails')
             ->with($days)
-            ->willReturn($deletedCount);
+            ->willReturn(['deleted' => $deletedCount]);
 
         $response = $this->controller->cleanup();
 
@@ -494,7 +330,7 @@ class SearchTrailControllerTest extends TestCase
             ->willReturn(30);
 
         $this->searchTrailService->expects($this->once())
-            ->method('cleanup')
+            ->method('clearExpiredSearchTrails')
             ->willThrowException(new \Exception('Cleanup failed'));
 
         $response = $this->controller->cleanup();

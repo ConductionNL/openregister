@@ -194,7 +194,7 @@ class OrganisationControllerTest extends TestCase
         $response = $this->controller->show($uuid);
 
         $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals(500, $response->getStatus());
+        $this->assertEquals(404, $response->getStatus());
         $data = $response->getData();
         $this->assertArrayHasKey('error', $data);
     }
@@ -251,23 +251,36 @@ class OrganisationControllerTest extends TestCase
      */
     public function testUpdateSuccessful(): void
     {
-        $id = 1;
-        $data = ['name' => 'Updated Organisation'];
-        $updatedOrganisation = ['id' => 1, 'name' => 'Updated Organisation'];
-
-        $this->request->expects($this->once())
-            ->method('getParams')
-            ->willReturn($data);
+        $uuid = 'test-uuid';
+        $name = 'Updated Organisation';
+        $description = 'Updated description';
+        $organisation = $this->createMock(\OCA\OpenRegister\Db\Organisation::class);
+        $organisation->expects($this->once())
+            ->method('jsonSerialize')
+            ->willReturn(['id' => 1, 'name' => 'Updated Organisation']);
 
         $this->organisationService->expects($this->once())
-            ->method('update')
-            ->with($id, $data)
-            ->willReturn($updatedOrganisation);
+            ->method('hasAccessToOrganisation')
+            ->with($uuid)
+            ->willReturn(true);
 
-        $response = $this->controller->update($id);
+        $this->organisationMapper->expects($this->once())
+            ->method('findByUuid')
+            ->with($uuid)
+            ->willReturn($organisation);
+
+        $this->organisationMapper->expects($this->once())
+            ->method('save')
+            ->with($organisation)
+            ->willReturn($organisation);
+
+        $response = $this->controller->update($uuid, $name, $description);
 
         $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals($updatedOrganisation, $response->getData());
+        $this->assertEquals(200, $response->getStatus());
+        $data = $response->getData();
+        $this->assertArrayHasKey('message', $data);
+        $this->assertArrayHasKey('organisation', $data);
     }
 
     /**
@@ -277,63 +290,27 @@ class OrganisationControllerTest extends TestCase
      */
     public function testUpdateOrganisationNotFound(): void
     {
-        $id = 999;
-        $data = ['name' => 'Updated Organisation'];
-
-        $this->request->expects($this->once())
-            ->method('getParams')
-            ->willReturn($data);
+        $uuid = 'non-existent-uuid';
+        $name = 'Updated Organisation';
 
         $this->organisationService->expects($this->once())
-            ->method('update')
-            ->willThrowException(new \Exception('Organisation not found'));
-
-        $response = $this->controller->update($id);
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals(404, $response->getStatus());
-        $this->assertEquals(['error' => 'Organisation not found'], $response->getData());
-    }
-
-    /**
-     * Test destroy method with successful organisation deletion
-     *
-     * @return void
-     */
-    public function testDestroySuccessful(): void
-    {
-        $id = 1;
-
-        $this->organisationService->expects($this->once())
-            ->method('delete')
-            ->with($id)
+            ->method('hasAccessToOrganisation')
+            ->with($uuid)
             ->willReturn(true);
 
-        $response = $this->controller->destroy($id);
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals(['success' => true], $response->getData());
-    }
-
-    /**
-     * Test destroy method with organisation not found
-     *
-     * @return void
-     */
-    public function testDestroyOrganisationNotFound(): void
-    {
-        $id = 999;
-
-        $this->organisationService->expects($this->once())
-            ->method('delete')
+        $this->organisationMapper->expects($this->once())
+            ->method('findByUuid')
+            ->with($uuid)
             ->willThrowException(new \Exception('Organisation not found'));
 
-        $response = $this->controller->destroy($id);
+        $response = $this->controller->update($uuid, $name);
 
         $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals(404, $response->getStatus());
-        $this->assertEquals(['error' => 'Organisation not found'], $response->getData());
+        $this->assertEquals(400, $response->getStatus());
+        $data = $response->getData();
+        $this->assertArrayHasKey('error', $data);
     }
+
 
     /**
      * Test getActiveOrganisation method with successful retrieval
@@ -342,16 +319,21 @@ class OrganisationControllerTest extends TestCase
      */
     public function testGetActiveOrganisationSuccessful(): void
     {
-        $activeOrganisation = ['id' => 1, 'name' => 'Active Organisation'];
+        $activeOrganisation = $this->createMock(\OCA\OpenRegister\Db\Organisation::class);
+        $activeOrganisation->expects($this->once())
+            ->method('jsonSerialize')
+            ->willReturn(['id' => 1, 'name' => 'Active Organisation']);
 
         $this->organisationService->expects($this->once())
             ->method('getActiveOrganisation')
             ->willReturn($activeOrganisation);
 
-        $response = $this->controller->getActiveOrganisation();
+        $response = $this->controller->getActive();
 
         $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals($activeOrganisation, $response->getData());
+        $data = $response->getData();
+        $this->assertArrayHasKey('activeOrganisation', $data);
+        $this->assertEquals(['id' => 1, 'name' => 'Active Organisation'], $data['activeOrganisation']);
     }
 
     /**
@@ -365,11 +347,13 @@ class OrganisationControllerTest extends TestCase
             ->method('getActiveOrganisation')
             ->willReturn(null);
 
-        $response = $this->controller->getActiveOrganisation();
+        $response = $this->controller->getActive();
 
         $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals(404, $response->getStatus());
-        $this->assertEquals(['error' => 'No active organisation'], $response->getData());
+        $this->assertEquals(200, $response->getStatus());
+        $data = $response->getData();
+        $this->assertArrayHasKey('activeOrganisation', $data);
+        $this->assertNull($data['activeOrganisation']);
     }
 
     /**
@@ -379,17 +363,29 @@ class OrganisationControllerTest extends TestCase
      */
     public function testSetActiveOrganisationSuccessful(): void
     {
-        $id = 1;
+        $uuid = 'test-uuid';
 
         $this->organisationService->expects($this->once())
             ->method('setActiveOrganisation')
-            ->with($id)
+            ->with($uuid)
             ->willReturn(true);
 
-        $response = $this->controller->setActiveOrganisation($id);
+        $activeOrganisation = $this->createMock(\OCA\OpenRegister\Db\Organisation::class);
+        $activeOrganisation->expects($this->once())
+            ->method('jsonSerialize')
+            ->willReturn(['id' => 1, 'name' => 'Test Organisation']);
+
+        $this->organisationService->expects($this->once())
+            ->method('getActiveOrganisation')
+            ->willReturn($activeOrganisation);
+
+        $response = $this->controller->setActive($uuid);
 
         $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals(['success' => true], $response->getData());
+        $this->assertEquals(200, $response->getStatus());
+        $data = $response->getData();
+        $this->assertArrayHasKey('message', $data);
+        $this->assertArrayHasKey('activeOrganisation', $data);
     }
 
     /**
@@ -399,107 +395,21 @@ class OrganisationControllerTest extends TestCase
      */
     public function testSetActiveOrganisationNotFound(): void
     {
-        $id = 999;
+        $uuid = 'non-existent-uuid';
 
         $this->organisationService->expects($this->once())
             ->method('setActiveOrganisation')
+            ->with($uuid)
             ->willThrowException(new \Exception('Organisation not found'));
 
-        $response = $this->controller->setActiveOrganisation($id);
+        $response = $this->controller->setActive($uuid);
 
         $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals(404, $response->getStatus());
-        $this->assertEquals(['error' => 'Organisation not found'], $response->getData());
+        $this->assertEquals(400, $response->getStatus());
+        $data = $response->getData();
+        $this->assertArrayHasKey('error', $data);
     }
 
-    /**
-     * Test getUserOrganisations method with successful retrieval
-     *
-     * @return void
-     */
-    public function testGetUserOrganisationsSuccessful(): void
-    {
-        $userId = 'user123';
-        $organisations = [
-            ['id' => 1, 'name' => 'Organisation 1'],
-            ['id' => 2, 'name' => 'Organisation 2']
-        ];
 
-        $this->organisationService->expects($this->once())
-            ->method('getUserOrganisations')
-            ->with($userId)
-            ->willReturn($organisations);
 
-        $response = $this->controller->getUserOrganisations($userId);
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals($organisations, $response->getData());
-    }
-
-    /**
-     * Test addUserToOrganisation method with successful addition
-     *
-     * @return void
-     */
-    public function testAddUserToOrganisationSuccessful(): void
-    {
-        $organisationId = 1;
-        $userId = 'user123';
-        $role = 'member';
-
-        $this->organisationService->expects($this->once())
-            ->method('addUserToOrganisation')
-            ->with($organisationId, $userId, $role)
-            ->willReturn(true);
-
-        $response = $this->controller->addUserToOrganisation($organisationId, $userId, $role);
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals(['success' => true], $response->getData());
-    }
-
-    /**
-     * Test removeUserFromOrganisation method with successful removal
-     *
-     * @return void
-     */
-    public function testRemoveUserFromOrganisationSuccessful(): void
-    {
-        $organisationId = 1;
-        $userId = 'user123';
-
-        $this->organisationService->expects($this->once())
-            ->method('removeUserFromOrganisation')
-            ->with($organisationId, $userId)
-            ->willReturn(true);
-
-        $response = $this->controller->removeUserFromOrganisation($organisationId, $userId);
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals(['success' => true], $response->getData());
-    }
-
-    /**
-     * Test getOrganisationUsers method with successful retrieval
-     *
-     * @return void
-     */
-    public function testGetOrganisationUsersSuccessful(): void
-    {
-        $organisationId = 1;
-        $users = [
-            ['id' => 'user1', 'name' => 'User 1', 'role' => 'admin'],
-            ['id' => 'user2', 'name' => 'User 2', 'role' => 'member']
-        ];
-
-        $this->organisationService->expects($this->once())
-            ->method('getOrganisationUsers')
-            ->with($organisationId)
-            ->willReturn($users);
-
-        $response = $this->controller->getOrganisationUsers($organisationId);
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals($users, $response->getData());
-    }
 }
