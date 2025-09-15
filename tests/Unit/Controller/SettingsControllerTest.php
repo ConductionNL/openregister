@@ -327,6 +327,74 @@ class SettingsControllerTest extends TestCase
     }
 
     /**
+     * Test SOLR setup error reporting with string port '0' (common config issue)
+     * 
+     * @return void
+     */
+    public function testSolrSetupErrorReportingWithStringPortZero(): void
+    {
+        // Mock setup failure
+        $this->settingsService
+            ->method('setupSolr')
+            ->willReturn(false);
+
+        // Mock getSolrSettings with string port '0' (common when saved from UI)
+        $this->settingsService
+            ->method('getSolrSettings')
+            ->willReturn([
+                'host' => 'con-solr-solrcloud-common.solr.svc.cluster.local',
+                'port' => '0', // String '0' instead of integer 0
+                'scheme' => 'http',
+                'path' => '/solr'
+            ]);
+
+        $response = $this->controller->setupSolr();
+
+        $data = $response->getData();
+        
+        // Verify string port '0' is not included in URLs
+        $generatedUrl = $data['error_details']['configuration_used']['generated_url'];
+        $this->assertStringNotContainsString(':0', $generatedUrl, 'Generated URL should not contain string port "0"');
+        
+        // Verify Kubernetes service name is handled correctly
+        $this->assertStringContainsString('con-solr-solrcloud-common.solr.svc.cluster.local', $generatedUrl);
+        $this->assertStringNotContainsString(':', $generatedUrl, 'Kubernetes service URL should not contain any port');
+    }
+
+    /**
+     * Test SOLR setup error reporting with empty string port (another common config issue)
+     * 
+     * @return void
+     */
+    public function testSolrSetupErrorReportingWithEmptyStringPort(): void
+    {
+        // Mock setup failure
+        $this->settingsService
+            ->method('setupSolr')
+            ->willReturn(false);
+
+        // Mock getSolrSettings with empty string port
+        $this->settingsService
+            ->method('getSolrSettings')
+            ->willReturn([
+                'host' => 'solr.example.com',
+                'port' => '', // Empty string port
+                'scheme' => 'https',
+                'path' => '/solr'
+            ]);
+
+        $response = $this->controller->setupSolr();
+
+        $data = $response->getData();
+        
+        // Verify empty string port results in no port in URL
+        $generatedUrl = $data['error_details']['configuration_used']['generated_url'];
+        $this->assertStringNotContainsString(':8983', $generatedUrl, 'URL should not contain default port when port is empty string');
+        $this->assertStringNotContainsString(':', $generatedUrl, 'URL should not contain any port when port is empty string');
+        $this->assertStringContainsString('https://solr.example.com/solr', $generatedUrl);
+    }
+
+    /**
      * Test SOLR settings endpoint returns configuration
      * 
      * @return void
