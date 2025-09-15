@@ -2129,13 +2129,23 @@ class SettingsService
             $path = $solrSettings['path'];
             $collection = $rawStats['collection'] ?? $solrSettings['core'];
             
+            // Normalize port - convert string '0' to null, handle empty strings
+            if ($port === '0' || $port === '' || $port === null) {
+                $port = null;
+            } else {
+                $port = (int)$port;
+                if ($port === 0) {
+                    $port = null;
+                }
+            }
+            
             // Apply same Kubernetes-aware URL building logic as other methods
             if (strpos($host, '.svc.cluster.local') !== false) {
                 // Kubernetes service - don't append port
                 return sprintf('%s://%s%s/%s', $scheme, $host, $path, $collection);
             } else {
-                // Regular hostname - only append port if explicitly provided and not 0
-                if ($port !== null && $port !== '' && $port !== 0) {
+                // Regular hostname - only append port if explicitly provided and not 0/null
+                if ($port !== null && $port > 0) {
                     return sprintf('%s://%s:%d%s/%s', $scheme, $host, $port, $path, $collection);
                 } else {
                     return sprintf('%s://%s%s/%s', $scheme, $host, $path, $collection);
@@ -2237,41 +2247,15 @@ class SettingsService
 
     /**
      * Test SOLR connection and get comprehensive status information
-     *
-     * Performs connection tests and retrieves detailed SOLR status information
-     * including connectivity, availability, and basic performance statistics.
-     *
+     * 
+     * @deprecated Use GuzzleSolrService::testConnectionForDashboard() directly
      * @return array Connection test results with detailed status information
      */
     public function testSolrConnectionForDashboard(): array
     {
-        try {
-            $objectCacheService = $this->container->get(ObjectCacheService::class);
-            
-            $connectionTest = $objectCacheService->testSolrConnection();
-            $stats = $objectCacheService->getSolrStats();
-            
-            return [
-                'connection' => $connectionTest,
-                'availability' => $stats['available'] ?? false,
-                'stats' => $stats,
-                'timestamp' => date('c')
-            ];
-            
-        } catch (\Exception $e) {
-            return [
-                'connection' => [
-                    'success' => false,
-                    'message' => 'SOLR service unavailable: ' . $e->getMessage(),
-                    'details' => []
-                ],
-                'availability' => false,
-                'stats' => [],
-                'timestamp' => date('c'),
-                'error' => $e->getMessage()
-            ];
-        }
-    }//end testSolrConnection()
+        $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+        return $guzzleSolrService->testConnectionForDashboard();
+    }//end testSolrConnectionForDashboard()
 
 
     /**
