@@ -92,8 +92,8 @@ class SolrSetup
                 $path
             );
         } else {
-            // Regular hostname - only append port if explicitly provided
-            if ($port !== null && $port !== '') {
+            // Regular hostname - only append port if explicitly provided and not 0
+            if ($port !== null && $port !== '' && $port !== 0) {
                 return sprintf('%s://%s:%d%s%s',
                     $scheme,
                     $host,

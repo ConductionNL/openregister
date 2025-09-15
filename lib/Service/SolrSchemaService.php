@@ -685,8 +685,8 @@ class SolrSchemaService
                 $baseCollectionName
             );
         } else {
-            // Regular hostname - only append port if explicitly provided
-            if ($port !== null && $port !== '') {
+            // Regular hostname - only append port if explicitly provided and not 0
+            if ($port !== null && $port !== '' && $port !== 0) {
                 $url = sprintf('%s://%s:%d%s/%s/schema',
                     $solrConfig['scheme'] ?? 'http',
                     $host,
