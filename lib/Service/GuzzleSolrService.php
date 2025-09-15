@@ -114,7 +114,11 @@ class GuzzleSolrService
         private readonly ?RegisterMapper $registerMapper = null,
         private readonly ?OrganisationService $organisationService = null,
     ) {
-        $this->httpClient = $clientService->newClient();
+        // Configure HTTP client to allow local network requests for SOLR/Zookeeper
+        $this->httpClient = $clientService->newClient([
+            'allow_local_address' => true,
+            'verify' => false // Allow self-signed certificates in development
+        ]);
         $this->tenantId = $this->generateTenantId();
         $this->initializeConfig();
     }
