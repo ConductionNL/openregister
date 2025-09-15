@@ -115,19 +115,9 @@ class GuzzleSolrService
         private readonly ?RegisterMapper $registerMapper = null,
         private readonly ?OrganisationService $organisationService = null,
     ) {
-        // TODO: Switch back to Nextcloud HTTP client when local access restrictions are properly configured
-        // Currently using direct Guzzle client to bypass Nextcloud's 'allow_local_address' restrictions
-        // Future improvement: $this->httpClient = $clientService->newClient(['allow_local_address' => true]);
-        // This is necessary for SOLR/Zookeeper connections in Kubernetes environments
-        $this->httpClient = new GuzzleClient([
-            'timeout' => 30,
-            'connect_timeout' => 10,
-            'verify' => false, // Allow self-signed certificates
-            'allow_redirects' => true,
-            'http_errors' => false // Don't throw exceptions for 4xx/5xx responses
-        ]);
         $this->tenantId = $this->generateTenantId();
         $this->initializeConfig();
+        $this->initializeHttpClient();
     }
 
     /**
@@ -143,6 +133,43 @@ class GuzzleSolrService
             $this->logger->warning('Failed to load SOLR settings', ['error' => $e->getMessage()]);
             $this->solrConfig = ['enabled' => false];
         }
+    }
+
+    /**
+     * Initialize HTTP client with authentication support
+     *
+     * @return void
+     */
+    private function initializeHttpClient(): void
+    {
+        // Prepare Guzzle client configuration
+        $clientConfig = [
+            'timeout' => 30,
+            'connect_timeout' => 10,
+            'verify' => false, // Allow self-signed certificates
+            'allow_redirects' => true,
+            'http_errors' => false // Don't throw exceptions for 4xx/5xx responses
+        ];
+        
+        // Add HTTP Basic Authentication if credentials are provided
+        if (!empty($this->solrConfig['username']) && !empty($this->solrConfig['password'])) {
+            $clientConfig['auth'] = [
+                $this->solrConfig['username'],
+                $this->solrConfig['password'],
+                'basic'
+            ];
+            
+            $this->logger->info('GuzzleSolrService: HTTP Basic Authentication configured', [
+                'username' => $this->solrConfig['username'],
+                'auth_type' => 'basic'
+            ]);
+        }
+        
+        // TODO: Switch back to Nextcloud HTTP client when local access restrictions are properly configured
+        // Currently using direct Guzzle client to bypass Nextcloud's 'allow_local_address' restrictions
+        // Future improvement: $this->httpClient = $clientService->newClient(['allow_local_address' => true]);
+        // This is necessary for SOLR/Zookeeper connections in Kubernetes environments
+        $this->httpClient = new GuzzleClient($clientConfig);
     }
 
     /**

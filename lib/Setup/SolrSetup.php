@@ -74,14 +74,31 @@ class SolrSetup
         $this->solrConfig = $solrConfig;
         $this->logger = $logger;
         
-        // Initialize Guzzle HTTP client with same configuration as GuzzleSolrService
-        // This bypasses Nextcloud's local access restrictions for Kubernetes services
-        $this->httpClient = new GuzzleClient([
+        // Prepare Guzzle client configuration
+        $clientConfig = [
             'timeout' => 30,
             'connect_timeout' => 10,
             'verify' => false, // Allow self-signed certificates
             'http_errors' => false, // Don't throw exceptions on HTTP errors
-        ]);
+        ];
+        
+        // Add HTTP Basic Authentication if credentials are provided
+        if (!empty($this->solrConfig['username']) && !empty($this->solrConfig['password'])) {
+            $clientConfig['auth'] = [
+                $this->solrConfig['username'],
+                $this->solrConfig['password'],
+                'basic'
+            ];
+            
+            $this->logger->info('SOLR Setup: HTTP Basic Authentication configured', [
+                'username' => $this->solrConfig['username'],
+                'auth_type' => 'basic'
+            ]);
+        }
+        
+        // Initialize Guzzle HTTP client with authentication support
+        // This bypasses Nextcloud's local access restrictions for Kubernetes services
+        $this->httpClient = new GuzzleClient($clientConfig);
     }
 
     /**
