@@ -2608,6 +2608,24 @@ class GuzzleSolrService
     }
 
     /**
+     * Get SOLR endpoint URL for dashboard display
+     * 
+     * @param string|null $collection Optional collection name, defaults to active collection
+     * @return string SOLR endpoint URL
+     */
+    public function getEndpointUrl(?string $collection = null): string
+    {
+        try {
+            $baseUrl = $this->buildSolrBaseUrl();
+            $collectionName = $collection ?? $this->getActiveCollectionName();
+            return $baseUrl . '/' . $collectionName;
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to build endpoint URL', ['error' => $e->getMessage()]);
+            return 'N/A';
+        }
+    }
+
+    /**
      * Bulk index objects from database to Solr in batches
      *
      * @param int $batchSize Number of objects to process per batch (default: 1000)

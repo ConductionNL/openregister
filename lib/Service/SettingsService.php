@@ -2082,7 +2082,7 @@ class SettingsService
                 'active_core' => $rawStats['collection'] ?? 'unknown',
                 'core_status' => $rawStats['available'] ? 'active' : 'inactive',
                 'tenant_id' => $rawStats['tenant_id'] ?? 'unknown',
-                'endpoint_url' => $this->buildSolrEndpointUrl($rawStats),
+                'endpoint_url' => $this->container->get(GuzzleSolrService::class)->getEndpointUrl($rawStats['collection'] ?? null),
             ],
             'performance' => [
                 'total_searches' => $serviceStats['searches'] ?? 0,
@@ -2113,48 +2113,6 @@ class SettingsService
         ];
     }
 
-    /**
-     * Build SOLR endpoint URL from raw stats
-     *
-     * @param array $rawStats Raw SOLR statistics
-     * @return string SOLR endpoint URL
-     */
-    private function buildSolrEndpointUrl(array $rawStats): string
-    {
-        try {
-            $solrSettings = $this->getSolrSettingsOnly();
-            $host = $solrSettings['host'];
-            $port = $solrSettings['port'];
-            $scheme = $solrSettings['scheme'];
-            $path = $solrSettings['path'];
-            $collection = $rawStats['collection'] ?? $solrSettings['core'];
-            
-            // Normalize port - convert string '0' to null, handle empty strings
-            if ($port === '0' || $port === '' || $port === null) {
-                $port = null;
-            } else {
-                $port = (int)$port;
-                if ($port === 0) {
-                    $port = null;
-                }
-            }
-            
-            // Apply same Kubernetes-aware URL building logic as other methods
-            if (strpos($host, '.svc.cluster.local') !== false) {
-                // Kubernetes service - don't append port
-                return sprintf('%s://%s%s/%s', $scheme, $host, $path, $collection);
-            } else {
-                // Regular hostname - only append port if explicitly provided and not 0/null
-                if ($port !== null && $port > 0) {
-                    return sprintf('%s://%s:%d%s/%s', $scheme, $host, $port, $path, $collection);
-                } else {
-                    return sprintf('%s://%s%s/%s', $scheme, $host, $path, $collection);
-                }
-            }
-        } catch (\Exception $e) {
-            return 'N/A';
-        }
-    }
 
     /**
      * Format bytes to human readable format for dashboard
