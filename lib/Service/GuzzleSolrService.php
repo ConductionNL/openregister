@@ -2653,6 +2653,29 @@ class GuzzleSolrService
     }
 
     /**
+     * Get the authenticated HTTP client for other services to use
+     * 
+     * This allows other services like SolrSetup to use the same authenticated
+     * HTTP client without duplicating authentication logic.
+     * 
+     * @return GuzzleClient The configured and authenticated HTTP client
+     */
+    public function getHttpClient(): GuzzleClient
+    {
+        return $this->httpClient;
+    }
+
+    /**
+     * Get SOLR configuration for other services
+     * 
+     * @return array SOLR configuration array
+     */
+    public function getSolrConfig(): array
+    {
+        return $this->solrConfig;
+    }
+
+    /**
      * Bulk index objects from database to Solr in batches
      *
      * @param int $batchSize Number of objects to process per batch (default: 1000)

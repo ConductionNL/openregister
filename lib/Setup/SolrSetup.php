@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Setup;
 
 use Psr\Log\LoggerInterface;
 use GuzzleHttp\Client as GuzzleClient;
+use OCA\OpenRegister\Service\GuzzleSolrService;
 
 /**
  * SOLR Setup and Configuration Manager
@@ -59,46 +60,34 @@ class SolrSetup
     private array $solrConfig;
 
     /**
-     * @var GuzzleClient HTTP client for SOLR requests
+     * @var GuzzleClient HTTP client for SOLR requests (from GuzzleSolrService)
      */
     private GuzzleClient $httpClient;
 
     /**
+     * @var GuzzleSolrService SOLR service for authenticated HTTP client and configuration
+     */
+    private GuzzleSolrService $solrService;
+
+    /**
      * Initialize SOLR setup manager
      *
-     * @param array{host: string, port: int, scheme: string, path: string, username?: string, password?: string} $solrConfig SOLR connection configuration
+     * @param GuzzleSolrService $solrService SOLR service with authenticated HTTP client and configuration
      * @param LoggerInterface $logger PSR-3 compliant logger for operation tracking
      */
-    public function __construct(array $solrConfig, LoggerInterface $logger)
+    public function __construct(GuzzleSolrService $solrService, LoggerInterface $logger)
     {
-        $this->solrConfig = $solrConfig;
+        $this->solrService = $solrService;
         $this->logger = $logger;
         
-        // Prepare Guzzle client configuration
-        $clientConfig = [
-            'timeout' => 30,
-            'connect_timeout' => 10,
-            'verify' => false, // Allow self-signed certificates
-            'http_errors' => false, // Don't throw exceptions on HTTP errors
-        ];
+        // Get authenticated HTTP client and configuration from GuzzleSolrService
+        $this->httpClient = $solrService->getHttpClient();
+        $this->solrConfig = $solrService->getSolrConfig();
         
-        // Add HTTP Basic Authentication if credentials are provided
-        if (!empty($this->solrConfig['username']) && !empty($this->solrConfig['password'])) {
-            $clientConfig['auth'] = [
-                $this->solrConfig['username'],
-                $this->solrConfig['password'],
-                'basic'
-            ];
-            
-            $this->logger->info('SOLR Setup: HTTP Basic Authentication configured', [
-                'username' => $this->solrConfig['username'],
-                'auth_type' => 'basic'
-            ]);
-        }
-        
-        // Initialize Guzzle HTTP client with authentication support
-        // This bypasses Nextcloud's local access restrictions for Kubernetes services
-        $this->httpClient = new GuzzleClient($clientConfig);
+        $this->logger->info('SOLR Setup: Using authenticated HTTP client from GuzzleSolrService', [
+            'has_credentials' => !empty($this->solrConfig['username']) && !empty($this->solrConfig['password']),
+            'host' => $this->solrConfig['host'] ?? 'unknown'
+        ]);
     }
 
     /**
