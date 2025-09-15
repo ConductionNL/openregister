@@ -26,6 +26,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Setup;
 
 use Psr\Log\LoggerInterface;
+use GuzzleHttp\Client as GuzzleClient;
+use OCA\OpenRegister\Service\GuzzleSolrService;
 
 /**
  * SOLR Setup and Configuration Manager
@@ -58,15 +60,34 @@ class SolrSetup
     private array $solrConfig;
 
     /**
+     * @var GuzzleClient HTTP client for SOLR requests (from GuzzleSolrService)
+     */
+    private GuzzleClient $httpClient;
+
+    /**
+     * @var GuzzleSolrService SOLR service for authenticated HTTP client and configuration
+     */
+    private GuzzleSolrService $solrService;
+
+    /**
      * Initialize SOLR setup manager
      *
-     * @param array{host: string, port: int, scheme: string, path: string, username?: string, password?: string} $solrConfig SOLR connection configuration
+     * @param GuzzleSolrService $solrService SOLR service with authenticated HTTP client and configuration
      * @param LoggerInterface $logger PSR-3 compliant logger for operation tracking
      */
-    public function __construct(array $solrConfig, LoggerInterface $logger)
+    public function __construct(GuzzleSolrService $solrService, LoggerInterface $logger)
     {
-        $this->solrConfig = $solrConfig;
+        $this->solrService = $solrService;
         $this->logger = $logger;
+        
+        // Get authenticated HTTP client and configuration from GuzzleSolrService
+        $this->httpClient = $solrService->getHttpClient();
+        $this->solrConfig = $solrService->getSolrConfig();
+        
+        $this->logger->info('SOLR Setup: Using authenticated HTTP client from GuzzleSolrService', [
+            'has_credentials' => !empty($this->solrConfig['username']) && !empty($this->solrConfig['password']),
+            'host' => $this->solrConfig['host'] ?? 'unknown'
+        ]);
     }
 
     /**
@@ -221,31 +242,42 @@ class SolrSetup
     {
         $url = $this->buildSolrUrl('/admin/info/system?wt=json');
 
-        $context = stream_context_create([
-            'http' => [
-                'timeout' => 10,
-                'method' => 'GET'
-            ]
-        ]);
+        try {
+            $response = $this->httpClient->get($url, ['timeout' => 10]);
+            
+            if ($response->getStatusCode() !== 200) {
+                $this->logger->error('SOLR connectivity verification failed - HTTP error', [
+                    'url' => $url,
+                    'status_code' => $response->getStatusCode(),
+                    'response_body' => (string)$response->getBody()
+                ]);
+                return false;
+            }
 
-        $response = @file_get_contents($url, false, $context);
-        
-        if ($response === false) {
-            $this->logger->error('Failed to connect to SOLR', ['url' => $url]);
+            $data = json_decode((string)$response->getBody(), true);
+            if ($data === null || !isset($data['lucene'])) {
+                $this->logger->error('SOLR connectivity verification failed - invalid response', [
+                    'url' => $url,
+                    'response' => (string)$response->getBody()
+                ]);
+                return false;
+            }
+
+            $this->logger->info('SOLR connectivity verified successfully', [
+                'url' => $url,
+                'lucene_version' => $data['lucene']['lucene-spec-version'] ?? 'unknown'
+            ]);
+
+            return true;
+            
+        } catch (\Exception $e) {
+            $this->logger->error('SOLR connectivity verification failed - Exception', [
+                'url' => $url,
+                'error' => $e->getMessage(),
+                'exception_type' => get_class($e)
+            ]);
             return false;
         }
-
-        $data = json_decode($response, true);
-        if (!isset($data['lucene'])) {
-            $this->logger->error('Invalid SOLR response', ['response' => $response]);
-            return false;
-        }
-
-        $this->logger->info('SOLR connectivity verified', [
-            'version' => $data['lucene']['solr-spec-version'] ?? 'unknown'
-        ]);
-        
-        return true;
     }
 
     /**
@@ -283,24 +315,37 @@ class SolrSetup
             'url' => $url
         ]);
 
-        $response = @file_get_contents($url);
-        if ($response === false) {
-            $lastError = error_get_last();
+        try {
+            $response = $this->httpClient->get($url, ['timeout' => 10]);
+            
+            if ($response->getStatusCode() !== 200) {
+                $this->logger->warning('Failed to check configSet existence - HTTP error', [
+                    'configSet' => $configSetName,
+                    'url' => $url,
+                    'status_code' => $response->getStatusCode(),
+                    'response_body' => (string)$response->getBody(),
+                    'assumption' => 'Assuming configSet does not exist'
+                ]);
+                return false;
+            }
+
+            $data = json_decode((string)$response->getBody(), true);
+            
+        } catch (\Exception $e) {
             $this->logger->warning('Failed to check configSet existence - HTTP request failed', [
                 'configSet' => $configSetName,
                 'url' => $url,
-                'error' => $lastError['message'] ?? 'Unknown HTTP error',
+                'error' => $e->getMessage(),
+                'exception_type' => get_class($e),
                 'assumption' => 'Assuming configSet does not exist'
             ]);
             return false;
         }
-
-        $data = json_decode($response, true);
+        
         if ($data === null) {
             $this->logger->warning('Failed to check configSet existence - Invalid JSON response', [
                 'configSet' => $configSetName,
                 'url' => $url,
-                'raw_response' => $response,
                 'json_error' => json_last_error_msg(),
                 'assumption' => 'Assuming configSet does not exist'
             ]);
@@ -339,26 +384,43 @@ class SolrSetup
             'url' => $url
         ]);
 
-        // Create HTTP context with timeout and error handling
-        $context = stream_context_create([
-            'http' => [
+        try {
+            // Use Guzzle HTTP client with proper timeout and headers
+            $response = $this->httpClient->get($url, [
                 'timeout' => 30,
-                'method' => 'GET',
-                'header' => [
-                    'Accept: application/json',
-                    'Content-Type: application/json'
+                'headers' => [
+                    'Accept' => 'application/json',
+                    'Content-Type' => 'application/json'
                 ]
-            ]
-        ]);
+            ]);
 
-        $response = @file_get_contents($url, false, $context);
-        if ($response === false) {
-            $lastError = error_get_last();
+            if ($response->getStatusCode() !== 200) {
+                $this->logger->error('Failed to create configSet - HTTP error', [
+                    'configSet' => $newConfigSetName,
+                    'template' => $templateConfigSetName,
+                    'url' => $url,
+                    'status_code' => $response->getStatusCode(),
+                    'response_body' => (string)$response->getBody(),
+                    'possible_causes' => [
+                        'SOLR server not reachable at configured URL',
+                        'Network connectivity issues',
+                        'SOLR server not responding',
+                        'Invalid SOLR configuration (host/port/path)',
+                        'SOLR server overloaded or timeout'
+                    ]
+                ]);
+                return false;
+            }
+
+            $data = json_decode((string)$response->getBody(), true);
+            
+        } catch (\Exception $e) {
             $this->logger->error('Failed to create configSet - HTTP request failed', [
                 'configSet' => $newConfigSetName,
                 'template' => $templateConfigSetName,
                 'url' => $url,
-                'error' => $lastError['message'] ?? 'Unknown HTTP error',
+                'error' => $e->getMessage(),
+                'exception_type' => get_class($e),
                 'possible_causes' => [
                     'SOLR server not reachable at configured URL',
                     'Network connectivity issues',
@@ -369,8 +431,6 @@ class SolrSetup
             ]);
             return false;
         }
-
-        $data = json_decode($response, true);
         if ($data === null) {
             $this->logger->error('Failed to create configSet - Invalid JSON response', [
                 'configSet' => $newConfigSetName,
