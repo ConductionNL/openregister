@@ -115,7 +115,9 @@ class GuzzleSolrService
         private readonly ?RegisterMapper $registerMapper = null,
         private readonly ?OrganisationService $organisationService = null,
     ) {
-        // Use direct Guzzle client to bypass Nextcloud's local access restrictions
+        // TODO: Switch back to Nextcloud HTTP client when local access restrictions are properly configured
+        // Currently using direct Guzzle client to bypass Nextcloud's 'allow_local_address' restrictions
+        // Future improvement: $this->httpClient = $clientService->newClient(['allow_local_address' => true]);
         // This is necessary for SOLR/Zookeeper connections in Kubernetes environments
         $this->httpClient = new GuzzleClient([
             'timeout' => 30,
