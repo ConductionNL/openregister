@@ -86,7 +86,12 @@ class SolrSetup
         
         $this->logger->info('SOLR Setup: Using authenticated HTTP client from GuzzleSolrService', [
             'has_credentials' => !empty($this->solrConfig['username']) && !empty($this->solrConfig['password']),
-            'host' => $this->solrConfig['host'] ?? 'unknown'
+            'username' => $this->solrConfig['username'] ?? 'not_set',
+            'password_set' => !empty($this->solrConfig['password']),
+            'host' => $this->solrConfig['host'] ?? 'unknown',
+            'port' => $this->solrConfig['port'] ?? 'not_set',
+            'scheme' => $this->solrConfig['scheme'] ?? 'not_set',
+            'path' => $this->solrConfig['path'] ?? 'not_set'
         ]);
     }
 
@@ -373,6 +378,27 @@ class SolrSetup
      */
     private function createConfigSet(string $newConfigSetName, string $templateConfigSetName): bool
     {
+        // First, test basic SOLR connectivity before attempting configSet creation
+        $this->logger->info('Testing SOLR connectivity before configSet creation', [
+            'configSet' => $newConfigSetName
+        ]);
+        
+        $pingUrl = $this->buildSolrUrl('/admin/ping?wt=json');
+        try {
+            $pingResponse = $this->httpClient->get($pingUrl, ['timeout' => 10]);
+            $this->logger->info('SOLR ping test successful', [
+                'status_code' => $pingResponse->getStatusCode(),
+                'ping_url' => $pingUrl
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error('SOLR ping test failed - connectivity issue detected', [
+                'ping_url' => $pingUrl,
+                'error' => $e->getMessage(),
+                'exception_type' => get_class($e)
+            ]);
+            // Continue anyway - ping might not be available but admin endpoints might work
+        }
+        
         $url = $this->buildSolrUrl(sprintf('/admin/configs?action=CREATE&name=%s&baseConfigSet=%s&wt=json',
             urlencode($newConfigSetName),
             urlencode($templateConfigSetName)
@@ -381,7 +407,8 @@ class SolrSetup
         $this->logger->info('Attempting to create SOLR configSet', [
             'configSet' => $newConfigSetName,
             'template' => $templateConfigSetName,
-            'url' => $url
+            'url' => $url,
+            'authentication_configured' => !empty($this->solrConfig['username']) && !empty($this->solrConfig['password'])
         ]);
 
         try {
@@ -415,20 +442,58 @@ class SolrSetup
             $data = json_decode((string)$response->getBody(), true);
             
         } catch (\Exception $e) {
-            $this->logger->error('Failed to create configSet - HTTP request failed', [
+            // Enhanced exception logging for HTTP client issues
+            $logData = [
                 'configSet' => $newConfigSetName,
                 'template' => $templateConfigSetName,
                 'url' => $url,
                 'error' => $e->getMessage(),
                 'exception_type' => get_class($e),
-                'possible_causes' => [
-                    'SOLR server not reachable at configured URL',
-                    'Network connectivity issues',
-                    'SOLR server not responding',
-                    'Invalid SOLR configuration (host/port/path)',
-                    'SOLR server overloaded or timeout'
-                ]
-            ]);
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ];
+            
+            // Extract additional details from Guzzle exceptions
+            if ($e instanceof \GuzzleHttp\Exception\RequestException) {
+                $logData['guzzle_request_exception'] = true;
+                if ($e->hasResponse()) {
+                    $response = $e->getResponse();
+                    $logData['response_status'] = $response->getStatusCode();
+                    $logData['response_body'] = (string)$response->getBody();
+                    $logData['response_headers'] = $response->getHeaders();
+                }
+                if ($e->getRequest()) {
+                    $request = $e->getRequest();
+                    $logData['request_method'] = $request->getMethod();
+                    $logData['request_uri'] = (string)$request->getUri();
+                    $logData['request_headers'] = $request->getHeaders();
+                }
+            }
+            
+            // Check for authentication issues
+            if (strpos($e->getMessage(), '401') !== false || strpos($e->getMessage(), 'Unauthorized') !== false) {
+                $logData['authentication_issue'] = true;
+                $logData['has_credentials'] = !empty($this->solrConfig['username']) && !empty($this->solrConfig['password']);
+            }
+            
+            // Check for network connectivity issues
+            if (strpos($e->getMessage(), 'Connection refused') !== false || 
+                strpos($e->getMessage(), 'Could not resolve host') !== false ||
+                strpos($e->getMessage(), 'timeout') !== false) {
+                $logData['network_connectivity_issue'] = true;
+            }
+            
+            $logData['possible_causes'] = [
+                'SOLR server not reachable at configured URL',
+                'Network connectivity issues',
+                'SOLR server not responding',
+                'Invalid SOLR configuration (host/port/path)',
+                'SOLR server overloaded or timeout',
+                'Authentication failure (check username/password)',
+                'Kubernetes service name resolution failure'
+            ];
+            
+            $this->logger->error('Failed to create configSet - HTTP request failed', $logData);
             return false;
         }
         if ($data === null) {
