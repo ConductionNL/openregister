@@ -179,23 +179,40 @@ class GuzzleSolrService
      */
     private function buildSolrBaseUrl(): string
     {
-        return sprintf(
-            '%s://%s:%d%s',
-            $this->solrConfig['scheme'] ?? 'http',
-            $this->solrConfig['host'] ?? 'localhost',
-            $this->solrConfig['port'] ?? 8983,
-            $this->solrConfig['path'] ?? '/solr'
-        );
+        $host = $this->solrConfig['host'] ?? 'localhost';
+        $port = $this->solrConfig['port'] ?? 8983;
+        
+        // Check if it's a Kubernetes service name (contains .svc.cluster.local)
+        if (strpos($host, '.svc.cluster.local') !== false) {
+            // Kubernetes service - don't append port, it's handled by the service
+            return sprintf(
+                '%s://%s%s',
+                $this->solrConfig['scheme'] ?? 'http',
+                $host,
+                $this->solrConfig['path'] ?? '/solr'
+            );
+        } else {
+            // Regular hostname - append port
+            return sprintf(
+                '%s://%s:%d%s',
+                $this->solrConfig['scheme'] ?? 'http',
+                $host,
+                $port,
+                $this->solrConfig['path'] ?? '/solr'
+            );
+        }
     }
 
     /**
      * Check if SOLR is available and configured
+     * DISABLED: Always returns false to prevent direct SOLR calls
      *
-     * @return bool True if SOLR is available
+     * @return bool Always false (SOLR disabled)
      */
     public function isAvailable(): bool
     {
-        return !empty($this->solrConfig['enabled']) && $this->solrConfig['enabled'] === true;
+        // SOLR direct calls disabled - always return false
+        return false;
     }
 
     /**
@@ -205,43 +222,16 @@ class GuzzleSolrService
      */
     public function testConnection(): array
     {
-        if (!$this->isAvailable()) {
-            return [
-                'success' => false,
-                'message' => 'SOLR is not enabled or configured',
-                'details' => ['enabled' => $this->solrConfig['enabled'] ?? false]
-            ];
-        }
-
-        try {
-            $startTime = microtime(true);
-            
-            // Test system info endpoint
-            $url = $this->buildSolrBaseUrl() . '/admin/info/system?wt=json';
-            $response = $this->httpClient->get($url, ['timeout' => 10]);
-            $responseTime = (microtime(true) - $startTime) * 1000;
-
-            $data = json_decode($response->getBody(), true);
-            
-            return [
-                'success' => true,
-                'message' => 'SOLR connection successful',
-                'details' => [
-                    'response_time_ms' => round($responseTime, 2),
-                    'tenant_id' => $this->tenantId,
-                    'solr_version' => $data['lucene']['solr-spec-version'] ?? 'unknown',
-                    'mode' => 'SolrCloud'
-                ]
-            ];
-
-        } catch (\Exception $e) {
-            $this->stats['errors']++;
-            return [
-                'success' => false,
-                'message' => 'SOLR connection failed: ' . $e->getMessage(),
-                'details' => ['error_type' => get_class($e)]
-            ];
-        }
+        // SOLR direct calls disabled - always return failure
+        return [
+            'success' => false,
+            'message' => 'SOLR direct calls have been disabled',
+            'details' => [
+                'response_time_ms' => 0,
+                'tenant_id' => $this->tenantId,
+                'error' => 'Direct SOLR integration disabled'
+            ]
+        ];
     }
 
     /**
@@ -1070,9 +1060,20 @@ class GuzzleSolrService
      */
     public function searchObjectsPaginated(array $query = [], bool $rbac = true, bool $multi = true, bool $published = false, bool $deleted = false): array
     {
-        if (!$this->isAvailable()) {
-            throw new \Exception('Solr service is not available');
-        }
+        // SOLR direct calls disabled - return empty results
+        return [
+            'success' => true,
+            'message' => 'SOLR search disabled - no results',
+            'data' => [],
+            'pagination' => [
+                'page' => 1,
+                'limit' => 30,
+                'pages' => 0,
+                'total' => 0
+            ],
+            'facets' => []
+        ];
+    }
 
         // Translate OpenRegister query to Solr query
         $solrQuery = $this->translateOpenRegisterQuery($query);
@@ -2044,9 +2045,15 @@ class GuzzleSolrService
      */
     public function searchObjects(array $searchParams): array
     {
-        if (!$this->isAvailable()) {
-            return ['success' => false, 'error' => 'SOLR not available'];
-        }
+        // SOLR direct calls disabled - return empty results
+        return [
+            'success' => true,
+            'data' => [],
+            'total' => 0,
+            'facets' => [],
+            'message' => 'SOLR search disabled'
+        ];
+    }
 
         try {
             $startTime = microtime(true);
