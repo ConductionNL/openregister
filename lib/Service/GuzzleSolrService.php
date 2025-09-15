@@ -30,6 +30,7 @@ use OCA\OpenRegister\Service\OrganisationService;
 use OCP\Http\Client\IClientService;
 use OCP\IConfig;
 use Psr\Log\LoggerInterface;
+use GuzzleHttp\Client as GuzzleClient;
 
 /**
  * Lightweight SOLR service using Guzzle HTTP client
@@ -114,10 +115,14 @@ class GuzzleSolrService
         private readonly ?RegisterMapper $registerMapper = null,
         private readonly ?OrganisationService $organisationService = null,
     ) {
-        // Configure HTTP client to allow local network requests for SOLR/Zookeeper
-        $this->httpClient = $clientService->newClient([
-            'allow_local_address' => true,
-            'verify' => false // Allow self-signed certificates in development
+        // Use direct Guzzle client to bypass Nextcloud's local access restrictions
+        // This is necessary for SOLR/Zookeeper connections in Kubernetes environments
+        $this->httpClient = new GuzzleClient([
+            'timeout' => 30,
+            'connect_timeout' => 10,
+            'verify' => false, // Allow self-signed certificates
+            'allow_redirects' => true,
+            'http_errors' => false // Don't throw exceptions for 4xx/5xx responses
         ]);
         $this->tenantId = $this->generateTenantId();
         $this->initializeConfig();
