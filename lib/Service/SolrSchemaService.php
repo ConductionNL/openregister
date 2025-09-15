@@ -671,13 +671,39 @@ class SolrSchemaService
         $solrConfig = $this->settingsService->getSolrSettings();
         $baseCollectionName = $solrConfig['core'] ?? 'openregister';
         
-        $url = sprintf('%s://%s:%d%s/%s/schema',
-            $solrConfig['scheme'] ?? 'http',
-            $solrConfig['host'] ?? 'localhost',
-            $solrConfig['port'] ?? 8983,
-            $solrConfig['path'] ?? '/solr',
-            $baseCollectionName
-        );
+        // Build SOLR URL - handle Kubernetes service names properly
+        $host = $solrConfig['host'] ?? 'localhost';
+        $port = $solrConfig['port'] ?? null;
+        
+        // Check if it's a Kubernetes service name (contains .svc.cluster.local)
+        if (strpos($host, '.svc.cluster.local') !== false) {
+            // Kubernetes service - don't append port, it's handled by the service
+            $url = sprintf('%s://%s%s/%s/schema',
+                $solrConfig['scheme'] ?? 'http',
+                $host,
+                $solrConfig['path'] ?? '/solr',
+                $baseCollectionName
+            );
+        } else {
+            // Regular hostname - only append port if explicitly provided
+            if ($port !== null && $port !== '') {
+                $url = sprintf('%s://%s:%d%s/%s/schema',
+                    $solrConfig['scheme'] ?? 'http',
+                    $host,
+                    $port,
+                    $solrConfig['path'] ?? '/solr',
+                    $baseCollectionName
+                );
+            } else {
+                // No port provided - let the service handle it
+                $url = sprintf('%s://%s%s/%s/schema',
+                    $solrConfig['scheme'] ?? 'http',
+                    $host,
+                    $solrConfig['path'] ?? '/solr',
+                    $baseCollectionName
+                );
+            }
+        }
 
         // Try to add field first
         $payload = [
