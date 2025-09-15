@@ -82,6 +82,16 @@ class SolrSetup
         $scheme = $this->solrConfig['scheme'] ?? 'http';
         $basePath = $this->solrConfig['path'] ?? '/solr';
         
+        // Normalize port - convert string '0' to integer 0, handle empty strings
+        if ($port === '0' || $port === '' || $port === null) {
+            $port = null;
+        } else {
+            $port = (int)$port;
+            if ($port === 0) {
+                $port = null;
+            }
+        }
+        
         // Check if it's a Kubernetes service name (contains .svc.cluster.local)
         if (strpos($host, '.svc.cluster.local') !== false) {
             // Kubernetes service - don't append port, it's handled by the service
@@ -92,8 +102,8 @@ class SolrSetup
                 $path
             );
         } else {
-            // Regular hostname - only append port if explicitly provided and not 0
-            if ($port !== null && $port !== '' && $port !== 0) {
+            // Regular hostname - only append port if explicitly provided and not 0/null
+            if ($port !== null && $port > 0) {
                 return sprintf('%s://%s:%d%s%s',
                     $scheme,
                     $host,
@@ -102,7 +112,7 @@ class SolrSetup
                     $path
                 );
             } else {
-                // No port provided - let the service handle it
+                // No port provided or port is 0 - let the service handle it
                 return sprintf('%s://%s%s%s',
                     $scheme,
                     $host,

@@ -675,6 +675,16 @@ class SolrSchemaService
         $host = $solrConfig['host'] ?? 'localhost';
         $port = $solrConfig['port'] ?? null;
         
+        // Normalize port - convert string '0' to null, handle empty strings
+        if ($port === '0' || $port === '' || $port === null) {
+            $port = null;
+        } else {
+            $port = (int)$port;
+            if ($port === 0) {
+                $port = null;
+            }
+        }
+        
         // Check if it's a Kubernetes service name (contains .svc.cluster.local)
         if (strpos($host, '.svc.cluster.local') !== false) {
             // Kubernetes service - don't append port, it's handled by the service
@@ -685,8 +695,8 @@ class SolrSchemaService
                 $baseCollectionName
             );
         } else {
-            // Regular hostname - only append port if explicitly provided and not 0
-            if ($port !== null && $port !== '' && $port !== 0) {
+            // Regular hostname - only append port if explicitly provided and not 0/null
+            if ($port !== null && $port > 0) {
                 $url = sprintf('%s://%s:%d%s/%s/schema',
                     $solrConfig['scheme'] ?? 'http',
                     $host,

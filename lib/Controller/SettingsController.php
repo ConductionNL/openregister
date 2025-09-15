@@ -566,8 +566,9 @@ class SettingsController extends Controller
     public function testSolrConnection(): JSONResponse
     {
         try {
-            // Test the currently configured SOLR settings
-            $result = $this->settingsService->testSolrConnection();
+            // Phase 1: Use GuzzleSolrService directly for SOLR operations
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $result = $guzzleSolrService->testConnection();
             
             return new JSONResponse($result);
             
@@ -662,7 +663,9 @@ class SettingsController extends Controller
                 ], 400);
             }
             
-            $result = $this->settingsService->warmupSolrIndex($batchSize, $maxObjects, $mode, $collectErrors);
+            // Phase 1: Use GuzzleSolrService directly for SOLR operations
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $result = $guzzleSolrService->warmupIndex([], $maxObjects, $mode, $collectErrors);
             return new JSONResponse($result);
         } catch (\Exception $e) {
             // **ERROR VISIBILITY**: Let exceptions bubble up with full details
@@ -687,7 +690,9 @@ class SettingsController extends Controller
     public function getSolrDashboardStats(): JSONResponse
     {
         try {
-            $stats = $this->settingsService->getSolrDashboardStats();
+            // Phase 1: Use GuzzleSolrService directly for SOLR operations
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $stats = $guzzleSolrService->getDashboardStats();
             return new JSONResponse($stats);
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
@@ -707,8 +712,43 @@ class SettingsController extends Controller
     public function manageSolr(string $operation): JSONResponse
     {
         try {
-            $result = $this->settingsService->manageSolr($operation);
-            return new JSONResponse($result);
+            // Phase 1: Use GuzzleSolrService directly for SOLR operations
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            
+            switch ($operation) {
+                case 'commit':
+                    $success = $guzzleSolrService->commit();
+                    return new JSONResponse([
+                        'success' => $success,
+                        'operation' => 'commit',
+                        'message' => $success ? 'Index committed successfully' : 'Commit failed',
+                        'timestamp' => date('c')
+                    ]);
+                    
+                case 'optimize':
+                    $success = $guzzleSolrService->optimize();
+                    return new JSONResponse([
+                        'success' => $success,
+                        'operation' => 'optimize',
+                        'message' => $success ? 'Index optimized successfully' : 'Optimization failed',
+                        'timestamp' => date('c')
+                    ]);
+                    
+                case 'clear':
+                    $success = $guzzleSolrService->clearIndex();
+                    return new JSONResponse([
+                        'success' => $success,
+                        'operation' => 'clear',
+                        'message' => $success ? 'Index cleared successfully' : 'Clear operation failed',
+                        'timestamp' => date('c')
+                    ]);
+                    
+                default:
+                    return new JSONResponse([
+                        'success' => false,
+                        'message' => 'Unknown operation: ' . $operation
+                    ], 400);
+            }
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }

@@ -193,6 +193,16 @@ class GuzzleSolrService
         $host = $this->solrConfig['host'] ?? 'localhost';
         $port = $this->solrConfig['port'] ?? null; // Don't default port here
         
+        // Normalize port - convert string '0' to null, handle empty strings
+        if ($port === '0' || $port === '' || $port === null) {
+            $port = null;
+        } else {
+            $port = (int)$port;
+            if ($port === 0) {
+                $port = null;
+            }
+        }
+        
         // Check if it's a Kubernetes service name (contains .svc.cluster.local)
         if (strpos($host, '.svc.cluster.local') !== false) {
             // Kubernetes service - don't append port, it's handled by the service
@@ -203,8 +213,8 @@ class GuzzleSolrService
                 $this->solrConfig['path'] ?? '/solr'
             );
         } else {
-            // Regular hostname - only append port if explicitly provided and not 0
-            if ($port !== null && $port !== '' && $port !== 0) {
+               // Regular hostname - only append port if explicitly provided and not 0/null
+               if ($port !== null && $port > 0) {
                 return sprintf(
                     '%s://%s:%d%s',
                     $this->solrConfig['scheme'] ?? 'http',
@@ -213,7 +223,7 @@ class GuzzleSolrService
                     $this->solrConfig['path'] ?? '/solr'
                 );
             } else {
-                // No port provided - use default port behavior (let the service handle it)
+                // No port provided or port is 0 - let the service handle it
                 return sprintf(
                     '%s://%s%s',
                     $this->solrConfig['scheme'] ?? 'http',
@@ -2560,6 +2570,59 @@ class GuzzleSolrService
             'service_type' => 'GuzzleHttp',
             'memory_usage' => 'lightweight'
         ]);
+    }
+
+    /**
+     * Test SOLR connection specifically for dashboard display
+     * 
+     * @return array Dashboard-specific connection test results
+     */
+    public function testConnectionForDashboard(): array
+    {
+        try {
+            $connectionTest = $this->testConnection();
+            $stats = $this->getDashboardStats();
+            
+            return [
+                'connection' => $connectionTest,
+                'availability' => $stats['available'] ?? false,
+                'stats' => $stats,
+                'timestamp' => date('c')
+            ];
+            
+        } catch (\Exception $e) {
+            return [
+                'connection' => [
+                    'success' => false,
+                    'message' => 'SOLR service unavailable: ' . $e->getMessage(),
+                    'details' => ['error' => $e->getMessage()]
+                ],
+                'availability' => false,
+                'stats' => [
+                    'available' => false,
+                    'error' => $e->getMessage()
+                ],
+                'timestamp' => date('c')
+            ];
+        }
+    }
+
+    /**
+     * Get SOLR endpoint URL for dashboard display
+     * 
+     * @param string|null $collection Optional collection name, defaults to active collection
+     * @return string SOLR endpoint URL
+     */
+    public function getEndpointUrl(?string $collection = null): string
+    {
+        try {
+            $baseUrl = $this->buildSolrBaseUrl();
+            $collectionName = $collection ?? $this->getActiveCollectionName();
+            return $baseUrl . '/' . $collectionName;
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to build endpoint URL', ['error' => $e->getMessage()]);
+            return 'N/A';
+        }
     }
 
     /**
