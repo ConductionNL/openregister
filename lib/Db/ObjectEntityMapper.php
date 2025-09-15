@@ -1495,6 +1495,10 @@ class ObjectEntityMapper extends QBMapper
         $hasComplexFields = !empty($query['_fields'] ?? null);
         $isSimpleRequest = !$hasExtend && !$hasComplexFields;
 
+        // **PERFORMANCE OPTIMIZATION**: Smart RBAC skipping for public data (30-40% improvement)
+        $isSimplePublicRequest = $isSimpleRequest && $published !== false && empty($cleanQuery) && $search === null;
+        $smartBypass = $isSimplePublicRequest && !$rbac; // Only when RBAC explicitly disabled
+
         // Build base query - different for count vs search
         if ($count === true) {
             // For count queries, use COUNT(*) and skip pagination
@@ -1562,10 +1566,6 @@ class ObjectEntityMapper extends QBMapper
             }
         }
 
-        // **PERFORMANCE OPTIMIZATION**: Smart RBAC skipping for public data (30-40% improvement)
-        $isSimplePublicRequest = $isSimpleRequest && $published !== false && empty($cleanQuery) && $search === null;
-        $smartBypass = $isSimplePublicRequest && !$rbac; // Only when RBAC explicitly disabled
-        
         if ($performanceBypass) {
             $this->logger->info('⚠️  PERFORMANCE BYPASS MODE - Skipping all authorization checks', [
                 'WARNING' => 'This should ONLY be used for performance testing!'
