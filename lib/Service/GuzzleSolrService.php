@@ -325,7 +325,7 @@ class GuzzleSolrService
         try {
             $url = $this->buildSolrBaseUrl() . '/admin/collections?action=CLUSTERSTATUS&wt=json';
             $response = $this->httpClient->get($url, ['timeout' => 10]);
-            $data = json_decode($response->getBody(), true);
+            $data = json_decode((string)$response->getBody(), true);
             
             return isset($data['cluster']['collections'][$collectionName]);
             
@@ -423,7 +423,7 @@ class GuzzleSolrService
             ]);
 
             $response = $this->httpClient->get($url, ['timeout' => 30]);
-            $data = json_decode($response->getBody(), true);
+            $data = json_decode((string)$response->getBody(), true);
 
             if (($data['responseHeader']['status'] ?? -1) === 0) {
                 $this->logger->info('SOLR collection created successfully', [
@@ -503,7 +503,7 @@ class GuzzleSolrService
                 'timeout' => 30
             ]);
 
-            $data = json_decode($response->getBody(), true);
+            $data = json_decode((string)$response->getBody(), true);
             $success = ($data['responseHeader']['status'] ?? -1) === 0;
 
             if ($success) {
@@ -575,7 +575,7 @@ class GuzzleSolrService
                 'timeout' => 30
             ]);
 
-            $data = json_decode($response->getBody(), true);
+            $data = json_decode((string)$response->getBody(), true);
             $success = ($data['responseHeader']['status'] ?? -1) === 0;
 
             if ($success) {
@@ -621,7 +621,7 @@ class GuzzleSolrService
             ]);
 
             $response = $this->httpClient->get($url, ['timeout' => 10]);
-            $data = json_decode($response->getBody(), true);
+            $data = json_decode((string)$response->getBody(), true);
 
             return (int)($data['response']['numFound'] ?? 0);
 
@@ -2003,7 +2003,7 @@ class GuzzleSolrService
                 'timeout' => 30
             ]);
 
-            $data = json_decode($response->getBody(), true);
+            $data = json_decode((string)$response->getBody(), true);
             $success = ($data['responseHeader']['status'] ?? -1) === 0;
 
             if ($success) {
@@ -2059,7 +2059,7 @@ class GuzzleSolrService
                 'timeout' => 30
             ]);
 
-            $data = json_decode($response->getBody(), true);
+            $data = json_decode((string)$response->getBody(), true);
             $success = ($data['responseHeader']['status'] ?? -1) === 0;
 
             if ($success) {
@@ -2228,7 +2228,7 @@ class GuzzleSolrService
                 ];
             }
             
-            $data = json_decode($response->getBody(), true);
+            $data = json_decode((string)$response->getBody(), true);
             
             // Validate admin response - be flexible about response format
             $isValidResponse = false;
@@ -2305,7 +2305,7 @@ class GuzzleSolrService
                     ];
                 }
                 
-                $data = json_decode($response->getBody(), true);
+                $data = json_decode((string)$response->getBody(), true);
                 $collections = $data['cluster']['collections'] ?? [];
                 
                 if (isset($collections[$collectionName])) {
@@ -2342,7 +2342,7 @@ class GuzzleSolrService
                     ];
                 }
                 
-                $data = json_decode($response->getBody(), true);
+                $data = json_decode((string)$response->getBody(), true);
                 $cores = $data['status'] ?? [];
                 
                 if (isset($cores[$collectionName])) {
@@ -2408,7 +2408,7 @@ class GuzzleSolrService
                 ];
             }
             
-            $data = json_decode($response->getBody(), true);
+            $data = json_decode((string)$response->getBody(), true);
             
             if (isset($data['response'])) {
                 return [
@@ -2476,7 +2476,7 @@ class GuzzleSolrService
                 'timeout' => 120 // Optimization can take time
             ]);
 
-            $data = json_decode($response->getBody(), true);
+            $data = json_decode((string)$response->getBody(), true);
             $success = ($data['responseHeader']['status'] ?? -1) === 0;
 
             if ($success) {
