@@ -289,14 +289,23 @@ class SolrSetup
 
             // Step 2: Ensure tenant configSet exists
             $tenantConfigSetName = $this->getTenantConfigSetName();
-            $this->trackStep(2, 'ConfigSet Creation', 'started', 'Checking and creating tenant configSet "' . $tenantConfigSetName . '"');
+            $this->trackStep(2, 'EnsureTenantConfigSet', 'started', 'Checking and creating tenant configSet "' . $tenantConfigSetName . '"');
             
             try {
                 if (!$this->ensureTenantConfigSet()) {
-                    $this->trackStep(2, 'ConfigSet Creation', 'failed', 'Failed to create tenant configSet', [
+                    // Use detailed error information from createConfigSet if available
+                    $errorDetails = $this->lastErrorDetails ?? [];
+                    
+                    $this->trackStep(2, 'EnsureTenantConfigSet', 'failed', 'Failed to create tenant configSet "' . $tenantConfigSetName . '"', [
                         'configSet' => $tenantConfigSetName,
                         'template' => '_default',
-                        'error_details' => $this->lastErrorDetails
+                        'error_type' => $errorDetails['error_type'] ?? 'configset_creation_failure',
+                        'url_attempted' => $errorDetails['url_attempted'] ?? 'unknown',
+                        'actual_error' => $errorDetails['error_message'] ?? 'Failed to create tenant configSet "' . $tenantConfigSetName . '"',
+                        'guzzle_response_status' => $errorDetails['guzzle_response_status'] ?? null,
+                        'guzzle_response_body' => $errorDetails['guzzle_response_body'] ?? null,
+                        'solr_error_code' => $errorDetails['solr_error_code'] ?? null,
+                        'solr_error_details' => $errorDetails['solr_error_details'] ?? null
                     ]);
                     
                     // Enhanced error details for configSet failure
@@ -321,10 +330,10 @@ class SolrSetup
                     return false;
                 }
                 
-                $this->trackStep(2, 'ConfigSet Creation', 'completed', 'Tenant configSet "' . $tenantConfigSetName . '" is available');
+                $this->trackStep(2, 'EnsureTenantConfigSet', 'completed', 'Tenant configSet "' . $tenantConfigSetName . '" is available');
                 $this->setupProgress['completed_steps']++;
             } catch (\Exception $e) {
-                $this->trackStep(2, 'ConfigSet Creation', 'failed', $e->getMessage(), [
+                $this->trackStep(2, 'EnsureTenantConfigSet', 'failed', $e->getMessage(), [
                     'exception_type' => get_class($e),
                     'configSet' => $tenantConfigSetName
                 ]);
@@ -718,12 +727,13 @@ class SolrSetup
             ]);
 
             if ($response->getStatusCode() !== 200) {
+                $responseBody = (string)$response->getBody();
                 $this->logger->error('Failed to create configSet - HTTP error', [
                     'configSet' => $newConfigSetName,
                     'template' => $templateConfigSetName,
                     'url' => $url,
                     'status_code' => $response->getStatusCode(),
-                    'response_body' => (string)$response->getBody(),
+                    'response_body' => $responseBody,
                     'possible_causes' => [
                         'SOLR server not reachable at configured URL',
                         'Network connectivity issues',
@@ -731,9 +741,23 @@ class SolrSetup
                         'Invalid SOLR configuration (host/port/path)',
                         'SOLR server overloaded or timeout'
                     ]
-            ]);
-            return false;
-        }
+                ]);
+                
+                // Store detailed error information for API response
+                $this->lastErrorDetails = [
+                    'operation' => 'createConfigSet',
+                    'error_type' => 'http_error',
+                    'error_message' => 'HTTP error ' . $response->getStatusCode(),
+                    'url_attempted' => $url,
+                    'guzzle_response_status' => $response->getStatusCode(),
+                    'guzzle_response_body' => $responseBody,
+                    'solr_error_code' => null,
+                    'solr_error_details' => null,
+                    'configuration_used' => $this->solrConfig
+                ];
+                
+                return false;
+            }
 
             $data = json_decode((string)$response->getBody(), true);
             
