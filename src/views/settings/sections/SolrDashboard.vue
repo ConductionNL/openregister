@@ -132,11 +132,11 @@
 								<div class="performance-stats">
 									<div class="performance-stat">
 										<span class="stat-label">Total Searches:</span>
-										<span class="stat-value">{{ formatNumber(solrStats.performance.total_searches) }}</span>
+										<span class="stat-value">{{ formatNumber(solrStats.performance && solrStats.performance.total_searches || 0) }}</span>
 									</div>
 									<div class="performance-stat">
 										<span class="stat-label">Avg Time:</span>
-										<span class="stat-value">{{ solrStats.performance.avg_search_time_ms }}ms</span>
+										<span class="stat-value">{{ solrStats.performance && solrStats.performance.avg_search_time_ms || 0 }}ms</span>
 									</div>
 								</div>
 							</div>
@@ -146,11 +146,11 @@
 								<div class="performance-stats">
 									<div class="performance-stat">
 										<span class="stat-label">Total Indexes:</span>
-										<span class="stat-value">{{ formatNumber(solrStats.performance.total_indexes) }}</span>
+										<span class="stat-value">{{ formatNumber(solrStats.performance && solrStats.performance.total_indexes || 0) }}</span>
 									</div>
 									<div class="performance-stat">
 										<span class="stat-label">Avg Time:</span>
-										<span class="stat-value">{{ solrStats.performance.avg_index_time_ms }}ms</span>
+										<span class="stat-value">{{ solrStats.performance && solrStats.performance.avg_index_time_ms || 0 }}ms</span>
 									</div>
 								</div>
 							</div>
@@ -160,11 +160,11 @@
 								<div class="performance-stats">
 									<div class="performance-stat">
 										<span class="stat-label">Error Rate:</span>
-										<span class="stat-value" :class="getErrorRateClass(solrStats.performance.error_rate)">{{ solrStats.performance.error_rate }}%</span>
+										<span class="stat-value" :class="getErrorRateClass(solrStats.performance && solrStats.performance.error_rate || 0)">{{ solrStats.performance && solrStats.performance.error_rate || 0 }}%</span>
 									</div>
 									<div class="performance-stat">
 										<span class="stat-label">Total Deletes:</span>
-										<span class="stat-value">{{ formatNumber(solrStats.performance.total_deletes) }}</span>
+										<span class="stat-value">{{ formatNumber(solrStats.performance && solrStats.performance.total_deletes || 0) }}</span>
 									</div>
 								</div>
 							</div>
