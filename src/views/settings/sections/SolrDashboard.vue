@@ -374,50 +374,54 @@
 			</template>
 		</NcDialog>
 
-		<!-- SOLR Warmup Configuration Dialog -->
-		<NcDialog
-			v-if="showWarmupDialog"
-			name="SOLR Index Warmup"
-			:can-close="!warmingUp"
-			@closing="hideWarmupDialog"
-			size="large">
-			<div class="dialog-content">
-				<p class="warmup-description">
-					Configure warmup parameters for SOLR index initialization. This process will mirror schemas and index objects into SOLR for enhanced search performance.
-				</p>
+		<!-- SOLR Warmup Configuration Modal -->
+		<SolrWarmupModal
+			:show="showWarmupDialog"
+			:warming-up="warmingUp"
+			:completed="warmupCompleted"
+			:results="warmupResults"
+			:config="warmupConfig"
+			:object-stats="objectStats"
+			@close="hideWarmupDialog"
+			@start-warmup="performWarmup"
+			@reset="resetWarmupDialog"
+			@config-changed="updateWarmupConfig" />
 
-				<!-- Loading State -->
-				<div v-if="warmingUp" class="warmup-loading">
-					<div class="loading-spinner">
-						<NcLoadingIcon :size="40" />
-					</div>
-					<h4>Warming up SOLR Index...</h4>
-					<p class="loading-description">
-						Please wait while the SOLR index is being warmed up. This process may take several minutes depending on the amount of data.
-					</p>
-					<div class="loading-details">
-						<p><strong>Mode:</strong> {{ warmupConfig.mode === 'serial' ? 'Serial' : 'Parallel' }}</p>
-						<p><strong>Max Objects:</strong> {{ warmupConfig.maxObjects === 0 ? 'All' : warmupConfig.maxObjects }}</p>
-						<p><strong>Batch Size:</strong> {{ warmupConfig.batchSize }}</p>
-					</div>
-				</div>
 
-				<!-- Results State -->
-				<div v-else-if="warmupCompleted && warmupResults" class="warmup-results">
-					<div class="results-header">
-						<div class="success-icon">✅</div>
-						<h4>Warmup Completed Successfully!</h4>
-						<p class="results-description">
-							The SOLR index has been successfully warmed up with the configured parameters.
-						</p>
-					</div>
+	</div>
+</template>
 
-					<div class="results-summary">
-						<h5>Configuration Used</h5>
-						<div class="results-details">
-							<p><strong>Mode:</strong> {{ warmupConfig.mode === 'serial' ? 'Serial' : 'Parallel' }}</p>
-							<p><strong>Max Objects:</strong> {{ warmupConfig.maxObjects === 0 ? 'All' : warmupConfig.maxObjects }}</p>
-							<p><strong>Batch Size:</strong> {{ warmupConfig.batchSize }}</p>
+<script>
+import { NcSettingsSection, NcButton, NcLoadingIcon, NcDialog, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
+import Fire from 'vue-material-design-icons/Fire.vue'
+import Check from 'vue-material-design-icons/Check.vue'
+import Wrench from 'vue-material-design-icons/Wrench.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
+import Cancel from 'vue-material-design-icons/Cancel.vue'
+import { SolrWarmupModal, ClearIndexModal } from '../../modals/settings'
+
+export default {
+	name: 'SolrDashboard',
+	
+	components: {
+		NcSettingsSection,
+		NcButton,
+		NcLoadingIcon,
+		NcDialog,
+		NcCheckboxRadioSwitch,
+		Refresh,
+		Fire,
+		Check,
+		Wrench,
+		Delete,
+		Cancel,
+		SolrWarmupModal,
+		ClearIndexModal,
+	},
+
+	data() {
+		return {
 							<p><strong>Error Handling:</strong> {{ warmupConfig.collectErrors ? 'Collect errors' : 'Stop on first error' }}</p>
 						</div>
 					</div>
@@ -668,6 +672,7 @@ import Check from 'vue-material-design-icons/Check.vue'
 import Wrench from 'vue-material-design-icons/Wrench.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
+import { SolrWarmupModal, ClearIndexModal } from '../../modals/settings'
 
 export default {
 	name: 'SolrDashboard',
@@ -684,6 +689,8 @@ export default {
 		Wrench,
 		Delete,
 		Cancel,
+		SolrWarmupModal,
+		ClearIndexModal,
 	},
 
 	data() {
@@ -915,6 +922,15 @@ export default {
 			this.warmupCompleted = false
 			this.warmupResults = null
 			this.warmingUp = false
+		},
+
+		/**
+		 * Update warmup configuration when changed in modal
+		 *
+		 * @param {object} newConfig Updated configuration
+		 */
+		updateWarmupConfig(newConfig) {
+			this.warmupConfig = { ...newConfig }
 		},
 
 		/**
