@@ -162,7 +162,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 									</NcActionButton>
 									<NcActionButton v-if="canDeleteOrganisation(organisation)"
 										close-after-click
-										@click="organisationStore.setOrganisationItem(organisation); navigationStore.setDialog('deleteOrganisation')">
+										@click="organisationStore.setOrganisationItem(organisation); navigationStore.setModal('deleteOrganisation')">
 										<template #icon>
 											<TrashCanOutline :size="20" />
 										</template>
