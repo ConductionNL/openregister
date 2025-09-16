@@ -112,11 +112,11 @@
 									</div>
 									<div class="core-detail">
 										<span class="detail-label">Tenant:</span>
-										<span class="detail-value">{{ solrStats.cores.tenant_id }}</span>
+										<span class="detail-value">{{ solrStats.cores && solrStats.cores.tenant_id || 'Unknown' }}</span>
 									</div>
 									<div class="core-detail">
 										<span class="detail-label">Endpoint:</span>
-										<span class="detail-value endpoint-url">{{ solrStats.cores.endpoint_url }}</span>
+										<span class="detail-value endpoint-url">{{ solrStats.cores && solrStats.cores.endpoint_url || 'Unknown' }}</span>
 									</div>
 								</div>
 							</div>
@@ -547,12 +547,14 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async loadSolrStats() {
+			console.log('[SOLR DASHBOARD] Starting loadSolrStats')
 			this.loadingStats = true
 			this.solrError = false
 			this.solrErrorMessage = ''
 
 			try {
 				const response = await axios.get('/index.php/apps/openregister/api/solr/dashboard/stats')
+				console.log('[SOLR DASHBOARD] API Response:', response.data)
 				
 				if (response.data && response.data.available) {
 					this.solrStats = response.data
