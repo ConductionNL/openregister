@@ -70,6 +70,11 @@ class SolrSetup
     private GuzzleSolrService $solrService;
 
     /**
+     * @var array|null Detailed error information from the last failed operation
+     */
+    private ?array $lastErrorDetails = null;
+
+    /**
      * Initialize SOLR setup manager
      *
      * @param GuzzleSolrService $solrService SOLR service with authenticated HTTP client and configuration
@@ -93,6 +98,16 @@ class SolrSetup
             'scheme' => $this->solrConfig['scheme'] ?? 'not_set',
             'path' => $this->solrConfig['path'] ?? 'not_set'
         ]);
+    }
+
+    /**
+     * Get detailed error information from the last failed operation
+     *
+     * @return array|null Error details or null if no error occurred
+     */
+    public function getLastErrorDetails(): ?array
+    {
+        return $this->lastErrorDetails;
     }
 
     /**
@@ -494,6 +509,50 @@ class SolrSetup
             ];
             
             $this->logger->error('Failed to create configSet - HTTP request failed', $logData);
+            
+            // Store detailed error information for API response
+            $this->lastErrorDetails = [
+                'operation' => 'createConfigSet',
+                'configSet' => $newConfigSetName,
+                'template' => $templateConfigSetName,
+                'url_attempted' => $url,
+                'error_type' => 'http_request_failed',
+                'error_message' => $e->getMessage(),
+                'exception_type' => get_class($e),
+                'guzzle_details' => []
+            ];
+            
+            // Add Guzzle-specific details if available
+            if ($e instanceof \GuzzleHttp\Exception\RequestException) {
+                $this->lastErrorDetails['guzzle_details']['is_request_exception'] = true;
+                
+                if ($e->hasResponse()) {
+                    $response = $e->getResponse();
+                    $this->lastErrorDetails['guzzle_details']['response_status'] = $response->getStatusCode();
+                    $this->lastErrorDetails['guzzle_details']['response_body'] = (string)$response->getBody();
+                    $this->lastErrorDetails['guzzle_details']['response_headers'] = $response->getHeaders();
+                }
+                
+                if ($e->getRequest()) {
+                    $request = $e->getRequest();
+                    $this->lastErrorDetails['guzzle_details']['request_method'] = $request->getMethod();
+                    $this->lastErrorDetails['guzzle_details']['request_uri'] = (string)$request->getUri();
+                    $this->lastErrorDetails['guzzle_details']['request_headers'] = $request->getHeaders();
+                }
+            }
+            
+            // Add specific error categorization
+            if (strpos($e->getMessage(), '401') !== false || strpos($e->getMessage(), 'Unauthorized') !== false) {
+                $this->lastErrorDetails['error_category'] = 'authentication_failure';
+                $this->lastErrorDetails['has_credentials'] = !empty($this->solrConfig['username']) && !empty($this->solrConfig['password']);
+            } elseif (strpos($e->getMessage(), 'Connection refused') !== false || 
+                      strpos($e->getMessage(), 'Could not resolve host') !== false ||
+                      strpos($e->getMessage(), 'timeout') !== false) {
+                $this->lastErrorDetails['error_category'] = 'network_connectivity';
+            } else {
+                $this->lastErrorDetails['error_category'] = 'unknown_http_error';
+            }
+            
             return false;
         }
         if ($data === null) {
@@ -501,9 +560,24 @@ class SolrSetup
                 'configSet' => $newConfigSetName,
                 'template' => $templateConfigSetName,
                 'url' => $url,
-                'raw_response' => $response,
+                'raw_response' => (string)$response->getBody(),
                 'json_error' => json_last_error_msg()
             ]);
+            
+            // Store detailed error information for API response
+            $this->lastErrorDetails = [
+                'operation' => 'createConfigSet',
+                'configSet' => $newConfigSetName,
+                'template' => $templateConfigSetName,
+                'url_attempted' => $url,
+                'error_type' => 'invalid_json_response',
+                'error_message' => 'SOLR returned invalid JSON response',
+                'json_error' => json_last_error_msg(),
+                'raw_response' => (string)$response->getBody(),
+                'response_status' => $response->getStatusCode(),
+                'response_headers' => $response->getHeaders()
+            ];
+            
             return false;
         }
 
@@ -537,6 +611,28 @@ class SolrSetup
                 'Check SOLR logs for additional error details'
             ]
         ]);
+        
+        // Store detailed error information for API response
+        $this->lastErrorDetails = [
+            'operation' => 'createConfigSet',
+            'configSet' => $newConfigSetName,
+            'template' => $templateConfigSetName,
+            'url_attempted' => $url,
+            'error_type' => 'solr_api_error',
+            'error_message' => $errorMsg,
+            'solr_status' => $status,
+            'solr_error_code' => $errorCode,
+            'solr_error_details' => $errorDetails,
+            'full_solr_response' => $data,
+            'troubleshooting_tips' => [
+                'Verify template configSet "' . $templateConfigSetName . '" exists in SOLR',
+                'Check SOLR admin UI for existing configSets',
+                'Ensure SOLR has write permissions for config directory',
+                'Verify SOLR is running in SolrCloud mode if using collections',
+                'Check SOLR logs for additional error details'
+            ]
+        ];
+        
         return false;
     }
 

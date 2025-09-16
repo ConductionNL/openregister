@@ -422,70 +422,79 @@ class SettingsController extends Controller
                     ]
                 ]);
             } else {
-                // Get the last error from logs or setup object
-                $lastError = error_get_last();
+                // Get detailed error information from SolrSetup
+                $errorDetails = $setup->getLastErrorDetails();
                 
-                return new JSONResponse([
-                    'success' => false,
-                    'message' => 'SOLR setup failed',
-                    'timestamp' => date('Y-m-d H:i:s'),
-                    'error_details' => [
-                        'primary_error' => 'Failed to create base configSet "openregister"',
-                        'possible_causes' => [
-                            'SOLR server lacks write permissions for config directory',
-                            'Template configSet "_default" does not exist',
-                            'SOLR is not running in SolrCloud mode',
-                            'ZooKeeper connectivity issues in SolrCloud setup',
-                            'Network connectivity issues',
-                            'Invalid SOLR configuration (host/port/path)',
-                            'Port configuration issue (check if port 0 is being used)'
+                if ($errorDetails) {
+                    // Use the detailed error information from SolrSetup
+                    return new JSONResponse([
+                        'success' => false,
+                        'message' => 'SOLR setup failed',
+                        'timestamp' => date('Y-m-d H:i:s'),
+                        'error_details' => [
+                            'primary_error' => $errorDetails['error_message'] ?? 'SOLR setup operation failed',
+                            'error_type' => $errorDetails['error_type'] ?? 'unknown_error',
+                            'operation' => $errorDetails['operation'] ?? 'unknown_operation',
+                            'url_attempted' => $errorDetails['url_attempted'] ?? 'unknown',
+                            'exception_type' => $errorDetails['exception_type'] ?? 'unknown',
+                            'error_category' => $errorDetails['error_category'] ?? 'unknown',
+                            'solr_response' => $errorDetails['full_solr_response'] ?? null,
+                            'guzzle_details' => $errorDetails['guzzle_details'] ?? [],
+                            'configuration_used' => [
+                                'host' => $solrSettings['host'],
+                                'port' => $solrSettings['port'] ?: 'default',
+                                'scheme' => $solrSettings['scheme'],
+                                'path' => $solrSettings['path']
+                            ]
                         ],
-                        'configuration_used' => [
-                            'host' => $solrSettings['host'],
-                            'port' => $solrSettings['port'] ?: 'default',
-                            'scheme' => $solrSettings['scheme'],
-                            'path' => $solrSettings['path'],
-                            'generated_url' => sprintf('%s://%s%s%s/admin/configs',
-                                $solrSettings['scheme'] ?? 'http',
-                                $solrSettings['host'] ?? 'localhost',
-                                ($solrSettings['port'] && $solrSettings['port'] !== '0') ? ':' . $solrSettings['port'] : '',
-                                $solrSettings['path'] ?? '/solr'
-                            )
+                        'troubleshooting_steps' => $errorDetails['troubleshooting_tips'] ?? [
+                            'Check SOLR server connectivity',
+                            'Verify SOLR configuration',
+                            'Check SOLR server logs'
                         ],
-                        'troubleshooting_steps' => [
-                            'Check SOLR admin UI at: ' . sprintf('%s://%s%s%s/#/~configs',
-                                $solrSettings['scheme'] ?? 'http',
-                                $solrSettings['host'] ?? 'localhost',
-                                ($solrSettings['port'] && $solrSettings['port'] !== '0') ? ':' . $solrSettings['port'] : '',
-                                $solrSettings['path'] ?? '/solr'
-                            ),
-                            'Verify available configSets in SOLR admin',
-                            'Check SOLR server logs for detailed error messages',
-                            'Ensure SOLR is running in SolrCloud mode if using Zookeeper',
-                            'Verify network connectivity to SOLR server',
-                            'Check if port is configured correctly (should not be 0)'
-                        ],
-                        'last_system_error' => $lastError ? $lastError['message'] : 'No system error captured'
-                    ],
-                    'steps' => [
-                        [
-                            'step' => 1,
-                            'name' => 'ConfigSet Creation',
-                            'description' => 'Failed to create base configSet "openregister"',
-                            'status' => 'failed',
-                            'details' => [
-                                'error' => 'HTTP request to SOLR admin API failed',
-                                'url_attempted' => sprintf('%s://%s%s%s/admin/configs?action=CREATE&name=openregister&baseConfigSet=_default&wt=json',
-                                    $solrSettings['scheme'] ?? 'http',
-                                    $solrSettings['host'] ?? 'localhost',
-                                    ($solrSettings['port'] && $solrSettings['port'] !== '0') ? ':' . $solrSettings['port'] : '',
-                                    $solrSettings['path'] ?? '/solr'
-                                ),
-                                'check_logs_for' => 'HTTP request failed, Invalid JSON response, or SOLR-specific errors'
+                        'steps' => [
+                            [
+                                'step' => 1,
+                                'name' => ucfirst($errorDetails['operation'] ?? 'Setup Operation'),
+                                'description' => $errorDetails['error_message'] ?? 'Setup operation failed',
+                                'status' => 'failed',
+                                'details' => [
+                                    'error_type' => $errorDetails['error_type'] ?? 'unknown',
+                                    'url_attempted' => $errorDetails['url_attempted'] ?? 'unknown',
+                                    'actual_error' => $errorDetails['error_message'] ?? 'No error message available',
+                                    'guzzle_response_status' => $errorDetails['guzzle_details']['response_status'] ?? null,
+                                    'guzzle_response_body' => $errorDetails['guzzle_details']['response_body'] ?? null,
+                                    'solr_error_code' => $errorDetails['solr_error_code'] ?? null,
+                                    'solr_error_details' => $errorDetails['solr_error_details'] ?? null
+                                ]
                             ]
                         ]
-                    ]
-                ], 500);
+                    ], 500);
+                } else {
+                    // Fallback to generic error if no detailed error information is available
+                    $lastError = error_get_last();
+                    
+                    return new JSONResponse([
+                        'success' => false,
+                        'message' => 'SOLR setup failed',
+                        'timestamp' => date('Y-m-d H:i:s'),
+                        'error_details' => [
+                            'primary_error' => 'Setup failed but no detailed error information was captured',
+                            'last_system_error' => $lastError ? $lastError['message'] : 'No system error captured',
+                            'configuration_used' => [
+                                'host' => $solrSettings['host'],
+                                'port' => $solrSettings['port'] ?: 'default',
+                                'scheme' => $solrSettings['scheme'],
+                                'path' => $solrSettings['path']
+                            ]
+                        ],
+                        'troubleshooting_steps' => [
+                            'Check SOLR server logs for detailed error messages',
+                            'Verify SOLR server connectivity',
+                            'Check SOLR configuration'
+                        ]
+                    ], 500);
+                }
             }
             
         } catch (\Exception $e) {
