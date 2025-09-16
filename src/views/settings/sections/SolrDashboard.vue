@@ -2,7 +2,7 @@
 	<div>
 		<NcSettingsSection name="SOLR Search Management"
 			description="Monitor and manage SOLR search performance and operations">
-			<div v-if="!loadingStats && !solrError" class="solr-section">
+			<div v-if="!loadingStats && !solrError && solrStats && solrStats.overview && solrStats.cores" class="solr-section">
 				<!-- Action Buttons -->
 				<div class="section-header-inline">
 					<span />
@@ -551,7 +551,7 @@ export default {
 			this.solrErrorMessage = ''
 
 			try {
-				const response = await this.$http.get('/api/solr/dashboard/stats')
+				const response = await axios.get(generateUrl('/apps/openregister/api/solr/dashboard/stats'))
 				
 				if (response.data && response.data.available) {
 					// Transform the flat API response into the expected nested structure
