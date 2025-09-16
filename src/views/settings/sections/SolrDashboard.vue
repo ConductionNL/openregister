@@ -68,27 +68,27 @@
 								<h4>🔗 Connection</h4>
 								<div class="solr-metric">
 									<span class="metric-value" :class="connectionStatusClass">{{ solrStats.overview && solrStats.overview.connection_status || 'Unknown' }}</span>
-									<span class="metric-label">Status ({{ solrStats.overview.response_time_ms }}ms)</span>
+									<span class="metric-label">Status ({{ solrStats.overview && solrStats.overview.response_time_ms || 0 }}ms)</span>
 								</div>
 							</div>
 							<div class="solr-overview-card">
 								<h4>📊 Documents</h4>
 								<div class="solr-metric">
-									<span class="metric-value">{{ formatNumber(solrStats.overview.total_documents) }}</span>
+									<span class="metric-value">{{ formatNumber(solrStats.overview && solrStats.overview.total_documents || 0) }}</span>
 									<span class="metric-label">Total Indexed</span>
 								</div>
 							</div>
 							<div class="solr-overview-card">
 								<h4>💾 Index Size</h4>
 								<div class="solr-metric">
-									<span class="metric-value">{{ solrStats.overview.index_size }}</span>
+									<span class="metric-value">{{ solrStats.overview && solrStats.overview.index_size || 'Unknown' }}</span>
 									<span class="metric-label">Storage Used</span>
 								</div>
 							</div>
 							<div class="solr-overview-card" :class="performanceClass">
 								<h4>⚡ Performance</h4>
 								<div class="solr-metric">
-									<span class="metric-value performance-metric">{{ solrStats.performance.operations_per_sec }}/sec</span>
+									<span class="metric-value performance-metric">{{ solrStats.performance && solrStats.performance.operations_per_sec || 0 }}/sec</span>
 									<span class="metric-label">Operations</span>
 								</div>
 							</div>
@@ -104,11 +104,11 @@
 								<div class="core-info">
 									<div class="core-detail">
 										<span class="detail-label">Name:</span>
-										<span class="detail-value">{{ solrStats.cores.active_core }}</span>
+										<span class="detail-value">{{ solrStats.cores && solrStats.cores.active_core || 'Unknown' }}</span>
 									</div>
 									<div class="core-detail">
 										<span class="detail-label">Status:</span>
-										<span class="detail-value" :class="getCoreStatusClass(solrStats.cores.core_status)">{{ solrStats.cores.core_status }}</span>
+										<span class="detail-value" :class="getCoreStatusClass(solrStats.cores && solrStats.cores.core_status || 'Unknown')">{{ solrStats.cores && solrStats.cores.core_status || 'Unknown' }}</span>
 									</div>
 									<div class="core-detail">
 										<span class="detail-label">Tenant:</span>
@@ -402,7 +402,6 @@ import Cancel from 'vue-material-design-icons/Cancel.vue'
 import { SolrWarmupModal, ClearIndexModal } from '../../../modals/settings'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { generateUrl } from '@nextcloud/router'
 
 export default {
 	name: 'SolrDashboard',
@@ -516,7 +515,7 @@ export default {
 		 * Get CSS class for performance rating
 		 */
 		performanceClass() {
-			const opsPerSec = this.solrStats.performance.operations_per_sec
+			const opsPerSec = this.solrStats.performance && solrStats.performance.operations_per_sec || 0
 			if (opsPerSec > 50) return 'performance-excellent'
 			if (opsPerSec > 20) return 'performance-good'
 			if (opsPerSec > 10) return 'performance-average'
