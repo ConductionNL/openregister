@@ -377,17 +377,14 @@
 		<!-- SOLR Warmup Configuration Dialog -->
 		<NcDialog
 			v-if="showWarmupDialog"
-			name="SOLR Warmup Configuration"
+			name="SOLR Index Warmup"
 			:can-close="!warmingUp"
 			@closing="hideWarmupDialog"
-			:size="'large'">
-			<div class="warmup-dialog">
-				<div class="warmup-header">
-					<h3>🔥 SOLR Index Warmup</h3>
-					<p class="warmup-description">
-						Configure warmup parameters for SOLR index initialization. This process will mirror schemas and index objects into SOLR for enhanced search performance.
-					</p>
-				</div>
+			size="large">
+			<div class="dialog-content">
+				<p class="warmup-description">
+					Configure warmup parameters for SOLR index initialization. This process will mirror schemas and index objects into SOLR for enhanced search performance.
+				</p>
 
 				<!-- Loading State -->
 				<div v-if="warmingUp" class="warmup-loading">
@@ -510,20 +507,22 @@
 				<div v-else class="warmup-form">
 					<div class="form-section">
 						<h4>Execution Mode</h4>
-						<NcCheckboxRadioSwitch
-							:checked.sync="warmupConfig.mode"
-							name="warmup_mode"
-							value="serial"
-							type="radio">
-							Serial Mode (Safer, slower)
-						</NcCheckboxRadioSwitch>
-						<NcCheckboxRadioSwitch
-							:checked.sync="warmupConfig.mode"
-							name="warmup_mode"
-							value="parallel"
-							type="radio">
-							Parallel Mode (Faster, more resource intensive)
-						</NcCheckboxRadioSwitch>
+						<div class="radio-group">
+							<NcCheckboxRadioSwitch
+								:checked.sync="warmupConfig.mode"
+								name="warmup_mode"
+								value="serial"
+								type="radio">
+								Serial Mode (Safer, slower)
+							</NcCheckboxRadioSwitch>
+							<NcCheckboxRadioSwitch
+								:checked.sync="warmupConfig.mode"
+								name="warmup_mode"
+								value="parallel"
+								type="radio">
+								Parallel Mode (Faster, more resource intensive)
+							</NcCheckboxRadioSwitch>
+						</div>
 						<p class="form-description">
 							Serial mode processes objects one by one, while parallel mode processes multiple objects simultaneously for faster completion.
 						</p>
@@ -616,41 +615,47 @@
 							v-model="warmupConfig.collectErrors"
 							:disabled="warmingUp"
 							type="switch">
-							{{ warmupConfig.collectErrors ? 'Collect errors in response' : 'Stop on first error' }}
+							Continue on errors (collect all errors)
 						</NcCheckboxRadioSwitch>
 						<p class="form-description">
-							When enabled, errors will be collected and returned in the response instead of stopping the warmup process.
-							This is useful for debugging but may mask critical issues.
+							<strong>When enabled:</strong> Warmup continues processing even if errors occur, collecting all errors for review at the end.<br>
+							<strong>When disabled:</strong> Warmup stops immediately when the first error is encountered.
 						</p>
 					</div>
 				</div>
 
-				<div class="dialog-actions">
-					<NcButton
-						:disabled="warmingUp"
-						@click="hideWarmupDialog">
-						{{ warmingUp ? 'Close' : (warmupCompleted ? 'Close' : 'Cancel') }}
-					</NcButton>
-					<NcButton
-						v-if="!warmingUp && !warmupCompleted"
-						type="primary"
-						@click="performWarmup">
-						<template #icon>
-							<Fire :size="20" />
-						</template>
-						Start Warmup
-					</NcButton>
-					<NcButton
-						v-if="warmupCompleted"
-						type="secondary"
-						@click="resetWarmupDialog">
-						<template #icon>
-							<Refresh :size="20" />
-						</template>
-						Run Again
-					</NcButton>
-				</div>
 			</div>
+
+			<template #actions>
+				<NcButton
+					:disabled="warmingUp"
+					@click="hideWarmupDialog">
+					<template #icon>
+						<Cancel :size="20" />
+					</template>
+					{{ warmingUp ? 'Close' : (warmupCompleted ? 'Close' : 'Cancel') }}
+				</NcButton>
+
+				<NcButton
+					v-if="!warmingUp && !warmupCompleted"
+					type="primary"
+					@click="performWarmup">
+					<template #icon>
+						<Fire :size="20" />
+					</template>
+					Start Warmup
+				</NcButton>
+
+				<NcButton
+					v-if="warmupCompleted"
+					type="secondary"
+					@click="resetWarmupDialog">
+					<template #icon>
+						<Refresh :size="20" />
+					</template>
+					Run Again
+				</NcButton>
+			</template>
 		</NcDialog>
 	</div>
 </template>
@@ -662,6 +667,7 @@ import Fire from 'vue-material-design-icons/Fire.vue'
 import Check from 'vue-material-design-icons/Check.vue'
 import Wrench from 'vue-material-design-icons/Wrench.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
+import Cancel from 'vue-material-design-icons/Cancel.vue'
 
 export default {
 	name: 'SolrDashboard',
@@ -677,6 +683,7 @@ export default {
 		Check,
 		Wrench,
 		Delete,
+		Cancel,
 	},
 
 	data() {
@@ -867,9 +874,19 @@ export default {
 			this.objectStats.loading = true
 			
 			try {
-				const response = await this.$http.get('/apps/openregister/api/settings/stats')
-				if (response.data && response.data.totals) {
-					this.objectStats.totalObjects = response.data.totals.totalObjects || 0
+				const response = await fetch('/index.php/apps/openregister/api/settings/stats')
+				
+				if (!response.ok) {
+					throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+				}
+				
+				const data = await response.json()
+				
+				if (data && data.totals) {
+					this.objectStats.totalObjects = data.totals.totalObjects || 0
+				} else {
+					console.warn('No totals data found in response:', data)
+					this.objectStats.totalObjects = 0
 				}
 			} catch (error) {
 				console.error('Failed to load object stats:', error)
@@ -1837,6 +1854,11 @@ export default {
 	color: var(--color-text-maxcontrast);
 }
 
+/* Dialog content styles (consistent with EditObject.vue) */
+.dialog-content {
+	padding: 0 20px;
+}
+
 /* Warmup Dialog Styles */
 .warmup-dialog {
 	padding: 2rem;
@@ -1888,6 +1910,16 @@ export default {
 	flex-direction: column;
 	gap: 0.5rem;
 	margin-bottom: 1rem;
+}
+
+.radio-group {
+	display: flex;
+	gap: 1rem;
+	margin-bottom: 0.5rem;
+}
+
+.radio-group > * {
+	flex: 1;
 }
 
 .form-label {
