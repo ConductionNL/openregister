@@ -430,9 +430,17 @@
 								</div>
 							</div>
 							<div v-if="testResults.components.collection.details" class="component-metrics">
+								<div class="metric highlight">
+									<span class="metric-label">📁 Collection Name</span>
+									<span class="metric-value">{{ testResults.components.collection.details.collection_name || testResults.components.collection.details.collection }}</span>
+								</div>
 								<div class="metric">
-									<span class="metric-label">📁 Collection</span>
-									<span class="metric-value">{{ testResults.components.collection.details.collection }}</span>
+									<span class="metric-label">🏷️ Type</span>
+									<span class="metric-value">{{ testResults.components.collection.details.collection_type || 'base' }}</span>
+								</div>
+								<div v-if="testResults.components.collection.details.tenant_id" class="metric">
+									<span class="metric-label">🏢 Tenant ID</span>
+									<span class="metric-value">{{ testResults.components.collection.details.tenant_id }}</span>
 								</div>
 								<div class="metric">
 									<span class="metric-label">🗂️ Shards</span>
@@ -441,6 +449,10 @@
 								<div class="metric">
 									<span class="metric-label">📊 Status</span>
 									<span class="metric-value">{{ testResults.components.collection.details.status || 'Active' }}</span>
+								</div>
+								<div v-if="testResults.components.collection.details.available_collections" class="metric">
+									<span class="metric-label">📋 Available Collections</span>
+									<span class="metric-value">{{ testResults.components.collection.details.available_collections.join(', ') || 'None' }}</span>
 								</div>
 							</div>
 						</div>
@@ -460,17 +472,29 @@
 								</div>
 							</div>
 							<div v-if="testResults.components.query.details" class="component-metrics">
+								<div class="metric">
+									<span class="metric-label">📁 Collection</span>
+									<span class="metric-value">{{ testResults.components.query.details.collection_name }}</span>
+								</div>
+								<div class="metric">
+									<span class="metric-label">🏷️ Type</span>
+									<span class="metric-value">{{ testResults.components.query.details.collection_type || 'base' }}</span>
+								</div>
+								<div v-if="testResults.components.query.details.tenant_id" class="metric">
+									<span class="metric-label">🏢 Tenant ID</span>
+									<span class="metric-value">{{ testResults.components.query.details.tenant_id }}</span>
+								</div>
 								<div class="metric highlight">
-									<span class="metric-label">⚡ Query Time</span>
-									<span class="metric-value">{{ testResults.components.query.details.query_time }}ms</span>
+									<span class="metric-label">⚡ Response Time</span>
+									<span class="metric-value">{{ testResults.components.query.details.response_time_ms }}ms</span>
 								</div>
 								<div class="metric">
 									<span class="metric-label">📄 Documents</span>
-									<span class="metric-value">{{ testResults.components.query.details.num_found?.toLocaleString() || 'N/A' }}</span>
+									<span class="metric-value">{{ testResults.components.query.details.total_docs?.toLocaleString() || 'N/A' }}</span>
 								</div>
 								<div class="metric technical">
 									<span class="metric-label">🌐 Query URL</span>
-									<span class="metric-value technical-url">{{ testResults.components.query.details.url }}</span>
+									<span class="metric-value technical-url">{{ testResults.components.query.details.query_url }}</span>
 								</div>
 							</div>
 						</div>
