@@ -2,7 +2,25 @@
 	<div>
 		<NcSettingsSection name="SOLR Search Management"
 			description="Monitor and manage SOLR search performance and operations">
-			<div v-if="!loadingStats && !solrError" class="solr-section">
+			<!-- Loading State -->
+			<div v-if="loadingStats" class="loading-section">
+				<NcLoadingIcon :size="64" />
+				<p>Loading SOLR statistics...</p>
+			</div>
+
+			<!-- Error State -->
+			<div v-else-if="solrError" class="error-section">
+				<p class="error-message">❌ {{ solrErrorMessage }}</p>
+				<NcButton type="primary" @click="loadSolrStats">
+					<template #icon>
+						<Refresh :size="20" />
+					</template>
+					Retry Connection
+				</NcButton>
+			</div>
+
+			<!-- Success State -->
+			<div v-else class="solr-section">
 				<!-- Action Buttons -->
 				<div class="section-header-inline">
 					<span />
