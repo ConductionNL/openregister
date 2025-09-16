@@ -626,7 +626,14 @@ class SolrSetup
         ]);
 
         try {
-            $response = $this->httpClient->get($url, ['timeout' => 10]);
+            $requestOptions = ['timeout' => 10];
+            
+            // Add authentication if configured
+            if (!empty($this->solrConfig['username']) && !empty($this->solrConfig['password'])) {
+                $requestOptions['auth'] = [$this->solrConfig['username'], $this->solrConfig['password']];
+            }
+            
+            $response = $this->httpClient->get($url, $requestOptions);
             
             if ($response->getStatusCode() !== 200) {
                 $this->logger->warning('Failed to check configSet existence - HTTP error', [
@@ -704,7 +711,7 @@ class SolrSetup
             // Continue anyway - ping might not be available but admin endpoints might work
         }
         
-        // Use SolrCloud ConfigSets API for configSet creation
+        // Use SolrCloud ConfigSets API for configSet creation with authentication
         $url = $this->buildSolrUrl(sprintf('/admin/configs?action=CREATE&name=%s&baseConfigSet=%s&wt=json',
             urlencode($newConfigSetName),
             urlencode($templateConfigSetName)
@@ -718,14 +725,25 @@ class SolrSetup
         ]);
 
         try {
-            // Use Guzzle HTTP client with proper timeout and headers
-            $response = $this->httpClient->get($url, [
+            // Use Guzzle HTTP client with proper timeout, headers, and authentication for SolrCloud
+            $requestOptions = [
                 'timeout' => 30,
                 'headers' => [
                     'Accept' => 'application/json',
                     'Content-Type' => 'application/json'
                 ]
-            ]);
+            ];
+            
+            // Add authentication if configured
+            if (!empty($this->solrConfig['username']) && !empty($this->solrConfig['password'])) {
+                $requestOptions['auth'] = [$this->solrConfig['username'], $this->solrConfig['password']];
+                $this->logger->info('Using HTTP Basic authentication for SOLR configSet creation', [
+                    'username' => $this->solrConfig['username'],
+                    'url' => $url
+                ]);
+            }
+            
+            $response = $this->httpClient->get($url, $requestOptions);
 
             if ($response->getStatusCode() !== 200) {
                 $responseBody = (string)$response->getBody();
@@ -992,7 +1010,14 @@ class SolrSetup
         $url = $this->buildSolrUrl('/admin/collections?action=CLUSTERSTATUS&wt=json');
 
         try {
-            $response = $this->httpClient->get($url, ['timeout' => 10]);
+            $requestOptions = ['timeout' => 10];
+            
+            // Add authentication if configured
+            if (!empty($this->solrConfig['username']) && !empty($this->solrConfig['password'])) {
+                $requestOptions['auth'] = [$this->solrConfig['username'], $this->solrConfig['password']];
+            }
+            
+            $response = $this->httpClient->get($url, $requestOptions);
             
             if ($response->getStatusCode() !== 200) {
                 $this->logger->debug('Failed to check collection existence - HTTP error', [
@@ -1000,8 +1025,8 @@ class SolrSetup
                     'url' => $url,
                     'status_code' => $response->getStatusCode()
                 ]);
-            return false;
-        }
+                return false;
+            }
 
             $data = json_decode((string)$response->getBody(), true);
             
