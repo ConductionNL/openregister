@@ -585,8 +585,9 @@ class SolrSetup
 
     /**
      * Ensures the tenant-specific configSet exists in SOLR.
-     * Creates the tenant configSet if it doesn't exist, using
-     * the default '_default' configSet as a template.
+     * 
+     * In SolrCloud mode, creating configSets from trusted configSets (like _default) 
+     * requires authentication. Instead, we upload a ZIP file containing the configSet.
      *
      * @return bool True if configSet exists or was created successfully
      */
@@ -602,12 +603,12 @@ class SolrSetup
             return true;
         }
 
-        // Create configSet using _default as template
-        $this->logger->info('Creating tenant configSet', [
+        // Upload configSet from ZIP file (bypasses trusted configSet authentication)
+        $this->logger->info('Uploading tenant configSet from ZIP file', [
             'configSet' => $tenantConfigSetName,
-            'template' => '_default'
+            'method' => 'ZIP upload (avoids SolrCloud authentication issues)'
         ]);
-        return $this->createConfigSet($tenantConfigSetName, '_default');
+        return $this->uploadConfigSet($tenantConfigSetName);
     }
 
     /**
@@ -1201,6 +1202,182 @@ class SolrSetup
             ];
             
         return false;
+        }
+    }
+
+    /**
+     * Upload a configSet from ZIP file to SOLR
+     * 
+     * This method uploads a pre-packaged configSet ZIP file to SOLR, which bypasses
+     * the authentication requirements for creating configSets from trusted templates.
+     *
+     * @param string $configSetName Name for the new configSet
+     * @return bool True if configSet was uploaded successfully
+     */
+    private function uploadConfigSet(string $configSetName): bool
+    {
+        // Path to our packaged configSet ZIP file
+        $zipPath = __DIR__ . '/../../resources/solr/openregister-configset.zip';
+        
+        if (!file_exists($zipPath)) {
+            $this->logger->error('ConfigSet ZIP file not found', [
+                'configSet' => $configSetName,
+                'zipPath' => $zipPath
+            ]);
+            
+            $this->lastErrorDetails = [
+                'operation' => 'uploadConfigSet',
+                'configSet' => $configSetName,
+                'error_type' => 'zip_file_not_found',
+                'error_message' => 'ConfigSet ZIP file not found at: ' . $zipPath,
+                'zip_path' => $zipPath,
+                'troubleshooting_tips' => [
+                    'Ensure the configSet ZIP file exists in resources/solr/',
+                    'Check file permissions on the ZIP file',
+                    'Verify the ZIP file contains valid configSet files'
+                ]
+            ];
+            return false;
+        }
+        
+        $url = $this->buildSolrUrl(sprintf('/admin/configs?action=UPLOAD&name=%s&wt=json',
+            urlencode($configSetName)
+        ));
+
+        $this->logger->info('Uploading SOLR configSet from ZIP file', [
+            'configSet' => $configSetName,
+            'url' => $url,
+            'zipPath' => $zipPath,
+            'zipSize' => filesize($zipPath) . ' bytes'
+        ]);
+
+        try {
+            // Read ZIP file contents
+            $zipContents = file_get_contents($zipPath);
+            if ($zipContents === false) {
+                $this->logger->error('Failed to read configSet ZIP file', [
+                    'configSet' => $configSetName,
+                    'zipPath' => $zipPath
+                ]);
+                
+                $this->lastErrorDetails = [
+                    'operation' => 'uploadConfigSet',
+                    'configSet' => $configSetName,
+                    'error_type' => 'zip_read_failed',
+                    'error_message' => 'Failed to read configSet ZIP file',
+                    'zip_path' => $zipPath
+                ];
+                return false;
+            }
+            
+            // Upload ZIP file via POST request
+            $requestOptions = [
+                'timeout' => 30,
+                'headers' => [
+                    'Content-Type' => 'application/octet-stream'
+                ],
+                'body' => $zipContents
+            ];
+            
+            $response = $this->httpClient->post($url, $requestOptions);
+
+            if ($response->getStatusCode() !== 200) {
+                $responseBody = (string)$response->getBody();
+                $this->logger->error('Failed to upload configSet - HTTP error', [
+                    'configSet' => $configSetName,
+                    'url' => $url,
+                    'status_code' => $response->getStatusCode(),
+                    'response_body' => $responseBody
+                ]);
+                
+                $this->lastErrorDetails = [
+                    'operation' => 'uploadConfigSet',
+                    'configSet' => $configSetName,
+                    'url_attempted' => $url,
+                    'error_type' => 'http_error',
+                    'error_message' => 'HTTP error ' . $response->getStatusCode(),
+                    'response_status' => $response->getStatusCode(),
+                    'response_body' => $responseBody
+                ];
+                return false;
+            }
+
+            $data = json_decode((string)$response->getBody(), true);
+            
+            if ($data === null) {
+                $this->logger->error('Failed to upload configSet - Invalid JSON response', [
+                    'configSet' => $configSetName,
+                    'url' => $url,
+                    'raw_response' => (string)$response->getBody(),
+                    'json_error' => json_last_error_msg()
+                ]);
+                
+                $this->lastErrorDetails = [
+                    'operation' => 'uploadConfigSet',
+                    'configSet' => $configSetName,
+                    'url_attempted' => $url,
+                    'error_type' => 'invalid_json_response',
+                    'error_message' => 'SOLR returned invalid JSON response',
+                    'json_error' => json_last_error_msg(),
+                    'raw_response' => (string)$response->getBody()
+                ];
+                return false;
+            }
+            
+            $status = $data['responseHeader']['status'] ?? -1;
+            if ($status === 0) {
+                $this->logger->info('ConfigSet uploaded successfully', [
+                    'configSet' => $configSetName,
+                    'method' => 'ZIP upload'
+                ]);
+                return true;
+            }
+            
+            // Handle SOLR API errors
+            $errorCode = $data['error']['code'] ?? $status;
+            $errorMsg = $data['error']['msg'] ?? 'Unknown SOLR error';
+            $errorDetails = $data['error']['metadata'] ?? [];
+            
+            $this->logger->error('Failed to upload configSet - SOLR API error', [
+                'configSet' => $configSetName,
+                'url' => $url,
+                'solr_status' => $status,
+                'solr_error_code' => $errorCode,
+                'solr_error_message' => $errorMsg,
+                'solr_error_details' => $errorDetails,
+                'full_response' => $data
+            ]);
+            
+            $this->lastErrorDetails = [
+                'operation' => 'uploadConfigSet',
+                'configSet' => $configSetName,
+                'url_attempted' => $url,
+                'error_type' => 'solr_api_error',
+                'error_message' => $errorMsg,
+                'solr_status' => $status,
+                'solr_error_code' => $errorCode,
+                'solr_error_details' => $errorDetails,
+                'full_solr_response' => $data
+            ];
+            return false;
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to upload configSet - HTTP request failed', [
+                'configSet' => $configSetName,
+                'url' => $url,
+                'error' => $e->getMessage(),
+                'exception_type' => get_class($e)
+            ]);
+            
+            $this->lastErrorDetails = [
+                'operation' => 'uploadConfigSet',
+                'configSet' => $configSetName,
+                'url_attempted' => $url,
+                'error_type' => 'http_request_failed',
+                'error_message' => $e->getMessage(),
+                'exception_type' => get_class($e)
+            ];
+            return false;
         }
     }
 
