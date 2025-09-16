@@ -547,32 +547,47 @@ export default {
 		 * @async
 		 * @return {Promise<void>}
 		 */
-			console.log('[DEBUG] Starting loadSolrStats')
 		async loadSolrStats() {
+			console.log('[DEBUG] Starting loadSolrStats')
 			this.loadingStats = true
 			this.solrError = false
 			this.solrErrorMessage = ''
 
 			try {
 				const response = await axios.get(generateUrl('/apps/openregister/api/solr/dashboard/stats'))
-				console.log('[DEBUG] Making API call to:', generateUrl('/apps/openregister/api/solr/dashboard/stats'))
 				
-				if (response.data && response.data.available) {
 				console.log('[DEBUG] API response:', response)
-					this.solrStats = response.data
+				if (response.data && response.data.available) {
+					// Transform flat API response to nested structure
+					this.solrStats = {
+						available: response.data.available,
+						overview: {
+							connection_status: 'Connected',
+							response_time_ms: 0,
+							total_documents: response.data.document_count || 0,
+							index_size: 'Unknown',
+						},
+						cores: {
+							active_core: response.data.collection || 'Unknown',
+							core_status: 'Active',
+							tenant_id: response.data.tenant_id || 'Unknown',
+							endpoint_url: 'Unknown',
+						},
+						performance: { operations_per_sec: 0, total_searches: 0, avg_search_time_ms: 0, total_indexes: 0, avg_index_time_ms: 0, error_rate: 0, total_deletes: 0 },
+						health: { status: 'good', uptime: 'Unknown', last_optimization: null, memory_usage: { used: 'N/A', max: 'N/A', percentage: 0 }, disk_usage: { used: 'N/A', available: 'N/A', percentage: 0 }, warnings: [] },
+						operations: { recent_activity: [], queue_status: { pending_operations: 0, processing: false, last_processed: null }, commit_frequency: { auto_commit: false, commit_within: 0, last_commit: null }, optimization_needed: false }
+					}
+					console.log('[DEBUG] Data transformation completed, solrStats:', this.solrStats)
 				} else {
 					this.solrError = true
 					this.solrErrorMessage = response.data?.error || 'SOLR not available'
-					console.log('[DEBUG] Data transformation completed, solrStats:', this.solrStats)
 				}
 			} catch (error) {
-				console.error('[DEBUG] API call failed:', error)
 				console.error('Failed to load SOLR stats:', error)
 				this.solrError = true
 				this.solrErrorMessage = error.message || 'Failed to load SOLR statistics'
 			} finally {
 				this.loadingStats = false
-				console.log('[DEBUG] Setting loadingStats to false')
 			}
 		},
 
