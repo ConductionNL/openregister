@@ -2325,7 +2325,8 @@ class GuzzleSolrService
     private function testSolrCollection(): array
     {
         try {
-            $collectionName = $this->solrConfig['collection'] ?? $this->solrConfig['core'] ?? 'openregister';
+            // Use tenant-specific collection name (with fallback to base collection)
+            $collectionName = $this->getActiveCollectionName();
             $baseUrl = $this->buildSolrBaseUrl();
             
             // For SolrCloud, test collection existence
@@ -2350,7 +2351,8 @@ class GuzzleSolrService
                         'success' => true,
                         'message' => "Collection '{$collectionName}' exists and is available",
                         'details' => [
-                            'collection' => $collectionName,
+                            'collection_name' => $collectionName,
+                            'collection_type' => strpos($collectionName, '_nc_') !== false ? 'tenant-specific' : 'base',
                             'status' => $collections[$collectionName]['status'] ?? 'unknown',
                             'shards' => count($collections[$collectionName]['shards'] ?? [])
                         ]
@@ -2360,8 +2362,11 @@ class GuzzleSolrService
                         'success' => false,
                         'message' => "Collection '{$collectionName}' not found",
                         'details' => [
-                            'collection' => $collectionName,
-                            'available_collections' => array_keys($collections)
+                            'collection_name' => $collectionName,
+                            'collection_type' => strpos($collectionName, '_nc_') !== false ? 'tenant-specific' : 'base',
+                            'available_collections' => array_keys($collections),
+                            'tenant_id' => $this->tenantId,
+                            'expected_pattern' => 'openregister_' . $this->tenantId
                         ]
                     ];
                 }
@@ -2387,18 +2392,22 @@ class GuzzleSolrService
                         'success' => true,
                         'message' => "Core '{$collectionName}' exists and is available",
                         'details' => [
-                            'core' => $collectionName,
+                            'collection_name' => $collectionName,
+                            'collection_type' => strpos($collectionName, '_nc_') !== false ? 'tenant-specific' : 'base',
                             'num_docs' => $cores[$collectionName]['index']['numDocs'] ?? 0,
                             'max_docs' => $cores[$collectionName]['index']['maxDoc'] ?? 0
                         ]
                     ];
-                } else {
+            } else {
                     return [
                         'success' => false,
                         'message' => "Core '{$collectionName}' not found",
                         'details' => [
-                            'core' => $collectionName,
-                            'available_cores' => array_keys($cores)
+                            'collection_name' => $collectionName,
+                            'collection_type' => strpos($collectionName, '_nc_') !== false ? 'tenant-specific' : 'base',
+                            'available_cores' => array_keys($cores),
+                            'tenant_id' => $this->tenantId,
+                            'expected_pattern' => 'openregister_' . $this->tenantId
                         ]
                     ];
                 }
@@ -2424,7 +2433,8 @@ class GuzzleSolrService
     private function testSolrQuery(): array
     {
         try {
-            $collectionName = $this->solrConfig['collection'] ?? $this->solrConfig['core'] ?? 'openregister';
+            // Use tenant-specific collection name (with fallback to base collection)
+            $collectionName = $this->getActiveCollectionName();
             $baseUrl = $this->buildSolrBaseUrl();
             
             // Test basic query functionality
@@ -2452,9 +2462,12 @@ class GuzzleSolrService
                     'success' => true,
                     'message' => 'Query test successful',
                     'details' => [
+                        'collection_name' => $collectionName,
+                        'collection_type' => strpos($collectionName, '_nc_') !== false ? 'tenant-specific' : 'base',
                         'total_docs' => $data['response']['numFound'] ?? 0,
                         'response_time_ms' => round($responseTime, 2),
-                        'query_url' => $url
+                        'query_url' => $url,
+                        'tenant_id' => $this->tenantId
                     ]
                 ];
             } else {

@@ -27,3 +27,30 @@ quality-baseline.json
 *.xls
 *.xlsx
 
+
+*.
+
+# Files with unusual extensions or no extensions that could be mistakes
+**/PR *
+**/adds *
+**/implements *
+**/ALL *
+**/endpoints *
+**/*Analysis*
+**/*references*
+**/*encoding*
+**/ter
+**/clearCache*
+**/update*Settings*
+**/rebase*
+**/Solr*
+**/setup*
+
+# Temporary test files that shouldn't be committed
+simple-solr-test.php
+test-solr-connection.php
+
+# Files with unusual extensions or no extensions that could be mistakes
+**/PR *
+**/adds *
+**/implements *

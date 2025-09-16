@@ -75,6 +75,11 @@ class SolrSetup
     private ?array $lastErrorDetails = null;
 
     /**
+     * @var array Setup progress tracking with detailed step information
+     */
+    private array $setupProgress = [];
+
+    /**
      * Initialize SOLR setup manager
      *
      * @param GuzzleSolrService $solrService SOLR service with authenticated HTTP client and configuration
@@ -108,6 +113,53 @@ class SolrSetup
     public function getLastErrorDetails(): ?array
     {
         return $this->lastErrorDetails;
+    }
+
+    /**
+     * Get detailed setup progress information
+     *
+     * @return array Setup progress with step details
+     */
+    public function getSetupProgress(): array
+    {
+        return $this->setupProgress;
+    }
+
+    /**
+     * Track a setup step with detailed information
+     *
+     * @param int $stepNumber Step number (1-5)
+     * @param string $stepName Human-readable step name
+     * @param string $status Step status (started, completed, failed)
+     * @param string $description Step description
+     * @param array $details Additional step details
+     */
+    private function trackStep(int $stepNumber, string $stepName, string $status, string $description, array $details = []): void
+    {
+        $stepData = [
+            'step_number' => $stepNumber,
+            'step_name' => $stepName,
+            'status' => $status,
+            'description' => $description,
+            'timestamp' => date('Y-m-d H:i:s'),
+            'details' => $details
+        ];
+
+        // Update or add the step
+        $found = false;
+        foreach ($this->setupProgress['steps'] as &$step) {
+            if ($step['step_number'] === $stepNumber) {
+                $step = array_merge($step, $stepData);
+                $found = true;
+                break;
+            }
+        }
+
+        if (!$found) {
+            $this->setupProgress['steps'][] = $stepData;
+        }
+
+        $this->logger->info("Setup Step {$stepNumber}/{$stepName}: {$status} - {$description}", $details);
     }
 
     /**
@@ -181,19 +233,58 @@ class SolrSetup
     public function setupSolr(): bool
     {
         $this->logger->info('Starting SOLR setup for OpenRegister multi-tenant architecture (SolrCloud mode)');
+        
+        // Initialize setup progress tracking
+        $this->setupProgress = [
+            'started_at' => date('Y-m-d H:i:s'),
+            'steps' => []
+        ];
 
         try {
             // Step 1: Verify SOLR connectivity
-            $this->logger->info('Step 1/5: Verifying SOLR server connectivity');
-            if (!$this->verifySolrConnectivity()) {
-                throw new \RuntimeException(
-                    'Cannot connect to SOLR server. Please check: ' .
-                    '1) SOLR server is running, ' .
-                    '2) Host/port configuration is correct (' . ($this->solrConfig['host'] ?? 'unknown') . ':' . ($this->solrConfig['port'] ?? 'unknown') . '), ' .
-                    '3) Network connectivity between application and SOLR server, ' .
-                    '4) SOLR server is not overloaded or blocking connections. ' .
-                    'Check application logs for detailed connection error messages.'
-                );
+            $this->trackStep(1, 'SOLR Connectivity', 'started', 'Verifying SOLR server connectivity and authentication');
+            
+            try {
+                if (!$this->verifySolrConnectivity()) {
+                    $this->trackStep(1, 'SOLR Connectivity', 'failed', 'Cannot connect to SOLR server', [
+                        'error' => 'SOLR connectivity test failed',
+                        'host' => $this->solrConfig['host'] ?? 'unknown',
+                        'port' => $this->solrConfig['port'] ?? 'unknown',
+                        'url_tested' => $this->buildSolrUrl('/admin/ping?wt=json')
+                    ]);
+                    
+                    $this->lastErrorDetails = [
+                        'operation' => 'verifySolrConnectivity',
+                        'step' => 1,
+                        'error_type' => 'connectivity_failure',
+                        'error_message' => 'Cannot connect to SOLR server',
+                        'configuration' => $this->solrConfig,
+                        'troubleshooting' => [
+                            'Check if SOLR server is running',
+                            'Verify host/port configuration',
+                            'Check network connectivity',
+                            'Verify authentication credentials if required'
+                        ]
+                    ];
+                    return false;
+                }
+                
+                $this->trackStep(1, 'SOLR Connectivity', 'completed', 'SOLR server connectivity verified');
+            } catch (\Exception $e) {
+                $this->trackStep(1, 'SOLR Connectivity', 'failed', $e->getMessage(), [
+                    'exception_type' => get_class($e),
+                    'exception_message' => $e->getMessage()
+                ]);
+                
+                $this->lastErrorDetails = [
+                    'operation' => 'verifySolrConnectivity',
+                    'step' => 1,
+                    'error_type' => 'connectivity_exception',
+                    'error_message' => $e->getMessage(),
+                    'exception_type' => get_class($e),
+                    'configuration' => $this->solrConfig
+                ];
+                return false;
             }
 
             // Step 2: Ensure base configSet exists
@@ -241,7 +332,7 @@ class SolrSetup
                 'solr_port' => $this->solrConfig['port'] ?? '8983',
                 'admin_ui_url' => 'http://' . ($this->solrConfig['host'] ?? 'localhost') . ':' . ($this->solrConfig['port'] ?? '8983') . '/solr/'
             ]);
-            return true;
+        return true;
 
         } catch (\Exception $e) {
             $this->logger->error('SOLR setup failed', [
@@ -271,8 +362,8 @@ class SolrSetup
                     'status_code' => $response->getStatusCode(),
                     'response_body' => (string)$response->getBody()
                 ]);
-                return false;
-            }
+            return false;
+        }
 
             $data = json_decode((string)$response->getBody(), true);
             if ($data === null || !isset($data['lucene'])) {
@@ -280,15 +371,15 @@ class SolrSetup
                     'url' => $url,
                     'response' => (string)$response->getBody()
                 ]);
-                return false;
-            }
+            return false;
+        }
 
             $this->logger->info('SOLR connectivity verified successfully', [
                 'url' => $url,
                 'lucene_version' => $data['lucene']['lucene-spec-version'] ?? 'unknown'
-            ]);
-
-            return true;
+        ]);
+        
+        return true;
             
         } catch (\Exception $e) {
             $this->logger->error('SOLR connectivity verification failed - Exception', [
@@ -346,8 +437,8 @@ class SolrSetup
                     'response_body' => (string)$response->getBody(),
                     'assumption' => 'Assuming configSet does not exist'
                 ]);
-                return false;
-            }
+            return false;
+        }
 
             $data = json_decode((string)$response->getBody(), true);
             
@@ -420,7 +511,7 @@ class SolrSetup
         ));
 
         $this->logger->info('Attempting to create SOLR configSet', [
-            'configSet' => $newConfigSetName,
+                'configSet' => $newConfigSetName,
             'template' => $templateConfigSetName,
             'url' => $url,
             'authentication_configured' => !empty($this->solrConfig['username']) && !empty($this->solrConfig['password'])
@@ -450,9 +541,9 @@ class SolrSetup
                         'Invalid SOLR configuration (host/port/path)',
                         'SOLR server overloaded or timeout'
                     ]
-                ]);
-                return false;
-            }
+            ]);
+            return false;
+        }
 
             $data = json_decode((string)$response->getBody(), true);
             
