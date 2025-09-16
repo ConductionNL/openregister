@@ -279,7 +279,8 @@ class SettingsService
 
             // SOLR Search Configuration
             $solrConfig = $this->config->getValueString($this->appName, 'solr', '');
-            $tenantId = $this->generateTenantId();
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $tenantId = $guzzleSolrService->getTenantId();
             
             if (empty($solrConfig)) {
                 $data['solr'] = [
@@ -445,6 +446,7 @@ class SettingsService
 
             // Handle SOLR settings
             if (isset($data['solr'])) {
+                $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
                 $solrData   = $data['solr'];
                 $solrConfig = [
                     'enabled'        => $solrData['enabled'] ?? false,
@@ -459,7 +461,7 @@ class SettingsService
                     'autoCommit'     => $solrData['autoCommit'] ?? true,
                     'commitWithin'   => (int) ($solrData['commitWithin'] ?? 1000),
                     'enableLogging'  => $solrData['enableLogging'] ?? true,
-                    'tenantId'       => $solrData['tenantId'] ?? $this->generateTenantId(),
+                    'tenantId'       => $solrData['tenantId'] ?? $guzzleSolrService->getTenantId(),
                     'zookeeperHosts' => $solrData['zookeeperHosts'] ?? 'zookeeper:2181',
                     'collection'     => $solrData['collection'] ?? 'openregister',
                     'useCloud'       => $solrData['useCloud'] ?? true,
@@ -2217,31 +2219,6 @@ class SettingsService
 
 
     /**
-     * Generate unique tenant ID for this Nextcloud instance
-     *
-     * Creates a consistent identifier based on instance configuration
-     * to ensure proper multi-tenancy in shared SOLR environments.
-     *
-     * @return string Tenant identifier (format: nc_12345678)
-     */
-    private function generateTenantId(): string
-    {
-        // Get the system configuration for instance identification
-        $instanceId = $this->systemConfig->getSystemValue('instanceid', 'default');
-        $overwriteHost = $this->systemConfig->getSystemValue('overwrite.cli.url', '');
-        
-        // Prefer using the configured host URL for tenant identification
-        if (!empty($overwriteHost)) {
-            return 'nc_' . hash('crc32', $overwriteHost);
-        }
-        
-        // Fallback to instance ID (first 8 characters for readability)
-        return 'nc_' . substr($instanceId, 0, 8);
-
-    }//end generateTenantId()
-
-
-    /**
      * Get focused SOLR settings only
      *
      * @return array SOLR configuration with tenant information
@@ -2250,8 +2227,9 @@ class SettingsService
     public function getSolrSettingsOnly(): array
     {
         try {
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
             $solrConfig = $this->config->getValueString($this->appName, 'solr', '');
-            $tenantId = $this->generateTenantId();
+            $tenantId = $guzzleSolrService->getTenantId();
             
             if (empty($solrConfig)) {
                 return [
@@ -2308,7 +2286,8 @@ class SettingsService
     public function updateSolrSettingsOnly(array $solrData): array
     {
         try {
-            $tenantId = $this->generateTenantId();
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $tenantId = $guzzleSolrService->getTenantId();
             $solrConfig = [
                 'enabled'        => $solrData['enabled'] ?? false,
                 'host'           => $solrData['host'] ?? 'solr',
