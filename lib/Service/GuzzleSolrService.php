@@ -274,14 +274,37 @@ class GuzzleSolrService
 
     /**
      * Check if SOLR is available and configured
-     * DISABLED: Always returns false to prevent direct SOLR calls
      *
-     * @return bool Always false (SOLR disabled)
+     * @return bool True if SOLR is available and responding
      */
     public function isAvailable(): bool
     {
-        // SOLR direct calls disabled - always return false
-        return false;
+        try {
+            // Check if SOLR is enabled in configuration
+            if (!($this->solrConfig['enabled'] ?? false)) {
+                return false;
+            }
+
+            // Use system info endpoint instead of ping (SolrCloud compatible)
+            $systemUrl = $this->buildSolrBaseUrl() . '/admin/info/system?wt=json';
+            $response = $this->httpClient->get($systemUrl, ['timeout' => 5]);
+            
+            if ($response->getStatusCode() !== 200) {
+                return false;
+            }
+            
+            $data = json_decode((string)$response->getBody(), true);
+            // Check if we got a valid SOLR response with system info
+            return isset($data['solr']) || isset($data['system']);
+            
+        } catch (\Exception $e) {
+            // Log the error but don't throw - just return false
+            $this->logger->debug('SOLR availability check failed', [
+                'error' => $e->getMessage(),
+                'url' => $this->buildSolrBaseUrl() . '/admin/info/system'
+            ]);
+            return false;
+        }
     }
 
     /**
@@ -2573,7 +2596,7 @@ class GuzzleSolrService
             // Get collection stats
             $statsUrl = $this->buildSolrBaseUrl() . '/admin/collections?action=CLUSTERSTATUS&collection=' . $tenantCollectionName . '&wt=json';
             $statsResponse = $this->httpClient->get($statsUrl, ['timeout' => 10]);
-            $statsData = json_decode($statsResponse->getBody(), true);
+            $statsData = json_decode((string)$statsResponse->getBody(), true);
 
             // Get document count
             $docCount = $this->getDocumentCount();
@@ -2581,7 +2604,7 @@ class GuzzleSolrService
             // Get index size (approximate)
             $indexSizeUrl = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/admin/luke?wt=json&numTerms=0';
             $sizeResponse = $this->httpClient->get($indexSizeUrl, ['timeout' => 10]);
-            $sizeData = json_decode($sizeResponse->getBody(), true);
+            $sizeData = json_decode((string)$sizeResponse->getBody(), true);
 
             $collectionInfo = $statsData['cluster']['collections'][$tenantCollectionName] ?? [];
             $shards = $collectionInfo['shards'] ?? [];
