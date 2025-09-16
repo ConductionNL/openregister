@@ -163,57 +163,49 @@ class SolrSetup
     }
 
     /**
-     * Build SOLR URL with proper Kubernetes service name support
+     * Build SOLR URL using GuzzleSolrService base URL method for consistency
      *
      * @param string $path The SOLR API path (e.g., '/admin/info/system')
      * @return string Complete SOLR URL
      */
     private function buildSolrUrl(string $path): string
     {
-        $host = $this->solrConfig['host'] ?? 'localhost';
-        $port = $this->solrConfig['port'] ?? null;
-        $scheme = $this->solrConfig['scheme'] ?? 'http';
-        $basePath = $this->solrConfig['path'] ?? '/solr';
-        
-        // Normalize port - convert string '0' to integer 0, handle empty strings
-        if ($port === '0' || $port === '' || $port === null) {
-            $port = null;
-        } else {
-            $port = (int)$port;
-            if ($port === 0) {
-                $port = null;
-            }
-        }
-        
-        // Check if it's a Kubernetes service name (contains .svc.cluster.local)
-        if (strpos($host, '.svc.cluster.local') !== false) {
-            // Kubernetes service - don't append port, it's handled by the service
-            return sprintf('%s://%s%s%s',
-                $scheme,
-                $host,
-                $basePath,
-                $path
-            );
-        } else {
-            // Regular hostname - only append port if explicitly provided and not 0/null
-            if ($port !== null && $port > 0) {
-                return sprintf('%s://%s:%d%s%s',
-                    $scheme,
-                    $host,
-                    $port,
-                    $basePath,
-                    $path
-                );
-            } else {
-                // No port provided or port is 0 - let the service handle it
-                return sprintf('%s://%s%s%s',
-                    $scheme,
-                    $host,
-                    $basePath,
-                    $path
-                );
-            }
-        }
+        // Use GuzzleSolrService's buildSolrBaseUrl method for consistency
+        // This ensures URL building logic is centralized and consistent
+        $baseUrl = $this->solrService->buildSolrBaseUrl();
+        return $baseUrl . $path;
+    }
+
+    /**
+     * Get tenant-specific collection name using GuzzleSolrService
+     *
+     * @return string Tenant-specific collection name (e.g., "openregister_nc_f0e53393")
+     */
+    private function getTenantCollectionName(): string
+    {
+        $baseCollectionName = $this->solrConfig['core'] ?? 'openregister';
+        return $this->solrService->getTenantSpecificCollectionName($baseCollectionName);
+    }
+
+    /**
+     * Get tenant ID from GuzzleSolrService
+     *
+     * @return string Tenant identifier (e.g., "nc_f0e53393")
+     */
+    private function getTenantId(): string
+    {
+        return $this->solrService->getTenantId();
+    }
+
+    /**
+     * Get tenant-specific configSet name
+     *
+     * @return string Tenant-specific configSet name (e.g., "openregister_nc_f0e53393")
+     */
+    private function getTenantConfigSetName(): string
+    {
+        $baseConfigSetName = $this->solrConfig['core'] ?? 'openregister';
+        return $baseConfigSetName . '_' . $this->getTenantId();
     }
 
     /**
@@ -223,7 +215,8 @@ class SolrSetup
      * 1. Verifies SOLR connectivity
      * 2. Creates base configSet if missing
      * 3. Creates base collection for template
-     * 4. Validates setup completion
+     * 4. Configures schema fields
+     * 5. Validates setup completion
      *
      * Note: This works with SolrCloud mode with ZooKeeper coordination
      *
@@ -237,6 +230,10 @@ class SolrSetup
         // Initialize setup progress tracking
         $this->setupProgress = [
             'started_at' => date('Y-m-d H:i:s'),
+            'completed_at' => null,
+            'total_steps' => 5,
+            'completed_steps' => 0,
+            'success' => false,
             'steps' => []
         ];
 
@@ -256,6 +253,7 @@ class SolrSetup
                     $this->lastErrorDetails = [
                         'operation' => 'verifySolrConnectivity',
                         'step' => 1,
+                        'step_name' => 'SOLR Connectivity',
                         'error_type' => 'connectivity_failure',
                         'error_message' => 'Cannot connect to SOLR server',
                         'configuration' => $this->solrConfig,
@@ -270,6 +268,7 @@ class SolrSetup
                 }
                 
                 $this->trackStep(1, 'SOLR Connectivity', 'completed', 'SOLR server connectivity verified');
+                $this->setupProgress['completed_steps']++;
             } catch (\Exception $e) {
                 $this->trackStep(1, 'SOLR Connectivity', 'failed', $e->getMessage(), [
                     'exception_type' => get_class($e),
@@ -279,6 +278,7 @@ class SolrSetup
                 $this->lastErrorDetails = [
                     'operation' => 'verifySolrConnectivity',
                     'step' => 1,
+                    'step_name' => 'SOLR Connectivity',
                     'error_type' => 'connectivity_exception',
                     'error_message' => $e->getMessage(),
                     'exception_type' => get_class($e),
@@ -287,58 +287,241 @@ class SolrSetup
                 return false;
             }
 
-            // Step 2: Ensure base configSet exists
-            $this->logger->info('Step 2/5: Ensuring base configSet exists');
-            if (!$this->ensureBaseConfigSet()) {
-                throw new \RuntimeException(
-                    'Failed to create base configSet "openregister". This could be due to: ' .
-                    '1) SOLR server lacks write permissions for config directory, ' .
-                    '2) Template configSet "_default" does not exist, ' .
-                    '3) SOLR is not running in SolrCloud mode, ' .
-                    '4) ZooKeeper connectivity issues in SolrCloud setup. ' .
-                    'Check SOLR admin UI at http://' . ($this->solrConfig['host'] ?? 'localhost') . ':' . ($this->solrConfig['port'] ?? '8983') . '/solr/#/~configs ' .
-                    'and verify available configSets. Check application logs for detailed error messages.'
-                );
+            // Step 2: Ensure tenant configSet exists
+            $tenantConfigSetName = $this->getTenantConfigSetName();
+            $this->trackStep(2, 'ConfigSet Creation', 'started', 'Checking and creating tenant configSet "' . $tenantConfigSetName . '"');
+            
+            try {
+                if (!$this->ensureTenantConfigSet()) {
+                    $this->trackStep(2, 'ConfigSet Creation', 'failed', 'Failed to create tenant configSet', [
+                        'configSet' => $tenantConfigSetName,
+                        'template' => '_default',
+                        'error_details' => $this->lastErrorDetails
+                    ]);
+                    
+                    // Enhanced error details for configSet failure
+                    if ($this->lastErrorDetails === null) {
+                        $this->lastErrorDetails = [
+                            'operation' => 'ensureTenantConfigSet',
+                            'step' => 2,
+                            'step_name' => 'ConfigSet Creation',
+                            'error_type' => 'configset_creation_failure',
+                            'error_message' => 'Failed to create tenant configSet "' . $tenantConfigSetName . '"',
+                            'configSet' => $tenantConfigSetName,
+                            'template' => '_default',
+                            'troubleshooting' => [
+                                'Check if SOLR server has write permissions for config directory',
+                                'Verify template configSet "_default" exists in SOLR',
+                                'Ensure SOLR is running in SolrCloud mode',
+                                'Check ZooKeeper connectivity in SolrCloud setup',
+                                'Check SOLR admin UI for existing configSets'
+                            ]
+                        ];
+                    }
+                    return false;
+                }
+                
+                $this->trackStep(2, 'ConfigSet Creation', 'completed', 'Tenant configSet "' . $tenantConfigSetName . '" is available');
+                $this->setupProgress['completed_steps']++;
+            } catch (\Exception $e) {
+                $this->trackStep(2, 'ConfigSet Creation', 'failed', $e->getMessage(), [
+                    'exception_type' => get_class($e),
+                    'configSet' => $tenantConfigSetName
+                ]);
+                
+                $this->lastErrorDetails = [
+                    'operation' => 'ensureTenantConfigSet',
+                    'step' => 2,
+                    'step_name' => 'ConfigSet Creation',
+                    'error_type' => 'configset_exception',
+                    'error_message' => $e->getMessage(),
+                    'exception_type' => get_class($e),
+                    'configSet' => $tenantConfigSetName
+                ];
+                return false;
             }
 
-            // Step 3: Ensure base collection exists (used as template)
-            $this->logger->info('Step 3/5: Ensuring base collection exists');
-            if (!$this->ensureBaseCollectionExists()) {
-                throw new \RuntimeException(
-                    'Failed to create base collection "openregister". This could be due to: ' .
-                    '1) ConfigSet "openregister" was not created in previous step, ' .
-                    '2) SOLR lacks permissions to create collections, ' .
-                    '3) ZooKeeper coordination issues in SolrCloud, ' .
-                    '4) Insufficient disk space or memory on SOLR server. ' .
-                    'Check SOLR admin UI at http://' . ($this->solrConfig['host'] ?? 'localhost') . ':' . ($this->solrConfig['port'] ?? '8983') . '/solr/#/~collections ' .
-                    'and verify collection status. Check application logs for detailed error messages.'
-                );
+            // Step 3: Ensure tenant collection exists
+            $tenantCollectionName = $this->getTenantCollectionName();
+            $this->trackStep(3, 'Collection Creation', 'started', 'Checking and creating tenant collection "' . $tenantCollectionName . '"');
+            
+            try {
+                // Ensure tenant collection exists (using tenant-specific configSet)
+                if (!$this->ensureTenantCollectionExists()) {
+                    $tenantConfigSetName = $this->getTenantConfigSetName();
+                    $this->trackStep(3, 'Collection Creation', 'failed', 'Failed to create tenant collection', [
+                        'collection' => $tenantCollectionName,
+                        'configSet' => $tenantConfigSetName,
+                        'error_details' => $this->lastErrorDetails
+                    ]);
+                    
+                    // Enhanced error details for collection failure
+                    if ($this->lastErrorDetails === null) {
+                        $this->lastErrorDetails = [
+                            'operation' => 'ensureTenantCollectionExists',
+                            'step' => 3,
+                            'step_name' => 'Collection Creation',
+                            'error_type' => 'collection_creation_failure',
+                            'error_message' => 'Failed to create tenant collection "' . $tenantCollectionName . '"',
+                            'collection' => $tenantCollectionName,
+                            'configSet' => $tenantConfigSetName,
+                            'troubleshooting' => [
+                                'Verify configSet "' . $tenantConfigSetName . '" was created in previous step',
+                                'Check SOLR permissions to create collections',
+                                'Verify ZooKeeper coordination in SolrCloud',
+                                'Check available disk space and memory on SOLR server',
+                                'Check SOLR admin UI for collection status'
+                            ]
+                        ];
+                    }
+                    return false;
+                }
+                
+                $this->trackStep(3, 'Collection Creation', 'completed', 'Tenant collection "' . $tenantCollectionName . '" is available');
+                $this->setupProgress['completed_steps']++;
+            } catch (\Exception $e) {
+                $this->trackStep(3, 'Collection Creation', 'failed', $e->getMessage(), [
+                    'exception_type' => get_class($e),
+                    'collection' => $tenantCollectionName
+                ]);
+                
+                $this->lastErrorDetails = [
+                    'operation' => 'ensureTenantCollectionExists',
+                    'step' => 3,
+                    'step_name' => 'Collection Creation',
+                    'error_type' => 'collection_exception',
+                    'error_message' => $e->getMessage(),
+                    'exception_type' => get_class($e),
+                    'collection' => $tenantCollectionName
+                ];
+                return false;
             }
 
-            // Step 4: Configure schema fields for ObjectEntity metadata (placeholder)
-            $this->logger->info('Step 4/5: Configuring schema fields for ObjectEntity metadata');
-            // TODO: Implement schema field configuration
-            $this->logger->info('Schema field configuration completed (placeholder - implement schema field setup)');
+            // Step 4: Configure schema fields
+            $this->trackStep(4, 'Schema Configuration', 'started', 'Configuring schema fields for ObjectEntity metadata');
+            
+            try {
+                if (!$this->configureSchemaFields()) {
+                    $this->trackStep(4, 'Schema Configuration', 'failed', 'Failed to configure schema fields');
+                    
+                    $this->lastErrorDetails = [
+                        'operation' => 'configureSchemaFields',
+                        'step' => 4,
+                        'step_name' => 'Schema Configuration',
+                        'error_type' => 'schema_configuration_failure',
+                        'error_message' => 'Failed to configure schema fields for ObjectEntity metadata',
+                        'troubleshooting' => [
+                            'Check SOLR collection is accessible',
+                            'Verify schema API is enabled',
+                            'Check field type definitions',
+                            'Ensure proper field naming conventions'
+                        ]
+                    ];
+                    return false;
+                }
+                
+                $this->trackStep(4, 'Schema Configuration', 'completed', 'Schema fields configured successfully');
+                $this->setupProgress['completed_steps']++;
+            } catch (\Exception $e) {
+                $this->trackStep(4, 'Schema Configuration', 'failed', $e->getMessage(), [
+                    'exception_type' => get_class($e)
+                ]);
+                
+                $this->lastErrorDetails = [
+                    'operation' => 'configureSchemaFields',
+                    'step' => 4,
+                    'step_name' => 'Schema Configuration',
+                    'error_type' => 'schema_exception',
+                    'error_message' => $e->getMessage(),
+                    'exception_type' => get_class($e)
+                ];
+                return false;
+            }
 
-            // Step 5: Validate setup (placeholder)  
-            $this->logger->info('Step 5/5: Validating SOLR setup');
-            // TODO: Implement setup validation
-            $this->logger->info('Setup validation completed (placeholder - implement validation checks)');
+            // Step 5: Validate setup
+            $this->trackStep(5, 'Setup Validation', 'started', 'Validating SOLR setup completion');
+            
+            try {
+                if (!$this->validateSetup()) {
+                    $this->trackStep(5, 'Setup Validation', 'failed', 'Setup validation failed');
+                    
+                    $this->lastErrorDetails = [
+                        'operation' => 'validateSetup',
+                        'step' => 5,
+                        'step_name' => 'Setup Validation',
+                        'error_type' => 'validation_failure',
+                        'error_message' => 'Setup validation checks failed',
+                        'troubleshooting' => [
+                            'Check configSet exists and is accessible',
+                            'Verify collection exists and is queryable',
+                            'Test collection query functionality',
+                            'Check SOLR admin UI for status'
+                        ]
+                    ];
+                    return false;
+                }
+                
+                $this->trackStep(5, 'Setup Validation', 'completed', 'Setup validation passed');
+                $this->setupProgress['completed_steps']++;
+            } catch (\Exception $e) {
+                $this->trackStep(5, 'Setup Validation', 'failed', $e->getMessage(), [
+                    'exception_type' => get_class($e)
+                ]);
+                
+                $this->lastErrorDetails = [
+                    'operation' => 'validateSetup',
+                    'step' => 5,
+                    'step_name' => 'Setup Validation',
+                    'error_type' => 'validation_exception',
+                    'error_message' => $e->getMessage(),
+                    'exception_type' => get_class($e)
+                ];
+                return false;
+            }
 
+            // Mark setup as completed successfully
+            $this->setupProgress['completed_at'] = date('Y-m-d H:i:s');
+            $this->setupProgress['success'] = true;
+
+            $tenantCollectionName = $this->getTenantCollectionName();
+            $tenantConfigSetName = $this->getTenantConfigSetName();
             $this->logger->info('✅ SOLR setup completed successfully (SolrCloud mode)', [
-                'configSet_created' => 'openregister',
-                'collection_created' => 'openregister',
+                'tenant_configSet_created' => $tenantConfigSetName,
+                'tenant_collection_created' => $tenantCollectionName,
+                'schema_fields_configured' => true,
+                'setup_validated' => true,
+                'completed_steps' => $this->setupProgress['completed_steps'],
+                'total_steps' => $this->setupProgress['total_steps'],
                 'solr_host' => $this->solrConfig['host'] ?? 'localhost',
                 'solr_port' => $this->solrConfig['port'] ?? '8983',
                 'admin_ui_url' => 'http://' . ($this->solrConfig['host'] ?? 'localhost') . ':' . ($this->solrConfig['port'] ?? '8983') . '/solr/'
             ]);
+            
         return true;
 
         } catch (\Exception $e) {
+            $this->setupProgress['completed_at'] = date('Y-m-d H:i:s');
+            $this->setupProgress['success'] = false;
+            
             $this->logger->error('SOLR setup failed', [
                 'error' => $e->getMessage(),
+                'completed_steps' => $this->setupProgress['completed_steps'],
+                'total_steps' => $this->setupProgress['total_steps'],
                 'trace' => $e->getTraceAsString()
             ]);
+            
+            // Store general failure details if no specific error was captured
+            if ($this->lastErrorDetails === null) {
+                $this->lastErrorDetails = [
+                    'operation' => 'setupSolr',
+                    'error_type' => 'general_setup_failure',
+                    'error_message' => $e->getMessage(),
+                    'exception_type' => get_class($e),
+                    'completed_steps' => $this->setupProgress['completed_steps'],
+                    'total_steps' => $this->setupProgress['total_steps']
+                ];
+            }
+            
             return false;
         }
     }
@@ -392,23 +575,30 @@ class SolrSetup
     }
 
     /**
-     * Ensure the base configSet exists for creating tenant cores
-     *
-     * Creates the 'openregister' configSet if it doesn't exist, using
+     * Ensures the tenant-specific configSet exists in SOLR.
+     * Creates the tenant configSet if it doesn't exist, using
      * the default '_default' configSet as a template.
      *
      * @return bool True if configSet exists or was created successfully
      */
-    private function ensureBaseConfigSet(): bool
+    private function ensureTenantConfigSet(): bool
     {
+        $tenantConfigSetName = $this->getTenantConfigSetName();
+        
         // Check if configSet already exists
-        if ($this->configSetExists('openregister')) {
-            $this->logger->info('Base configSet already exists');
+        if ($this->configSetExists($tenantConfigSetName)) {
+            $this->logger->info('Tenant configSet already exists', [
+                'configSet' => $tenantConfigSetName
+            ]);
             return true;
         }
 
         // Create configSet using _default as template
-        return $this->createConfigSet('openregister', '_default');
+        $this->logger->info('Creating tenant configSet', [
+            'configSet' => $tenantConfigSetName,
+            'template' => '_default'
+        ]);
+        return $this->createConfigSet($tenantConfigSetName, '_default');
     }
 
     /**
@@ -727,24 +917,35 @@ class SolrSetup
         return false;
     }
 
+
     /**
-     * Ensure the base collection exists as a template for tenant collections
+     * Ensure the tenant-specific collection exists for this instance
      *
-     * The base 'openregister' collection serves as both a working collection and
-     * a template for creating tenant-specific collections in SolrCloud.
+     * Creates a tenant-specific collection (e.g., "openregister_nc_f0e53393")
+     * using the tenant-specific configSet (e.g., "openregister_nc_f0e53393").
      *
-     * @return bool True if base collection exists or was created successfully
+     * @return bool True if tenant collection exists or was created successfully
      */
-    private function ensureBaseCollectionExists(): bool
+    private function ensureTenantCollectionExists(): bool
     {
-        // Check if base collection already exists
-        if ($this->collectionExists('openregister')) {
-            $this->logger->info('Base collection already exists');
+        $tenantCollectionName = $this->getTenantCollectionName();
+        
+        // Check if tenant collection already exists
+        if ($this->solrService->collectionExists($tenantCollectionName)) {
+            $this->logger->info('Tenant collection already exists', [
+                'collection' => $tenantCollectionName
+            ]);
             return true;
         }
 
-        // Create base collection using the openregister configSet
-        return $this->createCollection('openregister', 'openregister');
+        // Create tenant collection using the tenant-specific configSet
+        $tenantConfigSetName = $this->getTenantConfigSetName();
+        $this->logger->info('Creating tenant collection', [
+            'collection' => $tenantCollectionName,
+            'configSet' => $tenantConfigSetName
+        ]);
+        
+        return $this->solrService->createCollection($tenantCollectionName, $tenantConfigSetName);
     }
 
     /**
@@ -757,15 +958,48 @@ class SolrSetup
     {
         $url = $this->buildSolrUrl('/admin/collections?action=CLUSTERSTATUS&wt=json');
 
-        $response = @file_get_contents($url);
-        if ($response === false) {
+        try {
+            $response = $this->httpClient->get($url, ['timeout' => 10]);
+            
+            if ($response->getStatusCode() !== 200) {
+                $this->logger->debug('Failed to check collection existence - HTTP error', [
+                    'collection' => $collectionName,
+                    'url' => $url,
+                    'status_code' => $response->getStatusCode()
+                ]);
             return false;
         }
 
-        $data = json_decode($response, true);
+            $data = json_decode((string)$response->getBody(), true);
+            
+            if ($data === null) {
+                $this->logger->debug('Failed to check collection existence - Invalid JSON', [
+                    'collection' => $collectionName,
+                    'url' => $url,
+                    'json_error' => json_last_error_msg()
+                ]);
+                return false;
+            }
         
         // Collection exists if it's in the cluster status
-        return isset($data['cluster']['collections'][$collectionName]);
+            $exists = isset($data['cluster']['collections'][$collectionName]);
+            
+            $this->logger->debug('Collection existence check completed', [
+                'collection' => $collectionName,
+                'exists' => $exists,
+                'available_collections' => array_keys($data['cluster']['collections'] ?? [])
+            ]);
+            
+            return $exists;
+        } catch (\Exception $e) {
+            $this->logger->debug('Failed to check collection existence - Exception', [
+                'collection' => $collectionName,
+                'url' => $url,
+                'error' => $e->getMessage(),
+                'exception_type' => get_class($e)
+            ]);
+            return false;
+        }
     }
 
     /**
@@ -782,17 +1016,66 @@ class SolrSetup
             urlencode($configSetName)
         ));
 
-        $response = @file_get_contents($url);
-        if ($response === false) {
-            $this->logger->error('Failed to create collection', [
+        $this->logger->info('Attempting to create SOLR collection', [
                 'collection' => $collectionName,
-                'configSet' => $configSetName
-            ]);
+            'configSet' => $configSetName,
+            'url' => $url
+        ]);
+
+        try {
+            $response = $this->httpClient->get($url, ['timeout' => 30]);
+            
+            if ($response->getStatusCode() !== 200) {
+                $this->logger->error('Failed to create collection - HTTP error', [
+                    'collection' => $collectionName,
+                    'configSet' => $configSetName,
+                    'url' => $url,
+                    'status_code' => $response->getStatusCode(),
+                    'response_body' => (string)$response->getBody()
+                ]);
+                
+                // Store detailed error information for API response
+                $this->lastErrorDetails = [
+                    'operation' => 'createCollection',
+                    'collection' => $collectionName,
+                    'configSet' => $configSetName,
+                    'url_attempted' => $url,
+                    'error_type' => 'http_error',
+                    'error_message' => 'HTTP request failed with status ' . $response->getStatusCode(),
+                    'response_status' => $response->getStatusCode(),
+                    'response_body' => (string)$response->getBody()
+                ];
+                
             return false;
         }
 
-        $data = json_decode($response, true);
-        if (($data['responseHeader']['status'] ?? -1) === 0) {
+            $data = json_decode((string)$response->getBody(), true);
+            
+            if ($data === null) {
+                $this->logger->error('Failed to create collection - Invalid JSON response', [
+                    'collection' => $collectionName,
+                    'configSet' => $configSetName,
+                    'url' => $url,
+                    'raw_response' => (string)$response->getBody(),
+                    'json_error' => json_last_error_msg()
+                ]);
+                
+                $this->lastErrorDetails = [
+                    'operation' => 'createCollection',
+                    'collection' => $collectionName,
+                    'configSet' => $configSetName,
+                    'url_attempted' => $url,
+                    'error_type' => 'invalid_json_response',
+                    'error_message' => 'SOLR returned invalid JSON response',
+                    'json_error' => json_last_error_msg(),
+                    'raw_response' => (string)$response->getBody()
+                ];
+                
+                return false;
+            }
+            
+            $status = $data['responseHeader']['status'] ?? -1;
+            if ($status === 0) {
             $this->logger->info('Collection created successfully', [
                 'collection' => $collectionName,
                 'configSet' => $configSetName
@@ -800,11 +1083,67 @@ class SolrSetup
             return true;
         }
 
-        $this->logger->error('Collection creation failed', [
+            // Extract detailed error information from SOLR response
+            $errorMsg = $data['error']['msg'] ?? 'Unknown SOLR error';
+            $errorCode = $data['error']['code'] ?? $status;
+            $errorDetails = $data['error']['metadata'] ?? [];
+
+            $this->logger->error('Collection creation failed - SOLR returned error', [
             'collection' => $collectionName,
-            'response' => $data
-        ]);
+                'configSet' => $configSetName,
+                'url' => $url,
+                'solr_status' => $status,
+                'solr_error_message' => $errorMsg,
+                'solr_error_code' => $errorCode,
+                'solr_error_details' => $errorDetails,
+                'full_response' => $data
+            ]);
+            
+            // Store detailed error information for API response
+            $this->lastErrorDetails = [
+                'operation' => 'createCollection',
+                'collection' => $collectionName,
+                'configSet' => $configSetName,
+                'url_attempted' => $url,
+                'error_type' => 'solr_api_error',
+                'error_message' => $errorMsg,
+                'solr_status' => $status,
+                'solr_error_code' => $errorCode,
+                'solr_error_details' => $errorDetails,
+                'full_solr_response' => $data,
+                'troubleshooting_tips' => [
+                    'Verify configSet "' . $configSetName . '" exists and is accessible',
+                    'Check SOLR has permissions to create collections',
+                    'Verify ZooKeeper coordination in SolrCloud',
+                    'Check available disk space and memory on SOLR server',
+                    'Check SOLR logs for additional error details'
+                ]
+            ];
+            
+            return false;
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to create collection - HTTP request failed', [
+                'collection' => $collectionName,
+                'configSet' => $configSetName,
+                'url' => $url,
+                'error' => $e->getMessage(),
+                'exception_type' => get_class($e)
+            ]);
+            
+            // Store detailed error information for API response
+            $this->lastErrorDetails = [
+                'operation' => 'createCollection',
+                'collection' => $collectionName,
+                'configSet' => $configSetName,
+                'url_attempted' => $url,
+                'error_type' => 'http_request_failed',
+                'error_message' => $e->getMessage(),
+                'exception_type' => get_class($e)
+            ];
+            
         return false;
+        }
     }
 
     /**
@@ -819,12 +1158,17 @@ class SolrSetup
             urlencode($coreName)
         ));
 
-        $response = @file_get_contents($url);
-        if ($response === false) {
+        try {
+            $response = $this->httpClient->get($url, ['timeout' => 10]);
+            $data = json_decode((string)$response->getBody(), true);
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to check core existence', [
+                'core' => $coreName,
+                'error' => $e->getMessage(),
+                'url' => $url
+            ]);
             return false;
         }
-
-        $data = json_decode($response, true);
         
         // Core exists if it's in the status response
         return isset($data['status'][$coreName]);
@@ -844,16 +1188,19 @@ class SolrSetup
             urlencode($configSetName)
         ));
 
-        $response = @file_get_contents($url);
-        if ($response === false) {
+        try {
+            $response = $this->httpClient->get($url, ['timeout' => 30]);
+            $data = json_decode((string)$response->getBody(), true);
+        } catch (\Exception $e) {
             $this->logger->error('Failed to create core', [
                 'core' => $coreName,
-                'configSet' => $configSetName
+                'configSet' => $configSetName,
+                'error' => $e->getMessage(),
+                'url' => $url
             ]);
             return false;
         }
 
-        $data = json_decode($response, true);
         if (($data['responseHeader']['status'] ?? -1) === 0) {
             $this->logger->info('Core created successfully', [
                 'core' => $coreName,
@@ -881,34 +1228,360 @@ class SolrSetup
     {
         $this->logger->info('Configuring SOLR schema fields for ObjectEntity metadata');
 
-        // Define field type mappings for ObjectEntity properties
-        $fieldDefinitions = $this->getObjectEntityFieldDefinitions();
+        // Use the shared field definitions
+        $fieldDefinitions = self::getObjectEntityFieldDefinitions();
+        
+        $fieldResults = [
+            'total_fields' => count($fieldDefinitions),
+            'fields_added' => 0,
+            'fields_updated' => 0,
+            'fields_failed' => 0,
+            'fields_skipped' => 0,
+            'added_fields' => [],
+            'updated_fields' => [],
+            'failed_fields' => [],
+            'skipped_fields' => []
+        ];
 
         $success = true;
         foreach ($fieldDefinitions as $fieldName => $fieldConfig) {
-            if (!$this->addOrUpdateSchemaField($fieldName, $fieldConfig)) {
-                $this->logger->error('Failed to configure field', ['field' => $fieldName]);
+            $result = $this->addOrUpdateSchemaFieldWithTracking($fieldName, $fieldConfig);
+            
+            if ($result['success']) {
+                if ($result['action'] === 'added') {
+                    $fieldResults['fields_added']++;
+                    $fieldResults['added_fields'][] = $fieldName;
+                } elseif ($result['action'] === 'updated') {
+                    $fieldResults['fields_updated']++;
+                    $fieldResults['updated_fields'][] = $fieldName;
+                } elseif ($result['action'] === 'skipped') {
+                    $fieldResults['fields_skipped']++;
+                    $fieldResults['skipped_fields'][] = $fieldName;
+                }
+            } else {
+                $fieldResults['fields_failed']++;
+                $fieldResults['failed_fields'][] = $fieldName;
+                $this->logger->error('Failed to configure field', ['field' => $fieldName, 'error' => $result['error'] ?? 'Unknown error']);
                 $success = false;
             }
         }
 
+        // Update the step tracking with detailed field information
+        $this->trackStep(4, 'Schema Configuration', $success ? 'completed' : 'failed', 
+            $success ? 'Schema fields configured successfully' : 'Schema field configuration failed',
+            $fieldResults
+        );
+
         if ($success) {
-            $this->logger->info('Schema field configuration completed successfully');
+            $this->logger->info('Schema field configuration completed successfully', $fieldResults);
         }
 
         return $success;
     }
 
     /**
-     * Get field definitions for ObjectEntity metadata fields
+     * Add or update a schema field with detailed tracking
+     *
+     * @param string $fieldName Name of the field
+     * @param array $fieldConfig Field configuration
+     * @return array Result with success status, action taken, and error details
+     */
+    private function addOrUpdateSchemaFieldWithTracking(string $fieldName, array $fieldConfig): array
+    {
+        // First, try to add the field
+        $addResult = $this->addSchemaFieldWithResult($fieldName, $fieldConfig);
+        
+        if ($addResult['success']) {
+            return [
+                'success' => true,
+                'action' => 'added',
+                'details' => $addResult
+            ];
+        }
+        
+        // If add failed because field exists, try to update/replace
+        if (strpos($addResult['error'] ?? '', 'already exists') !== false || 
+            strpos($addResult['error'] ?? '', 'Field') !== false) {
+            
+            $updateResult = $this->replaceSchemaFieldWithResult($fieldName, $fieldConfig);
+            
+            if ($updateResult['success']) {
+                return [
+                    'success' => true,
+                    'action' => 'updated',
+                    'details' => $updateResult
+                ];
+            } else {
+                // Field exists but couldn't be updated - might be same config
+                return [
+                    'success' => true,
+                    'action' => 'skipped',
+                    'details' => ['reason' => 'Field exists with compatible configuration']
+                ];
+            }
+        }
+        
+        // Both add and update failed
+        return [
+            'success' => false,
+            'action' => 'failed',
+            'error' => $addResult['error'] ?? 'Unknown error'
+        ];
+    }
+
+    /**
+     * Add a schema field and return detailed result
+     *
+     * @param string $fieldName Name of the field
+     * @param array $fieldConfig Field configuration
+     * @return array Result with success status and details
+     */
+    private function addSchemaFieldWithResult(string $fieldName, array $fieldConfig): array
+    {
+        $tenantCollectionName = $this->getTenantCollectionName();
+        $url = $this->buildSolrUrl('/' . $tenantCollectionName . '/schema');
+
+        $payload = [
+            'add-field' => array_merge(['name' => $fieldName], $fieldConfig)
+        ];
+
+        try {
+            $response = $this->httpClient->post($url, [
+                'headers' => ['Content-Type' => 'application/json'],
+                'json' => $payload,
+                'timeout' => 30
+            ]);
+
+            if ($response->getStatusCode() !== 200) {
+                return [
+                    'success' => false,
+                    'error' => 'HTTP error: ' . $response->getStatusCode(),
+                    'response_body' => (string)$response->getBody()
+                ];
+            }
+
+            $data = json_decode((string)$response->getBody(), true);
+            $success = ($data['responseHeader']['status'] ?? -1) === 0;
+
+            if ($success) {
+                return [
+                    'success' => true,
+                    'solr_response' => $data
+                ];
+            } else {
+                return [
+                    'success' => false,
+                    'error' => $data['error']['msg'] ?? 'SOLR error',
+                    'solr_response' => $data
+                ];
+            }
+            
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'exception_type' => get_class($e)
+            ];
+        }
+    }
+
+    /**
+     * Replace a schema field and return detailed result
+     *
+     * @param string $fieldName Name of the field
+     * @param array $fieldConfig Field configuration
+     * @return array Result with success status and details
+     */
+    private function replaceSchemaFieldWithResult(string $fieldName, array $fieldConfig): array
+    {
+        $tenantCollectionName = $this->getTenantCollectionName();
+        $url = $this->buildSolrUrl('/' . $tenantCollectionName . '/schema');
+
+        $payload = [
+            'replace-field' => array_merge(['name' => $fieldName], $fieldConfig)
+        ];
+
+        try {
+            $response = $this->httpClient->post($url, [
+                'headers' => ['Content-Type' => 'application/json'],
+                'json' => $payload,
+                'timeout' => 30
+            ]);
+
+            if ($response->getStatusCode() !== 200) {
+                return [
+                    'success' => false,
+                    'error' => 'HTTP error: ' . $response->getStatusCode(),
+                    'response_body' => (string)$response->getBody()
+                ];
+            }
+
+            $data = json_decode((string)$response->getBody(), true);
+            $success = ($data['responseHeader']['status'] ?? -1) === 0;
+
+            if ($success) {
+                return [
+                    'success' => true,
+                    'solr_response' => $data
+                ];
+            } else {
+                return [
+                    'success' => false,
+                    'error' => $data['error']['msg'] ?? 'SOLR error',
+                    'solr_response' => $data
+                ];
+            }
+            
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'exception_type' => get_class($e)
+            ];
+        }
+    }
+
+    /**
+     * Apply schema fields to a SOLR collection (shared method)
+     *
+     * This static method can be used by both setup and warmup processes to apply
+     * the standard ObjectEntity schema fields to any SOLR collection.
+     *
+     * @param \GuzzleHttp\Client $httpClient HTTP client for SOLR requests
+     * @param array $solrConfig SOLR configuration
+     * @param string $collectionName Name of the collection to update
+     * @param \Psr\Log\LoggerInterface $logger Logger for operation tracking
+     * @return array Results with success status and field counts
+     */
+    public static function applySchemaFields(
+        \GuzzleHttp\Client $httpClient,
+        array $solrConfig,
+        string $collectionName,
+        \Psr\Log\LoggerInterface $logger
+    ): array {
+        $logger->info('Applying ObjectEntity schema fields to SOLR collection', [
+            'collection' => $collectionName
+        ]);
+
+        $fieldDefinitions = self::getObjectEntityFieldDefinitions();
+        $results = [
+            'success' => true,
+            'total_fields' => count($fieldDefinitions),
+            'fields_added' => 0,
+            'fields_updated' => 0,
+            'fields_failed' => 0,
+            'errors' => []
+        ];
+
+        // Build SOLR URL helper
+        $buildUrl = function(string $path) use ($solrConfig): string {
+            $host = $solrConfig['host'] ?? 'localhost';
+            $port = $solrConfig['port'] ?? null;
+            $scheme = $solrConfig['scheme'] ?? 'http';
+            $basePath = $solrConfig['path'] ?? '/solr';
+            
+            // Handle Kubernetes service names and port logic
+            if (strpos($host, '.svc.cluster.local') !== false) {
+                return sprintf('%s://%s%s%s', $scheme, $host, $basePath, $path);
+            } else {
+                if ($port !== null && $port > 0) {
+                    return sprintf('%s://%s:%d%s%s', $scheme, $host, $port, $basePath, $path);
+                } else {
+                    return sprintf('%s://%s%s%s', $scheme, $host, $basePath, $path);
+                }
+            }
+        };
+
+        $schemaUrl = $buildUrl('/' . $collectionName . '/schema');
+
+        foreach ($fieldDefinitions as $fieldName => $fieldConfig) {
+            try {
+                // Try to add the field first
+                $addPayload = [
+                    'add-field' => array_merge(['name' => $fieldName], $fieldConfig)
+                ];
+
+                $response = $httpClient->post($schemaUrl, [
+                    'headers' => ['Content-Type' => 'application/json'],
+                    'json' => $addPayload,
+                    'timeout' => 30
+                ]);
+
+                if ($response->getStatusCode() === 200) {
+                    $data = json_decode((string)$response->getBody(), true);
+                    if (($data['responseHeader']['status'] ?? -1) === 0) {
+                        $results['fields_added']++;
+                        $logger->debug('Added schema field', ['field' => $fieldName]);
+                        continue;
+                    }
+                }
+
+                // If add failed, try to replace
+                $replacePayload = [
+                    'replace-field' => array_merge(['name' => $fieldName], $fieldConfig)
+                ];
+
+                $response = $httpClient->post($schemaUrl, [
+                    'headers' => ['Content-Type' => 'application/json'],
+                    'json' => $replacePayload,
+                    'timeout' => 30
+                ]);
+
+                if ($response->getStatusCode() === 200) {
+                    $data = json_decode((string)$response->getBody(), true);
+                    if (($data['responseHeader']['status'] ?? -1) === 0) {
+                        $results['fields_updated']++;
+                        $logger->debug('Updated schema field', ['field' => $fieldName]);
+                        continue;
+                    }
+                }
+
+                // Both add and replace failed
+                $results['fields_failed']++;
+                $results['errors'][] = "Failed to add/update field: {$fieldName}";
+                $logger->warning('Failed to add/update schema field', [
+                    'field' => $fieldName,
+                    'last_response' => (string)$response->getBody()
+                ]);
+
+            } catch (\Exception $e) {
+                $results['fields_failed']++;
+                $results['errors'][] = "Exception for field {$fieldName}: " . $e->getMessage();
+                $logger->error('Exception applying schema field', [
+                    'field' => $fieldName,
+                    'error' => $e->getMessage(),
+                    'exception_type' => get_class($e)
+                ]);
+            }
+        }
+
+        $results['success'] = $results['fields_failed'] === 0;
+
+        $logger->info('Schema field application completed', [
+            'collection' => $collectionName,
+            'total_fields' => $results['total_fields'],
+            'fields_added' => $results['fields_added'],
+            'fields_updated' => $results['fields_updated'],
+            'fields_failed' => $results['fields_failed'],
+            'success' => $results['success']
+        ]);
+
+        return $results;
+    }
+
+    /**
+     * Get field definitions for ObjectEntity metadata fields (shared method)
      *
      * Based on ObjectEntity.php properties, this method returns the proper
      * SOLR field type configuration for each metadata field using self_ prefixes
      * and clean field names (no suffixes needed when explicitly defined).
      *
+     * This method can be used by both setup and warmup processes to ensure
+     * consistent schema field configuration across all SOLR operations.
+     *
      * @return array Field definitions with SOLR type configuration
      */
-    private function getObjectEntityFieldDefinitions(): array
+    public static function getObjectEntityFieldDefinitions(): array
     {
         return [
             // **CRITICAL**: Core tenant field with self_ prefix (consistent naming)
@@ -1105,35 +1778,51 @@ class SolrSetup
      */
     private function addSchemaField(string $fieldName, array $fieldConfig): bool
     {
-        $baseCollectionName = $this->solrConfig['core'] ?? 'openregister';
-        $url = $this->buildSolrUrl('/' . $baseCollectionName . '/schema');
+        $tenantCollectionName = $this->getTenantCollectionName();
+        $url = $this->buildSolrUrl('/' . $tenantCollectionName . '/schema');
 
         $payload = [
             'add-field' => array_merge(['name' => $fieldName], $fieldConfig)
         ];
 
-        $context = stream_context_create([
-            'http' => [
-                'method' => 'POST',
-                'header' => 'Content-Type: application/json',
-                'content' => json_encode($payload),
+        try {
+            $response = $this->httpClient->post($url, [
+                'headers' => ['Content-Type' => 'application/json'],
+                'json' => $payload,
                 'timeout' => 30
-            ]
-        ]);
+            ]);
 
-        $response = @file_get_contents($url, false, $context);
-        if ($response === false) {
+            if ($response->getStatusCode() !== 200) {
+                $this->logger->debug('Failed to add schema field - HTTP error', [
+                    'field' => $fieldName,
+                    'status_code' => $response->getStatusCode(),
+                    'response_body' => (string)$response->getBody()
+                ]);
             return false;
         }
 
-        $data = json_decode($response, true);
+            $data = json_decode((string)$response->getBody(), true);
         $success = ($data['responseHeader']['status'] ?? -1) === 0;
 
         if ($success) {
             $this->logger->debug('Added schema field', ['field' => $fieldName]);
+            } else {
+                $this->logger->debug('Failed to add schema field - SOLR error', [
+                    'field' => $fieldName,
+                    'solr_response' => $data
+                ]);
         }
 
         return $success;
+            
+        } catch (\Exception $e) {
+            $this->logger->debug('Failed to add schema field - Exception', [
+                'field' => $fieldName,
+                'error' => $e->getMessage(),
+                'exception_type' => get_class($e)
+            ]);
+            return false;
+        }
     }
 
     /**
@@ -1145,35 +1834,51 @@ class SolrSetup
      */
     private function replaceSchemaField(string $fieldName, array $fieldConfig): bool
     {
-        $baseCollectionName = $this->solrConfig['core'] ?? 'openregister';
-        $url = $this->buildSolrUrl('/' . $baseCollectionName . '/schema');
+        $tenantCollectionName = $this->getTenantCollectionName();
+        $url = $this->buildSolrUrl('/' . $tenantCollectionName . '/schema');
 
         $payload = [
             'replace-field' => array_merge(['name' => $fieldName], $fieldConfig)
         ];
 
-        $context = stream_context_create([
-            'http' => [
-                'method' => 'POST',
-                'header' => 'Content-Type: application/json',
-                'content' => json_encode($payload),
+        try {
+            $response = $this->httpClient->post($url, [
+                'headers' => ['Content-Type' => 'application/json'],
+                'json' => $payload,
                 'timeout' => 30
-            ]
-        ]);
+            ]);
 
-        $response = @file_get_contents($url, false, $context);
-        if ($response === false) {
+            if ($response->getStatusCode() !== 200) {
+                $this->logger->debug('Failed to replace schema field - HTTP error', [
+                    'field' => $fieldName,
+                    'status_code' => $response->getStatusCode(),
+                    'response_body' => (string)$response->getBody()
+                ]);
             return false;
         }
 
-        $data = json_decode($response, true);
+            $data = json_decode((string)$response->getBody(), true);
         $success = ($data['responseHeader']['status'] ?? -1) === 0;
 
         if ($success) {
             $this->logger->debug('Replaced schema field', ['field' => $fieldName]);
+            } else {
+                $this->logger->debug('Failed to replace schema field - SOLR error', [
+                    'field' => $fieldName,
+                    'solr_response' => $data
+                ]);
         }
 
         return $success;
+            
+        } catch (\Exception $e) {
+            $this->logger->debug('Failed to replace schema field - Exception', [
+                'field' => $fieldName,
+                'error' => $e->getMessage(),
+                'exception_type' => get_class($e)
+            ]);
+            return false;
+        }
     }
 
     /**
@@ -1188,21 +1893,30 @@ class SolrSetup
      */
     private function validateSetup(): bool
     {
-        // Check configSet exists
-        if (!$this->configSetExists('openregister')) {
-            $this->logger->error('Validation failed: configSet missing');
+        $tenantCollectionName = $this->getTenantCollectionName();
+        
+        // Check tenant configSet exists
+        $tenantConfigSetName = $this->getTenantConfigSetName();
+        if (!$this->configSetExists($tenantConfigSetName)) {
+            $this->logger->error('Validation failed: tenant configSet missing', [
+                'configSet' => $tenantConfigSetName
+            ]);
             return false;
         }
 
-        // Check base collection exists
-        if (!$this->collectionExists('openregister')) {
-            $this->logger->error('Validation failed: base collection missing');
+        // Check tenant collection exists
+        if (!$this->solrService->collectionExists($tenantCollectionName)) {
+            $this->logger->error('Validation failed: tenant collection missing', [
+                'collection' => $tenantCollectionName
+            ]);
             return false;
         }
 
-        // Test collection query functionality
-        if (!$this->testCollectionQuery('openregister')) {
-            $this->logger->error('Validation failed: collection query test failed');
+        // Test tenant collection query functionality
+        if (!$this->testCollectionQuery($tenantCollectionName)) {
+            $this->logger->error('Validation failed: tenant collection query test failed', [
+                'collection' => $tenantCollectionName
+            ]);
             return false;
         }
 
@@ -1222,12 +1936,17 @@ class SolrSetup
             urlencode($collectionName)
         ));
 
-        $response = @file_get_contents($url);
-        if ($response === false) {
+        try {
+            $response = $this->httpClient->get($url, ['timeout' => 10]);
+            $data = json_decode((string)$response->getBody(), true);
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to test collection query', [
+                'collection' => $collectionName,
+                'error' => $e->getMessage(),
+                'url' => $url
+            ]);
             return false;
         }
-
-        $data = json_decode($response, true);
         
         // Valid response should have a response header with status 0
         return ($data['responseHeader']['status'] ?? -1) === 0;
@@ -1245,12 +1964,17 @@ class SolrSetup
             urlencode($coreName)
         ));
 
-        $response = @file_get_contents($url);
-        if ($response === false) {
+        try {
+            $response = $this->httpClient->get($url, ['timeout' => 10]);
+            $data = json_decode((string)$response->getBody(), true);
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to test core query', [
+                'core' => $coreName,
+                'error' => $e->getMessage(),
+                'url' => $url
+            ]);
             return false;
         }
-
-        $data = json_decode($response, true);
         
         // Valid response should have a response header with status 0
         return ($data['responseHeader']['status'] ?? -1) === 0;
