@@ -237,34 +237,36 @@
 		</div>
 
 		<template #actions>
-			<NcButton
-				:disabled="warmingUp"
-				@click="$emit('close')">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ warmingUp ? 'Close' : (completed ? 'Close' : 'Cancel') }}
-			</NcButton>
+			<div class="modal-actions">
+				<NcButton
+					:disabled="warmingUp"
+					@click="$emit('close')">
+					<template #icon>
+						<Cancel :size="20" />
+					</template>
+					{{ warmingUp ? 'Close' : (completed ? 'Close' : 'Cancel') }}
+				</NcButton>
 
-			<NcButton
-				v-if="!warmingUp && !completed"
-				type="primary"
-				@click="startWarmup">
-				<template #icon>
-					<Fire :size="20" />
-				</template>
-				Start Warmup
-			</NcButton>
+				<NcButton
+					v-if="!warmingUp && !completed"
+					type="primary"
+					@click="startWarmup">
+					<template #icon>
+						<Fire :size="20" />
+					</template>
+					Start Warmup
+				</NcButton>
 
-			<NcButton
-				v-if="completed"
-				type="secondary"
-				@click="resetModal">
-				<template #icon>
-					<Refresh :size="20" />
-				</template>
-				Run Again
-			</NcButton>
+				<NcButton
+					v-if="completed"
+					type="secondary"
+					@click="resetModal">
+					<template #icon>
+						<Refresh :size="20" />
+					</template>
+					Run Again
+				</NcButton>
+			</div>
 		</template>
 	</NcDialog>
 </template>
@@ -960,5 +962,11 @@ export default {
 	.radio-group > * {
 		flex: none;
 	}
+}
+
+.modal-actions {
+	display: flex;
+	gap: 0.5rem;
+	justify-content: flex-end;
 }
 </style>
