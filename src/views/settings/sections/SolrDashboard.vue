@@ -400,7 +400,6 @@ import Wrench from 'vue-material-design-icons/Wrench.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import axios from '@nextcloud/axios'
-import axios from '@nextcloud/axios'
 import { SolrWarmupModal, ClearIndexModal } from '../../../modals/settings'
 
 export default {
