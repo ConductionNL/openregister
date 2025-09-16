@@ -39,6 +39,9 @@ import { navigationStore } from '../store/store.js'
 		<UploadFiles />
 		<ViewSource />
 		<ViewConfiguration />
+		<JoinOrganisation v-if="navigationStore.modal === 'joinOrganisation'" />
+		<EditOrganisation v-if="navigationStore.modal === 'editOrganisation'" />
+		<DeleteOrganisation v-if="navigationStore.modal === 'deleteOrganisation'" />
 	</div>
 </template>
 
@@ -77,6 +80,9 @@ import RestoreMultiple from './deleted/RestoreMultiple.vue'
 import PurgeMultiple from './deleted/PurgeMultiple.vue'
 import ViewSource from './source/ViewSource.vue'
 import ViewConfiguration from './configuration/ViewConfiguration.vue'
+import JoinOrganisation from './organisation/JoinOrganisation.vue'
+import EditOrganisation from './organisation/EditOrganisation.vue'
+import DeleteOrganisation from './organisation/DeleteOrganisation.vue'
 export default {
 	name: 'Modals',
 	components: {
@@ -114,6 +120,9 @@ export default {
 		PurgeMultiple,
 		ViewSource,
 		ViewConfiguration,
+		JoinOrganisation,
+		EditOrganisation,
+		DeleteOrganisation,
 	},
 }
 </script>
