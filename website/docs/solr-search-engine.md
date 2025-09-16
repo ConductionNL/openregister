@@ -112,6 +112,10 @@ graph TB
     style E fill:#f3e5f5
 ```
 
+## Setup and Configuration
+
+> **📚 Complete Setup Guide**: For detailed setup instructions, SolrCloud configuration, and system field documentation, see [SOLR Setup and Configuration Guide](./technical/solr-setup-configuration.md).
+
 ## Configuration
 
 ### SOLR Settings
