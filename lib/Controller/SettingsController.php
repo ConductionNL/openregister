@@ -343,75 +343,26 @@ class SettingsController extends Controller
             $setupResult = $setup->setupSolr();
             
             if ($setupResult) {
-                // Return detailed setup results
+                // Get detailed setup progress from SolrSetup
+                $setupProgress = $setup->getSetupProgress();
+                
                 return new JSONResponse([
                     'success' => true,
                     'message' => 'SOLR setup completed successfully',
                     'timestamp' => date('Y-m-d H:i:s'),
                     'mode' => 'SolrCloud',
-                    'steps' => [
-                        [
-                            'step' => 1,
-                            'name' => 'SOLR Connectivity',
-                            'description' => 'Verified SOLR server connectivity and version',
-                            'status' => 'completed',
-                            'details' => [
-                                'host' => $solrSettings['host'],
-                                'port' => $solrSettings['port'],
-                                'scheme' => $solrSettings['scheme'],
-                                'path' => $solrSettings['path']
-                            ]
-                        ],
-                        [
-                            'step' => 2,
-                            'name' => 'ConfigSet Creation',
-                            'description' => 'Created OpenRegister configSet from default template',
-                            'status' => 'completed',
-                            'details' => [
-                                'configset_name' => 'openregister',
-                                'template' => '_default',
-                                'purpose' => 'Template for tenant collections'
-                            ]
-                        ],
-                        [
-                            'step' => 3,
-                            'name' => 'Base Collection',
-                            'description' => 'Created base collection for OpenRegister',
-                            'status' => 'completed',
-                            'details' => [
-                                'collection_name' => 'openregister',
-                                'configset' => 'openregister',
-                                'shards' => 1,
-                                'replicas' => 1
-                            ]
-                        ],
-                        [
-                            'step' => 4,
-                            'name' => 'Schema Configuration',
-                            'description' => 'Configured 22 ObjectEntity metadata fields',
-                            'status' => 'completed',
-                            'details' => [
-                                'fields_configured' => 22,
-                                'field_types' => ['text', 'string', 'boolean', 'date', 'int'],
-                                'purpose' => 'OpenRegister object metadata indexing'
-                            ]
-                        ],
-                        [
-                            'step' => 5,
-                            'name' => 'Setup Validation',
-                            'description' => 'Validated complete SOLR setup configuration',
-                            'status' => 'completed',
-                            'details' => [
-                                'configset_verified' => true,
-                                'collection_verified' => true,
-                                'schema_verified' => true
-                            ]
-                        ]
+                    'progress' => [
+                        'started_at' => $setupProgress['started_at'] ?? null,
+                        'completed_at' => $setupProgress['completed_at'] ?? null,
+                        'total_steps' => $setupProgress['total_steps'] ?? 5,
+                        'completed_steps' => $setupProgress['completed_steps'] ?? 5,
+                        'success' => $setupProgress['success'] ?? true
                     ],
+                    'steps' => $setupProgress['steps'] ?? [],
                     'infrastructure' => [
                         'configsets_created' => ['openregister'],
                         'collections_created' => ['openregister'],
-                        'schema_fields' => 22,
+                        'schema_fields_configured' => true,
                         'multi_tenant_ready' => true,
                         'cloud_mode' => true
                     ],
@@ -422,8 +373,9 @@ class SettingsController extends Controller
                     ]
                 ]);
             } else {
-                // Get detailed error information from SolrSetup
+                // Get detailed error information and setup progress from SolrSetup
                 $errorDetails = $setup->getLastErrorDetails();
+                $setupProgress = $setup->getSetupProgress();
                 
                 if ($errorDetails) {
                     // Use the detailed error information from SolrSetup
@@ -431,10 +383,21 @@ class SettingsController extends Controller
                         'success' => false,
                         'message' => 'SOLR setup failed',
                         'timestamp' => date('Y-m-d H:i:s'),
+                        'progress' => [
+                            'started_at' => $setupProgress['started_at'] ?? null,
+                            'completed_at' => $setupProgress['completed_at'] ?? null,
+                            'total_steps' => $setupProgress['total_steps'] ?? 5,
+                            'completed_steps' => $setupProgress['completed_steps'] ?? 0,
+                            'success' => false,
+                            'failed_at_step' => $errorDetails['step'] ?? 'unknown',
+                            'failed_step_name' => $errorDetails['step_name'] ?? 'unknown'
+                        ],
                         'error_details' => [
                             'primary_error' => $errorDetails['error_message'] ?? 'SOLR setup operation failed',
                             'error_type' => $errorDetails['error_type'] ?? 'unknown_error',
                             'operation' => $errorDetails['operation'] ?? 'unknown_operation',
+                            'step' => $errorDetails['step'] ?? 'unknown',
+                            'step_name' => $errorDetails['step_name'] ?? 'unknown',
                             'url_attempted' => $errorDetails['url_attempted'] ?? 'unknown',
                             'exception_type' => $errorDetails['exception_type'] ?? 'unknown',
                             'error_category' => $errorDetails['error_category'] ?? 'unknown',
@@ -447,28 +410,12 @@ class SettingsController extends Controller
                                 'path' => $solrSettings['path']
                             ]
                         ],
-                        'troubleshooting_steps' => $errorDetails['troubleshooting_tips'] ?? [
+                        'troubleshooting_steps' => $errorDetails['troubleshooting'] ?? $errorDetails['troubleshooting_tips'] ?? [
                             'Check SOLR server connectivity',
                             'Verify SOLR configuration',
                             'Check SOLR server logs'
                         ],
-                        'steps' => [
-                            [
-                                'step' => 1,
-                                'name' => ucfirst($errorDetails['operation'] ?? 'Setup Operation'),
-                                'description' => $errorDetails['error_message'] ?? 'Setup operation failed',
-                                'status' => 'failed',
-                                'details' => [
-                                    'error_type' => $errorDetails['error_type'] ?? 'unknown',
-                                    'url_attempted' => $errorDetails['url_attempted'] ?? 'unknown',
-                                    'actual_error' => $errorDetails['error_message'] ?? 'No error message available',
-                                    'guzzle_response_status' => $errorDetails['guzzle_details']['response_status'] ?? null,
-                                    'guzzle_response_body' => $errorDetails['guzzle_details']['response_body'] ?? null,
-                                    'solr_error_code' => $errorDetails['solr_error_code'] ?? null,
-                                    'solr_error_details' => $errorDetails['solr_error_details'] ?? null
-                                ]
-                            ]
-                        ]
+                        'steps' => $setupProgress['steps'] ?? []
                     ], 500);
                 } else {
                     // Fallback to generic error if no detailed error information is available

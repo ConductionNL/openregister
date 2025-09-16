@@ -197,12 +197,22 @@ class GuzzleSolrService
     }
 
     /**
+     * Get the tenant ID for this instance
+     *
+     * @return string Tenant identifier
+     */
+    public function getTenantId(): string
+    {
+        return $this->tenantId;
+    }
+
+    /**
      * Generate tenant-specific collection name for SolrCloud
      *
      * @param string $baseCollectionName Base collection name
      * @return string Tenant-specific collection name (not core name)
      */
-    private function getTenantSpecificCollectionName(string $baseCollectionName): string
+    public function getTenantSpecificCollectionName(string $baseCollectionName): string
     {
         // SOLR CLOUD: Use collection names, not core names
         // Format: openregister_nc_f0e53393 (collection)
@@ -215,7 +225,7 @@ class GuzzleSolrService
      *
      * @return string SOLR base URL
      */
-    private function buildSolrBaseUrl(): string
+    public function buildSolrBaseUrl(): string
     {
         $host = $this->solrConfig['host'] ?? 'localhost';
         $port = $this->solrConfig['port'] ?? null; // Don't default port here
@@ -263,14 +273,48 @@ class GuzzleSolrService
 
     /**
      * Check if SOLR is available and configured
-     * DISABLED: Always returns false to prevent direct SOLR calls
      *
-     * @return bool Always false (SOLR disabled)
+     * Performs a lightweight check to determine if SOLR service is available
+     * by testing basic connectivity and configuration validity.
+     *
+     * @return bool True if SOLR is available and properly configured
      */
     public function isAvailable(): bool
     {
-        // SOLR direct calls disabled - always return false
-        return false;
+        // Check if SOLR is enabled in configuration
+        if (!($this->solrConfig['enabled'] ?? false)) {
+            return false;
+        }
+        
+        // Check if basic configuration is present
+        if (empty($this->solrConfig['host'])) {
+            return false;
+        }
+        
+        try {
+            // Perform a simple ping test to verify connectivity
+            $baseUrl = $this->buildSolrBaseUrl();
+            $pingUrl = $baseUrl . '/admin/ping?wt=json';
+            
+            $response = $this->httpClient->get($pingUrl, [
+                'timeout' => 5,
+                'connect_timeout' => 3
+            ]);
+            
+            if ($response->getStatusCode() === 200) {
+                $data = json_decode((string)$response->getBody(), true);
+                // Check if ping was successful
+                return isset($data['status']) && $data['status'] === 'OK';
+            }
+            
+            return false;
+        } catch (\Exception $e) {
+            $this->logger->debug('SOLR availability check failed', [
+                'error' => $e->getMessage(),
+                'host' => $this->solrConfig['host'] ?? 'unknown'
+            ]);
+            return false;
+        }
     }
 
     /**
@@ -421,7 +465,7 @@ class GuzzleSolrService
      *
      * @return string The collection name to use for SOLR operations
      */
-    private function getActiveCollectionName(): string
+    public function getActiveCollectionName(): string
     {
         $baseCollectionName = $this->solrConfig['core'] ?? 'openregister';
         $tenantCollectionName = $this->getTenantSpecificCollectionName($baseCollectionName);
@@ -2551,8 +2595,21 @@ class GuzzleSolrService
      */
     public function getDashboardStats(): array
     {
-        if (!$this->isAvailable()) {
-            return ['available' => false, 'error' => 'SOLR not available'];
+        // Use the same availability check as testConnection() instead of isAvailable()
+        // This ensures consistency between connection test and dashboard stats
+        try {
+            $connectionTest = $this->testConnection();
+            if (!$connectionTest['success']) {
+                return [
+                    'available' => false, 
+                    'error' => 'SOLR not available: ' . ($connectionTest['message'] ?? 'Connection test failed')
+                ];
+            }
+        } catch (\Exception $e) {
+            return [
+                'available' => false, 
+                'error' => 'SOLR not available: ' . $e->getMessage()
+            ];
         }
 
         try {
@@ -2562,7 +2619,7 @@ class GuzzleSolrService
             // Get collection stats
             $statsUrl = $this->buildSolrBaseUrl() . '/admin/collections?action=CLUSTERSTATUS&collection=' . $tenantCollectionName . '&wt=json';
             $statsResponse = $this->httpClient->get($statsUrl, ['timeout' => 10]);
-            $statsData = json_decode($statsResponse->getBody(), true);
+            $statsData = json_decode((string)$statsResponse->getBody(), true);
 
             // Get document count
             $docCount = $this->getDocumentCount();
@@ -2570,7 +2627,7 @@ class GuzzleSolrService
             // Get index size (approximate)
             $indexSizeUrl = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/admin/luke?wt=json&numTerms=0';
             $sizeResponse = $this->httpClient->get($indexSizeUrl, ['timeout' => 10]);
-            $sizeData = json_decode($sizeResponse->getBody(), true);
+            $sizeData = json_decode((string)$sizeResponse->getBody(), true);
 
             $collectionInfo = $statsData['cluster']['collections'][$tenantCollectionName] ?? [];
             $shards = $collectionInfo['shards'] ?? [];
