@@ -197,14 +197,15 @@ class GuzzleSolrService
     }
 
     /**
-     * Get tenant ID for this Nextcloud instance
+     * Get tenant ID for this Nextcloud instance (public accessor)
      *
-     * @return string Tenant identifier (e.g., "nc_f0e53393")
+     * @return string The tenant ID
      */
     public function getTenantId(): string
     {
         return $this->tenantId;
     }
+
 
     /**
      * Generate tenant-specific collection name for SolrCloud
