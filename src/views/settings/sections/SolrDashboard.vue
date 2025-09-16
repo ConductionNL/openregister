@@ -505,8 +505,8 @@ export default {
 		 * Get CSS class for connection status
 		 */
 		connectionStatusClass() {
-			if (!this.solrStats.available) return 'status-error'
-			if (this.solrStats.overview.connection_status === 'Connected') return 'status-success'
+			if (!this.solrStats || !this.solrStats.available) return 'status-error'
+			if (this.solrStats.overview && this.solrStats.overview.connection_status === 'Connected') return 'status-success'
 			return 'status-warning'
 		},
 
@@ -514,7 +514,8 @@ export default {
 		 * Get CSS class for performance rating
 		 */
 		performanceClass() {
-			const opsPerSec = this.solrStats.performance.operations_per_sec
+			if (!this.solrStats || !this.solrStats.performance) return 'performance-low'
+			const opsPerSec = this.solrStats.performance.operations_per_sec || 0
 			if (opsPerSec > 50) return 'performance-excellent'
 			if (opsPerSec > 20) return 'performance-good'
 			if (opsPerSec > 10) return 'performance-average'
