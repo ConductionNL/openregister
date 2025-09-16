@@ -547,6 +547,7 @@ export default {
 		 * @async
 		 * @return {Promise<void>}
 		 */
+			console.log('[DEBUG] Starting loadSolrStats')
 		async loadSolrStats() {
 			this.loadingStats = true
 			this.solrError = false
@@ -554,19 +555,24 @@ export default {
 
 			try {
 				const response = await axios.get(generateUrl('/apps/openregister/api/solr/dashboard/stats'))
+				console.log('[DEBUG] Making API call to:', generateUrl('/apps/openregister/api/solr/dashboard/stats'))
 				
 				if (response.data && response.data.available) {
+				console.log('[DEBUG] API response:', response)
 					this.solrStats = response.data
 				} else {
 					this.solrError = true
 					this.solrErrorMessage = response.data?.error || 'SOLR not available'
+					console.log('[DEBUG] Data transformation completed, solrStats:', this.solrStats)
 				}
 			} catch (error) {
+				console.error('[DEBUG] API call failed:', error)
 				console.error('Failed to load SOLR stats:', error)
 				this.solrError = true
 				this.solrErrorMessage = error.message || 'Failed to load SOLR statistics'
 			} finally {
 				this.loadingStats = false
+				console.log('[DEBUG] Setting loadingStats to false')
 			}
 		},
 
