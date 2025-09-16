@@ -399,6 +399,7 @@ import Check from 'vue-material-design-icons/Check.vue'
 import Wrench from 'vue-material-design-icons/Wrench.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
+import axios from '@nextcloud/axios'
 import { SolrWarmupModal, ClearIndexModal } from '../../../modals/settings'
 
 export default {
@@ -550,7 +551,7 @@ export default {
 			this.solrErrorMessage = ''
 
 			try {
-				const response = await this.$http.get('/api/solr/dashboard/stats')
+				const response = await axios.get('/index.php/apps/openregister/api/solr/dashboard/stats')
 				
 				if (response.data && response.data.available) {
 					this.solrStats = response.data
