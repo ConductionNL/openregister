@@ -197,12 +197,22 @@ class GuzzleSolrService
     }
 
     /**
+     * Get tenant ID for this Nextcloud instance
+     *
+     * @return string Tenant identifier (e.g., "nc_f0e53393")
+     */
+    public function getTenantId(): string
+    {
+        return $this->tenantId;
+    }
+
+    /**
      * Generate tenant-specific collection name for SolrCloud
      *
      * @param string $baseCollectionName Base collection name
      * @return string Tenant-specific collection name (not core name)
      */
-    private function getTenantSpecificCollectionName(string $baseCollectionName): string
+    public function getTenantSpecificCollectionName(string $baseCollectionName): string
     {
         // SOLR CLOUD: Use collection names, not core names
         // Format: openregister_nc_f0e53393 (collection)
