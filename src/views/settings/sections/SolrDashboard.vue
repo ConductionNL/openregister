@@ -67,28 +67,28 @@
 							<div class="solr-overview-card" :class="connectionStatusClass">
 								<h4>🔗 Connection</h4>
 								<div class="solr-metric">
-									<span class="metric-value" :class="connectionStatusClass">{{ solrStats.overview.connection_status }}</span>
-									<span class="metric-label">Status ({{ solrStats.overview.response_time_ms }}ms)</span>
+									<span class="metric-value" :class="connectionStatusClass">{{ solrStats.overview && solrStats.overview.connection_status || 'Unknown' }}</span>
+									<span class="metric-label">Status ({{ solrStats.overview && solrStats.overview.response_time_ms || 0 }}ms)</span>
 								</div>
 							</div>
 							<div class="solr-overview-card">
 								<h4>📊 Documents</h4>
 								<div class="solr-metric">
-									<span class="metric-value">{{ formatNumber(solrStats.overview.total_documents) }}</span>
+									<span class="metric-value">{{ formatNumber(solrStats.overview && solrStats.overview.total_documents || 0) }}</span>
 									<span class="metric-label">Total Indexed</span>
 								</div>
 							</div>
 							<div class="solr-overview-card">
 								<h4>💾 Index Size</h4>
 								<div class="solr-metric">
-									<span class="metric-value">{{ solrStats.overview.index_size }}</span>
+									<span class="metric-value">{{ solrStats.overview && solrStats.overview.index_size || 'Unknown' }}</span>
 									<span class="metric-label">Storage Used</span>
 								</div>
 							</div>
 							<div class="solr-overview-card" :class="performanceClass">
 								<h4>⚡ Performance</h4>
 								<div class="solr-metric">
-									<span class="metric-value performance-metric">{{ solrStats.performance.operations_per_sec }}/sec</span>
+									<span class="metric-value performance-metric">{{ solrStats.performance && solrStats.performance.operations_per_sec || 0 }}/sec</span>
 									<span class="metric-label">Operations</span>
 								</div>
 							</div>
