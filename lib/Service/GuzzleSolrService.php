@@ -215,7 +215,7 @@ class GuzzleSolrService
      *
      * @return string SOLR base URL
      */
-    private function buildSolrBaseUrl(): string
+    public function buildSolrBaseUrl(): string
     {
         $host = $this->solrConfig['host'] ?? 'localhost';
         $port = $this->solrConfig['port'] ?? null; // Don't default port here
