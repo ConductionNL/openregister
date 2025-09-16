@@ -605,33 +605,93 @@
 								<p>{{ setupResults.message }}</p>
 								<div v-if="setupResults.timestamp" class="timestamp">
 									<span>⏱️ {{ setupResults.timestamp }}</span>
-									<span v-if="setupResults.mode" class="mode-badge">{{ setupResults.mode }}</span>
 								</div>
 							</div>
 						</div>
 					</div>
 
-					<!-- Setup Steps Progress -->
+					<!-- Progress Overview -->
+					<div v-if="setupResults.progress" class="progress-overview">
+						<h4>📊 Setup Progress</h4>
+						<div class="progress-summary">
+							<div class="progress-bar-container">
+								<div class="progress-bar">
+									<div class="progress-fill" 
+										:style="{ width: (setupResults.progress.completed_steps / setupResults.progress.total_steps) * 100 + '%' }"
+										:class="setupResults.success ? 'success' : 'error'">
+									</div>
+								</div>
+								<div class="progress-text">
+									{{ setupResults.progress.completed_steps }} / {{ setupResults.progress.total_steps }} steps completed
+								</div>
+							</div>
+							<div v-if="!setupResults.success && setupResults.progress.failed_at_step" class="failure-info">
+								<span class="failure-badge">❌ Failed at Step {{ setupResults.progress.failed_at_step }}</span>
+								<span class="failure-step">{{ setupResults.progress.failed_step_name }}</span>
+							</div>
+						</div>
+					</div>
+
+					<!-- Detailed Error Information (shown only on failure) -->
+					<div v-if="!setupResults.success && setupResults.error_details" class="error-details-section">
+						<h4>🔍 Error Details</h4>
+						<div class="error-card">
+							<div class="error-primary">
+								<h5>{{ setupResults.error_details.primary_error }}</h5>
+								<div class="error-meta">
+									<span class="error-type">{{ setupResults.error_details.error_type }}</span>
+									<span class="error-operation">{{ setupResults.error_details.operation }}</span>
+								</div>
+							</div>
+							
+							<div v-if="setupResults.error_details.configuration_used" class="configuration-used">
+								<h6>Configuration Used:</h6>
+								<div class="config-grid">
+									<div v-for="(value, key) in setupResults.error_details.configuration_used" :key="key" class="config-item">
+										<span class="config-key">{{ key }}:</span>
+										<span class="config-value">{{ value }}</span>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Setup Steps Timeline -->
 					<div v-if="setupResults.steps" class="setup-steps">
 						<h4>🔧 Setup Process</h4>
 						<div class="steps-timeline">
-							<div v-for="step in setupResults.steps" :key="step.step" class="step-item">
+							<div v-for="step in setupResults.steps" :key="step.step_number" 
+								class="step-item" :class="step.status">
 								<div class="step-indicator">
-									<span class="step-number">{{ step.step }}</span>
+									<span class="step-number">{{ step.step_number }}</span>
 									<span class="step-status" :class="step.status">
 										{{ step.status === 'completed' ? '✅' : step.status === 'failed' ? '❌' : '⏳' }}
 									</span>
 								</div>
 								<div class="step-content">
-									<h5>{{ step.name }}</h5>
+									<h5>{{ step.step_name }}</h5>
 									<p class="step-description">{{ step.description }}</p>
-									<div v-if="step.details" class="step-details">
+									<div v-if="step.timestamp" class="step-timestamp">
+										⏱️ {{ step.timestamp }}
+									</div>
+									<div v-if="step.details && Object.keys(step.details).length > 0" class="step-details">
 										<div v-for="(value, key) in step.details" :key="key" class="step-detail">
 											<span class="detail-label">{{ formatDetailLabel(key) }}:</span>
 											<span class="detail-value">{{ formatDetailValue(value) }}</span>
 										</div>
 									</div>
 								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Troubleshooting Steps (shown only on failure) -->
+					<div v-if="!setupResults.success && setupResults.troubleshooting_steps" class="troubleshooting-section">
+						<h4>🛠️ Troubleshooting Steps</h4>
+						<div class="troubleshooting-list">
+							<div v-for="(step, index) in setupResults.troubleshooting_steps" :key="index" class="troubleshooting-item">
+								<span class="troubleshooting-number">{{ index + 1 }}</span>
+								<span class="troubleshooting-text">{{ step }}</span>
 							</div>
 						</div>
 					</div>
@@ -1392,6 +1452,229 @@ export default {
 .setup-results {
 	max-height: 700px;
 	overflow-y: auto;
+}
+
+/* Progress Overview */
+.progress-overview {
+	margin: 24px 0;
+	background: var(--color-background-hover);
+	border-radius: 12px;
+	padding: 20px;
+	border: 1px solid var(--color-border);
+}
+
+.progress-overview h4 {
+	margin: 0 0 16px 0;
+	color: var(--color-main-text);
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.progress-summary {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.progress-bar-container {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.progress-bar {
+	width: 100%;
+	height: 8px;
+	background: var(--color-background-dark);
+	border-radius: 4px;
+	overflow: hidden;
+}
+
+.progress-fill {
+	height: 100%;
+	transition: width 0.3s ease;
+	border-radius: 4px;
+}
+
+.progress-fill.success {
+	background: linear-gradient(90deg, var(--color-success-light) 0%, var(--color-success) 100%);
+}
+
+.progress-fill.error {
+	background: linear-gradient(90deg, var(--color-error-light) 0%, var(--color-error) 100%);
+}
+
+.progress-text {
+	font-size: 14px;
+	color: var(--color-text-maxcontrast);
+	text-align: center;
+}
+
+.failure-info {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px;
+	background: rgba(var(--color-error), 0.1);
+	border: 1px solid var(--color-error);
+	border-radius: 8px;
+}
+
+.failure-badge {
+	background: var(--color-error);
+	color: white;
+	padding: 4px 8px;
+	border-radius: 4px;
+	font-size: 12px;
+	font-weight: 500;
+}
+
+.failure-step {
+	color: var(--color-error-text);
+	font-weight: 500;
+}
+
+/* Error Details Section */
+.error-details-section {
+	margin: 24px 0;
+}
+
+.error-details-section h4 {
+	margin: 0 0 16px 0;
+	color: var(--color-main-text);
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.error-card {
+	background: rgba(var(--color-error), 0.05);
+	border: 1px solid var(--color-error);
+	border-radius: 12px;
+	padding: 20px;
+}
+
+.error-primary h5 {
+	margin: 0 0 12px 0;
+	color: var(--color-error-text);
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.error-meta {
+	display: flex;
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.error-type,
+.error-operation {
+	background: var(--color-background-dark);
+	padding: 4px 8px;
+	border-radius: 4px;
+	font-size: 12px;
+	color: var(--color-text-maxcontrast);
+	font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.configuration-used h6 {
+	margin: 0 0 12px 0;
+	color: var(--color-main-text);
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.config-grid {
+	display: grid;
+	gap: 8px;
+}
+
+.config-item {
+	display: flex;
+	justify-content: space-between;
+	padding: 8px 12px;
+	background: var(--color-background-dark);
+	border-radius: 6px;
+	font-size: 13px;
+}
+
+.config-key {
+	font-weight: 500;
+	color: var(--color-main-text);
+}
+
+.config-value {
+	color: var(--color-text-maxcontrast);
+	font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+/* Troubleshooting Section */
+.troubleshooting-section {
+	margin: 24px 0;
+	background: var(--color-background-hover);
+	border-radius: 12px;
+	padding: 20px;
+	border: 1px solid var(--color-border);
+}
+
+.troubleshooting-section h4 {
+	margin: 0 0 16px 0;
+	color: var(--color-main-text);
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.troubleshooting-list {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.troubleshooting-item {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	padding: 12px;
+	background: var(--color-background-dark);
+	border-radius: 8px;
+	border-left: 4px solid var(--color-warning);
+}
+
+.troubleshooting-number {
+	width: 24px;
+	height: 24px;
+	background: var(--color-warning);
+	color: white;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: bold;
+	font-size: 12px;
+	flex-shrink: 0;
+}
+
+.troubleshooting-text {
+	flex: 1;
+	color: var(--color-text-light);
+	font-size: 14px;
+	line-height: 1.4;
+}
+
+/* Enhanced Step Items */
+.step-item.failed {
+	border-left-color: var(--color-error);
+	background: rgba(var(--color-error), 0.05);
+}
+
+.step-item.completed {
+	border-left-color: var(--color-success);
+}
+
+.step-timestamp {
+	font-size: 12px;
+	color: var(--color-text-maxcontrast);
+	margin-top: 8px;
+	font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
 }
 
 .timestamp {
