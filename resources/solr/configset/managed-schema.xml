@@ -123,6 +123,46 @@
 
     <field name="_text_" type="text_general" indexed="true" stored="false" multiValued="true"/>
 
+    <!-- OpenRegister System Fields (self_*) - Always present for all tenants -->
+    <!-- Core tenant field -->
+    <field name="self_tenant" type="string" indexed="true" stored="true" required="true" multiValued="false" />
+    
+    <!-- Metadata fields -->
+    <field name="self_object_id" type="pint" indexed="true" stored="true" multiValued="false" />
+    <field name="self_uuid" type="string" indexed="true" stored="true" multiValued="false" />
+    
+    <!-- Context fields -->
+    <field name="self_register" type="pint" indexed="true" stored="true" multiValued="false" />
+    <field name="self_schema" type="pint" indexed="true" stored="true" multiValued="false" />
+    <field name="self_schema_version" type="string" indexed="true" stored="true" multiValued="false" />
+    
+    <!-- Ownership and metadata -->
+    <field name="self_owner" type="string" indexed="true" stored="true" multiValued="false" />
+    <field name="self_organisation" type="string" indexed="true" stored="true" multiValued="false" />
+    <field name="self_application" type="string" indexed="true" stored="true" multiValued="false" />
+    
+    <!-- Core object fields -->
+    <field name="self_name" type="string" indexed="true" stored="true" multiValued="false" />
+    <field name="self_description" type="text_general" indexed="true" stored="true" multiValued="false" />
+    <field name="self_summary" type="text_general" indexed="true" stored="true" multiValued="false" />
+    <field name="self_image" type="string" indexed="false" stored="true" multiValued="false" />
+    <field name="self_slug" type="string" indexed="true" stored="true" multiValued="false" />
+    <field name="self_uri" type="string" indexed="true" stored="true" multiValued="false" />
+    <field name="self_version" type="string" indexed="true" stored="true" multiValued="false" />
+    <field name="self_size" type="string" indexed="false" stored="true" multiValued="false" />
+    <field name="self_folder" type="string" indexed="true" stored="true" multiValued="false" />
+    
+    <!-- Timestamps -->
+    <field name="self_created" type="pdate" indexed="true" stored="true" multiValued="false" />
+    <field name="self_updated" type="pdate" indexed="true" stored="true" multiValued="false" />
+    <field name="self_published" type="pdate" indexed="true" stored="true" multiValued="false" />
+    <field name="self_depublished" type="pdate" indexed="true" stored="true" multiValued="false" />
+    
+    <!-- Relation fields -->
+    <field name="self_relations" type="string" indexed="true" stored="true" multiValued="true" />
+    <field name="self_files" type="string" indexed="true" stored="true" multiValued="true" />
+    <field name="self_parent_uuid" type="string" indexed="true" stored="true" multiValued="false" />
+
     <!-- This can be enabled, in case the client does not know what fields may be searched. It isn't enabled by default
          because it's very expensive to index everything twice. -->
     <!-- <copyField source="*" dest="_text_"/> -->

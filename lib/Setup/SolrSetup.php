@@ -1463,8 +1463,18 @@ class SolrSetup
     {
         $this->logger->info('Configuring SOLR schema fields for ObjectEntity metadata');
 
-        // Use the shared field definitions
-        $fieldDefinitions = self::getObjectEntityFieldDefinitions();
+        // Get field definitions but skip self_* fields since they're pre-configured in the base schema
+        $allFieldDefinitions = self::getObjectEntityFieldDefinitions();
+        $fieldDefinitions = array_filter($allFieldDefinitions, function($key) {
+            return !str_starts_with($key, 'self_');
+        }, ARRAY_FILTER_USE_KEY);
+        
+        $this->logger->info('Schema field configuration', [
+            'total_defined_fields' => count($allFieldDefinitions),
+            'self_fields_skipped' => count($allFieldDefinitions) - count($fieldDefinitions),
+            'dynamic_fields_to_add' => count($fieldDefinitions),
+            'note' => 'self_* fields are pre-configured in base schema'
+        ]);
         
         $fieldResults = [
             'total_fields' => count($fieldDefinitions),
