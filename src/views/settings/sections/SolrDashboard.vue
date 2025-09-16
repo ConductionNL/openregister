@@ -2,7 +2,7 @@
 	<div>
 		<NcSettingsSection name="SOLR Search Management"
 			description="Monitor and manage SOLR search performance and operations">
-			<div v-if="!loadingStats && !solrError" class="solr-section">
+			<div v-if="!loadingStats && !solrError && solrStats && solrStats.overview" class="solr-section">
 				<!-- Action Buttons -->
 				<div class="section-header-inline">
 					<span />
