@@ -704,6 +704,7 @@ class SolrSetup
             // Continue anyway - ping might not be available but admin endpoints might work
         }
         
+        // Use SolrCloud ConfigSets API for configSet creation
         $url = $this->buildSolrUrl(sprintf('/admin/configs?action=CREATE&name=%s&baseConfigSet=%s&wt=json',
             urlencode($newConfigSetName),
             urlencode($templateConfigSetName)
@@ -833,9 +834,17 @@ class SolrSetup
                 
                 if ($e->hasResponse()) {
                     $response = $e->getResponse();
-                    $this->lastErrorDetails['guzzle_details']['response_status'] = $response->getStatusCode();
-                    $this->lastErrorDetails['guzzle_details']['response_body'] = (string)$response->getBody();
+                    $responseStatus = $response->getStatusCode();
+                    $responseBody = (string)$response->getBody();
+                    
+                    // Store in guzzle_details for comprehensive logging
+                    $this->lastErrorDetails['guzzle_details']['response_status'] = $responseStatus;
+                    $this->lastErrorDetails['guzzle_details']['response_body'] = $responseBody;
                     $this->lastErrorDetails['guzzle_details']['response_headers'] = $response->getHeaders();
+                    
+                    // Also store at top level for step tracking consistency
+                    $this->lastErrorDetails['guzzle_response_status'] = $responseStatus;
+                    $this->lastErrorDetails['guzzle_response_body'] = $responseBody;
                 }
                 
                 if ($e->getRequest()) {
