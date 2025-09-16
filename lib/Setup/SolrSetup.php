@@ -276,13 +276,15 @@ class SolrSetup
                 return false;
             }
 
-            // Step 2: Ensure base configSet exists
-            $this->trackStep(2, 'ConfigSet Creation', 'started', 'Checking and creating base configSet "openregister"');
+            // Step 2: Ensure tenant configSet exists
+            $tenantConfigSetName = $this->getTenantConfigSetName();
+            $this->trackStep(2, 'ConfigSet Creation', 'started', 'Checking and creating tenant configSet "' . $tenantConfigSetName . '"');
             
             try {
-            if (!$this->ensureBaseConfigSet()) {
-                    $this->trackStep(2, 'ConfigSet Creation', 'failed', 'Failed to create base configSet', [
-                        'configSet' => 'openregister',
+                if (!$this->ensureTenantConfigSet()) {
+                    $this->trackStep(2, 'ConfigSet Creation', 'failed', 'Failed to create tenant configSet', [
+                        'configSet' => $tenantConfigSetName,
+
                         'template' => '_default',
                         'error_details' => $this->lastErrorDetails
                     ]);
@@ -290,12 +292,13 @@ class SolrSetup
                     // Enhanced error details for configSet failure
                     if ($this->lastErrorDetails === null) {
                         $this->lastErrorDetails = [
-                            'operation' => 'ensureBaseConfigSet',
+                            'operation' => 'ensureTenantConfigSet',
                             'step' => 2,
                             'step_name' => 'ConfigSet Creation',
                             'error_type' => 'configset_creation_failure',
-                            'error_message' => 'Failed to create base configSet "openregister"',
-                            'configSet' => 'openregister',
+                            'error_message' => 'Failed to create tenant configSet "' . $tenantConfigSetName . '"',
+                            'configSet' => $tenantConfigSetName,
+
                             'template' => '_default',
                             'troubleshooting' => [
                                 'Check if SOLR server has write permissions for config directory',
@@ -309,22 +312,25 @@ class SolrSetup
                     return false;
                 }
                 
-                $this->trackStep(2, 'ConfigSet Creation', 'completed', 'Base configSet "openregister" is available');
+                $this->trackStep(2, 'ConfigSet Creation', 'completed', 'Tenant configSet "' . $tenantConfigSetName . '" is available');
+
                 $this->setupProgress['completed_steps']++;
             } catch (\Exception $e) {
                 $this->trackStep(2, 'ConfigSet Creation', 'failed', $e->getMessage(), [
                     'exception_type' => get_class($e),
-                    'configSet' => 'openregister'
+
+                    'configSet' => $tenantConfigSetName
                 ]);
                 
                 $this->lastErrorDetails = [
-                    'operation' => 'ensureBaseConfigSet',
+                    'operation' => 'ensureTenantConfigSet',
+
                     'step' => 2,
                     'step_name' => 'ConfigSet Creation',
                     'error_type' => 'configset_exception',
                     'error_message' => $e->getMessage(),
                     'exception_type' => get_class($e),
-                    'configSet' => 'openregister'
+                    'configSet' => $tenantConfigSetName
                 ];
                 return false;
             }
@@ -334,16 +340,12 @@ class SolrSetup
             $this->trackStep(3, 'Collection Creation', 'started', 'Checking and creating tenant collection "' . $tenantCollectionName . '"');
             
             try {
-                // First ensure base collection exists (as template)
-            if (!$this->ensureBaseCollectionExists()) {
-                    $this->logger->warning('Base collection creation failed, but continuing with tenant collection');
-                }
-                
-                // Then ensure tenant collection exists (primary collection for this instance)
+                // Ensure tenant collection exists (using tenant-specific configSet)
                 if (!$this->ensureTenantCollectionExists()) {
+                    $tenantConfigSetName = $this->getTenantConfigSetName();
                     $this->trackStep(3, 'Collection Creation', 'failed', 'Failed to create tenant collection', [
                         'collection' => $tenantCollectionName,
-                        'configSet' => 'openregister',
+                        'configSet' => $tenantConfigSetName,
                         'error_details' => $this->lastErrorDetails
                     ]);
                     
@@ -356,9 +358,9 @@ class SolrSetup
                             'error_type' => 'collection_creation_failure',
                             'error_message' => 'Failed to create tenant collection "' . $tenantCollectionName . '"',
                             'collection' => $tenantCollectionName,
-                            'configSet' => 'openregister',
+                            'configSet' => $tenantConfigSetName,
                             'troubleshooting' => [
-                                'Verify configSet "openregister" was created in previous step',
+                                'Verify configSet "' . $tenantConfigSetName . '" was created in previous step',
                                 'Check SOLR permissions to create collections',
                                 'Verify ZooKeeper coordination in SolrCloud',
                                 'Check available disk space and memory on SOLR server',
@@ -388,7 +390,6 @@ class SolrSetup
                 ];
                 return false;
             }
-
             // Step 4: Configure schema fields
             $this->trackStep(4, 'Schema Configuration', 'started', 'Configuring schema fields for ObjectEntity metadata');
             
@@ -476,9 +477,9 @@ class SolrSetup
             $this->setupProgress['success'] = true;
 
             $tenantCollectionName = $this->getTenantCollectionName();
+            $tenantConfigSetName = $this->getTenantConfigSetName();
             $this->logger->info('✅ SOLR setup completed successfully (SolrCloud mode)', [
-                'configSet_created' => 'openregister',
-                'base_collection_created' => 'openregister',
+                'tenant_configSet_created' => $tenantConfigSetName,
                 'tenant_collection_created' => $tenantCollectionName,
                 'schema_fields_configured' => true,
                 'setup_validated' => true,
@@ -567,23 +568,30 @@ class SolrSetup
     }
 
     /**
-     * Ensure the base configSet exists for creating tenant cores
-     *
-     * Creates the 'openregister' configSet if it doesn't exist, using
+     * Ensures the tenant-specific configSet exists in SOLR.
+     * Creates the tenant configSet if it doesn't exist, using
      * the default '_default' configSet as a template.
      *
      * @return bool True if configSet exists or was created successfully
      */
-    private function ensureBaseConfigSet(): bool
+    private function ensureTenantConfigSet(): bool
     {
+        $tenantConfigSetName = $this->getTenantConfigSetName();
+        
         // Check if configSet already exists
-        if ($this->configSetExists('openregister')) {
-            $this->logger->info('Base configSet already exists');
+        if ($this->configSetExists($tenantConfigSetName)) {
+            $this->logger->info('Tenant configSet already exists', [
+                'configSet' => $tenantConfigSetName
+            ]);
             return true;
         }
 
         // Create configSet using _default as template
-        return $this->createConfigSet('openregister', '_default');
+        $this->logger->info('Creating tenant configSet', [
+            'configSet' => $tenantConfigSetName,
+            'template' => '_default'
+        ]);
+        return $this->createConfigSet($tenantConfigSetName, '_default');
     }
 
     /**
@@ -902,31 +910,12 @@ class SolrSetup
         return false;
     }
 
-    /**
-     * Ensure the base collection exists as a template for tenant collections
-     *
-     * The base 'openregister' collection serves as both a working collection and
-     * a template for creating tenant-specific collections in SolrCloud.
-     *
-     * @return bool True if base collection exists or was created successfully
-     */
-    private function ensureBaseCollectionExists(): bool
-    {
-        // Check if base collection already exists
-        if ($this->solrService->collectionExists('openregister')) {
-            $this->logger->info('Base collection already exists');
-            return true;
-        }
-
-        // Create base collection using the openregister configSet
-        return $this->solrService->createCollection('openregister', 'openregister');
-    }
 
     /**
      * Ensure the tenant-specific collection exists for this instance
      *
      * Creates a tenant-specific collection (e.g., "openregister_nc_f0e53393")
-     * using the base "openregister" configSet.
+     * using the tenant-specific configSet (e.g., "openregister_nc_f0e53393").
      *
      * @return bool True if tenant collection exists or was created successfully
      */
@@ -942,13 +931,15 @@ class SolrSetup
             return true;
         }
 
-        // Create tenant collection using the openregister configSet
+        // Create tenant collection using the tenant-specific configSet
+        $tenantConfigSetName = $this->getTenantConfigSetName();
         $this->logger->info('Creating tenant collection', [
             'collection' => $tenantCollectionName,
-            'configSet' => 'openregister'
+            'configSet' => $tenantConfigSetName
         ]);
         
-        return $this->solrService->createCollection($tenantCollectionName, 'openregister');
+        return $this->solrService->createCollection($tenantCollectionName, $tenantConfigSetName);
+
     }
 
     /**
@@ -1898,9 +1889,13 @@ class SolrSetup
     {
         $tenantCollectionName = $this->getTenantCollectionName();
         
-        // Check configSet exists
-        if (!$this->configSetExists('openregister')) {
-            $this->logger->error('Validation failed: configSet missing');
+        // Check tenant configSet exists
+        $tenantConfigSetName = $this->getTenantConfigSetName();
+        if (!$this->configSetExists($tenantConfigSetName)) {
+            $this->logger->error('Validation failed: tenant configSet missing', [
+                'configSet' => $tenantConfigSetName
+            ]);
+
             return false;
         }
 
