@@ -780,6 +780,19 @@ class ObjectsControllerTest extends TestCase
      */
     public function testUnlockSuccessful(): void
     {
-        $this->markTestSkipped('ObjectService does not have an unlock method - controller bug');
+        $id = 'test-id';
+        $unlockedObject = $this->createMock(ObjectEntity::class);
+
+        $this->objectService->expects($this->once())
+            ->method('unlockObject')
+            ->with($id)
+            ->willReturn($unlockedObject);
+
+        $response = $this->controller->unlock('test-register', 'test-schema', $id);
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $data = $response->getData();
+        $this->assertArrayHasKey('message', $data);
+        $this->assertEquals('Object unlocked successfully', $data['message']);
     }
 }

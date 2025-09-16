@@ -160,7 +160,8 @@ class SchemasControllerTest extends TestCase
             $this->downloadService,
             $this->uploadService,
             $this->auditTrailMapper,
-            $this->organisationService
+            $this->organisationService,
+            $this->objectService
         );
     }
 
@@ -414,7 +415,7 @@ class SchemasControllerTest extends TestCase
     {
         $id = 1;
         $schema = $this->createMock(Schema::class);
-        $schema->expects($this->once())
+        $schema->expects($this->any())
             ->method('getId')
             ->willReturn((string)$id);
 
@@ -423,8 +424,25 @@ class SchemasControllerTest extends TestCase
             ->with($id)
             ->willReturn($schema);
 
-        // Mock the stats methods that don't exist - this test will be skipped
-        $this->markTestSkipped('ObjectService does not have required stats methods - controller bug');
+        $this->objectService->expects($this->once())
+            ->method('getObjectStats')
+            ->with($id)
+            ->willReturn(['total_objects' => 0, 'active_objects' => 0, 'deleted_objects' => 0]);
+
+        $this->objectService->expects($this->once())
+            ->method('getFileStats')
+            ->with($id)
+            ->willReturn(['total_files' => 0, 'total_size' => 0]);
+
+        $this->objectService->expects($this->once())
+            ->method('getLogStats')
+            ->with($id)
+            ->willReturn(['total_logs' => 0, 'recent_logs' => 0]);
+
+        $this->schemaMapper->expects($this->once())
+            ->method('getRegisterCount')
+            ->with($id)
+            ->willReturn(0);
 
         $response = $this->controller->stats($id);
 

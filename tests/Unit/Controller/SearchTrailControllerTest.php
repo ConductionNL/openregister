@@ -20,6 +20,9 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\SearchTrailController;
 use OCA\OpenRegister\Service\SearchTrailService;
+use OCA\OpenRegister\Db\SearchTrailMapper;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
@@ -51,11 +54,32 @@ class SearchTrailControllerTest extends TestCase
     private MockObject $request;
 
     /**
-     * Mock search trail service
+     * Search trail service instance
      *
-     * @var MockObject|SearchTrailService
+     * @var SearchTrailService
      */
-    private MockObject $searchTrailService;
+    private SearchTrailService $searchTrailService;
+
+    /**
+     * Mock search trail mapper
+     *
+     * @var MockObject|SearchTrailMapper
+     */
+    private MockObject $searchTrailMapper;
+
+    /**
+     * Mock register mapper
+     *
+     * @var MockObject|RegisterMapper
+     */
+    private MockObject $registerMapper;
+
+    /**
+     * Mock schema mapper
+     *
+     * @var MockObject|SchemaMapper
+     */
+    private MockObject $schemaMapper;
 
     /**
      * Set up test environment before each test
@@ -69,9 +93,21 @@ class SearchTrailControllerTest extends TestCase
     {
         parent::setUp();
 
+        // Set up $_SERVER for tests
+        $_SERVER['REQUEST_URI'] = '/test/uri';
+
         // Create mock objects for all dependencies
         $this->request = $this->createMock(IRequest::class);
-        $this->searchTrailService = $this->createMock(SearchTrailService::class);
+        $this->searchTrailMapper = $this->createMock(SearchTrailMapper::class);
+        $this->registerMapper = $this->createMock(RegisterMapper::class);
+        $this->schemaMapper = $this->createMock(SchemaMapper::class);
+        
+        // Create the search trail service with mocked dependencies
+        $this->searchTrailService = new SearchTrailService(
+            $this->searchTrailMapper,
+            $this->registerMapper,
+            $this->schemaMapper
+        );
 
         // Initialize the controller with mocked dependencies
         $this->controller = new SearchTrailController(
@@ -88,24 +124,32 @@ class SearchTrailControllerTest extends TestCase
      */
     public function testIndexSuccessful(): void
     {
-        $searchTrails = [
-            ['id' => 1, 'query' => 'test search', 'user_id' => 'user1'],
-            ['id' => 2, 'query' => 'another search', 'user_id' => 'user2']
-        ];
+        $searchTrail1 = $this->createMock(\OCA\OpenRegister\Db\SearchTrail::class);
+        $searchTrail2 = $this->createMock(\OCA\OpenRegister\Db\SearchTrail::class);
+        $searchTrails = [$searchTrail1, $searchTrail2];
 
         $this->request->expects($this->once())
             ->method('getParams')
             ->willReturn([]);
 
-        $this->searchTrailService->expects($this->once())
-            ->method('getSearchTrails')
-            ->willReturn([
-                'results' => $searchTrails,
-                'total' => count($searchTrails),
-                'limit' => 20,
-                'offset' => 0,
-                'page' => 1
-            ]);
+        $this->searchTrailMapper->expects($this->once())
+            ->method('findAll')
+            ->willReturn($searchTrails);
+
+        $this->searchTrailMapper->expects($this->once())
+            ->method('count')
+            ->willReturn(count($searchTrails));
+
+        $registerMock = $this->createMock(\OCA\OpenRegister\Db\Register::class);
+        $schemaMock = $this->createMock(\OCA\OpenRegister\Db\Schema::class);
+        
+        $this->registerMapper->expects($this->any())
+            ->method('find')
+            ->willReturn($registerMock);
+
+        $this->schemaMapper->expects($this->any())
+            ->method('find')
+            ->willReturn($schemaMock);
 
         $response = $this->controller->index();
 
@@ -113,6 +157,10 @@ class SearchTrailControllerTest extends TestCase
         $data = $response->getData();
         $this->assertArrayHasKey('results', $data);
         $this->assertEquals($searchTrails, $data['results']);
+        $this->assertArrayHasKey('total', $data);
+        $this->assertArrayHasKey('limit', $data);
+        $this->assertArrayHasKey('offset', $data);
+        $this->assertArrayHasKey('page', $data);
     }
 
     /**
@@ -123,24 +171,31 @@ class SearchTrailControllerTest extends TestCase
     public function testIndexWithFilters(): void
     {
         $filters = ['user_id' => 'user1', 'date_from' => '2024-01-01'];
-        $searchTrails = [
-            ['id' => 1, 'query' => 'test search', 'user_id' => 'user1']
-        ];
+        $searchTrail1 = $this->createMock(\OCA\OpenRegister\Db\SearchTrail::class);
+        $searchTrails = [$searchTrail1];
 
         $this->request->expects($this->once())
             ->method('getParams')
             ->willReturn($filters);
 
-        $this->searchTrailService->expects($this->once())
-            ->method('getSearchTrails')
-            ->with($filters)
-            ->willReturn([
-                'results' => $searchTrails,
-                'total' => count($searchTrails),
-                'limit' => 20,
-                'offset' => 0,
-                'page' => 1
-            ]);
+        $this->searchTrailMapper->expects($this->once())
+            ->method('findAll')
+            ->willReturn($searchTrails);
+
+        $this->searchTrailMapper->expects($this->once())
+            ->method('count')
+            ->willReturn(count($searchTrails));
+
+        $registerMock = $this->createMock(\OCA\OpenRegister\Db\Register::class);
+        $schemaMock = $this->createMock(\OCA\OpenRegister\Db\Schema::class);
+        
+        $this->registerMapper->expects($this->any())
+            ->method('find')
+            ->willReturn($registerMock);
+
+        $this->schemaMapper->expects($this->any())
+            ->method('find')
+            ->willReturn($schemaMock);
 
         $response = $this->controller->index();
 
@@ -148,6 +203,10 @@ class SearchTrailControllerTest extends TestCase
         $data = $response->getData();
         $this->assertArrayHasKey('results', $data);
         $this->assertEquals($searchTrails, $data['results']);
+        $this->assertArrayHasKey('total', $data);
+        $this->assertArrayHasKey('limit', $data);
+        $this->assertArrayHasKey('offset', $data);
+        $this->assertArrayHasKey('page', $data);
     }
 
     /**
@@ -160,8 +219,8 @@ class SearchTrailControllerTest extends TestCase
         $id = 1;
         $searchTrail = $this->createMock(\OCA\OpenRegister\Db\SearchTrail::class);
 
-        $this->searchTrailService->expects($this->once())
-            ->method('getSearchTrail')
+        $this->searchTrailMapper->expects($this->once())
+            ->method('find')
             ->with($id)
             ->willReturn($searchTrail);
 
@@ -180,8 +239,8 @@ class SearchTrailControllerTest extends TestCase
     {
         $id = 999;
 
-        $this->searchTrailService->expects($this->once())
-            ->method('getSearchTrail')
+        $this->searchTrailMapper->expects($this->once())
+            ->method('find')
             ->with($id)
             ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Search trail not found'));
 
@@ -206,6 +265,8 @@ class SearchTrailControllerTest extends TestCase
         $statistics = [
             'total_searches' => 100,
             'unique_users' => 25,
+            'non_empty_searches' => 80,
+            'total_results' => 500,
             'popular_queries' => [
                 ['query' => 'test', 'count' => 10],
                 ['query' => 'search', 'count' => 8]
@@ -216,14 +277,20 @@ class SearchTrailControllerTest extends TestCase
             ]
         ];
 
-        $this->searchTrailService->expects($this->once())
+        $this->searchTrailMapper->expects($this->once())
             ->method('getSearchStatistics')
             ->willReturn($statistics);
+
+        $this->searchTrailMapper->expects($this->once())
+            ->method('getUniqueSearchTermsCount')
+            ->willReturn(10);
 
         $response = $this->controller->statistics();
 
         $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals($statistics, $response->getData());
+        $data = $response->getData();
+        $this->assertArrayHasKey('total_searches', $data);
+        $this->assertEquals(100, $data['total_searches']);
     }
 
     /**
@@ -235,9 +302,13 @@ class SearchTrailControllerTest extends TestCase
     {
         $from = '2024-01-01';
         $to = '2024-01-31';
+        $fromDate = new \DateTime($from);
+        $toDate = new \DateTime($to);
         $statistics = [
             'total_searches' => 50,
             'unique_users' => 15,
+            'non_empty_searches' => 40,
+            'total_results' => 200,
             'popular_queries' => [
                 ['query' => 'test', 'count' => 5]
             ]
@@ -250,15 +321,22 @@ class SearchTrailControllerTest extends TestCase
                 'to' => $to
             ]);
 
-        $this->searchTrailService->expects($this->once())
+        $this->searchTrailMapper->expects($this->once())
             ->method('getSearchStatistics')
-            ->with($from, $to)
+            ->with($fromDate, $toDate)
             ->willReturn($statistics);
+
+        $this->searchTrailMapper->expects($this->once())
+            ->method('getUniqueSearchTermsCount')
+            ->with($fromDate, $toDate)
+            ->willReturn(10);
 
         $response = $this->controller->statistics();
 
         $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals($statistics, $response->getData());
+        $data = $response->getData();
+        $this->assertArrayHasKey('total_searches', $data);
+        $this->assertEquals(50, $data['total_searches']);
     }
 
     /**
@@ -270,25 +348,36 @@ class SearchTrailControllerTest extends TestCase
     {
         $limit = 10;
         $popularQueries = [
-            ['query' => 'test', 'count' => 25],
-            ['query' => 'search', 'count' => 20],
-            ['query' => 'data', 'count' => 15]
+            ['query' => 'test', 'count' => 25, 'avg_results' => 5],
+            ['query' => 'search', 'count' => 20, 'avg_results' => 3],
+            ['query' => 'data', 'count' => 15, 'avg_results' => 2]
         ];
 
-        $this->request->expects($this->once())
+        $this->request->expects($this->exactly(2))
             ->method('getParam')
-            ->with('limit', 10)
-            ->willReturn($limit);
+            ->willReturnMap([
+                ['_limit', 10, $limit],
+                ['limit', 10, $limit]
+            ]);
 
-        $this->searchTrailService->expects($this->once())
+        $this->request->expects($this->once())
+            ->method('getParams')
+            ->willReturn([]);
+
+        $this->searchTrailMapper->expects($this->once())
             ->method('getPopularSearchTerms')
-            ->with($limit)
+            ->with($limit, null, null)
             ->willReturn($popularQueries);
 
         $response = $this->controller->popularTerms();
 
         $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals($popularQueries, $response->getData());
+        $data = $response->getData();
+        $this->assertArrayHasKey('results', $data);
+        $this->assertCount(3, $data['results']);
+        $this->assertEquals('test', $data['results'][0]['query']);
+        $this->assertEquals(25, $data['results'][0]['count']);
+        $this->assertEquals(5, $data['results'][0]['avg_results']);
     }
 
     /**
@@ -298,23 +387,33 @@ class SearchTrailControllerTest extends TestCase
      */
     public function testCleanupSuccessful(): void
     {
-        $days = 30;
+        $before = '2024-01-01';
         $deletedCount = 50;
 
         $this->request->expects($this->once())
             ->method('getParam')
-            ->with('days', 30)
-            ->willReturn($days);
+            ->with('before', null)
+            ->willReturn($before);
 
-        $this->searchTrailService->expects($this->once())
-            ->method('clearExpiredSearchTrails')
-            ->with($days)
+        // Create a mock service for this test
+        $mockService = $this->createMock(SearchTrailService::class);
+        $mockService->expects($this->once())
+            ->method('cleanupSearchTrails')
             ->willReturn(['deleted' => $deletedCount]);
 
-        $response = $this->controller->cleanup();
+        // Create a new controller with the mock service
+        $controller = new SearchTrailController(
+            'openregister',
+            $this->request,
+            $mockService
+        );
+
+        $response = $controller->cleanup();
 
         $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals(['deleted' => $deletedCount], $response->getData());
+        $data = $response->getData();
+        $this->assertArrayHasKey('deleted', $data);
+        $this->assertEquals($deletedCount, $data['deleted']);
     }
 
     /**
@@ -326,17 +425,26 @@ class SearchTrailControllerTest extends TestCase
     {
         $this->request->expects($this->once())
             ->method('getParam')
-            ->with('days', 30)
-            ->willReturn(30);
+            ->with('before', null)
+            ->willReturn('2024-01-01');
 
-        $this->searchTrailService->expects($this->once())
-            ->method('clearExpiredSearchTrails')
+        // Create a mock service for this test
+        $mockService = $this->createMock(SearchTrailService::class);
+        $mockService->expects($this->once())
+            ->method('cleanupSearchTrails')
             ->willThrowException(new \Exception('Cleanup failed'));
 
-        $response = $this->controller->cleanup();
+        // Create a new controller with the mock service
+        $controller = new SearchTrailController(
+            'openregister',
+            $this->request,
+            $mockService
+        );
+
+        $response = $controller->cleanup();
 
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals(500, $response->getStatus());
-        $this->assertEquals(['error' => 'Cleanup failed'], $response->getData());
+        $this->assertEquals(['error' => 'Cleanup failed: Cleanup failed'], $response->getData());
     }
 }

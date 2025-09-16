@@ -229,7 +229,8 @@ class EntityOrganisationAssignmentTest extends TestCase
             $this->createMock(\OCA\OpenRegister\Service\DownloadService::class),
             $this->createMock(\OCA\OpenRegister\Service\UploadService::class),
             $this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class),
-            $this->organisationService
+            $this->organisationService,
+            $this->createMock(\OCA\OpenRegister\Service\ObjectService::class)
         );
         
         $this->objectsController = new ObjectsController(

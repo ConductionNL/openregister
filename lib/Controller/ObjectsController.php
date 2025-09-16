@@ -1294,7 +1294,7 @@ class ObjectsController extends Controller
     {
         $this->objectService->setRegister($register);
         $this->objectService->setSchema($schema);
-        $this->objectService->unlock($id);
+        $this->objectService->unlockObject($id);
         return new JSONResponse(['message' => 'Object unlocked successfully']);
 
     }//end unlock()

@@ -759,7 +759,32 @@ class RegistersControllerTest extends TestCase
      */
     public function testStatsSuccessful(): void
     {
-        $this->markTestSkipped('RegisterService does not have calculateStats method - controller bug');
+        $register = $this->createMock(\OCA\OpenRegister\Db\Register::class);
+        $register->expects($this->any())
+            ->method('getId')
+            ->willReturn('1');
+
+        $this->registerService->expects($this->once())
+            ->method('find')
+            ->with(1)
+            ->willReturn($register);
+
+        $this->registerService->expects($this->once())
+            ->method('calculateStats')
+            ->with($register)
+            ->willReturn([
+                'register_id' => '1',
+                'register_name' => 'Test Register',
+                'total_objects' => 0,
+                'total_schemas' => 0
+            ]);
+
+        $response = $this->controller->stats(1);
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $data = $response->getData();
+        $this->assertArrayHasKey('register_id', $data);
+        $this->assertEquals('1', $data['register_id']);
     }
 
     /**

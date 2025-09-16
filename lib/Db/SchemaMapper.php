@@ -671,4 +671,17 @@ class SchemaMapper extends QBMapper
     }//end hasReferenceToSchema()
 
 
+    /**
+     * Get register count for a schema
+     *
+     * @param int $schemaId The schema ID
+     * @return int Register count
+     */
+    public function getRegisterCount(int $schemaId): int
+    {
+        $counts = $this->getRegisterCountPerSchema();
+        return $counts[$schemaId] ?? 0;
+    }//end getRegisterCount()
+
+
 }//end class

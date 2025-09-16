@@ -69,7 +69,8 @@ class SchemasController extends Controller
         private readonly DownloadService $downloadService,
         private readonly UploadService $uploadService,
         private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly OrganisationService $organisationService
+        private readonly OrganisationService $organisationService,
+        private readonly ObjectService $objectService
     ) {
         parent::__construct($appName, $request);
 
