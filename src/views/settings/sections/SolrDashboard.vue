@@ -2,7 +2,7 @@
 	<div>
 		<NcSettingsSection name="SOLR Search Management"
 			description="Monitor and manage SOLR search performance and operations">
-			<div v-if="!loadingStats && !solrError && solrStats && solrStats.overview && solrStats.cores" class="solr-section">
+			<div v-if="!loadingStats && !solrError" class="solr-section">
 				<!-- Action Buttons -->
 				<div class="section-header-inline">
 					<span />
@@ -349,30 +349,12 @@
 			</div>
 		</NcSettingsSection>
 
-		<!-- Clear Index Confirmation Dialog -->
-		<NcDialog v-if="showClearDialog"
-			name="Clear SOLR Index"
-			message="This will permanently delete all documents from the SOLR index. This action cannot be undone."
-			:can-close="!operating"
-			@closing="hideClearIndexDialog">
-			<template #actions>
-				<NcButton
-					:disabled="!!operating"
-					@click="hideClearIndexDialog">
-					Cancel
-				</NcButton>
-				<NcButton
-					type="error"
-					:disabled="!!operating"
-					@click="performClearIndex">
-					<template #icon>
-						<NcLoadingIcon v-if="operating === 'clear'" :size="20" />
-						<Delete v-else :size="20" />
-					</template>
-					Clear Index
-				</NcButton>
-			</template>
-		</NcDialog>
+		<!-- Clear Index Confirmation Modal -->
+		<ClearIndexModal
+			:show="showClearDialog"
+			:operating="operating === 'clear'"
+			@close="hideClearIndexDialog"
+			@clear="performClearIndex" />
 
 		<!-- SOLR Warmup Configuration Modal -->
 		<SolrWarmupModal
@@ -1291,34 +1273,36 @@ export default {
 			</div>
 
 			<template #actions>
-				<NcButton
-					:disabled="warmingUp"
-					@click="hideWarmupDialog">
-					<template #icon>
-						<Cancel :size="20" />
-					</template>
-					{{ warmingUp ? 'Close' : (warmupCompleted ? 'Close' : 'Cancel') }}
-				</NcButton>
+				<div class="modal-actions">
+					<NcButton
+						:disabled="warmingUp"
+						@click="hideWarmupDialog">
+						<template #icon>
+							<Cancel :size="20" />
+						</template>
+						{{ warmingUp ? 'Close' : (warmupCompleted ? 'Close' : 'Cancel') }}
+					</NcButton>
 
-				<NcButton
-					v-if="!warmingUp && !warmupCompleted"
-					type="primary"
-					@click="performWarmup">
-					<template #icon>
-						<Fire :size="20" />
-					</template>
-					Start Warmup
-				</NcButton>
+					<NcButton
+						v-if="!warmingUp && !warmupCompleted"
+						type="primary"
+						@click="performWarmup">
+						<template #icon>
+							<Fire :size="20" />
+						</template>
+						Start Warmup
+					</NcButton>
 
-				<NcButton
-					v-if="warmupCompleted"
-					type="secondary"
-					@click="resetWarmupDialog">
-					<template #icon>
-						<Refresh :size="20" />
-					</template>
-					Run Again
-				</NcButton>
+					<NcButton
+						v-if="warmupCompleted"
+						type="secondary"
+						@click="resetWarmupDialog">
+						<template #icon>
+							<Refresh :size="20" />
+						</template>
+						Run Again
+					</NcButton>
+				</div>
 			</template>
 		</NcDialog>
 	</div>
