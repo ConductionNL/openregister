@@ -198,6 +198,17 @@ class SolrSetup
     }
 
     /**
+     * Get tenant-specific configSet name
+     *
+     * @return string Tenant-specific configSet name (e.g., "openregister_nc_f0e53393")
+     */
+    private function getTenantConfigSetName(): string
+    {
+        $baseConfigSetName = $this->solrConfig['core'] ?? 'openregister';
+        return $baseConfigSetName . '_' . $this->getTenantId();
+    }
+
+    /**
      * Run complete SOLR setup for OpenRegister multi-tenant architecture
      *
      * Performs all necessary setup operations for SolrCloud:
@@ -287,7 +298,6 @@ class SolrSetup
                     
                     $this->trackStep(2, 'EnsureTenantConfigSet', 'failed', 'Failed to create tenant configSet "' . $tenantConfigSetName . '"', [
                         'configSet' => $tenantConfigSetName,
-
                         'template' => '_default',
                         'error_type' => $errorDetails['error_type'] ?? 'configset_creation_failure',
                         'url_attempted' => $errorDetails['url_attempted'] ?? 'unknown',
@@ -307,7 +317,6 @@ class SolrSetup
                             'error_type' => 'configset_creation_failure',
                             'error_message' => 'Failed to create tenant configSet "' . $tenantConfigSetName . '"',
                             'configSet' => $tenantConfigSetName,
-
                             'template' => '_default',
                             'troubleshooting' => [
                                 'Check if SOLR server has write permissions for config directory',
@@ -321,23 +330,16 @@ class SolrSetup
                     return false;
                 }
                 
-<<<<<<< HEAD
                 $this->trackStep(2, 'EnsureTenantConfigSet', 'completed', 'Tenant configSet "' . $tenantConfigSetName . '" is available');
-=======
-                $this->trackStep(2, 'ConfigSet Creation', 'completed', 'Tenant configSet "' . $tenantConfigSetName . '" is available');
-
->>>>>>> dbe484f12e6fd4de5524ea9fb668506913a7a57c
                 $this->setupProgress['completed_steps']++;
             } catch (\Exception $e) {
                 $this->trackStep(2, 'EnsureTenantConfigSet', 'failed', $e->getMessage(), [
                     'exception_type' => get_class($e),
-
                     'configSet' => $tenantConfigSetName
                 ]);
                 
                 $this->lastErrorDetails = [
                     'operation' => 'ensureTenantConfigSet',
-
                     'step' => 2,
                     'step_name' => 'ConfigSet Creation',
                     'error_type' => 'configset_exception',
@@ -403,6 +405,7 @@ class SolrSetup
                 ];
                 return false;
             }
+
             // Step 4: Configure schema fields
             $this->trackStep(4, 'Schema Configuration', 'started', 'Configuring schema fields for ObjectEntity metadata');
             
@@ -534,50 +537,89 @@ class SolrSetup
 
 
     /**
-     * Verify that SOLR server is accessible and responding
+     * Verify SOLR connectivity using GuzzleSolrService for consistency
      *
-     * @return bool True if SOLR is accessible and responding properly
+     * **CONSISTENCY FIX**: Uses the same comprehensive connectivity testing 
+     * as all other parts of the system to ensure consistent behavior.
+     *
+     * @return bool True if SOLR is accessible and responding correctly
      */
     private function verifySolrConnectivity(): bool
     {
-        $url = $this->buildSolrUrl('/admin/info/system?wt=json');
-
         try {
-            $response = $this->httpClient->get($url, ['timeout' => 10]);
+            // **CONSISTENCY FIX**: Use GuzzleSolrService's comprehensive testConnection()
+            // This ensures all connectivity checks use the same robust logic
+            $connectionTest = $this->solrService->testConnection();
+            $isConnected = $connectionTest['success'] ?? false;
             
-            if ($response->getStatusCode() !== 200) {
-                $this->logger->error('SOLR connectivity verification failed - HTTP error', [
-                    'url' => $url,
-                    'status_code' => $response->getStatusCode(),
-                    'response_body' => (string)$response->getBody()
+            if ($isConnected) {
+                $this->logger->info('SOLR connectivity verified successfully using GuzzleSolrService', [
+                    'test_message' => $connectionTest['message'] ?? 'Connection test passed',
+                    'components_tested' => array_keys($connectionTest['components'] ?? []),
+                    'all_components_successful' => $this->allComponentsSuccessful($connectionTest['components'] ?? [])
                 ]);
-            return false;
-        }
-
-            $data = json_decode((string)$response->getBody(), true);
-            if ($data === null || !isset($data['lucene'])) {
-                $this->logger->error('SOLR connectivity verification failed - invalid response', [
-                    'url' => $url,
-                    'response' => (string)$response->getBody()
+                return true;
+            } else {
+                $this->logger->error('SOLR connectivity verification failed using GuzzleSolrService', [
+                    'test_message' => $connectionTest['message'] ?? 'Connection test failed',
+                    'components' => $connectionTest['components'] ?? [],
+                    'details' => $connectionTest['details'] ?? []
                 ]);
-            return false;
-        }
-
-            $this->logger->info('SOLR connectivity verified successfully', [
-                'url' => $url,
-                'lucene_version' => $data['lucene']['lucene-spec-version'] ?? 'unknown'
-        ]);
-        
-        return true;
+                
+                // Store detailed error information for better troubleshooting
+                $this->lastErrorDetails = [
+                    'operation' => 'verifySolrConnectivity',
+                    'error_type' => 'connectivity_test_failure',
+                    'error_message' => $connectionTest['message'] ?? 'Connection test failed',
+                    'connection_test_result' => $connectionTest,
+                    'troubleshooting' => [
+                        'Check if SOLR server is running and accessible',
+                        'Verify host/port configuration in settings',
+                        'Check network connectivity between containers',
+                        'Verify authentication credentials if required',
+                        'Check SOLR admin UI manually: ' . $this->buildSolrUrl('/solr/')
+                    ]
+                ];
+                
+                return false;
+            }
             
         } catch (\Exception $e) {
-            $this->logger->error('SOLR connectivity verification failed - Exception', [
-                'url' => $url,
+            $this->logger->error('SOLR connectivity verification failed - exception during GuzzleSolrService test', [
                 'error' => $e->getMessage(),
-                'exception_type' => get_class($e)
+                'exception_class' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
             ]);
+            
+            // Store detailed error information
+            $this->lastErrorDetails = [
+                'operation' => 'verifySolrConnectivity',
+                'error_type' => 'connectivity_exception',
+                'error_message' => $e->getMessage(),
+                'exception_class' => get_class($e),
+                'exception_file' => $e->getFile(),
+                'exception_line' => $e->getLine()
+            ];
+            
             return false;
         }
+    }
+    
+    /**
+     * Check if all components in a connection test were successful
+     *
+     * @param array $components Components test results
+     * @return bool True if all components passed
+     */
+    private function allComponentsSuccessful(array $components): bool
+    {
+        foreach ($components as $component => $result) {
+            if (!($result['success'] ?? false)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -995,7 +1037,6 @@ class SolrSetup
         ]);
         
         return $this->solrService->createCollection($tenantCollectionName, $tenantConfigSetName);
-
     }
 
     /**
@@ -2144,7 +2185,6 @@ class SolrSetup
             $this->logger->error('Validation failed: tenant configSet missing', [
                 'configSet' => $tenantConfigSetName
             ]);
-
             return false;
         }
 
