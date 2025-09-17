@@ -197,16 +197,25 @@ class GuzzleSolrService
     }
 
     /**
+<<<<<<< HEAD
      * Get tenant ID for this Nextcloud instance (public accessor)
      *
      * @return string The tenant ID
+=======
+     * Get the tenant ID for this instance
+     *
+     * @return string Tenant identifier
+>>>>>>> dbe484f12e6fd4de5524ea9fb668506913a7a57c
      */
     public function getTenantId(): string
     {
         return $this->tenantId;
     }
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> dbe484f12e6fd4de5524ea9fb668506913a7a57c
     /**
      * Generate tenant-specific collection name for SolrCloud
      *
@@ -275,6 +284,7 @@ class GuzzleSolrService
     /**
      * Check if SOLR is available and configured
      *
+<<<<<<< HEAD
      * @return bool True if SOLR is available and responding
      */
     public function isAvailable(): bool
@@ -302,6 +312,46 @@ class GuzzleSolrService
             $this->logger->debug('SOLR availability check failed', [
                 'error' => $e->getMessage(),
                 'url' => $this->buildSolrBaseUrl() . '/admin/info/system'
+=======
+     * Performs a lightweight check to determine if SOLR service is available
+     * by testing basic connectivity and configuration validity.
+     *
+     * @return bool True if SOLR is available and properly configured
+     */
+    public function isAvailable(): bool
+    {
+        // Check if SOLR is enabled in configuration
+        if (!($this->solrConfig['enabled'] ?? false)) {
+            return false;
+        }
+        
+        // Check if basic configuration is present
+        if (empty($this->solrConfig['host'])) {
+            return false;
+        }
+        
+        try {
+            // Perform a simple ping test to verify connectivity
+            $baseUrl = $this->buildSolrBaseUrl();
+            $pingUrl = $baseUrl . '/admin/ping?wt=json';
+            
+            $response = $this->httpClient->get($pingUrl, [
+                'timeout' => 5,
+                'connect_timeout' => 3
+            ]);
+            
+            if ($response->getStatusCode() === 200) {
+                $data = json_decode((string)$response->getBody(), true);
+                // Check if ping was successful
+                return isset($data['status']) && $data['status'] === 'OK';
+            }
+            
+            return false;
+        } catch (\Exception $e) {
+            $this->logger->debug('SOLR availability check failed', [
+                'error' => $e->getMessage(),
+                'host' => $this->solrConfig['host'] ?? 'unknown'
+>>>>>>> dbe484f12e6fd4de5524ea9fb668506913a7a57c
             ]);
             return false;
         }
@@ -455,7 +505,7 @@ class GuzzleSolrService
      *
      * @return string The collection name to use for SOLR operations
      */
-    private function getActiveCollectionName(): string
+    public function getActiveCollectionName(): string
     {
         $baseCollectionName = $this->solrConfig['core'] ?? 'openregister';
         $tenantCollectionName = $this->getTenantSpecificCollectionName($baseCollectionName);
@@ -2585,8 +2635,21 @@ class GuzzleSolrService
      */
     public function getDashboardStats(): array
     {
-        if (!$this->isAvailable()) {
-            return ['available' => false, 'error' => 'SOLR not available'];
+        // Use the same availability check as testConnection() instead of isAvailable()
+        // This ensures consistency between connection test and dashboard stats
+        try {
+            $connectionTest = $this->testConnection();
+            if (!$connectionTest['success']) {
+                return [
+                    'available' => false, 
+                    'error' => 'SOLR not available: ' . ($connectionTest['message'] ?? 'Connection test failed')
+                ];
+            }
+        } catch (\Exception $e) {
+            return [
+                'available' => false, 
+                'error' => 'SOLR not available: ' . $e->getMessage()
+            ];
         }
 
         try {
