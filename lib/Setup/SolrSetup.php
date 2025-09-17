@@ -75,6 +75,19 @@ class SolrSetup
     private ?array $lastErrorDetails = null;
 
     /**
+     * @var array Track infrastructure resources created/skipped during setup
+     */
+    private array $infrastructureCreated = [
+        'configsets_created' => [],
+        'configsets_skipped' => [],
+        'collections_created' => [],
+        'collections_skipped' => [],
+        'schema_fields_configured' => false,
+        'multi_tenant_ready' => false,
+        'cloud_mode' => false
+    ];
+
+    /**
      * @var array Setup progress tracking with detailed step information
      */
     private array $setupProgress = [];
@@ -113,6 +126,16 @@ class SolrSetup
     public function getLastErrorDetails(): ?array
     {
         return $this->lastErrorDetails;
+    }
+
+    /**
+     * Get infrastructure resources created during setup
+     *
+     * @return array Summary of created resources and configuration status
+     */
+    public function getInfrastructureCreated(): array
+    {
+        return $this->infrastructureCreated;
     }
 
     /**
@@ -247,7 +270,7 @@ class SolrSetup
                         'error' => 'SOLR connectivity test failed',
                         'host' => $this->solrConfig['host'] ?? 'unknown',
                         'port' => $this->solrConfig['port'] ?? 'unknown',
-                        'url_tested' => $this->buildSolrUrl('/admin/ping?wt=json')
+                        'url_tested' => $this->buildSolrUrl('/admin/info/system?wt=json')
                     ]);
                     
                     $this->lastErrorDetails = [
@@ -430,6 +453,7 @@ class SolrSetup
                 }
                 
                 $this->trackStep(4, 'Schema Configuration', 'completed', 'Schema fields configured successfully');
+                $this->infrastructureCreated['schema_fields_configured'] = true;
                 $this->setupProgress['completed_steps']++;
             } catch (\Exception $e) {
                 $this->trackStep(4, 'Schema Configuration', 'failed', $e->getMessage(), [
@@ -471,6 +495,8 @@ class SolrSetup
                 }
                 
                 $this->trackStep(5, 'Setup Validation', 'completed', 'Setup validation passed');
+                $this->infrastructureCreated['multi_tenant_ready'] = true;
+                $this->infrastructureCreated['cloud_mode'] = true;
                 $this->setupProgress['completed_steps']++;
             } catch (\Exception $e) {
                 $this->trackStep(5, 'Setup Validation', 'failed', $e->getMessage(), [
@@ -547,9 +573,9 @@ class SolrSetup
     private function verifySolrConnectivity(): bool
     {
         try {
-            // **CONSISTENCY FIX**: Use GuzzleSolrService's comprehensive testConnection()
-            // This ensures all connectivity checks use the same robust logic
-            $connectionTest = $this->solrService->testConnection();
+            // **SETUP-OPTIMIZED**: Use connectivity-only test for setup scenarios
+            // Collections don't exist yet during setup, so we only test SOLR/Zookeeper connectivity
+            $connectionTest = $this->solrService->testConnectivityOnly();
             $isConnected = $connectionTest['success'] ?? false;
             
             if ($isConnected) {
@@ -636,9 +662,13 @@ class SolrSetup
         
         // Check if configSet already exists
         if ($this->configSetExists($tenantConfigSetName)) {
-            $this->logger->info('Tenant configSet already exists', [
+            $this->logger->info('Tenant configSet already exists (skipping creation)', [
                 'configSet' => $tenantConfigSetName
             ]);
+            // Track existing configSet as skipped (not newly created)
+            if (!in_array($tenantConfigSetName, $this->infrastructureCreated['configsets_skipped'])) {
+                $this->infrastructureCreated['configsets_skipped'][] = $tenantConfigSetName;
+            }
             return true;
         }
 
@@ -735,20 +765,27 @@ class SolrSetup
             'configSet' => $newConfigSetName
         ]);
         
-        $pingUrl = $this->buildSolrUrl('/admin/ping?wt=json');
+        // Use GuzzleSolrService's comprehensive connectivity test instead of simple ping
         try {
-            $pingResponse = $this->httpClient->get($pingUrl, ['timeout' => 10]);
-            $this->logger->info('SOLR ping test successful', [
-                'status_code' => $pingResponse->getStatusCode(),
-                'ping_url' => $pingUrl
-            ]);
+            $connectionTest = $this->solrService->testConnection();
+            if ($connectionTest['success']) {
+                $this->logger->info('SOLR connectivity test successful', [
+                    'test_message' => $connectionTest['message'] ?? 'Connection verified',
+                    'components_tested' => array_keys($connectionTest['components'] ?? [])
+                ]);
+            } else {
+                $this->logger->error('SOLR connectivity test failed before configSet creation', [
+                    'test_message' => $connectionTest['message'] ?? 'Connection failed',
+                    'details' => $connectionTest['details'] ?? []
+                ]);
+                // Continue anyway - connectivity test might fail but configSet creation might still work
+            }
         } catch (\Exception $e) {
-            $this->logger->error('SOLR ping test failed - connectivity issue detected', [
-                'ping_url' => $pingUrl,
+            $this->logger->warning('SOLR connectivity test threw exception before configSet creation', [
                 'error' => $e->getMessage(),
                 'exception_type' => get_class($e)
             ]);
-            // Continue anyway - ping might not be available but admin endpoints might work
+            // Continue anyway - connectivity test might not be available but admin endpoints might work
         }
         
         // Use SolrCloud ConfigSets API for configSet creation with authentication
@@ -1023,9 +1060,15 @@ class SolrSetup
         
         // Check if tenant collection already exists
         if ($this->solrService->collectionExists($tenantCollectionName)) {
-            $this->logger->info('Tenant collection already exists', [
+            $this->logger->info('Tenant collection already exists (skipping creation)', [
                 'collection' => $tenantCollectionName
             ]);
+            
+            // Track existing collection as skipped (not newly created)
+            if (!in_array($tenantCollectionName, $this->infrastructureCreated['collections_skipped'])) {
+                $this->infrastructureCreated['collections_skipped'][] = $tenantCollectionName;
+            }
+            
             return true;
         }
 
@@ -1036,7 +1079,14 @@ class SolrSetup
             'configSet' => $tenantConfigSetName
         ]);
         
-        return $this->solrService->createCollection($tenantCollectionName, $tenantConfigSetName);
+        $success = $this->solrService->createCollection($tenantCollectionName, $tenantConfigSetName);
+        
+        // Track newly created collection
+        if ($success && !in_array($tenantCollectionName, $this->infrastructureCreated['collections_created'])) {
+            $this->infrastructureCreated['collections_created'][] = $tenantCollectionName;
+        }
+        
+        return $success;
     }
 
     /**
@@ -1178,6 +1228,12 @@ class SolrSetup
                 'collection' => $collectionName,
                 'configSet' => $configSetName
             ]);
+            
+            // Track newly created collection
+            if (!in_array($collectionName, $this->infrastructureCreated['collections_created'])) {
+                $this->infrastructureCreated['collections_created'][] = $collectionName;
+            }
+            
             return true;
         }
 
@@ -1369,6 +1425,12 @@ class SolrSetup
                     'configSet' => $configSetName,
                     'method' => 'ZIP upload'
                 ]);
+                
+                // Track newly created configSet
+                if (!in_array($configSetName, $this->infrastructureCreated['configsets_created'])) {
+                    $this->infrastructureCreated['configsets_created'][] = $configSetName;
+                }
+                
                 return true;
             }
             

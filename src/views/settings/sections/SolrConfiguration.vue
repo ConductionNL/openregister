@@ -706,12 +706,25 @@
 									<h5>ConfigSets</h5>
 								</div>
 								<div class="infra-content">
-									<div class="infra-stat">
-										<span class="stat-number">{{ setupResults.infrastructure.configsets_created?.length || 0 }}</span>
-										<span class="stat-label">Created</span>
+									<div class="infra-stats">
+										<div class="infra-stat created">
+											<span class="stat-number">{{ setupResults.infrastructure.configsets_created?.length || 0 }}</span>
+											<span class="stat-label">Created</span>
+										</div>
+										<div v-if="setupResults.infrastructure.configsets_skipped?.length" class="infra-stat skipped">
+											<span class="stat-number">{{ setupResults.infrastructure.configsets_skipped?.length || 0 }}</span>
+											<span class="stat-label">Skipped</span>
+										</div>
 									</div>
-									<div v-if="setupResults.infrastructure.configsets_created" class="infra-list">
-										<span v-for="configset in setupResults.infrastructure.configsets_created" :key="configset" class="list-item">
+									<div v-if="setupResults.infrastructure.configsets_created?.length" class="infra-list created-list">
+										<span class="list-header">Created:</span>
+										<span v-for="configset in setupResults.infrastructure.configsets_created" :key="configset" class="list-item created-item">
+											{{ configset }}
+										</span>
+									</div>
+									<div v-if="setupResults.infrastructure.configsets_skipped?.length" class="infra-list skipped-list">
+										<span class="list-header">Skipped (already existed):</span>
+										<span v-for="configset in setupResults.infrastructure.configsets_skipped" :key="configset" class="list-item skipped-item">
 											{{ configset }}
 										</span>
 									</div>
