@@ -1270,19 +1270,42 @@ class GuzzleSolrService
      */
     public function searchObjectsPaginated(array $query = [], bool $rbac = true, bool $multi = true, bool $published = false, bool $deleted = false): array
     {
-        // SOLR direct calls disabled - return empty results
-        return [
-            'success' => true,
-            'message' => 'SOLR search disabled - no results',
-            'data' => [],
-            'pagination' => [
-                'page' => 1,
-                'limit' => 30,
-                'pages' => 0,
-                'total' => 0
-            ],
-            'facets' => []
-        ];
+        // Check SOLR availability first
+        if (!$this->isAvailable()) {
+            throw new \Exception('SOLR service is not available');
+        }
+
+        try {
+            $startTime = microtime(true);
+            
+            // Get active collection name - if null, SOLR is not properly set up
+            $collectionName = $this->getActiveCollectionName();
+            if ($collectionName === null) {
+                throw new \Exception('No active SOLR collection available');
+            }
+            
+            // Build SOLR query from OpenRegister query parameters
+            $solrQuery = $this->buildSolrQuery($query);
+            
+            // Execute the search
+            $searchResults = $this->executeSearch($solrQuery, $collectionName);
+            
+            // Convert SOLR results to OpenRegister paginated format
+            $paginatedResults = $this->convertToOpenRegisterPaginatedFormat($searchResults, $query);
+            
+            // Add execution metadata
+            $paginatedResults['_execution_time_ms'] = round((microtime(true) - $startTime) * 1000, 2);
+            $paginatedResults['_source'] = 'index';
+            
+            return $paginatedResults;
+            
+        } catch (\Exception $e) {
+            $this->logger->error('SOLR search failed in searchObjectsPaginated', [
+                'error' => $e->getMessage(),
+                'query' => $query
+            ]);
+            throw $e;
+        }
     }
 
     /**
@@ -2232,15 +2255,230 @@ class GuzzleSolrService
      */
     public function searchObjects(array $searchParams): array
     {
-        // SOLR direct calls disabled - return empty results
+        // Check SOLR availability first
+        if (!$this->isAvailable()) {
+            return [
+                'success' => false,
+                'data' => [],
+                'total' => 0,
+                'facets' => [],
+                'message' => 'SOLR service is not available'
+            ];
+        }
+
+        try {
+            $startTime = microtime(true);
+            
+            // Get active collection name - if null, SOLR is not properly set up
+            $collectionName = $this->getActiveCollectionName();
+            if ($collectionName === null) {
+                return [
+                    'success' => false,
+                    'data' => [],
+                    'total' => 0,
+                    'facets' => [],
+                    'message' => 'No active SOLR collection available'
+                ];
+            }
+            
+            // Build and execute SOLR query
+            $solrQuery = $this->buildSolrQuery($searchParams);
+            $searchResults = $this->executeSearch($solrQuery, $collectionName);
+            
+            // Return results in expected format
+            return [
+                'success' => true,
+                'data' => $searchResults['objects'] ?? [],
+                'total' => $searchResults['total'] ?? 0,
+                'facets' => $searchResults['facets'] ?? [],
+                'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2)
+            ];
+            
+        } catch (\Exception $e) {
+            $this->logger->error('SOLR search failed in searchObjects', [
+                'error' => $e->getMessage(),
+                'searchParams' => $searchParams
+            ]);
+            
+            return [
+                'success' => false,
+                'data' => [],
+                'total' => 0,
+                'facets' => [],
+                'message' => 'SOLR search failed: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Build SOLR query from OpenRegister query parameters
+     *
+     * @param array $query OpenRegister query parameters
+     * @return array SOLR query parameters
+     */
+    private function buildSolrQuery(array $query): array
+    {
+        $solrQuery = [
+            'q' => '*:*',
+            'start' => 0,
+            'rows' => 20,
+            'wt' => 'json'
+        ];
+
+        // Handle search query
+        if (!empty($query['_search'])) {
+            $solrQuery['q'] = $this->escapeSolrValue($query['_search']);
+        }
+
+        // Handle pagination
+        if (isset($query['_limit'])) {
+            $solrQuery['rows'] = (int)$query['_limit'];
+        }
+        if (isset($query['_offset'])) {
+            $solrQuery['start'] = (int)$query['_offset'];
+        } elseif (isset($query['_page'])) {
+            $page = max(1, (int)$query['_page']);
+            $solrQuery['start'] = ($page - 1) * $solrQuery['rows'];
+        }
+
+        // Handle filters
+        $filters = [];
+        foreach ($query as $key => $value) {
+            if (!str_starts_with($key, '_') && !in_array($key, ['register', 'schema']) && $value !== null && $value !== '') {
+                if (is_array($value)) {
+                    $filters[] = $key . ':(' . implode(' OR ', array_map([$this, 'escapeSolrValue'], $value)) . ')';
+                } else {
+                    $filters[] = $key . ':' . $this->escapeSolrValue($value);
+                }
+            }
+        }
+
+        if (!empty($filters)) {
+            $solrQuery['fq'] = $filters;
+        }
+
+        // Handle facets
+        if (!empty($query['_facets'])) {
+            $solrQuery['facet'] = 'true';
+            $solrQuery['facet.field'] = [];
+            foreach ($query['_facets'] as $facetField => $facetConfig) {
+                if (is_array($facetConfig) && isset($facetConfig['type'])) {
+                    $solrQuery['facet.field'][] = $facetField;
+                }
+            }
+        }
+
+        return $solrQuery;
+    }
+
+    /**
+     * Execute SOLR search query
+     *
+     * @param array $solrQuery SOLR query parameters
+     * @param string $collectionName Collection name to search in
+     * @return array Search results
+     * @throws \Exception When search fails
+     */
+    private function executeSearch(array $solrQuery, string $collectionName): array
+    {
+        $url = $this->buildSolrBaseUrl() . '/' . $collectionName . '/select';
+        
+        try {
+            $response = $this->httpClient->get($url, [
+                'query' => $solrQuery,
+                'timeout' => 30,
+                'connect_timeout' => 10
+            ]);
+
+            $statusCode = $response->getStatusCode();
+            if ($statusCode !== 200) {
+                throw new \Exception("SOLR search failed with status code: $statusCode");
+            }
+
+            $responseData = json_decode($response->getBody()->getContents(), true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new \Exception('Invalid JSON response from SOLR: ' . json_last_error_msg());
+            }
+
+            return $this->parseSolrResponse($responseData);
+
+        } catch (\Exception $e) {
+            $this->logger->error('SOLR search execution failed', [
+                'url' => $url,
+                'query' => $solrQuery,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Parse SOLR response into standardized format
+     *
+     * @param array $responseData Raw SOLR response
+     * @return array Parsed search results
+     */
+    private function parseSolrResponse(array $responseData): array
+    {
+        $results = [
+            'objects' => [],
+            'total' => 0,
+            'facets' => []
+        ];
+
+        // Parse documents
+        if (isset($responseData['response']['docs'])) {
+            $results['objects'] = $responseData['response']['docs'];
+            $results['total'] = $responseData['response']['numFound'] ?? count($results['objects']);
+        }
+
+        // Parse facets
+        if (isset($responseData['facet_counts']['facet_fields'])) {
+            foreach ($responseData['facet_counts']['facet_fields'] as $field => $values) {
+                $facetData = [];
+                for ($i = 0; $i < count($values); $i += 2) {
+                    if (isset($values[$i + 1])) {
+                        $facetData[] = [
+                            'value' => $values[$i],
+                            'count' => $values[$i + 1]
+                        ];
+                    }
+                }
+                $results['facets'][$field] = $facetData;
+            }
+        }
+
+        return $results;
+    }
+
+    /**
+     * Convert SOLR search results to OpenRegister paginated format
+     *
+     * @param array $searchResults SOLR search results
+     * @param array $originalQuery Original OpenRegister query
+     * @return array Paginated results in OpenRegister format
+     */
+    private function convertToOpenRegisterPaginatedFormat(array $searchResults, array $originalQuery): array
+    {
+        $limit = (int)($originalQuery['_limit'] ?? 20);
+        $page = (int)($originalQuery['_page'] ?? 1);
+        $total = $searchResults['total'] ?? 0;
+        $pages = $limit > 0 ? max(1, ceil($total / $limit)) : 1;
+
         return [
             'success' => true,
-            'data' => [],
-            'total' => 0,
-            'facets' => [],
-            'message' => 'SOLR search disabled'
+            'message' => 'Search completed successfully',
+            'data' => $searchResults['objects'] ?? [],
+            'pagination' => [
+                'page' => $page,
+                'limit' => $limit,
+                'pages' => $pages,
+                'total' => $total
+            ],
+            'facets' => $searchResults['facets'] ?? []
         ];
     }
+
 
     /**
      * Test Zookeeper connectivity for SolrCloud
