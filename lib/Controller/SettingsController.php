@@ -363,14 +363,16 @@ class SettingsController extends Controller
             $setupResult = $setup->setupSolr();
             
             if ($setupResult) {
-                // Get detailed setup progress from SolrSetup
+                // Get detailed setup progress and infrastructure info from SolrSetup
                 $setupProgress = $setup->getSetupProgress();
+                $infrastructureCreated = $setup->getInfrastructureCreated();
                 
                 // **IMPROVED LOGGING**: Log successful setup
                 $logger->info('✅ SOLR setup completed successfully', [
                     'completed_steps' => $setupProgress['completed_steps'] ?? 0,
                     'total_steps' => $setupProgress['total_steps'] ?? 0,
-                    'duration' => $setupProgress['completed_at'] ?? 'unknown'
+                    'duration' => $setupProgress['completed_at'] ?? 'unknown',
+                    'infrastructure' => $infrastructureCreated
                 ]);
                 
                 return new JSONResponse([
@@ -386,15 +388,9 @@ class SettingsController extends Controller
                         'success' => $setupProgress['success'] ?? true
                     ],
                     'steps' => $setupProgress['steps'] ?? [],
-                    'infrastructure' => [
-                        'configsets_created' => ['openregister'],
-                        'collections_created' => ['openregister'],
-                        'schema_fields_configured' => true,
-                        'multi_tenant_ready' => true,
-                        'cloud_mode' => true
-                    ],
+                    'infrastructure' => $infrastructureCreated,
                     'next_steps' => [
-                        'Tenant collections will be created automatically',
+                        'Tenant-specific resources are ready for use',
                         'Objects can now be indexed to SOLR',
                         'Search functionality is ready for use'
                     ]
@@ -405,11 +401,15 @@ class SettingsController extends Controller
                 $setupProgress = $setup->getSetupProgress();
                 
                 if ($errorDetails) {
+                    // Get infrastructure info even on failure to show partial progress
+                    $infrastructureCreated = $setup->getInfrastructureCreated();
+                    
                     // Use the detailed error information from SolrSetup
                     return new JSONResponse([
                         'success' => false,
                         'message' => 'SOLR setup failed',
                         'timestamp' => date('Y-m-d H:i:s'),
+                        'mode' => 'SolrCloud',
                         'progress' => [
                             'started_at' => $setupProgress['started_at'] ?? null,
                             'completed_at' => $setupProgress['completed_at'] ?? null,
@@ -419,6 +419,8 @@ class SettingsController extends Controller
                             'failed_at_step' => $errorDetails['step'] ?? 'unknown',
                             'failed_step_name' => $errorDetails['step_name'] ?? 'unknown'
                         ],
+                        'steps' => $setupProgress['steps'] ?? [],
+                        'infrastructure' => $infrastructureCreated,
                         'error_details' => [
                             'primary_error' => $errorDetails['error_message'] ?? 'SOLR setup operation failed',
                             'error_type' => $errorDetails['error_type'] ?? 'unknown_error',

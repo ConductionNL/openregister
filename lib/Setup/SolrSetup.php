@@ -75,6 +75,17 @@ class SolrSetup
     private ?array $lastErrorDetails = null;
 
     /**
+     * @var array Track infrastructure resources created during setup
+     */
+    private array $infrastructureCreated = [
+        'configsets_created' => [],
+        'collections_created' => [],
+        'schema_fields_configured' => false,
+        'multi_tenant_ready' => false,
+        'cloud_mode' => false
+    ];
+
+    /**
      * @var array Setup progress tracking with detailed step information
      */
     private array $setupProgress = [];
@@ -113,6 +124,16 @@ class SolrSetup
     public function getLastErrorDetails(): ?array
     {
         return $this->lastErrorDetails;
+    }
+
+    /**
+     * Get infrastructure resources created during setup
+     *
+     * @return array Summary of created resources and configuration status
+     */
+    public function getInfrastructureCreated(): array
+    {
+        return $this->infrastructureCreated;
     }
 
     /**
@@ -430,6 +451,7 @@ class SolrSetup
                 }
                 
                 $this->trackStep(4, 'Schema Configuration', 'completed', 'Schema fields configured successfully');
+                $this->infrastructureCreated['schema_fields_configured'] = true;
                 $this->setupProgress['completed_steps']++;
             } catch (\Exception $e) {
                 $this->trackStep(4, 'Schema Configuration', 'failed', $e->getMessage(), [
@@ -471,6 +493,8 @@ class SolrSetup
                 }
                 
                 $this->trackStep(5, 'Setup Validation', 'completed', 'Setup validation passed');
+                $this->infrastructureCreated['multi_tenant_ready'] = true;
+                $this->infrastructureCreated['cloud_mode'] = true;
                 $this->setupProgress['completed_steps']++;
             } catch (\Exception $e) {
                 $this->trackStep(5, 'Setup Validation', 'failed', $e->getMessage(), [
@@ -636,9 +660,13 @@ class SolrSetup
         
         // Check if configSet already exists
         if ($this->configSetExists($tenantConfigSetName)) {
-            $this->logger->info('Tenant configSet already exists', [
+            $this->logger->info('Tenant configSet already exists (skipping creation)', [
                 'configSet' => $tenantConfigSetName
             ]);
+            // Track existing configSet (not newly created)
+            if (!in_array($tenantConfigSetName, $this->infrastructureCreated['configsets_created'])) {
+                $this->infrastructureCreated['configsets_created'][] = $tenantConfigSetName;
+            }
             return true;
         }
 
@@ -1023,9 +1051,15 @@ class SolrSetup
         
         // Check if tenant collection already exists
         if ($this->solrService->collectionExists($tenantCollectionName)) {
-            $this->logger->info('Tenant collection already exists', [
+            $this->logger->info('Tenant collection already exists (skipping creation)', [
                 'collection' => $tenantCollectionName
             ]);
+            
+            // Track existing collection (not newly created)
+            if (!in_array($tenantCollectionName, $this->infrastructureCreated['collections_created'])) {
+                $this->infrastructureCreated['collections_created'][] = $tenantCollectionName;
+            }
+            
             return true;
         }
 
@@ -1178,6 +1212,12 @@ class SolrSetup
                 'collection' => $collectionName,
                 'configSet' => $configSetName
             ]);
+            
+            // Track newly created collection
+            if (!in_array($collectionName, $this->infrastructureCreated['collections_created'])) {
+                $this->infrastructureCreated['collections_created'][] = $collectionName;
+            }
+            
             return true;
         }
 
@@ -1369,6 +1409,12 @@ class SolrSetup
                     'configSet' => $configSetName,
                     'method' => 'ZIP upload'
                 ]);
+                
+                // Track newly created configSet
+                if (!in_array($configSetName, $this->infrastructureCreated['configsets_created'])) {
+                    $this->infrastructureCreated['configsets_created'][] = $configSetName;
+                }
+                
                 return true;
             }
             
