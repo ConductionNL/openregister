@@ -331,8 +331,11 @@ class SettingsController extends Controller
     public function setupSolr(): JSONResponse
     {
         try {
+            // Get logger for improved logging
+            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
+            
             // **IMPROVED LOGGING**: Log setup attempt with detailed context
-            $this->logger->info('🔧 SOLR setup endpoint called', [
+            $logger->info('🔧 SOLR setup endpoint called', [
                 'timestamp' => date('c'),
                 'user_id' => $this->userId ?? 'unknown',
                 'request_id' => $this->request->getId() ?? 'unknown'
@@ -342,7 +345,7 @@ class SettingsController extends Controller
             $solrSettings = $this->settingsService->getSolrSettings();
             
             // **IMPROVED LOGGING**: Log SOLR configuration (without sensitive data)
-            $this->logger->info('📋 SOLR configuration loaded for setup', [
+            $logger->info('📋 SOLR configuration loaded for setup', [
                 'enabled' => $solrSettings['enabled'] ?? false,
                 'host' => $solrSettings['host'] ?? 'not_set',
                 'port' => $solrSettings['port'] ?? 'not_set',
@@ -350,25 +353,26 @@ class SettingsController extends Controller
             ]);
             
             // Create SolrSetup using GuzzleSolrService for authenticated HTTP client
-            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
             $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
             $setup = new \OCA\OpenRegister\Setup\SolrSetup($guzzleSolrService, $logger);
             
             // **IMPROVED LOGGING**: Log setup initialization
-            $this->logger->info('🏗️ SolrSetup instance created, starting setup process');
+            $logger->info('🏗️ SolrSetup instance created, starting setup process');
             
             // Run setup
             $setupResult = $setup->setupSolr();
             
             if ($setupResult) {
-                // Get detailed setup progress from SolrSetup
+                // Get detailed setup progress and infrastructure info from SolrSetup
                 $setupProgress = $setup->getSetupProgress();
+                $infrastructureCreated = $setup->getInfrastructureCreated();
                 
                 // **IMPROVED LOGGING**: Log successful setup
-                $this->logger->info('✅ SOLR setup completed successfully', [
+                $logger->info('✅ SOLR setup completed successfully', [
                     'completed_steps' => $setupProgress['completed_steps'] ?? 0,
                     'total_steps' => $setupProgress['total_steps'] ?? 0,
-                    'duration' => $setupProgress['completed_at'] ?? 'unknown'
+                    'duration' => $setupProgress['completed_at'] ?? 'unknown',
+                    'infrastructure' => $infrastructureCreated
                 ]);
                 
                 return new JSONResponse([
@@ -384,15 +388,9 @@ class SettingsController extends Controller
                         'success' => $setupProgress['success'] ?? true
                     ],
                     'steps' => $setupProgress['steps'] ?? [],
-                    'infrastructure' => [
-                        'configsets_created' => ['openregister'],
-                        'collections_created' => ['openregister'],
-                        'schema_fields_configured' => true,
-                        'multi_tenant_ready' => true,
-                        'cloud_mode' => true
-                    ],
+                    'infrastructure' => $infrastructureCreated,
                     'next_steps' => [
-                        'Tenant collections will be created automatically',
+                        'Tenant-specific resources are ready for use',
                         'Objects can now be indexed to SOLR',
                         'Search functionality is ready for use'
                     ]
@@ -403,11 +401,15 @@ class SettingsController extends Controller
                 $setupProgress = $setup->getSetupProgress();
                 
                 if ($errorDetails) {
+                    // Get infrastructure info even on failure to show partial progress
+                    $infrastructureCreated = $setup->getInfrastructureCreated();
+                    
                     // Use the detailed error information from SolrSetup
                     return new JSONResponse([
                         'success' => false,
                         'message' => 'SOLR setup failed',
                         'timestamp' => date('Y-m-d H:i:s'),
+                        'mode' => 'SolrCloud',
                         'progress' => [
                             'started_at' => $setupProgress['started_at'] ?? null,
                             'completed_at' => $setupProgress['completed_at'] ?? null,
@@ -417,6 +419,8 @@ class SettingsController extends Controller
                             'failed_at_step' => $errorDetails['step'] ?? 'unknown',
                             'failed_step_name' => $errorDetails['step_name'] ?? 'unknown'
                         ],
+                        'steps' => $setupProgress['steps'] ?? [],
+                        'infrastructure' => $infrastructureCreated,
                         'error_details' => [
                             'primary_error' => $errorDetails['error_message'] ?? 'SOLR setup operation failed',
                             'error_type' => $errorDetails['error_type'] ?? 'unknown_error',
@@ -470,8 +474,13 @@ class SettingsController extends Controller
             }
             
         } catch (\Exception $e) {
+            // Get logger for error logging if not already available
+            if (!isset($logger)) {
+                $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
+            }
+            
             // **IMPROVED ERROR LOGGING**: Log detailed setup failure information
-            $this->logger->error('❌ SOLR setup failed with exception', [
+            $logger->error('❌ SOLR setup failed with exception', [
                 'exception_class' => get_class($e),
                 'exception_message' => $e->getMessage(),
                 'exception_file' => $e->getFile(),
@@ -494,10 +503,10 @@ class SettingsController extends Controller
                     ];
                     
                     // **IMPROVED LOGGING**: Log setup progress and error details
-                    $this->logger->error('📋 SOLR setup failure details', $detailedError);
+                    $logger->error('📋 SOLR setup failure details', $detailedError);
                     
                 } catch (\Exception $progressException) {
-                    $this->logger->warning('Failed to get setup progress details', [
+                    $logger->warning('Failed to get setup progress details', [
                         'error' => $progressException->getMessage()
                     ]);
                 }

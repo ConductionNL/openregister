@@ -293,9 +293,9 @@ class GuzzleSolrService
         }
         
         try {
-            // **CONSISTENCY FIX**: Use the same comprehensive testing as testConnection()
-            // This ensures all availability checks use the same robust logic
-            $connectionTest = $this->testConnection();
+            // **CONSISTENCY FIX**: Use full operational test for availability checks
+            // This ensures all availability checks verify complete SOLR readiness
+            $connectionTest = $this->testFullOperationalReadiness();
             $isAvailable = $connectionTest['success'] ?? false;
             
             $this->logger->debug('SOLR availability check completed', [
@@ -319,9 +319,10 @@ class GuzzleSolrService
     /**
      * Test SOLR connection with comprehensive testing
      *
+     * @param bool $includeCollectionTests Whether to include collection/query tests (default: true for full test)
      * @return array{success: bool, message: string, details: array, components: array} Connection test results
      */
-    public function testConnection(): array
+    public function testConnection(bool $includeCollectionTests = true): array
     {
         try {
             $solrConfig = $this->solrConfig;
@@ -362,24 +363,33 @@ class GuzzleSolrService
                 $testResults['message'] = 'SOLR connection failed';
             }
 
-            // Test 3: Collection/Core availability
-            $collectionTest = $this->testSolrCollection();
-            $testResults['components']['collection'] = $collectionTest;
-            
-            if (!$collectionTest['success']) {
-                $testResults['success'] = false;
-                $testResults['message'] = 'SOLR collection/core not available';
-            }
-
-            // Test 4: Collection query test (if collection exists)
-            if ($collectionTest['success']) {
-                $queryTest = $this->testSolrQuery();
-                $testResults['components']['query'] = $queryTest;
+            // Test 3: Collection/Core availability (conditional)
+            if ($includeCollectionTests) {
+                $collectionTest = $this->testSolrCollection();
+                $testResults['components']['collection'] = $collectionTest;
                 
-                if (!$queryTest['success']) {
-                    // Don't fail overall test if query fails but collection exists
-                    $testResults['message'] = 'SOLR collection exists but query test failed';
+                if (!$collectionTest['success']) {
+                    $testResults['success'] = false;
+                    $testResults['message'] = 'SOLR collection/core not available';
                 }
+
+                // Test 4: Collection query test (if collection exists)
+                if ($collectionTest['success']) {
+                    $queryTest = $this->testSolrQuery();
+                    $testResults['components']['query'] = $queryTest;
+                    
+                    if (!$queryTest['success']) {
+                        // Don't fail overall test if query fails but collection exists
+                        $testResults['message'] = 'SOLR collection exists but query test failed';
+                    }
+                }
+            } else {
+                // **CONNECTIVITY-ONLY MODE**: Skip collection tests for setup scenarios
+                $testResults['components']['collection'] = [
+                    'success' => true,
+                    'message' => 'Collection tests skipped (connectivity-only mode)',
+                    'details' => ['test_mode' => 'connectivity_only']
+                ];
             }
 
             return $testResults;
@@ -392,6 +402,32 @@ class GuzzleSolrService
                 'components' => []
             ];
         }
+    }
+
+    /**
+     * Test SOLR connectivity only (for setup scenarios)
+     * 
+     * This method only tests if SOLR server and Zookeeper are reachable,
+     * without requiring collections to exist. Perfect for setup processes.
+     *
+     * @return array{success: bool, message: string, details: array, components: array} Connectivity test results
+     */
+    public function testConnectivityOnly(): array
+    {
+        return $this->testConnection(false);
+    }
+
+    /**
+     * Test full SOLR operational readiness (for dashboard/monitoring)
+     * 
+     * This method tests connectivity, collection availability, and query capability.
+     * Use this for dashboard status checks and operational monitoring.
+     *
+     * @return array{success: bool, message: string, details: array, components: array} Full operational test results
+     */
+    public function testFullOperationalReadiness(): array
+    {
+        return $this->testConnection(true);
     }
 
     /**
