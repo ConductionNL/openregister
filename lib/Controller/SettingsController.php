@@ -881,13 +881,17 @@ class SettingsController extends Controller
     public function clearSolrIndex(): JSONResponse
     {
         try {
-            $this->logger->info('Starting SOLR index clear operation');
+            // Get logger and GuzzleSolrService from container
+            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            
+            $logger->info('Starting SOLR index clear operation');
             
             // Use the GuzzleSolrService to clear the index
-            $cleared = $this->guzzleSolrService->clearIndex();
+            $cleared = $guzzleSolrService->clearIndex();
             
             if ($cleared) {
-                $this->logger->info('SOLR index cleared successfully');
+                $logger->info('SOLR index cleared successfully');
                 return new JSONResponse([
                     'success' => true,
                     'message' => 'SOLR index cleared successfully'
@@ -897,7 +901,9 @@ class SettingsController extends Controller
             }
             
         } catch (\Exception $e) {
-            $this->logger->error('Failed to clear SOLR index', [
+            // Get logger for error logging
+            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
+            $logger->error('Failed to clear SOLR index', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
