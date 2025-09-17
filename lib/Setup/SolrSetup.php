@@ -278,15 +278,24 @@ class SolrSetup
 
             // Step 2: Ensure tenant configSet exists
             $tenantConfigSetName = $this->getTenantConfigSetName();
-            $this->trackStep(2, 'ConfigSet Creation', 'started', 'Checking and creating tenant configSet "' . $tenantConfigSetName . '"');
+            $this->trackStep(2, 'EnsureTenantConfigSet', 'started', 'Checking and creating tenant configSet "' . $tenantConfigSetName . '"');
             
             try {
                 if (!$this->ensureTenantConfigSet()) {
-                    $this->trackStep(2, 'ConfigSet Creation', 'failed', 'Failed to create tenant configSet', [
+                    // Use detailed error information from createConfigSet if available
+                    $errorDetails = $this->lastErrorDetails ?? [];
+                    
+                    $this->trackStep(2, 'EnsureTenantConfigSet', 'failed', 'Failed to create tenant configSet "' . $tenantConfigSetName . '"', [
                         'configSet' => $tenantConfigSetName,
 
                         'template' => '_default',
-                        'error_details' => $this->lastErrorDetails
+                        'error_type' => $errorDetails['error_type'] ?? 'configset_creation_failure',
+                        'url_attempted' => $errorDetails['url_attempted'] ?? 'unknown',
+                        'actual_error' => $errorDetails['error_message'] ?? 'Failed to create tenant configSet "' . $tenantConfigSetName . '"',
+                        'guzzle_response_status' => $errorDetails['guzzle_response_status'] ?? null,
+                        'guzzle_response_body' => $errorDetails['guzzle_response_body'] ?? null,
+                        'solr_error_code' => $errorDetails['solr_error_code'] ?? null,
+                        'solr_error_details' => $errorDetails['solr_error_details'] ?? null
                     ]);
                     
                     // Enhanced error details for configSet failure
@@ -312,11 +321,15 @@ class SolrSetup
                     return false;
                 }
                 
+<<<<<<< HEAD
+                $this->trackStep(2, 'EnsureTenantConfigSet', 'completed', 'Tenant configSet "' . $tenantConfigSetName . '" is available');
+=======
                 $this->trackStep(2, 'ConfigSet Creation', 'completed', 'Tenant configSet "' . $tenantConfigSetName . '" is available');
 
+>>>>>>> dbe484f12e6fd4de5524ea9fb668506913a7a57c
                 $this->setupProgress['completed_steps']++;
             } catch (\Exception $e) {
-                $this->trackStep(2, 'ConfigSet Creation', 'failed', $e->getMessage(), [
+                $this->trackStep(2, 'EnsureTenantConfigSet', 'failed', $e->getMessage(), [
                     'exception_type' => get_class($e),
 
                     'configSet' => $tenantConfigSetName
@@ -569,8 +582,9 @@ class SolrSetup
 
     /**
      * Ensures the tenant-specific configSet exists in SOLR.
-     * Creates the tenant configSet if it doesn't exist, using
-     * the default '_default' configSet as a template.
+     * 
+     * In SolrCloud mode, creating configSets from trusted configSets (like _default) 
+     * requires authentication. Instead, we upload a ZIP file containing the configSet.
      *
      * @return bool True if configSet exists or was created successfully
      */
@@ -586,12 +600,12 @@ class SolrSetup
             return true;
         }
 
-        // Create configSet using _default as template
-        $this->logger->info('Creating tenant configSet', [
+        // Upload configSet from ZIP file (bypasses trusted configSet authentication)
+        $this->logger->info('Uploading tenant configSet from ZIP file', [
             'configSet' => $tenantConfigSetName,
-            'template' => '_default'
+            'method' => 'ZIP upload (avoids SolrCloud authentication issues)'
         ]);
-        return $this->createConfigSet($tenantConfigSetName, '_default');
+        return $this->uploadConfigSet($tenantConfigSetName);
     }
 
     /**
@@ -610,7 +624,14 @@ class SolrSetup
         ]);
 
         try {
-            $response = $this->httpClient->get($url, ['timeout' => 10]);
+            $requestOptions = ['timeout' => 10];
+            
+            // Add authentication if configured
+            if (!empty($this->solrConfig['username']) && !empty($this->solrConfig['password'])) {
+                $requestOptions['auth'] = [$this->solrConfig['username'], $this->solrConfig['password']];
+            }
+            
+            $response = $this->httpClient->get($url, $requestOptions);
             
             if ($response->getStatusCode() !== 200) {
                 $this->logger->warning('Failed to check configSet existence - HTTP error', [
@@ -688,6 +709,7 @@ class SolrSetup
             // Continue anyway - ping might not be available but admin endpoints might work
         }
         
+        // Use SolrCloud ConfigSets API for configSet creation with authentication
         $url = $this->buildSolrUrl(sprintf('/admin/configs?action=CREATE&name=%s&baseConfigSet=%s&wt=json',
             urlencode($newConfigSetName),
             urlencode($templateConfigSetName)
@@ -701,22 +723,34 @@ class SolrSetup
         ]);
 
         try {
-            // Use Guzzle HTTP client with proper timeout and headers
-            $response = $this->httpClient->get($url, [
+            // Use Guzzle HTTP client with proper timeout, headers, and authentication for SolrCloud
+            $requestOptions = [
                 'timeout' => 30,
                 'headers' => [
                     'Accept' => 'application/json',
                     'Content-Type' => 'application/json'
                 ]
-            ]);
+            ];
+            
+            // Add authentication if configured
+            if (!empty($this->solrConfig['username']) && !empty($this->solrConfig['password'])) {
+                $requestOptions['auth'] = [$this->solrConfig['username'], $this->solrConfig['password']];
+                $this->logger->info('Using HTTP Basic authentication for SOLR configSet creation', [
+                    'username' => $this->solrConfig['username'],
+                    'url' => $url
+                ]);
+            }
+            
+            $response = $this->httpClient->get($url, $requestOptions);
 
             if ($response->getStatusCode() !== 200) {
+                $responseBody = (string)$response->getBody();
                 $this->logger->error('Failed to create configSet - HTTP error', [
                     'configSet' => $newConfigSetName,
                     'template' => $templateConfigSetName,
                     'url' => $url,
                     'status_code' => $response->getStatusCode(),
-                    'response_body' => (string)$response->getBody(),
+                    'response_body' => $responseBody,
                     'possible_causes' => [
                         'SOLR server not reachable at configured URL',
                         'Network connectivity issues',
@@ -724,9 +758,23 @@ class SolrSetup
                         'Invalid SOLR configuration (host/port/path)',
                         'SOLR server overloaded or timeout'
                     ]
-            ]);
-            return false;
-        }
+                ]);
+                
+                // Store detailed error information for API response
+                $this->lastErrorDetails = [
+                    'operation' => 'createConfigSet',
+                    'error_type' => 'http_error',
+                    'error_message' => 'HTTP error ' . $response->getStatusCode(),
+                    'url_attempted' => $url,
+                    'guzzle_response_status' => $response->getStatusCode(),
+                    'guzzle_response_body' => $responseBody,
+                    'solr_error_code' => null,
+                    'solr_error_details' => null,
+                    'configuration_used' => $this->solrConfig
+                ];
+                
+                return false;
+            }
 
             $data = json_decode((string)$response->getBody(), true);
             
@@ -802,9 +850,17 @@ class SolrSetup
                 
                 if ($e->hasResponse()) {
                     $response = $e->getResponse();
-                    $this->lastErrorDetails['guzzle_details']['response_status'] = $response->getStatusCode();
-                    $this->lastErrorDetails['guzzle_details']['response_body'] = (string)$response->getBody();
+                    $responseStatus = $response->getStatusCode();
+                    $responseBody = (string)$response->getBody();
+                    
+                    // Store in guzzle_details for comprehensive logging
+                    $this->lastErrorDetails['guzzle_details']['response_status'] = $responseStatus;
+                    $this->lastErrorDetails['guzzle_details']['response_body'] = $responseBody;
                     $this->lastErrorDetails['guzzle_details']['response_headers'] = $response->getHeaders();
+                    
+                    // Also store at top level for step tracking consistency
+                    $this->lastErrorDetails['guzzle_response_status'] = $responseStatus;
+                    $this->lastErrorDetails['guzzle_response_body'] = $responseBody;
                 }
                 
                 if ($e->getRequest()) {
@@ -953,7 +1009,14 @@ class SolrSetup
         $url = $this->buildSolrUrl('/admin/collections?action=CLUSTERSTATUS&wt=json');
 
         try {
-            $response = $this->httpClient->get($url, ['timeout' => 10]);
+            $requestOptions = ['timeout' => 10];
+            
+            // Add authentication if configured
+            if (!empty($this->solrConfig['username']) && !empty($this->solrConfig['password'])) {
+                $requestOptions['auth'] = [$this->solrConfig['username'], $this->solrConfig['password']];
+            }
+            
+            $response = $this->httpClient->get($url, $requestOptions);
             
             if ($response->getStatusCode() !== 200) {
                 $this->logger->debug('Failed to check collection existence - HTTP error', [
@@ -961,8 +1024,8 @@ class SolrSetup
                     'url' => $url,
                     'status_code' => $response->getStatusCode()
                 ]);
-            return false;
-        }
+                return false;
+            }
 
             $data = json_decode((string)$response->getBody(), true);
             
@@ -1141,6 +1204,182 @@ class SolrSetup
     }
 
     /**
+     * Upload a configSet from ZIP file to SOLR
+     * 
+     * This method uploads a pre-packaged configSet ZIP file to SOLR, which bypasses
+     * the authentication requirements for creating configSets from trusted templates.
+     *
+     * @param string $configSetName Name for the new configSet
+     * @return bool True if configSet was uploaded successfully
+     */
+    private function uploadConfigSet(string $configSetName): bool
+    {
+        // Path to our packaged configSet ZIP file
+        $zipPath = __DIR__ . '/../../resources/solr/openregister-configset.zip';
+        
+        if (!file_exists($zipPath)) {
+            $this->logger->error('ConfigSet ZIP file not found', [
+                'configSet' => $configSetName,
+                'zipPath' => $zipPath
+            ]);
+            
+            $this->lastErrorDetails = [
+                'operation' => 'uploadConfigSet',
+                'configSet' => $configSetName,
+                'error_type' => 'zip_file_not_found',
+                'error_message' => 'ConfigSet ZIP file not found at: ' . $zipPath,
+                'zip_path' => $zipPath,
+                'troubleshooting_tips' => [
+                    'Ensure the configSet ZIP file exists in resources/solr/',
+                    'Check file permissions on the ZIP file',
+                    'Verify the ZIP file contains valid configSet files'
+                ]
+            ];
+            return false;
+        }
+        
+        $url = $this->buildSolrUrl(sprintf('/admin/configs?action=UPLOAD&name=%s&wt=json',
+            urlencode($configSetName)
+        ));
+
+        $this->logger->info('Uploading SOLR configSet from ZIP file', [
+            'configSet' => $configSetName,
+            'url' => $url,
+            'zipPath' => $zipPath,
+            'zipSize' => filesize($zipPath) . ' bytes'
+        ]);
+
+        try {
+            // Read ZIP file contents
+            $zipContents = file_get_contents($zipPath);
+            if ($zipContents === false) {
+                $this->logger->error('Failed to read configSet ZIP file', [
+                    'configSet' => $configSetName,
+                    'zipPath' => $zipPath
+                ]);
+                
+                $this->lastErrorDetails = [
+                    'operation' => 'uploadConfigSet',
+                    'configSet' => $configSetName,
+                    'error_type' => 'zip_read_failed',
+                    'error_message' => 'Failed to read configSet ZIP file',
+                    'zip_path' => $zipPath
+                ];
+                return false;
+            }
+            
+            // Upload ZIP file via POST request
+            $requestOptions = [
+                'timeout' => 30,
+                'headers' => [
+                    'Content-Type' => 'application/octet-stream'
+                ],
+                'body' => $zipContents
+            ];
+            
+            $response = $this->httpClient->post($url, $requestOptions);
+
+            if ($response->getStatusCode() !== 200) {
+                $responseBody = (string)$response->getBody();
+                $this->logger->error('Failed to upload configSet - HTTP error', [
+                    'configSet' => $configSetName,
+                    'url' => $url,
+                    'status_code' => $response->getStatusCode(),
+                    'response_body' => $responseBody
+                ]);
+                
+                $this->lastErrorDetails = [
+                    'operation' => 'uploadConfigSet',
+                    'configSet' => $configSetName,
+                    'url_attempted' => $url,
+                    'error_type' => 'http_error',
+                    'error_message' => 'HTTP error ' . $response->getStatusCode(),
+                    'response_status' => $response->getStatusCode(),
+                    'response_body' => $responseBody
+                ];
+                return false;
+            }
+
+            $data = json_decode((string)$response->getBody(), true);
+            
+            if ($data === null) {
+                $this->logger->error('Failed to upload configSet - Invalid JSON response', [
+                    'configSet' => $configSetName,
+                    'url' => $url,
+                    'raw_response' => (string)$response->getBody(),
+                    'json_error' => json_last_error_msg()
+                ]);
+                
+                $this->lastErrorDetails = [
+                    'operation' => 'uploadConfigSet',
+                    'configSet' => $configSetName,
+                    'url_attempted' => $url,
+                    'error_type' => 'invalid_json_response',
+                    'error_message' => 'SOLR returned invalid JSON response',
+                    'json_error' => json_last_error_msg(),
+                    'raw_response' => (string)$response->getBody()
+                ];
+                return false;
+            }
+            
+            $status = $data['responseHeader']['status'] ?? -1;
+            if ($status === 0) {
+                $this->logger->info('ConfigSet uploaded successfully', [
+                    'configSet' => $configSetName,
+                    'method' => 'ZIP upload'
+                ]);
+                return true;
+            }
+            
+            // Handle SOLR API errors
+            $errorCode = $data['error']['code'] ?? $status;
+            $errorMsg = $data['error']['msg'] ?? 'Unknown SOLR error';
+            $errorDetails = $data['error']['metadata'] ?? [];
+            
+            $this->logger->error('Failed to upload configSet - SOLR API error', [
+                'configSet' => $configSetName,
+                'url' => $url,
+                'solr_status' => $status,
+                'solr_error_code' => $errorCode,
+                'solr_error_message' => $errorMsg,
+                'solr_error_details' => $errorDetails,
+                'full_response' => $data
+            ]);
+            
+            $this->lastErrorDetails = [
+                'operation' => 'uploadConfigSet',
+                'configSet' => $configSetName,
+                'url_attempted' => $url,
+                'error_type' => 'solr_api_error',
+                'error_message' => $errorMsg,
+                'solr_status' => $status,
+                'solr_error_code' => $errorCode,
+                'solr_error_details' => $errorDetails,
+                'full_solr_response' => $data
+            ];
+            return false;
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to upload configSet - HTTP request failed', [
+                'configSet' => $configSetName,
+                'url' => $url,
+                'error' => $e->getMessage(),
+                'exception_type' => get_class($e)
+            ]);
+            
+            $this->lastErrorDetails = [
+                'operation' => 'uploadConfigSet',
+                'configSet' => $configSetName,
+                'url_attempted' => $url,
+                'error_type' => 'http_request_failed',
+                'error_message' => $e->getMessage(),
+                'exception_type' => get_class($e)
+            ];
+            return false;
+        }
+    }
+
+    /**
      * Check if a SOLR core exists
      *
      * @param string $coreName Name of the core to check
@@ -1222,8 +1461,18 @@ class SolrSetup
     {
         $this->logger->info('Configuring SOLR schema fields for ObjectEntity metadata');
 
-        // Use the shared field definitions
-        $fieldDefinitions = self::getObjectEntityFieldDefinitions();
+        // Get field definitions but skip self_* fields since they're pre-configured in the base schema
+        $allFieldDefinitions = self::getObjectEntityFieldDefinitions();
+        $fieldDefinitions = array_filter($allFieldDefinitions, function($key) {
+            return !str_starts_with($key, 'self_');
+        }, ARRAY_FILTER_USE_KEY);
+        
+        $this->logger->info('Schema field configuration', [
+            'total_defined_fields' => count($allFieldDefinitions),
+            'self_fields_skipped' => count($allFieldDefinitions) - count($fieldDefinitions),
+            'dynamic_fields_to_add' => count($fieldDefinitions),
+            'note' => 'self_* fields are pre-configured in base schema'
+        ]);
         
         $fieldResults = [
             'total_fields' => count($fieldDefinitions),
