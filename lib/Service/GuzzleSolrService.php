@@ -1458,6 +1458,13 @@ class GuzzleSolrService
             // Build SOLR query from OpenRegister query parameters
             $solrQuery = $this->buildSolrQuery($query);
             
+            // **DEBUG**: Log the built SOLR query for troubleshooting
+            $this->logger->debug('Built SOLR query', [
+                'original_query' => $query,
+                'solr_query' => $solrQuery,
+                'collection' => $collectionName
+            ]);
+            
             // Apply additional filters (RBAC, multi-tenancy, published, deleted)
             $this->applyAdditionalFilters($solrQuery, $rbac, $multi, $published, $deleted);
             
@@ -2702,6 +2709,12 @@ class GuzzleSolrService
             $queryString = implode('&', $queryParts);
             $fullUrl = $url . '?' . $queryString;
             
+            // **DEBUG**: Log the final SOLR URL and query for troubleshooting
+            $this->logger->debug('Executing SOLR search', [
+                'full_url' => $fullUrl,
+                'collection' => $collectionName,
+                'query_string' => $queryString
+            ]);
             
             // Use the manually built URL instead of Guzzle's query parameter handling
             $response = $this->httpClient->get($fullUrl, [
