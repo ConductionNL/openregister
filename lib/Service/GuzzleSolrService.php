@@ -319,6 +319,15 @@ class GuzzleSolrService
         }
         
         try {
+            // **DEBUG**: Log current SOLR configuration for troubleshooting
+            $this->logger->debug('SOLR availability check - current configuration', [
+                'enabled' => $this->solrConfig['enabled'] ?? false,
+                'host' => $this->solrConfig['host'] ?? 'not set',
+                'port' => $this->solrConfig['port'] ?? 'not set',
+                'tenant_id' => $this->tenantId,
+                'force_refresh' => $forceRefresh
+            ]);
+            
             // **COMPREHENSIVE TEST**: Use full operational readiness test for accurate availability
             // This ensures complete SOLR readiness including collections and schema
             $connectionTest = $this->testFullOperationalReadiness();
@@ -332,7 +341,8 @@ class GuzzleSolrService
                 'test_result' => $connectionTest['message'] ?? 'No message',
                 'components_tested' => array_keys($connectionTest['components'] ?? []),
                 'cache_key' => $cacheKey,
-                'cache_ttl' => 3600
+                'cache_ttl' => 3600,
+                'full_test_result' => $connectionTest // **DEBUG**: Full test result for troubleshooting
             ]);
             
             return $isAvailable;
