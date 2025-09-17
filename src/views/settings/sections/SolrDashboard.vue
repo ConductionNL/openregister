@@ -62,12 +62,12 @@
 
 					<div class="stat-card">
 						<h4>Active Collection</h4>
-						<p>{{ solrStats.cores?.active_core || 'Unknown' }}</p>
+						<p>{{ solrStats.collection || 'Unknown' }}</p>
 					</div>
 
 					<div class="stat-card">
 						<h4>Tenant ID</h4>
-						<p>{{ solrStats.cores?.tenant_id || 'Unknown' }}</p>
+						<p>{{ solrStats.tenant_id || 'Unknown' }}</p>
 						</div>
 					</div>
 				</div>

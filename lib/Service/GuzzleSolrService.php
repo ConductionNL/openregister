@@ -273,8 +273,8 @@ class GuzzleSolrService
     /**
      * Check if SOLR is available and configured
      *
-     * Performs a lightweight check to determine if SOLR service is available
-     * by testing basic connectivity and configuration validity.
+     * Uses the same comprehensive connectivity testing as testConnection() 
+     * to ensure consistent availability checking across all methods.
      *
      * @return bool True if SOLR is available and properly configured
      */
@@ -282,35 +282,35 @@ class GuzzleSolrService
     {
         // Check if SOLR is enabled in configuration
         if (!($this->solrConfig['enabled'] ?? false)) {
+            $this->logger->debug('SOLR is disabled in configuration');
             return false;
         }
         
         // Check if basic configuration is present
         if (empty($this->solrConfig['host'])) {
+            $this->logger->debug('SOLR host not configured');
             return false;
         }
         
         try {
-            // Perform a simple ping test to verify connectivity
-            $baseUrl = $this->buildSolrBaseUrl();
-            $pingUrl = $baseUrl . '/admin/ping?wt=json';
+            // **CONSISTENCY FIX**: Use the same comprehensive testing as testConnection()
+            // This ensures all availability checks use the same robust logic
+            $connectionTest = $this->testConnection();
+            $isAvailable = $connectionTest['success'] ?? false;
             
-            $response = $this->httpClient->get($pingUrl, [
-                'timeout' => 5,
-                'connect_timeout' => 3
+            $this->logger->debug('SOLR availability check completed', [
+                'available' => $isAvailable,
+                'test_result' => $connectionTest['message'] ?? 'No message',
+                'components_tested' => array_keys($connectionTest['components'] ?? [])
             ]);
             
-            if ($response->getStatusCode() === 200) {
-                $data = json_decode((string)$response->getBody(), true);
-                // Check if ping was successful
-                return isset($data['status']) && $data['status'] === 'OK';
-            }
+            return $isAvailable;
             
-            return false;
         } catch (\Exception $e) {
-            $this->logger->debug('SOLR availability check failed', [
+            $this->logger->warning('SOLR availability check failed with exception', [
                 'error' => $e->getMessage(),
-                'host' => $this->solrConfig['host'] ?? 'unknown'
+                'host' => $this->solrConfig['host'] ?? 'unknown',
+                'exception_class' => get_class($e)
             ]);
             return false;
         }
@@ -460,11 +460,11 @@ class GuzzleSolrService
     /**
      * Get the actual collection name to use for operations
      * 
-     * Checks tenant-specific collection first, then falls back to base collection with shard suffix
+     * Returns tenant-specific collection name only if it exists, otherwise null
      *
-     * @return string The collection name to use for SOLR operations
+     * @return string|null The collection name to use for SOLR operations, or null if no collection exists
      */
-    public function getActiveCollectionName(): string
+    public function getActiveCollectionName(): ?string
     {
         $baseCollectionName = $this->solrConfig['core'] ?? 'openregister';
         $tenantCollectionName = $this->getTenantSpecificCollectionName($baseCollectionName);
@@ -474,13 +474,15 @@ class GuzzleSolrService
             return $tenantCollectionName;
         }
 
-        // FALLBACK: Use base collection
-        if ($this->collectionExists($baseCollectionName)) {
-            return $baseCollectionName;
-        }
-
-        // Last resort: return tenant collection name (might not exist)
-        return $tenantCollectionName;
+        // **FIX**: No fallback to base collection - if tenant collection doesn't exist, return null
+        // This prevents operations on non-existent collections
+        $this->logger->warning('Tenant-specific collection does not exist', [
+            'tenant_collection' => $tenantCollectionName,
+            'tenant_id' => $this->tenantId,
+            'base_collection' => $baseCollectionName
+        ]);
+        
+        return null;
     }
 
     /**
@@ -558,8 +560,12 @@ class GuzzleSolrService
                 return false;
             }
 
-            // Get the active collection name (handles fallbacks automatically)
+            // Get the active collection name - return false if no collection exists
             $tenantCollectionName = $this->getActiveCollectionName();
+            if ($tenantCollectionName === null) {
+                $this->logger->warning('Cannot index object: no active collection available');
+                return false;
+            }
 
             // Create SOLR document using schema-aware mapping (no fallback)
             $document = $this->createSolrDocument($object);
@@ -631,8 +637,12 @@ class GuzzleSolrService
         }
 
         try {
-            // Get the active collection name (handles fallbacks automatically)
+            // Get the active collection name - return false if no collection exists
             $tenantCollectionName = $this->getActiveCollectionName();
+            if ($tenantCollectionName === null) {
+                $this->logger->warning('Cannot delete object: no active collection available');
+                return false;
+            }
 
             $deleteData = [
                 'delete' => [
@@ -691,8 +701,12 @@ class GuzzleSolrService
         }
 
         try {
-            // Get the active collection name (handles fallbacks automatically)
+            // Get the active collection name - return 0 if no collection exists
             $tenantCollectionName = $this->getActiveCollectionName();
+            if ($tenantCollectionName === null) {
+                $this->logger->warning('Cannot get document count: no active collection available');
+                return 0;
+            }
 
             $url = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/select?' . http_build_query([
                 'q' => 'self_tenant:' . $this->tenantId,
@@ -1862,8 +1876,12 @@ class GuzzleSolrService
                 return false;
             }
 
-            // Get the active collection name (handles fallbacks automatically)
+            // Get the active collection name - return false if no collection exists
             $tenantCollectionName = $this->getActiveCollectionName();
+            if ($tenantCollectionName === null) {
+                $this->logger->warning('Cannot bulk index: no active collection available');
+                return false;
+            }
 
             // Prepare documents
             $solrDocs = [];
@@ -2072,8 +2090,12 @@ class GuzzleSolrService
         }
 
         try {
-            // Get the active collection name (handles fallbacks automatically)
+            // Get the active collection name - return false if no collection exists
             $tenantCollectionName = $this->getActiveCollectionName();
+            if ($tenantCollectionName === null) {
+                $this->logger->warning('Cannot commit: no active collection available');
+                return false;
+            }
 
             $url = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/update?wt=json&commit=true';
 
@@ -2115,8 +2137,12 @@ class GuzzleSolrService
         }
 
         try {
-            // Get the active collection name (handles fallbacks automatically)
+            // Get the active collection name - return false if no collection exists
             $tenantCollectionName = $this->getActiveCollectionName();
+            if ($tenantCollectionName === null) {
+                $this->logger->warning('Cannot delete by query: no active collection available');
+                return false;
+            }
 
             // Add tenant isolation to query
             $tenantQuery = sprintf('(%s) AND self_tenant:%s', $query, $this->tenantId);
@@ -2368,8 +2394,19 @@ class GuzzleSolrService
     private function testSolrCollection(): array
     {
         try {
-            // Use tenant-specific collection name (with fallback to base collection)
+            // Use tenant-specific collection name - return failure if none exists
             $collectionName = $this->getActiveCollectionName();
+            if ($collectionName === null) {
+                return [
+                    'success' => false,
+                    'message' => 'No active collection available for testing',
+                    'details' => [
+                        'tenant_id' => $this->tenantId,
+                        'reason' => 'Tenant collection does not exist'
+                    ]
+                ];
+            }
+            
             $baseUrl = $this->buildSolrBaseUrl();
             
             // For SolrCloud, test collection existence
@@ -2476,10 +2513,21 @@ class GuzzleSolrService
     private function testSolrQuery(): array
     {
         try {
-            // Use tenant-specific collection name (with fallback to base collection)
+            // Use tenant-specific collection name - return failure if none exists
             $collectionName = $this->getActiveCollectionName();
-            $baseUrl = $this->buildSolrBaseUrl();
+            if ($collectionName === null) {
+                return [
+                    'success' => false,
+                    'message' => 'No active collection available for query testing',
+                    'details' => [
+                        'tenant_id' => $this->tenantId,
+                        'reason' => 'Tenant collection does not exist'
+                    ]
+                ];
+            }
             
+            $baseUrl = $this->buildSolrBaseUrl();
+
             // Test basic query functionality
             $url = $baseUrl . '/' . $collectionName . '/select?q=*:*&rows=1&wt=json';
             
@@ -2558,8 +2606,12 @@ class GuzzleSolrService
         }
 
         try {
-            // Get the active collection name (handles fallbacks automatically)
+            // Get the active collection name - return false if no collection exists
             $tenantCollectionName = $this->getActiveCollectionName();
+            if ($tenantCollectionName === null) {
+                $this->logger->warning('Cannot optimize: no active collection available');
+                return false;
+            }
 
             $url = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/update?wt=json&optimize=true';
 
@@ -2612,8 +2664,15 @@ class GuzzleSolrService
         }
 
         try {
-            // Get the active collection name (handles fallbacks automatically)
+            // Get the active collection name - return error if no collection exists
             $tenantCollectionName = $this->getActiveCollectionName();
+            if ($tenantCollectionName === null) {
+                return [
+                    'available' => false,
+                    'error' => 'No active collection available - tenant collection may not exist',
+                    'tenant_id' => $this->tenantId
+                ];
+            }
 
             // Get collection stats
             $statsUrl = $this->buildSolrBaseUrl() . '/admin/collections?action=CLUSTERSTATUS&collection=' . $tenantCollectionName . '&wt=json';
@@ -2714,6 +2773,11 @@ class GuzzleSolrService
         try {
             $baseUrl = $this->buildSolrBaseUrl();
             $collectionName = $collection ?? $this->getActiveCollectionName();
+            
+            if ($collectionName === null) {
+                return 'N/A (no active collection)';
+            }
+            
             return $baseUrl . '/' . $collectionName;
         } catch (\Exception $e) {
             $this->logger->warning('Failed to build endpoint URL', ['error' => $e->getMessage()]);
@@ -3487,6 +3551,11 @@ class GuzzleSolrService
         
         try {
             $tenantCollectionName = $this->getActiveCollectionName();
+            if ($tenantCollectionName === null) {
+                $this->logger->warning('Cannot get SOLR field types: no active collection available');
+                return [];
+            }
+            
             $url = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/schema/fields?wt=json';
             $response = $this->httpClient->get($url);
             $data = json_decode((string)$response->getBody(), true);
@@ -3621,8 +3690,14 @@ class GuzzleSolrService
             foreach ($warmupQueries as $i => $query) {
                 try {
                     // Simple query execution for cache warming
+                    $collectionName = $this->getActiveCollectionName();
+                    if ($collectionName === null) {
+                        $operations["warmup_query_$i"] = false;
+                        continue;
+                    }
+                    
                     $queryString = http_build_query($query);
-                    $url = $this->buildSolrBaseUrl() . "/{$this->getActiveCollectionName()}/select?" . $queryString;
+                    $url = $this->buildSolrBaseUrl() . "/{$collectionName}/select?" . $queryString;
                     
                     $response = $this->httpClient->get($url);
                     $operations["warmup_query_$i"] = ($response->getStatusCode() === 200);
