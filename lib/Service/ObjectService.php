@@ -2350,7 +2350,7 @@ class ObjectService
             ($requestedSource === null && $this->isSolrAvailable()) || $facetsRequested) {
             try {
                 $solrService = $this->container->get(GuzzleSolrService::class);
-                if ($solrService !== null && $solrService->isAvailable(true)) { // Force refresh to bypass cache for debugging
+                if ($solrService !== null && $solrService->isAvailable()) {
                     $result = $solrService->searchObjectsPaginated($query, $rbac, $multi, $published, $deleted);
                     $result['_source'] = 'index';
                     return $result;
