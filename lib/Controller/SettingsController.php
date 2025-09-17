@@ -870,5 +870,50 @@ class SettingsController extends Controller
         }
     }
 
+    /**
+     * Clear SOLR index
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     * 
+     * @return JSONResponse
+     */
+    public function clearSolrIndex(): JSONResponse
+    {
+        try {
+            // Get logger and GuzzleSolrService from container
+            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            
+            $logger->info('Starting SOLR index clear operation');
+            
+            // Use the GuzzleSolrService to clear the index
+            $cleared = $guzzleSolrService->clearIndex();
+            
+            if ($cleared) {
+                $logger->info('SOLR index cleared successfully');
+                return new JSONResponse([
+                    'success' => true,
+                    'message' => 'SOLR index cleared successfully'
+                ]);
+            } else {
+                throw new \Exception('Failed to clear SOLR index');
+            }
+            
+        } catch (\Exception $e) {
+            // Get logger for error logging
+            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
+            $logger->error('Failed to clear SOLR index', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 
 }//end class
