@@ -2350,6 +2350,12 @@ class ObjectService
                     $result = $solrService->searchObjectsPaginated($query, $rbac, $multi, $published, $deleted);
                     $result['_source'] = 'index';
                     return $result;
+                } else {
+                    $this->logger->warning('Solr service not available, falling back to database', [
+                        'solr_service_null' => ($solrService === null),
+                        'solr_available' => $solrService ? $solrService->isAvailable() : false,
+                        'requested_source' => $requestedSource
+                    ]);
                 }
             } catch (\Exception $e) {
                 $this->logger->warning('Solr search failed, falling back to database', [

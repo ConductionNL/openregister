@@ -35,6 +35,16 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 					placeholder="Select a schema"
 					@update:model-value="handleSchemaChange" />
 			</div>
+			<div class="filterGroup">
+				<label for="sourceSelect">{{ t('openregister', 'Data Source') }}</label>
+				<NcSelect
+					id="sourceSelect"
+					:model-value="selectedSourceValue"
+					:options="sourceOptions"
+					:input-label="t('openregister', 'Data Source')"
+					placeholder="Select data source"
+					@update:model-value="handleSourceChange" />
+			</div>
 		</div>
 
 		<!-- Search Section -->
@@ -163,6 +173,7 @@ export default {
 			facetData: null,
 			facetFilters: {},
 			facetsLoading: false,
+			selectedSource: 'auto', // 'auto', 'database', 'index'
 		}
 	},
 	computed: {
@@ -228,6 +239,29 @@ export default {
 		},
 		searchPlaceholder() {
 			return this.searchTerms.length > 0 ? 'Add more search terms...' : 'Type to search...'
+		},
+		sourceOptions() {
+			return [
+				{
+					value: 'auto',
+					label: '🤖 Auto (Intelligent)',
+					description: 'Automatically chooses the best data source'
+				},
+				{
+					value: 'index',
+					label: '🔍 SOLR Index',
+					description: 'Fast search with advanced features, field weighting, and faceting'
+				},
+				{
+					value: 'database',
+					label: '💾 Database',
+					description: 'Direct database queries (slower but always available)'
+				}
+			]
+		},
+		selectedSourceValue() {
+			const source = this.sourceOptions.find(option => option.value === this.selectedSource)
+			return source || this.sourceOptions[0]
 		},
 	},
 	watch: {
@@ -335,6 +369,14 @@ export default {
 			} finally {
 				// Clear loading state after schema change is complete
 				objectStore.loading = false
+			}
+		},
+		handleSourceChange(option) {
+			this.selectedSource = option.value
+			
+			// If we have register and schema selected, refresh the search with new source
+			if (this.canSearch) {
+				this.performSearchWithFacets()
 			}
 		},
 		handleSearchInput() {
@@ -502,10 +544,15 @@ export default {
 				}
 			})
 
-			// Add search terms to regular filters if any
+			// Add search terms and source selection to regular filters
 			const filters = {}
 			if (this.searchTerms.length > 0) {
 				filters._search = this.searchTerms.join(' ')
+			}
+			
+			// Add source selection (only if not 'auto')
+			if (this.selectedSource && this.selectedSource !== 'auto') {
+				filters._source = this.selectedSource
 			}
 
 			// Apply filters to object store using the existing activeFilters system
