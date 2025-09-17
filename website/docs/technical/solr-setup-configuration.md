@@ -6,6 +6,8 @@ This guide documents the complete SOLR setup process used by OpenRegister, inclu
 
 OpenRegister uses Apache SOLR in **SolrCloud mode** with a sophisticated setup process that automatically creates tenant-specific configSets and collections with pre-configured system fields. This approach ensures optimal performance, proper tenant isolation, and eliminates runtime field creation overhead.
 
+The system includes a comprehensive **SOLR Management Dashboard** that provides real-time monitoring, warmup operations, and index management capabilities with proper loading states and error handling.
+
 ```mermaid
 graph TB
     A[Setup Request] --> B[Generate Tenant ID]
@@ -480,6 +482,74 @@ sequenceDiagram
     }
   }
 }
+```
+
+## SOLR Management Dashboard
+
+OpenRegister includes a comprehensive SOLR Management Dashboard accessible through the Settings page that provides:
+
+### Dashboard Features
+
+#### Real-time Statistics
+- **Connection Status**: Live SOLR connectivity monitoring
+- **Document Count**: Total indexed documents (e.g., 13,489 objects)
+- **Collection Information**: Active tenant-specific collection names
+- **Tenant ID**: Current tenant identification
+
+#### Interactive Operations
+
+##### Warmup Index
+- **Object Count Prediction**: Displays total objects to be processed
+- **Batch Calculation**: Shows estimated batches (e.g., 14 batches for 13,489 objects)
+- **Duration Estimation**: Provides time estimates (e.g., ~21 seconds for parallel mode)
+- **Execution Modes**: 
+  - Serial Mode (safer, slower)
+  - Parallel Mode (faster, more resource intensive)
+- **Progress Tracking**: Real-time warmup progress with loading states
+- **Results Display**: Comprehensive results with execution time and statistics
+
+##### Clear Index
+- **Confirmation Dialog**: Safety confirmation before clearing
+- **API Integration**: Direct integration with '/api/settings/solr/clear' endpoint
+- **Error Handling**: Proper error feedback and recovery options
+
+#### User Experience Features
+- **Loading States**: Spinners and disabled controls during operations
+- **Error Feedback**: Clear error messages with troubleshooting information
+- **State Management**: Proper modal state handling and cleanup
+- **Debug Logging**: Comprehensive logging for troubleshooting
+
+### Dashboard Architecture
+
+```mermaid
+graph TB
+    A[SOLR Dashboard] --> B[Statistics Loading]
+    A --> C[Modal Management]
+    A --> D[API Integration]
+    
+    B --> B1[/api/solr/dashboard/stats]
+    B --> B2[/api/settings/stats]
+    B --> B3[Data Transformation]
+    
+    C --> C1[Warmup Modal]
+    C --> C2[Clear Index Modal]
+    C --> C3[State Management]
+    
+    D --> D1[GuzzleSolrService]
+    D --> D2[SettingsController]
+    D --> D3[Error Handling]
+    
+    C1 --> C1A[Object Count Prediction]
+    C1 --> C1B[Warmup Configuration]
+    C1 --> C1C[Progress Tracking]
+    
+    C2 --> C2A[Confirmation Dialog]
+    C2 --> C2B[Clear Operation]
+    C2 --> C2C[Result Feedback]
+    
+    style A fill:#e3f2fd
+    style C1A fill:#fff3e0
+    style D1 fill:#c8e6c9
 ```
 
 ## Troubleshooting

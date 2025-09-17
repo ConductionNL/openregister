@@ -198,17 +198,6 @@ class SolrSetup
     }
 
     /**
-     * Get tenant-specific configSet name
-     *
-     * @return string Tenant-specific configSet name (e.g., "openregister_nc_f0e53393")
-     */
-    private function getTenantConfigSetName(): string
-    {
-        $baseConfigSetName = $this->solrConfig['core'] ?? 'openregister';
-        return $baseConfigSetName . '_' . $this->getTenantId();
-    }
-
-    /**
      * Run complete SOLR setup for OpenRegister multi-tenant architecture
      *
      * Performs all necessary setup operations for SolrCloud:
@@ -298,6 +287,7 @@ class SolrSetup
                     
                     $this->trackStep(2, 'EnsureTenantConfigSet', 'failed', 'Failed to create tenant configSet "' . $tenantConfigSetName . '"', [
                         'configSet' => $tenantConfigSetName,
+
                         'template' => '_default',
                         'error_type' => $errorDetails['error_type'] ?? 'configset_creation_failure',
                         'url_attempted' => $errorDetails['url_attempted'] ?? 'unknown',
@@ -317,6 +307,7 @@ class SolrSetup
                             'error_type' => 'configset_creation_failure',
                             'error_message' => 'Failed to create tenant configSet "' . $tenantConfigSetName . '"',
                             'configSet' => $tenantConfigSetName,
+
                             'template' => '_default',
                             'troubleshooting' => [
                                 'Check if SOLR server has write permissions for config directory',
@@ -330,16 +321,23 @@ class SolrSetup
                     return false;
                 }
                 
+<<<<<<< HEAD
                 $this->trackStep(2, 'EnsureTenantConfigSet', 'completed', 'Tenant configSet "' . $tenantConfigSetName . '" is available');
+=======
+                $this->trackStep(2, 'ConfigSet Creation', 'completed', 'Tenant configSet "' . $tenantConfigSetName . '" is available');
+
+>>>>>>> dbe484f12e6fd4de5524ea9fb668506913a7a57c
                 $this->setupProgress['completed_steps']++;
             } catch (\Exception $e) {
                 $this->trackStep(2, 'EnsureTenantConfigSet', 'failed', $e->getMessage(), [
                     'exception_type' => get_class($e),
+
                     'configSet' => $tenantConfigSetName
                 ]);
                 
                 $this->lastErrorDetails = [
                     'operation' => 'ensureTenantConfigSet',
+
                     'step' => 2,
                     'step_name' => 'ConfigSet Creation',
                     'error_type' => 'configset_exception',
@@ -405,7 +403,6 @@ class SolrSetup
                 ];
                 return false;
             }
-
             // Step 4: Configure schema fields
             $this->trackStep(4, 'Schema Configuration', 'started', 'Configuring schema fields for ObjectEntity metadata');
             
@@ -998,6 +995,7 @@ class SolrSetup
         ]);
         
         return $this->solrService->createCollection($tenantCollectionName, $tenantConfigSetName);
+
     }
 
     /**
@@ -2146,6 +2144,7 @@ class SolrSetup
             $this->logger->error('Validation failed: tenant configSet missing', [
                 'configSet' => $tenantConfigSetName
             ]);
+
             return false;
         }
 
