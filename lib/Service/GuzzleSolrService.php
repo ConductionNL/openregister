@@ -197,25 +197,14 @@ class GuzzleSolrService
     }
 
     /**
-<<<<<<< HEAD
      * Get tenant ID for this Nextcloud instance (public accessor)
      *
      * @return string The tenant ID
-=======
-     * Get the tenant ID for this instance
-     *
-     * @return string Tenant identifier
->>>>>>> dbe484f12e6fd4de5524ea9fb668506913a7a57c
      */
     public function getTenantId(): string
     {
         return $this->tenantId;
     }
-
-<<<<<<< HEAD
-
-=======
->>>>>>> dbe484f12e6fd4de5524ea9fb668506913a7a57c
     /**
      * Generate tenant-specific collection name for SolrCloud
      *
@@ -284,35 +273,6 @@ class GuzzleSolrService
     /**
      * Check if SOLR is available and configured
      *
-<<<<<<< HEAD
-     * @return bool True if SOLR is available and responding
-     */
-    public function isAvailable(): bool
-    {
-        try {
-            // Check if SOLR is enabled in configuration
-            if (!($this->solrConfig['enabled'] ?? false)) {
-                return false;
-            }
-
-            // Use system info endpoint instead of ping (SolrCloud compatible)
-            $systemUrl = $this->buildSolrBaseUrl() . '/admin/info/system?wt=json';
-            $response = $this->httpClient->get($systemUrl, ['timeout' => 5]);
-            
-            if ($response->getStatusCode() !== 200) {
-                return false;
-            }
-            
-            $data = json_decode((string)$response->getBody(), true);
-            // Check if we got a valid SOLR response with system info
-            return isset($data['solr']) || isset($data['system']);
-            
-        } catch (\Exception $e) {
-            // Log the error but don't throw - just return false
-            $this->logger->debug('SOLR availability check failed', [
-                'error' => $e->getMessage(),
-                'url' => $this->buildSolrBaseUrl() . '/admin/info/system'
-=======
      * Performs a lightweight check to determine if SOLR service is available
      * by testing basic connectivity and configuration validity.
      *
@@ -351,7 +311,6 @@ class GuzzleSolrService
             $this->logger->debug('SOLR availability check failed', [
                 'error' => $e->getMessage(),
                 'host' => $this->solrConfig['host'] ?? 'unknown'
->>>>>>> dbe484f12e6fd4de5524ea9fb668506913a7a57c
             ]);
             return false;
         }
