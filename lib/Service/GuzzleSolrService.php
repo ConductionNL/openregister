@@ -365,23 +365,23 @@ class GuzzleSolrService
 
             // Test 3: Collection/Core availability (conditional)
             if ($includeCollectionTests) {
-                $collectionTest = $this->testSolrCollection();
-                $testResults['components']['collection'] = $collectionTest;
-                
-                if (!$collectionTest['success']) {
-                    $testResults['success'] = false;
-                    $testResults['message'] = 'SOLR collection/core not available';
-                }
+            $collectionTest = $this->testSolrCollection();
+            $testResults['components']['collection'] = $collectionTest;
+            
+            if (!$collectionTest['success']) {
+                $testResults['success'] = false;
+                $testResults['message'] = 'SOLR collection/core not available';
+            }
 
-                // Test 4: Collection query test (if collection exists)
-                if ($collectionTest['success']) {
-                    $queryTest = $this->testSolrQuery();
-                    $testResults['components']['query'] = $queryTest;
-                    
-                    if (!$queryTest['success']) {
-                        // Don't fail overall test if query fails but collection exists
-                        $testResults['message'] = 'SOLR collection exists but query test failed';
-                    }
+            // Test 4: Collection query test (if collection exists)
+            if ($collectionTest['success']) {
+                $queryTest = $this->testSolrQuery();
+                $testResults['components']['query'] = $queryTest;
+                
+                if (!$queryTest['success']) {
+                    // Don't fail overall test if query fails but collection exists
+                    $testResults['message'] = 'SOLR collection exists but query test failed';
+                }
                 }
             } else {
                 // **CONNECTIVITY-ONLY MODE**: Skip collection tests for setup scenarios
@@ -2286,8 +2286,8 @@ class GuzzleSolrService
             $searchResults = $this->executeSearch($solrQuery, $collectionName);
             
             // Return results in expected format
-            return [
-                'success' => true,
+        return [
+            'success' => true,
                 'data' => $searchResults['objects'] ?? [],
                 'total' => $searchResults['total'] ?? 0,
                 'facets' => $searchResults['facets'] ?? [],
@@ -2302,9 +2302,9 @@ class GuzzleSolrService
             
             return [
                 'success' => false,
-                'data' => [],
-                'total' => 0,
-                'facets' => [],
+            'data' => [],
+            'total' => 0,
+            'facets' => [],
                 'message' => 'SOLR search failed: ' . $e->getMessage()
             ];
         }
@@ -2318,6 +2318,7 @@ class GuzzleSolrService
      */
     private function buildSolrQuery(array $query): array
     {
+        
         $solrQuery = [
             'q' => '*:*',
             'start' => 0,
@@ -2343,19 +2344,52 @@ class GuzzleSolrService
 
         // Handle filters
         $filters = [];
+        
+        // Handle @self metadata filters (register, schema, etc.)
+        if (isset($query['@self']) && is_array($query['@self'])) {
+            foreach ($query['@self'] as $metaKey => $metaValue) {
+                if ($metaValue !== null && $metaValue !== '') {
+                    $solrField = 'self_' . $metaKey;
+                    if (is_array($metaValue)) {
+                        $conditions = array_map(function($v) use ($solrField) {
+                            return $solrField . ':' . (is_numeric($v) ? $v : '"' . $this->escapeSolrValue((string)$v) . '"');
+                        }, $metaValue);
+                        $filters[] = '(' . implode(' OR ', $conditions) . ')';
+                    } else {
+                        if (is_numeric($metaValue)) {
+                            $filters[] = $solrField . ':' . $metaValue;
+                        } else {
+                            $filters[] = $solrField . ':"' . $this->escapeSolrValue((string)$metaValue) . '"';
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Handle regular object field filters
         foreach ($query as $key => $value) {
-            if (!str_starts_with($key, '_') && !in_array($key, ['register', 'schema']) && $value !== null && $value !== '') {
+            if (!str_starts_with($key, '_') && !in_array($key, ['@self']) && $value !== null && $value !== '') {
                 if (is_array($value)) {
-                    $filters[] = $key . ':(' . implode(' OR ', array_map([$this, 'escapeSolrValue'], $value)) . ')';
+                    $conditions = array_map(function($v) use ($key) {
+                        return $key . ':' . (is_numeric($v) ? $v : '"' . $this->escapeSolrValue((string)$v) . '"');
+                    }, $value);
+                    $filters[] = '(' . implode(' OR ', $conditions) . ')';
                 } else {
-                    $filters[] = $key . ':' . $this->escapeSolrValue($value);
+                    if (is_numeric($value)) {
+                        $filters[] = $key . ':' . $value;
+                    } else {
+                        $filters[] = $key . ':"' . $this->escapeSolrValue((string)$value) . '"';
+                    }
                 }
             }
         }
 
+        // Handle multiple filter queries correctly for Guzzle
         if (!empty($filters)) {
+            // Guzzle expects array values for multiple parameters with same name
             $solrQuery['fq'] = $filters;
         }
+
 
         // Handle facets
         if (!empty($query['_facets'])) {
@@ -2383,9 +2417,26 @@ class GuzzleSolrService
     {
         $url = $this->buildSolrBaseUrl() . '/' . $collectionName . '/select';
         
+        
         try {
-            $response = $this->httpClient->get($url, [
-                'query' => $solrQuery,
+            // Build the query string manually to handle multiple fq parameters correctly
+            $queryParts = [];
+            foreach ($solrQuery as $key => $value) {
+                if ($key === 'fq' && is_array($value)) {
+                    // Handle multiple fq parameters correctly
+                    foreach ($value as $fqValue) {
+                        $queryParts[] = 'fq=' . urlencode((string)$fqValue);
+                    }
+                } else {
+                    $queryParts[] = $key . '=' . urlencode((string)$value);
+                }
+            }
+            $queryString = implode('&', $queryParts);
+            $fullUrl = $url . '?' . $queryString;
+            
+            
+            // Use the manually built URL instead of Guzzle's query parameter handling
+            $response = $this->httpClient->get($fullUrl, [
                 'timeout' => 30,
                 'connect_timeout' => 10
             ]);
@@ -2399,6 +2450,7 @@ class GuzzleSolrService
             if (json_last_error() !== JSON_ERROR_NONE) {
                 throw new \Exception('Invalid JSON response from SOLR: ' . json_last_error_msg());
             }
+
 
             return $this->parseSolrResponse($responseData);
 
@@ -2426,9 +2478,9 @@ class GuzzleSolrService
             'facets' => []
         ];
 
-        // Parse documents
+        // Parse documents and convert back to OpenRegister objects
         if (isset($responseData['response']['docs'])) {
-            $results['objects'] = $responseData['response']['docs'];
+            $results['objects'] = $this->convertSolrDocumentsToOpenRegisterObjects($responseData['response']['docs']);
             $results['total'] = $responseData['response']['numFound'] ?? count($results['objects']);
         }
 
@@ -2493,6 +2545,92 @@ class GuzzleSolrService
         return $response;
     }
 
+    /**
+     * Convert SOLR documents back to OpenRegister objects
+     *
+     * This method extracts the actual OpenRegister object from the SOLR document's self_object field
+     * and merges it with essential metadata from the SOLR document.
+     *
+     * @param array $solrDocuments Array of SOLR documents
+     * @return array Array of OpenRegister objects
+     */
+    private function convertSolrDocumentsToOpenRegisterObjects(array $solrDocuments): array
+    {
+        $openRegisterObjects = [];
+
+        foreach ($solrDocuments as $solrDoc) {
+            try {
+                // Extract the actual object from self_object field
+                $actualObject = null;
+                if (isset($solrDoc['self_object']) && is_array($solrDoc['self_object']) && !empty($solrDoc['self_object'])) {
+                    // self_object is stored as JSON string in an array
+                    $objectJson = $solrDoc['self_object'][0];
+                    $actualObject = json_decode($objectJson, true);
+                    
+                    if (json_last_error() !== JSON_ERROR_NONE) {
+                        $this->logger->warning('Failed to decode self_object JSON for document', [
+                            'document_id' => $solrDoc['id'] ?? 'unknown',
+                            'json_error' => json_last_error_msg(),
+                            'raw_json' => substr($objectJson, 0, 200) . '...'
+                        ]);
+                        continue;
+                    }
+                }
+
+                // If we couldn't extract the actual object, skip this document
+                if ($actualObject === null) {
+                    $this->logger->warning('No valid self_object found in SOLR document', [
+                        'document_id' => $solrDoc['id'] ?? 'unknown'
+                    ]);
+                    continue;
+                }
+
+                // Add essential metadata from SOLR document to the object
+                $actualObject['@self'] = [
+                    'id' => $solrDoc['self_uuid'] ?? $solrDoc['id'],
+                    'slug' => null, // Not stored in SOLR
+                    'name' => $solrDoc['self_name'] ?? null,
+                    'description' => null, // Not stored separately in SOLR
+                    'summary' => null, // Not stored separately in SOLR
+                    'image' => null, // Not stored separately in SOLR
+                    'uri' => null, // Not stored separately in SOLR
+                    'version' => null, // Not stored separately in SOLR
+                    'register' => (string)($solrDoc['self_register'] ?? ''),
+                    'schema' => (string)($solrDoc['self_schema'] ?? ''),
+                    'schemaVersion' => null, // Not stored separately in SOLR
+                    'files' => [], // Files would need separate handling
+                    'relations' => [], // Relations would need separate handling
+                    'locked' => null, // Not stored in SOLR
+                    'owner' => $solrDoc['self_owner'] ?? null,
+                    'organisation' => $solrDoc['self_organisation'] ?? null,
+                    'groups' => [], // Not stored in SOLR
+                    'authorization' => [], // Not stored in SOLR
+                    'folder' => null, // Not stored in SOLR
+                    'application' => null, // Not stored in SOLR
+                    'validation' => [], // Not stored in SOLR
+                    'geo' => [], // Not stored in SOLR
+                    'retention' => [], // Not stored in SOLR
+                    'size' => null, // Not stored in SOLR
+                    'updated' => isset($solrDoc['self_updated']) ? $solrDoc['self_updated'] : null,
+                    'created' => isset($solrDoc['self_created']) ? $solrDoc['self_created'] : null,
+                    'published' => null, // Not stored separately in SOLR
+                    'depublished' => null, // Not stored separately in SOLR
+                    'deleted' => [] // Not stored in SOLR
+                ];
+
+                $openRegisterObjects[] = $actualObject;
+
+            } catch (\Exception $e) {
+                $this->logger->error('Error converting SOLR document to OpenRegister object', [
+                    'document_id' => $solrDoc['id'] ?? 'unknown',
+                    'error' => $e->getMessage()
+                ]);
+                continue;
+            }
+        }
+
+        return $openRegisterObjects;
+    }
 
     /**
      * Test Zookeeper connectivity for SolrCloud
@@ -2815,7 +2953,7 @@ class GuzzleSolrService
             }
             
             $baseUrl = $this->buildSolrBaseUrl();
-
+            
             // Test basic query functionality
             $url = $baseUrl . '/' . $collectionName . '/select?q=*:*&rows=1&wt=json';
             
