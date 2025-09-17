@@ -282,9 +282,10 @@ class GuzzleSolrService
      * **PERFORMANCE OPTIMIZATION**: Results are cached for 1 hour to avoid expensive
      * connectivity tests on every API call while still ensuring accurate availability status.
      *
+     * @param bool $forceRefresh If true, ignores cache and performs fresh availability check
      * @return bool True if SOLR is available and properly configured
      */
-    public function isAvailable(): bool
+    public function isAvailable(bool $forceRefresh = false): bool
     {
         // Check if SOLR is enabled in configuration
         if (!($this->solrConfig['enabled'] ?? false)) {
@@ -298,16 +299,23 @@ class GuzzleSolrService
             return false;
         }
         
-        // **CACHING STRATEGY**: Check cached availability result first
+        // **CACHING STRATEGY**: Check cached availability result first (unless forced refresh)
         $cacheKey = 'solr_availability_' . md5($this->solrConfig['host'] . ':' . ($this->solrConfig['port'] ?? 8983));
-        $cachedResult = $this->getCachedAvailability($cacheKey);
         
-        if ($cachedResult !== null) {
-            $this->logger->debug('Using cached SOLR availability result', [
-                'available' => $cachedResult,
+        if (!$forceRefresh) {
+            $cachedResult = $this->getCachedAvailability($cacheKey);
+            
+            if ($cachedResult !== null) {
+                $this->logger->debug('Using cached SOLR availability result', [
+                    'available' => $cachedResult,
+                    'cache_key' => $cacheKey
+                ]);
+                return $cachedResult;
+            }
+        } else {
+            $this->logger->debug('Forcing fresh SOLR availability check (ignoring cache)', [
                 'cache_key' => $cacheKey
             ]);
-            return $cachedResult;
         }
         
         try {
