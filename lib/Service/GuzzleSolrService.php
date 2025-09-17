@@ -271,10 +271,16 @@ class GuzzleSolrService
     }
 
     /**
-     * Check if SOLR is available and configured
+     * Check if SOLR is available and properly configured
      *
-     * Uses the same comprehensive connectivity testing as testConnection() 
-     * to ensure consistent availability checking across all methods.
+     * This method performs a comprehensive availability check including:
+     * - Configuration validation (enabled, host, etc.)
+     * - Network connectivity test
+     * - SOLR server response validation
+     * - Collection existence and accessibility
+     *
+     * **PERFORMANCE OPTIMIZATION**: Results are cached for 1 hour to avoid expensive
+     * connectivity tests on every API call while still ensuring accurate availability status.
      *
      * @return bool True if SOLR is available and properly configured
      */
@@ -292,16 +298,33 @@ class GuzzleSolrService
             return false;
         }
         
+        // **CACHING STRATEGY**: Check cached availability result first
+        $cacheKey = 'solr_availability_' . md5($this->solrConfig['host'] . ':' . ($this->solrConfig['port'] ?? 8983));
+        $cachedResult = $this->getCachedAvailability($cacheKey);
+        
+        if ($cachedResult !== null) {
+            $this->logger->debug('Using cached SOLR availability result', [
+                'available' => $cachedResult,
+                'cache_key' => $cacheKey
+            ]);
+            return $cachedResult;
+        }
+        
         try {
-            // **PERFORMANCE FIX**: Use simple connectivity test for availability checks
-            // Full operational readiness test is too strict and slow for frequent availability checks
-            $connectionTest = $this->testConnectivityOnly();
+            // **COMPREHENSIVE TEST**: Use full operational readiness test for accurate availability
+            // This ensures complete SOLR readiness including collections and schema
+            $connectionTest = $this->testFullOperationalReadiness();
             $isAvailable = $connectionTest['success'] ?? false;
             
-            $this->logger->debug('SOLR availability check completed', [
+            // **CACHE RESULT**: Store result for 1 hour to improve performance
+            $this->setCachedAvailability($cacheKey, $isAvailable);
+            
+            $this->logger->debug('SOLR availability check completed and cached', [
                 'available' => $isAvailable,
                 'test_result' => $connectionTest['message'] ?? 'No message',
-                'components_tested' => array_keys($connectionTest['components'] ?? [])
+                'components_tested' => array_keys($connectionTest['components'] ?? []),
+                'cache_key' => $cacheKey,
+                'cache_ttl' => 3600
             ]);
             
             return $isAvailable;
@@ -312,7 +335,137 @@ class GuzzleSolrService
                 'host' => $this->solrConfig['host'] ?? 'unknown',
                 'exception_class' => get_class($e)
             ]);
+            
+            // **CACHE FAILURE**: Cache negative result for shorter period (5 minutes)
+            $this->setCachedAvailability($cacheKey, false, 300);
+            
             return false;
+        }
+    }
+
+    /**
+     * Get cached SOLR availability result
+     *
+     * @param string $cacheKey The cache key to lookup
+     * @return bool|null The cached availability result, or null if not cached or expired
+     */
+    private function getCachedAvailability(string $cacheKey): ?bool
+    {
+        try {
+            // Use APCu cache if available for best performance
+            if (function_exists('apcu_fetch')) {
+                $result = apcu_fetch($cacheKey);
+                return $result === false ? null : (bool) $result;
+            }
+            
+            // Fallback to file-based caching
+            $cacheFile = sys_get_temp_dir() . '/' . $cacheKey . '.cache';
+            if (file_exists($cacheFile)) {
+                $data = json_decode(file_get_contents($cacheFile), true);
+                if ($data && ($data['expires'] ?? 0) > time()) {
+                    return (bool) $data['available'];
+                }
+                // Clean up expired cache
+                unlink($cacheFile);
+            }
+            
+            return null;
+        } catch (\Exception $e) {
+            $this->logger->debug('Failed to read SOLR availability cache', [
+                'error' => $e->getMessage(),
+                'cache_key' => $cacheKey
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Cache SOLR availability result
+     *
+     * @param string $cacheKey The cache key to store under
+     * @param bool $isAvailable The availability result to cache
+     * @param int $ttl Time to live in seconds (default: 1 hour)
+     * @return void
+     */
+    private function setCachedAvailability(string $cacheKey, bool $isAvailable, int $ttl = 3600): void
+    {
+        try {
+            // Use APCu cache if available for best performance
+            if (function_exists('apcu_store')) {
+                apcu_store($cacheKey, $isAvailable, $ttl);
+                return;
+            }
+            
+            // Fallback to file-based caching
+            $cacheFile = sys_get_temp_dir() . '/' . $cacheKey . '.cache';
+            $data = [
+                'available' => $isAvailable,
+                'expires' => time() + $ttl,
+                'created' => time()
+            ];
+            file_put_contents($cacheFile, json_encode($data));
+        } catch (\Exception $e) {
+            $this->logger->debug('Failed to cache SOLR availability result', [
+                'error' => $e->getMessage(),
+                'cache_key' => $cacheKey,
+                'available' => $isAvailable,
+                'ttl' => $ttl
+            ]);
+            // Don't throw - caching is optional
+        }
+    }
+
+    /**
+     * Clear cached SOLR availability results (public method for manual cache invalidation)
+     *
+     * This method should be called when SOLR configuration changes to ensure
+     * availability checks reflect the new configuration immediately.
+     *
+     * @return void
+     */
+    public function clearAvailabilityCache(): void
+    {
+        $this->clearCachedAvailability();
+        $this->logger->info('SOLR availability cache cleared manually');
+    }
+
+    /**
+     * Clear cached SOLR availability result (internal method)
+     *
+     * @param string|null $cacheKey Specific cache key to clear, or null to clear all SOLR availability cache
+     * @return void
+     */
+    private function clearCachedAvailability(?string $cacheKey = null): void
+    {
+        try {
+            if ($cacheKey) {
+                // Clear specific cache entry
+                if (function_exists('apcu_delete')) {
+                    apcu_delete($cacheKey);
+                }
+                $cacheFile = sys_get_temp_dir() . '/' . $cacheKey . '.cache';
+                if (file_exists($cacheFile)) {
+                    unlink($cacheFile);
+                }
+            } else {
+                // Clear all SOLR availability cache entries
+                if (function_exists('apcu_delete')) {
+                    $iterator = new \APCUIterator('/^solr_availability_/');
+                    apcu_delete($iterator);
+                }
+                
+                // Clear file-based cache
+                $tempDir = sys_get_temp_dir();
+                $pattern = $tempDir . '/solr_availability_*.cache';
+                foreach (glob($pattern) as $file) {
+                    unlink($file);
+                }
+            }
+        } catch (\Exception $e) {
+            $this->logger->debug('Failed to clear SOLR availability cache', [
+                'error' => $e->getMessage(),
+                'cache_key' => $cacheKey
+            ]);
         }
     }
 
