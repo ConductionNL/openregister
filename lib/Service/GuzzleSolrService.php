@@ -2539,14 +2539,14 @@ class GuzzleSolrService
         
         // Build weighted queries for each field
         foreach ($fieldWeights as $field => $weight) {
-            // Exact match (highest relevance)
-            $queryParts[] = $field . ':("' . $cleanTerm . '")^' . ($weight * 3);
+            // Exact phrase match (highest relevance)
+            $queryParts[] = $field . ':"' . $cleanTerm . '"^' . ($weight * 3);
             
-            // Wildcard match (medium relevance) - *term*
-            $queryParts[] = $field . ':(*' . $cleanTerm . '*)^' . ($weight * 2);
+            // Wildcard match (medium relevance) - proper wildcard syntax
+            $queryParts[] = $field . ':*' . $cleanTerm . '*^' . ($weight * 2);
             
-            // Fuzzy match (lowest relevance) - handles typos
-            $queryParts[] = $field . ':(' . $cleanTerm . '~)^' . $weight;
+            // Fuzzy match (lowest relevance) - proper fuzzy syntax
+            $queryParts[] = $field . ':' . $cleanTerm . '~^' . $weight;
         }
         
         // Join all parts with OR
