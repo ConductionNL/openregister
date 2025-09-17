@@ -13,12 +13,12 @@
 			<div v-else-if="solrError" class="error-section">
 				<p class="error-message">❌ {{ solrErrorMessage }}</p>
 				<NcButton type="primary" @click="loadSolrStats">
-					<template #icon>
+							<template #icon>
 						<Refresh :size="20" />
-					</template>
+							</template>
 					Retry Connection
-				</NcButton>
-			</div>
+						</NcButton>
+				</div>
 
 			<!-- Success State -->
 			<div v-else-if="solrStats && solrStats.available" class="solr-section">
@@ -27,73 +27,79 @@
 				<!-- Action Buttons -->
 				<div class="button-group">
 					<NcButton type="secondary" @click="loadSolrStats" :disabled="loadingStats">
-						<template #icon>
+									<template #icon>
 							<Refresh :size="20" />
-						</template>
+									</template>
 						Refresh
-					</NcButton>
+								</NcButton>
 					
-					<NcButton type="primary" @click="showWarmupDialog = true">
+					<NcButton type="primary" @click="openWarmupModal">
 						<template #icon>
 							<Fire :size="20" />
 						</template>
 						Warmup Index
 					</NcButton>
 					
-					<NcButton type="secondary" @click="showClearDialog = true">
-						<template #icon>
+					<NcButton type="secondary" @click="openClearModal">
+					<template #icon>
 							<Delete :size="20" />
-						</template>
-						Clear Index
-					</NcButton>
+					</template>
+					Clear Index
+				</NcButton>
 				</div>
 
 				<!-- Basic Stats -->
-				<div class="stats-grid">
+							<div class="stats-grid">
 					<div class="stat-card">
 						<h4>Connection Status</h4>
 						<p :class="connectionStatusClass">{{ solrStats.overview?.connection_status || 'Unknown' }}</p>
-					</div>
-					
+						</div>
+
 					<div class="stat-card">
 						<h4>Total Documents</h4>
 						<p>{{ formatNumber(solrStats.overview?.total_documents || 0) }}</p>
-					</div>
-					
+						</div>
+
 					<div class="stat-card">
 						<h4>Active Collection</h4>
 						<p>{{ solrStats.cores?.active_core || 'Unknown' }}</p>
 					</div>
-					
+
 					<div class="stat-card">
 						<h4>Tenant ID</h4>
 						<p>{{ solrStats.cores?.tenant_id || 'Unknown' }}</p>
+						</div>
 					</div>
 				</div>
-			</div>
 
 			<!-- Default State (no data) -->
 			<div v-else class="no-data-section">
 				<p>No SOLR data available</p>
 				<NcButton type="primary" @click="loadSolrStats">
-					<template #icon>
-						<Refresh :size="20" />
-					</template>
+						<template #icon>
+							<Refresh :size="20" />
+						</template>
 					Load Stats
-				</NcButton>
-			</div>
+					</NcButton>
+				</div>
 		</NcSettingsSection>
 
 		<!-- Warmup Modal -->
 		<SolrWarmupModal 
-			v-if="showWarmupDialog"
-			@close="showWarmupDialog = false"
+			:show="showWarmupDialog"
+			:object-stats="objectStats"
+			:warming-up="warmingUp"
+			:completed="warmupCompleted"
+			:results="warmupResults"
+			@close="closeWarmupModal"
+			@start-warmup="handleStartWarmup"
 		/>
 
 		<!-- Clear Modal -->
 		<ClearIndexModal 
-			v-if="showClearDialog"
+			:show="showClearDialog"
 			@close="showClearDialog = false"
+			@confirm="handleClearIndex"
 		/>
 	</div>
 </template>
@@ -131,6 +137,13 @@ export default {
 			showWarmupDialog: false,
 			showClearDialog: false,
 			solrStats: null,
+			objectStats: {
+				loading: false,
+				totalObjects: 0,
+			},
+			warmingUp: false,
+			warmupCompleted: false,
+			warmupResults: null,
 		}
 	},
 
@@ -138,7 +151,7 @@ export default {
 		connectionStatusClass() {
 			console.log('[DEBUG] connectionStatusClass called with solrStats:', this.solrStats)
 			if (!this.solrStats || !this.solrStats.available) {
-				return 'status-error'
+					return 'status-error'
 			}
 			if (this.solrStats.overview?.connection_status === 'Connected') {
 				return 'status-success'
@@ -150,6 +163,7 @@ export default {
 	async mounted() {
 		console.log('[DEBUG] SolrDashboard mounted')
 		await this.loadSolrStats()
+		await this.loadObjectStats()
 	},
 
 	methods: {
@@ -203,6 +217,117 @@ export default {
 		formatNumber(num) {
 			if (typeof num !== 'number') return num
 			return num.toLocaleString()
+		},
+
+		openWarmupModal() {
+			console.log('[DEBUG] openWarmupModal called')
+			this.showWarmupDialog = true
+			console.log('[DEBUG] showWarmupDialog set to:', this.showWarmupDialog)
+		},
+
+		closeWarmupModal() {
+			console.log('[DEBUG] closeWarmupModal called')
+			this.showWarmupDialog = false
+			// Reset warmup state when modal is closed
+			this.warmingUp = false
+			this.warmupCompleted = false
+			this.warmupResults = null
+		},
+
+		openClearModal() {
+			console.log('[DEBUG] openClearModal called')
+			this.showClearDialog = true
+			console.log('[DEBUG] showClearDialog set to:', this.showClearDialog)
+		},
+
+		async handleClearIndex() {
+			console.log('[DEBUG] handleClearIndex called')
+			try {
+				const url = generateUrl('/apps/openregister/api/settings/solr/clear')
+				console.log('[DEBUG] Making clear index API call to:', url)
+				
+				const response = await axios.post(url)
+				console.log('[DEBUG] Clear index response:', response.data)
+				
+				// Close modal and refresh stats
+				this.showClearDialog = false
+				await this.loadSolrStats()
+			} catch (error) {
+				console.error('[DEBUG] Clear index failed:', error)
+				// Keep modal open on error so user can see what happened
+			}
+		},
+
+		async loadObjectStats() {
+			console.log('[DEBUG] loadObjectStats called')
+			this.objectStats.loading = true
+			
+			try {
+				const url = generateUrl('/apps/openregister/api/settings/stats')
+				console.log('[DEBUG] Making object stats API call to:', url)
+				
+				const response = await axios.get(url)
+				console.log('[DEBUG] Object stats response:', response.data)
+				
+				if (response.data && response.data.totals && response.data.totals.totalObjects) {
+					this.objectStats.totalObjects = response.data.totals.totalObjects
+					console.log('[DEBUG] Set totalObjects to:', this.objectStats.totalObjects)
+				} else {
+					console.warn('[DEBUG] No totalObjects found in response:', response.data)
+					this.objectStats.totalObjects = 0
+				}
+			} catch (error) {
+				console.error('[DEBUG] Failed to load object stats:', error)
+				this.objectStats.totalObjects = 0
+			} finally {
+				this.objectStats.loading = false
+				console.log('[DEBUG] loadObjectStats completed. Final objectStats:', this.objectStats)
+			}
+		},
+
+		async handleStartWarmup(config) {
+			console.log('[DEBUG] handleStartWarmup called with config:', config)
+			
+			// Set loading state
+			this.warmingUp = true
+			this.warmupCompleted = false
+			this.warmupResults = null
+			
+			try {
+				const url = generateUrl('/apps/openregister/api/settings/solr/warmup')
+				console.log('[DEBUG] Making warmup API call to:', url)
+				
+				// Convert config to the expected format
+				const warmupParams = {
+					maxObjects: config.maxObjects || 0,
+					mode: config.mode || 'serial',
+					batchSize: config.batchSize || 1000,
+				}
+				console.log('[DEBUG] Warmup params:', warmupParams)
+				
+				const response = await axios.post(url, warmupParams)
+				console.log('[DEBUG] Warmup response:', response.data)
+				
+				// Set results state
+				this.warmupCompleted = true
+				this.warmupResults = response.data
+				
+				// Refresh stats after warmup completes
+				await this.loadSolrStats()
+			} catch (error) {
+				console.error('[DEBUG] Warmup failed:', error)
+				
+				// Set error state
+				this.warmupCompleted = true
+				this.warmupResults = {
+					success: false,
+					message: error.response?.data?.error || error.message || 'Warmup failed',
+					error: true
+				}
+			} finally {
+				// Clear loading state
+				this.warmingUp = false
+			}
 		},
 	},
 }
