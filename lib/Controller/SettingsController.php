@@ -331,13 +331,31 @@ class SettingsController extends Controller
     public function setupSolr(): JSONResponse
     {
         try {
+            // **IMPROVED LOGGING**: Log setup attempt with detailed context
+            $this->logger->info('🔧 SOLR setup endpoint called', [
+                'timestamp' => date('c'),
+                'user_id' => $this->userId ?? 'unknown',
+                'request_id' => $this->request->getId() ?? 'unknown'
+            ]);
+            
             // Get SOLR settings
             $solrSettings = $this->settingsService->getSolrSettings();
+            
+            // **IMPROVED LOGGING**: Log SOLR configuration (without sensitive data)
+            $this->logger->info('📋 SOLR configuration loaded for setup', [
+                'enabled' => $solrSettings['enabled'] ?? false,
+                'host' => $solrSettings['host'] ?? 'not_set',
+                'port' => $solrSettings['port'] ?? 'not_set',
+                'has_credentials' => !empty($solrSettings['username']) && !empty($solrSettings['password'])
+            ]);
             
             // Create SolrSetup using GuzzleSolrService for authenticated HTTP client
             $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
             $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
             $setup = new \OCA\OpenRegister\Setup\SolrSetup($guzzleSolrService, $logger);
+            
+            // **IMPROVED LOGGING**: Log setup initialization
+            $this->logger->info('🏗️ SolrSetup instance created, starting setup process');
             
             // Run setup
             $setupResult = $setup->setupSolr();
@@ -345,6 +363,13 @@ class SettingsController extends Controller
             if ($setupResult) {
                 // Get detailed setup progress from SolrSetup
                 $setupProgress = $setup->getSetupProgress();
+                
+                // **IMPROVED LOGGING**: Log successful setup
+                $this->logger->info('✅ SOLR setup completed successfully', [
+                    'completed_steps' => $setupProgress['completed_steps'] ?? 0,
+                    'total_steps' => $setupProgress['total_steps'] ?? 0,
+                    'duration' => $setupProgress['completed_at'] ?? 'unknown'
+                ]);
                 
                 return new JSONResponse([
                     'success' => true,
@@ -445,6 +470,39 @@ class SettingsController extends Controller
             }
             
         } catch (\Exception $e) {
+            // **IMPROVED ERROR LOGGING**: Log detailed setup failure information
+            $this->logger->error('❌ SOLR setup failed with exception', [
+                'exception_class' => get_class($e),
+                'exception_message' => $e->getMessage(),
+                'exception_file' => $e->getFile(),
+                'exception_line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // Try to get detailed error information from SolrSetup if available
+            $detailedError = null;
+            if (isset($setup)) {
+                try {
+                    $setupProgress = $setup->getSetupProgress();
+                    $lastErrorDetails = $setup->getLastErrorDetails();
+                    
+                    $detailedError = [
+                        'setup_progress' => $setupProgress,
+                        'last_error_details' => $lastErrorDetails,
+                        'failed_at_step' => $setupProgress['completed_steps'] ?? 0,
+                        'total_steps' => $setupProgress['total_steps'] ?? 5
+                    ];
+                    
+                    // **IMPROVED LOGGING**: Log setup progress and error details
+                    $this->logger->error('📋 SOLR setup failure details', $detailedError);
+                    
+                } catch (\Exception $progressException) {
+                    $this->logger->warning('Failed to get setup progress details', [
+                        'error' => $progressException->getMessage()
+                    ]);
+                }
+            }
+            
             return new JSONResponse([
                 'success' => false,
                 'message' => 'SOLR setup failed: ' . $e->getMessage(),
@@ -453,7 +511,8 @@ class SettingsController extends Controller
                     'type' => get_class($e),
                     'message' => $e->getMessage(),
                     'file' => $e->getFile(),
-                    'line' => $e->getLine()
+                    'line' => $e->getLine(),
+                    'detailed_error' => $detailedError
                 ]
             ], 500);
         }
