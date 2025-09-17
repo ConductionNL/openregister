@@ -2456,27 +2456,41 @@ class GuzzleSolrService
      *
      * @param array $searchResults SOLR search results
      * @param array $originalQuery Original OpenRegister query
-     * @return array Paginated results in OpenRegister format
+     * @return array Paginated results in OpenRegister format matching database response structure
      */
     private function convertToOpenRegisterPaginatedFormat(array $searchResults, array $originalQuery): array
     {
         $limit = (int)($originalQuery['_limit'] ?? 20);
         $page = (int)($originalQuery['_page'] ?? 1);
+        $offset = (int)($originalQuery['_offset'] ?? (($page - 1) * $limit));
         $total = $searchResults['total'] ?? 0;
         $pages = $limit > 0 ? max(1, ceil($total / $limit)) : 1;
 
-        return [
-            'success' => true,
-            'message' => 'Search completed successfully',
-            'data' => $searchResults['objects'] ?? [],
-            'pagination' => [
-                'page' => $page,
-                'limit' => $limit,
-                'pages' => $pages,
-                'total' => $total
+        // Match the database response format exactly
+        $response = [
+            'results' => $searchResults['objects'] ?? [],
+            'total' => $total,
+            'page' => $page,
+            'pages' => $pages,
+            'limit' => $limit,
+            'offset' => $offset,
+            'facets' => [
+                'facets' => $searchResults['facets'] ?? []
             ],
-            'facets' => $searchResults['facets'] ?? []
+            '_source' => 'index'
         ];
+
+        // Add pagination URLs if applicable (matching database format)
+        if ($page < $pages) {
+            $response['next'] = $_SERVER['REQUEST_URI'] ?? '';
+            // Update page parameter in URL for next page
+            $response['next'] = preg_replace('/([?&])page=\d+/', '$1page=' . ($page + 1), $response['next']);
+            if (strpos($response['next'], 'page=') === false) {
+                $response['next'] .= (strpos($response['next'], '?') === false ? '?' : '&') . 'page=' . ($page + 1);
+            }
+        }
+
+        return $response;
     }
 
 
