@@ -293,9 +293,9 @@ class GuzzleSolrService
         }
         
         try {
-            // **CONSISTENCY FIX**: Use full operational test for availability checks
-            // This ensures all availability checks verify complete SOLR readiness
-            $connectionTest = $this->testFullOperationalReadiness();
+            // **PERFORMANCE FIX**: Use simple connectivity test for availability checks
+            // Full operational readiness test is too strict and slow for frequent availability checks
+            $connectionTest = $this->testConnectivityOnly();
             $isAvailable = $connectionTest['success'] ?? false;
             
             $this->logger->debug('SOLR availability check completed', [
