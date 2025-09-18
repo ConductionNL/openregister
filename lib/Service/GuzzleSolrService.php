@@ -271,6 +271,31 @@ class GuzzleSolrService
     }
 
     /**
+     * Check if SOLR is properly configured with required settings
+     *
+     * @return bool True if SOLR configuration is complete
+     */
+    private function isSolrConfigured(): bool
+    {
+        // Check if SOLR is enabled
+        if (!($this->solrConfig['enabled'] ?? false)) {
+            $this->logger->debug('SOLR is not enabled in configuration');
+            return false;
+        }
+        
+        // Check required configuration values
+        $requiredConfig = ['host', 'port', 'collection'];
+        foreach ($requiredConfig as $key) {
+            if (empty($this->solrConfig[$key])) {
+                $this->logger->debug('SOLR configuration missing required key: ' . $key);
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
+    /**
      * Check if SOLR is available and properly configured
      *
      * This method performs a comprehensive availability check including:
@@ -1441,25 +1466,43 @@ class GuzzleSolrService
      */
     public function searchObjectsPaginated(array $query = [], bool $rbac = true, bool $multi = true, bool $published = false, bool $deleted = false): array
     {
-        // Check SOLR availability first
+        $startTime = microtime(true);
+        
+        // Check SOLR configuration first
+        if (!$this->isSolrConfigured()) {
+            throw new \Exception(
+                'SOLR is not properly configured. Please check your SOLR settings in the OpenRegister admin panel. ' .
+                'Verify that SOLR URL, collection name, and authentication are correctly set.'
+            );
+        }
+        
+        // Test SOLR connection
         if (!$this->isAvailable()) {
-            throw new \Exception('SOLR service is not available');
+            $connectionTest = $this->testConnection();
+            throw new \Exception(
+                'SOLR service is not available. Connection test failed: ' . 
+                ($connectionTest['error'] ?? 'Unknown connection error') . 
+                '. Please verify that SOLR is running and accessible at the configured URL.'
+            );
         }
 
         try {
-            $startTime = microtime(true);
-            
             // Get active collection name - if null, SOLR is not properly set up
             $collectionName = $this->getActiveCollectionName();
             if ($collectionName === null) {
-                throw new \Exception('No active SOLR collection available');
+                throw new \Exception(
+                    'No active SOLR collection available. Please ensure a SOLR collection is created and configured ' .
+                    'in the OpenRegister settings, and that the collection exists in your SOLR instance.'
+                );
             }
             
             // Build SOLR query from OpenRegister query parameters
             $solrQuery = $this->buildSolrQuery($query);
             
-            // **DEBUG**: Log the built SOLR query for troubleshooting
-            $this->logger->debug('Built SOLR query', [
+            // Query building completed successfully
+            
+            // Log the built SOLR query for troubleshooting
+            $this->logger->debug('Executing SOLR search', [
                 'original_query' => $query,
                 'solr_query' => $solrQuery,
                 'collection' => $collectionName
@@ -1476,16 +1519,32 @@ class GuzzleSolrService
             
             // Add execution metadata
             $paginatedResults['_execution_time_ms'] = round((microtime(true) - $startTime) * 1000, 2);
-            $paginatedResults['_source'] = 'index';
+            
+            $this->logger->info('SOLR search completed successfully', [
+                'query_fingerprint' => substr(md5(json_encode($query)), 0, 8),
+                'results_count' => count($paginatedResults['results'] ?? []),
+                'total_results' => $paginatedResults['total'] ?? 0,
+                'execution_time_ms' => $paginatedResults['_execution_time_ms']
+            ]);
             
             return $paginatedResults;
             
         } catch (\Exception $e) {
-            $this->logger->error('SOLR search failed in searchObjectsPaginated', [
-                'error' => $e->getMessage(),
-                'query' => $query
+            $this->logger->error('SOLR search failed', [
+                'error_message' => $e->getMessage(),
+                'error_class' => get_class($e),
+                'query_fingerprint' => substr(md5(json_encode($query)), 0, 8),
+                'collection' => $collectionName ?? 'unknown',
+                'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2)
             ]);
-            throw $e;
+            
+            // Re-throw with more context for user
+            throw new \Exception(
+                'SOLR search failed: ' . $e->getMessage() . 
+                '. This indicates an issue with the SOLR service or query. Check the logs for more details.',
+                $e->getCode(),
+                $e
+            );
         }
     }
 
@@ -1534,13 +1593,14 @@ class GuzzleSolrService
         }
         
         // Deleted filtering
-        if ($deleted) {
-            // Include only deleted objects
-            $filters[] = 'self_deleted:[* TO *]';
-        } else {
-            // Exclude deleted objects (default behavior)
-            $filters[] = '-self_deleted:[* TO *]';
-        }
+        // @todo: this is not working as expected so we turned it of, for now deleted items should not be indexed
+        //if ($deleted) {
+        //    // Include only deleted objects
+        //    $filters[] = 'self_deleted:[* TO *]';
+        //} else {
+        //    // Exclude deleted objects (default behavior)
+        //    $filters[] = '-self_deleted:[* TO *]';
+        //}        
         
         // Update the filters in the query
         $solrQuery['fq'] = $filters;
@@ -2524,14 +2584,11 @@ class GuzzleSolrService
         $cleanTerm = $this->cleanSearchTerm($searchTerm);
         
         // Define field weights (higher = more important)
-        // Priority order: self_name > self_summary > self_description > legacy fields > catch-all
+        // Using essential OpenRegister fields with specified weights
         $fieldWeights = [
             'self_name' => 15.0,       // OpenRegister standardized name (highest priority)
             'self_summary' => 10.0,    // OpenRegister standardized summary
-            'self_description' => 7.0, // OpenRegister standardized description
-            'naam' => 5.0,             // Legacy name field (lower priority)
-            'beschrijvingKort' => 3.0, // Legacy short description
-            'beschrijving' => 2.0,     // Legacy full description
+            'self_description' => 5.0, // OpenRegister standardized description
             '_text_' => 1.0            // Catch-all text field (lowest priority)
         ];
         
@@ -2581,6 +2638,10 @@ class GuzzleSolrService
      */
     private function buildSolrQuery(array $query): array
     {
+        // **DEBUG**: Log the incoming OpenRegister query
+        $this->logger->debug('=== buildSolrQuery INPUT ===', [
+            'openregister_query' => $query
+        ]);
         
         $solrQuery = [
             'q' => '*:*',
@@ -2598,9 +2659,9 @@ class GuzzleSolrService
             $solrQuery['q'] = $searchQuery;
             
             
-            // Enable highlighting for search results (prioritize self_* fields)
+            // Enable highlighting for search results (only for searched fields)
             $solrQuery['hl'] = 'true';
-            $solrQuery['hl.fl'] = 'self_name,self_summary,self_description,naam,beschrijvingKort';
+            $solrQuery['hl.fl'] = 'self_name,self_summary,self_description';
             $solrQuery['hl.simple.pre'] = '<mark>';
             $solrQuery['hl.simple.post'] = '</mark>';
         }
@@ -2698,6 +2759,17 @@ class GuzzleSolrService
             }
         }
 
+        // **DEBUG**: Log the final SOLR query being built
+        $this->logger->debug('=== buildSolrQuery OUTPUT ===', [
+            'final_solr_query' => $solrQuery,
+            'pagination_check' => [
+                'rows' => $solrQuery['rows'] ?? 'missing',
+                'start' => $solrQuery['start'] ?? 'missing',
+                'original_limit' => $query['_limit'] ?? 'missing',
+                'original_page' => $query['_page'] ?? 'missing'
+            ]
+        ]);
+
         return $solrQuery;
     }
 
@@ -2731,11 +2803,14 @@ class GuzzleSolrService
             $fullUrl = $url . '?' . $queryString;
             
             // **DEBUG**: Log the final SOLR URL and query for troubleshooting
-            $this->logger->debug('Executing SOLR search', [
+            $this->logger->debug('=== EXECUTING SOLR SEARCH ===', [
                 'full_url' => $fullUrl,
                 'collection' => $collectionName,
-                'query_string' => $queryString
+                'query_string' => $queryString,
+                'query_parts_breakdown' => $queryParts
             ]);
+            
+            // SOLR query execution prepared
             
             // Use the manually built URL instead of Guzzle's query parameter handling
             $response = $this->httpClient->get($fullUrl, [
@@ -2744,11 +2819,15 @@ class GuzzleSolrService
             ]);
 
             $statusCode = $response->getStatusCode();
+            $responseBody = $response->getBody()->getContents();
+            
+            // SOLR response received
+            
             if ($statusCode !== 200) {
-                throw new \Exception("SOLR search failed with status code: $statusCode");
+                throw new \Exception("SOLR search failed with status code: $statusCode. Response: " . $responseBody);
             }
 
-            $responseData = json_decode($response->getBody()->getContents(), true);
+            $responseData = json_decode($responseBody, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
                 throw new \Exception('Invalid JSON response from SOLR: ' . json_last_error_msg());
             }
@@ -2784,6 +2863,14 @@ class GuzzleSolrService
         if (isset($responseData['response']['docs'])) {
             $results['objects'] = $this->convertSolrDocumentsToOpenRegisterObjects($responseData['response']['docs']);
             $results['total'] = $responseData['response']['numFound'] ?? count($results['objects']);
+            
+            // **DEBUG**: Log total vs results count for troubleshooting
+            $this->logger->debug('SOLR response parsing', [
+                'numFound_from_solr' => $responseData['response']['numFound'] ?? 'missing',
+                'docs_returned' => count($responseData['response']['docs'] ?? []),
+                'objects_converted' => count($results['objects']),
+                'final_total' => $results['total']
+            ]);
         }
 
         // Parse facets
@@ -2819,6 +2906,16 @@ class GuzzleSolrService
         $offset = (int)($originalQuery['_offset'] ?? (($page - 1) * $limit));
         $total = $searchResults['total'] ?? 0;
         $pages = $limit > 0 ? max(1, ceil($total / $limit)) : 1;
+        
+        // **DEBUG**: Log pagination calculation for troubleshooting
+        $this->logger->debug('Converting to OpenRegister paginated format', [
+            'searchResults_total' => $searchResults['total'] ?? 'missing',
+            'searchResults_objects_count' => count($searchResults['objects'] ?? []),
+            'calculated_total' => $total,
+            'limit' => $limit,
+            'page' => $page,
+            'calculated_pages' => $pages
+        ]);
 
         // Match the database response format exactly
         $response = [
@@ -2831,7 +2928,6 @@ class GuzzleSolrService
             'facets' => [
                 'facets' => $searchResults['facets'] ?? []
             ],
-            '_source' => 'index'
         ];
 
         // Add pagination URLs if applicable (matching database format)
