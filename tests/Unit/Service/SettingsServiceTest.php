@@ -122,6 +122,7 @@ class SettingsServiceTest extends TestCase
         // Mock app manager
         $this->appManager->expects($this->any())
             ->method('isInstalled')
+            ->with('openregister')
             ->willReturn(true);
 
         $result = $this->settingsService->isOpenRegisterEnabled();

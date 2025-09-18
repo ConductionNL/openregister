@@ -35,14 +35,30 @@ class BsnFormat implements Format
      */
     public function validate(mixed $data): bool
     {
-        $data = str_pad(
-            string: $data,
-            length:9,
-            pad_string: "0",
-            pad_type: STR_PAD_LEFT,
-        );
+        if ($data === null || $data === '') {
+            return false;
+        }
+        
+        // Only accept strings and numeric values that can be meaningfully converted
+        if (is_string($data) === false && is_numeric($data) === false) {
+            return false;
+        }
+        
+        $dataString = (string) $data;
+        
+        // Reject numbers that are not exactly 9 digits
+        if (strlen($dataString) !== 9) {
+            return false;
+        }
+        
+        $data = $dataString;
 
         if (ctype_digit($data) === false) {
+            return false;
+        }
+
+        // Reject all-zero BSNs (000000000)
+        if ($data === '000000000') {
             return false;
         }
 
