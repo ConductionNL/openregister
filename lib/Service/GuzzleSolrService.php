@@ -1499,12 +1499,7 @@ class GuzzleSolrService
             // Build SOLR query from OpenRegister query parameters
             $solrQuery = $this->buildSolrQuery($query);
             
-            // **DEBUG**: Dump the query building process
-            var_dump('=== SOLR QUERY DEBUG START ===');
-            var_dump('Original OpenRegister Query:', $query);
-            var_dump('Built SOLR Query:', $solrQuery);
-            var_dump('Collection Name:', $collectionName);
-            var_dump('=== SOLR QUERY DEBUG END ===');
+            // Query building completed successfully
             
             // Log the built SOLR query for troubleshooting
             $this->logger->debug('Executing SOLR search', [
@@ -1524,7 +1519,6 @@ class GuzzleSolrService
             
             // Add execution metadata
             $paginatedResults['_execution_time_ms'] = round((microtime(true) - $startTime) * 1000, 2);
-            $paginatedResults['_source'] = 'index';
             
             $this->logger->info('SOLR search completed successfully', [
                 'query_fingerprint' => substr(md5(json_encode($query)), 0, 8),
@@ -2590,13 +2584,14 @@ class GuzzleSolrService
         
         // Define field weights (higher = more important)
         // Priority order: self_name > self_summary > self_description > legacy fields > catch-all
+        // **FIX**: Removed 'beschrijving' field as it doesn't exist in SOLR schema
         $fieldWeights = [
             'self_name' => 15.0,       // OpenRegister standardized name (highest priority)
             'self_summary' => 10.0,    // OpenRegister standardized summary
             'self_description' => 7.0, // OpenRegister standardized description
             'naam' => 5.0,             // Legacy name field (lower priority)
             'beschrijvingKort' => 3.0, // Legacy short description
-            'beschrijving' => 2.0,     // Legacy full description
+            // 'beschrijving' => 2.0,  // REMOVED: Field doesn't exist in SOLR schema
             '_text_' => 1.0            // Catch-all text field (lowest priority)
         ];
         
@@ -2802,13 +2797,7 @@ class GuzzleSolrService
                 'query_string' => $queryString
             ]);
             
-            // **DEBUG**: Dump the final URL and query details
-            var_dump('=== SOLR EXECUTION DEBUG START ===');
-            var_dump('Full SOLR URL:', $fullUrl);
-            var_dump('Query String:', $queryString);
-            var_dump('Query Parts:', $queryParts);
-            var_dump('Original SOLR Query Array:', $solrQuery);
-            var_dump('=== SOLR EXECUTION DEBUG END ===');
+            // SOLR query execution prepared
             
             // Use the manually built URL instead of Guzzle's query parameter handling
             $response = $this->httpClient->get($fullUrl, [
@@ -2819,11 +2808,7 @@ class GuzzleSolrService
             $statusCode = $response->getStatusCode();
             $responseBody = $response->getBody()->getContents();
             
-            // **DEBUG**: Always dump response details for debugging
-            var_dump('=== SOLR RESPONSE DEBUG START ===');
-            var_dump('Status Code:', $statusCode);
-            var_dump('Response Body:', $responseBody);
-            var_dump('=== SOLR RESPONSE DEBUG END ===');
+            // SOLR response received
             
             if ($statusCode !== 200) {
                 throw new \Exception("SOLR search failed with status code: $statusCode. Response: " . $responseBody);
