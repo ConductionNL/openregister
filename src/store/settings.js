@@ -95,6 +95,24 @@ export const useSettingsStore = defineStore('settings', {
 			deleteLogRetention: 2592000000,      // 1 month
 		},
 		
+		aiOptions: {
+			enabled: false,
+			provider: 'openai', // openai, ollama, azure, anthropic
+			apiKey: '',
+			baseUrl: '',
+			model: 'gpt-3.5-turbo',
+			embeddingModel: 'text-embedding-ada-002',
+			maxTokens: 4000,
+			temperature: 0.7,
+			timeout: 30,
+			enableAutoTextGeneration: true,
+			enableAutoEmbedding: true,
+			embeddingDimensions: 1536,
+			batchSize: 100,
+			retryAttempts: 3,
+			enableLogging: true,
+		},
+		
 		versionInfo: {
 			appName: 'Open Register',
 			appVersion: '0.2.3',
@@ -108,6 +126,63 @@ export const useSettingsStore = defineStore('settings', {
 			{ id: 'http', label: 'HTTP' },
 			{ id: 'https', label: 'HTTPS' },
 		],
+		
+		// AI provider options based on LLPhant support
+		aiProviderOptions: [
+			{ id: 'openai', label: 'OpenAI', description: 'OpenAI GPT models and embeddings' },
+			{ id: 'ollama', label: 'Ollama', description: 'Local Ollama models' },
+			{ id: 'azure', label: 'Azure OpenAI', description: 'Microsoft Azure OpenAI Service' },
+			{ id: 'anthropic', label: 'Anthropic', description: 'Anthropic Claude models' },
+		],
+		
+		// Embedding model options supported by LLPhant
+		embeddingModelOptions: {
+			openai: [
+				{ id: 'text-embedding-ada-002', label: 'Ada v2 (1536 dims)', dimensions: 1536 },
+				{ id: 'text-embedding-3-small', label: 'Embedding v3 Small (1536 dims)', dimensions: 1536 },
+				{ id: 'text-embedding-3-large', label: 'Embedding v3 Large (3072 dims)', dimensions: 3072 },
+			],
+			ollama: [
+				{ id: 'nomic-embed-text', label: 'Nomic Embed Text (768 dims)', dimensions: 768 },
+				{ id: 'mxbai-embed-large', label: 'MxBai Embed Large (1024 dims)', dimensions: 1024 },
+				{ id: 'all-minilm', label: 'All MiniLM (384 dims)', dimensions: 384 },
+			],
+			azure: [
+				{ id: 'text-embedding-ada-002', label: 'Ada v2 (1536 dims)', dimensions: 1536 },
+				{ id: 'text-embedding-3-small', label: 'Embedding v3 Small (1536 dims)', dimensions: 1536 },
+				{ id: 'text-embedding-3-large', label: 'Embedding v3 Large (3072 dims)', dimensions: 3072 },
+			],
+			anthropic: [
+				// Anthropic doesn't provide embedding models directly, typically uses OpenAI
+				{ id: 'text-embedding-ada-002', label: 'OpenAI Ada v2 (1536 dims)', dimensions: 1536 },
+			],
+		},
+		
+		// Language model options
+		languageModelOptions: {
+			openai: [
+				{ id: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo', description: 'Fast and efficient' },
+				{ id: 'gpt-4', label: 'GPT-4', description: 'Most capable model' },
+				{ id: 'gpt-4-turbo', label: 'GPT-4 Turbo', description: 'Faster GPT-4 variant' },
+				{ id: 'gpt-4o', label: 'GPT-4o', description: 'Optimized GPT-4' },
+			],
+			ollama: [
+				{ id: 'llama2', label: 'Llama 2', description: 'Meta\'s Llama 2 model' },
+				{ id: 'llama2:13b', label: 'Llama 2 13B', description: 'Larger Llama 2 variant' },
+				{ id: 'mistral', label: 'Mistral', description: 'Mistral AI model' },
+				{ id: 'codellama', label: 'Code Llama', description: 'Code-specialized Llama' },
+			],
+			azure: [
+				{ id: 'gpt-35-turbo', label: 'GPT-3.5 Turbo', description: 'Azure GPT-3.5' },
+				{ id: 'gpt-4', label: 'GPT-4', description: 'Azure GPT-4' },
+				{ id: 'gpt-4-32k', label: 'GPT-4 32K', description: 'Large context GPT-4' },
+			],
+			anthropic: [
+				{ id: 'claude-3-haiku', label: 'Claude 3 Haiku', description: 'Fast and lightweight' },
+				{ id: 'claude-3-sonnet', label: 'Claude 3 Sonnet', description: 'Balanced performance' },
+				{ id: 'claude-3-opus', label: 'Claude 3 Opus', description: 'Most capable Claude model' },
+			],
+		},
 		
 		// Statistics data
 		stats: {
@@ -268,6 +343,7 @@ export const useSettingsStore = defineStore('settings', {
 					this.loadRbacSettings(),
 					this.loadMultitenancySettings(),
 					this.loadRetentionSettings(),
+					this.loadAiSettings(),
 					this.loadVersionInfo(),
 					this.loadAvailableOptions(),
 				])
@@ -541,6 +617,20 @@ export const useSettingsStore = defineStore('settings', {
 		},
 
 		/**
+		 * Load AI settings
+		 */
+		async loadAiSettings() {
+			try {
+				const response = await axios.get(generateUrl('/apps/openregister/api/settings/ai'))
+				if (response.data) {
+					this.aiOptions = { ...this.aiOptions, ...response.data }
+				}
+			} catch (error) {
+				console.error('Failed to load AI settings:', error)
+			}
+		},
+
+		/**
 		 * Update Retention settings
 		 */
 		async updateRetentionSettings(retentionData) {
@@ -563,6 +653,58 @@ export const useSettingsStore = defineStore('settings', {
 				throw error
 			} finally {
 				this.saving = false
+			}
+		},
+
+		/**
+		 * Update AI settings
+		 */
+		async updateAiSettings(aiData) {
+			this.saving = true
+			try {
+				const response = await axios.put(
+					generateUrl('/apps/openregister/api/settings/ai'),
+					aiData
+				)
+				
+				if (response.data) {
+					this.aiOptions = { ...this.aiOptions, ...response.data }
+				}
+				
+				showSuccess('AI settings updated successfully')
+				return response.data
+			} catch (error) {
+				console.error('Failed to update AI settings:', error)
+				showError('Failed to update AI settings: ' + error.message)
+				throw error
+			} finally {
+				this.saving = false
+			}
+		},
+
+		/**
+		 * Test AI connection
+		 */
+		async testAiConnection() {
+			this.testingConnection = true
+			try {
+				const response = await axios.post(
+					generateUrl('/apps/openregister/api/settings/ai/test')
+				)
+				
+				if (response.data.success) {
+					showSuccess('AI connection test successful')
+				} else {
+					showError('AI connection test failed: ' + response.data.message)
+				}
+				
+				return response.data
+			} catch (error) {
+				console.error('AI connection test failed:', error)
+				showError('AI connection test failed: ' + error.message)
+				throw error
+			} finally {
+				this.testingConnection = false
 			}
 		},
 
@@ -736,6 +878,8 @@ export const useSettingsStore = defineStore('settings', {
 					return await this.updateMultitenancySettings(data.multitenancy)
 				} else if (data.retention) {
 					return await this.updateRetentionSettings(data.retention)
+				} else if (data.ai) {
+					return await this.updateAiSettings(data.ai)
 				} else {
 					// Fallback to legacy endpoint
 					const response = await axios.put(generateUrl('/apps/openregister/api/settings'), data)
