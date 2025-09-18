@@ -2583,15 +2583,10 @@ class GuzzleSolrService
         $cleanTerm = $this->cleanSearchTerm($searchTerm);
         
         // Define field weights (higher = more important)
-        // Priority order: self_name > self_summary > self_description > legacy fields > catch-all
-        // **FIX**: Removed 'beschrijving' field as it doesn't exist in SOLR schema
+        // Simplified to only use essential fields: self_name, self_summary, and _text_
         $fieldWeights = [
             'self_name' => 15.0,       // OpenRegister standardized name (highest priority)
             'self_summary' => 10.0,    // OpenRegister standardized summary
-            'self_description' => 7.0, // OpenRegister standardized description
-            'naam' => 5.0,             // Legacy name field (lower priority)
-            'beschrijvingKort' => 3.0, // Legacy short description
-            // 'beschrijving' => 2.0,  // REMOVED: Field doesn't exist in SOLR schema
             '_text_' => 1.0            // Catch-all text field (lowest priority)
         ];
         
@@ -2658,9 +2653,9 @@ class GuzzleSolrService
             $solrQuery['q'] = $searchQuery;
             
             
-            // Enable highlighting for search results (prioritize self_* fields)
+            // Enable highlighting for search results (only for searched fields)
             $solrQuery['hl'] = 'true';
-            $solrQuery['hl.fl'] = 'self_name,self_summary,self_description,naam,beschrijvingKort';
+            $solrQuery['hl.fl'] = 'self_name,self_summary';
             $solrQuery['hl.simple.pre'] = '<mark>';
             $solrQuery['hl.simple.post'] = '</mark>';
         }
