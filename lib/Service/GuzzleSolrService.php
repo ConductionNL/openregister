@@ -271,14 +271,21 @@ class GuzzleSolrService
     }
 
     /**
-     * Check if SOLR is available and configured
+     * Check if SOLR is available and properly configured
      *
-     * Uses the same comprehensive connectivity testing as testConnection() 
-     * to ensure consistent availability checking across all methods.
+     * This method performs a comprehensive availability check including:
+     * - Configuration validation (enabled, host, etc.)
+     * - Network connectivity test
+     * - SOLR server response validation
+     * - Collection existence and accessibility
      *
+     * **PERFORMANCE OPTIMIZATION**: Results are cached for 1 hour to avoid expensive
+     * connectivity tests on every API call while still ensuring accurate availability status.
+     *
+     * @param bool $forceRefresh If true, ignores cache and performs fresh availability check
      * @return bool True if SOLR is available and properly configured
      */
-    public function isAvailable(): bool
+    public function isAvailable(bool $forceRefresh = false): bool
     {
         // Check if SOLR is enabled in configuration
         if (!($this->solrConfig['enabled'] ?? false)) {
@@ -292,16 +299,50 @@ class GuzzleSolrService
             return false;
         }
         
+        // **CACHING STRATEGY**: Check cached availability result first (unless forced refresh)
+        $cacheKey = 'solr_availability_' . md5($this->solrConfig['host'] . ':' . ($this->solrConfig['port'] ?? 8983));
+        
+        if (!$forceRefresh) {
+            $cachedResult = $this->getCachedAvailability($cacheKey);
+            
+            if ($cachedResult !== null) {
+                $this->logger->debug('Using cached SOLR availability result', [
+                    'available' => $cachedResult,
+                    'cache_key' => $cacheKey
+                ]);
+                return $cachedResult;
+            }
+        } else {
+            $this->logger->debug('Forcing fresh SOLR availability check (ignoring cache)', [
+                'cache_key' => $cacheKey
+            ]);
+        }
+        
         try {
-            // **CONSISTENCY FIX**: Use full operational test for availability checks
-            // This ensures all availability checks verify complete SOLR readiness
+            // **DEBUG**: Log current SOLR configuration for troubleshooting
+            $this->logger->debug('SOLR availability check - current configuration', [
+                'enabled' => $this->solrConfig['enabled'] ?? false,
+                'host' => $this->solrConfig['host'] ?? 'not set',
+                'port' => $this->solrConfig['port'] ?? 'not set',
+                'tenant_id' => $this->tenantId,
+                'force_refresh' => $forceRefresh
+            ]);
+            
+            // **COMPREHENSIVE TEST**: Use full operational readiness test for accurate availability
+            // This ensures complete SOLR readiness including collections and schema
             $connectionTest = $this->testFullOperationalReadiness();
             $isAvailable = $connectionTest['success'] ?? false;
             
-            $this->logger->debug('SOLR availability check completed', [
+            // **CACHE RESULT**: Store result for 1 hour to improve performance
+            $this->setCachedAvailability($cacheKey, $isAvailable);
+            
+            $this->logger->debug('SOLR availability check completed and cached', [
                 'available' => $isAvailable,
                 'test_result' => $connectionTest['message'] ?? 'No message',
-                'components_tested' => array_keys($connectionTest['components'] ?? [])
+                'components_tested' => array_keys($connectionTest['components'] ?? []),
+                'cache_key' => $cacheKey,
+                'cache_ttl' => 3600,
+                'full_test_result' => $connectionTest // **DEBUG**: Full test result for troubleshooting
             ]);
             
             return $isAvailable;
@@ -312,7 +353,137 @@ class GuzzleSolrService
                 'host' => $this->solrConfig['host'] ?? 'unknown',
                 'exception_class' => get_class($e)
             ]);
+            
+            // **CACHE FAILURE**: Cache negative result for shorter period (5 minutes)
+            $this->setCachedAvailability($cacheKey, false, 300);
+            
             return false;
+        }
+    }
+
+    /**
+     * Get cached SOLR availability result
+     *
+     * @param string $cacheKey The cache key to lookup
+     * @return bool|null The cached availability result, or null if not cached or expired
+     */
+    private function getCachedAvailability(string $cacheKey): ?bool
+    {
+        try {
+            // Use APCu cache if available for best performance
+            if (function_exists('apcu_fetch')) {
+                $result = apcu_fetch($cacheKey);
+                return $result === false ? null : (bool) $result;
+            }
+            
+            // Fallback to file-based caching
+            $cacheFile = sys_get_temp_dir() . '/' . $cacheKey . '.cache';
+            if (file_exists($cacheFile)) {
+                $data = json_decode(file_get_contents($cacheFile), true);
+                if ($data && ($data['expires'] ?? 0) > time()) {
+                    return (bool) $data['available'];
+                }
+                // Clean up expired cache
+                unlink($cacheFile);
+            }
+            
+            return null;
+        } catch (\Exception $e) {
+            $this->logger->debug('Failed to read SOLR availability cache', [
+                'error' => $e->getMessage(),
+                'cache_key' => $cacheKey
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Cache SOLR availability result
+     *
+     * @param string $cacheKey The cache key to store under
+     * @param bool $isAvailable The availability result to cache
+     * @param int $ttl Time to live in seconds (default: 1 hour)
+     * @return void
+     */
+    private function setCachedAvailability(string $cacheKey, bool $isAvailable, int $ttl = 3600): void
+    {
+        try {
+            // Use APCu cache if available for best performance
+            if (function_exists('apcu_store')) {
+                apcu_store($cacheKey, $isAvailable, $ttl);
+                return;
+            }
+            
+            // Fallback to file-based caching
+            $cacheFile = sys_get_temp_dir() . '/' . $cacheKey . '.cache';
+            $data = [
+                'available' => $isAvailable,
+                'expires' => time() + $ttl,
+                'created' => time()
+            ];
+            file_put_contents($cacheFile, json_encode($data));
+        } catch (\Exception $e) {
+            $this->logger->debug('Failed to cache SOLR availability result', [
+                'error' => $e->getMessage(),
+                'cache_key' => $cacheKey,
+                'available' => $isAvailable,
+                'ttl' => $ttl
+            ]);
+            // Don't throw - caching is optional
+        }
+    }
+
+    /**
+     * Clear cached SOLR availability results (public method for manual cache invalidation)
+     *
+     * This method should be called when SOLR configuration changes to ensure
+     * availability checks reflect the new configuration immediately.
+     *
+     * @return void
+     */
+    public function clearAvailabilityCache(): void
+    {
+        $this->clearCachedAvailability();
+        $this->logger->info('SOLR availability cache cleared manually');
+    }
+
+    /**
+     * Clear cached SOLR availability result (internal method)
+     *
+     * @param string|null $cacheKey Specific cache key to clear, or null to clear all SOLR availability cache
+     * @return void
+     */
+    private function clearCachedAvailability(?string $cacheKey = null): void
+    {
+        try {
+            if ($cacheKey) {
+                // Clear specific cache entry
+                if (function_exists('apcu_delete')) {
+                    apcu_delete($cacheKey);
+                }
+                $cacheFile = sys_get_temp_dir() . '/' . $cacheKey . '.cache';
+                if (file_exists($cacheFile)) {
+                    unlink($cacheFile);
+                }
+            } else {
+                // Clear all SOLR availability cache entries
+                if (function_exists('apcu_delete')) {
+                    $iterator = new \APCUIterator('/^solr_availability_/');
+                    apcu_delete($iterator);
+                }
+                
+                // Clear file-based cache
+                $tempDir = sys_get_temp_dir();
+                $pattern = $tempDir . '/solr_availability_*.cache';
+                foreach (glob($pattern) as $file) {
+                    unlink($file);
+                }
+            }
+        } catch (\Exception $e) {
+            $this->logger->debug('Failed to clear SOLR availability cache', [
+                'error' => $e->getMessage(),
+                'cache_key' => $cacheKey
+            ]);
         }
     }
 
@@ -1287,6 +1458,16 @@ class GuzzleSolrService
             // Build SOLR query from OpenRegister query parameters
             $solrQuery = $this->buildSolrQuery($query);
             
+            // **DEBUG**: Log the built SOLR query for troubleshooting
+            $this->logger->debug('Built SOLR query', [
+                'original_query' => $query,
+                'solr_query' => $solrQuery,
+                'collection' => $collectionName
+            ]);
+            
+            // Apply additional filters (RBAC, multi-tenancy, published, deleted)
+            $this->applyAdditionalFilters($solrQuery, $rbac, $multi, $published, $deleted);
+            
             // Execute the search
             $searchResults = $this->executeSearch($solrQuery, $collectionName);
             
@@ -1320,7 +1501,8 @@ class GuzzleSolrService
      */
     private function applyAdditionalFilters(array &$solrQuery, bool $rbac, bool $multi, bool $published, bool $deleted): void
     {
-        $filters = $solrQuery['filters'] ?? [];
+        
+        $filters = $solrQuery['fq'] ?? [];
         $now = date('Y-m-d\TH:i:s\Z');
         
         // Define published object condition: published is not null AND published <= now AND (depublished is null OR depublished > now)
@@ -1361,7 +1543,7 @@ class GuzzleSolrService
         }
         
         // Update the filters in the query
-        $solrQuery['filters'] = $filters;
+        $solrQuery['fq'] = $filters;
     }
 
     /**
@@ -2311,6 +2493,87 @@ class GuzzleSolrService
     }
 
     /**
+     * Build weighted search query with wildcard support and field boosting
+     *
+     * This method implements a sophisticated search strategy with:
+     * - Field-based relevance weighting following OpenRegister metadata standards
+     * - Multi-level matching: exact > wildcard > fuzzy
+     * - Automatic wildcard expansion for partial matching
+     * - Typo tolerance through fuzzy matching
+     *
+     * **Field Weighting Strategy (NL API Strategy compliant):**
+     * - self_name (15.0x): OpenRegister standardized name field - highest relevance
+     * - self_summary (10.0x): OpenRegister standardized summary field
+     * - self_description (7.0x): OpenRegister standardized description field  
+     * - naam (5.0x): Legacy name field - maintained for backwards compatibility
+     * - beschrijvingKort (3.0x): Legacy short description field
+     * - beschrijving (2.0x): Legacy full description field
+     * - _text_ (1.0x): Catch-all text field - lowest priority
+     *
+     * **Matching Strategy per Field:**
+     * - Exact match: field:"term" (3x field weight)
+     * - Wildcard match: field:*term* (2x field weight) 
+     * - Fuzzy match: field:term~ (1x field weight)
+     *
+     * @param string $searchTerm The search term to query for
+     * @return string SOLR query string with weighted fields and multi-level matching
+     */
+    private function buildWeightedSearchQuery(string $searchTerm): string
+    {
+        // Clean the search term
+        $cleanTerm = $this->cleanSearchTerm($searchTerm);
+        
+        // Define field weights (higher = more important)
+        // Priority order: self_name > self_summary > self_description > legacy fields > catch-all
+        $fieldWeights = [
+            'self_name' => 15.0,       // OpenRegister standardized name (highest priority)
+            'self_summary' => 10.0,    // OpenRegister standardized summary
+            'self_description' => 7.0, // OpenRegister standardized description
+            'naam' => 5.0,             // Legacy name field (lower priority)
+            'beschrijvingKort' => 3.0, // Legacy short description
+            'beschrijving' => 2.0,     // Legacy full description
+            '_text_' => 1.0            // Catch-all text field (lowest priority)
+        ];
+        
+        $queryParts = [];
+        
+        // Build weighted queries for each field
+        foreach ($fieldWeights as $field => $weight) {
+            // Exact phrase match (highest relevance)
+            $queryParts[] = $field . ':"' . $cleanTerm . '"^' . ($weight * 3);
+            
+            // Wildcard match (medium relevance) - proper wildcard syntax
+            $queryParts[] = $field . ':*' . $cleanTerm . '*^' . ($weight * 2);
+            
+            // Fuzzy match (lowest relevance) - proper fuzzy syntax
+            $queryParts[] = $field . ':' . $cleanTerm . '~^' . $weight;
+        }
+        
+        // Join all parts with OR
+        return '(' . implode(' OR ', $queryParts) . ')';
+    }
+    
+    /**
+     * Clean search term for SOLR query safety
+     *
+     * @param string $term Raw search term
+     * @return string Cleaned search term safe for SOLR
+     */
+    private function cleanSearchTerm(string $term): string
+    {
+        // Remove dangerous characters but keep wildcards if user explicitly added them
+        $userHasWildcards = (strpos($term, '*') !== false || strpos($term, '?') !== false);
+        
+        if (!$userHasWildcards) {
+            // Escape special SOLR characters except space
+            $specialChars = ['\\', '+', '-', '!', '(', ')', '{', '}', '[', ']', '^', '"', '~', ':', '/'];
+            $term = str_replace($specialChars, array_map(fn($char) => '\\' . $char, $specialChars), $term);
+        }
+        
+        return trim($term);
+    }
+
+    /**
      * Build SOLR query from OpenRegister query parameters
      *
      * @param array $query OpenRegister query parameters
@@ -2326,9 +2589,20 @@ class GuzzleSolrService
             'wt' => 'json'
         ];
 
-        // Handle search query
+        // Handle search query with wildcard support and field weighting
         if (!empty($query['_search'])) {
-            $solrQuery['q'] = $this->escapeSolrValue($query['_search']);
+            $searchTerm = trim($query['_search']);
+            
+            // Build weighted multi-field search query
+            $searchQuery = $this->buildWeightedSearchQuery($searchTerm);
+            $solrQuery['q'] = $searchQuery;
+            
+            
+            // Enable highlighting for search results (prioritize self_* fields)
+            $solrQuery['hl'] = 'true';
+            $solrQuery['hl.fl'] = 'self_name,self_summary,self_description,naam,beschrijvingKort';
+            $solrQuery['hl.simple.pre'] = '<mark>';
+            $solrQuery['hl.simple.post'] = '</mark>';
         }
 
         // Handle pagination
@@ -2371,14 +2645,14 @@ class GuzzleSolrService
             if (!str_starts_with($key, '_') && !in_array($key, ['@self']) && $value !== null && $value !== '') {
                 if (is_array($value)) {
                     $conditions = array_map(function($v) use ($key) {
-                        return $key . ':' . (is_numeric($v) ? $v : '"' . $this->escapeSolrValue((string)$v) . '"');
+                        return $key . ':' . (is_numeric($v) ? $v : $this->escapeSolrValue((string)$v));
                     }, $value);
                     $filters[] = '(' . implode(' OR ', $conditions) . ')';
                 } else {
                     if (is_numeric($value)) {
                         $filters[] = $key . ':' . $value;
                     } else {
-                        $filters[] = $key . ':"' . $this->escapeSolrValue((string)$value) . '"';
+                        $filters[] = $key . ':' . $this->escapeSolrValue((string)$value);
                     }
                 }
             }
@@ -2389,15 +2663,37 @@ class GuzzleSolrService
             // Guzzle expects array values for multiple parameters with same name
             $solrQuery['fq'] = $filters;
         }
+        
 
 
         // Handle facets
         if (!empty($query['_facets'])) {
             $solrQuery['facet'] = 'true';
             $solrQuery['facet.field'] = [];
-            foreach ($query['_facets'] as $facetField => $facetConfig) {
-                if (is_array($facetConfig) && isset($facetConfig['type'])) {
-                    $solrQuery['facet.field'][] = $facetField;
+            
+            foreach ($query['_facets'] as $facetGroup => $facetConfig) {
+                if ($facetGroup === '@self' && is_array($facetConfig)) {
+                    // Handle @self metadata facets
+                    foreach ($facetConfig as $metaField => $metaConfig) {
+                        if (is_array($metaConfig) && isset($metaConfig['type'])) {
+                            $solrFacetField = 'self_' . $metaField;
+                            
+                            if ($metaConfig['type'] === 'terms') {
+                                $solrQuery['facet.field'][] = $solrFacetField;
+                            } elseif ($metaConfig['type'] === 'date_histogram') {
+                                // Handle date histogram facets
+                                $solrQuery['facet.date'] = $solrFacetField;
+                                $solrQuery['facet.date.start'] = 'NOW/YEAR-10YEARS';
+                                $solrQuery['facet.date.end'] = 'NOW';
+                                $solrQuery['facet.date.gap'] = '+1MONTH';
+                            }
+                        }
+                    }
+                } elseif (is_array($facetConfig) && isset($facetConfig['type'])) {
+                    // Handle regular facets
+                    if ($facetConfig['type'] === 'terms') {
+                        $solrQuery['facet.field'][] = $facetGroup;
+                    }
                 }
             }
         }
@@ -2434,6 +2730,12 @@ class GuzzleSolrService
             $queryString = implode('&', $queryParts);
             $fullUrl = $url . '?' . $queryString;
             
+            // **DEBUG**: Log the final SOLR URL and query for troubleshooting
+            $this->logger->debug('Executing SOLR search', [
+                'full_url' => $fullUrl,
+                'collection' => $collectionName,
+                'query_string' => $queryString
+            ]);
             
             // Use the manually built URL instead of Guzzle's query parameter handling
             $response = $this->httpClient->get($fullUrl, [

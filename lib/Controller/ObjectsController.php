@@ -398,7 +398,7 @@ class ObjectsController extends Controller
         $params = $this->request->getParams();
         $rbac = filter_var($params['rbac'] ?? true, FILTER_VALIDATE_BOOLEAN);
         $multi = filter_var($params['multi'] ?? true, FILTER_VALIDATE_BOOLEAN);
-        $published = filter_var($params['published'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $published = filter_var($params['_published'] ?? false, FILTER_VALIDATE_BOOLEAN);
         $deleted = filter_var($params['deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
         
         // **INTELLIGENT SOURCE SELECTION**: ObjectService automatically chooses optimal source
