@@ -43,7 +43,7 @@
 		"quality:psalm-score": "psalm --output-format=json --no-cache | php -r \"\\$input = file_get_contents('php://stdin'); \\$json = json_decode(\\$input, true); \\$errors = count(\\$json ?? []); \\$score = 1000 - (\\$errors * 5); echo 'Psalm Score: ' . \\$score . ' (Errors: ' . \\$errors . ')' . PHP_EOL;\" || echo 'Psalm not available'",
 		"quality:score": [
 			"@quality:phpcs-score",
-			"@quality:phpmd-score", 
+			"@quality:phpmd-score",
 			"@quality:psalm-score"
 		],
 		"quality:baseline": "php scripts/quality-baseline.php",
@@ -77,7 +77,6 @@
 		"guzzlehttp/guzzle": "^7.0",
 		"opis/json-schema": "^2.3",
 		"phpoffice/phpspreadsheet": "^4.2",
-		"react/async": "^4.3",
 		"react/event-loop": "^1.5",
 		"react/promise": "^3.2",
 		"symfony/uid": "^6.4",
@@ -85,7 +84,6 @@
 		"twig/twig": "^3.18"
 	},
 	"require-dev": {
-		"nextcloud/ocp": "dev-stable29",
 		"phpcsstandards/phpcsextra": "^1.4",
 		"phpmd/phpmd": "^2.15",
 		"phpunit/phpunit": "^10.5",

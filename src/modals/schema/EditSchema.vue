@@ -681,6 +681,11 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 								:checked.sync="schemaItem.configuration.allowFiles">
 								Allow Files
 							</NcCheckboxRadioSwitch>
+							<NcCheckboxRadioSwitch
+								:disabled="loading"
+								:checked.sync="schemaItem.configuration.autoPublish">
+								Auto-Publish Objects
+							</NcCheckboxRadioSwitch>
 							<NcTextField
 								v-model="allowedTagsInput"
 								:disabled="loading"
@@ -983,6 +988,7 @@ export default {
 					objectSummaryField: '',
 					allowFiles: false,
 					allowedTags: [],
+					autoPublish: false,
 				},
 				authorization: {},
 				hardValidation: false,
@@ -1262,6 +1268,9 @@ export default {
 					if (!this.schemaItem.configuration.allowedTags) {
 						this.schemaItem.configuration.allowedTags = []
 					}
+					if (this.schemaItem.configuration.autoPublish === undefined) {
+						this.schemaItem.configuration.autoPublish = false
+					}
 				}
 
 				// Initialize allowedTagsInput from existing allowedTags array
@@ -1308,6 +1317,7 @@ export default {
 					objectSummaryField: '',
 					allowFiles: false,
 					allowedTags: [],
+					autoPublish: false,
 				}
 				this.allowedTagsInput = ''
 				this.originalProperties = {}
@@ -1528,6 +1538,7 @@ export default {
 								objectSummaryField: '',
 								allowFiles: false,
 								allowedTags: [],
+								autoPublish: false,
 							},
 							hardValidation: false,
 							immutable: false,

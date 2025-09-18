@@ -32,6 +32,26 @@ use OCP\IUserSession;
  *
  * This class handles storage and manipulation of objects including their metadata,
  * locking mechanisms, and serialization for API responses.
+ * 
+ * ⚠️  BULK OPERATIONS INTEGRATION:
+ * When adding new database fields to this entity, consider whether they should be
+ * excluded from bulk operation change detection in:
+ * - OptimizedBulkOperations::buildMassiveInsertOnDuplicateKeyUpdateSQL()
+ * 
+ * Database-managed fields (auto-populated/controlled by DB) should be added to the
+ * $databaseManagedFields array to prevent false change detection:
+ * - id, uuid: Primary identifiers (never change)
+ * - created: Set by database DEFAULT CURRENT_TIMESTAMP  
+ * - updated: Set by database ON UPDATE CURRENT_TIMESTAMP
+ * - published: Auto-managed by schema autoPublish logic
+ * 
+ * User/application-managed fields that CAN trigger updates:
+ * - name, description, summary, image: Extracted metadata 
+ * - object: The actual data payload
+ * - register, schema: Context fields
+ * - owner, organisation: Ownership fields
+ * 
+ * Adding fields? Check if they should trigger change detection or be database-managed.
  */
 class ObjectEntity extends Entity implements JsonSerializable
 {
@@ -46,6 +66,11 @@ class ObjectEntity extends Entity implements JsonSerializable
     /**
      * URL-friendly identifier for the object.
      *
+     * This field can be automatically populated via schema metadata mapping configuration.
+     * Configure in schema: { "configuration": { "objectSlugField": "naam" } }
+     * The field value will be converted to a URL-friendly slug format.
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var string|null URL-friendly slug for the object, unique within register+schema combination
      */
     protected ?string $slug = null;
@@ -185,6 +210,9 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     /**
      * Last update timestamp.
+     * 
+     * 🔒 DATABASE-MANAGED: Set by database ON UPDATE CURRENT_TIMESTAMP
+     * This field should NOT be set during bulk preparation to avoid false change detection.
      *
      * @var DateTime|null Last update timestamp
      */
@@ -192,6 +220,9 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     /**
      * Creation timestamp.
+     * 
+     * 🔒 DATABASE-MANAGED: Set by database DEFAULT CURRENT_TIMESTAMP  
+     * This field should NOT be set during bulk preparation to avoid false change detection.
      *
      * @var DateTime|null Creation timestamp
      */
@@ -200,13 +231,26 @@ class ObjectEntity extends Entity implements JsonSerializable
     /**
      * Published timestamp.
      *
+     * This field can be automatically populated via schema metadata mapping configuration.
+     * Configure in schema: { "configuration": { "objectPublishedField": "publicatieDatum" } }
+     * Supports various datetime formats which will be parsed to DateTime objects.
+     * 
+     * ⚠️  PARTIALLY DATABASE-MANAGED: Auto-publish logic sets this for NEW objects only.
+     * Excluded from bulk change detection to avoid false updates on existing objects.
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var DateTime|null Published timestamp
      */
     protected ?DateTime $published = null;
 
     /**
-     * Published timestamp.
+     * Depublished timestamp.
      *
+     * This field can be automatically populated via schema metadata mapping configuration.
+     * Configure in schema: { "configuration": { "objectDepublishedField": "einddatum" } }
+     * Supports various datetime formats which will be parsed to DateTime objects.
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var DateTime|null Depublished timestamp
      */
     protected ?DateTime $depublished = null;
@@ -223,6 +267,11 @@ class ObjectEntity extends Entity implements JsonSerializable
     /**
      * Name of the object.
      *
+     * This field is automatically populated via schema metadata mapping configuration.
+     * Configure in schema: { "configuration": { "objectNameField": "naam" } } or
+     * with twig-like concatenation: { "objectNameField": "{{ voornaam }} {{ achternaam }}" }
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var string|null Name of the object
      */
     protected ?string $name = null;
@@ -230,6 +279,11 @@ class ObjectEntity extends Entity implements JsonSerializable
     /**
      * Description of the object.
      *
+     * This field is automatically populated via schema metadata mapping configuration.
+     * Configure in schema: { "configuration": { "objectDescriptionField": "beschrijving" } }
+     * Supports dot notation for nested fields: "contact.beschrijving"
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var string|null Description of the object
      */
     protected ?string $description = null;
@@ -237,6 +291,11 @@ class ObjectEntity extends Entity implements JsonSerializable
     /**
      * Summary of the object.
      *
+     * This field is automatically populated via schema metadata mapping configuration.
+     * Configure in schema: { "configuration": { "objectSummaryField": "beschrijvingKort" } }
+     * Supports twig-like templates for combining fields.
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var string|null Summary of the object
      */
     protected ?string $summary = null;
@@ -244,6 +303,11 @@ class ObjectEntity extends Entity implements JsonSerializable
     /**
      * Image of the object.
      *
+     * This field is automatically populated via schema metadata mapping configuration.
+     * Configure in schema: { "configuration": { "objectImageField": "afbeelding" } }
+     * Can reference file fields or contain base64 encoded image data.
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var string|null Image of the object (base64 encoded or file reference)
      */
     protected ?string $image = null;

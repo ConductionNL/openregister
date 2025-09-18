@@ -1,3 +1,4 @@
+
 <?php
 
 /**
@@ -23,6 +24,11 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\BackgroundJob\SolrWarmupJob;
+use OCP\IUserManager;
+use OCP\IGroupManager;
+use OCP\IUser;
+use OCP\BackgroundJob\IJobList;
 use PhpOffice\PhpSpreadsheet\Reader\Csv;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -113,6 +119,27 @@ class ImportService
      */
     private readonly LoggerInterface $logger;
 
+    /**
+     * User manager for checking user context
+     *
+     * @var IUserManager
+     */
+    private readonly IUserManager $userManager;
+
+    /**
+     * Group manager for checking admin group membership
+     *
+     * @var IGroupManager
+     */
+    private readonly IGroupManager $groupManager;
+
+    /**
+     * Background job list for scheduling SOLR warmup jobs
+     *
+     * @var IJobList
+     */
+    private readonly IJobList $jobList;
+
 
     /**
      * Constructor for the ImportService
@@ -121,18 +148,47 @@ class ImportService
      * @param SchemaMapper       $schemaMapper       The schema mapper
      * @param ObjectService      $objectService      The object service
      * @param LoggerInterface    $logger             The logger interface
+     * @param IUserManager       $userManager        The user manager
+     * @param IGroupManager      $groupManager       The group manager
+     * @param IJobList           $jobList            The background job list
      */
-    public function __construct(ObjectEntityMapper $objectEntityMapper, SchemaMapper $schemaMapper, ObjectService $objectService, LoggerInterface $logger)
+    public function __construct(ObjectEntityMapper $objectEntityMapper, SchemaMapper $schemaMapper, ObjectService $objectService, LoggerInterface $logger, IUserManager $userManager, IGroupManager $groupManager, IJobList $jobList)
     {
         $this->objectEntityMapper = $objectEntityMapper;
         $this->schemaMapper       = $schemaMapper;
         $this->objectService      = $objectService;
         $this->logger             = $logger;
+        $this->userManager        = $userManager;
+        $this->groupManager       = $groupManager;
+        $this->jobList            = $jobList;
         
         // Initialize cache arrays to prevent issues
         $this->schemaPropertiesCache = [];
 
     }//end __construct()
+
+
+    /**
+     * Check if the given user is in the admin group
+     *
+     * @param IUser|null $user The user to check (null means anonymous/no user)
+     *
+     * @return bool True if user is admin, false otherwise
+     */
+    private function isUserAdmin(?IUser $user): bool
+    {
+        if ($user === null) {
+            return false; // Anonymous users are never admin
+        }
+
+        // Check if user is in admin group
+        $adminGroup = $this->groupManager->get('admin');
+        if ($adminGroup === null) {
+            return false; // Admin group doesn't exist
+        }
+
+        return $adminGroup->inGroup($user);
+    }//end isUserAdmin()
 
 
     /**
@@ -163,12 +219,9 @@ class ImportService
     ): PromiseInterface {
         return new Promise(
             function (callable $resolve, callable $reject) use ($filePath, $register, $schema, $chunkSize) {
-                try {
-                    $result = $this->importFromExcel(filePath: $filePath, register: $register, schema: $schema, chunkSize: $chunkSize);
-                    $resolve($result);
-                } catch (\Throwable $e) {
-                    $reject($e);
-                }
+                // NO ERROR SUPPRESSION: Let Excel import errors bubble up immediately!
+                $result = $this->importFromExcel(filePath: $filePath, register: $register, schema: $schema, chunkSize: $chunkSize);
+                $resolve($result);
             }
         );
 
@@ -201,7 +254,7 @@ class ImportService
      * @phpstan-return array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      * @psalm-return   array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      */
-    public function importFromExcel(string $filePath, ?Register $register=null, ?Schema $schema=null, int $chunkSize=self::DEFAULT_CHUNK_SIZE, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false): array
+    public function importFromExcel(string $filePath, ?Register $register=null, ?Schema $schema=null, int $chunkSize=self::DEFAULT_CHUNK_SIZE, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false, ?IUser $currentUser=null): array
     {
         // Clear caches at the start of each import to prevent stale data issues
         $this->clearCaches();
@@ -212,12 +265,12 @@ class ImportService
 
         // If we have a register but no schema, process each sheet as a different schema.
         if ($register !== null && $schema === null) {
-            return $this->processMultiSchemaSpreadsheetAsync($spreadsheet, $register, $chunkSize, $validation, $events, $rbac, $multi, $publish);
+            return $this->processMultiSchemaSpreadsheetAsync($spreadsheet, $register, $chunkSize, $validation, $events, $rbac, $multi, $publish, $currentUser);
         }
 
         // Single schema processing - use batch processing for better performance
         $sheetTitle = $spreadsheet->getActiveSheet()->getTitle();
-        $sheetSummary = $this->processSpreadsheetBatch($spreadsheet, $register, $schema, $chunkSize, $validation, $events, $rbac, $multi, $publish);
+        $sheetSummary = $this->processSpreadsheetBatch($spreadsheet, $register, $schema, $chunkSize, $validation, $events, $rbac, $multi, $publish, $currentUser);
 
         // Add schema information to the summary (consistent with multi-sheet Excel import).
         if ($schema !== null) {
@@ -228,8 +281,12 @@ class ImportService
             ];
         }
 
+        // Schedule SOLR warmup job after successful Excel import
+        $finalResult = [$sheetTitle => $sheetSummary];
+        $this->scheduleSmartSolrWarmup($finalResult);
+
         // Return in sheet-based format for consistency.
-        return [$sheetTitle => $sheetSummary];
+        return $finalResult;
 
     }//end importFromExcel()
 
@@ -252,12 +309,9 @@ class ImportService
     ): PromiseInterface {
         return new Promise(
             function (callable $resolve, callable $reject) use ($filePath, $register, $schema, $chunkSize) {
-                try {
-                    $result = $this->importFromCsv($filePath, $register, $schema, $chunkSize);
-                    $resolve($result);
-                } catch (\Throwable $e) {
-                    $reject($e);
-                }
+                // NO ERROR SUPPRESSION: Let CSV import errors bubble up immediately!
+                $result = $this->importFromCsv($filePath, $register, $schema, $chunkSize);
+                $resolve($result);
             }
         );
 
@@ -278,7 +332,7 @@ class ImportService
      * @phpstan-return array<string, array{created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      * @psalm-return   array<string, array{created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      */
-    public function importFromCsv(string $filePath, ?Register $register=null, ?Schema $schema=null, int $chunkSize=self::DEFAULT_CHUNK_SIZE, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false): array
+    public function importFromCsv(string $filePath, ?Register $register=null, ?Schema $schema=null, int $chunkSize=self::DEFAULT_CHUNK_SIZE, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false, ?IUser $currentUser=null): array
     {
         // Clear caches at the start of each import to prevent stale data issues
         $this->clearCaches();
@@ -297,7 +351,7 @@ class ImportService
 
         // Get the sheet title for CSV (usually just 'Worksheet' or similar).
         $sheetTitle = $spreadsheet->getActiveSheet()->getTitle();
-        $sheetSummary = $this->processCsvSheet($spreadsheet->getActiveSheet(), $register, $schema, $chunkSize, $validation, $events, $rbac, $multi, $publish);
+        $sheetSummary = $this->processCsvSheet($spreadsheet->getActiveSheet(), $register, $schema, $chunkSize, $validation, $events, $rbac, $multi, $publish, $currentUser);
 
         // Add schema information to the summary (consistent with Excel import).
         $sheetSummary['schema'] = [
@@ -306,8 +360,12 @@ class ImportService
             'slug'  => $schema->getSlug(),
         ];
 
+        // Schedule SOLR warmup job after successful CSV import
+        $finalResult = [$sheetTitle => $sheetSummary];
+        $this->scheduleSmartSolrWarmup($finalResult);
+
         // Return in sheet-based format for consistency.
-        return [$sheetTitle => $sheetSummary];
+        return $finalResult;
 
     }//end importFromCsv()
 
@@ -326,7 +384,7 @@ class ImportService
      * @phpstan-return array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      * @psalm-return   array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      */
-    private function processMultiSchemaSpreadsheetAsync(Spreadsheet $spreadsheet, Register $register, int $chunkSize, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false): array
+    private function processMultiSchemaSpreadsheetAsync(Spreadsheet $spreadsheet, Register $register, int $chunkSize, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false, ?IUser $currentUser=null): array
     {
         $summary = [];
 
@@ -339,7 +397,7 @@ class ImportService
                 'found'     => 0,
                 'created'   => [],
                 'updated'   => [],
-                'unchanged' => [],
+                'unchanged' => [],  // TODO: Renamed from 'skipped' - more descriptive (objects skipped because content was unchanged)
                 'errors'    => [],
                 'schema'    => null,
                 'debug'     => [
@@ -378,11 +436,14 @@ class ImportService
 
             // Set the worksheet as active and process using batch saving for better performance.
             $spreadsheet->setActiveSheetIndex($spreadsheet->getIndex($worksheet));
-            $sheetSummary = $this->processSpreadsheetBatch($spreadsheet, $register, $schema, $chunkSize, $validation, $events, $rbac, $multi, $publish);
+            $sheetSummary = $this->processSpreadsheetBatch($spreadsheet, $register, $schema, $chunkSize, $validation, $events, $rbac, $multi, $publish, $currentUser);
 
             // Merge the sheet summary with the existing summary (preserve debug info).
             $summary[$schemaSlug] = array_merge($summary[$schemaSlug], $sheetSummary);
         }//end foreach
+
+        // Schedule SOLR warmup job after successful multi-schema import
+        $this->scheduleSmartSolrWarmup($summary);
 
         return $summary;
 
@@ -488,148 +549,126 @@ class ImportService
         bool $events=false,
         bool $rbac=true,
         bool $multi=true,
-        bool $publish=false
+        bool $publish=false,
+        ?IUser $currentUser=null
     ): array {
         $summary = [
             'found'     => 0,
             'created'   => [],
             'updated'   => [],
+            'unchanged' => [],  // TODO: Renamed from 'skipped' - more descriptive
             'unchanged' => [],
             'errors'    => [],
         ];
 
-        try {
-            $startTime = microtime(true);
-            
-            // Get the active sheet
-            $sheet = $spreadsheet->getActiveSheet();
-            $sheetTitle = $sheet->getTitle();
+        // REMOVED ERROR SUPPRESSION: Let bulk save errors bubble up immediately!
+        
+        $startTime = microtime(true);
+        
+        // Get the active sheet
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheetTitle = $sheet->getTitle();
 
-            // Build column mapping from headers
-            $columnMapping = $this->buildColumnMapping($sheet);
-            
-            if (empty($columnMapping)) {
-                $summary['errors'][] = [
-                    'sheet'  => $sheetTitle,
-                    'row'    => 1,
-                    'object' => [],
-                    'error'  => 'No valid headers found in sheet',
-                ];
-                return $summary;
-            }
-
-            // Get total rows in the sheet
-            $highestRow = $sheet->getHighestRow();
-            
-            if ($highestRow <= 1) {
-                $summary['errors'][] = [
-                    'sheet'  => $sheetTitle,
-                    'row'    => 1,
-                    'object' => [],
-                    'error'  => 'No data rows found in sheet',
-                ];
-                return $summary;
-            }
-
-
-            // Parse ALL rows into objects array (no chunking here!)
-            $allObjects = [];
-            $rowErrors = [];
-            
-            for ($row = 2; $row <= $highestRow; $row++) {
-                try {
-                    $rowData = $this->extractRowData($sheet, $columnMapping, $row);
-                    
-                    if (empty($rowData)) {
-                        continue; // Skip empty rows
-                    }
-
-                    // Transform row data to object format
-                    $object = $this->transformExcelRowToObject($rowData, $register, $schema, $row);
-                    
-                    if ($object !== null) {
-                        $allObjects[] = $object;
-                    }
-
-                } catch (\Exception $e) {
-                    $rowErrors[] = [
-                        'sheet' => $sheetTitle,
-                        'row'   => $row,
-                        'object' => $rowData ?? [],
-                        'error' => $e->getMessage(),
-                    ];
-                }
-            }
-
-            $summary['found'] = count($allObjects);
-
-            // DEBUG: Check conditions for saveObjects call
-
-            // Call saveObjects ONCE with all objects - let ObjectService handle performance optimization
-            if (!empty($allObjects) && $register !== null && $schema !== null) {
-                try {
-                    // Add publish date to all objects if publish is enabled
-                    if ($publish) {
-                        $publishDate = (new \DateTime())->format('c'); // ISO 8601 format
-                        $allObjects = $this->addPublishedDateToObjects($allObjects, $publishDate);
-                    }
-                    
-                    $saveResult = $this->objectService->saveObjects($allObjects, $register, $schema, $rbac, $multi, $validation, $events);
-                    
-                    // Use the structured return from saveObjects
-                    // saveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id
-                    $summary['created'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []);
-                    $summary['updated'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []);
-                    
-                    // Handle validation errors if validation was enabled
-                    if ($validation && !empty($saveResult['invalid'] ?? [])) {
-                        foreach (($saveResult['invalid'] ?? []) as $invalidItem) {
-                            $summary['errors'][] = [
-                                'sheet' => $sheetTitle,
-                                'object' => $invalidItem['object'] ?? $invalidItem,
-                                'error' => $invalidItem['error'] ?? 'Validation failed',
-                                'type'  => $invalidItem['type'] ?? 'ValidationException',
-                            ];
-                        }
-                    }
-                } catch (\Exception $e) {
-                    // Handle batch save errors
-                    $summary['errors'][] = [
-                        'sheet' => $sheetTitle,
-                        'row' => 'batch',
-                        'object' => [],
-                        'error' => 'Batch save failed: ' . $e->getMessage(),
-                        'type' => 'BatchSaveException',
-                    ];
-                }
-            }
-
-            // Add row parsing errors
-            $summary['errors'] = array_merge($summary['errors'], $rowErrors);
-
-            $totalImportTime = microtime(true) - $startTime;
-            $overallRowsPerSecond = count($allObjects) / max($totalImportTime, 0.001);
-            
-
-        } catch (\Exception $e) {
-            // Enhanced error logging for debugging
-            
-            // Clear caches in case of error to prevent corruption
-            $this->clearCaches();
-            
+        // Build column mapping from headers
+        $columnMapping = $this->buildColumnMapping($sheet);
+        
+        if (empty($columnMapping)) {
             $summary['errors'][] = [
-                'sheet' => $sheetTitle ?? 'unknown',
-                'row'   => 'general',
+                'sheet'  => $sheetTitle,
+                'row'    => 1,
                 'object' => [],
-                'error' => 'Sheet processing failed: ' . $e->getMessage(),
-                'type'  => 'ProcessingException',
-                'debug' => [
-                    'file' => $e->getFile(),
-                    'line' => $e->getLine(),
-                    'class' => get_class($e)
-                ]
+                'error'  => 'No valid headers found in sheet',
             ];
+            return $summary;
         }
+
+        // Get total rows in the sheet
+        $highestRow = $sheet->getHighestRow();
+        
+        if ($highestRow <= 1) {
+            $summary['errors'][] = [
+                'sheet'  => $sheetTitle,
+                'row'    => 1,
+                'object' => [],
+                'error'  => 'No data rows found in sheet',
+            ];
+            return $summary;
+        }
+
+        // Parse ALL rows into objects array (no chunking here!)
+        $allObjects = [];
+        
+        for ($row = 2; $row <= $highestRow; $row++) {
+            // NO ERROR SUPPRESSION: Let row processing errors bubble up immediately!
+            $rowData = $this->extractRowData($sheet, $columnMapping, $row);
+            
+            if (empty($rowData)) {
+                continue; // Skip empty rows
+            }
+
+            // Transform row data to object format
+            $object = $this->transformExcelRowToObject($rowData, $register, $schema, $row, $currentUser);
+            
+            if ($object !== null) {
+                $allObjects[] = $object;
+            }
+        }
+
+        $summary['found'] = count($allObjects);
+
+        // Call saveObjects ONCE with all objects - NO ERROR SUPPRESSION!
+        // This will reveal the real bulk save problem immediately
+        if (!empty($allObjects) && $register !== null && $schema !== null) {
+            try {
+                // Add publish date to all objects if publish is enabled
+                if ($publish) {
+                    $publishDate = (new \DateTime())->format('c'); // ISO 8601 format
+                    $allObjects = $this->addPublishedDateToObjects($allObjects, $publishDate);
+                }
+
+                $saveResult = $this->objectService->saveObjects($allObjects, $register, $schema, $rbac, $multi, $validation, $events);
+
+                // Use the structured return from saveObjects with smart deduplication
+                // saveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id
+                $summary['created'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []);
+                $summary['updated'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []);
+
+                // TODO: Handle unchanged objects from smart deduplication (renamed from 'skipped')
+                $summary['unchanged'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['unchanged'] ?? []);
+
+                // Add efficiency metrics from smart deduplication
+                $totalProcessed = count($summary['created']) + count($summary['updated']) + count($summary['unchanged']);
+                if ($totalProcessed > 0 && count($summary['unchanged']) > 0) {
+                    $summary['deduplication_efficiency'] = round((count($summary['unchanged']) / $totalProcessed) * 100, 1) . '% operations avoided';
+                }
+
+                // Handle validation errors if validation was enabled
+                if ($validation && !empty($saveResult['invalid'] ?? [])) {
+                    foreach (($saveResult['invalid'] ?? []) as $invalidItem) {
+                        $summary['errors'][] = [
+                            'sheet' => $sheetTitle,
+                            'object' => $invalidItem['object'] ?? $invalidItem,
+                            'error' => $invalidItem['error'] ?? 'Validation failed',
+                            'type'  => $invalidItem['type'] ?? 'ValidationException',
+                        ];
+                    }
+                }
+            } catch (\Exception $e) {
+                // Handle batch save errors
+                $summary['errors'][] = [
+                    'sheet' => $sheetTitle,
+                    'row' => 'batch',
+                    'object' => [],
+                    'error' => 'Batch save failed: ' . $e->getMessage(),
+                    'type' => 'BatchSaveException',
+                ];
+            }
+        }
+
+        // NO ERROR SUPPRESSION: Row parsing errors will bubble up immediately - no need to collect them
+
+        $totalImportTime = microtime(true) - $startTime;
+        $overallRowsPerSecond = count($allObjects) / max($totalImportTime, 0.001);
 
         return $summary;
 
@@ -650,145 +689,137 @@ class ImportService
      * @phpstan-return array<string, array{found: int, created: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      * @psalm-return   array<string, array{found: int, created: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      */
-    private function processCsvSheet(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, Register $register, Schema $schema, int $chunkSize, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false): array
+    private function processCsvSheet(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, Register $register, Schema $schema, int $chunkSize, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false, ?IUser $currentUser=null): array
     {
         $summary = [
             'found'     => 0,
             'created'   => [],
             'updated'   => [],
+            'unchanged' => [],  // TODO: Renamed from 'skipped' - more descriptive
             'unchanged' => [],
             'errors'    => [],
         ];
 
-        try {
-            $startTime = microtime(true);
+        // REMOVED ERROR SUPPRESSION: Let CSV bulk save errors bubble up immediately!
+        
+        $startTime = microtime(true);
+        
+        // Build column mapping from headers
+        $columnMapping = $this->buildColumnMapping($sheet);
+        
+        if (empty($columnMapping)) {
+            $summary['errors'][] = [
+                'row'   => 1,
+                'object' => [],
+                'error' => 'No valid headers found in CSV file',
+            ];
+            return $summary;
+        }
+
+        // Get total rows in the sheet
+        $highestRow = $sheet->getHighestRow();
+        
+        if ($highestRow <= 1) {
+            $summary['errors'][] = [
+                'row'   => 1,
+                'object' => [],
+                'error' => 'No data rows found in CSV file',
+            ];
+            return $summary;
+        }
+
+        // Parse ALL rows into objects array (no chunking here!)
+        $allObjects = [];
+        
+        for ($row = 2; $row <= $highestRow; $row++) {
+            // NO ERROR SUPPRESSION: Let CSV row processing errors bubble up immediately!
+            $rowData = $this->extractRowData($sheet, $columnMapping, $row);
             
-            // Build column mapping from headers
-            $columnMapping = $this->buildColumnMapping($sheet);
-            
-            if (empty($columnMapping)) {
-                $summary['errors'][] = [
-                    'row'   => 1,
-                    'object' => [],
-                    'error' => 'No valid headers found in CSV file',
-                ];
-                return $summary;
+            if (empty($rowData)) {
+                continue; // Skip empty rows
             }
 
-            // Get total rows in the sheet
-            $highestRow = $sheet->getHighestRow();
+            // Transform row data to object format
+            $object = $this->transformCsvRowToObject($rowData, $register, $schema, $row, $currentUser);
             
-            if ($highestRow <= 1) {
-                $summary['errors'][] = [
-                    'row'   => 1,
-                    'object' => [],
-                    'error' => 'No data rows found in CSV file',
-                ];
-                return $summary;
+            if ($object !== null) {
+                $allObjects[] = $object;
             }
+        }
 
+        $summary['found'] = count($allObjects);
+
+        // Call saveObjects ONCE with all objects - NO ERROR SUPPRESSION!
+        // This will reveal the real bulk save problem immediately
+        if (!empty($allObjects)) {
+            // Log publish processing for debugging
+            $this->logger->debug('CSV import processing objects', [
+                'objectCount' => count($allObjects),
+                'publish' => $publish
+            ]);
             
-            // Parse ALL rows into objects array (no chunking here!)
-            $allObjects = [];
-            $rowErrors = [];
+            // Add publish date to all objects if publish is enabled
+            if ($publish) {
+                $publishDate = (new \DateTime())->format('c'); // ISO 8601 format
+                $this->logger->debug('Adding publish date to CSV import objects', [
+                    'publishDate' => $publishDate,
+                    'objectCount' => count($allObjects)
+                ]);
+                $allObjects = $this->addPublishedDateToObjects($allObjects, $publishDate);
+                
+                // Log first object structure for debugging
+                if (!empty($allObjects[0]['@self'])) {
+                    $this->logger->debug('First object @self structure after adding publish date', [
+                        'selfData' => $allObjects[0]['@self']
+                    ]);
+                }
+            } else {
+                $this->logger->debug('Publish disabled for CSV import, not adding publish dates');
+            }
             
-            for ($row = 2; $row <= $highestRow; $row++) {
-                try {
-                    $rowData = $this->extractRowData($sheet, $columnMapping, $row);
-                    
-                    if (empty($rowData)) {
-                        continue; // Skip empty rows
-                    }
-
-                    // Transform row data to object format
-                    $object = $this->transformCsvRowToObject($rowData, $register, $schema, $row);
-                    
-                    if ($object !== null) {
-                        $allObjects[] = $object;
-                    }
-
-                } catch (\Exception $e) {
-                    $rowErrors[] = [
-                        'row'   => $row,
-                        'object' => $rowData ?? [],
-                        'error' => $e->getMessage(),
+            
+            $saveResult = $this->objectService->saveObjects($allObjects, $register, $schema, $rbac, $multi, $validation, $events);
+            
+            // Use the structured return from saveObjects with smart deduplication
+            // saveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id
+            $summary['created'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []);
+            $summary['updated'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []);
+            
+            // TODO: Handle unchanged objects from smart deduplication (renamed from 'skipped')
+            $summary['unchanged'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['unchanged'] ?? []);
+            
+            // Add efficiency metrics from smart deduplication
+            $totalProcessed = count($summary['created']) + count($summary['updated']) + count($summary['unchanged']);
+            if ($totalProcessed > 0 && count($summary['unchanged']) > 0) {
+                $summary['deduplication_efficiency'] = round((count($summary['unchanged']) / $totalProcessed) * 100, 1) . '% operations avoided';
+            }
+            
+            // Handle validation errors if validation was enabled
+            if ($validation && !empty($saveResult['invalid'] ?? [])) {
+                foreach (($saveResult['invalid'] ?? []) as $invalidItem) {
+                    $summary['errors'][] = [
+                        'object' => $invalidItem['object'] ?? $invalidItem,
+                        'error' => $invalidItem['error'] ?? 'Validation failed',
+                        'type' => $invalidItem['type'] ?? 'ValidationException',
                     ];
                 }
             }
-
-            $summary['found'] = count($allObjects);
-
-            // DEBUG: Check conditions for saveObjects call
-
-            // Call saveObjects ONCE with all objects - let ObjectService handle performance optimization
-            if (!empty($allObjects)) {
-                // Log publish processing for debugging
-                $this->logger->debug('CSV import processing objects', [
-                    'objectCount' => count($allObjects),
-                    'publish' => $publish
-                ]);
-                
-                // Add publish date to all objects if publish is enabled
-                if ($publish) {
-                    $publishDate = (new \DateTime())->format('c'); // ISO 8601 format
-                    $this->logger->debug('Adding publish date to CSV import objects', [
-                        'publishDate' => $publishDate,
-                        'objectCount' => count($allObjects)
-                    ]);
-                    $allObjects = $this->addPublishedDateToObjects($allObjects, $publishDate);
-                    
-                    // Log first object structure for debugging
-                    if (!empty($allObjects[0]['@self'])) {
-                        $this->logger->debug('First object @self structure after adding publish date', [
-                            'selfData' => $allObjects[0]['@self']
-                        ]);
-                    }
-                } else {
-                    $this->logger->debug('Publish disabled for CSV import, not adding publish dates');
-                }
-                
-                $saveResult = $this->objectService->saveObjects($allObjects, $register, $schema, $rbac, $multi, $validation, $events);
-                
-                // Use the structured return from saveObjects
-                // saveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id
-                $summary['created'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []);
-                $summary['updated'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []);
-                
-                // Handle validation errors if validation was enabled
-                if ($validation && !empty($saveResult['invalid'] ?? [])) {
-                    foreach (($saveResult['invalid'] ?? []) as $invalidItem) {
-                        $summary['errors'][] = [
-                            'object' => $invalidItem['object'] ?? $invalidItem,
-                            'error' => $invalidItem['error'] ?? 'Validation failed',
-                            'type' => $invalidItem['type'] ?? 'ValidationException',
-                        ];
-                    }
-                }
-            }
-
-            // Add row parsing errors
-            $summary['errors'] = array_merge($summary['errors'], $rowErrors);
-
-            $totalImportTime = microtime(true) - $startTime;
-            $overallRowsPerSecond = count($allObjects) / max($totalImportTime, 0.001);
-            
-
-        } catch (\Exception $e) {
-            // Enhanced error logging for debugging
-            
-            // Clear caches in case of error to prevent corruption
-            $this->clearCaches();
-            
-            $summary['errors'][] = [
-                'error' => 'Sheet processing failed: ' . $e->getMessage(),
-                'type'  => 'ProcessingException',
-                'debug' => [
-                    'file' => $e->getFile(),
-                    'line' => $e->getLine(),
-                    'class' => get_class($e)
-                ]
-            ];
         }
+
+        // NO ERROR SUPPRESSION: Row parsing errors will bubble up immediately - no need to collect them
+
+        $totalImportTime = microtime(true) - $startTime;
+        $overallRowsPerSecond = count($allObjects) / max($totalImportTime, 0.001);
+        
+        // ADD PERFORMANCE METRICS: Include timing and speed metrics like SaveObjects does
+        $summary['performance'] = [
+            'totalTime'        => round($totalImportTime, 3),
+            'totalTimeMs'      => round($totalImportTime * 1000, 2),
+            'objectsPerSecond' => round($overallRowsPerSecond, 2),
+            'totalProcessed'   => count($allObjects),
+            'totalFound'       => $summary['found'],
+            'efficiency'       => $summary['found'] > 0 ? round((count($allObjects) / $summary['found']) * 100, 1) : 0,
+        ];
 
         return $summary;
 
@@ -851,79 +882,69 @@ class ImportService
             // Create promises for concurrent chunk processing
             foreach ($batch as $chunk) {
                 $promises[] = new Promise(function (callable $resolve, callable $reject) use ($sheet, $columnMapping, $chunk, $register, $schema, $validation, $events) {
-                    try {
-                        // Process chunk
-                        $chunkResult = $this->processExcelChunk($sheet, $columnMapping, $chunk['start'], $chunk['end'], $register, $schema);
-                        
-                        if (!empty($chunkResult['objects'])) {
-                            // Save objects for this chunk
-                            $saveResult = $this->objectService->saveObjects(
-                                $chunkResult['objects'], 
-                                $register, 
-                                $schema, 
-                                true, 
-                                true, 
-                                $validation, 
-                                $events
-                            );
+                    // NO ERROR SUPPRESSION: Let Excel chunk processing errors bubble up immediately!
+                    // Process chunk
+                    $chunkResult = $this->processExcelChunk($sheet, $columnMapping, $chunk['start'], $chunk['end'], $register, $schema);
+                    
+                    if (!empty($chunkResult['objects'])) {
+                        // Save objects for this chunk
+                        $saveResult = $this->objectService->saveObjects(
+                            $chunkResult['objects'], 
+                            $register, 
+                            $schema, 
+                            true, 
+                            true, 
+                            $validation, 
+                            $events
+                        );
 
-                            $result = [
-                                'found'   => count($chunkResult['objects']),
-                                'created' => array_map(fn($obj) => $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []),
-                                'updated' => array_map(fn($obj) => $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []),
-                                'errors'  => $chunkResult['errors'] ?? [],
-                            ];
+                        $result = [
+                            'found'   => count($chunkResult['objects']),
+                            'created' => array_map(fn($obj) => $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []),
+                            'updated' => array_map(fn($obj) => $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []),
+                            'errors'  => $chunkResult['errors'] ?? [],
+                        ];
 
-                            // Add validation errors if any
-                            if ($validation && !empty($saveResult['invalid'] ?? [])) {
-                                foreach ($saveResult['invalid'] as $invalidItem) {
-                                    $result['errors'][] = [
-                                        'rows'  => $chunk['start'] . '-' . $chunk['end'],
-                                        'object' => $invalidItem['object'] ?? $invalidItem,
-                                        'error' => $invalidItem['error'] ?? 'Validation failed',
-                                        'type'  => $invalidItem['type'] ?? 'ValidationException',
-                                    ];
-                                }
+                        // Add validation errors if any
+                        if ($validation && !empty($saveResult['invalid'] ?? [])) {
+                            foreach ($saveResult['invalid'] as $invalidItem) {
+                                $result['errors'][] = [
+                                    'rows'  => $chunk['start'] . '-' . $chunk['end'],
+                                    'object' => $invalidItem['object'] ?? $invalidItem,
+                                    'error' => $invalidItem['error'] ?? 'Validation failed',
+                                    'type'  => $invalidItem['type'] ?? 'ValidationException',
+                                ];
                             }
-                        } else {
-                            $result = [
-                                'found'   => 0,
-                                'created' => [],
-                                'updated' => [],
-                                'errors'  => $chunkResult['errors'] ?? [],
-                            ];
                         }
-
-                        $resolve($result);
-                    } catch (\Throwable $e) {
-                        $reject($e);
+                    } else {
+                        $result = [
+                            'found'   => 0,
+                            'created' => [],
+                            'updated' => [],
+                            'errors'  => $chunkResult['errors'] ?? [],
+                        ];
                     }
+
+                    $resolve($result);
                 });
             }
 
             // Process batch of promises concurrently
-            try {
-                $batchResults = \React\Async\await(\React\Promise\all($promises));
-                
-                // Merge results from concurrent processing
-                foreach ($batchResults as $result) {
-                    $summary['found'] += $result['found'];
-                    $summary['created'] = array_merge($summary['created'], $result['created']);
-                    $summary['updated'] = array_merge($summary['updated'], $result['updated']);
-                    $summary['errors'] = array_merge($summary['errors'], $result['errors']);
-                }
-
-
-                // Memory cleanup after each batch
-                unset($batchResults, $promises);
-                gc_collect_cycles();
-
-            } catch (\Exception $e) {
-                $summary['errors'][] = [
-                    'error' => 'Concurrent batch processing failed: ' . $e->getMessage(),
-                    'type'  => 'ConcurrentProcessingException',
-                ];
+            // NO ERROR SUPPRESSION: Let concurrent processing errors bubble up immediately!
+            $batchResults = \React\Async\await(\React\Promise\all($promises));
+            
+            // Merge results from concurrent processing
+            foreach ($batchResults as $result) {
+                $summary['found'] += $result['found'];
+                $summary['created'] = array_merge($summary['created'], $result['created']);
+                $summary['updated'] = array_merge($summary['updated'], $result['updated']);
+                $summary['errors'] = array_merge($summary['errors'], $result['errors']);
             }
+
+
+            // Memory cleanup after each batch
+            unset($batchResults, $promises);
+            gc_collect_cycles();
         }
 
         return $summary;
@@ -953,46 +974,37 @@ class ImportService
         Schema $schema
     ): array {
         $objects = [];
-        $errors = [];
         $startMemory = memory_get_usage(true);
 
         for ($row = $startRow; $row <= $endRow; $row++) {
-            try {
-                $rowData = $this->extractRowData($sheet, $columnMapping, $row);
+            // NO ERROR SUPPRESSION: Let CSV chunk processing errors bubble up immediately!
+            $rowData = $this->extractRowData($sheet, $columnMapping, $row);
+            
+            if (empty($rowData)) {
+                // Skip empty rows
+                continue;
+            }
+
+            // Transform row data to object format
+            $object = $this->transformCsvRowToObject($rowData, $register, $schema, $row);
+            
+            if ($object !== null) {
+                $objects[] = $object;
+            }
+
+            // Memory management: check memory usage every 10 rows
+            if ($row % 10 === 0) {
+                $currentMemory = memory_get_usage(true);
+                $memoryIncrease = $currentMemory - $startMemory;
                 
-                if (empty($rowData)) {
-                    // Skip empty rows
-                    continue;
+                // Log memory usage for monitoring
+                if ($memoryIncrease > 50 * 1024 * 1024) { // 50MB threshold
                 }
-
-                // Transform row data to object format
-                $object = $this->transformCsvRowToObject($rowData, $register, $schema, $row);
                 
-                if ($object !== null) {
-                    $objects[] = $object;
+                // Force garbage collection if memory usage is high
+                if ($memoryIncrease > 100 * 1024 * 1024) { // 100MB threshold
+                    gc_collect_cycles();
                 }
-
-                // Memory management: check memory usage every 10 rows
-                if ($row % 10 === 0) {
-                    $currentMemory = memory_get_usage(true);
-                    $memoryIncrease = $currentMemory - $startMemory;
-                    
-                    // Log memory usage for monitoring
-                    if ($memoryIncrease > 50 * 1024 * 1024) { // 50MB threshold
-                    }
-                    
-                    // Force garbage collection if memory usage is high
-                    if ($memoryIncrease > 100 * 1024 * 1024) { // 100MB threshold
-                        gc_collect_cycles();
-                    }
-                }
-
-            } catch (\Exception $e) {
-                $errors[] = [
-                    'row'   => $row,
-                    'data'  => $rowData ?? [],
-                    'error' => $e->getMessage(),
-                ];
             }
         }
 
@@ -1002,7 +1014,6 @@ class ImportService
 
         return [
             'objects' => $objects,
-            'errors'  => $errors,
         ];
 
     }//end processCsvChunk()
@@ -1018,7 +1029,7 @@ class ImportService
      *
      * @return array<string, mixed>|null Object data or null if transformation fails
      */
-    private function transformCsvRowToObject(array $rowData, Register $register, Schema $schema, int $rowIndex): ?array
+    private function transformCsvRowToObject(array $rowData, Register $register, Schema $schema, int $rowIndex, ?IUser $currentUser=null): ?array
     {
         // Use instance cache instead of static to prevent issues between requests
         $schemaId = $schema->getId();
@@ -1035,7 +1046,9 @@ class ImportService
             'schema'   => $schemaId,
         ];
 
-        // Single pass through row data with optimized conditions
+        // Single pass through row data with proper column filtering
+        $isAdmin = $this->isUserAdmin($currentUser);
+        
         foreach ($rowData as $key => $value) {
             // Skip empty values early
             if ($value === null || $value === '') {
@@ -1045,14 +1058,22 @@ class ImportService
             $firstChar = $key[0] ?? '';
             
             if ($firstChar === '_') {
-                // Ignore properties starting with _ (skip them)
+                // REQUIREMENT: Columns starting with _ are completely ignored
                 continue;
-            } else if ($firstChar === '@' && str_starts_with($key, '@self.')) {
-                // Move properties starting with @self. to @self array and remove the @self. prefix
-                $selfPropertyName = substr($key, 6);
+            } else if ($firstChar === '@') {
+                // REQUIREMENT: @ columns only processed if user is admin
+                if (!$isAdmin) {
+                    continue; // Skip @ columns for non-admin users
+                }
                 
-                // Transform special @self properties
-                $selfData[$selfPropertyName] = $this->transformSelfProperty($selfPropertyName, $value);
+                if (str_starts_with($key, '@self.')) {
+                    // Move properties starting with @self. to @self array and remove the @self. prefix
+                    $selfPropertyName = substr($key, 6);
+                    
+                    // Transform special @self properties
+                    $selfData[$selfPropertyName] = $this->transformSelfProperty($selfPropertyName, $value);
+                }
+                // Note: Other @ columns that don't start with @self. are ignored
             } else {
                 // Regular properties - transform based on schema if needed
                 if (isset($schemaProperties[$key])) {
@@ -1163,36 +1184,26 @@ class ImportService
         ?Schema $schema
     ): array {
         $objects = [];
-        $errors = [];
 
         for ($row = $startRow; $row <= $endRow; $row++) {
-            try {
-                $rowData = $this->extractRowData($sheet, $columnMapping, $row);
-                
-                if (empty($rowData)) {
-                    // Skip empty rows
-                    continue;
-                }
+            // NO ERROR SUPPRESSION: Let Excel chunk processing errors bubble up immediately!
+            $rowData = $this->extractRowData($sheet, $columnMapping, $row);
+            
+            if (empty($rowData)) {
+                // Skip empty rows
+                continue;
+            }
 
-                // Transform row data to object format
-                $object = $this->transformExcelRowToObject($rowData, $register, $schema, $row);
-                
-                if ($object !== null) {
-                    $objects[] = $object;
-                }
-
-            } catch (\Exception $e) {
-                $errors[] = [
-                    'row'   => $row,
-                    'data'  => $rowData ?? [],
-                    'error' => $e->getMessage(),
-                ];
+            // Transform row data to object format
+            $object = $this->transformExcelRowToObject($rowData, $register, $schema, $row);
+            
+            if ($object !== null) {
+                $objects[] = $object;
             }
         }
 
         return [
             'objects' => $objects,
-            'errors'  => $errors,
         ];
 
     }//end processExcelChunk()
@@ -1208,23 +1219,38 @@ class ImportService
      *
      * @return array<string, mixed>|null Object data or null if transformation fails
      */
-    private function transformExcelRowToObject(array $rowData, ?Register $register, ?Schema $schema, int $rowIndex): ?array
+    private function transformExcelRowToObject(array $rowData, ?Register $register, ?Schema $schema, int $rowIndex, ?IUser $currentUser=null): ?array
     {
         // Separate regular properties from system properties
         $objectData = [];
         $selfData = [];
 
+        // Check if current user is admin for column filtering
+        $isAdmin = $this->isUserAdmin($currentUser);
+        
         foreach ($rowData as $key => $value) {
+            // Skip empty values
+            if ($value === null || $value === '') {
+                continue;
+            }
+            
             if (str_starts_with($key, '_') === true) {
-                // Move properties starting with _ to @self array and remove the _
-                $selfPropertyName = substr($key, 1);
-                $selfData[$selfPropertyName] = $value;
-            } else if (str_starts_with($key, '@self.') === true) {
-                // Move properties starting with @self. to @self array and remove the @self. prefix
-                $selfPropertyName = substr($key, 6);
+                // REQUIREMENT: Columns starting with _ are completely ignored
+                continue;
+            } else if (str_starts_with($key, '@') === true) {
+                // REQUIREMENT: @ columns only processed if user is admin
+                if (!$isAdmin) {
+                    continue; // Skip @ columns for non-admin users
+                }
                 
-                // Transform special @self properties
-                $selfData[$selfPropertyName] = $this->transformSelfProperty($selfPropertyName, $value);
+                if (str_starts_with($key, '@self.') === true) {
+                    // Move properties starting with @self. to @self array and remove the @self. prefix
+                    $selfPropertyName = substr($key, 6);
+                    
+                    // Transform special @self properties
+                    $selfData[$selfPropertyName] = $this->transformSelfProperty($selfPropertyName, $value);
+                }
+                // Note: Other @ columns that don't start with @self. are ignored
             } else {
                 // Regular properties go to main object data
                 $objectData[$key] = $value;
@@ -1344,12 +1370,9 @@ class ImportService
             foreach ($processedRows as $index => $rowData) {
                 $promises[] = new Promise(
                         function (callable $resolve, callable $reject) use ($rowData, $index, $register, $schema, $startRow) {
-                            try {
-                                $result = $this->processRow($rowData, $register, $schema, $startRow + $index);
-                                $resolve($result);
-                            } catch (\Throwable $e) {
-                                $reject($e);
-                            }
+                            // NO ERROR SUPPRESSION: Let processRow errors bubble up immediately!
+                            $result = $this->processRow($rowData, $register, $schema, $startRow + $index);
+                            $resolve($result);
                         }
                         );
             }
@@ -1432,78 +1455,60 @@ class ImportService
      */
     private function processRow(array $rowData, Register $register, Schema $schema, int $rowIndex): array
     {
-        try {
-            // Separate regular properties from system properties starting with _ or @self.
-            $objectData = [];
-            $selfData   = [];
+        // NO ERROR SUPPRESSION: Let processRow errors bubble up immediately!
+        // Separate regular properties from system properties starting with _ or @self.
+        $objectData = [];
+        $selfData   = [];
 
-            foreach ($rowData as $key => $value) {
-                if (str_starts_with($key, '_') === true) {
-                    // Move properties starting with _ to @self array and remove the _.
-                    $selfPropertyName = substr($key, 1);
-                    // Remove the _ prefix.
-                    $selfData[$selfPropertyName] = $value;
-                } else if (str_starts_with($key, '@self.') === true) {
-                    // Move properties starting with @self. to @self array and remove the @self. prefix.
-                    $selfPropertyName = substr($key, 6);
-                    // Remove the @self. prefix (6 characters).
-                    $selfData[$selfPropertyName] = $value;
-                } else {
-                    // Regular properties go to main object data.
-                    $objectData[$key] = $value;
-                }
+        foreach ($rowData as $key => $value) {
+            if (str_starts_with($key, '_') === true) {
+                // Move properties starting with _ to @self array and remove the _.
+                $selfPropertyName = substr($key, 1);
+                // Remove the _ prefix.
+                $selfData[$selfPropertyName] = $value;
+            } else if (str_starts_with($key, '@self.') === true) {
+                // Move properties starting with @self. to @self array and remove the @self. prefix.
+                $selfPropertyName = substr($key, 6);
+                // Remove the @self. prefix (6 characters).
+                $selfData[$selfPropertyName] = $value;
+            } else {
+                // Regular properties go to main object data.
+                $objectData[$key] = $value;
             }
+        }
 
-            // Add @self array to object data if we have self properties.
-            if (empty($selfData) === false) {
-                $objectData['@self'] = $selfData;
-            }
+        // Add @self array to object data if we have self properties.
+        if (empty($selfData) === false) {
+            $objectData['@self'] = $selfData;
+        }
 
-            // Transform object data based on schema property types.
-            $objectData = $this->transformObjectBySchema($objectData, $schema);
+        // Transform object data based on schema property types.
+        $objectData = $this->transformObjectBySchema($objectData, $schema);
 
-            // Get the object ID for tracking updates vs creates.
-            $objectId    = $rowData['id'] ?? null;
-            $wasExisting = false;
+        // Get the object ID for tracking updates vs creates.
+        $objectId    = $rowData['id'] ?? null;
+        $wasExisting = false;
 
-            // Check if object exists (for reporting purposes only).
-            if ($objectId !== null) {
-                try {
-                    $existingObject = $this->objectEntityMapper->find($objectId);
-                    $wasExisting    = true;
-                } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                    // Object not found, will create new.
-                    $wasExisting = false;
-                } catch (\Exception $e) {
-                    // Other errors - assume it doesn't exist.
-                    $wasExisting = false;
-                }
-            }
+        // Check if object exists (for reporting purposes only).
+        if ($objectId !== null) {
+            // NO ERROR SUPPRESSION: Let object find errors bubble up immediately!
+            $existingObject = $this->objectEntityMapper->find($objectId);
+            $wasExisting    = true;
+        }
 
-            // Save the object (ObjectService handles create vs update logic).
-            $savedObject = $this->objectService->saveObject(
-                $objectData,
-                null,
-                $register,
-                $schema,
-                $objectId
-            );
+        // Save the object (ObjectService handles create vs update logic).
+        $savedObject = $this->objectService->saveObject(
+            $objectData,
+            null,
+            $register,
+            $schema,
+            $objectId
+        );
 
-            return [
-                'uuid'        => $savedObject->getUuid(),
-                'wasExisting' => $wasExisting,
-            ];
-        } catch (\Exception $e) {
-
-            return [
-                'error' => [
-                    'row'   => $rowIndex,
-                    'object' => $rowData,
-                    'error' => $e->getMessage(),
-                ],
-            ];
-        }//end try
-
+        return [
+            'uuid'        => $savedObject->getUuid(),
+            'wasExisting' => $wasExisting,
+        ];
     }//end processRow()
 
 
@@ -1516,34 +1521,9 @@ class ImportService
      */
     private function getSchemaBySlug(string $slug): ?Schema
     {
-        try {
-            $schema = $this->schemaMapper->find($slug);
-            return $schema;
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            // Fallback: Search all schemas for case-insensitive match.
-            try {
-                $allSchemas = $this->schemaMapper->findAll();
-
-                foreach ($allSchemas as $schema) {
-                    // Try exact match first.
-                    if ($schema->getSlug() === $slug) {
-                        return $schema;
-                    }
-
-                    // Try case-insensitive match.
-                    if (strtolower($schema->getSlug()) === strtolower($slug)) {
-                        return $schema;
-                    }
-                }
-
-                return null;
-            } catch (\Exception $fallbackException) {
-                return null;
-            }
-        } catch (\Exception $e) {
-            return null;
-        }//end try
-
+        // NO ERROR SUPPRESSION: Let schema lookup errors bubble up immediately!
+        $schema = $this->schemaMapper->find($slug);
+        return $schema;
     }//end getSchemaBySlug()
 
 
@@ -1563,36 +1543,31 @@ class ImportService
      */
     private function transformObjectBySchema(array $objectData, Schema $schema): array
     {
-        try {
-            $schemaProperties = $schema->getProperties();
-            $transformedData  = [];
+        // NO ERROR SUPPRESSION: Let schema transformation errors bubble up immediately!
+        $schemaProperties = $schema->getProperties();
+        $transformedData  = [];
 
-            foreach ($objectData as $propertyName => $value) {
-                // Skip @self array - it's handled separately.
-                if ($propertyName === '@self') {
-                    $transformedData[$propertyName] = $value;
-                    continue;
-                }
-
-                // Get property definition from schema.
-                $propertyDef = $schemaProperties[$propertyName] ?? null;
-
-                if ($propertyDef === null) {
-                    // Property not in schema, keep as is.
-                    $transformedData[$propertyName] = $value;
-                    continue;
-                }
-
-                // Transform based on type.
-                $transformedData[$propertyName] = $this->transformValueByType($value, $propertyDef);
+        foreach ($objectData as $propertyName => $value) {
+            // Skip @self array - it's handled separately.
+            if ($propertyName === '@self') {
+                $transformedData[$propertyName] = $value;
+                continue;
             }
 
-            return $transformedData;
-        } catch (\Exception $e) {
-            // Return original data if transformation fails.
-            return $objectData;
-        }//end try
+            // Get property definition from schema.
+            $propertyDef = $schemaProperties[$propertyName] ?? null;
 
+            if ($propertyDef === null) {
+                // Property not in schema, keep as is.
+                $transformedData[$propertyName] = $value;
+                continue;
+            }
+
+            // Transform based on type.
+            $transformedData[$propertyName] = $this->transformValueByType($value, $propertyDef);
+        }
+
+        return $transformedData;
     }//end transformObjectBySchema()
 
 
@@ -1884,6 +1859,144 @@ class ImportService
         return $objects;
 
     }//end addPublishedDateToObjects()
+
+
+    /**
+     * Schedule SOLR warmup job after successful import
+     *
+     * This method schedules a one-time background job to warm up the SOLR index
+     * after import operations complete. The warmup runs in the background to avoid
+     * impacting import performance while ensuring optimal search performance.
+     *
+     * @param array  $importSummary Summary of the import operation
+     * @param int    $delaySeconds  Delay before running the warmup (default: 30 seconds)
+     * @param string $mode          Warmup mode - 'serial', 'parallel', or 'hyper' (default: 'serial')
+     * @param int    $maxObjects    Maximum objects to index during warmup (default: 5000)
+     * @return bool True if job was scheduled successfully
+     */
+    public function scheduleSolrWarmup(
+        array $importSummary,
+        int $delaySeconds = 30,
+        string $mode = 'serial',
+        int $maxObjects = 5000
+    ): bool {
+        try {
+            // Calculate total objects imported across all sheets
+            $totalImported = $this->calculateTotalImported($importSummary);
+            
+            if ($totalImported === 0) {
+                $this->logger->info('Skipping SOLR warmup - no objects were imported');
+                return false;
+            }
+
+            // Prepare job arguments
+            $jobArguments = [
+                'maxObjects' => $maxObjects,
+                'mode' => $mode,
+                'collectErrors' => false, // Keep it fast for post-import warmup
+                'triggeredBy' => 'import_completion',
+                'importSummary' => [
+                    'totalImported' => $totalImported,
+                    'sheetsProcessed' => count($importSummary),
+                    'importTimestamp' => date('c')
+                ]
+            ];
+
+            // Schedule the job with delay
+            $executeAfter = time() + $delaySeconds;
+            $this->jobList->add(SolrWarmupJob::class, $jobArguments, $executeAfter);
+
+            $this->logger->info('🔥 SOLR Warmup Job Scheduled', [
+                'total_imported' => $totalImported,
+                'warmup_mode' => $mode,
+                'max_objects' => $maxObjects,
+                'delay_seconds' => $delaySeconds,
+                'execute_after' => date('Y-m-d H:i:s', $executeAfter),
+                'triggered_by' => 'import_completion'
+            ]);
+
+            return true;
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to schedule SOLR warmup job', [
+                'error' => $e->getMessage(),
+                'import_summary' => $importSummary
+            ]);
+
+            return false;
+        }
+    }//end scheduleSolrWarmup()
+
+    /**
+     * Calculate total objects imported from import summary
+     *
+     * @param array $importSummary Import summary from Excel/CSV import
+     * @return int Total number of objects imported
+     */
+    private function calculateTotalImported(array $importSummary): int
+    {
+        $total = 0;
+
+        foreach ($importSummary as $sheetName => $sheetSummary) {
+            if (is_array($sheetSummary)) {
+                $created = count($sheetSummary['created'] ?? []);
+                $updated = count($sheetSummary['updated'] ?? []);
+                $total += $created + $updated;
+            }
+        }
+
+        return $total;
+    }//end calculateTotalImported()
+
+    /**
+     * Determine optimal warmup mode based on import size
+     *
+     * @param int $totalImported Total objects imported
+     * @return string Recommended warmup mode
+     */
+    public function getRecommendedWarmupMode(int $totalImported): string
+    {
+        if ($totalImported > 10000) {
+            return 'hyper'; // Fast mode for large imports
+        } elseif ($totalImported > 1000) {
+            return 'parallel'; // Balanced mode for medium imports
+        } else {
+            return 'serial'; // Safe mode for small imports
+        }
+    }//end getRecommendedWarmupMode()
+
+    /**
+     * Schedule SOLR warmup with smart configuration based on import results
+     *
+     * This is a convenience method that automatically determines the best warmup
+     * configuration based on the import results.
+     *
+     * @param array $importSummary Import summary
+     * @param bool  $immediate     Whether to run immediately (default: false, 30s delay)
+     * @return bool True if job was scheduled successfully
+     */
+    public function scheduleSmartSolrWarmup(array $importSummary, bool $immediate = false): bool
+    {
+        $totalImported = $this->calculateTotalImported($importSummary);
+        
+        if ($totalImported === 0) {
+            return false;
+        }
+
+        // Smart configuration based on import size
+        $mode = $this->getRecommendedWarmupMode($totalImported);
+        $maxObjects = min($totalImported * 2, 15000); // Index up to 2x imported objects, max 15k
+        $delay = $immediate ? 0 : 30; // 30 second delay by default
+
+        $this->logger->info('Scheduling smart SOLR warmup', [
+            'total_imported' => $totalImported,
+            'recommended_mode' => $mode,
+            'max_objects' => $maxObjects,
+            'delay_seconds' => $delay
+        ]);
+
+        return $this->scheduleSolrWarmup($importSummary, $delay, $mode, $maxObjects);
+    }//end scheduleSmartSolrWarmup()
 
 
 }//end class

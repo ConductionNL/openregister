@@ -13,6 +13,13 @@ export type TSchema = {
     configuration?: {
         objectNameField?: string; // Field to use as object name
         objectDescriptionField?: string; // Field to use as object description
+        objectSummaryField?: string; // Field to use as object summary
+        objectImageField?: string; // Field to use as object image
+        allowFiles?: boolean; // Whether files are allowed for this schema
+        allowedTags?: string[]; // Array of allowed tags for files
+        unique?: boolean; // Whether objects must be unique
+        facetCacheTtl?: number; // Cache TTL for facets in seconds
+        autoPublish?: boolean; // Whether objects should be auto-published on creation
     }
     hardValidation: boolean; // Whether hard validation is enabled
     maxDepth: number; // Maximum depth of the schema

@@ -168,6 +168,13 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 		<NcNoteCard v-if="loading && isHeartbeatActive" type="info">
 			<p>🔄 Processing large file - keeping connection alive...</p>
 			<p><small>This may take several minutes for large datasets. The system is actively preventing timeouts.</small></p>
+			<div v-if="heartbeatStatus && heartbeatStatus.count > 0" class="heartbeatStatus">
+				<small>
+					<span v-if="heartbeatStatus.healthy" class="heartbeatHealthy">✓ Connection stable</span>
+					<span v-else class="heartbeatUnhealthy">⚠ Connection issues detected</span>
+					({{ heartbeatStatus.count }} heartbeats sent)
+				</small>
+			</div>
 		</NcNoteCard>
 
 		<div v-if="!success && !importResults" class="formContainer">
@@ -384,6 +391,7 @@ export default {
 			expandedErrors: {}, // To track expanded error details for each sheet
 			sheetName: null, // Current sheet name for error details
 			isHeartbeatActive: false, // Whether heartbeat is currently running for timeout prevention
+			heartbeatStatus: null, // Current heartbeat status (healthy, failure count, etc.)
 		}
 	},
 	computed: {
@@ -558,6 +566,7 @@ export default {
 			this.expandedSheets = {} // Reset expanded state
 			this.expandedErrors = {} // Reset expanded errors state
 			this.isHeartbeatActive = false // Reset heartbeat state
+			this.heartbeatStatus = null // Reset heartbeat status
 		},
 		/**
 		 * Handle dialog close event from X button
@@ -591,9 +600,15 @@ export default {
 
 			try {
 				console.info('ImportRegister: Calling registerStore.importRegister')
-				// Call importRegister - the register refresh will happen in the background
-				// This way the loading state is turned off as soon as the import is done
-				const result = await registerStore.importRegister(this.selectedFile, this.includeObjects, this.validation, this.events, this.rbac, this.multi, this.publish)
+				// Call importRegister with heartbeat status monitoring
+				const result = await registerStore.importRegister(
+					this.selectedFile,
+					// Heartbeat status callback
+					(status) => {
+						this.heartbeatStatus = status
+						console.info('ImportRegister: Heartbeat status updated:', status)
+					}
+				)
 
 				console.info('ImportRegister: Import completed, setting success state')
 				// Store the import summary from the backend response
@@ -1217,6 +1232,22 @@ export default {
 .cacheWarning .warningText {
 	color: var(--color-warning-text);
 	font-size: 0.8rem;
+	font-weight: 600;
+}
+
+/* Heartbeat Status Styles */
+.heartbeatStatus {
+	margin-top: 0.5rem;
+	padding: 0.25rem;
+}
+
+.heartbeatHealthy {
+	color: var(--color-success);
+	font-weight: 600;
+}
+
+.heartbeatUnhealthy {
+	color: var(--color-warning);
 	font-weight: 600;
 }
 

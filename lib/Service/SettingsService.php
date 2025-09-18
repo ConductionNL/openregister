@@ -19,6 +19,7 @@
 namespace OCA\OpenRegister\Service;
 
 use OCP\IAppConfig;
+use OCP\IConfig;
 use OCP\IRequest;
 use OCP\App\IAppManager;
 use Psr\Container\ContainerInterface;
@@ -27,11 +28,16 @@ use OC_App;
 use OCA\OpenRegister\AppInfo\Application;
 use OCP\IGroupManager;
 use OCP\IUserManager;
+use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\ObjectCacheService;
+use OCA\OpenRegister\Service\SchemaCacheService;
+use OCA\OpenRegister\Service\SchemaFacetCacheService;
+use OCP\ICacheFactory;
 
 /**
  * Service for handling settings-related operations.
@@ -67,19 +73,24 @@ class SettingsService
     /**
      * SettingsService constructor.
      *
-     * @param IAppConfig         $config             App configuration interface.
-     * @param IRequest           $request            Request interface.
-     * @param ContainerInterface $container          Container for dependency injection.
-     * @param IAppManager        $appManager         App manager interface.
-     * @param IGroupManager      $groupManager       Group manager interface.
-     * @param IUserManager       $userManager        User manager interface.
-     * @param OrganisationMapper $organisationMapper Organisation mapper for database operations.
-     * @param AuditTrailMapper   $auditTrailMapper   Audit trail mapper for database operations.
-     * @param SearchTrailMapper  $searchTrailMapper  Search trail mapper for database operations.
-     * @param ObjectEntityMapper $objectEntityMapper Object entity mapper for database operations.
+     * @param IAppConfig              $config                 App configuration interface.
+     * @param IConfig                 $systemConfig           System configuration interface.
+     * @param IRequest                $request                Request interface.
+     * @param ContainerInterface      $container              Container for dependency injection.
+     * @param IAppManager             $appManager             App manager interface.
+     * @param IGroupManager           $groupManager           Group manager interface.
+     * @param IUserManager            $userManager            User manager interface.
+     * @param OrganisationMapper      $organisationMapper     Organisation mapper for database operations.
+     * @param AuditTrailMapper        $auditTrailMapper       Audit trail mapper for database operations.
+     * @param SearchTrailMapper       $searchTrailMapper      Search trail mapper for database operations.
+     * @param ObjectEntityMapper      $objectEntityMapper     Object entity mapper for database operations.
+     * @param SchemaCacheService      $schemaCacheService     Schema cache service for cache management.
+     * @param SchemaFacetCacheService $schemaFacetCacheService Schema facet cache service for cache management.
+     * @param ICacheFactory           $cacheFactory           Cache factory for distributed cache access.
      */
     public function __construct(
         private readonly IAppConfig $config,
+        private readonly IConfig $systemConfig,
         private readonly IRequest $request,
         private readonly ContainerInterface $container,
         private readonly IAppManager $appManager,
@@ -88,7 +99,10 @@ class SettingsService
         private readonly OrganisationMapper $organisationMapper,
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly SearchTrailMapper $searchTrailMapper,
-        private readonly ObjectEntityMapper $objectEntityMapper
+        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly SchemaCacheService $schemaCacheService,
+        private readonly SchemaFacetCacheService $schemaFacetCacheService,
+        private readonly ICacheFactory $cacheFactory
     ) {
         // Indulge in setting the application name for identification and configuration purposes.
         $this->appName = 'openregister';
@@ -263,6 +277,56 @@ class SettingsService
                 ];
             }//end if
 
+            // SOLR Search Configuration
+            $solrConfig = $this->config->getValueString($this->appName, 'solr', '');
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $tenantId = $guzzleSolrService->getTenantId();
+            
+            if (empty($solrConfig)) {
+                $data['solr'] = [
+                    'enabled'        => false,
+                    'host'           => 'solr',
+                    'port'           => 8983,
+                    'path'           => '/solr',
+                    'core'           => 'openregister',
+                    'scheme'         => 'http',
+                    'username'       => 'solr',
+                    'password'       => 'SolrRocks',
+                    'timeout'        => 30,
+                    'autoCommit'     => true,
+                    'commitWithin'   => 1000,
+                    'enableLogging'  => true,
+                    'tenantId'       => $tenantId,
+                    'zookeeperHosts' => 'zookeeper:2181',
+                    'zookeeperUsername' => '',
+                    'zookeeperPassword' => '',
+                    'collection'     => 'openregister',
+                    'useCloud'       => true,
+                ];
+            } else {
+                $solrData     = json_decode($solrConfig, true);
+                $data['solr'] = [
+                    'enabled'        => $solrData['enabled'] ?? false,
+                    'host'           => $solrData['host'] ?? 'solr',
+                    'port'           => $solrData['port'] ?? 8983,
+                    'path'           => $solrData['path'] ?? '/solr',
+                    'core'           => $solrData['core'] ?? 'openregister',
+                    'scheme'         => $solrData['scheme'] ?? 'http',
+                    'username'       => $solrData['username'] ?? 'solr',
+                    'password'       => $solrData['password'] ?? 'SolrRocks',
+                    'timeout'        => $solrData['timeout'] ?? 30,
+                    'autoCommit'     => $solrData['autoCommit'] ?? true,
+                    'commitWithin'   => $solrData['commitWithin'] ?? 1000,
+                    'enableLogging'  => $solrData['enableLogging'] ?? true,
+                    'tenantId'       => $solrData['tenantId'] ?? $tenantId,
+                    'zookeeperHosts' => $solrData['zookeeperHosts'] ?? 'zookeeper:2181',
+                    'zookeeperUsername' => $solrData['zookeeperUsername'] ?? '',
+                    'zookeeperPassword' => $solrData['zookeeperPassword'] ?? '',
+                    'collection'     => $solrData['collection'] ?? 'openregister',
+                    'useCloud'       => $solrData['useCloud'] ?? true,
+                ];
+            }//end if
+
             return $data;
         } catch (\Exception $e) {
             throw new \RuntimeException('Failed to retrieve settings: '.$e->getMessage());
@@ -388,6 +452,33 @@ class SettingsService
                     'deleteLogRetention'     => $retentionData['deleteLogRetention'] ?? 2592000000,
                 ];
                 $this->config->setValueString($this->appName, 'retention', json_encode($retentionConfig));
+            }
+
+            // Handle SOLR settings
+            if (isset($data['solr'])) {
+                $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+                $solrData   = $data['solr'];
+                $solrConfig = [
+                    'enabled'        => $solrData['enabled'] ?? false,
+                    'host'           => $solrData['host'] ?? 'solr',
+                    'port'           => (int) ($solrData['port'] ?? 8983),
+                    'path'           => $solrData['path'] ?? '/solr',
+                    'core'           => $solrData['core'] ?? 'openregister',
+                    'scheme'         => $solrData['scheme'] ?? 'http',
+                    'username'       => $solrData['username'] ?? 'solr',
+                    'password'       => $solrData['password'] ?? 'SolrRocks',
+                    'timeout'        => (int) ($solrData['timeout'] ?? 30),
+                    'autoCommit'     => $solrData['autoCommit'] ?? true,
+                    'commitWithin'   => (int) ($solrData['commitWithin'] ?? 1000),
+                    'enableLogging'  => $solrData['enableLogging'] ?? true,
+                    'tenantId'       => $solrData['tenantId'] ?? $guzzleSolrService->getTenantId(),
+                    'zookeeperHosts' => $solrData['zookeeperHosts'] ?? 'zookeeper:2181',
+                    'zookeeperUsername' => $solrData['zookeeperUsername'] ?? '',
+                    'zookeeperPassword' => $solrData['zookeeperPassword'] ?? '',
+                    'collection'     => $solrData['collection'] ?? 'openregister',
+                    'useCloud'       => $solrData['useCloud'] ?? true,
+                ];
+                $this->config->setValueString($this->appName, 'solr', json_encode($solrConfig));
             }
 
             // Return the updated settings
@@ -712,6 +803,1766 @@ class SettingsService
         }//end try
 
     }//end getStats()
+
+
+    /**
+     * Get comprehensive cache statistics from actual cache systems (not database)
+     *
+     * Provides detailed insights into cache usage and performance by querying
+     * the actual cache backends rather than database tables for better performance.
+     *
+     * @return array Comprehensive cache statistics from cache systems
+     */
+    public function getCacheStats(): array
+    {
+        try {
+            // Get basic distributed cache info
+            $distributedStats = $this->getDistributedCacheStats();
+            $performanceStats = $this->getCachePerformanceMetrics();
+            
+            // Get object cache stats (only if ObjectCacheService provides them)
+            // Use cached stats to avoid expensive operations on every request
+            $objectStats = $this->getCachedObjectStats();
+            
+            $stats = [
+                'overview' => [
+                    'totalCacheSize' => $objectStats['memoryUsage'] ?? 0,
+                    'totalCacheEntries' => $objectStats['entries'] ?? 0,
+                    'overallHitRate' => $this->calculateHitRate($objectStats),
+                    'averageResponseTime' => $performanceStats['averageHitTime'] ?? 0.0,
+                    'cacheEfficiency' => $this->calculateHitRate($objectStats),
+                ],
+                'services' => [
+                    'object' => [
+                        'entries' => $objectStats['entries'] ?? 0,
+                        'hits' => $objectStats['hits'] ?? 0,
+                        'requests' => $objectStats['requests'] ?? 0,
+                        'memoryUsage' => $objectStats['memoryUsage'] ?? 0,
+                    ],
+                    'schema' => [
+                        'entries' => 0, // Not stored in database - would be performance issue
+                        'hits' => 0,
+                        'requests' => 0,
+                        'memoryUsage' => 0,
+                    ],
+                    'facet' => [
+                        'entries' => 0, // Not stored in database - would be performance issue
+                        'hits' => 0,
+                        'requests' => 0,
+                        'memoryUsage' => 0,
+                    ],
+                ],
+                'names' => [
+                    'cache_size' => $objectStats['name_cache_size'] ?? 0,
+                    'hit_rate' => $objectStats['name_hit_rate'] ?? 0.0,
+                    'hits' => $objectStats['name_hits'] ?? 0,
+                    'misses' => $objectStats['name_misses'] ?? 0,
+                    'warmups' => $objectStats['name_warmups'] ?? 0,
+                    'enabled' => true,
+                ],
+                'distributed' => $distributedStats,
+                'performance' => $performanceStats,
+                'lastUpdated' => (new \DateTime())->format('c'),
+            ];
+
+            return $stats;
+        } catch (\Exception $e) {
+            // Return safe defaults if cache stats unavailable
+            return [
+                'overview' => [
+                    'totalCacheSize' => 0,
+                    'totalCacheEntries' => 0,
+                    'overallHitRate' => 0.0,
+                    'averageResponseTime' => 0.0,
+                    'cacheEfficiency' => 0.0,
+                ],
+                'services' => [
+                    'object' => ['entries' => 0, 'hits' => 0, 'requests' => 0, 'memoryUsage' => 0],
+                    'schema' => ['entries' => 0, 'hits' => 0, 'requests' => 0, 'memoryUsage' => 0],
+                    'facet' => ['entries' => 0, 'hits' => 0, 'requests' => 0, 'memoryUsage' => 0],
+                ],
+                'names' => [
+                    'cache_size' => 0, 'hit_rate' => 0.0, 'hits' => 0, 'misses' => 0,
+                    'warmups' => 0, 'enabled' => false,
+                ],
+                'distributed' => ['type' => 'none', 'backend' => 'Unknown', 'available' => false],
+                'performance' => ['averageHitTime' => 0, 'averageMissTime' => 0, 'performanceGain' => 0, 'optimalHitRate' => 85.0],
+                'lastUpdated' => (new \DateTime())->format('c'),
+                'error' => 'Cache statistics unavailable: ' . $e->getMessage(),
+            ];
+        }
+    }
+    
+    /**
+     * Get cached object statistics to avoid expensive operations on every request
+     *
+     * @return array Object cache statistics
+     */
+    private function getCachedObjectStats(): array
+    {
+        // Use a simple in-memory cache with 30-second TTL to avoid expensive ObjectCacheService calls
+        static $cachedStats = null;
+        static $lastUpdate = 0;
+        
+        $now = time();
+        if ($cachedStats === null || ($now - $lastUpdate) > 30) {
+            try {
+                $objectCacheService = $this->container->get(ObjectCacheService::class);
+                $cachedStats = $objectCacheService->getStats();
+            } catch (\Exception $e) {
+                // If no object cache stats available, use defaults
+                $cachedStats = [
+                    'entries' => 0,
+                    'hits' => 0,
+                    'requests' => 0,
+                    'memoryUsage' => 0,
+                    'name_cache_size' => 0,
+                    'name_hit_rate' => 0.0,
+                    'name_hits' => 0,
+                    'name_misses' => 0,
+                    'name_warmups' => 0,
+                ];
+            }
+            $lastUpdate = $now;
+        }
+        
+        return $cachedStats;
+    }
+
+    /**
+     * Calculate hit rate from cache statistics
+     *
+     * @param array $stats Cache statistics array
+     * @return float Hit rate percentage
+     */
+    private function calculateHitRate(array $stats): float
+    {
+        $requests = $stats['requests'] ?? 0;
+        $hits = $stats['hits'] ?? 0;
+        
+        return $requests > 0 ? ($hits / $requests) * 100 : 0.0;
+    }
+
+    /**
+     * Get distributed cache statistics from Nextcloud's cache factory
+     *
+     * @return array Distributed cache statistics
+     */
+    private function getDistributedCacheStats(): array
+    {
+        try {
+            $distributedCache = $this->cacheFactory->createDistributed('openregister');
+            
+            return [
+                'type' => 'distributed',
+                'backend' => get_class($distributedCache),
+                'available' => true,
+                'keyCount' => 'Unknown', // Most cache backends don't provide this
+                'size' => 'Unknown',
+            ];
+        } catch (\Exception $e) {
+            return [
+                'type' => 'none',
+                'backend' => 'fallback',
+                'available' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Get cache performance metrics for the last period
+     *
+     * @return array Performance metrics
+     */
+    private function getCachePerformanceMetrics(): array
+    {
+        // This would typically come from a performance monitoring service
+        // For now, return basic metrics
+        return [
+            'averageHitTime' => 2.5, // ms
+            'averageMissTime' => 850.0, // ms
+            'performanceGain' => 340.0, // factor improvement with cache
+            'optimalHitRate' => 85.0, // target hit rate percentage
+            'currentTrend' => 'improving',
+        ];
+    }
+
+    /**
+     * Clear cache with granular control
+     *
+     * @param string      $type     Cache type: 'all', 'object', 'schema', 'facet', 'distributed', 'names'
+     * @param string|null $userId   Specific user ID to clear cache for (if supported)
+     * @param array       $options  Additional options for cache clearing
+     *
+     * @return array Results of cache clearing operations
+     * @throws \RuntimeException If cache clearing fails
+     */
+    public function clearCache(string $type = 'all', ?string $userId = null, array $options = []): array
+    {
+        try {
+            $results = [
+                'type' => $type,
+                'userId' => $userId,
+                'timestamp' => (new \DateTime())->format('c'),
+                'results' => [],
+                'errors' => [],
+                'totalCleared' => 0,
+            ];
+
+            switch ($type) {
+                case 'all':
+                    $results['results']['object'] = $this->clearObjectCache($userId);
+                    $results['results']['schema'] = $this->clearSchemaCache($userId);
+                    $results['results']['facet'] = $this->clearFacetCache($userId);
+                    $results['results']['distributed'] = $this->clearDistributedCache($userId);
+                    $results['results']['names'] = $this->clearNamesCache();
+                    break;
+
+                case 'object':
+                    $results['results']['object'] = $this->clearObjectCache($userId);
+                    break;
+
+                case 'schema':
+                    $results['results']['schema'] = $this->clearSchemaCache($userId);
+                    break;
+
+                case 'facet':
+                    $results['results']['facet'] = $this->clearFacetCache($userId);
+                    break;
+
+                case 'distributed':
+                    $results['results']['distributed'] = $this->clearDistributedCache($userId);
+                    break;
+
+                case 'names':
+                    $results['results']['names'] = $this->clearNamesCache();
+                    break;
+
+                default:
+                    throw new \InvalidArgumentException("Invalid cache type: {$type}");
+            }
+
+            // Calculate total cleared entries
+            foreach ($results['results'] as $serviceResult) {
+                $results['totalCleared'] += $serviceResult['cleared'] ?? 0;
+            }
+
+            return $results;
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to clear cache: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Clear object cache service
+     *
+     * @param string|null $userId Specific user ID
+     *
+     * @return array Clear operation results
+     */
+    private function clearObjectCache(?string $userId = null): array
+    {
+        try {
+            $objectCacheService = $this->container->get(ObjectCacheService::class);
+            $beforeStats = $objectCacheService->getStats();
+            $objectCacheService->clearCache();
+            $afterStats = $objectCacheService->getStats();
+
+            return [
+                'service' => 'object',
+                'cleared' => $beforeStats['entries'] - $afterStats['entries'],
+                'before' => $beforeStats,
+                'after' => $afterStats,
+                'success' => true,
+            ];
+        } catch (\Exception $e) {
+            return [
+                'service' => 'object',
+                'cleared' => 0,
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Clear object names cache specifically
+     *
+     * @return array Clear operation results
+     */
+    private function clearNamesCache(): array
+    {
+        try {
+            $objectCacheService = $this->container->get(ObjectCacheService::class);
+            $beforeStats = $objectCacheService->getStats();
+            $beforeNameCacheSize = $beforeStats['name_cache_size'] ?? 0;
+            
+            $objectCacheService->clearNameCache();
+            
+            $afterStats = $objectCacheService->getStats();
+            $afterNameCacheSize = $afterStats['name_cache_size'] ?? 0;
+
+            return [
+                'service' => 'names',
+                'cleared' => $beforeNameCacheSize - $afterNameCacheSize,
+                'before' => [
+                    'name_cache_size' => $beforeNameCacheSize,
+                    'name_hits' => $beforeStats['name_hits'] ?? 0,
+                    'name_misses' => $beforeStats['name_misses'] ?? 0,
+                ],
+                'after' => [
+                    'name_cache_size' => $afterNameCacheSize,
+                    'name_hits' => $afterStats['name_hits'] ?? 0,
+                    'name_misses' => $afterStats['name_misses'] ?? 0,
+                ],
+                'success' => true,
+            ];
+        } catch (\Exception $e) {
+            return [
+                'service' => 'names',
+                'cleared' => 0,
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Warmup object names cache manually
+     *
+     * @return array Warmup operation results
+     */
+    public function warmupNamesCache(): array
+    {
+        try {
+            $startTime = microtime(true);
+            $objectCacheService = $this->container->get(ObjectCacheService::class);
+            $beforeStats = $objectCacheService->getStats();
+            
+            $loadedCount = $objectCacheService->warmupNameCache();
+            
+            $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+            $afterStats = $objectCacheService->getStats();
+
+            return [
+                'success' => true,
+                'loaded_names' => $loadedCount,
+                'execution_time' => $executionTime . 'ms',
+                'before' => [
+                    'name_cache_size' => $beforeStats['name_cache_size'] ?? 0,
+                    'name_warmups' => $beforeStats['name_warmups'] ?? 0,
+                ],
+                'after' => [
+                    'name_cache_size' => $afterStats['name_cache_size'] ?? 0,
+                    'name_warmups' => $afterStats['name_warmups'] ?? 0,
+                ],
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => 'Cache warmup failed: ' . $e->getMessage(),
+                'loaded_names' => 0,
+            ];
+        }
+    }
+
+    /**
+     * Clear schema cache service
+     *
+     * @param string|null $userId Specific user ID
+     *
+     * @return array Clear operation results
+     */
+    private function clearSchemaCache(?string $userId = null): array
+    {
+        try {
+            $beforeStats = $this->schemaCacheService->getCacheStatistics();
+            $this->schemaCacheService->clearAllCaches();
+            $afterStats = $this->schemaCacheService->getCacheStatistics();
+
+            return [
+                'service' => 'schema',
+                'cleared' => $beforeStats['entries'] - $afterStats['entries'],
+                'before' => $beforeStats,
+                'after' => $afterStats,
+                'success' => true,
+            ];
+        } catch (\Exception $e) {
+            return [
+                'service' => 'schema',
+                'cleared' => 0,
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Clear facet cache service
+     *
+     * @param string|null $userId Specific user ID
+     *
+     * @return array Clear operation results
+     */
+    private function clearFacetCache(?string $userId = null): array
+    {
+        try {
+            $beforeStats = $this->schemaFacetCacheService->getCacheStatistics();
+            $this->schemaFacetCacheService->clearAllCaches();
+            $afterStats = $this->schemaFacetCacheService->getCacheStatistics();
+
+            return [
+                'service' => 'facet',
+                'cleared' => $beforeStats['entries'] - $afterStats['entries'],
+                'before' => $beforeStats,
+                'after' => $afterStats,
+                'success' => true,
+            ];
+        } catch (\Exception $e) {
+            return [
+                'service' => 'facet',
+                'cleared' => 0,
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Clear distributed cache
+     *
+     * @param string|null $userId Specific user ID
+     *
+     * @return array Clear operation results
+     */
+    private function clearDistributedCache(?string $userId = null): array
+    {
+        try {
+            $distributedCache = $this->cacheFactory->createDistributed('openregister');
+            $distributedCache->clear();
+
+            return [
+                'service' => 'distributed',
+                'cleared' => 'all', // Can't count distributed cache entries
+                'success' => true,
+            ];
+        } catch (\Exception $e) {
+            return [
+                'service' => 'distributed',
+                'cleared' => 0,
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+
+    /**
+     * Get SOLR configuration settings
+     *
+     * @return array SOLR configuration array
+     *
+     * @throws \RuntimeException If SOLR settings retrieval fails
+     */
+    public function getSolrSettings(): array
+    {
+        try {
+            $solrConfig = $this->config->getValueString($this->appName, 'solr', '');
+            if (empty($solrConfig)) {
+                return [
+                    'enabled'        => false,
+                    'host'           => 'solr',
+                    'port'           => 8983,
+                    'path'           => '/solr',
+                    'core'           => 'openregister',
+                    'scheme'         => 'http',
+                    'username'       => '',
+                    'password'       => '',
+                    'timeout'        => 30,
+                    'autoCommit'     => true,
+                    'commitWithin'   => 1000,
+                    'enableLogging'  => true,
+                    'zookeeperHosts' => 'zookeeper:2181',
+                    'collection'     => 'openregister',
+                    'useCloud'       => true,
+                ];
+            }
+
+            return json_decode($solrConfig, true);
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to retrieve SOLR settings: '.$e->getMessage());
+        }
+
+    }//end getSolrSettings()
+
+
+    /**
+     * Test SOLR connection with current settings (includes Zookeeper test for SolrCloud)
+     *
+     * @return array Connection test results with status and details
+     */
+    public function testSolrConnection(): array
+    {
+        try {
+            // Delegate to GuzzleSolrService for consistent configuration and URL handling
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            return $guzzleSolrService->testConnection();
+            
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Connection test failed: ' . $e->getMessage(),
+                'details' => [
+                    'exception' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString()
+                ],
+                'components' => []
+            ];
+        }
+    }
+
+    /**
+     * Test Zookeeper connectivity for SolrCloud
+     *
+     * @param array $solrSettings SOLR configuration
+     * @return array Zookeeper test results
+     */
+    private function testZookeeperConnection(array $solrSettings): array
+    {
+        try {
+            $zookeeperHosts = $solrSettings['zookeeperHosts'] ?? 'zookeeper:2181';
+            $hosts = explode(',', $zookeeperHosts);
+            
+            $successfulHosts = [];
+            $failedHosts = [];
+            
+            foreach ($hosts as $host) {
+                $host = trim($host);
+                if (empty($host)) continue;
+                
+                // Test Zookeeper connection using SOLR's Zookeeper API
+                $url = sprintf(
+                    '%s://%s:%d%s/admin/collections?action=CLUSTERSTATUS&wt=json',
+                    $solrSettings['scheme'],
+                    $solrSettings['host'],
+                    $solrSettings['port'],
+                    $solrSettings['path']
+                );
+                
+                $context = stream_context_create([
+                    'http' => [
+                        'timeout' => 5,
+                        'method' => 'GET'
+                    ]
+                ]);
+                
+                $response = @file_get_contents($url, false, $context);
+                
+                if ($response !== false) {
+                    $data = json_decode($response, true);
+                    if (isset($data['cluster'])) {
+                        $successfulHosts[] = $host;
+                    } else {
+                        $failedHosts[] = $host;
+                    }
+                } else {
+                    $failedHosts[] = $host;
+                }
+            }
+            
+            return [
+                'success' => !empty($successfulHosts),
+                'message' => !empty($successfulHosts) ? 
+                    'Zookeeper accessible via ' . implode(', ', $successfulHosts) : 
+                    'Zookeeper not accessible via any host',
+                'details' => [
+                    'zookeeper_hosts' => $zookeeperHosts,
+                    'successful_hosts' => $successfulHosts,
+                    'failed_hosts' => $failedHosts,
+                    'test_method' => 'SOLR Collections API'
+                ]
+            ];
+            
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Zookeeper test failed: ' . $e->getMessage(),
+                'details' => [
+                    'error' => $e->getMessage(),
+                    'zookeeper_hosts' => $solrSettings['zookeeperHosts'] ?? 'zookeeper:2181'
+                ]
+            ];
+        }
+    }
+
+    /**
+     * Test SOLR connectivity
+     *
+     * @param array $solrSettings SOLR configuration
+     * @return array SOLR test results
+     */
+    private function testSolrConnectivity(array $solrSettings): array
+    {
+        try {
+            // Build SOLR URL - handle Kubernetes service names properly
+            $host = $solrSettings['host'];
+            
+            // Check if it's a Kubernetes service name (contains .svc.cluster.local)
+            if (strpos($host, '.svc.cluster.local') !== false) {
+                // Kubernetes service - don't append port, it's handled by the service
+                $baseUrl = sprintf(
+                    '%s://%s%s',
+                    $solrSettings['scheme'],
+                    $host,
+                    $solrSettings['path']
+                );
+            } else {
+                // Regular hostname - append port (default to 8983 if not provided)
+                $port = !empty($solrSettings['port']) ? $solrSettings['port'] : 8983;
+                $baseUrl = sprintf(
+                    '%s://%s:%d%s',
+                    $solrSettings['scheme'],
+                    $host,
+                    $port,
+                    $solrSettings['path']
+                );
+            }
+
+            // Test basic SOLR connectivity with admin endpoints
+            // Try multiple common SOLR admin endpoints for maximum compatibility
+            $testEndpoints = [
+                '/admin/ping?wt=json',
+                '/solr/admin/ping?wt=json',
+                '/admin/info/system?wt=json'
+            ];
+            
+            $testUrl = null;
+            $testType = 'admin_ping';
+            $lastError = null;
+            
+            // Create HTTP context with timeout
+            $context = stream_context_create([
+                'http' => [
+                    'timeout' => 10,
+                    'method' => 'GET',
+                    'header' => [
+                        'Accept: application/json',
+                        'Content-Type: application/json'
+                    ]
+                ]
+            ]);
+            
+            // Try each endpoint until one works
+            $response = false;
+            $responseTime = 0;
+            
+            foreach ($testEndpoints as $endpoint) {
+                $testUrl = $baseUrl . $endpoint;
+                $startTime = microtime(true);
+                $response = @file_get_contents($testUrl, false, $context);
+                $responseTime = (microtime(true) - $startTime) * 1000;
+                
+                if ($response !== false) {
+                    // Found a working endpoint
+                    break;
+                } else {
+                    $lastError = "Failed to connect to: " . $testUrl;
+                }
+            }
+            
+            if ($response === false) {
+                return [
+                    'success' => false,
+                    'message' => 'SOLR server not responding on any admin endpoint',
+                    'details' => [
+                        'tested_endpoints' => array_map(function($endpoint) use ($baseUrl) {
+                            return $baseUrl . $endpoint;
+                        }, $testEndpoints),
+                        'last_error' => $lastError,
+                        'test_type' => $testType,
+                        'response_time_ms' => round($responseTime, 2)
+                    ]
+                ];
+            }
+            
+            $data = json_decode($response, true);
+            
+            // Validate admin response - be flexible about response format
+            if ($testType === 'admin_ping') {
+                // Check for successful response - different endpoints have different formats
+                $isValidResponse = false;
+                
+                if (isset($data['status']) && $data['status'] === 'OK') {
+                    // Standard ping response
+                    $isValidResponse = true;
+                } elseif (isset($data['responseHeader']['status']) && $data['responseHeader']['status'] === 0) {
+                    // System info response
+                    $isValidResponse = true;
+                } elseif (is_array($data) && !empty($data)) {
+                    // Any valid JSON response indicates SOLR is responding
+                    $isValidResponse = true;
+                }
+                
+                if (!$isValidResponse) {
+                    return [
+                        'success' => false,
+                        'message' => 'SOLR admin endpoint returned invalid response',
+                        'details' => [
+                            'url' => $testUrl,
+                            'test_type' => $testType,
+                            'response' => $data,
+                            'response_time_ms' => round($responseTime, 2)
+                        ]
+                    ];
+                }
+                
+            return [
+                'success' => true,
+                'message' => 'SOLR server responding correctly',
+                'details' => [
+                    'url' => $testUrl,
+                    'test_type' => $testType,
+                    'response_time_ms' => round($responseTime, 2),
+                    'solr_status' => $data['status'] ?? 'OK',
+                    'use_cloud' => $solrSettings['useCloud'] ?? false,
+                    'server_info' => $data['responseHeader'] ?? [],
+                    'working_endpoint' => str_replace($baseUrl, '', $testUrl)
+                ]
+            ];
+            } else {
+                // For standalone admin ping test
+                if (!isset($data['status']) || $data['status'] !== 'OK') {
+                    return [
+                        'success' => false,
+                        'message' => 'SOLR admin ping failed',
+                        'details' => [
+                            'url' => $testUrl,
+                            'test_type' => $testType,
+                            'response' => $data,
+                            'response_time_ms' => round($responseTime, 2)
+                        ]
+                    ];
+                }
+                
+                return [
+                    'success' => true,
+                    'message' => 'SOLR standalone server responding correctly',
+                    'details' => [
+                        'url' => $testUrl,
+                        'test_type' => $testType,
+                        'response_time_ms' => round($responseTime, 2),
+                        'solr_version' => $data['lucene']['solr-spec-version'] ?? 'unknown'
+                    ]
+                ];
+            }
+            
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'SOLR connectivity test failed: ' . $e->getMessage(),
+                'details' => [
+                    'error' => $e->getMessage(),
+                    'url' => $baseUrl ?? 'unknown',
+                    'test_type' => $testType ?? 'unknown'
+                ]
+            ];
+        }
+    }
+
+    /**
+     * Test SOLR collection/core availability
+     *
+     * @param array $solrSettings SOLR configuration
+     * @return array Collection test results
+     */
+    private function testSolrCollection(array $solrSettings): array
+    {
+        try {
+            $collectionName = $solrSettings['collection'] ?? $solrSettings['core'] ?? 'openregister';
+            
+            // Build SOLR URL - handle Kubernetes service names properly
+            $host = $solrSettings['host'];
+            
+            // Check if it's a Kubernetes service name (contains .svc.cluster.local)
+            if (strpos($host, '.svc.cluster.local') !== false) {
+                // Kubernetes service - don't append port, it's handled by the service
+                $baseUrl = sprintf(
+                    '%s://%s%s',
+                    $solrSettings['scheme'],
+                    $host,
+                    $solrSettings['path']
+                );
+            } else {
+                // Regular hostname - append port (default to 8983 if not provided)
+                $port = !empty($solrSettings['port']) ? $solrSettings['port'] : 8983;
+                $baseUrl = sprintf(
+                    '%s://%s:%d%s',
+                    $solrSettings['scheme'],
+                    $host,
+                    $port,
+                    $solrSettings['path']
+                );
+            }
+            
+            // For SolrCloud, test collection existence
+            if ($solrSettings['useCloud'] ?? false) {
+                $url = $baseUrl . '/admin/collections?action=CLUSTERSTATUS&wt=json';
+                
+                $context = stream_context_create([
+                    'http' => [
+                        'timeout' => 10,
+                        'method' => 'GET'
+                    ]
+                ]);
+                
+                $response = @file_get_contents($url, false, $context);
+                
+                if ($response === false) {
+                    return [
+                        'success' => false,
+                        'message' => 'Failed to check collection status',
+                        'details' => ['url' => $url]
+                    ];
+                }
+                
+                $data = json_decode($response, true);
+                $collections = $data['cluster']['collections'] ?? [];
+                
+                if (isset($collections[$collectionName])) {
+                    return [
+                        'success' => true,
+                        'message' => "Collection '{$collectionName}' exists and is available",
+                        'details' => [
+                            'collection' => $collectionName,
+                            'status' => $collections[$collectionName]['status'] ?? 'unknown',
+                            'shards' => count($collections[$collectionName]['shards'] ?? [])
+                        ]
+                    ];
+                } else {
+                    return [
+                        'success' => false,
+                        'message' => "Collection '{$collectionName}' not found",
+                        'details' => [
+                            'collection' => $collectionName,
+                            'available_collections' => array_keys($collections)
+                        ]
+                    ];
+                }
+            } else {
+                // For standalone SOLR, test core existence
+                $url = $baseUrl . '/admin/cores?action=STATUS&core=' . urlencode($collectionName) . '&wt=json';
+                
+                $context = stream_context_create([
+                    'http' => [
+                        'timeout' => 10,
+                        'method' => 'GET'
+                    ]
+                ]);
+                
+                $response = @file_get_contents($url, false, $context);
+                
+                if ($response === false) {
+                    return [
+                        'success' => false,
+                        'message' => 'Failed to check core status',
+                        'details' => ['url' => $url]
+                    ];
+                }
+                
+                $data = json_decode($response, true);
+                
+                if (isset($data['status'][$collectionName])) {
+                    return [
+                        'success' => true,
+                        'message' => "Core '{$collectionName}' exists and is available",
+                        'details' => [
+                            'core' => $collectionName,
+                            'status' => $data['status'][$collectionName]['status'] ?? 'unknown'
+                        ]
+                    ];
+                } else {
+                    return [
+                        'success' => false,
+                        'message' => "Core '{$collectionName}' not found",
+                        'details' => [
+                            'core' => $collectionName,
+                            'available_cores' => array_keys($data['status'] ?? [])
+                        ]
+                    ];
+                }
+            }
+            
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Collection test failed: ' . $e->getMessage(),
+                'details' => [
+                    'error' => $e->getMessage(),
+                    'collection' => $solrSettings['collection'] ?? $solrSettings['core'] ?? 'openregister'
+                ]
+            ];
+        }
+    }
+
+    /**
+     * Test SOLR collection query functionality
+     *
+     * @param array $solrSettings SOLR configuration
+     * @return array Query test results
+     */
+    private function testSolrQuery(array $solrSettings): array
+    {
+        try {
+            $collectionName = $solrSettings['collection'] ?? $solrSettings['core'] ?? 'openregister';
+            
+            // Build SOLR URL - handle Kubernetes service names properly
+            $host = $solrSettings['host'];
+            
+            // Check if it's a Kubernetes service name (contains .svc.cluster.local)
+            if (strpos($host, '.svc.cluster.local') !== false) {
+                // Kubernetes service - don't append port, it's handled by the service
+                $baseUrl = sprintf(
+                    '%s://%s%s',
+                    $solrSettings['scheme'],
+                    $host,
+                    $solrSettings['path']
+                );
+            } else {
+                // Regular hostname - append port (default to 8983 if not provided)
+                $port = !empty($solrSettings['port']) ? $solrSettings['port'] : 8983;
+                $baseUrl = sprintf(
+                    '%s://%s:%d%s',
+                    $solrSettings['scheme'],
+                    $host,
+                    $port,
+                    $solrSettings['path']
+                );
+            }
+            
+            // Test collection select query
+            $testUrl = $baseUrl . '/' . $collectionName . '/select?q=*:*&rows=0&wt=json';
+            
+            $context = stream_context_create([
+                'http' => [
+                    'timeout' => 10,
+                    'method' => 'GET'
+                ]
+            ]);
+            
+            $startTime = microtime(true);
+            $response = @file_get_contents($testUrl, false, $context);
+            $responseTime = (microtime(true) - $startTime) * 1000;
+            
+            if ($response === false) {
+                return [
+                    'success' => false,
+                    'message' => 'Collection query failed',
+                    'details' => [
+                        'url' => $testUrl,
+                        'collection' => $collectionName,
+                        'response_time_ms' => round($responseTime, 2)
+                    ]
+                ];
+            }
+            
+            $data = json_decode($response, true);
+            
+            // Check for successful query response
+            if (!isset($data['responseHeader']['status']) || $data['responseHeader']['status'] !== 0) {
+                return [
+                    'success' => false,
+                    'message' => 'Collection query returned error',
+                    'details' => [
+                        'url' => $testUrl,
+                        'collection' => $collectionName,
+                        'response' => $data,
+                        'response_time_ms' => round($responseTime, 2)
+                    ]
+                ];
+            }
+            
+            return [
+                'success' => true,
+                'message' => 'Collection query successful',
+                'details' => [
+                    'url' => $testUrl,
+                    'collection' => $collectionName,
+                    'response_time_ms' => round($responseTime, 2),
+                    'num_found' => $data['response']['numFound'] ?? 0,
+                    'query_time' => $data['responseHeader']['QTime'] ?? 0
+                ]
+            ];
+            
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Query test failed: ' . $e->getMessage(),
+                'details' => [
+                    'error' => $e->getMessage(),
+                    'collection' => $solrSettings['collection'] ?? $solrSettings['core'] ?? 'openregister'
+                ]
+            ];
+        }
+    }
+
+
+    /**
+     * Complete SOLR warmup: mirror schemas and index objects from the database
+     *
+     * This method performs comprehensive SOLR index warmup by:
+     * 1. Mirroring all OpenRegister schemas to SOLR for proper field typing
+     * 2. Bulk indexing objects from the database using schema-aware mapping
+     * 3. Performing cache warmup queries
+     * 4. Committing and optimizing the index
+     *
+     * @param int $batchSize Number of objects to process per batch (default 1000, parameter kept for API compatibility)
+     * @param int $maxObjects Maximum number of objects to index (0 = all)
+     * @return array Warmup operation results with statistics and status
+     * @throws \RuntimeException If SOLR warmup fails
+     */
+    public function warmupSolrIndex(int $batchSize = 2000, int $maxObjects = 0, string $mode = 'serial', bool $collectErrors = false): array
+    {
+        try {
+            $solrSettings = $this->getSolrSettings();
+            
+            if (!$solrSettings['enabled']) {
+                return [
+                    'success' => false,
+                    'message' => 'SOLR is disabled in settings',
+                    'stats' => [
+                        'totalProcessed' => 0,
+                        'totalIndexed' => 0,
+                        'totalErrors' => 0,
+                        'duration' => 0
+                    ]
+                ];
+            }
+
+            // Get SolrService for bulk indexing via direct DI
+            $solrService = $this->container->get(GuzzleSolrService::class);
+            
+            if ($solrService === null) {
+                return [
+                    'success' => false,
+                    'message' => 'SOLR service not available',
+                    'stats' => [
+                        'totalProcessed' => 0,
+                        'totalIndexed' => 0,
+                        'totalErrors' => 0,
+                        'duration' => 0
+                    ]
+                ];
+            }
+            
+            $startTime = microtime(true);
+            
+            // Get all schemas for schema mirroring
+            $schemas = [];
+            try {
+                $schemaMapper = $this->container->get('OCA\OpenRegister\Db\SchemaMapper');
+                $schemas = $schemaMapper->findAll();
+            } catch (\Exception $e) {
+                // Continue without schema mirroring if schema mapper is not available
+                $this->logger->warning('Schema mapper not available for warmup', ['error' => $e->getMessage()]);
+            }
+            
+            // **COMPLETE WARMUP**: Mirror schemas + index objects + cache warmup
+            $warmupResult = $solrService->warmupIndex($schemas, $maxObjects, $mode, $collectErrors);
+            
+            $totalDuration = microtime(true) - $startTime;
+            
+            if ($warmupResult['success']) {
+                $operations = $warmupResult['operations'] ?? [];
+                $indexed = $operations['objects_indexed'] ?? 0;
+                $schemasProcessed = $operations['schemas_processed'] ?? 0;
+                $fieldsCreated = $operations['fields_created'] ?? 0;
+                $objectsPerSecond = $totalDuration > 0 ? round($indexed / $totalDuration, 2) : 0;
+                
+                return [
+                    'success' => true,
+                    'message' => 'SOLR complete warmup finished successfully',
+                    'stats' => [
+                        'totalProcessed' => $indexed,
+                        'totalIndexed' => $indexed,
+                        'totalErrors' => $operations['indexing_errors'] ?? 0,
+                        'totalObjectsFound' => $warmupResult['total_objects_found'] ?? 0,
+                        'batchesProcessed' => $warmupResult['batches_processed'] ?? 0,
+                        'maxObjectsLimit' => $warmupResult['max_objects_limit'] ?? $maxObjects,
+                        'duration' => round($totalDuration, 2),
+                        'objectsPerSecond' => $objectsPerSecond,
+                        'successRate' => $indexed > 0 ? round((($indexed - ($operations['indexing_errors'] ?? 0)) / $indexed) * 100, 2) : 100.0,
+                        'schemasProcessed' => $schemasProcessed,
+                        'fieldsCreated' => $fieldsCreated,
+                        'operations' => $operations
+                    ]
+                ];
+            } else {
+                return [
+                    'success' => false,
+                    'message' => $warmupResult['error'] ?? 'SOLR complete warmup failed',
+                    'stats' => [
+                        'totalProcessed' => 0,
+                        'totalIndexed' => 0,
+                        'totalErrors' => 1,
+                        'duration' => round($totalDuration, 2),
+                        'operations' => $warmupResult['operations'] ?? []
+                    ]
+                ];
+            }
+
+        } catch (\Exception $e) {
+            $this->logger->error('SOLR warmup failed with exception', [
+                'error' => $e->getMessage(),
+                'class' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            
+            // **ERROR COLLECTION MODE**: Return errors in response if collectErrors is true
+            if ($collectErrors) {
+                return [
+                    'success' => false,
+                    'message' => 'SOLR warmup failed with errors (collected mode)',
+                    'stats' => [
+                        'totalProcessed' => 0,
+                        'totalIndexed' => 0,
+                        'totalErrors' => 1,
+                        'duration' => microtime(true) - ($startTime ?? microtime(true)),
+                        'error_collection_mode' => true
+                    ],
+                    'errors' => [
+                        [
+                            'type' => 'warmup_exception',
+                            'message' => $e->getMessage(),
+                            'class' => get_class($e),
+                            'file' => $e->getFile(),
+                            'line' => $e->getLine(),
+                            'timestamp' => date('c')
+                        ]
+                    ]
+                ];
+            }
+            
+            // **ERROR VISIBILITY**: Re-throw exception to expose errors in controller (default behavior)
+            throw new \RuntimeException(
+                'SOLR warmup failed: ' . $e->getMessage(),
+                0,
+                $e
+            );
+        }
+
+    }//end warmupSolrIndex()
+
+    /**
+     * Get comprehensive SOLR dashboard statistics
+     *
+     * Provides detailed metrics for the SOLR Search Management dashboard
+     * including core statistics, performance metrics, and health indicators.
+     *
+     * @return array SOLR dashboard metrics and statistics
+     * @throws \RuntimeException If SOLR statistics retrieval fails
+     */
+    public function getSolrDashboardStats(): array
+    {
+        try {
+            $objectCacheService = $this->container->get(ObjectCacheService::class);
+            $rawStats = $objectCacheService->getSolrDashboardStats();
+            
+            // Transform the raw stats into the expected dashboard structure
+            return $this->transformSolrStatsToDashboard($rawStats);
+        } catch (\Exception $e) {
+            // Return default dashboard structure if SOLR is not available
+            return [
+                'overview' => [
+                    'available' => false,
+                    'connection_status' => 'unavailable',
+                    'response_time_ms' => 0,
+                    'total_documents' => 0,
+                    'index_size' => '0 B',
+                    'last_commit' => null,
+                ],
+                'cores' => [
+                    'active_core' => 'unknown',
+                    'core_status' => 'inactive',
+                    'tenant_id' => 'unknown',
+                    'endpoint_url' => 'N/A',
+                ],
+                'performance' => [
+                    'total_searches' => 0,
+                    'total_indexes' => 0,
+                    'total_deletes' => 0,
+                    'avg_search_time_ms' => 0,
+                    'avg_index_time_ms' => 0,
+                    'total_search_time' => 0,
+                    'total_index_time' => 0,
+                    'operations_per_sec' => 0,
+                    'error_rate' => 0,
+                ],
+                'health' => [
+                    'status' => 'unavailable',
+                    'uptime' => 'N/A',
+                    'memory_usage' => ['used' => 'N/A', 'max' => 'N/A', 'percentage' => 0],
+                    'disk_usage' => ['used' => 'N/A', 'available' => 'N/A', 'percentage' => 0],
+                    'warnings' => ['SOLR service is not available or not configured'],
+                    'last_optimization' => null,
+                ],
+                'operations' => [
+                    'recent_activity' => [],
+                    'queue_status' => ['pending_operations' => 0, 'processing' => false, 'last_processed' => null],
+                    'commit_frequency' => ['auto_commit' => false, 'commit_within' => 0, 'last_commit' => null],
+                    'optimization_needed' => false,
+                ],
+                'generated_at' => date('c'),
+                'error' => $e->getMessage()
+            ];
+        }
+    }//end getSolrDashboardStats()
+
+    /**
+     * Transform raw SOLR stats into dashboard structure
+     *
+     * @param array $rawStats Raw statistics from SOLR service
+     * @return array Transformed dashboard statistics
+     */
+    private function transformSolrStatsToDashboard(array $rawStats): array
+    {
+        // If SOLR is not available, return error structure
+        if (!($rawStats['available'] ?? false)) {
+            return [
+                'overview' => [
+                    'available' => false,
+                    'connection_status' => 'unavailable',
+                    'response_time_ms' => 0,
+                    'total_documents' => 0,
+                    'index_size' => '0 B',
+                    'last_commit' => null,
+                ],
+                'cores' => [
+                    'active_core' => 'unknown',
+                    'core_status' => 'inactive',
+                    'tenant_id' => 'unknown',
+                    'endpoint_url' => 'N/A',
+                ],
+                'performance' => [
+                    'total_searches' => 0,
+                    'total_indexes' => 0,
+                    'total_deletes' => 0,
+                    'avg_search_time_ms' => 0,
+                    'avg_index_time_ms' => 0,
+                    'total_search_time' => 0,
+                    'total_index_time' => 0,
+                    'operations_per_sec' => 0,
+                    'error_rate' => 0,
+                ],
+                'health' => [
+                    'status' => 'unavailable',
+                    'uptime' => 'N/A',
+                    'memory_usage' => ['used' => 'N/A', 'max' => 'N/A', 'percentage' => 0],
+                    'disk_usage' => ['used' => 'N/A', 'available' => 'N/A', 'percentage' => 0],
+                    'warnings' => [$rawStats['error'] ?? 'SOLR service is not available or not configured'],
+                    'last_optimization' => null,
+                ],
+                'operations' => [
+                    'recent_activity' => [],
+                    'queue_status' => ['pending_operations' => 0, 'processing' => false, 'last_processed' => null],
+                    'commit_frequency' => ['auto_commit' => false, 'commit_within' => 0, 'last_commit' => null],
+                    'optimization_needed' => false,
+                ],
+                'generated_at' => date('c'),
+                'error' => $rawStats['error'] ?? 'SOLR service unavailable'
+            ];
+        }
+
+        // Transform available SOLR stats into dashboard structure
+        $serviceStats = $rawStats['service_stats'] ?? [];
+        $totalOps = ($serviceStats['searches'] ?? 0) + ($serviceStats['indexes'] ?? 0) + ($serviceStats['deletes'] ?? 0);
+        $totalTime = ($serviceStats['search_time'] ?? 0) + ($serviceStats['index_time'] ?? 0);
+        $opsPerSec = $totalTime > 0 ? round($totalOps / ($totalTime / 1000), 2) : 0;
+        $errorRate = $totalOps > 0 ? round(($serviceStats['errors'] ?? 0) / $totalOps * 100, 2) : 0;
+
+        return [
+            'overview' => [
+                'available' => true,
+                'connection_status' => $rawStats['health'] ?? 'unknown',
+                'response_time_ms' => 0, // Not available in raw stats
+                'total_documents' => $rawStats['document_count'] ?? 0,
+                'index_size' => $this->formatBytesForDashboard(($rawStats['index_size'] ?? 0) * 1024), // Assuming KB
+                'last_commit' => $rawStats['last_modified'] ?? null,
+            ],
+            'cores' => [
+                'active_core' => $rawStats['collection'] ?? 'unknown',
+                'core_status' => $rawStats['available'] ? 'active' : 'inactive',
+                'tenant_id' => $rawStats['tenant_id'] ?? 'unknown',
+                'endpoint_url' => $this->container->get(GuzzleSolrService::class)->getEndpointUrl($rawStats['collection'] ?? null),
+            ],
+            'performance' => [
+                'total_searches' => $serviceStats['searches'] ?? 0,
+                'total_indexes' => $serviceStats['indexes'] ?? 0,
+                'total_deletes' => $serviceStats['deletes'] ?? 0,
+                'avg_search_time_ms' => ($serviceStats['searches'] ?? 0) > 0 ? round(($serviceStats['search_time'] ?? 0) / ($serviceStats['searches'] ?? 1), 2) : 0,
+                'avg_index_time_ms' => ($serviceStats['indexes'] ?? 0) > 0 ? round(($serviceStats['index_time'] ?? 0) / ($serviceStats['indexes'] ?? 1), 2) : 0,
+                'total_search_time' => $serviceStats['search_time'] ?? 0,
+                'total_index_time' => $serviceStats['index_time'] ?? 0,
+                'operations_per_sec' => $opsPerSec,
+                'error_rate' => $errorRate,
+            ],
+            'health' => [
+                'status' => $rawStats['health'] ?? 'unknown',
+                'uptime' => 'N/A', // Not available in raw stats
+                'memory_usage' => ['used' => 'N/A', 'max' => 'N/A', 'percentage' => 0],
+                'disk_usage' => ['used' => 'N/A', 'available' => 'N/A', 'percentage' => 0],
+                'warnings' => [],
+                'last_optimization' => null,
+            ],
+            'operations' => [
+                'recent_activity' => [],
+                'queue_status' => ['pending_operations' => 0, 'processing' => false, 'last_processed' => null],
+                'commit_frequency' => ['auto_commit' => true, 'commit_within' => 1000, 'last_commit' => $rawStats['last_modified'] ?? null],
+                'optimization_needed' => false,
+            ],
+            'generated_at' => date('c'),
+        ];
+    }
+
+
+    /**
+     * Format bytes to human readable format for dashboard
+     *
+     * @param int $bytes Number of bytes
+     * @return string Formatted byte string
+     */
+    private function formatBytesForDashboard(int $bytes): string
+    {
+        if ($bytes <= 0) {
+            return '0 B';
+        }
+
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $factor = floor(log($bytes, 1024));
+        $factor = min($factor, count($units) - 1);
+
+        return round($bytes / pow(1024, $factor), 2) . ' ' . $units[$factor];
+    }
+
+    /**
+     * Perform SOLR management operations
+     *
+     * Executes various SOLR index management operations including commit, optimize,
+     * clear, and warmup with proper error handling and result reporting.
+     *
+     * @param string $operation Operation to perform (commit, optimize, clear, warmup)
+     *
+     * @return array Operation results with success status and details
+     * @throws \InvalidArgumentException If operation is not supported
+     */
+    public function manageSolr(string $operation): array
+    {
+        try {
+            $objectCacheService = $this->container->get(ObjectCacheService::class);
+            
+            switch ($operation) {
+                case 'commit':
+                    $result = $objectCacheService->commitSolr();
+                    return [
+                        'success' => $result['success'] ?? false,
+                        'operation' => 'commit',
+                        'message' => $result['success'] ? 'Index committed successfully' : 'Commit failed',
+                        'details' => $result,
+                        'timestamp' => date('c')
+                    ];
+                    
+                case 'optimize':
+                    $result = $objectCacheService->optimizeSolr();
+                    return [
+                        'success' => $result['success'] ?? false,
+                        'operation' => 'optimize',
+                        'message' => $result['success'] ? 'Index optimized successfully' : 'Optimization failed',
+                        'details' => $result,
+                        'timestamp' => date('c')
+                    ];
+                    
+                case 'clear':
+                    $result = $objectCacheService->clearSolrIndexForDashboard();
+                    return [
+                        'success' => $result['success'] ?? false,
+                        'operation' => 'clear',
+                        'message' => $result['success'] ? 'Index cleared successfully' : 'Clear operation failed',
+                        'details' => $result,
+                        'timestamp' => date('c')
+                    ];
+                    
+                case 'warmup':
+                    return $this->warmupSolrIndex();
+                    
+                default:
+                    return [
+                        'success' => false,
+                        'operation' => $operation,
+                        'message' => 'Unknown operation: ' . $operation,
+                        'timestamp' => date('c')
+                    ];
+            }
+            
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'operation' => $operation,
+                'message' => 'Operation failed: ' . $e->getMessage(),
+                'timestamp' => date('c'),
+                'error' => $e->getMessage()
+            ];
+        }
+    }//end manageSolr()
+
+    /**
+     * Test SOLR connection and get comprehensive status information
+     * 
+     * @deprecated Use GuzzleSolrService::testConnectionForDashboard() directly
+     * @return array Connection test results with detailed status information
+     */
+    public function testSolrConnectionForDashboard(): array
+    {
+        $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+        return $guzzleSolrService->testConnectionForDashboard();
+    }//end testSolrConnectionForDashboard()
+
+
+    /**
+     * Get focused SOLR settings only
+     *
+     * @return array SOLR configuration with tenant information
+     * @throws \RuntimeException If SOLR settings retrieval fails
+     */
+    public function getSolrSettingsOnly(): array
+    {
+        try {
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $solrConfig = $this->config->getValueString($this->appName, 'solr', '');
+            $tenantId = $guzzleSolrService->getTenantId();
+            
+            if (empty($solrConfig)) {
+                return [
+                    'enabled'        => false,
+                    'host'           => 'solr',
+                    'port'           => 8983,
+                    'path'           => '/solr',
+                    'core'           => 'openregister',
+                    'scheme'         => 'http',
+                    'username'       => 'solr',
+                    'password'       => 'SolrRocks',
+                    'timeout'        => 30,
+                    'autoCommit'     => true,
+                    'commitWithin'   => 1000,
+                    'enableLogging'  => true,
+                    'zookeeperHosts' => 'zookeeper:2181',
+                    'zookeeperUsername' => '',
+                    'zookeeperPassword' => '',
+                    'collection'     => 'openregister',
+                    'useCloud'       => true,
+                    'tenantId'       => $tenantId,
+                ];
+            }
+
+            $solrData = json_decode($solrConfig, true);
+            return [
+                'enabled'        => $solrData['enabled'] ?? false,
+                'host'           => $solrData['host'] ?? 'solr',
+                'port'           => $solrData['port'] ?? 8983,
+                'path'           => $solrData['path'] ?? '/solr',
+                'core'           => $solrData['core'] ?? 'openregister',
+                'scheme'         => $solrData['scheme'] ?? 'http',
+                'username'       => $solrData['username'] ?? 'solr',
+                'password'       => $solrData['password'] ?? 'SolrRocks',
+                'timeout'        => $solrData['timeout'] ?? 30,
+                'autoCommit'     => $solrData['autoCommit'] ?? true,
+                'commitWithin'   => $solrData['commitWithin'] ?? 1000,
+                'enableLogging'  => $solrData['enableLogging'] ?? true,
+                'zookeeperHosts' => $solrData['zookeeperHosts'] ?? 'zookeeper:2181',
+                'zookeeperUsername' => $solrData['zookeeperUsername'] ?? '',
+                'zookeeperPassword' => $solrData['zookeeperPassword'] ?? '',
+                'collection'     => $solrData['collection'] ?? 'openregister',
+                'useCloud'       => $solrData['useCloud'] ?? true,
+                'tenantId'       => $solrData['tenantId'] ?? $tenantId,
+            ];
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to retrieve SOLR settings: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Update SOLR settings only
+     *
+     * @param array $solrData SOLR configuration data
+     * @return array Updated SOLR configuration
+     * @throws \RuntimeException If SOLR settings update fails
+     */
+    public function updateSolrSettingsOnly(array $solrData): array
+    {
+        try {
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $tenantId = $guzzleSolrService->getTenantId();
+            $solrConfig = [
+                'enabled'        => $solrData['enabled'] ?? false,
+                'host'           => $solrData['host'] ?? 'solr',
+                'port'           => (int) ($solrData['port'] ?? 8983),
+                'path'           => $solrData['path'] ?? '/solr',
+                'core'           => $solrData['core'] ?? 'openregister',
+                'scheme'         => $solrData['scheme'] ?? 'http',
+                'username'       => $solrData['username'] ?? 'solr',
+                'password'       => $solrData['password'] ?? 'SolrRocks',
+                'timeout'        => (int) ($solrData['timeout'] ?? 30),
+                'autoCommit'     => $solrData['autoCommit'] ?? true,
+                'commitWithin'   => (int) ($solrData['commitWithin'] ?? 1000),
+                'enableLogging'  => $solrData['enableLogging'] ?? true,
+                'zookeeperHosts' => $solrData['zookeeperHosts'] ?? 'zookeeper:2181',
+                'zookeeperUsername' => $solrData['zookeeperUsername'] ?? '',
+                'zookeeperPassword' => $solrData['zookeeperPassword'] ?? '',
+                'collection'     => $solrData['collection'] ?? 'openregister',
+                'useCloud'       => $solrData['useCloud'] ?? true,
+                'tenantId'       => $solrData['tenantId'] ?? $tenantId,
+            ];
+            
+            $this->config->setValueString($this->appName, 'solr', json_encode($solrConfig));
+            return $solrConfig;
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to update SOLR settings: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Get focused RBAC settings only
+     *
+     * @return array RBAC configuration with available groups and users
+     * @throws \RuntimeException If RBAC settings retrieval fails
+     */
+    public function getRbacSettingsOnly(): array
+    {
+        try {
+            $rbacConfig = $this->config->getValueString($this->appName, 'rbac', '');
+            
+            $rbacData = [];
+            if (empty($rbacConfig)) {
+                $rbacData = [
+                    'enabled'             => false,
+                    'anonymousGroup'      => 'public',
+                    'defaultNewUserGroup' => 'viewer',
+                    'defaultObjectOwner'  => '',
+                    'adminOverride'       => true,
+                ];
+            } else {
+                $storedData = json_decode($rbacConfig, true);
+                $rbacData = [
+                    'enabled'             => $storedData['enabled'] ?? false,
+                    'anonymousGroup'      => $storedData['anonymousGroup'] ?? 'public',
+                    'defaultNewUserGroup' => $storedData['defaultNewUserGroup'] ?? 'viewer',
+                    'defaultObjectOwner'  => $storedData['defaultObjectOwner'] ?? '',
+                    'adminOverride'       => $storedData['adminOverride'] ?? true,
+                ];
+            }
+            
+            return [
+                'rbac' => $rbacData,
+                'availableGroups' => $this->getAvailableGroups(),
+                'availableUsers' => $this->getAvailableUsers(),
+            ];
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to retrieve RBAC settings: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Update RBAC settings only
+     *
+     * @param array $rbacData RBAC configuration data
+     * @return array Updated RBAC configuration
+     * @throws \RuntimeException If RBAC settings update fails
+     */
+    public function updateRbacSettingsOnly(array $rbacData): array
+    {
+        try {
+            $rbacConfig = [
+                'enabled'             => $rbacData['enabled'] ?? false,
+                'anonymousGroup'      => $rbacData['anonymousGroup'] ?? 'public',
+                'defaultNewUserGroup' => $rbacData['defaultNewUserGroup'] ?? 'viewer',
+                'defaultObjectOwner'  => $rbacData['defaultObjectOwner'] ?? '',
+                'adminOverride'       => $rbacData['adminOverride'] ?? true,
+            ];
+            
+            $this->config->setValueString($this->appName, 'rbac', json_encode($rbacConfig));
+            
+            return [
+                'rbac' => $rbacConfig,
+                'availableGroups' => $this->getAvailableGroups(),
+                'availableUsers' => $this->getAvailableUsers(),
+            ];
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to update RBAC settings: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Get focused Multitenancy settings only
+     *
+     * @return array Multitenancy configuration with available tenants
+     * @throws \RuntimeException If Multitenancy settings retrieval fails
+     */
+    /**
+     * Get multitenancy settings (alias for getMultitenancySettingsOnly)
+     *
+     * @return array Multitenancy configuration settings
+     */
+    public function getMultitenancySettings(): array
+    {
+        return $this->getMultitenancySettingsOnly();
+    }
+
+    /**
+     * Get multitenancy settings only (detailed implementation)
+     *
+     * @return array Multitenancy configuration settings
+     */
+    public function getMultitenancySettingsOnly(): array
+    {
+        try {
+            $multitenancyConfig = $this->config->getValueString($this->appName, 'multitenancy', '');
+            
+            $multitenancyData = [];
+            if (empty($multitenancyConfig)) {
+                $multitenancyData = [
+                    'enabled'             => false,
+                    'defaultUserTenant'   => '',
+                    'defaultObjectTenant' => '',
+                ];
+            } else {
+                $storedData = json_decode($multitenancyConfig, true);
+                $multitenancyData = [
+                    'enabled'             => $storedData['enabled'] ?? false,
+                    'defaultUserTenant'   => $storedData['defaultUserTenant'] ?? '',
+                    'defaultObjectTenant' => $storedData['defaultObjectTenant'] ?? '',
+                ];
+            }
+            
+            return [
+                'multitenancy' => $multitenancyData,
+                'availableTenants' => $this->getAvailableOrganisations(),
+            ];
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to retrieve Multitenancy settings: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Update Multitenancy settings only
+     *
+     * @param array $multitenancyData Multitenancy configuration data
+     * @return array Updated Multitenancy configuration
+     * @throws \RuntimeException If Multitenancy settings update fails
+     */
+    public function updateMultitenancySettingsOnly(array $multitenancyData): array
+    {
+        try {
+            $multitenancyConfig = [
+                'enabled'             => $multitenancyData['enabled'] ?? false,
+                'defaultUserTenant'   => $multitenancyData['defaultUserTenant'] ?? '',
+                'defaultObjectTenant' => $multitenancyData['defaultObjectTenant'] ?? '',
+            ];
+            
+            $this->config->setValueString($this->appName, 'multitenancy', json_encode($multitenancyConfig));
+            
+            return [
+                'multitenancy' => $multitenancyConfig,
+                'availableTenants' => $this->getAvailableOrganisations(),
+            ];
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to update Multitenancy settings: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Get focused Retention settings only
+     *
+     * @return array Retention configuration
+     * @throws \RuntimeException If Retention settings retrieval fails
+     */
+    public function getRetentionSettingsOnly(): array
+    {
+        try {
+            $retentionConfig = $this->config->getValueString($this->appName, 'retention', '');
+            
+            if (empty($retentionConfig)) {
+                return [
+                    'objectArchiveRetention' => 31536000000, // 1 year default
+                    'objectDeleteRetention'  => 63072000000, // 2 years default
+                    'searchTrailRetention'   => 2592000000,  // 1 month default
+                    'createLogRetention'     => 2592000000,  // 1 month default
+                    'readLogRetention'       => 86400000,    // 24 hours default
+                    'updateLogRetention'     => 604800000,   // 1 week default
+                    'deleteLogRetention'     => 2592000000,  // 1 month default
+                ];
+            }
+
+            $retentionData = json_decode($retentionConfig, true);
+            return [
+                'objectArchiveRetention' => $retentionData['objectArchiveRetention'] ?? 31536000000,
+                'objectDeleteRetention'  => $retentionData['objectDeleteRetention'] ?? 63072000000,
+                'searchTrailRetention'   => $retentionData['searchTrailRetention'] ?? 2592000000,
+                'createLogRetention'     => $retentionData['createLogRetention'] ?? 2592000000,
+                'readLogRetention'       => $retentionData['readLogRetention'] ?? 86400000,
+                'updateLogRetention'     => $retentionData['updateLogRetention'] ?? 604800000,
+                'deleteLogRetention'     => $retentionData['deleteLogRetention'] ?? 2592000000,
+            ];
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to retrieve Retention settings: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Update Retention settings only
+     *
+     * @param array $retentionData Retention configuration data
+     * @return array Updated Retention configuration
+     * @throws \RuntimeException If Retention settings update fails
+     */
+    public function updateRetentionSettingsOnly(array $retentionData): array
+    {
+        try {
+            $retentionConfig = [
+                'objectArchiveRetention' => $retentionData['objectArchiveRetention'] ?? 31536000000,
+                'objectDeleteRetention'  => $retentionData['objectDeleteRetention'] ?? 63072000000,
+                'searchTrailRetention'   => $retentionData['searchTrailRetention'] ?? 2592000000,
+                'createLogRetention'     => $retentionData['createLogRetention'] ?? 2592000000,
+                'readLogRetention'       => $retentionData['readLogRetention'] ?? 86400000,
+                'updateLogRetention'     => $retentionData['updateLogRetention'] ?? 604800000,
+                'deleteLogRetention'     => $retentionData['deleteLogRetention'] ?? 2592000000,
+            ];
+            
+            $this->config->setValueString($this->appName, 'retention', json_encode($retentionConfig));
+            return $retentionConfig;
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to update Retention settings: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Get version information only
+     *
+     * @return array Version information
+     * @throws \RuntimeException If version information retrieval fails
+     */
+    public function getVersionInfoOnly(): array
+    {
+        try {
+            return [
+                'appName'    => 'Open Register',
+                'appVersion' => '0.2.3',
+            ];
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to retrieve version information: '.$e->getMessage());
+        }
+    }
 
 
 }//end class

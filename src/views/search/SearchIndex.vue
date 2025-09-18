@@ -27,6 +27,9 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 					<span v-if="objectStore.selectedObjects.length > 0" class="viewIndicator">
 						({{ t('openregister', '{count} selected', { count: objectStore.selectedObjects.length }) }})
 					</span>
+					<span v-if="objectStore.objectList?._source" class="sourceIndicator" :class="'source-' + objectStore.objectList._source">
+						{{ getSourceLabel(objectStore.objectList._source) }}
+					</span>
 				</div>
 				<div class="viewActions">
 					<!-- Mass Actions Dropdown -->
@@ -570,6 +573,14 @@ export default {
 		},
 		getValidISOstring,
 		formatBytes,
+		getSourceLabel(source) {
+			const sourceLabels = {
+				'index': '🔍 SOLR Index',
+				'database': '💾 Database',
+				'auto': '🤖 Auto'
+			}
+			return sourceLabels[source] || source
+		},
 		/**
 		 * Publish a single object
 		 * @param {object} result - The object to publish
@@ -824,5 +835,30 @@ input[type="checkbox"] {
 
 .table-row-selected {
 	background-color: var(--color-primary-light) !important;
+}
+
+/* Source indicator styling */
+.sourceIndicator {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 12px;
+	font-size: 12px;
+	font-weight: 500;
+	margin-left: 8px;
+}
+
+.source-index {
+	background-color: var(--color-success-light);
+	color: var(--color-success-dark);
+}
+
+.source-database {
+	background-color: var(--color-warning-light);
+	color: var(--color-warning-dark);
+}
+
+.source-auto {
+	background-color: var(--color-info-light);
+	color: var(--color-info-dark);
 }
 </style>

@@ -4,6 +4,8 @@ volumes:
   apps:
   db:
   config:
+  solr:
+  zookeeper:
 
 services:
   db:
@@ -17,6 +19,50 @@ services:
       - MYSQL_PASSWORD='!ChangeMe!'
       - MYSQL_DATABASE=nextcloud
       - MYSQL_USER=nextcloud
+
+  # ZooKeeper for SolrCloud coordination
+  zookeeper:
+    image: zookeeper:3.8
+    container_name: openregister-zookeeper
+    restart: always
+    environment:
+      - ZOO_MY_ID=1
+      - ZOO_SERVERS=server.1=0.0.0.0:2888:3888;2181
+    volumes:
+      - zookeeper:/data
+    ports:
+      - "2181:2181"
+
+  # SOLR in SolrCloud mode
+  solr:
+    image: solr:9-slim
+    container_name: openregister-solr
+    restart: always
+    ports:
+      - "8983:8983"
+    volumes:
+      - solr:/var/solr
+    environment:
+      - SOLR_HEAP=512m
+      - ZK_HOST=zookeeper:2181
+    depends_on:
+      - zookeeper
+    command:
+      - bash
+      - -c
+      - |
+        # Wait for ZooKeeper to be ready
+        echo "Waiting for ZooKeeper..."
+        while ! nc -z zookeeper 2181; do sleep 1; done
+        echo "ZooKeeper is ready!"
+        
+        # Start SOLR in SolrCloud mode
+        solr-foreground -c -z zookeeper:2181
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8983/solr/admin/info/system || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # init-ubuntu:
   #   image: ubuntu
@@ -35,6 +81,7 @@ services:
       - 8080:80
     links:
       - db
+      - solr
     volumes:
       - nextcloud:/var/www/html:rw
       - ./custom_apps:/var/www/html/custom_apps
@@ -47,6 +94,10 @@ services:
       - TZ=Europe/Amsterdam
       - NEXTCLOUD_ADMIN_USER=admin
       - NEXTCLOUD_ADMIN_PASSWORD=admin
+      # PHP Configuration - Match production settings
+      - PHP_MEMORY_LIMIT=4G
+      - PHP_UPLOAD_LIMIT=2G
+      - PHP_POST_MAX_SIZE=2G
     # depends_on:
     #   init-ubuntu:
     #     condition: service_completed_successfully

@@ -3,7 +3,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.dialog === 'deleteOrganisation'"
+	<NcDialog
 		name="Delete Organisation"
 		size="normal"
 		:can-close="false">
@@ -128,7 +128,7 @@ export default {
 			return 'current-user' // Placeholder
 		},
 		closeDialog() {
-			navigationStore.setDialog(false)
+			navigationStore.setModal(false)
 			clearTimeout(this.closeModalTimeout)
 			this.success = false
 			this.loading = false

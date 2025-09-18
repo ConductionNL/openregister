@@ -108,6 +108,17 @@ class Schema extends Entity implements JsonSerializable
     protected ?array $archive = [];
 
     /**
+     * Pre-computed facet configuration based on schema properties
+     *
+     * **PERFORMANCE OPTIMIZATION**: This field stores pre-analyzed facetable fields
+     * to eliminate runtime schema analysis when _facetable=true is requested.
+     * The facets are automatically generated from schema properties marked with 'facetable': true.
+     *
+     * @var array|null Facet configuration with field types and options
+     */
+    protected ?array $facets = null;
+
+    /**
      * Source of the schema
      *
      * @var string|null Source of the schema
@@ -244,6 +255,7 @@ class Schema extends Entity implements JsonSerializable
         $this->addType(fieldName: 'required', type: 'json');
         $this->addType(fieldName: 'properties', type: 'json');
         $this->addType(fieldName: 'archive', type: 'json');
+        $this->addType(fieldName: 'facets', type: 'json');
         $this->addType(fieldName: 'source', type: 'string');
         $this->addType(fieldName: 'hardValidation', type: Types::BOOLEAN);
         $this->addType(fieldName: 'immutable', type: Types::BOOLEAN);
@@ -870,6 +882,8 @@ class Schema extends Entity implements JsonSerializable
             'allowFiles',
             'allowedTags',
             'unique',
+            'facetCacheTtl',
+            'autoPublish',
         ];
 
         foreach ($configuration as $key => $value) {
@@ -895,6 +909,15 @@ class Schema extends Entity implements JsonSerializable
                     // This should be a boolean
                     if ($value !== null && !is_bool($value)) {
                         throw new \InvalidArgumentException("Configuration 'allowFiles' must be a boolean or null");
+                    }
+
+                    $validatedConfig[$key] = $value;
+                    break;
+
+                case 'autoPublish':
+                    // This should be a boolean
+                    if ($value !== null && !is_bool($value)) {
+                        throw new \InvalidArgumentException("Configuration 'autoPublish' must be a boolean or null");
                     }
 
                     $validatedConfig[$key] = $value;
@@ -983,5 +1006,261 @@ class Schema extends Entity implements JsonSerializable
     {
         return $this->slug;
     }//end getSlug()
+
+    /**
+     * Get the pre-computed facet configuration
+     *
+     * **PERFORMANCE OPTIMIZATION**: Returns pre-analyzed facetable fields stored
+     * in the schema to eliminate runtime analysis during _facetable=true requests.
+     *
+     * @return array|null The facet configuration or null if not computed
+     *
+     * @phpstan-return array<string, mixed>|null
+     * @psalm-return   array<string, mixed>|null
+     */
+    public function getFacets(): ?array
+    {
+        if ($this->facets === null) {
+            return null;
+        }
+
+        // If it's already an array, return it
+        if (is_array($this->facets)) {
+            return $this->facets;
+        }
+
+        // If it's a JSON string, decode it
+        if (is_string($this->facets)) {
+            $decoded = json_decode($this->facets, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                return $decoded;
+            }
+        }
+
+        return null;
+
+    }//end getFacets()
+
+
+    /**
+     * Set the facet configuration
+     *
+     * **TYPE SAFETY**: Handle both array and JSON string inputs for database hydration
+     * The database stores facets as JSON strings, but we want to work with arrays in PHP.
+     *
+     * @param array|string|null $facets The facet configuration array or JSON string
+     *
+     * @return void
+     */
+    public function setFacets(array|string|null $facets): void
+    {
+        // **DATABASE COMPATIBILITY**: Handle JSON string from database
+        if (is_string($facets)) {
+            try {
+                $this->facets = json_decode($facets, true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    // Invalid JSON, set to null
+                    $this->facets = null;
+                }
+            } catch (\Exception $e) {
+                $this->facets = null;
+            }
+        } else {
+            $this->facets = $facets;
+        }
+        
+        $this->markFieldUpdated('facets');
+
+    }//end setFacets()
+
+
+    /**
+     * Regenerate facets from current schema properties
+     *
+     * **PERFORMANCE OPTIMIZATION**: This method analyzes the current schema properties
+     * and automatically generates facet configurations for fields marked with 'facetable': true.
+     * This eliminates the need for runtime analysis during search operations.
+     *
+     * @return void
+     */
+    public function regenerateFacetsFromProperties(): void
+    {
+        $properties = $this->getProperties();
+        
+        if (empty($properties)) {
+            $this->setFacets(null);
+            return;
+        }
+
+        $facetConfig = [
+            'object_fields' => [],
+            'generated_at' => time(),
+            'schema_version' => $this->getVersion() ?? '1.0'
+        ];
+
+        // Analyze each property for facetable configuration
+        foreach ($properties as $propertyKey => $property) {
+            // Skip properties that are not marked as facetable
+            if (!isset($property['facetable']) || $property['facetable'] !== true) {
+                continue;
+            }
+
+            // Determine appropriate facet type based on property configuration
+            $facetType = $this->determineFacetType($property);
+            
+            if ($facetType !== null) {
+                $facetConfig['object_fields'][$propertyKey] = [
+                    'type' => $facetType,
+                    'title' => $property['title'] ?? $propertyKey,
+                    'description' => $property['description'] ?? null,
+                    'data_type' => $property['type'] ?? 'string',
+                ];
+
+                // Add type-specific configuration
+                if ($facetType === 'date_histogram') {
+                    $facetConfig['object_fields'][$propertyKey]['default_interval'] = 'month';
+                    $facetConfig['object_fields'][$propertyKey]['supported_intervals'] = ['day', 'week', 'month', 'year'];
+                } elseif ($facetType === 'range') {
+                    $facetConfig['object_fields'][$propertyKey]['supports_custom_ranges'] = true;
+                } elseif ($facetType === 'terms' && isset($property['enum'])) {
+                    $facetConfig['object_fields'][$propertyKey]['predefined_values'] = $property['enum'];
+                }
+            }
+        }
+
+        // Set the generated facet configuration
+        $this->setFacets($facetConfig);
+
+    }//end regenerateFacetsFromProperties()
+
+
+    /**
+     * Determine the appropriate facet type for a property
+     *
+     * @param array $property The property configuration
+     *
+     * @return string|null The facet type ('terms', 'date_histogram', 'range') or null
+     *
+     * @phpstan-param array<string, mixed> $property
+     * @psalm-param   array<string, mixed> $property
+     * @phpstan-return string|null
+     * @psalm-return   string|null
+     */
+    private function determineFacetType(array $property): ?string
+    {
+        $type = $property['type'] ?? 'string';
+        $format = $property['format'] ?? null;
+
+        // Date/datetime fields use date_histogram
+        if ($type === 'string' && ($format === 'date' || $format === 'date-time')) {
+            return 'date_histogram';
+        }
+
+        // Numeric fields can use range facets
+        if ($type === 'number' || $type === 'integer') {
+            return 'range';
+        }
+
+        // String fields with enums or categorical data use terms
+        if ($type === 'string' || $type === 'boolean') {
+            return 'terms';
+        }
+
+        // Arrays typically use terms (for categorical values)
+        if ($type === 'array') {
+            return 'terms';
+        }
+
+        // Default to terms for other types
+        return 'terms';
+
+    }//end determineFacetType()
+
+
+    /**
+     * Determine the appropriate facet type for a schema property
+     *
+     * @param array  $property  The property definition
+     * @param string $fieldName The field name
+     *
+     * @return string|null The facet type ('terms', 'date_histogram') or null if not facetable
+     */
+    private function determineFacetTypeForProperty(array $property, string $fieldName): ?string
+    {
+        // Check if explicitly marked as facetable
+        if (isset($property['facetable']) && 
+            ($property['facetable'] === true || $property['facetable'] === 'true' || 
+             (is_string($property['facetable']) && strtolower(trim($property['facetable'])) === 'true'))
+        ) {
+            return $this->determineFacetTypeFromPropertyType($property);
+        }
+        
+        // Auto-detect common facetable field names
+        $commonFacetableFields = [
+            'type', 'status', 'category', 'tags', 'label', 'group', 
+            'department', 'location', 'priority', 'state', 'classification',
+            'genre', 'brand', 'model', 'version', 'license', 'language'
+        ];
+        
+        $lowerFieldName = strtolower($fieldName);
+        if (in_array($lowerFieldName, $commonFacetableFields)) {
+            return $this->determineFacetTypeFromPropertyType($property);
+        }
+        
+        // Auto-detect enum properties (good for faceting)
+        if (isset($property['enum']) && is_array($property['enum']) && count($property['enum']) > 0) {
+            return 'terms';
+        }
+        
+        // Auto-detect date/datetime fields
+        $propertyType = $property['type'] ?? '';
+        if (in_array($propertyType, ['date', 'datetime', 'date-time'])) {
+            return 'date_histogram';
+        }
+        
+        // Check for date-like field names
+        $dateFields = ['created', 'updated', 'modified', 'date', 'time', 'timestamp'];
+        foreach ($dateFields as $dateField) {
+            if (str_contains($lowerFieldName, $dateField)) {
+                return 'date_histogram';
+            }
+        }
+        
+        return null;
+        
+    }//end determineFacetTypeForProperty()
+
+
+    /**
+     * Determine facet type from property type
+     *
+     * @param array $property The property definition
+     *
+     * @return string The facet type ('terms' or 'date_histogram')
+     */
+    private function determineFacetTypeFromPropertyType(array $property): string
+    {
+        $propertyType = $property['type'] ?? 'string';
+        
+        // Date/datetime properties use date_histogram
+        if (in_array($propertyType, ['date', 'datetime', 'date-time'])) {
+            return 'date_histogram';
+        }
+        
+        // Enum properties use terms
+        if (isset($property['enum']) && is_array($property['enum'])) {
+            return 'terms';
+        }
+        
+        // Boolean, integer, number with small ranges use terms
+        if (in_array($propertyType, ['boolean', 'integer', 'number'])) {
+            return 'terms';
+        }
+        
+        // Default to terms for other types
+        return 'terms';
+        
+    }//end determineFacetTypeFromPropertyType()
+
 
 }//end class

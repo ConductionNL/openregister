@@ -26,7 +26,8 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Service\DownloadService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
-use OCA\OpenRegister\Service\SearchService;
+use OCA\OpenRegister\Service\SchemaCacheService;
+use OCA\OpenRegister\Service\SchemaFacetCacheService;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -55,8 +56,10 @@ class SchemasController extends Controller
      * @param ObjectEntityMapper  $objectEntityMapper  The object entity mapper
      * @param DownloadService     $downloadService     The download service
      * @param UploadService       $uploadService       The upload service
-     * @param AuditTrailMapper    $auditTrailMapper    The audit trail mapper
-     * @param OrganisationService $organisationService The organisation service
+     * @param AuditTrailMapper           $auditTrailMapper           The audit trail mapper
+     * @param OrganisationService        $organisationService        The organisation service
+     * @param SchemaCacheService         $schemaCacheService         Schema cache service for schema operations
+     * @param SchemaFacetCacheService    $schemaFacetCacheService    Schema facet cache service for facet operations
      *
      * @return void
      */
@@ -70,7 +73,8 @@ class SchemasController extends Controller
         private readonly UploadService $uploadService,
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly OrganisationService $organisationService,
-        private readonly ObjectService $objectService
+        private readonly SchemaCacheService $schemaCacheService,
+        private readonly SchemaFacetCacheService $schemaFacetCacheService
     ) {
         parent::__construct($appName, $request);
 
@@ -105,7 +109,6 @@ class SchemasController extends Controller
      * This method returns a JSON response containing an array of all schemas in the system.
      *
      * @param ObjectService $objectService The object service
-     * @param SearchService $searchService The search service
      *
      * @return JSONResponse A JSON response containing the list of schemas
      *
@@ -114,8 +117,7 @@ class SchemasController extends Controller
      * @NoCSRFRequired
      */
     public function index(
-        ObjectService $objectService,
-        SearchService $searchService
+        ObjectService $objectService
     ): JSONResponse {
         // Get request parameters for filtering and searching.
         $filters = $this->request->getParam(key: 'filters', default: []);
@@ -288,7 +290,13 @@ class SchemasController extends Controller
 
         try {
             // Update the schema with the provided data.
-            return new JSONResponse($this->schemaMapper->updateFromArray(id: $id, object: $data));
+            $updatedSchema = $this->schemaMapper->updateFromArray(id: $id, object: $data);
+            
+            // **CACHE INVALIDATION**: Clear all schema-related caches when schema is updated
+            $this->schemaCacheService->invalidateForSchemaChange($updatedSchema->getId(), 'update');
+            $this->schemaFacetCacheService->invalidateForSchemaChange($updatedSchema->getId(), 'update');
+            
+            return new JSONResponse($updatedSchema);
         } catch (DBException $e) {
             // Handle database constraint violations with user-friendly messages
             $constraintException = DatabaseConstraintException::fromDatabaseException($e, 'schema');
@@ -331,8 +339,13 @@ class SchemasController extends Controller
      */
     public function destroy(int $id): JSONResponse
     {
-        // Find the schema by ID and delete it.
-        $this->schemaMapper->delete($this->schemaMapper->find(id: $id));
+        // Find the schema by ID, delete it, and invalidate caches
+        $schemaToDelete = $this->schemaMapper->find(id: $id);
+        $this->schemaMapper->delete($schemaToDelete);
+        
+        // **CACHE INVALIDATION**: Clear all schema-related caches when schema is deleted
+        $this->schemaCacheService->invalidateForSchemaChange($schemaToDelete->getId(), 'delete');
+        $this->schemaFacetCacheService->invalidateForSchemaChange($schemaToDelete->getId(), 'delete');
 
         // Return an empty response.
         return new JSONResponse([]);
@@ -418,9 +431,17 @@ class SchemasController extends Controller
                     $schema->setOrganisation($organisationUuid);
                     $schema = $this->schemaMapper->update($schema);
                 }
+                
+                // **CACHE INVALIDATION**: Clear all schema-related caches when schema is created
+                $this->schemaCacheService->invalidateForSchemaChange($schema->getId(), 'create');
+                $this->schemaFacetCacheService->invalidateForSchemaChange($schema->getId(), 'create');
             } else {
                 // Update the existing schema.
                 $schema = $this->schemaMapper->update($schema);
+                
+                // **CACHE INVALIDATION**: Clear all schema-related caches when schema is updated
+                $this->schemaCacheService->invalidateForSchemaChange($schema->getId(), 'update');
+                $this->schemaFacetCacheService->invalidateForSchemaChange($schema->getId(), 'update');
             }
 
             return new JSONResponse($schema);

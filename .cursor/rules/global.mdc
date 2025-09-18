@@ -3,239 +3,51 @@ description:
 globs: 
 alwaysApply: true
 ---
-# Gneral rules for workin add Conduction as an AI
 
-You are a senior programmer at an innovation-oriented development company. You always make a detailed plan before writing anything, but are able to think outside the box and suggest alternative methods. 
+---
 
-## Documentation
-- Icons should be part of https://pictogrammers.com/library/mdi/
-- Layout should follow https://docs.nextcloud.com/server/latest/developer_manual/design/layoutcomponents.html 
-- Components can be used from https://nextcloud-vue-components.netlify.app/
+For easy insruction locking we write LLM instructions in JSON
 
-## Testing 
-We are developing a nextcloud application that has a back and frontend, all our bussen logic should therfore be accible trough api. All backend busnes logic that you write should be tested by mkaing api calls.  
-
-#### Common Mistakes to Avoid
-
-1. **❌ DO NOT** make API calls from the host machine to `http://localhost` or `http://nextcloud.local`
-   - These will result in 401 Unauthorized errors
-   - Authentication cookies and sessions don't work properly from external calls
-
-2. **❌ DO NOT** use standalone PHP server for API testing
-   - `php -S localhost:8000` lacks the Nextcloud framework and routing system
-   - API routes will return 404 errors
-   - Dependency injection and service container won't work
-
-3. **❌ DO NOT** forget authentication headers
-   - Always include `-u 'admin:admin'` for basic auth
-   - Always include `-H 'OCS-APIREQUEST: true'` header
-
-
-3. **❌ DO NOT** user error_log
-   - Use psr logger instead 
-
-
-#### 1. REQUIRED: Test from within the Docker Container
-Execute curl commands from inside the Nextcloud Docker container:
-
-**Step 1: Find your Nextcloud container name**
-```bash
-# List running containers to find Nextcloud container
-docker ps | grep nextcloud
-```
-
-**Step 2: Test API from within container (REQUIRED for local development)**
-```bash
-# Execute curl command in the container (replace 'master-nextcloud-1' with your container name)
-docker exec -it -u 33 master-nextcloud-1 bash -c "curl -u 'admin:admin' -H 'http://localhost/index.php/apps/openregister/api/objects/6/35?extend=deelnemers'"
-
-# For statistics endpoint specifically
-docker exec -it -u 33 master-nextcloud-1 bash -c "curl -u 'admin:admin' -H 'http://localhost/index.php/apps/openregister/api/search-trails/statistics'"
-
-# Or get a shell in the container for interactive testing
-docker exec -it -u 33 master-nextcloud-1 /bin/bash
-
-#### 2. External API Testing (Production/Staging Only)
-For external access, use the proper domain:
-
-```bash
-# For external access (production/staging environments only)
-curl -u 'admin:admin' -H  \
-     -H 'Content-Type: application/json' \
-     'http://nextcloud.local/index.php/apps/openregister/api/objects/6/35'
-```
-
-**Note:** External calls require proper DNS resolution and may not work in all local development environments.
-
-#### 3. Required Headers for API Testing
-Always include these headers when testing:
-```bash
-# Test with authentication headers (REQUIRED)
-curl -u 'admin:admin' \
-     -H 'Content-Type: application/json' \
-     'http://localhost/index.php/apps/openregister/api/search-trails/statistics'
-```
-
-We alwasy test first form the command line, but when the test is completed we should create a newman test in order to protect the functionality against feuture changes. 
-
-### Debugging API Endpoint Issues
-
-#### 1. Check App Status
-Ensure the app is enabled in Nextcloud:
-```bash
-# Check if app is enabled (replace 'master-nextcloud-1' with your container name)
-docker exec -u 33 master-nextcloud-1 php /var/www/html/occ app:list | grep openregister
-
-# Enable the app if needed
-docker exec -u 33 master-nextcloud-1 php /var/www/html/occ app:enable openregister
-
-# Verify app is enabled (should show 'openregister already enabled')
-docker exec -u 33 master-nextcloud-1 php /var/www/html/occ app:enable openregister
-```
-
-#### 2. View Debug Logs (CORRECT METHOD)
-For local development, debug logs appear in the Docker container's stdout, not in the Nextcloud log file:
-
-```bash
-# View real-time debug logs from Docker stdout
-docker logs -f master-nextcloud-1
-
-# Or view recent logs
-docker logs master-nextcloud-1 | tail -n 100
-
-# Filter for specific debug messages
-docker logs master-nextcloud-1 | grep -E '\[SaveObject\]|\[ObjectService\]|\[ObjectsController\]'
-
-# View logs for specific time period
-docker logs master-nextcloud-1 --since 10m | grep '\[SaveObject\]'
-```
-
-**Important**: Debug logs with `error_log()` calls appear in Docker stdout, not in `/var/www/html/data/nextcloud.log`. The Nextcloud log file only contains framework-level logs and errors.
-
-#### 2. Verify Routes Configuration
-Check that routes are properly defined in `appinfo/routes.php`:
-```php
-// Ensure routes are properly defined
-['name' => 'controller#method', 'url' => '/api/endpoint', 'verb' => 'GET'],
-```
-
-#### 3. Check Controller Methods
-Verify that controller methods have proper annotations:
-```php
-/**
- * @NoAdminRequired
- * @NoCSRFRequired
- */
-public function statistics(): JSONResponse
+```json
 {
-    // Method implementation
+  "repository": {
+    "name": "openregister",
+    "type": "Nextcloud app",
+    "purpose": "Provides object-oriented datastore used by other apps",
+    "dependencies": {
+      "nextcloud": "backend + vue frontend",
+      "mysql": "database storage",
+      "solr": "search functionality"
+    },
+    "api": {
+      "basePath": "/index.php/apps/openregister/api",
+      "endpoints": [
+        "objects",
+        "schemas",
+        "registers",
+        "sources",
+        "organisations"
+      ],
+    },
+    "data": {
+      "databaseTables": [
+        "oc_openregister_objects",
+        "oc_openregister_schemas",
+        "oc_openregister_registers",
+        "oc_openregister_sources",
+        "oc_openregister_organisations"
+      ],
+      "note": "All apps should store their data via OpenRegister"
+    },
+    "structure": {
+      "folders": [
+        "appinfo/ (Nextcloud app configuration)",
+        "lib/ (PHP logic)",
+        "tests/ (unit and API tests)",
+        "js/ (frontend Vue components)",
+        "docs/ (Docusaurus documentation)"
+      ]
+    }
+  }
 }
 ```
-
-#### 5. Test Database Connectivity
-Verify database queries work properly:
-```bash
-# Test database connection in container (replace 'master-nextcloud-1' with your container name)
-docker exec -u 33 master-nextcloud-1 php -r "
-\$config = include '/var/www/html/config/config.php';
-\$pdo = new PDO('mysql:host=' . \$config['dbhost'] . ';dbname=' . \$config['dbname'], \$config['dbuser'], \$config['dbpassword']);
-var_dump(\$pdo->query('SELECT COUNT(*) FROM oc_search_trails')->fetchColumn());
-"
-```
-
-### Code qoulity
-
-
-## App Structure
-## App Structure
-- Root Directory:
-  - `appinfo/` - Nextcloud app configuration
-  - `tests/` - Test files
-  - `composer.json` - PHP dependencies
-  - `package.json` - Node.js dependencies
-  - `phpunit.xml` - PHPUnit configuration
-  - `phpcs.xml` - PHP CodeSniffer configuration
-  - `.eslintrc.js` - ESLint configuration
-  - `tsconfig.json` - TypeScript configuration
-  - `webpack.config.js` - Webpack configuration
-
-## Version Control
-- Use meaningful commit messages
-- Reference issue numbers in commits
-- Keep commits focused and atomic
-- Update documentation in same commit as code changes
-
-## Code Quality
-- Write self-documenting code
-- Include comments for complex logic
-- Follow language-specific best practices
-- Maintain consistent code style
-- Write testable code
-
-## Testing
-- Write tests for new functionality
-- Update tests when modifying existing code
-- Maintain high test coverage
-- Document test scenarios
-
-## Security
-- Follow security best practices
-- Document security considerations
-- Keep dependencies up to date
-- Review security implications of changes
-
-## Performance
-- Consider performance implications
-- Document performance considerations
-- Include performance metrics where relevant
-
-## Accessibility
-- Follow accessibility guidelines
-- Document accessibility features
-- Test with accessibility tools
-
-## Internationalization
-- Support multiple languages
-- Document translation requirements
-- Use proper i18n practices
-
-## Project Structure
-- Follow consistent directory structure
-- Organize files logically
-- Use appropriate file extensions
-- Keep related files together
-- Maintain clear separation of concerns
-
-## Internationalization
-- Use translation files
-- Handle different date formats
-- Consider RTL languages
-- Use appropriate character encoding
-
-## Security
-- Regular security audits
-- Keep dependencies updated
-- Implement proper access controls
-- Regular penetration testing
-
-## Performance
-- Optimize load times
-- Implement caching
-- Minimize resource usage
-- Regular performance testing
-- Monitor metrics
-
-## Maintenance
-- Regular code cleanup
-- Remove unused code
-- Update outdated dependencies
-- Monitor error logs
-- Regular backups 
-
-## Special Considerations
-- Never use backticks (`) in documentation or code edits
-- Always use single quotes (') for code examples
-- Fix all linter and test issues before completion
-- Document all decisions and assumptions
-- Keep stakeholder informed of progress
-- Update project documentation as needed

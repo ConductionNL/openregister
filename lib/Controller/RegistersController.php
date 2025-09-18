@@ -25,7 +25,6 @@ use OCA\OpenRegister\Db\RegisterMapper;
 
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RegisterService;
-use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Service\UploadService;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -38,6 +37,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\DB\Exception as DBException;
+use OCP\IUserSession;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
@@ -117,6 +117,7 @@ class RegistersController extends Controller
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly UploadService $uploadService,
         private readonly LoggerInterface $logger,
+        private readonly IUserSession $userSession,
         ConfigurationService $configurationService,
         AuditTrailMapper $auditTrailMapper,
         ExportService $exportService,
@@ -163,7 +164,6 @@ class RegistersController extends Controller
      * This method returns a JSON response containing an array of all registers in the system.
      *
      * @param ObjectService $objectService The object service
-     * @param SearchService $searchService The search service
      *
      * @return JSONResponse A JSON response containing the list of registers
      *
@@ -172,8 +172,7 @@ class RegistersController extends Controller
      * @NoCSRFRequired
      */
     public function index(
-        ObjectService $objectService,
-        SearchService $searchService
+        ObjectService $objectService
     ): JSONResponse {
         // Get request parameters for filtering and searching.
         $filters = $this->request->getParam(key: 'filters', default: []);
@@ -445,7 +444,7 @@ class RegistersController extends Controller
 
             switch ($format) {
                 case 'excel':
-                    $spreadsheet = $this->exportService->exportToExcel($register);
+                    $spreadsheet = $this->exportService->exportToExcel($register, null, [], $this->userSession->getUser());
                     $writer      = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
                     $filename    = sprintf('%s_%s.xlsx', $register->getSlug(), (new \DateTime())->format('Y-m-d_His'));
                     ob_start();
@@ -462,7 +461,7 @@ class RegistersController extends Controller
                     }
 
                     $schema   = $this->schemaMapper->find($schemaId);
-                    $csv      = $this->exportService->exportToCsv($register, $schema);
+                    $csv      = $this->exportService->exportToCsv($register, $schema, [], $this->userSession->getUser());
                     $filename = sprintf('%s_%s_%s.csv', $register->getSlug(), $schema->getSlug(), (new \DateTime())->format('Y-m-d_His'));
                     return new DataDownloadResponse($csv, $filename, 'text/csv');
                 case 'configuration':
@@ -556,22 +555,17 @@ class RegistersController extends Controller
                         $events,
                         $rbac,
                         $multi,
-                        $publish
+                        $publish,
+                        $this->userSession->getUser()
                     );
                     break;
                 case 'csv':
                     // Import from CSV and get summary (now returns sheet-based format)
-                    // For CSV, schema can be specified in the request
+                    // For CSV, schema MUST be specified in the request
                     $schemaId = $this->request->getParam('schema');
 
                     if (!$schemaId) {
-                        // If no schema specified, use the first schema from the register
-                        $schemas = $register->getSchemas();
-                        if (empty($schemas)) {
-                            return new JSONResponse(['error' => 'No schema found for register'], 400);
-                        }
-
-                        $schemaId = is_array($schemas) ? reset($schemas) : $schemas;
+                        return new JSONResponse(['error' => 'Schema parameter is required for CSV imports. Please specify ?schema=105 in your request.'], 400);
                     }
 
                     $schema = $this->schemaMapper->find($schemaId);
@@ -590,7 +584,8 @@ class RegistersController extends Controller
                         $events,
                         $rbac,
                         $multi,
-                        $publish
+                        $publish,
+                        $this->userSession->getUser()
                     );
                     break;
                 case 'configuration':

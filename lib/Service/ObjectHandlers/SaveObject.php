@@ -36,6 +36,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\ObjectCacheService;
+use OCA\OpenRegister\Service\SchemaCacheService;
+use OCA\OpenRegister\Service\SchemaFacetCacheService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -114,9 +117,12 @@ class SaveObject
      * @param SchemaMapper        $schemaMapper        Schema mapper for schema operations.
      * @param RegisterMapper      $registerMapper      Register mapper for register operations.
      * @param IURLGenerator       $urlGenerator        URL generator service.
-     * @param OrganisationService $organisationService Service for organisation operations.
-     * @param LoggerInterface     $logger              Logger interface for logging operations.
-     * @param ArrayLoader         $arrayLoader         Twig array loader for template rendering.
+     * @param OrganisationService        $organisationService        Service for organisation operations.
+     * @param ObjectCacheService        $objectCacheService        Object cache service for entity and query caching.
+     * @param SchemaCacheService        $schemaCacheService        Schema cache service for schema entity caching.
+     * @param SchemaFacetCacheService   $schemaFacetCacheService   Schema facet cache service for facet caching.
+     * @param LoggerInterface          $logger                   Logger interface for logging operations.
+     * @param ArrayLoader              $arrayLoader              Twig array loader for template rendering.
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
@@ -127,6 +133,9 @@ class SaveObject
         private readonly RegisterMapper $registerMapper,
         private readonly IURLGenerator $urlGenerator,
         private readonly OrganisationService $organisationService,
+        private readonly ObjectCacheService $objectCacheService,
+        private readonly SchemaCacheService $schemaCacheService,
+        private readonly SchemaFacetCacheService $schemaFacetCacheService,
         private readonly LoggerInterface $logger,
         ArrayLoader $arrayLoader,
     ) {
@@ -420,11 +429,31 @@ class SaveObject
     /**
      * Hydrates object metadata fields based on schema configuration.
      *
-     * This method uses the schema configuration to set the name, description, summary, and image fields
-     * on the object entity based on the object data. It uses dot notation paths defined in the schema
-     * configuration to extract values from the object's data (e.g., 'contact.email', 'title').
+     * This method uses the schema configuration to set metadata fields on the object entity
+     * based on the object data. It supports:
+     * - Simple field mapping using dot notation paths (e.g., 'contact.email', 'title')
+     * - Twig-like concatenation for combining multiple fields (e.g., '{{ voornaam }} {{ tussenvoegsel }} {{ achternaam }}')
+     * - All metadata fields: name, description, summary, image, slug, published, depublished
+     * 
+     * Schema configuration example:
+     * ```json
+     * {
+     *   "objectNameField": "{{ voornaam }} {{ tussenvoegsel }} {{ achternaam }}",
+     *   "objectDescriptionField": "beschrijving", 
+     *   "objectSummaryField": "beschrijvingKort",
+     *   "objectImageField": "afbeelding",
+     *   "objectSlugField": "naam",
+     *   "objectPublishedField": "publicatieDatum",
+     *   "objectDepublishedField": "einddatum"
+     * }
+     * ```
      * 
      * This method is public to support both individual saves and bulk save operations.
+     * During bulk imports, it's called from SaveObjects for each object to ensure consistent
+     * metadata extraction across all import paths.
+     *
+     * @see website/docs/developers/import-flow.md for complete import flow documentation
+     * @see website/docs/core/schema.md for schema configuration details
      *
      * @param ObjectEntity $entity The entity to hydrate
      * @param Schema       $schema The schema containing the configuration
@@ -439,31 +468,81 @@ class SaveObject
         $config     = $schema->getConfiguration();
         $objectData = $entity->getObject();
 
+        // Name field mapping
         if (isset($config['objectNameField']) === true) {
-            $name = $this->getValueFromPath($objectData, $config['objectNameField']);
-            if ($name !== null) {
-                $entity->setName($name);
+            $name = $this->extractMetadataValue($objectData, $config['objectNameField']);
+            if ($name !== null && trim($name) !== '') {
+                $entity->setName(trim($name));
             }
         }
 
+        // Description field mapping
         if (isset($config['objectDescriptionField']) === true) {
-            $description = $this->getValueFromPath($objectData, $config['objectDescriptionField']);
-            if ($description !== null) {
-                $entity->setDescription($description);
+            $description = $this->extractMetadataValue($objectData, $config['objectDescriptionField']);
+            if ($description !== null && trim($description) !== '') {
+                $entity->setDescription(trim($description));
             }
         }
 
+        // Summary field mapping
         if (isset($config['objectSummaryField']) === true) {
-            $summary = $this->getValueFromPath($objectData, $config['objectSummaryField']);
-            if ($summary !== null) {
-                $entity->setSummary($summary);
+            $summary = $this->extractMetadataValue($objectData, $config['objectSummaryField']);
+            if ($summary !== null && trim($summary) !== '') {
+                $entity->setSummary(trim($summary));
             }
         }
 
+        // Image field mapping
         if (isset($config['objectImageField']) === true) {
-            $image = $this->getValueFromPath($objectData, $config['objectImageField']);
-            if ($image !== null) {
-                $entity->setImage($image);
+            $image = $this->extractMetadataValue($objectData, $config['objectImageField']);
+            if ($image !== null && trim($image) !== '') {
+                $entity->setImage(trim($image));
+            }
+        }
+
+        // Slug field mapping
+        if (isset($config['objectSlugField']) === true) {
+            $slug = $this->extractMetadataValue($objectData, $config['objectSlugField']);
+            if ($slug !== null && trim($slug) !== '') {
+                // Generate URL-friendly slug
+                $generatedSlug = $this->createSlugFromValue(trim($slug));
+                if ($generatedSlug !== null) {
+                    $entity->setSlug($generatedSlug);
+                }
+            }
+        }
+
+        // Published field mapping
+        if (isset($config['objectPublishedField']) === true) {
+            $published = $this->extractMetadataValue($objectData, $config['objectPublishedField']);
+            if ($published !== null && trim($published) !== '') {
+                try {
+                    $publishedDate = new DateTime(trim($published));
+                    $entity->setPublished($publishedDate);
+                } catch (Exception $e) {
+                    // Log warning but don't fail the entire operation
+                    $this->logger->warning('Invalid published date format', [
+                        'value' => $published,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+        }
+
+        // Depublished field mapping
+        if (isset($config['objectDepublishedField']) === true) {
+            $depublished = $this->extractMetadataValue($objectData, $config['objectDepublishedField']);
+            if ($depublished !== null && trim($depublished) !== '') {
+                try {
+                    $depublishedDate = new DateTime(trim($depublished));
+                    $entity->setDepublished($depublishedDate);
+                } catch (Exception $e) {
+                    // Log warning but don't fail the entire operation
+                    $this->logger->warning('Invalid depublished date format', [
+                        'value' => $depublished,
+                        'error' => $e->getMessage()
+                    ]);
+                }
             }
         }
 
@@ -502,6 +581,117 @@ class SaveObject
         return $current;
 
     }//end getValueFromPath()
+
+
+    /**
+     * Extracts metadata value from object data with support for twig-like concatenation.
+     *
+     * This method supports two formats:
+     * 1. Simple dot notation paths: "naam", "contact.email"
+     * 2. Twig-like templates: "{{ voornaam }} {{ tussenvoegsel }} {{ achternaam }}"
+     *
+     * For twig-like templates, it extracts field names from {{ }} syntax and concatenates
+     * their values with spaces, handling empty/null values gracefully.
+     *
+     * @param array  $data      The object data
+     * @param string $fieldPath The field path or twig-like template
+     *
+     * @return string|null The extracted/concatenated value, or null if not found
+     *
+     * @psalm-return   string|null
+     * @phpstan-return string|null
+     */
+    private function extractMetadataValue(array $data, string $fieldPath): ?string
+    {
+        // Check if this is a twig-like template with {{ }} syntax
+        if (str_contains($fieldPath, '{{') && str_contains($fieldPath, '}}')) {
+            return $this->processTwigLikeTemplate($data, $fieldPath);
+        }
+
+        // Simple field path - use existing method
+        return $this->getValueFromPath($data, $fieldPath);
+
+    }//end extractMetadataValue()
+
+
+    /**
+     * Processes twig-like templates by extracting field values and concatenating them.
+     *
+     * This method parses templates like "{{ voornaam }} {{ tussenvoegsel }} {{ achternaam }}"
+     * and replaces each {{ fieldName }} with the corresponding value from the data.
+     * Empty or null values are handled gracefully and excess whitespace is cleaned up.
+     *
+     * @param array  $data     The object data
+     * @param string $template The twig-like template string
+     *
+     * @return string|null The processed template result, or null if no values found
+     *
+     * @psalm-return   string|null
+     * @phpstan-return string|null
+     */
+    private function processTwigLikeTemplate(array $data, string $template): ?string
+    {
+        // Extract all {{ fieldName }} patterns
+        preg_match_all('/\{\{\s*([^}]+)\s*\}\}/', $template, $matches);
+        
+        if (empty($matches[0])) {
+            return null;
+        }
+
+        $result = $template;
+        $hasValues = false;
+
+        // Replace each {{ fieldName }} with its value
+        foreach ($matches[0] as $index => $fullMatch) {
+            $fieldName = trim($matches[1][$index]);
+            $value = $this->getValueFromPath($data, $fieldName);
+            
+            if ($value !== null && trim($value) !== '') {
+                $result = str_replace($fullMatch, trim($value), $result);
+                $hasValues = true;
+            } else {
+                // Replace with empty string for missing/empty values
+                $result = str_replace($fullMatch, '', $result);
+            }
+        }
+
+        if (!$hasValues) {
+            return null;
+        }
+
+        // Clean up excess whitespace and normalize spaces
+        $result = preg_replace('/\s+/', ' ', $result);
+        $result = trim($result);
+
+        return $result !== '' ? $result : null;
+
+    }//end processTwigLikeTemplate()
+
+
+    /**
+     * Creates a URL-friendly slug from a metadata value.
+     *
+     * This method is different from the generateSlug method used in setDefaultValues
+     * as it works with already extracted metadata values rather than generating defaults.
+     * It creates a slug without adding timestamps to avoid conflicts with schema-based slugs.
+     *
+     * @param string $value The value to convert to a slug
+     *
+     * @return string|null The generated slug or null if value is empty
+     *
+     * @psalm-return   string|null
+     * @phpstan-return string|null
+     */
+    private function createSlugFromValue(string $value): ?string
+    {
+        if (empty($value) || trim($value) === '') {
+            return null;
+        }
+
+        // Use the existing createSlug method for consistency
+        return $this->createSlug(trim($value));
+
+    }//end createSlugFromValue()
 
 
     /**
@@ -1275,6 +1465,7 @@ class SaveObject
         bool $persist=true,
         bool $validation=true
     ): ObjectEntity {
+        
 
         if (isset($data['@self']) && is_array($data['@self'])) {
             $selfData = $data['@self'];
@@ -1405,6 +1596,14 @@ class SaveObject
         // Update the object with the modified data (file IDs instead of content)
         $savedEntity->setObject($data);
 
+        // **CACHE INVALIDATION**: Clear collection and facet caches so new/updated objects appear immediately
+        $this->objectCacheService->invalidateForObjectChange(
+            $savedEntity,
+            $uuid ? 'update' : 'create',
+            $savedEntity->getRegister(),
+            $savedEntity->getSchema()
+        );
+
         return $savedEntity;
 
     }//end saveObject()
@@ -1461,7 +1660,32 @@ class SaveObject
         try {
             $this->hydrateObjectMetadata($objectEntity, $schema);
         } catch (Exception $e) {
-            // Continue without hydration if it fails
+            // CRITICAL FIX: Hydration failures indicate schema/data mismatch - don't suppress!
+            throw new \Exception(
+                'Object metadata hydration failed: ' . $e->getMessage() . 
+                '. This indicates a mismatch between object data and schema configuration.',
+                0,
+                $e
+            );
+        }
+
+        // Auto-publish logic: Set published date to now if autoPublish is enabled in schema configuration
+        // and no published date has been set yet (either from field mapping or explicit data)
+        $config = $schema->getConfiguration();
+        if (isset($config['autoPublish']) && $config['autoPublish'] === true) {
+            if ($objectEntity->getPublished() === null) {
+                $this->logger->debug('Auto-publishing object on creation', [
+                    'uuid' => $objectEntity->getUuid(),
+                    'schema' => $schema->getTitle(),
+                    'autoPublish' => true
+                ]);
+                $objectEntity->setPublished(new DateTime());
+            } else {
+                $this->logger->debug('Object already has published date, skipping auto-publish', [
+                    'uuid' => $objectEntity->getUuid(),
+                    'publishedDate' => $objectEntity->getPublished()->format('Y-m-d H:i:s')
+                ]);
+            }
         }
 
         // Set user information if available.
@@ -1481,7 +1705,13 @@ class SaveObject
         try {
             $objectEntity = $this->updateObjectRelations($objectEntity, $preparedData, $schema);
         } catch (Exception $e) {
-            // Continue without relations if it fails
+            // CRITICAL FIX: Relation processing failures indicate serious data integrity issues!
+            throw new \Exception(
+                'Object relations processing failed: ' . $e->getMessage() . 
+                '. This indicates invalid relation data or schema configuration problems.',
+                0,
+                $e
+            );
         }
 
         return $objectEntity;
@@ -1625,7 +1855,13 @@ class SaveObject
         try {
             $data = $this->sanitizeEmptyStringsForObjectProperties($data, $schema);
         } catch (Exception $e) {
-            // Continue without sanitization if it fails
+            // CRITICAL FIX: Sanitization failures indicate serious data problems - don't suppress!
+            throw new \Exception(
+                'Object data sanitization failed: ' . $e->getMessage() . 
+                '. This indicates invalid or corrupted object data that cannot be processed safely.',
+                0,
+                $e
+            );
         }
 
         // Apply cascading operations

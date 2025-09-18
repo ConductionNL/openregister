@@ -28,7 +28,6 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\SearchService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -133,6 +132,8 @@ class ObjectsController extends Controller
         return in_array('admin', $userGroups);
 
     }//end isCurrentUserAdmin()
+
+
 
 
     /**
@@ -245,86 +246,7 @@ class ObjectsController extends Controller
     }//end paginate()
 
 
-    /**
-     * Helper method to get query array from the current request for faceting-enabled methods
-     *
-     * This method builds a query structure compatible with the searchObjectsPaginated method
-     * which supports faceting, facetable field discovery, and all other search features.
-     *
-     * @param int|string|null $register Optional register identifier (should be resolved numeric ID)
-     * @param int|string|null $schema   Optional schema identifier (should be resolved numeric ID)
-     * @param array|null      $ids      Optional array of specific IDs to filter
-     *
-     * @return array Query array containing:
-     *               - @self: Metadata filters (register, schema, etc.)
-     *               - Direct keys: Object field filters
-     *               - _limit: Maximum number of items per page
-     *               - _offset: Number of items to skip
-     *               - _page: Current page number
-     *               - _order: Sort parameters
-     *               - _search: Search term
-     *               - _extend: Properties to extend
-     *               - _fields: Fields to include
-     *               - _filter/_unset: Fields to exclude
-     *               - _facets: Facet configuration
-     *               - _facetable: Include facetable field discovery
-     *               - _ids: Specific IDs to filter
-     */
-    private function buildSearchQuery(int | string | null $register=null, int | string | null $schema=null, ?array $ids=null): array
-    {
-        $params = $this->request->getParams();
 
-        // Remove system parameters that shouldn't be used as filters
-        unset($params['id'], $params['_route']);
-
-        // Build the query structure for searchObjectsPaginated
-        $query = [];
-
-        // Extract metadata filters into @self
-        $metadataFields = ['register', 'schema', 'uuid', 'organisation', 'owner', 'application', 'created', 'updated', 'published', 'depublished', 'deleted'];
-        $query['@self'] = [];
-
-        // Add register and schema to @self if provided (ensure they are integers)
-        if ($register !== null) {
-            $query['@self']['register'] = (int) $register;
-        }
-
-        if ($schema !== null) {
-            $query['@self']['schema'] = (int) $schema;
-        }
-
-        // Extract special underscore parameters
-        $specialParams = [];
-        $objectFilters = [];
-
-        foreach ($params as $key => $value) {
-            if (str_starts_with($key, '_')) {
-                $specialParams[$key] = $value;
-            } else if (in_array($key, $metadataFields)) {
-                // Only add to @self if not already set from function parameters
-                if (!isset($query['@self'][$key])) {
-                    $query['@self'][$key] = $value;
-                }
-            } else {
-                // This is an object field filter
-                $objectFilters[$key] = $value;
-            }
-        }
-
-        // Add object field filters directly to query
-        $query = array_merge($query, $objectFilters);
-
-        // Add IDs if provided
-        if ($ids !== null) {
-            $query['_ids'] = $ids;
-        }
-
-        // Add all special parameters (they'll be handled by searchObjectsPaginated)
-        $query = array_merge($query, $specialParams);
-
-        return $query;
-
-    }//end buildSearchQuery()
 
 
     /**
@@ -444,6 +366,9 @@ class ObjectsController extends Controller
      * - Search: _search
      * - Rendering: _extend, _fields, _filter/_unset
      * - Faceting: _facets (facet configuration), _facetable (facetable field discovery)
+     * - Aggregations: _aggregations (enable aggregations in response - SOLR only)
+     * - Debug: _debug (enable debug information in response - SOLR only)
+     * - Source: _source (force search source: 'database' or 'index'/'solr')
      * - Sorting: _order
      *
      * @param string        $register      The register slug or identifier
@@ -467,10 +392,17 @@ class ObjectsController extends Controller
         }
 
         // Build search query with resolved numeric IDs
-        $query = $this->buildSearchQuery($resolved['register'], $resolved['schema']);
+        $query = $objectService->buildSearchQuery($this->request->getParams(), $resolved['register'], $resolved['schema']);
         
-        // Use async version for better performance (3-5x faster)  
-        $result = $objectService->searchObjectsPaginatedSync($query);
+        // Extract filtering parameters from request
+        $params = $this->request->getParams();
+        $rbac = filter_var($params['rbac'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $multi = filter_var($params['multi'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $published = filter_var($params['_published'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $deleted = filter_var($params['deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        
+        // **INTELLIGENT SOURCE SELECTION**: ObjectService automatically chooses optimal source
+        $result = $objectService->searchObjectsPaginated($query, $rbac, $multi, $published, $deleted);
         
         // **SUB-SECOND OPTIMIZATION**: Enable response compression for large payloads
         $response = new JSONResponse($result);
@@ -484,6 +416,8 @@ class ObjectsController extends Controller
         return $response;
 
     }//end index()
+
+
 
 
     /**
@@ -504,6 +438,9 @@ class ObjectsController extends Controller
      * - Search: _search
      * - Rendering: _extend, _fields, _filter/_unset
      * - Faceting: _facets (facet configuration), _facetable (facetable field discovery)
+     * - Aggregations: _aggregations (enable aggregations in response - SOLR only)
+     * - Debug: _debug (enable debug information in response - SOLR only)
+     * - Source: _source (force search source: 'database' or 'index'/'solr')
      * - Sorting: _order
      *
      * @param ObjectService $objectService The object service
@@ -517,10 +454,10 @@ class ObjectsController extends Controller
     public function objects(ObjectService $objectService): JSONResponse
     {
         // Build search query without register/schema constraints
-        $query = $this->buildSearchQuery();
+        $query = $objectService->buildSearchQuery($this->request->getParams());
 
-        // Use async version for better performance (3-5x faster)
-        $result = $objectService->searchObjectsPaginatedSync($query);
+        // **INTELLIGENT SOURCE SELECTION**: ObjectService automatically chooses optimal source
+        $result = $objectService->searchObjectsPaginated($query);
 
         return new JSONResponse($result);
 
@@ -655,7 +592,7 @@ class ObjectsController extends Controller
             $object,
             fn ($key) => !str_starts_with($key, '_')
                 && !str_starts_with($key, '@')
-                && !in_array($key, ['id', 'uuid', 'register', 'schema']),
+                && !in_array($key, ['uuid', 'register', 'schema']),
             ARRAY_FILTER_USE_KEY
         );
 
@@ -734,7 +671,7 @@ class ObjectsController extends Controller
             $object,
             fn ($key) => !str_starts_with($key, '_')
                 && !str_starts_with($key, '@')
-                && !in_array($key, ['id', 'uuid', 'register', 'schema']),
+                && !in_array($key, ['uuid', 'register', 'schema']),
             ARRAY_FILTER_USE_KEY
         );
 
@@ -854,7 +791,7 @@ class ObjectsController extends Controller
             $patchData,
             fn ($key) => !str_starts_with($key, '_')
                 && !str_starts_with($key, '@')
-                && !in_array($key, ['id', 'uuid', 'register', 'schema']),
+                && !in_array($key, ['uuid', 'register', 'schema']),
             ARRAY_FILTER_USE_KEY
         );
 
@@ -956,10 +893,8 @@ class ObjectsController extends Controller
             // If admin, disable RBAC
             $multi = !$isAdmin;
             // If admin, disable multitenancy
-            // Get the object before deletion for response (include soft-deleted objects)
-            $oldObject = $this->objectEntityMapper->find($id, null, null, true);
 
-            // Use ObjectService to delete the object (includes RBAC permission checks)
+            // Use ObjectService to delete the object (includes RBAC permission checks, audit trail, and soft delete)
             $deleteResult = $objectService->deleteObject($id, $rbac, $multi);
 
             if (!$deleteResult) {
@@ -967,20 +902,10 @@ class ObjectsController extends Controller
                 return new JSONResponse(['error' => 'Failed to delete object'], 500);
             }
 
-            // Clone the object to pass as the new state for response
-            $newObject = clone $oldObject;
-            $newObject->delete($this->userSession, $this->request->getParam(key: 'deletedReason'), $this->request->getParam(key: 'retentionPeriod'));
-
-            // Update the object in the mapper (soft delete)
-            $this->objectEntityMapper->update($newObject);
-
-            // Create an audit trail with both old and new states
-            $this->auditTrailMapper->createAuditTrail(old: $oldObject, new: $newObject);
-
             // Return 204 No Content for successful delete (REST convention)
             return new JSONResponse(null, 204);
         } catch (\Exception $exception) {
-            // Handle all exceptions (including RBAC permission errors)
+            // Handle all exceptions (including RBAC permission errors and object not found)
             return new JSONResponse(['error' => $exception->getMessage()], 403);
         }//end try
 
@@ -1330,7 +1255,7 @@ class ObjectsController extends Controller
         // Handle different export types
         switch ($type) {
             case 'csv':
-                $csv = $this->exportService->exportToCsv($registerEntity, $schemaEntity, $filters);
+                $csv = $this->exportService->exportToCsv($registerEntity, $schemaEntity, $filters, $this->userSession->getUser());
 
                 // Generate filename
                 $filename = sprintf(
@@ -1348,7 +1273,7 @@ class ObjectsController extends Controller
 
             case 'excel':
             default:
-                $spreadsheet = $this->exportService->exportToExcel($registerEntity, $schemaEntity, $filters);
+                $spreadsheet = $this->exportService->exportToExcel($registerEntity, $schemaEntity, $filters, $this->userSession->getUser());
 
                 // Create Excel writer
                 $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
@@ -1414,12 +1339,14 @@ class ObjectsController extends Controller
                     $summary = $this->importService->importFromExcel(
                         $uploadedFile['tmp_name'],
                         $registerEntity,
-                        null,
-                    // Schema will be determined from sheet names
-                        5,
-                    // Use default chunk size
+                        null, // Schema will be determined from sheet names
+                        5, // Use default chunk size
                         $validation,
-                        $events
+                        $events,
+                        true, // rbac
+                        true, // multi
+                        false, // publish
+                        $this->userSession->getUser()
                     );
                     break;
 

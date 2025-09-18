@@ -244,39 +244,79 @@ export const useRegisterStore = defineStore('register', {
 		},
 		/**
 		 * Start a heartbeat mechanism to prevent gateway timeouts during long imports
-		 * @param {number} intervalMs - Heartbeat interval in milliseconds (default: 30 seconds)
-		 * @return {object} - Object with stop() method to stop the heartbeat
+		 * @param {number} intervalMs - Heartbeat interval in milliseconds (default: 15 seconds)
+		 * @param {Function} onStatusChange - Callback for heartbeat status changes
+		 * @return {object} - Object with stop() method and status property
 		 */
-		startImportHeartbeat(intervalMs = 30000) {
+		startImportHeartbeat(intervalMs = 15000, onStatusChange = null) {
 			console.log('RegisterStore: Starting import heartbeat every', intervalMs, 'ms')
+			
+			let heartbeatCount = 0
+			let failureCount = 0
+			let isHealthy = true
 			
 			const heartbeatInterval = setInterval(async () => {
 				try {
+					heartbeatCount++
+					const startTime = Date.now()
+					
 					// Send a lightweight request to keep the session alive
-					// Use a simple API endpoint that doesn't do heavy processing
-					await fetch('/index.php/apps/openregister/api/heartbeat', {
+					const response = await fetch('/index.php/apps/openregister/api/heartbeat', {
 						method: 'GET',
 						headers: {
 							'X-Requested-With': 'XMLHttpRequest',
 							'Cache-Control': 'no-cache'
-						}
+						},
+						// Add timeout to prevent hanging requests
+						signal: AbortSignal.timeout(10000) // 10 second timeout
 					})
-					console.log('RegisterStore: Heartbeat sent successfully')
+					
+					if (!response.ok) {
+						throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+					}
+					
+					const duration = Date.now() - startTime
+					console.log(`RegisterStore: Heartbeat #${heartbeatCount} successful (${duration}ms)`)
+					
+					// Reset failure count on success
+					if (failureCount > 0) {
+						failureCount = 0
+						isHealthy = true
+						if (onStatusChange) {
+							onStatusChange({ healthy: true, failures: 0, count: heartbeatCount })
+						}
+					}
+					
 				} catch (error) {
-					// Don't throw on heartbeat errors, just log them
-					console.warn('RegisterStore: Heartbeat failed (non-critical):', error)
+					failureCount++
+					const wasHealthy = isHealthy
+					isHealthy = failureCount < 3 // Consider unhealthy after 3 consecutive failures
+					
+					console.error(`RegisterStore: Heartbeat #${heartbeatCount} failed (failure ${failureCount}):`, error.message)
+					
+					if (onStatusChange && (!wasHealthy !== !isHealthy)) {
+						onStatusChange({ healthy: isHealthy, failures: failureCount, count: heartbeatCount, error: error.message })
+					}
+					
+					// If too many failures, warn user but don't stop heartbeat
+					if (failureCount === 3) {
+						console.warn('RegisterStore: Multiple heartbeat failures detected - connection may be unstable')
+					}
 				}
 			}, intervalMs)
 
 			return {
 				stop() {
-					console.log('RegisterStore: Stopping import heartbeat')
+					console.log(`RegisterStore: Stopping import heartbeat after ${heartbeatCount} attempts (${failureCount} failures)`)
 					clearInterval(heartbeatInterval)
+				},
+				getStatus() {
+					return { healthy: isHealthy, failures: failureCount, count: heartbeatCount }
 				}
 			}
 		},
 
-		async importRegister(file, includeObjects = false, validation = false, events = false, rbac = true, multi = true, publish = false) {
+		async importRegister(file, heartbeatCallback = null) {
 			if (!file) {
 				throw new Error('No file to import')
 			}
@@ -294,51 +334,21 @@ export const useRegisterStore = defineStore('register', {
 			const schemaStore = useSchemaStore()
 			const schemaId = (fileExtension === 'csv' && schemaStore.schemaItem) ? schemaStore.schemaItem.id : null
 
-			// Build endpoint with all parameters
-			let endpoint = `/index.php/apps/openregister/api/registers/${registerId}/import?includeObjects=${includeObjects ? '1' : '0'}`
+			// Build basic endpoint
+			let endpoint = `/index.php/apps/openregister/api/registers/${registerId}/import`
 			if (schemaId) {
-				endpoint += `&schema=${schemaId}`
-			}
-			if (validation !== undefined) {
-				endpoint += `&validation=${validation ? '1' : '0'}`
-			}
-			if (events !== undefined) {
-				endpoint += `&events=${events ? '1' : '0'}`
-			}
-			if (rbac !== undefined) {
-				endpoint += `&rbac=${rbac ? '1' : '0'}`
-			}
-			if (multi !== undefined) {
-				endpoint += `&multi=${multi ? '1' : '0'}`
-			}
-			if (publish !== undefined) {
-				endpoint += `&publish=${publish ? '1' : '0'}`
+				endpoint += `?schema=${schemaId}`
 			}
 
 			const formData = new FormData()
 			formData.append('file', file)
-			formData.append('includeObjects', includeObjects ? '1' : '0')
 			if (schemaId) {
 				formData.append('schema', schemaId)
 			}
-			if (validation !== undefined) {
-				formData.append('validation', validation ? '1' : '0')
-			}
-			if (events !== undefined) {
-				formData.append('events', events ? '1' : '0')
-			}
-			if (rbac !== undefined) {
-				formData.append('rbac', rbac ? '1' : '0')
-			}
-			if (multi !== undefined) {
-				formData.append('multi', multi ? '1' : '0')
-			}
-			if (publish !== undefined) {
-				formData.append('publish', publish ? '1' : '0')
-			}
 
 			// Start heartbeat to prevent gateway timeouts for large imports
-			const heartbeat = this.startImportHeartbeat(30000) // Every 30 seconds
+			// Use 15-second intervals for better timeout prevention
+			const heartbeat = this.startImportHeartbeat(15000, heartbeatCallback) // Every 15 seconds
 
 			try {
 				console.log('RegisterStore: Sending import request to:', endpoint)

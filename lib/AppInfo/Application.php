@@ -41,14 +41,30 @@ use OCA\OpenRegister\Service\ObjectHandlers\ValidateObject;
 use OCA\OpenRegister\Service\ObjectHandlers\PublishObject;
 use OCA\OpenRegister\Service\ObjectHandlers\DepublishObject;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FacetService;
 use OCA\OpenRegister\Service\ObjectCacheService;
+use OCA\OpenRegister\Service\ImportService;
+use OCA\OpenRegister\Service\ExportService;
+use OCA\OpenRegister\Service\SolrService;
+use OCA\OpenRegister\Service\GuzzleSolrService;
+use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\SolrSchemaService;
+use OCA\OpenRegister\Setup\SolrSetup;
+use OCA\OpenRegister\Service\SchemaCacheService;
+use OCA\OpenRegister\Command\SolrDebugCommand;
+use OCA\OpenRegister\Command\SolrManagementCommand;
+use OCA\OpenRegister\Service\SchemaFacetCacheService;
+use OCA\OpenRegister\Search\ObjectsProvider;
+use OCA\OpenRegister\BackgroundJob\SolrWarmupJob;
+use OCA\OpenRegister\BackgroundJob\SolrNightlyWarmupJob;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\EventDispatcher\IEventDispatcher;
-use OCA\OpenRegister\EventListener\OpenRegisterDebugListener;
+
 use OCA\OpenRegister\EventListener\TestEventListener;
+use OCA\OpenRegister\EventListener\SolrEventListener;
 use OCP\User\Events\UserLoggedInEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
@@ -160,12 +176,94 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register ObjectCacheService for performance optimization
+        // Register SolrService for advanced search capabilities (disabled due to performance issues)
+        // Issue: Even with lazy loading, DI registration causes performance problems
+        /*
+        $context->registerService(
+                SolrService::class,
+                function ($container) {
+                    return new SolrService(
+                    $container->get(SettingsService::class),
+                    $container->get('Psr\Log\LoggerInterface'),
+                    $container->get(ObjectEntityMapper::class),
+                    $container->get('OCP\IConfig')
+                    );
+                }
+                );
+        */
+
+        // Register ObjectCacheService for performance optimization with lightweight SOLR
         $context->registerService(
                 ObjectCacheService::class,
                 function ($container) {
+                    // Break circular dependency by lazy-loading GuzzleSolrService
+                    $solrService = null;
+                    try {
+                        $solrService = $container->get(GuzzleSolrService::class);
+                    } catch (\Exception $e) {
+                        // If GuzzleSolrService is not available, continue without it
+                        $solrService = null;
+                    }
+                    
                     return new ObjectCacheService(
                     $container->get(ObjectEntityMapper::class),
+                    $container->get('Psr\Log\LoggerInterface'),
+                    $solrService, // Lightweight SOLR service enabled!
+                    $container->get('OCP\ICacheFactory'),
+                    $container->get('OCP\IUserSession')
+                    );
+                }
+                );
+
+        // Register FacetService for centralized faceting operations
+        $context->registerService(
+                FacetService::class,
+                function ($container) {
+                    return new FacetService(
+                    $container->get(ObjectEntityMapper::class),
+                    $container->get(SchemaMapper::class),
+                    $container->get(RegisterMapper::class),
+                    $container->get('OCP\ICacheFactory'),
+                    $container->get('OCP\IUserSession'),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+
+        // Register SaveObject with consolidated cache services
+        $context->registerService(
+                SaveObject::class,
+                function ($container) {
+                    return new SaveObject(
+                    $container->get(ObjectEntityMapper::class),
+                    $container->get(FileService::class),
+                    $container->get('OCP\IUserSession'),
+                    $container->get('OCA\OpenRegister\Db\AuditTrailMapper'),
+                    $container->get(SchemaMapper::class),
+                    $container->get(RegisterMapper::class),
+                    $container->get('OCP\IURLGenerator'),
+                    $container->get(OrganisationService::class),
+                    $container->get(ObjectCacheService::class),
+                    $container->get(SchemaCacheService::class),
+                    $container->get(SchemaFacetCacheService::class),
+                    $container->get('Psr\Log\LoggerInterface'),
+                    new \Twig\Loader\ArrayLoader([])
+                    );
+                }
+                );
+
+        // Register DeleteObject with consolidated cache services
+        $context->registerService(
+                DeleteObject::class,
+                function ($container) {
+                    return new DeleteObject(
+                    $container->get(ObjectEntityMapper::class),
+                    $container->get(FileService::class),
+                    $container->get(ObjectCacheService::class),
+                    $container->get(SchemaCacheService::class),
+                    $container->get(SchemaFacetCacheService::class),
+                    $container->get('OCA\OpenRegister\Db\AuditTrailMapper'),
                     $container->get('Psr\Log\LoggerInterface')
                     );
                 }
@@ -216,7 +314,8 @@ class Application extends App implements IBootstrap
                     $container->get(SaveObject::class),
                     $container->get(ValidateObject::class),
                     $container->get('OCP\IUserSession'),
-                    $container->get(OrganisationService::class)
+                    $container->get(OrganisationService::class),
+                    $container->get('Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -243,21 +342,49 @@ class Application extends App implements IBootstrap
                     $container->get('OCP\IGroupManager'),
                     $container->get('OCP\IUserManager'),
                     $container->get(OrganisationService::class),
-                    $container->get('Psr\Log\LoggerInterface')
+                    $container->get('Psr\Log\LoggerInterface'),
+                    $container->get('OCP\ICacheFactory'),
+                    $container->get(FacetService::class),
+                    $container->get(ObjectCacheService::class),
+                    $container->get(SchemaCacheService::class),
+                    $container->get(SchemaFacetCacheService::class),
+                    $container->get(SettingsService::class),
+                    $container
                     );
                 }
                 );
 
-        // Register OpenRegisterDebugListener for comprehensive event debugging
+        // Register ImportService with IUserManager, IGroupManager, and IJobList dependencies
         $context->registerService(
-                OpenRegisterDebugListener::class,
+                ImportService::class,
                 function ($container) {
-                    return new OpenRegisterDebugListener(
+                    return new ImportService(
+                    $container->get(ObjectEntityMapper::class),
+                    $container->get(SchemaMapper::class),
+                    $container->get(ObjectService::class),
                     $container->get('Psr\Log\LoggerInterface'),
-                    true // Enable debug logging - set to false to disable
+                    $container->get('OCP\IUserManager'),
+                    $container->get('OCP\IGroupManager'),
+                    $container->get('OCP\BackgroundJob\IJobList')
                     );
                 }
                 );
+
+        // Register ExportService with IUserManager and IGroupManager dependencies
+        $context->registerService(
+                ExportService::class,
+                function ($container) {
+                    return new ExportService(
+                    $container->get(ObjectEntityMapper::class),
+                    $container->get(RegisterMapper::class),
+                    $container->get('OCP\IUserManager'),
+                    $container->get('OCP\IGroupManager'),
+                    $container->get(ObjectService::class)
+                    );
+                }
+                );
+
+
 
         // Register TestEventListener for verifying event system works
         $context->registerService(
@@ -269,23 +396,124 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register event listeners using context registration (like SoftwareCatalog)
-        $context->registerEventListener(ObjectCreatedEvent::class, OpenRegisterDebugListener::class);
-        $context->registerEventListener(ObjectUpdatedEvent::class, OpenRegisterDebugListener::class);
-        $context->registerEventListener(ObjectDeletedEvent::class, OpenRegisterDebugListener::class);
-        $context->registerEventListener(ObjectLockedEvent::class, OpenRegisterDebugListener::class);
-        $context->registerEventListener(ObjectUnlockedEvent::class, OpenRegisterDebugListener::class);
-        $context->registerEventListener(ObjectRevertedEvent::class, OpenRegisterDebugListener::class);
-        $context->registerEventListener(OrganisationCreatedEvent::class, OpenRegisterDebugListener::class);
-        $context->registerEventListener(RegisterCreatedEvent::class, OpenRegisterDebugListener::class);
-        $context->registerEventListener(RegisterDeletedEvent::class, OpenRegisterDebugListener::class);
-        $context->registerEventListener(RegisterUpdatedEvent::class, OpenRegisterDebugListener::class);
-        $context->registerEventListener(SchemaCreatedEvent::class, OpenRegisterDebugListener::class);
-        $context->registerEventListener(SchemaDeletedEvent::class, OpenRegisterDebugListener::class);
-        $context->registerEventListener(SchemaUpdatedEvent::class, OpenRegisterDebugListener::class);
+        // Register SolrEventListener for automatic Solr indexing
+        $context->registerService(
+                SolrEventListener::class,
+                function ($container) {
+                    return new SolrEventListener(
+                    $container->get(ObjectCacheService::class),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register SchemaCacheService for improved schema performance
+        $context->registerService(
+                SchemaCacheService::class,
+                function ($container) {
+                    return new SchemaCacheService(
+                    $container->get('OCP\IDBConnection'),
+                    $container->get(SchemaMapper::class),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register SchemaFacetCacheService for predictable facet caching
+        $context->registerService(
+                SchemaFacetCacheService::class,
+                function ($container) {
+                    return new SchemaFacetCacheService(
+                    $container->get('OCP\IDBConnection'),
+                    $container->get(SchemaMapper::class),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register ObjectsProvider for Nextcloud search integration
+        $context->registerService(
+                ObjectsProvider::class,
+                function ($container) {
+                    return new ObjectsProvider(
+                    $container->get('OCP\IL10N'),
+                    $container->get('OCP\IURLGenerator'),
+                    $container->get(ObjectService::class),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register ObjectsProvider as a search provider for Nextcloud search
+        $context->registerSearchProvider(ObjectsProvider::class);
+
+        // Register SolrDebugCommand for SOLR debugging
+        $context->registerService(
+                SolrDebugCommand::class,
+                function ($container) {
+                    return new SolrDebugCommand(
+                    $container->get(SettingsService::class),
+                    $container->get('Psr\Log\LoggerInterface'),
+                    $container->get('OCP\IConfig')
+                    );
+                }
+                );
+
+        // Register lightweight GuzzleSolrService directly (no factory needed!)
+        $context->registerService(
+                GuzzleSolrService::class,
+                function ($container) {
+                    return new GuzzleSolrService(
+                    $container->get(SettingsService::class),
+                    $container->get('Psr\Log\LoggerInterface'),
+                    $container->get('OCP\Http\Client\IClientService'),
+                    $container->get('OCP\IConfig'),
+                    $container->get(SchemaMapper::class) // Add SchemaMapper for schema-aware mapping
+                    // SolrSchemaService will be resolved lazily to avoid circular dependency
+                    );
+                }
+                );
+
+        // Register SolrSchemaService for SOLR schema operations
+        $context->registerService(
+                SolrSchemaService::class,
+                function ($container) {
+                    return new SolrSchemaService(
+                    $container->get(SchemaMapper::class),
+                    $container->get(GuzzleSolrService::class),
+                    $container->get(SettingsService::class),
+                    $container->get('Psr\Log\LoggerInterface'),
+                    $container->get('OCP\IConfig')
+                    );
+                }
+                );
+
+        // Register SolrManagementCommand for production SOLR operations
+        $context->registerService(
+                SolrManagementCommand::class,
+                function ($container) {
+                    return new SolrManagementCommand(
+                    $container->get(SettingsService::class),
+                    $container->get('Psr\Log\LoggerInterface'),
+                    $container->get(GuzzleSolrService::class),
+                    $container->get(SolrSchemaService::class),
+                    $container->get('OCP\IConfig')
+                    );
+                }
+                );
 
         // Register TEST event listener for easily triggerable Nextcloud events
         $context->registerEventListener(UserLoggedInEvent::class, TestEventListener::class);
+
+        // Register Solr event listeners for automatic indexing
+        $context->registerEventListener(ObjectCreatedEvent::class, SolrEventListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, SolrEventListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, SolrEventListener::class);
+        
+        // Register Solr event listeners for schema lifecycle management
+        $context->registerEventListener(SchemaCreatedEvent::class, SolrEventListener::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, SolrEventListener::class);
+        $context->registerEventListener(SchemaDeletedEvent::class, SolrEventListener::class);
 
     }//end register()
 
@@ -311,28 +539,29 @@ class Application extends App implements IBootstrap
         ]);
         
         try {
-            // Register OpenRegisterDebugListener for ALL custom OpenRegister events
-            $eventDispatcher->addServiceListener(ObjectCreatedEvent::class, OpenRegisterDebugListener::class);
-            $eventDispatcher->addServiceListener(ObjectDeletedEvent::class, OpenRegisterDebugListener::class);
-            $eventDispatcher->addServiceListener(ObjectLockedEvent::class, OpenRegisterDebugListener::class);
-            $eventDispatcher->addServiceListener(ObjectRevertedEvent::class, OpenRegisterDebugListener::class);
-            $eventDispatcher->addServiceListener(ObjectUnlockedEvent::class, OpenRegisterDebugListener::class);
-            $eventDispatcher->addServiceListener(ObjectUpdatedEvent::class, OpenRegisterDebugListener::class);
-            $eventDispatcher->addServiceListener(OrganisationCreatedEvent::class, OpenRegisterDebugListener::class);
-            $eventDispatcher->addServiceListener(RegisterCreatedEvent::class, OpenRegisterDebugListener::class);
-            $eventDispatcher->addServiceListener(RegisterDeletedEvent::class, OpenRegisterDebugListener::class);
-            $eventDispatcher->addServiceListener(RegisterUpdatedEvent::class, OpenRegisterDebugListener::class);
-            $eventDispatcher->addServiceListener(SchemaCreatedEvent::class, OpenRegisterDebugListener::class);
-            $eventDispatcher->addServiceListener(SchemaDeletedEvent::class, OpenRegisterDebugListener::class);
-            $eventDispatcher->addServiceListener(SchemaUpdatedEvent::class, OpenRegisterDebugListener::class);
+
             
             // Register test event listener for UserLoggedInEvent
             $eventDispatcher->addServiceListener(UserLoggedInEvent::class, TestEventListener::class);
             
             $logger->info('OpenRegister boot: Event listeners registered successfully');
             
+            // Register recurring SOLR nightly warmup job
+            $jobList = $container->get('OCP\BackgroundJob\IJobList');
+            
+            // Check if the nightly warmup job is already registered
+            if (!$jobList->has(SolrNightlyWarmupJob::class, null)) {
+                $jobList->add(SolrNightlyWarmupJob::class);
+                $logger->info('🌙 SOLR Nightly Warmup Job registered successfully', [
+                    'job_class' => SolrNightlyWarmupJob::class,
+                    'interval' => '24 hours (daily at 00:00)'
+                ]);
+            } else {
+                $logger->debug('SOLR Nightly Warmup Job already registered');
+            }
+            
         } catch (\Exception $e) {
-            $logger->error('OpenRegister boot: Failed to register event listeners', [
+            $logger->error('OpenRegister boot: Failed to register event listeners and background jobs', [
                 'exception' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);

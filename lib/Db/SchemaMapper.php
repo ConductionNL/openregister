@@ -375,6 +375,9 @@ class SchemaMapper extends QBMapper
         // Clean the schema object to ensure UUID, slug, and version are set.
         $this->cleanObject($schema);
 
+        // **PERFORMANCE OPTIMIZATION**: Generate facet configuration from schema properties
+        $this->generateFacetConfiguration($schema);
+
         $schema = $this->insert($schema);
 
         return $schema;
@@ -399,6 +402,9 @@ class SchemaMapper extends QBMapper
 
         // Clean the schema object to ensure UUID, slug, and version are set.
         $this->cleanObject($entity);
+
+        // **PERFORMANCE OPTIMIZATION**: Generate facet configuration from schema properties
+        $this->generateFacetConfiguration($entity);
 
         $entity = parent::update($entity);
 
@@ -669,6 +675,152 @@ class SchemaMapper extends QBMapper
         return false;
 
     }//end hasReferenceToSchema()
+
+
+    /**
+     * Generate facet configuration from schema properties
+     *
+     * **PERFORMANCE OPTIMIZATION**: This method automatically generates facet configurations
+     * from schema properties marked with 'facetable': true, eliminating the need for
+     * runtime analysis during _facetable=true requests.
+     *
+     * Facetable fields are detected by:
+     * - Properties with 'facetable': true explicitly set
+     * - Common field names that are typically facetable (type, status, category)
+     * - Enum properties (automatically facetable as terms)
+     * - Date/datetime properties (automatically facetable as date_histogram)
+     *
+     * @param Schema $schema The schema to generate facets for
+     *
+     * @return void
+     */
+    private function generateFacetConfiguration(Schema $schema): void
+    {
+        $properties = $schema->getProperties() ?? [];
+        $facetConfig = [];
+        
+        // Add metadata facets (always available)
+        $facetConfig['@self'] = [
+            'register' => ['type' => 'terms'],
+            'schema' => ['type' => 'terms'], 
+            'created' => ['type' => 'date_histogram', 'interval' => 'month'],
+            'updated' => ['type' => 'date_histogram', 'interval' => 'month'],
+            'published' => ['type' => 'date_histogram', 'interval' => 'month'],
+            'owner' => ['type' => 'terms']
+        ];
+        
+        // Analyze properties for facetable fields
+        foreach ($properties as $fieldName => $property) {
+            if (!is_array($property)) {
+                continue;
+            }
+            
+            $facetType = $this->determineFacetTypeForProperty($property, $fieldName);
+            if ($facetType !== null) {
+                $facetConfig[$fieldName] = ['type' => $facetType];
+                
+                // Add interval for date histograms
+                if ($facetType === 'date_histogram') {
+                    $facetConfig[$fieldName]['interval'] = 'month';
+                }
+            }
+        }
+        
+        // Store the facet configuration in the schema
+        if (!empty($facetConfig)) {
+            $schema->setFacets($facetConfig);
+        }
+        
+    }//end generateFacetConfiguration()
+
+
+    /**
+     * Determine the appropriate facet type for a schema property
+     *
+     * **PERFORMANCE OPTIMIZATION**: Smart detection of facetable fields based on
+     * property characteristics, names, and explicit facetable markers.
+     *
+     * @param array  $property  The property definition
+     * @param string $fieldName The field name
+     *
+     * @return string|null The facet type ('terms', 'date_histogram') or null if not facetable
+     */
+    private function determineFacetTypeForProperty(array $property, string $fieldName): ?string
+    {
+        // Check if explicitly marked as facetable
+        if (isset($property['facetable']) && 
+            ($property['facetable'] === true || $property['facetable'] === 'true' || 
+             (is_string($property['facetable']) && strtolower(trim($property['facetable'])) === 'true'))
+        ) {
+            return $this->determineFacetTypeFromProperty($property);
+        }
+        
+        // Auto-detect common facetable field names
+        $commonFacetableFields = [
+            'type', 'status', 'category', 'tags', 'label', 'group', 
+            'department', 'location', 'priority', 'state', 'classification',
+            'genre', 'brand', 'model', 'version', 'license', 'language'
+        ];
+        
+        $lowerFieldName = strtolower($fieldName);
+        if (in_array($lowerFieldName, $commonFacetableFields)) {
+            return $this->determineFacetTypeFromProperty($property);
+        }
+        
+        // Auto-detect enum properties (good for faceting)
+        if (isset($property['enum']) && is_array($property['enum']) && count($property['enum']) > 0) {
+            return 'terms';
+        }
+        
+        // Auto-detect date/datetime fields
+        $propertyType = $property['type'] ?? '';
+        if (in_array($propertyType, ['date', 'datetime', 'date-time'])) {
+            return 'date_histogram';
+        }
+        
+        // Check for date-like field names
+        $dateFields = ['created', 'updated', 'modified', 'date', 'time', 'timestamp'];
+        foreach ($dateFields as $dateField) {
+            if (str_contains($lowerFieldName, $dateField)) {
+                return 'date_histogram';
+            }
+        }
+        
+        return null;
+        
+    }//end determineFacetTypeForProperty()
+
+
+    /**
+     * Determine facet type from property characteristics
+     *
+     * @param array $property The property definition
+     *
+     * @return string The facet type ('terms' or 'date_histogram')
+     */
+    private function determineFacetTypeFromProperty(array $property): string
+    {
+        $propertyType = $property['type'] ?? 'string';
+        
+        // Date/datetime properties use date_histogram
+        if (in_array($propertyType, ['date', 'datetime', 'date-time'])) {
+            return 'date_histogram';
+        }
+        
+        // Enum properties use terms
+        if (isset($property['enum']) && is_array($property['enum'])) {
+            return 'terms';
+        }
+        
+        // Boolean, integer, number with small ranges use terms
+        if (in_array($propertyType, ['boolean', 'integer', 'number'])) {
+            return 'terms';
+        }
+        
+        // Default to terms for other types
+        return 'terms';
+        
+    }//end determineFacetTypeFromProperty()
 
 
     /**

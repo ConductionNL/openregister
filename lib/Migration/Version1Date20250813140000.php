@@ -75,12 +75,9 @@ class Version1Date20250813140000 extends SimpleMigrationStep
             $output->info('Added slug column to openregister_objects table');
         }
 
-        // Add unique constraint for slug+register+schema combination
-        $uniqueIndexName = 'unique_slug_register_schema';
-        if ($table->hasIndex($uniqueIndexName) === false) {
-            $table->addUniqueIndex(['slug', 'register', 'schema'], $uniqueIndexName);
-            $output->info('Added unique constraint for slug+register+schema combination');
-        }
+        // Skip complex index creation for now to avoid MySQL key length issues
+        // TODO: Add indexes after app is enabled
+        $output->info('Skipping complex index creation to avoid MySQL key length issues');
 
         return $schema;
 

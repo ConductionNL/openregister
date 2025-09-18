@@ -118,6 +118,10 @@ Please see our [Contributing Guide](CONTRIBUTING.md) for details on how to contr
 
 This project is licensed under the EUPL License - see the [LICENSE](LICENSE) file for details.
 
+## Installation
+
+This project is designed to be installed from the [nextcloud app store](https://apps.nextcloud.com/apps/openregister). Alternativly a [docker-compose.yml](docker-compose.yml) is available in the repostory for quick testing. If you are looking to contribute then please setup your own development environment following [setting up a development environment](https://cloud.nextcloud.com/s/iyNGp8ryWxc7Efa?dir=/1%20Setting%20up%20a%20development%20environment/Tutorial%20for%20Windows&openfile=true).
+
 ## Contact
 
 For more information, please contact [info@conduction.nl](mailto:info@conduction.nl).

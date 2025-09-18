@@ -1,0 +1,29 @@
+{
+    "commit_changelog": true,
+    "exclude_labels": ["bot", "dependabot", "ci", "skip-changelog"],
+    "group_config": [
+        {
+            "title": "🚀 New Features",
+            "labels": ["feature", "feat", "enhancement"]
+        },
+        {
+            "title": "🐛 Bug Fixes", 
+            "labels": ["bug", "bugfix", "fix", "hotfix"]
+        },
+        {
+            "title": "📚 Documentation Updates",
+            "labels": ["docs", "documentation", "doc"]
+        },
+        {
+            "title": "🔧 Code Improvements",
+            "labels": ["refactor", "perf", "style", "chore", "improvements"]
+        },
+        {
+            "title": "🧪 Testing",
+            "labels": ["test", "tests"]
+        }
+    ],
+    "header_prefix": "## ",
+    "commit_format": "- {{commit_title}} ([{{commit_short_sha}}]({{commit_url}}))",
+    "pull_request_title_regex": "^(.*)$"
+}
