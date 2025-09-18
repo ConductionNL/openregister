@@ -2350,13 +2350,13 @@ class ObjectService
             // Forward to SOLR service - let it handle availability checks and error handling
             $solrService = $this->container->get(GuzzleSolrService::class);
             $result = $solrService->searchObjectsPaginated($query, $rbac, $multi, $published, $deleted);
-            $result['_source'] = 'index';
+            $result['source'] = 'index';
             return $result;
         }
         
         // Use database search
         $result = $this->searchObjectsPaginatedDatabase($query, $rbac, $multi, $published, $deleted);
-        $result['_source'] = 'database';
+        $result['source'] = 'database';
         return $result;
     }
 
