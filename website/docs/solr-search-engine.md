@@ -1,6 +1,6 @@
 # SOLR Search Engine Integration
 
-The OpenRegister supports Apache SOLR for advanced search capabilities including full-text search, faceted search, and high-performance querying with automatic failover to database search when SOLR is unavailable.
+The OpenRegister supports Apache SOLR for advanced search capabilities including full-text search, faceted search, and high-performance querying. When SOLR is enabled and configured, it provides transparent error handling to ensure users are aware of any SOLR-related issues.
 
 ## Overview
 
@@ -8,20 +8,56 @@ SOLR provides enterprise-grade search functionality that significantly improves 
 
 ```mermaid
 graph TB
-    A[API Request] --> B{SOLR Enabled?}
-    B -->|Yes| C{SOLR Available?}
+    A[API Request] --> B{_source=index OR SOLR Enabled?}
+    B -->|Yes| C[Forward to SOLR Service]
     B -->|No| H[Database Search]
-    C -->|Yes| D[SOLR Search]
-    C -->|No| H[Database Search]
-    D --> E[Convert to ObjectEntity]
-    H --> F[Load from Database]
-    E --> G[Return Results]
-    F --> G
+    C --> D{SOLR Configured?}
+    D -->|No| E[Throw Configuration Error]
+    D -->|Yes| F{SOLR Available?}
+    F -->|No| G[Throw Connection Error]
+    F -->|Yes| I[Execute SOLR Search]
+    I --> J{Search Successful?}
+    J -->|No| K[Throw Search Error]
+    J -->|Yes| L[Return SOLR Results]
+    H --> M[Return Database Results]
     
-    style D fill:#e1f5fe
+    style I fill:#e1f5fe
     style H fill:#f3e5f5
-    style G fill:#e8f5e8
+    style L fill:#e8f5e8
+    style M fill:#e8f5e8
+    style E fill:#ffcdd2
+    style G fill:#ffcdd2
+    style K fill:#ffcdd2
 ```
+
+## Error Handling and Source Selection
+
+### Transparent Error Reporting
+
+OpenRegister now uses a **transparent error handling approach** for SOLR integration. Instead of silently falling back to database search when SOLR fails, the system provides clear error messages to help administrators identify and resolve SOLR issues.
+
+#### Source Selection Logic
+
+The system determines which search backend to use based on:
+
+1. **Explicit Source Request**: `_source=index` or `_source=solr` forces SOLR usage
+2. **Configuration Check**: If no source specified, checks if SOLR is enabled in settings
+3. **Error Transparency**: When SOLR is requested but unavailable, throws descriptive errors
+
+#### Error Types and Messages
+
+| Error Type | When It Occurs | Error Message | Resolution |
+|------------|----------------|---------------|------------|
+| **Configuration Error** | SOLR enabled but missing required settings | 'SOLR is not properly configured. Please check your SOLR settings...' | Verify host, port, collection in admin panel |
+| **Connection Error** | SOLR configured but service unreachable | 'SOLR service is not available. Connection test failed...' | Check SOLR service status and network connectivity |
+| **Search Error** | SOLR available but query execution fails | 'SOLR search failed: [specific error]...' | Check SOLR logs and query syntax |
+
+#### Benefits of Explicit Error Handling
+
+- **🔍 Problem Visibility**: Administrators immediately know when SOLR has issues
+- **🛠️ Faster Debugging**: Clear error messages guide troubleshooting
+- **⚡ Performance Clarity**: No confusion about which backend is being used
+- **🔧 Proactive Maintenance**: Issues are caught before they affect users
 
 ## Architecture
 
