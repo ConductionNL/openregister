@@ -1593,13 +1593,14 @@ class GuzzleSolrService
         }
         
         // Deleted filtering
-        if ($deleted) {
-            // Include only deleted objects
-            $filters[] = 'self_deleted:[* TO *]';
-        } else {
-            // Exclude deleted objects (default behavior)
-            $filters[] = '-self_deleted:[* TO *]';
-        }
+        // @todo: this is not working as expected so we turned it of, for now deleted items should not be indexed
+        //if ($deleted) {
+        //    // Include only deleted objects
+        //    $filters[] = 'self_deleted:[* TO *]';
+        //} else {
+        //    // Exclude deleted objects (default behavior)
+        //    $filters[] = '-self_deleted:[* TO *]';
+        //}        
         
         // Update the filters in the query
         $solrQuery['fq'] = $filters;
@@ -2637,6 +2638,10 @@ class GuzzleSolrService
      */
     private function buildSolrQuery(array $query): array
     {
+        // **DEBUG**: Log the incoming OpenRegister query
+        $this->logger->debug('=== buildSolrQuery INPUT ===', [
+            'openregister_query' => $query
+        ]);
         
         $solrQuery = [
             'q' => '*:*',
@@ -2754,6 +2759,17 @@ class GuzzleSolrService
             }
         }
 
+        // **DEBUG**: Log the final SOLR query being built
+        $this->logger->debug('=== buildSolrQuery OUTPUT ===', [
+            'final_solr_query' => $solrQuery,
+            'pagination_check' => [
+                'rows' => $solrQuery['rows'] ?? 'missing',
+                'start' => $solrQuery['start'] ?? 'missing',
+                'original_limit' => $query['_limit'] ?? 'missing',
+                'original_page' => $query['_page'] ?? 'missing'
+            ]
+        ]);
+
         return $solrQuery;
     }
 
@@ -2787,10 +2803,11 @@ class GuzzleSolrService
             $fullUrl = $url . '?' . $queryString;
             
             // **DEBUG**: Log the final SOLR URL and query for troubleshooting
-            $this->logger->debug('Executing SOLR search', [
+            $this->logger->debug('=== EXECUTING SOLR SEARCH ===', [
                 'full_url' => $fullUrl,
                 'collection' => $collectionName,
-                'query_string' => $queryString
+                'query_string' => $queryString,
+                'query_parts_breakdown' => $queryParts
             ]);
             
             // SOLR query execution prepared
@@ -2846,6 +2863,14 @@ class GuzzleSolrService
         if (isset($responseData['response']['docs'])) {
             $results['objects'] = $this->convertSolrDocumentsToOpenRegisterObjects($responseData['response']['docs']);
             $results['total'] = $responseData['response']['numFound'] ?? count($results['objects']);
+            
+            // **DEBUG**: Log total vs results count for troubleshooting
+            $this->logger->debug('SOLR response parsing', [
+                'numFound_from_solr' => $responseData['response']['numFound'] ?? 'missing',
+                'docs_returned' => count($responseData['response']['docs'] ?? []),
+                'objects_converted' => count($results['objects']),
+                'final_total' => $results['total']
+            ]);
         }
 
         // Parse facets
@@ -2881,6 +2906,16 @@ class GuzzleSolrService
         $offset = (int)($originalQuery['_offset'] ?? (($page - 1) * $limit));
         $total = $searchResults['total'] ?? 0;
         $pages = $limit > 0 ? max(1, ceil($total / $limit)) : 1;
+        
+        // **DEBUG**: Log pagination calculation for troubleshooting
+        $this->logger->debug('Converting to OpenRegister paginated format', [
+            'searchResults_total' => $searchResults['total'] ?? 'missing',
+            'searchResults_objects_count' => count($searchResults['objects'] ?? []),
+            'calculated_total' => $total,
+            'limit' => $limit,
+            'page' => $page,
+            'calculated_pages' => $pages
+        ]);
 
         // Match the database response format exactly
         $response = [
@@ -2893,7 +2928,6 @@ class GuzzleSolrService
             'facets' => [
                 'facets' => $searchResults['facets'] ?? []
             ],
-            '_source' => 'index'
         ];
 
         // Add pagination URLs if applicable (matching database format)
