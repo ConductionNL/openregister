@@ -2338,56 +2338,18 @@ class ObjectService
      */
     public function searchObjectsPaginated(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false): array
     {
-        // **INTELLIGENT SOURCE SELECTION**: Simple if statement for optimal performance
         $requestedSource = $query['_source'] ?? null;
         
-        // Force SOLR if facets/aggregations are requested (they require SOLR)
-        $facetsRequested = ($query['_facetable'] ?? false) === true || ($query['_facetable'] ?? false) === 'true' ||
-                          ($query['_aggregations'] ?? false) === true || ($query['_aggregations'] ?? false) === 'true';
-        
-        // Use Solr if explicitly requested OR if no source specified and Solr is enabled OR if facets are requested
+        // Simple switch: Use SOLR if explicitly requested OR if SOLR is enabled in config
         if ($requestedSource === 'index' || $requestedSource === 'solr' || 
-            ($requestedSource === null && $this->isSolrAvailable()) || $facetsRequested) {
-            try {
-                $solrService = $this->container->get(GuzzleSolrService::class);
-                if ($solrService !== null && $solrService->isAvailable()) {
-                    $result = $solrService->searchObjectsPaginated($query, $rbac, $multi, $published, $deleted);
-                    $result['_source'] = 'index';
-                    return $result;
-                } else {
-                    $this->logger->warning('Solr service not available, falling back to database', [
-                        'solr_service_null' => ($solrService === null),
-                        'solr_available' => $solrService ? $solrService->isAvailable() : false,
-                        'requested_source' => $requestedSource,
-                        'facets_requested' => $facetsRequested
-                    ]);
-                    
-                    // If facets were requested but SOLR is not available, throw a more helpful error
-                    if ($facetsRequested) {
-                        throw new \Exception(
-                            'SOLR search is required for facets/aggregations but SOLR service is not available. ' .
-                            'Please check SOLR configuration and ensure it is properly set up.'
-                        );
-                    }
-                }
-            } catch (\Exception $e) {
-                $this->logger->warning('Solr search failed, falling back to database', [
-                    'error' => $e->getMessage(),
-                    'query_fingerprint' => substr(md5(json_encode($query)), 0, 8),
-                    'facets_requested' => $facetsRequested
-                ]);
-                
-                // If facets were requested but SOLR failed, don't fall back to database - throw the error
-                if ($facetsRequested) {
-                    throw new \Exception(
-                        'SOLR search failed and facets/aggregations cannot be processed by database. ' .
-                        'Error: ' . $e->getMessage()
-                    );
-                }
-            }
+            ($requestedSource === null && $this->isSolrAvailable())) {
+            
+            // Forward to SOLR service - let it handle availability checks and error handling
+            $solrService = $this->container->get(GuzzleSolrService::class);
+            return $solrService->searchObjectsPaginated($query, $rbac, $multi, $published, $deleted);
         }
         
-        // Use database (either requested or fallback)
+        // Use database search
         $result = $this->searchObjectsPaginatedDatabase($query, $rbac, $multi, $published, $deleted);
         $result['_source'] = 'database';
         return $result;

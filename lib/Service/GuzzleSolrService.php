@@ -271,6 +271,31 @@ class GuzzleSolrService
     }
 
     /**
+     * Check if SOLR is properly configured with required settings
+     *
+     * @return bool True if SOLR configuration is complete
+     */
+    private function isSolrConfigured(): bool
+    {
+        // Check if SOLR is enabled
+        if (!($this->solrConfig['enabled'] ?? false)) {
+            $this->logger->debug('SOLR is not enabled in configuration');
+            return false;
+        }
+        
+        // Check required configuration values
+        $requiredConfig = ['host', 'port', 'collection'];
+        foreach ($requiredConfig as $key) {
+            if (empty($this->solrConfig[$key])) {
+                $this->logger->debug('SOLR configuration missing required key: ' . $key);
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
+    /**
      * Check if SOLR is available and properly configured
      *
      * This method performs a comprehensive availability check including:
@@ -1441,25 +1466,41 @@ class GuzzleSolrService
      */
     public function searchObjectsPaginated(array $query = [], bool $rbac = true, bool $multi = true, bool $published = false, bool $deleted = false): array
     {
-        // Check SOLR availability first
+        $startTime = microtime(true);
+        
+        // Check SOLR configuration first
+        if (!$this->isSolrConfigured()) {
+            throw new \Exception(
+                'SOLR is not properly configured. Please check your SOLR settings in the OpenRegister admin panel. ' .
+                'Verify that SOLR URL, collection name, and authentication are correctly set.'
+            );
+        }
+        
+        // Test SOLR connection
         if (!$this->isAvailable()) {
-            throw new \Exception('SOLR service is not available');
+            $connectionTest = $this->testConnection();
+            throw new \Exception(
+                'SOLR service is not available. Connection test failed: ' . 
+                ($connectionTest['error'] ?? 'Unknown connection error') . 
+                '. Please verify that SOLR is running and accessible at the configured URL.'
+            );
         }
 
         try {
-            $startTime = microtime(true);
-            
             // Get active collection name - if null, SOLR is not properly set up
             $collectionName = $this->getActiveCollectionName();
             if ($collectionName === null) {
-                throw new \Exception('No active SOLR collection available');
+                throw new \Exception(
+                    'No active SOLR collection available. Please ensure a SOLR collection is created and configured ' .
+                    'in the OpenRegister settings, and that the collection exists in your SOLR instance.'
+                );
             }
             
             // Build SOLR query from OpenRegister query parameters
             $solrQuery = $this->buildSolrQuery($query);
             
-            // **DEBUG**: Log the built SOLR query for troubleshooting
-            $this->logger->debug('Built SOLR query', [
+            // Log the built SOLR query for troubleshooting
+            $this->logger->debug('Executing SOLR search', [
                 'original_query' => $query,
                 'solr_query' => $solrQuery,
                 'collection' => $collectionName
@@ -1478,14 +1519,31 @@ class GuzzleSolrService
             $paginatedResults['_execution_time_ms'] = round((microtime(true) - $startTime) * 1000, 2);
             $paginatedResults['_source'] = 'index';
             
+            $this->logger->info('SOLR search completed successfully', [
+                'query_fingerprint' => substr(md5(json_encode($query)), 0, 8),
+                'results_count' => count($paginatedResults['results'] ?? []),
+                'total_results' => $paginatedResults['total'] ?? 0,
+                'execution_time_ms' => $paginatedResults['_execution_time_ms']
+            ]);
+            
             return $paginatedResults;
             
         } catch (\Exception $e) {
-            $this->logger->error('SOLR search failed in searchObjectsPaginated', [
-                'error' => $e->getMessage(),
-                'query' => $query
+            $this->logger->error('SOLR search failed', [
+                'error_message' => $e->getMessage(),
+                'error_class' => get_class($e),
+                'query_fingerprint' => substr(md5(json_encode($query)), 0, 8),
+                'collection' => $collectionName ?? 'unknown',
+                'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2)
             ]);
-            throw $e;
+            
+            // Re-throw with more context for user
+            throw new \Exception(
+                'SOLR search failed: ' . $e->getMessage() . 
+                '. This indicates an issue with the SOLR service or query. Check the logs for more details.',
+                $e->getCode(),
+                $e
+            );
         }
     }
 
