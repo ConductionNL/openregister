@@ -2341,12 +2341,17 @@ class ObjectService
         $requestedSource = $query['_source'] ?? null;
         
         // Simple switch: Use SOLR if explicitly requested OR if SOLR is enabled in config
-        if ($requestedSource === 'index' || $requestedSource === 'solr' || 
-            ($requestedSource === null && $this->isSolrAvailable())) {
+        if (
+            $requestedSource === 'index' || 
+            $requestedSource === 'solr' || 
+            ($requestedSource === null && $this->isSolrAvailable() && $requestedSource !== 'database')
+            ) {
             
             // Forward to SOLR service - let it handle availability checks and error handling
             $solrService = $this->container->get(GuzzleSolrService::class);
-            return $solrService->searchObjectsPaginated($query, $rbac, $multi, $published, $deleted);
+            $result = $solrService->searchObjectsPaginated($query, $rbac, $multi, $published, $deleted);
+            $result['_source'] = 'index';
+            return $result;
         }
         
         // Use database search
