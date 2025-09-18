@@ -39,6 +39,11 @@ return [
         
         ['name' => 'settings#getVersionInfo', 'url' => '/api/settings/version', 'verb' => 'GET'],
         
+        // AI settings endpoints
+        ['name' => 'settings#getAiSettings', 'url' => '/api/settings/ai', 'verb' => 'GET'],
+        ['name' => 'settings#updateAiSettings', 'url' => '/api/settings/ai', 'verb' => 'PUT'],
+        ['name' => 'settings#testAiConnection', 'url' => '/api/settings/ai/test', 'verb' => 'POST'],
+        
         // Statistics endpoint  
         ['name' => 'settings#getStatistics', 'url' => '/api/settings/statistics', 'verb' => 'GET'],
         
@@ -165,7 +170,15 @@ return [
         ['name' => 'organisation#setActive', 'url' => '/api/organisations/{uuid}/set-active', 'verb' => 'POST'],
         ['name' => 'organisation#join', 'url' => '/api/organisations/{uuid}/join', 'verb' => 'POST'],
         ['name' => 'organisation#leave', 'url' => '/api/organisations/{uuid}/leave', 'verb' => 'POST'],
-		// Tags
-		['name' => 'tags#getAllTags', 'url' => 'api/tags', 'verb' => 'GET'],
+        // Tags
+        ['name' => 'tags#getAllTags', 'url' => 'api/tags', 'verb' => 'GET'],
+        
+        // AI Chat endpoints
+        ['name' => 'chat#chat', 'url' => '/api/chat', 'verb' => 'POST'],
+        ['name' => 'chat#getCapabilities', 'url' => '/api/chat/capabilities', 'verb' => 'GET'],
+        ['name' => 'chat#testConnection', 'url' => '/api/chat/test', 'verb' => 'POST'],
+        ['name' => 'chat#getContext', 'url' => '/api/chat/context', 'verb' => 'GET'],
+        ['name' => 'chat#generateText', 'url' => '/api/chat/generate-text', 'verb' => 'POST'],
+        ['name' => 'chat#generateEmbedding', 'url' => '/api/chat/generate-embedding', 'verb' => 'POST'],
     ],
 ];

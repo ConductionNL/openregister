@@ -1,6 +1,6 @@
 # AI Functionality
 
-OpenRegister integrates with the [LLPhant framework](https://github.com/LLPhant/LLPhant) to provide advanced AI capabilities including automatic text generation and vector embeddings for semantic search and content analysis.
+OpenRegister integrates with the [LLPhant framework](https://github.com/LLPhant/LLPhant) to provide advanced AI capabilities including automatic text generation, vector embeddings, chat interactions, and intelligent content enrichment for semantic search and analysis.
 
 ## Overview
 
@@ -8,8 +8,11 @@ The AI functionality enables:
 
 - **Automatic Text Generation**: Generate searchable text representations of objects
 - **Vector Embeddings**: Create semantic embeddings for similarity search and recommendations
+- **AI Chat Interface**: Interactive chat functionality with context-aware responses
+- **Object Enrichment**: Automatic AI-powered content enhancement during object creation/updates
 - **Content Analysis**: AI-powered analysis of object content
 - **Semantic Search**: Enhanced search capabilities using vector similarity
+- **Multi-Provider Support**: Support for OpenAI, Ollama, Azure, and Anthropic
 
 ## Supported AI Providers
 
@@ -294,6 +297,144 @@ When enabling AI functionality on existing installations:
 3. **Bulk Processing**: Process existing objects for embeddings
 4. **Verify Results**: Test search and AI functionality
 
+## API Endpoints
+
+### Settings Endpoints
+
+- `GET /api/settings/ai` - Retrieve current AI configuration
+- `PUT /api/settings/ai` - Update AI configuration  
+- `POST /api/settings/ai/test` - Test AI connection and functionality
+
+### Chat Endpoints
+
+- `POST /api/chat` - Send a chat message and receive AI response
+- `GET /api/chat/capabilities` - Get AI chat capabilities and status
+- `POST /api/chat/test` - Test AI chat connection
+- `GET /api/chat/context` - Get context information for AI chat
+- `POST /api/chat/generate-text` - Generate text representation for an object
+- `POST /api/chat/generate-embedding` - Generate vector embedding for text
+
+## Advanced Usage
+
+### AI Chat Interface
+
+Use the chat API to interact with AI:
+
+```javascript
+// Send a chat message with context
+const response = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        message: 'How do I create a new register?',
+        context: {
+            register: 'current-register',
+            schema: 'current-schema'
+        },
+        history: [
+            { role: 'user', content: 'Previous question...' },
+            { role: 'assistant', content: 'Previous response...' }
+        ]
+    })
+});
+
+const chatResponse = await response.json();
+console.log(chatResponse.response); // AI-generated response
+```
+
+### Manual Text Generation
+
+Generate text representations manually:
+
+```javascript
+// Generate text for an object
+const textResponse = await fetch('/api/chat/generate-text', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        object: {
+            name: 'Product Name',
+            description: 'Product description...',
+            summary: 'Brief summary...'
+        }
+    })
+});
+
+const { text } = await textResponse.json();
+```
+
+### Manual Embedding Generation
+
+Generate vector embeddings for custom text:
+
+```javascript
+// Generate embedding for text
+const embeddingResponse = await fetch('/api/chat/generate-embedding', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        text: 'Text to embed...',
+        provider: 'openai' // optional
+    })
+});
+
+const { embedding, dimensions } = await embeddingResponse.json();
+```
+
+### Object Enrichment Process
+
+The AI enrichment process automatically occurs during object creation and updates:
+
+```mermaid
+flowchart TD
+    A[Object Creation/Update] --> B{AI Enabled?}
+    B -->|No| C[Save Object Normally]
+    B -->|Yes| D[Extract Name, Description, Summary]
+    D --> E[Generate Text Representation]
+    E --> F[Generate Vector Embedding]
+    F --> G[Save Object with AI Data]
+    G --> H[Object Saved Successfully]
+```
+
+## Integration with Business Logic
+
+### Object Metadata Hydration
+
+AI enrichment is integrated into the object metadata hydration process in `SaveObject.php`:
+
+1. **Metadata Extraction**: Name, description, and summary are extracted from object data
+2. **Text Generation**: AI generates a searchable text representation
+3. **Embedding Creation**: Vector embedding is created from the text
+4. **Database Storage**: Both text and embedding are stored with the object
+
+### Performance Considerations
+
+- **Asynchronous Processing**: AI operations are designed to be non-blocking
+- **Error Handling**: Failed AI operations don't prevent object creation
+- **Caching**: Consider implementing caching for frequently used embeddings
+- **Rate Limiting**: Be aware of API rate limits for external providers
+
+## Troubleshooting
+
+### Common Issues
+
+1. **AI Not Working**: Check if AI is enabled in settings and API keys are valid
+2. **Connection Errors**: Test connection using the test endpoints
+3. **Missing Embeddings**: Verify embedding model is supported by provider
+4. **Performance Issues**: Consider using local Ollama for better performance
+
+### Debugging
+
+Enable debug logging to see AI operations:
+
+```php
+$this->logger->debug('AI enrichment completed', [
+    'object_id' => $entity->getUuid(),
+    'text_length' => strlen($textRepresentation),
+    'has_embedding' => !empty($entity->getEmbedding())
+]);
+```
+
 ## Future Enhancements
 
 Planned AI features include:
@@ -302,6 +443,9 @@ Planned AI features include:
 - Multi-language support
 - Custom model fine-tuning
 - Advanced analytics and insights
+- Batch Processing: Bulk AI enrichment for existing objects
+- Custom Models: Support for fine-tuned models
+- Semantic Search: Enhanced search using vector embeddings
 
 ## Support
 
@@ -309,3 +453,4 @@ For AI functionality support:
 - Check LLPhant documentation: https://github.com/LLPhant/LLPhant
 - Review provider-specific documentation
 - Contact support for configuration assistance
+- Test AI functionality using the provided endpoints
