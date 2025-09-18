@@ -1499,6 +1499,13 @@ class GuzzleSolrService
             // Build SOLR query from OpenRegister query parameters
             $solrQuery = $this->buildSolrQuery($query);
             
+            // **DEBUG**: Dump the query building process
+            var_dump('=== SOLR QUERY DEBUG START ===');
+            var_dump('Original OpenRegister Query:', $query);
+            var_dump('Built SOLR Query:', $solrQuery);
+            var_dump('Collection Name:', $collectionName);
+            var_dump('=== SOLR QUERY DEBUG END ===');
+            
             // Log the built SOLR query for troubleshooting
             $this->logger->debug('Executing SOLR search', [
                 'original_query' => $query,
@@ -2795,6 +2802,14 @@ class GuzzleSolrService
                 'query_string' => $queryString
             ]);
             
+            // **DEBUG**: Dump the final URL and query details
+            var_dump('=== SOLR EXECUTION DEBUG START ===');
+            var_dump('Full SOLR URL:', $fullUrl);
+            var_dump('Query String:', $queryString);
+            var_dump('Query Parts:', $queryParts);
+            var_dump('Original SOLR Query Array:', $solrQuery);
+            var_dump('=== SOLR EXECUTION DEBUG END ===');
+            
             // Use the manually built URL instead of Guzzle's query parameter handling
             $response = $this->httpClient->get($fullUrl, [
                 'timeout' => 30,
@@ -2802,11 +2817,19 @@ class GuzzleSolrService
             ]);
 
             $statusCode = $response->getStatusCode();
+            $responseBody = $response->getBody()->getContents();
+            
+            // **DEBUG**: Always dump response details for debugging
+            var_dump('=== SOLR RESPONSE DEBUG START ===');
+            var_dump('Status Code:', $statusCode);
+            var_dump('Response Body:', $responseBody);
+            var_dump('=== SOLR RESPONSE DEBUG END ===');
+            
             if ($statusCode !== 200) {
-                throw new \Exception("SOLR search failed with status code: $statusCode");
+                throw new \Exception("SOLR search failed with status code: $statusCode. Response: " . $responseBody);
             }
 
-            $responseData = json_decode($response->getBody()->getContents(), true);
+            $responseData = json_decode($responseBody, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
                 throw new \Exception('Invalid JSON response from SOLR: ' . json_last_error_msg());
             }
