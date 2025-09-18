@@ -283,14 +283,17 @@ class GuzzleSolrService
             return false;
         }
         
-        // Check required configuration values
-        $requiredConfig = ['host', 'port', 'collection'];
+        // Check required configuration values - use 'core' not 'collection'
+        $requiredConfig = ['host'];
         foreach ($requiredConfig as $key) {
             if (empty($this->solrConfig[$key])) {
                 $this->logger->debug('SOLR configuration missing required key: ' . $key);
                 return false;
             }
         }
+        
+        // Port is optional (can be null for Kubernetes services)
+        // Core/collection is optional (has defaults)
         
         return true;
     }
@@ -1470,9 +1473,16 @@ class GuzzleSolrService
         
         // Check SOLR configuration first
         if (!$this->isSolrConfigured()) {
+            $configStatus = [
+                'enabled' => $this->solrConfig['enabled'] ?? false,
+                'host' => !empty($this->solrConfig['host']) ? 'configured' : 'missing',
+                'port' => isset($this->solrConfig['port']) ? 'configured' : 'optional',
+                'core' => !empty($this->solrConfig['core']) ? 'configured' : 'using_default'
+            ];
+            
             throw new \Exception(
-                'SOLR is not properly configured. Please check your SOLR settings in the OpenRegister admin panel. ' .
-                'Verify that SOLR URL, collection name, and authentication are correctly set.'
+                'SOLR configuration validation failed. Current status: ' . json_encode($configStatus) . '. ' .
+                'Please check your SOLR settings in the OpenRegister admin panel.'
             );
         }
         
