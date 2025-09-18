@@ -328,10 +328,62 @@ GET /api/objects?q=searchterm
 GET /api/objects?q=title:(important)^3 OR description:(important)
 ```
 
-**Default Field Boosting:**
-- **name, title**: 3.0x boost
-- **description, summary**: 2.0x boost
-- **content, _text_**: 1.0x boost
+**OpenRegister Field Weighting Strategy:**
+- **self_name**: 15.0x boost (highest priority - object name)
+- **self_summary**: 10.0x boost (medium-high priority - object summary)
+- **self_description**: 5.0x boost (medium priority - detailed description)
+- **_text_**: 1.0x boost (lowest priority - catch-all full-text content)
+
+#### Search Query Building
+
+OpenRegister automatically builds sophisticated SOLR queries with multiple search variations for each field:
+
+```mermaid
+graph TB
+    A[Search Term: 'cloud'] --> B[Query Builder]
+    B --> C[Exact Match Queries]
+    B --> D[Wildcard Queries] 
+    B --> E[Fuzzy Match Queries]
+    
+    C --> C1[self_name:'cloud'^45]
+    C --> C2[self_summary:'cloud'^30]
+    C --> C3[self_description:'cloud'^15]
+    
+    D --> D1[self_name:*cloud*^30]
+    D --> D2[self_summary:*cloud*^20]
+    D --> D3[self_description:*cloud*^10]
+    
+    E --> E1[self_name:cloud~^15]
+    E --> E2[self_summary:cloud~^10] 
+    E --> E3[self_description:cloud~^5]
+    
+    F[_text_:'cloud'^3] --> G[Combined OR Query]
+    C1 --> G
+    C2 --> G
+    C3 --> G
+    D1 --> G
+    D2 --> G
+    D3 --> G
+    E1 --> G
+    E2 --> G
+    E3 --> G
+    
+    style A fill:#e3f2fd
+    style G fill:#c8e6c9
+```
+
+**Query Pattern for Each Field:**
+1. **Exact Match**: 'field:'term'^(weight×3)' - Highest relevance
+2. **Wildcard Match**: 'field:*term*^(weight×2)' - Partial matching
+3. **Fuzzy Match**: 'field:term~^weight' - Handles typos and variations
+
+**Example Generated Query:**
+```
+(self_name:'cloud'^45 OR self_name:*cloud*^30 OR self_name:cloud~^15 OR
+ self_summary:'cloud'^30 OR self_summary:*cloud*^20 OR self_summary:cloud~^10 OR
+ self_description:'cloud'^15 OR self_description:*cloud*^10 OR self_description:cloud~^5 OR
+ _text_:'cloud'^3 OR _text_:*cloud*^2 OR _text_:cloud~^1)
+```
 
 ### Faceted Search
 
