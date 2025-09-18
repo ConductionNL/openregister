@@ -89,15 +89,33 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 		</div>
 
 		<!-- Faceted Search Section -->
-		<div v-if="facetData && Object.keys(facetData).length > 0" class="section">
+		<div class="section">
 			<h3 class="sectionTitle">
-				{{ t('openregister', 'Filter') }}
+				{{ t('openregister', 'Advanced Filters') }}
 			</h3>
+			
+			<!-- Enable Facets Button -->
+			<div v-if="!facetableFields && canSearch" class="facets-enable-container">
+				<NcButton
+					type="secondary"
+					:disabled="facetsLoading"
+					@click="enableFacets">
+					<template #icon>
+						<NcLoadingIcon v-if="facetsLoading" :size="20" />
+						<FilterIcon v-else :size="20" />
+					</template>
+					{{ t('openregister', 'Enable Advanced Filters') }}
+				</NcButton>
+				<p class="facets-enable-description">
+					{{ t('openregister', 'Discover available filter options for this schema') }}
+				</p>
+			</div>
+
 			<div v-if="facetsLoading" class="loading-container">
 				<NcLoadingIcon :size="20" />
 				<span>{{ t('openregister', 'Loading filters...') }}</span>
 			</div>
-			<div v-else class="facets-container">
+			<div v-else-if="facetData && Object.keys(facetData).length > 0" class="facets-container">
 				<!-- Show message if no facet data available -->
 				<div v-if="!facetData || Object.keys(facetData).length === 0" class="no-facets-message">
 					<p>{{ t('openregister', 'No facet filters available for this schema.') }}</p>
@@ -147,6 +165,7 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 import { NcAppSidebar, NcSelect, NcNoteCard, NcTextField, NcButton, NcLoadingIcon } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import Close from 'vue-material-design-icons/Close.vue'
+import FilterIcon from 'vue-material-design-icons/Filter.vue'
 import { translate as t } from '@nextcloud/l10n'
 
 export default {
@@ -160,6 +179,7 @@ export default {
 		NcLoadingIcon,
 		Magnify,
 		Close,
+		FilterIcon,
 	},
 	data() {
 		return {
@@ -304,7 +324,11 @@ export default {
 		if (registerStore.registerItem && schemaStore.schemaItem) {
 			// Set loading state for initial load
 			objectStore.loading = true
-			objectStore.refreshObjectList()
+			objectStore.refreshObjectList({
+				register: registerStore.registerItem.id,
+				schema: schemaStore.schemaItem.id,
+				includeFacets: false, // Don't include facets by default on initial load
+			})
 				.finally(() => {
 					objectStore.loading = false
 				})
@@ -347,10 +371,12 @@ export default {
 				schemaStore.setSchemaItem(option)
 				if (option) {
 					objectStore.initializeProperties(option)
-					// First: Load facetable fields to discover what facets are available
-					await this.loadFacetableFields()
-					// Second: Refresh object list with facet configuration to get both results and facet data
-					await this.performSearchWithFacets()
+					// Just load the object list without facets - user can enable facets later if needed
+					await objectStore.refreshObjectList({
+						register: registerStore.registerItem.id,
+						schema: option.id,
+						includeFacets: false, // Don't include facets by default
+					})
 				} else {
 					// Clear object list when schema is cleared
 					objectStore.setObjectList({
@@ -451,13 +477,49 @@ export default {
 			}
 		},
 
-		async loadFacetableFields() {
-			// Load facetable fields to discover what facets are available
+		async enableFacets() {
+			// Enable facets by loading facetable fields and then enabling default facets
 			if (!registerStore.registerItem || !schemaStore.schemaItem) return
 
 			try {
 				this.facetsLoading = true
 
+				// First: Load facetable fields to discover what facets are available
+				await this.loadFacetableFields()
+
+				// Second: Enable some default facets to show the user what's available
+				if (this.facetableFields) {
+					// Enable default @self facets
+					const defaultFacets = {
+						'@self.register': [],
+						'@self.schema': [],
+						'@self.created': [],
+					}
+
+					// Only enable facets that are actually available
+					Object.keys(defaultFacets).forEach(facetKey => {
+						const field = facetKey.replace('@self.', '')
+						if (this.facetableFields?.['@self']?.[field]) {
+							this.facetFilters[facetKey] = []
+						}
+					})
+
+					// Refresh search to get facet data
+					await this.performSearchWithFacets()
+				}
+
+			} catch (error) {
+				console.error('Error enabling facets:', error)
+			} finally {
+				this.facetsLoading = false
+			}
+		},
+
+		async loadFacetableFields() {
+			// Load facetable fields to discover what facets are available
+			if (!registerStore.registerItem || !schemaStore.schemaItem) return
+
+			try {
 				// Use objectStore.getFacetableFields to discover available facetable fields
 				const facetableFields = await objectStore.getFacetableFields({
 					register: registerStore.registerItem.id,
@@ -469,8 +531,6 @@ export default {
 			} catch (error) {
 				// Error loading facetable fields - set to null to handle gracefully
 				this.facetableFields = null
-			} finally {
-				this.facetsLoading = false
 			}
 		},
 
@@ -484,11 +544,17 @@ export default {
 				// Apply current filters and search terms to objectStore
 				this.applyFiltersToObjectStore()
 
-				// Refresh object list with facets included - this will get both results and facet data
+				// Check if we have any facet filters configured
+				const hasFacetFilters = Object.keys(this.facetFilters).some(key => 
+					this.facetFilters[key] && this.facetFilters[key].length > 0
+				)
+
+				// Always include facets discovery when searching to show available options
+				// This allows users to see what faceting options are available
 				await objectStore.refreshObjectList({
 					register: registerStore.registerItem.id,
 					schema: schemaStore.schemaItem.id,
-					includeFacets: true,
+					includeFacets: true, // Always include facets discovery for search results
 				})
 
 				// Get the facet data from the objectStore
@@ -718,5 +784,20 @@ export default {
 	text-align: center;
 	color: var(--color-text-maxcontrast);
 	font-style: italic;
+}
+
+.facets-enable-container {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	align-items: center;
+	text-align: center;
+}
+
+.facets-enable-description {
+	font-size: 12px;
+	color: var(--color-text-maxcontrast);
+	margin: 0;
+	line-height: 1.4;
 }
 </style>

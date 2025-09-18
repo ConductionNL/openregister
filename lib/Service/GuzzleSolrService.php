@@ -2670,9 +2670,30 @@ class GuzzleSolrService
         if (!empty($query['_facets'])) {
             $solrQuery['facet'] = 'true';
             $solrQuery['facet.field'] = [];
-            foreach ($query['_facets'] as $facetField => $facetConfig) {
-                if (is_array($facetConfig) && isset($facetConfig['type'])) {
-                    $solrQuery['facet.field'][] = $facetField;
+            
+            foreach ($query['_facets'] as $facetGroup => $facetConfig) {
+                if ($facetGroup === '@self' && is_array($facetConfig)) {
+                    // Handle @self metadata facets
+                    foreach ($facetConfig as $metaField => $metaConfig) {
+                        if (is_array($metaConfig) && isset($metaConfig['type'])) {
+                            $solrFacetField = 'self_' . $metaField;
+                            
+                            if ($metaConfig['type'] === 'terms') {
+                                $solrQuery['facet.field'][] = $solrFacetField;
+                            } elseif ($metaConfig['type'] === 'date_histogram') {
+                                // Handle date histogram facets
+                                $solrQuery['facet.date'] = $solrFacetField;
+                                $solrQuery['facet.date.start'] = 'NOW/YEAR-10YEARS';
+                                $solrQuery['facet.date.end'] = 'NOW';
+                                $solrQuery['facet.date.gap'] = '+1MONTH';
+                            }
+                        }
+                    }
+                } elseif (is_array($facetConfig) && isset($facetConfig['type'])) {
+                    // Handle regular facets
+                    if ($facetConfig['type'] === 'terms') {
+                        $solrQuery['facet.field'][] = $facetGroup;
+                    }
                 }
             }
         }
