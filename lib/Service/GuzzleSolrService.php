@@ -2583,10 +2583,11 @@ class GuzzleSolrService
         $cleanTerm = $this->cleanSearchTerm($searchTerm);
         
         // Define field weights (higher = more important)
-        // Simplified to only use essential fields: self_name, self_summary, and _text_
+        // Using essential OpenRegister fields with specified weights
         $fieldWeights = [
             'self_name' => 15.0,       // OpenRegister standardized name (highest priority)
             'self_summary' => 10.0,    // OpenRegister standardized summary
+            'self_description' => 5.0, // OpenRegister standardized description
             '_text_' => 1.0            // Catch-all text field (lowest priority)
         ];
         
@@ -2655,7 +2656,7 @@ class GuzzleSolrService
             
             // Enable highlighting for search results (only for searched fields)
             $solrQuery['hl'] = 'true';
-            $solrQuery['hl.fl'] = 'self_name,self_summary';
+            $solrQuery['hl.fl'] = 'self_name,self_summary,self_description';
             $solrQuery['hl.simple.pre'] = '<mark>';
             $solrQuery['hl.simple.post'] = '</mark>';
         }
