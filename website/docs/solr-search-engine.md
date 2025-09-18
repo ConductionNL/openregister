@@ -1,6 +1,6 @@
 # SOLR Search Engine Integration
 
-The OpenRegister supports Apache SOLR for advanced search capabilities including full-text search, faceted search, and high-performance querying with automatic failover to database search when SOLR is unavailable.
+The OpenRegister supports Apache SOLR for advanced search capabilities including full-text search, faceted search, and high-performance querying. When SOLR is enabled and configured, it provides transparent error handling to ensure users are aware of any SOLR-related issues.
 
 ## Overview
 
@@ -8,20 +8,56 @@ SOLR provides enterprise-grade search functionality that significantly improves 
 
 ```mermaid
 graph TB
-    A[API Request] --> B{SOLR Enabled?}
-    B -->|Yes| C{SOLR Available?}
+    A[API Request] --> B{_source=index OR SOLR Enabled?}
+    B -->|Yes| C[Forward to SOLR Service]
     B -->|No| H[Database Search]
-    C -->|Yes| D[SOLR Search]
-    C -->|No| H[Database Search]
-    D --> E[Convert to ObjectEntity]
-    H --> F[Load from Database]
-    E --> G[Return Results]
-    F --> G
+    C --> D{SOLR Configured?}
+    D -->|No| E[Throw Configuration Error]
+    D -->|Yes| F{SOLR Available?}
+    F -->|No| G[Throw Connection Error]
+    F -->|Yes| I[Execute SOLR Search]
+    I --> J{Search Successful?}
+    J -->|No| K[Throw Search Error]
+    J -->|Yes| L[Return SOLR Results]
+    H --> M[Return Database Results]
     
-    style D fill:#e1f5fe
+    style I fill:#e1f5fe
     style H fill:#f3e5f5
-    style G fill:#e8f5e8
+    style L fill:#e8f5e8
+    style M fill:#e8f5e8
+    style E fill:#ffcdd2
+    style G fill:#ffcdd2
+    style K fill:#ffcdd2
 ```
+
+## Error Handling and Source Selection
+
+### Transparent Error Reporting
+
+OpenRegister now uses a **transparent error handling approach** for SOLR integration. Instead of silently falling back to database search when SOLR fails, the system provides clear error messages to help administrators identify and resolve SOLR issues.
+
+#### Source Selection Logic
+
+The system determines which search backend to use based on:
+
+1. **Explicit Source Request**: `_source=index` or `_source=solr` forces SOLR usage
+2. **Configuration Check**: If no source specified, checks if SOLR is enabled in settings
+3. **Error Transparency**: When SOLR is requested but unavailable, throws descriptive errors
+
+#### Error Types and Messages
+
+| Error Type | When It Occurs | Error Message | Resolution |
+|------------|----------------|---------------|------------|
+| **Configuration Error** | SOLR enabled but missing required settings | 'SOLR is not properly configured. Please check your SOLR settings...' | Verify host, port, collection in admin panel |
+| **Connection Error** | SOLR configured but service unreachable | 'SOLR service is not available. Connection test failed...' | Check SOLR service status and network connectivity |
+| **Search Error** | SOLR available but query execution fails | 'SOLR search failed: [specific error]...' | Check SOLR logs and query syntax |
+
+#### Benefits of Explicit Error Handling
+
+- **🔍 Problem Visibility**: Administrators immediately know when SOLR has issues
+- **🛠️ Faster Debugging**: Clear error messages guide troubleshooting
+- **⚡ Performance Clarity**: No confusion about which backend is being used
+- **🔧 Proactive Maintenance**: Issues are caught before they affect users
 
 ## Architecture
 
@@ -292,10 +328,62 @@ GET /api/objects?q=searchterm
 GET /api/objects?q=title:(important)^3 OR description:(important)
 ```
 
-**Default Field Boosting:**
-- **name, title**: 3.0x boost
-- **description, summary**: 2.0x boost
-- **content, _text_**: 1.0x boost
+**OpenRegister Field Weighting Strategy:**
+- **self_name**: 15.0x boost (highest priority - object name)
+- **self_summary**: 10.0x boost (medium-high priority - object summary)
+- **self_description**: 5.0x boost (medium priority - detailed description)
+- **_text_**: 1.0x boost (lowest priority - catch-all full-text content)
+
+#### Search Query Building
+
+OpenRegister automatically builds sophisticated SOLR queries with multiple search variations for each field:
+
+```mermaid
+graph TB
+    A[Search Term: 'cloud'] --> B[Query Builder]
+    B --> C[Exact Match Queries]
+    B --> D[Wildcard Queries] 
+    B --> E[Fuzzy Match Queries]
+    
+    C --> C1[self_name:'cloud'^45]
+    C --> C2[self_summary:'cloud'^30]
+    C --> C3[self_description:'cloud'^15]
+    
+    D --> D1[self_name:*cloud*^30]
+    D --> D2[self_summary:*cloud*^20]
+    D --> D3[self_description:*cloud*^10]
+    
+    E --> E1[self_name:cloud~^15]
+    E --> E2[self_summary:cloud~^10] 
+    E --> E3[self_description:cloud~^5]
+    
+    F[_text_:'cloud'^3] --> G[Combined OR Query]
+    C1 --> G
+    C2 --> G
+    C3 --> G
+    D1 --> G
+    D2 --> G
+    D3 --> G
+    E1 --> G
+    E2 --> G
+    E3 --> G
+    
+    style A fill:#e3f2fd
+    style G fill:#c8e6c9
+```
+
+**Query Pattern for Each Field:**
+1. **Exact Match**: 'field:'term'^(weight×3)' - Highest relevance
+2. **Wildcard Match**: 'field:*term*^(weight×2)' - Partial matching
+3. **Fuzzy Match**: 'field:term~^weight' - Handles typos and variations
+
+**Example Generated Query:**
+```
+(self_name:'cloud'^45 OR self_name:*cloud*^30 OR self_name:cloud~^15 OR
+ self_summary:'cloud'^30 OR self_summary:*cloud*^20 OR self_summary:cloud~^10 OR
+ self_description:'cloud'^15 OR self_description:*cloud*^10 OR self_description:cloud~^5 OR
+ _text_:'cloud'^3 OR _text_:*cloud*^2 OR _text_:cloud~^1)
+```
 
 ### Faceted Search
 
