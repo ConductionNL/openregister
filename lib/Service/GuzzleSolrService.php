@@ -4773,6 +4773,386 @@ class GuzzleSolrService
     }
 
     /**
+     * Fix mismatched SOLR fields by updating their configuration
+     *
+     * @param array $mismatchedFields Array of field configurations keyed by field name that need to be fixed
+     * @param bool $dryRun If true, only simulate the updates without actually making changes
+     * @return array Result with success status, message, and fixed fields list
+     */
+    public function fixMismatchedFields(array $mismatchedFields, bool $dryRun = false): array
+    {
+        if (!$this->isAvailable()) {
+            return [
+                'success' => false,
+                'message' => 'SOLR is not available or not configured'
+            ];
+        }
+
+        try {
+            $startTime = microtime(true);
+            $collectionName = $this->getActiveCollectionName();
+            
+            if (!$collectionName) {
+                return [
+                    'success' => false,
+                    'message' => 'No active SOLR collection found'
+                ];
+            }
+
+            if (empty($mismatchedFields)) {
+                return [
+                    'success' => true,
+                    'message' => 'No mismatched fields provided',
+                    'fixed' => [],
+                    'errors' => []
+                ];
+            }
+
+            $this->logger->debug('Fixing mismatched SOLR fields', [
+                'field_count' => count($mismatchedFields),
+                'fields' => array_keys($mismatchedFields),
+                'dry_run' => $dryRun
+            ]);
+
+            // Process mismatched fields - all should be replaced since they exist
+            $fixed = [];
+            $errors = [];
+            $schemaUrl = $this->buildSolrBaseUrl() . "/{$collectionName}/schema";
+
+            foreach ($mismatchedFields as $fieldName => $fieldConfig) {
+                try {
+                    // Prepare field configuration for SOLR
+                    $solrFieldConfig = $this->prepareSolrFieldConfig($fieldName, $fieldConfig);
+                    
+                    // Use replace-field for existing mismatched fields
+                    $payload = [
+                        'replace-field' => $solrFieldConfig
+                    ];
+
+
+                    if ($dryRun) {
+                        $fixed[] = $fieldName;
+                        $this->logger->debug("Dry run: Would fix field '{$fieldName}'", [
+                            'field_config' => $solrFieldConfig
+                        ]);
+                    } else {
+                        // Make the API call to fix the field
+                        $response = $this->httpClient->post($schemaUrl, [
+                            'json' => $payload,
+                            'headers' => [
+                                'Content-Type' => 'application/json'
+                            ]
+                        ]);
+
+                        $responseData = json_decode($response->getBody()->getContents(), true);
+                        
+                        if ($response->getStatusCode() === 200 && ($responseData['responseHeader']['status'] ?? 1) === 0) {
+                            $fixed[] = $fieldName;
+                            $this->logger->info("Successfully fixed field '{$fieldName}'", [
+                                'field_config' => $solrFieldConfig
+                            ]);
+                        } else {
+                            $error = "Failed to fix field '{$fieldName}': " . ($responseData['error']['msg'] ?? 'Unknown error');
+                            $errors[] = $error;
+                            $this->logger->error($error, [
+                                'response_status' => $response->getStatusCode(),
+                                'response_data' => $responseData
+                            ]);
+                        }
+                    }
+
+                } catch (\Exception $e) {
+                    $error = "Exception while fixing field '{$fieldName}': " . $e->getMessage();
+                    $errors[] = $error;
+                    $this->logger->error($error, [
+                        'exception' => $e,
+                        'field_config' => $fieldConfig
+                    ]);
+                }
+            }
+
+            $executionTime = (microtime(true) - $startTime) * 1000;
+            $fixedCount = count($fixed);
+            $errorCount = count($errors);
+
+            if ($dryRun) {
+                $message = "Dry run completed: {$fixedCount} fields would be fixed";
+                if ($errorCount > 0) {
+                    $message .= ", {$errorCount} errors detected";
+                }
+            } else {
+                $message = "Fixed {$fixedCount} mismatched SOLR fields";
+                if ($errorCount > 0) {
+                    $message .= " with {$errorCount} errors";
+                }
+            }
+
+            return [
+                'success' => true,
+                'message' => $message,
+                'fixed' => $fixed,
+                'errors' => $errors,
+                'execution_time_ms' => round($executionTime, 2),
+                'dry_run' => $dryRun
+            ];
+
+        } catch (\Exception $e) {
+            $this->logger->error('Exception in fixMismatchedFields', [
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return [
+                'success' => false,
+                'message' => 'Failed to fix mismatched fields: ' . $e->getMessage(),
+                'errors' => [$e->getMessage()]
+            ];
+        }
+    }
+
+    /**
+     * Create missing SOLR fields based on schema analysis
+     *
+     * This method analyzes the difference between expected schema fields and actual SOLR fields,
+     * then creates the missing fields using the SOLR Schema API.
+     *
+     * @param array $expectedFields Expected field configuration from schema analysis
+     * @param bool $dryRun If true, only returns what would be created without making changes
+     * @return array{success: bool, message: string, created?: array, errors?: array, dry_run?: bool}
+     */
+    public function createMissingFields(array $expectedFields = [], bool $dryRun = false): array
+    {
+        if (!$this->isAvailable()) {
+            return [
+                'success' => false,
+                'message' => 'SOLR is not available or not configured'
+            ];
+        }
+
+        try {
+            $startTime = microtime(true);
+            $collectionName = $this->getActiveCollectionName();
+            
+            if (!$collectionName) {
+                return [
+                    'success' => false,
+                    'message' => 'No active SOLR collection found'
+                ];
+            }
+
+            // If no expected fields provided, get them from schema analysis
+            if (empty($expectedFields)) {
+                // Get SolrSchemaService to analyze schemas
+                $solrSchemaService = \OC::$server->get(SolrSchemaService::class);
+                $schemaMapper = \OC::$server->get(\OCA\OpenRegister\Db\SchemaMapper::class);
+                
+                // Get all schemas
+                $schemas = $schemaMapper->findAll();
+                
+                // Use the existing analyzeAndResolveFieldConflicts method via reflection
+                $reflection = new \ReflectionClass($solrSchemaService);
+                $method = $reflection->getMethod('analyzeAndResolveFieldConflicts');
+                $method->setAccessible(true);
+                $expectedFields = $method->invoke($solrSchemaService, $schemas);
+                
+                // Debug: Log the structure of expected fields
+                $this->logger->debug('Expected fields from schema analysis', [
+                    'field_count' => count($expectedFields),
+                    'sample_fields' => array_slice($expectedFields, 0, 3, true),
+                    'field_keys_sample' => array_slice(array_keys($expectedFields), 0, 5)
+                ]);
+            }
+
+            // Get current SOLR fields
+            $currentFieldsResponse = $this->getFieldsConfiguration();
+            if (!$currentFieldsResponse['success']) {
+                return [
+                    'success' => false,
+                    'message' => 'Failed to retrieve current SOLR fields: ' . $currentFieldsResponse['message']
+                ];
+            }
+
+            $currentFields = $currentFieldsResponse['fields'] ?? [];
+            
+            // Find only missing fields (not mismatched ones - use fixMismatchedFields for those)
+            $fieldsToProcess = [];
+            foreach ($expectedFields as $fieldName => $fieldConfig) {
+                // Skip if fieldName is not a string (defensive programming)
+                if (!is_string($fieldName)) {
+                    $this->logger->warning('Skipping non-string field name', [
+                        'field_name_type' => gettype($fieldName),
+                        'field_name_value' => $fieldName
+                    ]);
+                    continue;
+                }
+                
+                // Skip if fieldConfig is not an array
+                if (!is_array($fieldConfig)) {
+                    $this->logger->warning('Skipping non-array field config', [
+                        'field_name' => $fieldName,
+                        'field_config_type' => gettype($fieldConfig),
+                        'field_config_value' => $fieldConfig
+                    ]);
+                    continue;
+                }
+                
+                // Only add truly missing fields
+                if (!isset($currentFields[$fieldName])) {
+                    $fieldsToProcess[$fieldName] = $fieldConfig;
+                    $this->logger->debug("Field '{$fieldName}' is missing and will be created");
+                }
+            }
+
+            if (empty($fieldsToProcess)) {
+                return [
+                    'success' => true,
+                    'message' => 'No missing or mismatched fields found - SOLR schema is up to date',
+                    'created' => [],
+                    'errors' => []
+                ];
+            }
+
+            $this->logger->info('🔧 Processing SOLR fields (create missing, update mismatched)', [
+                'collection' => $collectionName,
+                'fields_to_process' => count($fieldsToProcess),
+                'dry_run' => $dryRun
+            ]);
+
+            if ($dryRun) {
+                return [
+                    'success' => true,
+                    'message' => 'Dry run completed - ' . count($fieldsToProcess) . ' fields would be processed',
+                    'would_create' => array_keys($fieldsToProcess),
+                    'dry_run' => true
+                ];
+            }
+
+            // Process fields (create missing, update mismatched)
+            $created = [];
+            $errors = [];
+            $schemaUrl = $this->buildSolrBaseUrl() . "/{$collectionName}/schema";
+
+            foreach ($fieldsToProcess as $fieldName => $fieldConfig) {
+                try {
+                    // Prepare field configuration for SOLR
+                    $solrFieldConfig = $this->prepareSolrFieldConfig($fieldName, $fieldConfig);
+                    
+                    // Always use add-field since we only process missing fields
+                    $operation = 'add-field';
+                    
+                    $payload = [
+                        $operation => $solrFieldConfig
+                    ];
+
+                    $response = $this->httpClient->post($schemaUrl, [
+                        'body' => json_encode($payload),
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'timeout' => 30
+                    ]);
+
+                    $responseData = json_decode($response->getBody()->getContents(), true);
+                    
+                    if (($responseData['responseHeader']['status'] ?? -1) === 0) {
+                        $created[] = $fieldName;
+                        $action = $fieldExists ? 'Updated' : 'Created';
+                        $this->logger->debug("✅ {$action} SOLR field", [
+                            'field' => $fieldName,
+                            'type' => $solrFieldConfig['type'],
+                            'multiValued' => $solrFieldConfig['multiValued'] ?? false,
+                            'operation' => $operation
+                        ]);
+                    } else {
+                        $error = $responseData['error']['msg'] ?? 'Unknown error';
+                        $errors[$fieldName] = $error;
+                        $action = $fieldExists ? 'update' : 'create';
+                        $this->logger->warning("❌ Failed to {$action} SOLR field", [
+                            'field' => $fieldName,
+                            'error' => $error,
+                            'operation' => $operation
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    $errors[$fieldName] = $e->getMessage();
+                    $this->logger->error('Exception creating SOLR field', [
+                        'field' => $fieldName,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
+            $executionTime = (microtime(true) - $startTime) * 1000;
+            $success = count($created) > 0 && count($errors) === 0;
+
+            $result = [
+                'success' => $success,
+                'message' => sprintf(
+                    'Field creation completed: %d created, %d errors',
+                    count($created),
+                    count($errors)
+                ),
+                'created' => $created,
+                'errors' => $errors,
+                'execution_time_ms' => round($executionTime, 2),
+                'collection' => $collectionName
+            ];
+
+            $this->logger->info('🎯 SOLR field creation completed', [
+                'created_count' => count($created),
+                'error_count' => count($errors),
+                'execution_time_ms' => $result['execution_time_ms']
+            ]);
+
+            return $result;
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to create missing SOLR fields', [
+                'error' => $e->getMessage(),
+                'collection' => $collectionName ?? 'unknown'
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Failed to create missing SOLR fields: ' . $e->getMessage(),
+                'details' => ['error' => $e->getMessage()]
+            ];
+        }
+    }
+
+    /**
+     * Prepare field configuration for SOLR Schema API
+     *
+     * @param string $fieldName Field name
+     * @param array $fieldConfig Field configuration from schema analysis
+     * @return array SOLR-compatible field configuration
+     */
+    private function prepareSolrFieldConfig(string $fieldName, array $fieldConfig): array
+    {
+        
+        // The field config already contains the resolved SOLR type from SolrSchemaService
+        // So we should use it directly instead of re-mapping
+        $solrType = $fieldConfig['type'] ?? 'string';
+        
+        // Handle array case - if type is an array, take the first element
+        if (is_array($solrType)) {
+            $solrType = !empty($solrType) ? (string)$solrType[0] : 'string';
+        } else {
+            $solrType = (string)$solrType;
+        }
+        
+        $config = [
+            'name' => $fieldName,
+            'type' => $solrType,
+            'indexed' => $fieldConfig['indexed'] ?? true,
+            'stored' => $fieldConfig['stored'] ?? true,
+            'multiValued' => $fieldConfig['multiValued'] ?? false,
+            'docValues' => $fieldConfig['docValues'] ?? true
+        ];
+        
+        
+        return $config;
+    }
+
+    /**
      * Get comprehensive SOLR field configuration and schema information
      *
      * Retrieves field definitions, dynamic fields, field types, and core information
