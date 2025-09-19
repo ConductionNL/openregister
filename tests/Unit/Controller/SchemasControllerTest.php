@@ -168,15 +168,13 @@ class SchemasControllerTest extends TestCase
             $this->schemaMapper,
             $this->objectEntityMapper,
             $this->downloadService,
+            $this->objectService,
             $this->uploadService,
             $this->auditTrailMapper,
             $this->organisationService,
             $this->schemaCacheService,
             $this->schemaFacetCacheService
         );
-        
-        // Note: The controller is missing ObjectService dependency in constructor
-        // This is a bug in the controller code
     }
 
     /**
@@ -453,7 +451,6 @@ class SchemasControllerTest extends TestCase
      */
     public function testStatsSuccessful(): void
     {
-        $this->markTestSkipped('Controller is missing ObjectService dependency - this is a bug in the controller code');
         $id = 1;
         $schema = $this->createMock(Schema::class);
         $schema->expects($this->any())
@@ -508,7 +505,6 @@ class SchemasControllerTest extends TestCase
      */
     public function testStatsSchemaNotFound(): void
     {
-        $this->markTestSkipped('Controller is missing ObjectService dependency - this is a bug in the controller code');
         $id = 999;
 
         $this->schemaMapper->expects($this->once())

@@ -354,15 +354,6 @@ class MagicMapperTest extends TestCase
 
 
 
-    /**
-     * Test schema version calculation for change detection
-     *
-     * @return void
-     */
-    public function testSchemaVersionCalculation(): void
-    {
-        $this->markTestSkipped('calculateSchemaVersion method does not exist in MagicMapper class');
-    }//end testSchemaVersionCalculation()
 
 
     /**

@@ -18,6 +18,49 @@ use Psr\Log\LoggerInterface;
 /**
  * Test class for ImportService
  *
+ * This test suite comprehensively tests the ImportService class, which handles
+ * CSV data import functionality for OpenRegister. The tests cover:
+ * 
+ * ## Test Categories:
+ * 
+ * ### 1. Basic Import Functionality
+ * - testImportFromCsvWithBatchSaving: Tests successful CSV import with proper data
+ * - testImportFromCsvWithEmptyFile: Tests handling of empty CSV files
+ * - testImportFromCsvWithoutSchema: Tests error handling when no schema provided
+ * 
+ * ### 2. Error Handling & Edge Cases
+ * - testImportFromCsvWithErrors: Tests error handling during import process
+ * - testImportFromCsvWithMalformedData: Tests handling of invalid CSV data
+ * - testImportFromCsvWithLargeFile: Tests performance with large datasets (1000+ rows)
+ * - testImportFromCsvWithSpecialCharacters: Tests Unicode and special character handling
+ * 
+ * ### 3. Advanced Features
+ * - testImportFromCsvAsync: Tests asynchronous import functionality
+ * - testImportFromCsvCategorizesCreatedVsUpdated: Tests object categorization logic
+ * 
+ * ## Mocking Strategy:
+ * 
+ * The tests use comprehensive mocking to isolate the ImportService from external dependencies:
+ * - ObjectService: Mocked to simulate database operations
+ * - SchemaMapper: Mocked to provide schema definitions
+ * - LoggerInterface: Mocked to capture log messages
+ * - User/Group Managers: Mocked for RBAC testing
+ * 
+ * ## Test Data Management:
+ * 
+ * Tests create temporary CSV files with various data patterns:
+ * - Valid data with proper headers
+ * - Malformed data with invalid types
+ * - Large datasets for performance testing
+ * - Special characters and Unicode content
+ * 
+ * All temporary files are properly cleaned up in finally blocks.
+ * 
+ * ## Dependencies:
+ * 
+ * Tests require PhpSpreadsheet library for CSV processing. Tests are skipped
+ * if the library is not available, with appropriate skip messages.
+ * 
  * @category Test
  * @package  OCA\OpenRegister\Tests\Service
  * @author   Your Name <your.email@example.com>
@@ -447,6 +490,222 @@ class ImportServiceTest extends TestCase
             
         } finally {
             // Clean up temp file
+            unlink($tempFile);
+        }
+    }
+
+    /**
+     * Test CSV import with malformed CSV data
+     */
+    public function testImportFromCsvWithMalformedData(): void
+    {
+        // Skip test if PhpSpreadsheet is not available
+        if (!class_exists('PhpOffice\PhpSpreadsheet\Reader\Csv')) {
+            $this->markTestSkipped('PhpSpreadsheet library not available');
+            return;
+        }
+        
+        // Create test data
+        $register = $this->createMock(Register::class);
+        $register->method('getId')->willReturn('test-register-id');
+
+        $schema = $this->createMock(Schema::class);
+        $schema->method('getId')->willReturn('1');
+        $schema->method('getTitle')->willReturn('Test Schema');
+        $schema->method('getSlug')->willReturn('test-schema');
+        $schema->method('getProperties')->willReturn([
+            'name' => ['type' => 'string'],
+            'age' => ['type' => 'integer'],
+        ]);
+        
+        // Use reflection to set protected properties
+        $reflection = new \ReflectionClass($schema);
+        $titleProperty = $reflection->getProperty('title');
+        $titleProperty->setAccessible(true);
+        $titleProperty->setValue($schema, 'Test Schema');
+        
+        $slugProperty = $reflection->getProperty('slug');
+        $slugProperty->setAccessible(true);
+        $slugProperty->setValue($schema, 'test-schema');
+
+        // Mock ObjectService to return empty results for malformed data
+        $this->objectService->expects($this->once())
+            ->method('saveObjects')
+            ->willReturn([
+                'saved' => [],
+                'updated' => [],
+                'invalid' => []
+            ]);
+
+        // Create temporary CSV file with malformed data
+        $csvContent = "name,age\nJohn Doe,invalid_number\nJane Smith,25\n"; // Invalid number in age column
+        $tempFile = tempnam(sys_get_temp_dir(), 'test_csv_');
+        file_put_contents($tempFile, $csvContent);
+
+        try {
+            // Test the import
+            $result = $this->importService->importFromCsv($tempFile, $register, $schema);
+
+            // Verify the result structure
+            $this->assertIsArray($result);
+            $this->assertCount(1, $result); // One sheet
+            
+            $sheetResult = array_values($result)[0];
+            $this->assertArrayHasKey('found', $sheetResult);
+            $this->assertArrayHasKey('created', $sheetResult);
+            $this->assertArrayHasKey('errors', $sheetResult);
+
+            // Should have found 2 rows but created 0 due to malformed data
+            $this->assertEquals(2, $sheetResult['found']);
+            $this->assertCount(0, $sheetResult['created']);
+            // Note: ImportService may not generate errors for malformed data, just skip invalid rows
+            $this->assertIsArray($sheetResult['errors']);
+
+        } finally {
+            // Clean up temporary file
+            unlink($tempFile);
+        }
+    }
+
+    /**
+     * Test CSV import with extremely large file
+     */
+    public function testImportFromCsvWithLargeFile(): void
+    {
+        // Skip test if PhpSpreadsheet is not available
+        if (!class_exists('PhpOffice\PhpSpreadsheet\Reader\Csv')) {
+            $this->markTestSkipped('PhpSpreadsheet library not available');
+            return;
+        }
+        
+        // Create test data
+        $register = $this->createMock(Register::class);
+        $register->method('getId')->willReturn('test-register-id');
+
+        $schema = $this->createMock(Schema::class);
+        $schema->method('getId')->willReturn('1');
+        $schema->method('getTitle')->willReturn('Test Schema');
+        $schema->method('getSlug')->willReturn('test-schema');
+        $schema->method('getProperties')->willReturn([
+            'name' => ['type' => 'string'],
+            'age' => ['type' => 'integer'],
+        ]);
+        
+        // Use reflection to set protected properties
+        $reflection = new \ReflectionClass($schema);
+        $titleProperty = $reflection->getProperty('title');
+        $titleProperty->setAccessible(true);
+        $titleProperty->setValue($schema, 'Test Schema');
+        
+        $slugProperty = $reflection->getProperty('slug');
+        $slugProperty->setAccessible(true);
+        $slugProperty->setValue($schema, 'test-schema');
+
+        // Create large CSV content (1000 rows)
+        $csvContent = "name,age\n";
+        for ($i = 1; $i <= 1000; $i++) {
+            $csvContent .= "User $i," . (20 + ($i % 50)) . "\n";
+        }
+
+        $tempFile = tempnam(sys_get_temp_dir(), 'test_csv_');
+        file_put_contents($tempFile, $csvContent);
+
+        try {
+            // Test the import with chunking
+            $result = $this->importService->importFromCsv($tempFile, $register, $schema, 100); // 100 row chunks
+
+            // Verify the result structure
+            $this->assertIsArray($result);
+            $this->assertCount(1, $result); // One sheet
+            
+            $sheetResult = array_values($result)[0];
+            $this->assertArrayHasKey('found', $sheetResult);
+            $this->assertArrayHasKey('created', $sheetResult);
+            $this->assertArrayHasKey('errors', $sheetResult);
+
+            // Should have found 1000 rows
+            $this->assertEquals(1000, $sheetResult['found']);
+
+        } finally {
+            // Clean up temporary file
+            unlink($tempFile);
+        }
+    }
+
+    /**
+     * Test CSV import with special characters and encoding issues
+     */
+    public function testImportFromCsvWithSpecialCharacters(): void
+    {
+        // Skip test if PhpSpreadsheet is not available
+        if (!class_exists('PhpOffice\PhpSpreadsheet\Reader\Csv')) {
+            $this->markTestSkipped('PhpSpreadsheet library not available');
+            return;
+        }
+        
+        // Create test data
+        $register = $this->createMock(Register::class);
+        $register->method('getId')->willReturn('test-register-id');
+
+        $schema = $this->createMock(Schema::class);
+        $schema->method('getId')->willReturn('1');
+        $schema->method('getTitle')->willReturn('Test Schema');
+        $schema->method('getSlug')->willReturn('test-schema');
+        $schema->method('getProperties')->willReturn([
+            'name' => ['type' => 'string'],
+            'description' => ['type' => 'string'],
+        ]);
+        
+        // Use reflection to set protected properties
+        $reflection = new \ReflectionClass($schema);
+        $titleProperty = $reflection->getProperty('title');
+        $titleProperty->setAccessible(true);
+        $titleProperty->setValue($schema, 'Test Schema');
+        
+        $slugProperty = $reflection->getProperty('slug');
+        $slugProperty->setAccessible(true);
+        $slugProperty->setValue($schema, 'test-schema');
+
+        // Mock ObjectService
+        $this->objectService->expects($this->once())
+            ->method('saveObjects')
+            ->willReturn([
+                'saved' => [
+                    ['@self' => ['id' => 'obj-1'], 'name' => 'José María', 'description' => 'Special chars: ñáéíóú'],
+                    ['@self' => ['id' => 'obj-2'], 'name' => 'François', 'description' => 'Unicode: 🚀💻🎉']
+                ],
+                'updated' => [],
+                'invalid' => []
+            ]);
+
+        // Create temporary CSV file with special characters
+        $csvContent = "name,description\n";
+        $csvContent .= "\"José María\",\"Special chars: ñáéíóú\"\n";
+        $csvContent .= "\"François\",\"Unicode: 🚀💻🎉\"\n";
+        $csvContent .= "\"Test with, comma\",\"Description with \"\"quotes\"\"\"\n";
+
+        $tempFile = tempnam(sys_get_temp_dir(), 'test_csv_');
+        file_put_contents($tempFile, $csvContent);
+
+        try {
+            // Test the import
+            $result = $this->importService->importFromCsv($tempFile, $register, $schema);
+
+            // Verify the result structure
+            $this->assertIsArray($result);
+            $this->assertCount(1, $result); // One sheet
+            
+            $sheetResult = array_values($result)[0];
+            $this->assertArrayHasKey('found', $sheetResult);
+            $this->assertArrayHasKey('created', $sheetResult);
+            $this->assertArrayHasKey('errors', $sheetResult);
+
+            // Should have found 3 rows
+            $this->assertEquals(3, $sheetResult['found']);
+            $this->assertCount(2, $sheetResult['created']); // 2 valid, 1 with parsing issues
+
+        } finally {
+            // Clean up temporary file
             unlink($tempFile);
         }
     }

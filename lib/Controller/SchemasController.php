@@ -70,6 +70,7 @@ class SchemasController extends Controller
         private readonly SchemaMapper $schemaMapper,
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly DownloadService $downloadService,
+        private readonly ObjectService $objectService,
         private readonly UploadService $uploadService,
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly OrganisationService $organisationService,
