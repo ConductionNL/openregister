@@ -423,7 +423,7 @@ class ObjectServiceRbacTest extends TestCase
         $checkPermissionMethod->invoke($this->objectService, $schema, 'update');
 
         // This assertion passes if no exception was thrown
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     /**
@@ -520,7 +520,7 @@ class ObjectServiceRbacTest extends TestCase
         $checkPermissionMethod->invoke($this->objectService, $schema, 'delete', null, 'editor');
         
         // This assertion passes if no exception was thrown
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     /**

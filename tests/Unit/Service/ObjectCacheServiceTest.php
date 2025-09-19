@@ -37,7 +37,10 @@ class ObjectCacheServiceTest extends TestCase
         // Create ObjectCacheService instance
         $this->objectCacheService = new ObjectCacheService(
             $this->objectEntityMapper,
-            $this->logger
+            $this->logger,
+            null, // guzzleSolrService
+            null, // cacheFactory
+            null  // userSession
         );
     }
 

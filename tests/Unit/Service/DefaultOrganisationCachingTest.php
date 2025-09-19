@@ -98,9 +98,6 @@ class DefaultOrganisationCachingTest extends TestCase
     {
         parent::setUp();
         
-        // Clear static cache before each test
-        $this->clearStaticCache();
-        
         // Create mock objects
         $this->organisationMapper = $this->createMock(OrganisationMapper::class);
         $this->userSession = $this->createMock(IUserSession::class);
@@ -118,6 +115,9 @@ class DefaultOrganisationCachingTest extends TestCase
             $this->groupManager,
             $this->logger
         );
+        
+        // Clear static cache after service is created
+        $this->clearStaticCache();
     }
 
     /**
@@ -154,11 +154,11 @@ class DefaultOrganisationCachingTest extends TestCase
         
         $cacheProperty = $reflection->getProperty('defaultOrganisationCache');
         $cacheProperty->setAccessible(true);
-        $cacheProperty->setValue(null);
+        $cacheProperty->setValue($this->organisationService, null);
         
         $timestampProperty = $reflection->getProperty('defaultOrganisationCacheTimestamp');
         $timestampProperty->setAccessible(true);
-        $timestampProperty->setValue(null);
+        $timestampProperty->setValue($this->organisationService, null);
     }
 
     /**
@@ -244,7 +244,7 @@ class DefaultOrganisationCachingTest extends TestCase
         $reflection = new \ReflectionClass(OrganisationService::class);
         $timestampProperty = $reflection->getProperty('defaultOrganisationCacheTimestamp');
         $timestampProperty->setAccessible(true);
-        $timestampProperty->setValue(time() - 1000); // Expired (older than 900 seconds)
+        $timestampProperty->setValue($this->organisationService, time() - 1000); // Expired (older than 900 seconds)
 
         // Act: Second call should fetch fresh data due to expiration
         $expiredResult = $this->organisationService->ensureDefaultOrganisation();
