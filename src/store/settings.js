@@ -42,8 +42,11 @@ export const useSettingsStore = defineStore('settings', {
 		settingUpSolr: false,
 		showTestDialog: false,
 		showSetupDialog: false,
+		showFieldsDialog: false,
+		loadingFields: false,
 		testResults: null,
 		setupResults: null,
+		fieldsInfo: null,
 		
 		// Cache states
 		clearingCache: false,
@@ -844,6 +847,38 @@ export const useSettingsStore = defineStore('settings', {
 		 */
 		retrySetup() {
 			this.setupSolr()
+		},
+
+		/**
+		 * Load SOLR field configuration
+		 */
+		async loadSolrFields() {
+			this.loadingFields = true
+			this.showFieldsDialog = true
+			try {
+				const response = await axios.get(generateUrl('/apps/openregister/api/solr/fields'))
+				this.fieldsInfo = response.data
+				return response.data
+			} catch (error) {
+				console.error('Failed to load SOLR fields:', error)
+				const errorData = {
+					success: false,
+					message: 'Failed to load SOLR fields: ' + error.message,
+					details: { error: error.message }
+				}
+				this.fieldsInfo = errorData
+				throw error
+			} finally {
+				this.loadingFields = false
+			}
+		},
+
+		/**
+		 * Hide fields dialog
+		 */
+		hideFieldsDialog() {
+			this.showFieldsDialog = false
+			this.fieldsInfo = null
 		},
 	},
 })
