@@ -70,6 +70,11 @@ class SolrSchemaService
     /**
      * Core metadata fields that should be defined in SOLR schema
      *
+     * Field configuration strategy:
+     * - JSON storage fields (self_object, self_authorization, etc.): stored=true, indexed=false, docValues=false
+     * - Sortable/facetable fields (self_name, self_owner, dates, etc.): stored=true, indexed=true, docValues=true
+     * - Text content fields (self_description, self_summary): stored=true, indexed=true, docValues=false (text analysis)
+     *
      * @var array<string, string> Field name => SOLR field type
      */
     private const CORE_METADATA_FIELDS = [
@@ -360,6 +365,7 @@ class SolrSchemaService
                     'stored' => true,
                     'indexed' => true,
                     'multiValued' => $this->isMultiValued($fieldInfo['definitions'][0]),
+                    'docValues' => true, // Schema-based fields should have docValues for sorting/faceting
                     'facetable' => $fieldInfo['definitions'][0]['facetable'] ?? true
                 ];
             }
@@ -472,6 +478,7 @@ class SolrSchemaService
                     'stored' => true,
                     'indexed' => true,
                     'multiValued' => $this->isMultiValued($fieldDefinition),
+                    'docValues' => true, // Schema-based fields should have docValues for sorting/faceting
                     'facetable' => $fieldDefinition['facetable'] ?? true
                 ];
                 $fieldsCreated++;
@@ -607,6 +614,60 @@ class SolrSchemaService
     }
 
     /**
+     * Determine if a core metadata field should have docValues enabled
+     *
+     * docValues enable fast sorting, faceting, grouping, and function queries.
+     * They should be enabled for fields that are used for:
+     * - Sorting (e.g., name, created, updated dates)
+     * - Faceting (e.g., owner, organisation, schema, register)
+     * - Grouping operations
+     * 
+     * JSON storage fields should have docValues=false to save storage space.
+     *
+     * @param string $fieldName Core field name
+     * @return bool True if field should have docValues enabled
+     */
+    private function shouldCoreFieldHaveDocValues(string $fieldName): bool
+    {
+        // Fields that should have docValues enabled for sorting/faceting/grouping
+        $docValuesFields = [
+            // Sortable fields
+            'self_name',         // Sort by name
+            'self_created',      // Sort by creation date
+            'self_updated',      // Sort by update date
+            'self_published',    // Sort by publication date
+            
+            // Facetable fields
+            'self_owner',        // Facet by owner
+            'self_organisation', // Facet by organisation
+            'self_application',  // Facet by application
+            'self_schema',       // Facet by schema ID
+            'self_schema_id',    // Facet by schema ID
+            'self_register',     // Facet by register ID
+            'self_register_id',  // Facet by register ID
+            
+            // UUID fields for exact matching and grouping
+            'self_uuid',         // Exact UUID matching
+            'self_schema_uuid',  // Schema UUID matching
+            'self_register_uuid',// Register UUID matching
+            
+            // Slug fields for URL-friendly lookups
+            'self_slug',         // URL slug lookup
+            'self_schema_slug',  // Schema slug lookup
+            'self_register_slug',// Register slug lookup
+            
+            // Other metadata that might be used for filtering
+            'self_object_id',    // Object ID filtering
+            'self_tenant',       // Tenant filtering
+            'self_version',      // Version filtering
+            'self_size',         // Size-based sorting/filtering
+            'self_locked',       // Locked status filtering
+        ];
+        
+        return in_array($fieldName, $docValuesFields);
+    }
+
+    /**
      * Ensure core metadata fields exist in SOLR schema
      *
      * These are the essential fields needed for object indexing including
@@ -629,7 +690,8 @@ class SolrSchemaService
                     'type' => $fieldType,
                     'stored' => true,
                     'indexed' => $this->shouldCoreFieldBeIndexed($fieldName),
-                    'multiValued' => $this->isCoreFieldMultiValued($fieldName, $fieldType)
+                    'multiValued' => $this->isCoreFieldMultiValued($fieldName, $fieldType),
+                    'docValues' => $this->shouldCoreFieldHaveDocValues($fieldName)
                 ];
 
                 if ($this->addOrUpdateSolrField($fieldName, $fieldConfig, $force)) {
