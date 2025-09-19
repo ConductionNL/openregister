@@ -203,6 +203,7 @@ class EntityOrganisationAssignmentTest extends TestCase
         $auditTrailMapper = $this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class);
         $exportService = $this->createMock(\OCA\OpenRegister\Service\ExportService::class);
         $importService = $this->createMock(\OCA\OpenRegister\Service\ImportService::class);
+        $userSession = $this->createMock(\OCP\IUserSession::class);
         
         // Create controller instances
         $this->registersController = new RegistersController(
@@ -212,6 +213,7 @@ class EntityOrganisationAssignmentTest extends TestCase
             $this->objectEntityMapper,
             $uploadService,
             $this->logger,
+            $userSession,
             $configurationService,
             $auditTrailMapper,
             $exportService,
@@ -230,7 +232,8 @@ class EntityOrganisationAssignmentTest extends TestCase
             $this->createMock(\OCA\OpenRegister\Service\UploadService::class),
             $this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class),
             $this->organisationService,
-            $this->createMock(\OCA\OpenRegister\Service\ObjectService::class)
+            $this->createMock(\OCA\OpenRegister\Service\SchemaCacheService::class),
+            $this->createMock(\OCA\OpenRegister\Service\SchemaFacetCacheService::class)
         );
         
         $this->objectsController = new ObjectsController(

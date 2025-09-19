@@ -26,7 +26,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\AuthorizationExceptionService;
-use OCP\Test\TestCase;
+use Test\TestCase;
 
 /**
  * Integration test class for the authorization exception system

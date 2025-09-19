@@ -597,8 +597,13 @@ class ObjectCacheService
             $this->objectCache = array_slice($this->objectCache, $entriesToRemove, null, true);
         }
 
-        // Cache with string representation
-        $this->objectCache[(string)$object] = $object;
+        // Cache with ID
+        $this->objectCache[$object->getId()] = $object;
+
+        // Also cache with UUID if available
+        if ($object->getUuid()) {
+            $this->objectCache[$object->getUuid()] = $object;
+        }
 
     }//end cacheObject()
 

@@ -56,6 +56,9 @@ class OrganisationServiceTest extends TestCase
             $this->groupManager,
             $this->logger
         );
+        
+        // Clear static cache to ensure clean test state
+        $this->organisationService->clearDefaultOrganisationCache();
     }
 
     /**
@@ -63,8 +66,11 @@ class OrganisationServiceTest extends TestCase
      */
     public function testEnsureDefaultOrganisation(): void
     {
-        // Create mock organisation
-        $organisation = $this->createMock(Organisation::class);
+        // Create real organisation object
+        $organisation = new Organisation();
+        $organisation->setUuid('existing-uuid');
+        $organisation->setName('Existing Organisation');
+        $organisation->setIsDefault(true);
 
         // Mock organisation mapper to return existing organisation
         $this->organisationMapper->expects($this->once())
@@ -73,7 +79,9 @@ class OrganisationServiceTest extends TestCase
 
         $result = $this->organisationService->ensureDefaultOrganisation();
 
-        $this->assertEquals($organisation, $result);
+        $this->assertInstanceOf(Organisation::class, $result);
+        $this->assertEquals('existing-uuid', $result->getUuid());
+        $this->assertEquals('Existing Organisation', $result->getName());
     }
 
     /**
@@ -81,11 +89,15 @@ class OrganisationServiceTest extends TestCase
      */
     public function testEnsureDefaultOrganisationWhenNoDefaultExists(): void
     {
-        // Create mock organisation
-        $organisation = $this->createMock(Organisation::class);
-        $organisation->method('__toString')->willReturn('test-uuid');
-        $organisation->method('hasUser')->willReturn(false);
-        $organisation->method('addUser')->willReturn($organisation);
+        // Create real organisation object
+        $organisation = new Organisation();
+        $organisation->setUuid('default-uuid-123');
+        $organisation->setName('Default Organisation');
+        $organisation->setDescription('Default organisation for users without specific organisation membership');
+        $organisation->setOwner('system');
+        $organisation->setUsers(['alice', 'bob']);
+        $organisation->setIsDefault(true);
+        $organisation->setActive(true);
 
         // Mock group manager to return admin users
         $adminGroup = $this->createMock(\OCP\IGroup::class);
@@ -105,10 +117,17 @@ class OrganisationServiceTest extends TestCase
         $this->organisationMapper->expects($this->once())
             ->method('createDefault')
             ->willReturn($organisation);
+            
+        // Mock update method to return the same organisation
+        $this->organisationMapper->expects($this->once())
+            ->method('update')
+            ->willReturn($organisation);
 
         $result = $this->organisationService->ensureDefaultOrganisation();
 
-        $this->assertEquals($organisation, $result);
+        $this->assertInstanceOf(Organisation::class, $result);
+        $this->assertEquals('default-uuid-123', $result->getUuid());
+        $this->assertEquals('Default Organisation', $result->getName());
     }
 
     /**

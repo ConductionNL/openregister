@@ -48,9 +48,10 @@ class ObjectCacheServiceTest extends TestCase
     {
         $identifier = 'test-object-id';
 
-        // Create mock object
-        $object = $this->createMock(ObjectEntity::class);
-        $object->method('__toString')->willReturn($identifier);
+        // Create real object entity
+        $object = new ObjectEntity();
+        $object->id = $identifier;
+        $object->setUuid(null);
 
         // First call should fetch from database and cache
         $this->objectEntityMapper->expects($this->once())
@@ -60,10 +61,12 @@ class ObjectCacheServiceTest extends TestCase
 
         // First call - should fetch from database
         $result1 = $this->objectCacheService->getObject($identifier);
+        $this->assertNotNull($result1, 'getObject should not return null');
         $this->assertEquals($object, $result1);
 
         // Second call - should return from cache (no additional database call)
         $result2 = $this->objectCacheService->getObject($identifier);
+        $this->assertNotNull($result2, 'Second call should not return null');
         $this->assertEquals($object, $result2);
         $this->assertSame($result1, $result2); // Should be the same object instance
     }

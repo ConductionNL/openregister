@@ -28,6 +28,9 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\ObjectCacheService;
+use OCA\OpenRegister\Service\SchemaCacheService;
+use OCA\OpenRegister\Service\SchemaFacetCacheService;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use OCP\IUser;
@@ -57,6 +60,9 @@ class SaveObjectTest extends TestCase
     private IURLGenerator|MockObject $urlGenerator;
     private IUserSession|MockObject $userSession;
     private LoggerInterface|MockObject $logger;
+    private ObjectCacheService|MockObject $objectCacheService;
+    private SchemaCacheService|MockObject $schemaCacheService;
+    private SchemaFacetCacheService|MockObject $schemaFacetCacheService;
     private Register|MockObject $mockRegister;
     private Schema|MockObject $mockSchema;
     private IUser|MockObject $mockUser;
@@ -77,6 +83,9 @@ class SaveObjectTest extends TestCase
         $this->urlGenerator = $this->createMock(IURLGenerator::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+        $this->objectCacheService = $this->createMock(ObjectCacheService::class);
+        $this->schemaCacheService = $this->createMock(SchemaCacheService::class);
+        $this->schemaFacetCacheService = $this->createMock(SchemaFacetCacheService::class);
         
         // Create mock entities
         $this->mockRegister = $this->createMock(Register::class);
@@ -98,6 +107,9 @@ class SaveObjectTest extends TestCase
             $this->registerMapper,
             $this->urlGenerator,
             $this->organisationService,
+            $this->objectCacheService,
+            $this->schemaCacheService,
+            $this->schemaFacetCacheService,
             $this->logger,
             $arrayLoader
         );

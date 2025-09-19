@@ -80,11 +80,13 @@ class IntegrationTest extends TestCase
         );
         
         $searchService = $this->createMock(\OCP\ISearch::class);
+        $solrService = $this->createMock(\OCA\OpenRegister\Service\SolrService::class);
         
         $this->searchController = new SearchController(
             'openregister',
             $this->request,
-            $searchService
+            $searchService,
+            $solrService
         );
     }
 

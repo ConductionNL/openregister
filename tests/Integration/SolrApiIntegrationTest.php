@@ -16,6 +16,7 @@ use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCA\OpenRegister\Setup\SolrSetup;
 use OCP\IConfig;
+use OCP\IAppConfig;
 use OCP\Http\Client\IClientService;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
@@ -46,6 +47,7 @@ class SolrApiIntegrationTest extends TestCase
     private SettingsService $settingsService;
     private GuzzleSolrService $guzzleSolrService;
     private IConfig $config;
+    private IAppConfig $appConfig;
     private LoggerInterface $logger;
 
     /**
@@ -59,24 +61,56 @@ class SolrApiIntegrationTest extends TestCase
         
         // Mock dependencies
         $this->config = $this->createMock(IConfig::class);
+        $this->appConfig = $this->createMock(IAppConfig::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $clientService = $this->createMock(IClientService::class);
         
         // Configure mock SOLR settings
-        $this->config->method('getAppValue')
-            ->willReturnMap([
-                ['openregister', 'solr_host', 'localhost', 'localhost'],
-                ['openregister', 'solr_port', '8983', '8983'],
-                ['openregister', 'solr_path', '/solr', '/solr'],
-                ['openregister', 'solr_core', 'openregister', 'openregister'],
-                ['openregister', 'solr_scheme', 'http', 'http'],
-                ['openregister', 'zookeeper_hosts', 'localhost:2181', 'localhost:2181'],
-            ]);
+        $solrConfig = json_encode([
+            'host' => 'localhost',
+            'port' => '8983',
+            'path' => '/solr',
+            'core' => 'openregister',
+            'scheme' => 'http',
+            'zookeeper_hosts' => 'localhost:2181',
+        ]);
+        
+        $this->appConfig->method('getValueString')
+            ->willReturnCallback(function($app, $key, $default = '') use ($solrConfig) {
+                if ($app === 'openregister' && $key === 'solr') {
+                    return $solrConfig;
+                }
+                return $default;
+            });
+            
+        // Configure mock system config
+        $this->config->method('getSystemValue')
+            ->willReturnCallback(function($key, $default = null) {
+                if ($key === 'instanceid') {
+                    return 'test-instance-id';
+                }
+                if ($key === 'overwrite.cli.url') {
+                    return '';
+                }
+                return $default;
+            });
 
         // Create services
         $this->settingsService = new SettingsService(
+            $this->appConfig,
             $this->config,
-            $this->logger
+            $this->createMock(IRequest::class),
+            $this->createMock(\Psr\Container\ContainerInterface::class),
+            $this->createMock(\OCP\App\IAppManager::class),
+            $this->createMock(\OCP\IGroupManager::class),
+            $this->createMock(\OCP\IUserManager::class),
+            $this->createMock(\OCA\OpenRegister\Db\OrganisationMapper::class),
+            $this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class),
+            $this->createMock(\OCA\OpenRegister\Db\SearchTrailMapper::class),
+            $this->createMock(\OCA\OpenRegister\Db\ObjectEntityMapper::class),
+            $this->createMock(\OCA\OpenRegister\Service\SchemaCacheService::class),
+            $this->createMock(\OCA\OpenRegister\Service\SchemaFacetCacheService::class),
+            $this->createMock(\OCP\ICacheFactory::class)
         );
 
         $this->guzzleSolrService = new GuzzleSolrService(
@@ -86,12 +120,23 @@ class SolrApiIntegrationTest extends TestCase
             $this->config
         );
 
+        // Create container mock and register GuzzleSolrService
+        $container = $this->createMock(\Psr\Container\ContainerInterface::class);
+        $container->method('get')
+            ->willReturnCallback(function($className) {
+                if ($className === \OCA\OpenRegister\Service\GuzzleSolrService::class) {
+                    return $this->guzzleSolrService;
+                }
+                return $this->createMock($className);
+            });
+            
         $this->controller = new SettingsController(
             'openregister',
             $this->createMock(IRequest::class),
-            $this->settingsService,
-            $this->config,
-            $this->logger
+            $this->appConfig,
+            $container,
+            $this->createMock(\OCP\App\IAppManager::class),
+            $this->settingsService
         );
     }
 

@@ -22,7 +22,6 @@ use OCA\OpenRegister\Controller\SourcesController;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapper;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\SearchService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IAppConfig;
@@ -119,29 +118,25 @@ class SourcesControllerTest extends TestCase
             ['id' => 2, 'name' => 'Source 2', 'type' => 'database']
         ];
         $objectService = $this->createMock(ObjectService::class);
-        $searchService = $this->createMock(SearchService::class);
 
         $this->request
             ->expects($this->once())
             ->method('getParams')
             ->willReturn(['search' => 'test']);
 
-        $searchService
-            ->expects($this->once())
-            ->method('createMySQLSearchParams')
-            ->willReturn(['limit' => 10, 'offset' => 0]);
-
-        $searchService
-            ->expects($this->once())
-            ->method('createMySQLSearchConditions')
-            ->willReturn(['search' => 'test']);
-
         $this->sourceMapper
             ->expects($this->once())
             ->method('findAll')
+            ->with(
+                null, // limit
+                null, // offset
+                [], // filters (after removing special params)
+                ['(title LIKE ? OR description LIKE ?)'], // searchConditions
+                ['%test%', '%test%'] // searchParams
+            )
             ->willReturn($sources);
 
-        $response = $this->controller->index($objectService, $searchService);
+        $response = $this->controller->index($objectService);
 
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals(200, $response->getStatus());

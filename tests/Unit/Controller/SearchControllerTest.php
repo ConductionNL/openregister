@@ -19,6 +19,7 @@
 namespace OCA\OpenRegister\Tests\Unit;
 
 use OCA\OpenRegister\Controller\SearchController;
+use OCA\OpenRegister\Service\SolrService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\ISearch;
@@ -46,9 +47,10 @@ class SearchControllerTest extends TestCase
         // Create mock objects
         $request = $this->createMock(IRequest::class);
         $searchService = $this->createMock(ISearch::class);
+        $solrService = $this->createMock(SolrService::class);
 
         // Create controller instance
-        $controller = new SearchController('openregister', $request, $searchService);
+        $controller = new SearchController('openregister', $request, $searchService, $solrService);
 
         // Verify controller was created
         $this->assertInstanceOf(SearchController::class, $controller);
@@ -66,7 +68,8 @@ class SearchControllerTest extends TestCase
         $searchService = $this->createMock(ISearch::class);
 
         // Create controller instance
-        $controller = new SearchController('openregister', $request, $searchService);
+        $solrService = $this->createMock(SolrService::class);
+        $controller = new SearchController('openregister', $request, $searchService, $solrService);
 
         // Verify search method exists
         $this->assertTrue(method_exists($controller, 'search'));
@@ -122,7 +125,8 @@ class SearchControllerTest extends TestCase
         $searchService->setSearchResults([]);
 
         // Create controller instance
-        $controller = new SearchController('openregister', $request, $searchService);
+        $solrService = $this->createMock(SolrService::class);
+        $controller = new SearchController('openregister', $request, $searchService, $solrService);
 
         // Execute search
         $response = $controller->search();
@@ -182,7 +186,8 @@ class SearchControllerTest extends TestCase
         $searchService->setSearchResults([]);
 
         // Create controller instance
-        $controller = new SearchController('openregister', $request, $searchService);
+        $solrService = $this->createMock(SolrService::class);
+        $controller = new SearchController('openregister', $request, $searchService, $solrService);
 
         // Execute search
         $response = $controller->search();
@@ -242,7 +247,8 @@ class SearchControllerTest extends TestCase
         $searchService->setSearchResults([]);
 
         // Create controller instance
-        $controller = new SearchController('openregister', $request, $searchService);
+        $solrService = $this->createMock(SolrService::class);
+        $controller = new SearchController('openregister', $request, $searchService, $solrService);
 
         // Execute search
         $response = $controller->search();

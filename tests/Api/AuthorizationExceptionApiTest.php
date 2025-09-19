@@ -20,7 +20,7 @@
 
 namespace OCA\OpenRegister\Tests\Api;
 
-use OCP\Test\TestCase;
+use Test\TestCase;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
 

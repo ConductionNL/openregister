@@ -32,11 +32,17 @@ class ExportServiceTest extends TestCase
         // Create mock dependencies
         $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
+        $userManager = $this->createMock(\OCP\IUserManager::class);
+        $groupManager = $this->createMock(\OCP\IGroupManager::class);
+        $objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
 
         // Create ExportService instance
         $this->exportService = new ExportService(
             $this->objectEntityMapper,
-            $this->registerMapper
+            $this->registerMapper,
+            $userManager,
+            $groupManager,
+            $objectService
         );
     }
 
@@ -55,8 +61,11 @@ class ExportServiceTest extends TestCase
     {
         $objectMapper = $this->createMock(ObjectEntityMapper::class);
         $registerMapper = $this->createMock(RegisterMapper::class);
+        $userManager = $this->createMock(\OCP\IUserManager::class);
+        $groupManager = $this->createMock(\OCP\IGroupManager::class);
+        $objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
 
-        $service = new ExportService($objectMapper, $registerMapper);
+        $service = new ExportService($objectMapper, $registerMapper, $userManager, $groupManager, $objectService);
 
         $this->assertInstanceOf(ExportService::class, $service);
     }
@@ -68,12 +77,18 @@ class ExportServiceTest extends TestCase
     {
         $objectMapper1 = $this->createMock(ObjectEntityMapper::class);
         $registerMapper1 = $this->createMock(RegisterMapper::class);
+        $userManager1 = $this->createMock(\OCP\IUserManager::class);
+        $groupManager1 = $this->createMock(\OCP\IGroupManager::class);
+        $objectService1 = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
 
         $objectMapper2 = $this->createMock(ObjectEntityMapper::class);
         $registerMapper2 = $this->createMock(RegisterMapper::class);
+        $userManager2 = $this->createMock(\OCP\IUserManager::class);
+        $groupManager2 = $this->createMock(\OCP\IGroupManager::class);
+        $objectService2 = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
 
-        $service1 = new ExportService($objectMapper1, $registerMapper1);
-        $service2 = new ExportService($objectMapper2, $registerMapper2);
+        $service1 = new ExportService($objectMapper1, $registerMapper1, $userManager1, $groupManager1, $objectService1);
+        $service2 = new ExportService($objectMapper2, $registerMapper2, $userManager2, $groupManager2, $objectService2);
 
         $this->assertInstanceOf(ExportService::class, $service1);
         $this->assertInstanceOf(ExportService::class, $service2);

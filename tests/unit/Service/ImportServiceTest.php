@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Tests\Service;
+namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -32,6 +32,9 @@ class ImportServiceTest extends TestCase
     private ObjectEntityMapper $objectEntityMapper;
     private SchemaMapper $schemaMapper;
     private LoggerInterface $logger;
+    private \OCP\IUserManager $userManager;
+    private \OCP\IGroupManager $groupManager;
+    private \OCP\BackgroundJob\IJobList $jobList;
 
     protected function setUp(): void
     {
@@ -42,13 +45,19 @@ class ImportServiceTest extends TestCase
         $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+        $this->userManager = $this->createMock(\OCP\IUserManager::class);
+        $this->groupManager = $this->createMock(\OCP\IGroupManager::class);
+        $this->jobList = $this->createMock(\OCP\BackgroundJob\IJobList::class);
 
         // Create ImportService instance
         $this->importService = new ImportService(
             $this->objectEntityMapper,
             $this->schemaMapper,
             $this->objectService,
-            $this->logger
+            $this->logger,
+            $this->userManager,
+            $this->groupManager,
+            $this->jobList
         );
     }
 
@@ -402,7 +411,10 @@ class ImportServiceTest extends TestCase
             $this->createMock(ObjectEntityMapper::class),
             $this->createMock(SchemaMapper::class),
             $mockObjectService,
-            $this->createMock(LoggerInterface::class)
+            $this->createMock(LoggerInterface::class),
+            $this->createMock(\OCP\IUserManager::class),
+            $this->createMock(\OCP\IGroupManager::class),
+            $this->createMock(\OCP\BackgroundJob\IJobList::class)
         );
         
         // Create a temporary CSV file with data

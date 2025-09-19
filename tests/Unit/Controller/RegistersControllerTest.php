@@ -29,7 +29,6 @@ use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCP\AppFramework\Http\TemplateResponse;
@@ -39,6 +38,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\DB\Exception as DBException;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCP\IRequest;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -95,6 +95,13 @@ class RegistersControllerTest extends TestCase
      * @var MockObject|LoggerInterface
      */
     private MockObject $logger;
+
+    /**
+     * Mock user session
+     *
+     * @var MockObject|IUserSession
+     */
+    private MockObject $userSession;
 
     /**
      * Mock configuration service
@@ -156,6 +163,7 @@ class RegistersControllerTest extends TestCase
         $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
         $this->uploadService = $this->createMock(UploadService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+        $this->userSession = $this->createMock(IUserSession::class);
         $this->configurationService = $this->createMock(ConfigurationService::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
         $this->exportService = $this->createMock(ExportService::class);
@@ -171,6 +179,7 @@ class RegistersControllerTest extends TestCase
             $this->objectEntityMapper,
             $this->uploadService,
             $this->logger,
+            $this->userSession,
             $this->configurationService,
             $this->auditTrailMapper,
             $this->exportService,
@@ -228,7 +237,6 @@ class RegistersControllerTest extends TestCase
 
         $response = $this->controller->index(
             $this->createMock(ObjectService::class),
-            $this->createMock(SearchService::class)
         );
 
         $this->assertInstanceOf(JSONResponse::class, $response);
@@ -275,7 +283,6 @@ class RegistersControllerTest extends TestCase
 
         $response = $this->controller->index(
             $this->createMock(ObjectService::class),
-            $this->createMock(SearchService::class)
         );
 
         $this->assertInstanceOf(JSONResponse::class, $response);

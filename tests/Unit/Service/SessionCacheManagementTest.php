@@ -130,9 +130,13 @@ class SessionCacheManagementTest extends TestCase
         $this->userSession->method('getUser')->willReturn($user);
         
         // Mock: Cache removal
-        $this->session->expects($this->once())
+        $this->session->expects($this->exactly(3))
             ->method('remove')
-            ->with('openregister_user_organisations_alice');
+            ->withConsecutive(
+                ['openregister_user_organisations_alice'],
+                ['openregister_active_organisation_alice'],
+                ['openregister_active_organisation_timestamp_alice']
+            );
 
         // Act: Clear cache
         $this->organisationService->clearCache();

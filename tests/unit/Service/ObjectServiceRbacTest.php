@@ -76,10 +76,17 @@ use OCA\OpenRegister\Service\ObjectHandlers\DepublishObject;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\ObjectCacheService;
+use OCA\OpenRegister\Service\SchemaCacheService;
+use OCA\OpenRegister\Service\SchemaFacetCacheService;
+use OCA\OpenRegister\Service\FacetService;
+use OCA\OpenRegister\Service\SettingsService;
 use OCP\IUserSession;
 use OCP\IUser;
 use OCP\IGroupManager;
 use OCP\IUserManager;
+use OCP\ICacheFactory;
+use OCP\AppFramework\IAppContainer;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -149,6 +156,27 @@ class ObjectServiceRbacTest extends TestCase
     /** @var MockObject|LoggerInterface */
     private $logger;
 
+    /** @var MockObject|ICacheFactory */
+    private $cacheFactory;
+
+    /** @var MockObject|FacetService */
+    private $facetService;
+
+    /** @var MockObject|ObjectCacheService */
+    private $objectCacheService;
+
+    /** @var MockObject|SchemaCacheService */
+    private $schemaCacheService;
+
+    /** @var MockObject|SchemaFacetCacheService */
+    private $schemaFacetCacheService;
+
+    /** @var MockObject|SettingsService */
+    private $settingsService;
+
+    /** @var MockObject|IAppContainer */
+    private $container;
+
     /** @var Schema */
     private Schema $mockSchema;
 
@@ -179,6 +207,13 @@ class ObjectServiceRbacTest extends TestCase
         $this->searchTrailService = $this->createMock(SearchTrailService::class);
         $this->organisationService = $this->createMock(OrganisationService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+        $this->cacheFactory = $this->createMock(ICacheFactory::class);
+        $this->facetService = $this->createMock(FacetService::class);
+        $this->objectCacheService = $this->createMock(ObjectCacheService::class);
+        $this->schemaCacheService = $this->createMock(SchemaCacheService::class);
+        $this->schemaFacetCacheService = $this->createMock(SchemaFacetCacheService::class);
+        $this->settingsService = $this->createMock(SettingsService::class);
+        $this->container = $this->createMock(IAppContainer::class);
 
         // Create ObjectService with mocked dependencies
         $this->objectService = new ObjectService(
@@ -199,7 +234,14 @@ class ObjectServiceRbacTest extends TestCase
             $this->groupManager,
             $this->userManager,
             $this->organisationService,
-            $this->logger
+            $this->logger,
+            $this->cacheFactory,
+            $this->facetService,
+            $this->objectCacheService,
+            $this->schemaCacheService,
+            $this->schemaFacetCacheService,
+            $this->settingsService,
+            $this->container
         );
 
         // Create test schema

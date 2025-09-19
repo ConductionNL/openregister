@@ -5,18 +5,22 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\SchemaCacheService;
+use OCA\OpenRegister\Service\SchemaFacetCacheService;
+use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use PHPUnit\Framework\TestCase;
 use OCP\IAppConfig;
+use OCP\IConfig;
 use OCP\IRequest;
-use OCP\AppFramework\IAppContainer;
-use OCP\AppFramework\App;
 use OCP\App\IAppManager;
 use OCP\IGroupManager;
 use OCP\IUserManager;
+use OCP\ICacheFactory;
+use Psr\Container\ContainerInterface;
 
 /**
  * Test class for SettingsService
@@ -32,8 +36,9 @@ class SettingsServiceTest extends TestCase
 {
     private SettingsService $settingsService;
     private IAppConfig $config;
+    private IConfig $systemConfig;
     private IRequest $request;
-    private IAppContainer $container;
+    private ContainerInterface $container;
     private IAppManager $appManager;
     private IGroupManager $groupManager;
     private IUserManager $userManager;
@@ -41,6 +46,10 @@ class SettingsServiceTest extends TestCase
     private AuditTrailMapper $auditTrailMapper;
     private SearchTrailMapper $searchTrailMapper;
     private ObjectEntityMapper $objectEntityMapper;
+    private SchemaCacheService $schemaCacheService;
+    private SchemaFacetCacheService $schemaFacetCacheService;
+    private ICacheFactory $cacheFactory;
+    private GuzzleSolrService $guzzleSolrService;
 
     protected function setUp(): void
     {
@@ -48,8 +57,9 @@ class SettingsServiceTest extends TestCase
 
         // Create mock dependencies
         $this->config = $this->createMock(IAppConfig::class);
+        $this->systemConfig = $this->createMock(IConfig::class);
         $this->request = $this->createMock(IRequest::class);
-        $this->container = $this->createMock(IAppContainer::class);
+        $this->container = $this->createMock(ContainerInterface::class);
         $this->appManager = $this->createMock(IAppManager::class);
         $this->groupManager = $this->createMock(IGroupManager::class);
         $this->userManager = $this->createMock(IUserManager::class);
@@ -57,10 +67,28 @@ class SettingsServiceTest extends TestCase
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
         $this->searchTrailMapper = $this->createMock(SearchTrailMapper::class);
         $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->schemaCacheService = $this->createMock(SchemaCacheService::class);
+        $this->schemaFacetCacheService = $this->createMock(SchemaFacetCacheService::class);
+        $this->cacheFactory = $this->createMock(ICacheFactory::class);
+        $this->guzzleSolrService = $this->createMock(GuzzleSolrService::class);
+
+        // Configure container to return services
+        $this->container->expects($this->any())
+            ->method('get')
+            ->willReturnMap([
+                [GuzzleSolrService::class, $this->guzzleSolrService],
+                ['OCP\IDBConnection', $this->createMock(\OCP\IDBConnection::class)]
+            ]);
+
+        // Configure GuzzleSolrService mock
+        $this->guzzleSolrService->expects($this->any())
+            ->method('getTenantId')
+            ->willReturn('test-tenant');
 
         // Create SettingsService instance
         $this->settingsService = new SettingsService(
             $this->config,
+            $this->systemConfig,
             $this->request,
             $this->container,
             $this->appManager,
@@ -69,7 +97,10 @@ class SettingsServiceTest extends TestCase
             $this->organisationMapper,
             $this->auditTrailMapper,
             $this->searchTrailMapper,
-            $this->objectEntityMapper
+            $this->objectEntityMapper,
+            $this->schemaCacheService,
+            $this->schemaFacetCacheService,
+            $this->cacheFactory
         );
     }
 

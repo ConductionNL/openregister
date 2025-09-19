@@ -128,6 +128,10 @@ class DefaultOrganisationManagementTest extends TestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+        
+        // Clear static cache to prevent test interference
+        $this->organisationService->clearDefaultOrganisationCache();
+        
         unset(
             $this->organisationService,
             $this->organisationMapper,
@@ -222,7 +226,6 @@ class DefaultOrganisationManagementTest extends TestCase
         $defaultOrg->setUsers(['alice']); // Alice already in default org
         
         $this->organisationMapper
-            ->expects($this->once())
             ->method('findDefault')
             ->willReturn($defaultOrg);
         
@@ -411,6 +414,11 @@ class DefaultOrganisationManagementTest extends TestCase
         $this->organisationMapper
             ->expects($this->once())
             ->method('createDefault')
+            ->willReturn($defaultOrg);
+            
+        $this->organisationMapper
+            ->expects($this->once())
+            ->method('update')
             ->willReturn($defaultOrg);
 
         // Act: Ensure default organisation

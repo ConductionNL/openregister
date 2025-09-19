@@ -38,12 +38,19 @@ use OCA\OpenRegister\Service\ObjectHandlers\PublishObject;
 use OCA\OpenRegister\Service\ObjectHandlers\DepublishObject;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\ObjectCacheService;
+use OCA\OpenRegister\Service\SchemaCacheService;
+use OCA\OpenRegister\Service\SchemaFacetCacheService;
+use OCA\OpenRegister\Service\FacetService;
+use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUserSession;
 use OCP\IUser;
 use OCP\IGroupManager;
 use OCP\IUserManager;
+use OCP\ICacheFactory;
+use OCP\AppFramework\IAppContainer;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -119,6 +126,27 @@ class ObjectServiceTest extends TestCase
     /** @var MockObject|LoggerInterface */
     private $logger;
 
+    /** @var MockObject|ICacheFactory */
+    private $cacheFactory;
+
+    /** @var MockObject|FacetService */
+    private $facetService;
+
+    /** @var MockObject|ObjectCacheService */
+    private $objectCacheService;
+
+    /** @var MockObject|SchemaCacheService */
+    private $schemaCacheService;
+
+    /** @var MockObject|SchemaFacetCacheService */
+    private $schemaFacetCacheService;
+
+    /** @var MockObject|SettingsService */
+    private $settingsService;
+
+    /** @var MockObject|IAppContainer */
+    private $container;
+
     /** @var MockObject|Register */
     private $mockRegister;
 
@@ -156,6 +184,13 @@ class ObjectServiceTest extends TestCase
         $this->groupManager = $this->createMock(IGroupManager::class);
         $this->userManager = $this->createMock(IUserManager::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+        $this->cacheFactory = $this->createMock(ICacheFactory::class);
+        $this->facetService = $this->createMock(FacetService::class);
+        $this->objectCacheService = $this->createMock(ObjectCacheService::class);
+        $this->schemaCacheService = $this->createMock(SchemaCacheService::class);
+        $this->schemaFacetCacheService = $this->createMock(SchemaFacetCacheService::class);
+        $this->settingsService = $this->createMock(SettingsService::class);
+        $this->container = $this->createMock(IAppContainer::class);
 
         // Create mock entities
         $this->mockRegister = $this->createMock(Register::class);
@@ -194,7 +229,14 @@ class ObjectServiceTest extends TestCase
             $this->groupManager,
             $this->userManager,
             $this->organisationService,
-            $this->logger
+            $this->logger,
+            $this->cacheFactory,
+            $this->facetService,
+            $this->objectCacheService,
+            $this->schemaCacheService,
+            $this->schemaFacetCacheService,
+            $this->settingsService,
+            $this->container
         );
 
         // Set register and schema context

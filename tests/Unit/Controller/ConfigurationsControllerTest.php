@@ -22,7 +22,6 @@ use OCA\OpenRegister\Controller\ConfigurationsController;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Service\ConfigurationService;
-use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -115,41 +114,18 @@ class ConfigurationsControllerTest extends TestCase
             ['id' => 1, 'title' => 'Config 1', 'description' => 'Description 1'],
             ['id' => 2, 'title' => 'Config 2', 'description' => 'Description 2']
         ];
-        $searchService = $this->createMock(SearchService::class);
-        $searchParams = ['limit' => 10, 'offset' => 0];
-        $searchConditions = ['search' => 'test'];
-        $filters = ['search' => 'test'];
 
         $this->request
             ->expects($this->once())
             ->method('getParams')
-            ->willReturn($filters);
-
-        $searchService
-            ->expects($this->once())
-            ->method('createMySQLSearchParams')
-            ->with($filters)
-            ->willReturn($searchParams);
-
-        $searchService
-            ->expects($this->once())
-            ->method('createMySQLSearchConditions')
-            ->with($filters, ['title', 'description'])
-            ->willReturn($filters);
-
-        $searchService
-            ->expects($this->once())
-            ->method('unsetSpecialQueryParams')
-            ->with($filters)
-            ->willReturn($filters);
+            ->willReturn([]);
 
         $this->configurationMapper
             ->expects($this->once())
             ->method('findAll')
-            ->with(null, null, $filters, $filters, $searchParams)
             ->willReturn($configurations);
 
-        $response = $this->controller->index($searchService);
+        $response = $this->controller->index();
 
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals(200, $response->getStatus());
