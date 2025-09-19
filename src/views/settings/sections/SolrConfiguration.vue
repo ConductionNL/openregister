@@ -828,14 +828,17 @@
 				</div>
 
 				<div v-else-if="fieldsInfo" class="fields-results">
-					<!-- Overall Status Header -->
-					<div class="results-header">
-						<div class="status-badge" :class="fieldsInfo.success ? 'success' : 'error'">
-							<span class="status-icon">{{ fieldsInfo.success ? '📋' : '❌' }}</span>
-							<div class="status-text">
-								<h3>{{ fieldsInfo.success ? 'Field Configuration Retrieved' : 'Failed to Load Fields' }}</h3>
-								<p>{{ fieldsInfo.message || 'SOLR field configuration and schema information' }}</p>
+					<!-- Mismatch Alert -->
+					<div v-if="fieldComparison && fieldComparison.summary.total_differences > 0" class="mismatch-alert">
+						<div class="alert-content">
+							<span class="alert-icon">⚠️</span>
+							<div class="alert-text">
+								<h3>Configuration Issues Found</h3>
+								<p>{{ fieldComparison.summary.total_differences }} field configuration differences detected between schemas and SOLR.</p>
 							</div>
+							<button @click="scrollToMismatches" class="alert-button">
+								View Issues
+							</button>
 						</div>
 					</div>
 
@@ -985,54 +988,11 @@
 							</div>
 						</div>
 
-						<!-- Field Types -->
-						<div v-if="fieldsInfo.field_types && Object.keys(fieldsInfo.field_types).length > 0" class="field-types-section">
-							<h4>🎯 Field Type Definitions</h4>
-							<div class="field-types-accordion">
-								<details v-for="(typeInfo, typeName) in fieldsInfo.field_types" :key="typeName" class="field-type-details">
-									<summary class="field-type-summary">
-										<span class="type-badge" :class="getTypeClass(typeName)">{{ typeName }}</span>
-										<span class="type-description">{{ typeInfo.class || 'Custom field type' }}</span>
-									</summary>
-									<div class="field-type-content">
-										<div v-if="typeInfo.analyzer" class="analyzer-info">
-											<h6>Analyzer Configuration:</h6>
-											<pre class="analyzer-config">{{ JSON.stringify(typeInfo.analyzer, null, 2) }}</pre>
-										</div>
-										<div v-if="typeInfo.properties" class="type-properties">
-											<h6>Properties:</h6>
-											<div class="properties-grid">
-												<div v-for="(value, key) in typeInfo.properties" :key="key" class="property-item">
-													<span class="property-key">{{ key }}:</span>
-													<span class="property-value">{{ value }}</span>
-												</div>
-											</div>
-										</div>
-									</div>
-								</details>
-							</div>
-						</div>
 
-						<!-- Environment Comparison -->
-						<div v-if="fieldsInfo.environment_notes" class="environment-section">
-							<h4>🔧 Environment Analysis</h4>
-							<div class="environment-notes">
-								<div v-for="note in fieldsInfo.environment_notes" :key="note.type" class="environment-note" :class="note.type">
-									<span class="note-icon">{{ note.type === 'warning' ? '⚠️' : note.type === 'error' ? '❌' : 'ℹ️' }}</span>
-									<div class="note-content">
-										<h5>{{ note.title }}</h5>
-										<p>{{ note.message }}</p>
-										<div v-if="note.details" class="note-details">
-											<pre>{{ JSON.stringify(note.details, null, 2) }}</pre>
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
 					</div>
 
 					<!-- Schema vs SOLR Comparison -->
-					<div v-if="fieldComparison && fieldComparison.summary.total_differences > 0" class="comparison-section">
+					<div v-if="fieldComparison && fieldComparison.summary.total_differences > 0" class="comparison-section" id="field-mismatches">
 						<h3 class="comparison-title">
 							<span class="comparison-icon">⚠️</span>
 							Schema vs SOLR Differences ({{ fieldComparison.summary.total_differences }})
@@ -1106,33 +1066,162 @@
 						<!-- Mismatched Fields -->
 						<div v-if="fieldComparison.mismatched.length > 0" class="difference-category">
 							<h4 class="category-title mismatched">
-								Type Mismatches ({{ fieldComparison.mismatched.length }})
+								Configuration Mismatches ({{ fieldComparison.mismatched.length }})
 							</h4>
-							<p class="category-description">Fields with different types between schemas and SOLR:</p>
+							<p class="category-description">Fields with different configuration between schemas and SOLR:</p>
 							<table class="comparison-table">
 								<thead>
 									<tr>
 										<th>Field Name</th>
-										<th>Expected Type</th>
-										<th>Actual Type</th>
-										<th>Action Needed</th>
+										<th>Expected</th>
+										<th>Actual</th>
 									</tr>
 								</thead>
 								<tbody>
 									<tr v-for="field in fieldComparison.mismatched" :key="'mismatch-' + field.field">
 										<td class="field-name">{{ field.field }}</td>
-										<td>
-											<span class="field-type expected" :class="field.expected_type">{{ field.expected_type }}</span>
+										<td class="field-config expected-config">
+											<div class="config-item">
+												<strong>Type:</strong> 
+												<span class="field-value expected-value">
+													{{ field.expected_type }}
+												</span>
+											</div>
+											<div class="config-item">
+												<strong>Multi:</strong> 
+												<span class="field-value expected-value">
+													{{ field.expected_multiValued ? 'Yes' : 'No' }}
+												</span>
+											</div>
+											<div class="config-item">
+												<strong>DocValues:</strong> 
+												<span class="field-value expected-value">
+													{{ field.expected_docValues ? 'Yes' : 'No' }}
+												</span>
+											</div>
 										</td>
-										<td>
-											<span class="field-type actual" :class="field.actual_type">{{ field.actual_type }}</span>
-										</td>
-										<td class="action-needed">
-											<span class="action-badge">Re-index Required</span>
+										<td class="field-config">
+											<div class="config-item">
+												<strong>Type:</strong> 
+												<span class="field-value" :class="{ 'match': field.expected_type === field.actual_type, 'mismatch': field.expected_type !== field.actual_type }">
+													{{ field.actual_type }}
+												</span>
+											</div>
+											<div class="config-item">
+												<strong>Multi:</strong> 
+												<span class="field-value" :class="{ 'match': field.expected_multiValued === field.actual_multiValued, 'mismatch': field.expected_multiValued !== field.actual_multiValued }">
+													{{ field.actual_multiValued ? 'Yes' : 'No' }}
+												</span>
+											</div>
+											<div class="config-item">
+												<strong>DocValues:</strong> 
+												<span class="field-value" :class="{ 'match': field.expected_docValues === field.actual_docValues, 'mismatch': field.expected_docValues !== field.actual_docValues }">
+													{{ field.actual_docValues ? 'Yes' : 'No' }}
+												</span>
+											</div>
 										</td>
 									</tr>
 								</tbody>
 							</table>
+							
+							<!-- Fix Mismatches Actions -->
+							<div class="fix-mismatches-section">
+								<h4 class="fix-title">Fix Configuration Issues</h4>
+								<p class="fix-description">
+									Update SOLR field configurations to match the expected schema definitions.
+								</p>
+								<div class="fix-actions">
+									<NcButton 
+										type="secondary" 
+										:disabled="fixingFields"
+										@click="fixMismatchedFields(true)">
+										<template #icon>
+											<NcLoadingIcon v-if="fixingFields" :size="16" />
+											<Eye v-else :size="16" />
+										</template>
+										Preview Changes (Dry Run)
+									</NcButton>
+									<NcButton 
+										type="primary" 
+										:disabled="fixingFields"
+										@click="fixMismatchedFields(false)">
+										<template #icon>
+											<NcLoadingIcon v-if="fixingFields" :size="16" />
+											<Wrench v-else :size="16" />
+										</template>
+										Fix Mismatched Fields
+									</NcButton>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Field Creation Actions -->
+					<div v-if="fieldComparison && fieldComparison.missing && fieldComparison.missing.length > 0" class="field-actions-section">
+						<h3 class="actions-title">
+							<span class="actions-icon">🛠️</span>
+							Field Creation Actions
+						</h3>
+						<p class="actions-description">
+							Create the missing fields in SOLR to resolve schema differences:
+						</p>
+						<div class="action-buttons">
+							<NcButton 
+								type="secondary"
+								:disabled="creatingFields"
+								@click="createMissingFields(true)">
+								<template #icon>
+									<NcLoadingIcon v-if="creatingFields" :size="20" />
+									<span v-else>🔍</span>
+								</template>
+								Preview Changes (Dry Run)
+							</NcButton>
+							
+							<NcButton 
+								type="primary"
+								:disabled="creatingFields"
+								@click="createMissingFields(false)">
+								<template #icon>
+									<NcLoadingIcon v-if="creatingFields" :size="20" />
+									<span v-else>🚀</span>
+								</template>
+								Create {{ fieldComparison.missing.length }} Missing Fields
+							</NcButton>
+						</div>
+					</div>
+
+					<!-- Field Creation Results -->
+					<div v-if="fieldCreationResult" class="field-creation-results">
+						<div v-if="fieldCreationResult.success" class="success-result">
+							<span class="result-icon">✅</span>
+							<strong>{{ fieldCreationResult.message }}</strong>
+							<div v-if="fieldCreationResult.dry_run && fieldCreationResult.would_create" class="dry-run-preview">
+								<p><strong>Fields that would be created:</strong></p>
+								<ul class="field-list">
+									<li v-for="field in fieldCreationResult.would_create" :key="field" class="field-item">{{ field }}</li>
+								</ul>
+							</div>
+							<div v-else-if="fieldCreationResult.created && fieldCreationResult.created.length > 0" class="created-fields">
+								<p><strong>Successfully created {{ fieldCreationResult.created.length }} fields:</strong></p>
+								<ul class="field-list">
+									<li v-for="field in fieldCreationResult.created" :key="field" class="field-item success">✅ {{ field }}</li>
+								</ul>
+								<div v-if="fieldCreationResult.execution_time_ms" class="execution-time">
+									<small>Completed in {{ fieldCreationResult.execution_time_ms }}ms</small>
+								</div>
+							</div>
+						</div>
+						<div v-else class="error-result">
+							<span class="result-icon">❌</span>
+							<strong>{{ fieldCreationResult.message }}</strong>
+							<div v-if="fieldCreationResult.errors && Object.keys(fieldCreationResult.errors).length > 0" class="creation-errors">
+								<p><strong>Errors encountered:</strong></p>
+								<ul class="error-list">
+									<li v-for="(error, field) in fieldCreationResult.errors" :key="field" class="error-item">
+										<strong>{{ field }}:</strong> {{ error }}
+									</li>
+								</ul>
+							</div>
 						</div>
 					</div>
 
@@ -1190,6 +1279,8 @@ import TestTube from 'vue-material-design-icons/TestTube.vue'
 import Save from 'vue-material-design-icons/ContentSave.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import ViewList from 'vue-material-design-icons/ViewList.vue'
+import Wrench from 'vue-material-design-icons/Wrench.vue'
+import Eye from 'vue-material-design-icons/Eye.vue'
 
 export default {
 	name: 'SolrConfiguration',
@@ -1206,6 +1297,8 @@ export default {
 		Save,
 		Refresh,
 		ViewList,
+		Wrench,
+		Eye,
 	},
 
 	data() {
@@ -1287,6 +1380,18 @@ export default {
 			return this.settingsStore.fieldComparison
 		},
 
+		creatingFields() {
+			return this.settingsStore.creatingFields
+		},
+
+		fixingFields() {
+			return this.settingsStore.fixingFields
+		},
+
+		fieldCreationResult() {
+			return this.settingsStore.fieldCreationResult
+		},
+
 		filteredFields() {
 			if (!this.fieldsInfo || !this.fieldsInfo.fields) {
 				return {}
@@ -1330,6 +1435,13 @@ export default {
 	},
 
 	methods: {
+		scrollToMismatches() {
+			const element = document.getElementById('field-mismatches')
+			if (element) {
+				element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+			}
+		},
+
 		async setupSolr() {
 			await this.settingsStore.setupSolr()
 		},
@@ -1364,6 +1476,46 @@ export default {
 
 		hideFieldsDialog() {
 			this.settingsStore.hideFieldsDialog()
+		},
+
+		async createMissingFields(dryRun = false) {
+			try {
+				await this.settingsStore.createMissingSolrFields(dryRun)
+				
+				// Show success notification
+				if (this.fieldCreationResult?.success) {
+					if (dryRun) {
+						showSuccess(`Dry run completed: ${this.fieldCreationResult.would_create?.length || 0} fields would be created`)
+					} else {
+						showSuccess(`Successfully created ${this.fieldCreationResult.created?.length || 0} SOLR fields`)
+					}
+				}
+			} catch (error) {
+				console.error('Error creating missing SOLR fields:', error)
+				showError('Failed to create missing SOLR fields: ' + error.message)
+			}
+		},
+
+		async fixMismatchedFields(dryRun = false) {
+			try {
+				// Use the dedicated fix-mismatches endpoint (automatically detects and fixes all mismatches)
+				await this.settingsStore.fixMismatchedSolrFields(dryRun)
+				
+				// Show success notification
+				if (this.fieldCreationResult?.success) {
+					const fixedCount = this.fieldCreationResult.fixed?.length || 0
+					if (dryRun) {
+						showSuccess(`Dry run completed: ${fixedCount} fields would be fixed`)
+					} else {
+						showSuccess(`Successfully fixed ${fixedCount} SOLR field configurations`)
+						// Refresh the field comparison after fixing
+						await this.inspectFields()
+					}
+				}
+			} catch (error) {
+				console.error('Error fixing mismatched SOLR fields:', error)
+				showError('Failed to fix mismatched SOLR fields: ' + error.message)
+			}
 		},
 
 		retryLoadFields() {
@@ -2699,160 +2851,7 @@ export default {
 	color: var(--color-text-maxcontrast);
 }
 
-/* Field Types */
-.field-types-section {
-	margin-bottom: 24px;
-}
 
-.field-types-section h4 {
-	margin: 0 0 16px 0;
-	color: var(--color-main-text);
-	font-size: 16px;
-	font-weight: 600;
-}
-
-.field-types-accordion {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
-
-.field-type-details {
-	background: var(--color-background-hover);
-	border: 1px solid var(--color-border);
-	border-radius: 8px;
-	padding: 16px;
-}
-
-.field-type-summary {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	cursor: pointer;
-	font-weight: 500;
-}
-
-.type-description {
-	color: var(--color-text-maxcontrast);
-	font-size: 13px;
-}
-
-.field-type-content {
-	margin-top: 16px;
-	padding-top: 16px;
-	border-top: 1px solid var(--color-border-dark);
-}
-
-.analyzer-config {
-	background: var(--color-background-dark);
-	padding: 12px;
-	border-radius: 4px;
-	font-size: 11px;
-	overflow-x: auto;
-	margin-top: 8px;
-}
-
-.properties-grid {
-	display: grid;
-	gap: 6px;
-	margin-top: 8px;
-}
-
-.property-item {
-	display: flex;
-	justify-content: space-between;
-	padding: 6px 12px;
-	background: var(--color-background-dark);
-	border-radius: 4px;
-	font-size: 12px;
-}
-
-.property-key {
-	font-weight: 500;
-	color: var(--color-main-text);
-}
-
-.property-value {
-	color: var(--color-text-maxcontrast);
-	font-family: monospace;
-}
-
-/* Environment Section */
-.environment-section {
-	margin-bottom: 24px;
-}
-
-.environment-section h4 {
-	margin: 0 0 16px 0;
-	color: var(--color-main-text);
-	font-size: 16px;
-	font-weight: 600;
-}
-
-.environment-notes {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-}
-
-.environment-note {
-	display: flex;
-	align-items: flex-start;
-	gap: 12px;
-	padding: 16px;
-	border-radius: 8px;
-	border: 1px solid;
-}
-
-.environment-note.info {
-	background: rgba(33, 150, 243, 0.1);
-	border-color: rgba(33, 150, 243, 0.2);
-}
-
-.environment-note.warning {
-	background: rgba(255, 152, 0, 0.1);
-	border-color: rgba(255, 152, 0, 0.2);
-}
-
-.environment-note.error {
-	background: rgba(244, 67, 54, 0.1);
-	border-color: rgba(244, 67, 54, 0.2);
-}
-
-.note-icon {
-	font-size: 20px;
-	flex-shrink: 0;
-}
-
-.note-content {
-	flex: 1;
-}
-
-.note-content h5 {
-	margin: 0 0 8px 0;
-	color: var(--color-main-text);
-	font-size: 14px;
-	font-weight: 600;
-}
-
-.note-content p {
-	margin: 0 0 12px 0;
-	color: var(--color-text-light);
-	font-size: 13px;
-	line-height: 1.4;
-}
-
-.note-details {
-	margin-top: 12px;
-}
-
-.note-details pre {
-	background: var(--color-background-dark);
-	padding: 8px;
-	border-radius: 4px;
-	font-size: 11px;
-	overflow-x: auto;
-}
 
 /* Fields Error */
 .fields-error {
@@ -2921,12 +2920,65 @@ export default {
 	}
 }
 
+/* Mismatch Alert */
+.mismatch-alert {
+	margin-bottom: 24px;
+	padding: 16px;
+	background: rgba(255, 152, 0, 0.1);
+	border: 1px solid rgba(255, 152, 0, 0.2);
+	border-radius: 8px;
+}
+
+.alert-content {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+}
+
+.alert-icon {
+	font-size: 24px;
+	flex-shrink: 0;
+}
+
+.alert-text {
+	flex: 1;
+}
+
+.alert-text h3 {
+	margin: 0 0 4px 0;
+	color: var(--color-main-text);
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.alert-text p {
+	margin: 0;
+	color: var(--color-text-light);
+	font-size: 14px;
+}
+
+.alert-button {
+	padding: 8px 16px;
+	background: var(--color-primary);
+	color: white;
+	border: none;
+	border-radius: 6px;
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: background-color 0.2s;
+}
+
+.alert-button:hover {
+	background: var(--color-primary-hover);
+}
+
 /* Schema Comparison Styling */
 .comparison-section {
 	margin-top: 24px;
 	padding: 20px;
-	background: #fff3cd;
-	border: 1px solid #ffeaa7;
+	background: var(--color-background-hover);
+	border: 1px solid var(--color-border);
 	border-radius: 8px;
 }
 
@@ -3091,5 +3143,170 @@ export default {
 .success-message p {
 	color: #155724;
 	margin: 0;
+}
+
+/* Field Actions Section */
+.field-actions-section {
+	margin-top: 24px;
+	padding: 20px;
+	background: #e3f2fd;
+	border: 1px solid #2196f3;
+	border-radius: 8px;
+}
+
+.actions-title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 18px;
+	font-weight: 600;
+	color: #1976d2;
+	margin-bottom: 8px;
+}
+
+.actions-icon {
+	font-size: 20px;
+}
+
+.actions-description {
+	color: #1976d2;
+	margin-bottom: 16px;
+}
+
+.action-buttons {
+	display: flex;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+/* Field Creation Results */
+.field-creation-results {
+	margin-top: 16px;
+	padding: 16px;
+	border-radius: 6px;
+}
+
+.success-result {
+	background: #d4edda;
+	border: 1px solid #c3e6cb;
+	color: #155724;
+}
+
+.error-result {
+	background: #f8d7da;
+	border: 1px solid #f5c6cb;
+	color: #721c24;
+}
+
+.result-icon {
+	font-size: 18px;
+	margin-right: 8px;
+}
+
+.dry-run-preview,
+.created-fields,
+.creation-errors {
+	margin-top: 12px;
+}
+
+.field-list {
+	margin: 8px 0 0 20px;
+	padding: 0;
+}
+
+.field-item {
+	margin: 4px 0;
+	font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+	font-size: 13px;
+}
+
+.field-item.success {
+	color: #28a745;
+}
+
+.error-list {
+	margin: 8px 0 0 20px;
+	padding: 0;
+}
+
+.error-item {
+	margin: 6px 0;
+	font-size: 14px;
+}
+
+.execution-time {
+	margin-top: 8px;
+	font-style: italic;
+	color: #666;
+}
+
+/* Field configuration display */
+.field-config {
+	font-size: 12px;
+	line-height: 1.4;
+}
+
+.config-item {
+	margin: 2px 0;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.config-item strong {
+	min-width: 60px;
+	font-size: 11px;
+	color: #666;
+}
+
+.field-value {
+	padding: 2px 6px;
+	border-radius: 3px;
+	font-size: 11px;
+	font-weight: 500;
+}
+
+.field-value.match {
+	background: #d4edda;
+	color: #155724;
+}
+
+.field-value.mismatch {
+	background: #f8d7da;
+	color: #721c24;
+}
+
+.field-value.expected-value {
+	background: #d4edda;
+	color: #155724;
+}
+
+/* Fix mismatches section */
+.fix-mismatches-section {
+	margin-top: 20px;
+	padding: 16px;
+	background: #f8f9fa;
+	border-radius: 6px;
+	border-left: 4px solid #ffc107;
+}
+
+.fix-title {
+	margin: 0 0 8px 0;
+	font-size: 16px;
+	font-weight: 600;
+	color: #856404;
+}
+
+.fix-description {
+	margin: 0 0 16px 0;
+	color: #666;
+	font-size: 14px;
+	line-height: 1.4;
+}
+
+.fix-actions {
+	display: flex;
+	gap: 12px;
+	flex-wrap: wrap;
 }
 </style>
