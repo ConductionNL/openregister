@@ -124,7 +124,10 @@ class SolrSchemaService
         'self_authorization' => 'string', // JSON storage - not indexed, only for reconstruction
         'self_deleted' => 'string',       // JSON storage - not indexed, only for reconstruction
         'self_validation' => 'string',    // JSON storage - not indexed, only for reconstruction
-        'self_groups' => 'string'         // JSON storage - not indexed, only for reconstruction
+        'self_groups' => 'string',        // JSON storage - not indexed, only for reconstruction
+        
+        // SOLR system fields that need explicit definition
+        '_text_' => 'text_general'        // Catch-all full-text search field
     ];
 
     /**
@@ -663,6 +666,11 @@ class SolrSchemaService
             'self_size',         // Size-based sorting/filtering
             'self_locked',       // Locked status filtering
         ];
+        
+        // Special handling for system fields
+        if ($fieldName === '_text_') {
+            return false; // Full-text search fields don't need docValues
+        }
         
         return in_array($fieldName, $docValuesFields);
     }
