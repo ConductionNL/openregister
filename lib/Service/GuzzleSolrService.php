@@ -1119,6 +1119,11 @@ class GuzzleSolrService
                 $fieldValue = $objectData[$fieldName];
                 $fieldType = $fieldDefinition['type'] ?? 'string';
                 
+                // **TRUNCATE LARGE VALUES**: Respect SOLR's 32,766 byte limit for indexed fields
+                if ($this->shouldTruncateField($fieldName, $fieldDefinition)) {
+                    $fieldValue = $this->truncateFieldValue($fieldValue, $fieldName);
+                }
+                
                 // **FILTER COMPLEX DATA**: Skip arrays and objects - they don't belong in SOLR as individual fields
                 if (is_array($fieldValue) || is_object($fieldValue)) {
                     $this->logger->debug('Skipping complex field value', [
@@ -1392,6 +1397,11 @@ class GuzzleSolrService
         if (is_array($objectData)) {
             foreach ($objectData as $key => $value) {
                 if (!is_array($value) && !is_object($value)) {
+                    // **TRUNCATE LARGE VALUES**: Apply truncation for known large content fields
+                    if (is_string($value) && $this->shouldTruncateField($key)) {
+                        $value = $this->truncateFieldValue($value, $key);
+                    }
+                    
                     // **PRIMARY**: Raw field for natural querying (SOLR will auto-detect type)
                     $document[$key] = $value;
                     
@@ -4386,6 +4396,11 @@ class GuzzleSolrService
         // Set execution time limit for warmup process (memory limit now set at container level)
         ini_set('max_execution_time', 3600); // 1 hour
         
+        // **MEMORY TRACKING**: Capture initial memory usage and predict requirements
+        $initialMemoryUsage = (int) memory_get_usage(true);
+        $initialMemoryPeak = (int) memory_get_peak_usage(true);
+        $memoryPrediction = $this->predictWarmupMemoryUsage($maxObjects);
+        
         // **CRITICAL**: Disable profiler during warmup - even with reduced logging, 26K+ queries overwhelm profiler
         $profilerWasEnabled = false;
         try {
@@ -4521,6 +4536,11 @@ class GuzzleSolrService
             
             $executionTime = (microtime(true) - $startTime) * 1000;
             
+            // **MEMORY TRACKING**: Calculate final memory usage and statistics
+            $finalMemoryUsage = (int) memory_get_usage(true);
+            $finalMemoryPeak = (int) memory_get_peak_usage(true);
+            $memoryReport = $this->generateMemoryReport($initialMemoryUsage, $finalMemoryUsage, $initialMemoryPeak, $finalMemoryPeak, $memoryPrediction);
+            
             // **RESTORE SETTINGS**: Reset PHP execution time to original value
             ini_set('max_execution_time', $originalMaxExecutionTime);
             
@@ -4544,10 +4564,16 @@ class GuzzleSolrService
                 'message' => 'GuzzleSolrService warmup completed with field management and optimization',
                 'total_objects_found' => $indexResult['total'] ?? 0,
                 'batches_processed' => $indexResult['batches'] ?? 0,
-                'max_objects_limit' => $maxObjects
+                'max_objects_limit' => $maxObjects,
+                'memory_usage' => $memoryReport
             ];
             
         } catch (\Exception $e) {
+            // **MEMORY TRACKING**: Calculate memory usage even on error
+            $finalMemoryUsage = (int) memory_get_usage(true);
+            $finalMemoryPeak = (int) memory_get_peak_usage(true);
+            $memoryReport = $this->generateMemoryReport($initialMemoryUsage, $finalMemoryUsage, $initialMemoryPeak, $finalMemoryPeak, $memoryPrediction ?? []);
+            
             // **RESTORE SETTINGS**: Reset PHP execution time to original value even on error
             ini_set('max_execution_time', $originalMaxExecutionTime);
             
@@ -4568,7 +4594,8 @@ class GuzzleSolrService
                 'success' => false,
                 'operations' => $operations,
                 'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2),
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'memory_usage' => $memoryReport
             ];
         }
     }
@@ -5398,5 +5425,243 @@ class GuzzleSolrService
         }
 
         return $notes;
+    }
+
+    /**
+     * Predict memory usage for SOLR warmup operation
+     *
+     * @param int $maxObjects Maximum number of objects to process
+     * @return array Memory usage prediction
+     */
+    private function predictWarmupMemoryUsage(int $maxObjects): array
+    {
+        try {
+            // Get current memory info
+            $currentMemory = (int) memory_get_usage(true);
+            $memoryLimit = $this->parseMemoryLimit(ini_get('memory_limit'));
+            
+            // Get object count for prediction
+            $objectMapper = \OC::$server->get('OCA\OpenRegister\Db\ObjectEntityMapper');
+            $totalObjects = $objectMapper->countAll();
+            
+            // Calculate objects to process
+            $objectsToProcess = ($maxObjects === 0) ? $totalObjects : min($maxObjects, $totalObjects);
+            
+            // Memory estimation based on empirical data:
+            // - Base overhead: ~50MB for SOLR service, profiler, etc.
+            // - Per object: ~2KB for document creation and processing
+            // - Batch overhead: ~10MB per 1000 objects for bulk operations
+            // - Schema operations: ~20MB for field management
+            
+            $baseOverhead = 50 * 1024 * 1024; // 50MB
+            $schemaOperations = 20 * 1024 * 1024; // 20MB
+            $perObjectMemory = 2 * 1024; // 2KB per object
+            $batchOverhead = ceil($objectsToProcess / 1000) * 10 * 1024 * 1024; // 10MB per 1000 objects
+            
+            $estimatedUsage = $baseOverhead + $schemaOperations + ($objectsToProcess * $perObjectMemory) + $batchOverhead;
+            $totalPredicted = $currentMemory + $estimatedUsage;
+            
+            return [
+                'current_memory' => $currentMemory,
+                'memory_limit' => $memoryLimit,
+                'objects_to_process' => $objectsToProcess,
+                'estimated_additional' => $estimatedUsage,
+                'total_predicted' => $totalPredicted,
+                'memory_available' => $memoryLimit - $currentMemory,
+                'prediction_safe' => $totalPredicted < ($memoryLimit * 0.9), // 90% threshold
+                'formatted' => [
+                    'current' => $this->formatBytes($currentMemory),
+                    'limit' => $this->formatBytes($memoryLimit),
+                    'estimated_additional' => $this->formatBytes($estimatedUsage),
+                    'total_predicted' => $this->formatBytes($totalPredicted),
+                    'available' => $this->formatBytes($memoryLimit - $currentMemory)
+                ]
+            ];
+        } catch (\Exception $e) {
+            return [
+                'error' => 'Unable to predict memory usage: ' . $e->getMessage(),
+                'prediction_safe' => false
+            ];
+        }
+    }
+
+    /**
+     * Generate memory usage report after warmup completion
+     *
+     * @param int $initialUsage Initial memory usage
+     * @param int $finalUsage Final memory usage
+     * @param int $initialPeak Initial peak memory
+     * @param int $finalPeak Final peak memory
+     * @param array $prediction Original prediction data
+     * @return array Memory usage report
+     */
+    private function generateMemoryReport(int $initialUsage, int $finalUsage, int $initialPeak, int $finalPeak, array $prediction): array
+    {
+        $actualUsed = $finalUsage - $initialUsage;
+        $peakUsed = $finalPeak - $initialPeak;
+        $memoryLimit = $this->parseMemoryLimit(ini_get('memory_limit'));
+        
+        $report = [
+            'initial_usage' => $initialUsage,
+            'final_usage' => $finalUsage,
+            'actual_used' => $actualUsed,
+            'initial_peak' => $initialPeak,
+            'final_peak' => $finalPeak,
+            'peak_used' => $peakUsed,
+            'memory_limit' => $memoryLimit,
+            'peak_percentage' => round(($finalPeak / $memoryLimit) * 100, 2),
+            'formatted' => [
+                'initial_usage' => $this->formatBytes($initialUsage),
+                'final_usage' => $this->formatBytes($finalUsage),
+                'actual_used' => $this->formatBytes($actualUsed),
+                'peak_usage' => $this->formatBytes($finalPeak),
+                'peak_used' => $this->formatBytes($peakUsed),
+                'memory_limit' => $this->formatBytes($memoryLimit),
+                'peak_percentage' => round(($finalPeak / $memoryLimit) * 100, 2) . '%'
+            ]
+        ];
+        
+        // Add prediction accuracy if prediction was available
+        if (!empty($prediction) && isset($prediction['estimated_additional'])) {
+            $predictionAccuracy = ($prediction['estimated_additional'] > 0) 
+                ? round((abs($actualUsed - $prediction['estimated_additional']) / $prediction['estimated_additional']) * 100, 2)
+                : 0;
+            
+            $report['prediction'] = [
+                'estimated' => $prediction['estimated_additional'],
+                'actual' => $actualUsed,
+                'accuracy_percentage' => max(0, 100 - $predictionAccuracy),
+                'difference' => $actualUsed - $prediction['estimated_additional'],
+                'formatted' => [
+                    'estimated' => $this->formatBytes($prediction['estimated_additional']),
+                    'difference' => $this->formatBytes($actualUsed - $prediction['estimated_additional'])
+                ]
+            ];
+        }
+        
+        return $report;
+    }
+
+    /**
+     * Parse memory limit string to bytes
+     *
+     * @param string $memoryLimit Memory limit string (e.g., "512M", "2G")
+     * @return int Memory limit in bytes
+     */
+    private function parseMemoryLimit(string $memoryLimit): int
+    {
+        if ($memoryLimit === '-1') {
+            return PHP_INT_MAX; // No limit
+        }
+        
+        $unit = strtoupper(substr($memoryLimit, -1));
+        $value = (int) substr($memoryLimit, 0, -1);
+        
+        switch ($unit) {
+            case 'G':
+                return $value * 1024 * 1024 * 1024;
+            case 'M':
+                return $value * 1024 * 1024;
+            case 'K':
+                return $value * 1024;
+            default:
+                return (int) $memoryLimit;
+        }
+    }
+
+    /**
+     * Format bytes to human readable format
+     *
+     * @param int|float $bytes Number of bytes
+     * @return string Formatted string
+     */
+    private function formatBytes(int|float $bytes): string
+    {
+        if ($bytes >= 1024 * 1024 * 1024) {
+            return round($bytes / (1024 * 1024 * 1024), 2) . ' GB';
+        } elseif ($bytes >= 1024 * 1024) {
+            return round($bytes / (1024 * 1024), 2) . ' MB';
+        } elseif ($bytes >= 1024) {
+            return round($bytes / 1024, 2) . ' KB';
+        } else {
+            return $bytes . ' B';
+        }
+    }
+
+    /**
+     * Truncate field value to respect SOLR's 32,766 byte limit for indexed string fields
+     *
+     * SOLR has a hard limit of 32,766 bytes for indexed string fields. This method
+     * ensures field values stay within this limit while preserving as much data as possible.
+     *
+     * @param mixed $value The field value to check and potentially truncate
+     * @param string $fieldName Field name for logging purposes
+     * @return mixed Truncated value or original value if within limits
+     */
+    private function truncateFieldValue($value, string $fieldName = ''): mixed
+    {
+        // Only truncate string values
+        if (!is_string($value)) {
+            return $value;
+        }
+        
+        // SOLR's byte limit for indexed string fields
+        $maxBytes = 32766;
+        
+        // Check if value exceeds byte limit (UTF-8 safe)
+        if (strlen($value) <= $maxBytes) {
+            return $value; // Within limits
+        }
+        
+        // **TRUNCATE SAFELY**: Ensure we don't break UTF-8 characters
+        $truncated = mb_strcut($value, 0, $maxBytes - 100, 'UTF-8'); // Leave buffer for safety
+        
+        // Add truncation indicator
+        $truncated .= '...[TRUNCATED]';
+        
+        // Log truncation for monitoring
+        $this->logger->info('Field value truncated for SOLR indexing', [
+            'field' => $fieldName,
+            'original_bytes' => strlen($value),
+            'truncated_bytes' => strlen($truncated),
+            'truncation_point' => $maxBytes - 100
+        ]);
+        
+        return $truncated;
+    }
+
+    /**
+     * Check if a field should be truncated based on schema definition
+     *
+     * File fields and other large content fields should be truncated to prevent
+     * SOLR indexing errors.
+     *
+     * @param string $fieldName Field name
+     * @param array $fieldDefinition Schema field definition (if available)
+     * @return bool True if field should be truncated
+     */
+    private function shouldTruncateField(string $fieldName, array $fieldDefinition = []): bool
+    {
+        $type = $fieldDefinition['type'] ?? '';
+        $format = $fieldDefinition['format'] ?? '';
+        
+        // File fields should always be truncated
+        if ($type === 'file' || $format === 'file' || $format === 'binary' || 
+            in_array($format, ['data-url', 'base64', 'image', 'document'])) {
+            return true;
+        }
+        
+        // Fields that commonly contain large content
+        $largeContentFields = ['logo', 'image', 'icon', 'thumbnail', 'content', 'body', 'description'];
+        if (in_array(strtolower($fieldName), $largeContentFields)) {
+            return true;
+        }
+        
+        // Base64 data URLs (common pattern)
+        if (is_string($fieldName) && str_contains(strtolower($fieldName), 'base64')) {
+            return true;
+        }
+        
+        return false;
     }
 }

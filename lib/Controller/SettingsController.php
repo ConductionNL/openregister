@@ -1280,5 +1280,57 @@ class SettingsController extends Controller
         }
     }
 
+    /**
+     * Get memory usage prediction for SOLR warmup
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Memory usage prediction
+     */
+    public function getSolrMemoryPrediction(): JSONResponse
+    {
+        try {
+            // Get request parameters
+            $maxObjects = (int) $this->request->getParam('maxObjects', 0);
+            
+            // Get GuzzleSolrService for prediction
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            
+            if (!$guzzleSolrService->isAvailable()) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'SOLR is not available or not configured',
+                    'prediction' => [
+                        'error' => 'SOLR service unavailable',
+                        'prediction_safe' => false
+                    ]
+                ], 503);
+            }
+
+            // Use reflection to call the private method (for API access)
+            $reflection = new \ReflectionClass($guzzleSolrService);
+            $method = $reflection->getMethod('predictWarmupMemoryUsage');
+            $method->setAccessible(true);
+            $prediction = $method->invoke($guzzleSolrService, $maxObjects);
+
+            return new JSONResponse([
+                'success' => true,
+                'message' => 'Memory prediction calculated successfully',
+                'prediction' => $prediction
+            ]);
+
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Failed to calculate memory prediction: ' . $e->getMessage(),
+                'prediction' => [
+                    'error' => $e->getMessage(),
+                    'prediction_safe' => false
+                ]
+            ], 500);
+        }
+    }
+
 
 }//end class

@@ -88,6 +88,7 @@
 		<SolrWarmupModal 
 			:show="showWarmupDialog"
 			:object-stats="objectStats"
+			:memory-prediction="memoryPrediction"
 			:warming-up="warmingUp"
 			:completed="warmupCompleted"
 			:results="warmupResults"
@@ -140,6 +141,13 @@ export default {
 			objectStats: {
 				loading: false,
 				totalObjects: 0,
+			},
+			memoryPrediction: {
+				prediction_safe: true,
+				formatted: {
+					total_predicted: 'Unknown',
+					available: 'Unknown'
+				}
 			},
 			warmingUp: false,
 			warmupCompleted: false,
@@ -272,6 +280,9 @@ export default {
 				if (response.data && response.data.totals && response.data.totals.totalObjects) {
 					this.objectStats.totalObjects = response.data.totals.totalObjects
 					console.log('[DEBUG] Set totalObjects to:', this.objectStats.totalObjects)
+					
+					// Load memory prediction after getting object count
+					await this.loadMemoryPrediction(0) // Default to all objects
 				} else {
 					console.warn('[DEBUG] No totalObjects found in response:', response.data)
 					this.objectStats.totalObjects = 0
@@ -282,6 +293,20 @@ export default {
 			} finally {
 				this.objectStats.loading = false
 				console.log('[DEBUG] loadObjectStats completed. Final objectStats:', this.objectStats)
+			}
+		},
+
+		async loadMemoryPrediction(maxObjects = 0) {
+			try {
+				const url = generateUrl('/apps/openregister/api/settings/solr/memory-prediction')
+				const response = await axios.post(url, { maxObjects })
+				
+				if (response.data && response.data.success) {
+					this.memoryPrediction = response.data.prediction
+				}
+			} catch (error) {
+				console.warn('Failed to load memory prediction:', error)
+				// Keep default prediction data
 			}
 		},
 
