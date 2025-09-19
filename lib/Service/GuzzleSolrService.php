@@ -4771,4 +4771,248 @@ class GuzzleSolrService
             ];
         }
     }
+
+    /**
+     * Get comprehensive SOLR field configuration and schema information
+     *
+     * Retrieves field definitions, dynamic fields, field types, and core information
+     * from the active SOLR collection to help debug field configuration issues.
+     *
+     * @return array{success: bool, message: string, fields?: array, dynamic_fields?: array, field_types?: array, core_info?: array, environment_notes?: array}
+     */
+    public function getFieldsConfiguration(): array
+    {
+        if (!$this->isAvailable()) {
+            return [
+                'success' => false,
+                'message' => 'SOLR is not available or not configured'
+            ];
+        }
+
+        try {
+            $startTime = microtime(true);
+            $collectionName = $this->getActiveCollectionName();
+            
+            if (!$collectionName) {
+                return [
+                    'success' => false,
+                    'message' => 'No active SOLR collection found'
+                ];
+            }
+
+            $this->logger->info('🔍 Retrieving SOLR field configuration', [
+                'collection' => $collectionName,
+                'tenant_id' => $this->tenantId
+            ]);
+
+            // Build schema API URL
+            $schemaUrl = $this->buildSolrBaseUrl() . "/{$collectionName}/schema";
+            
+            // Prepare request options
+            $requestOptions = [
+                'timeout' => $this->solrConfig['timeout'] ?? 30,
+                'headers' => ['Accept' => 'application/json']
+            ];
+
+            // Add authentication if configured
+            if (!empty($this->solrConfig['username']) && !empty($this->solrConfig['password'])) {
+                $requestOptions['auth'] = [
+                    $this->solrConfig['username'],
+                    $this->solrConfig['password']
+                ];
+            }
+
+            // Make the schema request
+            $response = $this->httpClient->get($schemaUrl, $requestOptions);
+            $schemaData = json_decode($response->getBody(), true);
+
+            if (!$schemaData || !isset($schemaData['schema'])) {
+                return [
+                    'success' => false,
+                    'message' => 'Invalid schema response from SOLR',
+                    'details' => ['response' => $schemaData]
+                ];
+            }
+
+            $schema = $schemaData['schema'];
+            $executionTime = (microtime(true) - $startTime) * 1000;
+
+            // Extract and organize field information
+            $result = [
+                'success' => true,
+                'message' => 'SOLR field configuration retrieved successfully',
+                'execution_time_ms' => round($executionTime, 2),
+                'fields' => $this->extractFields($schema),
+                'dynamic_fields' => $this->extractSchemaDynamicFields($schema),
+                'field_types' => $this->extractFieldTypes($schema),
+                'core_info' => $this->extractCoreInfo($schema, $collectionName),
+                'environment_notes' => $this->generateEnvironmentNotes($schema)
+            ];
+
+            $this->logger->info('✅ SOLR field configuration retrieved', [
+                'collection' => $collectionName,
+                'field_count' => count($result['fields']),
+                'dynamic_field_count' => count($result['dynamic_fields']),
+                'field_type_count' => count($result['field_types']),
+                'execution_time_ms' => $result['execution_time_ms']
+            ]);
+
+            return $result;
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to retrieve SOLR field configuration', [
+                'error' => $e->getMessage(),
+                'collection' => $collectionName ?? 'unknown'
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Failed to retrieve SOLR field configuration: ' . $e->getMessage(),
+                'details' => ['error' => $e->getMessage()]
+            ];
+        }
+    }
+
+    /**
+     * Extract field definitions from schema
+     *
+     * @param array $schema SOLR schema data
+     * @return array Field definitions
+     */
+    private function extractFields(array $schema): array
+    {
+        $fields = [];
+        
+        if (isset($schema['fields'])) {
+            foreach ($schema['fields'] as $field) {
+                $name = $field['name'] ?? 'unknown';
+                $fields[$name] = [
+                    'type' => $field['type'] ?? 'unknown',
+                    'indexed' => $field['indexed'] ?? true,
+                    'stored' => $field['stored'] ?? true,
+                    'multiValued' => $field['multiValued'] ?? false,
+                    'required' => $field['required'] ?? false,
+                    'docValues' => $field['docValues'] ?? false,
+                ];
+            }
+        }
+
+        // Sort fields alphabetically for better readability
+        ksort($fields);
+        
+        return $fields;
+    }
+
+    /**
+     * Extract dynamic field patterns from schema
+     *
+     * @param array $schema SOLR schema data
+     * @return array Dynamic field patterns
+     */
+    private function extractSchemaDynamicFields(array $schema): array
+    {
+        $dynamicFields = [];
+        
+        if (isset($schema['dynamicFields'])) {
+            foreach ($schema['dynamicFields'] as $field) {
+                $name = $field['name'] ?? 'unknown';
+                $dynamicFields[$name] = [
+                    'type' => $field['type'] ?? 'unknown',
+                    'indexed' => $field['indexed'] ?? true,
+                    'stored' => $field['stored'] ?? true,
+                    'multiValued' => $field['multiValued'] ?? false,
+                ];
+            }
+        }
+
+        return $dynamicFields;
+    }
+
+    /**
+     * Extract field type definitions from schema
+     *
+     * @param array $schema SOLR schema data
+     * @return array Field type definitions
+     */
+    private function extractFieldTypes(array $schema): array
+    {
+        $fieldTypes = [];
+        
+        if (isset($schema['fieldTypes'])) {
+            foreach ($schema['fieldTypes'] as $fieldType) {
+                $name = $fieldType['name'] ?? 'unknown';
+                $fieldTypes[$name] = [
+                    'class' => $fieldType['class'] ?? 'unknown',
+                    'analyzer' => $fieldType['analyzer'] ?? null,
+                    'properties' => array_diff_key($fieldType, array_flip(['name', 'class', 'analyzer']))
+                ];
+            }
+        }
+
+        return $fieldTypes;
+    }
+
+    /**
+     * Extract core information from schema
+     *
+     * @param array $schema SOLR schema data
+     * @param string $collectionName Collection name
+     * @return array Core information
+     */
+    private function extractCoreInfo(array $schema, string $collectionName): array
+    {
+        return [
+            'core_name' => $collectionName,
+            'schema_name' => $schema['name'] ?? 'unknown',
+            'schema_version' => $schema['version'] ?? 'unknown',
+            'unique_key' => $schema['uniqueKey'] ?? 'id',
+            'default_search_field' => $schema['defaultSearchField'] ?? null,
+            'similarity' => $schema['similarity'] ?? null,
+        ];
+    }
+
+    /**
+     * Generate environment analysis notes
+     *
+     * @param array $schema SOLR schema data
+     * @return array Environment notes and warnings
+     */
+    private function generateEnvironmentNotes(array $schema): array
+    {
+        $notes = [];
+
+        // Check for common field configuration issues
+        if (isset($schema['fields'])) {
+            $stringFields = array_filter($schema['fields'], function($field) {
+                return ($field['type'] ?? '') === 'string' && ($field['multiValued'] ?? false) === true;
+            });
+
+            if (!empty($stringFields)) {
+                $notes[] = [
+                    'type' => 'warning',
+                    'title' => 'Multi-valued String Fields Detected',
+                    'message' => 'Found ' . count($stringFields) . ' multi-valued string fields. This might cause array conversion issues during object reconstruction.',
+                    'details' => array_keys($stringFields)
+                ];
+            }
+        }
+
+        // Check for OpenRegister-specific field patterns
+        if (isset($schema['dynamicFields'])) {
+            $orFields = array_filter($schema['dynamicFields'], function($field) {
+                return strpos($field['name'] ?? '', '*_s') !== false || strpos($field['name'] ?? '', '*_t') !== false;
+            });
+
+            if (!empty($orFields)) {
+                $notes[] = [
+                    'type' => 'info',
+                    'title' => 'OpenRegister Dynamic Fields Found',
+                    'message' => 'Found ' . count($orFields) . ' OpenRegister-compatible dynamic field patterns.',
+                    'details' => array_column($orFields, 'name')
+                ];
+            }
+        }
+
+        return $notes;
+    }
 }

@@ -3043,6 +3043,22 @@ class SolrService
     }
 
     /**
+     * Extract field value from SOLR document, handling both array and single value responses
+     *
+     * Different SOLR field configurations can return values as either single values or arrays.
+     * This helper method normalizes the extraction to always return a single value or null.
+     *
+     * @param array $doc SOLR document
+     * @param string $fieldName Field name to extract
+     * @return mixed|null Field value or null if not found
+     */
+    private function extractSolrFieldValue(array $doc, string $fieldName)
+    {
+        $value = $doc[$fieldName] ?? null;
+        return is_array($value) ? ($value[0] ?? null) : $value;
+    }
+
+    /**
      * Reconstruct ObjectEntity from Solr document
      *
      * @param array $doc Solr document
@@ -3052,10 +3068,10 @@ class SolrService
     {
         try {
             // Extract metadata from self_ fields
-            $objectId = $doc['self_object_id'][0] ?? null;
-            $uuid = $doc['self_uuid'][0] ?? null;
-            $register = $doc['self_register'][0] ?? null;
-            $schema = $doc['self_schema'][0] ?? null;
+            $objectId = $this->extractSolrFieldValue($doc, 'self_object_id');
+            $uuid = $this->extractSolrFieldValue($doc, 'self_uuid');
+            $register = $this->extractSolrFieldValue($doc, 'self_register');
+            $schema = $this->extractSolrFieldValue($doc, 'self_schema');
             
             if (!$objectId || !$register || !$schema) {
                 $this->logger->warning('[SolrService] Invalid document missing required fields', [
@@ -3075,64 +3091,89 @@ class SolrService
             $entity->setSchema($schema);
             
             // Set metadata fields
-            $entity->setOrganisation($doc['self_organisation'][0] ?? null);
-            $entity->setName($doc['self_name'][0] ?? null);
-            $entity->setDescription($doc['self_description'][0] ?? null);
-            $entity->setSummary($doc['self_summary'][0] ?? null);
-            $entity->setImage($doc['self_image'][0] ?? null);
-            $entity->setSlug($doc['self_slug'][0] ?? null);
-            $entity->setUri($doc['self_uri'][0] ?? null);
-            $entity->setVersion($doc['self_version'][0] ?? null);
-            $entity->setSize($doc['self_size'][0] ?? null);
-            $entity->setOwner($doc['self_owner'][0] ?? null);
-            $entity->setLocked($doc['self_locked'][0] ?? null);
-            $entity->setFolder($doc['self_folder'][0] ?? null);
-            $entity->setApplication($doc['self_application'][0] ?? null);
+            $entity->setOrganisation($this->extractSolrFieldValue($doc, 'self_organisation'));
+            $entity->setName($this->extractSolrFieldValue($doc, 'self_name'));
+            $entity->setDescription($this->extractSolrFieldValue($doc, 'self_description'));
+            $entity->setSummary($this->extractSolrFieldValue($doc, 'self_summary'));
+            $entity->setImage($this->extractSolrFieldValue($doc, 'self_image'));
+            $entity->setSlug($this->extractSolrFieldValue($doc, 'self_slug'));
+            $entity->setUri($this->extractSolrFieldValue($doc, 'self_uri'));
+            $entity->setVersion($this->extractSolrFieldValue($doc, 'self_version'));
+            $entity->setSize($this->extractSolrFieldValue($doc, 'self_size'));
+            $entity->setOwner($this->extractSolrFieldValue($doc, 'self_owner'));
+            $entity->setLocked($this->extractSolrFieldValue($doc, 'self_locked'));
+            $entity->setFolder($this->extractSolrFieldValue($doc, 'self_folder'));
+            $entity->setApplication($this->extractSolrFieldValue($doc, 'self_application'));
             
             // Set datetime fields
-            if (isset($doc['self_created'][0])) {
-                $entity->setCreated(new \DateTime($doc['self_created'][0]));
-            }
-            if (isset($doc['self_updated'][0])) {
-                $entity->setUpdated(new \DateTime($doc['self_updated'][0]));
-            }
-            if (isset($doc['self_published'][0])) {
-                $entity->setPublished(new \DateTime($doc['self_published'][0]));
-            }
-            if (isset($doc['self_depublished'][0])) {
-                $entity->setDepublished(new \DateTime($doc['self_depublished'][0]));
+            $createdValue = $this->extractSolrFieldValue($doc, 'self_created');
+            if ($createdValue) {
+                $entity->setCreated(new \DateTime($createdValue));
             }
             
-            // Reconstruct object data from JSON or individual fields
-            $objectData = [];
-            if (isset($doc['self_object'][0])) {
-                $objectData = json_decode($doc['self_object'][0], true) ?: [];
-            } else {
-                // Fallback: extract object properties from root level fields
-                foreach ($doc as $key => $value) {
-                    if (!str_starts_with($key, 'self_') && 
-                        !in_array($key, ['id', 'tenant_id', '_text_', '_version_', '_root_'])) {
-                        // Remove Solr type suffixes
-                        $cleanKey = preg_replace('/_(s|t|i|f|b)$/', '', $key);
-                        $objectData[$cleanKey] = is_array($value) ? $value[0] : $value;
-                    }
-                }
+            $updatedValue = $this->extractSolrFieldValue($doc, 'self_updated');
+            if ($updatedValue) {
+                $entity->setUpdated(new \DateTime($updatedValue));
             }
+            
+            $publishedValue = $this->extractSolrFieldValue($doc, 'self_published');
+            if ($publishedValue) {
+                $entity->setPublished(new \DateTime($publishedValue));
+            }
+            
+            $depublishedValue = $this->extractSolrFieldValue($doc, 'self_depublished');
+            if ($depublishedValue) {
+                $entity->setDepublished(new \DateTime($depublishedValue));
+            }
+            
+            // Reconstruct object data from JSON stored in self_object field
+            $selfObject = $this->extractSolrFieldValue($doc, 'self_object');
+            
+            if (!$selfObject) {
+                $this->logger->error('[SolrService] Missing self_object field in SOLR document - cannot reconstruct object', [
+                    'doc_id' => $doc['id'] ?? 'unknown',
+                    'available_fields' => array_keys($doc),
+                    'has_self_object_key' => isset($doc['self_object']),
+                    'self_object_value' => $doc['self_object'] ?? 'not_set'
+                ]);
+                throw new \RuntimeException('SOLR document missing required self_object field for object reconstruction');
+            }
+
+            $objectData = json_decode($selfObject, true);
+            if ($objectData === null && json_last_error() !== JSON_ERROR_NONE) {
+                $this->logger->error('[SolrService] Failed to decode self_object JSON in SOLR document', [
+                    'doc_id' => $doc['id'] ?? 'unknown',
+                    'json_error' => json_last_error_msg(),
+                    'raw_json' => substr($selfObject, 0, 200) . '...',
+                    'json_length' => strlen($selfObject)
+                ]);
+                throw new \RuntimeException('SOLR document contains invalid JSON in self_object field: ' . json_last_error_msg());
+            }
+
+            // Ensure we have an array (empty array if null)
+            $objectData = $objectData ?: [];
             
             $entity->setObject($objectData);
             
             // Set complex fields from JSON
-            if (isset($doc['self_authorization'][0])) {
-                $entity->setAuthorization(json_decode($doc['self_authorization'][0], true));
+            $authorizationValue = $this->extractSolrFieldValue($doc, 'self_authorization');
+            if ($authorizationValue) {
+                $entity->setAuthorization(json_decode($authorizationValue, true));
             }
-            if (isset($doc['self_deleted'][0])) {
-                $entity->setDeleted(json_decode($doc['self_deleted'][0], true));
+            
+            $deletedValue = $this->extractSolrFieldValue($doc, 'self_deleted');
+            if ($deletedValue) {
+                $entity->setDeleted(json_decode($deletedValue, true));
             }
-            if (isset($doc['self_validation'][0])) {
-                $entity->setValidation(json_decode($doc['self_validation'][0], true));
+            
+            $validationValue = $this->extractSolrFieldValue($doc, 'self_validation');
+            if ($validationValue) {
+                $entity->setValidation(json_decode($validationValue, true));
             }
-            if (isset($doc['self_groups'][0])) {
-                $entity->setGroups(json_decode($doc['self_groups'][0], true));
+            
+            $groupsValue = $this->extractSolrFieldValue($doc, 'self_groups');
+            if ($groupsValue) {
+                $entity->setGroups(json_decode($groupsValue, true));
             }
 
             return $entity;
