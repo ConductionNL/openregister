@@ -1046,11 +1046,11 @@ class SaveObject
 
         // Filter out empty or invalid objects
         $validObjects = array_filter(
-          $propData,
-          function ($object) {
-            return (is_array($object) && !empty($object) && !(count($object) === 1 && isset($object['id']) && empty($object['id'])))  || (is_string($object) && Uuid::isValid($object));
-          }
-          );
+            $propData,
+            function ($object) {
+                return (is_array($object) === true && empty($object) === false && !(count($object) === 1 && isset($object['id']) === true && empty($object['id']) === true)) || (is_string($object) === true && Uuid::isValid($object) === true);
+            }
+        );
 
         if (empty($validObjects)) {
             return [];
