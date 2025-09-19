@@ -27,6 +27,16 @@
 						Test Connection
 					</NcButton>
 					<NcButton
+						type="secondary"
+						:disabled="loading || saving || testingConnection || warmingUpSolr || settingUpSolr || loadingFields"
+						@click="inspectFields">
+						<template #icon>
+							<NcLoadingIcon v-if="loadingFields" :size="20" />
+							<ViewList v-else :size="20" />
+						</template>
+						Inspect Fields
+					</NcButton>
+					<NcButton
 						type="primary"
 						:disabled="loading || saving || testingConnection || settingUpSolr"
 						@click="saveSettings">
@@ -798,6 +808,262 @@
 				</div>
 			</div>
 		</NcDialog>
+
+		<!-- SOLR Fields Inspection Dialog -->
+		<NcDialog
+			v-if="showFieldsDialog"
+			name="SOLR Field Configuration"
+			:can-close="!loadingFields"
+			@closing="hideFieldsDialog"
+			:size="'large'">
+			<div class="fields-dialog">
+				<div v-if="loadingFields" class="fields-loading">
+					<div class="loading-spinner">
+						<NcLoadingIcon :size="40" />
+					</div>
+					<h4>Loading SOLR Field Configuration...</h4>
+					<p class="loading-description">
+						Please wait while we retrieve the field configuration from your SOLR core.
+					</p>
+				</div>
+
+				<div v-else-if="fieldsInfo" class="fields-results">
+					<!-- Overall Status Header -->
+					<div class="results-header">
+						<div class="status-badge" :class="fieldsInfo.success ? 'success' : 'error'">
+							<span class="status-icon">{{ fieldsInfo.success ? '📋' : '❌' }}</span>
+							<div class="status-text">
+								<h3>{{ fieldsInfo.success ? 'Field Configuration Retrieved' : 'Failed to Load Fields' }}</h3>
+								<p>{{ fieldsInfo.message || 'SOLR field configuration and schema information' }}</p>
+							</div>
+						</div>
+					</div>
+
+					<div v-if="fieldsInfo.success && fieldsInfo.fields" class="fields-content">
+						<!-- Fields Overview -->
+						<div class="fields-overview">
+							<h4>📊 Fields Overview</h4>
+							<div class="overview-stats">
+								<div class="stat-card">
+									<div class="stat-number">{{ Object.keys(fieldsInfo.fields).length }}</div>
+									<div class="stat-label">Total Fields</div>
+								</div>
+								<div class="stat-card">
+									<div class="stat-number">{{ fieldsInfo.dynamic_fields ? Object.keys(fieldsInfo.dynamic_fields).length : 0 }}</div>
+									<div class="stat-label">Dynamic Fields</div>
+								</div>
+								<div class="stat-card">
+									<div class="stat-number">{{ fieldsInfo.field_types ? Object.keys(fieldsInfo.field_types).length : 0 }}</div>
+									<div class="stat-label">Field Types</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- Core Information -->
+						<div v-if="fieldsInfo.core_info" class="core-info">
+							<h4>🏗️ Core Information</h4>
+							<div class="info-grid">
+								<div class="info-item">
+									<span class="info-label">Core Name:</span>
+									<span class="info-value">{{ fieldsInfo.core_info.core_name }}</span>
+								</div>
+								<div class="info-item">
+									<span class="info-label">Schema Name:</span>
+									<span class="info-value">{{ fieldsInfo.core_info.schema_name }}</span>
+								</div>
+								<div class="info-item">
+									<span class="info-label">Schema Version:</span>
+									<span class="info-value">{{ fieldsInfo.core_info.schema_version }}</span>
+								</div>
+								<div class="info-item">
+									<span class="info-label">Unique Key:</span>
+									<span class="info-value">{{ fieldsInfo.core_info.unique_key }}</span>
+								</div>
+							</div>
+						</div>
+
+						<!-- Fields Table -->
+						<div class="fields-table-section">
+							<h4>🔍 Field Details</h4>
+							<div class="fields-controls">
+								<input 
+									v-model="fieldFilter" 
+									type="text" 
+									placeholder="Filter fields..." 
+									class="field-filter">
+								<NcSelect
+									v-model="fieldTypeFilter"
+									:options="fieldTypeOptions"
+									placeholder="Filter by type"
+									:clearable="true"
+									class="field-type-filter" />
+							</div>
+							<div class="fields-table-container">
+								<table class="fields-table">
+									<thead>
+										<tr>
+											<th>Field Name</th>
+											<th>Type</th>
+											<th>Indexed</th>
+											<th>Stored</th>
+											<th>Multi-valued</th>
+											<th>Required</th>
+											<th>Doc Values</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr v-for="(field, fieldName) in filteredFields" :key="fieldName" class="field-row">
+											<td class="field-name">
+												<code>{{ fieldName }}</code>
+											</td>
+											<td class="field-type">
+												<span class="type-badge" :class="getTypeClass(field.type)">
+													{{ field.type }}
+												</span>
+											</td>
+											<td class="field-indexed">
+												<span class="boolean-indicator" :class="field.indexed ? 'true' : 'false'">
+													{{ field.indexed ? '✓' : '✗' }}
+												</span>
+											</td>
+											<td class="field-stored">
+												<span class="boolean-indicator" :class="field.stored ? 'true' : 'false'">
+													{{ field.stored ? '✓' : '✗' }}
+												</span>
+											</td>
+											<td class="field-multivalued">
+												<span class="boolean-indicator" :class="field.multiValued ? 'true' : 'false'">
+													{{ field.multiValued ? '✓' : '✗' }}
+												</span>
+											</td>
+											<td class="field-required">
+												<span class="boolean-indicator" :class="field.required ? 'true' : 'false'">
+													{{ field.required ? '✓' : '✗' }}
+												</span>
+											</td>
+											<td class="field-docvalues">
+												<span class="boolean-indicator" :class="field.docValues ? 'true' : 'false'">
+													{{ field.docValues ? '✓' : '✗' }}
+												</span>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+						</div>
+
+						<!-- Dynamic Fields -->
+						<div v-if="fieldsInfo.dynamic_fields && Object.keys(fieldsInfo.dynamic_fields).length > 0" class="dynamic-fields-section">
+							<h4>⚡ Dynamic Field Patterns</h4>
+							<div class="dynamic-fields-grid">
+								<div v-for="(field, pattern) in fieldsInfo.dynamic_fields" :key="pattern" class="dynamic-field-card">
+									<div class="dynamic-field-header">
+										<code class="pattern-name">{{ pattern }}</code>
+										<span class="type-badge" :class="getTypeClass(field.type)">{{ field.type }}</span>
+									</div>
+									<div class="dynamic-field-properties">
+										<div class="property-row">
+											<span class="property-label">Indexed:</span>
+											<span class="boolean-indicator" :class="field.indexed ? 'true' : 'false'">
+												{{ field.indexed ? '✓' : '✗' }}
+											</span>
+										</div>
+										<div class="property-row">
+											<span class="property-label">Stored:</span>
+											<span class="boolean-indicator" :class="field.stored ? 'true' : 'false'">
+												{{ field.stored ? '✓' : '✗' }}
+											</span>
+										</div>
+										<div class="property-row">
+											<span class="property-label">Multi-valued:</span>
+											<span class="boolean-indicator" :class="field.multiValued ? 'true' : 'false'">
+												{{ field.multiValued ? '✓' : '✗' }}
+											</span>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- Field Types -->
+						<div v-if="fieldsInfo.field_types && Object.keys(fieldsInfo.field_types).length > 0" class="field-types-section">
+							<h4>🎯 Field Type Definitions</h4>
+							<div class="field-types-accordion">
+								<details v-for="(typeInfo, typeName) in fieldsInfo.field_types" :key="typeName" class="field-type-details">
+									<summary class="field-type-summary">
+										<span class="type-badge" :class="getTypeClass(typeName)">{{ typeName }}</span>
+										<span class="type-description">{{ typeInfo.class || 'Custom field type' }}</span>
+									</summary>
+									<div class="field-type-content">
+										<div v-if="typeInfo.analyzer" class="analyzer-info">
+											<h6>Analyzer Configuration:</h6>
+											<pre class="analyzer-config">{{ JSON.stringify(typeInfo.analyzer, null, 2) }}</pre>
+										</div>
+										<div v-if="typeInfo.properties" class="type-properties">
+											<h6>Properties:</h6>
+											<div class="properties-grid">
+												<div v-for="(value, key) in typeInfo.properties" :key="key" class="property-item">
+													<span class="property-key">{{ key }}:</span>
+													<span class="property-value">{{ value }}</span>
+												</div>
+											</div>
+										</div>
+									</div>
+								</details>
+							</div>
+						</div>
+
+						<!-- Environment Comparison -->
+						<div v-if="fieldsInfo.environment_notes" class="environment-section">
+							<h4>🔧 Environment Analysis</h4>
+							<div class="environment-notes">
+								<div v-for="note in fieldsInfo.environment_notes" :key="note.type" class="environment-note" :class="note.type">
+									<span class="note-icon">{{ note.type === 'warning' ? '⚠️' : note.type === 'error' ? '❌' : 'ℹ️' }}</span>
+									<div class="note-content">
+										<h5>{{ note.title }}</h5>
+										<p>{{ note.message }}</p>
+										<div v-if="note.details" class="note-details">
+											<pre>{{ JSON.stringify(note.details, null, 2) }}</pre>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Error Display -->
+					<div v-else-if="!fieldsInfo.success" class="fields-error">
+						<div class="error-card">
+							<h4>❌ Failed to Load Field Configuration</h4>
+							<p>{{ fieldsInfo.message || 'Unable to retrieve SOLR field configuration' }}</p>
+							<div v-if="fieldsInfo.details" class="error-details">
+								<details>
+									<summary>Error Details</summary>
+									<pre>{{ JSON.stringify(fieldsInfo.details, null, 2) }}</pre>
+								</details>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="dialog-actions">
+					<NcButton
+						:disabled="loadingFields"
+						@click="hideFieldsDialog">
+						Close
+					</NcButton>
+					<NcButton
+						v-if="!loadingFields && fieldsInfo && !fieldsInfo.success"
+						type="primary"
+						@click="retryLoadFields">
+						<template #icon>
+							<ViewList :size="20" />
+						</template>
+						Retry
+					</NcButton>
+				</div>
+			</div>
+		</NcDialog>
 	</NcSettingsSection>
 </template>
 
@@ -809,6 +1075,7 @@ import Settings from 'vue-material-design-icons/ApplicationSettings.vue'
 import TestTube from 'vue-material-design-icons/TestTube.vue'
 import Save from 'vue-material-design-icons/ContentSave.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
+import ViewList from 'vue-material-design-icons/ViewList.vue'
 
 export default {
 	name: 'SolrConfiguration',
@@ -824,6 +1091,14 @@ export default {
 		TestTube,
 		Save,
 		Refresh,
+		ViewList,
+	},
+
+	data() {
+		return {
+			fieldFilter: '',
+			fieldTypeFilter: null,
+		}
 	},
 
 	computed: {
@@ -881,6 +1156,59 @@ export default {
 		setupResults() {
 			return this.settingsStore.setupResults
 		},
+
+		showFieldsDialog() {
+			return this.settingsStore.showFieldsDialog
+		},
+
+		loadingFields() {
+			return this.settingsStore.loadingFields
+		},
+
+		fieldsInfo() {
+			return this.settingsStore.fieldsInfo
+		},
+
+		filteredFields() {
+			if (!this.fieldsInfo || !this.fieldsInfo.fields) {
+				return {}
+			}
+
+			let fields = this.fieldsInfo.fields
+			
+			// Apply text filter
+			if (this.fieldFilter) {
+				const filter = this.fieldFilter.toLowerCase()
+				fields = Object.fromEntries(
+					Object.entries(fields).filter(([name]) => 
+						name.toLowerCase().includes(filter)
+					)
+				)
+			}
+
+			// Apply type filter
+			if (this.fieldTypeFilter) {
+				fields = Object.fromEntries(
+					Object.entries(fields).filter(([, field]) => 
+						field.type === this.fieldTypeFilter.value
+					)
+				)
+			}
+
+			return fields
+		},
+
+		fieldTypeOptions() {
+			if (!this.fieldsInfo || !this.fieldsInfo.fields) {
+				return []
+			}
+
+			const types = [...new Set(Object.values(this.fieldsInfo.fields).map(field => field.type))]
+			return types.map(type => ({
+				value: type,
+				label: type
+			})).sort((a, b) => a.label.localeCompare(b.label))
+		},
 	},
 
 	methods: {
@@ -910,6 +1238,32 @@ export default {
 
 		retrySetup() {
 			this.settingsStore.retrySetup()
+		},
+
+		async inspectFields() {
+			await this.settingsStore.loadSolrFields()
+		},
+
+		hideFieldsDialog() {
+			this.settingsStore.hideFieldsDialog()
+		},
+
+		retryLoadFields() {
+			this.inspectFields()
+		},
+
+		getTypeClass(type) {
+			const typeMap = {
+				'string': 'type-string',
+				'text_general': 'type-text',
+				'pint': 'type-integer',
+				'pfloat': 'type-float',
+				'pdate': 'type-date',
+				'boolean': 'type-boolean',
+				'plong': 'type-long',
+				'pdouble': 'type-double',
+			}
+			return typeMap[type] || 'type-unknown'
 		},
 
 		formatComponentName(name) {
@@ -1962,5 +2316,490 @@ export default {
 
 .next-step-text {
 	flex: 1;
+}
+
+/* Fields Dialog Styles */
+.fields-dialog {
+	padding: 24px;
+	max-width: 1200px;
+}
+
+.fields-loading {
+	text-align: center;
+	padding: 40px 20px;
+}
+
+.fields-results {
+	max-height: 800px;
+	overflow-y: auto;
+}
+
+/* Fields Overview */
+.fields-overview {
+	margin-bottom: 24px;
+}
+
+.fields-overview h4 {
+	margin: 0 0 16px 0;
+	color: var(--color-main-text);
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.overview-stats {
+	display: flex;
+	gap: 16px;
+	flex-wrap: wrap;
+}
+
+.stat-card {
+	background: var(--color-background-hover);
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+	padding: 16px;
+	text-align: center;
+	flex: 1;
+	min-width: 120px;
+}
+
+.stat-number {
+	font-size: 24px;
+	font-weight: bold;
+	color: var(--color-primary);
+	margin-bottom: 4px;
+}
+
+.stat-label {
+	font-size: 12px;
+	color: var(--color-text-maxcontrast);
+	font-weight: 500;
+}
+
+/* Core Information */
+.core-info {
+	margin-bottom: 24px;
+	background: var(--color-background-hover);
+	border-radius: 8px;
+	padding: 16px;
+	border: 1px solid var(--color-border);
+}
+
+.core-info h4 {
+	margin: 0 0 16px 0;
+	color: var(--color-main-text);
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.info-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 12px;
+}
+
+.info-item {
+	display: flex;
+	justify-content: space-between;
+	padding: 8px 12px;
+	background: var(--color-background-dark);
+	border-radius: 4px;
+}
+
+.info-label {
+	font-weight: 500;
+	color: var(--color-main-text);
+}
+
+.info-value {
+	color: var(--color-text-maxcontrast);
+	font-family: monospace;
+	font-size: 13px;
+}
+
+/* Fields Table */
+.fields-table-section {
+	margin-bottom: 24px;
+}
+
+.fields-table-section h4 {
+	margin: 0 0 16px 0;
+	color: var(--color-main-text);
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.fields-controls {
+	display: flex;
+	gap: 12px;
+	margin-bottom: 16px;
+	flex-wrap: wrap;
+}
+
+.field-filter {
+	flex: 1;
+	min-width: 200px;
+	padding: 8px 12px;
+	border: 1px solid var(--color-border);
+	border-radius: 4px;
+	background: var(--color-main-background);
+	color: var(--color-text-light);
+}
+
+.field-type-filter {
+	min-width: 150px;
+}
+
+.fields-table-container {
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+	overflow: hidden;
+	background: var(--color-main-background);
+}
+
+.fields-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.fields-table th {
+	background: var(--color-background-hover);
+	padding: 12px;
+	text-align: left;
+	font-weight: 600;
+	color: var(--color-main-text);
+	border-bottom: 1px solid var(--color-border);
+	font-size: 13px;
+}
+
+.fields-table td {
+	padding: 10px 12px;
+	border-bottom: 1px solid var(--color-border-dark);
+	font-size: 13px;
+}
+
+.field-row:hover {
+	background: var(--color-background-hover);
+}
+
+.field-name code {
+	background: var(--color-background-dark);
+	padding: 2px 6px;
+	border-radius: 3px;
+	font-size: 12px;
+	color: var(--color-primary);
+	font-family: monospace;
+}
+
+.type-badge {
+	padding: 2px 8px;
+	border-radius: 12px;
+	font-size: 11px;
+	font-weight: 500;
+	color: white;
+}
+
+.type-string { background: #2196F3; }
+.type-text { background: #4CAF50; }
+.type-integer { background: #FF9800; }
+.type-float { background: #FF5722; }
+.type-date { background: #9C27B0; }
+.type-boolean { background: #607D8B; }
+.type-long { background: #FF9800; }
+.type-double { background: #FF5722; }
+.type-unknown { background: #9E9E9E; }
+
+.boolean-indicator {
+	font-weight: bold;
+	font-size: 14px;
+}
+
+.boolean-indicator.true {
+	color: var(--color-success);
+}
+
+.boolean-indicator.false {
+	color: var(--color-text-maxcontrast);
+}
+
+/* Dynamic Fields */
+.dynamic-fields-section {
+	margin-bottom: 24px;
+}
+
+.dynamic-fields-section h4 {
+	margin: 0 0 16px 0;
+	color: var(--color-main-text);
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.dynamic-fields-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+	gap: 16px;
+}
+
+.dynamic-field-card {
+	background: var(--color-background-hover);
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+	padding: 16px;
+	border-left: 4px solid var(--color-warning);
+}
+
+.dynamic-field-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 12px;
+}
+
+.pattern-name {
+	background: var(--color-background-dark);
+	padding: 4px 8px;
+	border-radius: 4px;
+	font-family: monospace;
+	font-size: 12px;
+	color: var(--color-primary);
+}
+
+.dynamic-field-properties {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.property-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 4px 0;
+}
+
+.property-label {
+	font-size: 12px;
+	color: var(--color-text-maxcontrast);
+}
+
+/* Field Types */
+.field-types-section {
+	margin-bottom: 24px;
+}
+
+.field-types-section h4 {
+	margin: 0 0 16px 0;
+	color: var(--color-main-text);
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.field-types-accordion {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.field-type-details {
+	background: var(--color-background-hover);
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+	padding: 16px;
+}
+
+.field-type-summary {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	cursor: pointer;
+	font-weight: 500;
+}
+
+.type-description {
+	color: var(--color-text-maxcontrast);
+	font-size: 13px;
+}
+
+.field-type-content {
+	margin-top: 16px;
+	padding-top: 16px;
+	border-top: 1px solid var(--color-border-dark);
+}
+
+.analyzer-config {
+	background: var(--color-background-dark);
+	padding: 12px;
+	border-radius: 4px;
+	font-size: 11px;
+	overflow-x: auto;
+	margin-top: 8px;
+}
+
+.properties-grid {
+	display: grid;
+	gap: 6px;
+	margin-top: 8px;
+}
+
+.property-item {
+	display: flex;
+	justify-content: space-between;
+	padding: 6px 12px;
+	background: var(--color-background-dark);
+	border-radius: 4px;
+	font-size: 12px;
+}
+
+.property-key {
+	font-weight: 500;
+	color: var(--color-main-text);
+}
+
+.property-value {
+	color: var(--color-text-maxcontrast);
+	font-family: monospace;
+}
+
+/* Environment Section */
+.environment-section {
+	margin-bottom: 24px;
+}
+
+.environment-section h4 {
+	margin: 0 0 16px 0;
+	color: var(--color-main-text);
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.environment-notes {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.environment-note {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	padding: 16px;
+	border-radius: 8px;
+	border: 1px solid;
+}
+
+.environment-note.info {
+	background: rgba(33, 150, 243, 0.1);
+	border-color: rgba(33, 150, 243, 0.2);
+}
+
+.environment-note.warning {
+	background: rgba(255, 152, 0, 0.1);
+	border-color: rgba(255, 152, 0, 0.2);
+}
+
+.environment-note.error {
+	background: rgba(244, 67, 54, 0.1);
+	border-color: rgba(244, 67, 54, 0.2);
+}
+
+.note-icon {
+	font-size: 20px;
+	flex-shrink: 0;
+}
+
+.note-content {
+	flex: 1;
+}
+
+.note-content h5 {
+	margin: 0 0 8px 0;
+	color: var(--color-main-text);
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.note-content p {
+	margin: 0 0 12px 0;
+	color: var(--color-text-light);
+	font-size: 13px;
+	line-height: 1.4;
+}
+
+.note-details {
+	margin-top: 12px;
+}
+
+.note-details pre {
+	background: var(--color-background-dark);
+	padding: 8px;
+	border-radius: 4px;
+	font-size: 11px;
+	overflow-x: auto;
+}
+
+/* Fields Error */
+.fields-error {
+	padding: 20px;
+	text-align: center;
+}
+
+.error-card {
+	background: rgba(244, 67, 54, 0.1);
+	border: 1px solid var(--color-error);
+	border-radius: 8px;
+	padding: 20px;
+}
+
+.error-card h4 {
+	margin: 0 0 12px 0;
+	color: var(--color-error-text);
+}
+
+.error-card p {
+	margin: 0 0 16px 0;
+	color: var(--color-text-light);
+}
+
+.error-details {
+	text-align: left;
+}
+
+.error-details pre {
+	background: var(--color-background-dark);
+	padding: 12px;
+	border-radius: 4px;
+	font-size: 11px;
+	overflow-x: auto;
+	margin-top: 8px;
+}
+
+@media (max-width: 768px) {
+	.fields-dialog {
+		padding: 16px;
+	}
+	
+	.overview-stats {
+		flex-direction: column;
+	}
+	
+	.info-grid {
+		grid-template-columns: 1fr;
+	}
+	
+	.fields-controls {
+		flex-direction: column;
+	}
+	
+	.fields-table {
+		font-size: 12px;
+	}
+	
+	.fields-table th,
+	.fields-table td {
+		padding: 8px;
+	}
+	
+	.dynamic-fields-grid {
+		grid-template-columns: 1fr;
+	}
 }
 </style>

@@ -547,15 +547,40 @@ class SolrSchemaService
     }
 
     /**
-     * Check if field should be multi-valued
+     * Check if field should be multi-valued based strictly on schema property type
      *
-     * @param array $fieldDefinition Field definition
-     * @return bool True if multi-valued
+     * Only fields with type 'array' in the OpenRegister schema should be multi-valued in SOLR.
+     * This prevents issues where string fields incorrectly become multi-valued due to 
+     * different SOLR configurations between environments.
+     *
+     * @param array $fieldDefinition Field definition from OpenRegister schema
+     * @return bool True if field should be multi-valued
      */
     private function isMultiValued(array $fieldDefinition): bool
     {
-        return ($fieldDefinition['type'] ?? '') === 'array' || 
-               ($fieldDefinition['multiValued'] ?? false);
+        // STRICT: Only array type should be multi-valued
+        return ($fieldDefinition['type'] ?? '') === 'array';
+    }
+
+    /**
+     * Determine if a core metadata field should be multi-valued
+     *
+     * Only specific core fields that legitimately store multiple values should be multi-valued.
+     * This prevents accidental multi-value configuration for single-value fields.
+     *
+     * @param string $fieldName Core field name
+     * @param string $fieldType SOLR field type
+     * @return bool True if field should be multi-valued
+     */
+    private function isCoreFieldMultiValued(string $fieldName, string $fieldType): bool
+    {
+        // Only these core fields are legitimately multi-valued
+        $multiValuedCoreFields = [
+            'self_relations', // Array of UUID references
+            'self_files'      // Array of file references
+        ];
+        
+        return in_array($fieldName, $multiValuedCoreFields) && $fieldType === 'strings';
     }
 
     /**
@@ -581,7 +606,7 @@ class SolrSchemaService
                     'type' => $fieldType,
                     'stored' => true,
                     'indexed' => true,
-                    'multiValued' => in_array($fieldType, ['strings']) // Multi-valued for array fields
+                    'multiValued' => $this->isCoreFieldMultiValued($fieldName, $fieldType)
                 ];
 
                 if ($this->addOrUpdateSolrField($fieldName, $fieldConfig, $force)) {
