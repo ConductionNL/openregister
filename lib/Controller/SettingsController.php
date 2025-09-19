@@ -635,6 +635,16 @@ class SettingsController extends Controller
             // Get field configuration from SOLR
             $fieldsData = $guzzleSolrService->getFieldsConfiguration();
             
+            // Get expected fields based on OpenRegister schemas
+            $expectedFields = $this->getExpectedSchemaFields();
+            
+            // Compare actual vs expected fields
+            $comparison = $this->compareFields($fieldsData['fields'] ?? [], $expectedFields);
+            
+            // Add expected fields and comparison to response
+            $fieldsData['expected_fields'] = $expectedFields;
+            $fieldsData['comparison'] = $comparison;
+            
             return new JSONResponse($fieldsData);
             
         } catch (\Exception $e) {
@@ -646,6 +656,104 @@ class SettingsController extends Controller
         }
     }//end getSolrFields()
 
+    /**
+     * Get expected schema fields based on OpenRegister schemas
+     *
+     * @return array Expected field configuration
+     */
+    private function getExpectedSchemaFields(): array
+    {
+        try {
+            // Get SolrSchemaService to analyze schemas
+            $solrSchemaService = $this->container->get(\OCA\OpenRegister\Service\SolrSchemaService::class);
+            $schemaMapper = $this->container->get(\OCA\OpenRegister\Db\SchemaMapper::class);
+            
+            // Get all schemas
+            $schemas = $schemaMapper->findAll();
+            
+            // Use the existing analyzeAndResolveFieldConflicts method via reflection
+            $reflection = new \ReflectionClass($solrSchemaService);
+            $method = $reflection->getMethod('analyzeAndResolveFieldConflicts');
+            $method->setAccessible(true);
+            
+            $result = $method->invoke($solrSchemaService, $schemas);
+            
+            return $result['fields'] ?? [];
+            
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to get expected schema fields', [
+                'error' => $e->getMessage()
+            ]);
+            return [];
+        }
+    }
+
+    /**
+     * Compare actual SOLR fields with expected schema fields
+     *
+     * @param array $actualFields   Current SOLR fields
+     * @param array $expectedFields Expected fields from schemas
+     * @return array Comparison results
+     */
+    private function compareFields(array $actualFields, array $expectedFields): array
+    {
+        $missing = [];
+        $extra = [];
+        $mismatched = [];
+        
+        // Find missing fields (expected but not in SOLR)
+        foreach ($expectedFields as $fieldName => $expectedConfig) {
+            if (!isset($actualFields[$fieldName])) {
+                $missing[] = [
+                    'field' => $fieldName,
+                    'expected_type' => $expectedConfig['type'] ?? 'unknown',
+                    'expected_config' => $expectedConfig
+                ];
+            }
+        }
+        
+        // Find extra fields (in SOLR but not expected) and mismatched configurations
+        foreach ($actualFields as $fieldName => $actualField) {
+            // Skip system fields and core metadata fields
+            if (str_starts_with($fieldName, '_') || str_starts_with($fieldName, 'self_')) {
+                continue;
+            }
+            
+            if (!isset($expectedFields[$fieldName])) {
+                $extra[] = [
+                    'field' => $fieldName,
+                    'actual_type' => $actualField['type'] ?? 'unknown',
+                    'actual_config' => $actualField
+                ];
+            } else {
+                // Check for type mismatches
+                $expectedType = $expectedFields[$fieldName]['type'] ?? '';
+                $actualType = $actualField['type'] ?? '';
+                
+                if ($expectedType !== $actualType) {
+                    $mismatched[] = [
+                        'field' => $fieldName,
+                        'expected_type' => $expectedType,
+                        'actual_type' => $actualType,
+                        'expected_config' => $expectedFields[$fieldName],
+                        'actual_config' => $actualField
+                    ];
+                }
+            }
+        }
+        
+        return [
+            'missing' => $missing,
+            'extra' => $extra,
+            'mismatched' => $mismatched,
+            'summary' => [
+                'missing_count' => count($missing),
+                'extra_count' => count($extra),
+                'mismatched_count' => count($mismatched),
+                'total_differences' => count($missing) + count($extra) + count($mismatched)
+            ]
+        ];
+    }
 
     /**
      * Get SOLR settings only

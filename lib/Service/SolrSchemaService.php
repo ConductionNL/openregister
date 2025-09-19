@@ -61,14 +61,24 @@ class SolrSchemaService
     /**
      * Reserved SOLR field names (cannot be prefixed)
      *
+     * These are SOLR system fields that should not be modified or prefixed.
+     *
      * @var array<string>
      */
     private const RESERVED_FIELDS = [
-        'id', 'uuid', 'self_tenant', '_text_', '_version_'
+        'id', 'uuid', 'self_tenant', '_text_', '_version_', '_root_', '_nest_path_',
+        '_embedding_', '_embedding_model_', '_embedding_dim_', '_confidence_', '_classification_'
     ];
 
     /**
      * Core metadata fields that should be defined in SOLR schema
+     *
+     * Field configuration strategy:
+     * - JSON storage fields (self_object, self_authorization, etc.): stored=true, indexed=false, docValues=false
+     * - Sortable/facetable fields (self_name, self_owner, dates, etc.): stored=true, indexed=true, docValues=true
+     * - Text content fields (self_description, self_summary): stored=true, indexed=true, docValues=false (text analysis)
+     * - AI/ML fields (_embedding_, _confidence_, etc.): stored=true, indexed=true, docValues=false (vector operations)
+     * - AI metadata fields (_embedding_model_, _embedding_dim_): stored=true, indexed=true/false, docValues=true/false
      *
      * @var array<string, string> Field name => SOLR field type
      */
@@ -113,13 +123,23 @@ class SolrSchemaService
         'self_depublished' => 'pdate',
         
         // Complex fields
-        'self_object' => 'text_general', // JSON storage
+        'self_object' => 'string', // JSON storage - not indexed, only for reconstruction
         'self_relations' => 'strings',   // Multi-valued UUIDs
         'self_files' => 'strings',       // Multi-valued file references
-        'self_authorization' => 'text_general', // JSON
-        'self_deleted' => 'text_general',       // JSON
-        'self_validation' => 'text_general',    // JSON
-        'self_groups' => 'text_general'         // JSON
+        'self_authorization' => 'string', // JSON storage - not indexed, only for reconstruction
+        'self_deleted' => 'string',       // JSON storage - not indexed, only for reconstruction
+        'self_validation' => 'string',    // JSON storage - not indexed, only for reconstruction
+        'self_groups' => 'string',        // JSON storage - not indexed, only for reconstruction
+        
+        // SOLR system fields that need explicit definition
+        '_text_' => 'text_general',       // Catch-all full-text search field
+        
+        // AI/ML fields for future semantic search and classification features
+        '_embedding_' => 'pfloats',       // Vector embeddings for semantic search (multi-valued floats)
+        '_embedding_model_' => 'string',  // Model identifier (e.g., 'openai-ada-002', 'sentence-transformers')
+        '_embedding_dim_' => 'pint',      // Embedding dimension count for validation
+        '_confidence_' => 'pfloat',       // ML confidence scores (0.0-1.0)
+        '_classification_' => 'strings'   // Auto-classification results (multi-valued)
     ];
 
     /**
@@ -360,6 +380,7 @@ class SolrSchemaService
                     'stored' => true,
                     'indexed' => true,
                     'multiValued' => $this->isMultiValued($fieldInfo['definitions'][0]),
+                    'docValues' => true, // Schema-based fields should have docValues for sorting/faceting
                     'facetable' => $fieldInfo['definitions'][0]['facetable'] ?? true
                 ];
             }
@@ -472,6 +493,7 @@ class SolrSchemaService
                     'stored' => true,
                     'indexed' => true,
                     'multiValued' => $this->isMultiValued($fieldDefinition),
+                    'docValues' => true, // Schema-based fields should have docValues for sorting/faceting
                     'facetable' => $fieldDefinition['facetable'] ?? true
                 ];
                 $fieldsCreated++;
@@ -584,6 +606,98 @@ class SolrSchemaService
     }
 
     /**
+     * Determine if a core metadata field should be indexed
+     *
+     * Some core fields like JSON storage fields should be stored but not indexed
+     * since they're only used for reconstruction, not searching.
+     *
+     * @param string $fieldName Core field name
+     * @return bool True if field should be indexed
+     */
+    private function shouldCoreFieldBeIndexed(string $fieldName): bool
+    {
+        // Fields that should NOT be indexed (stored only for reconstruction)
+        $nonIndexedFields = [
+            'self_object',        // JSON blob for object reconstruction
+            'self_authorization', // JSON blob for permissions
+            'self_deleted',       // JSON blob for deletion metadata
+            'self_validation',    // JSON blob for validation results
+            'self_groups',        // JSON blob for group assignments
+            '_embedding_dim_'     // Dimension count - stored for validation, not searched
+        ];
+        
+        return !in_array($fieldName, $nonIndexedFields);
+    }
+
+    /**
+     * Determine if a core metadata field should have docValues enabled
+     *
+     * docValues enable fast sorting, faceting, grouping, and function queries.
+     * They should be enabled for fields that are used for:
+     * - Sorting (e.g., name, created, updated dates)
+     * - Faceting (e.g., owner, organisation, schema, register)
+     * - Grouping operations
+     * 
+     * JSON storage fields should have docValues=false to save storage space.
+     *
+     * @param string $fieldName Core field name
+     * @return bool True if field should have docValues enabled
+     */
+    private function shouldCoreFieldHaveDocValues(string $fieldName): bool
+    {
+        // Fields that should have docValues enabled for sorting/faceting/grouping
+        $docValuesFields = [
+            // Sortable fields
+            'self_name',         // Sort by name
+            'self_created',      // Sort by creation date
+            'self_updated',      // Sort by update date
+            'self_published',    // Sort by publication date
+            
+            // Facetable fields
+            'self_owner',        // Facet by owner
+            'self_organisation', // Facet by organisation
+            'self_application',  // Facet by application
+            'self_schema',       // Facet by schema ID
+            'self_schema_id',    // Facet by schema ID
+            'self_register',     // Facet by register ID
+            'self_register_id',  // Facet by register ID
+            
+            // UUID fields for exact matching and grouping
+            'self_uuid',         // Exact UUID matching
+            'self_schema_uuid',  // Schema UUID matching
+            'self_register_uuid',// Register UUID matching
+            
+            // Slug fields for URL-friendly lookups
+            'self_slug',         // URL slug lookup
+            'self_schema_slug',  // Schema slug lookup
+            'self_register_slug',// Register slug lookup
+            
+            // Other metadata that might be used for filtering
+            'self_object_id',    // Object ID filtering
+            'self_tenant',       // Tenant filtering
+            'self_version',      // Version filtering
+            'self_size',         // Size-based sorting/filtering
+            'self_locked',       // Locked status filtering
+        ];
+        
+        // Special handling for system fields
+        if ($fieldName === '_text_') {
+            return false; // Full-text search fields don't need docValues
+        }
+        
+        // AI/ML fields configuration
+        if (in_array($fieldName, ['_embedding_', '_confidence_', '_classification_'])) {
+            return false; // Vector and classification fields don't need docValues for sorting
+        }
+        
+        if (in_array($fieldName, ['_embedding_model_', '_embedding_dim_'])) {
+            return true; // Metadata fields that might be used for filtering/faceting
+        }
+        
+        return in_array($fieldName, $docValuesFields);
+    }
+
+    /**
      * Ensure core metadata fields exist in SOLR schema
      *
      * These are the essential fields needed for object indexing including
@@ -605,8 +719,9 @@ class SolrSchemaService
                 $fieldConfig = [
                     'type' => $fieldType,
                     'stored' => true,
-                    'indexed' => true,
-                    'multiValued' => $this->isCoreFieldMultiValued($fieldName, $fieldType)
+                    'indexed' => $this->shouldCoreFieldBeIndexed($fieldName),
+                    'multiValued' => $this->isCoreFieldMultiValued($fieldName, $fieldType),
+                    'docValues' => $this->shouldCoreFieldHaveDocValues($fieldName)
                 ];
 
                 if ($this->addOrUpdateSolrField($fieldName, $fieldConfig, $force)) {
