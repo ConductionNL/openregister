@@ -944,8 +944,8 @@ class SaveObject
             return $property['type'] === 'array'
                 && (isset($property['$ref']) || isset($property['items']['$ref']))
                 && (isset($property['inversedBy']) === true || isset($property['items']['inversedBy']) === true ||
-                    (isset($property['objectConfiguration']['handling']) && $property['objectConfiguration']['handling'] === 'cascade') ||
-                    (isset($property['items']['objectConfiguration']['handling']) && $property['items']['objectConfiguration']['handling'] === 'cascade'));
+                    (isset($property['objectConfiguration']['handling']) && ($property['objectConfiguration']['handling'] === 'cascade'|| $property['objectConfiguration']['handling'] === 'related-object')) ||
+                    (isset($property['items']['objectConfiguration']['handling']) && ($property['items']['objectConfiguration']['handling'] === 'cascade' || $property['objectConfiguration']['handling'] === 'related-object')));
           }
           );
 
@@ -1048,7 +1048,7 @@ class SaveObject
         $validObjects = array_filter(
           $propData,
           function ($object) {
-            return is_array($object) && !empty($object) && !(count($object) === 1 && isset($object['id']) && empty($object['id']));
+            return (is_array($object) && !empty($object) && !(count($object) === 1 && isset($object['id']) && empty($object['id'])))  || (is_string($object) && Uuid::isValid($object));
           }
           );
 
@@ -1079,6 +1079,11 @@ class SaveObject
 
         $createdUuids = [];
         foreach ($validObjects as $object) {
+            
+            if (is_string($object) && Uuid::isValid($object)) {
+                $object = ['id' => $object];
+            }
+
             try {
                 $uuid = $this->cascadeSingleObject(objectEntity: $objectEntity, definition: $property['items'], object: $object);
                 if ($uuid !== null) {
