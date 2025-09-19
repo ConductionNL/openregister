@@ -48,6 +48,9 @@ export const useSettingsStore = defineStore('settings', {
 		setupResults: null,
 		fieldsInfo: null,
 		fieldComparison: null,
+		creatingFields: false,
+		fixingFields: false,
+		fieldCreationResult: null,
 		
 		// Cache states
 		clearingCache: false,
@@ -882,6 +885,86 @@ export const useSettingsStore = defineStore('settings', {
 			this.showFieldsDialog = false
 			this.fieldsInfo = null
 			this.fieldComparison = null
+			this.fieldCreationResult = null
+		},
+
+		setCreatingFields(creating) {
+			this.creatingFields = creating
+		},
+
+		setFixingFields(fixing) {
+			this.fixingFields = fixing
+		},
+
+		setFieldCreationResult(result) {
+			this.fieldCreationResult = result
+		},
+
+		/**
+		 * Create missing SOLR fields
+		 */
+		async createMissingSolrFields(dryRun = false) {
+			this.creatingFields = true
+			this.fieldCreationResult = null
+			try {
+				const payload = {
+					dry_run: dryRun
+				}
+				
+				const response = await axios.post(generateUrl('/apps/openregister/api/solr/fields/create-missing'), payload)
+				this.fieldCreationResult = response.data
+				
+				// If successful and not a dry run, reload the fields to show updated state
+				if (response.data.success && !dryRun) {
+					await this.loadSolrFields()
+				}
+				
+				return response.data
+			} catch (error) {
+				console.error('Failed to create missing SOLR fields:', error)
+				const result = {
+					success: false,
+					message: error.response?.data?.message || error.message,
+					error: error.response?.data?.error || error.message
+				}
+				this.fieldCreationResult = result
+				return result
+			} finally {
+				this.creatingFields = false
+			}
+		},
+
+		/**
+		 * Fix mismatched SOLR field configurations
+		 */
+		async fixMismatchedSolrFields(dryRun = false) {
+			this.fixingFields = true
+			this.fieldCreationResult = null
+			try {
+				const payload = {
+					dry_run: dryRun
+				}
+				
+				const response = await axios.post(generateUrl('/apps/openregister/api/solr/fields/fix-mismatches'), payload)
+				this.fieldCreationResult = response.data
+				
+				// If successful and not a dry run, reload the fields to show updated state
+				if (response.data.success && !dryRun) {
+					await this.loadSolrFields()
+				}
+				
+				return response.data
+			} catch (error) {
+				console.error('Failed to fix mismatched SOLR fields:', error)
+				this.fieldCreationResult = {
+					success: false,
+					message: 'Failed to fix mismatched SOLR fields: ' + error.message,
+					errors: [error.message]
+				}
+				throw error
+			} finally {
+				this.fixingFields = false
+			}
 		},
 	},
 })

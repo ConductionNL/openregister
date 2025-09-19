@@ -639,7 +639,10 @@ class SettingsController extends Controller
             $expectedFields = $this->getExpectedSchemaFields();
             
             // Compare actual vs expected fields
-            $comparison = $this->compareFields($fieldsData['fields'] ?? [], $expectedFields);
+            $comparison = $this->compareFields(
+                actualFields: $fieldsData['fields'] ?? [], 
+                expectedFields: $expectedFields
+            );
             
             // Add expected fields and comparison to response
             $fieldsData['expected_fields'] = $expectedFields;
@@ -655,6 +658,129 @@ class SettingsController extends Controller
             ], 500);
         }
     }//end getSolrFields()
+
+    /**
+     * Create missing SOLR fields based on schema analysis
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse The field creation results
+     */
+    public function createMissingSolrFields(): JSONResponse
+    {
+        try {
+            // Get GuzzleSolrService for field creation
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            
+            // Check if SOLR is available first
+            if (!$guzzleSolrService->isAvailable()) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'SOLR is not available or not configured',
+                    'details' => ['error' => 'SOLR service is not enabled or connection failed']
+                ], 503);
+            }
+
+            // Get dry run parameter
+            $dryRun = $this->request->getParam('dry_run', false);
+            $dryRun = filter_var($dryRun, FILTER_VALIDATE_BOOLEAN);
+
+            // Get expected fields using the same method as the comparison
+            $expectedFields = $this->getExpectedSchemaFields();
+            
+            // Create missing fields
+            $result = $guzzleSolrService->createMissingFields($expectedFields, $dryRun);
+            
+            return new JSONResponse($result);
+            
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Failed to create missing SOLR fields: ' . $e->getMessage(),
+                'details' => ['error' => $e->getMessage()]
+            ], 500);
+        }
+    }//end createMissingSolrFields()
+
+    /**
+     * Fix mismatched SOLR field configurations
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse The field fix results
+     */
+    public function fixMismatchedSolrFields(): JSONResponse
+    {
+        try {
+            // Get GuzzleSolrService for field operations
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            
+            // Check if SOLR is available first
+            if (!$guzzleSolrService->isAvailable()) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'SOLR is not available or not configured',
+                    'details' => ['error' => 'SOLR service is not enabled or connection failed']
+                ], 503);
+            }
+
+            // Get dry run parameter
+            $dryRun = $this->request->getParam('dry_run', false);
+            $dryRun = filter_var($dryRun, FILTER_VALIDATE_BOOLEAN);
+
+            // Get expected fields and current SOLR fields for comparison
+            $expectedFields = $this->getExpectedSchemaFields();
+            $fieldsInfo = $guzzleSolrService->getFieldsConfiguration();
+            
+            if (!$fieldsInfo['success']) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'Failed to get SOLR field configuration',
+                    'details' => ['error' => $fieldsInfo['message'] ?? 'Unknown error']
+                ], 500);
+            }
+            
+            // Compare fields to find mismatched ones
+            $comparison = $this->compareFields(
+                actualFields: $fieldsInfo['fields'] ?? [], 
+                expectedFields: $expectedFields
+            );
+            
+            if (empty($comparison['mismatched'])) {
+                return new JSONResponse([
+                    'success' => true,
+                    'message' => 'No mismatched fields found - SOLR schema is properly configured',
+                    'fixed' => [],
+                    'errors' => []
+                ]);
+            }
+            
+            // Prepare fields to fix from mismatched fields
+            $fieldsToFix = [];
+            foreach ($comparison['mismatched'] as $mismatch) {
+                $fieldsToFix[$mismatch['field']] = $mismatch['expected_config'];
+                
+            }
+            
+            // Debug: Log field count for troubleshooting
+            error_log("OpenRegister: Fixing " . count($fieldsToFix) . " mismatched SOLR fields (dry_run: " . ($dryRun ? 'true' : 'false') . ")");
+            
+            // Fix the mismatched fields using the dedicated method
+            $result = $guzzleSolrService->fixMismatchedFields($fieldsToFix, $dryRun);
+            
+            // The fixMismatchedFields method already returns the correct format
+            return new JSONResponse($result);
+            
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Failed to fix mismatched SOLR fields: ' . $e->getMessage(),
+                'details' => ['error' => $e->getMessage()]
+            ], 500);
+        }
+    }//end fixMismatchedSolrFields()
 
     /**
      * Get expected schema fields based on OpenRegister schemas
@@ -726,16 +852,41 @@ class SettingsController extends Controller
                     'actual_config' => $actualField
                 ];
             } else {
-                // Check for type mismatches
-                $expectedType = $expectedFields[$fieldName]['type'] ?? '';
+                // Check for configuration mismatches (type, multiValued, docValues)
+                $expectedConfig = $expectedFields[$fieldName];
+                $expectedType = $expectedConfig['type'] ?? '';
                 $actualType = $actualField['type'] ?? '';
+                $expectedMultiValued = $expectedConfig['multiValued'] ?? false;
+                $actualMultiValued = $actualField['multiValued'] ?? false;
+                $expectedDocValues = $expectedConfig['docValues'] ?? false;
+                $actualDocValues = $actualField['docValues'] ?? false;
                 
-                if ($expectedType !== $actualType) {
+                // Check if any configuration differs
+                if ($expectedType !== $actualType || 
+                    $expectedMultiValued !== $actualMultiValued || 
+                    $expectedDocValues !== $actualDocValues) {
+                    
+                    $differences = [];
+                    if ($expectedType !== $actualType) {
+                        $differences[] = 'type';
+                    }
+                    if ($expectedMultiValued !== $actualMultiValued) {
+                        $differences[] = 'multiValued';
+                    }
+                    if ($expectedDocValues !== $actualDocValues) {
+                        $differences[] = 'docValues';
+                    }
+                    
                     $mismatched[] = [
                         'field' => $fieldName,
                         'expected_type' => $expectedType,
                         'actual_type' => $actualType,
-                        'expected_config' => $expectedFields[$fieldName],
+                        'expected_multiValued' => $expectedMultiValued,
+                        'actual_multiValued' => $actualMultiValued,
+                        'expected_docValues' => $expectedDocValues,
+                        'actual_docValues' => $actualDocValues,
+                        'differences' => $differences,
+                        'expected_config' => $expectedConfig,
                         'actual_config' => $actualField
                     ];
                 }
