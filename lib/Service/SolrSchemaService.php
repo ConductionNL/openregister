@@ -113,13 +113,13 @@ class SolrSchemaService
         'self_depublished' => 'pdate',
         
         // Complex fields
-        'self_object' => 'text_general', // JSON storage
+        'self_object' => 'string', // JSON storage - not indexed, only for reconstruction
         'self_relations' => 'strings',   // Multi-valued UUIDs
         'self_files' => 'strings',       // Multi-valued file references
-        'self_authorization' => 'text_general', // JSON
-        'self_deleted' => 'text_general',       // JSON
-        'self_validation' => 'text_general',    // JSON
-        'self_groups' => 'text_general'         // JSON
+        'self_authorization' => 'string', // JSON storage - not indexed, only for reconstruction
+        'self_deleted' => 'string',       // JSON storage - not indexed, only for reconstruction
+        'self_validation' => 'string',    // JSON storage - not indexed, only for reconstruction
+        'self_groups' => 'string'         // JSON storage - not indexed, only for reconstruction
     ];
 
     /**
@@ -584,6 +584,29 @@ class SolrSchemaService
     }
 
     /**
+     * Determine if a core metadata field should be indexed
+     *
+     * Some core fields like JSON storage fields should be stored but not indexed
+     * since they're only used for reconstruction, not searching.
+     *
+     * @param string $fieldName Core field name
+     * @return bool True if field should be indexed
+     */
+    private function shouldCoreFieldBeIndexed(string $fieldName): bool
+    {
+        // Fields that should NOT be indexed (stored only for reconstruction)
+        $nonIndexedFields = [
+            'self_object',        // JSON blob for object reconstruction
+            'self_authorization', // JSON blob for permissions
+            'self_deleted',       // JSON blob for deletion metadata
+            'self_validation',    // JSON blob for validation results
+            'self_groups'         // JSON blob for group assignments
+        ];
+        
+        return !in_array($fieldName, $nonIndexedFields);
+    }
+
+    /**
      * Ensure core metadata fields exist in SOLR schema
      *
      * These are the essential fields needed for object indexing including
@@ -605,7 +628,7 @@ class SolrSchemaService
                 $fieldConfig = [
                     'type' => $fieldType,
                     'stored' => true,
-                    'indexed' => true,
+                    'indexed' => $this->shouldCoreFieldBeIndexed($fieldName),
                     'multiValued' => $this->isCoreFieldMultiValued($fieldName, $fieldType)
                 ];
 
