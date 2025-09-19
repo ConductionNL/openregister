@@ -180,7 +180,56 @@ class ImportServiceTest extends TestCase
      */
     public function testImportFromCsvWithErrors(): void
     {
-        $this->markTestSkipped('ImportService requires real database connection - this is an integration test');
+        // Skip test if PhpSpreadsheet is not available
+        if (!class_exists('PhpOffice\PhpSpreadsheet\Reader\Csv')) {
+            $this->markTestSkipped('PhpSpreadsheet library not available');
+            return;
+        }
+        
+        // Create test data
+        $register = $this->createMock(Register::class);
+        $register->method('getId')->willReturn('test-register-id');
+
+        $schema = $this->createMock(Schema::class);
+        $schema->method('getId')->willReturn('1');
+        $schema->method('getTitle')->willReturn('Test Schema');
+        $schema->method('getSlug')->willReturn('test-schema');
+        $schema->method('getProperties')->willReturn([
+            'name' => ['type' => 'string'],
+            'age' => ['type' => 'integer'],
+        ]);
+        
+        // Use reflection to set protected properties
+        $reflection = new \ReflectionClass($schema);
+        $titleProperty = $reflection->getProperty('title');
+        $titleProperty->setAccessible(true);
+        $titleProperty->setValue($schema, 'Test Schema');
+        
+        $slugProperty = $reflection->getProperty('slug');
+        $slugProperty->setAccessible(true);
+        $slugProperty->setValue($schema, 'test-schema');
+
+        // Mock ObjectService to throw exception on saveObjects
+        $this->objectService->expects($this->once())
+            ->method('saveObjects')
+            ->willThrowException(new \Exception('Database connection failed'));
+
+        // Create temporary CSV file with test data
+        $csvContent = "name,age\nJohn Doe,30\nJane Smith,25";
+        $tempFile = tempnam(sys_get_temp_dir(), 'test_csv_');
+        file_put_contents($tempFile, $csvContent);
+
+        try {
+            // Test the import - should throw exception due to database connection failure
+            $this->expectException(\Exception::class);
+            $this->expectExceptionMessage('Database connection failed');
+            
+            $this->importService->importFromCsv($tempFile, $register, $schema);
+
+        } finally {
+            // Clean up temporary file
+            unlink($tempFile);
+        }
     }
 
     /**
