@@ -775,12 +775,7 @@ class GuzzleSolrService
      */
     public function indexObject(ObjectEntity $object, bool $commit = false): bool
     {
-        // **DEBUG**: Track individual indexObject calls
-        $this->logger->debug('=== GUZZLE indexObject() CALLED ===');
-        $this->logger->debug('Object ID: ' . $object->getId());
-        $this->logger->debug('Object UUID: ' . ($object->getUuid() ?? 'null'));
-        $this->logger->debug('Called from: ' . (debug_backtrace()[1]['function'] ?? 'unknown'));
-        $this->logger->debug('=== END indexObject DEBUG ===');
+        // Individual object indexing (logging removed for performance)
         
         if (!$this->isAvailable()) {
             return false;
@@ -3697,12 +3692,7 @@ class GuzzleSolrService
                 
                 // Fetch objects directly from ObjectEntityMapper using simpler findAll method
                 $fetchStart = microtime(true);
-                $this->logger->info('📥 Fetching batch {batch} using ObjectEntityMapper::findAll', [
-                    'batch' => $batchCount + 1,
-                    'limit' => $currentBatchSize,
-                    'offset' => $offset,
-                    'totalProcessed' => $totalProcessed
-                ]);
+                // Batch fetched (logging removed for performance)
                 
                 $objects = $objectMapper->findAll(
                     limit: $currentBatchSize,
@@ -3719,12 +3709,7 @@ class GuzzleSolrService
                     'fetchTime' => $fetchDuration . 'ms'
                 ]);
                 
-                $this->logger->debug('Fetched {count} objects from database', [
-                    'count' => count($objects)
-                ]);
-                
                 if (empty($objects)) {
-                    $this->logger->debug('No more objects found, breaking pagination loop');
                     break; // No more objects
                 }
                 
@@ -3752,23 +3737,7 @@ class GuzzleSolrService
                 $indexed = 0;
                 if (!empty($documents)) {
                     $indexStart = microtime(true);
-                    $this->logger->info('📤 Attempting bulk index to SOLR', [
-                        'batch' => $batchCount + 1,
-                        'documents' => count($documents),
-                        'totalProcessedSoFar' => $totalProcessed
-                    ]);
-                    
-                    // Debug first document structure
-                    if (!empty($documents)) {
-                        $firstDoc = $documents[0];
-                        $this->logger->debug('First document structure', [
-                            'batch' => $batchCount + 1,
-                            'documentFields' => array_keys($firstDoc),
-                            'hasId' => isset($firstDoc['id']),
-                            'hasObject' => isset($firstDoc['self_object']),
-                            'id' => $firstDoc['id'] ?? 'missing'
-                        ]);
-                    }
+                    // Bulk index the documents (minimal logging for performance)
                     
                     $this->bulkIndex($documents, true); // Commit each batch for immediate visibility
                     $indexed = count($documents); // If we reach here, indexing succeeded
@@ -3776,31 +3745,15 @@ class GuzzleSolrService
                     $indexEnd = microtime(true);
                     $indexDuration = round(($indexEnd - $indexStart) * 1000, 2);
                     
-                    $this->logger->info('✅ Bulk index result', [
-                        'batch' => $batchCount + 1,
-                        'indexed' => $indexed,
-                        'documentsProvided' => count($documents),
-                        'indexTime' => $indexDuration . 'ms'
-                    ]);
-                } else {
-                    $this->logger->warning('⚠️  No documents to bulk index', [
-                        'batch' => $batchCount + 1,
-                        'objects_count' => count($objects),
-                        'possibleIssue' => 'Document creation failed for all objects in batch'
-                    ]);
+                    // Progress tracking (logging removed for performance)
                 }
                 
-                $this->logger->info('Indexed {indexed} objects in batch {batch}', [
-                    'indexed' => $indexed,
-                    'batch' => $batchCount + 1
-                ]);
+                // Removed redundant per-batch logging for performance
                 
                 // Commit after each batch
                 if (!empty($objects)) {
                     $this->commit();
-                    $this->logger->debug('Committed batch {batch} to Solr', [
-                        'batch' => $batchCount + 1
-                    ]);
+                    // Reduced commit logging for performance
                 }
                 
                 $batchCount++;
@@ -3863,11 +3816,7 @@ class GuzzleSolrService
             $objectMapper = \OC::$server->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
             
             $startTime = microtime(true);
-            $this->logger->info('Starting parallel bulk index from database using ObjectEntityMapper', [
-                'batchSize' => $batchSize,
-                'maxObjects' => $maxObjects,
-                'parallelBatches' => $parallelBatches
-            ]);
+            // Parallel bulk indexing started (logging removed for performance)
 
             // First, get the total count to plan batches using ObjectEntityMapper's dedicated count method
             $countQuery = []; // Empty query to count all objects
@@ -3875,22 +3824,13 @@ class GuzzleSolrService
             
             // Total objects retrieved from database
             
-            $this->logger->info('Total objects found for parallel indexing', [
-                'totalFromDatabase' => $totalObjects,
-                'maxObjectsLimit' => $maxObjects
-            ]);
+            // Total objects determined (logging removed for performance)
             
             if ($maxObjects > 0) {
                 $totalObjects = min($totalObjects, $maxObjects);
-                $this->logger->info('Applied maxObjects limit', [
-                    'finalTotal' => $totalObjects
-                ]);
             }
 
-            $this->logger->info('Planning parallel batch processing', [
-                'totalObjects' => $totalObjects,
-                'estimatedBatches' => ceil($totalObjects / $batchSize)
-            ]);
+            // Parallel batch processing planned (logging removed for performance)
 
             // Create batch jobs
             $batchJobs = [];
@@ -3907,10 +3847,7 @@ class GuzzleSolrService
                 $offset += $currentBatchSize;
             }
 
-            $this->logger->info('Created batch jobs', [
-                'totalJobs' => count($batchJobs),
-                'parallelBatches' => $parallelBatches
-            ]);
+            // Batch jobs created (logging removed for performance)
 
         // **FIXED**: Process batches in parallel chunks using ReactPHP (without ->wait())
         $totalIndexed = 0;
@@ -4442,6 +4379,30 @@ class GuzzleSolrService
         $startTime = microtime(true);
         $operations = [];
         
+        // **MEMORY OPTIMIZATION**: Increase memory limit and optimize settings for large datasets
+        $originalMemoryLimit = ini_get('memory_limit');
+        $originalMaxExecutionTime = ini_get('max_execution_time');
+        
+        // Set execution time limit for warmup process (memory limit now set at container level)
+        ini_set('max_execution_time', 3600); // 1 hour
+        
+        // **CRITICAL**: Disable profiler during warmup - even with reduced logging, 26K+ queries overwhelm profiler
+        $profilerWasEnabled = false;
+        try {
+            $profiler = \OC::$server->get(\OCP\Profiler\IProfiler::class);
+            if ($profiler->isEnabled()) {
+                $profilerWasEnabled = true;
+                $reflection = new \ReflectionClass($profiler);
+                if ($reflection->hasMethod('setEnabled')) {
+                    $profiler->setEnabled(false);
+                }
+            }
+        } catch (\Exception $e) {
+            // Profiler not available - continue
+        }
+        
+        // Minimal warmup logging to prevent profiler memory issues
+        
         try {
             // 1. Test connection
             $connectionResult = $this->testConnection();
@@ -4451,9 +4412,7 @@ class GuzzleSolrService
             if (!empty($schemas)) {
                 $stageStart = microtime(true);
                 
-                $this->logger->info('🔄 Starting schema mirroring with conflict resolution', [
-                    'schema_count' => count($schemas)
-                ]);
+                // Schema mirroring (logging removed for performance)
                 
                 // Lazy-load SolrSchemaService to avoid circular dependency
                 $solrSchemaService = \OC::$server->get(SolrSchemaService::class);
@@ -4463,21 +4422,24 @@ class GuzzleSolrService
                 $operations['fields_created'] = $mirrorResult['stats']['fields_created'] ?? 0;
                 $operations['conflicts_resolved'] = $mirrorResult['stats']['conflicts_resolved'] ?? 0;
                 
-                // 2.5. Collect current SOLR field types for validation (force refresh after schema changes)
+                // 2.5. Create missing fields and fix existing field conflicts (no logging for performance)
+                $fieldManagementStart = microtime(true);
+                
+                $fieldCreationResult = $this->createMissingFields([], false); // Auto-detect missing fields
+                $operations['missing_fields_created'] = $fieldCreationResult['success'] ?? false;
+                $operations['fields_added'] = $fieldCreationResult['fields_added'] ?? 0;
+                $operations['fields_updated'] = $fieldCreationResult['fields_updated'] ?? 0;
+                
+                // Field management result stored in operations (logging removed for performance)
+                
+                $fieldManagementEnd = microtime(true);
+                $timing['field_management'] = round(($fieldManagementEnd - $fieldManagementStart) * 1000, 2) . 'ms';
+                
+                // 2.6. Collect current SOLR field types for validation (force refresh after schema changes)
                 $solrFieldTypes = $this->getSolrFieldTypes(true);
                 $operations['field_types_collected'] = count($solrFieldTypes);
                 
-                if ($mirrorResult['success']) {
-                    $this->logger->info('✅ Schema mirroring completed successfully', [
-                        'schemas_processed' => $operations['schemas_processed'],
-                        'fields_created' => $operations['fields_created'],
-                        'conflicts_resolved' => $operations['conflicts_resolved']
-                    ]);
-                } else {
-                    $this->logger->error('❌ Schema mirroring failed', [
-                        'error' => $mirrorResult['error'] ?? 'Unknown error'
-                    ]);
-                }
+                // Schema mirroring result stored in operations (logging removed for performance)
                 
                 $stageEnd = microtime(true);
                 $timing['schema_mirroring'] = round(($stageEnd - $stageStart) * 1000, 2) . 'ms';
@@ -4487,24 +4449,34 @@ class GuzzleSolrService
                 $operations['fields_created'] = 0;
                 $operations['conflicts_resolved'] = 0;
                 $timing['schema_mirroring'] = '0ms (no schemas provided)';
+                
+                // Still create missing fields even without schema mirroring (no logging for performance)
+                $fieldManagementStart = microtime(true);
+                
+                $fieldCreationResult = $this->createMissingFields([], false); // Auto-detect missing fields
+                $operations['missing_fields_created'] = $fieldCreationResult['success'] ?? false;
+                $operations['fields_added'] = $fieldCreationResult['fields_added'] ?? 0;
+                $operations['fields_updated'] = $fieldCreationResult['fields_updated'] ?? 0;
+                
+                // Field management result stored in operations (logging removed for performance)
+                
+                $fieldManagementEnd = microtime(true);
+                $timing['field_management'] = round(($fieldManagementEnd - $fieldManagementStart) * 1000, 2) . 'ms';
+                
+                // Get current SOLR field types for validation
+                $solrFieldTypes = $this->getSolrFieldTypes(true);
+                $operations['field_types_collected'] = count($solrFieldTypes);
             }
             
-            // 3. Object indexing using mode-based bulk indexing
-            $this->logger->debug('=== WARMUP MODE DEBUG ===');
-            $this->logger->debug('Mode: ' . $mode);
-            $this->logger->debug('MaxObjects: ' . $maxObjects);
+            // 3. Object indexing using mode-based bulk indexing (no logging for performance)
             
             if ($mode === 'hyper') {
-                $this->logger->debug('Calling: bulkIndexFromDatabaseOptimized (hyper mode)');
                 $indexResult = $this->bulkIndexFromDatabaseOptimized(2000, $maxObjects, $solrFieldTypes ?? []);
             } elseif ($mode === 'parallel') {
-                $this->logger->debug('Calling: bulkIndexFromDatabaseParallel');
                 $indexResult = $this->bulkIndexFromDatabaseParallel(1000, $maxObjects, 5, $solrFieldTypes ?? []);
             } else {
-                $this->logger->debug('Calling: bulkIndexFromDatabase (serial)');
                 $indexResult = $this->bulkIndexFromDatabase(1000, $maxObjects, $solrFieldTypes ?? []);
             }
-            $this->logger->debug('=== END WARMUP MODE DEBUG ===');
             
             // Pass collectErrors mode for potential future use
             $operations['error_collection_mode'] = $collectErrors;
@@ -4549,17 +4521,49 @@ class GuzzleSolrService
             
             $executionTime = (microtime(true) - $startTime) * 1000;
             
+            // **RESTORE SETTINGS**: Reset PHP execution time to original value
+            ini_set('max_execution_time', $originalMaxExecutionTime);
+            
+            // **RESTORE PROFILER**: Re-enable profiler if it was enabled
+            if ($profilerWasEnabled) {
+                try {
+                    $profiler = \OC::$server->get(\OCP\Profiler\IProfiler::class);
+                    $reflection = new \ReflectionClass($profiler);
+                    if ($reflection->hasMethod('setEnabled')) {
+                        $profiler->setEnabled(true);
+                    }
+                } catch (\Exception $e) {
+                    // Ignore profiler restoration errors
+                }
+            }
+            
             return [
                 'success' => true,
                 'operations' => $operations,
                 'execution_time_ms' => round($executionTime, 2),
-                'message' => 'GuzzleSolrService warmup completed (limited functionality - no schema mirroring)',
+                'message' => 'GuzzleSolrService warmup completed with field management and optimization',
                 'total_objects_found' => $indexResult['total'] ?? 0,
                 'batches_processed' => $indexResult['batches'] ?? 0,
                 'max_objects_limit' => $maxObjects
             ];
             
         } catch (\Exception $e) {
+            // **RESTORE SETTINGS**: Reset PHP execution time to original value even on error
+            ini_set('max_execution_time', $originalMaxExecutionTime);
+            
+            // **RESTORE PROFILER**: Re-enable profiler if it was enabled (even on error)
+            if ($profilerWasEnabled) {
+                try {
+                    $profiler = \OC::$server->get(\OCP\Profiler\IProfiler::class);
+                    $reflection = new \ReflectionClass($profiler);
+                    if ($reflection->hasMethod('setEnabled')) {
+                        $profiler->setEnabled(true);
+                    }
+                } catch (\Exception $profilerError) {
+                    // Ignore profiler restoration errors
+                }
+            }
+            
             return [
                 'success' => false,
                 'operations' => $operations,
