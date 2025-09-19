@@ -47,6 +47,7 @@ export const useSettingsStore = defineStore('settings', {
 		testResults: null,
 		setupResults: null,
 		fieldsInfo: null,
+		fieldComparison: null,
 		
 		// Cache states
 		clearingCache: false,
@@ -858,6 +859,7 @@ export const useSettingsStore = defineStore('settings', {
 			try {
 				const response = await axios.get(generateUrl('/apps/openregister/api/solr/fields'))
 				this.fieldsInfo = response.data
+			this.fieldComparison = response.data.comparison || null
 				return response.data
 			} catch (error) {
 				console.error('Failed to load SOLR fields:', error)
@@ -879,6 +881,7 @@ export const useSettingsStore = defineStore('settings', {
 		hideFieldsDialog() {
 			this.showFieldsDialog = false
 			this.fieldsInfo = null
+			this.fieldComparison = null
 		},
 	},
 })

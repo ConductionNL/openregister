@@ -1031,6 +1031,120 @@
 						</div>
 					</div>
 
+					<!-- Schema vs SOLR Comparison -->
+					<div v-if="fieldComparison && fieldComparison.summary.total_differences > 0" class="comparison-section">
+						<h3 class="comparison-title">
+							<span class="comparison-icon">⚠️</span>
+							Schema vs SOLR Differences ({{ fieldComparison.summary.total_differences }})
+						</h3>
+						<p class="comparison-description">
+							The following differences were detected between your OpenRegister schemas and the actual SOLR configuration:
+						</p>
+
+						<!-- Missing Fields -->
+						<div v-if="fieldComparison.missing.length > 0" class="difference-category">
+							<h4 class="category-title missing">
+								Missing Fields ({{ fieldComparison.missing.length }})
+							</h4>
+							<p class="category-description">Fields defined in schemas but not present in SOLR:</p>
+							<table class="comparison-table">
+								<thead>
+									<tr>
+										<th>Field Name</th>
+										<th>Expected Type</th>
+										<th>Expected Config</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr v-for="field in fieldComparison.missing" :key="'missing-' + field.field">
+										<td class="field-name">{{ field.field }}</td>
+										<td>
+											<span class="field-type" :class="field.expected_type">{{ field.expected_type }}</span>
+										</td>
+										<td class="config-details">
+											<span v-if="field.expected_config.multiValued" class="config-badge multi">Multi</span>
+											<span v-if="field.expected_config.indexed" class="config-badge indexed">Indexed</span>
+											<span v-if="field.expected_config.stored" class="config-badge stored">Stored</span>
+											<span v-if="field.expected_config.docValues" class="config-badge docvalues">DocValues</span>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+
+						<!-- Extra Fields -->
+						<div v-if="fieldComparison.extra.length > 0" class="difference-category">
+							<h4 class="category-title extra">
+								Extra Fields ({{ fieldComparison.extra.length }})
+							</h4>
+							<p class="category-description">Fields present in SOLR but not defined in any schema:</p>
+							<table class="comparison-table">
+								<thead>
+									<tr>
+										<th>Field Name</th>
+										<th>Actual Type</th>
+										<th>Actual Config</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr v-for="field in fieldComparison.extra" :key="'extra-' + field.field">
+										<td class="field-name">{{ field.field }}</td>
+										<td>
+											<span class="field-type" :class="field.actual_type">{{ field.actual_type }}</span>
+										</td>
+										<td class="config-details">
+											<span v-if="field.actual_config.multiValued" class="config-badge multi">Multi</span>
+											<span v-if="field.actual_config.indexed" class="config-badge indexed">Indexed</span>
+											<span v-if="field.actual_config.stored" class="config-badge stored">Stored</span>
+											<span v-if="field.actual_config.docValues" class="config-badge docvalues">DocValues</span>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+
+						<!-- Mismatched Fields -->
+						<div v-if="fieldComparison.mismatched.length > 0" class="difference-category">
+							<h4 class="category-title mismatched">
+								Type Mismatches ({{ fieldComparison.mismatched.length }})
+							</h4>
+							<p class="category-description">Fields with different types between schemas and SOLR:</p>
+							<table class="comparison-table">
+								<thead>
+									<tr>
+										<th>Field Name</th>
+										<th>Expected Type</th>
+										<th>Actual Type</th>
+										<th>Action Needed</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr v-for="field in fieldComparison.mismatched" :key="'mismatch-' + field.field">
+										<td class="field-name">{{ field.field }}</td>
+										<td>
+											<span class="field-type expected" :class="field.expected_type">{{ field.expected_type }}</span>
+										</td>
+										<td>
+											<span class="field-type actual" :class="field.actual_type">{{ field.actual_type }}</span>
+										</td>
+										<td class="action-needed">
+											<span class="action-badge">Re-index Required</span>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+
+					<!-- No Differences Message -->
+					<div v-else-if="fieldComparison && fieldComparison.summary.total_differences === 0" class="no-differences">
+						<div class="success-message">
+							<span class="success-icon">✅</span>
+							<h4>Schema and SOLR in Sync</h4>
+							<p>All schema fields are properly configured in SOLR. No differences detected.</p>
+						</div>
+					</div>
+
 					<!-- Error Display -->
 					<div v-else-if="!fieldsInfo.success" class="fields-error">
 						<div class="error-card">
@@ -1167,6 +1281,10 @@ export default {
 
 		fieldsInfo() {
 			return this.settingsStore.fieldsInfo
+		},
+
+		fieldComparison() {
+			return this.settingsStore.fieldComparison
 		},
 
 		filteredFields() {
@@ -2801,5 +2919,177 @@ export default {
 	.dynamic-fields-grid {
 		grid-template-columns: 1fr;
 	}
+}
+
+/* Schema Comparison Styling */
+.comparison-section {
+	margin-top: 24px;
+	padding: 20px;
+	background: #fff3cd;
+	border: 1px solid #ffeaa7;
+	border-radius: 8px;
+}
+
+.comparison-title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 18px;
+	font-weight: 600;
+	color: #856404;
+	margin-bottom: 8px;
+}
+
+.comparison-icon {
+	font-size: 20px;
+}
+
+.comparison-description {
+	color: #856404;
+	margin-bottom: 20px;
+}
+
+.difference-category {
+	margin-bottom: 24px;
+}
+
+.category-title {
+	font-size: 16px;
+	font-weight: 600;
+	margin-bottom: 8px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.category-title.missing {
+	color: #dc3545;
+}
+
+.category-title.extra {
+	color: #fd7e14;
+}
+
+.category-title.mismatched {
+	color: #6f42c1;
+}
+
+.category-description {
+	font-size: 14px;
+	color: #6c757d;
+	margin-bottom: 12px;
+}
+
+.comparison-table {
+	width: 100%;
+	border-collapse: collapse;
+	background: white;
+	border-radius: 6px;
+	overflow: hidden;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.comparison-table th {
+	background: #f8f9fa;
+	padding: 12px;
+	text-align: left;
+	font-weight: 600;
+	border-bottom: 2px solid #dee2e6;
+}
+
+.comparison-table td {
+	padding: 12px;
+	border-bottom: 1px solid #dee2e6;
+	vertical-align: top;
+}
+
+.comparison-table tr:hover {
+	background: #f8f9fa;
+}
+
+.config-badge {
+	display: inline-block;
+	padding: 2px 6px;
+	font-size: 11px;
+	font-weight: 500;
+	border-radius: 3px;
+	margin-right: 4px;
+	margin-bottom: 2px;
+}
+
+.config-badge.multi {
+	background: #e3f2fd;
+	color: #1976d2;
+}
+
+.config-badge.indexed {
+	background: #e8f5e8;
+	color: #2e7d32;
+}
+
+.config-badge.stored {
+	background: #fff3e0;
+	color: #f57c00;
+}
+
+.config-badge.docvalues {
+	background: #f3e5f5;
+	color: #7b1fa2;
+}
+
+.field-type.expected {
+	background: #d4edda;
+	color: #155724;
+	padding: 2px 6px;
+	border-radius: 3px;
+	font-size: 12px;
+	font-weight: 500;
+}
+
+.field-type.actual {
+	background: #f8d7da;
+	color: #721c24;
+	padding: 2px 6px;
+	border-radius: 3px;
+	font-size: 12px;
+	font-weight: 500;
+}
+
+.action-badge {
+	background: #fff3cd;
+	color: #856404;
+	padding: 4px 8px;
+	border-radius: 4px;
+	font-size: 12px;
+	font-weight: 500;
+}
+
+.no-differences {
+	margin-top: 24px;
+	padding: 20px;
+	text-align: center;
+}
+
+.success-message {
+	background: #d4edda;
+	border: 1px solid #c3e6cb;
+	border-radius: 8px;
+	padding: 20px;
+}
+
+.success-icon {
+	font-size: 24px;
+	display: block;
+	margin-bottom: 8px;
+}
+
+.success-message h4 {
+	color: #155724;
+	margin-bottom: 8px;
+}
+
+.success-message p {
+	color: #155724;
+	margin: 0;
 }
 </style>
