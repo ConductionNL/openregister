@@ -491,13 +491,20 @@ class SolrSchemaService
             
             if ($solrFieldName && $solrFieldType) {
                 $isFacetable = $fieldDefinition['facetable'] ?? true;
+                
+                // **FILE TYPE HANDLING**: File fields should not be indexed to avoid size limits
+                $type = $fieldDefinition['type'] ?? 'string';
+                $format = $fieldDefinition['format'] ?? '';
+                $isFileField = ($type === 'file' || $format === 'file' || $format === 'binary' || 
+                              in_array($format, ['data-url', 'base64', 'image', 'document']));
+                
                 $solrFields[$solrFieldName] = [
                     'type' => $solrFieldType,
                     'stored' => true,
-                    'indexed' => true,
+                    'indexed' => !$isFileField, // File fields are stored but not indexed
                     'multiValued' => $this->isMultiValued($fieldDefinition),
-                    'docValues' => $isFacetable, // docValues enabled only for facetable fields
-                    'facetable' => $isFacetable
+                    'docValues' => $isFacetable && !$isFileField, // File fields can't have docValues
+                    'facetable' => $isFacetable && !$isFileField // File fields can't be faceted
                 ];
                 $fieldsCreated++;
             }
@@ -568,6 +575,13 @@ class SolrSchemaService
     private function determineSolrFieldType(array $fieldDefinition): string
     {
         $type = $fieldDefinition['type'] ?? 'string';
+        $format = $fieldDefinition['format'] ?? '';
+        
+        // **FILE TYPE HANDLING**: File fields should use text_general for large content
+        if ($type === 'file' || $format === 'file' || $format === 'binary' || 
+            in_array($format, ['data-url', 'base64', 'image', 'document'])) {
+            return 'text_general'; // Large text type for file content
+        }
         
         // Map OpenRegister types to SOLR types
         // Type determination should be based on data semantics, not facetability
@@ -579,6 +593,7 @@ class SolrSchemaService
             'boolean', 'bool' => 'boolean',
             'date', 'datetime' => 'pdate',
             'array' => 'string',            // Multi-valued string (type=string, multiValued=true)
+            'file' => 'text_general',       // File content (large text)
             default => 'string'
         };
     }
