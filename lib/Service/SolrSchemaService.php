@@ -61,10 +61,12 @@ class SolrSchemaService
     /**
      * Reserved SOLR field names (cannot be prefixed)
      *
+     * These are SOLR system fields that should not be modified or prefixed.
+     *
      * @var array<string>
      */
     private const RESERVED_FIELDS = [
-        'id', 'uuid', 'self_tenant', '_text_', '_version_'
+        'id', 'uuid', 'self_tenant', '_text_', '_version_', '_root_', '_nest_path_'
     ];
 
     /**
