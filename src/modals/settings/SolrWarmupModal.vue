@@ -39,6 +39,23 @@
 					<p class="results-message">{{ results.message }}</p>
 				</div>
 
+				<!-- Error Details (prominent display) -->
+				<div v-if="!results.success && results.error" class="error-banner">
+					<div class="error-header">
+						<span class="error-icon">⚠️</span>
+						<h5>Error Details</h5>
+					</div>
+					<div class="error-content">
+						<div class="error-message">
+							{{ results.error }}
+						</div>
+						<details v-if="results.error_details || hasDetailedError" class="error-details-toggle">
+							<summary>Show Technical Details</summary>
+							<pre class="error-details-content">{{ formatErrorDetails() }}</pre>
+						</details>
+					</div>
+				</div>
+
 				<!-- Performance Summary -->
 				<div v-if="results.success" class="performance-summary">
 					<h5>Performance Summary</h5>
@@ -58,6 +75,16 @@
 						<div v-if="results.indexing_errors !== undefined" class="summary-item">
 							<span class="summary-label">Indexing Errors:</span>
 							<span class="summary-value" :class="{ 'error': results.indexing_errors > 0 }">{{ results.indexing_errors }}</span>
+						</div>
+						<div v-if="results.memory_usage" class="summary-item">
+							<span class="summary-label">Memory Used:</span>
+							<span class="summary-value">{{ results.memory_usage.formatted.actual_used }}</span>
+						</div>
+						<div v-if="results.memory_usage && results.memory_usage.formatted.peak_percentage" class="summary-item">
+							<span class="summary-label">Peak Memory:</span>
+							<span class="summary-value" :class="getMemoryUsageClass(results.memory_usage.peak_percentage)">
+								{{ results.memory_usage.formatted.peak_usage }} ({{ results.memory_usage.formatted.peak_percentage }})
+							</span>
 						</div>
 					</div>
 				</div>
@@ -177,6 +204,12 @@
 									<span class="stat-label">Estimated Duration:</span>
 									<span class="stat-value">
 										{{ estimateWarmupDuration() }}
+									</span>
+								</div>
+								<div class="stat-item">
+									<span class="stat-label">Memory Prediction:</span>
+									<span class="stat-value" :class="{ 'warning': !memoryPrediction.prediction_safe }">
+										{{ formatMemoryPrediction() }}
 									</span>
 								</div>
 							</div>
@@ -321,6 +354,16 @@ export default {
 			default: () => ({
 				loading: false,
 				totalObjects: 0,
+			}),
+		},
+		memoryPrediction: {
+			type: Object,
+			default: () => ({
+				prediction_safe: true,
+				formatted: {
+					total_predicted: 'Unknown',
+					available: 'Unknown'
+				}
 			}),
 		},
 	},
@@ -507,6 +550,62 @@ export default {
 			}
 
 			return detailsMap[operation] || null
+		},
+
+		/**
+		 * Format memory prediction for display
+		 *
+		 * @return {string} Formatted memory prediction
+		 */
+		formatMemoryPrediction() {
+			if (!this.memoryPrediction || this.memoryPrediction.error) {
+				return 'Unable to predict'
+			}
+			
+			const prediction = this.memoryPrediction.formatted
+			if (!prediction) {
+				return 'Unknown'
+			}
+			
+			return `${prediction.total_predicted} / ${prediction.available} available`
+		},
+
+		/**
+		 * Get CSS class for memory usage display
+		 *
+		 * @param {number} percentage Memory usage percentage
+		 * @return {string} CSS class
+		 */
+		getMemoryUsageClass(percentage) {
+			const numPercentage = parseFloat(percentage)
+			if (numPercentage >= 90) return 'error'
+			if (numPercentage >= 75) return 'warning'
+			return ''
+		},
+
+		/**
+		 * Check if there are detailed error information available
+		 *
+		 * @return {boolean} True if detailed error info is available
+		 */
+		hasDetailedError() {
+			return !!(this.results?.error_details || 
+					 (this.results?.error && this.results.error.length > 100))
+		},
+
+		/**
+		 * Format error details for display
+		 *
+		 * @return {string} Formatted error details
+		 */
+		formatErrorDetails() {
+			if (this.results?.error_details) {
+				return typeof this.results.error_details === 'string' 
+					? this.results.error_details 
+					: JSON.stringify(this.results.error_details, null, 2)
+			}
+			
+			return this.results?.error || 'No detailed error information available'
 		},
 	},
 }
@@ -719,6 +818,86 @@ export default {
 	padding: 1rem 0;
 }
 
+/* Error Banner Styles */
+.error-banner {
+	background-color: rgba(var(--color-error-rgb), 0.1);
+	border: 1px solid var(--color-error);
+	border-radius: var(--border-radius);
+	padding: 1rem;
+	margin-bottom: 1.5rem;
+}
+
+.error-header {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	margin-bottom: 1rem;
+}
+
+.error-icon {
+	font-size: 1.2rem;
+}
+
+.error-header h5 {
+	margin: 0;
+	color: var(--color-error);
+	font-size: 1.1rem;
+}
+
+.error-content {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+
+.error-message {
+	background-color: var(--color-main-background);
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	padding: 1rem;
+	color: var(--color-text);
+	font-family: monospace;
+	font-size: 0.9rem;
+	line-height: 1.4;
+	white-space: pre-wrap;
+	word-break: break-word;
+	max-height: 200px;
+	overflow-y: auto;
+}
+
+.error-details-toggle {
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	background-color: var(--color-background-hover);
+}
+
+.error-details-toggle summary {
+	padding: 0.75rem;
+	cursor: pointer;
+	font-weight: 500;
+	color: var(--color-text);
+	user-select: none;
+}
+
+.error-details-toggle summary:hover {
+	background-color: var(--color-background-darker);
+}
+
+.error-details-content {
+	margin: 0;
+	padding: 1rem;
+	background-color: var(--color-main-background);
+	border-top: 1px solid var(--color-border);
+	color: var(--color-text-light);
+	font-family: monospace;
+	font-size: 0.85rem;
+	line-height: 1.4;
+	white-space: pre-wrap;
+	word-break: break-word;
+	max-height: 300px;
+	overflow-y: auto;
+}
+
 .results-header {
 	text-align: center;
 	margin-bottom: 2rem;
@@ -788,6 +967,11 @@ export default {
 
 .summary-value.error {
 	color: var(--color-error);
+}
+
+.summary-value.warning,
+.stat-value.warning {
+	color: var(--color-warning);
 }
 
 /* Operations Status */
