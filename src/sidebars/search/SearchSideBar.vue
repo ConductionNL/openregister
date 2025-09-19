@@ -95,7 +95,7 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 			</h3>
 			
 			<!-- Enable Facets Button -->
-			<div v-if="!facetableFields && canSearch" class="facets-enable-container">
+			<div v-if="!facetableFields && canSearch && !isDatabaseSource" class="facets-enable-container">
 				<NcButton
 					type="secondary"
 					:disabled="facetsLoading"
@@ -111,11 +111,18 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 				</p>
 			</div>
 
+			<!-- Database Source Notice -->
+			<div v-if="isDatabaseSource && canSearch" class="database-source-notice">
+				<p class="database-notice-text">
+					{{ t('openregister', 'Advanced filters are not available when using database source. Switch to Auto or SOLR Index for filtering options.') }}
+				</p>
+			</div>
+
 			<div v-if="facetsLoading" class="loading-container">
 				<NcLoadingIcon :size="20" />
 				<span>{{ t('openregister', 'Loading filters...') }}</span>
 			</div>
-			<div v-else-if="facetData && Object.keys(facetData).length > 0" class="facets-container">
+			<div v-else-if="facetData && Object.keys(facetData).length > 0 && !isDatabaseSource" class="facets-container">
 				<!-- Show message if no facet data available -->
 				<div v-if="!facetData || Object.keys(facetData).length === 0" class="no-facets-message">
 					<p>{{ t('openregister', 'No facet filters available for this schema.') }}</p>
@@ -282,6 +289,9 @@ export default {
 		selectedSourceValue() {
 			const source = this.sourceOptions.find(option => option.value === this.selectedSource)
 			return source || this.sourceOptions[0]
+		},
+		isDatabaseSource() {
+			return this.selectedSource === 'database'
 		},
 	},
 	watch: {
@@ -797,6 +807,20 @@ export default {
 .facets-enable-description {
 	font-size: 12px;
 	color: var(--color-text-maxcontrast);
+	margin: 0;
+	line-height: 1.4;
+}
+
+.database-source-notice {
+	padding: 12px;
+	background-color: var(--color-warning-light);
+	border-radius: 6px;
+	text-align: center;
+}
+
+.database-notice-text {
+	font-size: 12px;
+	color: var(--color-warning-dark);
 	margin: 0;
 	line-height: 1.4;
 }

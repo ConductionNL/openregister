@@ -480,7 +480,11 @@ export const useObjectStore = defineStore('object', {
 			}
 
 			// Include facets and facetable fields if requested
-			if (options.includeFacets !== false) { // Default to true
+			// CRITICAL FIX: Don't send _facetable=true when using database source
+			// Database source doesn't support faceting and will cause errors
+			const isUsingDatabaseSource = this.filters._source === 'database'
+			
+			if (options.includeFacets !== false && !isUsingDatabaseSource) { // Default to true, but skip for database source
 				// Always request facetable fields discovery to show available options
 				params.push('_facetable=true')
 				
@@ -1564,6 +1568,15 @@ export const useObjectStore = defineStore('object', {
 				return
 			}
 
+			// CRITICAL FIX: Don't attempt to get facetable fields when using database source
+			// Database source doesn't support faceting and will cause errors
+			const isUsingDatabaseSource = this.filters._source === 'database'
+			if (isUsingDatabaseSource) {
+				console.warn('Facetable fields discovery skipped for database source')
+				this.setFacetableFields({})
+				return {}
+			}
+
 			this.setFacetsLoading(true)
 
 			try {
@@ -1616,6 +1629,15 @@ export const useObjectStore = defineStore('object', {
 			if (!register || !schema) {
 				console.warn('Register and schema are required for facets')
 				return
+			}
+
+			// CRITICAL FIX: Don't attempt to get facets when using database source
+			// Database source doesn't support faceting and will cause errors
+			const isUsingDatabaseSource = this.filters._source === 'database'
+			if (isUsingDatabaseSource) {
+				console.warn('Facets discovery skipped for database source')
+				this.setFacets({})
+				return {}
 			}
 
 			this.setFacetsLoading(true)
