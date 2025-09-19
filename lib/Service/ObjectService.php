@@ -1276,7 +1276,7 @@ class ObjectService
     private function applyInversedByFilter(array &$filters): ?array
     {
         if ($filters['schema'] === false) {
-            return null;
+            return [];
         }
 
         $schema = $this->schemaMapper->find($filters['schema']);
@@ -1295,7 +1295,7 @@ class ObjectService
         $filtersWithSub = array_intersect_key($filters, array_flip($filterKeysWithSub));
 
         if (empty($filtersWithSub)) {
-            return null;
+            return [];
         }
 
         $filterDot = new Dot(items: $filtersWithSub, parse: true, delimiter: '_');
