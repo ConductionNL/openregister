@@ -3770,7 +3770,7 @@ class GuzzleSolrService
                         ]);
                     }
                     
-                    $this->bulkIndex($documents, false); // Don't commit each batch - will throw on error
+                    $this->bulkIndex($documents, true); // Commit each batch for immediate visibility
                     $indexed = count($documents); // If we reach here, indexing succeeded
                     
                     $indexEnd = microtime(true);
@@ -4035,7 +4035,7 @@ class GuzzleSolrService
             // Bulk index the entire batch
             $indexed = 0;
             if (!empty($documents)) {
-                $this->bulkIndex($documents, false); // Don't commit each batch - will throw on error
+                $this->bulkIndex($documents, true); // Commit each batch for immediate visibility
                 $indexed = count($documents); // If we reach here, indexing succeeded
             }
 
@@ -4119,7 +4119,7 @@ class GuzzleSolrService
             // Bulk index the entire batch
             $indexed = 0;
             if (!empty($documents)) {
-                $success = $this->bulkIndex($documents, false); // Don't commit each batch
+                $success = $this->bulkIndex($documents, true); // Commit each batch for immediate visibility
                 $indexed = $success ? count($documents) : 0;
             }
 
@@ -4320,7 +4320,7 @@ class GuzzleSolrService
                             }
                             
                             // Index the document
-                            if ($this->bulkIndex([$document], false)) {
+                            if ($this->bulkIndex([$document], true)) {
                                 $schemaDetails['objects_indexed']++;
                                 $results['objects_indexed']++;
                             }
@@ -4719,7 +4719,7 @@ class GuzzleSolrService
                 
                 // Bulk index the batch
                 if (!empty($documents)) {
-                    $indexResult = $this->bulkIndex($documents, false); // No commit per batch
+                    $indexResult = $this->bulkIndex($documents, true); // Commit each batch for immediate visibility
                     if ($indexResult) {
                         $totalIndexed += count($documents);
                     } else {
