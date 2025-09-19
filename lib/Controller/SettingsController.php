@@ -610,6 +610,44 @@ class SettingsController extends Controller
 
 
     /**
+     * Get SOLR field configuration and schema information
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse SOLR field configuration data
+     */
+    public function getSolrFields(): JSONResponse
+    {
+        try {
+            // Use GuzzleSolrService to get field information
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            
+            // Check if SOLR is available first
+            if (!$guzzleSolrService->isAvailable()) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'SOLR is not available or not configured',
+                    'details' => ['error' => 'SOLR service is not enabled or connection failed']
+                ], 503);
+            }
+
+            // Get field configuration from SOLR
+            $fieldsData = $guzzleSolrService->getFieldsConfiguration();
+            
+            return new JSONResponse($fieldsData);
+            
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Failed to retrieve SOLR field configuration: ' . $e->getMessage(),
+                'details' => ['error' => $e->getMessage()]
+            ], 500);
+        }
+    }//end getSolrFields()
+
+
+    /**
      * Get SOLR settings only
      *
      * @NoAdminRequired
