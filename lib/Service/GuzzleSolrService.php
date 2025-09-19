@@ -4824,7 +4824,7 @@ class GuzzleSolrService
 
             // Make the schema request
             $response = $this->httpClient->get($schemaUrl, $requestOptions);
-            $schemaData = json_decode($response->getBody(), true);
+            $schemaData = json_decode($response->getBody()->getContents(), true);
 
             if (!$schemaData || !isset($schemaData['schema'])) {
                 return [
