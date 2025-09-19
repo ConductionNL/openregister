@@ -66,7 +66,8 @@ class SolrSchemaService
      * @var array<string>
      */
     private const RESERVED_FIELDS = [
-        'id', 'uuid', 'self_tenant', '_text_', '_version_', '_root_', '_nest_path_'
+        'id', 'uuid', 'self_tenant', '_text_', '_version_', '_root_', '_nest_path_',
+        '_embedding_', '_embedding_model_', '_embedding_dim_', '_confidence_', '_classification_'
     ];
 
     /**
@@ -76,6 +77,8 @@ class SolrSchemaService
      * - JSON storage fields (self_object, self_authorization, etc.): stored=true, indexed=false, docValues=false
      * - Sortable/facetable fields (self_name, self_owner, dates, etc.): stored=true, indexed=true, docValues=true
      * - Text content fields (self_description, self_summary): stored=true, indexed=true, docValues=false (text analysis)
+     * - AI/ML fields (_embedding_, _confidence_, etc.): stored=true, indexed=true, docValues=false (vector operations)
+     * - AI metadata fields (_embedding_model_, _embedding_dim_): stored=true, indexed=true/false, docValues=true/false
      *
      * @var array<string, string> Field name => SOLR field type
      */
@@ -129,7 +132,14 @@ class SolrSchemaService
         'self_groups' => 'string',        // JSON storage - not indexed, only for reconstruction
         
         // SOLR system fields that need explicit definition
-        '_text_' => 'text_general'        // Catch-all full-text search field
+        '_text_' => 'text_general',       // Catch-all full-text search field
+        
+        // AI/ML fields for future semantic search and classification features
+        '_embedding_' => 'pfloats',       // Vector embeddings for semantic search (multi-valued floats)
+        '_embedding_model_' => 'string',  // Model identifier (e.g., 'openai-ada-002', 'sentence-transformers')
+        '_embedding_dim_' => 'pint',      // Embedding dimension count for validation
+        '_confidence_' => 'pfloat',       // ML confidence scores (0.0-1.0)
+        '_classification_' => 'strings'   // Auto-classification results (multi-valued)
     ];
 
     /**
@@ -612,7 +622,8 @@ class SolrSchemaService
             'self_authorization', // JSON blob for permissions
             'self_deleted',       // JSON blob for deletion metadata
             'self_validation',    // JSON blob for validation results
-            'self_groups'         // JSON blob for group assignments
+            'self_groups',        // JSON blob for group assignments
+            '_embedding_dim_'     // Dimension count - stored for validation, not searched
         ];
         
         return !in_array($fieldName, $nonIndexedFields);
@@ -672,6 +683,15 @@ class SolrSchemaService
         // Special handling for system fields
         if ($fieldName === '_text_') {
             return false; // Full-text search fields don't need docValues
+        }
+        
+        // AI/ML fields configuration
+        if (in_array($fieldName, ['_embedding_', '_confidence_', '_classification_'])) {
+            return false; // Vector and classification fields don't need docValues for sorting
+        }
+        
+        if (in_array($fieldName, ['_embedding_model_', '_embedding_dim_'])) {
+            return true; // Metadata fields that might be used for filtering/faceting
         }
         
         return in_array($fieldName, $docValuesFields);
