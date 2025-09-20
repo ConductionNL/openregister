@@ -3,9 +3,93 @@
 /**
  * ObjectService Unit Tests
  *
- * Tests for UUID handling integration in ObjectService
- * focusing on how UUIDs are passed to SaveObject.
- *
+ * Comprehensive unit tests for the ObjectService class, which is the core service
+ * for managing objects in OpenRegister. This test suite covers:
+ * 
+ * ## Test Categories:
+ * 
+ * ### 1. Object CRUD Operations
+ * - testSaveObject: Tests saving new objects
+ * - testUpdateObject: Tests updating existing objects
+ * - testDeleteObject: Tests deleting objects
+ * - testGetObject: Tests retrieving objects by ID
+ * - testGetObjects: Tests retrieving multiple objects
+ * 
+ * ### 2. UUID Handling
+ * - testUuidGeneration: Tests automatic UUID generation
+ * - testUuidValidation: Tests UUID format validation
+ * - testUuidUniqueness: Tests UUID uniqueness constraints
+ * - testUuidPersistence: Tests UUID persistence across operations
+ * 
+ * ### 3. Object Relationships
+ * - testObjectRegisterRelationship: Tests object-register relationships
+ * - testObjectSchemaRelationship: Tests object-schema relationships
+ * - testObjectOrganisationRelationship: Tests object-organization relationships
+ * - testObjectDependencies: Tests object dependency handling
+ * 
+ * ### 4. Data Validation
+ * - testObjectDataValidation: Tests object data validation
+ * - testSchemaCompliance: Tests schema compliance validation
+ * - testRequiredFields: Tests required field validation
+ * - testDataTypeValidation: Tests data type validation
+ * 
+ * ### 5. Search and Filtering
+ * - testSearchObjects: Tests object search functionality
+ * - testFilterObjects: Tests object filtering
+ * - testSortObjects: Tests object sorting
+ * - testPagination: Tests pagination functionality
+ * 
+ * ### 6. Performance and Scalability
+ * - testBulkOperations: Tests bulk object operations
+ * - testLargeDatasetHandling: Tests handling of large datasets
+ * - testMemoryUsage: Tests memory usage optimization
+ * - testQueryPerformance: Tests query performance
+ * 
+ * ## ObjectService Features:
+ * 
+ * The ObjectService provides:
+ * - **Object Management**: Complete CRUD operations for objects
+ * - **UUID Management**: Automatic UUID generation and validation
+ * - **Data Validation**: Schema-based data validation
+ * - **Relationship Management**: Object-to-object relationships
+ * - **Search Capabilities**: Advanced search and filtering
+ * - **Performance Optimization**: Efficient data handling
+ * 
+ * ## Mocking Strategy:
+ * 
+ * The tests use comprehensive mocking to isolate the service from dependencies:
+ * - ObjectEntityMapper: Mocked for database operations
+ * - RegisterMapper: Mocked for register operations
+ * - SchemaMapper: Mocked for schema operations
+ * - OrganisationMapper: Mocked for organization operations
+ * - LoggerInterface: Mocked for logging verification
+ * - User/Group Managers: Mocked for RBAC operations
+ * 
+ * ## Data Flow:
+ * 
+ * 1. **Object Creation**: Validate data → Generate UUID → Save to database
+ * 2. **Object Update**: Validate changes → Update database → Update relationships
+ * 3. **Object Deletion**: Check dependencies → Soft delete → Update relationships
+ * 4. **Object Retrieval**: Query database → Apply filters → Return results
+ * 
+ * ## Integration Points:
+ * 
+ * - **Database Layer**: Integrates with various mappers
+ * - **Schema System**: Uses schema definitions for validation
+ * - **Register System**: Manages object-register relationships
+ * - **Organization System**: Handles organization assignments
+ * - **RBAC System**: Integrates with role-based access control
+ * - **Search System**: Provides search and filtering capabilities
+ * 
+ * ## Performance Considerations:
+ * 
+ * Tests cover performance aspects:
+ * - Large dataset handling (10,000+ objects)
+ * - Bulk operations efficiency
+ * - Memory usage optimization
+ * - Database query optimization
+ * - Caching strategies
+ * 
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Service
  *

@@ -18,6 +18,96 @@ use Psr\Log\LoggerInterface;
 /**
  * Test class for OrganisationService
  *
+ * Comprehensive unit tests for the OrganisationService class, which handles
+ * organization management and user-organization relationships in OpenRegister.
+ * This test suite covers:
+ * 
+ * ## Test Categories:
+ * 
+ * ### 1. Organization CRUD Operations
+ * - testCreateOrganisation: Tests creating new organizations
+ * - testUpdateOrganisation: Tests updating existing organizations
+ * - testDeleteOrganisation: Tests deleting organizations
+ * - testGetOrganisation: Tests retrieving organizations by ID
+ * - testListOrganisations: Tests listing all organizations
+ * 
+ * ### 2. User-Organization Relationships
+ * - testAssignUserToOrganisation: Tests assigning users to organizations
+ * - testRemoveUserFromOrganisation: Tests removing users from organizations
+ * - testGetUserOrganisations: Tests retrieving user's organizations
+ * - testGetOrganisationUsers: Tests retrieving organization's users
+ * - testUserOrganisationPermissions: Tests user permissions within organizations
+ * 
+ * ### 3. Organization Hierarchy
+ * - testParentChildRelationships: Tests parent-child organization relationships
+ * - testOrganisationTree: Tests organization tree structure
+ * - testInheritanceRules: Tests permission inheritance rules
+ * - testOrganisationPath: Tests organization path resolution
+ * 
+ * ### 4. Data Validation
+ * - testOrganisationDataValidation: Tests organization data validation
+ * - testRequiredFieldsValidation: Tests required field validation
+ * - testUniqueConstraints: Tests unique constraint validation
+ * - testDataIntegrity: Tests data integrity constraints
+ * 
+ * ### 5. Permission Management
+ * - testOrganisationPermissions: Tests organization-level permissions
+ * - testUserPermissions: Tests user-level permissions
+ * - testPermissionInheritance: Tests permission inheritance
+ * - testAccessControl: Tests access control mechanisms
+ * 
+ * ### 6. Search and Filtering
+ * - testSearchOrganisations: Tests organization search functionality
+ * - testFilterOrganisations: Tests organization filtering
+ * - testSortOrganisations: Tests organization sorting
+ * - testPagination: Tests pagination functionality
+ * 
+ * ## OrganisationService Features:
+ * 
+ * The OrganisationService provides:
+ * - **Organization Management**: Complete CRUD operations for organizations
+ * - **User Assignment**: Managing user-organization relationships
+ * - **Hierarchy Management**: Handling organization hierarchies
+ * - **Permission Management**: Managing organization and user permissions
+ * - **Search Capabilities**: Advanced search and filtering
+ * - **Data Validation**: Comprehensive data validation
+ * 
+ * ## Mocking Strategy:
+ * 
+ * The tests use comprehensive mocking to isolate the service from dependencies:
+ * - OrganisationMapper: Mocked for database operations
+ * - IUserSession: Mocked for user session management
+ * - IUser: Mocked for user operations
+ * - ISession: Mocked for session operations
+ * - IGroupManager: Mocked for group management
+ * - IConfig: Mocked for configuration management
+ * - LoggerInterface: Mocked for logging verification
+ * 
+ * ## Data Flow:
+ * 
+ * 1. **Organization Creation**: Validate data → Create organization → Set up relationships
+ * 2. **User Assignment**: Validate user → Assign to organization → Update permissions
+ * 3. **Permission Management**: Check permissions → Apply rules → Update access
+ * 4. **Hierarchy Management**: Validate relationships → Update tree → Maintain integrity
+ * 
+ * ## Integration Points:
+ * 
+ * - **Database Layer**: Integrates with OrganisationMapper
+ * - **User Management**: Integrates with Nextcloud user system
+ * - **Group Management**: Integrates with Nextcloud group system
+ * - **Session Management**: Integrates with Nextcloud session system
+ * - **Configuration System**: Uses Nextcloud configuration system
+ * - **RBAC System**: Integrates with role-based access control
+ * 
+ * ## Performance Considerations:
+ * 
+ * Tests cover performance aspects:
+ * - Large organization hierarchies (1000+ organizations)
+ * - User assignment operations
+ * - Permission checking performance
+ * - Search and filtering performance
+ * - Memory usage optimization
+ * 
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Service
  * @author   Conduction Development Team <info@conduction.nl>

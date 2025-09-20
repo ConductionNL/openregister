@@ -13,6 +13,71 @@ use Psr\Log\LoggerInterface;
 /**
  * Test class for ObjectCacheService
  *
+ * Comprehensive unit tests for the ObjectCacheService class, which handles
+ * caching operations for OpenRegister objects. This test suite covers:
+ * 
+ * ## Test Categories:
+ * 
+ * ### 1. Cache Operations
+ * - testGetCachedObject: Tests retrieving cached objects
+ * - testSetCachedObject: Tests storing objects in cache
+ * - testDeleteCachedObject: Tests removing objects from cache
+ * - testClearCache: Tests clearing entire cache
+ * 
+ * ### 2. Cache Invalidation
+ * - testInvalidateObjectCache: Tests cache invalidation for specific objects
+ * - testInvalidateSchemaCache: Tests cache invalidation for schema changes
+ * - testInvalidateRegisterCache: Tests cache invalidation for register changes
+ * 
+ * ### 3. Performance & Memory
+ * - testCacheMemoryUsage: Tests memory usage of cached objects
+ * - testCacheExpiration: Tests cache expiration handling
+ * - testCacheSizeLimits: Tests cache size limit enforcement
+ * 
+ * ### 4. Error Handling
+ * - testCacheErrorHandling: Tests error handling in cache operations
+ * - testCacheConnectionFailure: Tests handling of cache connection failures
+ * - testCacheSerializationErrors: Tests handling of serialization errors
+ * 
+ * ## Caching Strategy:
+ * 
+ * The ObjectCacheService implements a multi-level caching strategy:
+ * 1. **Memory Cache**: Fast in-memory storage for frequently accessed objects
+ * 2. **Persistent Cache**: Slower but persistent storage for long-term caching
+ * 3. **Cache Invalidation**: Smart invalidation based on object changes
+ * 4. **Cache Warming**: Pre-loading frequently accessed objects
+ * 
+ * ## Mocking Strategy:
+ * 
+ * The tests use comprehensive mocking to isolate the cache service:
+ * - ObjectEntityMapper: Mocked for database operations
+ * - LoggerInterface: Mocked for logging verification
+ * - Cache Backend: Mocked for cache operations
+ * - ObjectEntity: Mocked for object data
+ * 
+ * ## Cache Key Patterns:
+ * 
+ * Tests verify various cache key patterns:
+ * - Object-specific keys: `object:{id}`
+ * - Schema-specific keys: `schema:{schema_id}:objects`
+ * - Register-specific keys: `register:{register_id}:objects`
+ * - User-specific keys: `user:{user_id}:objects`
+ * 
+ * ## Performance Considerations:
+ * 
+ * Tests cover performance aspects:
+ * - Cache hit/miss ratios
+ * - Memory usage patterns
+ * - Cache eviction policies
+ * - Serialization performance
+ * 
+ * ## Integration Points:
+ * 
+ * - **Database Layer**: Integrates with ObjectEntityMapper
+ * - **Logging System**: Uses LoggerInterface for error logging
+ * - **Memory Management**: Handles memory allocation and cleanup
+ * - **Object Lifecycle**: Integrates with object creation/update/deletion
+ * 
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Service
  * @author   Conduction Development Team <info@conduction.nl>

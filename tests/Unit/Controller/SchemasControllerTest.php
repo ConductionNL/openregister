@@ -5,8 +5,82 @@ declare(strict_types=1);
 /**
  * SchemasControllerTest
  * 
- * Unit tests for the SchemasController
- *
+ * Comprehensive unit tests for the SchemasController, which handles HTTP API
+ * endpoints for schema management in OpenRegister. This test suite covers:
+ * 
+ * ## Test Categories:
+ * 
+ * ### 1. Schema Management
+ * - testIndex: Tests listing all schemas
+ * - testShow: Tests retrieving a specific schema by ID
+ * - testStore: Tests creating new schemas
+ * - testUpdate: Tests updating existing schemas
+ * - testDestroy: Tests deleting schemas
+ * 
+ * ### 2. Statistics & Analytics
+ * - testStatsSuccessful: Tests schema statistics retrieval
+ * - testStatsSchemaNotFound: Tests error handling for non-existent schemas
+ * - testStatsWithEmptyData: Tests statistics with no data
+ * 
+ * ### 3. File Operations
+ * - testDownload: Tests schema file download functionality
+ * - testUpload: Tests schema file upload functionality
+ * - testExport: Tests schema export functionality
+ * 
+ * ### 4. Error Handling
+ * - testShowNotFound: Tests handling of non-existent schema requests
+ * - testUpdateNotFound: Tests handling of update requests for non-existent schemas
+ * - testDestroyNotFound: Tests handling of delete requests for non-existent schemas
+ * - testStoreValidationError: Tests validation error handling
+ * 
+ * ## API Endpoints Covered:
+ * 
+ * - `GET /schemas` - List all schemas
+ * - `GET /schemas/{id}` - Get specific schema
+ * - `POST /schemas` - Create new schema
+ * - `PUT /schemas/{id}` - Update schema
+ * - `DELETE /schemas/{id}` - Delete schema
+ * - `GET /schemas/{id}/stats` - Get schema statistics
+ * - `GET /schemas/{id}/download` - Download schema file
+ * - `POST /schemas/{id}/upload` - Upload schema file
+ * 
+ * ## Mocking Strategy:
+ * 
+ * The tests use comprehensive mocking to isolate the controller from dependencies:
+ * - SchemaMapper: Mocked for database operations
+ * - ObjectEntityMapper: Mocked for object queries
+ * - ObjectService: Mocked for object statistics and operations
+ * - DownloadService: Mocked for file operations
+ * - UploadService: Mocked for file uploads
+ * - AuditTrailMapper: Mocked for audit logging
+ * - OrganisationService: Mocked for organization operations
+ * - Cache Services: Mocked for caching operations
+ * 
+ * ## Response Types:
+ * 
+ * Tests verify various response types:
+ * - JSONResponse: For API data responses
+ * - TemplateResponse: For view responses
+ * - DataResponse: For simple data responses
+ * - Error responses: For error handling
+ * 
+ * ## Data Validation:
+ * 
+ * Tests cover various data validation scenarios:
+ * - Valid schema data
+ * - Invalid schema data
+ * - Missing required fields
+ * - Invalid data types
+ * - Duplicate schema names
+ * 
+ * ## Integration Points:
+ * 
+ * - **Database Layer**: Integrates with various mappers
+ * - **Service Layer**: Uses multiple services for business logic
+ * - **File System**: Handles file uploads and downloads
+ * - **Caching**: Integrates with cache services
+ * - **Audit Trail**: Logs all operations
+ * 
  * @category   Test
  * @package    OCA\OpenRegister\Tests\Unit\Controller
  * @author     Conduction.nl <info@conduction.nl>

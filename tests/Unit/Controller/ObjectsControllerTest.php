@@ -5,8 +5,109 @@ declare(strict_types=1);
 /**
  * ObjectsControllerTest
  * 
- * Unit tests for the ObjectsController
- *
+ * Comprehensive unit tests for the ObjectsController, which handles HTTP API
+ * endpoints for object management in OpenRegister. This test suite covers:
+ * 
+ * ## Test Categories:
+ * 
+ * ### 1. Object CRUD Operations
+ * - testIndex: Tests listing objects with pagination and filtering
+ * - testShow: Tests retrieving a specific object by ID
+ * - testStore: Tests creating new objects
+ * - testUpdate: Tests updating existing objects
+ * - testDestroy: Tests deleting objects
+ * 
+ * ### 2. Object Search and Filtering
+ * - testSearch: Tests object search functionality
+ * - testFilter: Tests object filtering by various criteria
+ * - testSort: Tests object sorting options
+ * - testPagination: Tests pagination functionality
+ * - testAdvancedQuery: Tests complex query operations
+ * 
+ * ### 3. Object Relationships
+ * - testObjectRegisterRelationship: Tests object-register relationships
+ * - testObjectSchemaRelationship: Tests object-schema relationships
+ * - testObjectOrganisationRelationship: Tests object-organization relationships
+ * - testObjectDependencies: Tests object dependency handling
+ * 
+ * ### 4. Data Validation and Processing
+ * - testDataValidation: Tests input data validation
+ * - testSchemaCompliance: Tests schema compliance validation
+ * - testDataTransformation: Tests data transformation
+ * - testBulkOperations: Tests bulk object operations
+ * 
+ * ### 5. Error Handling
+ * - testNotFoundHandling: Tests handling of non-existent objects
+ * - testValidationErrorHandling: Tests validation error responses
+ * - testPermissionErrorHandling: Tests permission error handling
+ * - testServerErrorHandling: Tests server error handling
+ * 
+ * ### 6. API Response Formats
+ * - testJsonResponse: Tests JSON response format
+ * - testXmlResponse: Tests XML response format
+ * - testCsvResponse: Tests CSV export functionality
+ * - testErrorResponse: Tests error response format
+ * 
+ * ## API Endpoints Covered:
+ * 
+ * - `GET /objects` - List objects with filtering and pagination
+ * - `GET /objects/{id}` - Get specific object
+ * - `POST /objects` - Create new object
+ * - `PUT /objects/{id}` - Update object
+ * - `DELETE /objects/{id}` - Delete object
+ * - `GET /objects/search` - Search objects
+ * - `GET /objects/export` - Export objects
+ * - `POST /objects/bulk` - Bulk operations
+ * 
+ * ## Mocking Strategy:
+ * 
+ * The tests use comprehensive mocking to isolate the controller from dependencies:
+ * - ObjectEntityMapper: Mocked for database operations
+ * - RegisterMapper: Mocked for register operations
+ * - SchemaMapper: Mocked for schema operations
+ * - OrganisationMapper: Mocked for organization operations
+ * - AuditTrailMapper: Mocked for audit logging
+ * - ObjectService: Mocked for business logic
+ * - User/Group Managers: Mocked for RBAC operations
+ * 
+ * ## Response Types:
+ * 
+ * Tests verify various response types:
+ * - JSONResponse: For API data responses
+ * - DataResponse: For simple data responses
+ * - TemplateResponse: For view responses
+ * - Error responses: For error handling
+ * - File responses: For export functionality
+ * 
+ * ## Data Validation:
+ * 
+ * Tests cover various data validation scenarios:
+ * - Valid object data
+ * - Invalid object data
+ * - Missing required fields
+ * - Invalid data types
+ * - Schema compliance
+ * - Permission validation
+ * 
+ * ## Integration Points:
+ * 
+ * - **Database Layer**: Integrates with various mappers
+ * - **Service Layer**: Uses ObjectService for business logic
+ * - **Schema System**: Uses schema definitions for validation
+ * - **Register System**: Manages object-register relationships
+ * - **Organization System**: Handles organization assignments
+ * - **RBAC System**: Integrates with role-based access control
+ * - **Audit System**: Logs all object operations
+ * 
+ * ## Performance Considerations:
+ * 
+ * Tests cover performance aspects:
+ * - Large dataset handling (10,000+ objects)
+ * - Pagination efficiency
+ * - Search performance
+ * - Bulk operation performance
+ * - Memory usage optimization
+ * 
  * @category   Test
  * @package    OCA\OpenRegister\Tests\Unit\Controller
  * @author     Conduction.nl <info@conduction.nl>
