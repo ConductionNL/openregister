@@ -2444,19 +2444,34 @@ class GuzzleSolrService
      *
      * @param string $query  SOLR query
      * @param bool   $commit Whether to commit immediately
-     * @return bool True if successful
+     * @param bool   $returnDetails Whether to return detailed error information
+     * @return bool|array True if successful (when $returnDetails=false), or detailed result array (when $returnDetails=true)
      */
-    public function deleteByQuery(string $query, bool $commit = false): bool
+    public function deleteByQuery(string $query, bool $commit = false, bool $returnDetails = false): bool|array
     {
         if (!$this->isAvailable()) {
+            if ($returnDetails) {
+                return [
+                    'success' => false,
+                    'error' => 'SOLR service is not available',
+                    'error_details' => 'SOLR connection is not configured or unavailable'
+                ];
+            }
             return false;
         }
 
         try {
-            // Get the active collection name - return false if no collection exists
+            // Get the active collection name - return error if no collection exists
             $tenantCollectionName = $this->getActiveCollectionName();
             if ($tenantCollectionName === null) {
                 $this->logger->warning('Cannot delete by query: no active collection available');
+                if ($returnDetails) {
+                    return [
+                        'success' => false,
+                        'error' => 'No active SOLR collection available',
+                        'error_details' => 'No collection found for the current tenant'
+                    ];
+                }
                 return false;
             }
 
@@ -2491,11 +2506,89 @@ class GuzzleSolrService
                     'collection' => $tenantCollectionName,
                     'tenant_id' => $this->tenantId
                 ]);
+                
+                if ($returnDetails) {
+                    return [
+                        'success' => true,
+                        'deleted_docs' => $data['responseHeader']['QTime'] ?? 0
+                    ];
+                }
+                return true;
+            } else {
+                if ($returnDetails) {
+                    $errorMsg = $data['error']['msg'] ?? 'Unknown SOLR error';
+                    $errorCode = $data['error']['code'] ?? $data['responseHeader']['status'] ?? -1;
+                    
+                    return [
+                        'success' => false,
+                        'error' => "SOLR delete operation failed: {$errorMsg}",
+                        'error_details' => [
+                            'solr_error' => $errorMsg,
+                            'error_code' => $errorCode,
+                            'query' => $tenantQuery,
+                            'collection' => $tenantCollectionName,
+                            'full_response' => $data
+                        ]
+                    ];
+                }
+                return false;
             }
 
-            return $success;
+        } catch (\GuzzleHttp\Exception\RequestException $e) {
+            if ($returnDetails) {
+                $errorMsg = 'HTTP request failed';
+                $errorDetails = [
+                    'exception_type' => 'RequestException',
+                    'message' => $e->getMessage(),
+                    'query' => $query
+                ];
+
+                // Try to extract SOLR error from response
+                if ($e->hasResponse()) {
+                    $responseBody = (string)$e->getResponse()->getBody();
+                    $responseData = json_decode($responseBody, true);
+                    
+                    if ($responseData && isset($responseData['error'])) {
+                        $errorMsg = "SOLR HTTP {$e->getResponse()->getStatusCode()} Error: " . ($responseData['error']['msg'] ?? $responseData['error']);
+                        $errorDetails['solr_response'] = $responseData;
+                        $errorDetails['http_status'] = $e->getResponse()->getStatusCode();
+                    }
+                }
+
+                $this->logger->error('HTTP exception deleting by query from SOLR', $errorDetails);
+                
+                return [
+                    'success' => false,
+                    'error' => $errorMsg,
+                    'error_details' => $errorDetails
+                ];
+            }
+
+            $this->logger->error('Exception deleting by query from SOLR', [
+                'query' => $query,
+                'error' => $e->getMessage()
+            ]);
+            return false;
 
         } catch (\Exception $e) {
+            if ($returnDetails) {
+                $this->logger->error('Exception deleting by query from SOLR', [
+                    'query' => $query,
+                    'error' => $e->getMessage(),
+                    'exception_type' => get_class($e)
+                ]);
+                
+                return [
+                    'success' => false,
+                    'error' => 'Unexpected error during SOLR delete operation: ' . $e->getMessage(),
+                    'error_details' => [
+                        'exception_type' => get_class($e),
+                        'message' => $e->getMessage(),
+                        'query' => $query
+                    ]
+                ];
+            }
+
             $this->logger->error('Exception deleting by query from SOLR', [
                 'query' => $query,
                 'error' => $e->getMessage()
@@ -2503,6 +2596,7 @@ class GuzzleSolrService
             return false;
         }
     }
+
 
     /**
      * Search objects in SOLR
@@ -3426,11 +3520,152 @@ class GuzzleSolrService
     /**
      * Clear entire index for tenant
      *
-     * @return bool True if successful
+     * @return array Result with success status and error details
      */
-    public function clearIndex(): bool
+    public function clearIndex(): array
     {
-        return $this->deleteByQuery('*:*', true);
+        return $this->deleteByQuery('*:*', true, true);
+    }
+
+    /**
+     * Inspect SOLR index documents
+     *
+     * @param string $query SOLR query
+     * @param int $start Start offset
+     * @param int $rows Number of rows to return
+     * @param string $fields Comma-separated list of fields to return
+     * @return array Result with documents and metadata
+     */
+    public function inspectIndex(string $query = '*:*', int $start = 0, int $rows = 20, string $fields = ''): array
+    {
+        if (!$this->isAvailable()) {
+            return [
+                'success' => false,
+                'error' => 'SOLR service is not available',
+                'error_details' => 'SOLR connection is not configured or unavailable'
+            ];
+        }
+
+        try {
+            // Get the active collection name
+            $tenantCollectionName = $this->getActiveCollectionName();
+            if ($tenantCollectionName === null) {
+                return [
+                    'success' => false,
+                    'error' => 'No active SOLR collection available',
+                    'error_details' => 'No collection found for the current tenant'
+                ];
+            }
+
+            // Add tenant isolation to query
+            $tenantQuery = sprintf('(%s) AND self_tenant:%s', $query, $this->tenantId);
+
+            // Build search parameters
+            $searchParams = [
+                'q' => $tenantQuery,
+                'start' => $start,
+                'rows' => $rows,
+                'wt' => 'json',
+                'indent' => 'true'
+            ];
+
+            // Add field list if specified
+            if (!empty($fields)) {
+                $searchParams['fl'] = $fields;
+            }
+
+            $url = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/select';
+            
+            $response = $this->httpClient->get($url, [
+                'query' => $searchParams,
+                'timeout' => 30
+            ]);
+
+            $data = json_decode((string)$response->getBody(), true);
+            
+            if (($data['responseHeader']['status'] ?? -1) === 0) {
+                $documents = $data['response']['docs'] ?? [];
+                $totalResults = $data['response']['numFound'] ?? 0;
+                
+                $this->logger->debug('🔍 SOLR INDEX INSPECT', [
+                    'query' => $tenantQuery,
+                    'collection' => $tenantCollectionName,
+                    'tenant_id' => $this->tenantId,
+                    'total_results' => $totalResults,
+                    'returned_docs' => count($documents)
+                ]);
+                
+                return [
+                    'success' => true,
+                    'documents' => $documents,
+                    'total' => $totalResults,
+                    'start' => $start,
+                    'rows' => $rows,
+                    'collection' => $tenantCollectionName,
+                    'tenant_id' => $this->tenantId
+                ];
+            } else {
+                $errorMsg = $data['error']['msg'] ?? 'Unknown SOLR error';
+                $errorCode = $data['error']['code'] ?? $data['responseHeader']['status'] ?? -1;
+                
+                return [
+                    'success' => false,
+                    'error' => "SOLR search failed: {$errorMsg}",
+                    'error_details' => [
+                        'solr_error' => $errorMsg,
+                        'error_code' => $errorCode,
+                        'query' => $tenantQuery,
+                        'collection' => $tenantCollectionName,
+                        'full_response' => $data
+                    ]
+                ];
+            }
+
+        } catch (\GuzzleHttp\Exception\RequestException $e) {
+            $errorMsg = 'HTTP request failed';
+            $errorDetails = [
+                'exception_type' => 'RequestException',
+                'message' => $e->getMessage(),
+                'query' => $query
+            ];
+
+            // Try to extract SOLR error from response
+            if ($e->hasResponse()) {
+                $responseBody = (string)$e->getResponse()->getBody();
+                $responseData = json_decode($responseBody, true);
+                
+                if ($responseData && isset($responseData['error'])) {
+                    $errorMsg = "SOLR HTTP {$e->getResponse()->getStatusCode()} Error: " . ($responseData['error']['msg'] ?? $responseData['error']);
+                    $errorDetails['solr_response'] = $responseData;
+                    $errorDetails['http_status'] = $e->getResponse()->getStatusCode();
+                }
+            }
+
+            $this->logger->error('HTTP exception inspecting SOLR index', $errorDetails);
+            
+            return [
+                'success' => false,
+                'error' => $errorMsg,
+                'error_details' => $errorDetails
+            ];
+
+        } catch (\Exception $e) {
+            $this->logger->error('Exception inspecting SOLR index', [
+                'query' => $query,
+                'error' => $e->getMessage(),
+                'exception_type' => get_class($e)
+            ]);
+            
+            return [
+                'success' => false,
+                'error' => 'Unexpected error during SOLR inspection: ' . $e->getMessage(),
+                'error_details' => [
+                    'exception_type' => get_class($e),
+                    'message' => $e->getMessage(),
+                    'query' => $query
+                ]
+            ];
+        }
     }
 
     /**

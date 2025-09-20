@@ -46,6 +46,13 @@
 					</template>
 					Clear Index
 				</NcButton>
+				
+				<NcButton type="secondary" @click="openInspectModal">
+					<template #icon>
+						<FileSearchOutline :size="20" />
+					</template>
+					Inspect Index
+				</NcButton>
 				</div>
 
 				<!-- Basic Stats -->
@@ -102,6 +109,12 @@
 			@close="showClearDialog = false"
 			@confirm="handleClearIndex"
 		/>
+
+		<!-- Inspect Modal -->
+		<InspectIndexModal 
+			:show="showInspectDialog"
+			@close="showInspectDialog = false"
+		/>
 	</div>
 </template>
 
@@ -112,9 +125,11 @@ import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Fire from 'vue-material-design-icons/Fire.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
+import FileSearchOutline from 'vue-material-design-icons/FileSearchOutline.vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { SolrWarmupModal, ClearIndexModal } from '../../../modals/settings'
+import InspectIndexModal from '../../../modals/settings/InspectIndexModal.vue'
 
 export default {
 	name: 'SolrDashboard',
@@ -126,8 +141,10 @@ export default {
 		Refresh,
 		Fire,
 		Delete,
+		FileSearchOutline,
 		SolrWarmupModal,
 		ClearIndexModal,
+		InspectIndexModal,
 	},
 
 	data() {
@@ -137,6 +154,7 @@ export default {
 			solrErrorMessage: '',
 			showWarmupDialog: false,
 			showClearDialog: false,
+			showInspectDialog: false,
 			solrStats: null,
 			objectStats: {
 				loading: false,
@@ -246,6 +264,12 @@ export default {
 			console.log('[DEBUG] openClearModal called')
 			this.showClearDialog = true
 			console.log('[DEBUG] showClearDialog set to:', this.showClearDialog)
+		},
+
+		openInspectModal() {
+			console.log('[DEBUG] openInspectModal called')
+			this.showInspectDialog = true
+			console.log('[DEBUG] showInspectDialog set to:', this.showInspectDialog)
 		},
 
 		async handleClearIndex() {
