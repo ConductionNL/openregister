@@ -2378,17 +2378,9 @@ class ObjectService
      */
     private function searchObjectsPaginatedDatabase(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false): array
     {
-        // **VALIDATION**: Check for SOLR-only features in database mode
+        // **VALIDATION**: Database mode now supports facetable functionality
         $facetable = $query['_facetable'] ?? false;
         $aggregations = $query['_aggregations'] ?? false;
-        
-        if (($facetable === true || $facetable === 'true') || 
-            ($aggregations === true || $aggregations === 'true')) {
-            throw new \InvalidArgumentException(
-                'Facets and aggregations are only available when using SOLR search engine. ' .
-                'Please use _source=index parameter to enable SOLR search, or remove _facetable/_aggregations parameters.'
-            );
-        }
 
         // **PERFORMANCE DEBUGGING**: Start detailed timing
         $perfStart = microtime(true);
