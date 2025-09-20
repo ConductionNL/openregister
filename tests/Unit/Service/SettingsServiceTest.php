@@ -425,7 +425,7 @@ class SettingsServiceTest extends TestCase
     {
         // Mock various operations
         $this->guzzleSolrService->method('clearIndex')
-            ->willReturn(true);
+            ->willReturn(['success' => true]);
 
         $result = $this->settingsService->manageSolr('clearIndex');
 

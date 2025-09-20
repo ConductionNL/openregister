@@ -1803,9 +1803,11 @@ class ObjectCacheService
         try {
             $result = $solrService->clearIndex();
             return [
-                'success' => $result,
+                'success' => $result['success'],
+                'error' => $result['error'] ?? null,
+                'error_details' => $result['error_details'] ?? null,
                 'timestamp' => date('c'),
-                'message' => $result ? 'Index cleared successfully' : 'Index clear failed'
+                'message' => $result['success'] ? 'Index cleared successfully' : 'Index clear failed'
             ];
         } catch (\Exception $e) {
             return [

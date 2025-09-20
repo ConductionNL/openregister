@@ -1058,11 +1058,13 @@ class SettingsController extends Controller
                     ]);
                     
                 case 'clear':
-                    $success = $guzzleSolrService->clearIndex();
+                    $result = $guzzleSolrService->clearIndex();
                     return new JSONResponse([
-                        'success' => $success,
+                        'success' => $result['success'],
                         'operation' => 'clear',
-                        'message' => $success ? 'Index cleared successfully' : 'Clear operation failed',
+                        'error' => $result['error'] ?? null,
+                        'error_details' => $result['error_details'] ?? null,
+                        'message' => $result['success'] ? 'Index cleared successfully' : 'Clear operation failed',
                         'timestamp' => date('c')
                     ]);
                     
@@ -1252,33 +1254,112 @@ class SettingsController extends Controller
             
             $logger->info('Starting SOLR index clear operation');
             
-            // Use the GuzzleSolrService to clear the index
-            $cleared = $guzzleSolrService->clearIndex();
+            // Use the GuzzleSolrService to clear the index - now returns detailed result array
+            $result = $guzzleSolrService->clearIndex();
             
-            if ($cleared) {
-                $logger->info('SOLR index cleared successfully');
+            if ($result['success']) {
+                $logger->info('SOLR index cleared successfully', [
+                    'deleted_docs' => $result['deleted_docs'] ?? 'unknown'
+                ]);
                 return new JSONResponse([
                     'success' => true,
-                    'message' => 'SOLR index cleared successfully'
+                    'message' => 'SOLR index cleared successfully',
+                    'deleted_docs' => $result['deleted_docs'] ?? null
                 ]);
             } else {
-                throw new \Exception('Failed to clear SOLR index');
+                // Log detailed error information for debugging
+                $logger->error('Failed to clear SOLR index', [
+                    'error' => $result['error'],
+                    'error_details' => $result['error_details'] ?? null
+                ]);
+                
+                return new JSONResponse([
+                    'success' => false,
+                    'error' => $result['error'],
+                    'error_details' => $result['error_details'] ?? null
+                ], 500);
             }
             
         } catch (\Exception $e) {
             // Get logger for error logging
             $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
-            $logger->error('Failed to clear SOLR index', [
+            $logger->error('Exception in clearSolrIndex controller', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
             
             return new JSONResponse([
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => 'Controller exception: ' . $e->getMessage(),
+                'error_details' => [
+                    'exception_type' => get_class($e),
+                    'trace' => $e->getTraceAsString()
+                ]
             ], 500);
         }
     }
+
+    /**
+     * Inspect SOLR index documents
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     * 
+     * @return JSONResponse
+     */
+    public function inspectSolrIndex(): JSONResponse
+    {
+        try {
+            $query = $this->request->getParam('query', '*:*');
+            $start = (int)$this->request->getParam('start', 0);
+            $rows = (int)$this->request->getParam('rows', 20);
+            $fields = $this->request->getParam('fields', '');
+            
+            // Validate parameters
+            $rows = min(max($rows, 1), 100); // Limit between 1 and 100
+            $start = max($start, 0);
+            
+            // Get GuzzleSolrService from container
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            
+            // Search documents in SOLR
+            $result = $guzzleSolrService->inspectIndex($query, $start, $rows, $fields);
+            
+            if ($result['success']) {
+                return new JSONResponse([
+                    'success' => true,
+                    'documents' => $result['documents'],
+                    'total' => $result['total'],
+                    'start' => $start,
+                    'rows' => $rows,
+                    'query' => $query
+                ]);
+            } else {
+                return new JSONResponse([
+                    'success' => false,
+                    'error' => $result['error'],
+                    'error_details' => $result['error_details'] ?? null
+                ], 500);
+            }
+            
+        } catch (\Exception $e) {
+            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
+            $logger->error('Exception in inspectSolrIndex controller', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return new JSONResponse([
+                'success' => false,
+                'error' => 'Controller exception: ' . $e->getMessage(),
+                'error_details' => [
+                    'exception_type' => get_class($e),
+                    'trace' => $e->getTraceAsString()
+                ]
+            ], 500);
+        }
+    }
+
 
     /**
      * Get memory usage prediction for SOLR warmup
