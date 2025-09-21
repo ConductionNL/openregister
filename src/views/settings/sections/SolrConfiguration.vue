@@ -192,7 +192,7 @@
 					<div class="config-row">
 						<label class="config-label">
 							<strong>Core</strong>
-							<p class="config-description">SOLR core name for OpenRegister data</p>
+							<p class="config-description">SOLR core name for standalone SOLR installations (not used in SolrCloud)</p>
 						</label>
 						<div class="config-input">
 							<input
@@ -200,6 +200,21 @@
 								type="text"
 								:disabled="loading || saving"
 								placeholder="openregister"
+								class="solr-input-field">
+						</div>
+					</div>
+
+					<div class="config-row">
+						<label class="config-label">
+							<strong>ConfigSet</strong>
+							<p class="config-description">ConfigSet name for SolrCloud collections. Use '_default' for maximum compatibility, or specify a custom ConfigSet name</p>
+						</label>
+						<div class="config-input">
+							<input
+								v-model="solrOptions.configSet"
+								type="text"
+								:disabled="loading || saving"
+								placeholder="_default"
 								class="solr-input-field">
 						</div>
 					</div>
