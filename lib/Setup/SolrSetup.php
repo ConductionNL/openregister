@@ -1783,8 +1783,8 @@ class SolrSetup
      */
     private function uploadConfigSet(string $configSetName): bool
     {
-        // Path to our packaged configSet ZIP file
-        $zipPath = __DIR__ . '/../../resources/solr/openregister-configset.zip';
+        // Path to our packaged configSet ZIP file (fixed version with proper XML structure)
+        $zipPath = __DIR__ . '/../../resources/solr/openregister-configset-fixed.zip';
         
         if (!file_exists($zipPath)) {
             $this->logger->error('ConfigSet ZIP file not found', [
