@@ -1210,11 +1210,11 @@ class SolrSetup
      * 
      * @param string $collectionName Collection name to create
      * @param string $configSetName ConfigSet name to use
-     * @param int $maxAttempts Maximum number of retry attempts (default: 8 - up to ~60 seconds)
+     * @param int $maxAttempts Maximum number of retry attempts (default: 6 - up to ~120 seconds)
      * @return bool True if collection created successfully
      * @throws \Exception If all retry attempts fail
      */
-    private function createCollectionWithRetry(string $collectionName, string $configSetName, int $maxAttempts = 8): bool
+    private function createCollectionWithRetry(string $collectionName, string $configSetName, int $maxAttempts = 6): bool
     {
         $attempt = 0;
         $baseDelaySeconds = 2; // Start with 2 second delay
