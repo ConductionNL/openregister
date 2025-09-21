@@ -827,6 +827,31 @@ class GuzzleSolrService
     }
 
     /**
+     * Check if SOLR core exists
+     *
+     * @param string $coreName Core name to check
+     * @return bool True if core exists
+     */
+    public function coreExists(string $coreName): bool
+    {
+        try {
+            $url = $this->buildSolrBaseUrl() . '/admin/cores?action=STATUS&core=' . urlencode($coreName) . '&wt=json';
+            $response = $this->httpClient->get($url, ['timeout' => 10]);
+            $data = json_decode((string)$response->getBody(), true);
+            
+            // Core exists if it appears in the status response
+            return isset($data['status'][$coreName]);
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to check core existence', [
+                'core' => $coreName,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
      * Delete SOLR collection
      *
      * @param string|null $collectionName Collection name (if null, uses active collection)
