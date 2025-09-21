@@ -423,26 +423,6 @@ export const useSettingsStore = defineStore('settings', {
 			}
 		},
 
-		/**
-		 * Load SOLR dashboard statistics
-		 */
-		async loadSolrDashboardStats() {
-			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/solr/dashboard/stats'))
-				this.solrDashboardStats = response.data || this.solrDashboardStats
-				return response.data
-			} catch (error) {
-				console.error('Failed to load SOLR dashboard stats:', error)
-				// Set unavailable state
-				this.solrDashboardStats = {
-					...this.solrDashboardStats,
-					available: false,
-					connection_status: 'unavailable',
-					health: 'error',
-				}
-				throw error
-			}
-		},
 
 		/**
 		 * Load RBAC settings
@@ -965,6 +945,128 @@ export const useSettingsStore = defineStore('settings', {
 			} finally {
 				this.fixingFields = false
 			}
+		},
+
+		// ========================================
+		// SOLR Management Actions
+		// ========================================
+
+		/**
+		 * Setup SOLR configuration
+		 */
+		async setupSolr() {
+			this.settingUpSolr = true
+			this.setupResults = null
+			this.showSetupDialog = true
+			
+			try {
+				const response = await axios.post(generateUrl('/apps/openregister/api/solr/setup'))
+				
+				this.setupResults = response.data
+				
+				if (response.data.success) {
+					showSuccess('SOLR setup completed successfully!')
+				} else {
+					// Don't show error toast for propagation timeouts - the modal will handle it
+					const isConfigSetPropagationError = response.data.error_details?.exception_message?.includes('ConfigSet propagation timeout')
+					if (!isConfigSetPropagationError) {
+						showError('SOLR setup failed: ' + (response.data.message || 'Unknown error'))
+					}
+				}
+				
+				return response.data
+			} catch (error) {
+				console.error('Failed to setup SOLR:', error)
+				
+				// Handle different error scenarios
+				let errorMessage = 'Failed to setup SOLR: ' + error.message
+				let setupResults = {
+					success: false,
+					message: errorMessage,
+					timestamp: new Date().toISOString(),
+					error_details: {
+						primary_error: 'Setup operation failed',
+						error_type: 'network_error',
+						exception_message: error.message
+					}
+				}
+				
+				// If we have response data from server, use that instead
+				if (error.response?.data) {
+					setupResults = error.response.data
+					errorMessage = setupResults.message || errorMessage
+				}
+				
+				this.setupResults = setupResults
+				showError(errorMessage)
+				throw error
+			} finally {
+				this.settingUpSolr = false
+			}
+		},
+
+		/**
+		 * Test SOLR connection
+		 */
+		async testSolrConnection() {
+			this.testingConnection = true
+			this.testResults = null
+			this.showTestDialog = true
+			
+			try {
+				const response = await axios.post(generateUrl('/apps/openregister/api/settings/solr/test'))
+				this.testResults = response.data
+				
+				if (response.data.success) {
+					showSuccess('SOLR connection test successful!')
+				} else {
+					showError('SOLR connection test failed: ' + (response.data.message || 'Unknown error'))
+				}
+				
+				return response.data
+			} catch (error) {
+				console.error('Failed to test SOLR connection:', error)
+				const errorMessage = 'Failed to test SOLR connection: ' + error.message
+				this.testResults = {
+					success: false,
+					message: errorMessage,
+					error: error.message
+				}
+				showError(errorMessage)
+				throw error
+			} finally {
+				this.testingConnection = false
+			}
+		},
+
+		/**
+		 * Hide setup dialog
+		 */
+		hideSetupDialog() {
+			this.showSetupDialog = false
+			this.setupResults = null
+		},
+
+		/**
+		 * Hide test dialog
+		 */
+		hideTestDialog() {
+			this.showTestDialog = false
+			this.testResults = null
+		},
+
+		/**
+		 * Retry setup
+		 */
+		retrySetup() {
+			this.setupSolr()
+		},
+
+		/**
+		 * Retry test
+		 */
+		retryTest() {
+			this.testSolrConnection()
 		},
 	},
 })

@@ -119,7 +119,7 @@
     <!-- for nested documents (minimal; points to root document) -->
     <field name="_root_" type="string" indexed="true" stored="false" />
     <!-- for nested documents (relationship tracking) -->
-    <field name="_nest_path_" type="_nest_path_" />
+    <field name="_nest_path_" type="_nest_path_" /><fieldType name="_nest_path_" class="solr.NestPathField" />
 
     <field name="_text_" type="text_general" indexed="true" stored="false" multiValued="true"/>
 
@@ -243,9 +243,6 @@
 
     <!-- The StrField type is not analyzed, but indexed/stored verbatim. -->
     <fieldType name="string" class="solr.StrField" sortMissingLast="true" />
-    
-    <!-- Field type for nested document path tracking -->
-    <fieldType name="_nest_path_" class="solr.NestPathField" />
     <fieldType name="strings" class="solr.StrField" sortMissingLast="true" multiValued="true" />
 
     <!-- boolean type: "true" or "false" -->
