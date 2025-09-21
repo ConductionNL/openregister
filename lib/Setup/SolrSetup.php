@@ -1082,6 +1082,9 @@ class SolrSetup
         ]);
         
         try {
+            // Try to force configSet propagation before collection creation
+            $this->forceConfigSetPropagation($tenantConfigSetName);
+            
             // Attempt collection creation with retry logic for configSet propagation delays
             $success = $this->createCollectionWithRetry($tenantCollectionName, $tenantConfigSetName);
             
@@ -1182,26 +1185,39 @@ class SolrSetup
     {
         $attempt = 0;
         $baseDelaySeconds = 2; // Start with 2 second delay
+        $startTime = time();
+        $retryDetails = [
+            'attempts' => 0,
+            'total_delay_seconds' => 0,
+            'attempt_timestamps' => []
+        ];
         
         while ($attempt < $maxAttempts) {
             $attempt++;
             
             try {
+                $retryDetails['attempts'] = $attempt;
+                $retryDetails['attempt_timestamps'][] = date('Y-m-d H:i:s');
+                
                 $this->logger->info('Attempting collection creation', [
                     'collection' => $collectionName,
                     'configSet' => $configSetName,
                     'attempt' => $attempt,
-                    'maxAttempts' => $maxAttempts
+                    'maxAttempts' => $maxAttempts,
+                    'elapsed_seconds' => time() - $startTime
                 ]);
                 
                 // Direct attempt to create collection
                 $success = $this->solrService->createCollection($collectionName, $configSetName);
                 
                 if ($success) {
+                    $totalElapsed = time() - $startTime;
                     $this->logger->info('Collection created successfully', [
                         'collection' => $collectionName,
                         'configSet' => $configSetName,
-                        'attempt' => $attempt
+                        'attempt' => $attempt,
+                        'total_elapsed_seconds' => $totalElapsed,
+                        'retry_details' => $retryDetails
                     ]);
                     return true;
                 }
@@ -1219,12 +1235,15 @@ class SolrSetup
                     'isConfigSetPropagationError' => $isConfigSetError
                 ]);
                 
-                // If this is the last attempt, provide user-friendly propagation error
+                // If this is the last attempt, provide user-friendly propagation error with retry details
                 if ($attempt >= $maxAttempts && $isConfigSetError) {
+                    $totalElapsed = time() - $startTime;
+                    $retryDetails['total_elapsed_seconds'] = $totalElapsed;
+                    
                     throw new \Exception(
-                        "SOLR ConfigSet propagation timeout: The configSet was created successfully but is still propagating across the SOLR cluster. This is normal in distributed SOLR environments. Please wait 2-5 minutes and try the setup again.",
+                        "SOLR ConfigSet propagation timeout: The configSet was created successfully but is still propagating across the SOLR cluster. This is normal in distributed SOLR environments. Attempted {$attempt} times over {$totalElapsed} seconds. Please wait 2-5 minutes and try the setup again.",
                         500,
-                        $e
+                        new \Exception(json_encode($retryDetails))
                     );
                 }
                 
@@ -1235,11 +1254,14 @@ class SolrSetup
                 
                 // Calculate exponential backoff delay: 2, 4, 8, 16 seconds
                 $delaySeconds = $baseDelaySeconds * pow(2, $attempt - 1);
+                $retryDetails['total_delay_seconds'] += $delaySeconds;
                 
                 $this->logger->info('Retrying collection creation after delay', [
                     'collection' => $collectionName,
                     'delaySeconds' => $delaySeconds,
-                    'nextAttempt' => $attempt + 1
+                    'nextAttempt' => $attempt + 1,
+                    'total_elapsed_seconds' => time() - $startTime,
+                    'cumulative_delay_seconds' => $retryDetails['total_delay_seconds']
                 ]);
                 
                 sleep($delaySeconds);
@@ -1273,6 +1295,79 @@ class SolrSetup
         }
         
         return false;
+    }
+
+    /**
+     * Try to force configSet propagation across SOLR cluster nodes
+     * 
+     * This attempts to trigger immediate configSet synchronization using
+     * various SOLR admin API calls that can help speed up propagation.
+     *
+     * @param string $configSetName ConfigSet name to force propagation for
+     * @return bool True if any propagation commands succeeded
+     */
+    private function forceConfigSetPropagation(string $configSetName): bool
+    {
+        $this->logger->info('Attempting to force configSet propagation', [
+            'configSet' => $configSetName
+        ]);
+        
+        $successCount = 0;
+        
+        try {
+            // Method 1: List configSets to trigger cache refresh
+            $url = $this->buildSolrUrl('/admin/configs?action=LIST&wt=json');
+            $response = $this->httpClient->get($url, ['timeout' => 10]);
+            
+            if ($response->getStatusCode() === 200) {
+                $successCount++;
+                $this->logger->debug('ConfigSet list refresh successful', [
+                    'configSet' => $configSetName,
+                    'method' => 'LIST'
+                ]);
+            }
+            
+        } catch (\Exception $e) {
+            $this->logger->debug('ConfigSet list refresh failed', [
+                'configSet' => $configSetName,
+                'method' => 'LIST',
+                'error' => $e->getMessage()
+            ]);
+        }
+        
+        try {
+            // Method 2: Check cluster status to trigger ZooKeeper sync
+            $url = $this->buildSolrUrl('/admin/collections?action=CLUSTERSTATUS&wt=json');
+            $response = $this->httpClient->get($url, ['timeout' => 10]);
+            
+            if ($response->getStatusCode() === 200) {
+                $successCount++;
+                $this->logger->debug('Cluster status refresh successful', [
+                    'configSet' => $configSetName,
+                    'method' => 'CLUSTERSTATUS'
+                ]);
+            }
+            
+        } catch (\Exception $e) {
+            $this->logger->debug('Cluster status refresh failed', [
+                'configSet' => $configSetName,
+                'method' => 'CLUSTERSTATUS',
+                'error' => $e->getMessage()
+            ]);
+        }
+        
+        $this->logger->info('ConfigSet propagation force completed', [
+            'configSet' => $configSetName,
+            'successful_methods' => $successCount,
+            'total_methods' => 2
+        ]);
+        
+        // Give a moment for any triggered propagation to begin
+        if ($successCount > 0) {
+            sleep(1);
+        }
+        
+        return $successCount > 0;
     }
 
 
