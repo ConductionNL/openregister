@@ -36,6 +36,45 @@
 						</template>
 						Inspect Fields
 					</NcButton>
+					
+					<!-- Management Buttons (shown when SOLR is enabled) -->
+					<template v-if="solrOptions.enabled">
+						<NcButton type="secondary" @click="loadSolrStats" :disabled="loadingStats">
+							<template #icon>
+								<Refresh :size="20" />
+							</template>
+							Refresh Stats
+						</NcButton>
+						
+						<NcButton type="primary" @click="openWarmupModal">
+							<template #icon>
+								<Fire :size="20" />
+							</template>
+							Warmup Index
+						</NcButton>
+						
+						<NcButton type="secondary" @click="openClearModal">
+							<template #icon>
+								<Delete :size="20" />
+							</template>
+							Clear Index
+						</NcButton>
+						
+						<NcButton type="error" @click="openDeleteCollectionModal">
+							<template #icon>
+								<DatabaseRemove :size="20" />
+							</template>
+							Delete Collection
+						</NcButton>
+						
+						<NcButton type="secondary" @click="openInspectModal">
+							<template #icon>
+								<FileSearchOutline :size="20" />
+							</template>
+							Inspect Index
+						</NcButton>
+					</template>
+					
 					<NcButton
 						type="primary"
 						:disabled="loading || saving || testingConnection || settingUpSolr"
@@ -323,11 +362,6 @@
 
 		<!-- SOLR Management Dashboard -->
 		<div v-if="solrOptions.enabled" class="solr-management-section">
-			<h4>🔍 SOLR Management Dashboard</h4>
-			<p class="option-description">
-				Monitor and manage your SOLR search index operations.
-			</p>
-
 			<!-- Loading State -->
 			<div v-if="loadingStats" class="loading-section">
 				<NcLoadingIcon :size="32" />
@@ -347,44 +381,6 @@
 
 			<!-- Success State -->
 			<div v-else-if="solrStats && solrStats.available" class="dashboard-section">
-				<!-- Management Action Buttons -->
-				<div class="management-button-group">
-					<NcButton type="secondary" @click="loadSolrStats" :disabled="loadingStats">
-						<template #icon>
-							<Refresh :size="20" />
-						</template>
-						Refresh Stats
-					</NcButton>
-					
-					<NcButton type="primary" @click="openWarmupModal">
-						<template #icon>
-							<Fire :size="20" />
-						</template>
-						Warmup Index
-					</NcButton>
-					
-					<NcButton type="secondary" @click="openClearModal">
-						<template #icon>
-							<Delete :size="20" />
-						</template>
-						Clear Index
-					</NcButton>
-					
-					<NcButton type="error" @click="openDeleteCollectionModal">
-						<template #icon>
-							<DatabaseRemove :size="20" />
-						</template>
-						Delete Collection
-					</NcButton>
-					
-					<NcButton type="secondary" @click="openInspectModal">
-						<template #icon>
-							<FileSearchOutline :size="20" />
-						</template>
-						Inspect Index
-					</NcButton>
-				</div>
-
 				<!-- Dashboard Stats -->
 				<div class="dashboard-stats-grid">
 					<div class="stat-card">
@@ -1937,6 +1933,7 @@ export default {
 	display: flex;
 	gap: 8px;
 	flex-wrap: wrap;
+	align-items: center;
 }
 
 .section-description-full {
@@ -3715,12 +3712,6 @@ export default {
 	padding: 1rem 0;
 }
 
-.management-button-group {
-	display: flex;
-	gap: 0.5rem;
-	margin-bottom: 2rem;
-	flex-wrap: wrap;
-}
 
 .dashboard-stats-grid {
 	display: grid;
