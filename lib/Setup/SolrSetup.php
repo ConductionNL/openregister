@@ -1174,11 +1174,11 @@ class SolrSetup
      * 
      * @param string $collectionName Collection name to create
      * @param string $configSetName ConfigSet name to use
-     * @param int $maxAttempts Maximum number of retry attempts (default: 5)
+     * @param int $maxAttempts Maximum number of retry attempts (default: 8 - up to ~60 seconds)
      * @return bool True if collection created successfully
      * @throws \Exception If all retry attempts fail
      */
-    private function createCollectionWithRetry(string $collectionName, string $configSetName, int $maxAttempts = 5): bool
+    private function createCollectionWithRetry(string $collectionName, string $configSetName, int $maxAttempts = 8): bool
     {
         $attempt = 0;
         $baseDelaySeconds = 2; // Start with 2 second delay
@@ -1219,8 +1219,17 @@ class SolrSetup
                     'isConfigSetPropagationError' => $isConfigSetError
                 ]);
                 
-                // If this is the last attempt, or not a configSet propagation error, throw immediately
-                if ($attempt >= $maxAttempts || !$isConfigSetError) {
+                // If this is the last attempt, provide user-friendly propagation error
+                if ($attempt >= $maxAttempts && $isConfigSetError) {
+                    throw new \Exception(
+                        "SOLR ConfigSet propagation timeout: The configSet was created successfully but is still propagating across the SOLR cluster. This is normal in distributed SOLR environments. Please wait 2-5 minutes and try the setup again.",
+                        500,
+                        $e
+                    );
+                }
+                
+                // If not a configSet propagation error, throw immediately  
+                if (!$isConfigSetError) {
                     throw $e;
                 }
                 

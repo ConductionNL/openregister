@@ -66,8 +66,37 @@
 					</div>
 				</div>
 
-				<!-- Error Details -->
-				<div v-if="!results.success && results.error_details" class="error-details">
+				<!-- ConfigSet Propagation Error (Special Handling) -->
+				<div v-if="!results.success && isConfigSetPropagationError" class="propagation-error">
+					<h5>⏱️ ConfigSet Propagation Delay</h5>
+					<div class="propagation-content">
+						<div class="propagation-explanation">
+							<p><strong>What happened:</strong> The SOLR configSet was created successfully, but it's still propagating across the distributed SOLR cluster nodes. This is normal in production SOLR environments.</p>
+						</div>
+						
+						<div class="propagation-instructions">
+							<h6>🔄 Next Steps:</h6>
+							<ol>
+								<li><strong>Wait 2-5 minutes</strong> for the configSet to fully propagate to all SOLR nodes</li>
+								<li>Click the <strong>"Setup Again"</strong> button below to retry</li>
+								<li>The setup should succeed on the next attempt</li>
+							</ol>
+						</div>
+
+						<div class="propagation-technical">
+							<details>
+								<summary>Technical Details</summary>
+								<p>In SolrCloud environments, configSets are distributed via ZooKeeper coordination. Large clusters or high network latency can cause propagation delays of several minutes. This is expected behavior and not an error with your configuration.</p>
+								<div v-if="results.error_details" class="raw-error">
+									<pre>{{ JSON.stringify(results.error_details, null, 2) }}</pre>
+								</div>
+							</details>
+						</div>
+					</div>
+				</div>
+
+				<!-- Standard Error Details -->
+				<div v-else-if="!results.success && results.error_details" class="error-details">
 					<h5>Error Details</h5>
 					<div class="error-content">
 						<div v-if="results.primary_error" class="primary-error">
@@ -154,6 +183,32 @@ export default {
 	},
 
 	emits: ['close', 'retry'],
+
+	computed: {
+		isConfigSetPropagationError() {
+			if (!this.results || this.results.success) {
+				return false
+			}
+
+			// Check for configSet propagation error patterns in the message or error details
+			const errorMessage = this.results.message || ''
+			const errorDetails = this.results.error_details || {}
+			const exceptionMessage = errorDetails.exception_message || ''
+
+			const propagationPatterns = [
+				'ConfigSet propagation timeout',
+				'Underlying core creation failed while creating collection',
+				'configset does not exist',
+				'Config does not exist',
+				'Could not find configSet',
+				'configSet not found'
+			]
+
+			return propagationPatterns.some(pattern => 
+				errorMessage.includes(pattern) || exceptionMessage.includes(pattern)
+			)
+		}
+	},
 
 	methods: {
 		getStepStatus(step) {
@@ -389,6 +444,80 @@ export default {
 .config-value {
 	color: var(--color-text);
 	font-family: monospace;
+}
+
+/* ConfigSet Propagation Error */
+.propagation-error {
+	margin-bottom: 1rem;
+}
+
+.propagation-error h5 {
+	margin: 0 0 1rem 0;
+	color: var(--color-warning);
+	font-size: 1.1rem;
+}
+
+.propagation-content {
+	background-color: rgba(var(--color-warning-rgb), 0.1);
+	border: 1px solid var(--color-warning);
+	border-radius: var(--border-radius);
+	padding: 1.5rem;
+}
+
+.propagation-explanation {
+	margin-bottom: 1.5rem;
+	padding: 1rem;
+	background-color: var(--color-main-background);
+	border-radius: var(--border-radius);
+	border-left: 4px solid var(--color-warning);
+}
+
+.propagation-explanation p {
+	margin: 0;
+	color: var(--color-text);
+	line-height: 1.5;
+}
+
+.propagation-instructions {
+	margin-bottom: 1.5rem;
+}
+
+.propagation-instructions h6 {
+	margin: 0 0 0.75rem 0;
+	color: var(--color-text);
+	font-size: 1rem;
+}
+
+.propagation-instructions ol {
+	margin: 0;
+	padding-left: 1.5rem;
+	color: var(--color-text);
+}
+
+.propagation-instructions li {
+	margin-bottom: 0.5rem;
+	line-height: 1.4;
+}
+
+.propagation-technical {
+	border-top: 1px solid var(--color-border);
+	padding-top: 1rem;
+}
+
+.propagation-technical details summary {
+	color: var(--color-text-maxcontrast);
+	cursor: pointer;
+	padding: 0.5rem;
+	background-color: var(--color-background-hover);
+	border-radius: var(--border-radius);
+	margin-bottom: 0.75rem;
+}
+
+.propagation-technical p {
+	margin: 0 0 1rem 0;
+	color: var(--color-text-light);
+	line-height: 1.4;
+	font-size: 0.9rem;
 }
 
 /* Error Details */
