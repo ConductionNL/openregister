@@ -582,6 +582,88 @@ class SettingsController extends Controller
     }
 
     /**
+     * Delete SOLR collection (DANGER: This will permanently delete all data in the collection)
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse The deletion results
+     */
+    public function deleteSolrCollection(): JSONResponse
+    {
+        try {
+            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
+            
+            $logger->warning('🚨 SOLR collection deletion requested', [
+                'timestamp' => date('c'),
+                'user_id' => $this->userId ?? 'unknown',
+                'request_id' => $this->request->getId() ?? 'unknown'
+            ]);
+            
+            // Get GuzzleSolrService
+            $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+            
+            // Get current collection name for logging
+            $currentCollection = $guzzleSolrService->getActiveCollectionName();
+            
+            $logger->warning('🗑️ Deleting SOLR collection', [
+                'collection' => $currentCollection,
+                'user_id' => $this->userId ?? 'unknown'
+            ]);
+            
+            // Delete the collection
+            $result = $guzzleSolrService->deleteCollection();
+            
+            if ($result['success']) {
+                $logger->info('✅ SOLR collection deleted successfully', [
+                    'collection' => $result['collection'] ?? 'unknown',
+                    'user_id' => $this->userId ?? 'unknown'
+                ]);
+                
+                return new JSONResponse([
+                    'success' => true,
+                    'message' => $result['message'],
+                    'collection' => $result['collection'] ?? null,
+                    'tenant_id' => $result['tenant_id'] ?? null,
+                    'response_time_ms' => $result['response_time_ms'] ?? null,
+                    'next_steps' => [
+                        'Run SOLR Setup to create a new collection',
+                        'Run Warmup Index to rebuild the search index',
+                        'Verify search functionality is working'
+                    ]
+                ]);
+            } else {
+                $logger->error('❌ SOLR collection deletion failed', [
+                    'error' => $result['message'],
+                    'error_code' => $result['error_code'] ?? 'unknown',
+                    'collection' => $result['collection'] ?? 'unknown'
+                ]);
+                
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => $result['message'],
+                    'error_code' => $result['error_code'] ?? 'unknown',
+                    'collection' => $result['collection'] ?? null,
+                    'solr_error' => $result['solr_error'] ?? null
+                ], 500);
+            }
+            
+        } catch (\Exception $e) {
+            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
+            $logger->error('Exception during SOLR collection deletion', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Collection deletion failed: ' . $e->getMessage(),
+                'error_code' => 'EXCEPTION'
+            ], 500);
+        }
+    }
+
+    /**
      * Test SOLR connection with provided settings
      *
      * @NoAdminRequired

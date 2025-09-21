@@ -47,6 +47,13 @@
 					Clear Index
 				</NcButton>
 				
+				<NcButton type="error" @click="openDeleteCollectionModal">
+					<template #icon>
+						<DatabaseRemove :size="20" />
+					</template>
+					Delete Collection
+				</NcButton>
+				
 				<NcButton type="secondary" @click="openInspectModal">
 					<template #icon>
 						<FileSearchOutline :size="20" />
@@ -115,6 +122,13 @@
 			:show="showInspectDialog"
 			@close="showInspectDialog = false"
 		/>
+
+		<!-- Delete Collection Modal -->
+		<DeleteCollectionModal
+			:show="showDeleteCollectionDialog"
+			@close="closeDeleteCollectionModal"
+			@deleted="handleCollectionDeleted"
+		/>
 	</div>
 </template>
 
@@ -125,11 +139,13 @@ import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Fire from 'vue-material-design-icons/Fire.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
+import DatabaseRemove from 'vue-material-design-icons/DatabaseRemove.vue'
 import FileSearchOutline from 'vue-material-design-icons/FileSearchOutline.vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { SolrWarmupModal, ClearIndexModal } from '../../../modals/settings'
 import InspectIndexModal from '../../../modals/settings/InspectIndexModal.vue'
+import DeleteCollectionModal from '../../../modals/settings/DeleteCollectionModal.vue'
 
 export default {
 	name: 'SolrDashboard',
@@ -141,10 +157,12 @@ export default {
 		Refresh,
 		Fire,
 		Delete,
+		DatabaseRemove,
 		FileSearchOutline,
 		SolrWarmupModal,
 		ClearIndexModal,
 		InspectIndexModal,
+		DeleteCollectionModal,
 	},
 
 	data() {
@@ -155,6 +173,7 @@ export default {
 			showWarmupDialog: false,
 			showClearDialog: false,
 			showInspectDialog: false,
+			showDeleteCollectionDialog: false,
 			solrStats: null,
 			objectStats: {
 				loading: false,
@@ -270,6 +289,30 @@ export default {
 			console.log('[DEBUG] openInspectModal called')
 			this.showInspectDialog = true
 			console.log('[DEBUG] showInspectDialog set to:', this.showInspectDialog)
+		},
+
+		openDeleteCollectionModal() {
+			console.log('[DEBUG] openDeleteCollectionModal called')
+			this.showDeleteCollectionDialog = true
+			console.log('[DEBUG] showDeleteCollectionDialog set to:', this.showDeleteCollectionDialog)
+		},
+
+		closeDeleteCollectionModal() {
+			console.log('[DEBUG] closeDeleteCollectionModal called')
+			this.showDeleteCollectionDialog = false
+		},
+
+		async handleCollectionDeleted(result) {
+			console.log('[DEBUG] handleCollectionDeleted called with result:', result)
+			
+			// Close the modal
+			this.closeDeleteCollectionModal()
+			
+			// Refresh SOLR stats to reflect the deletion
+			await this.loadSolrStats()
+			
+			// Show success message (already shown in modal, but this confirms)
+			console.log('[DEBUG] Collection deletion completed:', result)
 		},
 
 		async handleClearIndex() {
