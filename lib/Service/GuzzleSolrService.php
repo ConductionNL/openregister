@@ -1098,7 +1098,7 @@ class GuzzleSolrService
             'self_files' => $this->flattenFilesForSolr($object->getFiles()),
             
             // **COMPLETE OBJECT STORAGE**: Store entire object as JSON for exact reconstruction
-            'self_object' => json_encode($objectData->jsonSerialize() ?: [])
+            'self_object' => json_encode($object->jsonSerialize() ?: [])
         ];
         
         // **SCHEMA-AWARE FIELD MAPPING**: Map object data based on schema properties
