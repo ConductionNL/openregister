@@ -767,6 +767,98 @@ class GuzzleSolrService
     }
 
     /**
+     * Delete SOLR collection
+     *
+     * @param string|null $collectionName Collection name (if null, uses active collection)
+     * @return array Result with success status and details
+     */
+    public function deleteCollection(?string $collectionName = null): array
+    {
+        try {
+            // Use provided collection name or get active collection
+            $targetCollection = $collectionName ?? $this->getActiveCollectionName();
+            
+            if ($targetCollection === null) {
+                return [
+                    'success' => false,
+                    'message' => 'No collection specified and no active collection found',
+                    'error_code' => 'NO_COLLECTION'
+                ];
+            }
+
+            // Check if collection exists before attempting to delete
+            if (!$this->collectionExists($targetCollection)) {
+                return [
+                    'success' => false,
+                    'message' => "Collection '{$targetCollection}' does not exist",
+                    'error_code' => 'COLLECTION_NOT_EXISTS',
+                    'collection' => $targetCollection
+                ];
+            }
+
+            // Build delete collection URL
+            $url = $this->buildSolrBaseUrl() . '/admin/collections?' . http_build_query([
+                'action' => 'DELETE',
+                'name' => $targetCollection,
+                'wt' => 'json'
+            ]);
+
+            $this->logger->info('🗑️ Attempting to delete SOLR collection', [
+                'collection' => $targetCollection,
+                'tenant_id' => $this->tenantId,
+                'url' => $url
+            ]);
+
+            $response = $this->httpClient->get($url, ['timeout' => 60]);
+            $data = json_decode((string)$response->getBody(), true);
+
+            if (($data['responseHeader']['status'] ?? -1) === 0) {
+                $this->logger->info('✅ SOLR collection deleted successfully', [
+                    'collection' => $targetCollection,
+                    'tenant_id' => $this->tenantId,
+                    'response_time' => $data['responseHeader']['QTime'] ?? 'unknown'
+                ]);
+                
+                return [
+                    'success' => true,
+                    'message' => "Collection '{$targetCollection}' deleted successfully",
+                    'collection' => $targetCollection,
+                    'tenant_id' => $this->tenantId,
+                    'response_time_ms' => $data['responseHeader']['QTime'] ?? null
+                ];
+            }
+
+            $this->logger->error('❌ SOLR collection deletion failed', [
+                'collection' => $targetCollection,
+                'response' => $data
+            ]);
+            
+            return [
+                'success' => false,
+                'message' => "Failed to delete collection '{$targetCollection}': " . ($data['error']['msg'] ?? 'Unknown error'),
+                'error_code' => 'DELETE_FAILED',
+                'collection' => $targetCollection,
+                'solr_error' => $data['error'] ?? null
+            ];
+
+        } catch (\Exception $e) {
+            $this->logger->error('Exception deleting SOLR collection', [
+                'collection' => $targetCollection ?? 'unknown',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return [
+                'success' => false,
+                'message' => 'Exception occurred while deleting collection: ' . $e->getMessage(),
+                'error_code' => 'EXCEPTION',
+                'collection' => $targetCollection ?? 'unknown',
+                'exception' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
      * Index object in SOLR
      *
      * @param ObjectEntity $object Object to index
