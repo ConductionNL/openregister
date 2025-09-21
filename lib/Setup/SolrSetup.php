@@ -200,6 +200,34 @@ class SolrSetup
     }
 
     /**
+     * Initialize all setup steps as pending to show complete progress view
+     * 
+     * This ensures that users can see all steps in the setup modal,
+     * including ones that haven't been reached yet due to earlier failures.
+     */
+    private function initializeAllSteps(): void
+    {
+        $allSteps = [
+            1 => ['step_name' => 'SOLR Connectivity', 'description' => 'Verify SOLR server connectivity and authentication'],
+            2 => ['step_name' => 'EnsureTenantConfigSet', 'description' => 'Create or verify tenant-specific configSet'],
+            3 => ['step_name' => 'Collection Creation', 'description' => 'Create or verify tenant-specific collection'],
+            4 => ['step_name' => 'Schema Configuration', 'description' => 'Configure schema fields for ObjectEntity metadata'],
+            5 => ['step_name' => 'Setup Validation', 'description' => 'Validate complete SOLR setup and functionality']
+        ];
+        
+        foreach ($allSteps as $stepNumber => $stepInfo) {
+            $this->setupProgress['steps'][] = [
+                'step_number' => $stepNumber,
+                'step_name' => $stepInfo['step_name'],
+                'status' => 'pending',
+                'description' => $stepInfo['description'],
+                'timestamp' => null,
+                'details' => []
+            ];
+        }
+    }
+
+    /**
      * Get tenant-specific collection name using GuzzleSolrService
      *
      * @return string Tenant-specific collection name (e.g., "openregister_nc_f0e53393")
@@ -259,6 +287,9 @@ class SolrSetup
             'success' => false,
             'steps' => []
         ];
+        
+        // Initialize all steps as pending to show complete progress
+        $this->initializeAllSteps();
 
         try {
             // Step 1: Verify SOLR connectivity
