@@ -1906,110 +1906,27 @@ class GuzzleSolrService
      */
     private function reconstructObjectFromSolrDocument(array $doc): ?ObjectEntity
     {
-        try {
-            // Extract metadata from self_ fields
-            // Handle both single values and arrays (SOLR can return either)
-            $objectId = is_array($doc['self_object_id'] ?? null) ? ($doc['self_object_id'][0] ?? null) : ($doc['self_object_id'] ?? null);
-            $uuid = is_array($doc['self_uuid'] ?? null) ? ($doc['self_uuid'][0] ?? null) : ($doc['self_uuid'] ?? null);
-            $register = is_array($doc['self_register'] ?? null) ? ($doc['self_register'][0] ?? null) : ($doc['self_register'] ?? null);
-            $schema = is_array($doc['self_schema'] ?? null) ? ($doc['self_schema'][0] ?? null) : ($doc['self_schema'] ?? null);
-            
-            if (!$objectId || !$register || !$schema) {
-                $this->logger->warning('[GuzzleSolrService] Invalid document missing required fields', [
-                    'doc_id' => $doc['id'] ?? 'unknown',
-                    'object_id' => $objectId,
-                    'register' => $register,
-                    'schema' => $schema
-                ]);
-                return null;
-            }
-
-            // Create ObjectEntity instance
-            $entity = new \OCA\OpenRegister\Db\ObjectEntity();
-            $entity->setId($objectId);
-            $entity->setUuid($uuid);
-            $entity->setRegister($register);
-            $entity->setSchema($schema);
-            
-            // Set metadata fields
-            $entity->setOrganisation(is_array($doc['self_organisation'] ?? null) ? ($doc['self_organisation'][0] ?? null) : ($doc['self_organisation'] ?? null));
-            $entity->setName(is_array($doc['self_name'] ?? null) ? ($doc['self_name'][0] ?? null) : ($doc['self_name'] ?? null));
-            $entity->setDescription(is_array($doc['self_description'] ?? null) ? ($doc['self_description'][0] ?? null) : ($doc['self_description'] ?? null));
-            $entity->setSummary(is_array($doc['self_summary'] ?? null) ? ($doc['self_summary'][0] ?? null) : ($doc['self_summary'] ?? null));
-            $entity->setImage(is_array($doc['self_image'] ?? null) ? ($doc['self_image'][0] ?? null) : ($doc['self_image'] ?? null));
-            $entity->setSlug(is_array($doc['self_slug'] ?? null) ? ($doc['self_slug'][0] ?? null) : ($doc['self_slug'] ?? null));
-            $entity->setUri(is_array($doc['self_uri'] ?? null) ? ($doc['self_uri'][0] ?? null) : ($doc['self_uri'] ?? null));
-            $entity->setVersion(is_array($doc['self_version'] ?? null) ? ($doc['self_version'][0] ?? null) : ($doc['self_version'] ?? null));
-            $entity->setSize(is_array($doc['self_size'] ?? null) ? ($doc['self_size'][0] ?? null) : ($doc['self_size'] ?? null));
-            $entity->setOwner(is_array($doc['self_owner'] ?? null) ? ($doc['self_owner'][0] ?? null) : ($doc['self_owner'] ?? null));
-            $entity->setLocked(is_array($doc['self_locked'] ?? null) ? ($doc['self_locked'][0] ?? null) : ($doc['self_locked'] ?? null));
-            $entity->setFolder(is_array($doc['self_folder'] ?? null) ? ($doc['self_folder'][0] ?? null) : ($doc['self_folder'] ?? null));
-            $entity->setApplication(is_array($doc['self_application'] ?? null) ? ($doc['self_application'][0] ?? null) : ($doc['self_application'] ?? null));
-            
-            // Set datetime fields
-            $created = is_array($doc['self_created'] ?? null) ? ($doc['self_created'][0] ?? null) : ($doc['self_created'] ?? null);
-            if ($created) {
-                $entity->setCreated(new \DateTime($created));
-            }
-            $updated = is_array($doc['self_updated'] ?? null) ? ($doc['self_updated'][0] ?? null) : ($doc['self_updated'] ?? null);
-            if ($updated) {
-                $entity->setUpdated(new \DateTime($updated));
-            }
-            $published = is_array($doc['self_published'] ?? null) ? ($doc['self_published'][0] ?? null) : ($doc['self_published'] ?? null);
-            if ($published) {
-                $entity->setPublished(new \DateTime($published));
-            }
-            $depublished = is_array($doc['self_depublished'] ?? null) ? ($doc['self_depublished'][0] ?? null) : ($doc['self_depublished'] ?? null);
-            if ($depublished) {
-                $entity->setDepublished(new \DateTime($depublished));
-            }
-            
-            // Reconstruct object data from JSON or individual fields
-            $objectData = [];
-            $selfObject = is_array($doc['self_object'] ?? null) ? ($doc['self_object'][0] ?? null) : ($doc['self_object'] ?? null);
-            if ($selfObject) {
-                $objectData = json_decode($selfObject, true) ?: [];
-            } else {
-                // Fallback: extract object properties from root level fields
-                foreach ($doc as $key => $value) {
-                    if (!str_starts_with($key, 'self_') && 
-                        !in_array($key, ['id', 'tenant_id', '_text_', '_version_', '_root_'])) {
-                        // Remove Solr type suffixes
-                        $cleanKey = preg_replace('/_(s|t|i|f|b)$/', '', $key);
-                        $objectData[$cleanKey] = is_array($value) ? $value[0] : $value;
-                    }
-                }
-            }
-            
-            $entity->setObject($objectData);
-            
-            // Set complex fields from JSON
-            $authorization = is_array($doc['self_authorization'] ?? null) ? ($doc['self_authorization'][0] ?? null) : ($doc['self_authorization'] ?? null);
-            if ($authorization) {
-                $entity->setAuthorization(json_decode($authorization, true));
-            }
-            $deleted = is_array($doc['self_deleted'] ?? null) ? ($doc['self_deleted'][0] ?? null) : ($doc['self_deleted'] ?? null);
-            if ($deleted) {
-                $entity->setDeleted(json_decode($deleted, true));
-            }
-            $validation = is_array($doc['self_validation'] ?? null) ? ($doc['self_validation'][0] ?? null) : ($doc['self_validation'] ?? null);
-            if ($validation) {
-                $entity->setValidation(json_decode($validation, true));
-            }
-            $groups = is_array($doc['self_groups'] ?? null) ? ($doc['self_groups'][0] ?? null) : ($doc['self_groups'] ?? null);
-            if ($groups) {
-                $entity->setGroups(json_decode($groups, true));
-            }
-
-            return $entity;
-            
-        } catch (\Exception $e) {
-            $this->logger->error('[GuzzleSolrService] Failed to reconstruct object from Solr document', [
-                'doc_id' => $doc['id'] ?? 'unknown',
-                'error' => $e->getMessage()
+        // Extract metadata from self_ fields
+        // Handle both single values and arrays (SOLR can return either)
+        $object = is_array($doc['self_object'] ?? null) ? ($doc['self_object'][0] ?? null) : ($doc['self_object'] ?? null);
+        $uuid = is_array($doc['self_uuid'] ?? null) ? ($doc['self_uuid'][0] ?? null) : ($doc['self_uuid'] ?? null);
+        $register = is_array($doc['self_register'] ?? null) ? ($doc['self_register'][0] ?? null) : ($doc['self_register'] ?? null);
+        $schema = is_array($doc['self_schema'] ?? null) ? ($doc['self_schema'][0] ?? null) : ($doc['self_schema'] ?? null);
+        
+        if (!$object) {
+            $this->logger->error('[GuzzleSolrService] Invalid document missing required self_object', [
+                'uuid' => $uuid,
+                'register' => $register,
+                'schema' => $schema
             ]);
             return null;
         }
+
+        // Create ObjectEntity instance
+        $entity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $entity->hydrateObject(json_decode($object, true));
+
+        return $entity;
     }
 
     /**
@@ -3058,84 +2975,36 @@ class GuzzleSolrService
      * This method extracts the actual OpenRegister object from the SOLR document's self_object field
      * and merges it with essential metadata from the SOLR document.
      *
+     * @phpstan-param array<int, array<string, mixed>> $solrDocuments
+     * @psalm-param array<array<string, mixed>> $solrDocuments
+     * @phpstan-return array<int, array<string, mixed>>
+     * @psalm-return array<array<string, mixed>>
+     *
      * @param array $solrDocuments Array of SOLR documents
      * @return array Array of OpenRegister objects
      */
-    private function convertSolrDocumentsToOpenRegisterObjects(array $solrDocuments): array
+    private function convertSolrDocumentsToOpenRegisterObjects(array $solrDocuments = []): array
     {
         $openRegisterObjects = [];
 
-        foreach ($solrDocuments as $solrDoc) {
-            try {
-                // Extract the actual object from self_object field
-                $actualObject = null;
-                if (isset($solrDoc['self_object']) && is_array($solrDoc['self_object']) && !empty($solrDoc['self_object'])) {
-                    // self_object is stored as JSON string in an array
-                    $objectJson = $solrDoc['self_object'][0];
-                    $actualObject = json_decode($objectJson, true);
-                    
-                    if (json_last_error() !== JSON_ERROR_NONE) {
-                        $this->logger->warning('Failed to decode self_object JSON for document', [
-                            'document_id' => $solrDoc['id'] ?? 'unknown',
-                            'json_error' => json_last_error_msg(),
-                            'raw_json' => substr($objectJson, 0, 200) . '...'
-                        ]);
-                        continue;
-                    }
-                }
-
-                // If we couldn't extract the actual object, skip this document
-                if ($actualObject === null) {
-                    $this->logger->warning('No valid self_object found in SOLR document', [
-                        'document_id' => $solrDoc['id'] ?? 'unknown'
-                    ]);
-                    continue;
-                }
-
-                // Add essential metadata from SOLR document to the object
-                $actualObject['@self'] = [
-                    'id' => $solrDoc['self_uuid'] ?? $solrDoc['id'],
-                    'slug' => null, // Not stored in SOLR
-                    'name' => $solrDoc['self_name'] ?? null,
-                    'description' => null, // Not stored separately in SOLR
-                    'summary' => null, // Not stored separately in SOLR
-                    'image' => null, // Not stored separately in SOLR
-                    'uri' => null, // Not stored separately in SOLR
-                    'version' => null, // Not stored separately in SOLR
-                    'register' => (string)($solrDoc['self_register'] ?? ''),
-                    'schema' => (string)($solrDoc['self_schema'] ?? ''),
-                    'schemaVersion' => null, // Not stored separately in SOLR
-                    'files' => [], // Files would need separate handling
-                    'relations' => [], // Relations would need separate handling
-                    'locked' => null, // Not stored in SOLR
-                    'owner' => $solrDoc['self_owner'] ?? null,
-                    'organisation' => $solrDoc['self_organisation'] ?? null,
-                    'groups' => [], // Not stored in SOLR
-                    'authorization' => [], // Not stored in SOLR
-                    'folder' => null, // Not stored in SOLR
-                    'application' => null, // Not stored in SOLR
-                    'validation' => [], // Not stored in SOLR
-                    'geo' => [], // Not stored in SOLR
-                    'retention' => [], // Not stored in SOLR
-                    'size' => null, // Not stored in SOLR
-                    'updated' => isset($solrDoc['self_updated']) ? $solrDoc['self_updated'] : null,
-                    'created' => isset($solrDoc['self_created']) ? $solrDoc['self_created'] : null,
-                    'published' => null, // Not stored separately in SOLR
-                    'depublished' => null, // Not stored separately in SOLR
-                    'deleted' => [] // Not stored in SOLR
-                ];
-
-                $openRegisterObjects[] = $actualObject;
-
-            } catch (\Exception $e) {
-                $this->logger->error('Error converting SOLR document to OpenRegister object', [
-                    'document_id' => $solrDoc['id'] ?? 'unknown',
-                    'error' => $e->getMessage()
+        foreach ($solrDocuments as $doc) {
+            $object   = is_array($doc['self_object'] ?? null) ? ($doc['self_object'][0] ?? null) : ($doc['self_object'] ?? null);
+            $uuid     = is_array($doc['self_uuid'] ?? null) ? ($doc['self_uuid'][0] ?? null) : ($doc['self_uuid'] ?? null);
+            $register = is_array($doc['self_register'] ?? null) ? ($doc['self_register'][0] ?? null) : ($doc['self_register'] ?? null);
+            $schema   = is_array($doc['self_schema'] ?? null) ? ($doc['self_schema'][0] ?? null) : ($doc['self_schema'] ?? null);
+    
+            if (!$object) {
+                $this->logger->warning('[GuzzleSolrService] Invalid document missing required self_object', [
+                    'uuid' => $uuid,
+                    'register' => $register,
+                    'schema' => $schema
                 ]);
                 continue;
             }
+    
+            $openRegisterObjects[] = json_decode($object, true);
         }
-
+    
         return $openRegisterObjects;
     }
 
