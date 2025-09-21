@@ -1082,8 +1082,8 @@ class SolrSetup
         ]);
         
         try {
-            // First attempt: Standard collection creation (should work in most SolrCloud setups)
-            $success = $this->solrService->createCollection($tenantCollectionName, $tenantConfigSetName);
+            // Attempt collection creation with retry logic for configSet propagation delays
+            $success = $this->createCollectionWithRetry($tenantCollectionName, $tenantConfigSetName);
             
             // Track newly created collection
             if ($success && !in_array($tenantCollectionName, $this->infrastructureCreated['collections_created'])) {
@@ -1131,16 +1131,13 @@ class SolrSetup
                 }
             }
             
-            $this->logger->warning('Collection creation failed, attempting core-first approach', [
+            // Log the collection creation failure with full details
+            $this->logger->error('Collection creation failed', [
                 'collection' => $tenantCollectionName,
                 'configSet' => $tenantConfigSetName,
-                'original_error' => $e->getMessage()
+                'original_error' => $e->getMessage(),
+                'error_type' => get_class($e)
             ]);
-            
-            // Try the "core-first" approach for problematic SOLR setups
-            if ($this->tryCreateCoreFirstApproach($tenantCollectionName, $tenantConfigSetName)) {
-                return true;
-            }
             
             $this->lastErrorDetails = [
                 'primary_error' => 'Failed to create tenant collection "' . $tenantCollectionName . '"',
@@ -1170,104 +1167,105 @@ class SolrSetup
     }
 
     /**
-     * Try the "core-first" approach for problematic SOLR setups
+     * Create collection with retry logic for configSet propagation delays
      * 
-     * Some SOLR environments require cores to be created first before collections can use them.
-     * This method attempts to:
-     * 1. Create core(s) manually first
-     * 2. Then create collection that uses those cores
-     *
+     * This addresses the ZooKeeper propagation delay issue by directly attempting
+     * collection creation with exponential backoff retry logic instead of polling.
+     * 
      * @param string $collectionName Collection name to create
      * @param string $configSetName ConfigSet name to use
-     * @return bool True if successful, false otherwise
+     * @param int $maxAttempts Maximum number of retry attempts (default: 5)
+     * @return bool True if collection created successfully
+     * @throws \Exception If all retry attempts fail
      */
-    private function tryCreateCoreFirstApproach(string $collectionName, string $configSetName): bool
+    private function createCollectionWithRetry(string $collectionName, string $configSetName, int $maxAttempts = 5): bool
     {
-        $this->logger->info('Attempting core-first approach for SOLR setup', [
-            'collection' => $collectionName,
-            'configSet' => $configSetName,
-            'approach' => 'create_core_then_collection'
-        ]);
+        $attempt = 0;
+        $baseDelaySeconds = 2; // Start with 2 second delay
         
-        try {
-            // Step 1: Check if core already exists, if not create it
-            if ($this->solrService->coreExists($collectionName)) {
-                $this->logger->info('Step 1: Core already exists, skipping creation', [
-                    'core' => $collectionName
-                ]);
-            } else {
-                $this->logger->info('Step 1: Creating core first', [
-                    'core' => $collectionName,
-                    'configSet' => $configSetName
-                ]);
-                
-                $coreSuccess = $this->solrService->createCore($collectionName, $configSetName);
-                
-                if (!$coreSuccess) {
-                    $this->logger->error('Core creation failed in core-first approach');
-                    return false;
-                }
-                
-                $this->logger->info('Step 1 completed: Core created successfully', [
-                    'core' => $collectionName
-                ]);
-            }
-            
-            // Step 2: Now try to create collection that uses the existing core
-            $this->logger->info('Step 2: Creating collection using existing core', [
-                'collection' => $collectionName,
-                'existing_core' => $collectionName
-            ]);
+        while ($attempt < $maxAttempts) {
+            $attempt++;
             
             try {
-                $collectionSuccess = $this->solrService->createCollection($collectionName, $configSetName);
+                $this->logger->info('Attempting collection creation', [
+                    'collection' => $collectionName,
+                    'configSet' => $configSetName,
+                    'attempt' => $attempt,
+                    'maxAttempts' => $maxAttempts
+                ]);
                 
-                if ($collectionSuccess) {
-                    $this->logger->info('Core-first approach succeeded', [
-                        'core' => $collectionName,
+                // Direct attempt to create collection
+                $success = $this->solrService->createCollection($collectionName, $configSetName);
+                
+                if ($success) {
+                    $this->logger->info('Collection created successfully', [
                         'collection' => $collectionName,
-                        'configSet' => $configSetName
+                        'configSet' => $configSetName,
+                        'attempt' => $attempt
                     ]);
-                    
-                    // Track as created collection
-                    if (!in_array($collectionName, $this->infrastructureCreated['collections_created'])) {
-                        $this->infrastructureCreated['collections_created'][] = $collectionName;
-                    }
-                    
                     return true;
                 }
-            } catch (\Exception $collectionException) {
-                // Collection creation failed even with existing core
-                $this->logger->warning('Collection creation failed even with existing core', [
-                    'core' => $collectionName,
-                    'collection_error' => $collectionException->getMessage()
+                
+            } catch (\Exception $e) {
+                $errorMessage = $e->getMessage();
+                $isConfigSetError = $this->isConfigSetPropagationError($errorMessage);
+                
+                $this->logger->warning('Collection creation attempt failed', [
+                    'collection' => $collectionName,
+                    'configSet' => $configSetName,
+                    'attempt' => $attempt,
+                    'maxAttempts' => $maxAttempts,
+                    'error' => $errorMessage,
+                    'isConfigSetPropagationError' => $isConfigSetError
                 ]);
                 
-                // But the core exists, so we can still use it for operations
-                $this->logger->info('Using core directly since collection creation failed', [
-                    'core' => $collectionName,
-                    'note' => 'Operations will target core directly'
-                ]);
-                
-                // Track core as "collection" for operational purposes
-                if (!in_array($collectionName, $this->infrastructureCreated['collections_created'])) {
-                    $this->infrastructureCreated['collections_created'][] = $collectionName;
+                // If this is the last attempt, or not a configSet propagation error, throw immediately
+                if ($attempt >= $maxAttempts || !$isConfigSetError) {
+                    throw $e;
                 }
                 
-                return true; // Core exists and can be used
+                // Calculate exponential backoff delay: 2, 4, 8, 16 seconds
+                $delaySeconds = $baseDelaySeconds * pow(2, $attempt - 1);
+                
+                $this->logger->info('Retrying collection creation after delay', [
+                    'collection' => $collectionName,
+                    'delaySeconds' => $delaySeconds,
+                    'nextAttempt' => $attempt + 1
+                ]);
+                
+                sleep($delaySeconds);
             }
-            
-        } catch (\Exception $coreException) {
-            $this->logger->error('Core-first approach failed', [
-                'core_error' => $coreException->getMessage(),
-                'collection' => $collectionName,
-                'configSet' => $configSetName
-            ]);
-            return false;
+        }
+        
+        // Should not reach here due to exception throwing above
+        return false;
+    }
+
+    /**
+     * Check if error message indicates configSet propagation delay
+     * 
+     * @param string $errorMessage Error message from SOLR
+     * @return bool True if this appears to be a configSet propagation issue
+     */
+    private function isConfigSetPropagationError(string $errorMessage): bool
+    {
+        $configSetErrorPatterns = [
+            'Underlying core creation failed while creating collection',
+            'configset does not exist',
+            'Config does not exist',
+            'Could not find configSet',
+            'configSet not found'
+        ];
+        
+        foreach ($configSetErrorPatterns as $pattern) {
+            if (stripos($errorMessage, $pattern) !== false) {
+                return true;
+            }
         }
         
         return false;
     }
+
 
     /**
      * Check if a SOLR collection exists (SolrCloud)
