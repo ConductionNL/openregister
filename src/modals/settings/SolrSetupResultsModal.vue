@@ -13,7 +13,20 @@
 				</div>
 				<h4>Setting up SOLR...</h4>
 				<p class="loading-description">
-					Please wait while we configure your SOLR server with the necessary collections, schemas, and configurations.
+					Please wait while we configure your SOLR server. This process involves:
+				</p>
+				<div class="setup-steps-info">
+					<ul>
+						<li>🔗 <strong>Connectivity verification</strong> - Testing connection to SOLR cluster</li>
+						<li>📦 <strong>ConfigSet creation</strong> - Uploading search configuration</li>
+						<li>⏱️ <strong>Propagation sync</strong> - Distributing config across cluster nodes</li>
+						<li>🗂️ <strong>Collection setup</strong> - Creating your search index</li>
+						<li>🔧 <strong>Schema configuration</strong> - Setting up field mappings</li>
+					</ul>
+				</div>
+				<p class="timing-note">
+					<strong>⏳ Why does this take time?</strong><br>
+					In distributed SOLR environments, configurations need to propagate across multiple server nodes via ZooKeeper coordination. This ensures consistency but may take 1-3 minutes depending on cluster size and network conditions.
 				</p>
 			</div>
 
@@ -275,8 +288,45 @@ export default {
 
 .loading-description {
 	color: var(--color-text-light);
-	margin: 0;
+	margin: 0 0 1rem 0;
 	line-height: 1.5;
+}
+
+.setup-steps-info {
+	margin: 1rem 0 1.5rem 0;
+	text-align: left;
+}
+
+.setup-steps-info ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.setup-steps-info li {
+	margin: 0.75rem 0;
+	padding: 0.5rem;
+	background-color: var(--color-background-hover);
+	border-radius: var(--border-radius);
+	color: var(--color-text);
+	font-size: 0.9rem;
+	line-height: 1.4;
+}
+
+.timing-note {
+	background-color: rgba(var(--color-warning-rgb), 0.1);
+	border: 1px solid var(--color-warning);
+	border-radius: var(--border-radius);
+	padding: 1rem;
+	margin: 1.5rem 0 0 0;
+	color: var(--color-text);
+	font-size: 0.9rem;
+	line-height: 1.5;
+	text-align: left;
+}
+
+.timing-note strong {
+	color: var(--color-warning);
 }
 
 /* Results State */
