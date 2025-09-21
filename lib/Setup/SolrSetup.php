@@ -1082,6 +1082,7 @@ class SolrSetup
         ]);
         
         try {
+            // First attempt: Standard collection creation (should work in most SolrCloud setups)
             $success = $this->solrService->createCollection($tenantCollectionName, $tenantConfigSetName);
             
             // Track newly created collection
@@ -1130,34 +1131,15 @@ class SolrSetup
                 }
             }
             
-            $this->logger->warning('Collection creation failed, attempting core creation as fallback', [
+            $this->logger->warning('Collection creation failed, attempting core-first approach', [
                 'collection' => $tenantCollectionName,
                 'configSet' => $tenantConfigSetName,
                 'original_error' => $e->getMessage()
             ]);
             
-            // Try creating a core as fallback (some SOLR setups might need this)
-            try {
-                $coreSuccess = $this->solrService->createCore($tenantCollectionName, $tenantConfigSetName);
-                
-                if ($coreSuccess) {
-                    $this->logger->info('Core creation succeeded as fallback', [
-                        'core' => $tenantCollectionName,
-                        'configSet' => $tenantConfigSetName
-                    ]);
-                    
-                    // Track as created collection
-                    if (!in_array($tenantCollectionName, $this->infrastructureCreated['collections_created'])) {
-                        $this->infrastructureCreated['collections_created'][] = $tenantCollectionName;
-                    }
-                    
-                    return true;
-                }
-            } catch (\Exception $coreException) {
-                $this->logger->error('Both collection and core creation failed', [
-                    'collection_error' => $e->getMessage(),
-                    'core_error' => $coreException->getMessage()
-                ]);
+            // Try the "core-first" approach for problematic SOLR setups
+            if ($this->tryCreateCoreFirstApproach($tenantCollectionName, $tenantConfigSetName)) {
+                return true;
             }
             
             $this->lastErrorDetails = [
@@ -1185,6 +1167,106 @@ class SolrSetup
             $this->logger->error('SOLR collection creation exception', $this->lastErrorDetails);
             return false;
         }
+    }
+
+    /**
+     * Try the "core-first" approach for problematic SOLR setups
+     * 
+     * Some SOLR environments require cores to be created first before collections can use them.
+     * This method attempts to:
+     * 1. Create core(s) manually first
+     * 2. Then create collection that uses those cores
+     *
+     * @param string $collectionName Collection name to create
+     * @param string $configSetName ConfigSet name to use
+     * @return bool True if successful, false otherwise
+     */
+    private function tryCreateCoreFirstApproach(string $collectionName, string $configSetName): bool
+    {
+        $this->logger->info('Attempting core-first approach for SOLR setup', [
+            'collection' => $collectionName,
+            'configSet' => $configSetName,
+            'approach' => 'create_core_then_collection'
+        ]);
+        
+        try {
+            // Step 1: Check if core already exists, if not create it
+            if ($this->solrService->coreExists($collectionName)) {
+                $this->logger->info('Step 1: Core already exists, skipping creation', [
+                    'core' => $collectionName
+                ]);
+            } else {
+                $this->logger->info('Step 1: Creating core first', [
+                    'core' => $collectionName,
+                    'configSet' => $configSetName
+                ]);
+                
+                $coreSuccess = $this->solrService->createCore($collectionName, $configSetName);
+                
+                if (!$coreSuccess) {
+                    $this->logger->error('Core creation failed in core-first approach');
+                    return false;
+                }
+                
+                $this->logger->info('Step 1 completed: Core created successfully', [
+                    'core' => $collectionName
+                ]);
+            }
+            
+            // Step 2: Now try to create collection that uses the existing core
+            $this->logger->info('Step 2: Creating collection using existing core', [
+                'collection' => $collectionName,
+                'existing_core' => $collectionName
+            ]);
+            
+            try {
+                $collectionSuccess = $this->solrService->createCollection($collectionName, $configSetName);
+                
+                if ($collectionSuccess) {
+                    $this->logger->info('Core-first approach succeeded', [
+                        'core' => $collectionName,
+                        'collection' => $collectionName,
+                        'configSet' => $configSetName
+                    ]);
+                    
+                    // Track as created collection
+                    if (!in_array($collectionName, $this->infrastructureCreated['collections_created'])) {
+                        $this->infrastructureCreated['collections_created'][] = $collectionName;
+                    }
+                    
+                    return true;
+                }
+            } catch (\Exception $collectionException) {
+                // Collection creation failed even with existing core
+                $this->logger->warning('Collection creation failed even with existing core', [
+                    'core' => $collectionName,
+                    'collection_error' => $collectionException->getMessage()
+                ]);
+                
+                // But the core exists, so we can still use it for operations
+                $this->logger->info('Using core directly since collection creation failed', [
+                    'core' => $collectionName,
+                    'note' => 'Operations will target core directly'
+                ]);
+                
+                // Track core as "collection" for operational purposes
+                if (!in_array($collectionName, $this->infrastructureCreated['collections_created'])) {
+                    $this->infrastructureCreated['collections_created'][] = $collectionName;
+                }
+                
+                return true; // Core exists and can be used
+            }
+            
+        } catch (\Exception $coreException) {
+            $this->logger->error('Core-first approach failed', [
+                'core_error' => $coreException->getMessage(),
+                'collection' => $collectionName,
+                'configSet' => $configSetName
+            ]);
+            return false;
+        }
+        
+        return false;
     }
 
     /**
