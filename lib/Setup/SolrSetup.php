@@ -702,6 +702,11 @@ class SolrSetup
             if (!in_array($tenantConfigSetName, $this->infrastructureCreated['configsets_skipped'])) {
                 $this->infrastructureCreated['configsets_skipped'][] = $tenantConfigSetName;
             }
+            
+            // Even for existing configSets, force propagation to ensure availability
+            // This handles cases where configSet exists but isn't fully propagated
+            $this->forceConfigSetPropagation($tenantConfigSetName);
+            
             return true;
         }
 
@@ -1113,9 +1118,6 @@ class SolrSetup
         ]);
         
         try {
-            // Try to force configSet propagation before collection creation
-            $this->forceConfigSetPropagation($tenantConfigSetName);
-            
             // Attempt collection creation with retry logic for configSet propagation delays
             $success = $this->createCollectionWithRetry($tenantCollectionName, $tenantConfigSetName);
             
@@ -1743,6 +1745,11 @@ class SolrSetup
                 if (!in_array($configSetName, $this->infrastructureCreated['configsets_created'])) {
                     $this->infrastructureCreated['configsets_created'][] = $configSetName;
                 }
+                
+                // Force configSet propagation immediately after successful upload
+                // This proactively triggers cache refresh and ZooKeeper sync to reduce
+                // the likelihood of propagation delays when creating collections
+                $this->forceConfigSetPropagation($configSetName);
                 
                 return true;
             }
