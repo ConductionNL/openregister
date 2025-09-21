@@ -5189,8 +5189,8 @@ class GuzzleSolrService
                     
                     if (($responseData['responseHeader']['status'] ?? -1) === 0) {
                         $created[] = $fieldName;
-                        $action = $fieldExists ? 'Updated' : 'Created';
-                        $this->logger->debug("✅ {$action} SOLR field", [
+                        // Since we only process missing fields, this is always a create operation
+                        $this->logger->debug("✅ Created SOLR field", [
                             'field' => $fieldName,
                             'type' => $solrFieldConfig['type'],
                             'multiValued' => $solrFieldConfig['multiValued'] ?? false,
@@ -5199,8 +5199,8 @@ class GuzzleSolrService
                     } else {
                         $error = $responseData['error']['msg'] ?? 'Unknown error';
                         $errors[$fieldName] = $error;
-                        $action = $fieldExists ? 'update' : 'create';
-                        $this->logger->warning("❌ Failed to {$action} SOLR field", [
+                        // Since we only process missing fields, this is always a create operation
+                        $this->logger->warning("❌ Failed to create SOLR field", [
                             'field' => $fieldName,
                             'error' => $error,
                             'operation' => $operation
@@ -5269,7 +5269,7 @@ class GuzzleSolrService
         
         // Handle array case - if type is an array, take the first element
         if (is_array($solrType)) {
-            $solrType = !empty($solrType) ? (string)$solrType[0] : 'string';
+            $solrType = !empty($solrType) && isset($solrType[0]) ? (string)$solrType[0] : 'string';
         } else {
             $solrType = (string)$solrType;
         }
