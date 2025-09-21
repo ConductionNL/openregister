@@ -390,19 +390,21 @@ class SolrSetup
                     // Enhanced error details for collection failure
                     if ($this->lastErrorDetails === null) {
                         $this->lastErrorDetails = [
+                            'primary_error' => 'Failed to create tenant collection "' . $tenantCollectionName . '"',
+                            'error_type' => 'collection_creation_failure',
                             'operation' => 'ensureTenantCollectionExists',
                             'step' => 3,
                             'step_name' => 'Collection Creation',
-                            'error_type' => 'collection_creation_failure',
-                            'error_message' => 'Failed to create tenant collection "' . $tenantCollectionName . '"',
-                            'collection' => $tenantCollectionName,
-                            'configSet' => $tenantConfigSetName,
-                            'troubleshooting' => [
-                                'Verify configSet "' . $tenantConfigSetName . '" was created in previous step',
-                                'Check SOLR permissions to create collections',
-                                'Verify ZooKeeper coordination in SolrCloud',
-                                'Check available disk space and memory on SOLR server',
-                                'Check SOLR admin UI for collection status'
+                            'url_attempted' => 'unknown',
+                            'exception_type' => 'unknown',
+                            'error_category' => 'unknown',
+                            'solr_response' => null,
+                            'guzzle_details' => [],
+                            'configuration_used' => [
+                                'host' => $this->solrConfig['host'] ?? 'unknown',
+                                'port' => $this->solrConfig['port'] ?? 'default',
+                                'scheme' => $this->solrConfig['scheme'] ?? 'http',
+                                'path' => $this->solrConfig['path'] ?? '/solr'
                             ]
                         ];
                     }
@@ -1079,14 +1081,110 @@ class SolrSetup
             'configSet' => $tenantConfigSetName
         ]);
         
-        $success = $this->solrService->createCollection($tenantCollectionName, $tenantConfigSetName);
-        
-        // Track newly created collection
-        if ($success && !in_array($tenantCollectionName, $this->infrastructureCreated['collections_created'])) {
-            $this->infrastructureCreated['collections_created'][] = $tenantCollectionName;
+        try {
+            $success = $this->solrService->createCollection($tenantCollectionName, $tenantConfigSetName);
+            
+            // Track newly created collection
+            if ($success && !in_array($tenantCollectionName, $this->infrastructureCreated['collections_created'])) {
+                $this->infrastructureCreated['collections_created'][] = $tenantCollectionName;
+            }
+            
+            return $success;
+            
+        } catch (\GuzzleHttp\Exception\GuzzleException $e) {
+            // Capture Guzzle HTTP errors (network, timeout, etc.)
+            $this->lastErrorDetails = [
+                'primary_error' => 'HTTP request to SOLR failed',
+                'error_type' => 'guzzle_http_error',
+                'operation' => 'ensureTenantCollectionExists',
+                'step' => 3,
+                'step_name' => 'Collection Creation',
+                'collection' => $tenantCollectionName,
+                'configSet' => $tenantConfigSetName,
+                'url_attempted' => $e->getRequest() ? $e->getRequest()->getUri() : 'unknown',
+                'exception_type' => get_class($e),
+                'exception_message' => $e->getMessage(),
+                'error_category' => 'network_connectivity',
+                'guzzle_details' => [
+                    'request_method' => $e->getRequest() ? $e->getRequest()->getMethod() : 'unknown',
+                    'response_code' => $e->hasResponse() ? $e->getResponse()->getStatusCode() : null,
+                    'response_body' => $e->hasResponse() ? (string)$e->getResponse()->getBody() : null
+                ]
+            ];
+            
+            $this->logger->error('Guzzle HTTP error during collection creation', $this->lastErrorDetails);
+            return false;
+            
+        } catch (\Exception $e) {
+            // Capture SOLR API errors (400 responses, validation errors, etc.)
+            $solrResponse = null;
+            $errorCategory = 'solr_api_error';
+            
+            // Try to extract SOLR response from nested exception
+            if ($e->getPrevious() && $e->getPrevious()->getMessage()) {
+                $possibleJson = $e->getPrevious()->getMessage();
+                $decodedResponse = json_decode($possibleJson, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $solrResponse = $decodedResponse;
+                    $errorCategory = 'solr_validation_error';
+                }
+            }
+            
+            $this->logger->warning('Collection creation failed, attempting core creation as fallback', [
+                'collection' => $tenantCollectionName,
+                'configSet' => $tenantConfigSetName,
+                'original_error' => $e->getMessage()
+            ]);
+            
+            // Try creating a core as fallback (some SOLR setups might need this)
+            try {
+                $coreSuccess = $this->solrService->createCore($tenantCollectionName, $tenantConfigSetName);
+                
+                if ($coreSuccess) {
+                    $this->logger->info('Core creation succeeded as fallback', [
+                        'core' => $tenantCollectionName,
+                        'configSet' => $tenantConfigSetName
+                    ]);
+                    
+                    // Track as created collection
+                    if (!in_array($tenantCollectionName, $this->infrastructureCreated['collections_created'])) {
+                        $this->infrastructureCreated['collections_created'][] = $tenantCollectionName;
+                    }
+                    
+                    return true;
+                }
+            } catch (\Exception $coreException) {
+                $this->logger->error('Both collection and core creation failed', [
+                    'collection_error' => $e->getMessage(),
+                    'core_error' => $coreException->getMessage()
+                ]);
+            }
+            
+            $this->lastErrorDetails = [
+                'primary_error' => 'Failed to create tenant collection "' . $tenantCollectionName . '"',
+                'error_type' => 'collection_creation_failure',
+                'operation' => 'ensureTenantCollectionExists',
+                'step' => 3,
+                'step_name' => 'Collection Creation',
+                'collection' => $tenantCollectionName,
+                'configSet' => $tenantConfigSetName,
+                'url_attempted' => 'SOLR Collections API',
+                'exception_type' => get_class($e),
+                'exception_message' => $e->getMessage(),
+                'error_category' => $errorCategory,
+                'solr_response' => $solrResponse,
+                'guzzle_details' => [],
+                'configuration_used' => [
+                    'host' => $this->solrConfig['host'] ?? 'unknown',
+                    'port' => $this->solrConfig['port'] ?? 'default',
+                    'scheme' => $this->solrConfig['scheme'] ?? 'http',
+                    'path' => $this->solrConfig['path'] ?? '/solr'
+                ]
+            ];
+            
+            $this->logger->error('SOLR collection creation exception', $this->lastErrorDetails);
+            return false;
         }
-        
-        return $success;
     }
 
     /**
