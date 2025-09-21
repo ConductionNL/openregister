@@ -6,8 +6,43 @@
 		@closing="$emit('close')"
 		size="large">
 		<div class="dialog-content">
+			<!-- Confirmation State -->
+			<div v-if="!setting && !results" class="setup-confirmation">
+				<div class="confirmation-icon">
+					🚀
+				</div>
+				<h4>SOLR Setup</h4>
+				<p class="confirmation-description">
+					This will configure your SOLR search engine for OpenRegister. The setup process will:
+				</p>
+				<div class="setup-preview-steps">
+					<ul>
+						<li>🔗 <strong>Test connectivity</strong> to your SOLR cluster</li>
+						<li>📦 <strong>Create configuration sets</strong> with your search schema</li>
+						<li>⏱️ <strong>Sync configurations</strong> across all cluster nodes</li>
+						<li>🗂️ <strong>Create search collections</strong> for your data</li>
+						<li>🔧 <strong>Configure field mappings</strong> and search rules</li>
+					</ul>
+				</div>
+				<div class="timing-warning">
+					<strong>⏳ Expected Duration:</strong> 1-3 minutes<br>
+					<small>In distributed SOLR environments, configurations need time to propagate across multiple server nodes via ZooKeeper coordination.</small>
+				</div>
+				<div class="confirmation-actions">
+					<NcButton type="secondary" @click="$emit('close')">
+						Cancel
+					</NcButton>
+					<NcButton type="primary" @click="startSetup">
+						<template #icon>
+							<PlayIcon :size="16" />
+						</template>
+						Start Setup
+					</NcButton>
+				</div>
+			</div>
+
 			<!-- Loading State -->
-			<div v-if="setting" class="setup-loading">
+			<div v-else-if="setting" class="setup-loading">
 				<div class="loading-spinner">
 					<NcLoadingIcon :size="40" />
 				</div>
@@ -168,6 +203,7 @@
 import { NcDialog, NcButton, NcLoadingIcon } from '@nextcloud/vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
+import PlayIcon from 'vue-material-design-icons/Play.vue'
 
 export default {
 	name: 'SolrSetupResultsModal',
@@ -178,6 +214,7 @@ export default {
 		NcLoadingIcon,
 		Cancel,
 		Refresh,
+		PlayIcon,
 	},
 
 	props: {
@@ -195,7 +232,7 @@ export default {
 		},
 	},
 
-	emits: ['close', 'retry'],
+	emits: ['close', 'retry', 'start-setup'],
 
 	computed: {
 		isConfigSetPropagationError() {
@@ -259,6 +296,10 @@ export default {
 			}
 			return String(value)
 		},
+
+		startSetup() {
+			this.$emit('start-setup')
+		},
 	},
 }
 </script>
@@ -266,6 +307,78 @@ export default {
 <style scoped>
 .dialog-content {
 	padding: 0 20px;
+}
+
+/* Confirmation State */
+.setup-confirmation {
+	text-align: center;
+	padding: 1.5rem 0;
+}
+
+.confirmation-icon {
+	font-size: 3rem;
+	margin-bottom: 1rem;
+}
+
+.setup-confirmation h4 {
+	color: var(--color-primary);
+	margin: 0 0 1rem 0;
+	font-size: 1.5rem;
+}
+
+.confirmation-description {
+	color: var(--color-text);
+	margin: 0 0 1.5rem 0;
+	line-height: 1.5;
+}
+
+.setup-preview-steps {
+	margin: 1.5rem 0;
+	text-align: left;
+	background-color: var(--color-background-hover);
+	border-radius: var(--border-radius);
+	padding: 1rem;
+}
+
+.setup-preview-steps ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.setup-preview-steps li {
+	margin: 0.75rem 0;
+	color: var(--color-text);
+	font-size: 0.95rem;
+	line-height: 1.4;
+}
+
+.timing-warning {
+	background-color: rgba(var(--color-warning-rgb), 0.1);
+	border: 1px solid var(--color-warning);
+	border-radius: var(--border-radius);
+	padding: 1rem;
+	margin: 1.5rem 0;
+	text-align: left;
+	color: var(--color-text);
+	font-size: 0.9rem;
+	line-height: 1.5;
+}
+
+.timing-warning strong {
+	color: var(--color-warning);
+}
+
+.timing-warning small {
+	color: var(--color-text-light);
+	font-style: italic;
+}
+
+.confirmation-actions {
+	display: flex;
+	gap: 1rem;
+	justify-content: center;
+	margin-top: 2rem;
 }
 
 /* Loading State */
