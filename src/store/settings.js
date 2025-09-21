@@ -423,26 +423,6 @@ export const useSettingsStore = defineStore('settings', {
 			}
 		},
 
-		/**
-		 * Load SOLR dashboard statistics
-		 */
-		async loadSolrDashboardStats() {
-			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/solr/dashboard/stats'))
-				this.solrDashboardStats = response.data || this.solrDashboardStats
-				return response.data
-			} catch (error) {
-				console.error('Failed to load SOLR dashboard stats:', error)
-				// Set unavailable state
-				this.solrDashboardStats = {
-					...this.solrDashboardStats,
-					available: false,
-					connection_status: 'unavailable',
-					health: 'error',
-				}
-				throw error
-			}
-		},
 
 		/**
 		 * Load RBAC settings

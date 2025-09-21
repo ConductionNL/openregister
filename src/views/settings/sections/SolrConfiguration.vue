@@ -321,6 +321,106 @@
 			</div>
 		</div>
 
+		<!-- SOLR Management Dashboard -->
+		<div v-if="solrOptions.enabled" class="solr-management-section">
+			<h4>🔍 SOLR Management Dashboard</h4>
+			<p class="option-description">
+				Monitor and manage your SOLR search index operations.
+			</p>
+
+			<!-- Loading State -->
+			<div v-if="loadingStats" class="loading-section">
+				<NcLoadingIcon :size="32" />
+				<p>Loading SOLR statistics...</p>
+			</div>
+
+			<!-- Error State -->
+			<div v-else-if="solrError" class="error-section">
+				<p class="error-message">❌ {{ solrErrorMessage }}</p>
+				<NcButton type="primary" @click="loadSolrStats">
+					<template #icon>
+						<Refresh :size="20" />
+					</template>
+					Retry Connection
+				</NcButton>
+			</div>
+
+			<!-- Success State -->
+			<div v-else-if="solrStats && solrStats.available" class="dashboard-section">
+				<!-- Management Action Buttons -->
+				<div class="management-button-group">
+					<NcButton type="secondary" @click="loadSolrStats" :disabled="loadingStats">
+						<template #icon>
+							<Refresh :size="20" />
+						</template>
+						Refresh Stats
+					</NcButton>
+					
+					<NcButton type="primary" @click="openWarmupModal">
+						<template #icon>
+							<Fire :size="20" />
+						</template>
+						Warmup Index
+					</NcButton>
+					
+					<NcButton type="secondary" @click="openClearModal">
+						<template #icon>
+							<Delete :size="20" />
+						</template>
+						Clear Index
+					</NcButton>
+					
+					<NcButton type="error" @click="openDeleteCollectionModal">
+						<template #icon>
+							<DatabaseRemove :size="20" />
+						</template>
+						Delete Collection
+					</NcButton>
+					
+					<NcButton type="secondary" @click="openInspectModal">
+						<template #icon>
+							<FileSearchOutline :size="20" />
+						</template>
+						Inspect Index
+					</NcButton>
+				</div>
+
+				<!-- Dashboard Stats -->
+				<div class="dashboard-stats-grid">
+					<div class="stat-card">
+						<h5>Connection Status</h5>
+						<p :class="connectionStatusClass">{{ solrStats.overview?.connection_status || 'Unknown' }}</p>
+					</div>
+
+					<div class="stat-card">
+						<h5>Total Documents</h5>
+						<p>{{ formatNumber(solrStats.overview?.total_documents || 0) }}</p>
+					</div>
+
+					<div class="stat-card">
+						<h5>Active Collection</h5>
+						<p>{{ solrStats.collection || 'Unknown' }}</p>
+					</div>
+
+					<div class="stat-card">
+						<h5>Tenant ID</h5>
+						<p>{{ solrStats.tenant_id || 'Unknown' }}</p>
+					</div>
+				</div>
+			</div>
+
+			<!-- Default State (no data) -->
+			<div v-else class="no-data-section">
+				<p>No SOLR data available</p>
+				<NcButton type="primary" @click="loadSolrStats">
+					<template #icon>
+						<Refresh :size="20" />
+					</template>
+					Load Stats
+				</NcButton>
+			</div>
+		</div>
+
 		<!-- Test Connection Results Dialog -->
 		<NcDialog
 			v-if="showTestDialog"
@@ -1267,6 +1367,39 @@
 				</div>
 			</div>
 		</NcDialog>
+
+		<!-- Dashboard Modals -->
+		<!-- Warmup Modal -->
+		<SolrWarmupModal 
+			:show="showWarmupDialog"
+			:object-stats="objectStats"
+			:memory-prediction="memoryPrediction"
+			:warming-up="warmingUp"
+			:completed="warmupCompleted"
+			:results="warmupResults"
+			@close="closeWarmupModal"
+			@start-warmup="handleStartWarmup"
+		/>
+
+		<!-- Clear Index Modal -->
+		<ClearIndexModal 
+			:show="showClearDialog"
+			@close="showClearDialog = false"
+			@confirm="handleClearIndex"
+		/>
+
+		<!-- Inspect Index Modal -->
+		<InspectIndexModal 
+			:show="showInspectDialog"
+			@close="showInspectDialog = false"
+		/>
+
+		<!-- Delete Collection Modal -->
+		<DeleteCollectionModal
+			:show="showDeleteCollectionDialog"
+			@close="closeDeleteCollectionModal"
+			@deleted="handleCollectionDeleted"
+		/>
 	</NcSettingsSection>
 </template>
 
@@ -1281,6 +1414,15 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
 import ViewList from 'vue-material-design-icons/ViewList.vue'
 import Wrench from 'vue-material-design-icons/Wrench.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
+import Fire from 'vue-material-design-icons/Fire.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
+import DatabaseRemove from 'vue-material-design-icons/DatabaseRemove.vue'
+import FileSearchOutline from 'vue-material-design-icons/FileSearchOutline.vue'
+import { SolrWarmupModal, ClearIndexModal } from '../../../modals/settings'
+import InspectIndexModal from '../../../modals/settings/InspectIndexModal.vue'
+import DeleteCollectionModal from '../../../modals/settings/DeleteCollectionModal.vue'
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 
 export default {
 	name: 'SolrConfiguration',
@@ -1299,17 +1441,53 @@ export default {
 		ViewList,
 		Wrench,
 		Eye,
+		Fire,
+		Delete,
+		DatabaseRemove,
+		FileSearchOutline,
+		SolrWarmupModal,
+		ClearIndexModal,
+		InspectIndexModal,
+		DeleteCollectionModal,
 	},
 
 	data() {
 		return {
 			fieldFilter: '',
 			fieldTypeFilter: null,
+			// Dashboard data properties
+			loadingStats: false,
+			solrError: false,
+			solrErrorMessage: '',
+			showWarmupDialog: false,
+			showClearDialog: false,
+			showInspectDialog: false,
+			showDeleteCollectionDialog: false,
+			solrStats: null,
+			objectStats: {
+				loading: false,
+				totalObjects: 0,
+			},
+			memoryPrediction: {
+				prediction_safe: true,
+				formatted: {
+					total_predicted: 'Unknown',
+					available: 'Unknown'
+				}
+			},
+			warmingUp: false,
+			warmupCompleted: false,
+			warmupResults: null,
 		}
 	},
 
 	computed: {
 		...mapStores(useSettingsStore),
+
+		// Access the settings store
+		settingsStore() {
+			return useSettingsStore()
+		},
 
 		solrOptions: {
 			get() {
@@ -1432,6 +1610,28 @@ export default {
 				label: type
 			})).sort((a, b) => a.label.localeCompare(b.label))
 		},
+
+		// Dashboard computed properties
+		connectionStatusClass() {
+			if (!this.solrStats || !this.solrStats.available) {
+				return 'status-error'
+			}
+			if (this.solrStats.overview?.connection_status === 'Connected') {
+				return 'status-success'
+			}
+			return 'status-warning'
+		},
+	},
+
+	async mounted() {
+		// Load dashboard stats if SOLR is enabled
+		if (this.solrOptions?.enabled) {
+			// Load both SOLR stats and object stats in parallel
+			await Promise.all([
+				this.loadSolrStats(),
+				this.loadObjectStats()
+			])
+		}
 	},
 
 	methods: {
@@ -1549,6 +1749,173 @@ export default {
 				return JSON.stringify(value, null, 2)
 			}
 			return String(value)
+		},
+
+		// Dashboard methods
+		async loadSolrStats() {
+			this.loadingStats = true
+			this.solrError = false
+			this.solrErrorMessage = ''
+
+			try {
+				const url = generateUrl('/apps/openregister/api/solr/dashboard/stats')
+				const response = await axios.get(url)
+
+				if (response.data && response.data.available) {
+					// Transform flat response to expected structure
+					this.solrStats = {
+						available: response.data.available,
+						overview: {
+							connection_status: 'Connected',
+							total_documents: response.data.document_count || 0,
+						},
+						collection: response.data.collection || 'Unknown',
+						tenant_id: response.data.tenant_id || 'Unknown',
+					}
+				} else {
+					this.solrError = true
+					this.solrErrorMessage = response.data?.error || 'SOLR not available'
+					this.solrStats = null
+				}
+			} catch (error) {
+				this.solrError = true
+				this.solrErrorMessage = error.message || 'Failed to load SOLR statistics'
+				this.solrStats = null
+			} finally {
+				this.loadingStats = false
+			}
+		},
+
+		formatNumber(num) {
+			if (typeof num !== 'number') return num
+			return num.toLocaleString()
+		},
+
+		async openWarmupModal() {
+			// Load object stats before opening the modal
+			await this.loadObjectStats()
+			this.showWarmupDialog = true
+		},
+
+		closeWarmupModal() {
+			this.showWarmupDialog = false
+			// Reset warmup state when modal is closed
+			this.warmingUp = false
+			this.warmupCompleted = false
+			this.warmupResults = null
+		},
+
+		openClearModal() {
+			this.showClearDialog = true
+		},
+
+		openInspectModal() {
+			this.showInspectDialog = true
+		},
+
+		openDeleteCollectionModal() {
+			this.showDeleteCollectionDialog = true
+		},
+
+		closeDeleteCollectionModal() {
+			this.showDeleteCollectionDialog = false
+		},
+
+		async handleCollectionDeleted(result) {
+			// Close the modal
+			this.closeDeleteCollectionModal()
+			
+			// Refresh SOLR stats to reflect the deletion
+			await this.loadSolrStats()
+		},
+
+		async handleClearIndex() {
+			try {
+				const url = generateUrl('/apps/openregister/api/settings/solr/clear')
+				const response = await axios.post(url)
+				
+				// Close modal and refresh stats
+				this.showClearDialog = false
+				await this.loadSolrStats()
+			} catch (error) {
+				console.error('Clear index failed:', error)
+				// Keep modal open on error so user can see what happened
+			}
+		},
+
+		async loadObjectStats() {
+			this.objectStats.loading = true
+			
+			try {
+				// Use the settings store to load stats
+				await this.settingsStore.loadStats()
+				
+				// Get the total objects from the store
+				const totalObjects = this.settingsStore.stats?.totals?.totalObjects || 0
+				this.objectStats.totalObjects = totalObjects
+				
+				// Load memory prediction after getting object count
+				await this.loadMemoryPrediction(0) // Default to all objects
+			} catch (error) {
+				console.error('Failed to load object stats:', error)
+				this.objectStats.totalObjects = 0
+			} finally {
+				this.objectStats.loading = false
+			}
+		},
+
+		async loadMemoryPrediction(maxObjects = 0) {
+			try {
+				const url = generateUrl('/apps/openregister/api/settings/solr/memory-prediction')
+				const response = await axios.post(url, { maxObjects })
+				
+				if (response.data && response.data.success) {
+					this.memoryPrediction = response.data.prediction
+				}
+			} catch (error) {
+				console.warn('Failed to load memory prediction:', error)
+				// Keep default prediction data
+			}
+		},
+
+		async handleStartWarmup(config) {
+			// Set loading state
+			this.warmingUp = true
+			this.warmupCompleted = false
+			this.warmupResults = null
+			
+			try {
+				const url = generateUrl('/apps/openregister/api/settings/solr/warmup')
+				
+				// Convert config to the expected format
+				const warmupParams = {
+					maxObjects: config.maxObjects || 0,
+					mode: config.mode || 'serial',
+					batchSize: config.batchSize || 1000,
+				}
+				
+				const response = await axios.post(url, warmupParams)
+				
+				// Set results state
+				this.warmupCompleted = true
+				this.warmupResults = response.data
+				
+				// Refresh stats after warmup completes
+				await this.loadSolrStats()
+			} catch (error) {
+				console.error('Warmup failed:', error)
+				
+				// Set error state
+				this.warmupCompleted = true
+				this.warmupResults = {
+					success: false,
+					message: error.response?.data?.error || error.message || 'Warmup failed',
+					error: true
+				}
+			} finally {
+				// Clear loading state
+				this.warmingUp = false
+			}
 		},
 	},
 }
@@ -3308,5 +3675,88 @@ export default {
 	display: flex;
 	gap: 12px;
 	flex-wrap: wrap;
+}
+
+/* Dashboard Styles */
+.solr-management-section {
+	margin-top: 32px;
+	padding-top: 24px;
+	border-top: 2px solid var(--color-border);
+}
+
+.solr-management-section h4 {
+	color: var(--color-text-light);
+	margin: 0 0 16px 0;
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.loading-section {
+	text-align: center;
+	padding: 2rem;
+}
+
+.error-section {
+	text-align: center;
+	padding: 2rem;
+}
+
+.error-message {
+	color: var(--color-error);
+	margin-bottom: 1rem;
+}
+
+.no-data-section {
+	text-align: center;
+	padding: 2rem;
+}
+
+.dashboard-section {
+	padding: 1rem 0;
+}
+
+.management-button-group {
+	display: flex;
+	gap: 0.5rem;
+	margin-bottom: 2rem;
+	flex-wrap: wrap;
+}
+
+.dashboard-stats-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 1rem;
+}
+
+.stat-card {
+	background: var(--color-background-hover);
+	padding: 1rem;
+	border-radius: var(--border-radius-large);
+	border: 1px solid var(--color-border);
+}
+
+.stat-card h5 {
+	margin: 0 0 0.5rem 0;
+	font-size: 0.9rem;
+	color: var(--color-text-maxcontrast);
+	font-weight: 500;
+}
+
+.stat-card p {
+	margin: 0;
+	font-size: 1.1rem;
+	font-weight: bold;
+}
+
+.status-success {
+	color: var(--color-success);
+}
+
+.status-warning {
+	color: var(--color-warning);
+}
+
+.status-error {
+	color: var(--color-error);
 }
 </style>
