@@ -224,7 +224,7 @@ class SettingsController extends Controller
             $result = $this->settingsService->getStats();
             return new JSONResponse($result);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
+            return new JSONResponse(['error' => $e->getMessage()], 422);
         }
 
     }//end stats()
@@ -314,7 +314,7 @@ class SettingsController extends Controller
             $result = $this->settingsService->warmupNamesCache();
             return new JSONResponse($result);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
+            return new JSONResponse(['error' => $e->getMessage()], 422);
         }
 
     }//end warmupNamesCache()
@@ -445,7 +445,7 @@ class SettingsController extends Controller
                             'Check SOLR server logs'
                         ],
                         'steps' => $setupProgress['steps'] ?? []
-                    ], 500);
+                    ], 422);
                 } else {
                     // Fallback to generic error if no detailed error information is available
                     $lastError = error_get_last();
@@ -469,7 +469,7 @@ class SettingsController extends Controller
                             'Verify SOLR server connectivity',
                             'Check SOLR configuration'
                         ]
-                    ], 500);
+                    ], 422);
                 }
             }
             
@@ -523,7 +523,7 @@ class SettingsController extends Controller
                     'line' => $e->getLine(),
                     'detailed_error' => $detailedError
                 ]
-            ], 500);
+            ], 422);
         }
     }
 
@@ -570,14 +570,14 @@ class SettingsController extends Controller
                 return new JSONResponse([
                     'success' => false,
                     'message' => 'SOLR setup failed - check logs'
-                ], 500);
+                ], 422);
             }
             
         } catch (\Exception $e) {
             return new JSONResponse([
                 'success' => false,
                 'message' => 'SOLR setup error: ' . $e->getMessage()
-            ], 500);
+            ], 422);
         }
     }
 
@@ -645,7 +645,7 @@ class SettingsController extends Controller
                     'error_code' => $result['error_code'] ?? 'unknown',
                     'collection' => $result['collection'] ?? null,
                     'solr_error' => $result['solr_error'] ?? null
-                ], 500);
+                ], 422);
             }
             
         } catch (\Exception $e) {
@@ -659,7 +659,7 @@ class SettingsController extends Controller
                 'success' => false,
                 'message' => 'Collection deletion failed: ' . $e->getMessage(),
                 'error_code' => 'EXCEPTION'
-            ], 500);
+            ], 422);
         }
     }
 
@@ -685,7 +685,7 @@ class SettingsController extends Controller
                 'success' => false,
                 'message' => 'Connection test failed: ' . $e->getMessage(),
                 'details' => ['exception' => $e->getMessage()]
-            ], 500);
+            ], 422);
         }
 
     }//end testSolrConnection()
@@ -711,7 +711,7 @@ class SettingsController extends Controller
                     'success' => false,
                     'message' => 'SOLR is not available or not configured',
                     'details' => ['error' => 'SOLR service is not enabled or connection failed']
-                ], 503);
+                ], 422);
             }
 
             // Get field configuration from SOLR
@@ -737,7 +737,7 @@ class SettingsController extends Controller
                 'success' => false,
                 'message' => 'Failed to retrieve SOLR field configuration: ' . $e->getMessage(),
                 'details' => ['error' => $e->getMessage()]
-            ], 500);
+            ], 422);
         }
     }//end getSolrFields()
 
@@ -761,7 +761,7 @@ class SettingsController extends Controller
                     'success' => false,
                     'message' => 'SOLR is not available or not configured',
                     'details' => ['error' => 'SOLR service is not enabled or connection failed']
-                ], 503);
+                ], 422);
             }
 
             // Get dry run parameter
@@ -781,7 +781,7 @@ class SettingsController extends Controller
                 'success' => false,
                 'message' => 'Failed to create missing SOLR fields: ' . $e->getMessage(),
                 'details' => ['error' => $e->getMessage()]
-            ], 500);
+            ], 422);
         }
     }//end createMissingSolrFields()
 
@@ -805,7 +805,7 @@ class SettingsController extends Controller
                     'success' => false,
                     'message' => 'SOLR is not available or not configured',
                     'details' => ['error' => 'SOLR service is not enabled or connection failed']
-                ], 503);
+                ], 422);
             }
 
             // Get dry run parameter
@@ -821,7 +821,7 @@ class SettingsController extends Controller
                     'success' => false,
                     'message' => 'Failed to get SOLR field configuration',
                     'details' => ['error' => $fieldsInfo['message'] ?? 'Unknown error']
-                ], 500);
+                ], 422);
             }
             
             // Compare fields to find mismatched ones
@@ -860,7 +860,7 @@ class SettingsController extends Controller
                 'success' => false,
                 'message' => 'Failed to fix mismatched SOLR fields: ' . $e->getMessage(),
                 'details' => ['error' => $e->getMessage()]
-            ], 500);
+            ], 422);
         }
     }//end fixMismatchedSolrFields()
 
@@ -1315,7 +1315,7 @@ class SettingsController extends Controller
             return new JSONResponse([
                 'success' => false,
                 'error' => $e->getMessage()
-            ], 500);
+            ], 422);
         }
     }
 
@@ -1359,7 +1359,7 @@ class SettingsController extends Controller
                     'success' => false,
                     'error' => $result['error'],
                     'error_details' => $result['error_details'] ?? null
-                ], 500);
+                ], 422);
             }
             
         } catch (\Exception $e) {
@@ -1421,7 +1421,7 @@ class SettingsController extends Controller
                     'success' => false,
                     'error' => $result['error'],
                     'error_details' => $result['error_details'] ?? null
-                ], 500);
+                ], 422);
             }
             
         } catch (\Exception $e) {
@@ -1466,9 +1466,9 @@ class SettingsController extends Controller
                     'message' => 'SOLR is not available or not configured',
                     'prediction' => [
                         'error' => 'SOLR service unavailable',
-                        'prediction_safe' => false
-                    ]
-                ], 503);
+                    'prediction_safe' => false
+                ]
+            ], 422);
             }
 
             // Use reflection to call the private method (for API access)
@@ -1491,9 +1491,8 @@ class SettingsController extends Controller
                     'error' => $e->getMessage(),
                     'prediction_safe' => false
                 ]
-            ], 500);
+            ], 422);
         }
     }
-
 
 }//end class

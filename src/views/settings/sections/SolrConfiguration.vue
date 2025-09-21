@@ -36,6 +36,45 @@
 						</template>
 						Inspect Fields
 					</NcButton>
+					
+					<!-- Management Buttons (shown when SOLR is enabled) -->
+					<template v-if="solrOptions.enabled">
+						<NcButton type="secondary" @click="loadSolrStats" :disabled="loadingStats">
+							<template #icon>
+								<Refresh :size="20" />
+							</template>
+							Refresh Stats
+						</NcButton>
+						
+						<NcButton type="primary" @click="openWarmupModal">
+							<template #icon>
+								<Fire :size="20" />
+							</template>
+							Warmup Index
+						</NcButton>
+						
+						<NcButton type="secondary" @click="openClearModal">
+							<template #icon>
+								<Delete :size="20" />
+							</template>
+							Clear Index
+						</NcButton>
+						
+						<NcButton type="error" @click="openDeleteCollectionModal">
+							<template #icon>
+								<DatabaseRemove :size="20" />
+							</template>
+							Delete Collection
+						</NcButton>
+						
+						<NcButton type="secondary" @click="openInspectModal">
+							<template #icon>
+								<FileSearchOutline :size="20" />
+							</template>
+							Inspect Index
+						</NcButton>
+					</template>
+					
 					<NcButton
 						type="primary"
 						:disabled="loading || saving || testingConnection || settingUpSolr"
@@ -153,7 +192,7 @@
 					<div class="config-row">
 						<label class="config-label">
 							<strong>Core</strong>
-							<p class="config-description">SOLR core name for OpenRegister data</p>
+							<p class="config-description">SOLR core name for standalone SOLR installations (not used in SolrCloud)</p>
 						</label>
 						<div class="config-input">
 							<input
@@ -161,6 +200,21 @@
 								type="text"
 								:disabled="loading || saving"
 								placeholder="openregister"
+								class="solr-input-field">
+						</div>
+					</div>
+
+					<div class="config-row">
+						<label class="config-label">
+							<strong>ConfigSet</strong>
+							<p class="config-description">ConfigSet name for SolrCloud collections. Use '_default' for maximum compatibility, or specify a custom ConfigSet name</p>
+						</label>
+						<div class="config-input">
+							<input
+								v-model="solrOptions.configSet"
+								type="text"
+								:disabled="loading || saving"
+								placeholder="_default"
 								class="solr-input-field">
 						</div>
 					</div>
@@ -318,6 +372,63 @@
 						Enable detailed logging for SOLR operations (recommended for debugging)
 					</p>
 				</div>
+			</div>
+		</div>
+
+		<!-- SOLR Management Dashboard -->
+		<div v-if="solrOptions.enabled" class="solr-management-section">
+			<!-- Loading State -->
+			<div v-if="loadingStats" class="loading-section">
+				<NcLoadingIcon :size="32" />
+				<p>Loading SOLR statistics...</p>
+			</div>
+
+			<!-- Error State -->
+			<div v-else-if="solrError" class="error-section">
+				<p class="error-message">❌ {{ solrErrorMessage }}</p>
+				<NcButton type="primary" @click="loadSolrStats">
+					<template #icon>
+						<Refresh :size="20" />
+					</template>
+					Retry Connection
+				</NcButton>
+			</div>
+
+			<!-- Success State -->
+			<div v-else-if="solrStats && solrStats.available" class="dashboard-section">
+				<!-- Dashboard Stats -->
+				<div class="dashboard-stats-grid">
+					<div class="stat-card">
+						<h5>Connection Status</h5>
+						<p :class="connectionStatusClass">{{ solrStats.overview?.connection_status || 'Unknown' }}</p>
+					</div>
+
+					<div class="stat-card">
+						<h5>Total Documents</h5>
+						<p>{{ formatNumber(solrStats.overview?.total_documents || 0) }}</p>
+					</div>
+
+					<div class="stat-card">
+						<h5>Active Collection</h5>
+						<p>{{ solrStats.collection || 'Unknown' }}</p>
+					</div>
+
+					<div class="stat-card">
+						<h5>Tenant ID</h5>
+						<p>{{ solrStats.tenant_id || 'Unknown' }}</p>
+					</div>
+				</div>
+			</div>
+
+			<!-- Default State (no data) -->
+			<div v-else class="no-data-section">
+				<p>No SOLR data available</p>
+				<NcButton type="primary" @click="loadSolrStats">
+					<template #icon>
+						<Refresh :size="20" />
+					</template>
+					Load Stats
+				</NcButton>
 			</div>
 		</div>
 
@@ -595,14 +706,56 @@
 			@closing="hideSetupDialog"
 			:size="'large'">
 			<div class="setup-dialog">
-				<div v-if="settingUpSolr" class="setup-loading">
+				<!-- Confirmation State -->
+				<div v-if="!settingUpSolr && !setupResults" class="setup-confirmation">
+					<div class="confirmation-icon">
+						🚀
+					</div>
+					<h4>SOLR Setup</h4>
+					<p class="confirmation-description">
+						This will configure your SOLR search engine for OpenRegister. The setup process will:
+					</p>
+					<div class="setup-preview-steps">
+						<ul>
+							<li>🔗 <strong>Test connectivity</strong> to your SOLR cluster</li>
+							<li>📦 <strong>Create configuration sets</strong> with your search schema</li>
+							<li>⏱️ <strong>Sync configurations</strong> across all cluster nodes</li>
+							<li>🗂️ <strong>Create search collections</strong> for your data</li>
+							<li>🔧 <strong>Configure field mappings</strong> and search rules</li>
+						</ul>
+					</div>
+					<div class="timing-warning">
+						<strong>⏳ Expected Duration:</strong> 1-3 minutes<br>
+						<small>In distributed SOLR environments, configurations need time to propagate across multiple server nodes via ZooKeeper coordination.</small>
+					</div>
+					<div class="confirmation-actions">
+						<NcButton type="secondary" @click="hideSetupDialog">
+							Cancel
+						</NcButton>
+						<NcButton type="primary" @click="startSolrSetup">
+							<template #icon>
+								<PlayIcon :size="16" />
+							</template>
+							Start Setup
+						</NcButton>
+					</div>
+				</div>
+
+				<div v-else-if="settingUpSolr" class="setup-loading">
 					<div class="loading-spinner">
 						<NcLoadingIcon :size="40" />
 					</div>
 					<h4>Setting up SOLR...</h4>
-					<p class="loading-description">
-						Please wait while we configure SOLR for OpenRegister. This may take a few moments.
-					</p>
+					<div class="game-loading-content">
+						<div class="educational-tips">
+							<div v-for="(tip, index) in visibleTips" :key="index" class="tip-item" :class="{ 'tip-fade-in': tip.visible }">
+								{{ tip.text }}
+							</div>
+						</div>
+						<div class="loading-progress-text">
+							{{ currentLoadingMessage }}
+						</div>
+					</div>
 				</div>
 
 				<div v-else-if="setupResults" class="setup-results">
@@ -612,7 +765,6 @@
 							<span class="status-icon">{{ setupResults.success ? '✅' : '❌' }}</span>
 							<div class="status-text">
 								<h3>{{ setupResults.success ? 'SOLR Setup Completed!' : 'SOLR Setup Failed' }}</h3>
-								<p>{{ setupResults.message }}</p>
 								<div v-if="setupResults.timestamp" class="timestamp">
 									<span>⏱️ {{ setupResults.timestamp }}</span>
 								</div>
@@ -642,8 +794,48 @@
 						</div>
 					</div>
 
-					<!-- Detailed Error Information (shown only on failure) -->
-					<div v-if="!setupResults.success && setupResults.error_details" class="error-details-section">
+					<!-- ConfigSet Propagation Error (Special handling) -->
+					<div v-if="!setupResults.success && isConfigSetPropagationError" class="propagation-error-section">
+						<h4>⏱️ ConfigSet Propagation Delay</h4>
+						<div class="propagation-explanation">
+							<p><strong>What happened?</strong></p>
+							<p>The configuration was successfully created but is still propagating across the SOLR cluster nodes. This is normal in distributed SOLR environments.</p>
+							
+							<div class="propagation-details">
+								<p><strong>📊 Retry Information:</strong></p>
+								<ul v-if="setupResults.error_details?.solr_response">
+									<li>🔄 <strong>Attempts made:</strong> {{ setupResults.error_details.solr_response.attempts || 'Unknown' }}</li>
+									<li>⏱️ <strong>Total time:</strong> {{ setupResults.error_details.solr_response.total_elapsed_seconds || 'Unknown' }} seconds</li>
+									<li>🕐 <strong>Started at:</strong> {{ formatTime(setupResults.error_details.solr_response.attempt_timestamps?.[0]) }}</li>
+									<li>🕐 <strong>Last attempt:</strong> {{ formatTime(setupResults.error_details.solr_response.attempt_timestamps?.slice(-1)[0]) }}</li>
+								</ul>
+							</div>
+
+							<div class="propagation-solution">
+								<p><strong>🛠️ What to do next:</strong></p>
+								<ol>
+									<li><strong>Wait 2-5 minutes</strong> for the configuration to fully propagate</li>
+									<li><strong>Click "Setup Again"</strong> to retry the setup process</li>
+									<li>If the issue persists, contact your SOLR administrator</li>
+								</ol>
+							</div>
+
+							<div class="propagation-technical" v-if="setupResults.error_details?.configuration_used">
+								<details>
+									<summary>🔧 Technical Details</summary>
+									<div class="config-grid">
+										<div v-for="(value, key) in setupResults.error_details.configuration_used" :key="key" class="config-item">
+											<span class="config-key">{{ key }}:</span>
+											<span class="config-value">{{ value }}</span>
+										</div>
+									</div>
+								</details>
+							</div>
+						</div>
+					</div>
+
+					<!-- General Error Information (shown for other failures) -->
+					<div v-else-if="!setupResults.success && setupResults.error_details" class="error-details-section">
 						<h4>🔍 Error Details</h4>
 						<div class="error-card">
 							<div class="error-primary">
@@ -1267,6 +1459,39 @@
 				</div>
 			</div>
 		</NcDialog>
+
+		<!-- Dashboard Modals -->
+		<!-- Warmup Modal -->
+		<SolrWarmupModal 
+			:show="showWarmupDialog"
+			:object-stats="objectStats"
+			:memory-prediction="memoryPrediction"
+			:warming-up="warmingUp"
+			:completed="warmupCompleted"
+			:results="warmupResults"
+			@close="closeWarmupModal"
+			@start-warmup="handleStartWarmup"
+		/>
+
+		<!-- Clear Index Modal -->
+		<ClearIndexModal 
+			:show="showClearDialog"
+			@close="showClearDialog = false"
+			@confirm="handleClearIndex"
+		/>
+
+		<!-- Inspect Index Modal -->
+		<InspectIndexModal 
+			:show="showInspectDialog"
+			@close="showInspectDialog = false"
+		/>
+
+		<!-- Delete Collection Modal -->
+		<DeleteCollectionModal
+			:show="showDeleteCollectionDialog"
+			@close="closeDeleteCollectionModal"
+			@deleted="handleCollectionDeleted"
+		/>
 	</NcSettingsSection>
 </template>
 
@@ -1281,6 +1506,16 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
 import ViewList from 'vue-material-design-icons/ViewList.vue'
 import Wrench from 'vue-material-design-icons/Wrench.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
+import Fire from 'vue-material-design-icons/Fire.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
+import DatabaseRemove from 'vue-material-design-icons/DatabaseRemove.vue'
+import FileSearchOutline from 'vue-material-design-icons/FileSearchOutline.vue'
+import PlayIcon from 'vue-material-design-icons/Play.vue'
+import { SolrWarmupModal, ClearIndexModal } from '../../../modals/settings'
+import InspectIndexModal from '../../../modals/settings/InspectIndexModal.vue'
+import DeleteCollectionModal from '../../../modals/settings/DeleteCollectionModal.vue'
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 
 export default {
 	name: 'SolrConfiguration',
@@ -1299,17 +1534,71 @@ export default {
 		ViewList,
 		Wrench,
 		Eye,
+		Fire,
+		Delete,
+		DatabaseRemove,
+		FileSearchOutline,
+		PlayIcon,
+		SolrWarmupModal,
+		ClearIndexModal,
+		InspectIndexModal,
+		DeleteCollectionModal,
 	},
 
 	data() {
 		return {
 			fieldFilter: '',
 			fieldTypeFilter: null,
+			// Dashboard data properties
+			loadingStats: false,
+			solrError: false,
+			solrErrorMessage: '',
+			showWarmupDialog: false,
+			showClearDialog: false,
+			showInspectDialog: false,
+			showDeleteCollectionDialog: false,
+			solrStats: null,
+			objectStats: {
+				loading: false,
+				totalObjects: 0,
+			},
+			memoryPrediction: {
+				prediction_safe: true,
+				formatted: {
+					total_predicted: 'Unknown',
+					available: 'Unknown'
+				}
+			},
+			warmingUp: false,
+			warmupCompleted: false,
+			warmupResults: null,
+			// Game-style loading
+			loadingTips: [
+				'🔍 SOLR is a powerful enterprise search platform built on Apache Lucene...',
+				'🌐 In distributed mode, SOLR uses ZooKeeper for cluster coordination...',
+				'📦 ConfigSets contain the schema and configuration files for your search index...',
+				'⚡ SOLR can handle millions of documents with sub-second search response times...',
+				'🔄 Replication ensures your search index is available even if nodes fail...',
+				'🎯 Faceted search allows users to drill down into results by categories...',
+				'📊 SOLR provides rich analytics and statistics about search performance...',
+				'🛡️ Security features include authentication, authorization, and SSL encryption...',
+				'🚀 Auto-scaling can dynamically add or remove nodes based on load...',
+				'💡 Did you know? SOLR powers search for Netflix, Apple, and many other major sites!'
+			],
+			visibleTips: [],
+			currentLoadingMessage: 'Initializing SOLR setup...',
+			loadingInterval: null,
+			tipIndex: 0,
 		}
 	},
 
 	computed: {
 		...mapStores(useSettingsStore),
+
+		// Access the settings store
+		settingsStore() {
+			return useSettingsStore()
+		},
 
 		solrOptions: {
 			get() {
@@ -1432,6 +1721,28 @@ export default {
 				label: type
 			})).sort((a, b) => a.label.localeCompare(b.label))
 		},
+
+		// Dashboard computed properties
+		connectionStatusClass() {
+			if (!this.solrStats || !this.solrStats.available) {
+				return 'status-error'
+			}
+			if (this.solrStats.overview?.connection_status === 'Connected') {
+				return 'status-success'
+			}
+			return 'status-warning'
+		},
+	},
+
+	async mounted() {
+		// Load dashboard stats if SOLR is enabled
+		if (this.solrOptions?.enabled) {
+			// Load both SOLR stats and object stats in parallel
+			await Promise.all([
+				this.loadSolrStats(),
+				this.loadObjectStats()
+			])
+		}
 	},
 
 	methods: {
@@ -1443,7 +1754,84 @@ export default {
 		},
 
 		async setupSolr() {
+			// Just show the setup dialog - it will start with confirmation screen
+			this.settingsStore.showSetupDialog = true
+			this.settingsStore.setupResults = null
+		},
+
+		async startSolrSetup() {
+			// Start the game-style loading
+			this.startGameLoading()
+			
+			// Actually start the SOLR setup process
 			await this.settingsStore.setupSolr()
+			
+			// Stop the game-style loading
+			this.stopGameLoading()
+		},
+
+		startGameLoading() {
+			this.visibleTips = []
+			this.tipIndex = 0
+			this.currentLoadingMessage = 'Initializing SOLR setup...'
+			
+			// Show first tip immediately
+			this.showNextTip()
+			
+			// Set interval to show new tips every 3 seconds
+			this.loadingInterval = setInterval(() => {
+				this.showNextTip()
+				this.updateLoadingMessage()
+			}, 3000)
+		},
+
+		stopGameLoading() {
+			if (this.loadingInterval) {
+				clearInterval(this.loadingInterval)
+				this.loadingInterval = null
+			}
+		},
+
+		showNextTip() {
+			if (this.tipIndex < this.loadingTips.length) {
+				this.visibleTips.push({
+					text: this.loadingTips[this.tipIndex],
+					visible: true
+				})
+				this.tipIndex++
+				
+				// Keep only last 3 tips visible
+				if (this.visibleTips.length > 3) {
+					this.visibleTips.shift()
+				}
+			}
+		},
+
+		updateLoadingMessage() {
+			const messages = [
+				'Connecting to SOLR cluster...',
+				'Verifying server connectivity...',
+				'Uploading configuration sets...',
+				'Waiting for cluster synchronization...',
+				'Creating search collections...',
+				'Configuring field mappings...',
+				'Optimizing search performance...',
+				'Finalizing setup...'
+			]
+			
+			const randomMessage = messages[Math.floor(Math.random() * messages.length)]
+			this.currentLoadingMessage = randomMessage
+		},
+
+		formatTime(timestamp) {
+			if (!timestamp) return 'Unknown'
+			
+			try {
+				const date = new Date(timestamp)
+				return date.toLocaleTimeString()
+			} catch (error) {
+				return timestamp
+			}
 		},
 
 		async testSolrConnection() {
@@ -1550,6 +1938,173 @@ export default {
 			}
 			return String(value)
 		},
+
+		// Dashboard methods
+		async loadSolrStats() {
+			this.loadingStats = true
+			this.solrError = false
+			this.solrErrorMessage = ''
+
+			try {
+				const url = generateUrl('/apps/openregister/api/solr/dashboard/stats')
+				const response = await axios.get(url)
+
+				if (response.data && response.data.available) {
+					// Transform flat response to expected structure
+					this.solrStats = {
+						available: response.data.available,
+						overview: {
+							connection_status: 'Connected',
+							total_documents: response.data.document_count || 0,
+						},
+						collection: response.data.collection || 'Unknown',
+						tenant_id: response.data.tenant_id || 'Unknown',
+					}
+				} else {
+					this.solrError = true
+					this.solrErrorMessage = response.data?.error || 'SOLR not available'
+					this.solrStats = null
+				}
+			} catch (error) {
+				this.solrError = true
+				this.solrErrorMessage = error.message || 'Failed to load SOLR statistics'
+				this.solrStats = null
+			} finally {
+				this.loadingStats = false
+			}
+		},
+
+		formatNumber(num) {
+			if (typeof num !== 'number') return num
+			return num.toLocaleString()
+		},
+
+		async openWarmupModal() {
+			// Load object stats before opening the modal
+			await this.loadObjectStats()
+			this.showWarmupDialog = true
+		},
+
+		closeWarmupModal() {
+			this.showWarmupDialog = false
+			// Reset warmup state when modal is closed
+			this.warmingUp = false
+			this.warmupCompleted = false
+			this.warmupResults = null
+		},
+
+		openClearModal() {
+			this.showClearDialog = true
+		},
+
+		openInspectModal() {
+			this.showInspectDialog = true
+		},
+
+		openDeleteCollectionModal() {
+			this.showDeleteCollectionDialog = true
+		},
+
+		closeDeleteCollectionModal() {
+			this.showDeleteCollectionDialog = false
+		},
+
+		async handleCollectionDeleted(result) {
+			// Close the modal
+			this.closeDeleteCollectionModal()
+			
+			// Refresh SOLR stats to reflect the deletion
+			await this.loadSolrStats()
+		},
+
+		async handleClearIndex() {
+			try {
+				const url = generateUrl('/apps/openregister/api/settings/solr/clear')
+				const response = await axios.post(url)
+				
+				// Close modal and refresh stats
+				this.showClearDialog = false
+				await this.loadSolrStats()
+			} catch (error) {
+				console.error('Clear index failed:', error)
+				// Keep modal open on error so user can see what happened
+			}
+		},
+
+		async loadObjectStats() {
+			this.objectStats.loading = true
+			
+			try {
+				// Use the settings store to load stats
+				await this.settingsStore.loadStats()
+				
+				// Get the total objects from the store
+				const totalObjects = this.settingsStore.stats?.totals?.totalObjects || 0
+				this.objectStats.totalObjects = totalObjects
+				
+				// Load memory prediction after getting object count
+				await this.loadMemoryPrediction(0) // Default to all objects
+			} catch (error) {
+				console.error('Failed to load object stats:', error)
+				this.objectStats.totalObjects = 0
+			} finally {
+				this.objectStats.loading = false
+			}
+		},
+
+		async loadMemoryPrediction(maxObjects = 0) {
+			try {
+				const url = generateUrl('/apps/openregister/api/settings/solr/memory-prediction')
+				const response = await axios.post(url, { maxObjects })
+				
+				if (response.data && response.data.success) {
+					this.memoryPrediction = response.data.prediction
+				}
+			} catch (error) {
+				console.warn('Failed to load memory prediction:', error)
+				// Keep default prediction data
+			}
+		},
+
+		async handleStartWarmup(config) {
+			// Set loading state
+			this.warmingUp = true
+			this.warmupCompleted = false
+			this.warmupResults = null
+			
+			try {
+				const url = generateUrl('/apps/openregister/api/settings/solr/warmup')
+				
+				// Convert config to the expected format
+				const warmupParams = {
+					maxObjects: config.maxObjects || 0,
+					mode: config.mode || 'serial',
+					batchSize: config.batchSize || 1000,
+				}
+				
+				const response = await axios.post(url, warmupParams)
+				
+				// Set results state
+				this.warmupCompleted = true
+				this.warmupResults = response.data
+				
+				// Refresh stats after warmup completes
+				await this.loadSolrStats()
+			} catch (error) {
+				console.error('Warmup failed:', error)
+				
+				// Set error state
+				this.warmupCompleted = true
+				this.warmupResults = {
+					success: false,
+					message: error.response?.data?.error || error.message || 'Warmup failed',
+					error: true
+				}
+			} finally {
+				// Clear loading state
+				this.warmingUp = false
+			}
+		},
 	},
 }
 </script>
@@ -1570,6 +2125,7 @@ export default {
 	display: flex;
 	gap: 8px;
 	flex-wrap: wrap;
+	align-items: center;
 }
 
 .section-description-full {
@@ -3308,5 +3864,307 @@ export default {
 	display: flex;
 	gap: 12px;
 	flex-wrap: wrap;
+}
+
+/* Dashboard Styles */
+.solr-management-section {
+	margin-top: 32px;
+	padding-top: 24px;
+	border-top: 2px solid var(--color-border);
+}
+
+.solr-management-section h4 {
+	color: var(--color-text-light);
+	margin: 0 0 16px 0;
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.loading-section {
+	text-align: center;
+	padding: 2rem;
+}
+
+.error-section {
+	text-align: center;
+	padding: 2rem;
+}
+
+.error-message {
+	color: var(--color-error);
+	margin-bottom: 1rem;
+}
+
+.no-data-section {
+	text-align: center;
+	padding: 2rem;
+}
+
+.dashboard-section {
+	padding: 1rem 0;
+}
+
+
+.dashboard-stats-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 1rem;
+}
+
+.stat-card {
+	background: var(--color-background-hover);
+	padding: 1rem;
+	border-radius: var(--border-radius-large);
+	border: 1px solid var(--color-border);
+}
+
+.stat-card h5 {
+	margin: 0 0 0.5rem 0;
+	font-size: 0.9rem;
+	color: var(--color-text-maxcontrast);
+	font-weight: 500;
+}
+
+.stat-card p {
+	margin: 0;
+	font-size: 1.1rem;
+	font-weight: bold;
+}
+
+.status-success {
+	color: var(--color-success);
+}
+
+.status-warning {
+	color: var(--color-warning);
+}
+
+.status-error {
+	color: var(--color-error);
+}
+
+/* Confirmation State */
+.setup-confirmation {
+	text-align: center;
+	padding: 1.5rem 0;
+}
+
+.confirmation-icon {
+	font-size: 3rem;
+	margin-bottom: 1rem;
+}
+
+.setup-confirmation h4 {
+	color: var(--color-primary);
+	margin: 0 0 1rem 0;
+	font-size: 1.5rem;
+}
+
+.confirmation-description {
+	color: var(--color-text);
+	margin: 0 0 1.5rem 0;
+	line-height: 1.5;
+}
+
+.setup-preview-steps {
+	margin: 1.5rem 0;
+	text-align: left;
+	background-color: var(--color-background-hover);
+	border-radius: var(--border-radius);
+	padding: 1rem;
+}
+
+.setup-preview-steps ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.setup-preview-steps li {
+	margin: 0.75rem 0;
+	color: var(--color-text);
+	font-size: 0.95rem;
+	line-height: 1.4;
+}
+
+.timing-warning {
+	background-color: rgba(var(--color-warning-rgb), 0.1);
+	border: 1px solid var(--color-warning);
+	border-radius: var(--border-radius);
+	padding: 1rem;
+	margin: 1.5rem 0;
+	text-align: left;
+	color: var(--color-text);
+	font-size: 0.9rem;
+	line-height: 1.5;
+}
+
+.timing-warning strong {
+	color: var(--color-warning);
+}
+
+.timing-warning small {
+	color: var(--color-text-light);
+	font-style: italic;
+}
+
+.confirmation-actions {
+	display: flex;
+	gap: 1rem;
+	justify-content: center;
+	margin-top: 2rem;
+}
+
+/* Game-style Loading */
+.game-loading-content {
+	margin-top: 2rem;
+	min-height: 200px;
+}
+
+.educational-tips {
+	background-color: var(--color-background-hover);
+	border-radius: var(--border-radius);
+	padding: 1.5rem;
+	margin-bottom: 1.5rem;
+	min-height: 120px;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+}
+
+.tip-item {
+	opacity: 0;
+	transform: translateY(20px);
+	transition: all 0.5s ease-in-out;
+	margin: 0.5rem 0;
+	color: var(--color-text);
+	font-size: 0.95rem;
+	line-height: 1.4;
+	text-align: left;
+}
+
+.tip-item.tip-fade-in {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+.loading-progress-text {
+	text-align: center;
+	color: var(--color-primary);
+	font-weight: 600;
+	font-size: 1rem;
+	padding: 1rem;
+	background-color: rgba(var(--color-primary-rgb), 0.1);
+	border-radius: var(--border-radius);
+	border: 1px solid var(--color-primary);
+	animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+	0% {
+		opacity: 0.8;
+		transform: scale(1);
+	}
+	50% {
+		opacity: 1;
+		transform: scale(1.02);
+	}
+	100% {
+		opacity: 0.8;
+		transform: scale(1);
+	}
+}
+
+/* ConfigSet Propagation Error Styles */
+.propagation-error-section {
+	margin: 1.5rem 0;
+	background-color: rgba(var(--color-warning-rgb), 0.1);
+	border: 1px solid var(--color-warning);
+	border-radius: var(--border-radius);
+	padding: 1.5rem;
+}
+
+.propagation-error-section h4 {
+	color: var(--color-warning);
+	margin: 0 0 1rem 0;
+	font-size: 1.2rem;
+	font-weight: 600;
+}
+
+.propagation-explanation p {
+	margin: 0.5rem 0;
+	color: var(--color-text);
+	line-height: 1.5;
+}
+
+.propagation-explanation strong {
+	color: var(--color-warning);
+	font-weight: 600;
+}
+
+.propagation-details {
+	background-color: var(--color-background-hover);
+	border-radius: var(--border-radius);
+	padding: 1rem;
+	margin: 1rem 0;
+}
+
+.propagation-details ul {
+	margin: 0.5rem 0;
+	padding-left: 1.5rem;
+	list-style: none;
+}
+
+.propagation-details li {
+	margin: 0.5rem 0;
+	color: var(--color-text);
+	font-size: 0.95rem;
+	line-height: 1.4;
+}
+
+.propagation-solution {
+	background-color: rgba(var(--color-success-rgb), 0.1);
+	border: 1px solid var(--color-success);
+	border-radius: var(--border-radius);
+	padding: 1rem;
+	margin: 1rem 0;
+}
+
+.propagation-solution p {
+	margin: 0.5rem 0;
+	color: var(--color-text);
+	font-weight: 600;
+}
+
+.propagation-solution ol {
+	margin: 0.5rem 0;
+	padding-left: 1.5rem;
+}
+
+.propagation-solution li {
+	margin: 0.5rem 0;
+	color: var(--color-text);
+	line-height: 1.4;
+}
+
+.propagation-technical {
+	margin: 1rem 0;
+}
+
+.propagation-technical details {
+	background-color: var(--color-background-hover);
+	border-radius: var(--border-radius);
+	padding: 1rem;
+}
+
+.propagation-technical summary {
+	color: var(--color-primary);
+	cursor: pointer;
+	font-weight: 600;
+	margin-bottom: 0.5rem;
+}
+
+.propagation-technical summary:hover {
+	color: var(--color-primary-hover);
 }
 </style>

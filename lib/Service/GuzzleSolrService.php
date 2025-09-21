@@ -726,45 +726,55 @@ class GuzzleSolrService
      * @param string $collectionName Collection name
      * @param string $configSetName  ConfigSet name
      * @return bool True if successful
+     * @throws \GuzzleHttp\Exception\GuzzleException When HTTP request fails
+     * @throws \Exception When SOLR returns error response
      */
     public function createCollection(string $collectionName, string $configSetName): bool
     {
-        try {
-            $url = $this->buildSolrBaseUrl() . '/admin/collections?' . http_build_query([
-                'action' => 'CREATE',
-                'name' => $collectionName,
-                'collection.configName' => $configSetName,
-                'numShards' => 1,
-                'replicationFactor' => 1,
-                'wt' => 'json'
-            ]);
+        $url = $this->buildSolrBaseUrl() . '/admin/collections?' . http_build_query([
+            'action' => 'CREATE',
+            'name' => $collectionName,
+            'collection.configName' => $configSetName,
+            'numShards' => 1,
+            'replicationFactor' => 1,
+            'wt' => 'json'
+        ]);
 
-            $response = $this->httpClient->get($url, ['timeout' => 30]);
-            $data = json_decode((string)$response->getBody(), true);
+        $response = $this->httpClient->get($url, ['timeout' => 30]);
+        $data = json_decode((string)$response->getBody(), true);
 
-            if (($data['responseHeader']['status'] ?? -1) === 0) {
-                $this->logger->info('SOLR collection created successfully', [
-                    'collection' => $collectionName,
-                    'configSet' => $configSetName,
-                    'tenant_id' => $this->tenantId
-                ]);
-                return true;
-            }
-
-            $this->logger->error('SOLR collection creation failed', [
+        if (($data['responseHeader']['status'] ?? -1) === 0) {
+            $this->logger->info('SOLR collection created successfully', [
                 'collection' => $collectionName,
-                'response' => $data
+                'configSet' => $configSetName,
+                'tenant_id' => $this->tenantId
             ]);
-            return false;
-
-        } catch (\Exception $e) {
-            $this->logger->error('Exception creating SOLR collection', [
-                'collection' => $collectionName,
-                'error' => $e->getMessage()
-            ]);
-            return false;
+            return true;
         }
+
+        // SOLR returned an error response - throw exception with details
+        $errorMessage = $data['error']['msg'] ?? 'Unknown SOLR error';
+        $errorCode = $data['responseHeader']['status'] ?? 500;
+        
+        $this->logger->error('SOLR collection creation failed', [
+            'collection' => $collectionName,
+            'configSet' => $configSetName,
+            'tenant_id' => $this->tenantId,
+            'url' => $url,
+            'solr_status' => $errorCode,
+            'solr_error' => $data['error'] ?? null,
+            'full_response' => $data
+        ]);
+
+        // Throw exception with SOLR response details
+        throw new \Exception(
+            "SOLR collection creation failed: {$errorMessage}",
+            $errorCode,
+            new \Exception(json_encode($data))
+        );
     }
+
+
 
     /**
      * Delete SOLR collection
