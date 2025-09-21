@@ -251,12 +251,32 @@ class SolrSetup
     /**
      * Get tenant-specific configSet name
      *
-     * @return string Tenant-specific configSet name (e.g., "openregister_nc_f0e53393")
+     * @return string ConfigSet name to use for tenant collections
      */
     private function getTenantConfigSetName(): string
     {
-        $baseConfigSetName = $this->solrConfig['core'] ?? 'openregister';
-        return $baseConfigSetName . '_' . $this->getTenantId();
+        // Use the configSet from configuration (defaults to '_default')
+        $configSetName = $this->solrConfig['configSet'] ?? '_default';
+        
+        // If using _default, return it as-is (no tenant suffix needed)
+        if ($configSetName === '_default') {
+            $this->logger->info('Using _default ConfigSet for maximum compatibility', [
+                'configSet' => $configSetName,
+                'tenant_id' => $this->getTenantId(),
+                'reason' => 'Proven stable configuration with dynamic field support'
+            ]);
+            return '_default';
+        }
+        
+        // For custom configSets, append tenant ID to make it tenant-specific
+        $tenantSpecificName = $configSetName . '_' . $this->getTenantId();
+        $this->logger->info('Using custom tenant-specific ConfigSet', [
+            'base_configSet' => $configSetName,
+            'tenant_configSet' => $tenantSpecificName,
+            'tenant_id' => $this->getTenantId()
+        ]);
+        
+        return $tenantSpecificName;
     }
 
     /**
