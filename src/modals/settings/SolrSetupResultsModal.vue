@@ -41,10 +41,10 @@
 							:class="getStepStatus(step)">
 							<div class="step-header">
 								<span class="step-icon">{{ getStepIcon(step) }}</span>
-								<h6>{{ step.step || `Step ${index + 1}` }}</h6>
+								<h6>{{ step.step_name || step.step || `Step ${step.step_number || index + 1}` }}</h6>
 								<span class="step-status">{{ getStepStatusText(step) }}</span>
 							</div>
-							<p v-if="step.message" class="step-message">{{ step.message }}</p>
+							<p v-if="step.description || step.message" class="step-message">{{ step.description || step.message }}</p>
 							<div v-if="step.details" class="step-details">
 								<div v-for="(value, key) in step.details" :key="key" class="detail-item">
 									<span class="detail-label">{{ formatDetailLabel(key) }}:</span>
@@ -212,20 +212,24 @@ export default {
 
 	methods: {
 		getStepStatus(step) {
-			if (step.success === true) return 'success'
-			if (step.success === false) return 'error'
+			// Handle both step.success (boolean) and step.status (string) formats
+			if (step.success === true || step.status === 'completed') return 'success'
+			if (step.success === false || step.status === 'failed') return 'error'
 			return 'pending'
 		},
 
 		getStepIcon(step) {
-			if (step.success === true) return '✅'
-			if (step.success === false) return '❌'
+			// Handle both step.success (boolean) and step.status (string) formats
+			if (step.success === true || step.status === 'completed') return '✅'
+			if (step.success === false || step.status === 'failed') return '❌'
 			return '⏳'
 		},
 
 		getStepStatusText(step) {
-			if (step.success === true) return 'Completed'
-			if (step.success === false) return 'Failed'
+			// Handle both step.success (boolean) and step.status (string) formats  
+			if (step.success === true || step.status === 'completed') return 'Completed'
+			if (step.success === false || step.status === 'failed') return 'Failed'
+			if (step.status === 'started') return 'In Progress'
 			return 'Pending'
 		},
 
