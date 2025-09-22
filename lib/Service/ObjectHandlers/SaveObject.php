@@ -357,8 +357,30 @@ class SaveObject
                             }
                         }
                     } else {
-                        // Recursively scan nested arrays
-                        $relations = array_merge($relations, $this->scanForRelations($value, $currentPath, $schema));
+                        // Check if this is a simple array of UUIDs/strings
+                        $isSimpleStringArray = true;
+                        foreach ($value as $item) {
+                            if (!is_string($item)) {
+                                $isSimpleStringArray = false;
+                                break;
+                            }
+                        }
+                        
+                        if ($isSimpleStringArray) {
+                            // Handle simple arrays of UUIDs/strings directly
+                            foreach ($value as $index => $item) {
+                                if (!empty($item) && trim($item) !== '') {
+                                    // Check if it looks like a UUID or URL
+                                    if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $item) ||
+                                        filter_var($item, FILTER_VALIDATE_URL)) {
+                                        $relations[$currentPath.'.'.$index] = $item;
+                                    }
+                                }
+                            }
+                        } else {
+                            // Recursively scan nested arrays (for complex nested structures)
+                            $relations = array_merge($relations, $this->scanForRelations($value, $currentPath, $schema));
+                        }
                     }
                 } else if (is_string($value) && !empty($value) && trim($value) !== '') {
                     $shouldTreatAsRelation = false;

@@ -2347,11 +2347,39 @@ class ObjectService
             ($requestedSource === null && $this->isSolrAvailable() && $requestedSource !== 'database')
             ) {
             
-            // Forward to SOLR service - let it handle availability checks and error handling
-            $solrService = $this->container->get(GuzzleSolrService::class);
-            $result = $solrService->searchObjectsPaginated($query, $rbac, $multi, $published, $deleted);
-            $result['source'] = 'index';
-            return $result;
+            try {
+                // Forward to SOLR service - let it handle availability checks and error handling
+                $solrService = $this->container->get(GuzzleSolrService::class);
+                $result = $solrService->searchObjectsPaginated($query, $rbac, $multi, $published, $deleted);
+                $result['source'] = 'index';
+                return $result;
+            } catch (\Exception $e) {
+                // Check if this is a SOLR field-related error that we can recover from
+                $errorMessage = $e->getMessage();
+                $isRecoverableError = (
+                    str_contains($errorMessage, 'undefined field') ||
+                    str_contains($errorMessage, 'unknown field') ||
+                    str_contains($errorMessage, 'field does not exist') ||
+                    str_contains($errorMessage, 'no such field')
+                );
+                
+                if ($isRecoverableError && $requestedSource === null) {
+                    // Only fall back to database if SOLR wasn't explicitly requested
+                    $this->logger->warning('SOLR search failed with field error, falling back to database', [
+                        'error' => $errorMessage,
+                        'query_fingerprint' => substr(md5(json_encode($query)), 0, 8)
+                    ]);
+                    
+                    // Fall back to database search
+                    $result = $this->searchObjectsPaginatedDatabase($query, $rbac, $multi, $published, $deleted);
+                    $result['source'] = 'database';
+                    $result['_fallback_reason'] = 'SOLR field error: ' . $errorMessage;
+                    return $result;
+                } else {
+                    // Re-throw if it's not recoverable or SOLR was explicitly requested
+                    throw $e;
+                }
+            }
         }
         
         // Use database search
