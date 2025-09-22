@@ -3123,12 +3123,22 @@ class GuzzleSolrService
                 // This is much more efficient than making separate calls
                 $contextualFacetData = $this->getContextualFacetsFromSameQuery($solrQuery, $originalQuery);
                 
-                // Include facetable field discovery 
-                $facetableFields = $contextualFacetData['facetable'] ?? [];
+                // Also discover all available facetable fields from SOLR schema
+                $allFacetableFields = $this->discoverFacetableFieldsFromSolr();
+                
+                // Get metadata facetable fields (always available)
+                $metadataFacetableFields = $this->getMetadataFacetableFields();
+                
+                // Combine contextual facets (metadata with data) with all available facetable fields
+                $facetableFields = [
+                    '@self' => $metadataFacetableFields['@self'] ?? [],
+                    'object_fields' => $allFacetableFields['object_fields'] ?? []
+                ];
+                
                 // Rename object_fields to fields for frontend consumption
                 $response['facets']['facetable'] = [
-                    '@self' => $facetableFields['@self'] ?? [],
-                    'fields' => $facetableFields['object_fields'] ?? []
+                    '@self' => $facetableFields['@self'],
+                    'fields' => $facetableFields['object_fields']
                 ];
                 
                 // Put extended facet data in facets.facets property
@@ -6535,7 +6545,7 @@ class GuzzleSolrService
     }
 
     /**
-     * Build optimized contextual facet query that only includes fields with actual values
+     * Build optimized contextual facet query that includes both metadata and object fields with actual values
      *
      * @return array Optimized JSON facet query
      */
@@ -6559,6 +6569,23 @@ class GuzzleSolrService
             $facetQuery[$fieldName] = [
                 'type' => 'terms',
                 'field' => $solrField,
+                'limit' => 50,
+                'mincount' => 1, // Only include if there are actual values
+                'missing' => false // Don't include missing values
+            ];
+        }
+        
+        // Add object fields that are commonly facetable
+        $commonObjectFields = [
+            'slug', 'naam', 'type', 'status', 'category', 'tag', 'label',
+            'cloudDienstverleningsmodel', 'hostingJurisdictie', 'hostingLocatie',
+            'beschrijvingKort', 'website', 'logo'
+        ];
+        
+        foreach ($commonObjectFields as $fieldName) {
+            $facetQuery['object_' . $fieldName] = [
+                'type' => 'terms',
+                'field' => $fieldName,
                 'limit' => 50,
                 'mincount' => 1, // Only include if there are actual values
                 'missing' => false // Don't include missing values
@@ -6600,6 +6627,31 @@ class GuzzleSolrService
                 $contextualData['extended']['@self'][$fieldName] = array_merge(
                     $fieldInfo,
                     ['data' => $this->formatFacetData($facetData[$fieldName], $fieldInfo['type'])]
+                );
+            }
+        }
+        
+        // Process object fields (they come with 'object_' prefix in facet response)
+        foreach ($facetData as $facetKey => $facetValue) {
+            if (str_starts_with($facetKey, 'object_') && !empty($facetValue['buckets'])) {
+                $objectFieldName = substr($facetKey, 7); // Remove 'object_' prefix
+                
+                $objectFieldInfo = [
+                    'name' => $objectFieldName,
+                    'type' => 'terms', // Most object fields are terms-based
+                    'index_field' => $objectFieldName,
+                    'index_type' => 'string',
+                    'queryParameter' => $objectFieldName,
+                    'source' => 'object'
+                ];
+                
+                // Add to facetable fields
+                $contextualData['facetable']['object_fields'][$objectFieldName] = $objectFieldInfo;
+                
+                // Add to extended data with actual values
+                $contextualData['extended']['object_fields'][$objectFieldName] = array_merge(
+                    $objectFieldInfo,
+                    ['data' => $this->formatFacetData($facetValue, 'terms')]
                 );
             }
         }
@@ -6985,6 +7037,73 @@ class GuzzleSolrService
                             'label' => date('Y-m-d', strtotime($bucket['val']))
                         ];
                     }, $dailyBuckets)
+                ]
+            ]
+        ];
+    }
+
+    /**
+     * Get metadata facetable fields (standard @self fields)
+     *
+     * @return array Standard metadata fields that can be faceted
+     * @phpstan-return array<string, mixed>
+     * @psalm-return   array<string, mixed>
+     */
+    private function getMetadataFacetableFields(): array
+    {
+        return [
+            '@self' => [
+                'register' => [
+                    'type' => 'terms',
+                    'title' => 'Register',
+                    'description' => 'Register that contains the object',
+                    'data_type' => 'integer',
+                    'queryParameter' => '@self[register]',
+                    'source' => 'metadata'
+                ],
+                'schema' => [
+                    'type' => 'terms',
+                    'title' => 'Schema',
+                    'description' => 'Schema that defines the object structure',
+                    'data_type' => 'integer',
+                    'queryParameter' => '@self[schema]',
+                    'source' => 'metadata'
+                ],
+                'organisation' => [
+                    'type' => 'terms',
+                    'title' => 'Organisation',
+                    'description' => 'Organisation that owns the object',
+                    'data_type' => 'string',
+                    'queryParameter' => '@self[organisation]',
+                    'source' => 'metadata'
+                ],
+                'application' => [
+                    'type' => 'terms',
+                    'title' => 'Application',
+                    'description' => 'Application that created the object',
+                    'data_type' => 'string',
+                    'queryParameter' => '@self[application]',
+                    'source' => 'metadata'
+                ],
+                'created' => [
+                    'type' => 'date_histogram',
+                    'title' => 'Created Date',
+                    'description' => 'When the object was created',
+                    'data_type' => 'datetime',
+                    'default_interval' => 'month',
+                    'supported_intervals' => ['day', 'week', 'month', 'year'],
+                    'queryParameter' => '@self[created]',
+                    'source' => 'metadata'
+                ],
+                'updated' => [
+                    'type' => 'date_histogram',
+                    'title' => 'Updated Date',
+                    'description' => 'When the object was last modified',
+                    'data_type' => 'datetime',
+                    'default_interval' => 'month',
+                    'supported_intervals' => ['day', 'week', 'month', 'year'],
+                    'queryParameter' => '@self[updated]',
+                    'source' => 'metadata'
                 ]
             ]
         ];
