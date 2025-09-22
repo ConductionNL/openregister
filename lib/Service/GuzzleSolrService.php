@@ -6581,12 +6581,12 @@ class GuzzleSolrService
         
         // Process metadata fields
         $metadataFieldMap = [
-            'register' => ['name' => 'register', 'type' => 'terms', 'index_field' => 'self_register', 'index_type' => 'pint'],
-            'schema' => ['name' => 'schema', 'type' => 'terms', 'index_field' => 'self_schema', 'index_type' => 'pint'],
-            'organisation' => ['name' => 'organisation', 'type' => 'terms', 'index_field' => 'self_organisation', 'index_type' => 'string'],
-            'application' => ['name' => 'application', 'type' => 'terms', 'index_field' => 'self_application', 'index_type' => 'string'],
-            'created' => ['name' => 'created', 'type' => 'date_histogram', 'index_field' => 'self_created', 'index_type' => 'pdate'],
-            'updated' => ['name' => 'updated', 'type' => 'date_histogram', 'index_field' => 'self_updated', 'index_type' => 'pdate']
+            'register' => ['name' => 'register', 'type' => 'terms', 'index_field' => 'self_register', 'index_type' => 'pint', 'queryParameter' => '@self[register]'],
+            'schema' => ['name' => 'schema', 'type' => 'terms', 'index_field' => 'self_schema', 'index_type' => 'pint', 'queryParameter' => '@self[schema]'],
+            'organisation' => ['name' => 'organisation', 'type' => 'terms', 'index_field' => 'self_organisation', 'index_type' => 'string', 'queryParameter' => '@self[organisation]'],
+            'application' => ['name' => 'application', 'type' => 'terms', 'index_field' => 'self_application', 'index_type' => 'string', 'queryParameter' => '@self[application]'],
+            'created' => ['name' => 'created', 'type' => 'date_histogram', 'index_field' => 'self_created', 'index_type' => 'pdate', 'queryParameter' => '@self[created]'],
+            'updated' => ['name' => 'updated', 'type' => 'date_histogram', 'index_field' => 'self_updated', 'index_type' => 'pdate', 'queryParameter' => '@self[updated]']
         ];
         
         foreach ($metadataFieldMap as $fieldName => $fieldInfo) {
