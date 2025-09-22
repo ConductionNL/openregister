@@ -3090,7 +3090,11 @@ class GuzzleSolrService
         if (isset($originalQuery['_facetable']) && ($originalQuery['_facetable'] === true || $originalQuery['_facetable'] === 'true')) {
             try {
                 $facetableFields = $this->discoverFacetableFieldsFromSolr();
-                $response['facets']['facetable'] = $facetableFields;
+                // Rename object_fields to fields for frontend consumption
+                $response['facets']['facetable'] = [
+                    '@self' => $facetableFields['@self'] ?? [],
+                    'fields' => $facetableFields['object_fields'] ?? []
+                ];
                 
                 $this->logger->debug('Added facetable fields to response', [
                     'facetableFieldCount' => count($facetableFields['@self'] ?? []) + count($facetableFields['object_fields'] ?? [])
@@ -3102,7 +3106,7 @@ class GuzzleSolrService
                 // Don't fail the whole request, just return empty facetable fields
                 $response['facets']['facetable'] = [
                     '@self' => [],
-                    'object_fields' => []
+                    'fields' => []
                 ];
             }
         }
@@ -3120,7 +3124,12 @@ class GuzzleSolrService
                 $contextualFacetData = $this->getContextualFacetsFromSameQuery($solrQuery, $originalQuery);
                 
                 // Include facetable field discovery 
-                $response['facets']['facetable'] = $contextualFacetData['facetable'] ?? [];
+                $facetableFields = $contextualFacetData['facetable'] ?? [];
+                // Rename object_fields to fields for frontend consumption
+                $response['facets']['facetable'] = [
+                    '@self' => $facetableFields['@self'] ?? [],
+                    'fields' => $facetableFields['object_fields'] ?? []
+                ];
                 
                 // Put extended facet data in facets.facets property
                 $extendedData = $contextualFacetData['extended'] ?? [];
@@ -3129,7 +3138,7 @@ class GuzzleSolrService
                     $response['facets']['facets']['@self'] = $extendedData['@self'];
                 }
                 if (isset($extendedData['object_fields'])) {
-                    $response['facets']['facets']['object_fields'] = $extendedData['object_fields'];
+                    $response['facets']['facets']['fields'] = $extendedData['object_fields'];
                 }
                 
                 $this->logger->debug('Added contextual faceting data to response', [
@@ -6116,7 +6125,8 @@ class GuzzleSolrService
                         'name' => $metadataKey,
                         'type' => $this->mapSolrTypeToFacetType($fieldType),
                         'index_field' => $fieldName,
-                        'index_type' => $fieldType
+                        'index_type' => $fieldType,
+                        'queryParameter' => '@self[' . $metadataKey . ']'
                     ];
                 } elseif (!in_array($fieldName, ['_version_', 'id', '_text_'])) {
                     // Object field (exclude system fields)
@@ -6124,7 +6134,8 @@ class GuzzleSolrService
                         'name' => $fieldName,
                         'type' => $this->mapSolrTypeToFacetType($fieldType),
                         'index_field' => $fieldName,
-                        'index_type' => $fieldType
+                        'index_type' => $fieldType,
+                        'queryParameter' => $fieldName
                     ];
                 }
             }

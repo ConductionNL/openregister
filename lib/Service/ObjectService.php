@@ -6625,17 +6625,32 @@ class ObjectService
                 continue;
             }
 
-            if ($schemaFacets !== null && isset($schemaFacets['object_fields'])) {
-                // Merge object fields from this schema
+            // Check if facets exist and have queryParameter properties
+            $needsRegeneration = false;
+            if ($schemaFacets === null || !isset($schemaFacets['object_fields'])) {
+                $needsRegeneration = true;
+            } else {
+                // Check if existing facets have queryParameter properties
+                foreach ($schemaFacets['object_fields'] as $fieldName => $fieldConfig) {
+                    if (!isset($fieldConfig['queryParameter'])) {
+                        $needsRegeneration = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (!$needsRegeneration && isset($schemaFacets['object_fields'])) {
+                // Use existing facets with queryParameter
                 $facetableFields['object_fields'] = array_merge(
                     $facetableFields['object_fields'],
                     $schemaFacets['object_fields']
                 );
             } else {
-                // **FALLBACK**: If schema doesn't have pre-computed facets, generate them
-                $this->logger->debug('Generating missing facets for schema', [
+                // **FALLBACK**: If schema doesn't have pre-computed facets or missing queryParameter, generate them
+                $this->logger->debug('Regenerating facets for schema (missing facets or queryParameter)', [
                     'schemaId' => $schema->getId(),
-                    'schemaSlug' => $schema->getSlug()
+                    'schemaSlug' => $schema->getSlug(),
+                    'reason' => $schemaFacets === null ? 'no_facets' : 'missing_queryParameter'
                 ]);
 
                 $schema->regenerateFacetsFromProperties();
@@ -6777,13 +6792,15 @@ class ObjectService
                 'type' => 'terms',
                 'title' => 'Register',
                 'description' => 'Register that contains the object',
-                'data_type' => 'integer'
+                'data_type' => 'integer',
+                'queryParameter' => '@self[register]'
             ],
             'schema' => [
                 'type' => 'terms',
                 'title' => 'Schema',
                 'description' => 'Schema that defines the object structure',
-                'data_type' => 'integer'
+                'data_type' => 'integer',
+                'queryParameter' => '@self[schema]'
             ],
             'created' => [
                 'type' => 'date_histogram',
@@ -6791,7 +6808,8 @@ class ObjectService
                 'description' => 'When the object was created',
                 'data_type' => 'datetime',
                 'default_interval' => 'month',
-                'supported_intervals' => ['day', 'week', 'month', 'year']
+                'supported_intervals' => ['day', 'week', 'month', 'year'],
+                'queryParameter' => '@self[created]'
             ],
             'updated' => [
                 'type' => 'date_histogram',
@@ -6799,19 +6817,22 @@ class ObjectService
                 'description' => 'When the object was last modified',
                 'data_type' => 'datetime',
                 'default_interval' => 'month',
-                'supported_intervals' => ['day', 'week', 'month', 'year']
+                'supported_intervals' => ['day', 'week', 'month', 'year'],
+                'queryParameter' => '@self[updated]'
             ],
             'owner' => [
                 'type' => 'terms',
                 'title' => 'Owner',
                 'description' => 'User who owns the object',
-                'data_type' => 'string'
+                'data_type' => 'string',
+                'queryParameter' => '@self[owner]'
             ],
             'organisation' => [
                 'type' => 'terms',
                 'title' => 'Organisation',
                 'description' => 'Organisation that owns the object',
-                'data_type' => 'string'
+                'data_type' => 'string',
+                'queryParameter' => '@self[organisation]'
             ]
         ];
 
