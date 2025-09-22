@@ -1163,14 +1163,14 @@ class GuzzleSolrService
             'self_object_id' => $object->getId(),
             'self_uuid' => $object->getUuid(),
             
-            // Context fields
-            'self_register' => (int)$object->getRegister(),
-            'self_register_id' => (int)$object->getRegister(),
+            // Context fields - resolve to integer IDs
+            'self_register' => $this->resolveRegisterToId($object->getRegister(), $register),
+            'self_register_id' => $this->resolveRegisterToId($object->getRegister(), $register),
             'self_register_uuid' => $register?->getUuid(),
             'self_register_slug' => $register?->getSlug(),
             
-            'self_schema' => (int)$object->getSchema(),
-            'self_schema_id' => (int)$object->getSchema(),
+            'self_schema' => $this->resolveSchemaToId($object->getSchema(), $schema),
+            'self_schema_id' => $this->resolveSchemaToId($object->getSchema(), $schema),
             'self_schema_uuid' => $schema->getUuid(),
             'self_schema_slug' => $schema->getSlug(),
             'self_schema_version' => $object->getSchemaVersion(),
@@ -1530,8 +1530,8 @@ class GuzzleSolrService
         $document['self_id'] = $uuid; // Always use UUID for consistency
         $document['self_object_id'] = $object->getId();
         $document['self_uuid'] = $uuid;
-        $document['self_register'] = $object->getRegister();
-        $document['self_schema'] = $object->getSchema();
+        $document['self_register'] = $this->resolveRegisterToId($object->getRegister());
+        $document['self_schema'] = $this->resolveSchemaToId($object->getSchema());
         $document['self_organisation'] = $object->getOrganisation();
         $document['self_name'] = $object->getName();
         $document['self_description'] = $object->getDescription();
@@ -1578,6 +1578,7 @@ class GuzzleSolrService
      */
     public function searchObjectsPaginated(array $query = [], bool $rbac = true, bool $multi = true, bool $published = false, bool $deleted = false): array
     {
+        
         $startTime = microtime(true);
         
         // Check SOLR configuration first
@@ -1632,6 +1633,10 @@ class GuzzleSolrService
             
             // Execute the search
             $extend = $query['_extend'] ?? [];
+            // Normalize extend to array if it's a string
+            if (is_string($extend)) {
+                $extend = array_map('trim', explode(',', $extend));
+            }
             $searchResults = $this->executeSearch($solrQuery, $collectionName, $extend);
             
             // Convert SOLR results to OpenRegister paginated format
@@ -2778,10 +2783,6 @@ class GuzzleSolrService
      */
     private function buildSolrQuery(array $query): array
     {
-        // **DEBUG**: Log the incoming OpenRegister query
-        $this->logger->debug('=== buildSolrQuery INPUT ===', [
-            'openregister_query' => $query
-        ]);
         
         $solrQuery = [
             'q' => '*:*',
@@ -2841,16 +2842,26 @@ class GuzzleSolrService
             foreach ($query['@self'] as $metaKey => $metaValue) {
                 if ($metaValue !== null && $metaValue !== '') {
                     $solrField = 'self_' . $metaKey;
+                    
+                    // Handle string values for register/schema fields by resolving to integer IDs
+                    if (in_array($metaKey, ['register', 'schema']) && !is_numeric($metaValue)) {
+                        $metaValue = $this->resolveMetadataValueToId($metaKey, $metaValue);
+                    }
+                    
                     if (is_array($metaValue)) {
-                        $conditions = array_map(function($v) use ($solrField) {
-                            return $solrField . ':' . (is_numeric($v) ? $v : '"' . $this->escapeSolrValue((string)$v) . '"');
+                        $conditions = array_map(function($v) use ($solrField, $metaKey) {
+                            // Handle string values in arrays by resolving to integer IDs
+                            if (in_array($metaKey, ['register', 'schema']) && !is_numeric($v)) {
+                                $v = $this->resolveMetadataValueToId($metaKey, $v);
+                            }
+                            return $solrField . ':' . (is_numeric($v) ? $v : $this->escapeSolrValue((string)$v));
                         }, $metaValue);
                         $filters[] = '(' . implode(' OR ', $conditions) . ')';
                     } else {
                         if (is_numeric($metaValue)) {
                             $filters[] = $solrField . ':' . $metaValue;
                         } else {
-                            $filters[] = $solrField . ':"' . $this->escapeSolrValue((string)$metaValue) . '"';
+                            $filters[] = $solrField . ':' . $this->escapeSolrValue((string)$metaValue);
                         }
                     }
                 }
@@ -2915,16 +2926,6 @@ class GuzzleSolrService
             }
         }
 
-        // **DEBUG**: Log the final SOLR query being built
-        $this->logger->debug('=== buildSolrQuery OUTPUT ===', [
-            'final_solr_query' => $solrQuery,
-            'pagination_check' => [
-                'rows' => $solrQuery['rows'] ?? 'missing',
-                'start' => $solrQuery['start'] ?? 'missing',
-                'original_limit' => $query['_limit'] ?? 'missing',
-                'original_page' => $query['_page'] ?? 'missing'
-            ]
-        ]);
 
         return $solrQuery;
     }
@@ -3114,6 +3115,7 @@ class GuzzleSolrService
         // Handle _facets=extend parameter for complete faceting (discovery + data)
         if (isset($originalQuery['_facets']) && $originalQuery['_facets'] === 'extend') {
             try {
+                
                 // Build contextual facets - if we don't have solrQuery, build it from original query
                 if ($solrQuery === null) {
                     $solrQuery = $this->buildSolrQuery($originalQuery);
@@ -6219,8 +6221,10 @@ class GuzzleSolrService
         $facetQuery = $solrQuery;
         $facetQuery['rows'] = 0; // We only want facet data
         
-        // Add JSON faceting for core metadata fields
-        $jsonFacets = $this->buildOptimizedContextualFacetQuery();
+        
+        // Add JSON faceting for core metadata fields with domain filtering
+        $filterQueries = $facetQuery['fq'] ?? [];
+        $jsonFacets = $this->buildOptimizedContextualFacetQuery($filterQueries);
         if (!empty($jsonFacets)) {
             $facetQuery['json.facet'] = json_encode($jsonFacets);
         }
@@ -6231,6 +6235,7 @@ class GuzzleSolrService
         
         try {
             $startTime = microtime(true);
+            
             
             // Use POST to avoid URI length issues
             $response = $this->httpClient->post($queryUrl, [
@@ -6258,6 +6263,7 @@ class GuzzleSolrService
                 'total_found' => $data['response']['numFound'] ?? 0,
                 'facets_available' => isset($data['facets'])
             ]);
+            
             
             // Process the facet data
             if (isset($data['facets'])) {
@@ -6545,10 +6551,12 @@ class GuzzleSolrService
 
     /**
      * Build optimized contextual facet query that includes both metadata and object fields with actual values
+     * This method now properly applies filter queries to facets using SOLR domains
      *
-     * @return array Optimized JSON facet query
+     * @param array $filterQueries Filter queries to apply to facets (e.g., ['self_register:3'])
+     * @return array Optimized JSON facet query with domain filtering
      */
-    private function buildOptimizedContextualFacetQuery(): array
+    private function buildOptimizedContextualFacetQuery(array $filterQueries = []): array
     {
         // Get core metadata fields that should always be checked
         $coreMetadataFields = [
@@ -6563,15 +6571,30 @@ class GuzzleSolrService
         // Build facet query with existence checks and data retrieval
         $facetQuery = [];
         
-        // Add metadata fields with existence checks
+        // Build domain filter for applying filter queries to facets
+        $domainFilter = null;
+        if (!empty($filterQueries)) {
+            $domainFilter = [
+                'filter' => $filterQueries
+            ];
+        }
+        
+        // Add metadata fields with existence checks and domain filtering
         foreach ($coreMetadataFields as $fieldName => $solrField) {
-            $facetQuery[$fieldName] = [
+            $facetConfig = [
                 'type' => 'terms',
                 'field' => $solrField,
                 'limit' => 50,
                 'mincount' => 1, // Only include if there are actual values
                 'missing' => false // Don't include missing values
             ];
+            
+            // Apply domain filter if we have filter queries
+            if ($domainFilter !== null) {
+                $facetConfig['domain'] = $domainFilter;
+            }
+            
+            $facetQuery[$fieldName] = $facetConfig;
         }
         
         // For _facets=extend, discover and facet ALL available fields from SOLR schema
@@ -6582,13 +6605,20 @@ class GuzzleSolrService
                 foreach ($allFacetableFields['object_fields'] as $fieldName => $fieldConfig) {
                     // Only add fields that can be faceted (have docValues)
                     if (isset($fieldConfig['index_field'])) {
-                        $facetQuery['object_' . $fieldName] = [
+                        $objectFacetConfig = [
                             'type' => 'terms',
                             'field' => $fieldConfig['index_field'],
                             'limit' => 50,
                             'mincount' => 1, // Only include if there are actual values
                             'missing' => false // Don't include missing values
                         ];
+                        
+                        // Apply domain filter if we have filter queries
+                        if ($domainFilter !== null) {
+                            $objectFacetConfig['domain'] = $domainFilter;
+                        }
+                        
+                        $facetQuery['object_' . $fieldName] = $objectFacetConfig;
                     }
                 }
             }
@@ -6605,13 +6635,20 @@ class GuzzleSolrService
             ];
             
             foreach ($commonObjectFields as $fieldName) {
-                $facetQuery['object_' . $fieldName] = [
+                $fallbackFacetConfig = [
                     'type' => 'terms',
                     'field' => $fieldName,
                     'limit' => 50,
                     'mincount' => 1, // Only include if there are actual values
                     'missing' => false // Don't include missing values
                 ];
+                
+                // Apply domain filter if we have filter queries
+                if ($domainFilter !== null) {
+                    $fallbackFacetConfig['domain'] = $domainFilter;
+                }
+                
+                $facetQuery['object_' . $fieldName] = $fallbackFacetConfig;
             }
         }
         
@@ -7310,5 +7347,145 @@ class GuzzleSolrService
             // Fallback to individual UUIDs as labels
             return array_combine($ids, array_map(fn($uuid) => "Organisation $uuid", $ids));
         }
+    }
+
+    /**
+     * Resolve register value to integer ID
+     *
+     * Handles cases where register is stored as string ID, slug, or already an integer.
+     *
+     * @param string|int|null $registerValue The register value from ObjectEntity
+     * @param \OCA\OpenRegister\Db\Register|null $register Optional pre-loaded register entity
+     * @return int The resolved register ID, or 0 if resolution fails
+     */
+    private function resolveRegisterToId($registerValue, ?\OCA\OpenRegister\Db\Register $register = null): int
+    {
+        if (empty($registerValue)) {
+            return 0;
+        }
+
+        // If it's already a numeric ID, return it as integer
+        if (is_numeric($registerValue)) {
+            return (int)$registerValue;
+        }
+
+        // If we have a pre-loaded register entity, use its ID
+        if ($register !== null) {
+            return $register->getId() ?? 0;
+        }
+
+        // Try to resolve by slug/name using RegisterMapper
+        if ($this->registerMapper !== null) {
+            try {
+                $resolvedRegister = $this->registerMapper->find($registerValue);
+                return $resolvedRegister->getId() ?? 0;
+            } catch (\Exception $e) {
+                $this->logger->warning('Failed to resolve register value to ID', [
+                    'registerValue' => $registerValue,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        // Fallback: return 0 for unresolvable values
+        $this->logger->warning('Could not resolve register to integer ID', [
+            'registerValue' => $registerValue,
+            'type' => gettype($registerValue)
+        ]);
+        return 0;
+    }
+
+    /**
+     * Resolve schema value to integer ID
+     *
+     * Handles cases where schema is stored as string ID, slug, or already an integer.
+     *
+     * @param string|int|null $schemaValue The schema value from ObjectEntity
+     * @param \OCA\OpenRegister\Db\Schema|null $schema Optional pre-loaded schema entity
+     * @return int The resolved schema ID, or 0 if resolution fails
+     */
+    private function resolveSchemaToId($schemaValue, ?\OCA\OpenRegister\Db\Schema $schema = null): int
+    {
+        if (empty($schemaValue)) {
+            return 0;
+        }
+
+        // If it's already a numeric ID, return it as integer
+        if (is_numeric($schemaValue)) {
+            return (int)$schemaValue;
+        }
+
+        // If we have a pre-loaded schema entity, use its ID
+        if ($schema !== null) {
+            return $schema->getId() ?? 0;
+        }
+
+        // Try to resolve by slug/name using SchemaMapper
+        if ($this->schemaMapper !== null) {
+            try {
+                $resolvedSchema = $this->schemaMapper->find($schemaValue);
+                return $resolvedSchema->getId() ?? 0;
+            } catch (\Exception $e) {
+                $this->logger->warning('Failed to resolve schema value to ID', [
+                    'schemaValue' => $schemaValue,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        // Fallback: return 0 for unresolvable values
+        $this->logger->warning('Could not resolve schema to integer ID', [
+            'schemaValue' => $schemaValue,
+            'type' => gettype($schemaValue)
+        ]);
+        return 0;
+    }
+
+    /**
+     * TODO: HOTFIX - Resolve metadata field values (register/schema names) to integer IDs
+     *
+     * This is a temporary hotfix method that handles cases where external applications 
+     * (like OpenCatalogi) pass register/schema names or slugs instead of integer IDs.
+     * 
+     * PROPER SOLUTION: The OpenCatalogi controllers should be updated to resolve
+     * these values to integer IDs before calling OpenRegister APIs, rather than
+     * doing this conversion at the SOLR query level.
+     *
+     * @param string $fieldType The metadata field type ('register' or 'schema')
+     * @param string $value The value to resolve (name, slug, or ID)
+     * @return int The resolved integer ID, or the original value if resolution fails
+     */
+    private function resolveMetadataValueToId(string $fieldType, $value): int
+    {
+        if (is_numeric($value)) {
+            return (int)$value;
+        }
+
+        try {
+            switch ($fieldType) {
+                case 'register':
+                    if ($this->registerMapper !== null) {
+                        $register = $this->registerMapper->find($value);
+                        return $register->getId() ?? 0;
+                    }
+                    break;
+                    
+                case 'schema':
+                    if ($this->schemaMapper !== null) {
+                        $schema = $this->schemaMapper->find($value);
+                        return $schema->getId() ?? 0;
+                    }
+                    break;
+            }
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to resolve metadata value to ID', [
+                'fieldType' => $fieldType,
+                'value' => $value,
+                'error' => $e->getMessage()
+            ]);
+        }
+
+        // Return 0 for unresolvable values (will be filtered out in SOLR)
+        return 0;
     }
 }
