@@ -1072,6 +1072,7 @@ class Schema extends Entity implements JsonSerializable
                     'title' => $property['title'] ?? $propertyKey,
                     'description' => $property['description'] ?? null,
                     'data_type' => $property['type'] ?? 'string',
+                    'queryParameter' => $propertyKey
                 ];
 
                 // Add type-specific configuration

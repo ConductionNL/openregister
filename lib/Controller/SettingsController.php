@@ -872,7 +872,10 @@ class SettingsController extends Controller
     private function getExpectedSchemaFields(): array
     {
         try {
-            // Get SolrSchemaService to analyze schemas
+            // Start with the core ObjectEntity metadata fields from SolrSetup
+            $expectedFields = \OCA\OpenRegister\Setup\SolrSetup::getObjectEntityFieldDefinitions();
+            
+            // Get SolrSchemaService to analyze user-defined schemas
             $solrSchemaService = $this->container->get(\OCA\OpenRegister\Service\SolrSchemaService::class);
             $schemaMapper = $this->container->get(\OCA\OpenRegister\Db\SchemaMapper::class);
             
@@ -886,13 +889,18 @@ class SettingsController extends Controller
             
             $result = $method->invoke($solrSchemaService, $schemas);
             
-            return $result['fields'] ?? [];
+            // Merge user-defined schema fields with core metadata fields
+            $userSchemaFields = $result['fields'] ?? [];
+            $expectedFields = array_merge($expectedFields, $userSchemaFields);
+            
+            return $expectedFields;
             
         } catch (\Exception $e) {
             $this->logger->warning('Failed to get expected schema fields', [
                 'error' => $e->getMessage()
             ]);
-            return [];
+            // Return at least the core metadata fields even if schema analysis fails
+            return \OCA\OpenRegister\Setup\SolrSetup::getObjectEntityFieldDefinitions();
         }
     }
 
@@ -922,8 +930,8 @@ class SettingsController extends Controller
         
         // Find extra fields (in SOLR but not expected) and mismatched configurations
         foreach ($actualFields as $fieldName => $actualField) {
-            // Skip system fields and core metadata fields
-            if (str_starts_with($fieldName, '_') || str_starts_with($fieldName, 'self_')) {
+            // Skip only system fields (but allow self_* metadata fields to be checked)
+            if (str_starts_with($fieldName, '_')) {
                 continue;
             }
             

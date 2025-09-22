@@ -79,6 +79,40 @@ class OrganisationMapper extends QBMapper
 
     }//end findByUuid()
 
+    /**
+     * Find multiple organisations by UUIDs using a single optimized query
+     *
+     * This method performs a single database query to fetch multiple organisations,
+     * significantly improving performance compared to individual queries.
+     *
+     * @param array $uuids Array of organisation UUIDs to find
+     * @return array Associative array of UUID => Organisation entity
+     */
+    public function findMultipleByUuid(array $uuids): array
+    {
+        if (empty($uuids)) {
+            return [];
+        }
+
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from('openregister_organisations')
+            ->where(
+                $qb->expr()->in('uuid', $qb->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY))
+            );
+
+        $result = $qb->executeQuery();
+        $organisations = [];
+        
+        while ($row = $result->fetch()) {
+            $organisation = new Organisation();
+            $organisation = $organisation->fromRow($row);
+            $organisations[$row['uuid']] = $organisation;
+        }
+        
+        return $organisations;
+    }//end findMultipleByUuid()
+
 
     /**
      * Find all organisations for a specific user
