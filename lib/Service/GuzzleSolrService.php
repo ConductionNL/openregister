@@ -1163,14 +1163,14 @@ class GuzzleSolrService
             'self_object_id' => $object->getId(),
             'self_uuid' => $object->getUuid(),
             
-            // Context fields
-            'self_register' => (int)$object->getRegister(),
-            'self_register_id' => (int)$object->getRegister(),
+            // Context fields - resolve to integer IDs
+            'self_register' => $this->resolveRegisterToId($object->getRegister(), $register),
+            'self_register_id' => $this->resolveRegisterToId($object->getRegister(), $register),
             'self_register_uuid' => $register?->getUuid(),
             'self_register_slug' => $register?->getSlug(),
             
-            'self_schema' => (int)$object->getSchema(),
-            'self_schema_id' => (int)$object->getSchema(),
+            'self_schema' => $this->resolveSchemaToId($object->getSchema(), $schema),
+            'self_schema_id' => $this->resolveSchemaToId($object->getSchema(), $schema),
             'self_schema_uuid' => $schema->getUuid(),
             'self_schema_slug' => $schema->getSlug(),
             'self_schema_version' => $object->getSchemaVersion(),
@@ -1530,8 +1530,8 @@ class GuzzleSolrService
         $document['self_id'] = $uuid; // Always use UUID for consistency
         $document['self_object_id'] = $object->getId();
         $document['self_uuid'] = $uuid;
-        $document['self_register'] = $object->getRegister();
-        $document['self_schema'] = $object->getSchema();
+        $document['self_register'] = $this->resolveRegisterToId($object->getRegister());
+        $document['self_schema'] = $this->resolveSchemaToId($object->getSchema());
         $document['self_organisation'] = $object->getOrganisation();
         $document['self_name'] = $object->getName();
         $document['self_description'] = $object->getDescription();
@@ -7310,5 +7310,97 @@ class GuzzleSolrService
             // Fallback to individual UUIDs as labels
             return array_combine($ids, array_map(fn($uuid) => "Organisation $uuid", $ids));
         }
+    }
+
+    /**
+     * Resolve register value to integer ID
+     *
+     * Handles cases where register is stored as string ID, slug, or already an integer.
+     *
+     * @param string|int|null $registerValue The register value from ObjectEntity
+     * @param Register|null $register Optional pre-loaded register entity
+     * @return int The resolved register ID, or 0 if resolution fails
+     */
+    private function resolveRegisterToId($registerValue, ?Register $register = null): int
+    {
+        if (empty($registerValue)) {
+            return 0;
+        }
+
+        // If it's already a numeric ID, return it as integer
+        if (is_numeric($registerValue)) {
+            return (int)$registerValue;
+        }
+
+        // If we have a pre-loaded register entity, use its ID
+        if ($register !== null) {
+            return $register->getId() ?? 0;
+        }
+
+        // Try to resolve by slug/name using RegisterMapper
+        if ($this->registerMapper !== null) {
+            try {
+                $resolvedRegister = $this->registerMapper->find($registerValue);
+                return $resolvedRegister->getId() ?? 0;
+            } catch (\Exception $e) {
+                $this->logger->warning('Failed to resolve register value to ID', [
+                    'registerValue' => $registerValue,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        // Fallback: return 0 for unresolvable values
+        $this->logger->warning('Could not resolve register to integer ID', [
+            'registerValue' => $registerValue,
+            'type' => gettype($registerValue)
+        ]);
+        return 0;
+    }
+
+    /**
+     * Resolve schema value to integer ID
+     *
+     * Handles cases where schema is stored as string ID, slug, or already an integer.
+     *
+     * @param string|int|null $schemaValue The schema value from ObjectEntity
+     * @param Schema|null $schema Optional pre-loaded schema entity
+     * @return int The resolved schema ID, or 0 if resolution fails
+     */
+    private function resolveSchemaToId($schemaValue, ?Schema $schema = null): int
+    {
+        if (empty($schemaValue)) {
+            return 0;
+        }
+
+        // If it's already a numeric ID, return it as integer
+        if (is_numeric($schemaValue)) {
+            return (int)$schemaValue;
+        }
+
+        // If we have a pre-loaded schema entity, use its ID
+        if ($schema !== null) {
+            return $schema->getId() ?? 0;
+        }
+
+        // Try to resolve by slug/name using SchemaMapper
+        if ($this->schemaMapper !== null) {
+            try {
+                $resolvedSchema = $this->schemaMapper->find($schemaValue);
+                return $resolvedSchema->getId() ?? 0;
+            } catch (\Exception $e) {
+                $this->logger->warning('Failed to resolve schema value to ID', [
+                    'schemaValue' => $schemaValue,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        // Fallback: return 0 for unresolvable values
+        $this->logger->warning('Could not resolve schema to integer ID', [
+            'schemaValue' => $schemaValue,
+            'type' => gettype($schemaValue)
+        ]);
+        return 0;
     }
 }
