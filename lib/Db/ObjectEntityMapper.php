@@ -1618,6 +1618,17 @@ class ObjectEntityMapper extends QBMapper
             $orX->add($queryBuilder->expr()->in('o.uuid', $queryBuilder->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
             $queryBuilder->andWhere($orX);
         }
+        
+        // Handle filtering by uses in relations if provided
+        if ($uses !== null) {
+            $queryBuilder->andWhere(
+                $queryBuilder->expr()->isNotNull(
+                    $queryBuilder->createFunction(
+                        "JSON_SEARCH(o.relations, 'one', " . $queryBuilder->createNamedParameter($uses) . ", NULL, '$')"
+                    )
+                )
+            );
+        }
 
         // Use cleaned query as object filters
         $objectFilters = $cleanQuery;
@@ -1738,7 +1749,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return int The number of objects matching the criteria
      */
-    public function countSearchObjects(array $query = [], ?string $activeOrganisationUuid = null, bool $rbac = true, bool $multi = true): int
+    public function countSearchObjects(array $query = [], ?string $activeOrganisationUuid = null, bool $rbac = true, bool $multi = true, ?array $ids = null, ?string $uses = null): int
     {
         // Extract options from query (prefixed with _)
         $search = $this->processSearchParameter($query['_search'] ?? null);
@@ -1780,7 +1791,7 @@ class ObjectEntityMapper extends QBMapper
                 filters: $cleanQuery,
                 search: $search,
                 ids: $ids,
-                uses: null,
+                uses: $uses,
                 includeDeleted: $includeDeleted,
                 register: $register,
                 schema: $schema,
