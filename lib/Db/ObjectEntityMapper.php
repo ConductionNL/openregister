@@ -1075,7 +1075,7 @@ class ObjectEntityMapper extends QBMapper
             $qb->andWhere(
                 $qb->expr()->isNotNull(
                     $qb->createFunction(
-                        "JSON_SEARCH(relations, 'one', ".$qb->createNamedParameter($uses).", NULL, '$')"
+                        "JSON_SEARCH(o.relations, 'one', ".$qb->createNamedParameter($uses).", NULL, '$')"
                     )
                 )
             );
@@ -1821,6 +1821,17 @@ class ObjectEntityMapper extends QBMapper
             $queryBuilder->andWhere($orX);
         }
 
+        // Handle filtering by uses in relations if provided (same as searchObjects)
+        if ($uses !== null) {
+            $queryBuilder->andWhere(
+                $queryBuilder->expr()->isNotNull(
+                    $queryBuilder->createFunction(
+                        "JSON_SEARCH(o.relations, 'one', " . $queryBuilder->createNamedParameter($uses) . ", NULL, '$')"
+                    )
+                )
+            );
+        }
+
         // Use cleaned query as object filters
         $objectFilters = $cleanQuery;
 
@@ -2216,7 +2227,7 @@ class ObjectEntityMapper extends QBMapper
             $qb->andWhere(
                 $qb->expr()->isNotNull(
                     $qb->createFunction(
-                        "JSON_SEARCH(relations, 'one', ".$qb->createNamedParameter($uses).", NULL, '$')"
+                        "JSON_SEARCH(o.relations, 'one', ".$qb->createNamedParameter($uses).", NULL, '$')"
                     )
                 )
             );
