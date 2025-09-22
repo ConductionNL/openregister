@@ -127,6 +127,40 @@ class SchemaMapper extends QBMapper
 
     }//end findMultiple()
 
+    /**
+     * Find multiple schemas by IDs using a single optimized query
+     *
+     * This method performs a single database query to fetch multiple schemas,
+     * significantly improving performance compared to individual queries.
+     *
+     * @param array $ids Array of schema IDs to find
+     * @return array Associative array of ID => Schema entity
+     */
+    public function findMultipleOptimized(array $ids): array
+    {
+        if (empty($ids)) {
+            return [];
+        }
+
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from('openregister_schemas')
+            ->where(
+                $qb->expr()->in('id', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY))
+            );
+
+        $result = $qb->executeQuery();
+        $schemas = [];
+        
+        while ($row = $result->fetch()) {
+            $schema = new Schema();
+            $schema = $schema->fromRow($row);
+            $schemas[$row['id']] = $schema;
+        }
+        
+        return $schemas;
+    }//end findMultipleOptimized()
+
 
     /**
      * Finds all schemas, with optional extension for statistics
