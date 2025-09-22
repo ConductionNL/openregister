@@ -815,13 +815,17 @@ class ObjectService
             $config['extend'] = explode(',', $config['extend']);
         }
 
-        // Set the current register context if a register is provided and it's not an array.
-        if (isset($config['filters']['register']) === true  && is_array($config['filters']['register']) === false) {
+        // Set the current register context if a register is provided, it's not an array, and it's not empty.
+        if (isset($config['filters']['register']) === true  
+            && is_array($config['filters']['register']) === false 
+            && !empty($config['filters']['register'])) {
             $this->setRegister($config['filters']['register']);
         }
 
-        // Set the current schema context if a schema is provided and it's not an array.
-        if (isset($config['filters']['schema']) === true  && is_array($config['filters']['schema']) === false) {
+        // Set the current schema context if a schema is provided, it's not an array, and it's not empty.
+        if (isset($config['filters']['schema']) === true  
+            && is_array($config['filters']['schema']) === false 
+            && !empty($config['filters']['schema'])) {
             $this->setSchema($config['filters']['schema']);
         }
 
