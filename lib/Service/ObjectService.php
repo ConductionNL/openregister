@@ -815,13 +815,17 @@ class ObjectService
             $config['extend'] = explode(',', $config['extend']);
         }
 
-        // Set the current register context if a register is provided and it's not an array.
-        if (isset($config['filters']['register']) === true  && is_array($config['filters']['register']) === false) {
+        // Set the current register context if a register is provided, it's not an array, and it's not empty.
+        if (isset($config['filters']['register']) === true  
+            && is_array($config['filters']['register']) === false 
+            && !empty($config['filters']['register'])) {
             $this->setRegister($config['filters']['register']);
         }
 
-        // Set the current schema context if a schema is provided and it's not an array.
-        if (isset($config['filters']['schema']) === true  && is_array($config['filters']['schema']) === false) {
+        // Set the current schema context if a schema is provided, it's not an array, and it's not empty.
+        if (isset($config['filters']['schema']) === true  
+            && is_array($config['filters']['schema']) === false 
+            && !empty($config['filters']['schema'])) {
             $this->setSchema($config['filters']['schema']);
         }
 
@@ -1697,6 +1701,12 @@ class ObjectService
         if ($ids !== null) {
             $query['_ids'] = $ids;
         }
+        
+        // Support both 'ids' and '_ids' parameters for flexibility
+        if (isset($specialParams['ids'])) {
+            $query['_ids'] = $specialParams['ids'];
+            unset($specialParams['ids']); // Remove to avoid duplication
+        }
 
         // Add all special parameters (they'll be handled by searchObjectsPaginated)
         $query = array_merge($query, $specialParams);
@@ -1706,8 +1716,9 @@ class ObjectService
     }//end buildSearchQuery()
 
 
-    public function searchObjects(array $query=[], bool $rbac=true, bool $multi=true): array|int
+    public function searchObjects(array $query=[], bool $rbac=true, bool $multi=true, ?array $ids=null, ?string $uses=null): array|int
     {
+        
         // **CRITICAL PERFORMANCE OPTIMIZATION**: Detect simple vs complex rendering needs
         $hasExtend = !empty($query['_extend'] ?? []);
         $hasFields = !empty($query['_fields'] ?? null);
@@ -1739,7 +1750,7 @@ class ObjectService
 
             // **MAPPER CALL TIMING**: Track how long the mapper takes
             $mapperStart = microtime(true);
-            $result = $this->objectEntityMapper->searchObjects($query, $activeOrganisationUuid, $rbac, $multi);
+            $result = $this->objectEntityMapper->searchObjects($query, $activeOrganisationUuid, $rbac, $multi, $ids, $uses);
 
             $this->logger->info('✅ MAPPER CALL - Database search completed', [
                 'resultCount' => is_array($result) ? count($result) : 'non-array',
@@ -2050,13 +2061,13 @@ class ObjectService
      *
      * @return int The number of objects matching the criteria
      */
-    public function countSearchObjects(array $query=[], bool $rbac=true, bool $multi=true): int
+    public function countSearchObjects(array $query=[], bool $rbac=true, bool $multi=true, ?array $ids=null, ?string $uses=null): int
     {
         // Get active organization context for multi-tenancy (only if multi is enabled)
         $activeOrganisationUuid = $multi ? $this->getActiveOrganisationForContext() : null;
 
         // Use the new optimized countSearchObjects method from ObjectEntityMapper with organization context
-        return $this->objectEntityMapper->countSearchObjects($query, $activeOrganisationUuid, $rbac, $multi);
+        return $this->objectEntityMapper->countSearchObjects($query, $activeOrganisationUuid, $rbac, $multi, $ids, $uses);
 
     }//end countSearchObjects()
 
@@ -2341,26 +2352,66 @@ class ObjectService
      *                              - next: URL for next page (if available)
      *                              - prev: URL for previous page (if available)
      */
-    public function searchObjectsPaginated(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false): array
+    public function searchObjectsPaginated(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false, ?array $ids=null, ?string $uses=null): array
     {
+        // ids and uses are passed as proper parameters, not added to query
+        
         $requestedSource = $query['_source'] ?? null;
         
         // Simple switch: Use SOLR if explicitly requested OR if SOLR is enabled in config
+        // BUT force database when ids or uses parameters are provided (relation-based searches)
         if (
-            $requestedSource === 'index' || 
-            $requestedSource === 'solr' || 
-            ($requestedSource === null && $this->isSolrAvailable() && $requestedSource !== 'database')
-            ) {
+            (
+                ($requestedSource === 'index' || $requestedSource === 'solr') &&
+                $ids === null && $uses === null &&
+                !isset($query['_ids']) && !isset($query['_uses'])
+            ) ||
+            (
+                $requestedSource === null && 
+                $this->isSolrAvailable() && 
+                $requestedSource !== 'database' &&
+                $ids === null && $uses === null &&
+                !isset($query['_ids']) && !isset($query['_uses'])
+            )
+        ) {
             
-            // Forward to SOLR service - let it handle availability checks and error handling
-            $solrService = $this->container->get(GuzzleSolrService::class);
-            $result = $solrService->searchObjectsPaginated($query, $rbac, $multi, $published, $deleted);
-            $result['source'] = 'index';
-            return $result;
+            try {
+                // Forward to SOLR service - let it handle availability checks and error handling
+                $solrService = $this->container->get(GuzzleSolrService::class);
+                $result = $solrService->searchObjectsPaginated($query, $rbac, $multi, $published, $deleted);
+                $result['source'] = 'index';
+                return $result;
+            } catch (\Exception $e) {
+                // Check if this is a SOLR field-related error that we can recover from
+                $errorMessage = $e->getMessage();
+                $isRecoverableError = (
+                    str_contains($errorMessage, 'undefined field') ||
+                    str_contains($errorMessage, 'unknown field') ||
+                    str_contains($errorMessage, 'field does not exist') ||
+                    str_contains($errorMessage, 'no such field')
+                );
+                
+                if ($isRecoverableError && $requestedSource === null) {
+                    // Only fall back to database if SOLR wasn't explicitly requested
+                    $this->logger->warning('SOLR search failed with field error, falling back to database', [
+                        'error' => $errorMessage,
+                        'query_fingerprint' => substr(md5(json_encode($query)), 0, 8)
+                    ]);
+                    
+                    // Fall back to database search
+                    $result = $this->searchObjectsPaginatedDatabase($query, $rbac, $multi, $published, $deleted, $ids, $uses);
+                    $result['source'] = 'database';
+                    $result['_fallback_reason'] = 'SOLR field error: ' . $errorMessage;
+                    return $result;
+                } else {
+                    // Re-throw if it's not recoverable or SOLR was explicitly requested
+                    throw $e;
+                }
+            }
         }
         
         // Use database search
-        $result = $this->searchObjectsPaginatedDatabase($query, $rbac, $multi, $published, $deleted);
+        $result = $this->searchObjectsPaginatedDatabase($query, $rbac, $multi, $published, $deleted, $ids, $uses);
         $result['source'] = 'database';
         return $result;
     }
@@ -2381,7 +2432,7 @@ class ObjectService
     /**
      * Original database search logic - extracted to avoid code duplication
      */
-    private function searchObjectsPaginatedDatabase(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false): array
+    private function searchObjectsPaginatedDatabase(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false, ?array $ids=null, ?string $uses=null): array
     {
         // **VALIDATION**: Database mode now supports facetable functionality
         $facetable = $query['_facetable'] ?? false;
@@ -2477,14 +2528,14 @@ class ObjectService
 
         // **CRITICAL OPTIMIZATION**: Get search results and count in a single optimized call
         $searchStartTime = microtime(true);
-        $results = $this->searchObjects($paginatedQuery, rbac: $rbac, multi: $multi);
+        $results = $this->searchObjects($paginatedQuery, rbac: $rbac, multi: $multi, ids: $ids, uses: $uses);
         $searchTime = round((microtime(true) - $searchStartTime) * 1000, 2);
 
         // **PERFORMANCE OPTIMIZATION**: Use combined query to get count without additional database call
         $countStartTime = microtime(true);
         $countQuery = $query;
         unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page'], $countQuery['_facetable']);
-        $total = $this->countSearchObjects($countQuery);
+        $total = $this->countSearchObjects($countQuery, rbac: $rbac, multi: $multi, ids: $ids, uses: $uses);
         $countTime = round((microtime(true) - $countStartTime) * 1000, 2);
 
         // Calculate total pages
@@ -2509,8 +2560,15 @@ class ObjectService
             $paginatedResults = array_merge($paginatedResults, $relatedData);
         }
 
-        // **PERFORMANCE OPTIMIZATION**: Only add facets if explicitly requested (empty facets object for backward compatibility)
-        $paginatedResults['facets'] = ['facets' => []];
+        // **PERFORMANCE OPTIMIZATION**: Only add facets if explicitly requested
+        if (isset($query['_facets']) && !empty($query['_facets'])) {
+            $paginatedResults['facets'] = ['facets' => []];
+        }
+        
+        // **DEBUG**: Add query to results for debugging purposes
+        if (isset($query['_debug']) && $query['_debug']) {
+            $paginatedResults['query'] = $query;
+        }
 
         // **PERFORMANCE OPTIMIZATION**: Add next/prev page URLs efficiently
         $this->addPaginationUrls($paginatedResults, $page, $pages);
@@ -3107,7 +3165,7 @@ class ObjectService
                 function ($resolve, $reject) use ($paginatedQuery, $rbac, $multi) {
                     try {
                         $searchStart = microtime(true);
-                        $result = $this->searchObjects($paginatedQuery, $rbac, $multi);
+                        $result = $this->searchObjects($paginatedQuery, $rbac, $multi, null, null);
                         $searchTime = round((microtime(true) - $searchStart) * 1000, 2);
                         $this->logger->debug('Search objects completed', [
                             'searchTime' => $searchTime . 'ms',
@@ -5644,7 +5702,9 @@ class ObjectService
                 $chunkQuery,
                 $activeOrganisationUuid,
                 $rbac,
-                $multi
+                $multi,
+                null,
+                null
             );
 
             $chunkTime = round((microtime(true) - $startChunk) * 1000, 2);

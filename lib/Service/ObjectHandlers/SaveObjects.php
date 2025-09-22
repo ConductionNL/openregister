@@ -2652,8 +2652,23 @@ class SaveObjects
                         }
                     }
                 } else {
-                    // Recursively scan nested arrays
-                    $relations = array_merge($relations, $this->scanForRelations($value, $currentPath, $schema));
+                    // For non-object arrays, check each item
+                    foreach ($value as $index => $item) {
+                        if (is_array($item)) {
+                            // Recursively scan nested arrays/objects
+                            $itemRelations = $this->scanForRelations(
+                                $item,
+                                $currentPath.'.'.$index,
+                                $schema
+                            );
+                            $relations = array_merge($relations, $itemRelations);
+                        } else if (is_string($item) && !empty($item) && trim($item) !== '') {
+                            // Check if the string looks like a reference
+                            if ($this->isReference($item)) {
+                                $relations[$currentPath.'.'.$index] = $item;
+                            }
+                        }
+                    }
                 }
             } else if (is_string($value) && !empty($value) && trim($value) !== '') {
                 $shouldTreatAsRelation = false;
@@ -2673,16 +2688,9 @@ class SaveObjects
                     }
                 }
 
-                // If not determined by schema, check for patterns
+                // If not determined by schema, check for reference patterns
                 if (!$shouldTreatAsRelation) {
-                    // Check for UUID pattern
-                    if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value)) {
-                        $shouldTreatAsRelation = true;
-                    }
-                    // Check for URL pattern
-                    else if (filter_var($value, FILTER_VALIDATE_URL)) {
-                        $shouldTreatAsRelation = true;
-                    }
+                    $shouldTreatAsRelation = $this->isReference($value);
                 }
 
                 if ($shouldTreatAsRelation) {
@@ -2696,6 +2704,57 @@ class SaveObjects
     }//end scanForRelations()
 
 
+    /**
+     * Determines if a string value should be treated as a reference to another object
+     *
+     * This method checks for various reference patterns including:
+     * - Standard UUIDs (e.g., "dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4")
+     * - Prefixed IDs (e.g., "id-819c2fe5-db4e-4b6f-8071-6a63fd400e34")
+     * - URLs
+     * - Other identifier patterns
+     *
+     * @param string $value The string value to check
+     *
+     * @return bool True if the value should be treated as a reference
+     */
+    private function isReference(string $value): bool
+    {
+        $value = trim($value);
+        
+        // Empty strings are not references
+        if (empty($value)) {
+            return false;
+        }
+
+        // Check for standard UUID pattern (8-4-4-4-12 format)
+        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value)) {
+            return true;
+        }
+
+        // Check for prefixed UUID patterns (e.g., "id-uuid", "ref-uuid", etc.)
+        if (preg_match('/^[a-z]+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value)) {
+            return true;
+        }
+
+        // Check for URLs
+        if (filter_var($value, FILTER_VALIDATE_URL)) {
+            return true;
+        }
+
+        // Check for other common ID patterns, but be more selective to avoid false positives
+        // Only consider strings that look like identifiers, not regular text
+        if (preg_match('/^[a-z0-9][a-z0-9_-]{7,}$/i', $value)) {
+            // Must contain at least one hyphen or underscore (indicating it's likely an ID)
+            // AND must not contain spaces or common text words
+            if ((strpos($value, '-') !== false || strpos($value, '_') !== false) && 
+                !preg_match('/\s/', $value) && 
+                !in_array(strtolower($value), ['applicatie', 'systeemsoftware', 'open-source', 'closed-source'])) {
+                return true;
+            }
+        }
+
+        return false;
+    }//end isReference()
 
 
 }//end class

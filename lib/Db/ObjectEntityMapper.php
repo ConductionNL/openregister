@@ -1075,7 +1075,7 @@ class ObjectEntityMapper extends QBMapper
             $qb->andWhere(
                 $qb->expr()->isNotNull(
                     $qb->createFunction(
-                        "JSON_SEARCH(relations, 'one', ".$qb->createNamedParameter($uses).", NULL, '$')"
+                        "JSON_SEARCH(o.relations, 'one', ".$qb->createNamedParameter($uses).", NULL, '$')"
                     )
                 )
             );
@@ -1403,7 +1403,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return array<int, ObjectEntity>|int An array of ObjectEntity objects matching the criteria, or integer count if _count is true
      */
-    public function searchObjects(array $query = [], ?string $activeOrganisationUuid = null, bool $rbac = true, bool $multi = true): array|int {
+    public function searchObjects(array $query = [], ?string $activeOrganisationUuid = null, bool $rbac = true, bool $multi = true, ?array $ids = null, ?string $uses = null): array|int {
         // **PERFORMANCE DEBUGGING**: Start detailed timing for ObjectEntityMapper
         $mapperStartTime = microtime(true);
         $perfTimings = [];
@@ -1423,7 +1423,7 @@ class ObjectEntityMapper extends QBMapper
         $search = $this->processSearchParameter($query['_search'] ?? null);
         $includeDeleted = $query['_includeDeleted'] ?? false;
         $published = $query['_published'] ?? false;
-        $ids = $query['_ids'] ?? null;
+        // ids parameter is now passed as method parameter, not from query
         $count = $query['_count'] ?? false;
         $perfTimings['extract_options'] = round((microtime(true) - $extractStart) * 1000, 2);
 
@@ -1463,7 +1463,7 @@ class ObjectEntityMapper extends QBMapper
                     filters: $cleanQuery,
                     search: $search,
                     ids: $ids,
-                    uses: null,
+                    uses: $uses,
                     includeDeleted: $includeDeleted,
                     register: $register,
                     schema: $schema,
@@ -1478,6 +1478,7 @@ class ObjectEntityMapper extends QBMapper
                 sort: $order,
                 search: $search,
                 ids: $ids,
+                uses: $uses,
                 includeDeleted: $includeDeleted,
                 register: $register,
                 schema: $schema,
@@ -1617,6 +1618,17 @@ class ObjectEntityMapper extends QBMapper
             $orX->add($queryBuilder->expr()->in('o.uuid', $queryBuilder->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
             $queryBuilder->andWhere($orX);
         }
+        
+        // Handle filtering by uses in relations if provided
+        if ($uses !== null) {
+            $queryBuilder->andWhere(
+                $queryBuilder->expr()->isNotNull(
+                    $queryBuilder->createFunction(
+                        "JSON_SEARCH(o.relations, 'one', " . $queryBuilder->createNamedParameter($uses) . ", NULL, '$')"
+                    )
+                )
+            );
+        }
 
         // Use cleaned query as object filters
         $objectFilters = $cleanQuery;
@@ -1737,13 +1749,13 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return int The number of objects matching the criteria
      */
-    public function countSearchObjects(array $query = [], ?string $activeOrganisationUuid = null, bool $rbac = true, bool $multi = true): int
+    public function countSearchObjects(array $query = [], ?string $activeOrganisationUuid = null, bool $rbac = true, bool $multi = true, ?array $ids = null, ?string $uses = null): int
     {
         // Extract options from query (prefixed with _)
         $search = $this->processSearchParameter($query['_search'] ?? null);
         $includeDeleted = $query['_includeDeleted'] ?? false;
         $published = $query['_published'] ?? false;
-        $ids = $query['_ids'] ?? null;
+        // ids parameter is now passed as method parameter, not from query
 
         // Extract metadata from @self
         $metadataFilters = [];
@@ -1779,7 +1791,7 @@ class ObjectEntityMapper extends QBMapper
                 filters: $cleanQuery,
                 search: $search,
                 ids: $ids,
-                uses: null,
+                uses: $uses,
                 includeDeleted: $includeDeleted,
                 register: $register,
                 schema: $schema,
@@ -1807,6 +1819,17 @@ class ObjectEntityMapper extends QBMapper
             $orX->add($queryBuilder->expr()->in('o.id', $queryBuilder->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
             $orX->add($queryBuilder->expr()->in('o.uuid', $queryBuilder->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
             $queryBuilder->andWhere($orX);
+        }
+
+        // Handle filtering by uses in relations if provided (same as searchObjects)
+        if ($uses !== null) {
+            $queryBuilder->andWhere(
+                $queryBuilder->expr()->isNotNull(
+                    $queryBuilder->createFunction(
+                        "JSON_SEARCH(o.relations, 'one', " . $queryBuilder->createNamedParameter($uses) . ", NULL, '$')"
+                    )
+                )
+            );
         }
 
         // Use cleaned query as object filters
@@ -1851,7 +1874,7 @@ class ObjectEntityMapper extends QBMapper
         $search = $this->processSearchParameter($query['_search'] ?? null);
         $includeDeleted = $query['_includeDeleted'] ?? false;
         $published = $query['_published'] ?? false;
-        $ids = $query['_ids'] ?? null;
+        // ids parameter is now passed as method parameter, not from query
 
         // Extract metadata from @self
         $metadataFilters = [];
@@ -2204,7 +2227,7 @@ class ObjectEntityMapper extends QBMapper
             $qb->andWhere(
                 $qb->expr()->isNotNull(
                     $qb->createFunction(
-                        "JSON_SEARCH(relations, 'one', ".$qb->createNamedParameter($uses).", NULL, '$')"
+                        "JSON_SEARCH(o.relations, 'one', ".$qb->createNamedParameter($uses).", NULL, '$')"
                     )
                 )
             );
