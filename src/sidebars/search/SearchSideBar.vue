@@ -88,26 +88,26 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 			</div>
 		</div>
 
-		<!-- Faceted Search Section -->
+		<!-- Unified Faceting Section -->
 		<div class="section">
 			<h3 class="sectionTitle">
 				{{ t('openregister', 'Advanced Filters') }}
 			</h3>
 			
-			<!-- Enable Facets Button -->
-			<div v-if="!facetableFields && canSearch && !isDatabaseSource" class="facets-enable-container">
+			<!-- Stage 1: Facet Discovery -->
+			<div v-if="!facetableFields && canSearch && !isDatabaseSource" class="facets-discovery-container">
 				<NcButton
 					type="secondary"
 					:disabled="facetsLoading"
-					@click="enableFacets">
+					@click="discoverFacets">
 					<template #icon>
 						<NcLoadingIcon v-if="facetsLoading" :size="20" />
 						<FilterIcon v-else :size="20" />
 					</template>
-					{{ t('openregister', 'Enable Advanced Filters') }}
+					{{ t('openregister', 'Load Advanced Filters') }}
 				</NcButton>
-				<p class="facets-enable-description">
-					{{ t('openregister', 'Discover available filter options for this schema') }}
+				<p class="facets-description">
+					{{ t('openregister', 'Load advanced filters with live data from your search index') }}
 				</p>
 			</div>
 
@@ -118,25 +118,76 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 				</p>
 			</div>
 
-			<div v-if="facetsLoading" class="loading-container">
+			<!-- Loading -->
+			<div v-if="facetsLoading && !facetableFields" class="loading-container">
 				<NcLoadingIcon :size="20" />
-				<span>{{ t('openregister', 'Loading filters...') }}</span>
+				<span>{{ t('openregister', 'Loading advanced filters...') }}</span>
 			</div>
-			<div v-else-if="facetData && Object.keys(facetData).length > 0 && !isDatabaseSource" class="facets-container">
-				<!-- Show message if no facet data available -->
-				<div v-if="!facetData || Object.keys(facetData).length === 0" class="no-facets-message">
-					<p>{{ t('openregister', 'No facet filters available for this schema.') }}</p>
+
+			<!-- Available Facets (Stage 1 Complete) -->
+			<div v-else-if="facetableFields && !isDatabaseSource" class="available-facets-container">
+				<h4 class="available-facets-title">{{ t('openregister', 'Available Filters') }}</h4>
+				
+				<!-- Metadata Facets -->
+				<div v-if="facetableFields['@self']" class="facet-category">
+					<h5 class="facet-category-title">{{ t('openregister', 'Metadata Filters') }}</h5>
+					<div class="facet-checkboxes">
+						<div v-for="(field, fieldName) in facetableFields['@self']" :key="`@self.${fieldName}`" class="facet-checkbox">
+							<input
+								:id="`facet-@self-${fieldName}`"
+								v-model="enabledFacets[`@self.${fieldName}`]"
+								type="checkbox"
+								@change="toggleFacet(`@self.${fieldName}`, field)">
+							<label :for="`facet-@self-${fieldName}`" class="facet-checkbox-label">
+								{{ field.description || fieldName }}
+								<span class="facet-types">({{ field.facet_types.join(', ') }})</span>
+							</label>
+						</div>
+					</div>
 				</div>
+
+				<!-- Object Field Facets -->
+				<div v-if="facetableFields.object_fields" class="facet-category">
+					<h5 class="facet-category-title">{{ t('openregister', 'Content Filters') }}</h5>
+					<div class="facet-checkboxes">
+						<div v-for="(field, fieldName) in facetableFields.object_fields" :key="fieldName" class="facet-checkbox">
+							<input
+								:id="`facet-${fieldName}`"
+								v-model="enabledFacets[fieldName]"
+								type="checkbox"
+								@change="toggleFacet(fieldName, field)">
+							<label :for="`facet-${fieldName}`" class="facet-checkbox-label">
+								{{ field.title || field.description || fieldName }}
+								<span class="facet-types">({{ field.facet_types.join(', ') }})</span>
+							</label>
+						</div>
+					</div>
+				</div>
+
+				<!-- Info about loaded facets -->
+				<div v-if="facetData && Object.keys(facetData).length > 0" class="facets-loaded-info">
+					<p class="facets-loaded-description">
+						{{ t('openregister', 'Filter data loaded automatically. Use the filters below to refine your search.') }}
+					</p>
+				</div>
+			</div>
+
+			<!-- Stage 2 Loading -->
+			<div v-if="facetDataLoading" class="loading-container">
+				<NcLoadingIcon :size="20" />
+				<span>{{ t('openregister', 'Loading filter data...') }}</span>
+			</div>
+
+			<!-- Stage 2: Facet Data (Active Filters) -->
+			<div v-else-if="facetData && Object.keys(facetData).length > 0 && !isDatabaseSource" class="active-facets-container">
+				<h4 class="active-facets-title">{{ t('openregister', 'Active Filters') }}</h4>
 
 				<!-- Metadata facets (@self) -->
 				<div v-for="(facet, field) in facetData?.['@self'] || {}" :key="`@self.${field}`" class="facet-group">
 					<label class="facet-label">{{ getFacetLabel(field, facet, true) }}</label>
 					<NcSelect
 						:model-value="facetFilters[`@self.${field}`] || []"
-						:options="(facet?.buckets || []).map(bucket => ({
-							value: bucket.key,
-							label: (bucket.label || bucket.key) + ' (' + (bucket.results || bucket.doc_count || 0) + ')'
-						}))"
+						:options="getFacetOptions(facet)"
 						:multiple="true"
 						:placeholder="t('openregister', 'Select options...')"
 						:input-label="getFacetLabel(field, facet, true)"
@@ -144,18 +195,24 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 				</div>
 
 				<!-- Object field facets -->
-				<div v-for="(facet, field) in Object.fromEntries(Object.entries(facetData || {}).filter(([key]) => key !== '@self'))" :key="field" class="facet-group">
+				<div v-for="(facet, field) in facetData?.object_fields || {}" :key="field" class="facet-group">
 					<label class="facet-label">{{ getFacetLabel(field, facet, false) }}</label>
 					<NcSelect
 						:model-value="facetFilters[field] || []"
-						:options="(facet?.buckets || []).map(bucket => ({
-							value: bucket.key,
-							label: (bucket.label || bucket.key) + ' (' + (bucket.results || bucket.doc_count || 0) + ')'
-						}))"
+						:options="getFacetOptions(facet)"
 						:multiple="true"
 						:placeholder="t('openregister', 'Select options...')"
 						:input-label="getFacetLabel(field, facet, false)"
 						@update:model-value="(value) => updateFacetFilter(field, value)" />
+				</div>
+
+				<!-- Reset Facets Button -->
+				<div class="facets-reset-container">
+					<NcButton
+						type="secondary"
+						@click="resetFacets">
+						{{ t('openregister', 'Reset Filters') }}
+					</NcButton>
 				</div>
 			</div>
 		</div>
@@ -196,10 +253,13 @@ export default {
 			searchTerms: [],
 			searchLoading: false,
 			lastSearchStats: null,
-			facetableFields: null,
-			facetData: null,
-			facetFilters: {},
-			facetsLoading: false,
+			// Unified Faceting System
+			facetableFields: null, // Stage 1: Available facetable fields
+			facetData: null, // Stage 2: Actual facet data with counts
+			facetFilters: {}, // Applied facet filters
+			enabledFacets: {}, // Which facets user has enabled
+			facetsLoading: false, // Stage 1 loading
+			facetDataLoading: false, // Stage 2 loading
 			selectedSource: 'auto', // 'auto', 'database', 'index'
 		}
 	},
@@ -293,6 +353,9 @@ export default {
 		isDatabaseSource() {
 			return this.selectedSource === 'database'
 		},
+		hasEnabledFacets() {
+			return Object.values(this.enabledFacets).some(enabled => enabled)
+		},
 	},
 	watch: {
 		// Watch for schema changes to initialize properties
@@ -364,9 +427,9 @@ export default {
 					offset: 0,
 				})
 
-				// Clear facet data
-				this.facetData = null
-				this.facetFilters = {}
+				// Clear all facet data
+				this.resetFacets()
+				this.facetableFields = null
 
 			} finally {
 				// Clear loading state after register change is complete
@@ -398,9 +461,9 @@ export default {
 						offset: 0,
 					})
 
-					// Clear facet data
-					this.facetData = null
-					this.facetFilters = {}
+					// Clear all facet data
+					this.resetFacets()
+					this.facetableFields = null
 				}
 			} finally {
 				// Clear loading state after schema change is complete
@@ -487,61 +550,106 @@ export default {
 			}
 		},
 
-		async enableFacets() {
-			// Enable facets by loading facetable fields and then enabling default facets
+		// Complete Faceting: Load everything using _facets=extend
+		async discoverFacets() {
 			if (!registerStore.registerItem || !schemaStore.schemaItem) return
 
 			try {
 				this.facetsLoading = true
+				this.facetableFields = null
+				this.facetData = null
 
-				// First: Load facetable fields to discover what facets are available
-				await this.loadFacetableFields()
+				// Use _facets=extend to get complete faceting data in one call
+				const response = await objectStore.refreshObjectList({
+					register: registerStore.registerItem.id,
+					schema: schemaStore.schemaItem.id,
+					_facets: 'extend',
+					_limit: 0 // We only want facet data, not objects
+				})
 
-				// Second: Enable some default facets to show the user what's available
-				if (this.facetableFields) {
-					// Enable default @self facets
-					const defaultFacets = {
-						'@self.register': [],
-						'@self.schema': [],
-						'@self.created': [],
-					}
+				// Extract facetable fields (for UI structure)
+				this.facetableFields = objectStore.facets?.facetable || {}
+				
+				// Extract extended facet data (with counts and options)
+				this.facetData = objectStore.facets?.extended || {}
+				
+				// Auto-enable all facets since we already have the data
+				this.enabledFacets = {}
+				Object.keys(this.facetableFields['@self'] || {}).forEach(field => {
+					this.enabledFacets[`@self.${field}`] = true
+				})
+				Object.keys(this.facetableFields.object_fields || {}).forEach(field => {
+					this.enabledFacets[field] = true
+				})
 
-					// Only enable facets that are actually available
-					Object.keys(defaultFacets).forEach(facetKey => {
-						const field = facetKey.replace('@self.', '')
-						if (this.facetableFields?.['@self']?.[field]) {
-							this.facetFilters[facetKey] = []
-						}
-					})
-
-					// Refresh search to get facet data
-					await this.performSearchWithFacets()
-				}
+				this.logger?.debug('Loaded complete faceting data', {
+					metadataFields: Object.keys(this.facetableFields['@self'] || {}).length,
+					objectFields: Object.keys(this.facetableFields.object_fields || {}).length,
+					facetDataLoaded: Object.keys(this.facetData).length > 0
+				})
 
 			} catch (error) {
-				console.error('Error enabling facets:', error)
+				console.error('Error loading complete faceting data:', error)
+				this.facetableFields = null
+				this.facetData = null
 			} finally {
 				this.facetsLoading = false
 			}
 		},
 
-		async loadFacetableFields() {
-			// Load facetable fields to discover what facets are available
-			if (!registerStore.registerItem || !schemaStore.schemaItem) return
-
-			try {
-				// Use objectStore.getFacetableFields to discover available facetable fields
-				const facetableFields = await objectStore.getFacetableFields({
-					register: registerStore.registerItem.id,
-					schema: schemaStore.schemaItem.id,
-				})
-
-				this.facetableFields = facetableFields || {}
-
-			} catch (error) {
-				// Error loading facetable fields - set to null to handle gracefully
-				this.facetableFields = null
+		// Toggle individual facet on/off
+		toggleFacet(fieldName, fieldInfo) {
+			// When toggling facet, clear any existing data for that field
+			if (this.enabledFacets[fieldName]) {
+				// Facet was enabled, now being disabled
+				delete this.facetFilters[fieldName]
 			}
+			
+			// The v-model will handle the enabledFacets update
+		},
+
+
+		// Build facet configuration from enabled facets
+		buildFacetConfiguration() {
+			const config = {}
+
+			// Process enabled facets
+			Object.entries(this.enabledFacets).forEach(([fieldName, enabled]) => {
+				if (!enabled) return
+
+				if (fieldName.startsWith('@self.')) {
+					// Metadata facet
+					const field = fieldName.replace('@self.', '')
+					if (!config['@self']) config['@self'] = {}
+					
+					const fieldInfo = this.facetableFields?.['@self']?.[field]
+					const facetType = fieldInfo?.facet_types?.[0] || 'terms'
+					
+					config['@self'][field] = { type: facetType }
+					if (facetType === 'date_histogram') {
+						config['@self'][field].interval = 'month'
+					}
+				} else {
+					// Object field facet
+					const fieldInfo = this.facetableFields?.object_fields?.[fieldName]
+					const facetType = fieldInfo?.facet_types?.[0] || 'terms'
+					
+					config[fieldName] = { type: facetType }
+					if (facetType === 'date_histogram') {
+						config[fieldName].interval = 'month'
+					}
+				}
+			})
+
+			return { _facets: config }
+		},
+
+		// Reset all facets
+		resetFacets() {
+			this.enabledFacets = {}
+			this.facetFilters = {}
+			this.facetData = null
+			this.facetDataLoading = false
 		},
 
 		async performSearchWithFacets() {
@@ -588,6 +696,65 @@ export default {
 				const fieldInfo = this.facetableFields?.object_fields?.[field]
 				return fieldInfo?.title || fieldInfo?.description || this.capitalizeFieldName(field)
 			}
+		},
+
+		getFacetOptions(facet) {
+			// Handle different facet data structures from _facets=extend
+			if (!facet || !facet.data) return []
+
+			const facetData = facet.data
+			
+			if (facetData.type === 'terms') {
+				// Terms facet: simple buckets with value and count
+				return (facetData.buckets || []).map(bucket => ({
+					value: bucket.value,
+					label: `${bucket.label || bucket.value} (${bucket.count || 0})`
+				}))
+			} else if (facetData.type === 'range') {
+				// Range facet: numeric ranges
+				return (facetData.buckets || []).map(bucket => ({
+					value: `${bucket.from}-${bucket.to}`,
+					label: `${bucket.label || `${bucket.from} - ${bucket.to}`} (${bucket.count || 0})`
+				}))
+			} else if (facetData.type === 'date_histogram') {
+				// Date histogram facet: multiple time brackets
+				const options = []
+				
+				// Add yearly options
+				if (facetData.brackets?.yearly?.buckets) {
+					facetData.brackets.yearly.buckets.forEach(bucket => {
+						options.push({
+							value: `year:${bucket.date}`,
+							label: `${bucket.label} (${bucket.count || 0})`
+						})
+					})
+				}
+				
+				// Add monthly options
+				if (facetData.brackets?.monthly?.buckets) {
+					facetData.brackets.monthly.buckets.forEach(bucket => {
+						options.push({
+							value: `month:${bucket.date}`,
+							label: `${bucket.label} (${bucket.count || 0})`
+						})
+					})
+				}
+				
+				// Add daily options (limit to recent entries to avoid clutter)
+				if (facetData.brackets?.daily?.buckets) {
+					facetData.brackets.daily.buckets.slice(0, 30).forEach(bucket => {
+						options.push({
+							value: `day:${bucket.date}`,
+							label: `${bucket.label} (${bucket.count || 0})`
+						})
+					})
+				}
+				
+				return options
+			}
+			
+			// Fallback for unknown facet types
+			return []
 		},
 
 		capitalizeFieldName(fieldName) {
@@ -823,5 +990,90 @@ export default {
 	color: var(--color-warning-dark);
 	margin: 0;
 	line-height: 1.4;
+}
+
+/* Unified Faceting System Styles */
+.facets-discovery-container,
+.facets-load-container,
+.facets-reset-container {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	align-items: center;
+	text-align: center;
+	padding: 12px;
+}
+
+.facets-description,
+.facets-load-description {
+	font-size: 12px;
+	color: var(--color-text-maxcontrast);
+	margin: 0;
+	line-height: 1.4;
+}
+
+.available-facets-container,
+.active-facets-container {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.available-facets-title,
+.active-facets-title {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--color-main-text);
+	margin: 0 0 8px 0;
+}
+
+.facet-category {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.facet-category-title {
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--color-text-maxcontrast);
+	margin: 0;
+}
+
+.facet-checkboxes {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.facet-checkbox {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+}
+
+.facet-checkbox input[type="checkbox"] {
+	margin-top: 2px;
+	flex-shrink: 0;
+}
+
+.facet-checkbox-label {
+	font-size: 12px;
+	color: var(--color-main-text);
+	line-height: 1.4;
+	cursor: pointer;
+	flex: 1;
+}
+
+.facet-types {
+	font-size: 11px;
+	color: var(--color-text-maxcontrast);
+	font-style: italic;
+}
+
+.facets-reset-container {
+	border-top: 1px solid var(--color-border);
+	padding-top: 12px;
+	margin-top: 8px;
 }
 </style>
