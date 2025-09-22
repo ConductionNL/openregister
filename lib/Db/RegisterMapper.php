@@ -145,6 +145,40 @@ class RegisterMapper extends QBMapper
 
     }//end findMultiple()
 
+    /**
+     * Find multiple registers by IDs using a single optimized query
+     *
+     * This method performs a single database query to fetch multiple registers,
+     * significantly improving performance compared to individual queries.
+     *
+     * @param array $ids Array of register IDs to find
+     * @return array Associative array of ID => Register entity
+     */
+    public function findMultipleOptimized(array $ids): array
+    {
+        if (empty($ids)) {
+            return [];
+        }
+
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from('openregister_registers')
+            ->where(
+                $qb->expr()->in('id', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY))
+            );
+
+        $result = $qb->executeQuery();
+        $registers = [];
+        
+        while ($row = $result->fetch()) {
+            $register = new Register();
+            $register = $register->fromRow($row);
+            $registers[$row['id']] = $register;
+        }
+        
+        return $registers;
+    }//end findMultipleOptimized()
+
 
     /**
      * Find all registers, with optional extension for statistics

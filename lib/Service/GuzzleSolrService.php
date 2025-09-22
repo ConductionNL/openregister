@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Service\SolrSchemaService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -114,6 +115,7 @@ class GuzzleSolrService
         private readonly ?SchemaMapper $schemaMapper = null,
         private readonly ?RegisterMapper $registerMapper = null,
         private readonly ?OrganisationService $organisationService = null,
+        private readonly ?OrganisationMapper $organisationMapper = null,
     ) {
         $this->tenantId = $this->generateTenantId();
         $this->initializeConfig();
@@ -3090,24 +3092,22 @@ class GuzzleSolrService
         if (isset($originalQuery['_facetable']) && ($originalQuery['_facetable'] === true || $originalQuery['_facetable'] === 'true')) {
             try {
                 $facetableFields = $this->discoverFacetableFieldsFromSolr();
-                // Rename object_fields to fields for frontend consumption
-                $response['facets']['facetable'] = [
-                    '@self' => $facetableFields['@self'] ?? [],
-                    'fields' => $facetableFields['object_fields'] ?? []
-                ];
+                // Combine all facetable fields into a single flat structure
+                $combinedFacetableFields = array_merge(
+                    $facetableFields['@self'] ?? [],
+                    $facetableFields['object_fields'] ?? []
+                );
+                $response['facetable'] = $combinedFacetableFields;
                 
                 $this->logger->debug('Added facetable fields to response', [
-                    'facetableFieldCount' => count($facetableFields['@self'] ?? []) + count($facetableFields['object_fields'] ?? [])
+                    'facetableFieldCount' => count($combinedFacetableFields)
                 ]);
             } catch (\Exception $e) {
                 $this->logger->error('Failed to discover facetable fields from SOLR', [
                     'error' => $e->getMessage()
                 ]);
                 // Don't fail the whole request, just return empty facetable fields
-                $response['facets']['facetable'] = [
-                    '@self' => [],
-                    'fields' => []
-                ];
+                $response['facetable'] = [];
             }
         }
 
@@ -3135,21 +3135,20 @@ class GuzzleSolrService
                     'object_fields' => $allFacetableFields['object_fields'] ?? []
                 ];
                 
-                // Rename object_fields to fields for frontend consumption
-                $response['facets']['facetable'] = [
-                    '@self' => $facetableFields['@self'],
-                    'fields' => $facetableFields['object_fields']
-                ];
+                // Combine all facetable fields (metadata + object) into a single flat structure
+                $combinedFacetableFields = array_merge(
+                    $facetableFields['@self'] ?? [],
+                    $facetableFields['object_fields'] ?? []
+                );
+                $response['facetable'] = $combinedFacetableFields;
                 
-                // Put extended facet data in facets.facets property
+                // Combine all extended facet data (metadata + object) into a single flat structure
                 $extendedData = $contextualFacetData['extended'] ?? [];
-                $response['facets']['facets'] = [];
-                if (isset($extendedData['@self'])) {
-                    $response['facets']['facets']['@self'] = $extendedData['@self'];
-                }
-                if (isset($extendedData['object_fields'])) {
-                    $response['facets']['facets']['fields'] = $extendedData['object_fields'];
-                }
+                $combinedFacetData = array_merge(
+                    $extendedData['@self'] ?? [],
+                    $extendedData['object_fields'] ?? []
+                );
+                $response['facets'] = $combinedFacetData;
                 
                 $this->logger->debug('Added contextual faceting data to response', [
                     'facetableFieldCount' => count($contextualFacetData['facetable']['@self'] ?? []) + count($contextualFacetData['facetable']['object_fields'] ?? []),
@@ -6575,21 +6574,45 @@ class GuzzleSolrService
             ];
         }
         
-        // Add object fields that are commonly facetable
-        $commonObjectFields = [
-            'slug', 'naam', 'type', 'status', 'category', 'tag', 'label',
-            'cloudDienstverleningsmodel', 'hostingJurisdictie', 'hostingLocatie',
-            'beschrijvingKort', 'website', 'logo'
-        ];
-        
-        foreach ($commonObjectFields as $fieldName) {
-            $facetQuery['object_' . $fieldName] = [
-                'type' => 'terms',
-                'field' => $fieldName,
-                'limit' => 50,
-                'mincount' => 1, // Only include if there are actual values
-                'missing' => false // Don't include missing values
+        // For _facets=extend, discover and facet ALL available fields from SOLR schema
+        try {
+            $allFacetableFields = $this->discoverFacetableFieldsFromSolr();
+            
+            if (isset($allFacetableFields['object_fields'])) {
+                foreach ($allFacetableFields['object_fields'] as $fieldName => $fieldConfig) {
+                    // Only add fields that can be faceted (have docValues)
+                    if (isset($fieldConfig['index_field'])) {
+                        $facetQuery['object_' . $fieldName] = [
+                            'type' => 'terms',
+                            'field' => $fieldConfig['index_field'],
+                            'limit' => 50,
+                            'mincount' => 1, // Only include if there are actual values
+                            'missing' => false // Don't include missing values
+                        ];
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            // Fallback to commonly facetable fields if schema discovery fails
+            $this->logger->warning('Failed to discover all facetable fields, using fallback list', [
+                'error' => $e->getMessage()
+            ]);
+            
+            $commonObjectFields = [
+                'slug', 'naam', 'type', 'status', 'category', 'tag', 'label',
+                'cloudDienstverleningsmodel', 'hostingJurisdictie', 'hostingLocatie',
+                'beschrijvingKort', 'website', 'logo'
             ];
+            
+            foreach ($commonObjectFields as $fieldName) {
+                $facetQuery['object_' . $fieldName] = [
+                    'type' => 'terms',
+                    'field' => $fieldName,
+                    'limit' => 50,
+                    'mincount' => 1, // Only include if there are actual values
+                    'missing' => false // Don't include missing values
+                ];
+            }
         }
         
         return $facetQuery;
@@ -6608,25 +6631,26 @@ class GuzzleSolrService
             'extended' => ['@self' => [], 'object_fields' => []]
         ];
         
-        // Process metadata fields
+        // Process metadata fields with underscore prefix to avoid collisions
         $metadataFieldMap = [
-            'register' => ['name' => 'register', 'type' => 'terms', 'index_field' => 'self_register', 'index_type' => 'pint', 'queryParameter' => '@self[register]', 'source' => 'metadata'],
-            'schema' => ['name' => 'schema', 'type' => 'terms', 'index_field' => 'self_schema', 'index_type' => 'pint', 'queryParameter' => '@self[schema]', 'source' => 'metadata'],
-            'organisation' => ['name' => 'organisation', 'type' => 'terms', 'index_field' => 'self_organisation', 'index_type' => 'string', 'queryParameter' => '@self[organisation]', 'source' => 'metadata'],
-            'application' => ['name' => 'application', 'type' => 'terms', 'index_field' => 'self_application', 'index_type' => 'string', 'queryParameter' => '@self[application]', 'source' => 'metadata'],
-            'created' => ['name' => 'created', 'type' => 'date_histogram', 'index_field' => 'self_created', 'index_type' => 'pdate', 'queryParameter' => '@self[created]', 'source' => 'metadata'],
-            'updated' => ['name' => 'updated', 'type' => 'date_histogram', 'index_field' => 'self_updated', 'index_type' => 'pdate', 'queryParameter' => '@self[updated]', 'source' => 'metadata']
+            'register' => ['name' => '_register', 'type' => 'terms', 'index_field' => 'self_register', 'index_type' => 'pint', 'queryParameter' => '@self[register]', 'source' => 'metadata'],
+            'schema' => ['name' => '_schema', 'type' => 'terms', 'index_field' => 'self_schema', 'index_type' => 'pint', 'queryParameter' => '@self[schema]', 'source' => 'metadata'],
+            'organisation' => ['name' => '_organisation', 'type' => 'terms', 'index_field' => 'self_organisation', 'index_type' => 'string', 'queryParameter' => '@self[organisation]', 'source' => 'metadata'],
+            'application' => ['name' => '_application', 'type' => 'terms', 'index_field' => 'self_application', 'index_type' => 'string', 'queryParameter' => '@self[application]', 'source' => 'metadata'],
+            'created' => ['name' => '_created', 'type' => 'date_histogram', 'index_field' => 'self_created', 'index_type' => 'pdate', 'queryParameter' => '@self[created]', 'source' => 'metadata'],
+            'updated' => ['name' => '_updated', 'type' => 'date_histogram', 'index_field' => 'self_updated', 'index_type' => 'pdate', 'queryParameter' => '@self[updated]', 'source' => 'metadata']
         ];
         
-        foreach ($metadataFieldMap as $fieldName => $fieldInfo) {
-            if (isset($facetData[$fieldName]) && !empty($facetData[$fieldName]['buckets'])) {
-                // Add to facetable fields
-                $contextualData['facetable']['@self'][$fieldName] = $fieldInfo;
+        foreach ($metadataFieldMap as $solrFieldName => $fieldInfo) {
+            if (isset($facetData[$solrFieldName]) && !empty($facetData[$solrFieldName]['buckets'])) {
+                // Add to facetable fields with underscore-prefixed name
+                $contextualData['facetable']['@self'][$fieldInfo['name']] = $fieldInfo;
                 
-                // Add to extended data with actual values
-                $contextualData['extended']['@self'][$fieldName] = array_merge(
+                // Add to extended data with actual values and resolved labels for metadata fields
+                $formattedData = $this->formatMetadataFacetData($facetData[$solrFieldName], $solrFieldName, $fieldInfo['type']);
+                $contextualData['extended']['@self'][$fieldInfo['name']] = array_merge(
                     $fieldInfo,
-                    ['data' => $this->formatFacetData($facetData[$fieldName], $fieldInfo['type'])]
+                    ['data' => $formattedData]
                 );
             }
         }
@@ -6941,6 +6965,71 @@ class GuzzleSolrService
     }
 
     /**
+     * Format metadata facet data with resolved labels for registers, schemas, and organisations
+     *
+     * @param array $rawData Raw facet data from SOLR
+     * @param string $fieldName The metadata field name (register, schema, organisation)
+     * @param string $facetType The facet type
+     * @return array Formatted facet data with resolved labels
+     */
+    private function formatMetadataFacetData(array $rawData, string $fieldName, string $facetType): array
+    {
+        if ($facetType !== 'terms') {
+            // For non-terms facets (like date_histogram), use regular formatting
+            return $this->formatFacetData($rawData, $facetType);
+        }
+        
+        $buckets = $rawData['buckets'] ?? [];
+        $formattedBuckets = [];
+        
+        // Extract IDs for bulk lookup
+        $ids = array_map(function($bucket) { return $bucket['val']; }, $buckets);
+        
+        // Resolve labels based on field type
+        $labels = [];
+        try {
+            switch ($fieldName) {
+                case 'register':
+                    $labels = $this->resolveRegisterLabels($ids);
+                    break;
+                case 'schema':
+                    $labels = $this->resolveSchemaLabels($ids);
+                    break;
+                case 'organisation':
+                    $labels = $this->resolveOrganisationLabels($ids);
+                    break;
+                default:
+                    // For other metadata fields, just use the value as label
+                    $labels = array_combine($ids, $ids);
+                    break;
+            }
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to resolve labels for metadata field', [
+                'field' => $fieldName,
+                'error' => $e->getMessage()
+            ]);
+            // Fallback to using values as labels
+            $labels = array_combine($ids, $ids);
+        }
+        
+        // Format buckets with resolved labels
+        foreach ($buckets as $bucket) {
+            $id = $bucket['val'];
+            $formattedBuckets[] = [
+                'value' => $id,
+                'count' => $bucket['count'],
+                'label' => $labels[$id] ?? $id // Use resolved label or fallback to ID
+            ];
+        }
+        
+        return [
+            'type' => 'terms',
+            'total_count' => $rawData['numBuckets'] ?? count($buckets),
+            'buckets' => $formattedBuckets
+        ];
+    }
+
+    /**
      * Format terms facet data
      *
      * @param array $rawData Raw terms facet data
@@ -7053,7 +7142,7 @@ class GuzzleSolrService
     {
         return [
             '@self' => [
-                'register' => [
+                '_register' => [
                     'type' => 'terms',
                     'title' => 'Register',
                     'description' => 'Register that contains the object',
@@ -7061,7 +7150,7 @@ class GuzzleSolrService
                     'queryParameter' => '@self[register]',
                     'source' => 'metadata'
                 ],
-                'schema' => [
+                '_schema' => [
                     'type' => 'terms',
                     'title' => 'Schema',
                     'description' => 'Schema that defines the object structure',
@@ -7069,7 +7158,7 @@ class GuzzleSolrService
                     'queryParameter' => '@self[schema]',
                     'source' => 'metadata'
                 ],
-                'organisation' => [
+                '_organisation' => [
                     'type' => 'terms',
                     'title' => 'Organisation',
                     'description' => 'Organisation that owns the object',
@@ -7077,7 +7166,7 @@ class GuzzleSolrService
                     'queryParameter' => '@self[organisation]',
                     'source' => 'metadata'
                 ],
-                'application' => [
+                '_application' => [
                     'type' => 'terms',
                     'title' => 'Application',
                     'description' => 'Application that created the object',
@@ -7085,7 +7174,7 @@ class GuzzleSolrService
                     'queryParameter' => '@self[application]',
                     'source' => 'metadata'
                 ],
-                'created' => [
+                '_created' => [
                     'type' => 'date_histogram',
                     'title' => 'Created Date',
                     'description' => 'When the object was created',
@@ -7095,7 +7184,7 @@ class GuzzleSolrService
                     'queryParameter' => '@self[created]',
                     'source' => 'metadata'
                 ],
-                'updated' => [
+                '_updated' => [
                     'type' => 'date_histogram',
                     'title' => 'Updated Date',
                     'description' => 'When the object was last modified',
@@ -7107,5 +7196,119 @@ class GuzzleSolrService
                 ]
             ]
         ];
+    }
+
+    /**
+     * Resolve register labels by IDs using batch loading for improved performance
+     *
+     * @param array $ids Array of register IDs
+     * @return array Associative array of ID => label
+     */
+    private function resolveRegisterLabels(array $ids): array
+    {
+        if (empty($ids) || $this->registerMapper === null) {
+            return array_combine($ids, $ids);
+        }
+
+        try {
+            // Use optimized batch loading
+            $registers = $this->registerMapper->findMultipleOptimized($ids);
+            
+            $labels = [];
+            foreach ($ids as $id) {
+                if (isset($registers[$id])) {
+                    $register = $registers[$id];
+                    $labels[$id] = $register->getName() ?? "Register $id";
+                } else {
+                    $labels[$id] = "Register $id";
+                }
+            }
+            
+            return $labels;
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to batch load register labels', [
+                'ids' => $ids,
+                'error' => $e->getMessage()
+            ]);
+            
+            // Fallback to individual IDs as labels
+            return array_combine($ids, array_map(fn($id) => "Register $id", $ids));
+        }
+    }
+
+    /**
+     * Resolve schema labels by IDs using batch loading for improved performance
+     *
+     * @param array $ids Array of schema IDs
+     * @return array Associative array of ID => label
+     */
+    private function resolveSchemaLabels(array $ids): array
+    {
+        if (empty($ids) || $this->schemaMapper === null) {
+            return array_combine($ids, $ids);
+        }
+
+        try {
+            // Use optimized batch loading
+            $schemas = $this->schemaMapper->findMultipleOptimized($ids);
+            
+            $labels = [];
+            foreach ($ids as $id) {
+                if (isset($schemas[$id])) {
+                    $schema = $schemas[$id];
+                    $labels[$id] = $schema->getTitle() ?? $schema->getName() ?? "Schema $id";
+                } else {
+                    $labels[$id] = "Schema $id";
+                }
+            }
+            
+            return $labels;
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to batch load schema labels', [
+                'ids' => $ids,
+                'error' => $e->getMessage()
+            ]);
+            
+            // Fallback to individual IDs as labels
+            return array_combine($ids, array_map(fn($id) => "Schema $id", $ids));
+        }
+    }
+
+    /**
+     * Resolve organisation labels by UUIDs using batch loading for improved performance
+     *
+     * @param array $ids Array of organisation UUIDs
+     * @return array Associative array of UUID => label
+     */
+    private function resolveOrganisationLabels(array $ids): array
+    {
+        if (empty($ids) || $this->organisationMapper === null) {
+            return array_combine($ids, $ids);
+        }
+
+        try {
+            // Use optimized batch loading
+            $organisations = $this->organisationMapper->findMultipleByUuid($ids);
+            
+            $labels = [];
+            foreach ($ids as $uuid) {
+                if (isset($organisations[$uuid])) {
+                    $organisation = $organisations[$uuid];
+                    $labels[$uuid] = $organisation->getName() ?? "Organisation $uuid";
+                } else {
+                    $labels[$uuid] = "Organisation $uuid";
+                }
+            }
+            
+            return $labels;
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to batch load organisation labels', [
+                'ids' => $ids,
+                'error' => $e->getMessage()
+            ]);
+            
+            // Fallback to individual UUIDs as labels
+            return array_combine($ids, array_map(fn($uuid) => "Organisation $uuid", $ids));
+        }
     }
 }
