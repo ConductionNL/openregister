@@ -468,7 +468,10 @@ class Application extends App implements IBootstrap
                     $container->get('Psr\Log\LoggerInterface'),
                     $container->get('OCP\Http\Client\IClientService'),
                     $container->get('OCP\IConfig'),
-                    $container->get(SchemaMapper::class) // Add SchemaMapper for schema-aware mapping
+                    $container->get(SchemaMapper::class), // Add SchemaMapper for schema-aware mapping
+                    $container->get(RegisterMapper::class), // Add RegisterMapper for register access
+                    $container->get(OrganisationService::class) // Add OrganisationService for multi-tenancy
+                    // Note: RenderObject removed to avoid circular dependency with ObjectCacheService
                     // SolrSchemaService will be resolved lazily to avoid circular dependency
                     );
                 }

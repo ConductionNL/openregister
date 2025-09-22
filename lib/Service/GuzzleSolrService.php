@@ -1629,7 +1629,8 @@ class GuzzleSolrService
             $this->applyAdditionalFilters($solrQuery, $rbac, $multi, $published, $deleted);
             
             // Execute the search
-            $searchResults = $this->executeSearch($solrQuery, $collectionName);
+            $extend = $query['_extend'] ?? [];
+            $searchResults = $this->executeSearch($solrQuery, $collectionName, $extend);
             
             // Convert SOLR results to OpenRegister paginated format
             $paginatedResults = $this->convertToOpenRegisterPaginatedFormat($searchResults, $query, $solrQuery);
@@ -2661,7 +2662,8 @@ class GuzzleSolrService
             
             // Build and execute SOLR query
             $solrQuery = $this->buildSolrQuery($searchParams);
-            $searchResults = $this->executeSearch($solrQuery, $collectionName);
+            $extend = $searchParams['_extend'] ?? [];
+            $searchResults = $this->executeSearch($solrQuery, $collectionName, $extend);
             
             // Return results in expected format
         return [
@@ -2930,10 +2932,11 @@ class GuzzleSolrService
      *
      * @param array $solrQuery SOLR query parameters
      * @param string $collectionName Collection name to search in
+     * @param array  $extend         Extension parameters for @self properties
      * @return array Search results
      * @throws \Exception When search fails
      */
-    private function executeSearch(array $solrQuery, string $collectionName): array
+    private function executeSearch(array $solrQuery, string $collectionName, array $extend = []): array
     {
         $url = $this->buildSolrBaseUrl() . '/' . $collectionName . '/select';
         
@@ -2985,7 +2988,7 @@ class GuzzleSolrService
             }
 
 
-            return $this->parseSolrResponse($responseData);
+            return $this->parseSolrResponse($responseData, $extend);
 
         } catch (\Exception $e) {
             $this->logger->error('SOLR search execution failed', [
@@ -3001,9 +3004,10 @@ class GuzzleSolrService
      * Parse SOLR response into standardized format
      *
      * @param array $responseData Raw SOLR response
+     * @param array $extend       Extension parameters for @self properties
      * @return array Parsed search results
      */
-    private function parseSolrResponse(array $responseData): array
+    private function parseSolrResponse(array $responseData, array $extend = []): array
     {
         $results = [
             'objects' => [],
@@ -3013,7 +3017,7 @@ class GuzzleSolrService
 
         // Parse documents and convert back to OpenRegister objects
         if (isset($responseData['response']['docs'])) {
-            $results['objects'] = $this->convertSolrDocumentsToOpenRegisterObjects($responseData['response']['docs']);
+            $results['objects'] = $this->convertSolrDocumentsToOpenRegisterObjects($responseData['response']['docs'], $extend);
             $results['total'] = $responseData['response']['numFound'] ?? count($results['objects']);
             
             // **DEBUG**: Log total vs results count for troubleshooting
@@ -3166,7 +3170,9 @@ class GuzzleSolrService
      * Convert SOLR documents back to OpenRegister objects
      *
      * This method extracts the actual OpenRegister object from the SOLR document's self_object field
-     * and merges it with essential metadata from the SOLR document.
+     * and merges it with essential metadata from the SOLR document. If @self.register or @self.schema
+     * extensions are requested, it will load and include the full register/schema objects using the
+     * RenderObject service's caching mechanism.
      *
      * @phpstan-param array<int, array<string, mixed>> $solrDocuments
      * @psalm-param array<array<string, mixed>> $solrDocuments
@@ -3174,28 +3180,78 @@ class GuzzleSolrService
      * @psalm-return array<array<string, mixed>>
      *
      * @param array $solrDocuments Array of SOLR documents
-     * @return array Array of OpenRegister objects
+     * @param array $extend Array of properties to extend (e.g., ['@self.register', '@self.schema'])
+     * @return array Array of OpenRegister objects with extended @self properties
      */
-    private function convertSolrDocumentsToOpenRegisterObjects(array $solrDocuments = []): array
+    private function convertSolrDocumentsToOpenRegisterObjects(array $solrDocuments = [], $extend = []): array
     {
         $openRegisterObjects = [];
 
         foreach ($solrDocuments as $doc) {
             $object   = is_array($doc['self_object'] ?? null) ? ($doc['self_object'][0] ?? null) : ($doc['self_object'] ?? null);
             $uuid     = is_array($doc['self_uuid'] ?? null) ? ($doc['self_uuid'][0] ?? null) : ($doc['self_uuid'] ?? null);
-            $register = is_array($doc['self_register'] ?? null) ? ($doc['self_register'][0] ?? null) : ($doc['self_register'] ?? null);
-            $schema   = is_array($doc['self_schema'] ?? null) ? ($doc['self_schema'][0] ?? null) : ($doc['self_schema'] ?? null);
+            $registerId = is_array($doc['self_register'] ?? null) ? ($doc['self_register'][0] ?? null) : ($doc['self_register'] ?? null);
+            $schemaId   = is_array($doc['self_schema'] ?? null) ? ($doc['self_schema'][0] ?? null) : ($doc['self_schema'] ?? null);
     
             if (!$object) {
                 $this->logger->warning('[GuzzleSolrService] Invalid document missing required self_object', [
                     'uuid' => $uuid,
-                    'register' => $register,
-                    'schema' => $schema
+                    'register' => $registerId,
+                    'schema' => $schemaId
                 ]);
                 continue;
             }
-    
-            $openRegisterObjects[] = json_decode($object, true);
+
+            try { 
+                $objectData = json_decode($object, true);
+
+                // Add register and schema context to @self if requested and we have the necessary data
+                if (is_array($extend) && ($registerId || $schemaId) && 
+                    (in_array('@self.register', $extend) === true || in_array('@self.schema', $extend) === true)) {
+                    
+                    $self = $objectData['@self'] ?? [];
+        
+                    if (in_array('@self.register', $extend) === true && $registerId && $this->registerMapper !== null) {
+                        // Use the RegisterMapper directly to get register
+                        try {
+                            $register = $this->registerMapper->find($registerId);
+                            if ($register !== null) {
+                                $self['register'] = $register->jsonSerialize();
+                            }
+                        } catch (\Exception $e) {
+                            $this->logger->warning('Failed to load register for @self extension', [
+                                'registerId' => $registerId,
+                                'error' => $e->getMessage()
+                            ]);
+                        }
+                    }
+        
+                    if (in_array('@self.schema', $extend) === true && $schemaId && $this->schemaMapper !== null) {
+                        // Use the SchemaMapper directly to get schema
+                        try {
+                            $schema = $this->schemaMapper->find($schemaId);
+                            if ($schema !== null) {
+                                $self['schema'] = $schema->jsonSerialize();
+                            }
+                        } catch (\Exception $e) {
+                            $this->logger->warning('Failed to load schema for @self extension', [
+                                'schemaId' => $schemaId,
+                                'error' => $e->getMessage()
+                            ]);
+                        }
+                    }
+        
+                    $objectData['@self'] = $self;
+                }
+                
+                $openRegisterObjects[] = $objectData;
+
+            } catch (\Exception $e) {
+                $this->logger->warning('[GuzzleSolrService] Failed to reconstruct object from Solr document', [
+                    'doc_id' => $doc['id'] ?? 'unknown',
+                    'error' => $e->getMessage()
+                ]);
+            }
         }
     
         return $openRegisterObjects;
