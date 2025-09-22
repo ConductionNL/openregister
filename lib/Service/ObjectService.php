@@ -1697,6 +1697,12 @@ class ObjectService
         if ($ids !== null) {
             $query['_ids'] = $ids;
         }
+        
+        // Support both 'ids' and '_ids' parameters for flexibility
+        if (isset($specialParams['ids'])) {
+            $query['_ids'] = $specialParams['ids'];
+            unset($specialParams['ids']); // Remove to avoid duplication
+        }
 
         // Add all special parameters (they'll be handled by searchObjectsPaginated)
         $query = array_merge($query, $specialParams);
@@ -2341,16 +2347,34 @@ class ObjectService
      *                              - next: URL for next page (if available)
      *                              - prev: URL for previous page (if available)
      */
-    public function searchObjectsPaginated(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false): array
+    public function searchObjectsPaginated(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false, ?array $ids=null, ?string $uses=null): array
     {
+        // Add ids and uses parameters to query if provided
+        if ($ids !== null) {
+            $query['ids'] = $ids;
+        }
+        if ($uses !== null) {
+            $query['uses'] = $uses;
+        }
+        
         $requestedSource = $query['_source'] ?? null;
         
         // Simple switch: Use SOLR if explicitly requested OR if SOLR is enabled in config
+        // BUT force database when ids or uses parameters are provided (relation-based searches)
         if (
-            $requestedSource === 'index' || 
-            $requestedSource === 'solr' || 
-            ($requestedSource === null && $this->isSolrAvailable() && $requestedSource !== 'database')
-            ) {
+            (
+                ($requestedSource === 'index' || $requestedSource === 'solr') &&
+                $ids === null && $uses === null &&
+                !isset($query['ids']) && !isset($query['uses'])
+            ) ||
+            (
+                $requestedSource === null && 
+                $this->isSolrAvailable() && 
+                $requestedSource !== 'database' &&
+                $ids === null && $uses === null &&
+                !isset($query['ids']) && !isset($query['uses'])
+            )
+        ) {
             
             try {
                 // Forward to SOLR service - let it handle availability checks and error handling
@@ -2537,8 +2561,15 @@ class ObjectService
             $paginatedResults = array_merge($paginatedResults, $relatedData);
         }
 
-        // **PERFORMANCE OPTIMIZATION**: Only add facets if explicitly requested (empty facets object for backward compatibility)
-        $paginatedResults['facets'] = ['facets' => []];
+        // **PERFORMANCE OPTIMIZATION**: Only add facets if explicitly requested
+        if (isset($query['_facets']) && !empty($query['_facets'])) {
+            $paginatedResults['facets'] = ['facets' => []];
+        }
+        
+        // **DEBUG**: Add query to results for debugging purposes
+        if (isset($query['_debug']) && $query['_debug']) {
+            $paginatedResults['query'] = $query;
+        }
 
         // **PERFORMANCE OPTIMIZATION**: Add next/prev page URLs efficiently
         $this->addPaginationUrls($paginatedResults, $page, $pages);

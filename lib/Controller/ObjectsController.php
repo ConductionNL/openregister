@@ -984,38 +984,28 @@ class ObjectsController extends Controller
         $relationsArray = $objectService->find($id)->getRelations();
         $relations      = array_values($relationsArray);
 
-        // Check if relations array is empty
-        if (empty($relations)) {
-            // If relations is empty, set objects to an empty array.
-            $objects = [];
-            $total   = 0;
-            $config  = [
-                'limit'  => 1,
-                'offset' => 0,
-                'page'   => 1,
-            ];
-        } else {
-            // Get config and fetch objects
-            $config = $this->getConfig($register, $schema, ids: $relations);
-
-            // We specifacllly want to look outside our current definitions.
-            unset($config['filters']['register'], $config['filters']['schema'], $config['limit']);
-
-            $objects = $objectService->findAll($config);
-            // Get total count for pagination.
-            $total = $objectService->count($config);
-        }
-
-        // Return paginated results.
-        return new JSONResponse(
-            $this->paginate(
-                results: $objects,
-                total: $total,
-                limit: $config['limit'],
-                offset: $config['offset'],
-                page: $config['page']
-            )
+        // Build search query using ObjectService searchObjectsPaginated directly
+        $queryParams = $this->request->getParams();
+        $searchQuery = $queryParams;
+        
+        // Clean up unwanted parameters
+        unset($searchQuery['id'], $searchQuery['_route']);
+        
+        // Use ObjectService searchObjectsPaginated directly - pass ids as named parameter
+        $result = $objectService->searchObjectsPaginated(
+            query: $searchQuery, 
+            rbac: true, 
+            multi: true, 
+            published: true, 
+            deleted: false,
+            ids: $relations
         );
+        
+        // Add relations being searched for debugging
+        $result['relations'] = $relations;
+
+        // Return the result directly from ObjectService
+        return new JSONResponse($result);
 
     }//end uses()
 
@@ -1042,42 +1032,28 @@ class ObjectsController extends Controller
         $objectService->setSchema($schema);
         $objectService->setRegister($register);
 
-        // Get the relations for the object.
-        $relationsArray = $objectService->findByRelations($id);
-        $relations      = array_map(static fn($relation) => $relation->getUuid(), $relationsArray);
-
-        // Check if relations array is empty.
-        if (empty($relations)) {
-            // If relations is empty, set objects to an empty array
-            $objects = [];
-            $total   = 0;
-            $config  = [
-                'limit'  => 1,
-                'offset' => 0,
-                'page'   => 1,
-            ];
-        } else {
-            // Get config and fetch objects
-            $config = $this->getConfig($register, $schema, $relations);
-
-            // We specifacllly want to look outside our current definitions.
-            unset($config['filters']['register'], $config['filters']['schema']);
-
-            $objects = $objectService->findAll($config);
-            // Get total count for pagination.
-            $total = $objectService->count($config);
-        }
-
-        // Return paginated results.
-        return new JSONResponse(
-            $this->paginate(
-                results: $objects,
-                total: $total,
-                limit: $config['limit'],
-                offset: $config['offset'],
-                page: $config['page']
-            )
+        // Build search query using ObjectService searchObjectsPaginated directly
+        $queryParams = $this->request->getParams();
+        $searchQuery = $queryParams;
+        
+        // Clean up unwanted parameters
+        unset($searchQuery['id'], $searchQuery['_route']);
+        
+        // Use ObjectService searchObjectsPaginated directly - pass uses as named parameter
+        $result = $objectService->searchObjectsPaginated(
+            query: $searchQuery, 
+            rbac: true, 
+            multi: true, 
+            published: true, 
+            deleted: false,
+            uses: $id
         );
+        
+        // Add what we're searching for in debugging
+        $result['uses'] = $id;
+
+        // Return the result directly from ObjectService
+        return new JSONResponse($result);
 
     }//end used()
 
