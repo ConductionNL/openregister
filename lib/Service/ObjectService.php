@@ -1714,6 +1714,7 @@ class ObjectService
 
     public function searchObjects(array $query=[], bool $rbac=true, bool $multi=true, ?array $ids=null, ?string $uses=null): array|int
     {
+        
         // **CRITICAL PERFORMANCE OPTIMIZATION**: Detect simple vs complex rendering needs
         $hasExtend = !empty($query['_extend'] ?? []);
         $hasFields = !empty($query['_fields'] ?? null);
@@ -2056,13 +2057,13 @@ class ObjectService
      *
      * @return int The number of objects matching the criteria
      */
-    public function countSearchObjects(array $query=[], bool $rbac=true, bool $multi=true): int
+    public function countSearchObjects(array $query=[], bool $rbac=true, bool $multi=true, ?array $ids=null, ?string $uses=null): int
     {
         // Get active organization context for multi-tenancy (only if multi is enabled)
         $activeOrganisationUuid = $multi ? $this->getActiveOrganisationForContext() : null;
 
         // Use the new optimized countSearchObjects method from ObjectEntityMapper with organization context
-        return $this->objectEntityMapper->countSearchObjects($query, $activeOrganisationUuid, $rbac, $multi);
+        return $this->objectEntityMapper->countSearchObjects($query, $activeOrganisationUuid, $rbac, $multi, $ids, $uses);
 
     }//end countSearchObjects()
 
@@ -2530,7 +2531,7 @@ class ObjectService
         $countStartTime = microtime(true);
         $countQuery = $query;
         unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page'], $countQuery['_facetable']);
-        $total = $this->countSearchObjects($countQuery);
+        $total = $this->countSearchObjects($countQuery, rbac: $rbac, multi: $multi, ids: $ids, uses: $uses);
         $countTime = round((microtime(true) - $countStartTime) * 1000, 2);
 
         // Calculate total pages
