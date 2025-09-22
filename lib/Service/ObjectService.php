@@ -1712,7 +1712,7 @@ class ObjectService
     }//end buildSearchQuery()
 
 
-    public function searchObjects(array $query=[], bool $rbac=true, bool $multi=true): array|int
+    public function searchObjects(array $query=[], bool $rbac=true, bool $multi=true, ?array $ids=null, ?string $uses=null): array|int
     {
         // **CRITICAL PERFORMANCE OPTIMIZATION**: Detect simple vs complex rendering needs
         $hasExtend = !empty($query['_extend'] ?? []);
@@ -1745,7 +1745,7 @@ class ObjectService
 
             // **MAPPER CALL TIMING**: Track how long the mapper takes
             $mapperStart = microtime(true);
-            $result = $this->objectEntityMapper->searchObjects($query, $activeOrganisationUuid, $rbac, $multi);
+            $result = $this->objectEntityMapper->searchObjects($query, $activeOrganisationUuid, $rbac, $multi, $ids, $uses);
 
             $this->logger->info('✅ MAPPER CALL - Database search completed', [
                 'resultCount' => is_array($result) ? count($result) : 'non-array',
@@ -2349,13 +2349,7 @@ class ObjectService
      */
     public function searchObjectsPaginated(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false, ?array $ids=null, ?string $uses=null): array
     {
-        // Add ids and uses parameters to query if provided
-        if ($ids !== null) {
-            $query['ids'] = $ids;
-        }
-        if ($uses !== null) {
-            $query['uses'] = $uses;
-        }
+        // ids and uses are passed as proper parameters, not added to query
         
         $requestedSource = $query['_source'] ?? null;
         
@@ -2365,14 +2359,14 @@ class ObjectService
             (
                 ($requestedSource === 'index' || $requestedSource === 'solr') &&
                 $ids === null && $uses === null &&
-                !isset($query['ids']) && !isset($query['uses'])
+                !isset($query['_ids']) && !isset($query['_uses'])
             ) ||
             (
                 $requestedSource === null && 
                 $this->isSolrAvailable() && 
                 $requestedSource !== 'database' &&
                 $ids === null && $uses === null &&
-                !isset($query['ids']) && !isset($query['uses'])
+                !isset($query['_ids']) && !isset($query['_uses'])
             )
         ) {
             
@@ -2400,7 +2394,7 @@ class ObjectService
                     ]);
                     
                     // Fall back to database search
-                    $result = $this->searchObjectsPaginatedDatabase($query, $rbac, $multi, $published, $deleted);
+                    $result = $this->searchObjectsPaginatedDatabase($query, $rbac, $multi, $published, $deleted, $ids, $uses);
                     $result['source'] = 'database';
                     $result['_fallback_reason'] = 'SOLR field error: ' . $errorMessage;
                     return $result;
@@ -2412,7 +2406,7 @@ class ObjectService
         }
         
         // Use database search
-        $result = $this->searchObjectsPaginatedDatabase($query, $rbac, $multi, $published, $deleted);
+        $result = $this->searchObjectsPaginatedDatabase($query, $rbac, $multi, $published, $deleted, $ids, $uses);
         $result['source'] = 'database';
         return $result;
     }
@@ -2433,7 +2427,7 @@ class ObjectService
     /**
      * Original database search logic - extracted to avoid code duplication
      */
-    private function searchObjectsPaginatedDatabase(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false): array
+    private function searchObjectsPaginatedDatabase(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false, ?array $ids=null, ?string $uses=null): array
     {
         // **VALIDATION**: Database mode now supports facetable functionality
         $facetable = $query['_facetable'] ?? false;
@@ -2529,7 +2523,7 @@ class ObjectService
 
         // **CRITICAL OPTIMIZATION**: Get search results and count in a single optimized call
         $searchStartTime = microtime(true);
-        $results = $this->searchObjects($paginatedQuery, rbac: $rbac, multi: $multi);
+        $results = $this->searchObjects($paginatedQuery, rbac: $rbac, multi: $multi, ids: $ids, uses: $uses);
         $searchTime = round((microtime(true) - $searchStartTime) * 1000, 2);
 
         // **PERFORMANCE OPTIMIZATION**: Use combined query to get count without additional database call
@@ -3166,7 +3160,7 @@ class ObjectService
                 function ($resolve, $reject) use ($paginatedQuery, $rbac, $multi) {
                     try {
                         $searchStart = microtime(true);
-                        $result = $this->searchObjects($paginatedQuery, $rbac, $multi);
+                        $result = $this->searchObjects($paginatedQuery, $rbac, $multi, null, null);
                         $searchTime = round((microtime(true) - $searchStart) * 1000, 2);
                         $this->logger->debug('Search objects completed', [
                             'searchTime' => $searchTime . 'ms',
@@ -5703,7 +5697,9 @@ class ObjectService
                 $chunkQuery,
                 $activeOrganisationUuid,
                 $rbac,
-                $multi
+                $multi,
+                null,
+                null
             );
 
             $chunkTime = round((microtime(true) - $startChunk) * 1000, 2);

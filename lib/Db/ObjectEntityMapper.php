@@ -1403,7 +1403,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return array<int, ObjectEntity>|int An array of ObjectEntity objects matching the criteria, or integer count if _count is true
      */
-    public function searchObjects(array $query = [], ?string $activeOrganisationUuid = null, bool $rbac = true, bool $multi = true): array|int {
+    public function searchObjects(array $query = [], ?string $activeOrganisationUuid = null, bool $rbac = true, bool $multi = true, ?array $ids = null, ?string $uses = null): array|int {
         // **PERFORMANCE DEBUGGING**: Start detailed timing for ObjectEntityMapper
         $mapperStartTime = microtime(true);
         $perfTimings = [];
@@ -1423,7 +1423,7 @@ class ObjectEntityMapper extends QBMapper
         $search = $this->processSearchParameter($query['_search'] ?? null);
         $includeDeleted = $query['_includeDeleted'] ?? false;
         $published = $query['_published'] ?? false;
-        $ids = $query['_ids'] ?? null;
+        // ids parameter is now passed as method parameter, not from query
         $count = $query['_count'] ?? false;
         $perfTimings['extract_options'] = round((microtime(true) - $extractStart) * 1000, 2);
 
@@ -1463,7 +1463,7 @@ class ObjectEntityMapper extends QBMapper
                     filters: $cleanQuery,
                     search: $search,
                     ids: $ids,
-                    uses: null,
+                    uses: $uses,
                     includeDeleted: $includeDeleted,
                     register: $register,
                     schema: $schema,
@@ -1478,6 +1478,7 @@ class ObjectEntityMapper extends QBMapper
                 sort: $order,
                 search: $search,
                 ids: $ids,
+                uses: $uses,
                 includeDeleted: $includeDeleted,
                 register: $register,
                 schema: $schema,
@@ -1743,7 +1744,7 @@ class ObjectEntityMapper extends QBMapper
         $search = $this->processSearchParameter($query['_search'] ?? null);
         $includeDeleted = $query['_includeDeleted'] ?? false;
         $published = $query['_published'] ?? false;
-        $ids = $query['_ids'] ?? null;
+        // ids parameter is now passed as method parameter, not from query
 
         // Extract metadata from @self
         $metadataFilters = [];
@@ -1851,7 +1852,7 @@ class ObjectEntityMapper extends QBMapper
         $search = $this->processSearchParameter($query['_search'] ?? null);
         $includeDeleted = $query['_includeDeleted'] ?? false;
         $published = $query['_published'] ?? false;
-        $ids = $query['_ids'] ?? null;
+        // ids parameter is now passed as method parameter, not from query
 
         // Extract metadata from @self
         $metadataFilters = [];
