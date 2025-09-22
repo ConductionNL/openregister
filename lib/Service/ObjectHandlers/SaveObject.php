@@ -456,12 +456,12 @@ class SaveObject
      * - Simple field mapping using dot notation paths (e.g., 'contact.email', 'title')
      * - Twig-like concatenation for combining multiple fields (e.g., '{{ voornaam }} {{ tussenvoegsel }} {{ achternaam }}')
      * - All metadata fields: name, description, summary, image, slug, published, depublished
-     * 
+     *
      * Schema configuration example:
      * ```json
      * {
      *   "objectNameField": "{{ voornaam }} {{ tussenvoegsel }} {{ achternaam }}",
-     *   "objectDescriptionField": "beschrijving", 
+     *   "objectDescriptionField": "beschrijving",
      *   "objectSummaryField": "beschrijvingKort",
      *   "objectImageField": "afbeelding",
      *   "objectSlugField": "naam",
@@ -469,7 +469,7 @@ class SaveObject
      *   "objectDepublishedField": "einddatum"
      * }
      * ```
-     * 
+     *
      * This method is public to support both individual saves and bulk save operations.
      * During bulk imports, it's called from SaveObjects for each object to ensure consistent
      * metadata extraction across all import paths.
@@ -655,7 +655,7 @@ class SaveObject
     {
         // Extract all {{ fieldName }} patterns
         preg_match_all('/\{\{\s*([^}]+)\s*\}\}/', $template, $matches);
-        
+
         if (empty($matches[0])) {
             return null;
         }
@@ -667,7 +667,7 @@ class SaveObject
         foreach ($matches[0] as $index => $fullMatch) {
             $fieldName = trim($matches[1][$index]);
             $value = $this->getValueFromPath($data, $fieldName);
-            
+
             if ($value !== null && trim($value) !== '') {
                 $result = str_replace($fullMatch, trim($value), $result);
                 $hasValues = true;
@@ -966,8 +966,8 @@ class SaveObject
             return $property['type'] === 'array'
                 && (isset($property['$ref']) || isset($property['items']['$ref']))
                 && (isset($property['inversedBy']) === true || isset($property['items']['inversedBy']) === true ||
-                    (isset($property['objectConfiguration']['handling']) && $property['objectConfiguration']['handling'] === 'cascade') ||
-                    (isset($property['items']['objectConfiguration']['handling']) && $property['items']['objectConfiguration']['handling'] === 'cascade'));
+                    (isset($property['objectConfiguration']['handling']) && ($property['objectConfiguration']['handling'] === 'cascade'|| $property['objectConfiguration']['handling'] === 'related-object')) ||
+                    (isset($property['items']['objectConfiguration']['handling']) && ($property['items']['objectConfiguration']['handling'] === 'cascade' || $property['objectConfiguration']['handling'] === 'related-object')));
           }
           );
 
@@ -1068,11 +1068,11 @@ class SaveObject
 
         // Filter out empty or invalid objects
         $validObjects = array_filter(
-          $propData,
-          function ($object) {
-            return is_array($object) && !empty($object) && !(count($object) === 1 && isset($object['id']) && empty($object['id']));
-          }
-          );
+            $propData,
+            function ($object) {
+                return (is_array($object) === true && empty($object) === false && !(count($object) === 1 && isset($object['id']) === true && empty($object['id']) === true)) || (is_string($object) === true && Uuid::isValid($object) === true);
+            }
+        );
 
         if (empty($validObjects)) {
             return [];
@@ -1101,6 +1101,11 @@ class SaveObject
 
         $createdUuids = [];
         foreach ($validObjects as $object) {
+
+            if (is_string($object) && Uuid::isValid($object)) {
+                continue;
+            }
+
             try {
                 $uuid = $this->cascadeSingleObject(objectEntity: $objectEntity, definition: $property['items'], object: $object);
                 if ($uuid !== null) {
@@ -1487,7 +1492,6 @@ class SaveObject
         bool $persist=true,
         bool $validation=true
     ): ObjectEntity {
-        
 
         if (isset($data['@self']) && is_array($data['@self'])) {
             $selfData = $data['@self'];
@@ -1555,7 +1559,6 @@ class SaveObject
                     selfData: $selfData ?? [],
                     folderId: $folderId
                 );
-
                 // If not persisting, return the prepared object
                 if (!$persist) {
                     return $preparedObject;
@@ -1684,7 +1687,7 @@ class SaveObject
         } catch (Exception $e) {
             // CRITICAL FIX: Hydration failures indicate schema/data mismatch - don't suppress!
             throw new \Exception(
-                'Object metadata hydration failed: ' . $e->getMessage() . 
+                'Object metadata hydration failed: ' . $e->getMessage() .
                 '. This indicates a mismatch between object data and schema configuration.',
                 0,
                 $e
@@ -1729,7 +1732,7 @@ class SaveObject
         } catch (Exception $e) {
             // CRITICAL FIX: Relation processing failures indicate serious data integrity issues!
             throw new \Exception(
-                'Object relations processing failed: ' . $e->getMessage() . 
+                'Object relations processing failed: ' . $e->getMessage() .
                 '. This indicates invalid relation data or schema configuration problems.',
                 0,
                 $e
@@ -1807,16 +1810,16 @@ class SaveObject
         $this->logger->debug('Processing published field in SaveObject', [
             'selfDataKeys' => array_keys($selfData)
         ]);
-        
+
         if (array_key_exists('published', $selfData)) {
             $publishedValue = $selfData['published'];
             $isEmpty = empty($publishedValue);
-            
+
             $this->logger->debug('Published field found in object data', [
                 'publishedValue' => $publishedValue,
                 'isEmpty' => $isEmpty
             ]);
-            
+
             if (!empty($publishedValue)) {
                 try {
                     // Convert string to DateTime if it's a valid date string
@@ -1879,7 +1882,7 @@ class SaveObject
         } catch (Exception $e) {
             // CRITICAL FIX: Sanitization failures indicate serious data problems - don't suppress!
             throw new \Exception(
-                'Object data sanitization failed: ' . $e->getMessage() . 
+                'Object data sanitization failed: ' . $e->getMessage() .
                 '. This indicates invalid or corrupted object data that cannot be processed safely.',
                 0,
                 $e
