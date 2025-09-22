@@ -1,3 +1,4 @@
+
 <?php
 
 declare(strict_types=1);
@@ -433,7 +434,7 @@ class SettingsServiceTest extends TestCase
         $mockResult->expects($this->any())
             ->method('closeCursor')
             ->willReturn(true);
-
+            
         $db->expects($this->any())
             ->method('executeQuery')
             ->willReturn($mockResult);
@@ -444,5 +445,85 @@ class SettingsServiceTest extends TestCase
         $this->assertArrayHasKey('warnings', $result);
         $this->assertArrayHasKey('totals', $result);
         $this->assertArrayHasKey('sizes', $result);
+    }
+    
+    /**
+     * Test SOLR connection testing (WILL BE MOVED TO GuzzleSolrService)
+     */
+    public function testTestSolrConnection(): void
+    {
+        // Mock GuzzleSolrService testConnection method
+        $this->guzzleSolrService->method('testConnection')
+            ->willReturn([
+                'success' => true,
+                'message' => 'Connection successful',
+                'components' => [
+                    'solr' => ['success' => true],
+                    'zookeeper' => ['success' => true]
+                ]
+            ]);
+
+        $result = $this->settingsService->testSolrConnection();
+
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('success', $result);
+        $this->assertTrue($result['success']);
+    }
+
+    /**
+     * Test SOLR index warmup (WILL BE MOVED TO GuzzleSolrService)
+     */
+    public function testWarmupSolrIndex(): void
+    {
+        // Mock GuzzleSolrService warmupIndex method
+        $this->guzzleSolrService->method('warmupIndex')
+            ->willReturn([
+                'success' => true,
+                'operations' => ['connection_test' => true, 'object_indexing' => true],
+                'execution_time_ms' => 1500.0
+            ]);
+
+        $result = $this->settingsService->warmupSolrIndex(1000, 0, 'serial', false);
+
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('success', $result);
+        $this->assertTrue($result['success']);
+    }
+
+    /**
+     * Test getting SOLR dashboard stats (WILL BE MOVED TO GuzzleSolrService)
+     */
+    public function testGetSolrDashboardStats(): void
+    {
+        // Mock GuzzleSolrService getDashboardStats method
+        $this->guzzleSolrService->method('getDashboardStats')
+            ->willReturn([
+                'available' => true,
+                'document_count' => 1000,
+                'collection' => 'openregister',
+                'health' => 'healthy'
+            ]);
+
+        $result = $this->settingsService->getSolrDashboardStats();
+
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('available', $result);
+        $this->assertTrue($result['available']);
+    }
+
+    /**
+     * Test SOLR management operations (WILL BE MOVED TO GuzzleSolrService)
+     */
+    public function testManageSolr(): void
+    {
+        // Mock various operations
+        $this->guzzleSolrService->method('clearIndex')
+            ->willReturn(['success' => true]);
+
+        $result = $this->settingsService->manageSolr('clearIndex');
+
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('success', $result);
+        $this->assertTrue($result['success']);
     }
 }

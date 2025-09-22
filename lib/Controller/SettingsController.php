@@ -224,7 +224,7 @@ class SettingsController extends Controller
             $result = $this->settingsService->getStats();
             return new JSONResponse($result);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
+            return new JSONResponse(['error' => $e->getMessage()], 422);
         }
 
     }//end stats()
@@ -314,7 +314,7 @@ class SettingsController extends Controller
             $result = $this->settingsService->warmupNamesCache();
             return new JSONResponse($result);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
+            return new JSONResponse(['error' => $e->getMessage()], 422);
         }
 
     }//end warmupNamesCache()
@@ -445,7 +445,7 @@ class SettingsController extends Controller
                             'Check SOLR server logs'
                         ],
                         'steps' => $setupProgress['steps'] ?? []
-                    ], 500);
+                    ], 422);
                 } else {
                     // Fallback to generic error if no detailed error information is available
                     $lastError = error_get_last();
@@ -469,7 +469,7 @@ class SettingsController extends Controller
                             'Verify SOLR server connectivity',
                             'Check SOLR configuration'
                         ]
-                    ], 500);
+                    ], 422);
                 }
             }
             
@@ -523,7 +523,7 @@ class SettingsController extends Controller
                     'line' => $e->getLine(),
                     'detailed_error' => $detailedError
                 ]
-            ], 500);
+            ], 422);
         }
     }
 
@@ -570,14 +570,96 @@ class SettingsController extends Controller
                 return new JSONResponse([
                     'success' => false,
                     'message' => 'SOLR setup failed - check logs'
-                ], 500);
+                ], 422);
             }
             
         } catch (\Exception $e) {
             return new JSONResponse([
                 'success' => false,
                 'message' => 'SOLR setup error: ' . $e->getMessage()
-            ], 500);
+            ], 422);
+        }
+    }
+
+    /**
+     * Delete SOLR collection (DANGER: This will permanently delete all data in the collection)
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse The deletion results
+     */
+    public function deleteSolrCollection(): JSONResponse
+    {
+        try {
+            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
+            
+            $logger->warning('🚨 SOLR collection deletion requested', [
+                'timestamp' => date('c'),
+                'user_id' => $this->userId ?? 'unknown',
+                'request_id' => $this->request->getId() ?? 'unknown'
+            ]);
+            
+            // Get GuzzleSolrService
+            $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+            
+            // Get current collection name for logging
+            $currentCollection = $guzzleSolrService->getActiveCollectionName();
+            
+            $logger->warning('🗑️ Deleting SOLR collection', [
+                'collection' => $currentCollection,
+                'user_id' => $this->userId ?? 'unknown'
+            ]);
+            
+            // Delete the collection
+            $result = $guzzleSolrService->deleteCollection();
+            
+            if ($result['success']) {
+                $logger->info('✅ SOLR collection deleted successfully', [
+                    'collection' => $result['collection'] ?? 'unknown',
+                    'user_id' => $this->userId ?? 'unknown'
+                ]);
+                
+                return new JSONResponse([
+                    'success' => true,
+                    'message' => $result['message'],
+                    'collection' => $result['collection'] ?? null,
+                    'tenant_id' => $result['tenant_id'] ?? null,
+                    'response_time_ms' => $result['response_time_ms'] ?? null,
+                    'next_steps' => [
+                        'Run SOLR Setup to create a new collection',
+                        'Run Warmup Index to rebuild the search index',
+                        'Verify search functionality is working'
+                    ]
+                ]);
+            } else {
+                $logger->error('❌ SOLR collection deletion failed', [
+                    'error' => $result['message'],
+                    'error_code' => $result['error_code'] ?? 'unknown',
+                    'collection' => $result['collection'] ?? 'unknown'
+                ]);
+                
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => $result['message'],
+                    'error_code' => $result['error_code'] ?? 'unknown',
+                    'collection' => $result['collection'] ?? null,
+                    'solr_error' => $result['solr_error'] ?? null
+                ], 422);
+            }
+            
+        } catch (\Exception $e) {
+            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
+            $logger->error('Exception during SOLR collection deletion', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Collection deletion failed: ' . $e->getMessage(),
+                'error_code' => 'EXCEPTION'
+            ], 422);
         }
     }
 
@@ -603,11 +685,308 @@ class SettingsController extends Controller
                 'success' => false,
                 'message' => 'Connection test failed: ' . $e->getMessage(),
                 'details' => ['exception' => $e->getMessage()]
-            ], 500);
+            ], 422);
         }
 
     }//end testSolrConnection()
 
+
+    /**
+     * Get SOLR field configuration and schema information
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse SOLR field configuration data
+     */
+    public function getSolrFields(): JSONResponse
+    {
+        try {
+            // Use GuzzleSolrService to get field information
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            
+            // Check if SOLR is available first
+            if (!$guzzleSolrService->isAvailable()) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'SOLR is not available or not configured',
+                    'details' => ['error' => 'SOLR service is not enabled or connection failed']
+                ], 422);
+            }
+
+            // Get field configuration from SOLR
+            $fieldsData = $guzzleSolrService->getFieldsConfiguration();
+            
+            // Get expected fields based on OpenRegister schemas
+            $expectedFields = $this->getExpectedSchemaFields();
+            
+            // Compare actual vs expected fields
+            $comparison = $this->compareFields(
+                actualFields: $fieldsData['fields'] ?? [], 
+                expectedFields: $expectedFields
+            );
+            
+            // Add expected fields and comparison to response
+            $fieldsData['expected_fields'] = $expectedFields;
+            $fieldsData['comparison'] = $comparison;
+            
+            return new JSONResponse($fieldsData);
+            
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Failed to retrieve SOLR field configuration: ' . $e->getMessage(),
+                'details' => ['error' => $e->getMessage()]
+            ], 422);
+        }
+    }//end getSolrFields()
+
+    /**
+     * Create missing SOLR fields based on schema analysis
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse The field creation results
+     */
+    public function createMissingSolrFields(): JSONResponse
+    {
+        try {
+            // Get GuzzleSolrService for field creation
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            
+            // Check if SOLR is available first
+            if (!$guzzleSolrService->isAvailable()) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'SOLR is not available or not configured',
+                    'details' => ['error' => 'SOLR service is not enabled or connection failed']
+                ], 422);
+            }
+
+            // Get dry run parameter
+            $dryRun = $this->request->getParam('dry_run', false);
+            $dryRun = filter_var($dryRun, FILTER_VALIDATE_BOOLEAN);
+
+            // Get expected fields using the same method as the comparison
+            $expectedFields = $this->getExpectedSchemaFields();
+            
+            // Create missing fields
+            $result = $guzzleSolrService->createMissingFields($expectedFields, $dryRun);
+            
+            return new JSONResponse($result);
+            
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Failed to create missing SOLR fields: ' . $e->getMessage(),
+                'details' => ['error' => $e->getMessage()]
+            ], 422);
+        }
+    }//end createMissingSolrFields()
+
+    /**
+     * Fix mismatched SOLR field configurations
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse The field fix results
+     */
+    public function fixMismatchedSolrFields(): JSONResponse
+    {
+        try {
+            // Get GuzzleSolrService for field operations
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            
+            // Check if SOLR is available first
+            if (!$guzzleSolrService->isAvailable()) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'SOLR is not available or not configured',
+                    'details' => ['error' => 'SOLR service is not enabled or connection failed']
+                ], 422);
+            }
+
+            // Get dry run parameter
+            $dryRun = $this->request->getParam('dry_run', false);
+            $dryRun = filter_var($dryRun, FILTER_VALIDATE_BOOLEAN);
+
+            // Get expected fields and current SOLR fields for comparison
+            $expectedFields = $this->getExpectedSchemaFields();
+            $fieldsInfo = $guzzleSolrService->getFieldsConfiguration();
+            
+            if (!$fieldsInfo['success']) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'Failed to get SOLR field configuration',
+                    'details' => ['error' => $fieldsInfo['message'] ?? 'Unknown error']
+                ], 422);
+            }
+            
+            // Compare fields to find mismatched ones
+            $comparison = $this->compareFields(
+                actualFields: $fieldsInfo['fields'] ?? [], 
+                expectedFields: $expectedFields
+            );
+            
+            if (empty($comparison['mismatched'])) {
+                return new JSONResponse([
+                    'success' => true,
+                    'message' => 'No mismatched fields found - SOLR schema is properly configured',
+                    'fixed' => [],
+                    'errors' => []
+                ]);
+            }
+            
+            // Prepare fields to fix from mismatched fields
+            $fieldsToFix = [];
+            foreach ($comparison['mismatched'] as $mismatch) {
+                $fieldsToFix[$mismatch['field']] = $mismatch['expected_config'];
+                
+            }
+            
+            // Debug: Log field count for troubleshooting
+            error_log("OpenRegister: Fixing " . count($fieldsToFix) . " mismatched SOLR fields (dry_run: " . ($dryRun ? 'true' : 'false') . ")");
+            
+            // Fix the mismatched fields using the dedicated method
+            $result = $guzzleSolrService->fixMismatchedFields($fieldsToFix, $dryRun);
+            
+            // The fixMismatchedFields method already returns the correct format
+            return new JSONResponse($result);
+            
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Failed to fix mismatched SOLR fields: ' . $e->getMessage(),
+                'details' => ['error' => $e->getMessage()]
+            ], 422);
+        }
+    }//end fixMismatchedSolrFields()
+
+    /**
+     * Get expected schema fields based on OpenRegister schemas
+     *
+     * @return array Expected field configuration
+     */
+    private function getExpectedSchemaFields(): array
+    {
+        try {
+            // Get SolrSchemaService to analyze schemas
+            $solrSchemaService = $this->container->get(\OCA\OpenRegister\Service\SolrSchemaService::class);
+            $schemaMapper = $this->container->get(\OCA\OpenRegister\Db\SchemaMapper::class);
+            
+            // Get all schemas
+            $schemas = $schemaMapper->findAll();
+            
+            // Use the existing analyzeAndResolveFieldConflicts method via reflection
+            $reflection = new \ReflectionClass($solrSchemaService);
+            $method = $reflection->getMethod('analyzeAndResolveFieldConflicts');
+            $method->setAccessible(true);
+            
+            $result = $method->invoke($solrSchemaService, $schemas);
+            
+            return $result['fields'] ?? [];
+            
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to get expected schema fields', [
+                'error' => $e->getMessage()
+            ]);
+            return [];
+        }
+    }
+
+    /**
+     * Compare actual SOLR fields with expected schema fields
+     *
+     * @param array $actualFields   Current SOLR fields
+     * @param array $expectedFields Expected fields from schemas
+     * @return array Comparison results
+     */
+    private function compareFields(array $actualFields, array $expectedFields): array
+    {
+        $missing = [];
+        $extra = [];
+        $mismatched = [];
+        
+        // Find missing fields (expected but not in SOLR)
+        foreach ($expectedFields as $fieldName => $expectedConfig) {
+            if (!isset($actualFields[$fieldName])) {
+                $missing[] = [
+                    'field' => $fieldName,
+                    'expected_type' => $expectedConfig['type'] ?? 'unknown',
+                    'expected_config' => $expectedConfig
+                ];
+            }
+        }
+        
+        // Find extra fields (in SOLR but not expected) and mismatched configurations
+        foreach ($actualFields as $fieldName => $actualField) {
+            // Skip system fields and core metadata fields
+            if (str_starts_with($fieldName, '_') || str_starts_with($fieldName, 'self_')) {
+                continue;
+            }
+            
+            if (!isset($expectedFields[$fieldName])) {
+                $extra[] = [
+                    'field' => $fieldName,
+                    'actual_type' => $actualField['type'] ?? 'unknown',
+                    'actual_config' => $actualField
+                ];
+            } else {
+                // Check for configuration mismatches (type, multiValued, docValues)
+                $expectedConfig = $expectedFields[$fieldName];
+                $expectedType = $expectedConfig['type'] ?? '';
+                $actualType = $actualField['type'] ?? '';
+                $expectedMultiValued = $expectedConfig['multiValued'] ?? false;
+                $actualMultiValued = $actualField['multiValued'] ?? false;
+                $expectedDocValues = $expectedConfig['docValues'] ?? false;
+                $actualDocValues = $actualField['docValues'] ?? false;
+                
+                // Check if any configuration differs
+                if ($expectedType !== $actualType || 
+                    $expectedMultiValued !== $actualMultiValued || 
+                    $expectedDocValues !== $actualDocValues) {
+                    
+                    $differences = [];
+                    if ($expectedType !== $actualType) {
+                        $differences[] = 'type';
+                    }
+                    if ($expectedMultiValued !== $actualMultiValued) {
+                        $differences[] = 'multiValued';
+                    }
+                    if ($expectedDocValues !== $actualDocValues) {
+                        $differences[] = 'docValues';
+                    }
+                    
+                    $mismatched[] = [
+                        'field' => $fieldName,
+                        'expected_type' => $expectedType,
+                        'actual_type' => $actualType,
+                        'expected_multiValued' => $expectedMultiValued,
+                        'actual_multiValued' => $actualMultiValued,
+                        'expected_docValues' => $expectedDocValues,
+                        'actual_docValues' => $actualDocValues,
+                        'differences' => $differences,
+                        'expected_config' => $expectedConfig,
+                        'actual_config' => $actualField
+                    ];
+                }
+            }
+        }
+        
+        return [
+            'missing' => $missing,
+            'extra' => $extra,
+            'mismatched' => $mismatched,
+            'summary' => [
+                'missing_count' => count($missing),
+                'extra_count' => count($extra),
+                'mismatched_count' => count($mismatched),
+                'total_differences' => count($missing) + count($extra) + count($mismatched)
+            ]
+        ];
+    }
 
     /**
      * Get SOLR settings only
@@ -761,11 +1140,13 @@ class SettingsController extends Controller
                     ]);
                     
                 case 'clear':
-                    $success = $guzzleSolrService->clearIndex();
+                    $result = $guzzleSolrService->clearIndex();
                     return new JSONResponse([
-                        'success' => $success,
+                        'success' => $result['success'],
                         'operation' => 'clear',
-                        'message' => $success ? 'Index cleared successfully' : 'Clear operation failed',
+                        'error' => $result['error'] ?? null,
+                        'error_details' => $result['error_details'] ?? null,
+                        'message' => $result['success'] ? 'Index cleared successfully' : 'Clear operation failed',
                         'timestamp' => date('c')
                     ]);
                     
@@ -934,7 +1315,7 @@ class SettingsController extends Controller
             return new JSONResponse([
                 'success' => false,
                 'error' => $e->getMessage()
-            ], 500);
+            ], 422);
         }
     }
 
@@ -955,33 +1336,163 @@ class SettingsController extends Controller
             
             $logger->info('Starting SOLR index clear operation');
             
-            // Use the GuzzleSolrService to clear the index
-            $cleared = $guzzleSolrService->clearIndex();
+            // Use the GuzzleSolrService to clear the index - now returns detailed result array
+            $result = $guzzleSolrService->clearIndex();
             
-            if ($cleared) {
-                $logger->info('SOLR index cleared successfully');
+            if ($result['success']) {
+                $logger->info('SOLR index cleared successfully', [
+                    'deleted_docs' => $result['deleted_docs'] ?? 'unknown'
+                ]);
                 return new JSONResponse([
                     'success' => true,
-                    'message' => 'SOLR index cleared successfully'
+                    'message' => 'SOLR index cleared successfully',
+                    'deleted_docs' => $result['deleted_docs'] ?? null
                 ]);
             } else {
-                throw new \Exception('Failed to clear SOLR index');
+                // Log detailed error information for debugging
+                $logger->error('Failed to clear SOLR index', [
+                    'error' => $result['error'],
+                    'error_details' => $result['error_details'] ?? null
+                ]);
+                
+                return new JSONResponse([
+                    'success' => false,
+                    'error' => $result['error'],
+                    'error_details' => $result['error_details'] ?? null
+                ], 422);
             }
             
         } catch (\Exception $e) {
             // Get logger for error logging
             $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
-            $logger->error('Failed to clear SOLR index', [
+            $logger->error('Exception in clearSolrIndex controller', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
             
             return new JSONResponse([
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => 'Controller exception: ' . $e->getMessage(),
+                'error_details' => [
+                    'exception_type' => get_class($e),
+                    'trace' => $e->getTraceAsString()
+                ]
             ], 500);
         }
     }
 
+    /**
+     * Inspect SOLR index documents
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     * 
+     * @return JSONResponse
+     */
+    public function inspectSolrIndex(): JSONResponse
+    {
+        try {
+            $query = $this->request->getParam('query', '*:*');
+            $start = (int)$this->request->getParam('start', 0);
+            $rows = (int)$this->request->getParam('rows', 20);
+            $fields = $this->request->getParam('fields', '');
+            
+            // Validate parameters
+            $rows = min(max($rows, 1), 100); // Limit between 1 and 100
+            $start = max($start, 0);
+            
+            // Get GuzzleSolrService from container
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            
+            // Search documents in SOLR
+            $result = $guzzleSolrService->inspectIndex($query, $start, $rows, $fields);
+            
+            if ($result['success']) {
+                return new JSONResponse([
+                    'success' => true,
+                    'documents' => $result['documents'],
+                    'total' => $result['total'],
+                    'start' => $start,
+                    'rows' => $rows,
+                    'query' => $query
+                ]);
+            } else {
+                return new JSONResponse([
+                    'success' => false,
+                    'error' => $result['error'],
+                    'error_details' => $result['error_details'] ?? null
+                ], 422);
+            }
+            
+        } catch (\Exception $e) {
+            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
+            $logger->error('Exception in inspectSolrIndex controller', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return new JSONResponse([
+                'success' => false,
+                'error' => 'Controller exception: ' . $e->getMessage(),
+                'error_details' => [
+                    'exception_type' => get_class($e),
+                    'trace' => $e->getTraceAsString()
+                ]
+            ], 500);
+        }
+    }
+
+
+    /**
+     * Get memory usage prediction for SOLR warmup
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Memory usage prediction
+     */
+    public function getSolrMemoryPrediction(): JSONResponse
+    {
+        try {
+            // Get request parameters
+            $maxObjects = (int) $this->request->getParam('maxObjects', 0);
+            
+            // Get GuzzleSolrService for prediction
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            
+            if (!$guzzleSolrService->isAvailable()) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'SOLR is not available or not configured',
+                    'prediction' => [
+                        'error' => 'SOLR service unavailable',
+                    'prediction_safe' => false
+                ]
+            ], 422);
+            }
+
+            // Use reflection to call the private method (for API access)
+            $reflection = new \ReflectionClass($guzzleSolrService);
+            $method = $reflection->getMethod('predictWarmupMemoryUsage');
+            $method->setAccessible(true);
+            $prediction = $method->invoke($guzzleSolrService, $maxObjects);
+
+            return new JSONResponse([
+                'success' => true,
+                'message' => 'Memory prediction calculated successfully',
+                'prediction' => $prediction
+            ]);
+
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Failed to calculate memory prediction: ' . $e->getMessage(),
+                'prediction' => [
+                    'error' => $e->getMessage(),
+                    'prediction_safe' => false
+                ]
+            ], 422);
+        }
+    }
 
 }//end class

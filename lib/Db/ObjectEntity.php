@@ -523,6 +523,27 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     }//end hydrate()
 
+    /**
+     * Hydrate the entity from an serialized array of data
+     *
+     * @param array $object Array of data to hydrate the entity with
+     *
+     * @return self Returns the hydrated entity
+     */
+    public function hydrateObject(array $object): self
+    {
+        // Lets grap the metadata fields and remove them from the object
+        $metaDataFields = $object['@self'];
+        unset($object['@self']);
+
+        // Hydrate the entity with the metadata fields
+        $this->hydrate($metaDataFields);
+        $this->setObject($object);
+
+        // Return the hydrated entity
+        return $this;
+
+    }//end hydrate()
 
     /**
      * Serialize the entity to JSON format

@@ -27,6 +27,55 @@
 						Test Connection
 					</NcButton>
 					<NcButton
+						type="secondary"
+						:disabled="loading || saving || testingConnection || warmingUpSolr || settingUpSolr || loadingFields"
+						@click="inspectFields">
+						<template #icon>
+							<NcLoadingIcon v-if="loadingFields" :size="20" />
+							<ViewList v-else :size="20" />
+						</template>
+						Inspect Fields
+					</NcButton>
+					
+					<!-- Management Buttons (shown when SOLR is enabled) -->
+					<template v-if="solrOptions.enabled">
+						<NcButton type="secondary" @click="loadSolrStats" :disabled="loadingStats">
+							<template #icon>
+								<Refresh :size="20" />
+							</template>
+							Refresh Stats
+						</NcButton>
+						
+						<NcButton type="primary" @click="openWarmupModal">
+							<template #icon>
+								<Fire :size="20" />
+							</template>
+							Warmup Index
+						</NcButton>
+						
+						<NcButton type="secondary" @click="openClearModal">
+							<template #icon>
+								<Delete :size="20" />
+							</template>
+							Clear Index
+						</NcButton>
+						
+						<NcButton type="error" @click="openDeleteCollectionModal">
+							<template #icon>
+								<DatabaseRemove :size="20" />
+							</template>
+							Delete Collection
+						</NcButton>
+						
+						<NcButton type="secondary" @click="openInspectModal">
+							<template #icon>
+								<FileSearchOutline :size="20" />
+							</template>
+							Inspect Index
+						</NcButton>
+					</template>
+					
+					<NcButton
 						type="primary"
 						:disabled="loading || saving || testingConnection || settingUpSolr"
 						@click="saveSettings">
@@ -143,7 +192,7 @@
 					<div class="config-row">
 						<label class="config-label">
 							<strong>Core</strong>
-							<p class="config-description">SOLR core name for OpenRegister data</p>
+							<p class="config-description">SOLR core name for standalone SOLR installations (not used in SolrCloud)</p>
 						</label>
 						<div class="config-input">
 							<input
@@ -151,6 +200,21 @@
 								type="text"
 								:disabled="loading || saving"
 								placeholder="openregister"
+								class="solr-input-field">
+						</div>
+					</div>
+
+					<div class="config-row">
+						<label class="config-label">
+							<strong>ConfigSet</strong>
+							<p class="config-description">ConfigSet name for SolrCloud collections. Use '_default' for maximum compatibility, or specify a custom ConfigSet name</p>
+						</label>
+						<div class="config-input">
+							<input
+								v-model="solrOptions.configSet"
+								type="text"
+								:disabled="loading || saving"
+								placeholder="_default"
 								class="solr-input-field">
 						</div>
 					</div>
@@ -308,6 +372,63 @@
 						Enable detailed logging for SOLR operations (recommended for debugging)
 					</p>
 				</div>
+			</div>
+		</div>
+
+		<!-- SOLR Management Dashboard -->
+		<div v-if="solrOptions.enabled" class="solr-management-section">
+			<!-- Loading State -->
+			<div v-if="loadingStats" class="loading-section">
+				<NcLoadingIcon :size="32" />
+				<p>Loading SOLR statistics...</p>
+			</div>
+
+			<!-- Error State -->
+			<div v-else-if="solrError" class="error-section">
+				<p class="error-message">❌ {{ solrErrorMessage }}</p>
+				<NcButton type="primary" @click="loadSolrStats">
+					<template #icon>
+						<Refresh :size="20" />
+					</template>
+					Retry Connection
+				</NcButton>
+			</div>
+
+			<!-- Success State -->
+			<div v-else-if="solrStats && solrStats.available" class="dashboard-section">
+				<!-- Dashboard Stats -->
+				<div class="dashboard-stats-grid">
+					<div class="stat-card">
+						<h5>Connection Status</h5>
+						<p :class="connectionStatusClass">{{ solrStats.overview?.connection_status || 'Unknown' }}</p>
+					</div>
+
+					<div class="stat-card">
+						<h5>Total Documents</h5>
+						<p>{{ formatNumber(solrStats.overview?.total_documents || 0) }}</p>
+					</div>
+
+					<div class="stat-card">
+						<h5>Active Collection</h5>
+						<p>{{ solrStats.collection || 'Unknown' }}</p>
+					</div>
+
+					<div class="stat-card">
+						<h5>Tenant ID</h5>
+						<p>{{ solrStats.tenant_id || 'Unknown' }}</p>
+					</div>
+				</div>
+			</div>
+
+			<!-- Default State (no data) -->
+			<div v-else class="no-data-section">
+				<p>No SOLR data available</p>
+				<NcButton type="primary" @click="loadSolrStats">
+					<template #icon>
+						<Refresh :size="20" />
+					</template>
+					Load Stats
+				</NcButton>
 			</div>
 		</div>
 
@@ -585,14 +706,56 @@
 			@closing="hideSetupDialog"
 			:size="'large'">
 			<div class="setup-dialog">
-				<div v-if="settingUpSolr" class="setup-loading">
+				<!-- Confirmation State -->
+				<div v-if="!settingUpSolr && !setupResults" class="setup-confirmation">
+					<div class="confirmation-icon">
+						🚀
+					</div>
+					<h4>SOLR Setup</h4>
+					<p class="confirmation-description">
+						This will configure your SOLR search engine for OpenRegister. The setup process will:
+					</p>
+					<div class="setup-preview-steps">
+						<ul>
+							<li>🔗 <strong>Test connectivity</strong> to your SOLR cluster</li>
+							<li>📦 <strong>Create configuration sets</strong> with your search schema</li>
+							<li>⏱️ <strong>Sync configurations</strong> across all cluster nodes</li>
+							<li>🗂️ <strong>Create search collections</strong> for your data</li>
+							<li>🔧 <strong>Configure field mappings</strong> and search rules</li>
+						</ul>
+					</div>
+					<div class="timing-warning">
+						<strong>⏳ Expected Duration:</strong> 1-3 minutes<br>
+						<small>In distributed SOLR environments, configurations need time to propagate across multiple server nodes via ZooKeeper coordination.</small>
+					</div>
+					<div class="confirmation-actions">
+						<NcButton type="secondary" @click="hideSetupDialog">
+							Cancel
+						</NcButton>
+						<NcButton type="primary" @click="startSolrSetup">
+							<template #icon>
+								<PlayIcon :size="16" />
+							</template>
+							Start Setup
+						</NcButton>
+					</div>
+				</div>
+
+				<div v-else-if="settingUpSolr" class="setup-loading">
 					<div class="loading-spinner">
 						<NcLoadingIcon :size="40" />
 					</div>
 					<h4>Setting up SOLR...</h4>
-					<p class="loading-description">
-						Please wait while we configure SOLR for OpenRegister. This may take a few moments.
-					</p>
+					<div class="game-loading-content">
+						<div class="educational-tips">
+							<div v-for="(tip, index) in visibleTips" :key="index" class="tip-item" :class="{ 'tip-fade-in': tip.visible }">
+								{{ tip.text }}
+							</div>
+						</div>
+						<div class="loading-progress-text">
+							{{ currentLoadingMessage }}
+						</div>
+					</div>
 				</div>
 
 				<div v-else-if="setupResults" class="setup-results">
@@ -602,7 +765,6 @@
 							<span class="status-icon">{{ setupResults.success ? '✅' : '❌' }}</span>
 							<div class="status-text">
 								<h3>{{ setupResults.success ? 'SOLR Setup Completed!' : 'SOLR Setup Failed' }}</h3>
-								<p>{{ setupResults.message }}</p>
 								<div v-if="setupResults.timestamp" class="timestamp">
 									<span>⏱️ {{ setupResults.timestamp }}</span>
 								</div>
@@ -632,8 +794,48 @@
 						</div>
 					</div>
 
-					<!-- Detailed Error Information (shown only on failure) -->
-					<div v-if="!setupResults.success && setupResults.error_details" class="error-details-section">
+					<!-- ConfigSet Propagation Error (Special handling) -->
+					<div v-if="!setupResults.success && isConfigSetPropagationError" class="propagation-error-section">
+						<h4>⏱️ ConfigSet Propagation Delay</h4>
+						<div class="propagation-explanation">
+							<p><strong>What happened?</strong></p>
+							<p>The configuration was successfully created but is still propagating across the SOLR cluster nodes. This is normal in distributed SOLR environments.</p>
+							
+							<div class="propagation-details">
+								<p><strong>📊 Retry Information:</strong></p>
+								<ul v-if="setupResults.error_details?.solr_response">
+									<li>🔄 <strong>Attempts made:</strong> {{ setupResults.error_details.solr_response.attempts || 'Unknown' }}</li>
+									<li>⏱️ <strong>Total time:</strong> {{ setupResults.error_details.solr_response.total_elapsed_seconds || 'Unknown' }} seconds</li>
+									<li>🕐 <strong>Started at:</strong> {{ formatTime(setupResults.error_details.solr_response.attempt_timestamps?.[0]) }}</li>
+									<li>🕐 <strong>Last attempt:</strong> {{ formatTime(setupResults.error_details.solr_response.attempt_timestamps?.slice(-1)[0]) }}</li>
+								</ul>
+							</div>
+
+							<div class="propagation-solution">
+								<p><strong>🛠️ What to do next:</strong></p>
+								<ol>
+									<li><strong>Wait 2-5 minutes</strong> for the configuration to fully propagate</li>
+									<li><strong>Click "Setup Again"</strong> to retry the setup process</li>
+									<li>If the issue persists, contact your SOLR administrator</li>
+								</ol>
+							</div>
+
+							<div class="propagation-technical" v-if="setupResults.error_details?.configuration_used">
+								<details>
+									<summary>🔧 Technical Details</summary>
+									<div class="config-grid">
+										<div v-for="(value, key) in setupResults.error_details.configuration_used" :key="key" class="config-item">
+											<span class="config-key">{{ key }}:</span>
+											<span class="config-value">{{ value }}</span>
+										</div>
+									</div>
+								</details>
+							</div>
+						</div>
+					</div>
+
+					<!-- General Error Information (shown for other failures) -->
+					<div v-else-if="!setupResults.success && setupResults.error_details" class="error-details-section">
 						<h4>🔍 Error Details</h4>
 						<div class="error-card">
 							<div class="error-primary">
@@ -798,6 +1000,498 @@
 				</div>
 			</div>
 		</NcDialog>
+
+		<!-- SOLR Fields Inspection Dialog -->
+		<NcDialog
+			v-if="showFieldsDialog"
+			name="SOLR Field Configuration"
+			:can-close="!loadingFields"
+			@closing="hideFieldsDialog"
+			:size="'large'">
+			<div class="fields-dialog">
+				<div v-if="loadingFields" class="fields-loading">
+					<div class="loading-spinner">
+						<NcLoadingIcon :size="40" />
+					</div>
+					<h4>Loading SOLR Field Configuration...</h4>
+					<p class="loading-description">
+						Please wait while we retrieve the field configuration from your SOLR core.
+					</p>
+				</div>
+
+				<div v-else-if="fieldsInfo" class="fields-results">
+					<!-- Mismatch Alert -->
+					<div v-if="fieldComparison && fieldComparison.summary.total_differences > 0" class="mismatch-alert">
+						<div class="alert-content">
+							<span class="alert-icon">⚠️</span>
+							<div class="alert-text">
+								<h3>Configuration Issues Found</h3>
+								<p>{{ fieldComparison.summary.total_differences }} field configuration differences detected between schemas and SOLR.</p>
+							</div>
+							<button @click="scrollToMismatches" class="alert-button">
+								View Issues
+							</button>
+						</div>
+					</div>
+
+					<div v-if="fieldsInfo.success && fieldsInfo.fields" class="fields-content">
+						<!-- Fields Overview -->
+						<div class="fields-overview">
+							<h4>📊 Fields Overview</h4>
+							<div class="overview-stats">
+								<div class="stat-card">
+									<div class="stat-number">{{ Object.keys(fieldsInfo.fields).length }}</div>
+									<div class="stat-label">Total Fields</div>
+								</div>
+								<div class="stat-card">
+									<div class="stat-number">{{ fieldsInfo.dynamic_fields ? Object.keys(fieldsInfo.dynamic_fields).length : 0 }}</div>
+									<div class="stat-label">Dynamic Fields</div>
+								</div>
+								<div class="stat-card">
+									<div class="stat-number">{{ fieldsInfo.field_types ? Object.keys(fieldsInfo.field_types).length : 0 }}</div>
+									<div class="stat-label">Field Types</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- Core Information -->
+						<div v-if="fieldsInfo.core_info" class="core-info">
+							<h4>🏗️ Core Information</h4>
+							<div class="info-grid">
+								<div class="info-item">
+									<span class="info-label">Core Name:</span>
+									<span class="info-value">{{ fieldsInfo.core_info.core_name }}</span>
+								</div>
+								<div class="info-item">
+									<span class="info-label">Schema Name:</span>
+									<span class="info-value">{{ fieldsInfo.core_info.schema_name }}</span>
+								</div>
+								<div class="info-item">
+									<span class="info-label">Schema Version:</span>
+									<span class="info-value">{{ fieldsInfo.core_info.schema_version }}</span>
+								</div>
+								<div class="info-item">
+									<span class="info-label">Unique Key:</span>
+									<span class="info-value">{{ fieldsInfo.core_info.unique_key }}</span>
+								</div>
+							</div>
+						</div>
+
+						<!-- Fields Table -->
+						<div class="fields-table-section">
+							<h4>🔍 Field Details</h4>
+							<div class="fields-controls">
+								<input 
+									v-model="fieldFilter" 
+									type="text" 
+									placeholder="Filter fields..." 
+									class="field-filter">
+								<NcSelect
+									v-model="fieldTypeFilter"
+									:options="fieldTypeOptions"
+									placeholder="Filter by type"
+									:clearable="true"
+									class="field-type-filter" />
+							</div>
+							<div class="fields-table-container">
+								<table class="fields-table">
+									<thead>
+										<tr>
+											<th>Field Name</th>
+											<th>Type</th>
+											<th>Indexed</th>
+											<th>Stored</th>
+											<th>Multi-valued</th>
+											<th>Required</th>
+											<th>Doc Values</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr v-for="(field, fieldName) in filteredFields" :key="fieldName" class="field-row">
+											<td class="field-name">
+												<code>{{ fieldName }}</code>
+											</td>
+											<td class="field-type">
+												<span class="type-badge" :class="getTypeClass(field.type)">
+													{{ field.type }}
+												</span>
+											</td>
+											<td class="field-indexed">
+												<span class="boolean-indicator" :class="field.indexed ? 'true' : 'false'">
+													{{ field.indexed ? '✓' : '✗' }}
+												</span>
+											</td>
+											<td class="field-stored">
+												<span class="boolean-indicator" :class="field.stored ? 'true' : 'false'">
+													{{ field.stored ? '✓' : '✗' }}
+												</span>
+											</td>
+											<td class="field-multivalued">
+												<span class="boolean-indicator" :class="field.multiValued ? 'true' : 'false'">
+													{{ field.multiValued ? '✓' : '✗' }}
+												</span>
+											</td>
+											<td class="field-required">
+												<span class="boolean-indicator" :class="field.required ? 'true' : 'false'">
+													{{ field.required ? '✓' : '✗' }}
+												</span>
+											</td>
+											<td class="field-docvalues">
+												<span class="boolean-indicator" :class="field.docValues ? 'true' : 'false'">
+													{{ field.docValues ? '✓' : '✗' }}
+												</span>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+						</div>
+
+						<!-- Dynamic Fields -->
+						<div v-if="fieldsInfo.dynamic_fields && Object.keys(fieldsInfo.dynamic_fields).length > 0" class="dynamic-fields-section">
+							<h4>⚡ Dynamic Field Patterns</h4>
+							<div class="dynamic-fields-grid">
+								<div v-for="(field, pattern) in fieldsInfo.dynamic_fields" :key="pattern" class="dynamic-field-card">
+									<div class="dynamic-field-header">
+										<code class="pattern-name">{{ pattern }}</code>
+										<span class="type-badge" :class="getTypeClass(field.type)">{{ field.type }}</span>
+									</div>
+									<div class="dynamic-field-properties">
+										<div class="property-row">
+											<span class="property-label">Indexed:</span>
+											<span class="boolean-indicator" :class="field.indexed ? 'true' : 'false'">
+												{{ field.indexed ? '✓' : '✗' }}
+											</span>
+										</div>
+										<div class="property-row">
+											<span class="property-label">Stored:</span>
+											<span class="boolean-indicator" :class="field.stored ? 'true' : 'false'">
+												{{ field.stored ? '✓' : '✗' }}
+											</span>
+										</div>
+										<div class="property-row">
+											<span class="property-label">Multi-valued:</span>
+											<span class="boolean-indicator" :class="field.multiValued ? 'true' : 'false'">
+												{{ field.multiValued ? '✓' : '✗' }}
+											</span>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+
+					</div>
+
+					<!-- Schema vs SOLR Comparison -->
+					<div v-if="fieldComparison && fieldComparison.summary.total_differences > 0" class="comparison-section" id="field-mismatches">
+						<h3 class="comparison-title">
+							<span class="comparison-icon">⚠️</span>
+							Schema vs SOLR Differences ({{ fieldComparison.summary.total_differences }})
+						</h3>
+						<p class="comparison-description">
+							The following differences were detected between your OpenRegister schemas and the actual SOLR configuration:
+						</p>
+
+						<!-- Missing Fields -->
+						<div v-if="fieldComparison.missing.length > 0" class="difference-category">
+							<h4 class="category-title missing">
+								Missing Fields ({{ fieldComparison.missing.length }})
+							</h4>
+							<p class="category-description">Fields defined in schemas but not present in SOLR:</p>
+							<table class="comparison-table">
+								<thead>
+									<tr>
+										<th>Field Name</th>
+										<th>Expected Type</th>
+										<th>Expected Config</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr v-for="field in fieldComparison.missing" :key="'missing-' + field.field">
+										<td class="field-name">{{ field.field }}</td>
+										<td>
+											<span class="field-type" :class="field.expected_type">{{ field.expected_type }}</span>
+										</td>
+										<td class="config-details">
+											<span v-if="field.expected_config.multiValued" class="config-badge multi">Multi</span>
+											<span v-if="field.expected_config.indexed" class="config-badge indexed">Indexed</span>
+											<span v-if="field.expected_config.stored" class="config-badge stored">Stored</span>
+											<span v-if="field.expected_config.docValues" class="config-badge docvalues">DocValues</span>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+
+						<!-- Extra Fields -->
+						<div v-if="fieldComparison.extra.length > 0" class="difference-category">
+							<h4 class="category-title extra">
+								Extra Fields ({{ fieldComparison.extra.length }})
+							</h4>
+							<p class="category-description">Fields present in SOLR but not defined in any schema:</p>
+							<table class="comparison-table">
+								<thead>
+									<tr>
+										<th>Field Name</th>
+										<th>Actual Type</th>
+										<th>Actual Config</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr v-for="field in fieldComparison.extra" :key="'extra-' + field.field">
+										<td class="field-name">{{ field.field }}</td>
+										<td>
+											<span class="field-type" :class="field.actual_type">{{ field.actual_type }}</span>
+										</td>
+										<td class="config-details">
+											<span v-if="field.actual_config.multiValued" class="config-badge multi">Multi</span>
+											<span v-if="field.actual_config.indexed" class="config-badge indexed">Indexed</span>
+											<span v-if="field.actual_config.stored" class="config-badge stored">Stored</span>
+											<span v-if="field.actual_config.docValues" class="config-badge docvalues">DocValues</span>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+
+						<!-- Mismatched Fields -->
+						<div v-if="fieldComparison.mismatched.length > 0" class="difference-category">
+							<h4 class="category-title mismatched">
+								Configuration Mismatches ({{ fieldComparison.mismatched.length }})
+							</h4>
+							<p class="category-description">Fields with different configuration between schemas and SOLR:</p>
+							<table class="comparison-table">
+								<thead>
+									<tr>
+										<th>Field Name</th>
+										<th>Expected</th>
+										<th>Actual</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr v-for="field in fieldComparison.mismatched" :key="'mismatch-' + field.field">
+										<td class="field-name">{{ field.field }}</td>
+										<td class="field-config expected-config">
+											<div class="config-item">
+												<strong>Type:</strong> 
+												<span class="field-value expected-value">
+													{{ field.expected_type }}
+												</span>
+											</div>
+											<div class="config-item">
+												<strong>Multi:</strong> 
+												<span class="field-value expected-value">
+													{{ field.expected_multiValued ? 'Yes' : 'No' }}
+												</span>
+											</div>
+											<div class="config-item">
+												<strong>DocValues:</strong> 
+												<span class="field-value expected-value">
+													{{ field.expected_docValues ? 'Yes' : 'No' }}
+												</span>
+											</div>
+										</td>
+										<td class="field-config">
+											<div class="config-item">
+												<strong>Type:</strong> 
+												<span class="field-value" :class="{ 'match': field.expected_type === field.actual_type, 'mismatch': field.expected_type !== field.actual_type }">
+													{{ field.actual_type }}
+												</span>
+											</div>
+											<div class="config-item">
+												<strong>Multi:</strong> 
+												<span class="field-value" :class="{ 'match': field.expected_multiValued === field.actual_multiValued, 'mismatch': field.expected_multiValued !== field.actual_multiValued }">
+													{{ field.actual_multiValued ? 'Yes' : 'No' }}
+												</span>
+											</div>
+											<div class="config-item">
+												<strong>DocValues:</strong> 
+												<span class="field-value" :class="{ 'match': field.expected_docValues === field.actual_docValues, 'mismatch': field.expected_docValues !== field.actual_docValues }">
+													{{ field.actual_docValues ? 'Yes' : 'No' }}
+												</span>
+											</div>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+							
+							<!-- Fix Mismatches Actions -->
+							<div class="fix-mismatches-section">
+								<h4 class="fix-title">Fix Configuration Issues</h4>
+								<p class="fix-description">
+									Update SOLR field configurations to match the expected schema definitions.
+								</p>
+								<div class="fix-actions">
+									<NcButton 
+										type="secondary" 
+										:disabled="fixingFields"
+										@click="fixMismatchedFields(true)">
+										<template #icon>
+											<NcLoadingIcon v-if="fixingFields" :size="16" />
+											<Eye v-else :size="16" />
+										</template>
+										Preview Changes (Dry Run)
+									</NcButton>
+									<NcButton 
+										type="primary" 
+										:disabled="fixingFields"
+										@click="fixMismatchedFields(false)">
+										<template #icon>
+											<NcLoadingIcon v-if="fixingFields" :size="16" />
+											<Wrench v-else :size="16" />
+										</template>
+										Fix Mismatched Fields
+									</NcButton>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Field Creation Actions -->
+					<div v-if="fieldComparison && fieldComparison.missing && fieldComparison.missing.length > 0" class="field-actions-section">
+						<h3 class="actions-title">
+							<span class="actions-icon">🛠️</span>
+							Field Creation Actions
+						</h3>
+						<p class="actions-description">
+							Create the missing fields in SOLR to resolve schema differences:
+						</p>
+						<div class="action-buttons">
+							<NcButton 
+								type="secondary"
+								:disabled="creatingFields"
+								@click="createMissingFields(true)">
+								<template #icon>
+									<NcLoadingIcon v-if="creatingFields" :size="20" />
+									<span v-else>🔍</span>
+								</template>
+								Preview Changes (Dry Run)
+							</NcButton>
+							
+							<NcButton 
+								type="primary"
+								:disabled="creatingFields"
+								@click="createMissingFields(false)">
+								<template #icon>
+									<NcLoadingIcon v-if="creatingFields" :size="20" />
+									<span v-else>🚀</span>
+								</template>
+								Create {{ fieldComparison.missing.length }} Missing Fields
+							</NcButton>
+						</div>
+					</div>
+
+					<!-- Field Creation Results -->
+					<div v-if="fieldCreationResult" class="field-creation-results">
+						<div v-if="fieldCreationResult.success" class="success-result">
+							<span class="result-icon">✅</span>
+							<strong>{{ fieldCreationResult.message }}</strong>
+							<div v-if="fieldCreationResult.dry_run && fieldCreationResult.would_create" class="dry-run-preview">
+								<p><strong>Fields that would be created:</strong></p>
+								<ul class="field-list">
+									<li v-for="field in fieldCreationResult.would_create" :key="field" class="field-item">{{ field }}</li>
+								</ul>
+							</div>
+							<div v-else-if="fieldCreationResult.created && fieldCreationResult.created.length > 0" class="created-fields">
+								<p><strong>Successfully created {{ fieldCreationResult.created.length }} fields:</strong></p>
+								<ul class="field-list">
+									<li v-for="field in fieldCreationResult.created" :key="field" class="field-item success">✅ {{ field }}</li>
+								</ul>
+								<div v-if="fieldCreationResult.execution_time_ms" class="execution-time">
+									<small>Completed in {{ fieldCreationResult.execution_time_ms }}ms</small>
+								</div>
+							</div>
+						</div>
+						<div v-else class="error-result">
+							<span class="result-icon">❌</span>
+							<strong>{{ fieldCreationResult.message }}</strong>
+							<div v-if="fieldCreationResult.errors && Object.keys(fieldCreationResult.errors).length > 0" class="creation-errors">
+								<p><strong>Errors encountered:</strong></p>
+								<ul class="error-list">
+									<li v-for="(error, field) in fieldCreationResult.errors" :key="field" class="error-item">
+										<strong>{{ field }}:</strong> {{ error }}
+									</li>
+								</ul>
+							</div>
+						</div>
+					</div>
+
+					<!-- No Differences Message -->
+					<div v-else-if="fieldComparison && fieldComparison.summary.total_differences === 0" class="no-differences">
+						<div class="success-message">
+							<span class="success-icon">✅</span>
+							<h4>Schema and SOLR in Sync</h4>
+							<p>All schema fields are properly configured in SOLR. No differences detected.</p>
+						</div>
+					</div>
+
+					<!-- Error Display -->
+					<div v-else-if="!fieldsInfo.success" class="fields-error">
+						<div class="error-card">
+							<h4>❌ Failed to Load Field Configuration</h4>
+							<p>{{ fieldsInfo.message || 'Unable to retrieve SOLR field configuration' }}</p>
+							<div v-if="fieldsInfo.details" class="error-details">
+								<details>
+									<summary>Error Details</summary>
+									<pre>{{ JSON.stringify(fieldsInfo.details, null, 2) }}</pre>
+								</details>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="dialog-actions">
+					<NcButton
+						:disabled="loadingFields"
+						@click="hideFieldsDialog">
+						Close
+					</NcButton>
+					<NcButton
+						v-if="!loadingFields && fieldsInfo && !fieldsInfo.success"
+						type="primary"
+						@click="retryLoadFields">
+						<template #icon>
+							<ViewList :size="20" />
+						</template>
+						Retry
+					</NcButton>
+				</div>
+			</div>
+		</NcDialog>
+
+		<!-- Dashboard Modals -->
+		<!-- Warmup Modal -->
+		<SolrWarmupModal 
+			:show="showWarmupDialog"
+			:object-stats="objectStats"
+			:memory-prediction="memoryPrediction"
+			:warming-up="warmingUp"
+			:completed="warmupCompleted"
+			:results="warmupResults"
+			@close="closeWarmupModal"
+			@start-warmup="handleStartWarmup"
+		/>
+
+		<!-- Clear Index Modal -->
+		<ClearIndexModal 
+			:show="showClearDialog"
+			@close="showClearDialog = false"
+			@confirm="handleClearIndex"
+		/>
+
+		<!-- Inspect Index Modal -->
+		<InspectIndexModal 
+			:show="showInspectDialog"
+			@close="showInspectDialog = false"
+		/>
+
+		<!-- Delete Collection Modal -->
+		<DeleteCollectionModal
+			:show="showDeleteCollectionDialog"
+			@close="closeDeleteCollectionModal"
+			@deleted="handleCollectionDeleted"
+		/>
 	</NcSettingsSection>
 </template>
 
@@ -809,6 +1503,19 @@ import Settings from 'vue-material-design-icons/ApplicationSettings.vue'
 import TestTube from 'vue-material-design-icons/TestTube.vue'
 import Save from 'vue-material-design-icons/ContentSave.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
+import ViewList from 'vue-material-design-icons/ViewList.vue'
+import Wrench from 'vue-material-design-icons/Wrench.vue'
+import Eye from 'vue-material-design-icons/Eye.vue'
+import Fire from 'vue-material-design-icons/Fire.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
+import DatabaseRemove from 'vue-material-design-icons/DatabaseRemove.vue'
+import FileSearchOutline from 'vue-material-design-icons/FileSearchOutline.vue'
+import PlayIcon from 'vue-material-design-icons/Play.vue'
+import { SolrWarmupModal, ClearIndexModal } from '../../../modals/settings'
+import InspectIndexModal from '../../../modals/settings/InspectIndexModal.vue'
+import DeleteCollectionModal from '../../../modals/settings/DeleteCollectionModal.vue'
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 
 export default {
 	name: 'SolrConfiguration',
@@ -824,10 +1531,74 @@ export default {
 		TestTube,
 		Save,
 		Refresh,
+		ViewList,
+		Wrench,
+		Eye,
+		Fire,
+		Delete,
+		DatabaseRemove,
+		FileSearchOutline,
+		PlayIcon,
+		SolrWarmupModal,
+		ClearIndexModal,
+		InspectIndexModal,
+		DeleteCollectionModal,
+	},
+
+	data() {
+		return {
+			fieldFilter: '',
+			fieldTypeFilter: null,
+			// Dashboard data properties
+			loadingStats: false,
+			solrError: false,
+			solrErrorMessage: '',
+			showWarmupDialog: false,
+			showClearDialog: false,
+			showInspectDialog: false,
+			showDeleteCollectionDialog: false,
+			solrStats: null,
+			objectStats: {
+				loading: false,
+				totalObjects: 0,
+			},
+			memoryPrediction: {
+				prediction_safe: true,
+				formatted: {
+					total_predicted: 'Unknown',
+					available: 'Unknown'
+				}
+			},
+			warmingUp: false,
+			warmupCompleted: false,
+			warmupResults: null,
+			// Game-style loading
+			loadingTips: [
+				'🔍 SOLR is a powerful enterprise search platform built on Apache Lucene...',
+				'🌐 In distributed mode, SOLR uses ZooKeeper for cluster coordination...',
+				'📦 ConfigSets contain the schema and configuration files for your search index...',
+				'⚡ SOLR can handle millions of documents with sub-second search response times...',
+				'🔄 Replication ensures your search index is available even if nodes fail...',
+				'🎯 Faceted search allows users to drill down into results by categories...',
+				'📊 SOLR provides rich analytics and statistics about search performance...',
+				'🛡️ Security features include authentication, authorization, and SSL encryption...',
+				'🚀 Auto-scaling can dynamically add or remove nodes based on load...',
+				'💡 Did you know? SOLR powers search for Netflix, Apple, and many other major sites!'
+			],
+			visibleTips: [],
+			currentLoadingMessage: 'Initializing SOLR setup...',
+			loadingInterval: null,
+			tipIndex: 0,
+		}
 	},
 
 	computed: {
 		...mapStores(useSettingsStore),
+
+		// Access the settings store
+		settingsStore() {
+			return useSettingsStore()
+		},
 
 		solrOptions: {
 			get() {
@@ -881,11 +1652,186 @@ export default {
 		setupResults() {
 			return this.settingsStore.setupResults
 		},
+
+		showFieldsDialog() {
+			return this.settingsStore.showFieldsDialog
+		},
+
+		loadingFields() {
+			return this.settingsStore.loadingFields
+		},
+
+		fieldsInfo() {
+			return this.settingsStore.fieldsInfo
+		},
+
+		fieldComparison() {
+			return this.settingsStore.fieldComparison
+		},
+
+		creatingFields() {
+			return this.settingsStore.creatingFields
+		},
+
+		fixingFields() {
+			return this.settingsStore.fixingFields
+		},
+
+		fieldCreationResult() {
+			return this.settingsStore.fieldCreationResult
+		},
+
+		filteredFields() {
+			if (!this.fieldsInfo || !this.fieldsInfo.fields) {
+				return {}
+			}
+
+			let fields = this.fieldsInfo.fields
+			
+			// Apply text filter
+			if (this.fieldFilter) {
+				const filter = this.fieldFilter.toLowerCase()
+				fields = Object.fromEntries(
+					Object.entries(fields).filter(([name]) => 
+						name.toLowerCase().includes(filter)
+					)
+				)
+			}
+
+			// Apply type filter
+			if (this.fieldTypeFilter) {
+				fields = Object.fromEntries(
+					Object.entries(fields).filter(([, field]) => 
+						field.type === this.fieldTypeFilter.value
+					)
+				)
+			}
+
+			return fields
+		},
+
+		fieldTypeOptions() {
+			if (!this.fieldsInfo || !this.fieldsInfo.fields) {
+				return []
+			}
+
+			const types = [...new Set(Object.values(this.fieldsInfo.fields).map(field => field.type))]
+			return types.map(type => ({
+				value: type,
+				label: type
+			})).sort((a, b) => a.label.localeCompare(b.label))
+		},
+
+		// Dashboard computed properties
+		connectionStatusClass() {
+			if (!this.solrStats || !this.solrStats.available) {
+				return 'status-error'
+			}
+			if (this.solrStats.overview?.connection_status === 'Connected') {
+				return 'status-success'
+			}
+			return 'status-warning'
+		},
+	},
+
+	async mounted() {
+		// Load dashboard stats if SOLR is enabled
+		if (this.solrOptions?.enabled) {
+			// Load both SOLR stats and object stats in parallel
+			await Promise.all([
+				this.loadSolrStats(),
+				this.loadObjectStats()
+			])
+		}
 	},
 
 	methods: {
+		scrollToMismatches() {
+			const element = document.getElementById('field-mismatches')
+			if (element) {
+				element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+			}
+		},
+
 		async setupSolr() {
+			// Just show the setup dialog - it will start with confirmation screen
+			this.settingsStore.showSetupDialog = true
+			this.settingsStore.setupResults = null
+		},
+
+		async startSolrSetup() {
+			// Start the game-style loading
+			this.startGameLoading()
+			
+			// Actually start the SOLR setup process
 			await this.settingsStore.setupSolr()
+			
+			// Stop the game-style loading
+			this.stopGameLoading()
+		},
+
+		startGameLoading() {
+			this.visibleTips = []
+			this.tipIndex = 0
+			this.currentLoadingMessage = 'Initializing SOLR setup...'
+			
+			// Show first tip immediately
+			this.showNextTip()
+			
+			// Set interval to show new tips every 3 seconds
+			this.loadingInterval = setInterval(() => {
+				this.showNextTip()
+				this.updateLoadingMessage()
+			}, 3000)
+		},
+
+		stopGameLoading() {
+			if (this.loadingInterval) {
+				clearInterval(this.loadingInterval)
+				this.loadingInterval = null
+			}
+		},
+
+		showNextTip() {
+			if (this.tipIndex < this.loadingTips.length) {
+				this.visibleTips.push({
+					text: this.loadingTips[this.tipIndex],
+					visible: true
+				})
+				this.tipIndex++
+				
+				// Keep only last 3 tips visible
+				if (this.visibleTips.length > 3) {
+					this.visibleTips.shift()
+				}
+			}
+		},
+
+		updateLoadingMessage() {
+			const messages = [
+				'Connecting to SOLR cluster...',
+				'Verifying server connectivity...',
+				'Uploading configuration sets...',
+				'Waiting for cluster synchronization...',
+				'Creating search collections...',
+				'Configuring field mappings...',
+				'Optimizing search performance...',
+				'Finalizing setup...'
+			]
+			
+			const randomMessage = messages[Math.floor(Math.random() * messages.length)]
+			this.currentLoadingMessage = randomMessage
+		},
+
+		formatTime(timestamp) {
+			if (!timestamp) return 'Unknown'
+			
+			try {
+				const date = new Date(timestamp)
+				return date.toLocaleTimeString()
+			} catch (error) {
+				return timestamp
+			}
 		},
 
 		async testSolrConnection() {
@@ -912,6 +1858,72 @@ export default {
 			this.settingsStore.retrySetup()
 		},
 
+		async inspectFields() {
+			await this.settingsStore.loadSolrFields()
+		},
+
+		hideFieldsDialog() {
+			this.settingsStore.hideFieldsDialog()
+		},
+
+		async createMissingFields(dryRun = false) {
+			try {
+				await this.settingsStore.createMissingSolrFields(dryRun)
+				
+				// Show success notification
+				if (this.fieldCreationResult?.success) {
+					if (dryRun) {
+						showSuccess(`Dry run completed: ${this.fieldCreationResult.would_create?.length || 0} fields would be created`)
+					} else {
+						showSuccess(`Successfully created ${this.fieldCreationResult.created?.length || 0} SOLR fields`)
+					}
+				}
+			} catch (error) {
+				console.error('Error creating missing SOLR fields:', error)
+				showError('Failed to create missing SOLR fields: ' + error.message)
+			}
+		},
+
+		async fixMismatchedFields(dryRun = false) {
+			try {
+				// Use the dedicated fix-mismatches endpoint (automatically detects and fixes all mismatches)
+				await this.settingsStore.fixMismatchedSolrFields(dryRun)
+				
+				// Show success notification
+				if (this.fieldCreationResult?.success) {
+					const fixedCount = this.fieldCreationResult.fixed?.length || 0
+					if (dryRun) {
+						showSuccess(`Dry run completed: ${fixedCount} fields would be fixed`)
+					} else {
+						showSuccess(`Successfully fixed ${fixedCount} SOLR field configurations`)
+						// Refresh the field comparison after fixing
+						await this.inspectFields()
+					}
+				}
+			} catch (error) {
+				console.error('Error fixing mismatched SOLR fields:', error)
+				showError('Failed to fix mismatched SOLR fields: ' + error.message)
+			}
+		},
+
+		retryLoadFields() {
+			this.inspectFields()
+		},
+
+		getTypeClass(type) {
+			const typeMap = {
+				'string': 'type-string',
+				'text_general': 'type-text',
+				'pint': 'type-integer',
+				'pfloat': 'type-float',
+				'pdate': 'type-date',
+				'boolean': 'type-boolean',
+				'plong': 'type-long',
+				'pdouble': 'type-double',
+			}
+			return typeMap[type] || 'type-unknown'
+		},
+
 		formatComponentName(name) {
 			return name.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())
 		},
@@ -925,6 +1937,173 @@ export default {
 				return JSON.stringify(value, null, 2)
 			}
 			return String(value)
+		},
+
+		// Dashboard methods
+		async loadSolrStats() {
+			this.loadingStats = true
+			this.solrError = false
+			this.solrErrorMessage = ''
+
+			try {
+				const url = generateUrl('/apps/openregister/api/solr/dashboard/stats')
+				const response = await axios.get(url)
+
+				if (response.data && response.data.available) {
+					// Transform flat response to expected structure
+					this.solrStats = {
+						available: response.data.available,
+						overview: {
+							connection_status: 'Connected',
+							total_documents: response.data.document_count || 0,
+						},
+						collection: response.data.collection || 'Unknown',
+						tenant_id: response.data.tenant_id || 'Unknown',
+					}
+				} else {
+					this.solrError = true
+					this.solrErrorMessage = response.data?.error || 'SOLR not available'
+					this.solrStats = null
+				}
+			} catch (error) {
+				this.solrError = true
+				this.solrErrorMessage = error.message || 'Failed to load SOLR statistics'
+				this.solrStats = null
+			} finally {
+				this.loadingStats = false
+			}
+		},
+
+		formatNumber(num) {
+			if (typeof num !== 'number') return num
+			return num.toLocaleString()
+		},
+
+		async openWarmupModal() {
+			// Load object stats before opening the modal
+			await this.loadObjectStats()
+			this.showWarmupDialog = true
+		},
+
+		closeWarmupModal() {
+			this.showWarmupDialog = false
+			// Reset warmup state when modal is closed
+			this.warmingUp = false
+			this.warmupCompleted = false
+			this.warmupResults = null
+		},
+
+		openClearModal() {
+			this.showClearDialog = true
+		},
+
+		openInspectModal() {
+			this.showInspectDialog = true
+		},
+
+		openDeleteCollectionModal() {
+			this.showDeleteCollectionDialog = true
+		},
+
+		closeDeleteCollectionModal() {
+			this.showDeleteCollectionDialog = false
+		},
+
+		async handleCollectionDeleted(result) {
+			// Close the modal
+			this.closeDeleteCollectionModal()
+			
+			// Refresh SOLR stats to reflect the deletion
+			await this.loadSolrStats()
+		},
+
+		async handleClearIndex() {
+			try {
+				const url = generateUrl('/apps/openregister/api/settings/solr/clear')
+				const response = await axios.post(url)
+				
+				// Close modal and refresh stats
+				this.showClearDialog = false
+				await this.loadSolrStats()
+			} catch (error) {
+				console.error('Clear index failed:', error)
+				// Keep modal open on error so user can see what happened
+			}
+		},
+
+		async loadObjectStats() {
+			this.objectStats.loading = true
+			
+			try {
+				// Use the settings store to load stats
+				await this.settingsStore.loadStats()
+				
+				// Get the total objects from the store
+				const totalObjects = this.settingsStore.stats?.totals?.totalObjects || 0
+				this.objectStats.totalObjects = totalObjects
+				
+				// Load memory prediction after getting object count
+				await this.loadMemoryPrediction(0) // Default to all objects
+			} catch (error) {
+				console.error('Failed to load object stats:', error)
+				this.objectStats.totalObjects = 0
+			} finally {
+				this.objectStats.loading = false
+			}
+		},
+
+		async loadMemoryPrediction(maxObjects = 0) {
+			try {
+				const url = generateUrl('/apps/openregister/api/settings/solr/memory-prediction')
+				const response = await axios.post(url, { maxObjects })
+				
+				if (response.data && response.data.success) {
+					this.memoryPrediction = response.data.prediction
+				}
+			} catch (error) {
+				console.warn('Failed to load memory prediction:', error)
+				// Keep default prediction data
+			}
+		},
+
+		async handleStartWarmup(config) {
+			// Set loading state
+			this.warmingUp = true
+			this.warmupCompleted = false
+			this.warmupResults = null
+			
+			try {
+				const url = generateUrl('/apps/openregister/api/settings/solr/warmup')
+				
+				// Convert config to the expected format
+				const warmupParams = {
+					maxObjects: config.maxObjects || 0,
+					mode: config.mode || 'serial',
+					batchSize: config.batchSize || 1000,
+				}
+				
+				const response = await axios.post(url, warmupParams)
+				
+				// Set results state
+				this.warmupCompleted = true
+				this.warmupResults = response.data
+				
+				// Refresh stats after warmup completes
+				await this.loadSolrStats()
+			} catch (error) {
+				console.error('Warmup failed:', error)
+				
+				// Set error state
+				this.warmupCompleted = true
+				this.warmupResults = {
+					success: false,
+					message: error.response?.data?.error || error.message || 'Warmup failed',
+					error: true
+				}
+			} finally {
+				// Clear loading state
+				this.warmingUp = false
+			}
 		},
 	},
 }
@@ -946,6 +2125,7 @@ export default {
 	display: flex;
 	gap: 8px;
 	flex-wrap: wrap;
+	align-items: center;
 }
 
 .section-description-full {
@@ -1962,5 +3142,1029 @@ export default {
 
 .next-step-text {
 	flex: 1;
+}
+
+/* Fields Dialog Styles */
+.fields-dialog {
+	padding: 24px;
+	max-width: 1200px;
+}
+
+.fields-loading {
+	text-align: center;
+	padding: 40px 20px;
+}
+
+.fields-results {
+	max-height: 800px;
+	overflow-y: auto;
+}
+
+/* Fields Overview */
+.fields-overview {
+	margin-bottom: 24px;
+}
+
+.fields-overview h4 {
+	margin: 0 0 16px 0;
+	color: var(--color-main-text);
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.overview-stats {
+	display: flex;
+	gap: 16px;
+	flex-wrap: wrap;
+}
+
+.stat-card {
+	background: var(--color-background-hover);
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+	padding: 16px;
+	text-align: center;
+	flex: 1;
+	min-width: 120px;
+}
+
+.stat-number {
+	font-size: 24px;
+	font-weight: bold;
+	color: var(--color-primary);
+	margin-bottom: 4px;
+}
+
+.stat-label {
+	font-size: 12px;
+	color: var(--color-text-maxcontrast);
+	font-weight: 500;
+}
+
+/* Core Information */
+.core-info {
+	margin-bottom: 24px;
+	background: var(--color-background-hover);
+	border-radius: 8px;
+	padding: 16px;
+	border: 1px solid var(--color-border);
+}
+
+.core-info h4 {
+	margin: 0 0 16px 0;
+	color: var(--color-main-text);
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.info-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 12px;
+}
+
+.info-item {
+	display: flex;
+	justify-content: space-between;
+	padding: 8px 12px;
+	background: var(--color-background-dark);
+	border-radius: 4px;
+}
+
+.info-label {
+	font-weight: 500;
+	color: var(--color-main-text);
+}
+
+.info-value {
+	color: var(--color-text-maxcontrast);
+	font-family: monospace;
+	font-size: 13px;
+}
+
+/* Fields Table */
+.fields-table-section {
+	margin-bottom: 24px;
+}
+
+.fields-table-section h4 {
+	margin: 0 0 16px 0;
+	color: var(--color-main-text);
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.fields-controls {
+	display: flex;
+	gap: 12px;
+	margin-bottom: 16px;
+	flex-wrap: wrap;
+}
+
+.field-filter {
+	flex: 1;
+	min-width: 200px;
+	padding: 8px 12px;
+	border: 1px solid var(--color-border);
+	border-radius: 4px;
+	background: var(--color-main-background);
+	color: var(--color-text-light);
+}
+
+.field-type-filter {
+	min-width: 150px;
+}
+
+.fields-table-container {
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+	overflow: hidden;
+	background: var(--color-main-background);
+}
+
+.fields-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.fields-table th {
+	background: var(--color-background-hover);
+	padding: 12px;
+	text-align: left;
+	font-weight: 600;
+	color: var(--color-main-text);
+	border-bottom: 1px solid var(--color-border);
+	font-size: 13px;
+}
+
+.fields-table td {
+	padding: 10px 12px;
+	border-bottom: 1px solid var(--color-border-dark);
+	font-size: 13px;
+}
+
+.field-row:hover {
+	background: var(--color-background-hover);
+}
+
+.field-name code {
+	background: var(--color-background-dark);
+	padding: 2px 6px;
+	border-radius: 3px;
+	font-size: 12px;
+	color: var(--color-primary);
+	font-family: monospace;
+}
+
+.type-badge {
+	padding: 2px 8px;
+	border-radius: 12px;
+	font-size: 11px;
+	font-weight: 500;
+	color: white;
+}
+
+.type-string { background: #2196F3; }
+.type-text { background: #4CAF50; }
+.type-integer { background: #FF9800; }
+.type-float { background: #FF5722; }
+.type-date { background: #9C27B0; }
+.type-boolean { background: #607D8B; }
+.type-long { background: #FF9800; }
+.type-double { background: #FF5722; }
+.type-unknown { background: #9E9E9E; }
+
+.boolean-indicator {
+	font-weight: bold;
+	font-size: 14px;
+}
+
+.boolean-indicator.true {
+	color: var(--color-success);
+}
+
+.boolean-indicator.false {
+	color: var(--color-text-maxcontrast);
+}
+
+/* Dynamic Fields */
+.dynamic-fields-section {
+	margin-bottom: 24px;
+}
+
+.dynamic-fields-section h4 {
+	margin: 0 0 16px 0;
+	color: var(--color-main-text);
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.dynamic-fields-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+	gap: 16px;
+}
+
+.dynamic-field-card {
+	background: var(--color-background-hover);
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+	padding: 16px;
+	border-left: 4px solid var(--color-warning);
+}
+
+.dynamic-field-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 12px;
+}
+
+.pattern-name {
+	background: var(--color-background-dark);
+	padding: 4px 8px;
+	border-radius: 4px;
+	font-family: monospace;
+	font-size: 12px;
+	color: var(--color-primary);
+}
+
+.dynamic-field-properties {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.property-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 4px 0;
+}
+
+.property-label {
+	font-size: 12px;
+	color: var(--color-text-maxcontrast);
+}
+
+
+
+/* Fields Error */
+.fields-error {
+	padding: 20px;
+	text-align: center;
+}
+
+.error-card {
+	background: rgba(244, 67, 54, 0.1);
+	border: 1px solid var(--color-error);
+	border-radius: 8px;
+	padding: 20px;
+}
+
+.error-card h4 {
+	margin: 0 0 12px 0;
+	color: var(--color-error-text);
+}
+
+.error-card p {
+	margin: 0 0 16px 0;
+	color: var(--color-text-light);
+}
+
+.error-details {
+	text-align: left;
+}
+
+.error-details pre {
+	background: var(--color-background-dark);
+	padding: 12px;
+	border-radius: 4px;
+	font-size: 11px;
+	overflow-x: auto;
+	margin-top: 8px;
+}
+
+@media (max-width: 768px) {
+	.fields-dialog {
+		padding: 16px;
+	}
+	
+	.overview-stats {
+		flex-direction: column;
+	}
+	
+	.info-grid {
+		grid-template-columns: 1fr;
+	}
+	
+	.fields-controls {
+		flex-direction: column;
+	}
+	
+	.fields-table {
+		font-size: 12px;
+	}
+	
+	.fields-table th,
+	.fields-table td {
+		padding: 8px;
+	}
+	
+	.dynamic-fields-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* Mismatch Alert */
+.mismatch-alert {
+	margin-bottom: 24px;
+	padding: 16px;
+	background: rgba(255, 152, 0, 0.1);
+	border: 1px solid rgba(255, 152, 0, 0.2);
+	border-radius: 8px;
+}
+
+.alert-content {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+}
+
+.alert-icon {
+	font-size: 24px;
+	flex-shrink: 0;
+}
+
+.alert-text {
+	flex: 1;
+}
+
+.alert-text h3 {
+	margin: 0 0 4px 0;
+	color: var(--color-main-text);
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.alert-text p {
+	margin: 0;
+	color: var(--color-text-light);
+	font-size: 14px;
+}
+
+.alert-button {
+	padding: 8px 16px;
+	background: var(--color-primary);
+	color: white;
+	border: none;
+	border-radius: 6px;
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: background-color 0.2s;
+}
+
+.alert-button:hover {
+	background: var(--color-primary-hover);
+}
+
+/* Schema Comparison Styling */
+.comparison-section {
+	margin-top: 24px;
+	padding: 20px;
+	background: var(--color-background-hover);
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+}
+
+.comparison-title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 18px;
+	font-weight: 600;
+	color: #856404;
+	margin-bottom: 8px;
+}
+
+.comparison-icon {
+	font-size: 20px;
+}
+
+.comparison-description {
+	color: #856404;
+	margin-bottom: 20px;
+}
+
+.difference-category {
+	margin-bottom: 24px;
+}
+
+.category-title {
+	font-size: 16px;
+	font-weight: 600;
+	margin-bottom: 8px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.category-title.missing {
+	color: #dc3545;
+}
+
+.category-title.extra {
+	color: #fd7e14;
+}
+
+.category-title.mismatched {
+	color: #6f42c1;
+}
+
+.category-description {
+	font-size: 14px;
+	color: #6c757d;
+	margin-bottom: 12px;
+}
+
+.comparison-table {
+	width: 100%;
+	border-collapse: collapse;
+	background: white;
+	border-radius: 6px;
+	overflow: hidden;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.comparison-table th {
+	background: #f8f9fa;
+	padding: 12px;
+	text-align: left;
+	font-weight: 600;
+	border-bottom: 2px solid #dee2e6;
+}
+
+.comparison-table td {
+	padding: 12px;
+	border-bottom: 1px solid #dee2e6;
+	vertical-align: top;
+}
+
+.comparison-table tr:hover {
+	background: #f8f9fa;
+}
+
+.config-badge {
+	display: inline-block;
+	padding: 2px 6px;
+	font-size: 11px;
+	font-weight: 500;
+	border-radius: 3px;
+	margin-right: 4px;
+	margin-bottom: 2px;
+}
+
+.config-badge.multi {
+	background: #e3f2fd;
+	color: #1976d2;
+}
+
+.config-badge.indexed {
+	background: #e8f5e8;
+	color: #2e7d32;
+}
+
+.config-badge.stored {
+	background: #fff3e0;
+	color: #f57c00;
+}
+
+.config-badge.docvalues {
+	background: #f3e5f5;
+	color: #7b1fa2;
+}
+
+.field-type.expected {
+	background: #d4edda;
+	color: #155724;
+	padding: 2px 6px;
+	border-radius: 3px;
+	font-size: 12px;
+	font-weight: 500;
+}
+
+.field-type.actual {
+	background: #f8d7da;
+	color: #721c24;
+	padding: 2px 6px;
+	border-radius: 3px;
+	font-size: 12px;
+	font-weight: 500;
+}
+
+.action-badge {
+	background: #fff3cd;
+	color: #856404;
+	padding: 4px 8px;
+	border-radius: 4px;
+	font-size: 12px;
+	font-weight: 500;
+}
+
+.no-differences {
+	margin-top: 24px;
+	padding: 20px;
+	text-align: center;
+}
+
+.success-message {
+	background: #d4edda;
+	border: 1px solid #c3e6cb;
+	border-radius: 8px;
+	padding: 20px;
+}
+
+.success-icon {
+	font-size: 24px;
+	display: block;
+	margin-bottom: 8px;
+}
+
+.success-message h4 {
+	color: #155724;
+	margin-bottom: 8px;
+}
+
+.success-message p {
+	color: #155724;
+	margin: 0;
+}
+
+/* Field Actions Section */
+.field-actions-section {
+	margin-top: 24px;
+	padding: 20px;
+	background: #e3f2fd;
+	border: 1px solid #2196f3;
+	border-radius: 8px;
+}
+
+.actions-title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 18px;
+	font-weight: 600;
+	color: #1976d2;
+	margin-bottom: 8px;
+}
+
+.actions-icon {
+	font-size: 20px;
+}
+
+.actions-description {
+	color: #1976d2;
+	margin-bottom: 16px;
+}
+
+.action-buttons {
+	display: flex;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+/* Field Creation Results */
+.field-creation-results {
+	margin-top: 16px;
+	padding: 16px;
+	border-radius: 6px;
+}
+
+.success-result {
+	background: #d4edda;
+	border: 1px solid #c3e6cb;
+	color: #155724;
+}
+
+.error-result {
+	background: #f8d7da;
+	border: 1px solid #f5c6cb;
+	color: #721c24;
+}
+
+.result-icon {
+	font-size: 18px;
+	margin-right: 8px;
+}
+
+.dry-run-preview,
+.created-fields,
+.creation-errors {
+	margin-top: 12px;
+}
+
+.field-list {
+	margin: 8px 0 0 20px;
+	padding: 0;
+}
+
+.field-item {
+	margin: 4px 0;
+	font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+	font-size: 13px;
+}
+
+.field-item.success {
+	color: #28a745;
+}
+
+.error-list {
+	margin: 8px 0 0 20px;
+	padding: 0;
+}
+
+.error-item {
+	margin: 6px 0;
+	font-size: 14px;
+}
+
+.execution-time {
+	margin-top: 8px;
+	font-style: italic;
+	color: #666;
+}
+
+/* Field configuration display */
+.field-config {
+	font-size: 12px;
+	line-height: 1.4;
+}
+
+.config-item {
+	margin: 2px 0;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.config-item strong {
+	min-width: 60px;
+	font-size: 11px;
+	color: #666;
+}
+
+.field-value {
+	padding: 2px 6px;
+	border-radius: 3px;
+	font-size: 11px;
+	font-weight: 500;
+}
+
+.field-value.match {
+	background: #d4edda;
+	color: #155724;
+}
+
+.field-value.mismatch {
+	background: #f8d7da;
+	color: #721c24;
+}
+
+.field-value.expected-value {
+	background: #d4edda;
+	color: #155724;
+}
+
+/* Fix mismatches section */
+.fix-mismatches-section {
+	margin-top: 20px;
+	padding: 16px;
+	background: #f8f9fa;
+	border-radius: 6px;
+	border-left: 4px solid #ffc107;
+}
+
+.fix-title {
+	margin: 0 0 8px 0;
+	font-size: 16px;
+	font-weight: 600;
+	color: #856404;
+}
+
+.fix-description {
+	margin: 0 0 16px 0;
+	color: #666;
+	font-size: 14px;
+	line-height: 1.4;
+}
+
+.fix-actions {
+	display: flex;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+/* Dashboard Styles */
+.solr-management-section {
+	margin-top: 32px;
+	padding-top: 24px;
+	border-top: 2px solid var(--color-border);
+}
+
+.solr-management-section h4 {
+	color: var(--color-text-light);
+	margin: 0 0 16px 0;
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.loading-section {
+	text-align: center;
+	padding: 2rem;
+}
+
+.error-section {
+	text-align: center;
+	padding: 2rem;
+}
+
+.error-message {
+	color: var(--color-error);
+	margin-bottom: 1rem;
+}
+
+.no-data-section {
+	text-align: center;
+	padding: 2rem;
+}
+
+.dashboard-section {
+	padding: 1rem 0;
+}
+
+
+.dashboard-stats-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 1rem;
+}
+
+.stat-card {
+	background: var(--color-background-hover);
+	padding: 1rem;
+	border-radius: var(--border-radius-large);
+	border: 1px solid var(--color-border);
+}
+
+.stat-card h5 {
+	margin: 0 0 0.5rem 0;
+	font-size: 0.9rem;
+	color: var(--color-text-maxcontrast);
+	font-weight: 500;
+}
+
+.stat-card p {
+	margin: 0;
+	font-size: 1.1rem;
+	font-weight: bold;
+}
+
+.status-success {
+	color: var(--color-success);
+}
+
+.status-warning {
+	color: var(--color-warning);
+}
+
+.status-error {
+	color: var(--color-error);
+}
+
+/* Confirmation State */
+.setup-confirmation {
+	text-align: center;
+	padding: 1.5rem 0;
+}
+
+.confirmation-icon {
+	font-size: 3rem;
+	margin-bottom: 1rem;
+}
+
+.setup-confirmation h4 {
+	color: var(--color-primary);
+	margin: 0 0 1rem 0;
+	font-size: 1.5rem;
+}
+
+.confirmation-description {
+	color: var(--color-text);
+	margin: 0 0 1.5rem 0;
+	line-height: 1.5;
+}
+
+.setup-preview-steps {
+	margin: 1.5rem 0;
+	text-align: left;
+	background-color: var(--color-background-hover);
+	border-radius: var(--border-radius);
+	padding: 1rem;
+}
+
+.setup-preview-steps ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.setup-preview-steps li {
+	margin: 0.75rem 0;
+	color: var(--color-text);
+	font-size: 0.95rem;
+	line-height: 1.4;
+}
+
+.timing-warning {
+	background-color: rgba(var(--color-warning-rgb), 0.1);
+	border: 1px solid var(--color-warning);
+	border-radius: var(--border-radius);
+	padding: 1rem;
+	margin: 1.5rem 0;
+	text-align: left;
+	color: var(--color-text);
+	font-size: 0.9rem;
+	line-height: 1.5;
+}
+
+.timing-warning strong {
+	color: var(--color-warning);
+}
+
+.timing-warning small {
+	color: var(--color-text-light);
+	font-style: italic;
+}
+
+.confirmation-actions {
+	display: flex;
+	gap: 1rem;
+	justify-content: center;
+	margin-top: 2rem;
+}
+
+/* Game-style Loading */
+.game-loading-content {
+	margin-top: 2rem;
+	min-height: 200px;
+}
+
+.educational-tips {
+	background-color: var(--color-background-hover);
+	border-radius: var(--border-radius);
+	padding: 1.5rem;
+	margin-bottom: 1.5rem;
+	min-height: 120px;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+}
+
+.tip-item {
+	opacity: 0;
+	transform: translateY(20px);
+	transition: all 0.5s ease-in-out;
+	margin: 0.5rem 0;
+	color: var(--color-text);
+	font-size: 0.95rem;
+	line-height: 1.4;
+	text-align: left;
+}
+
+.tip-item.tip-fade-in {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+.loading-progress-text {
+	text-align: center;
+	color: var(--color-primary);
+	font-weight: 600;
+	font-size: 1rem;
+	padding: 1rem;
+	background-color: rgba(var(--color-primary-rgb), 0.1);
+	border-radius: var(--border-radius);
+	border: 1px solid var(--color-primary);
+	animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+	0% {
+		opacity: 0.8;
+		transform: scale(1);
+	}
+	50% {
+		opacity: 1;
+		transform: scale(1.02);
+	}
+	100% {
+		opacity: 0.8;
+		transform: scale(1);
+	}
+}
+
+/* ConfigSet Propagation Error Styles */
+.propagation-error-section {
+	margin: 1.5rem 0;
+	background-color: rgba(var(--color-warning-rgb), 0.1);
+	border: 1px solid var(--color-warning);
+	border-radius: var(--border-radius);
+	padding: 1.5rem;
+}
+
+.propagation-error-section h4 {
+	color: var(--color-warning);
+	margin: 0 0 1rem 0;
+	font-size: 1.2rem;
+	font-weight: 600;
+}
+
+.propagation-explanation p {
+	margin: 0.5rem 0;
+	color: var(--color-text);
+	line-height: 1.5;
+}
+
+.propagation-explanation strong {
+	color: var(--color-warning);
+	font-weight: 600;
+}
+
+.propagation-details {
+	background-color: var(--color-background-hover);
+	border-radius: var(--border-radius);
+	padding: 1rem;
+	margin: 1rem 0;
+}
+
+.propagation-details ul {
+	margin: 0.5rem 0;
+	padding-left: 1.5rem;
+	list-style: none;
+}
+
+.propagation-details li {
+	margin: 0.5rem 0;
+	color: var(--color-text);
+	font-size: 0.95rem;
+	line-height: 1.4;
+}
+
+.propagation-solution {
+	background-color: rgba(var(--color-success-rgb), 0.1);
+	border: 1px solid var(--color-success);
+	border-radius: var(--border-radius);
+	padding: 1rem;
+	margin: 1rem 0;
+}
+
+.propagation-solution p {
+	margin: 0.5rem 0;
+	color: var(--color-text);
+	font-weight: 600;
+}
+
+.propagation-solution ol {
+	margin: 0.5rem 0;
+	padding-left: 1.5rem;
+}
+
+.propagation-solution li {
+	margin: 0.5rem 0;
+	color: var(--color-text);
+	line-height: 1.4;
+}
+
+.propagation-technical {
+	margin: 1rem 0;
+}
+
+.propagation-technical details {
+	background-color: var(--color-background-hover);
+	border-radius: var(--border-radius);
+	padding: 1rem;
+}
+
+.propagation-technical summary {
+	color: var(--color-primary);
+	cursor: pointer;
+	font-weight: 600;
+	margin-bottom: 0.5rem;
+}
+
+.propagation-technical summary:hover {
+	color: var(--color-primary-hover);
 }
 </style>

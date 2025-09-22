@@ -1276,7 +1276,7 @@ class ObjectService
     private function applyInversedByFilter(array &$filters): ?array
     {
         if ($filters['schema'] === false) {
-            return null;
+            return [];
         }
 
         $schema = $this->schemaMapper->find($filters['schema']);
@@ -1295,7 +1295,7 @@ class ObjectService
         $filtersWithSub = array_intersect_key($filters, array_flip($filterKeysWithSub));
 
         if (empty($filtersWithSub)) {
-            return null;
+            return [];
         }
 
         $filterDot = new Dot(items: $filtersWithSub, parse: true, delimiter: '_');
@@ -1343,7 +1343,7 @@ class ObjectService
             }
         }//end foreach
 
-        if ($iterator === 0 && $ids === []) {
+        if ($iterator > 0 && $ids === []) {
             return null;
         }
 
@@ -1408,13 +1408,18 @@ class ObjectService
 
         $searchIds = $this->applyInversedByFilter(filters: $filters);
 
+        $returnEmpty = false;
+        $objects = [];
+        $total = 0;
         if ($ids === null && $searchIds !== null) {
             $ids = $searchIds;
         } else if ($ids !== null && $searchIds !== null) {
             $ids = array_intersect($ids, $searchIds);
+        } else if ($searchIds === null && $searchIds !== []) {
+            // Return empty because applyInversedBy had a filter but got found result
+            $returnEmpty = true;
         }
-
-        if ($ids !== null) {
+        if ($ids !== null && $returnEmpty === false) {
             $objects = $this->findAll(
                 [
                     "limit"     => $limit,
@@ -1434,7 +1439,7 @@ class ObjectService
                     "ids"     => $ids,
                 ]
             );
-        } else {
+        } elseif ($returnEmpty === false) {
             $objects = $this->findAll(
                 [
                     "limit"     => $limit,
@@ -2378,17 +2383,9 @@ class ObjectService
      */
     private function searchObjectsPaginatedDatabase(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false): array
     {
-        // **VALIDATION**: Check for SOLR-only features in database mode
+        // **VALIDATION**: Database mode now supports facetable functionality
         $facetable = $query['_facetable'] ?? false;
         $aggregations = $query['_aggregations'] ?? false;
-        
-        if (($facetable === true || $facetable === 'true') || 
-            ($aggregations === true || $aggregations === 'true')) {
-            throw new \InvalidArgumentException(
-                'Facets and aggregations are only available when using SOLR search engine. ' .
-                'Please use _source=index parameter to enable SOLR search, or remove _facetable/_aggregations parameters.'
-            );
-        }
 
         // **PERFORMANCE DEBUGGING**: Start detailed timing
         $perfStart = microtime(true);

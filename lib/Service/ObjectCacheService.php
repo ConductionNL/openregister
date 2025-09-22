@@ -955,8 +955,8 @@ class ObjectCacheService
         // **SOLR INTEGRATION**: Index or remove from SOLR based on operation
         
         if ($operation === 'create' || $operation === 'update') {
-            // Index the object in SOLR (async, non-blocking)
-            $this->indexObjectInSolr($object, false);
+            // Index the object in SOLR with immediate commit for instant visibility
+            $this->indexObjectInSolr($object, true);
                 
                 // Update name cache for the modified object
                 $name = $object->getName() ?? $object->getUuid();
@@ -965,8 +965,8 @@ class ObjectCacheService
                     $this->setObjectName($object->getId(), $name);
                 }
             } elseif ($operation === 'delete') {
-                // Remove from SOLR index
-                $this->removeObjectFromSolr($object, false);
+                // Remove from SOLR index with immediate commit for instant visibility
+                $this->removeObjectFromSolr($object, true);
                 
                 // Remove from name cache
                 unset($this->nameCache[$object->getUuid()]);
@@ -1568,7 +1568,7 @@ class ObjectCacheService
                 
                 // Bulk index documents in SOLR
                 if (!empty($solrDocuments)) {
-                    $bulkResult = $solrService->bulkIndex($solrDocuments, false);
+                    $bulkResult = $solrService->bulkIndex($solrDocuments, true);
                     if (!$bulkResult) {
                         $batchErrors += count($solrDocuments);
                         $this->logger->warning('Bulk index failed for batch', [
@@ -1801,9 +1801,11 @@ class ObjectCacheService
         try {
             $result = $solrService->clearIndex();
             return [
-                'success' => $result,
+                'success' => $result['success'],
+                'error' => $result['error'] ?? null,
+                'error_details' => $result['error_details'] ?? null,
                 'timestamp' => date('c'),
-                'message' => $result ? 'Index cleared successfully' : 'Index clear failed'
+                'message' => $result['success'] ? 'Index cleared successfully' : 'Index clear failed'
             ];
         } catch (\Exception $e) {
             return [

@@ -19,14 +19,20 @@ return [
         ['name' => 'settings#updateSolrSettings', 'url' => '/api/settings/solr', 'verb' => 'PUT'],
         ['name' => 'settings#testSolrConnection', 'url' => '/api/settings/solr/test', 'verb' => 'POST'],
         ['name' => 'settings#warmupSolrIndex', 'url' => '/api/settings/solr/warmup', 'verb' => 'POST'],
+        ['name' => 'settings#getSolrMemoryPrediction', 'url' => '/api/settings/solr/memory-prediction', 'verb' => 'POST'],
         ['name' => 'settings#testSchemaMapping', 'url' => '/api/settings/solr/test-schema-mapping', 'verb' => 'POST'],
+		['name' => 'settings#getSolrFields', 'url' => '/api/solr/fields', 'verb' => 'GET'],
+		['name' => 'settings#createMissingSolrFields', 'url' => '/api/solr/fields/create-missing', 'verb' => 'POST'],
+		['name' => 'settings#fixMismatchedSolrFields', 'url' => '/api/solr/fields/fix-mismatches', 'verb' => 'POST'],
         
         // SOLR Dashboard Management endpoints
         ['name' => 'settings#getSolrDashboardStats', 'url' => '/api/solr/dashboard/stats', 'verb' => 'GET'],
         ['name' => 'settings#clearSolrIndex', 'url' => '/api/settings/solr/clear', 'verb' => 'POST'],
+        ['name' => 'settings#inspectSolrIndex', 'url' => '/api/settings/solr/inspect', 'verb' => 'POST'],
         ['name' => 'settings#manageSolr', 'url' => '/api/solr/manage/{operation}', 'verb' => 'POST'],
     ['name' => 'settings#setupSolr', 'url' => '/api/solr/setup', 'verb' => 'POST'],
     ['name' => 'settings#testSolrSetup', 'url' => '/api/solr/test-setup', 'verb' => 'POST'],
+    ['name' => 'settings#deleteSolrCollection', 'url' => '/api/solr/collection/delete', 'verb' => 'DELETE'],
         
         ['name' => 'settings#getRbacSettings', 'url' => '/api/settings/rbac', 'verb' => 'GET'],
         ['name' => 'settings#updateRbacSettings', 'url' => '/api/settings/rbac', 'verb' => 'PUT'],

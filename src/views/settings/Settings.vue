@@ -26,8 +26,6 @@
 				appearance="dark" />
 		</NcSettingsSection>
 
-		<!-- SOLR Dashboard Section -->
-		<SolrDashboard />
 
 		<!-- System Statistics Section -->
 		<StatisticsOverview />
@@ -55,7 +53,6 @@ import { useSettingsStore } from '../../store/settings.js'
 
 import { NcSettingsSection, NcLoadingIcon } from '@nextcloud/vue'
 
-import SolrDashboard from './sections/SolrDashboard.vue'
 import SolrConfiguration from './sections/SolrConfiguration.vue'
 import StatisticsOverview from './sections/StatisticsOverview.vue'
 import CacheManagement from './sections/CacheManagement.vue'
@@ -83,7 +80,6 @@ export default {
 	components: {
 		NcSettingsSection,
 		NcLoadingIcon,
-		SolrDashboard,
 		SolrConfiguration,
 		StatisticsOverview,
 		CacheManagement,
@@ -111,7 +107,6 @@ export default {
 			await Promise.allSettled([
 				this.settingsStore.loadStats(),
 				this.settingsStore.loadCacheStats(),
-				this.settingsStore.loadSolrDashboardStats(),
 			])
 			
 			console.log('✅ Settings data loaded successfully')
