@@ -6793,14 +6793,16 @@ class ObjectService
                 'title' => 'Register',
                 'description' => 'Register that contains the object',
                 'data_type' => 'integer',
-                'queryParameter' => '@self[register]'
+                'queryParameter' => '@self[register]',
+                'source' => 'metadata'
             ],
             'schema' => [
                 'type' => 'terms',
                 'title' => 'Schema',
                 'description' => 'Schema that defines the object structure',
                 'data_type' => 'integer',
-                'queryParameter' => '@self[schema]'
+                'queryParameter' => '@self[schema]',
+                'source' => 'metadata'
             ],
             'created' => [
                 'type' => 'date_histogram',

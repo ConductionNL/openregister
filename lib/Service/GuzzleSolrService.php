@@ -6126,7 +6126,8 @@ class GuzzleSolrService
                         'type' => $this->mapSolrTypeToFacetType($fieldType),
                         'index_field' => $fieldName,
                         'index_type' => $fieldType,
-                        'queryParameter' => '@self[' . $metadataKey . ']'
+                        'queryParameter' => '@self[' . $metadataKey . ']',
+                        'source' => 'metadata'
                     ];
                 } elseif (!in_array($fieldName, ['_version_', 'id', '_text_'])) {
                     // Object field (exclude system fields)
@@ -6135,7 +6136,8 @@ class GuzzleSolrService
                         'type' => $this->mapSolrTypeToFacetType($fieldType),
                         'index_field' => $fieldName,
                         'index_type' => $fieldType,
-                        'queryParameter' => $fieldName
+                        'queryParameter' => $fieldName,
+                        'source' => 'object'
                     ];
                 }
             }
@@ -6581,12 +6583,12 @@ class GuzzleSolrService
         
         // Process metadata fields
         $metadataFieldMap = [
-            'register' => ['name' => 'register', 'type' => 'terms', 'index_field' => 'self_register', 'index_type' => 'pint', 'queryParameter' => '@self[register]'],
-            'schema' => ['name' => 'schema', 'type' => 'terms', 'index_field' => 'self_schema', 'index_type' => 'pint', 'queryParameter' => '@self[schema]'],
-            'organisation' => ['name' => 'organisation', 'type' => 'terms', 'index_field' => 'self_organisation', 'index_type' => 'string', 'queryParameter' => '@self[organisation]'],
-            'application' => ['name' => 'application', 'type' => 'terms', 'index_field' => 'self_application', 'index_type' => 'string', 'queryParameter' => '@self[application]'],
-            'created' => ['name' => 'created', 'type' => 'date_histogram', 'index_field' => 'self_created', 'index_type' => 'pdate', 'queryParameter' => '@self[created]'],
-            'updated' => ['name' => 'updated', 'type' => 'date_histogram', 'index_field' => 'self_updated', 'index_type' => 'pdate', 'queryParameter' => '@self[updated]']
+            'register' => ['name' => 'register', 'type' => 'terms', 'index_field' => 'self_register', 'index_type' => 'pint', 'queryParameter' => '@self[register]', 'source' => 'metadata'],
+            'schema' => ['name' => 'schema', 'type' => 'terms', 'index_field' => 'self_schema', 'index_type' => 'pint', 'queryParameter' => '@self[schema]', 'source' => 'metadata'],
+            'organisation' => ['name' => 'organisation', 'type' => 'terms', 'index_field' => 'self_organisation', 'index_type' => 'string', 'queryParameter' => '@self[organisation]', 'source' => 'metadata'],
+            'application' => ['name' => 'application', 'type' => 'terms', 'index_field' => 'self_application', 'index_type' => 'string', 'queryParameter' => '@self[application]', 'source' => 'metadata'],
+            'created' => ['name' => 'created', 'type' => 'date_histogram', 'index_field' => 'self_created', 'index_type' => 'pdate', 'queryParameter' => '@self[created]', 'source' => 'metadata'],
+            'updated' => ['name' => 'updated', 'type' => 'date_histogram', 'index_field' => 'self_updated', 'index_type' => 'pdate', 'queryParameter' => '@self[updated]', 'source' => 'metadata']
         ];
         
         foreach ($metadataFieldMap as $fieldName => $fieldInfo) {
