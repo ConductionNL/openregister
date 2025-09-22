@@ -7318,10 +7318,10 @@ class GuzzleSolrService
      * Handles cases where register is stored as string ID, slug, or already an integer.
      *
      * @param string|int|null $registerValue The register value from ObjectEntity
-     * @param Register|null $register Optional pre-loaded register entity
+     * @param \OCA\OpenRegister\Db\Register|null $register Optional pre-loaded register entity
      * @return int The resolved register ID, or 0 if resolution fails
      */
-    private function resolveRegisterToId($registerValue, ?Register $register = null): int
+    private function resolveRegisterToId($registerValue, ?\OCA\OpenRegister\Db\Register $register = null): int
     {
         if (empty($registerValue)) {
             return 0;
@@ -7364,10 +7364,10 @@ class GuzzleSolrService
      * Handles cases where schema is stored as string ID, slug, or already an integer.
      *
      * @param string|int|null $schemaValue The schema value from ObjectEntity
-     * @param Schema|null $schema Optional pre-loaded schema entity
+     * @param \OCA\OpenRegister\Db\Schema|null $schema Optional pre-loaded schema entity
      * @return int The resolved schema ID, or 0 if resolution fails
      */
-    private function resolveSchemaToId($schemaValue, ?Schema $schema = null): int
+    private function resolveSchemaToId($schemaValue, ?\OCA\OpenRegister\Db\Schema $schema = null): int
     {
         if (empty($schemaValue)) {
             return 0;
