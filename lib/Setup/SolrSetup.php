@@ -2065,17 +2065,13 @@ class SolrSetup
     {
         $this->logger->info('Configuring SOLR schema fields for ObjectEntity metadata');
 
-        // Get field definitions but skip self_* fields since they're pre-configured in the base schema
-        $allFieldDefinitions = self::getObjectEntityFieldDefinitions();
-        $fieldDefinitions = array_filter($allFieldDefinitions, function($key) {
-            return !str_starts_with($key, 'self_');
-        }, ARRAY_FILTER_USE_KEY);
+        // Get all field definitions including self_* metadata fields
+        $fieldDefinitions = self::getObjectEntityFieldDefinitions();
         
         $this->logger->info('Schema field configuration', [
-            'total_defined_fields' => count($allFieldDefinitions),
-            'self_fields_skipped' => count($allFieldDefinitions) - count($fieldDefinitions),
-            'dynamic_fields_to_add' => count($fieldDefinitions),
-            'note' => 'self_* fields are pre-configured in base schema'
+            'total_fields_to_configure' => count($fieldDefinitions),
+            'includes_metadata_fields' => true,
+            'note' => 'All ObjectEntity fields including self_* metadata fields will be configured'
         ]);
         
         $fieldResults = [
@@ -2437,7 +2433,8 @@ class SolrSetup
                 'stored' => true,
                 'indexed' => true,
                 'multiValued' => false,
-                'required' => true
+                'required' => true,
+                'docValues' => true // Enable faceting for tenant filtering
             ],
 
             // Metadata fields with self_ prefix (consistent with legacy mapping)
@@ -2445,13 +2442,15 @@ class SolrSetup
                 'type' => 'pint',
                 'stored' => true,
                 'indexed' => true,
-                'multiValued' => false
+                'multiValued' => false,
+                'docValues' => false // Not useful for faceting
             ],
             'self_uuid' => [
                 'type' => 'string',
                 'stored' => true,
                 'indexed' => true,
-                'multiValued' => false
+                'multiValued' => false,
+                'docValues' => false // Not useful for faceting
             ],
 
             // Context fields  
@@ -2459,19 +2458,22 @@ class SolrSetup
                 'type' => 'pint',
                 'stored' => true,
                 'indexed' => true,
-                'multiValued' => false
+                'multiValued' => false,
+                'docValues' => true // Enable faceting
             ],
             'self_schema' => [
                 'type' => 'pint',
                 'stored' => true,
                 'indexed' => true,
-                'multiValued' => false
+                'multiValued' => false,
+                'docValues' => true // Enable faceting
             ],
             'self_schema_version' => [
                 'type' => 'string',
                 'stored' => true,
                 'indexed' => true,
-                'multiValued' => false
+                'multiValued' => false,
+                'docValues' => true // Enable faceting
             ],
 
             // Ownership and metadata
@@ -2479,19 +2481,22 @@ class SolrSetup
                 'type' => 'string',
                 'stored' => true,
                 'indexed' => true,
-                'multiValued' => false
+                'multiValued' => false,
+                'docValues' => false // Not useful for faceting - used for ownership tracking
             ],
             'self_organisation' => [
                 'type' => 'string',
                 'stored' => true,
                 'indexed' => true,
-                'multiValued' => false
+                'multiValued' => false,
+                'docValues' => true // Enable faceting
             ],
             'self_application' => [
                 'type' => 'string',
                 'stored' => true,
                 'indexed' => true,
-                'multiValued' => false
+                'multiValued' => false,
+                'docValues' => true // Enable faceting
             ],
 
             // Core object fields (no suffixes needed when explicitly defined)
@@ -2499,13 +2504,15 @@ class SolrSetup
                 'type' => 'string',
                 'stored' => true,
                 'indexed' => true,
-                'multiValued' => false
+                'multiValued' => false,
+                'docValues' => false // Not useful for faceting - used for search
             ],
             'self_description' => [
                 'type' => 'text_general',
                 'stored' => true,
                 'indexed' => true,
-                'multiValued' => false
+                'multiValued' => false,
+                'docValues' => false // Not useful for faceting - used for search
             ],
             'self_summary' => [
                 'type' => 'text_general',
@@ -2555,25 +2562,29 @@ class SolrSetup
                 'type' => 'pdate',
                 'stored' => true,
                 'indexed' => true,
-                'multiValued' => false
+                'multiValued' => false,
+                'docValues' => true // Enable faceting for date ranges
             ],
             'self_updated' => [
                 'type' => 'pdate',
                 'stored' => true,
                 'indexed' => true,
-                'multiValued' => false
+                'multiValued' => false,
+                'docValues' => true // Enable faceting for date ranges
             ],
             'self_published' => [
                 'type' => 'pdate',
                 'stored' => true,
                 'indexed' => true,
-                'multiValued' => false
+                'multiValued' => false,
+                'docValues' => true // Enable faceting for date ranges
             ],
             'self_depublished' => [
                 'type' => 'pdate',
                 'stored' => true,
                 'indexed' => true,
-                'multiValued' => false
+                'multiValued' => false,
+                'docValues' => true // Enable faceting for date ranges
             ],
 
             // **NEW**: UUID relation fields for clean object relationships

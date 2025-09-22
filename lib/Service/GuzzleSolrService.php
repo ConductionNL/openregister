@@ -1632,7 +1632,7 @@ class GuzzleSolrService
             $searchResults = $this->executeSearch($solrQuery, $collectionName);
             
             // Convert SOLR results to OpenRegister paginated format
-            $paginatedResults = $this->convertToOpenRegisterPaginatedFormat($searchResults, $query);
+            $paginatedResults = $this->convertToOpenRegisterPaginatedFormat($searchResults, $query, $solrQuery);
             
             // Add execution metadata
             $paginatedResults['_execution_time_ms'] = round((microtime(true) - $startTime) * 1000, 2);
@@ -1799,6 +1799,14 @@ class GuzzleSolrService
 
         // Handle faceting - check for _facetable parameter (can be boolean true or string "true")
         $enableFacets = isset($query['_facetable']) && ($query['_facetable'] === true || $query['_facetable'] === 'true');
+        
+        // Handle extended faceting - check for _facets parameter
+        $facetsMode = $query['_facets'] ?? null;
+        $enableExtendedFacets = ($facetsMode === 'extend');
+        
+        // Store faceting flags for later processing in convertToOpenRegisterPaginatedFormat
+        $solrQuery['_facetable'] = $enableFacets;
+        $solrQuery['_facets'] = $facetsMode;
 
         // Handle filters
         $filterQueries = [];
@@ -2777,6 +2785,22 @@ class GuzzleSolrService
             'rows' => 20,
             'wt' => 'json'
         ];
+        
+        // Handle _facetable parameter for field discovery
+        if (isset($query['_facetable']) && ($query['_facetable'] === true || $query['_facetable'] === 'true')) {
+            $solrQuery['_facetable'] = true;
+        }
+        
+        // Handle _facets parameter for extended faceting
+        if (isset($query['_facets'])) {
+            $solrQuery['_facets'] = $query['_facets'];
+            
+            // For extended faceting, we'll use JSON faceting instead of traditional faceting
+            // Skip traditional faceting setup when using extended mode
+            if ($query['_facets'] === 'extend') {
+                $solrQuery['_use_json_faceting'] = true;
+            }
+        }
 
         // Handle search query with wildcard support and field weighting
         if (!empty($query['_search'])) {
@@ -2855,8 +2879,8 @@ class GuzzleSolrService
         
 
 
-        // Handle facets
-        if (!empty($query['_facets'])) {
+        // Handle facets - but skip traditional faceting if using JSON faceting (extend mode)
+        if (!empty($query['_facets']) && $query['_facets'] !== 'extend') {
             $solrQuery['facet'] = 'true';
             $solrQuery['facet.field'] = [];
             
@@ -3027,7 +3051,7 @@ class GuzzleSolrService
      * @param array $originalQuery Original OpenRegister query
      * @return array Paginated results in OpenRegister format matching database response structure
      */
-    private function convertToOpenRegisterPaginatedFormat(array $searchResults, array $originalQuery): array
+    private function convertToOpenRegisterPaginatedFormat(array $searchResults, array $originalQuery, array $solrQuery = null): array
     {
         $limit = (int)($originalQuery['_limit'] ?? 20);
         $page = (int)($originalQuery['_page'] ?? 1);
@@ -3057,6 +3081,73 @@ class GuzzleSolrService
                 'facets' => $searchResults['facets'] ?? []
             ],
         ];
+        
+        // Handle _facetable parameter for live field discovery from SOLR
+        if (isset($originalQuery['_facetable']) && ($originalQuery['_facetable'] === true || $originalQuery['_facetable'] === 'true')) {
+            try {
+                $facetableFields = $this->discoverFacetableFieldsFromSolr();
+                $response['facets']['facetable'] = $facetableFields;
+                
+                $this->logger->debug('Added facetable fields to response', [
+                    'facetableFieldCount' => count($facetableFields['@self'] ?? []) + count($facetableFields['object_fields'] ?? [])
+                ]);
+            } catch (\Exception $e) {
+                $this->logger->error('Failed to discover facetable fields from SOLR', [
+                    'error' => $e->getMessage()
+                ]);
+                // Don't fail the whole request, just return empty facetable fields
+                $response['facets']['facetable'] = [
+                    '@self' => [],
+                    'object_fields' => []
+                ];
+            }
+        }
+
+        // Handle _facets=extend parameter for complete faceting (discovery + data)
+        if (isset($originalQuery['_facets']) && $originalQuery['_facets'] === 'extend') {
+            try {
+                // Build contextual facets - if we don't have solrQuery, build it from original query
+                if ($solrQuery === null) {
+                    $solrQuery = $this->buildSolrQuery($originalQuery);
+                }
+                
+                // Re-run the same query with faceting enabled to get contextual facets
+                // This is much more efficient than making separate calls
+                $contextualFacetData = $this->getContextualFacetsFromSameQuery($solrQuery, $originalQuery);
+                
+                // Include facetable field discovery 
+                $response['facets']['facetable'] = $contextualFacetData['facetable'] ?? [];
+                
+                // Put extended facet data in facets.facets property
+                $extendedData = $contextualFacetData['extended'] ?? [];
+                $response['facets']['facets'] = [];
+                if (isset($extendedData['@self'])) {
+                    $response['facets']['facets']['@self'] = $extendedData['@self'];
+                }
+                if (isset($extendedData['object_fields'])) {
+                    $response['facets']['facets']['object_fields'] = $extendedData['object_fields'];
+                }
+                
+                $this->logger->debug('Added contextual faceting data to response', [
+                    'facetableFieldCount' => count($contextualFacetData['facetable']['@self'] ?? []) + count($contextualFacetData['facetable']['object_fields'] ?? []),
+                    'metadataFacets' => count($contextualFacetData['extended']['@self'] ?? []),
+                    'objectFieldFacets' => count($contextualFacetData['extended']['object_fields'] ?? [])
+                ]);
+            } catch (\Exception $e) {
+                $this->logger->error('Failed to get contextual faceting data from SOLR', [
+                    'error' => $e->getMessage()
+                ]);
+                // Don't fail the whole request, just return empty faceting data
+                $response['facets']['facetable'] = [
+                    '@self' => [],
+                    'object_fields' => []
+                ];
+                $response['facets']['facets'] = [
+                    '@self' => [],
+                    'object_fields' => []
+                ];
+            }
+        }
 
         // Add pagination URLs if applicable (matching database format)
         if ($page < $pages) {
@@ -5051,13 +5142,37 @@ class GuzzleSolrService
                 'dry_run' => $dryRun
             ]);
 
-            // Process mismatched fields - all should be replaced since they exist
+            // Process mismatched fields - check for SOLR limitations first
             $fixed = [];
             $errors = [];
+            $warnings = [];
             $schemaUrl = $this->buildSolrBaseUrl() . "/{$collectionName}/schema";
+
+            // Get current field configuration to check for immutable property changes
+            $currentFieldsResponse = $this->getFieldsConfiguration();
+            $currentFields = $currentFieldsResponse['fields'] ?? [];
 
             foreach ($mismatchedFields as $fieldName => $fieldConfig) {
                 try {
+                    // Check if this is a docValues change (which is immutable in SOLR)
+                    $currentField = $currentFields[$fieldName] ?? null;
+                    $newDocValues = $fieldConfig['docValues'] ?? false;
+                    $currentDocValues = $currentField['docValues'] ?? false;
+                    
+                    if ($currentField && $newDocValues !== $currentDocValues) {
+                        $warning = "Cannot change docValues for field '{$fieldName}' from " . 
+                                 ($currentDocValues ? 'true' : 'false') . " to " . 
+                                 ($newDocValues ? 'true' : 'false') . 
+                                 " - docValues is immutable in SOLR. Field would need to be deleted and recreated (losing data).";
+                        $warnings[] = $warning;
+                        $this->logger->warning($warning, [
+                            'field' => $fieldName,
+                            'current_docValues' => $currentDocValues,
+                            'desired_docValues' => $newDocValues
+                        ]);
+                        continue;
+                    }
+                    
                     // Prepare field configuration for SOLR
                     $solrFieldConfig = $this->prepareSolrFieldConfig($fieldName, $fieldConfig);
                     
@@ -5065,7 +5180,6 @@ class GuzzleSolrService
                     $payload = [
                         'replace-field' => $solrFieldConfig
                     ];
-
 
                     if ($dryRun) {
                         $fixed[] = $fieldName;
@@ -5111,16 +5225,23 @@ class GuzzleSolrService
             $executionTime = (microtime(true) - $startTime) * 1000;
             $fixedCount = count($fixed);
             $errorCount = count($errors);
+            $warningCount = count($warnings);
 
             if ($dryRun) {
                 $message = "Dry run completed: {$fixedCount} fields would be fixed";
                 if ($errorCount > 0) {
                     $message .= ", {$errorCount} errors detected";
                 }
+                if ($warningCount > 0) {
+                    $message .= ", {$warningCount} warnings (immutable properties)";
+                }
             } else {
                 $message = "Fixed {$fixedCount} mismatched SOLR fields";
                 if ($errorCount > 0) {
                     $message .= " with {$errorCount} errors";
+                }
+                if ($warningCount > 0) {
+                    $message .= " and {$warningCount} warnings (immutable properties)";
                 }
             }
 
@@ -5129,6 +5250,7 @@ class GuzzleSolrService
                 'message' => $message,
                 'fixed' => $fixed,
                 'errors' => $errors,
+                'warnings' => $warnings,
                 'execution_time_ms' => round($executionTime, 2),
                 'dry_run' => $dryRun
             ];
@@ -5869,5 +5991,933 @@ class GuzzleSolrService
         }
         
         return false;
+    }
+    
+    /**
+     * Discover facetable fields directly from SOLR schema
+     *
+     * This method queries SOLR's schema API to find all fields that have docValues=true,
+     * which makes them suitable for faceting. It returns the fields in the same format
+     * as the database-based facetable field discovery.
+     *
+     * @return array<string, mixed> Facetable fields configuration
+     * @throws \Exception If SOLR schema query fails
+     */
+    private function discoverFacetableFieldsFromSolr(): array
+    {
+        $collectionName = $this->getActiveCollectionName();
+        if ($collectionName === null) {
+            throw new \Exception('No active SOLR collection available for schema discovery');
+        }
+        
+        // Query SOLR schema API for all fields
+        $baseUrl = $this->buildSolrBaseUrl();
+        $schemaUrl = $baseUrl . "/{$collectionName}/schema/fields";
+        
+        try {
+            $response = $this->httpClient->get($schemaUrl, [
+                'query' => [
+                    'wt' => 'json'
+                ]
+            ]);
+            
+            $schemaData = json_decode($response->getBody()->getContents(), true);
+            
+            if (!isset($schemaData['fields']) || !is_array($schemaData['fields'])) {
+                throw new \Exception('Invalid schema response from SOLR');
+            }
+            
+            $facetableFields = [
+                '@self' => [],
+                'object_fields' => []
+            ];
+            
+            // Process each field to determine if it's facetable
+            foreach ($schemaData['fields'] as $field) {
+                $fieldName = $field['name'] ?? 'unknown';
+                
+                // Log self_ fields for debugging
+                if (str_starts_with($fieldName, 'self_')) {
+                    $this->logger->debug('Found self_ field in SOLR schema', [
+                        'field' => $fieldName,
+                        'docValues' => $field['docValues'] ?? 'not set',
+                        'type' => $field['type'] ?? 'unknown'
+                    ]);
+                }
+                
+                if (!isset($field['name']) || !isset($field['docValues']) || $field['docValues'] !== true) {
+                    continue; // Skip fields without docValues
+                }
+                
+                $fieldName = $field['name'];
+                $fieldType = $field['type'] ?? 'string';
+                
+                // Categorize fields
+                if (str_starts_with($fieldName, 'self_')) {
+                    // Metadata field
+                    $metadataKey = substr($fieldName, 5); // Remove 'self_' prefix
+                    $facetableFields['@self'][$metadataKey] = [
+                        'name' => $metadataKey,
+                        'type' => $this->mapSolrTypeToFacetType($fieldType),
+                        'index_field' => $fieldName,
+                        'index_type' => $fieldType
+                    ];
+                } elseif (!in_array($fieldName, ['_version_', 'id', '_text_'])) {
+                    // Object field (exclude system fields)
+                    $facetableFields['object_fields'][$fieldName] = [
+                        'name' => $fieldName,
+                        'type' => $this->mapSolrTypeToFacetType($fieldType),
+                        'index_field' => $fieldName,
+                        'index_type' => $fieldType
+                    ];
+                }
+            }
+            
+            $this->logger->debug('Discovered facetable fields from SOLR schema', [
+                'collection' => $collectionName,
+                'metadataFields' => count($facetableFields['@self']),
+                'objectFields' => count($facetableFields['object_fields']),
+                'totalFields' => count($schemaData['fields'])
+            ]);
+            
+            return $facetableFields;
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to query SOLR schema for facetable fields', [
+                'collection' => $collectionName,
+                'url' => $schemaUrl,
+                'error' => $e->getMessage()
+            ]);
+            
+            throw new \Exception('SOLR schema discovery failed: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Map SOLR field type to OpenRegister facet type
+     *
+     * @param string $solrType SOLR field type
+     * @return string OpenRegister facet type
+     */
+    private function mapSolrTypeToFacetType(string $solrType): string
+    {
+        switch ($solrType) {
+            case 'pint':
+            case 'plong':
+            case 'pfloat':
+            case 'pdouble':
+            case 'int':
+            case 'long':
+            case 'float':
+            case 'double':
+                return 'range';
+            case 'pdate':
+            case 'date':
+                return 'date_histogram';
+            case 'boolean':
+                return 'terms';
+            default:
+                return 'terms';
+        }
+    }
+
+    /**
+     * Get contextual facets by re-running the same query with faceting enabled
+     * This is much more efficient and respects all current search parameters
+     *
+     * @param array $solrQuery The current SOLR query parameters
+     * @param array $originalQuery The original OpenRegister query
+     * @return array Contextual facet data with both facetable fields and extended data
+     */
+    private function getContextualFacetsFromSameQuery(array $solrQuery, array $originalQuery): array
+    {
+        $collectionName = $this->getActiveCollectionName();
+        if ($collectionName === null) {
+            throw new \Exception('No active SOLR collection available for contextual faceting');
+        }
+
+        // Build faceting query using the same parameters as the main query
+        // but with rows=0 for performance and JSON faceting enabled
+        $facetQuery = $solrQuery;
+        $facetQuery['rows'] = 0; // We only want facet data
+        
+        // Add JSON faceting for core metadata fields
+        $jsonFacets = $this->buildOptimizedContextualFacetQuery();
+        if (!empty($jsonFacets)) {
+            $facetQuery['json.facet'] = json_encode($jsonFacets);
+        }
+
+        // Execute the faceting query
+        $baseUrl = $this->buildSolrBaseUrl();
+        $queryUrl = $baseUrl . "/{$collectionName}/select";
+        
+        try {
+            $startTime = microtime(true);
+            
+            // Use POST to avoid URI length issues
+            $response = $this->httpClient->post($queryUrl, [
+                'form_params' => $facetQuery,
+                'headers' => [
+                    'Content-Type' => 'application/x-www-form-urlencoded'
+                ]
+            ]);
+            
+            $responseBody = $response->getBody()->getContents();
+            $data = json_decode($responseBody, true);
+            
+            $executionTime = (microtime(true) - $startTime) * 1000;
+            
+            if ($data === null) {
+                $this->logger->error('Failed to decode SOLR JSON response for contextual facets', [
+                    'response_body' => substr($responseBody, 0, 1000), // First 1000 chars
+                    'json_error' => json_last_error_msg()
+                ]);
+                throw new \Exception('Failed to decode SOLR JSON response: ' . json_last_error_msg());
+            }
+            
+            $this->logger->debug('Contextual faceting query completed', [
+                'execution_time_ms' => round($executionTime, 2),
+                'total_found' => $data['response']['numFound'] ?? 0,
+                'facets_available' => isset($data['facets'])
+            ]);
+            
+            // Process the facet data
+            if (isset($data['facets'])) {
+                return $this->processOptimizedContextualFacets($data['facets']);
+            } else {
+                // Fallback: discover fields that have values in the current result set
+                return $this->discoverFieldsFromCurrentResults($data);
+            }
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get contextual facets from same query', [
+                'collection' => $collectionName,
+                'url' => $queryUrl,
+                'error' => $e->getMessage()
+            ]);
+            
+            throw new \Exception('SOLR contextual faceting failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Discover fields that have values from the current search results
+     * This is a fallback when JSON faceting is not available
+     *
+     * @param array $solrResponse The SOLR response data
+     * @return array Contextual facet data
+     */
+    private function discoverFieldsFromCurrentResults(array $solrResponse): array
+    {
+        $contextualData = [
+            'facetable' => ['@self' => [], 'object_fields' => []],
+            'extended' => ['@self' => [], 'object_fields' => []]
+        ];
+
+        // If there are no results, return empty facets
+        if (!isset($solrResponse['response']['docs']) || empty($solrResponse['response']['docs'])) {
+            return $contextualData;
+        }
+
+        $docs = $solrResponse['response']['docs'];
+        $fieldsFound = [];
+
+        // Analyze the first few documents to discover available fields
+        $sampleSize = min(10, count($docs));
+        for ($i = 0; $i < $sampleSize; $i++) {
+            foreach ($docs[$i] as $fieldName => $fieldValue) {
+                if (!isset($fieldsFound[$fieldName])) {
+                    $fieldsFound[$fieldName] = [];
+                }
+                
+                // Store unique values (up to 50 per field for performance)
+                if (is_array($fieldValue)) {
+                    foreach ($fieldValue as $value) {
+                        if (count($fieldsFound[$fieldName]) < 50) {
+                            $fieldsFound[$fieldName][] = $value;
+                        }
+                    }
+                } else {
+                    if (count($fieldsFound[$fieldName]) < 50) {
+                        $fieldsFound[$fieldName][] = $fieldValue;
+                    }
+                }
+            }
+        }
+
+        // Process discovered fields
+        $metadataFields = [
+            'self_register' => ['name' => 'register', 'type' => 'terms', 'index_field' => 'self_register', 'index_type' => 'pint'],
+            'self_schema' => ['name' => 'schema', 'type' => 'terms', 'index_field' => 'self_schema', 'index_type' => 'pint'],
+            'self_organisation' => ['name' => 'organisation', 'type' => 'terms', 'index_field' => 'self_organisation', 'index_type' => 'string'],
+            'self_application' => ['name' => 'application', 'type' => 'terms', 'index_field' => 'self_application', 'index_type' => 'string'],
+            'self_created' => ['name' => 'created', 'type' => 'date_histogram', 'index_field' => 'self_created', 'index_type' => 'pdate'],
+            'self_updated' => ['name' => 'updated', 'type' => 'date_histogram', 'index_field' => 'self_updated', 'index_type' => 'pdate']
+        ];
+
+        foreach ($fieldsFound as $fieldName => $values) {
+            if (str_starts_with($fieldName, 'self_')) {
+                // Metadata field
+                if (isset($metadataFields[$fieldName])) {
+                    $fieldInfo = $metadataFields[$fieldName];
+                    $contextualData['facetable']['@self'][$fieldInfo['name']] = $fieldInfo;
+                    $contextualData['extended']['@self'][$fieldInfo['name']] = array_merge(
+                        $fieldInfo,
+                        ['data' => array_map(function($value) { return ['value' => $value, 'count' => 1]; }, array_unique($values))]
+                    );
+                }
+            } elseif (!in_array($fieldName, ['_version_', 'id', '_text_'])) {
+                // Object field (exclude system fields)
+                $fieldType = $this->inferFieldType($values);
+                $fieldInfo = [
+                    'name' => $fieldName,
+                    'type' => $this->mapSolrTypeToFacetType($fieldType),
+                    'index_field' => $fieldName,
+                    'index_type' => $fieldType
+                ];
+                
+                $contextualData['facetable']['object_fields'][$fieldName] = $fieldInfo;
+                $contextualData['extended']['object_fields'][$fieldName] = array_merge(
+                    $fieldInfo,
+                    ['data' => array_map(function($value) { return ['value' => $value, 'count' => 1]; }, array_unique($values))]
+                );
+            }
+        }
+
+        $this->logger->debug('Discovered fields from current results', [
+            'metadata_fields' => count($contextualData['facetable']['@self']),
+            'object_fields' => count($contextualData['facetable']['object_fields']),
+            'sample_size' => $sampleSize,
+            'total_docs' => count($docs)
+        ]);
+
+        return $contextualData;
+    }
+
+    /**
+     * Infer field type from sample values
+     *
+     * @param array $values Sample values from the field
+     * @return string Inferred SOLR field type
+     */
+    private function inferFieldType(array $values): string
+    {
+        if (empty($values)) {
+            return 'string';
+        }
+
+        $sampleValue = $values[0];
+        
+        if (is_numeric($sampleValue)) {
+            return strpos($sampleValue, '.') !== false ? 'pfloat' : 'pint';
+        } elseif (strtotime($sampleValue) !== false) {
+            return 'pdate';
+        } else {
+            return 'string';
+        }
+    }
+
+    /**
+     * Get contextual facet data in one optimized SOLR call
+     * This method respects current search parameters and only returns facets with actual values
+     *
+     * @param array $searchResults Current search results to extract facets from
+     * @param array $filters Current query filters to apply
+     * @return array Contextual facet data with both facetable fields and extended data
+     */
+    private function getContextualFacetData(array $searchResults, array $filters = []): array
+    {
+        $collectionName = $this->getActiveCollectionName();
+        if ($collectionName === null) {
+            throw new \Exception('No active SOLR collection available for contextual faceting');
+        }
+
+        // Extract facets from the current search results if they exist
+        // This is much faster than making additional SOLR calls
+        if (isset($searchResults['facets']) && !empty($searchResults['facets'])) {
+            $this->logger->debug('Using facets from current search results for contextual data');
+            return $this->processContextualFacetsFromSearchResults($searchResults['facets']);
+        }
+
+        // If no facets in search results, make an optimized SOLR call
+        // that discovers fields AND gets data in one request
+        return $this->getOptimizedContextualFacets($filters);
+    }
+
+    /**
+     * Process contextual facets from existing search results
+     *
+     * @param array $searchFacets Facets from current search results
+     * @return array Processed contextual facet data
+     */
+    private function processContextualFacetsFromSearchResults(array $searchFacets): array
+    {
+        // For now, return empty structure - we'll implement this if needed
+        // Most of the time we'll use the optimized call instead
+        return [
+            'facetable' => ['@self' => [], 'object_fields' => []],
+            'extended' => ['@self' => [], 'object_fields' => []]
+        ];
+    }
+
+    /**
+     * Get optimized contextual facets with a single SOLR call
+     * Uses SOLR's field stats to discover which fields have values, then facets only those
+     *
+     * @param array $filters Current query filters
+     * @return array Contextual facet data
+     */
+    private function getOptimizedContextualFacets(array $filters = []): array
+    {
+        $collectionName = $this->getActiveCollectionName();
+        
+        // Build a comprehensive JSON faceting query that discovers fields with values
+        // and gets their facet data in one call
+        $optimizedFacetQuery = $this->buildOptimizedContextualFacetQuery();
+        
+        if (empty($optimizedFacetQuery)) {
+            return [
+                'facetable' => ['@self' => [], 'object_fields' => []],
+                'extended' => ['@self' => [], 'object_fields' => []]
+            ];
+        }
+
+        // Build base query with current filters
+        $baseQuery = '*:*';
+        $filterQueries = [];
+        
+        // Add tenant filter
+        $tenantId = $this->getTenantId();
+        if ($tenantId) {
+            $filterQueries[] = 'self_tenant:' . $tenantId;
+        }
+        
+        // Add current filters
+        foreach ($filters as $filter) {
+            if (!empty($filter)) {
+                $filterQueries[] = $filter;
+            }
+        }
+
+        // Query SOLR with optimized JSON faceting
+        $baseUrl = $this->buildSolrBaseUrl();
+        $queryUrl = $baseUrl . "/{$collectionName}/select";
+        
+        $queryParams = [
+            'q' => $baseQuery,
+            'rows' => 0, // We only want facet data
+            'wt' => 'json',
+            'json.facet' => json_encode($optimizedFacetQuery)
+        ];
+        
+        // Add filter queries
+        if (!empty($filterQueries)) {
+            $queryParams['fq'] = $filterQueries;
+        }
+
+        try {
+            $startTime = microtime(true);
+            
+            // Use POST to avoid URI length issues
+            $response = $this->httpClient->post($queryUrl, [
+                'form_params' => $queryParams,
+                'headers' => [
+                    'Content-Type' => 'application/x-www-form-urlencoded'
+                ]
+            ]);
+            
+            $responseBody = $response->getBody()->getContents();
+            $data = json_decode($responseBody, true);
+            
+            $executionTime = (microtime(true) - $startTime) * 1000;
+            
+            if ($data === null) {
+                $this->logger->error('Failed to decode SOLR JSON response for contextual facets', [
+                    'response_body' => substr($responseBody, 0, 1000), // First 1000 chars
+                    'json_error' => json_last_error_msg()
+                ]);
+                throw new \Exception('Failed to decode SOLR JSON response: ' . json_last_error_msg());
+            }
+            
+            if (!isset($data['facets'])) {
+                $this->logger->error('SOLR response missing facets key for contextual facets', [
+                    'response_keys' => array_keys($data)
+                ]);
+                throw new \Exception('Invalid contextual faceting response from SOLR - missing facets key');
+            }
+            
+            $this->logger->debug('Optimized contextual faceting completed', [
+                'execution_time_ms' => round($executionTime, 2),
+                'facets_found' => count($data['facets'])
+            ]);
+            
+            // Process and format the contextual facet data
+            return $this->processOptimizedContextualFacets($data['facets']);
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get optimized contextual facet data from SOLR', [
+                'collection' => $collectionName,
+                'url' => $queryUrl,
+                'error' => $e->getMessage()
+            ]);
+            
+            throw new \Exception('SOLR contextual faceting failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Build optimized contextual facet query that only includes fields with actual values
+     *
+     * @return array Optimized JSON facet query
+     */
+    private function buildOptimizedContextualFacetQuery(): array
+    {
+        // Get core metadata fields that should always be checked
+        $coreMetadataFields = [
+            'register' => 'self_register',
+            'schema' => 'self_schema', 
+            'organisation' => 'self_organisation',
+            'application' => 'self_application',
+            'created' => 'self_created',
+            'updated' => 'self_updated'
+        ];
+        
+        // Build facet query with existence checks and data retrieval
+        $facetQuery = [];
+        
+        // Add metadata fields with existence checks
+        foreach ($coreMetadataFields as $fieldName => $solrField) {
+            $facetQuery[$fieldName] = [
+                'type' => 'terms',
+                'field' => $solrField,
+                'limit' => 50,
+                'mincount' => 1, // Only include if there are actual values
+                'missing' => false // Don't include missing values
+            ];
+        }
+        
+        return $facetQuery;
+    }
+
+    /**
+     * Process optimized contextual facets from SOLR response
+     *
+     * @param array $facetData Raw facet data from SOLR
+     * @return array Processed contextual facet data
+     */
+    private function processOptimizedContextualFacets(array $facetData): array
+    {
+        $contextualData = [
+            'facetable' => ['@self' => [], 'object_fields' => []],
+            'extended' => ['@self' => [], 'object_fields' => []]
+        ];
+        
+        // Process metadata fields
+        $metadataFieldMap = [
+            'register' => ['name' => 'register', 'type' => 'terms', 'index_field' => 'self_register', 'index_type' => 'pint'],
+            'schema' => ['name' => 'schema', 'type' => 'terms', 'index_field' => 'self_schema', 'index_type' => 'pint'],
+            'organisation' => ['name' => 'organisation', 'type' => 'terms', 'index_field' => 'self_organisation', 'index_type' => 'string'],
+            'application' => ['name' => 'application', 'type' => 'terms', 'index_field' => 'self_application', 'index_type' => 'string'],
+            'created' => ['name' => 'created', 'type' => 'date_histogram', 'index_field' => 'self_created', 'index_type' => 'pdate'],
+            'updated' => ['name' => 'updated', 'type' => 'date_histogram', 'index_field' => 'self_updated', 'index_type' => 'pdate']
+        ];
+        
+        foreach ($metadataFieldMap as $fieldName => $fieldInfo) {
+            if (isset($facetData[$fieldName]) && !empty($facetData[$fieldName]['buckets'])) {
+                // Add to facetable fields
+                $contextualData['facetable']['@self'][$fieldName] = $fieldInfo;
+                
+                // Add to extended data with actual values
+                $contextualData['extended']['@self'][$fieldName] = array_merge(
+                    $fieldInfo,
+                    ['data' => $this->formatFacetData($facetData[$fieldName], $fieldInfo['type'])]
+                );
+            }
+        }
+        
+        $this->logger->debug('Processed optimized contextual facets', [
+            'metadata_fields_found' => count($contextualData['extended']['@self']),
+            'object_fields_found' => count($contextualData['extended']['object_fields'])
+        ]);
+        
+        return $contextualData;
+    }
+
+    /**
+     * Get extended facet data from SOLR using JSON faceting API
+     *
+     * @param array $facetableFields The facetable fields discovered from schema
+     * @param array $filters Current query filters to apply
+     * @return array Extended facet data with counts and options
+     */
+    private function getExtendedFacetData(array $facetableFields, array $filters = []): array
+    {
+        $collectionName = $this->getActiveCollectionName();
+        if ($collectionName === null) {
+            throw new \Exception('No active SOLR collection available for extended faceting');
+        }
+
+        // Build JSON faceting query
+        $facetQuery = $this->buildJsonFacetQuery($facetableFields);
+        
+        if (empty($facetQuery)) {
+            return [
+                '@self' => [],
+                'object_fields' => []
+            ];
+        }
+
+        // Build base query with filters
+        $baseQuery = '*:*';
+        $filterQueries = [];
+        
+        // Add tenant filter
+        $tenantId = $this->getTenantId();
+        if ($tenantId) {
+            $filterQueries[] = 'self_tenant:' . $tenantId;
+        }
+        
+        // Add any additional filters from the query
+        foreach ($filters as $filter) {
+            if (!empty($filter)) {
+                $filterQueries[] = $filter;
+            }
+        }
+
+        // Query SOLR with JSON faceting
+        $baseUrl = $this->buildSolrBaseUrl();
+        $queryUrl = $baseUrl . "/{$collectionName}/select";
+        
+        $queryParams = [
+            'q' => $baseQuery,
+            'rows' => 0, // We only want facet data, not documents
+            'wt' => 'json',
+            'json.facet' => json_encode($facetQuery)
+        ];
+        
+        // Add filter queries
+        if (!empty($filterQueries)) {
+            $queryParams['fq'] = $filterQueries;
+        }
+
+        try {
+            // Use POST instead of GET to avoid 414 Request-URI Too Large errors
+            // when using complex JSON faceting queries
+            $response = $this->httpClient->post($queryUrl, [
+                'form_params' => $queryParams,
+                'headers' => [
+                    'Content-Type' => 'application/x-www-form-urlencoded'
+                ]
+            ]);
+            
+            $responseBody = $response->getBody()->getContents();
+            $data = json_decode($responseBody, true);
+            
+            if ($data === null) {
+                $this->logger->error('Failed to decode SOLR JSON response', [
+                    'response_body' => $responseBody,
+                    'json_error' => json_last_error_msg()
+                ]);
+                throw new \Exception('Failed to decode SOLR JSON response: ' . json_last_error_msg());
+            }
+            
+            $this->logger->debug('SOLR JSON faceting response', [
+                'response_keys' => array_keys($data),
+                'facets_key_exists' => isset($data['facets']),
+                'response_sample' => array_slice($data, 0, 3, true)
+            ]);
+            
+            if (!isset($data['facets'])) {
+                // Log the full response for debugging
+                $this->logger->error('SOLR response missing facets key', [
+                    'response' => $data
+                ]);
+                throw new \Exception('Invalid faceting response from SOLR - missing facets key');
+            }
+            
+            // Process and format the facet data
+            return $this->processFacetResponse($data['facets'], $facetableFields);
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get extended facet data from SOLR', [
+                'collection' => $collectionName,
+                'url' => $queryUrl,
+                'error' => $e->getMessage()
+            ]);
+            
+            throw new \Exception('SOLR extended faceting failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Build JSON facet query for SOLR
+     *
+     * @param array $facetableFields The facetable fields to create facets for
+     * @return array JSON facet query structure
+     */
+    private function buildJsonFacetQuery(array $facetableFields): array
+    {
+        $facetQuery = [];
+        
+        // Process metadata fields (@self)
+        foreach ($facetableFields['@self'] ?? [] as $fieldName => $fieldInfo) {
+            $solrFieldName = $fieldInfo['index_field'];
+            $facetType = $fieldInfo['type'];
+            
+            if ($facetType === 'date_histogram') {
+                $facetQuery[$fieldName] = $this->buildDateHistogramFacet($solrFieldName);
+            } elseif ($facetType === 'range') {
+                $facetQuery[$fieldName] = $this->buildRangeFacet($solrFieldName);
+            } else {
+                $facetQuery[$fieldName] = $this->buildTermsFacet($solrFieldName);
+            }
+        }
+        
+        // Process object fields
+        foreach ($facetableFields['object_fields'] ?? [] as $fieldName => $fieldInfo) {
+            $solrFieldName = $fieldInfo['index_field'];
+            $facetType = $fieldInfo['type'];
+            
+            if ($facetType === 'date_histogram') {
+                $facetQuery[$fieldName] = $this->buildDateHistogramFacet($solrFieldName);
+            } elseif ($facetType === 'range') {
+                $facetQuery[$fieldName] = $this->buildRangeFacet($solrFieldName);
+            } else {
+                $facetQuery[$fieldName] = $this->buildTermsFacet($solrFieldName);
+            }
+        }
+        
+        return $facetQuery;
+    }
+
+    /**
+     * Build terms facet for categorical fields
+     *
+     * @param string $fieldName SOLR field name
+     * @return array Terms facet configuration
+     */
+    private function buildTermsFacet(string $fieldName): array
+    {
+        return [
+            'type' => 'terms',
+            'field' => $fieldName,
+            'limit' => 50, // Limit to top 50 terms
+            'mincount' => 1 // Only include terms with at least 1 document
+        ];
+    }
+
+    /**
+     * Build range facet for numeric fields
+     *
+     * @param string $fieldName SOLR field name
+     * @return array Range facet configuration
+     */
+    private function buildRangeFacet(string $fieldName): array
+    {
+        return [
+            'type' => 'range',
+            'field' => $fieldName,
+            'start' => 0,
+            'end' => 1000000,
+            'gap' => 100,
+            'mincount' => 1
+        ];
+    }
+
+    /**
+     * Build date histogram facet with sensible time brackets
+     *
+     * @param string $fieldName SOLR field name
+     * @return array Date histogram facet configuration
+     */
+    private function buildDateHistogramFacet(string $fieldName): array
+    {
+        // For date fields, we'll create multiple time brackets
+        return [
+            'type' => 'range',
+            'field' => $fieldName,
+            'start' => 'NOW-10YEARS',
+            'end' => 'NOW+1DAY',
+            'gap' => '+1YEAR',
+            'mincount' => 1,
+            'facet' => [
+                'monthly' => [
+                    'type' => 'range',
+                    'field' => $fieldName,
+                    'start' => 'NOW-2YEARS',
+                    'end' => 'NOW+1DAY',
+                    'gap' => '+1MONTH',
+                    'mincount' => 1
+                ],
+                'daily' => [
+                    'type' => 'range',
+                    'field' => $fieldName,
+                    'start' => 'NOW-90DAYS',
+                    'end' => 'NOW+1DAY',
+                    'gap' => '+1DAY',
+                    'mincount' => 1
+                ]
+            ]
+        ];
+    }
+
+    /**
+     * Process SOLR facet response and format for frontend consumption
+     *
+     * @param array $facetData Raw facet data from SOLR
+     * @param array $facetableFields Original facetable fields structure
+     * @return array Formatted facet data
+     */
+    private function processFacetResponse(array $facetData, array $facetableFields): array
+    {
+        $processedFacets = [
+            '@self' => [],
+            'object_fields' => []
+        ];
+        
+        // Process metadata fields
+        foreach ($facetableFields['@self'] ?? [] as $fieldName => $fieldInfo) {
+            if (isset($facetData[$fieldName])) {
+                $processedFacets['@self'][$fieldName] = array_merge(
+                    $fieldInfo,
+                    ['data' => $this->formatFacetData($facetData[$fieldName], $fieldInfo['type'])]
+                );
+            }
+        }
+        
+        // Process object fields
+        foreach ($facetableFields['object_fields'] ?? [] as $fieldName => $fieldInfo) {
+            if (isset($facetData[$fieldName])) {
+                $processedFacets['object_fields'][$fieldName] = array_merge(
+                    $fieldInfo,
+                    ['data' => $this->formatFacetData($facetData[$fieldName], $fieldInfo['type'])]
+                );
+            }
+        }
+        
+        return $processedFacets;
+    }
+
+    /**
+     * Format facet data based on facet type
+     *
+     * @param array $rawFacetData Raw facet data from SOLR
+     * @param string $facetType Type of facet (terms, range, date_histogram)
+     * @return array Formatted facet data
+     */
+    private function formatFacetData(array $rawFacetData, string $facetType): array
+    {
+        switch ($facetType) {
+            case 'terms':
+                return $this->formatTermsFacetData($rawFacetData);
+            case 'range':
+                return $this->formatRangeFacetData($rawFacetData);
+            case 'date_histogram':
+                return $this->formatDateHistogramFacetData($rawFacetData);
+            default:
+                return $rawFacetData;
+        }
+    }
+
+    /**
+     * Format terms facet data
+     *
+     * @param array $rawData Raw terms facet data
+     * @return array Formatted terms data
+     */
+    private function formatTermsFacetData(array $rawData): array
+    {
+        $buckets = $rawData['buckets'] ?? [];
+        $formattedBuckets = [];
+        
+        foreach ($buckets as $bucket) {
+            $formattedBuckets[] = [
+                'value' => $bucket['val'],
+                'count' => $bucket['count'],
+                'label' => $bucket['val'] // Could be enhanced with human-readable labels
+            ];
+        }
+        
+        return [
+            'type' => 'terms',
+            'total_count' => array_sum(array_column($formattedBuckets, 'count')),
+            'buckets' => $formattedBuckets
+        ];
+    }
+
+    /**
+     * Format range facet data
+     *
+     * @param array $rawData Raw range facet data
+     * @return array Formatted range data
+     */
+    private function formatRangeFacetData(array $rawData): array
+    {
+        $buckets = $rawData['buckets'] ?? [];
+        $formattedBuckets = [];
+        
+        foreach ($buckets as $bucket) {
+            $formattedBuckets[] = [
+                'from' => $bucket['val'],
+                'to' => $bucket['val'] + ($rawData['gap'] ?? 100),
+                'count' => $bucket['count'],
+                'label' => $bucket['val'] . ' - ' . ($bucket['val'] + ($rawData['gap'] ?? 100))
+            ];
+        }
+        
+        return [
+            'type' => 'range',
+            'total_count' => array_sum(array_column($formattedBuckets, 'count')),
+            'buckets' => $formattedBuckets
+        ];
+    }
+
+    /**
+     * Format date histogram facet data with multiple time brackets
+     *
+     * @param array $rawData Raw date histogram facet data
+     * @return array Formatted date histogram data with yearly, monthly, and daily brackets
+     */
+    private function formatDateHistogramFacetData(array $rawData): array
+    {
+        $yearlyBuckets = $rawData['buckets'] ?? [];
+        $monthlyBuckets = $rawData['monthly']['buckets'] ?? [];
+        $dailyBuckets = $rawData['daily']['buckets'] ?? [];
+        
+        return [
+            'type' => 'date_histogram',
+            'brackets' => [
+                'yearly' => [
+                    'interval' => 'year',
+                    'buckets' => array_map(function($bucket) {
+                        return [
+                            'date' => $bucket['val'],
+                            'count' => $bucket['count'],
+                            'label' => date('Y', strtotime($bucket['val']))
+                        ];
+                    }, $yearlyBuckets)
+                ],
+                'monthly' => [
+                    'interval' => 'month',
+                    'buckets' => array_map(function($bucket) {
+                        return [
+                            'date' => $bucket['val'],
+                            'count' => $bucket['count'],
+                            'label' => date('Y-m', strtotime($bucket['val']))
+                        ];
+                    }, $monthlyBuckets)
+                ],
+                'daily' => [
+                    'interval' => 'day',
+                    'buckets' => array_map(function($bucket) {
+                        return [
+                            'date' => $bucket['val'],
+                            'count' => $bucket['count'],
+                            'label' => date('Y-m-d', strtotime($bucket['val']))
+                        ];
+                    }, $dailyBuckets)
+                ]
+            ]
+        ];
     }
 }

@@ -37,6 +37,7 @@ $fieldDefinitions = [
         'stored' => true,
         'indexed' => true,
         'multiValued' => false,
+        'docValues' => false, // Not useful for faceting
         'description' => 'Tenant identifier for multi-tenancy'
     ],
 
@@ -46,6 +47,7 @@ $fieldDefinitions = [
         'stored' => true,
         'indexed' => true,
         'multiValued' => false,
+        'docValues' => false, // Not useful for faceting
         'description' => 'Database object ID'
     ],
     'self_uuid' => [
@@ -53,6 +55,7 @@ $fieldDefinitions = [
         'stored' => true,
         'indexed' => true,
         'multiValued' => false,
+        'docValues' => false, // Not useful for faceting
         'description' => 'Object UUID'
     ],
 
@@ -62,6 +65,7 @@ $fieldDefinitions = [
         'stored' => true,
         'indexed' => true,
         'multiValued' => false,
+        'docValues' => true,
         'description' => 'Register ID'
     ],
     'self_schema' => [
@@ -69,6 +73,7 @@ $fieldDefinitions = [
         'stored' => true,
         'indexed' => true,
         'multiValued' => false,
+        'docValues' => true,
         'description' => 'Schema ID'
     ],
     'self_schema_version' => [
@@ -76,6 +81,7 @@ $fieldDefinitions = [
         'stored' => true,
         'indexed' => true,
         'multiValued' => false,
+        'docValues' => true,
         'description' => 'Schema version'
     ],
 
@@ -85,6 +91,7 @@ $fieldDefinitions = [
         'stored' => true,
         'indexed' => true,
         'multiValued' => false,
+        'docValues' => true,
         'description' => 'Object owner'
     ],
     'self_organisation' => [
@@ -92,6 +99,7 @@ $fieldDefinitions = [
         'stored' => true,
         'indexed' => true,
         'multiValued' => false,
+        'docValues' => true,
         'description' => 'Organisation'
     ],
     'self_application' => [
@@ -99,6 +107,7 @@ $fieldDefinitions = [
         'stored' => true,
         'indexed' => true,
         'multiValued' => false,
+        'docValues' => true,
         'description' => 'Application name'
     ],
 
@@ -108,6 +117,7 @@ $fieldDefinitions = [
         'stored' => true,
         'indexed' => true,
         'multiValued' => false,
+        'docValues' => false, // Not useful for faceting - used for search
         'description' => 'Object name'
     ],
     'self_description' => [
@@ -115,6 +125,7 @@ $fieldDefinitions = [
         'stored' => true,
         'indexed' => true,
         'multiValued' => false,
+        'docValues' => false, // Not useful for faceting - used for search
         'description' => 'Object description (full-text searchable)'
     ],
     'self_summary' => [
@@ -122,6 +133,7 @@ $fieldDefinitions = [
         'stored' => true,
         'indexed' => true,
         'multiValued' => false,
+        'docValues' => false, // Not useful for faceting - used for search
         'description' => 'Object summary'
     ],
     'self_image' => [
@@ -129,6 +141,7 @@ $fieldDefinitions = [
         'stored' => true,
         'indexed' => false,
         'multiValued' => false,
+        'docValues' => false, // Not useful for faceting
         'description' => 'Object image reference'
     ],
     'self_slug' => [
@@ -136,6 +149,7 @@ $fieldDefinitions = [
         'stored' => true,
         'indexed' => true,
         'multiValued' => false,
+        'docValues' => false, // Not useful for faceting
         'description' => 'Object URL slug'
     ],
     'self_uri' => [
@@ -143,6 +157,7 @@ $fieldDefinitions = [
         'stored' => true,
         'indexed' => true,
         'multiValued' => false,
+        'docValues' => false, // Not useful for faceting
         'description' => 'Object URI'
     ],
     'self_version' => [
@@ -150,6 +165,7 @@ $fieldDefinitions = [
         'stored' => true,
         'indexed' => true,
         'multiValued' => false,
+        'docValues' => false, // Not useful for faceting
         'description' => 'Object version'
     ],
     'self_size' => [
@@ -157,6 +173,7 @@ $fieldDefinitions = [
         'stored' => true,
         'indexed' => false,
         'multiValued' => false,
+        'docValues' => false, // Not useful for faceting
         'description' => 'Object size'
     ],
     'self_folder' => [
@@ -164,6 +181,7 @@ $fieldDefinitions = [
         'stored' => true,
         'indexed' => true,
         'multiValued' => false,
+        'docValues' => false, // Not useful for faceting
         'description' => 'Object folder path'
     ],
 
@@ -173,6 +191,7 @@ $fieldDefinitions = [
         'stored' => true,
         'indexed' => true,
         'multiValued' => false,
+        'docValues' => true,
         'description' => 'Creation timestamp'
     ],
     'self_updated' => [
@@ -180,6 +199,7 @@ $fieldDefinitions = [
         'stored' => true,
         'indexed' => true,
         'multiValued' => false,
+        'docValues' => true,
         'description' => 'Last update timestamp'
     ],
     'self_published' => [
@@ -187,6 +207,7 @@ $fieldDefinitions = [
         'stored' => true,
         'indexed' => true,
         'multiValued' => false,
+        'docValues' => true,
         'description' => 'Published timestamp'
     ],
     'self_depublished' => [
@@ -194,6 +215,7 @@ $fieldDefinitions = [
         'stored' => true,
         'indexed' => true,
         'multiValued' => false,
+        'docValues' => true,
         'description' => 'Depublished timestamp'
     ],
 
