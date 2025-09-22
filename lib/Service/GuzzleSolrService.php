@@ -7218,7 +7218,7 @@ class GuzzleSolrService
             foreach ($ids as $id) {
                 if (isset($registers[$id])) {
                     $register = $registers[$id];
-                    $labels[$id] = $register->getName() ?? "Register $id";
+                    $labels[$id] = $register->getTitle() ?? "Register $id";
                 } else {
                     $labels[$id] = "Register $id";
                 }
