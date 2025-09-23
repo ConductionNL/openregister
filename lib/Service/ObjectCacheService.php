@@ -1331,14 +1331,8 @@ class ObjectCacheService
                     $key = $object->getUuid();
                     $results[$key] = $name;
                     
-                    // Cache for future use
+                    // Cache for future use (UUID only)
                     $this->setObjectName($key, $name);
-                    
-                    // Also cache by ID if different from UUID
-                    if ($object->getId() && (string)$object->getId() !== $key) {
-                        $results[(string)$object->getId()] = $name;
-                        $this->setObjectName($object->getId(), $name);
-                    }
                 }
             } catch (\Exception $e) {
                 $this->logger->error('Failed to bulk load object names', [
@@ -1348,14 +1342,21 @@ class ObjectCacheService
             }
         }
         
+        // Filter to return only UUID -> name mappings (exclude database IDs)
+        $uuidResults = array_filter($results, function($key) {
+            // Only return entries where key looks like a UUID (contains hyphens)
+            return is_string($key) && str_contains($key, '-');
+        }, ARRAY_FILTER_USE_KEY);
+        
         $this->logger->debug('📦 BULK NAME LOOKUP COMPLETED', [
             'requested' => count($identifiers),
-            'found' => count($results),
+            'total_found' => count($results),
+            'uuid_results_returned' => count($uuidResults),
             'cache_hits' => count($identifiers) - count($missingIdentifiers),
             'db_loads' => count($missingIdentifiers)
         ]);
         
-        return $results;
+        return $uuidResults;
 
     }//end getMultipleObjectNames()
 
@@ -1384,16 +1385,22 @@ class ObjectCacheService
             $this->warmupNameCache();
         }
         
-        // Return all cached names
+        // Filter to return only UUID -> name mappings (exclude database IDs)
+        $uuidNames = array_filter($this->nameCache, function($key) {
+            // Only return entries where key looks like a UUID (contains hyphens)
+            return is_string($key) && str_contains($key, '-');
+        }, ARRAY_FILTER_USE_KEY);
+        
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
         
         $this->logger->info('📋 ALL OBJECT NAMES RETRIEVED', [
-            'count' => count($this->nameCache),
+            'total_cached' => count($this->nameCache),
+            'uuid_names_returned' => count($uuidNames),
             'warmup_triggered' => $shouldWarmup,
             'execution_time' => $executionTime . 'ms'
         ]);
         
-        return $this->nameCache;
+        return $uuidNames;
 
     }//end getAllObjectNames()
 
@@ -1419,15 +1426,10 @@ class ObjectCacheService
             foreach ($objects as $object) {
                 $name = $object->getName() ?? $object->getUuid();
                 
-                // Cache by UUID
+                // Cache by UUID only (not by database ID)
                 if ($object->getUuid()) {
                     $this->nameCache[$object->getUuid()] = $name;
                     $loadedCount++;
-                }
-                
-                // Also cache by ID if different
-                if ($object->getId() && (string)$object->getId() !== $object->getUuid()) {
-                    $this->nameCache[(string)$object->getId()] = $name;
                 }
             }
             
