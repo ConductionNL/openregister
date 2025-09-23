@@ -1454,7 +1454,7 @@ class ObjectCacheService
             $loadedCount = 0;
             
             // STEP 1: Load all organisations first (they take priority)
-            $organisations = $this->organisationMapper->findAll();
+            $organisations = $this->organisationMapper->findAllWithUserCount();
             foreach ($organisations as $organisation) {
                 $name = $organisation->getName() ?? $organisation->getUuid();
                 
