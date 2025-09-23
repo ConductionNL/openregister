@@ -428,7 +428,7 @@ class SaveObject
     private function isReference(string $value): bool
     {
         $value = trim($value);
-        
+
         // Empty strings are not references
         if (empty($value)) {
             return false;
@@ -454,8 +454,8 @@ class SaveObject
         if (preg_match('/^[a-z0-9][a-z0-9_-]{7,}$/i', $value)) {
             // Must contain at least one hyphen or underscore (indicating it's likely an ID)
             // AND must not contain spaces or common text words
-            if ((strpos($value, '-') !== false || strpos($value, '_') !== false) && 
-                !preg_match('/\s/', $value) && 
+            if ((strpos($value, '-') !== false || strpos($value, '_') !== false) &&
+                !preg_match('/\s/', $value) &&
                 !in_array(strtolower($value), ['applicatie', 'systeemsoftware', 'open-source', 'closed-source'])) {
                 return true;
             }
@@ -1896,6 +1896,10 @@ class SaveObject
             }
         } else {
             $objectEntity->setDepublished(null);
+        }
+
+        if (array_key_exists('owner', $selfData) && !empty($selfData['owner'])) {
+            $objectEntity->setOwner($selfData['owner']);
         }
 
     }//end setSelfMetadata()
