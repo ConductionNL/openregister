@@ -1252,7 +1252,7 @@ class ObjectCacheService
         try {
             // STEP 1: Try to find as organisation first (they take priority)
             try {
-                $organisation = $this->organisationMapper->find($identifier);
+                $organisation = $this->organisationMapper->findByUuid($identifier);
                 if ($organisation !== null) {
                     $name = $organisation->getName() ?? $organisation->getUuid();
                     $this->setObjectName($identifier, $name);
