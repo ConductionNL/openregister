@@ -321,6 +321,92 @@ class SettingsController extends Controller
 
 
     /**
+     * Validate all objects in the system
+     *
+     * This method validates all objects against their schemas and returns
+     * a summary of validation results including any errors found.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Validation results summary
+     */
+    public function validateAllObjects(): JSONResponse
+    {
+        try {
+            $objectService = $this->getObjectService();
+            $validateHandler = $this->container->get('OCA\OpenRegister\Service\ObjectHandlers\ValidateObject');
+            $schemaMapper = $this->container->get('OCA\OpenRegister\Db\SchemaMapper');
+            
+            // Get all objects from the system
+            $allObjects = $objectService->findAll();
+            
+            $validationResults = [
+                'total_objects' => count($allObjects),
+                'valid_objects' => 0,
+                'invalid_objects' => 0,
+                'validation_errors' => [],
+                'summary' => []
+            ];
+            
+            foreach ($allObjects as $object) {
+                try {
+                    // Get the schema for this object
+                    $schema = $schemaMapper->find($object->getSchema());
+                    
+                    // Validate the object against its schema using the ValidateObject handler
+                    $validationResult = $validateHandler->validateObject($object->getObject(), $schema);
+                    
+                    if ($validationResult->isValid() === true) {
+                        $validationResults['valid_objects']++;
+                    } else {
+                        $validationResults['invalid_objects']++;
+                        $validationResults['validation_errors'][] = [
+                            'object_id' => $object->getUuid(),
+                            'object_name' => $object->getName() ?? $object->getUuid(),
+                            'register' => $object->getRegister(),
+                            'schema' => $object->getSchema(),
+                            'errors' => $validationResult->error()
+                        ];
+                    }
+                } catch (\Exception $e) {
+                    $validationResults['invalid_objects']++;
+                    $validationResults['validation_errors'][] = [
+                        'object_id' => $object->getUuid(),
+                        'object_name' => $object->getName() ?? $object->getUuid(),
+                        'register' => $object->getRegister(),
+                        'schema' => $object->getSchema(),
+                        'errors' => ['Validation failed: ' . $e->getMessage()]
+                    ];
+                }
+            }
+            
+            // Create summary
+            $validationResults['summary'] = [
+                'validation_success_rate' => $validationResults['total_objects'] > 0 
+                    ? round(($validationResults['valid_objects'] / $validationResults['total_objects']) * 100, 2) 
+                    : 100,
+                'has_errors' => $validationResults['invalid_objects'] > 0,
+                'error_count' => count($validationResults['validation_errors'])
+            ];
+            
+            return new JSONResponse($validationResults);
+            
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'error' => 'Failed to validate objects: ' . $e->getMessage(),
+                'total_objects' => 0,
+                'valid_objects' => 0,
+                'invalid_objects' => 0,
+                'validation_errors' => [],
+                'summary' => ['has_errors' => true, 'error_count' => 1]
+            ], 500);
+        }
+
+    }//end validateAllObjects()
+
+
+    /**
      * Run SOLR setup to prepare for multi-tenant architecture
      *
      * @NoAdminRequired
