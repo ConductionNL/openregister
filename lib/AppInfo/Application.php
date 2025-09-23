@@ -207,6 +207,7 @@ class Application extends App implements IBootstrap
                     
                     return new ObjectCacheService(
                     $container->get(ObjectEntityMapper::class),
+                    $container->get(OrganisationMapper::class),
                     $container->get('Psr\Log\LoggerInterface'),
                     $solrService, // Lightweight SOLR service enabled!
                     $container->get('OCP\ICacheFactory'),
