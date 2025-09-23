@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCP\ICacheFactory;
 use OCP\IMemcache;
@@ -128,14 +129,16 @@ class ObjectCacheService
     /**
      * Constructor for ObjectCacheService
      *
-     * @param ObjectEntityMapper    $objectEntityMapper The object entity mapper
-     * @param LoggerInterface       $logger             Logger for performance monitoring
-     * @param GuzzleSolrService|null $guzzleSolrService Lightweight SOLR service using Guzzle HTTP
-     * @param ICacheFactory|null    $cacheFactory       Cache factory for query result caching
-     * @param IUserSession|null     $userSession        User session for cache key generation
+     * @param ObjectEntityMapper     $objectEntityMapper  The object entity mapper
+     * @param OrganisationMapper     $organisationMapper  The organisation entity mapper
+     * @param LoggerInterface        $logger              Logger for performance monitoring
+     * @param GuzzleSolrService|null $guzzleSolrService   Lightweight SOLR service using Guzzle HTTP
+     * @param ICacheFactory|null     $cacheFactory        Cache factory for query result caching
+     * @param IUserSession|null      $userSession         User session for cache key generation
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly OrganisationMapper $organisationMapper,
         private readonly LoggerInterface $logger,
         private readonly ?GuzzleSolrService $guzzleSolrService = null,
         ?ICacheFactory $cacheFactory = null,
@@ -1247,6 +1250,19 @@ class ObjectCacheService
         $this->logger->debug('❌ NAME CACHE MISS', ['identifier' => $key]);
         
         try {
+            // STEP 1: Try to find as organisation first (they take priority)
+            try {
+                $organisation = $this->organisationMapper->find($identifier);
+                if ($organisation !== null) {
+                    $name = $organisation->getName() ?? $organisation->getUuid();
+                    $this->setObjectName($identifier, $name);
+                    return $name;
+                }
+            } catch (\Exception $e) {
+                // Organisation not found, continue to objects
+            }
+            
+            // STEP 2: Try to find as object
             $object = $this->objectEntityMapper->find($identifier);
             if ($object !== null) {
                 $name = $object->getName() ?? $object->getUuid();
@@ -1254,7 +1270,7 @@ class ObjectCacheService
                 return $name;
             }
         } catch (\Exception $e) {
-            $this->logger->debug('Failed to load object for name lookup', [
+            $this->logger->debug('Failed to load entity for name lookup', [
                 'identifier' => $key,
                 'error' => $e->getMessage()
             ]);
@@ -1324,18 +1340,34 @@ class ObjectCacheService
             $this->stats['name_misses'] += count($missingIdentifiers);
             
             try {
-                $objects = $this->objectEntityMapper->findMultiple($missingIdentifiers);
-                
-                foreach ($objects as $object) {
-                    $name = $object->getName() ?? $object->getUuid();
-                    $key = $object->getUuid();
+                // STEP 1: Try to find organisations first (they take priority)
+                $organisations = $this->organisationMapper->findMultipleByUuid($missingIdentifiers);
+                foreach ($organisations as $organisation) {
+                    $name = $organisation->getName() ?? $organisation->getUuid();
+                    $key = $organisation->getUuid();
                     $results[$key] = $name;
                     
                     // Cache for future use (UUID only)
                     $this->setObjectName($key, $name);
+                    
+                    // Remove from missing list since we found it
+                    $missingIdentifiers = array_diff($missingIdentifiers, [$key]);
+                }
+                
+                // STEP 2: Try to find remaining identifiers as objects
+                if (!empty($missingIdentifiers)) {
+                    $objects = $this->objectEntityMapper->findMultiple($missingIdentifiers);
+                    foreach ($objects as $object) {
+                        $name = $object->getName() ?? $object->getUuid();
+                        $key = $object->getUuid();
+                        $results[$key] = $name;
+                        
+                        // Cache for future use (UUID only)
+                        $this->setObjectName($key, $name);
+                    }
                 }
             } catch (\Exception $e) {
-                $this->logger->error('Failed to bulk load object names', [
+                $this->logger->error('Failed to bulk load names from database', [
                     'identifiers' => count($missingIdentifiers),
                     'error' => $e->getMessage()
                 ]);
@@ -1419,15 +1451,28 @@ class ObjectCacheService
         $this->stats['name_warmups']++;
         
         try {
-            // Load all objects with minimal data (ID, UUID, name)
-            $objects = $this->objectEntityMapper->findAll();
-            
             $loadedCount = 0;
+            
+            // STEP 1: Load all organisations first (they take priority)
+            $organisations = $this->organisationMapper->findAll();
+            foreach ($organisations as $organisation) {
+                $name = $organisation->getName() ?? $organisation->getUuid();
+                
+                // Cache by UUID only (not by database ID)
+                if ($organisation->getUuid()) {
+                    $this->nameCache[$organisation->getUuid()] = $name;
+                    $loadedCount++;
+                }
+            }
+            
+            // STEP 2: Load all objects (organisations will overwrite if same UUID)
+            $objects = $this->objectEntityMapper->findAll();
             foreach ($objects as $object) {
                 $name = $object->getName() ?? $object->getUuid();
                 
                 // Cache by UUID only (not by database ID)
-                if ($object->getUuid()) {
+                // Note: If an organisation has the same UUID, it will remain (organisations loaded first)
+                if ($object->getUuid() && !isset($this->nameCache[$object->getUuid()])) {
                     $this->nameCache[$object->getUuid()] = $name;
                     $loadedCount++;
                 }
@@ -1436,8 +1481,9 @@ class ObjectCacheService
             $executionTime = round((microtime(true) - $startTime) * 1000, 2);
             
             $this->logger->info('🔥 NAME CACHE WARMED UP', [
+                'organisations_processed' => count($organisations),
                 'objects_processed' => count($objects),
-                'names_cached' => $loadedCount,
+                'total_names_cached' => $loadedCount,
                 'execution_time' => $executionTime . 'ms'
             ]);
             
