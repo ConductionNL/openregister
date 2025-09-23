@@ -830,14 +830,14 @@ class SettingsService
             $stats = [
                 'overview' => [
                     'totalCacheSize' => $objectStats['memoryUsage'] ?? 0,
-                    'totalCacheEntries' => $objectStats['entries'] ?? 0,
+                    'totalCacheEntries' => $objectStats['cache_size'] ?? 0,
                     'overallHitRate' => $this->calculateHitRate($objectStats),
                     'averageResponseTime' => $performanceStats['averageHitTime'] ?? 0.0,
                     'cacheEfficiency' => $this->calculateHitRate($objectStats),
                 ],
                 'services' => [
                     'object' => [
-                        'entries' => $objectStats['entries'] ?? 0,
+                        'entries' => $objectStats['cache_size'] ?? 0,
                         'hits' => $objectStats['hits'] ?? 0,
                         'requests' => $objectStats['requests'] ?? 0,
                         'memoryUsage' => $objectStats['memoryUsage'] ?? 0,
@@ -1048,7 +1048,7 @@ class SettingsService
 
             // Calculate total cleared entries
             foreach ($results['results'] as $serviceResult) {
-                $results['totalCleared'] += $serviceResult['cleared'] ?? 0;
+                $results['totalCleared'] += (int)($serviceResult['cleared'] ?? 0);
             }
 
             return $results;
@@ -1074,7 +1074,7 @@ class SettingsService
 
             return [
                 'service' => 'object',
-                'cleared' => $beforeStats['entries'] - $afterStats['entries'],
+                'cleared' => $beforeStats['cache_size'] - $afterStats['cache_size'],
                 'before' => $beforeStats,
                 'after' => $afterStats,
                 'success' => true,
@@ -1186,7 +1186,7 @@ class SettingsService
 
             return [
                 'service' => 'schema',
-                'cleared' => $beforeStats['entries'] - $afterStats['entries'],
+                'cleared' => $beforeStats['total_entries'] - $afterStats['total_entries'],
                 'before' => $beforeStats,
                 'after' => $afterStats,
                 'success' => true,
@@ -1217,7 +1217,7 @@ class SettingsService
 
             return [
                 'service' => 'facet',
-                'cleared' => $beforeStats['entries'] - $afterStats['entries'],
+                'cleared' => $beforeStats['total_entries'] - $afterStats['total_entries'],
                 'before' => $beforeStats,
                 'after' => $afterStats,
                 'success' => true,

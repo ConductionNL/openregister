@@ -707,7 +707,7 @@ class EntityOrganisationAssignmentTest extends TestCase
                 $this->callback(function($filters) use ($userOrgs) {
                     return isset($filters['organisation']) && 
                            is_array($filters['organisation']) &&
-                           !empty(array_intersect($filters['organisation'], array_keys($userOrgs)));
+                           empty(array_intersect($filters['organisation'], array_keys($userOrgs))) === false;
                 })
             )
             ->willReturn([]);

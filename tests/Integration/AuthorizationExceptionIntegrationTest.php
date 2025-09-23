@@ -339,7 +339,7 @@ class AuthorizationExceptionIntegrationTest extends TestCase
                 $allowedGroups = $authorization[$action] ?? [];
                 $userGroups = $this->getUserGroups($userId);
 
-                return !empty(array_intersect($userGroups, $allowedGroups));
+                return empty(array_intersect($userGroups, $allowedGroups)) === false;
             });
 
         // Test: Owner should always have access

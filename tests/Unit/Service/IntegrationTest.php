@@ -298,7 +298,7 @@ class IntegrationTest extends TestCase
                     // Should only include Bob's organisations
                     return isset($filters['organisation']) && 
                            $filters['organisation'] === ['orgA-uuid'] &&
-                           !in_array('orgB-uuid', (array)$filters['organisation']);
+                           in_array('orgB-uuid', (array)$filters['organisation']) === false;
                 })
             )
             ->willReturn([]); // No results from different org

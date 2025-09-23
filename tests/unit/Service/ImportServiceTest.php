@@ -110,7 +110,7 @@ class ImportServiceTest extends TestCase
     public function testImportFromCsvWithBatchSaving(): void
     {
         // Skip test if PhpSpreadsheet is not available
-        if (!class_exists('PhpOffice\PhpSpreadsheet\Reader\Csv')) {
+        if (class_exists('PhpOffice\PhpSpreadsheet\Reader\Csv') === false) {
             $this->markTestSkipped('PhpSpreadsheet library not available');
             return;
         }
@@ -163,7 +163,7 @@ class ImportServiceTest extends TestCase
                     }
                     
                     foreach ($objects as $object) {
-                        if (!isset($object['name'])) {
+                        if (isset($object['name']) === false) {
                             return false;
                         }
                     }
@@ -224,7 +224,7 @@ class ImportServiceTest extends TestCase
     public function testImportFromCsvWithErrors(): void
     {
         // Skip test if PhpSpreadsheet is not available
-        if (!class_exists('PhpOffice\PhpSpreadsheet\Reader\Csv')) {
+        if (class_exists('PhpOffice\PhpSpreadsheet\Reader\Csv') === false) {
             $this->markTestSkipped('PhpSpreadsheet library not available');
             return;
         }
@@ -281,7 +281,7 @@ class ImportServiceTest extends TestCase
     public function testImportFromCsvWithEmptyFile(): void
     {
         // Skip test if PhpSpreadsheet is not available
-        if (!class_exists('PhpOffice\PhpSpreadsheet\Reader\Csv')) {
+        if (class_exists('PhpOffice\PhpSpreadsheet\Reader\Csv') === false) {
             $this->markTestSkipped('PhpSpreadsheet library not available');
             return;
         }
@@ -358,7 +358,7 @@ class ImportServiceTest extends TestCase
     public function testImportFromCsvAsync(): void
     {
         // Skip test if PhpSpreadsheet is not available
-        if (!class_exists('PhpOffice\PhpSpreadsheet\Reader\Csv')) {
+        if (class_exists('PhpOffice\PhpSpreadsheet\Reader\Csv') === false) {
             $this->markTestSkipped('PhpSpreadsheet library not available');
             return;
         }
@@ -413,7 +413,7 @@ class ImportServiceTest extends TestCase
     public function testImportFromCsvCategorizesCreatedVsUpdated(): void
     {
         // Skip test if PhpSpreadsheet is not available
-        if (!class_exists('PhpOffice\PhpSpreadsheet\Reader\Csv')) {
+        if (class_exists('PhpOffice\PhpSpreadsheet\Reader\Csv') === false) {
             $this->markTestSkipped('PhpSpreadsheet library not available');
             return;
         }
@@ -500,7 +500,7 @@ class ImportServiceTest extends TestCase
     public function testImportFromCsvWithMalformedData(): void
     {
         // Skip test if PhpSpreadsheet is not available
-        if (!class_exists('PhpOffice\PhpSpreadsheet\Reader\Csv')) {
+        if (class_exists('PhpOffice\PhpSpreadsheet\Reader\Csv') === false) {
             $this->markTestSkipped('PhpSpreadsheet library not available');
             return;
         }
@@ -573,7 +573,7 @@ class ImportServiceTest extends TestCase
     public function testImportFromCsvWithLargeFile(): void
     {
         // Skip test if PhpSpreadsheet is not available
-        if (!class_exists('PhpOffice\PhpSpreadsheet\Reader\Csv')) {
+        if (class_exists('PhpOffice\PhpSpreadsheet\Reader\Csv') === false) {
             $this->markTestSkipped('PhpSpreadsheet library not available');
             return;
         }
@@ -638,7 +638,7 @@ class ImportServiceTest extends TestCase
     public function testImportFromCsvWithSpecialCharacters(): void
     {
         // Skip test if PhpSpreadsheet is not available
-        if (!class_exists('PhpOffice\PhpSpreadsheet\Reader\Csv')) {
+        if (class_exists('PhpOffice\PhpSpreadsheet\Reader\Csv') === false) {
             $this->markTestSkipped('PhpSpreadsheet library not available');
             return;
         }

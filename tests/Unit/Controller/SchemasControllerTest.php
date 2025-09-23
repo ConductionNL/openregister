@@ -562,7 +562,7 @@ class SchemasControllerTest extends TestCase
         $data = $response->getData();
         
         // Debug: print the actual response
-        if (!isset($data['objects'])) {
+        if (isset($data['objects']) === false) {
             $this->fail('Response data: ' . json_encode($data));
         }
         
