@@ -1101,9 +1101,9 @@
 											<th>Type</th>
 											<th>Indexed</th>
 											<th>Stored</th>
-											<th>Multi-valued</th>
-											<th>Required</th>
-											<th>Doc Values</th>
+											<th>Multi</th>
+											<th>Req.</th>
+											<th>DocVals</th>
 										</tr>
 									</thead>
 									<tbody>
