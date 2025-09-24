@@ -76,6 +76,17 @@
 					</template>
 					
 					<NcButton
+						type="secondary"
+						:disabled="loading || saving || testingConnection || warmingUpSolr || settingUpSolr || reindexing"
+						@click="startReindex">
+						<template #icon>
+							<NcLoadingIcon v-if="reindexing" :size="20" />
+							<Refresh v-else :size="20" />
+						</template>
+						{{ reindexing ? 'Reindexing...' : 'Reindex' }}
+					</NcButton>
+					
+					<NcButton
 						type="primary"
 						:disabled="loading || saving || testingConnection || settingUpSolr"
 						@click="saveSettings">
@@ -1240,6 +1251,7 @@
 										<th>Field Name</th>
 										<th>Actual Type</th>
 										<th>Actual Config</th>
+										<th>Actions</th>
 									</tr>
 								</thead>
 								<tbody>
@@ -1254,6 +1266,18 @@
 											<span v-if="field.actual_config.stored" class="config-badge stored">Stored</span>
 											<span v-if="field.actual_config.docValues" class="config-badge docvalues">DocValues</span>
 										</td>
+										<td class="field-actions">
+											<NcButton
+												type="error"
+												:disabled="deletingField === field.field"
+												@click="deleteField(field.field)"
+												:aria-label="`Delete field ${field.field}`">
+												<template #icon>
+													<NcLoadingIcon v-if="deletingField === field.field" :size="16" />
+													<Delete v-else :size="16" />
+												</template>
+											</NcButton>
+										</td>
 									</tr>
 								</tbody>
 							</table>
@@ -1265,60 +1289,72 @@
 								Configuration Mismatches ({{ fieldComparison.mismatched.length }})
 							</h4>
 							<p class="category-description">Fields with different configuration between schemas and SOLR:</p>
-							<table class="comparison-table">
-								<thead>
-									<tr>
-										<th>Field Name</th>
-										<th>Expected</th>
-										<th>Actual</th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr v-for="field in fieldComparison.mismatched" :key="'mismatch-' + field.field">
-										<td class="field-name">{{ field.field }}</td>
-										<td class="field-config expected-config">
-											<div class="config-item">
-												<strong>Type:</strong> 
+							<div v-for="field in fieldComparison.mismatched" :key="'mismatch-' + field.field" class="field-comparison-card">
+								<div class="field-header">
+									<h5 class="field-title">{{ field.field }}</h5>
+									<NcButton
+										type="error"
+										:disabled="deletingField === field.field"
+										@click="deleteField(field.field)"
+										:aria-label="`Delete field ${field.field}`">
+										<template #icon>
+											<NcLoadingIcon v-if="deletingField === field.field" :size="16" />
+											<Delete v-else :size="16" />
+										</template>
+										Delete
+									</NcButton>
+								</div>
+								<table class="comparison-table">
+									<thead>
+										<tr>
+											<th>Property</th>
+											<th>Expected</th>
+											<th>Actual</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr>
+											<td class="property-name">Type</td>
+											<td class="field-config expected-config">
 												<span class="field-value expected-value">
 													{{ field.expected_type }}
 												</span>
-											</div>
-											<div class="config-item">
-												<strong>Multi:</strong> 
-												<span class="field-value expected-value">
-													{{ field.expected_multiValued ? 'Yes' : 'No' }}
-												</span>
-											</div>
-											<div class="config-item">
-												<strong>DocValues:</strong> 
-												<span class="field-value expected-value">
-													{{ field.expected_docValues ? 'Yes' : 'No' }}
-												</span>
-											</div>
-										</td>
-										<td class="field-config">
-											<div class="config-item">
-												<strong>Type:</strong> 
+											</td>
+											<td class="field-config">
 												<span class="field-value" :class="{ 'match': field.expected_type === field.actual_type, 'mismatch': field.expected_type !== field.actual_type }">
 													{{ field.actual_type }}
 												</span>
-											</div>
-											<div class="config-item">
-												<strong>Multi:</strong> 
+											</td>
+										</tr>
+										<tr>
+											<td class="property-name">Multi</td>
+											<td class="field-config expected-config">
+												<span class="field-value expected-value">
+													{{ field.expected_multiValued ? 'Yes' : 'No' }}
+												</span>
+											</td>
+											<td class="field-config">
 												<span class="field-value" :class="{ 'match': field.expected_multiValued === field.actual_multiValued, 'mismatch': field.expected_multiValued !== field.actual_multiValued }">
 													{{ field.actual_multiValued ? 'Yes' : 'No' }}
 												</span>
-											</div>
-											<div class="config-item">
-												<strong>DocValues:</strong> 
+											</td>
+										</tr>
+										<tr>
+											<td class="property-name">DocValues</td>
+											<td class="field-config expected-config">
+												<span class="field-value expected-value">
+													{{ field.expected_docValues ? 'Yes' : 'No' }}
+												</span>
+											</td>
+											<td class="field-config">
 												<span class="field-value" :class="{ 'match': field.expected_docValues === field.actual_docValues, 'mismatch': field.expected_docValues !== field.actual_docValues }">
 													{{ field.actual_docValues ? 'Yes' : 'No' }}
 												</span>
-											</div>
-										</td>
-									</tr>
-								</tbody>
-							</table>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
 							
 							<!-- Fix Mismatches Actions -->
 							<div class="fix-mismatches-section">
@@ -1553,6 +1589,8 @@ export default {
 		return {
 			fieldFilter: '',
 			fieldTypeFilter: null,
+			deletingField: null, // Track which field is being deleted
+			reindexing: false, // Track reindex operation
 			// Dashboard data properties
 			loadingStats: false,
 			solrError: false,
@@ -2116,6 +2154,84 @@ export default {
 			} finally {
 				// Clear loading state
 				this.warmingUp = false
+			}
+		},
+
+		/**
+		 * Delete a SOLR field
+		 */
+		async deleteField(fieldName) {
+			if (!fieldName) {
+				this.$toast.error('Invalid field name')
+				return
+			}
+
+			// Confirm deletion
+			if (!confirm(`Are you sure you want to delete the field "${fieldName}"?\n\nThis action cannot be undone and will remove the field from SOLR permanently.`)) {
+				return
+			}
+
+			this.deletingField = fieldName
+
+			try {
+				const url = generateUrl(`/apps/openregister/api/solr/fields/${encodeURIComponent(fieldName)}`)
+				const response = await axios.delete(url)
+
+				if (response.data.success) {
+					this.$toast.success(`Field "${fieldName}" deleted successfully`)
+					
+					// Reload field information to reflect changes
+					await this.settingsStore.loadSolrFields()
+				} else {
+					this.$toast.error(response.data.message || `Failed to delete field "${fieldName}"`)
+				}
+			} catch (error) {
+				console.error('Failed to delete field:', error)
+				const errorMessage = error.response?.data?.message || error.message || 'Unknown error occurred'
+				this.$toast.error(`Failed to delete field "${fieldName}": ${errorMessage}`)
+			} finally {
+				this.deletingField = null
+			}
+		},
+
+		/**
+		 * Start SOLR reindex operation
+		 */
+		async startReindex() {
+			// Confirm reindex operation
+			if (!confirm('Are you sure you want to reindex all objects in SOLR?\n\nThis will:\n• Clear the current SOLR index\n• Rebuild the index with all objects using current field schema\n• Take several minutes to complete\n\nThis operation cannot be undone.')) {
+				return
+			}
+
+			this.reindexing = true
+
+			try {
+				const url = generateUrl('/apps/openregister/api/solr/reindex')
+				const response = await axios.post(url, {
+					maxObjects: 0, // Reindex all objects
+					batchSize: 1000 // Use default batch size
+				})
+
+				if (response.data.success) {
+					const stats = response.data.stats || {}
+					this.$toast.success(`Reindex completed successfully! Processed ${stats.processed_objects || 0} objects in ${stats.duration_seconds || 0}s`)
+					
+					// Refresh SOLR stats to show updated document count
+					await this.loadSolrStats()
+					
+					// Refresh field information if the fields dialog is open
+					if (this.settingsStore.showFieldsDialog) {
+						await this.settingsStore.loadSolrFields()
+					}
+				} else {
+					this.$toast.error(response.data.message || 'Reindex failed')
+				}
+			} catch (error) {
+				console.error('Failed to reindex SOLR:', error)
+				const errorMessage = error.response?.data?.message || error.message || 'Unknown error occurred'
+				this.$toast.error(`Failed to reindex SOLR: ${errorMessage}`)
+			} finally {
+				this.reindexing = false
 			}
 		},
 	},
@@ -3626,6 +3742,53 @@ export default {
 
 .comparison-table tr:hover {
 	background: #f8f9fa;
+}
+
+.field-actions {
+	text-align: center;
+	vertical-align: middle;
+	padding: 8px;
+	width: 80px;
+}
+
+.field-actions .button-vue {
+	min-width: auto;
+}
+
+.field-comparison-card {
+	margin-bottom: 24px;
+	border: 1px solid #dee2e6;
+	border-radius: 8px;
+	background: white;
+	overflow: hidden;
+}
+
+.field-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 16px 20px;
+	background: #f8f9fa;
+	border-bottom: 1px solid #dee2e6;
+}
+
+.field-title {
+	margin: 0;
+	font-size: 16px;
+	font-weight: 600;
+	color: #495057;
+	font-family: monospace;
+}
+
+.field-comparison-card .comparison-table {
+	margin: 0;
+	box-shadow: none;
+	border-radius: 0;
+}
+
+.property-name {
+	font-weight: 600;
+	color: #495057;
 }
 
 .config-badge {

@@ -4927,15 +4927,16 @@ class GuzzleSolrService
                 $operations['fields_created'] = $mirrorResult['stats']['fields_created'] ?? 0;
                 $operations['conflicts_resolved'] = $mirrorResult['stats']['conflicts_resolved'] ?? 0;
                 
-                // 2.5. Create missing fields and fix existing field conflicts (no logging for performance)
+                // 2.5. Field creation removed from warmup process to prevent conflicts
+                // Fields should be managed via the dedicated field management UI/API
                 $fieldManagementStart = microtime(true);
                 
-                $fieldCreationResult = $this->createMissingFields([], false); // Auto-detect missing fields
-                $operations['missing_fields_created'] = $fieldCreationResult['success'] ?? false;
-                $operations['fields_added'] = $fieldCreationResult['fields_added'] ?? 0;
-                $operations['fields_updated'] = $fieldCreationResult['fields_updated'] ?? 0;
+                // Skip automatic field creation - use dedicated field management instead
+                $operations['missing_fields_created'] = true; // Always true since we skip this step
+                $operations['fields_added'] = 0;
+                $operations['fields_updated'] = 0;
                 
-                // Field management result stored in operations (logging removed for performance)
+                // Field management skipped (logging removed for performance)
                 
                 $fieldManagementEnd = microtime(true);
                 $timing['field_management'] = round(($fieldManagementEnd - $fieldManagementStart) * 1000, 2) . 'ms';
@@ -4955,15 +4956,16 @@ class GuzzleSolrService
                 $operations['conflicts_resolved'] = 0;
                 $timing['schema_mirroring'] = '0ms (no schemas provided)';
                 
-                // Still create missing fields even without schema mirroring (no logging for performance)
+                // Field creation removed from warmup process to prevent conflicts
+                // Fields should be managed via the dedicated field management UI/API
                 $fieldManagementStart = microtime(true);
                 
-                $fieldCreationResult = $this->createMissingFields([], false); // Auto-detect missing fields
-                $operations['missing_fields_created'] = $fieldCreationResult['success'] ?? false;
-                $operations['fields_added'] = $fieldCreationResult['fields_added'] ?? 0;
-                $operations['fields_updated'] = $fieldCreationResult['fields_updated'] ?? 0;
+                // Skip automatic field creation - use dedicated field management instead
+                $operations['missing_fields_created'] = true; // Always true since we skip this step
+                $operations['fields_added'] = 0;
+                $operations['fields_updated'] = 0;
                 
-                // Field management result stored in operations (logging removed for performance)
+                // Field management skipped (logging removed for performance)
                 
                 $fieldManagementEnd = microtime(true);
                 $timing['field_management'] = round(($fieldManagementEnd - $fieldManagementStart) * 1000, 2) . 'ms';
@@ -5459,6 +5461,305 @@ class GuzzleSolrService
                 'success' => false,
                 'message' => 'Failed to fix mismatched fields: ' . $e->getMessage(),
                 'errors' => [$e->getMessage()]
+            ];
+        }
+    }
+
+    /**
+     * Delete a field from SOLR schema
+     *
+     * @param string $fieldName Name of the field to delete
+     * @return array{success: bool, message: string, error?: string}
+     */
+    public function deleteField(string $fieldName): array
+    {
+        if (!$this->isAvailable()) {
+            return [
+                'success' => false,
+                'message' => 'SOLR is not available or not configured'
+            ];
+        }
+
+        try {
+            $collectionName = $this->getActiveCollectionName();
+            
+            if (!$collectionName) {
+                return [
+                    'success' => false,
+                    'message' => 'No active SOLR collection found'
+                ];
+            }
+
+            $schemaUrl = $this->buildSolrBaseUrl() . "/{$collectionName}/schema";
+            
+            // Prepare delete field payload
+            $payload = [
+                'delete-field' => [
+                    'name' => $fieldName
+                ]
+            ];
+
+            $this->logger->info('🗑️ Deleting SOLR field', [
+                'field_name' => $fieldName,
+                'collection' => $collectionName,
+                'url' => $schemaUrl
+            ]);
+
+            $response = $this->httpClient->post($schemaUrl, [
+                'json' => $payload,
+                'timeout' => 30
+            ]);
+
+            $data = json_decode((string)$response->getBody(), true);
+            $success = ($data['responseHeader']['status'] ?? -1) === 0;
+
+            if ($success) {
+                $this->logger->info('✅ SOLR field deleted successfully', [
+                    'field_name' => $fieldName,
+                    'collection' => $collectionName
+                ]);
+
+                return [
+                    'success' => true,
+                    'message' => "Field '{$fieldName}' deleted successfully"
+                ];
+            } else {
+                $error = $data['error']['msg'] ?? 'Unknown error occurred';
+                $this->logger->error('❌ Failed to delete SOLR field', [
+                    'field_name' => $fieldName,
+                    'error' => $error,
+                    'response' => $data
+                ]);
+
+                return [
+                    'success' => false,
+                    'message' => "Failed to delete field '{$fieldName}': {$error}",
+                    'error' => $error
+                ];
+            }
+
+        } catch (\Exception $e) {
+            $this->logger->error('Exception deleting SOLR field', [
+                'field_name' => $fieldName,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return [
+                'success' => false,
+                'message' => "Exception deleting field '{$fieldName}': " . $e->getMessage(),
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Reindex all objects in SOLR
+     *
+     * This method clears the current SOLR index and rebuilds it from scratch
+     * with all objects using the current field schema configuration.
+     *
+     * @param int $maxObjects Maximum number of objects to reindex (0 = all)
+     * @param int $batchSize Number of objects to process per batch
+     * @return array{success: bool, message: string, stats?: array, error?: string}
+     */
+    public function reindexAll(int $maxObjects = 0, int $batchSize = 1000): array
+    {
+        if (!$this->isAvailable()) {
+            return [
+                'success' => false,
+                'message' => 'SOLR is not available or not configured'
+            ];
+        }
+
+        try {
+            $startTime = microtime(true);
+            $startMemory = memory_get_usage(true);
+
+            $this->logger->info('🔄 Starting SOLR reindex operation', [
+                'max_objects' => $maxObjects,
+                'batch_size' => $batchSize,
+                'collection' => $this->getActiveCollectionName()
+            ]);
+
+            // Step 1: Clear the current index
+            $this->logger->info('🗑️ Clearing current SOLR index');
+            $clearResult = $this->clearIndex();
+            
+            if (!$clearResult['success']) {
+                return [
+                    'success' => false,
+                    'message' => 'Failed to clear SOLR index: ' . $clearResult['message'],
+                    'error' => $clearResult['error'] ?? null
+                ];
+            }
+
+            // Step 2: Get object count for progress tracking
+            $objectMapper = \OC::$server->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+            $totalObjects = $objectMapper->countAll(
+                filters: [],
+                search: null,
+                ids: null,
+                uses: null,
+                includeDeleted: false,
+                register: null,
+                schema: null,
+                published: null, // Reindex ALL objects (published and unpublished)
+                rbac: false,
+                multi: false
+            );
+
+            // Apply maxObjects limit if specified
+            if ($maxObjects > 0 && $maxObjects < $totalObjects) {
+                $totalObjects = $maxObjects;
+            }
+
+            $this->logger->info('📊 Reindex scope determined', [
+                'total_objects' => $totalObjects,
+                'batch_size' => $batchSize,
+                'estimated_batches' => ceil($totalObjects / $batchSize)
+            ]);
+
+            // Step 3: Reindex objects in batches
+            $stats = [
+                'total_objects' => $totalObjects,
+                'processed_objects' => 0,
+                'successful_indexes' => 0,
+                'failed_indexes' => 0,
+                'batches_processed' => 0,
+                'errors' => []
+            ];
+
+            $offset = 0;
+            $batchNumber = 1;
+
+            while ($offset < $totalObjects) {
+                $currentBatchSize = min($batchSize, $totalObjects - $offset);
+                
+                $this->logger->debug('📦 Processing reindex batch', [
+                    'batch_number' => $batchNumber,
+                    'offset' => $offset,
+                    'batch_size' => $currentBatchSize
+                ]);
+
+                // Get objects for this batch
+                $objects = $objectMapper->findAll(
+                    limit: $currentBatchSize,
+                    offset: $offset,
+                    filters: [],
+                    searchConditions: [],
+                    searchParams: [],
+                    sort: [],
+                    search: null,
+                    ids: null,
+                    uses: null,
+                    includeDeleted: false,
+                    register: null,
+                    schema: null,
+                    published: null, // Reindex ALL objects
+                    rbac: false,
+                    multi: false
+                );
+
+                // Index objects in this batch
+                $batchSuccesses = 0;
+                $batchErrors = 0;
+
+                foreach ($objects as $object) {
+                    try {
+                        $success = $this->indexObject($object, false); // Don't commit each object
+                        if ($success) {
+                            $batchSuccesses++;
+                        } else {
+                            $batchErrors++;
+                            $stats['errors'][] = [
+                                'object_id' => $object->getId(),
+                                'object_uuid' => $object->getUuid(),
+                                'error' => 'Failed to index object'
+                            ];
+                        }
+                    } catch (\Exception $e) {
+                        $batchErrors++;
+                        $stats['errors'][] = [
+                            'object_id' => $object->getId(),
+                            'object_uuid' => $object->getUuid(),
+                            'error' => $e->getMessage()
+                        ];
+                        
+                        $this->logger->warning('Failed to reindex object', [
+                            'object_id' => $object->getId(),
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+
+                // Commit batch
+                $this->commit();
+
+                // Update stats
+                $stats['processed_objects'] += count($objects);
+                $stats['successful_indexes'] += $batchSuccesses;
+                $stats['failed_indexes'] += $batchErrors;
+                $stats['batches_processed']++;
+
+                $this->logger->info('✅ Reindex batch completed', [
+                    'batch_number' => $batchNumber,
+                    'processed' => count($objects),
+                    'successful' => $batchSuccesses,
+                    'failed' => $batchErrors,
+                    'total_processed' => $stats['processed_objects'],
+                    'progress_percent' => round(($stats['processed_objects'] / $totalObjects) * 100, 1)
+                ]);
+
+                $offset += $currentBatchSize;
+                $batchNumber++;
+
+                // Memory cleanup every 10 batches
+                if ($batchNumber % 10 === 0) {
+                    gc_collect_cycles();
+                }
+            }
+
+            // Final commit and optimize
+            $this->logger->info('🔧 Finalizing reindex - committing and optimizing');
+            $this->commit();
+            
+            // Calculate final stats
+            $endTime = microtime(true);
+            $endMemory = memory_get_usage(true);
+            
+            $stats['duration_seconds'] = round($endTime - $startTime, 2);
+            $stats['objects_per_second'] = $stats['duration_seconds'] > 0 
+                ? round($stats['processed_objects'] / $stats['duration_seconds'], 2) 
+                : 0;
+            $stats['memory_used_mb'] = round(($endMemory - $startMemory) / 1024 / 1024, 2);
+            $stats['peak_memory_mb'] = round(memory_get_peak_usage(true) / 1024 / 1024, 2);
+
+            $this->logger->info('🎉 SOLR reindex completed successfully', [
+                'total_processed' => $stats['processed_objects'],
+                'successful' => $stats['successful_indexes'],
+                'failed' => $stats['failed_indexes'],
+                'duration' => $stats['duration_seconds'] . 's',
+                'objects_per_second' => $stats['objects_per_second'],
+                'memory_used' => $stats['memory_used_mb'] . 'MB'
+            ]);
+
+            return [
+                'success' => true,
+                'message' => "Reindex completed successfully. Processed {$stats['processed_objects']} objects in {$stats['duration_seconds']}s",
+                'stats' => $stats
+            ];
+
+        } catch (\Exception $e) {
+            $this->logger->error('Exception during SOLR reindex', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Reindex failed: ' . $e->getMessage(),
+                'error' => $e->getMessage()
             ];
         }
     }

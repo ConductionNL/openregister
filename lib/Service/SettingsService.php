@@ -2471,8 +2471,10 @@ class SettingsService
     public function updateMultitenancySettingsOnly(array $multitenancyData): array
     {
         try {
+            
             $multitenancyConfig = [
-                'enabled'             => $multitenancyData['enabled'] ?? false,
+                'enabled'             => $enabledValue,
+                'enabled             => $multitenancyData['enabled'] ?? false,
                 'defaultUserTenant'   => $multitenancyData['defaultUserTenant'] ?? '',
                 'defaultObjectTenant' => $multitenancyData['defaultObjectTenant'] ?? '',
             ];
