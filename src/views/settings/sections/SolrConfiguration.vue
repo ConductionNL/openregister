@@ -404,8 +404,12 @@
 					</div>
 
 					<div class="stat-card">
-						<h5>Total Documents</h5>
-						<p>{{ formatNumber(solrStats.overview?.total_documents || 0) }}</p>
+						<h5>Total Objects</h5>
+						<p>{{ formatNumber(solrStats.total_count || 0) }}</p>
+						<small class="object-info">
+							{{ formatNumber(solrStats.published_count || 0) }} published, 
+							{{ formatNumber(solrStats.document_count || 0) }} indexed
+						</small>
 					</div>
 
 					<div class="stat-card">
@@ -1950,15 +1954,13 @@ export default {
 				const response = await axios.get(url)
 
 				if (response.data && response.data.available) {
-					// Transform flat response to expected structure
+					// Store the complete response data (includes published_count, total_count, memory_prediction)
 					this.solrStats = {
-						available: response.data.available,
+						...response.data,
 						overview: {
 							connection_status: 'Connected',
 							total_documents: response.data.document_count || 0,
 						},
-						collection: response.data.collection || 'Unknown',
-						tenant_id: response.data.tenant_id || 'Unknown',
 					}
 				} else {
 					this.solrError = true
@@ -2035,15 +2037,26 @@ export default {
 			this.objectStats.loading = true
 			
 			try {
-				// Use the settings store to load stats
-				await this.settingsStore.loadStats()
+				// Use SOLR dashboard stats to get all data needed for warmup (published count + memory prediction)
+				await this.loadSolrStats()
 				
-				// Get the total objects from the store
-				const totalObjects = this.settingsStore.stats?.totals?.totalObjects || 0
-				this.objectStats.totalObjects = totalObjects
+				// Get the published objects count from SOLR stats (this is what we actually process during warmup)
+				const publishedObjects = this.solrStats?.published_count || 0
+				this.objectStats.totalObjects = publishedObjects
 				
-				// Load memory prediction after getting object count
-				await this.loadMemoryPrediction(0) // Default to all objects
+				// Get memory prediction from SOLR stats (no separate API call needed)
+				if (this.solrStats?.memory_prediction) {
+					this.memoryPrediction = this.solrStats.memory_prediction
+				} else {
+					// Fallback to default prediction if not available
+					this.memoryPrediction = {
+						prediction_safe: true,
+						formatted: {
+							total_predicted: 'Unknown',
+							available: 'Unknown'
+						}
+					}
+				}
 			} catch (error) {
 				console.error('Failed to load object stats:', error)
 				this.objectStats.totalObjects = 0
@@ -3929,6 +3942,15 @@ export default {
 	margin: 0;
 	font-size: 1.1rem;
 	font-weight: bold;
+}
+
+.object-info {
+	display: block;
+	margin-top: 0.25rem;
+	color: var(--color-text-maxcontrast);
+	font-size: 0.8rem;
+	font-weight: normal;
+	font-style: italic;
 }
 
 .status-success {

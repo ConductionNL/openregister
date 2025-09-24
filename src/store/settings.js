@@ -58,6 +58,11 @@ export const useSettingsStore = defineStore('settings', {
 		showClearCacheConfirmation: false,
 		clearCacheType: 'all',
 		
+		// Mass validation states
+		massValidating: false,
+		showMassValidateConfirmation: false,
+		massValidateResults: null,
+		
 		// Settings data
 		solrOptions: {
 			enabled: false,
@@ -195,6 +200,9 @@ export const useSettingsStore = defineStore('settings', {
 		
 		// Dialog states
 		showRebaseConfirmation: false,
+		showMassValidateConfirmation: false,
+		massValidating: false,
+		massValidateResults: null,
 		
 		// Connection status
 		solrConnectionStatus: null,
@@ -421,6 +429,104 @@ export const useSettingsStore = defineStore('settings', {
 			} finally {
 				this.warmingUpSolr = false
 			}
+		},
+
+		/**
+		 * Mass validate objects with advanced configuration
+		 */
+		async massValidate(options = {}) {
+			this.massValidating = true
+			this.massValidateResults = null
+			
+			try {
+				const response = await axios.post(
+					generateUrl('/apps/openregister/api/settings/mass-validate'),
+					{
+						batchSize: options.batchSize || 1000,
+						maxObjects: options.maxObjects || 0,
+						mode: options.mode || 'serial',
+						collectErrors: options.collectErrors || false,
+					}
+				)
+				
+				this.massValidateResults = response.data
+				
+				if (response.data.success) {
+					showSuccess('Mass validation completed successfully')
+				} else {
+					showError('Mass validation failed: ' + response.data.message)
+				}
+				
+				return response.data
+			} catch (error) {
+				console.error('Mass validation failed:', error)
+				const errorMessage = error.response?.data?.message || error.message
+				showError('Mass validation failed: ' + errorMessage)
+				
+				this.massValidateResults = {
+					success: false,
+					message: errorMessage,
+					error: errorMessage,
+					stats: {
+						total_objects: 0,
+						processed_objects: 0,
+						successful_saves: 0,
+						failed_saves: 0,
+						duration_seconds: 0
+					},
+					errors: []
+				}
+				
+				throw error
+			} finally {
+				this.massValidating = false
+			}
+		},
+
+		/**
+		 * Load memory prediction for mass validation
+		 */
+		async loadMassValidateMemoryPrediction(maxObjects = 0) {
+			try {
+				const response = await axios.post(
+					generateUrl('/apps/openregister/api/settings/mass-validate/memory-prediction'),
+					{ maxObjects }
+				)
+				
+				return response.data
+			} catch (error) {
+				console.error('Failed to load memory prediction:', error)
+				return {
+					success: false,
+					prediction_safe: true,
+					formatted: {
+						total_predicted: 'Unknown',
+						available: 'Unknown'
+					}
+				}
+			}
+		},
+
+		/**
+		 * Show mass validate confirmation dialog
+		 */
+		showMassValidateDialog() {
+			this.showMassValidateConfirmation = true
+		},
+
+		/**
+		 * Hide mass validate confirmation dialog
+		 */
+		hideMassValidateDialog() {
+			this.showMassValidateConfirmation = false
+		},
+
+		/**
+		 * Confirm mass validate operation
+		 */
+		async confirmMassValidate(options = {}) {
+			this.hideMassValidateDialog()
+			return await this.massValidate(options)
 		},
 
 
@@ -759,6 +865,30 @@ export const useSettingsStore = defineStore('settings', {
 			this.hideRebaseDialog()
 			await this.rebase()
 		},
+
+		/**
+		 * Show mass validate confirmation dialog
+		 */
+		showMassValidateDialog() {
+			this.showMassValidateConfirmation = true
+		},
+
+		/**
+		 * Hide mass validate confirmation dialog
+		 */
+		hideMassValidateDialog() {
+			this.showMassValidateConfirmation = false
+			this.massValidateResults = null
+		},
+
+		/**
+		 * Confirm and execute mass validate
+		 */
+		async confirmMassValidate(options = {}) {
+			this.hideMassValidateDialog()
+			await this.massValidate(options)
+		},
+
 
 		/**
 		 * Clear cache of specified type

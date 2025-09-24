@@ -383,6 +383,7 @@ class ObjectsController extends Controller
      */
     public function index(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
+        error_log('🔥 CONTROLLER DEBUG: ObjectsController::index called with register=' . $register . ', schema=' . $schema);
         try {
             // Resolve slugs to numeric IDs consistently
             $resolved = $this->resolveRegisterSchemaIds($register, $schema, $objectService);
@@ -403,6 +404,9 @@ class ObjectsController extends Controller
         
         // **INTELLIGENT SOURCE SELECTION**: ObjectService automatically chooses optimal source
         $result = $objectService->searchObjectsPaginated($query, $rbac, $multi, $published, $deleted);
+        
+        error_log('🔥 CONTROLLER DEBUG: Result keys: ' . implode(', ', array_keys($result)));
+        error_log('🔥 CONTROLLER DEBUG: Source: ' . ($result['source'] ?? 'NOT FOUND'));
         
         // **SUB-SECOND OPTIMIZATION**: Enable response compression for large payloads
         $response = new JSONResponse($result);
