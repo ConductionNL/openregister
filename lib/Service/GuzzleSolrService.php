@@ -1160,7 +1160,6 @@ class GuzzleSolrService
             'self_tenant' => (string)$this->tenantId,
             
             // Metadata fields with self_ prefix (consistent with legacy mapping)
-            'self_object_id' => $object->getId(),
             'self_uuid' => $object->getUuid(),
             
             // Context fields - resolve to integer IDs
@@ -1528,7 +1527,6 @@ class GuzzleSolrService
 
         // Add metadata fields with self_ prefix for easy identification and faceting
         $document['self_id'] = $uuid; // Always use UUID for consistency
-        $document['self_object_id'] = $object->getId();
         $document['self_uuid'] = $uuid;
         $document['self_register'] = $this->resolveRegisterToId($object->getRegister());
         $document['self_schema'] = $this->resolveSchemaToId($object->getSchema());
@@ -1714,7 +1712,9 @@ class GuzzleSolrService
         
         // Published filtering (only if explicitly requested)
         if ($published) {
-            $filters[] = $publishedCondition;
+            // Use separate filters for better SOLR performance and reliability
+            $filters[] = 'self_published:[* TO ' . $now . ']';
+            $filters[] = '-self_depublished:[* TO *]';
         }
         
         // Deleted filtering
