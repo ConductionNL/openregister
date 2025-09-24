@@ -40,13 +40,13 @@
 				</p>
 				<p class="toggle-status">
 					<strong>Current Status:</strong>
-					<span :class="multitenancyOptions.enableMultitenancy ? 'status-enabled' : 'status-disabled'">
-						{{ multitenancyOptions.enableMultitenancy ? 'Multitenancy enabled' : 'Multitenancy disabled' }}
+					<span :class="multitenancyOptions.enabled ? 'status-enabled' : 'status-disabled'">
+						{{ multitenancyOptions.enabled ? 'Multitenancy enabled' : 'Multitenancy disabled' }}
 					</span>
 				</p>
 				<p class="impact-description">
-					<strong>{{ multitenancyOptions.enableMultitenancy ? 'Disabling' : 'Enabling' }} Multitenancy will:</strong><br>
-					<span v-if="!multitenancyOptions.enableMultitenancy">
+					<strong>{{ multitenancyOptions.enabled ? 'Disabling' : 'Enabling' }} Multitenancy will:</strong><br>
+					<span v-if="!multitenancyOptions.enabled">
 						• Enable multiple organizations to share the same system instance<br>
 						• Provide complete data isolation between different tenants<br>
 						• Allow centralized management while maintaining security boundaries<br>
@@ -64,15 +64,15 @@
 			<!-- Enable Multitenancy Toggle -->
 			<div class="option-section">
 				<NcCheckboxRadioSwitch
-					:checked.sync="multitenancyOptions.enableMultitenancy"
+					:checked.sync="multitenancyOptions.enabled"
 					:disabled="saving"
 					type="switch">
-					{{ multitenancyOptions.enableMultitenancy ? 'Multitenancy enabled' : 'Multitenancy disabled' }}
+					{{ multitenancyOptions.enabled ? 'Multitenancy enabled' : 'Multitenancy disabled' }}
 				</NcCheckboxRadioSwitch>
 			</div>
 
 			<!-- Default Tenants -->
-			<div v-if="multitenancyOptions.enableMultitenancy">
+			<div v-if="multitenancyOptions.enabled">
 				<h4>Default Tenants</h4>
 				<p class="option-description">
 					Configure default tenant assignments for users and objects
