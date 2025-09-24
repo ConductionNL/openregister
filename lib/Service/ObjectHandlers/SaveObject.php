@@ -796,8 +796,6 @@ class SaveObject
                 $schemaObject['properties']
                 );
 
-//        var_dump($properties, $schemaObject);
-
         // Handle constant values - these should ALWAYS be set regardless of input data
         $constantValues = [];
         foreach ($properties as $property) {
