@@ -27,6 +27,10 @@ return [
 		['name' => 'settings#deleteSolrField', 'url' => '/api/solr/fields/{fieldName}', 'verb' => 'DELETE', 'requirements' => ['fieldName' => '[^/]+']],
 		['name' => 'settings#reindexSolr', 'url' => '/api/solr/reindex', 'verb' => 'POST'],
         
+        // Orphaned objects cleanup endpoints
+        ['name' => 'settings#deleteOrphanedFromRegisters', 'url' => '/api/settings/orphaned/registers', 'verb' => 'DELETE'],
+        ['name' => 'settings#deleteOrphanedFromSchemas', 'url' => '/api/settings/orphaned/schemas', 'verb' => 'DELETE'],
+        
         // SOLR Dashboard Management endpoints
         ['name' => 'settings#getSolrDashboardStats', 'url' => '/api/solr/dashboard/stats', 'verb' => 'GET'],
         ['name' => 'settings#clearSolrIndex', 'url' => '/api/settings/solr/clear', 'verb' => 'POST'],

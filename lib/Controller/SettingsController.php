@@ -2478,10 +2478,110 @@ class SettingsController extends Controller
 
             return new JSONResponse([
                 'success' => false,
-                'message' => 'Failed to reindex SOLR: ' . $e->getMessage(),
+                'message' => 'Failed to reindex SOLR: ' . $e->getMessage(),     
                 'error' => $e->getMessage()
             ], 500);
         }
     }
+
+
+    /**
+     * Delete objects orphaned from registers
+     *
+     * This endpoint deletes all objects that have a register ID set to a value
+     * that no longer exists in the registers table.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse The deletion results
+     */
+    public function deleteOrphanedFromRegisters(): JSONResponse
+    {
+        try {
+            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
+            $logger->info('🗑️ Deleting objects orphaned from registers via API', [
+                'user' => $this->userId
+            ]);
+
+            $result = $this->settingsService->deleteOrphanedFromRegisters();
+
+            $logger->info('✅ Successfully deleted objects orphaned from registers', [
+                'deleted_count' => $result['deleted_count'],
+                'user' => $this->userId
+            ]);
+
+            return new JSONResponse([
+                'success' => true,
+                'message' => $result['message'],
+                'deleted_count' => $result['deleted_count'],
+                'timestamp' => $result['timestamp']
+            ], 200);
+
+        } catch (\Exception $e) {
+            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
+            $logger->error('Exception deleting objects orphaned from registers', [
+                'error' => $e->getMessage(),
+                'user' => $this->userId,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Failed to delete objects orphaned from registers: ' . $e->getMessage(),
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }//end deleteOrphanedFromRegisters()
+
+
+    /**
+     * Delete objects orphaned from schemas
+     *
+     * This endpoint deletes all objects that have a schema ID set to a value
+     * that no longer exists in the schemas table.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse The deletion results
+     */
+    public function deleteOrphanedFromSchemas(): JSONResponse
+    {
+        try {
+            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
+            $logger->info('🗑️ Deleting objects orphaned from schemas via API', [
+                'user' => $this->userId
+            ]);
+
+            $result = $this->settingsService->deleteOrphanedFromSchemas();
+
+            $logger->info('✅ Successfully deleted objects orphaned from schemas', [
+                'deleted_count' => $result['deleted_count'],
+                'user' => $this->userId
+            ]);
+
+            return new JSONResponse([
+                'success' => true,
+                'message' => $result['message'],
+                'deleted_count' => $result['deleted_count'],
+                'timestamp' => $result['timestamp']
+            ], 200);
+
+        } catch (\Exception $e) {
+            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
+            $logger->error('Exception deleting objects orphaned from schemas', [
+                'error' => $e->getMessage(),
+                'user' => $this->userId,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Failed to delete objects orphaned from schemas: ' . $e->getMessage(),
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }//end deleteOrphanedFromSchemas()
 
 }//end class

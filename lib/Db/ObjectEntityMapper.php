@@ -5214,6 +5214,200 @@ class ObjectEntityMapper extends QBMapper
 
 
     /**
+     * Count objects orphaned from registers
+     *
+     * This method counts all objects that have a register ID set to a value
+     * that no longer exists in the registers table.
+     *
+     * @return int Number of objects orphaned from registers
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     */
+    public function countOrphanedFromRegisters(): int
+    {
+        try {
+            $qb = $this->db->getQueryBuilder();
+            
+            // Count objects where register ID doesn't exist in registers table
+            $qb->select($qb->createFunction('COUNT(o.id) as count'))
+                ->from('openregister_objects', 'o')
+                ->leftJoin('o', 'openregister_registers', 'r', 'o.register = r.id')
+                ->where($qb->expr()->isNotNull('o.register'))
+                ->andWhere($qb->expr()->isNull('r.id'));
+            
+            $result = $qb->executeQuery();
+            $count = $result->fetchOne();
+            $result->closeCursor();
+            
+            return (int) ($count ?? 0);
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Error counting objects orphaned from registers', [
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw new \OCP\DB\Exception('Failed to count orphaned objects from registers: ' . $e->getMessage());
+        }
+    }//end countOrphanedFromRegisters()
+
+
+    /**
+     * Count objects orphaned from schemas
+     *
+     * This method counts all objects that have a schema ID set to a value
+     * that no longer exists in the schemas table.
+     *
+     * @return int Number of objects orphaned from schemas
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     */
+    public function countOrphanedFromSchemas(): int
+    {
+        try {
+            $qb = $this->db->getQueryBuilder();
+            
+            // Count objects where schema ID doesn't exist in schemas table
+            $qb->select($qb->createFunction('COUNT(o.id) as count'))
+                ->from('openregister_objects', 'o')
+                ->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id')
+                ->where($qb->expr()->isNotNull('o.schema'))
+                ->andWhere($qb->expr()->isNull('s.id'));
+            
+            $result = $qb->executeQuery();
+            $count = $result->fetchOne();
+            $result->closeCursor();
+            
+            return (int) ($count ?? 0);
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Error counting objects orphaned from schemas', [
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw new \OCP\DB\Exception('Failed to count orphaned objects from schemas: ' . $e->getMessage());
+        }
+    }//end countOrphanedFromSchemas()
+
+
+    /**
+     * Delete objects orphaned from registers
+     *
+     * This method deletes all objects that have a register ID set to a value
+     * that no longer exists in the registers table. It performs a hard delete
+     * to clean up the database.
+     *
+     * @return int Number of objects deleted
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     */
+    public function deleteOrphanedFromRegisters(): int
+    {
+        try {
+            // First, get the IDs of orphaned objects for logging
+            $qb = $this->db->getQueryBuilder();
+            $qb->select('o.id', 'o.uuid', 'o.register')
+                ->from('openregister_objects', 'o')
+                ->leftJoin('o', 'openregister_registers', 'r', 'o.register = r.id')
+                ->where($qb->expr()->isNotNull('o.register'))
+                ->andWhere($qb->expr()->isNull('r.id'));
+            
+            $result = $qb->executeQuery();
+            $orphanedObjects = $result->fetchAll();
+            $result->closeCursor();
+            
+            if (empty($orphanedObjects)) {
+                return 0;
+            }
+            
+            $this->logger->info('Deleting objects orphaned from registers', [
+                'count' => count($orphanedObjects),
+                'sample_objects' => array_slice($orphanedObjects, 0, 5) // Log first 5 for reference
+            ]);
+            
+            // Delete the orphaned objects
+            $orphanedIds = array_column($orphanedObjects, 'id');
+            $qb = $this->db->getQueryBuilder();
+            $qb->delete('openregister_objects')
+                ->where($qb->expr()->in('id', $qb->createNamedParameter($orphanedIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
+            
+            $deletedCount = $qb->executeStatement();
+            
+            $this->logger->info('Successfully deleted objects orphaned from registers', [
+                'deleted_count' => $deletedCount
+            ]);
+            
+            return $deletedCount;
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Error deleting objects orphaned from registers', [
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw new \OCP\DB\Exception('Failed to delete orphaned objects from registers: ' . $e->getMessage());
+        }
+    }//end deleteOrphanedFromRegisters()
+
+
+    /**
+     * Delete objects orphaned from schemas
+     *
+     * This method deletes all objects that have a schema ID set to a value
+     * that no longer exists in the schemas table. It performs a hard delete
+     * to clean up the database.
+     *
+     * @return int Number of objects deleted
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     */
+    public function deleteOrphanedFromSchemas(): int
+    {
+        try {
+            // First, get the IDs of orphaned objects for logging
+            $qb = $this->db->getQueryBuilder();
+            $qb->select('o.id', 'o.uuid', 'o.schema')
+                ->from('openregister_objects', 'o')
+                ->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id')
+                ->where($qb->expr()->isNotNull('o.schema'))
+                ->andWhere($qb->expr()->isNull('s.id'));
+            
+            $result = $qb->executeQuery();
+            $orphanedObjects = $result->fetchAll();
+            $result->closeCursor();
+            
+            if (empty($orphanedObjects)) {
+                return 0;
+            }
+            
+            $this->logger->info('Deleting objects orphaned from schemas', [
+                'count' => count($orphanedObjects),
+                'sample_objects' => array_slice($orphanedObjects, 0, 5) // Log first 5 for reference
+            ]);
+            
+            // Delete the orphaned objects
+            $orphanedIds = array_column($orphanedObjects, 'id');
+            $qb = $this->db->getQueryBuilder();
+            $qb->delete('openregister_objects')
+                ->where($qb->expr()->in('id', $qb->createNamedParameter($orphanedIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
+            
+            $deletedCount = $qb->executeStatement();
+            
+            $this->logger->info('Successfully deleted objects orphaned from schemas', [
+                'deleted_count' => $deletedCount
+            ]);
+            
+            return $deletedCount;
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Error deleting objects orphaned from schemas', [
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw new \OCP\DB\Exception('Failed to delete orphaned objects from schemas: ' . $e->getMessage());
+        }
+    }//end deleteOrphanedFromSchemas()
+
+
+    /**
      * Get the database connection for advanced operations
      *
      * **PERFORMANCE OPTIMIZATION**: Exposes database connection for advanced

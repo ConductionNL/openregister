@@ -126,6 +126,8 @@ export const useSettingsStore = defineStore('settings', {
 			warnings: {
 				objectsWithoutOwner: 0,
 				objectsWithoutOrganisation: 0,
+				objectsOrphanedFromRegisters: 0,
+				objectsOrphanedFromSchemas: 0,
 				auditTrailsWithoutExpiry: 0,
 				searchTrailsWithoutExpiry: 0,
 				expiredAuditTrails: 0,

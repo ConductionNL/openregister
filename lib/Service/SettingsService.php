@@ -672,6 +672,8 @@ class SettingsService
                 'warnings'    => [
                     'objectsWithoutOwner'        => 0,
                     'objectsWithoutOrganisation' => 0,
+                    'objectsOrphanedFromRegisters' => 0,
+                    'objectsOrphanedFromSchemas'   => 0,
                     'auditTrailsWithoutExpiry'   => 0,
                     'searchTrailsWithoutExpiry'  => 0,
                     'expiredAuditTrails'         => 0,
@@ -733,6 +735,10 @@ class SettingsService
             $stats['sizes']['deletedObjectsSize'] = (int) ($objectsData['deleted_size'] ?? 0);
             $stats['warnings']['expiredObjects'] = (int) ($objectsData['expired_count'] ?? 0);
             $stats['sizes']['expiredObjectsSize'] = (int) ($objectsData['expired_size'] ?? 0);
+
+            // Get orphaned object counts using ObjectEntityMapper methods
+            $stats['warnings']['objectsOrphanedFromRegisters'] = $this->objectEntityMapper->countOrphanedFromRegisters();
+            $stats['warnings']['objectsOrphanedFromSchemas'] = $this->objectEntityMapper->countOrphanedFromSchemas();
 
             // 2. Audit trails table - comprehensive stats
             $auditQuery = "
@@ -2471,7 +2477,6 @@ class SettingsService
     public function updateMultitenancySettingsOnly(array $multitenancyData): array
     {
         try {
-            
             $multitenancyConfig = [
                 'enabled'             => $multitenancyData['enabled'] ?? false,
                 'defaultUserTenant'   => $multitenancyData['defaultUserTenant'] ?? '',
@@ -2553,6 +2558,58 @@ class SettingsService
             throw new \RuntimeException('Failed to update Retention settings: '.$e->getMessage());
         }
     }
+
+    /**
+     * Delete objects orphaned from registers
+     *
+     * This method deletes all objects that have a register ID set to a value
+     * that no longer exists in the registers table.
+     *
+     * @return array Operation results with count of deleted objects
+     * @throws \RuntimeException If deletion fails
+     */
+    public function deleteOrphanedFromRegisters(): array
+    {
+        try {
+            $deletedCount = $this->objectEntityMapper->deleteOrphanedFromRegisters();
+            
+            return [
+                'success' => true,
+                'deleted_count' => $deletedCount,
+                'message' => "Successfully deleted {$deletedCount} objects orphaned from registers",
+                'timestamp' => (new \DateTime())->format('c')
+            ];
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to delete objects orphaned from registers: ' . $e->getMessage());
+        }
+    }//end deleteOrphanedFromRegisters()
+
+
+    /**
+     * Delete objects orphaned from schemas
+     *
+     * This method deletes all objects that have a schema ID set to a value
+     * that no longer exists in the schemas table.
+     *
+     * @return array Operation results with count of deleted objects
+     * @throws \RuntimeException If deletion fails
+     */
+    public function deleteOrphanedFromSchemas(): array
+    {
+        try {
+            $deletedCount = $this->objectEntityMapper->deleteOrphanedFromSchemas();
+            
+            return [
+                'success' => true,
+                'deleted_count' => $deletedCount,
+                'message' => "Successfully deleted {$deletedCount} objects orphaned from schemas",
+                'timestamp' => (new \DateTime())->format('c')
+            ];
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to delete objects orphaned from schemas: ' . $e->getMessage());
+        }
+    }//end deleteOrphanedFromSchemas()
+
 
     /**
      * Get version information only

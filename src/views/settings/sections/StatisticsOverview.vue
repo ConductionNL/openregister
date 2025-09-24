@@ -64,6 +64,50 @@
 									</tr>
 									<tr class="stats-table-row">
 										<td class="stats-table-label">
+											Objects orphaned from registers
+										</td>
+										<td class="stats-table-value" :class="{ 'danger': stats.warnings.objectsOrphanedFromRegisters > 0 }">
+											{{ stats.warnings.objectsOrphanedFromRegisters }}
+										</td>
+										<td class="stats-table-value">
+											<NcButton
+												v-if="stats.warnings.objectsOrphanedFromRegisters > 0"
+												type="error"
+												:disabled="deletingOrphanedRegisters"
+												@click="deleteOrphanedFromRegisters">
+												<template #icon>
+													<NcLoadingIcon v-if="deletingOrphanedRegisters" :size="16" />
+													<Delete v-else :size="16" />
+												</template>
+												Delete
+											</NcButton>
+											<span v-else>-</span>
+										</td>
+									</tr>
+									<tr class="stats-table-row">
+										<td class="stats-table-label">
+											Objects orphaned from schemas
+										</td>
+										<td class="stats-table-value" :class="{ 'danger': stats.warnings.objectsOrphanedFromSchemas > 0 }">
+											{{ stats.warnings.objectsOrphanedFromSchemas }}
+										</td>
+										<td class="stats-table-value">
+											<NcButton
+												v-if="stats.warnings.objectsOrphanedFromSchemas > 0"
+												type="error"
+												:disabled="deletingOrphanedSchemas"
+												@click="deleteOrphanedFromSchemas">
+												<template #icon>
+													<NcLoadingIcon v-if="deletingOrphanedSchemas" :size="16" />
+													<Delete v-else :size="16" />
+												</template>
+												Delete
+											</NcButton>
+											<span v-else>-</span>
+										</td>
+									</tr>
+									<tr class="stats-table-row">
+										<td class="stats-table-label">
 											Audit trails without expiry
 										</td>
 										<td class="stats-table-value" :class="{ 'danger': stats.warnings.auditTrailsWithoutExpiry > 0 }">
@@ -354,6 +398,7 @@ import { useSettingsStore } from '../../../store/settings.js'
 import { NcSettingsSection, NcButton, NcLoadingIcon, NcDialog } from '@nextcloud/vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
 import { MassValidateModal } from '../../../modals/settings'
 
 export default {
@@ -366,6 +411,7 @@ export default {
 		NcDialog,
 		Refresh,
 		CheckCircle,
+		Delete,
 		MassValidateModal,
 	},
 
@@ -440,6 +486,8 @@ export default {
 				}
 			},
 			memoryPredictionLoading: false,
+			deletingOrphanedRegisters: false,
+			deletingOrphanedSchemas: false,
 		}
 	},
 
@@ -516,6 +564,62 @@ export default {
 				// Keep default prediction data
 			} finally {
 				this.memoryPredictionLoading = false
+			}
+		},
+
+		async deleteOrphanedFromRegisters() {
+			this.deletingOrphanedRegisters = true
+			try {
+				const response = await fetch('/index.php/apps/openregister/api/settings/orphaned/registers', {
+					method: 'DELETE',
+					headers: {
+						'Content-Type': 'application/json',
+						'requesttoken': OC.requestToken
+					}
+				})
+
+				const result = await response.json()
+
+				if (result.success) {
+					this.$toast.success(`Successfully deleted ${result.deleted_count} objects orphaned from registers`)
+					// Reload stats to update the counts
+					this.settingsStore.loadStats()
+				} else {
+					this.$toast.error(result.message || 'Failed to delete orphaned objects')
+				}
+			} catch (error) {
+				console.error('Error deleting orphaned objects from registers:', error)
+				this.$toast.error('Failed to delete orphaned objects from registers')
+			} finally {
+				this.deletingOrphanedRegisters = false
+			}
+		},
+
+		async deleteOrphanedFromSchemas() {
+			this.deletingOrphanedSchemas = true
+			try {
+				const response = await fetch('/index.php/apps/openregister/api/settings/orphaned/schemas', {
+					method: 'DELETE',
+					headers: {
+						'Content-Type': 'application/json',
+						'requesttoken': OC.requestToken
+					}
+				})
+
+				const result = await response.json()
+
+				if (result.success) {
+					this.$toast.success(`Successfully deleted ${result.deleted_count} objects orphaned from schemas`)
+					// Reload stats to update the counts
+					this.settingsStore.loadStats()
+				} else {
+					this.$toast.error(result.message || 'Failed to delete orphaned objects')
+				}
+			} catch (error) {
+				console.error('Error deleting orphaned objects from schemas:', error)
+				this.$toast.error('Failed to delete orphaned objects from schemas')
+			} finally {
+				this.deletingOrphanedSchemas = false
 			}
 		},
 	},
