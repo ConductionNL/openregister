@@ -407,6 +407,727 @@ class SettingsController extends Controller
 
 
     /**
+     * Mass validate all objects by re-saving them to trigger business logic
+     *
+     * This method re-saves all objects in the system to ensure all business logic
+     * is triggered and objects are properly processed according to current rules.
+     * Unlike validateAllObjects, this actually saves each object.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Mass validation results summary
+     */
+    public function massValidateObjects(): JSONResponse
+    {
+        try {
+            $startTime = microtime(true);
+            $startMemory = memory_get_usage(true);
+            $peakMemory = memory_get_peak_usage(true);
+            
+            // Get request parameters from JSON body or query parameters
+            $maxObjects = $this->request->getParam('maxObjects', 0);
+            $batchSize = $this->request->getParam('batchSize', 1000);
+            $mode = $this->request->getParam('mode', 'serial'); // New mode parameter
+            $collectErrors = $this->request->getParam('collectErrors', false); // New error collection parameter
+            
+            // Try to get from JSON body if not in query params
+            if ($maxObjects === 0 && $batchSize === 1000) {
+                $input = file_get_contents('php://input');
+                if ($input) {
+                    $data = json_decode($input, true);
+                    if ($data) {
+                        $maxObjects = $data['maxObjects'] ?? 0;
+                        $batchSize = $data['batchSize'] ?? 1000;
+                        $mode = $data['mode'] ?? 'serial';
+                        $collectErrors = $data['collectErrors'] ?? false;
+                    }
+                }
+            }
+            
+            // Convert string boolean to actual boolean
+            if (is_string($collectErrors)) {
+                $collectErrors = filter_var($collectErrors, FILTER_VALIDATE_BOOLEAN);
+            }
+            
+            // Validate parameters
+            if (!in_array($mode, ['serial', 'parallel'])) {
+                return new JSONResponse([
+                    'error' => 'Invalid mode parameter. Must be "serial" or "parallel"'
+                ], 400);
+            }
+            
+            if ($batchSize < 1 || $batchSize > 5000) {
+                return new JSONResponse([
+                    'error' => 'Invalid batch size. Must be between 1 and 5000'
+                ], 400);
+            }
+            
+            $objectService = $this->getObjectService();
+            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
+            
+            // Use optimized approach like SOLR warmup - get count first, then process in chunks
+            $objectMapper = \OC::$server->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+            $totalObjects = $objectMapper->countSearchObjects([], null, false, false);
+            
+            // Apply maxObjects limit if specified
+            if ($maxObjects > 0 && $maxObjects < $totalObjects) {
+                $totalObjects = $maxObjects;
+            }
+            
+            $logger->info('🚀 STARTING MASS VALIDATION', [
+                'totalObjects' => $totalObjects,
+                'batchSize' => $batchSize,
+                'mode' => $mode,
+                'collectErrors' => $collectErrors
+            ]);
+            
+            $results = [
+                'success' => true,
+                'message' => 'Mass validation completed successfully',
+                'stats' => [
+                    'total_objects' => $totalObjects,
+                    'processed_objects' => 0,
+                    'successful_saves' => 0,
+                    'failed_saves' => 0,
+                    'duration_seconds' => 0,
+                    'batches_processed' => 0,
+                    'objects_per_second' => 0
+                ],
+                'errors' => [],
+                'batches_processed' => 0,
+                'timestamp' => date('c'),
+                'config_used' => [
+                    'mode' => $mode,
+                    'max_objects' => $maxObjects,
+                    'batch_size' => $batchSize,
+                    'collect_errors' => $collectErrors
+                ]
+            ];
+            
+            // Create batch jobs like SOLR warmup
+            $batchJobs = [];
+            $offset = 0;
+            $batchNumber = 0;
+            
+            while ($offset < $totalObjects) {
+                $currentBatchSize = min($batchSize, $totalObjects - $offset);
+                $batchJobs[] = [
+                    'batchNumber' => ++$batchNumber,
+                    'offset' => $offset,
+                    'limit' => $currentBatchSize
+                ];
+                $offset += $currentBatchSize;
+            }
+            
+            $results['stats']['batches_processed'] = count($batchJobs);
+            
+            $logger->info('📋 BATCH JOBS CREATED', [
+                'totalBatches' => count($batchJobs),
+                'estimatedDuration' => round((count($batchJobs) * 2)) . 's'
+            ]);
+            
+            // Process batches based on mode
+            if ($mode === 'parallel') {
+                $this->processJobsParallel($batchJobs, $objectMapper, $objectService, $results, $collectErrors, 4, $logger);
+            } else {
+                $this->processJobsSerial($batchJobs, $objectMapper, $objectService, $results, $collectErrors, $logger);
+            }
+            
+            // Calculate final metrics
+            $endTime = microtime(true);
+            $endMemory = memory_get_usage(true);
+            $finalPeakMemory = memory_get_peak_usage(true);
+            
+            $results['stats']['duration_seconds'] = round($endTime - $startTime, 2);
+            $results['stats']['objects_per_second'] = $results['stats']['duration_seconds'] > 0 
+                ? round($results['stats']['processed_objects'] / $results['stats']['duration_seconds'], 2)
+                : 0;
+            
+            // Add memory usage information
+            $results['memory_usage'] = [
+                'start_memory' => $startMemory,
+                'end_memory' => $endMemory,
+                'peak_memory' => max($peakMemory, $finalPeakMemory),
+                'memory_used' => $endMemory - $startMemory,
+                'peak_percentage' => round((max($peakMemory, $finalPeakMemory) / (1024 * 1024 * 1024)) * 100, 1), // Assume 1GB available
+                'formatted' => [
+                    'actual_used' => $this->formatBytes($endMemory - $startMemory),
+                    'peak_usage' => $this->formatBytes(max($peakMemory, $finalPeakMemory)),
+                    'peak_percentage' => round((max($peakMemory, $finalPeakMemory) / (1024 * 1024 * 1024)) * 100, 1) . '%'
+                ]
+            ];
+            
+            // Determine overall success
+            if ($results['stats']['failed_saves'] > 0) {
+                if ($collectErrors) {
+                    $results['success'] = $results['stats']['successful_saves'] > 0; // Partial success if some objects were saved
+                    $results['message'] = sprintf(
+                        'Mass validation completed with %d errors out of %d objects (%d successful)',
+                        $results['stats']['failed_saves'],
+                        $results['stats']['total_objects'],
+                        $results['stats']['successful_saves']
+                    );
+                } else {
+                    $results['success'] = false;
+                    $results['message'] = sprintf(
+                        'Mass validation stopped after %d errors (processed %d out of %d objects)',
+                        $results['stats']['failed_saves'],
+                        $results['stats']['processed_objects'],
+                        $results['stats']['total_objects']
+                    );
+                }
+            }
+            
+            $logger->info('✅ MASS VALIDATION COMPLETED', [
+                'successful' => $results['stats']['successful_saves'],
+                'failed' => $results['stats']['failed_saves'],
+                'total' => $results['stats']['processed_objects'],
+                'duration' => $results['stats']['duration_seconds'] . 's',
+                'objectsPerSecond' => $results['stats']['objects_per_second'],
+                'mode' => $mode
+            ]);
+            
+            return new JSONResponse($results);
+            
+        } catch (\Exception $e) {
+            $logger = $logger ?? \OC::$server->get(\Psr\Log\LoggerInterface::class);
+            $logger->error('❌ MASS VALIDATION FAILED', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return new JSONResponse([
+                'success' => false,
+                'error' => 'Mass validation failed: ' . $e->getMessage(),
+                'stats' => [
+                    'total_objects' => 0,
+                    'processed_objects' => 0,
+                    'successful_saves' => 0,
+                    'failed_saves' => 0,
+                    'duration_seconds' => 0
+                ],
+                'errors' => [
+                    [
+                        'error' => $e->getMessage()
+                    ]
+                ],
+                'timestamp' => date('c')
+            ], 500);
+        }
+
+    }//end massValidateObjects()
+
+
+    /**
+     * Process a batch of objects in serial mode
+     *
+     * @param array $batch Array of objects to process
+     * @param mixed $objectService The object service instance
+     * @param array &$results Results array to update
+     * @param bool $collectErrors Whether to collect all errors or stop on first
+     * @return void
+     */
+    private function processBatchSerial(array $batch, $objectService, array &$results, bool $collectErrors): void
+    {
+        foreach ($batch as $object) {
+                try {
+                    $results['stats']['processed_objects']++;
+                    
+                    // Re-save the object to trigger all business logic
+                    // This will run validation, transformations, and other handlers
+                    $savedObject = $objectService->saveObject(
+                        $object->getObject(),
+                    [], // extend parameter
+                        $object->getRegister(),
+                        $object->getSchema(),
+                        $object->getUuid()
+                    );
+                    
+                    if ($savedObject) {
+                        $results['stats']['successful_saves']++;
+                    } else {
+                        $results['stats']['failed_saves']++;
+                        $results['errors'][] = [
+                            'object_id' => $object->getUuid(),
+                            'object_name' => $object->getName() ?? $object->getUuid(),
+                            'register' => $object->getRegister(),
+                            'schema' => $object->getSchema(),
+                        'error' => 'Save operation returned null',
+                        'batch_mode' => 'serial'
+                        ];
+                    }
+                    
+                } catch (\Exception $e) {
+                    $results['stats']['failed_saves']++;
+                    $results['errors'][] = [
+                        'object_id' => $object->getUuid(),
+                        'object_name' => $object->getName() ?? $object->getUuid(),
+                        'register' => $object->getRegister(),
+                        'schema' => $object->getSchema(),
+                    'error' => $e->getMessage(),
+                    'batch_mode' => 'serial'
+                ];
+                
+                // Log the error for debugging
+                $this->logger->error('Mass validation failed for object ' . $object->getUuid() . ': ' . $e->getMessage());
+                
+                // If not collecting errors, stop processing this batch
+                if (!$collectErrors) {
+                    break;
+                }
+            }
+        }
+    }//end processBatchSerial()
+
+
+    /**
+     * Process a batch of objects in parallel mode (simulated)
+     *
+     * @param array $batch Array of objects to process
+     * @param mixed $objectService The object service instance
+     * @param array &$results Results array to update
+     * @param bool $collectErrors Whether to collect all errors or stop on first
+     * @return void
+     */
+    private function processBatchParallel(array $batch, $objectService, array &$results, bool $collectErrors): void
+    {
+        // Note: True parallel processing would require process forking or threading
+        // For now, we simulate parallel processing with optimized serial processing
+        // In a real implementation, you might use ReactPHP, Swoole, or similar
+        
+        $batchErrors = [];
+        $batchSuccesses = 0;
+        
+        foreach ($batch as $object) {
+            try {
+                $results['stats']['processed_objects']++;
+                
+                // Re-save the object to trigger all business logic
+                // This will run validation, transformations, and other handlers
+                $savedObject = $objectService->saveObject(
+                    $object->getObject(),
+                    [], // extend parameter
+                    $object->getRegister(),
+                    $object->getSchema(),
+                    $object->getUuid()
+                );
+                
+                if ($savedObject) {
+                    $batchSuccesses++;
+                } else {
+                    $batchErrors[] = [
+                        'object_id' => $object->getUuid(),
+                        'object_name' => $object->getName() ?? $object->getUuid(),
+                        'register' => $object->getRegister(),
+                        'schema' => $object->getSchema(),
+                        'error' => 'Save operation returned null',
+                        'batch_mode' => 'parallel'
+                    ];
+                }
+                
+            } catch (\Exception $e) {
+                $batchErrors[] = [
+                    'object_id' => $object->getUuid(),
+                    'object_name' => $object->getName() ?? $object->getUuid(),
+                    'register' => $object->getRegister(),
+                    'schema' => $object->getSchema(),
+                    'error' => $e->getMessage(),
+                    'batch_mode' => 'parallel'
+                ];
+                
+                // Log the error for debugging
+                $this->logger->error('Mass validation failed for object ' . $object->getUuid() . ': ' . $e->getMessage());
+                
+                // If not collecting errors, stop processing this batch
+                if (!$collectErrors) {
+                    break;
+                }
+            }
+        }
+        
+        // Update results with batch totals
+        $results['stats']['successful_saves'] += $batchSuccesses;
+        $results['stats']['failed_saves'] += count($batchErrors);
+        $results['errors'] = array_merge($results['errors'], $batchErrors);
+    }//end processBatchParallel()
+
+
+    /**
+     * Process batch jobs in serial mode (optimized like SOLR warmup)
+     *
+     * @param array $batchJobs Array of batch job definitions
+     * @param mixed $objectMapper The object entity mapper
+     * @param mixed $objectService The object service instance
+     * @param array &$results Results array to update
+     * @param bool $collectErrors Whether to collect all errors or stop on first
+     * @return void
+     */
+    private function processJobsSerial(array $batchJobs, $objectMapper, $objectService, array &$results, bool $collectErrors, $logger): void
+    {
+        foreach ($batchJobs as $batchIndex => $job) {
+            $batchStartTime = microtime(true);
+            
+            // Get objects for this batch using offset/limit like SOLR warmup
+            $objects = $objectMapper->findAll(
+                limit: $job['limit'],
+                offset: $job['offset']
+            );
+            
+            $batchProcessed = 0;
+            $batchSuccesses = 0;
+            $batchErrors = [];
+            
+            foreach ($objects as $object) {
+                try {
+                    $batchProcessed++;
+                    $results['stats']['processed_objects']++;
+                    
+                    // Re-save the object to trigger all business logic
+                    $savedObject = $objectService->saveObject(
+                        $object->getObject(),
+                        [], // extend parameter
+                        $object->getRegister(),
+                        $object->getSchema(),
+                        $object->getUuid()
+                    );
+                    
+                    if ($savedObject) {
+                        $batchSuccesses++;
+                        $results['stats']['successful_saves']++;
+                    } else {
+                        $results['stats']['failed_saves']++;
+                        $batchErrors[] = [
+                            'object_id' => $object->getUuid(),
+                            'object_name' => $object->getName() ?? $object->getUuid(),
+                            'register' => $object->getRegister(),
+                            'schema' => $object->getSchema(),
+                            'error' => 'Save operation returned null',
+                            'batch_mode' => 'serial_optimized'
+                        ];
+                    }
+                    
+                } catch (\Exception $e) {
+                    $results['stats']['failed_saves']++;
+                    $batchErrors[] = [
+                        'object_id' => $object->getUuid(),
+                        'object_name' => $object->getName() ?? $object->getUuid(),
+                        'register' => $object->getRegister(),
+                        'schema' => $object->getSchema(),
+                        'error' => $e->getMessage(),
+                        'batch_mode' => 'serial_optimized'
+                    ];
+                    
+                    $logger->error('Mass validation failed for object ' . $object->getUuid() . ': ' . $e->getMessage());
+                    
+                    if (!$collectErrors) {
+                        break;
+                    }
+                }
+            }
+            
+            $batchDuration = microtime(true) - $batchStartTime;
+            $objectsPerSecond = $batchDuration > 0 ? round($batchProcessed / $batchDuration, 2) : 0;
+            
+            // Log progress every batch like SOLR warmup
+            $logger->info('📈 MASS VALIDATION PROGRESS', [
+                'batchNumber' => $job['batchNumber'],
+                'totalBatches' => count($batchJobs),
+                'processed' => $batchProcessed,
+                'successful' => $batchSuccesses,
+                'failed' => count($batchErrors),
+                'batchDuration' => round($batchDuration * 1000) . 'ms',
+                'objectsPerSecond' => $objectsPerSecond,
+                'totalProcessed' => $results['stats']['processed_objects']
+            ]);
+            
+            // Add batch errors to results
+            $results['errors'] = array_merge($results['errors'], $batchErrors);
+            
+            // Memory management every 10 batches
+            if ($job['batchNumber'] % 10 === 0) {
+                $logger->debug('🧹 MEMORY CLEANUP', [
+                    'memoryUsage' => round(memory_get_usage() / 1024 / 1024, 2) . 'MB',
+                    'peakMemory' => round(memory_get_peak_usage() / 1024 / 1024, 2) . 'MB'
+                ]);
+                gc_collect_cycles();
+            }
+            
+            // Clear objects from memory
+            unset($objects);
+        }
+    }//end processJobsSerial()
+
+
+    /**
+     * Process batch jobs in parallel mode (optimized like SOLR warmup)
+     *
+     * @param array $batchJobs Array of batch job definitions
+     * @param mixed $objectMapper The object entity mapper
+     * @param mixed $objectService The object service instance
+     * @param array &$results Results array to update
+     * @param bool $collectErrors Whether to collect all errors or stop on first
+     * @param int $parallelBatches Number of parallel batches to process
+     * @return void
+     */
+    private function processJobsParallel(array $batchJobs, $objectMapper, $objectService, array &$results, bool $collectErrors, int $parallelBatches, $logger): void
+    {
+        // Process batches in parallel chunks like SOLR warmup
+        $batchChunks = array_chunk($batchJobs, $parallelBatches);
+        
+        foreach ($batchChunks as $chunkIndex => $chunk) {
+            $logger->info('🔄 PROCESSING PARALLEL CHUNK', [
+                'chunkIndex' => $chunkIndex + 1,
+                'totalChunks' => count($batchChunks),
+                'batchesInChunk' => count($chunk)
+            ]);
+            
+            $chunkStartTime = microtime(true);
+            
+            // Process batches in this chunk (simulated parallel processing)
+            // In a real implementation, this would use actual parallel processing
+            $chunkResults = [];
+            foreach ($chunk as $job) {
+                $result = $this->processBatchDirectly($objectMapper, $objectService, $job, $collectErrors);
+                $chunkResults[] = $result;
+            }
+            
+            // Aggregate results from this chunk
+            foreach ($chunkResults as $result) {
+                $results['stats']['processed_objects'] += $result['processed'];
+                $results['stats']['successful_saves'] += $result['successful'];
+                $results['stats']['failed_saves'] += $result['failed'];
+                $results['errors'] = array_merge($results['errors'], $result['errors']);
+            }
+            
+            $chunkTime = round((microtime(true) - $chunkStartTime) * 1000, 2);
+            $chunkProcessed = array_sum(array_column($chunkResults, 'processed'));
+            
+            $logger->info('✅ COMPLETED PARALLEL CHUNK', [
+                'chunkIndex' => $chunkIndex + 1,
+                'chunkTime' => $chunkTime . 'ms',
+                'objectsProcessed' => $chunkProcessed,
+                'totalProcessed' => $results['stats']['processed_objects']
+            ]);
+            
+            // Memory cleanup after each chunk
+            gc_collect_cycles();
+        }
+    }//end processJobsParallel()
+
+
+    /**
+     * Process a single batch directly (helper for parallel processing)
+     *
+     * @param mixed $objectMapper The object entity mapper
+     * @param mixed $objectService The object service instance
+     * @param array $job Batch job definition
+     * @param bool $collectErrors Whether to collect all errors
+     * @return array Batch processing results
+     */
+    private function processBatchDirectly($objectMapper, $objectService, array $job, bool $collectErrors): array
+    {
+        $batchStartTime = microtime(true);
+        
+        // Get objects for this batch
+        $objects = $objectMapper->findAll(
+            limit: $job['limit'],
+            offset: $job['offset']
+        );
+        
+        $batchProcessed = 0;
+        $batchSuccesses = 0;
+        $batchErrors = [];
+        
+        foreach ($objects as $object) {
+            try {
+                $batchProcessed++;
+                
+                // Re-save the object to trigger all business logic
+                $savedObject = $objectService->saveObject(
+                    $object->getObject(),
+                    [], // extend parameter
+                    $object->getRegister(),
+                    $object->getSchema(),
+                    $object->getUuid()
+                );
+                
+                if ($savedObject) {
+                    $batchSuccesses++;
+                } else {
+                    $batchErrors[] = [
+                        'object_id' => $object->getUuid(),
+                        'object_name' => $object->getName() ?? $object->getUuid(),
+                        'register' => $object->getRegister(),
+                        'schema' => $object->getSchema(),
+                        'error' => 'Save operation returned null',
+                        'batch_mode' => 'parallel_optimized'
+                    ];
+                }
+                
+            } catch (\Exception $e) {
+                $batchErrors[] = [
+                    'object_id' => $object->getUuid(),
+                    'object_name' => $object->getName() ?? $object->getUuid(),
+                    'register' => $object->getRegister(),
+                    'schema' => $object->getSchema(),
+                    'error' => $e->getMessage(),
+                    'batch_mode' => 'parallel_optimized'
+                ];
+                
+                if (!$collectErrors) {
+                    break;
+                }
+            }
+        }
+        
+        $batchDuration = microtime(true) - $batchStartTime;
+        
+        // Clear objects from memory
+        unset($objects);
+        
+        return [
+            'processed' => $batchProcessed,
+            'successful' => $batchSuccesses,
+            'failed' => count($batchErrors),
+            'errors' => $batchErrors,
+            'duration' => $batchDuration
+        ];
+    }//end processBatchDirectly()
+
+
+    /**
+     * Format bytes into human readable format
+     *
+     * @param int $bytes Number of bytes
+     * @param int $precision Decimal precision
+     * @return string Formatted string
+     */
+    private function formatBytes(int $bytes, int $precision = 2): string
+    {
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        
+        for ($i = 0; $bytes > 1024 && $i < count($units) - 1; $i++) {
+            $bytes /= 1024;
+        }
+        
+        return round($bytes, $precision) . ' ' . $units[$i];
+    }//end formatBytes()
+
+
+    /**
+     * Predict memory usage for mass validation operation
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Memory prediction results
+     */
+    public function predictMassValidationMemory(): JSONResponse
+    {
+        try {
+            // Get request parameters
+            $maxObjects = $this->request->getParam('maxObjects', 0);
+            
+            // Try to get from JSON body if not in query params
+            if ($maxObjects === 0) {
+                $input = file_get_contents('php://input');
+                if ($input) {
+                    $data = json_decode($input, true);
+                    if ($data) {
+                        $maxObjects = $data['maxObjects'] ?? 0;
+                    }
+                }
+            }
+            
+            // Get current memory usage without loading all objects (much faster)
+            $currentMemory = memory_get_usage(true);
+            $memoryLimit = ini_get('memory_limit');
+            
+            // Convert memory limit to bytes
+            $memoryLimitBytes = $this->convertToBytes($memoryLimit);
+            $availableMemory = $memoryLimitBytes - $currentMemory;
+            
+            // Use a lightweight approach - estimate based on typical object size
+            // We'll use the maxObjects parameter or provide a reasonable default estimate
+            $estimatedObjectCount = $maxObjects > 0 ? $maxObjects : 10000; // Default estimate
+            
+            // Estimate memory usage (rough calculation)
+            // Assume each object uses approximately 50KB in memory during processing
+            $estimatedMemoryPerObject = 50 * 1024; // 50KB
+            $totalEstimatedMemory = $estimatedObjectCount * $estimatedMemoryPerObject;
+            
+            // Determine if prediction is safe
+            $predictionSafe = $totalEstimatedMemory < ($availableMemory * 0.8); // Use 80% as safety margin
+            
+            $prediction = [
+                'success' => true,
+                'prediction_safe' => $predictionSafe,
+                'objects_to_process' => $estimatedObjectCount,
+                'total_objects_available' => 'Unknown (fast mode)', // Don't count all objects for speed
+                'memory_per_object_bytes' => $estimatedMemoryPerObject,
+                'total_predicted_bytes' => $totalEstimatedMemory,
+                'current_memory_bytes' => $currentMemory,
+                'memory_limit_bytes' => $memoryLimitBytes,
+                'available_memory_bytes' => $availableMemory,
+                'safety_margin_percentage' => 80,
+                'formatted' => [
+                    'total_predicted' => $this->formatBytes($totalEstimatedMemory),
+                    'available' => $this->formatBytes($availableMemory),
+                    'current_usage' => $this->formatBytes($currentMemory),
+                    'memory_limit' => $this->formatBytes($memoryLimitBytes),
+                    'memory_per_object' => $this->formatBytes($estimatedMemoryPerObject)
+                ],
+                'recommendation' => $predictionSafe 
+                    ? 'Memory usage looks safe for this operation'
+                    : 'Consider reducing batch size or max objects to avoid memory issues',
+                'note' => 'Fast prediction mode - actual object count will be determined during processing'
+            ];
+            
+            return new JSONResponse($prediction);
+            
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => 'Failed to predict memory usage: ' . $e->getMessage(),
+                'prediction_safe' => true, // Default to safe if we can't predict
+                'formatted' => [
+                    'total_predicted' => 'Unknown',
+                    'available' => 'Unknown'
+                ]
+            ], 500);
+        }
+    }//end predictMassValidationMemory()
+
+
+    /**
+     * Convert memory limit string to bytes
+     *
+     * @param string $memoryLimit Memory limit string (e.g., '128M', '1G')
+     * @return int Memory limit in bytes
+     */
+    private function convertToBytes(string $memoryLimit): int
+    {
+        $memoryLimit = trim($memoryLimit);
+        $last = strtolower($memoryLimit[strlen($memoryLimit) - 1]);
+        $value = (int) $memoryLimit;
+        
+        switch ($last) {
+            case 'g':
+                $value *= 1024;
+                // no break
+            case 'm':
+                $value *= 1024;
+                // no break
+            case 'k':
+                $value *= 1024;
+        }
+        
+        return $value;
+    }//end convertToBytes()
+
+
+    /**
      * Run SOLR setup to prepare for multi-tenant architecture
      *
      * @NoAdminRequired

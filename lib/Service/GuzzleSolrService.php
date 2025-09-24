@@ -879,7 +879,19 @@ class GuzzleSolrService
      */
     public function indexObject(ObjectEntity $object, bool $commit = false): bool
     {
-        // Individual object indexing (logging removed for performance)
+        // TODO: In the future, we want to index all objects to Solr for comprehensive search.
+        // Currently, we only index published objects to keep the search results relevant.
+        // This decision was made to ensure that only publicly available content appears in search results.
+        
+        // Check if object is published
+        if (!$object->getPublished()) {
+            $this->logger->debug('Skipping indexing of unpublished object', [
+                'object_id' => $object->getId(),
+                'object_uuid' => $object->getUuid(),
+                'published' => $object->getPublished()
+            ]);
+            return true; // Return true as this is expected behavior, not an error
+        }
         
         if (!$this->isAvailable()) {
             return false;
@@ -1556,8 +1568,14 @@ class GuzzleSolrService
         $document['self_validation'] = $object->getValidation() ? json_encode($object->getValidation()) : null;
         $document['self_groups'] = $object->getGroups() ? json_encode($object->getGroups()) : null;
 
-        // Remove null values
-        return array_filter($document, fn($value) => $value !== null && $value !== '');
+        // Remove null values, but keep published/depublished fields for proper filtering
+        return array_filter($document, function($value, $key) {
+            // Always keep published/depublished fields even if null for proper Solr filtering
+            if (in_array($key, ['self_published', 'self_depublished'])) {
+                return true;
+            }
+            return $value !== null && $value !== '';
+        }, ARRAY_FILTER_USE_BOTH);
     }
 
     /**
@@ -1712,9 +1730,10 @@ class GuzzleSolrService
         
         // Published filtering (only if explicitly requested)
         if ($published) {
-            // Use separate filters for better SOLR performance and reliability
-            $filters[] = 'self_published:[* TO ' . $now . ']';
-            $filters[] = '-self_depublished:[* TO *]';
+            // Filter for objects that have a published date AND it's in the past
+            // AND either no depublished date OR depublished date is in the future
+            $filters[] = 'self_published:[* TO ' . $now . '] AND NOT self_published:null';
+            $filters[] = '(self_depublished:null OR self_depublished:[' . $now . ' TO *])';
         }
         
         // Deleted filtering
@@ -2244,6 +2263,7 @@ class GuzzleSolrService
                     if (!isset($doc['self_tenant'])) {
                         $doc['self_tenant'] = (string)$this->tenantId;
                     }
+                    // Document is already a Solr document array - don't recreate it
                     $solrDocs[] = $doc;
                 } else {
                     $this->logger->warning('Invalid document type in bulk index', ['type' => gettype($doc)]);
@@ -3891,8 +3911,46 @@ class GuzzleSolrService
             $statsResponse = $this->httpClient->get($statsUrl, ['timeout' => 10]);
             $statsData = json_decode((string)$statsResponse->getBody(), true);
 
-            // Get document count
+            // Get document count from Solr (indexed objects)
             $docCount = $this->getDocumentCount();
+
+            // Get object counts from database using ObjectEntityMapper
+            $totalCount = 0;
+            $publishedCount = 0;
+            try {
+                // Get ObjectEntityMapper directly from container
+                $objectMapper = \OC::$server->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+                
+                // Get total object count (excluding deleted objects)
+                $totalCount = $objectMapper->countAll(
+                    filters: [],
+                    search: null,
+                    ids: null,
+                    uses: null,
+                    includeDeleted: false,
+                    register: null,
+                    schema: null,
+                    published: null, // Don't filter by published status for total count
+                    rbac: false,     // Skip RBAC for performance
+                    multi: false     // Skip multitenancy for performance
+                );
+                
+                // Get published object count
+                $publishedCount = $objectMapper->countAll(
+                    filters: [],
+                    search: null,
+                    ids: null,
+                    uses: null,
+                    includeDeleted: false,
+                    register: null,
+                    schema: null,
+                    published: true, // Only count published objects
+                    rbac: false,     // Skip RBAC for performance
+                    multi: false     // Skip multitenancy for performance
+                );
+            } catch (\Exception $e) {
+                $this->logger->warning('Failed to get object counts from database', ['error' => $e->getMessage()]);
+            }
 
             // Get index size (approximate)
             $indexSizeUrl = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/admin/luke?wt=json&numTerms=0';
@@ -3902,16 +3960,31 @@ class GuzzleSolrService
             $collectionInfo = $statsData['cluster']['collections'][$tenantCollectionName] ?? [];
             $shards = $collectionInfo['shards'] ?? [];
 
+            // Get memory prediction for warmup (using published object count)
+            $memoryPrediction = [];
+            try {
+                $memoryPrediction = $this->predictWarmupMemoryUsage(0); // 0 = all published objects
+            } catch (\Exception $e) {
+                $this->logger->warning('Failed to get memory prediction for dashboard stats', ['error' => $e->getMessage()]);
+                $memoryPrediction = [
+                    'error' => 'Unable to predict memory usage',
+                    'prediction_safe' => true // Default to safe
+                ];
+            }
+
             return [
                 'available' => true,
                 'tenant_id' => $this->tenantId,
                 'collection' => $tenantCollectionName,
                 'document_count' => $docCount,
+                'total_count' => $totalCount,
+                'published_count' => $publishedCount,
                 'shards' => count($shards),
                 'index_version' => $sizeData['index']['version'] ?? 'unknown',
                 'last_modified' => $sizeData['index']['lastModified'] ?? 'unknown',
                 'service_stats' => $this->stats,
-                'health' => !empty($collectionInfo) ? 'healthy' : 'degraded'
+                'health' => !empty($collectionInfo) ? 'healthy' : 'degraded',
+                'memory_prediction' => $memoryPrediction
             ];
 
         } catch (\Exception $e) {
@@ -4096,17 +4169,25 @@ class GuzzleSolrService
                     break; // No more objects
                 }
                 
-                // **DEBUG**: Test bulk indexing with detailed logging
+                // TODO: In the future, we want to index all objects to Solr for comprehensive search.
+                // Currently, we only index published objects to keep the search results relevant.
                 $documents = [];
+                $skippedUnpublished = 0;
                 foreach ($objects as $object) {
                     try {
+                        $objectEntity = null;
                         if ($object instanceof ObjectEntity) {
-                            $documents[] = $this->createSolrDocument($object, $solrFieldTypes);
+                            $objectEntity = $object;
                         } else if (is_array($object)) {
                             // Convert array to ObjectEntity if needed
-                            $entity = new ObjectEntity();
-                            $entity->hydrate($object);
-                            $documents[] = $this->createSolrDocument($entity, $solrFieldTypes);
+                            $objectEntity = new ObjectEntity();
+                            $objectEntity->hydrate($object);
+                        }
+                        
+                        if ($objectEntity && $objectEntity->getPublished()) {
+                            $documents[] = $this->createSolrDocument($objectEntity, $solrFieldTypes);
+                        } else {
+                            $skippedUnpublished++;
                         }
                     } catch (\Exception $e) {
                         $this->logger->warning('Failed to create SOLR document', [
@@ -4114,6 +4195,14 @@ class GuzzleSolrService
                             'objectId' => is_array($object) ? ($object['id'] ?? 'unknown') : ($object instanceof ObjectEntity ? $object->getId() : 'unknown')
                         ]);
                     }
+                }
+                
+                if ($skippedUnpublished > 0) {
+                    $this->logger->info('Skipped unpublished objects in batch', [
+                        'batch' => $batchCount + 1,
+                        'skipped' => $skippedUnpublished,
+                        'published' => count($documents)
+                    ]);
                 }
                 
                 // Bulk index the entire batch
@@ -4201,9 +4290,19 @@ class GuzzleSolrService
             $startTime = microtime(true);
             // Parallel bulk indexing started (logging removed for performance)
 
-            // First, get the total count to plan batches using ObjectEntityMapper's dedicated count method
-            $countQuery = []; // Empty query to count all objects
-            $totalObjects = $objectMapper->countSearchObjects($countQuery, null, false, false);
+            // First, get the published object count to plan batches (since we only index published objects)
+            $totalObjects = $objectMapper->countAll(
+                filters: [],
+                search: null,
+                ids: null,
+                uses: null,
+                includeDeleted: false,
+                register: null,
+                schema: null,
+                published: true, // Only count published objects since we only index those
+                rbac: false,     // Skip RBAC for performance
+                multi: false     // Skip multitenancy for performance
+            );
             
             // Total objects retrieved from database
             
@@ -4401,18 +4500,30 @@ class GuzzleSolrService
             $batchStartTime = microtime(true);
             
             // Fetch objects directly from ObjectEntityMapper
-            $query = [
-                '_limit' => $job['limit'],
-                '_offset' => $job['offset']
-            ];
-
             $this->logger->debug('Processing batch async with ObjectEntityMapper', [
                 'batchNumber' => $job['batchNumber'],
                 'offset' => $job['offset'],
                 'limit' => $job['limit']
             ]);
 
-            $objects = $objectMapper->searchObjects($query, null, false, false);
+            // Fetch only published objects (since we only index published objects)
+            $objects = $objectMapper->findAll(
+                limit: $job['limit'],
+                offset: $job['offset'],
+                filters: [],
+                searchConditions: [],
+                searchParams: [],
+                sort: [],
+                search: null,
+                ids: null,
+                uses: null,
+                includeDeleted: false,
+                register: null,
+                schema: null,
+                published: true, // Only fetch published objects
+                rbac: false,     // Skip RBAC for performance
+                multi: false     // Skip multitenancy for performance
+            );
 
             if (empty($objects)) {
                 return ['success' => true, 'indexed' => 0, 'batchNumber' => $job['batchNumber']];
@@ -4501,7 +4612,24 @@ class GuzzleSolrService
                 'limit' => $maxObjects
             ]);
 
-            $objects = $objectMapper->searchObjects($query, null, false, false);
+            // Fetch only published objects (since we only index published objects)
+            $objects = $objectMapper->findAll(
+                limit: $maxObjects > 0 ? $maxObjects : null,
+                offset: null,
+                filters: [],
+                searchConditions: [],
+                searchParams: [],
+                sort: [],
+                search: null,
+                ids: null,
+                uses: null,
+                includeDeleted: false,
+                register: null,
+                schema: null,
+                published: true, // Only fetch published objects
+                rbac: false,     // Skip RBAC for performance
+                multi: false     // Skip multitenancy for performance
+            );
             
             if (empty($objects)) {
                 $this->logger->info('No objects to index');
@@ -5104,13 +5232,20 @@ class GuzzleSolrService
                     break;
                 }
                 
-                // Create SOLR documents with field validation
+                // TODO: In the future, we want to index all objects to Solr for comprehensive search.
+                // Currently, we only index published objects to keep the search results relevant.
                 $documents = [];
+                $skippedUnpublished = 0;
                 foreach ($objects as $object) {
                     try {
-                        $document = $this->createSolrDocument($object, $solrFieldTypes);
-                        if (!empty($document)) {
-                            $documents[] = $document;
+                        // Only index published objects
+                        if ($object->getPublished()) {
+                            $document = $this->createSolrDocument($object, $solrFieldTypes);
+                            if (!empty($document)) {
+                                $documents[] = $document;
+                            }
+                        } else {
+                            $skippedUnpublished++;
                         }
                     } catch (\Exception $e) {
                         $totalErrors++;
@@ -5119,6 +5254,14 @@ class GuzzleSolrService
                             'error' => $e->getMessage()
                         ]);
                     }
+                }
+                
+                if ($skippedUnpublished > 0) {
+                    $this->logger->debug('Skipped unpublished objects in optimized batch', [
+                        'batch' => $batchCount,
+                        'skipped' => $skippedUnpublished,
+                        'published' => count($documents)
+                    ]);
                 }
                 
                 // Bulk index the batch
@@ -5844,9 +5987,20 @@ class GuzzleSolrService
             $currentMemory = (int) memory_get_usage(true);
             $memoryLimit = $this->parseMemoryLimit(ini_get('memory_limit'));
             
-            // Get object count for prediction
-            $objectMapper = \OC::$server->get('OCA\OpenRegister\Db\ObjectEntityMapper');
-            $totalObjects = $objectMapper->countAll();
+            // Get published object count for prediction (since we only index published objects)
+            $objectMapper = \OC::$server->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+            $totalObjects = $objectMapper->countAll(
+                filters: [],
+                search: null,
+                ids: null,
+                uses: null,
+                includeDeleted: false,
+                register: null,
+                schema: null,
+                published: true, // Only count published objects since we only index those
+                rbac: false,     // Skip RBAC for performance
+                multi: false     // Skip multitenancy for performance
+            );
             
             // Calculate objects to process
             $objectsToProcess = ($maxObjects === 0) ? $totalObjects : min($maxObjects, $totalObjects);
