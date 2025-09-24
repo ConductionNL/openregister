@@ -4169,10 +4169,9 @@ class GuzzleSolrService
                     break; // No more objects
                 }
                 
-                // TODO: In the future, we want to index all objects to Solr for comprehensive search.
-                // Currently, we only index published objects to keep the search results relevant.
+                // Index ALL objects (published and unpublished) for comprehensive search.
+                // Filtering for published-only content is now handled at query time, not index time.
                 $documents = [];
-                $skippedUnpublished = 0;
                 foreach ($objects as $object) {
                     try {
                         $objectEntity = null;
@@ -4184,10 +4183,8 @@ class GuzzleSolrService
                             $objectEntity->hydrate($object);
                         }
                         
-                        if ($objectEntity && $objectEntity->getPublished()) {
+                        if ($objectEntity) {
                             $documents[] = $this->createSolrDocument($objectEntity, $solrFieldTypes);
-                        } else {
-                            $skippedUnpublished++;
                         }
                     } catch (\Exception $e) {
                         $this->logger->warning('Failed to create SOLR document', [
@@ -4195,14 +4192,6 @@ class GuzzleSolrService
                             'objectId' => is_array($object) ? ($object['id'] ?? 'unknown') : ($object instanceof ObjectEntity ? $object->getId() : 'unknown')
                         ]);
                     }
-                }
-                
-                if ($skippedUnpublished > 0) {
-                    $this->logger->info('Skipped unpublished objects in batch', [
-                        'batch' => $batchCount + 1,
-                        'skipped' => $skippedUnpublished,
-                        'published' => count($documents)
-                    ]);
                 }
                 
                 // Bulk index the entire batch
@@ -4290,7 +4279,7 @@ class GuzzleSolrService
             $startTime = microtime(true);
             // Parallel bulk indexing started (logging removed for performance)
 
-            // First, get the published object count to plan batches (since we only index published objects)
+            // Get ALL object count to plan batches (since we now index all objects, not just published)
             $totalObjects = $objectMapper->countAll(
                 filters: [],
                 search: null,
@@ -4299,7 +4288,7 @@ class GuzzleSolrService
                 includeDeleted: false,
                 register: null,
                 schema: null,
-                published: true, // Only count published objects since we only index those
+                published: null, // Count ALL objects (published and unpublished)
                 rbac: false,     // Skip RBAC for performance
                 multi: false     // Skip multitenancy for performance
             );
@@ -5232,20 +5221,14 @@ class GuzzleSolrService
                     break;
                 }
                 
-                // TODO: In the future, we want to index all objects to Solr for comprehensive search.
-                // Currently, we only index published objects to keep the search results relevant.
+                // Index ALL objects (published and unpublished) for comprehensive search.
+                // Filtering for published-only content is now handled at query time, not index time.
                 $documents = [];
-                $skippedUnpublished = 0;
                 foreach ($objects as $object) {
                     try {
-                        // Only index published objects
-                        if ($object->getPublished()) {
-                            $document = $this->createSolrDocument($object, $solrFieldTypes);
-                            if (!empty($document)) {
-                                $documents[] = $document;
-                            }
-                        } else {
-                            $skippedUnpublished++;
+                        $document = $this->createSolrDocument($object, $solrFieldTypes);
+                        if (!empty($document)) {
+                            $documents[] = $document;
                         }
                     } catch (\Exception $e) {
                         $totalErrors++;
@@ -5254,14 +5237,6 @@ class GuzzleSolrService
                             'error' => $e->getMessage()
                         ]);
                     }
-                }
-                
-                if ($skippedUnpublished > 0) {
-                    $this->logger->debug('Skipped unpublished objects in optimized batch', [
-                        'batch' => $batchCount,
-                        'skipped' => $skippedUnpublished,
-                        'published' => count($documents)
-                    ]);
                 }
                 
                 // Bulk index the batch
