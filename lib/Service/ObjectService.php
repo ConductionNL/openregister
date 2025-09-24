@@ -2380,6 +2380,11 @@ class ObjectService
                 $solrService = $this->container->get(GuzzleSolrService::class);
                 $result = $solrService->searchObjectsPaginated($query, $rbac, $multi, $published, $deleted);
                 $result['source'] = 'index';
+                $result['query'] = $query;
+                $result['rbac'] =  $rbac;
+                $result['multi'] =  $multi;
+                $result['published'] =  $published;
+                $result['deleted'] =  $deleted;
                 return $result;
             } catch (\Exception $e) {
                 // Check if this is a SOLR field-related error that we can recover from
@@ -2401,6 +2406,11 @@ class ObjectService
                     // Fall back to database search
                     $result = $this->searchObjectsPaginatedDatabase($query, $rbac, $multi, $published, $deleted, $ids, $uses);
                     $result['source'] = 'database';
+                    $result['query'] = $query;
+                    $result['rbac'] =  $rbac;
+                    $result['multi'] =  $multi;
+                    $result['published'] =  $published;
+                    $result['deleted'] =  $deleted;
                     $result['_fallback_reason'] = 'SOLR field error: ' . $errorMessage;
                     return $result;
                 } else {
@@ -2413,6 +2423,12 @@ class ObjectService
         // Use database search
         $result = $this->searchObjectsPaginatedDatabase($query, $rbac, $multi, $published, $deleted, $ids, $uses);
         $result['source'] = 'database';
+        $result['query'] = $query;
+        $result['rbac'] =  $rbac;
+        $result['multi'] =  $multi;
+        $result['published'] =  $published;
+        $result['deleted'] =  $deleted;
+        
         return $result;
     }
 

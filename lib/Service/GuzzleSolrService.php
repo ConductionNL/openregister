@@ -1712,7 +1712,9 @@ class GuzzleSolrService
         
         // Published filtering (only if explicitly requested)
         if ($published) {
-            $filters[] = $publishedCondition;
+            // Use separate filters for better SOLR performance and reliability
+            $filters[] = 'self_published:[* TO ' . $now . ']';
+            $filters[] = '-self_depublished:[* TO *]';
         }
         
         // Deleted filtering
