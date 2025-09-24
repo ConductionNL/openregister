@@ -389,10 +389,14 @@ class ObjectCacheService
         // Add dynamic fields from object data
         $document = array_merge($document, $this->extractDynamicFieldsFromObject($objectData));
         
-        // Remove null values to keep SOLR document clean
-        return array_filter($document, function($value) {
+        // Remove null values, but keep published/depublished fields for proper filtering
+        return array_filter($document, function($value, $key) {
+            // Always keep published/depublished fields even if null for proper Solr filtering
+            if (in_array($key, ['published_dt', 'depublished_dt'])) {
+                return true;
+            }
             return $value !== null && $value !== '' && $value !== [];
-        });
+        }, ARRAY_FILTER_USE_BOTH);
     }
 
     /**
@@ -1571,11 +1575,24 @@ class ObjectCacheService
         ]);
 
         try {
-            // Get total count for progress tracking
-            $totalCount = $this->objectEntityMapper->getTotalCount($registerId, $schemaId);
+            // Get total count for progress tracking - use countAll with no published filter to get ALL objects
+            $totalCount = $this->objectEntityMapper->countAll(
+                filters: [],
+                search: null,
+                ids: null,
+                uses: null,
+                includeDeleted: false,
+                register: null, // Don't filter by register for total count
+                schema: null,   // Don't filter by schema for total count  
+                published: null, // Count ALL objects (published and unpublished)
+                rbac: false,
+                multi: false
+            );
             
-            $this->logger->info('📊 SOLR WARMUP: Total objects to process', [
+            $this->logger->info('📊 SOLR WARMUP: Total objects to process (ALL objects, not just published)', [
                 'totalCount' => $totalCount,
+                'registerId' => $registerId,
+                'schemaId' => $schemaId,
                 'estimatedDuration' => round(($totalCount / $batchSize) * 2) . 's'
             ]);
 
@@ -1600,11 +1617,12 @@ class ObjectCacheService
                 $batchIndexed = 0;
                 $batchErrors = 0;
                 
-                // Prepare batch of SOLR documents
+                // Prepare batch of SOLR documents using consistent schema-aware mapping
                 $solrDocuments = [];
                 foreach ($objects as $object) {
                     try {
-                        $solrDocument = $this->createSolrDocumentFromObject($object);
+                        // Use the same createSolrDocument method as single object creation for consistency
+                        $solrDocument = $solrService->createSolrDocument($object);
                         $solrDocuments[] = $solrDocument;
                         $batchIndexed++;
                     } catch (\Exception $e) {
