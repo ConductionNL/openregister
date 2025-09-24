@@ -206,6 +206,50 @@ When using `_source=database` (or default database mode), certain features are n
 - **SOLR mode**: Better for complex searches, faceting, and aggregations
 - **Automatic selection**: System automatically chooses the best source unless `_source` is specified
 
+## @self Metadata
+
+Objects include a special `@self` metadata section that contains system-managed information:
+
+```json
+{
+  "@self": {
+    "id": "object-uuid",
+    "name": "Object Name",
+    "register": "1",
+    "schema": "3",
+    "created": "2024-01-01T00:00:00Z",
+    "updated": "2024-01-01T00:00:00Z",
+    "owner": "owner-uuid",
+    "organisation": "org-uuid",
+    "published": "2024-01-01T00:00:00Z",
+    "depublished": null
+  }
+}
+```
+
+### Modifiable @self Properties
+
+When creating or updating objects, you can explicitly set certain @self metadata properties:
+
+- **`owner`**: Object owner UUID
+- **`organisation`**: Organization UUID  
+- **`published`**: Publication timestamp
+- **`depublished`**: Depublication timestamp
+
+Example:
+```json
+{
+  "naam": "My Object",
+  "@self": {
+    "owner": "user-uuid",
+    "organisation": "org-uuid",
+    "published": "2024-01-01T00:00:00Z"
+  }
+}
+```
+
+For detailed information about @self metadata handling, see [Self Metadata Handling](../developers/self-metadata-handling.md).
+
 ## Security
 
 - **RBAC**: Respects role-based access control
