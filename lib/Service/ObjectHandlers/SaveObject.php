@@ -1760,7 +1760,9 @@ class SaveObject
 
         // Set organisation from active organisation if not already set
         // Always respect user's active organisation regardless of multitenancy settings
-        if ($objectEntity->getOrganisation() === null || $objectEntity->getOrganisation() === '') {
+        // BUT: Don't override if organisation was explicitly set via @self metadata (e.g., for organization activation)
+        if (($objectEntity->getOrganisation() === null || $objectEntity->getOrganisation() === '') 
+            && !isset($selfData['organisation'])) {
             $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
             $objectEntity->setOrganisation($organisationUuid);
         }
@@ -1900,6 +1902,10 @@ class SaveObject
 
         if (array_key_exists('owner', $selfData) && !empty($selfData['owner'])) {
             $objectEntity->setOwner($selfData['owner']);
+        }
+
+        if (array_key_exists('organisation', $selfData) && !empty($selfData['organisation'])) {
+            $objectEntity->setOrganisation($selfData['organisation']);
         }
 
     }//end setSelfMetadata()
