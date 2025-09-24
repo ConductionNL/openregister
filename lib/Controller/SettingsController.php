@@ -2310,4 +2310,178 @@ class SettingsController extends Controller
         }
     }
 
+    /**
+     * Delete a SOLR field
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $fieldName Name of the field to delete
+     * @return JSONResponse
+     */
+    public function deleteSolrField(string $fieldName): JSONResponse
+    {
+        try {
+            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
+            $logger->info('🗑️ Deleting SOLR field via API', [
+                'field_name' => $fieldName,
+                'user' => $this->userId
+            ]);
+
+            // Validate field name
+            if (empty($fieldName) || !is_string($fieldName)) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'Invalid field name provided'
+                ], 400);
+            }
+
+            // Prevent deletion of critical system fields
+            $protectedFields = ['id', '_version_', '_root_', '_text_'];
+            if (in_array($fieldName, $protectedFields)) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => "Cannot delete protected system field: {$fieldName}"
+                ], 403);
+            }
+
+            // Get GuzzleSolrService from container
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $result = $guzzleSolrService->deleteField($fieldName);
+
+            if ($result['success']) {
+                $logger->info('✅ SOLR field deleted successfully via API', [
+                    'field_name' => $fieldName,
+                    'user' => $this->userId
+                ]);
+
+                return new JSONResponse([
+                    'success' => true,
+                    'message' => $result['message'],
+                    'field_name' => $fieldName
+                ]);
+            } else {
+                $logger->warning('❌ Failed to delete SOLR field via API', [
+                    'field_name' => $fieldName,
+                    'error' => $result['message'],
+                    'user' => $this->userId
+                ]);
+
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => $result['message'],
+                    'error' => $result['error'] ?? null
+                ], 422);
+            }
+
+        } catch (\Exception $e) {
+            $logger = $logger ?? \OC::$server->get(\Psr\Log\LoggerInterface::class);
+            $logger->error('Exception deleting SOLR field via API', [
+                'field_name' => $fieldName,
+                'error' => $e->getMessage(),
+                'user' => $this->userId,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Failed to delete SOLR field: ' . $e->getMessage(),
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Reindex all objects in SOLR
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse
+     */
+    public function reindexSolr(): JSONResponse
+    {
+        try {
+            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
+            
+            // Get parameters from request
+            $maxObjects = (int) ($this->request->getParam('maxObjects', 0));
+            $batchSize = (int) ($this->request->getParam('batchSize', 1000));
+            
+            // Validate parameters
+            if ($batchSize < 1 || $batchSize > 5000) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'Invalid batch size. Must be between 1 and 5000'
+                ], 400);
+            }
+            
+            if ($maxObjects < 0) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'Invalid maxObjects. Must be 0 (all) or positive number'
+                ], 400);
+            }
+
+            $logger->info('🔄 Starting SOLR reindex via API', [
+                'max_objects' => $maxObjects,
+                'batch_size' => $batchSize,
+                'user' => $this->userId
+            ]);
+
+            // Get GuzzleSolrService from container
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            
+            // Check if SOLR is available
+            if (!$guzzleSolrService->isAvailable()) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'SOLR is not available or not configured'
+                ], 422);
+            }
+
+            // Start reindex operation
+            $result = $guzzleSolrService->reindexAll($maxObjects, $batchSize);
+
+            if ($result['success']) {
+                $logger->info('✅ SOLR reindex completed successfully via API', [
+                    'processed_objects' => $result['stats']['processed_objects'] ?? 0,
+                    'duration' => $result['stats']['duration_seconds'] ?? 0,
+                    'user' => $this->userId
+                ]);
+
+                return new JSONResponse([
+                    'success' => true,
+                    'message' => $result['message'],
+                    'stats' => $result['stats'] ?? []
+                ]);
+            } else {
+                $logger->warning('❌ SOLR reindex failed via API', [
+                    'error' => $result['message'],
+                    'user' => $this->userId
+                ]);
+
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => $result['message'],
+                    'error' => $result['error'] ?? null
+                ], 422);
+            }
+
+        } catch (\Exception $e) {
+            $logger = $logger ?? \OC::$server->get(\Psr\Log\LoggerInterface::class);
+            $logger->error('Exception during SOLR reindex via API', [
+                'error' => $e->getMessage(),
+                'user' => $this->userId,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Failed to reindex SOLR: ' . $e->getMessage(),
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 }//end class

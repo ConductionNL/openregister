@@ -2,12 +2,14 @@
 /**
  * Apply SOLR Schema Configuration for OpenRegister
  *
- * This script configures SOLR schema fields to match ObjectEntity metadata fields.
- * Run this script after setting up SOLR to ensure proper field types.
+ * ⚠️  DEPRECATED: This script is deprecated and should not be used.
+ * 
+ * This script creates field configurations that conflict with the main field management system.
+ * Use the dedicated field management UI/API instead:
+ * - SOLR Configuration > Field Management
+ * - API: /apps/openregister/api/settings/solr/fields/create
  *
- * Usage:
- *   php apply_solr_schema.php [collection_name]
- *
+ * @deprecated Use the field management UI/API instead
  * @category Setup
  * @package  OCA\OpenRegister\Setup
  * @author   OpenRegister Team
@@ -16,6 +18,16 @@
  * @version  1.0.0
  * @link     https://github.com/OpenRegister/OpenRegister
  */
+
+echo "⚠️  DEPRECATED SCRIPT\n";
+echo "==========================================\n";
+echo "This script is deprecated and should not be used.\n";
+echo "It creates field configurations that conflict with the main field management system.\n\n";
+echo "Please use the dedicated field management instead:\n";
+echo "- SOLR Configuration > Field Management (UI)\n";
+echo "- API: /apps/openregister/api/settings/solr/fields/create\n\n";
+echo "Exiting without making changes...\n";
+exit(1);
 
 // Get collection name from command line or use default
 $collectionName = $argv[1] ?? 'openregister_nc_f0e53393';
