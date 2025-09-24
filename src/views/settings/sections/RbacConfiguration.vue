@@ -41,13 +41,13 @@
 				</p>
 				<p class="toggle-status">
 					<strong>Current Status:</strong>
-					<span :class="rbacOptions.enableRBAC ? 'status-enabled' : 'status-disabled'">
-						{{ rbacOptions.enableRBAC ? 'Role Based Access Control enabled' : 'Role Based Access Control disabled' }}
+					<span :class="rbacOptions.enabled ? 'status-enabled' : 'status-disabled'">
+						{{ rbacOptions.enabled ? 'Role Based Access Control enabled' : 'Role Based Access Control disabled' }}
 					</span>
 				</p>
 				<p class="impact-description">
-					<strong>{{ rbacOptions.enableRBAC ? 'Disabling' : 'Enabling' }} RBAC will:</strong><br>
-					<span v-if="!rbacOptions.enableRBAC">
+					<strong>{{ rbacOptions.enabled ? 'Disabling' : 'Enabling' }} RBAC will:</strong><br>
+					<span v-if="!rbacOptions.enabled">
 						• Provide fine-grained access control over registers and schemas<br>
 						• Allow you to assign users to specific Nextcloud groups (Viewer, Editor, Admin)<br>
 						• Enable secure multi-user environments with proper permission boundaries<br>
@@ -65,14 +65,14 @@
 			<!-- Enable RBAC Toggle -->
 			<div class="option-section">
 				<NcCheckboxRadioSwitch
-					:checked.sync="rbacOptions.enableRBAC"
+					:checked.sync="rbacOptions.enabled"
 					:disabled="saving"
 					type="switch">
-					{{ rbacOptions.enableRBAC ? 'Role Based Access Control enabled' : 'Role Based Access Control disabled' }}
+					{{ rbacOptions.enabled ? 'Role Based Access Control enabled' : 'Role Based Access Control disabled' }}
 				</NcCheckboxRadioSwitch>
 
 				<!-- Admin Override -->
-				<div v-if="rbacOptions.enableRBAC">
+				<div v-if="rbacOptions.enabled">
 					<NcCheckboxRadioSwitch
 						:checked.sync="rbacOptions.adminOverride"
 						:disabled="saving"
