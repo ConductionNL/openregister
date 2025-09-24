@@ -268,6 +268,29 @@
 						</div>
 					</div>
 				</div>
+
+				<!-- Mass Validate Action -->
+				<div class="mass-validate-section">
+					<div class="mass-validate-info">
+						<h4>🔄 Mass Validate Objects</h4>
+						<p class="mass-validate-description">
+							Re-save all objects in the system to trigger business logic validation and processing. 
+							This ensures all objects are properly processed according to current rules and schemas.
+						</p>
+						<div class="mass-validate-actions">
+							<NcButton
+								type="primary"
+								:disabled="loading || saving || rebasing || massValidating"
+								@click="openMassValidateModal">
+								<template #icon>
+									<NcLoadingIcon v-if="massValidating" :size="20" />
+									<CheckCircle v-else :size="20" />
+								</template>
+								{{ massValidating ? 'Validating...' : 'Mass Validate Objects' }}
+							</NcButton>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 
@@ -306,6 +329,22 @@
 				</div>
 			</div>
 		</NcDialog>
+
+		<!-- Mass Validate Modal -->
+		<MassValidateModal 
+			:show="showMassValidateModal"
+			:object-stats="objectStats"
+			:mass-validating="massValidating"
+			:completed="massValidateCompleted"
+			:results="massValidateResults"
+			:config="massValidateConfig"
+			:memory-prediction="memoryPrediction"
+			:memory-prediction-loading="memoryPredictionLoading"
+			@close="closeMassValidateModal"
+			@start-validate="handleStartMassValidate"
+			@retry="handleRetryMassValidate"
+			@reset="handleResetMassValidate"
+		/>
 	</NcSettingsSection>
 </template>
 
@@ -314,6 +353,8 @@ import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../../store/settings.js'
 import { NcSettingsSection, NcButton, NcLoadingIcon, NcDialog } from '@nextcloud/vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import { MassValidateModal } from '../../../modals/settings'
 
 export default {
 	name: 'StatisticsOverview',
@@ -324,6 +365,8 @@ export default {
 		NcLoadingIcon,
 		NcDialog,
 		Refresh,
+		CheckCircle,
+		MassValidateModal,
 	},
 
 	computed: {
@@ -352,6 +395,18 @@ export default {
 		showRebaseConfirmation() {
 			return this.settingsStore.showRebaseConfirmation
 		},
+
+		massValidating() {
+			return this.settingsStore.massValidating
+		},
+
+		showMassValidateConfirmation() {
+			return this.settingsStore.showMassValidateConfirmation
+		},
+
+		massValidateResults() {
+			return this.settingsStore.massValidateResults
+		},
 		
 		/**
 		 * Check if there are any warnings that require attention
@@ -363,9 +418,105 @@ export default {
 		},
 	},
 
+	data() {
+		return {
+			showMassValidateModal: false,
+			massValidateCompleted: false,
+			objectStats: {
+				loading: false,
+				totalObjects: 0,
+			},
+			massValidateConfig: {
+				mode: 'serial',
+				maxObjects: 0,
+				batchSize: 1000,
+				collectErrors: false,
+			},
+			memoryPrediction: {
+				prediction_safe: true,
+				formatted: {
+					total_predicted: 'Unknown',
+					available: 'Unknown'
+				}
+			},
+			memoryPredictionLoading: false,
+		}
+	},
+
 	methods: {
 		loadStats() {
 			this.settingsStore.loadStats()
+		},
+
+		async openMassValidateModal() {
+			// Open modal immediately for better UX
+			this.showMassValidateModal = true
+			
+			// Load object stats and memory prediction in background
+			this.loadObjectStats()
+			this.loadMemoryPrediction(0) // Default to all objects
+		},
+
+		closeMassValidateModal() {
+			this.showMassValidateModal = false
+			// Reset state when modal is closed
+			this.massValidateCompleted = false
+		},
+
+		async handleStartMassValidate(config) {
+			this.massValidateCompleted = false
+			this.massValidateConfig = { ...config }
+			
+			try {
+				await this.settingsStore.massValidate(config)
+				this.massValidateCompleted = true
+			} catch (error) {
+				console.error('Mass validate failed:', error)
+				this.massValidateCompleted = true
+			}
+		},
+
+		async handleRetryMassValidate() {
+			await this.handleStartMassValidate(this.massValidateConfig)
+		},
+
+		handleResetMassValidate() {
+			this.massValidateCompleted = false
+			// Reset to default configuration
+			this.massValidateConfig = {
+				mode: 'serial',
+				maxObjects: 0,
+				batchSize: 1000,
+				collectErrors: false,
+			}
+		},
+
+		async loadObjectStats() {
+			this.objectStats.loading = true
+			
+			try {
+				// Get the total objects from the store stats
+				const totalObjects = this.settingsStore.stats?.totals?.totalObjects || 0
+				this.objectStats.totalObjects = totalObjects
+			} catch (error) {
+				console.error('Failed to load object stats:', error)
+				this.objectStats.totalObjects = 0
+			} finally {
+				this.objectStats.loading = false
+			}
+		},
+
+		async loadMemoryPrediction(maxObjects = 0) {
+			this.memoryPredictionLoading = true
+			try {
+				const prediction = await this.settingsStore.loadMassValidateMemoryPrediction(maxObjects)
+				this.memoryPrediction = prediction
+			} catch (error) {
+				console.warn('Failed to load memory prediction:', error)
+				// Keep default prediction data
+			} finally {
+				this.memoryPredictionLoading = false
+			}
 		},
 	},
 }
@@ -492,6 +643,31 @@ export default {
 }
 
 .rebase-actions {
+	display: flex;
+	gap: 12px;
+}
+
+.mass-validate-section {
+	margin-top: 24px;
+	padding: 20px;
+	background: rgba(var(--color-primary), 0.1);
+	border: 1px solid var(--color-primary);
+	border-radius: var(--border-radius-large);
+}
+
+.mass-validate-info h4 {
+	margin: 0 0 12px 0;
+	color: var(--color-primary);
+	font-size: 16px;
+}
+
+.mass-validate-description {
+	color: var(--color-text-light);
+	line-height: 1.5;
+	margin: 0 0 16px 0;
+}
+
+.mass-validate-actions {
 	display: flex;
 	gap: 12px;
 }
