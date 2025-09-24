@@ -2473,8 +2473,7 @@ class SettingsService
         try {
             
             $multitenancyConfig = [
-                'enabled'             => $enabledValue,
-                'enabled             => $multitenancyData['enabled'] ?? false,
+                'enabled'             => $multitenancyData['enabled'] ?? false,
                 'defaultUserTenant'   => $multitenancyData['defaultUserTenant'] ?? '',
                 'defaultObjectTenant' => $multitenancyData['defaultObjectTenant'] ?? '',
             ];
