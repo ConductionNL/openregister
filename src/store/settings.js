@@ -84,7 +84,7 @@ export const useSettingsStore = defineStore('settings', {
 		},
 		
 		rbacOptions: {
-			enableRBAC: false,
+			enabled: false,
 			anonymousGroup: 'public',
 			defaultNewUserGroup: 'viewer',
 			defaultObjectOwner: '',
@@ -92,7 +92,7 @@ export const useSettingsStore = defineStore('settings', {
 		},
 		
 		multitenancyOptions: {
-			enableMultitenancy: false,
+			enabled: false,
 			defaultUserTenant: '',
 			defaultObjectTenant: '',
 		},
