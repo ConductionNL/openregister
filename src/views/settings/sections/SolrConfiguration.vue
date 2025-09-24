@@ -2037,12 +2037,12 @@ export default {
 			this.objectStats.loading = true
 			
 			try {
-				// Use SOLR dashboard stats to get all data needed for warmup (published count + memory prediction)
+				// Use SOLR dashboard stats to get all data needed for warmup (total count + memory prediction)
 				await this.loadSolrStats()
 				
-				// Get the published objects count from SOLR stats (this is what we actually process during warmup)
-				const publishedObjects = this.solrStats?.published_count || 0
-				this.objectStats.totalObjects = publishedObjects
+				// Get the total objects count from SOLR stats (we now index all objects, not just published)
+				const totalObjects = this.solrStats?.total_count || 0
+				this.objectStats.totalObjects = totalObjects
 				
 				// Get memory prediction from SOLR stats (no separate API call needed)
 				if (this.solrStats?.memory_prediction) {
