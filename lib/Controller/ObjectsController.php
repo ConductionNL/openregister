@@ -592,10 +592,11 @@ class ObjectsController extends Controller
 
         // Filter out special parameters and reserved fields.
         // @todo shouldn't this be part of the object service?
+        // Allow @self metadata to pass through for organization activation
         $object = array_filter(
             $object,
             fn ($key) => !str_starts_with($key, '_')
-                && !str_starts_with($key, '@')
+                && !($key !== '@self' && str_starts_with($key, '@'))
                 && !in_array($key, ['uuid', 'register', 'schema']),
             ARRAY_FILTER_USE_KEY
         );
@@ -671,10 +672,11 @@ class ObjectsController extends Controller
 
         // Filter out special parameters and reserved fields.
         // @todo shouldn't this be part of the object service?
+        // Allow @self metadata to pass through for organization activation
         $object = array_filter(
             $object,
             fn ($key) => !str_starts_with($key, '_')
-                && !str_starts_with($key, '@')
+                && !($key !== '@self' && str_starts_with($key, '@'))
                 && !in_array($key, ['uuid', 'register', 'schema']),
             ARRAY_FILTER_USE_KEY
         );
@@ -791,10 +793,11 @@ class ObjectsController extends Controller
 
         // Filter out special parameters and reserved fields.
         // @todo shouldn't this be part of the object service?
+        // Allow @self metadata to pass through for organization activation
         $patchData = array_filter(
             $patchData,
             fn ($key) => !str_starts_with($key, '_')
-                && !str_starts_with($key, '@')
+                && !($key !== '@self' && str_starts_with($key, '@'))
                 && !in_array($key, ['uuid', 'register', 'schema']),
             ARRAY_FILTER_USE_KEY
         );

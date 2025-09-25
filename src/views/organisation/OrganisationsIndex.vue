@@ -73,7 +73,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 						<NcActionButton
 							:primary="true"
 							close-after-click
-							@click="organisationStore.setOrganisationItem(null); navigationStore.setModal('editOrganisation')">
+							@click="createOrganisation">
 							<template #icon>
 								<Plus :size="20" />
 							</template>
@@ -127,38 +127,43 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 									<template #icon>
 										<DotsHorizontal :size="20" />
 									</template>
-									<NcActionButton v-if="!isActiveOrganisation(organisation)"
-										close-after-click
-										@click="setActiveOrganisation(organisation.uuid)">
+									<NcActionButton close-after-click
+										@click="viewOrganisation(organisation)">
 										<template #icon>
-											<CheckCircle :size="20" />
+											<Eye :size="20" />
 										</template>
-										Set as Active
+										View
 									</NcActionButton>
 									<NcActionButton v-if="canEditOrganisation(organisation)"
 										close-after-click
-										@click="organisationStore.setOrganisationItem(organisation); navigationStore.setModal('editOrganisation')">
+										@click="editOrganisation(organisation)">
 										<template #icon>
 											<Pencil :size="20" />
 										</template>
 										Edit
 									</NcActionButton>
 									<NcActionButton close-after-click
-										@click="organisationStore.setOrganisationItem(organisation); navigationStore.setSelected('organisationDetails')">
+										@click="copyOrganisation(organisation)">
 										<template #icon>
-											<InformationOutline :size="20" />
+											<ContentCopy :size="20" />
 										</template>
-										View Details
+										Copy
 									</NcActionButton>
-									<NcActionButton v-if="canLeaveOrganisation(organisation)"
-										v-tooltip="organisationStore.userStats.total === 1 ? 'Cannot leave your only organisation' : ''"
+									<NcActionButton v-if="organisation.website"
 										close-after-click
-										:disabled="organisationStore.userStats.total === 1"
-										@click="leaveOrganisation(organisation)">
+										@click="goToOrganisation(organisation)">
 										<template #icon>
-											<AccountMinus :size="20" />
+											<OpenInNew :size="20" />
 										</template>
-										Leave Organisation
+										Go to organisation
+									</NcActionButton>
+									<NcActionButton v-if="!isActiveOrganisation(organisation)"
+										close-after-click
+										@click="setActiveOrganisation(organisation.uuid)">
+										<template #icon>
+											<CheckCircle :size="20" />
+										</template>
+										Activeren
 									</NcActionButton>
 									<NcActionButton v-if="canDeleteOrganisation(organisation)"
 										close-after-click
@@ -166,7 +171,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 										<template #icon>
 											<TrashCanOutline :size="20" />
 										</template>
-										Delete Organisation
+										Delete
 									</NcActionButton>
 								</NcActions>
 							</div>
@@ -251,37 +256,43 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 											<template #icon>
 												<DotsHorizontal :size="20" />
 											</template>
-											<NcActionButton v-if="!isActiveOrganisation(organisation)"
-												close-after-click
-												@click="setActiveOrganisation(organisation.uuid)">
+											<NcActionButton close-after-click
+												@click="viewOrganisation(organisation)">
 												<template #icon>
-													<CheckCircle :size="20" />
+													<Eye :size="20" />
 												</template>
-												Set as Active
+												View
 											</NcActionButton>
 											<NcActionButton v-if="canEditOrganisation(organisation)"
 												close-after-click
-												@click="organisationStore.setOrganisationItem(organisation); navigationStore.setModal('editOrganisation')">
+												@click="editOrganisation(organisation)">
 												<template #icon>
 													<Pencil :size="20" />
 												</template>
 												Edit
 											</NcActionButton>
 											<NcActionButton close-after-click
-												@click="organisationStore.setOrganisationItem(organisation); navigationStore.setSelected('organisationDetails')">
+												@click="copyOrganisation(organisation)">
 												<template #icon>
-													<InformationOutline :size="20" />
+													<ContentCopy :size="20" />
 												</template>
-												View Details
+												Copy
 											</NcActionButton>
-											<NcActionButton v-if="canLeaveOrganisation(organisation)"
+											<NcActionButton v-if="organisation.website"
 												close-after-click
-												:disabled="organisationStore.userStats.total === 1"
-												@click="leaveOrganisation(organisation)">
+												@click="goToOrganisation(organisation)">
 												<template #icon>
-													<AccountMinus :size="20" />
+													<OpenInNew :size="20" />
 												</template>
-												Leave Organisation
+												Go to organisation
+											</NcActionButton>
+											<NcActionButton v-if="!isActiveOrganisation(organisation)"
+												close-after-click
+												@click="setActiveOrganisation(organisation.uuid)">
+												<template #icon>
+													<CheckCircle :size="20" />
+												</template>
+												Activeren
 											</NcActionButton>
 										</NcActions>
 									</td>
@@ -326,6 +337,13 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 				</div>
 			</div>
 		</NcModal>
+
+		<!-- Organisation Management Modal -->
+		<OrganisationModal
+			:show="showOrganisationModal"
+			:organisation="selectedOrganisation"
+			:mode="organisationModalMode"
+			@close="closeOrganisationModal" />
 	</NcAppContent>
 </template>
 
@@ -342,8 +360,12 @@ import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
 import AccountMinus from 'vue-material-design-icons/AccountMinus.vue'
 import SwapHorizontal from 'vue-material-design-icons/SwapHorizontal.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
+import Eye from 'vue-material-design-icons/Eye.vue'
+import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
+import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import OrganisationModal from '../../modals/OrganisationModal.vue'
 
 export default {
 	name: 'OrganisationsIndex',
@@ -366,12 +388,19 @@ export default {
 		AccountMinus,
 		SwapHorizontal,
 		Plus,
+		Eye,
+		ContentCopy,
+		OpenInNew,
 		PaginationComponent,
+		OrganisationModal,
 	},
 	data() {
 		return {
 			selectedOrganisations: [],
 			showOrganisationSwitcher: false,
+			showOrganisationModal: false,
+			selectedOrganisation: null,
+			organisationModalMode: 'create', // 'create', 'edit', 'copy'
 		}
 	},
 	computed: {
@@ -483,6 +512,42 @@ export default {
 				hour: '2-digit',
 				minute: '2-digit',
 			})
+		},
+		// Organisation Modal Methods
+		createOrganisation() {
+			this.selectedOrganisation = null
+			this.organisationModalMode = 'create'
+			this.showOrganisationModal = true
+		},
+		editOrganisation(organisation) {
+			this.selectedOrganisation = organisation
+			this.organisationModalMode = 'edit'
+			this.showOrganisationModal = true
+		},
+		copyOrganisation(organisation) {
+			this.selectedOrganisation = organisation
+			this.organisationModalMode = 'copy'
+			this.showOrganisationModal = true
+		},
+		closeOrganisationModal() {
+			this.showOrganisationModal = false
+			this.selectedOrganisation = null
+			this.organisationModalMode = 'create'
+		},
+		// Organisation Action Methods
+		viewOrganisation(organisation) {
+			const publicationUrl = `https://www.softwarecatalogus.nl/publicatie/${organisation.id}`
+			window.open(publicationUrl, '_blank')
+		},
+		goToOrganisation(organisation) {
+			if (organisation.website) {
+				let websiteUrl = organisation.website
+				// Add https:// if no protocol is specified
+				if (!websiteUrl.startsWith('http://') && !websiteUrl.startsWith('https://')) {
+					websiteUrl = 'https://' + websiteUrl
+				}
+				window.open(websiteUrl, '_blank')
+			}
 		},
 		showSuccessMessage(message) {
 			// Implementation would depend on your notification system
