@@ -101,11 +101,19 @@
 					</div>
 				</div>
 
+				<!-- Success Message -->
+				<div v-if="success" class="success-message">
+					<CheckCircle :size="24" class="success-icon" />
+					<p>{{ successMessage }}</p>
+					<p class="auto-close-message">{{ t('openregister', 'This dialog will close automatically in 3 seconds...') }}</p>
+				</div>
+
 				<div class="form-actions">
 					<NcButton type="secondary" @click="closeModal">
 						{{ t('openregister', 'Cancel') }}
 					</NcButton>
-					<NcButton type="primary" 
+					<NcButton v-if="!success"
+						type="primary" 
 						:disabled="loading || !isFormValid"
 						native-type="submit">
 						<template #icon>
@@ -127,6 +135,7 @@ import {
 	NcButton,
 	NcLoadingIcon
 } from '@nextcloud/vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import { organisationStore } from '../store/store.js'
 import { showSuccess, showError } from '@nextcloud/dialogs'
 
@@ -138,6 +147,7 @@ export default {
 		NcSelect,
 		NcButton,
 		NcLoadingIcon,
+		CheckCircle,
 	},
 	props: {
 		show: {
@@ -172,6 +182,8 @@ export default {
 			},
 			selectedType: null,
 			loading: false,
+			success: false,
+			successMessage: '',
 			organisationTypes: [
 				{ id: 'Gemeente', label: 'Gemeente' },
 				{ id: 'Leverancier', label: 'Leverancier' },
@@ -236,6 +248,8 @@ export default {
 			}
 			this.selectedType = null
 			this.loading = false
+			this.success = false
+			this.successMessage = ''
 		},
 		loadOrganisationData() {
 			if (!this.organisation) return
@@ -277,6 +291,7 @@ export default {
 			}
 
 			this.loading = true
+			this.success = false
 
 			try {
 				let result
@@ -288,18 +303,23 @@ export default {
 						id: this.organisation.id,
 					}
 					result = await organisationStore.updateOrganisation(updateData)
-					showSuccess(this.t('openregister', 'Organisation updated successfully'))
+					this.successMessage = this.t('openregister', 'Organisation updated successfully')
 				} else {
 					// Create new organisation (both create and copy modes)
 					result = await organisationStore.createOrganisation(this.formData)
-					showSuccess(this.t('openregister', 'Organisation created successfully'))
+					this.successMessage = this.t('openregister', 'Organisation created successfully')
 				}
 
+				// Show success state
+				this.success = true
+				
 				// Refresh organisation list
 				await organisationStore.refreshOrganisationList()
 				
-				// Close modal
-				this.closeModal()
+				// Auto-close modal after 3 seconds
+				setTimeout(() => {
+					this.closeModal()
+				}, 3000)
 
 			} catch (error) {
 				console.error('Error saving organisation:', error)
@@ -361,5 +381,34 @@ export default {
 
 .form-row :deep(.select__main-wrapper) {
 	width: 100%;
+}
+
+/* Success Message Styles */
+.success-message {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 20px;
+	margin: 20px 0;
+	background: var(--color-success-light);
+	border: 1px solid var(--color-success);
+	border-radius: 8px;
+	text-align: center;
+}
+
+.success-icon {
+	color: var(--color-success);
+	margin-bottom: 8px;
+}
+
+.success-message p {
+	margin: 4px 0;
+	color: var(--color-text-dark);
+}
+
+.auto-close-message {
+	font-size: 12px;
+	color: var(--color-text-lighter);
+	font-style: italic;
 }
 </style>

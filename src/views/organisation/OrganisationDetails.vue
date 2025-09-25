@@ -173,6 +173,13 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 				</div>
 			</div>
 		</div>
+
+		<!-- Organisation Management Modal -->
+		<OrganisationModal
+			:show="showOrganisationModal"
+			:organisation="organisationStore.organisationItem"
+			:mode="organisationModalMode"
+			@close="closeOrganisationModal" />
 	</NcAppContent>
 </template>
 
@@ -189,6 +196,8 @@ import Account from 'vue-material-design-icons/Account.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
+
+import OrganisationModal from '../../modals/OrganisationModal.vue'
 
 export default {
 	name: 'OrganisationDetails',
@@ -210,6 +219,7 @@ export default {
 		ContentCopy,
 		Eye,
 		OpenInNew,
+		OrganisationModal,
 	},
 	data() {
 		return {
@@ -219,6 +229,8 @@ export default {
 				objects: 0,
 				storage: 0,
 			},
+			showOrganisationModal: false,
+			organisationModalMode: 'edit',
 		}
 	},
 	computed: {
@@ -335,12 +347,15 @@ export default {
 			window.open(publicationUrl, '_blank')
 		},
 		editOrganisation() {
-			// TODO: Open organisation edit modal
-			console.log('Edit organisation:', organisationStore.organisationItem)
+			this.organisationModalMode = 'edit'
+			this.showOrganisationModal = true
 		},
 		copyOrganisation() {
-			// TODO: Open organisation copy modal
-			console.log('Copy organisation:', organisationStore.organisationItem)
+			this.organisationModalMode = 'copy'
+			this.showOrganisationModal = true
+		},
+		closeOrganisationModal() {
+			this.showOrganisationModal = false
 		},
 		goToOrganisation() {
 			if (organisationStore.organisationItem?.website) {
