@@ -503,6 +503,8 @@ class ObjectService
     /**
      * Clears the current schema and current register, so that a new call on the ObjectService does not retain old values.
      *
+     *
+     * @deprecated Deprecated as public function, should be called from within at appropriate locations.
      * @return void
      */
     public function clearCurrents(): void
