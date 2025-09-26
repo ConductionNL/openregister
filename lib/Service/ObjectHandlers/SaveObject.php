@@ -1629,6 +1629,13 @@ class SaveObject
             $objectEntity->setFolder((string) $folderId);
         }
 
+        // Handle file properties - process them and replace content with file IDs
+        foreach ($data as $propertyName => $value) {
+            if ($this->isFileProperty($value, $schema, $propertyName) === true) {
+                $this->handleFileProperty($objectEntity, $data, $propertyName, $schema);
+            }
+        }
+
         // Prepare the object for creation
         $preparedObject = $this->prepareObjectForCreation(
             objectEntity: $objectEntity,
@@ -1650,15 +1657,9 @@ class SaveObject
         $log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity);
         $savedEntity->setLastLog($log->jsonSerialize());
 
-        // Handle file properties - process them and replace content with file IDs
-        foreach ($data as $propertyName => $value) {
-            if ($this->isFileProperty($value, $schema, $propertyName) === true) {
-                $this->handleFileProperty($savedEntity, $data, $propertyName, $schema);
-            }
-        }
 
         // Update the object with the modified data (file IDs instead of content)
-        $savedEntity->setObject($data);
+//        $savedEntity->setObject($data);
 
         // **CACHE INVALIDATION**: Clear collection and facet caches so new/updated objects appear immediately
         $this->objectCacheService->invalidateForObjectChange(
