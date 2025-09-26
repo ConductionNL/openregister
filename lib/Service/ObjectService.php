@@ -500,6 +500,17 @@ class ObjectService
 
     }//end getObject()
 
+    /**
+     * Clears the current schema and current register, so that a new call on the ObjectService does not retain old values.
+     *
+     * @return void
+     */
+    public function clearCurrents(): void
+    {
+        $this->currentSchema = null;
+        $this->currentRegister = null;
+    }//end clearCurrents()
+
 
     /**
      * Finds an object by ID or UUID and renders it.
@@ -626,13 +637,13 @@ class ObjectService
         $tempObject = new ObjectEntity();
         $tempObject->setRegister($this->currentRegister->getId());
         $tempObject->setSchema($this->currentSchema->getId());
-        
+
         // Check if an ID is provided in the object data before generating new UUID
         $providedId = null;
         if (is_array($object)) {
             $providedId = $object['@self']['id'] ?? $object['id'] ?? null;
         }
-        
+
         if ($providedId && !empty(trim($providedId))) {
             // Use provided ID as UUID
             $tempObject->setUuid($providedId);
@@ -816,15 +827,15 @@ class ObjectService
         }
 
         // Set the current register context if a register is provided, it's not an array, and it's not empty.
-        if (isset($config['filters']['register']) === true  
-            && is_array($config['filters']['register']) === false 
+        if (isset($config['filters']['register']) === true
+            && is_array($config['filters']['register']) === false
             && !empty($config['filters']['register'])) {
             $this->setRegister($config['filters']['register']);
         }
 
         // Set the current schema context if a schema is provided, it's not an array, and it's not empty.
-        if (isset($config['filters']['schema']) === true  
-            && is_array($config['filters']['schema']) === false 
+        if (isset($config['filters']['schema']) === true
+            && is_array($config['filters']['schema']) === false
             && !empty($config['filters']['schema'])) {
             $this->setSchema($config['filters']['schema']);
         }
@@ -1136,7 +1147,7 @@ class ObjectService
         // For new objects without UUID, let SaveObject generate the UUID and handle folder creation
         // Save the object using the current register and schema.
         // Let SaveObject handle the UUID logic completely
-        
+
         $savedObject = $this->saveHandler->saveObject(
             $this->currentRegister,
             $this->currentSchema,
@@ -1673,7 +1684,7 @@ class ObjectService
         if ($schema !== null) {
             $query['@self']['schema'] = (int) $schema;
         }
-        
+
         // Query structure built successfully
 
         // Extract special underscore parameters
@@ -1701,7 +1712,7 @@ class ObjectService
         if ($ids !== null) {
             $query['_ids'] = $ids;
         }
-        
+
         // Support both 'ids' and '_ids' parameters for flexibility
         if (isset($specialParams['ids'])) {
             $query['_ids'] = $specialParams['ids'];
@@ -1718,7 +1729,7 @@ class ObjectService
 
     public function searchObjects(array $query=[], bool $rbac=true, bool $multi=true, ?array $ids=null, ?string $uses=null): array|int
     {
-        
+
         // **CRITICAL PERFORMANCE OPTIMIZATION**: Detect simple vs complex rendering needs
         $hasExtend = !empty($query['_extend'] ?? []);
         $hasFields = !empty($query['_fields'] ?? null);
@@ -2355,9 +2366,9 @@ class ObjectService
     public function searchObjectsPaginated(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false, ?array $ids=null, ?string $uses=null): array
     {
         // ids and uses are passed as proper parameters, not added to query
-        
+
         $requestedSource = $query['_source'] ?? null;
-        
+
         // Simple switch: Use SOLR if explicitly requested OR if SOLR is enabled in config
         // BUT force database when ids or uses parameters are provided (relation-based searches)
         if (
@@ -2367,14 +2378,14 @@ class ObjectService
                 !isset($query['_ids']) && !isset($query['_uses'])
             ) ||
             (
-                $requestedSource === null && 
-                $this->isSolrAvailable() && 
+                $requestedSource === null &&
+                $this->isSolrAvailable() &&
                 $requestedSource !== 'database' &&
                 $ids === null && $uses === null &&
                 !isset($query['_ids']) && !isset($query['_uses'])
             )
         ) {
-            
+
             try {
                 // Forward to SOLR service - let it handle availability checks and error handling
                 $solrService = $this->container->get(GuzzleSolrService::class);
@@ -2398,14 +2409,14 @@ class ObjectService
                     str_contains($errorMessage, 'field does not exist') ||
                     str_contains($errorMessage, 'no such field')
                 );
-                
+
                 if ($isRecoverableError && $requestedSource === null) {
                     // Only fall back to database if SOLR wasn't explicitly requested
                     $this->logger->warning('SOLR search failed with field error, falling back to database', [
                         'error' => $errorMessage,
                         'query_fingerprint' => substr(md5(json_encode($query)), 0, 8)
                     ]);
-                    
+
                     // Fall back to database search
                     $result = $this->searchObjectsPaginatedDatabase($query, $rbac, $multi, $published, $deleted, $ids, $uses);
                     $result['source'] = 'database';
@@ -2422,7 +2433,7 @@ class ObjectService
                 }
             }
         }
-        
+
         // Use database search
         $result = $this->searchObjectsPaginatedDatabase($query, $rbac, $multi, $published, $deleted, $ids, $uses);
         $result['source'] = 'database';
@@ -2432,7 +2443,7 @@ class ObjectService
         $result['multi'] =  $multi;
         $result['published'] =  $published;
         $result['deleted'] =  $deleted;
-        
+
         return $result;
     }
 
@@ -2584,7 +2595,7 @@ class ObjectService
         if (isset($query['_facets']) && !empty($query['_facets'])) {
             $paginatedResults['facets'] = ['facets' => []];
         }
-        
+
         // **DEBUG**: Add query to results for debugging purposes
         if (isset($query['_debug']) && $query['_debug']) {
             $paginatedResults['query'] = $query;
@@ -5825,7 +5836,7 @@ class ObjectService
                             try {
                                 $register = $this->registerMapper->find($singleRegisterValue);
                                 $normalizedRegisters[] = $register->getId();
-                                
+
                                 $this->logger->debug('🔄 CACHE NORMALIZATION: Register slug → ID (array)', [
                                     'slug' => $singleRegisterValue,
                                     'id' => $register->getId(),
@@ -5878,7 +5889,7 @@ class ObjectService
                             try {
                                 $schema = $this->schemaMapper->find($singleSchemaValue);
                                 $normalizedSchemas[] = $schema->getId();
-                                
+
                                 $this->logger->debug('🔄 CACHE NORMALIZATION: Schema slug → ID (array)', [
                                     'slug' => $singleSchemaValue,
                                     'id' => $schema->getId(),
@@ -6723,7 +6734,7 @@ class ObjectService
                     }
                 }
             }
-            
+
             if (!$needsRegeneration && isset($schemaFacets['object_fields'])) {
                 // Use existing facets with queryParameter
                 $facetableFields['object_fields'] = array_merge(
