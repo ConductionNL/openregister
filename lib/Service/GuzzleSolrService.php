@@ -7415,7 +7415,10 @@ class GuzzleSolrService
                 // Apply custom facet configuration
                 $facetResult = $this->applyFacetConfiguration($facetResult, 'self_' . $solrFieldName);
                 
-                $contextualData['extended']['@self'][$fieldInfo['name']] = $facetResult;
+                // Only include enabled facets
+                if ($facetResult['enabled'] ?? true) {
+                    $contextualData['extended']['@self'][$fieldInfo['name']] = $facetResult;
+                }
             }
         }
         
