@@ -60,8 +60,6 @@ use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCP\AppFramework\IAppContainer;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
-use OCP\IMemcache;
-use OCP\ICacheFactory;
 
 /**
  * Primary Object Management Service for OpenRegister
@@ -171,7 +169,6 @@ class ObjectService
      * @param IUserManager        $userManager         User manager for getting user objects.
      * @param OrganisationService $organisationService Service for organisation operations.
      * @param LoggerInterface           $logger                    Logger for performance monitoring.
-     * @param ICacheFactory             $cacheFactory              Nextcloud cache factory for distributed caching.
      * @param ObjectCacheService        $objectCacheService        Object cache service for entity and query caching.
      * @param SchemaCacheService        $schemaCacheService        Schema cache service for schema entity caching.
      * @param SchemaFacetCacheService   $schemaFacetCacheService   Schema facet cache service for facet caching.
@@ -195,7 +192,6 @@ class ObjectService
         private readonly IUserManager $userManager,
         private readonly OrganisationService $organisationService,
         private readonly LoggerInterface $logger,
-        private readonly ICacheFactory $cacheFactory,
         private readonly FacetService $facetService,
         private readonly ObjectCacheService $objectCacheService,
         private readonly SchemaCacheService $schemaCacheService,
@@ -2259,7 +2255,12 @@ class ObjectService
     /**
      * Search objects with pagination and comprehensive faceting support
      *
-     * **PERFORMANCE OPTIMIZATION**: This method now intelligently determines which operations
+     * **SEARCH ENGINE**: This method uses Solr as the primary search engine when available,
+     * falling back to database search only when Solr is disabled or when using relation-based
+     * searches (ids/uses parameters). If Solr fails, the method will throw an exception
+     * rather than falling back to database search.
+     *
+     * **PERFORMANCE OPTIMIZATION**: This method intelligently determines which operations
      * are needed based on the query parameters and only executes the required operations.
      * For simple requests without faceting, it skips facet calculations entirely.
      *
@@ -2339,6 +2340,7 @@ class ObjectService
      * @psalm-param array<string, mixed> $query
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     * @throws \Exception If Solr search fails and cannot be recovered
      *
      * @return array<string, mixed> Array containing:
      *                              - results: Array of rendered ObjectEntity objects
@@ -2375,52 +2377,19 @@ class ObjectService
             )
         ) {
             
-            try {
-                // Forward to SOLR service - let it handle availability checks and error handling
-                $solrService = $this->container->get(GuzzleSolrService::class);
-                $result = $solrService->searchObjectsPaginated($query, $rbac, $multi, $published, $deleted);
-                $result['source'] = 'index';
-                $result['query'] = $query;
-                $result['rbac'] =  $rbac;
-                $result['multi'] =  $multi;
-                $result['published'] =  $published;
-                $result['deleted'] =  $deleted;
-                error_log('🔥 QUERY REPORTING DEBUG: Added query reporting properties to SOLR result');
-                error_log('🔥 QUERY REPORTING DEBUG: Final result keys: ' . implode(', ', array_keys($result)));
-                error_log('🔥 QUERY REPORTING DEBUG: Query value: ' . json_encode($result['query'] ?? 'MISSING'));
-                return $result;
-            } catch (\Exception $e) {
-                // Check if this is a SOLR field-related error that we can recover from
-                $errorMessage = $e->getMessage();
-                $isRecoverableError = (
-                    str_contains($errorMessage, 'undefined field') ||
-                    str_contains($errorMessage, 'unknown field') ||
-                    str_contains($errorMessage, 'field does not exist') ||
-                    str_contains($errorMessage, 'no such field')
-                );
-                
-                if ($isRecoverableError && $requestedSource === null) {
-                    // Only fall back to database if SOLR wasn't explicitly requested
-                    $this->logger->warning('SOLR search failed with field error, falling back to database', [
-                        'error' => $errorMessage,
-                        'query_fingerprint' => substr(md5(json_encode($query)), 0, 8)
-                    ]);
-                    
-                    // Fall back to database search
-                    $result = $this->searchObjectsPaginatedDatabase($query, $rbac, $multi, $published, $deleted, $ids, $uses);
-                    $result['source'] = 'database';
-                    $result['query'] = $query;
-                    $result['rbac'] =  $rbac;
-                    $result['multi'] =  $multi;
-                    $result['published'] =  $published;
-                    $result['deleted'] =  $deleted;
-                    $result['_fallback_reason'] = 'SOLR field error: ' . $errorMessage;
-                    return $result;
-                } else {
-                    // Re-throw if it's not recoverable or SOLR was explicitly requested
-                    throw $e;
-                }
-            }
+            // Forward to SOLR service - let it handle availability checks and error handling
+            $solrService = $this->container->get(GuzzleSolrService::class);
+            $result = $solrService->searchObjectsPaginated($query, $rbac, $multi, $published, $deleted);
+            $result['source'] = 'index';
+            $result['query'] = $query;
+            $result['rbac'] =  $rbac;
+            $result['multi'] =  $multi;
+            $result['published'] =  $published;
+            $result['deleted'] =  $deleted;
+            error_log('🔥 QUERY REPORTING DEBUG: Added query reporting properties to SOLR result');
+            error_log('🔥 QUERY REPORTING DEBUG: Final result keys: ' . implode(', ', array_keys($result)));
+            error_log('🔥 QUERY REPORTING DEBUG: Query value: ' . json_encode($result['query'] ?? 'MISSING'));
+            return $result;
         }
         
         // Use database search
@@ -2634,8 +2603,6 @@ class ObjectService
                     'limit' => $limit,
                     'hasExtend' => !empty($extend),
                     'extendCount' => count($extend ?? []),
-                    'cacheHit' => $cachedResponse !== null,
-                    'cacheDisabled' => $cacheDisabled,
                 ],
                 'recommendations' => $this->getPerformanceRecommendations($totalTime, $perfTimings, $query),
                 'timestamp' => (new \DateTime())->format('c'),
@@ -2643,7 +2610,6 @@ class ObjectService
 
             $this->logger->info('📊 PERFORMANCE METRICS INCLUDED', [
                 'totalTime' => $totalTime,
-                'cacheHit' => $cachedResponse !== null,
                 'objectCount' => count($results),
                 'hasExtend' => !empty($extend),
             ]);
@@ -2722,18 +2688,6 @@ class ObjectService
             ];
         }
 
-        // Cache recommendations
-        if (($query['_cache'] ?? true) === false) {
-            $recommendations[] = [
-                'type' => 'info',
-                'issue' => 'Cache disabled',
-                'message' => 'Caching is disabled for this request',
-                'suggestions' => [
-                    'Enable caching for production use',
-                    'This is fine for testing/debugging purposes'
-                ]
-            ];
-        }
 
         // Extend usage recommendations
         $extendCount = 0;
@@ -5774,192 +5728,6 @@ class ObjectService
 
 
     /**
-     * Normalize query for caching to ensure consistent cache keys
-     *
-     * This method converts register/schema slugs to IDs so that URLs like:
-     * - objects/19/108
-     * - objects/voorzieningen/contactpersoon
-     * Generate the SAME cache key when they represent the same data.
-     *
-     * @param array $query The original query array
-     *
-     * @return array Normalized query with IDs instead of slugs
-     *
-     * @phpstan-param array<string, mixed> $query
-     * @phpstan-return array<string, mixed>
-     * @psalm-param array<string, mixed> $query
-     * @psalm-return array<string, mixed>
-     */
-    private function normalizeQueryForCaching(array $query): array
-    {
-        $normalized = $query;
-
-        try {
-            // **REGISTER NORMALIZATION**: Convert register slug to ID (handle both single values and arrays)
-            if (isset($normalized['@self']['register'])) {
-                $registerValue = $normalized['@self']['register'];
-
-                // If it's not numeric, try to find the register (find method supports slug/uuid/id)
-                if (!is_numeric($registerValue)) {
-                    try {
-                        $register = $this->registerMapper->find($registerValue);
-                        $normalized['@self']['register'] = $register->getId();
-
-                        $this->logger->debug('🔄 CACHE NORMALIZATION: Register slug → ID', [
-                            'slug' => $registerValue,
-                            'id' => $register->getId(),
-                            'benefit' => 'consistent_cache_keys'
-                        ]);
-                    } catch (\Exception $e) {
-                        // Keep original value if lookup fails
-                        $this->logger->debug('Cache normalization: Could not resolve register slug', [
-                            'slug' => $registerValue,
-                            'error' => $e->getMessage()
-                        ]);
-                    }
-                } elseif (is_array($registerValue)) {
-                    // Array of values - convert each slug to ID if not numeric
-                    $normalizedRegisters = [];
-                    foreach ($registerValue as $singleRegisterValue) {
-                        if (is_string($singleRegisterValue) && !is_numeric($singleRegisterValue)) {
-                            try {
-                                $register = $this->registerMapper->find($singleRegisterValue);
-                                $normalizedRegisters[] = $register->getId();
-                                
-                                $this->logger->debug('🔄 CACHE NORMALIZATION: Register slug → ID (array)', [
-                                    'slug' => $singleRegisterValue,
-                                    'id' => $register->getId(),
-                                    'benefit' => 'consistent_cache_keys'
-                                ]);
-                            } catch (\Exception $e) {
-                                // Keep original value if lookup fails
-                                $normalizedRegisters[] = $singleRegisterValue;
-                                $this->logger->debug('Cache normalization: Could not resolve register slug in array', [
-                                    'slug' => $singleRegisterValue,
-                                    'error' => $e->getMessage()
-                                ]);
-                            }
-                        } else {
-                            // Keep numeric or non-string values as-is
-                            $normalizedRegisters[] = $singleRegisterValue;
-                        }
-                    }
-                    $normalized['@self']['register'] = $normalizedRegisters;
-                }
-            }
-
-            // **SCHEMA NORMALIZATION**: Convert schema slug to ID
-            if (isset($normalized['@self']['schema']) && is_string($normalized['@self']['schema'])) {
-                $schemaValue = $normalized['@self']['schema'];
-
-                // If it's not numeric, try to find the schema (find method supports slug/uuid/id)
-                if (!is_numeric($schemaValue)) {
-                    try {
-                        $schema = $this->schemaMapper->find($schemaValue);
-                        $normalized['@self']['schema'] = $schema->getId();
-
-                        $this->logger->debug('🔄 CACHE NORMALIZATION: Schema slug → ID', [
-                            'slug' => $schemaValue,
-                            'id' => $schema->getId(),
-                            'benefit' => 'consistent_cache_keys'
-                        ]);
-                    } catch (\Exception $e) {
-                        // Keep original value if lookup fails
-                        $this->logger->debug('Cache normalization: Could not resolve schema slug', [
-                            'slug' => $schemaValue,
-                            'error' => $e->getMessage()
-                        ]);
-                    }
-                } elseif (is_array($schemaValue)) {
-                    // Array of values - convert each slug to ID if not numeric
-                    $normalizedSchemas = [];
-                    foreach ($schemaValue as $singleSchemaValue) {
-                        if (is_string($singleSchemaValue) && !is_numeric($singleSchemaValue)) {
-                            try {
-                                $schema = $this->schemaMapper->find($singleSchemaValue);
-                                $normalizedSchemas[] = $schema->getId();
-                                
-                                $this->logger->debug('🔄 CACHE NORMALIZATION: Schema slug → ID (array)', [
-                                    'slug' => $singleSchemaValue,
-                                    'id' => $schema->getId(),
-                                    'benefit' => 'consistent_cache_keys'
-                                ]);
-                            } catch (\Exception $e) {
-                                // Keep original value if lookup fails
-                                $normalizedSchemas[] = $singleSchemaValue;
-                                $this->logger->debug('Cache normalization: Could not resolve schema slug in array', [
-                                    'slug' => $singleSchemaValue,
-                                    'error' => $e->getMessage()
-                                ]);
-                            }
-                        } else {
-                            // Keep numeric or non-string values as-is
-                            $normalizedSchemas[] = $singleSchemaValue;
-                        }
-                    }
-                    $normalized['@self']['schema'] = $normalizedSchemas;
-                }
-            }
-
-            // **PATH-BASED NORMALIZATION**: Handle URL path parameters
-            // This covers cases where register/schema come from URL path like /objects/voorzieningen/contactpersoon
-            if (isset($_SERVER['REQUEST_URI'])) {
-                $pathPattern = '/\/objects\/([^\/\?]+)\/([^\/\?]+)/';
-                if (preg_match($pathPattern, $_SERVER['REQUEST_URI'], $matches)) {
-                    $pathRegister = $matches[1] ?? null;
-                    $pathSchema = $matches[2] ?? null;
-
-                    // Normalize path register if it's a slug
-                    if ($pathRegister && !is_numeric($pathRegister)) {
-                        try {
-                            $register = $this->registerMapper->find($pathRegister);
-                            // Add normalized path info to query for cache key consistency
-                            $normalized['_path_register_id'] = $register->getId();
-                            $this->logger->debug('🔄 CACHE NORMALIZATION: Path register slug → ID', [
-                                'pathSlug' => $pathRegister,
-                                'id' => $register->getId()
-                            ]);
-                        } catch (\Exception $e) {
-                            // Ignore path normalization errors
-                        }
-                    } elseif ($pathRegister && is_numeric($pathRegister)) {
-                        $normalized['_path_register_id'] = (int)$pathRegister;
-                    }
-
-                    // Normalize path schema if it's a slug
-                    if ($pathSchema && !is_numeric($pathSchema)) {
-                        try {
-                            $schema = $this->schemaMapper->find($pathSchema);
-                            // Add normalized path info to query for cache key consistency
-                            $normalized['_path_schema_id'] = $schema->getId();
-                            $this->logger->debug('🔄 CACHE NORMALIZATION: Path schema slug → ID', [
-                                'pathSlug' => $pathSchema,
-                                'id' => $schema->getId()
-                            ]);
-                        } catch (\Exception $e) {
-                            // Ignore path normalization errors
-                        }
-                    } elseif ($pathSchema && is_numeric($pathSchema)) {
-                        $normalized['_path_schema_id'] = (int)$pathSchema;
-                    }
-                }
-            }
-
-        } catch (\Exception $e) {
-            // If normalization fails completely, use original query
-            $this->logger->warning('Cache normalization failed, using original query', [
-                'error' => $e->getMessage(),
-                'impact' => 'potential_duplicate_caching'
-            ]);
-            return $query;
-        }
-
-        return $normalized;
-
-    }//end normalizeQueryForCaching()
-
-
-    /**
      * Detect external app context from call stack for cache isolation
      *
      * **EXTERNAL APP OPTIMIZATION**: Analyzes the call stack to detect which
@@ -6009,147 +5777,6 @@ class ObjectService
         return null;
 
     }//end detectExternalAppContext()
-
-
-    /**
-     * Generate a query fingerprint for anonymous cache isolation
-     *
-     * **CACHE ISOLATION**: Creates a fingerprint based on query patterns
-     * to prevent different usage patterns from sharing cache entries and
-     * causing performance degradation.
-     *
-     * @param array $query The search query array
-     *
-     * @return string Query pattern fingerprint
-     *
-     * @phpstan-param array<string, mixed> $query
-     * @psalm-param   array<string, mixed> $query
-     * @phpstan-return string
-     * @psalm-return   string
-     */
-    private function generateQueryFingerprint(array $query): string
-    {
-        // **CACHE NORMALIZATION**: Use normalized query for consistent fingerprints
-        $normalizedQuery = $this->normalizeQueryForCaching($query);
-
-        // **PATTERN ANALYSIS**: Extract query characteristics for cache grouping
-        $characteristics = [];
-
-        // Detect query complexity patterns
-        $characteristics['has_search'] = !empty($normalizedQuery['_search']);
-        $characteristics['has_facets'] = !empty($normalizedQuery['_facets']);
-        $characteristics['has_extend'] = !empty($normalizedQuery['_extend']);
-        $characteristics['has_filters'] = count(array_filter(array_keys($normalizedQuery), fn($k) => !str_starts_with($k, '_'))) > 0;
-        $characteristics['limit_range'] = $this->getLimitRange($normalizedQuery['_limit'] ?? 20);
-
-        // **NORMALIZED CONTEXT**: Use normalized register/schema IDs for consistent fingerprints
-        if (isset($normalizedQuery['@self']['register'])) {
-            $characteristics['register'] = $normalizedQuery['@self']['register'];
-        }
-        if (isset($normalizedQuery['@self']['schema'])) {
-            $characteristics['schema'] = $normalizedQuery['@self']['schema'];
-        }
-
-        // Include normalized path info if available
-        if (isset($normalizedQuery['_path_register_id'])) {
-            $characteristics['path_register'] = $normalizedQuery['_path_register_id'];
-        }
-        if (isset($normalizedQuery['_path_schema_id'])) {
-            $characteristics['path_schema'] = $normalizedQuery['_path_schema_id'];
-        }
-
-        // **FINGERPRINT GENERATION**: Create short fingerprint for cache key efficiency
-        return substr(md5(json_encode($characteristics)), 0, 8);
-
-    }//end generateQueryFingerprint()
-
-
-    /**
-     * Get limit range for query fingerprinting
-     *
-     * @param int $limit Query limit value
-     *
-     * @return string Limit range category
-     */
-    private function getLimitRange(int $limit): string
-    {
-        if ($limit <= 10) {
-            return 'small';
-        } elseif ($limit <= 50) {
-            return 'medium';
-        } elseif ($limit <= 200) {
-            return 'large';
-        } else {
-            return 'xlarge';
-        }
-
-    }//end getLimitRange()
-
-
-    /**
-     * Get cached response using Nextcloud's distributed cache
-     *
-     * **PERFORMANCE OPTIMIZATION**: Use Nextcloud's ICache for distributed caching
-     * that works across multiple app instances and supports Redis/Memcached.
-     *
-     * @param string $cacheKey The cache key to check
-     *
-     * @return array|null Cached response or null if not found/expired
-     *
-     * @phpstan-return array<string, mixed>|null
-     * @psalm-return   array<string, mixed>|null
-     */
-    private function getCachedResponse(string $cacheKey): ?array
-    {
-        if ($this->distributedCache === null) {
-            return null;
-        }
-
-        try {
-            $cached = $this->distributedCache->get($cacheKey);
-
-            if ($cached !== null && is_array($cached)) {
-                return $cached;
-            }
-        } catch (\Exception $e) {
-            // Cache access failed, continue without cache
-        }
-
-        return null;
-
-    }//end getCachedResponse()
-
-
-    /**
-     * Set cached response using Nextcloud's distributed cache with TTL
-     *
-     * **PERFORMANCE OPTIMIZATION**: Use Nextcloud's ICache with automatic TTL
-     * and memory management. This provides better performance than manual arrays.
-     *
-     * @param string $cacheKey The cache key to set
-     * @param array  $data     The response data to cache
-     *
-     * @return void
-     *
-     * @phpstan-param string $cacheKey
-     * @phpstan-param array<string, mixed> $data
-     * @psalm-param   string $cacheKey
-     * @psalm-param   array<string, mixed> $data
-     */
-    private function setCachedResponse(string $cacheKey, array $data): void
-    {
-        if ($this->distributedCache === null) {
-            return;
-        }
-
-        try {
-            // **NEXTCLOUD OPTIMIZATION**: Use distributed cache with automatic TTL
-            $this->distributedCache->set($cacheKey, $data, self::CACHE_TTL);
-        } catch (\Exception $e) {
-            // Cache write failed, continue without caching
-        }
-
-    }//end setCachedResponse()
 
 
     /**

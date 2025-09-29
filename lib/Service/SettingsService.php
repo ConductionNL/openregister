@@ -2340,6 +2340,148 @@ class SettingsService
     }
 
     /**
+     * Get SOLR facet configuration
+     *
+     * Returns the configuration for customizing SOLR facets including
+     * custom titles, ordering, and descriptions.
+     *
+     * @return array Facet configuration array
+     *
+     * @throws \RuntimeException If facet configuration retrieval fails
+     */
+    public function getSolrFacetConfiguration(): array
+    {
+        try {
+            $facetConfig = $this->config->getValueString($this->appName, 'solr_facet_config', '');
+            if (empty($facetConfig)) {
+                return [
+                    'facets' => [],
+                    'global_order' => [],
+                    'default_settings' => [
+                        'show_count' => true,
+                        'show_empty' => false,
+                        'max_items' => 10
+                    ]
+                ];
+            }
+
+            return json_decode($facetConfig, true);
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to retrieve SOLR facet configuration: '.$e->getMessage());
+        }
+
+    }//end getSolrFacetConfiguration()
+
+
+    /**
+     * Update SOLR facet configuration
+     *
+     * Updates the configuration for customizing SOLR facets including
+     * custom titles, ordering, and descriptions.
+     *
+     * Expected structure:
+     * [
+     *   'facets' => [
+     *     'field_name' => [
+     *       'title' => 'Custom Title',
+     *       'description' => 'Custom description',
+     *       'order' => 1,
+     *       'enabled' => true,
+     *       'show_count' => true,
+     *       'max_items' => 10
+     *     ]
+     *   ],
+     *   'global_order' => ['field1', 'field2', 'field3'],
+     *   'default_settings' => [
+     *     'show_count' => true,
+     *     'show_empty' => false,
+     *     'max_items' => 10
+     *   ]
+     * ]
+     *
+     * @param array $facetConfig Facet configuration data
+     *
+     * @return array Updated facet configuration
+     *
+     * @throws \RuntimeException If facet configuration update fails
+     */
+    public function updateSolrFacetConfiguration(array $facetConfig): array
+    {
+        try {
+            // Validate the configuration structure
+            $validatedConfig = $this->validateFacetConfiguration($facetConfig);
+            
+            $this->config->setValueString($this->appName, 'solr_facet_config', json_encode($validatedConfig));
+            return $validatedConfig;
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to update SOLR facet configuration: '.$e->getMessage());
+        }
+
+    }//end updateSolrFacetConfiguration()
+
+
+    /**
+     * Validate facet configuration structure
+     *
+     * @param array $config Configuration to validate
+     *
+     * @return array Validated and normalized configuration
+     *
+     * @throws \InvalidArgumentException If configuration is invalid
+     */
+    private function validateFacetConfiguration(array $config): array
+    {
+        $validatedConfig = [
+            'facets' => [],
+            'global_order' => [],
+            'default_settings' => [
+                'show_count' => true,
+                'show_empty' => false,
+                'max_items' => 10
+            ]
+        ];
+
+        // Validate facets configuration
+        if (isset($config['facets']) && is_array($config['facets'])) {
+            foreach ($config['facets'] as $fieldName => $facetConfig) {
+                if (!is_string($fieldName) || empty($fieldName)) {
+                    continue;
+                }
+
+                $validatedFacet = [
+                    'title' => $facetConfig['title'] ?? $fieldName,
+                    'description' => $facetConfig['description'] ?? '',
+                    'order' => (int)($facetConfig['order'] ?? 0),
+                    'enabled' => (bool)($facetConfig['enabled'] ?? true),
+                    'show_count' => (bool)($facetConfig['show_count'] ?? true),
+                    'max_items' => (int)($facetConfig['max_items'] ?? 10)
+                ];
+
+                $validatedConfig['facets'][$fieldName] = $validatedFacet;
+            }
+        }
+
+        // Validate global order
+        if (isset($config['global_order']) && is_array($config['global_order'])) {
+            $validatedConfig['global_order'] = array_filter($config['global_order'], 'is_string');
+        }
+
+        // Validate default settings
+        if (isset($config['default_settings']) && is_array($config['default_settings'])) {
+            $defaults = $config['default_settings'];
+            $validatedConfig['default_settings'] = [
+                'show_count' => (bool)($defaults['show_count'] ?? true),
+                'show_empty' => (bool)($defaults['show_empty'] ?? false),
+                'max_items' => (int)($defaults['max_items'] ?? 10)
+            ];
+        }
+
+        return $validatedConfig;
+
+    }//end validateFacetConfiguration()
+
+
+    /**
      * Get focused RBAC settings only
      *
      * @return array RBAC configuration with available groups and users

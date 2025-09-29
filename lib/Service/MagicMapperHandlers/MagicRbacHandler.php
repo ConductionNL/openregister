@@ -165,8 +165,7 @@ class MagicRbacHandler
             }
         }
 
-        // 4. Object is currently published (publication-based public access)
-        $readConditions->add($this->createPublishedCondition($qb, $tableAlias));
+        // Removed automatic published object access - this should be handled via explicit published filter
 
         $qb->andWhere($readConditions);
     }
@@ -191,24 +190,18 @@ class MagicRbacHandler
 
         $authConfig = is_string($authorization) ? json_decode($authorization, true) : $authorization;
         if (!is_array($authConfig)) {
-            // Invalid config - default to published-only access
-            $qb->andWhere($this->createPublishedCondition($qb, $tableAlias));
+            // Invalid config - no automatic access, use explicit published filter
             return;
         }
 
         $readPerms = $authConfig['read'] ?? [];
-        
-        $publicConditions = $qb->expr()->orX();
         
         // Check for explicit public read access
         if (is_array($readPerms) && in_array('public', $readPerms)) {
             return; // Full public access - no filtering needed
         }
         
-        // Otherwise, only show published objects
-        $publicConditions->add($this->createPublishedCondition($qb, $tableAlias));
-        
-        $qb->andWhere($publicConditions);
+        // No automatic published object access - use explicit published filter
     }
 
     /**
