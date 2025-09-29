@@ -1516,6 +1516,7 @@
 			:warming-up="warmingUp"
 			:completed="warmupCompleted"
 			:results="warmupResults"
+			:config="warmupConfig"
 			@close="closeWarmupModal"
 			@start-warmup="handleStartWarmup"
 		/>
@@ -1541,162 +1542,10 @@
 		/>
 
 		<!-- Facet Configuration Modal -->
-		<NcDialog
-			v-if="showFacetConfigDialog"
-			name="Configure SOLR Facets"
-			:can-close="!savingFacetConfig"
-			@closing="closeFacetConfigModal"
-			:size="'large'">
-			<div class="facet-config-dialog">
-				<div v-if="loadingFacetConfig" class="loading-container">
-					<NcLoadingIcon :size="40" />
-					<p>Loading facet configuration...</p>
-				</div>
-				
-				<div v-else class="facet-config-content">
-					<div class="config-header">
-						<h3>Facet Configuration</h3>
-						<p>Customize how SOLR facets are displayed in search results. You can change titles, descriptions, ordering, and visibility.</p>
-					</div>
-
-					<!-- Global Settings -->
-					<div class="config-section">
-						<h4>Global Settings</h4>
-						<div class="form-row">
-							<NcCheckboxRadioSwitch
-								:checked.sync="facetConfig.default_settings.show_count">
-								Show facet counts by default
-							</NcCheckboxRadioSwitch>
-						</div>
-						<div class="form-row">
-							<NcCheckboxRadioSwitch
-								:checked.sync="facetConfig.default_settings.show_empty">
-								Show empty facets by default
-							</NcCheckboxRadioSwitch>
-						</div>
-						<div class="form-row">
-							<label>Default maximum items per facet:</label>
-							<input 
-								v-model.number="facetConfig.default_settings.max_items" 
-								type="number" 
-								min="1" 
-								max="100" 
-								class="form-input" />
-						</div>
-					</div>
-
-					<!-- Facet Configuration -->
-					<div class="config-section">
-						<h4>Individual Facet Settings</h4>
-						<div v-if="availableFacets.length === 0" class="no-facets">
-							<p>No facets available. Make sure SOLR is configured and has indexed data.</p>
-							<NcButton @click="discoverFacets" :disabled="discoveringFacets">
-								<template #icon>
-									<NcLoadingIcon v-if="discoveringFacets" :size="20" />
-									<Magnify v-else :size="20" />
-								</template>
-								Discover Facets
-							</NcButton>
-						</div>
-						
-						<div v-else class="facets-list">
-							<div v-for="(facet, fieldName) in facetConfig.facets" :key="fieldName" class="facet-item">
-								<div class="facet-header">
-									<h5>{{ fieldName }}</h5>
-									<NcCheckboxRadioSwitch
-										:checked.sync="facet.enabled">
-										Enabled
-									</NcCheckboxRadioSwitch>
-								</div>
-								
-								<div v-if="facet.enabled" class="facet-details">
-									<div class="form-row">
-										<label>Display Title:</label>
-										<input 
-											v-model="facet.title" 
-											type="text" 
-											class="form-input" 
-											:placeholder="fieldName" />
-									</div>
-									
-									<div class="form-row">
-										<label>Description:</label>
-										<textarea 
-											v-model="facet.description" 
-											class="form-textarea" 
-											placeholder="Optional description for this facet"
-											rows="2"></textarea>
-									</div>
-									
-									<div class="form-row">
-										<label>Display Order:</label>
-										<input 
-											v-model.number="facet.order" 
-											type="number" 
-											class="form-input" 
-											min="0" />
-									</div>
-									
-									<div class="form-row">
-										<label>Maximum Items:</label>
-										<input 
-											v-model.number="facet.max_items" 
-											type="number" 
-											min="1" 
-											max="100" 
-											class="form-input" />
-									</div>
-									
-									<div class="form-row">
-										<label>Facet Type:</label>
-										<select v-model="facet.facet_type" class="form-select">
-											<option value="terms">Terms (discrete values)</option>
-											<option value="range">Range (numeric/date ranges)</option>
-											<option value="date_histogram">Date Histogram</option>
-										</select>
-									</div>
-									
-									<div class="form-row">
-										<label>Display Type:</label>
-										<select v-model="facet.display_type" class="form-select">
-											<option value="select">Dropdown Select</option>
-											<option value="multiselect">Multi-Select</option>
-											<option value="checkbox">Checkboxes</option>
-											<option value="radio">Radio Buttons</option>
-											<option value="range">Range Slider</option>
-											<option value="date_range">Date Range Picker</option>
-										</select>
-									</div>
-									
-									<div class="form-row">
-										<NcCheckboxRadioSwitch
-											:checked.sync="facet.show_count">
-											Show item counts
-										</NcCheckboxRadioSwitch>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<template #actions>
-				<NcButton @click="closeFacetConfigModal" :disabled="savingFacetConfig">
-					Cancel
-				</NcButton>
-				<NcButton 
-					type="primary" 
-					@click="saveFacetConfig" 
-					:disabled="savingFacetConfig || loadingFacetConfig">
-					<template #icon>
-						<NcLoadingIcon v-if="savingFacetConfig" :size="20" />
-						<Save v-else :size="20" />
-					</template>
-					Save Configuration
-				</NcButton>
-			</template>
-		</NcDialog>
+		<FacetConfigModal 
+			:show="showFacetConfigDialog"
+			@close="showFacetConfigDialog = false"
+		/>
 	</NcSettingsSection>
 </template>
 
@@ -1721,6 +1570,7 @@ import Magnify from 'vue-material-design-icons/Magnify.vue'
 import { SolrWarmupModal, ClearIndexModal } from '../../../modals/settings'
 import InspectIndexModal from '../../../modals/settings/InspectIndexModal.vue'
 import DeleteCollectionModal from '../../../modals/settings/DeleteCollectionModal.vue'
+import FacetConfigModal from '../../../modals/settings/FacetConfigModal.vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 
@@ -1752,6 +1602,7 @@ export default {
 		ClearIndexModal,
 		InspectIndexModal,
 		DeleteCollectionModal,
+		FacetConfigModal,
 	},
 
 	data() {
@@ -1783,6 +1634,12 @@ export default {
 			warmingUp: false,
 			warmupCompleted: false,
 			warmupResults: null,
+			warmupConfig: {
+				mode: 'serial',
+				maxObjects: 0,
+				batchSize: 1000,
+				collectErrors: false,
+			},
 			// Game-style loading
 			loadingTips: [
 				'🔍 SOLR is a powerful enterprise search platform built on Apache Lucene...',
@@ -1802,19 +1659,6 @@ export default {
 			tipIndex: 0,
 			// Facet configuration
 			showFacetConfigDialog: false,
-			loadingFacetConfig: false,
-			savingFacetConfig: false,
-			discoveringFacets: false,
-			facetConfig: {
-				facets: {},
-				global_order: [],
-				default_settings: {
-					show_count: true,
-					show_empty: false,
-					max_items: 10
-				}
-			},
-			availableFacets: [],
 		}
 	},
 
@@ -2215,6 +2059,13 @@ export default {
 			this.warmingUp = false
 			this.warmupCompleted = false
 			this.warmupResults = null
+			// Reset config to defaults
+			this.warmupConfig = {
+				mode: 'serial',
+				maxObjects: 0,
+				batchSize: 1000,
+				collectErrors: false,
+			}
 		},
 
 		openClearModal() {
@@ -2302,6 +2153,9 @@ export default {
 		},
 
 		async handleStartWarmup(config) {
+			// Store the config so it can be displayed in the modal
+			this.warmupConfig = { ...config }
+			
 			// Set loading state
 			this.warmingUp = true
 			this.warmupCompleted = false
@@ -2422,155 +2276,8 @@ export default {
 		/**
 		 * Open facet configuration modal
 		 */
-		async openFacetConfigModal() {
+		openFacetConfigModal() {
 			this.showFacetConfigDialog = true
-			await this.loadFacetConfiguration()
-		},
-
-		/**
-		 * Close facet configuration modal
-		 */
-		closeFacetConfigModal() {
-			this.showFacetConfigDialog = false
-			this.loadingFacetConfig = false
-			this.savingFacetConfig = false
-		},
-
-		/**
-		 * Load facet configuration from settings
-		 */
-		async loadFacetConfiguration() {
-			this.loadingFacetConfig = true
-			try {
-				const url = generateUrl('/apps/openregister/api/settings/solr-facet-config')
-				const response = await axios.get(url)
-				
-				if (response.data) {
-					this.facetConfig = response.data
-					// Discover available facets if none are configured
-					if (Object.keys(this.facetConfig.facets).length === 0) {
-						await this.discoverFacets()
-					}
-				}
-			} catch (error) {
-				console.error('Failed to load facet configuration:', error)
-				const errorMessage = error.response?.data?.message || error.message || 'Unknown error occurred'
-				this.$toast.error(`Failed to load facet configuration: ${errorMessage}`)
-			} finally {
-				this.loadingFacetConfig = false
-			}
-		},
-
-		/**
-		 * Save facet configuration
-		 */
-		async saveFacetConfig() {
-			this.savingFacetConfig = true
-			try {
-				const url = generateUrl('/apps/openregister/api/settings/solr-facet-config')
-				const response = await axios.post(url, this.facetConfig)
-				
-				if (response.data) {
-					this.$toast.success('Facet configuration saved successfully')
-					this.closeFacetConfigModal()
-				}
-			} catch (error) {
-				console.error('Failed to save facet configuration:', error)
-				const errorMessage = error.response?.data?.message || error.message || 'Unknown error occurred'
-				this.$toast.error(`Failed to save facet configuration: ${errorMessage}`)
-			} finally {
-				this.savingFacetConfig = false
-			}
-		},
-
-		/**
-		 * Discover available facets from SOLR
-		 */
-		async discoverFacets() {
-			this.discoveringFacets = true
-			try {
-				const url = generateUrl('/apps/openregister/api/solr/discover-facets')
-				const response = await axios.get(url)
-				
-				console.log('Discover facets response:', response.data)
-				
-				if (response.data && response.data.success && response.data.facets) {
-					// Store the raw facet data for reference
-					this.availableFacets = response.data.facets
-					
-					// Process both @self (metadata) and object_fields facets
-					const allFacets = []
-					
-					// Process metadata facets (@self)
-					if (response.data.facets['@self']) {
-						Object.entries(response.data.facets['@self']).forEach(([key, facetInfo]) => {
-							const fieldName = `@self[${key}]` // Use query parameter format
-							allFacets.push({
-								fieldName,
-								...facetInfo
-							})
-							
-							// Initialize facet configuration if not exists
-							if (!this.facetConfig.facets[fieldName]) {
-								this.$set(this.facetConfig.facets, fieldName, {
-									title: facetInfo.displayName || key,
-									description: `${facetInfo.category} field: ${facetInfo.displayName}`,
-									order: 0,
-									enabled: true,
-									show_count: true,
-									max_items: 10,
-									display_type: facetInfo.suggestedDisplayTypes?.[0] || 'select',
-									facet_type: facetInfo.suggestedFacetType || 'terms'
-								})
-							}
-						})
-					}
-					
-					// Process object fields
-					if (response.data.facets['object_fields']) {
-						Object.entries(response.data.facets['object_fields']).forEach(([key, facetInfo]) => {
-							const fieldName = key // Object fields use direct field name
-							allFacets.push({
-								fieldName,
-								...facetInfo
-							})
-							
-							// Initialize facet configuration if not exists
-							if (!this.facetConfig.facets[fieldName]) {
-								this.$set(this.facetConfig.facets, fieldName, {
-									title: facetInfo.displayName || key,
-									description: `${facetInfo.category} field: ${facetInfo.displayName}`,
-									order: 100, // Object fields come after metadata fields
-									enabled: false, // Disable by default to avoid clutter
-									show_count: true,
-									max_items: 10,
-									display_type: facetInfo.suggestedDisplayTypes?.[0] || 'select',
-									facet_type: facetInfo.suggestedFacetType || 'terms'
-								})
-							}
-						})
-					}
-					
-					// Update availableFacets to be an array for the template check
-					this.availableFacets = allFacets
-					
-					this.$toast.success(`Discovered ${allFacets.length} facets (${Object.keys(response.data.facets['@self'] || {}).length} metadata, ${Object.keys(response.data.facets['object_fields'] || {}).length} object fields)`)
-				} else {
-					console.warn('Invalid response from discover facets API:', response.data)
-					this.$toast.error('Invalid response from facet discovery API')
-				}
-			} catch (error) {
-				console.error('Failed to discover facets:', error)
-				console.error('Error details:', {
-					message: error.message,
-					response: error.response?.data,
-					status: error.response?.status
-				})
-				const errorMessage = error.response?.data?.message || error.message || 'Unknown error occurred'
-				this.$toast.error(`Failed to discover available facets: ${errorMessage}`)
-			} finally {
-				this.discoveringFacets = false
-			}
 		},
 	},
 }
@@ -4825,4 +4532,5 @@ export default {
 	padding: 40px;
 	color: var(--color-text-lighter);
 }
+
 </style>
