@@ -4120,6 +4120,100 @@ class GuzzleSolrService
     }
 
     /**
+     * Count objects that belong to searchable schemas
+     *
+     * @param \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper The object mapper instance
+     * @return int Number of objects with searchable schemas
+     */
+    private function countSearchableObjects(\OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper): int
+    {
+        try {
+            // Use direct database query to count objects with searchable schemas
+            $db = \OC::$server->getDatabaseConnection();
+            $qb = $db->getQueryBuilder();
+            
+            $qb->select($qb->createFunction('COUNT(o.id)'))
+                ->from('openregister_objects', 'o')
+                ->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id')
+                ->where($qb->expr()->eq('s.searchable', $qb->createNamedParameter(true, \PDO::PARAM_BOOL)))
+                ->andWhere($qb->expr()->isNull('o.deleted')); // Exclude deleted objects
+            
+            $result = $qb->executeQuery();
+            $count = (int) $result->fetchOne();
+            
+            $this->logger->info('📊 Counted searchable objects', [
+                'searchable_objects' => $count
+            ]);
+            
+            return $count;
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to count searchable objects, falling back to all objects', [
+                'error' => $e->getMessage()
+            ]);
+            // Fallback to counting all objects if searchable filter fails
+            return $objectMapper->countAll(rbac: false, multi: false);
+        }
+    }
+
+    /**
+     * Fetch objects that belong to searchable schemas only
+     *
+     * @param \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper The object mapper instance
+     * @param int $limit Number of objects to fetch
+     * @param int $offset Offset for pagination
+     * @return array Array of ObjectEntity objects with searchable schemas
+     */
+    private function fetchSearchableObjects(\OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper, int $limit, int $offset): array
+    {
+        try {
+            // Use direct database query to fetch objects with searchable schemas
+            $db = \OC::$server->getDatabaseConnection();
+            $qb = $db->getQueryBuilder();
+            
+            $qb->select('o.*')
+                ->from('openregister_objects', 'o')
+                ->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id')
+                ->where($qb->expr()->eq('s.searchable', $qb->createNamedParameter(true, \PDO::PARAM_BOOL)))
+                ->andWhere($qb->expr()->isNull('o.deleted')) // Exclude deleted objects
+                ->setMaxResults($limit)
+                ->setFirstResult($offset)
+                ->orderBy('o.id', 'ASC'); // Consistent ordering for pagination
+            
+            $result = $qb->executeQuery();
+            $rows = $result->fetchAll();
+            
+            // Convert rows to ObjectEntity objects
+            $objects = [];
+            foreach ($rows as $row) {
+                $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+                $objectEntity->hydrate($row);
+                $objects[] = $objectEntity;
+            }
+            
+            $this->logger->debug('📊 Fetched searchable objects', [
+                'requested' => $limit,
+                'offset' => $offset,
+                'found' => count($objects)
+            ]);
+            
+            return $objects;
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to fetch searchable objects, falling back to all objects', [
+                'error' => $e->getMessage(),
+                'limit' => $limit,
+                'offset' => $offset
+            ]);
+            // Fallback to fetching all objects if searchable filter fails
+            return $objectMapper->findAll(
+                limit: $limit,
+                offset: $offset,
+                rbac: false,
+                multi: false
+            );
+        }
+    }
+
+    /**
      * Bulk index objects from database to Solr in batches
      *
      * @param int $batchSize Number of objects to process per batch (default: 1000)
@@ -4149,13 +4243,10 @@ class GuzzleSolrService
             
             $this->logger->info('Starting sequential bulk index from database using ObjectEntityMapper directly');
             
-            // Get total count for planning using ObjectEntityMapper's countAll method
-            $totalObjects = $objectMapper->countAll(
-                rbac: false,  // Skip RBAC for performance
-                multi: false  // Skip multitenancy for performance  
-            );
-            $this->logger->info('📊 Sequential bulk index planning', [
-                'totalObjects' => $totalObjects,
+            // **IMPROVED**: Get count of only searchable objects for more accurate planning
+            $totalObjects = $this->countSearchableObjects($objectMapper);
+            $this->logger->info('📊 Sequential bulk index planning (searchable objects only)', [
+                'totalSearchableObjects' => $totalObjects,
                 'maxObjects' => $maxObjects,
                 'batchSize' => $batchSize,
                 'estimatedBatches' => $maxObjects > 0 ? ceil(min($totalObjects, $maxObjects) / $batchSize) : ceil($totalObjects / $batchSize),
@@ -4173,16 +4264,11 @@ class GuzzleSolrService
                     $currentBatchSize = min($batchSize, $remaining);
                 }
                 
-                // Fetch objects directly from ObjectEntityMapper using simpler findAll method
+                // **IMPROVED**: Fetch only objects with searchable schemas
                 $fetchStart = microtime(true);
                 // Batch fetched (logging removed for performance)
                 
-                $objects = $objectMapper->findAll(
-                    limit: $currentBatchSize,
-                    offset: $offset,
-                    rbac: false,  // Skip RBAC for performance
-                    multi: false  // Skip multitenancy for performance
-                );
+                $objects = $this->fetchSearchableObjects($objectMapper, $currentBatchSize, $offset);
                 
                 $fetchEnd = microtime(true);
                 $fetchDuration = round(($fetchEnd - $fetchStart) * 1000, 2);
@@ -4196,7 +4282,7 @@ class GuzzleSolrService
                     break; // No more objects
                 }
                 
-                // Index ALL objects (published and unpublished) for comprehensive search.
+                // **IMPROVED**: Index only searchable objects (already filtered at database level)
                 // Filtering for published-only content is now handled at query time, not index time.
                 $documents = [];
                 foreach ($objects as $object) {
@@ -4211,18 +4297,22 @@ class GuzzleSolrService
                         }
                         
                         if ($objectEntity) {
-                            try {
-                                $document = $this->createSolrDocument($objectEntity, $solrFieldTypes);
-                                $documents[] = $document;
-                            } catch (\RuntimeException $e) {
-                                // Skip non-searchable schemas
-                                if (str_contains($e->getMessage(), 'Schema is not searchable')) {
-                                    $results['skipped_non_searchable']++;
-                                    continue;
-                                }
-                                throw $e;
-                            }
+                            // Since we already filtered for searchable schemas at database level,
+                            // we should not encounter non-searchable schemas here
+                            $document = $this->createSolrDocument($objectEntity, $solrFieldTypes);
+                            $documents[] = $document;
                         }
+                    } catch (\RuntimeException $e) {
+                        // This should rarely happen now since we pre-filter for searchable schemas
+                        if (str_contains($e->getMessage(), 'Schema is not searchable')) {
+                            $results['skipped_non_searchable']++;
+                            $this->logger->warning('Unexpected non-searchable schema found despite pre-filtering', [
+                                'objectId' => $objectEntity ? $objectEntity->getId() : 'unknown',
+                                'error' => $e->getMessage()
+                            ]);
+                            continue;
+                        }
+                        throw $e;
                     } catch (\Exception $e) {
                         $this->logger->warning('Failed to create SOLR document', [
                             'error' => $e->getMessage(),
@@ -4317,19 +4407,8 @@ class GuzzleSolrService
             $startTime = microtime(true);
             // Parallel bulk indexing started (logging removed for performance)
 
-            // Get ALL object count to plan batches (since we now index all objects, not just published)
-            $totalObjects = $objectMapper->countAll(
-                filters: [],
-                search: null,
-                ids: null,
-                uses: null,
-                includeDeleted: false,
-                register: null,
-                schema: null,
-                published: null, // Count ALL objects (published and unpublished)
-                rbac: false,     // Skip RBAC for performance
-                multi: false     // Skip multitenancy for performance
-            );
+            // **IMPROVED**: Get count of only searchable objects for more accurate planning
+            $totalObjects = $this->countSearchableObjects($objectMapper);
             
             // Total objects retrieved from database
             
@@ -4446,12 +4525,8 @@ class GuzzleSolrService
         // Processing batch
         
         try {
-            // Fetch objects for this batch
-            $objects = $objectMapper->searchObjects([
-                '_offset' => $job['offset'],
-                '_limit' => $job['limit'],
-                '_bulk_operation' => true
-            ]);
+            // **IMPROVED**: Fetch only objects with searchable schemas for this batch
+            $objects = $this->fetchSearchableObjects($objectMapper, $job['limit'], $job['offset']);
 
             if (empty($objects)) {
                 return ['success' => true, 'indexed' => 0, 'batchNumber' => $job['batchNumber']];
@@ -4926,10 +5001,13 @@ class GuzzleSolrService
      *
      * @param array $schemas Array of Schema entities (not used in this implementation)
      * @param int   $maxObjects Maximum number of objects to index
+     * @param string $mode Processing mode ('serial', 'parallel', 'hyper')
+     * @param bool $collectErrors Whether to collect all errors or stop on first
+     * @param int $batchSize Number of objects to process per batch
      *
      * @return array Warmup results
      */
-    public function warmupIndex(array $schemas = [], int $maxObjects = 0, string $mode = 'serial', bool $collectErrors = false): array
+    public function warmupIndex(array $schemas = [], int $maxObjects = 0, string $mode = 'serial', bool $collectErrors = false, int $batchSize = 1000): array
     {
         if (!$this->isAvailable()) {
             return [
@@ -5042,11 +5120,11 @@ class GuzzleSolrService
             // 3. Object indexing using mode-based bulk indexing (no logging for performance)
             
             if ($mode === 'hyper') {
-                $indexResult = $this->bulkIndexFromDatabaseOptimized(2000, $maxObjects, $solrFieldTypes ?? []);
+                $indexResult = $this->bulkIndexFromDatabaseOptimized($batchSize, $maxObjects, $solrFieldTypes ?? []);
             } elseif ($mode === 'parallel') {
-                $indexResult = $this->bulkIndexFromDatabaseParallel(1000, $maxObjects, 5, $solrFieldTypes ?? []);
+                $indexResult = $this->bulkIndexFromDatabaseParallel($batchSize, $maxObjects, 5, $solrFieldTypes ?? []);
             } else {
-                $indexResult = $this->bulkIndexFromDatabase(1000, $maxObjects, $solrFieldTypes ?? []);
+                $indexResult = $this->bulkIndexFromDatabase($batchSize, $maxObjects, $solrFieldTypes ?? []);
             }
             
             // Pass collectErrors mode for potential future use
@@ -5264,8 +5342,9 @@ class GuzzleSolrService
         $batchCount = 0;
         
         try {
-            // Get total count efficiently
-            $totalObjects = $this->objectEntityMapper->countAll();
+            // **IMPROVED**: Get count of only searchable objects for more accurate planning
+            $objectMapper = \OC::$server->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+            $totalObjects = $this->countSearchableObjects($objectMapper);
             $actualLimit = $maxObjects > 0 ? min($maxObjects, $totalObjects) : $totalObjects;
             
             $this->logger->info('🚀 Starting optimized bulk indexing', [
@@ -5280,8 +5359,8 @@ class GuzzleSolrService
                 $currentBatchSize = min($batchSize, $actualLimit - $offset);
                 $batchCount++;
                 
-                // Fetch objects efficiently
-                $objects = $this->objectEntityMapper->findAll($currentBatchSize, $offset);
+                // **IMPROVED**: Fetch only objects with searchable schemas
+                $objects = $this->fetchSearchableObjects($objectMapper, $currentBatchSize, $offset);
                 
                 if (empty($objects)) {
                     break;
@@ -7328,10 +7407,15 @@ class GuzzleSolrService
                 
                 // Add to extended data with actual values and resolved labels for metadata fields
                 $formattedData = $this->formatMetadataFacetData($facetData[$solrFieldName], $solrFieldName, $fieldInfo['type']);
-                $contextualData['extended']['@self'][$fieldInfo['name']] = array_merge(
+                $facetResult = array_merge(
                     $fieldInfo,
                     ['data' => $formattedData]
                 );
+                
+                // Apply custom facet configuration
+                $facetResult = $this->applyFacetConfiguration($facetResult, 'self_' . $solrFieldName);
+                
+                $contextualData['extended']['@self'][$fieldInfo['name']] = $facetResult;
             }
         }
         
@@ -7612,9 +7696,17 @@ class GuzzleSolrService
             $settingsService = \OC::$server->get(\OCA\OpenRegister\Service\SettingsService::class);
             $facetConfig = $settingsService->getSolrFacetConfiguration();
             
+            // Convert field name to configuration format if needed
+            $configFieldName = $fieldName;
+            if (str_starts_with($fieldName, 'self_')) {
+                // Convert self_fieldname to @self[fieldname] format for metadata fields
+                $metadataField = substr($fieldName, 5); // Remove 'self_' prefix
+                $configFieldName = "@self[{$metadataField}]";
+            }
+            
             // Check if this field has custom configuration
-            if (isset($facetConfig['facets'][$fieldName])) {
-                $customConfig = $facetConfig['facets'][$fieldName];
+            if (isset($facetConfig['facets'][$configFieldName])) {
+                $customConfig = $facetConfig['facets'][$configFieldName];
                 
                 // Apply custom title
                 if (!empty($customConfig['title'])) {

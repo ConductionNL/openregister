@@ -1919,6 +1919,135 @@ class SettingsController extends Controller
     }
 
     /**
+     * Get SOLR facet configuration with discovery
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Discovered facets merged with current configuration
+     */
+    public function getSolrFacetConfigWithDiscovery(): JSONResponse
+    {
+        try {
+            // Get GuzzleSolrService from container
+            $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+            
+            // Check if SOLR is available
+            if (!$guzzleSolrService->isAvailable()) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'SOLR is not available or not configured',
+                    'facets' => []
+                ], 422);
+            }
+
+            // Get discovered facets
+            $discoveredFacets = $guzzleSolrService->getRawSolrFieldsForFacetConfiguration();
+            
+            // Get existing configuration
+            $existingConfig = $this->settingsService->getSolrFacetConfiguration();
+            $existingFacets = $existingConfig['facets'] ?? [];
+            
+            // Merge discovered facets with existing configuration
+            $mergedFacets = [
+                '@self' => [],
+                'object_fields' => []
+            ];
+            
+            // Process metadata facets
+            if (isset($discoveredFacets['@self'])) {
+                $index = 0;
+                foreach ($discoveredFacets['@self'] as $key => $facetInfo) {
+                    $fieldName = "self_{$key}";
+                    $existingFacetConfig = $existingFacets[$fieldName] ?? [];
+                    
+                    $mergedFacets['@self'][$key] = array_merge($facetInfo, [
+                        'config' => [
+                            'enabled' => $existingFacetConfig['enabled'] ?? true,
+                            'title' => $existingFacetConfig['title'] ?? $facetInfo['displayName'] ?? $key,
+                            'description' => $existingFacetConfig['description'] ?? ($facetInfo['category'] ?? 'metadata') . " field: " . ($facetInfo['displayName'] ?? $key),
+                            'order' => $existingFacetConfig['order'] ?? $index,
+                            'maxItems' => $existingFacetConfig['max_items'] ?? $existingFacetConfig['maxItems'] ?? 10,
+                            'facetType' => $existingFacetConfig['facet_type'] ?? $existingFacetConfig['facetType'] ?? $facetInfo['suggestedFacetType'] ?? 'terms',
+                            'displayType' => $existingFacetConfig['display_type'] ?? $existingFacetConfig['displayType'] ?? ($facetInfo['suggestedDisplayTypes'][0] ?? 'select'),
+                            'showCount' => $existingFacetConfig['show_count'] ?? $existingFacetConfig['showCount'] ?? true,
+                        ]
+                    ]);
+                    $index++;
+                }
+            }
+            
+            // Process object field facets
+            if (isset($discoveredFacets['object_fields'])) {
+                $index = 0;
+                foreach ($discoveredFacets['object_fields'] as $key => $facetInfo) {
+                    $fieldName = $key;
+                    $existingFacetConfig = $existingFacets[$fieldName] ?? [];
+                    
+                    $mergedFacets['object_fields'][$key] = array_merge($facetInfo, [
+                        'config' => [
+                            'enabled' => $existingFacetConfig['enabled'] ?? false,
+                            'title' => $existingFacetConfig['title'] ?? $facetInfo['displayName'] ?? $key,
+                            'description' => $existingFacetConfig['description'] ?? ($facetInfo['category'] ?? 'object') . " field: " . ($facetInfo['displayName'] ?? $key),
+                            'order' => $existingFacetConfig['order'] ?? (100 + $index),
+                            'maxItems' => $existingFacetConfig['max_items'] ?? $existingFacetConfig['maxItems'] ?? 10,
+                            'facetType' => $existingFacetConfig['facet_type'] ?? $existingFacetConfig['facetType'] ?? $facetInfo['suggestedFacetType'] ?? 'terms',
+                            'displayType' => $existingFacetConfig['display_type'] ?? $existingFacetConfig['displayType'] ?? ($facetInfo['suggestedDisplayTypes'][0] ?? 'select'),
+                            'showCount' => $existingFacetConfig['show_count'] ?? $existingFacetConfig['showCount'] ?? true,
+                        ]
+                    ]);
+                    $index++;
+                }
+            }
+            
+            return new JSONResponse([
+                'success' => true,
+                'message' => 'Facets discovered and configured successfully',
+                'facets' => $mergedFacets,
+                'global_settings' => $existingConfig['default_settings'] ?? [
+                    'show_count' => true,
+                    'show_empty' => false,
+                    'max_items' => 10
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Failed to get facet configuration: ' . $e->getMessage(),
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update SOLR facet configuration with discovery
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Updated facet configuration
+     */
+    public function updateSolrFacetConfigWithDiscovery(): JSONResponse
+    {
+        try {
+            $data = $this->request->getParams();
+            $result = $this->settingsService->updateSolrFacetConfiguration($data);
+            
+            return new JSONResponse([
+                'success' => true,
+                'message' => 'Facet configuration updated successfully',
+                'config' => $result
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Failed to update facet configuration: ' . $e->getMessage(),
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Warmup SOLR index
      *
      * @NoAdminRequired
@@ -1955,15 +2084,15 @@ class SettingsController extends Controller
             }
             
             // Validate mode parameter
-            if (!in_array($mode, ['serial', 'parallel'])) {
+            if (!in_array($mode, ['serial', 'parallel', 'hyper'])) {
                 return new JSONResponse([
-                    'error' => 'Invalid mode parameter. Must be "serial" or "parallel"'
+                    'error' => 'Invalid mode parameter. Must be "serial", "parallel", or "hyper"'
                 ], 400);
             }
             
             // Phase 1: Use GuzzleSolrService directly for SOLR operations
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
-            $result = $guzzleSolrService->warmupIndex([], $maxObjects, $mode, $collectErrors);
+            $result = $guzzleSolrService->warmupIndex([], $maxObjects, $mode, $collectErrors, $batchSize);
             return new JSONResponse($result);
         } catch (\Exception $e) {
             // **ERROR VISIBILITY**: Let exceptions bubble up with full details
