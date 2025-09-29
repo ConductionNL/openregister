@@ -2492,7 +2492,9 @@ export default {
 				const url = generateUrl('/apps/openregister/api/solr/discover-facets')
 				const response = await axios.get(url)
 				
-				if (response.data && response.data.facets) {
+				console.log('Discover facets response:', response.data)
+				
+				if (response.data && response.data.success && response.data.facets) {
 					// Store the raw facet data for reference
 					this.availableFacets = response.data.facets
 					
@@ -2553,9 +2555,17 @@ export default {
 					this.availableFacets = allFacets
 					
 					this.$toast.success(`Discovered ${allFacets.length} facets (${Object.keys(response.data.facets['@self'] || {}).length} metadata, ${Object.keys(response.data.facets['object_fields'] || {}).length} object fields)`)
+				} else {
+					console.warn('Invalid response from discover facets API:', response.data)
+					this.$toast.error('Invalid response from facet discovery API')
 				}
 			} catch (error) {
 				console.error('Failed to discover facets:', error)
+				console.error('Error details:', {
+					message: error.message,
+					response: error.response?.data,
+					status: error.response?.status
+				})
 				const errorMessage = error.response?.data?.message || error.message || 'Unknown error occurred'
 				this.$toast.error(`Failed to discover available facets: ${errorMessage}`)
 			} finally {
