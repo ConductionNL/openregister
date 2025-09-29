@@ -1841,6 +1841,84 @@ class SettingsController extends Controller
     }
 
     /**
+     * Get SOLR facet configuration
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse SOLR facet configuration
+     */
+    public function getSolrFacetConfiguration(): JSONResponse
+    {
+        try {
+            $data = $this->settingsService->getSolrFacetConfiguration();
+            return new JSONResponse($data);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Update SOLR facet configuration
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Updated SOLR facet configuration
+     */
+    public function updateSolrFacetConfiguration(): JSONResponse
+    {
+        try {
+            $data = $this->request->getParams();
+            $result = $this->settingsService->updateSolrFacetConfiguration($data);
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Discover available SOLR facets
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Available SOLR facets
+     */
+    public function discoverSolrFacets(): JSONResponse
+    {
+        try {
+            // Get GuzzleSolrService from container
+            $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+            
+            // Check if SOLR is available
+            if (!$guzzleSolrService->isAvailable()) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'SOLR is not available or not configured',
+                    'facets' => []
+                ], 422);
+            }
+
+            // Get raw SOLR field information for facet configuration
+            $facetableFields = $guzzleSolrService->getRawSolrFieldsForFacetConfiguration();
+
+            return new JSONResponse([
+                'success' => true,
+                'message' => 'Facets discovered successfully',
+                'facets' => $facetableFields
+            ]);
+            
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Failed to discover facets: ' . $e->getMessage(),
+                'facets' => []
+            ], 422);
+        }
+    }
+
+    /**
      * Warmup SOLR index
      *
      * @NoAdminRequired

@@ -706,6 +706,11 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 								:checked.sync="schemaItem.immutable">
 								Immutable
 							</NcCheckboxRadioSwitch>
+							<NcCheckboxRadioSwitch
+								:disabled="loading"
+								:checked.sync="schemaItem.searchable">
+								Searchable in SOLR
+							</NcCheckboxRadioSwitch>
 						</div>
 					</BTab>
 					<BTab title="Security">
@@ -993,6 +998,7 @@ export default {
 				authorization: {},
 				hardValidation: false,
 				immutable: false,
+				searchable: true,
 				maxDepth: 0,
 			},
 			createAnother: false,
@@ -1542,6 +1548,7 @@ export default {
 							},
 							hardValidation: false,
 							immutable: false,
+							searchable: true,
 							maxDepth: 0,
 						}
 						this.allowedTagsInput = ''

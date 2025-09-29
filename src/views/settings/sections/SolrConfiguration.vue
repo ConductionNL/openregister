@@ -73,6 +73,13 @@
 							</template>
 							Inspect Index
 						</NcButton>
+						
+						<NcButton type="secondary" @click="openFacetConfigModal">
+							<template #icon>
+								<Tune :size="20" />
+							</template>
+							Configure Facets
+						</NcButton>
 					</template>
 					
 					<NcButton
@@ -1532,6 +1539,164 @@
 			@close="closeDeleteCollectionModal"
 			@deleted="handleCollectionDeleted"
 		/>
+
+		<!-- Facet Configuration Modal -->
+		<NcDialog
+			v-if="showFacetConfigDialog"
+			name="Configure SOLR Facets"
+			:can-close="!savingFacetConfig"
+			@closing="closeFacetConfigModal"
+			:size="'large'">
+			<div class="facet-config-dialog">
+				<div v-if="loadingFacetConfig" class="loading-container">
+					<NcLoadingIcon :size="40" />
+					<p>Loading facet configuration...</p>
+				</div>
+				
+				<div v-else class="facet-config-content">
+					<div class="config-header">
+						<h3>Facet Configuration</h3>
+						<p>Customize how SOLR facets are displayed in search results. You can change titles, descriptions, ordering, and visibility.</p>
+					</div>
+
+					<!-- Global Settings -->
+					<div class="config-section">
+						<h4>Global Settings</h4>
+						<div class="form-row">
+							<NcCheckboxRadioSwitch
+								:checked.sync="facetConfig.default_settings.show_count">
+								Show facet counts by default
+							</NcCheckboxRadioSwitch>
+						</div>
+						<div class="form-row">
+							<NcCheckboxRadioSwitch
+								:checked.sync="facetConfig.default_settings.show_empty">
+								Show empty facets by default
+							</NcCheckboxRadioSwitch>
+						</div>
+						<div class="form-row">
+							<label>Default maximum items per facet:</label>
+							<input 
+								v-model.number="facetConfig.default_settings.max_items" 
+								type="number" 
+								min="1" 
+								max="100" 
+								class="form-input" />
+						</div>
+					</div>
+
+					<!-- Facet Configuration -->
+					<div class="config-section">
+						<h4>Individual Facet Settings</h4>
+						<div v-if="availableFacets.length === 0" class="no-facets">
+							<p>No facets available. Make sure SOLR is configured and has indexed data.</p>
+							<NcButton @click="discoverFacets" :disabled="discoveringFacets">
+								<template #icon>
+									<NcLoadingIcon v-if="discoveringFacets" :size="20" />
+									<Magnify v-else :size="20" />
+								</template>
+								Discover Facets
+							</NcButton>
+						</div>
+						
+						<div v-else class="facets-list">
+							<div v-for="(facet, fieldName) in facetConfig.facets" :key="fieldName" class="facet-item">
+								<div class="facet-header">
+									<h5>{{ fieldName }}</h5>
+									<NcCheckboxRadioSwitch
+										:checked.sync="facet.enabled">
+										Enabled
+									</NcCheckboxRadioSwitch>
+								</div>
+								
+								<div v-if="facet.enabled" class="facet-details">
+									<div class="form-row">
+										<label>Display Title:</label>
+										<input 
+											v-model="facet.title" 
+											type="text" 
+											class="form-input" 
+											:placeholder="fieldName" />
+									</div>
+									
+									<div class="form-row">
+										<label>Description:</label>
+										<textarea 
+											v-model="facet.description" 
+											class="form-textarea" 
+											placeholder="Optional description for this facet"
+											rows="2"></textarea>
+									</div>
+									
+									<div class="form-row">
+										<label>Display Order:</label>
+										<input 
+											v-model.number="facet.order" 
+											type="number" 
+											class="form-input" 
+											min="0" />
+									</div>
+									
+									<div class="form-row">
+										<label>Maximum Items:</label>
+										<input 
+											v-model.number="facet.max_items" 
+											type="number" 
+											min="1" 
+											max="100" 
+											class="form-input" />
+									</div>
+									
+									<div class="form-row">
+										<label>Facet Type:</label>
+										<select v-model="facet.facet_type" class="form-select">
+											<option value="terms">Terms (discrete values)</option>
+											<option value="range">Range (numeric/date ranges)</option>
+											<option value="date_histogram">Date Histogram</option>
+										</select>
+									</div>
+									
+									<div class="form-row">
+										<label>Display Type:</label>
+										<select v-model="facet.display_type" class="form-select">
+											<option value="select">Dropdown Select</option>
+											<option value="multiselect">Multi-Select</option>
+											<option value="checkbox">Checkboxes</option>
+											<option value="radio">Radio Buttons</option>
+											<option value="range">Range Slider</option>
+											<option value="date_range">Date Range Picker</option>
+										</select>
+									</div>
+									
+									<div class="form-row">
+										<NcCheckboxRadioSwitch
+											:checked.sync="facet.show_count">
+											Show item counts
+										</NcCheckboxRadioSwitch>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<template #actions>
+				<NcButton @click="closeFacetConfigModal" :disabled="savingFacetConfig">
+					Cancel
+				</NcButton>
+				<NcButton 
+					type="primary" 
+					@click="saveFacetConfig" 
+					:disabled="savingFacetConfig || loadingFacetConfig">
+					<template #icon>
+						<NcLoadingIcon v-if="savingFacetConfig" :size="20" />
+						<Save v-else :size="20" />
+					</template>
+					Save Configuration
+				</NcButton>
+			</template>
+		</NcDialog>
 	</NcSettingsSection>
 </template>
 
@@ -1551,6 +1716,8 @@ import Delete from 'vue-material-design-icons/Delete.vue'
 import DatabaseRemove from 'vue-material-design-icons/DatabaseRemove.vue'
 import FileSearchOutline from 'vue-material-design-icons/FileSearchOutline.vue'
 import PlayIcon from 'vue-material-design-icons/Play.vue'
+import Tune from 'vue-material-design-icons/Tune.vue'
+import Magnify from 'vue-material-design-icons/Magnify.vue'
 import { SolrWarmupModal, ClearIndexModal } from '../../../modals/settings'
 import InspectIndexModal from '../../../modals/settings/InspectIndexModal.vue'
 import DeleteCollectionModal from '../../../modals/settings/DeleteCollectionModal.vue'
@@ -1579,6 +1746,8 @@ export default {
 		DatabaseRemove,
 		FileSearchOutline,
 		PlayIcon,
+		Tune,
+		Magnify,
 		SolrWarmupModal,
 		ClearIndexModal,
 		InspectIndexModal,
@@ -1631,6 +1800,21 @@ export default {
 			currentLoadingMessage: 'Initializing SOLR setup...',
 			loadingInterval: null,
 			tipIndex: 0,
+			// Facet configuration
+			showFacetConfigDialog: false,
+			loadingFacetConfig: false,
+			savingFacetConfig: false,
+			discoveringFacets: false,
+			facetConfig: {
+				facets: {},
+				global_order: [],
+				default_settings: {
+					show_count: true,
+					show_empty: false,
+					max_items: 10
+				}
+			},
+			availableFacets: [],
 		}
 	},
 
@@ -2232,6 +2416,160 @@ export default {
 				this.$toast.error(`Failed to reindex SOLR: ${errorMessage}`)
 			} finally {
 				this.reindexing = false
+			}
+		},
+
+		/**
+		 * Open facet configuration modal
+		 */
+		async openFacetConfigModal() {
+			this.showFacetConfigDialog = true
+			await this.loadFacetConfiguration()
+		},
+
+		/**
+		 * Close facet configuration modal
+		 */
+		closeFacetConfigModal() {
+			this.showFacetConfigDialog = false
+			this.loadingFacetConfig = false
+			this.savingFacetConfig = false
+		},
+
+		/**
+		 * Load facet configuration from settings
+		 */
+		async loadFacetConfiguration() {
+			this.loadingFacetConfig = true
+			try {
+				const url = generateUrl('/apps/openregister/api/settings/solr-facet-config')
+				const response = await axios.get(url)
+				
+				if (response.data) {
+					this.facetConfig = response.data
+					// Discover available facets if none are configured
+					if (Object.keys(this.facetConfig.facets).length === 0) {
+						await this.discoverFacets()
+					}
+				}
+			} catch (error) {
+				console.error('Failed to load facet configuration:', error)
+				const errorMessage = error.response?.data?.message || error.message || 'Unknown error occurred'
+				this.$toast.error(`Failed to load facet configuration: ${errorMessage}`)
+			} finally {
+				this.loadingFacetConfig = false
+			}
+		},
+
+		/**
+		 * Save facet configuration
+		 */
+		async saveFacetConfig() {
+			this.savingFacetConfig = true
+			try {
+				const url = generateUrl('/apps/openregister/api/settings/solr-facet-config')
+				const response = await axios.post(url, this.facetConfig)
+				
+				if (response.data) {
+					this.$toast.success('Facet configuration saved successfully')
+					this.closeFacetConfigModal()
+				}
+			} catch (error) {
+				console.error('Failed to save facet configuration:', error)
+				const errorMessage = error.response?.data?.message || error.message || 'Unknown error occurred'
+				this.$toast.error(`Failed to save facet configuration: ${errorMessage}`)
+			} finally {
+				this.savingFacetConfig = false
+			}
+		},
+
+		/**
+		 * Discover available facets from SOLR
+		 */
+		async discoverFacets() {
+			this.discoveringFacets = true
+			try {
+				const url = generateUrl('/apps/openregister/api/solr/discover-facets')
+				const response = await axios.get(url)
+				
+				console.log('Discover facets response:', response.data)
+				
+				if (response.data && response.data.success && response.data.facets) {
+					// Store the raw facet data for reference
+					this.availableFacets = response.data.facets
+					
+					// Process both @self (metadata) and object_fields facets
+					const allFacets = []
+					
+					// Process metadata facets (@self)
+					if (response.data.facets['@self']) {
+						Object.entries(response.data.facets['@self']).forEach(([key, facetInfo]) => {
+							const fieldName = `@self[${key}]` // Use query parameter format
+							allFacets.push({
+								fieldName,
+								...facetInfo
+							})
+							
+							// Initialize facet configuration if not exists
+							if (!this.facetConfig.facets[fieldName]) {
+								this.$set(this.facetConfig.facets, fieldName, {
+									title: facetInfo.displayName || key,
+									description: `${facetInfo.category} field: ${facetInfo.displayName}`,
+									order: 0,
+									enabled: true,
+									show_count: true,
+									max_items: 10,
+									display_type: facetInfo.suggestedDisplayTypes?.[0] || 'select',
+									facet_type: facetInfo.suggestedFacetType || 'terms'
+								})
+							}
+						})
+					}
+					
+					// Process object fields
+					if (response.data.facets['object_fields']) {
+						Object.entries(response.data.facets['object_fields']).forEach(([key, facetInfo]) => {
+							const fieldName = key // Object fields use direct field name
+							allFacets.push({
+								fieldName,
+								...facetInfo
+							})
+							
+							// Initialize facet configuration if not exists
+							if (!this.facetConfig.facets[fieldName]) {
+								this.$set(this.facetConfig.facets, fieldName, {
+									title: facetInfo.displayName || key,
+									description: `${facetInfo.category} field: ${facetInfo.displayName}`,
+									order: 100, // Object fields come after metadata fields
+									enabled: false, // Disable by default to avoid clutter
+									show_count: true,
+									max_items: 10,
+									display_type: facetInfo.suggestedDisplayTypes?.[0] || 'select',
+									facet_type: facetInfo.suggestedFacetType || 'terms'
+								})
+							}
+						})
+					}
+					
+					// Update availableFacets to be an array for the template check
+					this.availableFacets = allFacets
+					
+					this.$toast.success(`Discovered ${allFacets.length} facets (${Object.keys(response.data.facets['@self'] || {}).length} metadata, ${Object.keys(response.data.facets['object_fields'] || {}).length} object fields)`)
+				} else {
+					console.warn('Invalid response from discover facets API:', response.data)
+					this.$toast.error('Invalid response from facet discovery API')
+				}
+			} catch (error) {
+				console.error('Failed to discover facets:', error)
+				console.error('Error details:', {
+					message: error.message,
+					response: error.response?.data,
+					status: error.response?.status
+				})
+				const errorMessage = error.response?.data?.message || error.message || 'Unknown error occurred'
+				this.$toast.error(`Failed to discover available facets: ${errorMessage}`)
+			} finally {
+				this.discoveringFacets = false
 			}
 		},
 	},
@@ -4351,5 +4689,140 @@ export default {
 
 .propagation-technical summary:hover {
 	color: var(--color-primary-hover);
+}
+
+/* Facet Configuration Modal Styles */
+.facet-config-dialog {
+	padding: 20px;
+	max-height: 70vh;
+	overflow-y: auto;
+}
+
+.config-header {
+	margin-bottom: 30px;
+}
+
+.config-header h3 {
+	margin: 0 0 10px 0;
+	color: var(--color-text-dark);
+}
+
+.config-header p {
+	margin: 0;
+	color: var(--color-text-lighter);
+}
+
+.config-section {
+	margin-bottom: 30px;
+	padding: 20px;
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+	background: var(--color-background-hover);
+}
+
+.config-section h4 {
+	margin: 0 0 20px 0;
+	color: var(--color-text-dark);
+	font-size: 16px;
+}
+
+.form-row {
+	margin-bottom: 15px;
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+}
+
+.form-row label {
+	font-weight: 600;
+	color: var(--color-text-dark);
+}
+
+.form-input {
+	padding: 8px 12px;
+	border: 1px solid var(--color-border);
+	border-radius: 4px;
+	background: var(--color-main-background);
+	color: var(--color-text-dark);
+}
+
+.form-select {
+	padding: 8px 12px;
+	border: 1px solid var(--color-border);
+	border-radius: 4px;
+	background: var(--color-main-background);
+	color: var(--color-text-dark);
+	cursor: pointer;
+}
+
+.form-select:focus {
+	outline: none;
+	border-color: var(--color-primary);
+	box-shadow: 0 0 0 2px rgba(var(--color-primary), 0.2);
+}
+
+.form-textarea {
+	padding: 8px 12px;
+	border: 1px solid var(--color-border);
+	border-radius: 4px;
+	background: var(--color-main-background);
+	color: var(--color-text-dark);
+	resize: vertical;
+	font-family: inherit;
+}
+
+.no-facets {
+	text-align: center;
+	padding: 40px 20px;
+	color: var(--color-text-lighter);
+}
+
+.facets-list {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+.facet-item {
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+	padding: 15px;
+	background: var(--color-main-background);
+}
+
+.facet-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 15px;
+}
+
+.facet-header h5 {
+	margin: 0;
+	color: var(--color-text-dark);
+	font-family: monospace;
+	background: var(--color-background-dark);
+	padding: 4px 8px;
+	border-radius: 4px;
+	font-size: 14px;
+}
+
+.facet-details {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 15px;
+}
+
+.facet-details .form-row:last-child {
+	grid-column: 1 / -1;
+}
+
+.loading-container {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 40px;
+	color: var(--color-text-lighter);
 }
 </style>

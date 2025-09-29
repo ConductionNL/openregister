@@ -216,6 +216,17 @@ class Schema extends Entity implements JsonSerializable
     protected bool $immutable = false;
 
     /**
+     * Whether objects of this schema should be indexed in SOLR for searching
+     *
+     * When set to false, objects of this schema will be excluded from SOLR indexing,
+     * making them unsearchable through the search functionality but still accessible
+     * through direct API calls.
+     *
+     * @var boolean Whether this schema should be searchable (default: true)
+     */
+    protected bool $searchable = true;
+
+    /**
      * An array defining group-based permissions for CRUD actions.
      * The keys are the CRUD actions ('create', 'read', 'update', 'delete'),
      * and the values are arrays of group IDs that are permitted to perform that action.
@@ -259,6 +270,7 @@ class Schema extends Entity implements JsonSerializable
         $this->addType(fieldName: 'source', type: 'string');
         $this->addType(fieldName: 'hardValidation', type: Types::BOOLEAN);
         $this->addType(fieldName: 'immutable', type: Types::BOOLEAN);
+        $this->addType(fieldName: 'searchable', type: Types::BOOLEAN);
         $this->addType(fieldName: 'updated', type: 'datetime');
         $this->addType(fieldName: 'created', type: 'datetime');
         $this->addType(fieldName: 'maxDepth', type: Types::INTEGER);
@@ -647,6 +659,7 @@ class Schema extends Entity implements JsonSerializable
             'source'         => $this->source,
             'hardValidation' => $this->hardValidation,
             'immutable'      => $this->immutable,
+            'searchable'     => $this->searchable,
         // @todo: should be refactored to strict
             'updated'        => $updated,
             'created'        => $created,
@@ -937,6 +950,33 @@ class Schema extends Entity implements JsonSerializable
         $this->markFieldUpdated('configuration');
 
     }//end setConfiguration()
+
+
+    /**
+     * Get whether this schema should be searchable in SOLR
+     *
+     * @return bool True if schema objects should be indexed in SOLR
+     */
+    public function getSearchable(): bool
+    {
+        return $this->searchable;
+
+    }//end getSearchable()
+
+
+    /**
+     * Set whether this schema should be searchable in SOLR
+     *
+     * @param bool $searchable Whether schema objects should be indexed in SOLR
+     *
+     * @return void
+     */
+    public function setSearchable(bool $searchable): void
+    {
+        $this->searchable = $searchable;
+        $this->markFieldUpdated('searchable');
+
+    }//end setSearchable()
 
 
     /**

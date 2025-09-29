@@ -449,10 +449,7 @@ class ObjectEntityMapper extends QBMapper
             return true;
         }
 
-        // Check if object is published (for read access)
-        if ($action === 'read' && $this->isObjectPublished($object)) {
-            return true;
-        }
+        // Removed automatic published object access - this should be handled via explicit published filter
 
         // Check schema-level permissions
         if ($schema !== null && $this->checkSchemaPermission($userId, $action, $schema)) {
@@ -678,19 +675,7 @@ class ObjectEntityMapper extends QBMapper
             );
         }
 
-        // 5. Object is currently published (publication-based public access)
-        // Objects are publicly accessible if published date has passed and depublished date hasn't
-        $now = (new \DateTime())->format('Y-m-d H:i:s');
-        $readConditions->add(
-            $qb->expr()->andX(
-                $qb->expr()->isNotNull("{$objectTableAlias}.published"),
-                $qb->expr()->lte("{$objectTableAlias}.published", $qb->createNamedParameter($now)),
-                $qb->expr()->orX(
-                    $qb->expr()->isNull("{$objectTableAlias}.depublished"),
-                    $qb->expr()->gt("{$objectTableAlias}.depublished", $qb->createNamedParameter($now))
-                )
-            )
-        );
+        // Removed automatic published object access from RBAC - this should be handled via explicit published filter
 
         $qb->andWhere($readConditions);
         
@@ -728,18 +713,7 @@ class ObjectEntityMapper extends QBMapper
         $userId = $user ? $user->getUID() : null;
 
         if ($userId === null) {
-            // For unauthenticated requests, show objects that are currently published
-            $now = (new \DateTime())->format('Y-m-d H:i:s');
-            $qb->andWhere(
-                $qb->expr()->andX(
-                    $qb->expr()->isNotNull("{$objectTableAlias}.published"),
-                    $qb->expr()->lte("{$objectTableAlias}.published", $qb->createNamedParameter($now)),
-                    $qb->expr()->orX(
-                        $qb->expr()->isNull("{$objectTableAlias}.depublished"),
-                        $qb->expr()->gt("{$objectTableAlias}.depublished", $qb->createNamedParameter($now))
-                    )
-                )
-            );
+            // For unauthenticated requests, no automatic published object access - use explicit published filter
             return;
         }
 
