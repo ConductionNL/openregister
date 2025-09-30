@@ -666,6 +666,14 @@ class ObjectService
             // Log error but continue - object can function without folder
         }
 
+        if($register === null) {
+            $register = $this->currentRegister;
+        }
+
+        if($schema === null) {
+            $schema = $this->currentSchema;
+        }
+
         // Save the object using the current register and schema with folder ID
         $savedObject = $this->saveObject(
             object: $object,
@@ -674,6 +682,10 @@ class ObjectService
             uuid: $tempObject->getUuid(),
         // $folderId
         );
+
+        // Fallback for the case that someone unsets register and schema
+        $this->setRegister($register);
+        $this->setSchema($schema);
 
         // Render and return the saved object.
         return $this->renderHandler->renderEntity(
