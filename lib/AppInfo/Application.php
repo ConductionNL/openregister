@@ -48,6 +48,7 @@ use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\SolrService;
 use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\AiService;
 use OCA\OpenRegister\Service\SolrSchemaService;
 use OCA\OpenRegister\Setup\SolrSetup;
 use OCA\OpenRegister\Service\SchemaCacheService;
@@ -232,7 +233,20 @@ class Application extends App implements IBootstrap
                 );
 
 
-        // Register SaveObject with consolidated cache services
+        // Register AiService for AI functionality
+        $context->registerService(
+                AiService::class,
+                function ($container) {
+                    return new AiService(
+                        $container->get('OCP\IAppConfig'),
+                        $container->get('OCP\IConfig'),
+                        $container->get('Psr\Log\LoggerInterface'),
+                        $container->get(SettingsService::class)
+                    );
+                }
+        );
+
+        // Register SaveObject with consolidated cache services and AI service
         $context->registerService(
                 SaveObject::class,
                 function ($container) {
@@ -248,6 +262,7 @@ class Application extends App implements IBootstrap
                     $container->get(ObjectCacheService::class),
                     $container->get(SchemaCacheService::class),
                     $container->get(SchemaFacetCacheService::class),
+                    $container->get(AiService::class),
                     $container->get('Psr\Log\LoggerInterface'),
                     new \Twig\Loader\ArrayLoader([])
                     );

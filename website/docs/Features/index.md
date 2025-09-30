@@ -18,7 +18,7 @@ One of the most powerful aspects of Open Register is how its core concepts inter
 
 ## Relationship Overview
 
-The core entities in Open Register - Registers, Schemas, Objects, Files, Sources, and Events - form an interconnected system:
+The core entities in Open Register - Registers, Schemas, Objects, Files, Sources, Events, and AI functionality - form an interconnected system:
 
 ```mermaid
 architecture-beta
@@ -415,6 +415,61 @@ The dashboard sidebar now interacts with the dashboard store in a reactive way. 
 - This ensures the dashboard always reflects the current selection in the sidebar, with no need for manual synchronization.
 
 This approach improves maintainability and ensures a single source of truth for the active register and schema throughout the application.
+
+## AI-Object Relationship
+
+OpenRegister integrates AI functionality to enhance objects with automatic text generation and vector embeddings:
+
+### How AI Enhances Objects
+
+- Objects can have AI-generated text representations stored in the 'text' field
+- Objects can have vector embeddings stored in the 'embedding' field for semantic search
+- AI processing is configurable and can be automatic or manual
+- Multiple AI providers are supported through the LLPhant framework
+
+### Example
+
+```json
+// Object with AI enhancements
+{
+  'id': 'document-12345',
+  'register': 'document-register',
+  'schema': 'document',
+  'object': {
+    'title': 'Annual Report',
+    'content': 'This report contains...'
+  },
+  'text': 'Annual Report: This comprehensive document contains financial data, performance metrics, and strategic insights for the fiscal year...',
+  'embedding': [0.1234, -0.5678, 0.9012, 0.3456, ...], // 1536-dimensional vector
+  // other properties...
+}
+```
+
+### AI Processing Flow
+
+```mermaid
+graph TD
+    ObjectSave[Object Save] -->|triggers| AiProcessor[AI Processor]
+    AiProcessor -->|generates| TextRepresentation[Text Representation]
+    AiProcessor -->|creates| VectorEmbedding[Vector Embedding]
+    TextRepresentation -->|stored in| TextField[text field]
+    VectorEmbedding -->|stored in| EmbeddingField[embedding field]
+    EmbeddingField -->|enables| SemanticSearch[Semantic Search]
+    TextField -->|improves| FullTextSearch[Full-Text Search]
+```
+
+### Design Considerations
+
+When designing AI integration:
+
+1. **Provider Selection**: Choose appropriate AI provider based on requirements, cost, and privacy
+2. **Model Configuration**: Select suitable language and embedding models for your use case
+3. **Processing Strategy**: Decide between automatic and manual AI processing
+4. **Performance**: Consider batch processing for large datasets
+5. **Cost Management**: Monitor API usage and implement appropriate limits
+6. **Data Privacy**: Ensure compliance with privacy requirements when using external AI services
+
+For detailed AI configuration and usage, see [AI Functionality](ai-functionality.md).
 
 ## Conclusion
 

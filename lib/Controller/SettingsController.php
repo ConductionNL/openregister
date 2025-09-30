@@ -2313,6 +2313,61 @@ class SettingsController extends Controller
     }
 
     /**
+     * Get AI settings only
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse AI configuration
+     */
+    public function getAiSettings(): JSONResponse
+    {
+        try {
+            $data = $this->settingsService->getAiSettingsOnly();
+            return new JSONResponse($data);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Update AI settings only
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Updated AI configuration
+     */
+    public function updateAiSettings(): JSONResponse
+    {
+        try {
+            $data = $this->request->getParams();
+            $result = $this->settingsService->updateAiSettingsOnly($data);
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Test AI connection with current settings
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse AI connection test results
+     */
+    public function testAiConnection(): JSONResponse
+    {
+        try {
+            $result = $this->settingsService->testAiConnection();
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * Test schema-aware SOLR mapping by indexing sample objects
      *
      * @NoAdminRequired

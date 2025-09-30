@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\ObjectCacheService;
 use OCA\OpenRegister\Service\SchemaCacheService;
 use OCA\OpenRegister\Service\SchemaFacetCacheService;
+use OCA\OpenRegister\Service\AiService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -121,6 +122,7 @@ class SaveObject
      * @param ObjectCacheService        $objectCacheService        Object cache service for entity and query caching.
      * @param SchemaCacheService        $schemaCacheService        Schema cache service for schema entity caching.
      * @param SchemaFacetCacheService   $schemaFacetCacheService   Schema facet cache service for facet caching.
+     * @param AiService                 $aiService                AI service for AI-powered content enrichment.
      * @param LoggerInterface          $logger                   Logger interface for logging operations.
      * @param ArrayLoader              $arrayLoader              Twig array loader for template rendering.
      */
@@ -136,6 +138,7 @@ class SaveObject
         private readonly ObjectCacheService $objectCacheService,
         private readonly SchemaCacheService $schemaCacheService,
         private readonly SchemaFacetCacheService $schemaFacetCacheService,
+        private readonly AiService $aiService,
         private readonly LoggerInterface $logger,
         ArrayLoader $arrayLoader,
     ) {
@@ -605,6 +608,51 @@ class SaveObject
                     ]);
                 }
             }
+        }
+
+        // AI Enrichment: Generate text representation and embedding if AI is enabled
+        try {
+            if ($this->aiService->isAiEnabled()) {
+                // Prepare object data for AI enrichment
+                $enrichmentData = [
+                    'id' => $entity->getUuid(),
+                    'name' => $entity->getName(),
+                    'description' => $entity->getDescription(),
+                    'summary' => $entity->getSummary(),
+                ];
+
+                // Generate text representation from name, summary, and description
+                $textRepresentation = $this->aiService->generateTextRepresentation($enrichmentData);
+                if (!empty($textRepresentation)) {
+                    $entity->setText($textRepresentation);
+                    
+                    // Generate embedding for the text representation
+                    try {
+                        $embedding = $this->aiService->generateEmbedding($textRepresentation);
+                        if (!empty($embedding)) {
+                            $entity->setEmbedding($embedding);
+                        }
+                    } catch (\Exception $e) {
+                        $this->logger->warning('Failed to generate embedding for object', [
+                            'object_id' => $entity->getUuid(),
+                            'error' => $e->getMessage()
+                        ]);
+                        // Continue without embedding if generation fails
+                    }
+                }
+
+                $this->logger->debug('AI enrichment completed for object', [
+                    'object_id' => $entity->getUuid(),
+                    'text_length' => strlen($textRepresentation ?? ''),
+                    'has_embedding' => !empty($entity->getEmbedding())
+                ]);
+            }
+        } catch (\Exception $e) {
+            $this->logger->warning('AI enrichment failed for object', [
+                'object_id' => $entity->getUuid(),
+                'error' => $e->getMessage()
+            ]);
+            // Continue without AI enrichment if it fails
         }
 
     }//end hydrateObjectMetadata()

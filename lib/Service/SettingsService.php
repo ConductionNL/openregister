@@ -329,6 +329,41 @@ class SettingsService
                 ];
             }//end if
 
+            // AI Settings with defaults
+            $aiConfig = $this->config->getValueString($this->appName, 'ai', '');
+            if (empty($aiConfig)) {
+                $data['ai'] = [
+                    'enabled' => false,
+                    'provider' => 'openai',
+                    'host' => '',
+                    'port' => 443,
+                    'apiKey' => '',
+                    'model' => 'gpt-3.5-turbo',
+                    'embeddingModel' => 'text-embedding-ada-002',
+                    'embeddingDimensions' => 1536,
+                    'maxTokens' => 150,
+                    'temperature' => 0.7,
+                    'timeout' => 30,
+                    'autoEnrichObjects' => true,
+                ];
+            } else {
+                $aiData = json_decode($aiConfig, true);
+                $data['ai'] = [
+                    'enabled' => $aiData['enabled'] ?? false,
+                    'provider' => $aiData['provider'] ?? 'openai',
+                    'host' => $aiData['host'] ?? '',
+                    'port' => $aiData['port'] ?? 443,
+                    'apiKey' => $aiData['apiKey'] ?? '',
+                    'model' => $aiData['model'] ?? 'gpt-3.5-turbo',
+                    'embeddingModel' => $aiData['embeddingModel'] ?? 'text-embedding-ada-002',
+                    'embeddingDimensions' => $aiData['embeddingDimensions'] ?? 1536,
+                    'maxTokens' => $aiData['maxTokens'] ?? 150,
+                    'temperature' => $aiData['temperature'] ?? 0.7,
+                    'timeout' => $aiData['timeout'] ?? 30,
+                    'autoEnrichObjects' => $aiData['autoEnrichObjects'] ?? true,
+                ];
+            }//end if
+
             return $data;
         } catch (\Exception $e) {
             throw new \RuntimeException('Failed to retrieve settings: '.$e->getMessage());
@@ -482,6 +517,26 @@ class SettingsService
                     'useCloud'       => $solrData['useCloud'] ?? true,
                 ];
                 $this->config->setValueString($this->appName, 'solr', json_encode($solrConfig));
+            }
+
+            // Handle AI settings
+            if (isset($data['ai'])) {
+                $aiData = $data['ai'];
+                $aiConfig = [
+                    'enabled' => $aiData['enabled'] ?? false,
+                    'provider' => $aiData['provider'] ?? 'openai',
+                    'host' => $aiData['host'] ?? '',
+                    'port' => (int) ($aiData['port'] ?? 443),
+                    'apiKey' => $aiData['apiKey'] ?? '',
+                    'model' => $aiData['model'] ?? 'gpt-3.5-turbo',
+                    'embeddingModel' => $aiData['embeddingModel'] ?? 'text-embedding-ada-002',
+                    'embeddingDimensions' => (int) ($aiData['embeddingDimensions'] ?? 1536),
+                    'maxTokens' => (int) ($aiData['maxTokens'] ?? 150),
+                    'temperature' => (float) ($aiData['temperature'] ?? 0.7),
+                    'timeout' => (int) ($aiData['timeout'] ?? 30),
+                    'autoEnrichObjects' => $aiData['autoEnrichObjects'] ?? true,
+                ];
+                $this->config->setValueString($this->appName, 'ai', json_encode($aiConfig));
             }
 
             // Return the updated settings
@@ -2711,6 +2766,141 @@ class SettingsService
             ];
         } catch (\Exception $e) {
             throw new \RuntimeException('Failed to retrieve version information: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Get AI settings only
+     *
+     * @return array AI configuration
+     * @throws \RuntimeException If AI settings retrieval fails
+     */
+    public function getAiSettingsOnly(): array
+    {
+        try {
+            $aiConfig = $this->config->getValueString($this->appName, 'ai', '');
+            
+            if (empty($aiConfig)) {
+                return [
+                    'enabled' => false,
+                    'provider' => 'openai',
+                    'host' => '',
+                    'port' => 443,
+                    'apiKey' => '',
+                    'model' => 'gpt-3.5-turbo',
+                    'embeddingModel' => 'text-embedding-ada-002',
+                    'embeddingDimensions' => 1536,
+                    'maxTokens' => 150,
+                    'temperature' => 0.7,
+                    'timeout' => 30,
+                    'autoEnrichObjects' => true,
+                ];
+            }
+
+            $aiData = json_decode($aiConfig, true);
+            return [
+                'enabled' => $aiData['enabled'] ?? false,
+                'provider' => $aiData['provider'] ?? 'openai',
+                'host' => $aiData['host'] ?? '',
+                'port' => $aiData['port'] ?? 443,
+                'apiKey' => $aiData['apiKey'] ?? '',
+                'model' => $aiData['model'] ?? 'gpt-3.5-turbo',
+                'embeddingModel' => $aiData['embeddingModel'] ?? 'text-embedding-ada-002',
+                'embeddingDimensions' => $aiData['embeddingDimensions'] ?? 1536,
+                'maxTokens' => $aiData['maxTokens'] ?? 150,
+                'temperature' => $aiData['temperature'] ?? 0.7,
+                'timeout' => $aiData['timeout'] ?? 30,
+                'autoEnrichObjects' => $aiData['autoEnrichObjects'] ?? true,
+            ];
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to retrieve AI settings: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Update AI settings only
+     *
+     * @param array $aiData AI configuration data
+     * @return array Updated AI configuration
+     * @throws \RuntimeException If AI settings update fails
+     */
+    public function updateAiSettingsOnly(array $aiData): array
+    {
+        try {
+            $aiConfig = [
+                'enabled' => $aiData['enabled'] ?? false,
+                'provider' => $aiData['provider'] ?? 'openai',
+                'host' => $aiData['host'] ?? '',
+                'port' => (int) ($aiData['port'] ?? 443),
+                'apiKey' => $aiData['apiKey'] ?? '',
+                'model' => $aiData['model'] ?? 'gpt-3.5-turbo',
+                'embeddingModel' => $aiData['embeddingModel'] ?? 'text-embedding-ada-002',
+                'embeddingDimensions' => (int) ($aiData['embeddingDimensions'] ?? 1536),
+                'maxTokens' => (int) ($aiData['maxTokens'] ?? 150),
+                'temperature' => (float) ($aiData['temperature'] ?? 0.7),
+                'timeout' => (int) ($aiData['timeout'] ?? 30),
+                'autoEnrichObjects' => $aiData['autoEnrichObjects'] ?? true,
+            ];
+            
+            $this->config->setValueString($this->appName, 'ai', json_encode($aiConfig));
+            return $aiConfig;
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to update AI settings: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Test AI connection with current settings
+     *
+     * @return array Connection test results with status and details
+     */
+    public function testAiConnection(): array
+    {
+        try {
+            $aiSettings = $this->getAiSettingsOnly();
+            
+            if (!$aiSettings['enabled']) {
+                return [
+                    'success' => false,
+                    'message' => 'AI is disabled in settings',
+                    'details' => []
+                ];
+            }
+
+            // For now, return a simple validation of settings
+            // TODO: Implement actual AI connection testing when AiService is created
+            $requiredFields = [];
+            if (empty($aiSettings['apiKey']) && $aiSettings['provider'] !== 'ollama') {
+                $requiredFields[] = 'apiKey';
+            }
+            if (empty($aiSettings['model'])) {
+                $requiredFields[] = 'model';
+            }
+
+            if (!empty($requiredFields)) {
+                return [
+                    'success' => false,
+                    'message' => 'Missing required AI configuration fields: ' . implode(', ', $requiredFields),
+                    'details' => ['missing_fields' => $requiredFields]
+                ];
+            }
+
+            return [
+                'success' => true,
+                'message' => 'AI configuration appears valid',
+                'details' => [
+                    'provider' => $aiSettings['provider'],
+                    'model' => $aiSettings['model'],
+                    'embedding_model' => $aiSettings['embeddingModel'],
+                    'auto_enrich' => $aiSettings['autoEnrichObjects']
+                ]
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'AI connection test failed: ' . $e->getMessage(),
+                'details' => ['exception' => $e->getMessage()]
+            ];
         }
     }
 

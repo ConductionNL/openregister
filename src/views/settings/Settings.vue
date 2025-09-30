@@ -44,6 +44,9 @@
 
 		<!-- SOLR Configuration Section -->
 		<SolrConfiguration />
+
+		<!-- AI Configuration Section -->
+		<AiConfiguration />
 	</div>
 </template>
 
@@ -59,6 +62,7 @@ import CacheManagement from './sections/CacheManagement.vue'
 import RbacConfiguration from './sections/RbacConfiguration.vue'
 import MultitenancyConfiguration from './sections/MultitenancyConfiguration.vue'
 import RetentionConfiguration from './sections/RetentionConfiguration.vue'
+import AiConfiguration from './sections/AiConfiguration.vue'
 
 /**
  * @class Settings
@@ -86,6 +90,7 @@ export default {
 		RbacConfiguration,
 		MultitenancyConfiguration,
 		RetentionConfiguration,
+		AiConfiguration,
 	},
 
 	computed: {

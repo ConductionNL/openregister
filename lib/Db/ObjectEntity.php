@@ -340,6 +340,31 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     protected ?DateTime $expires = null;
 
+    /**
+     * AI-generated text representation of the object for search and analysis
+     *
+     * This field stores a searchable text representation of the object's content,
+     * which can be used for full-text search, AI analysis, and content processing.
+     * The text is automatically generated from the object's data during save operations.
+     *
+     * @var string|null AI-generated text representation of the object
+     */
+    protected ?string $text = null;
+
+    /**
+     * AI-generated vector embedding of the object for semantic search
+     *
+     * This field stores a vector representation of the object's content for semantic
+     * similarity searches, AI-powered recommendations, and advanced analytics.
+     * The embedding is automatically generated from the object's text representation.
+     *
+     * Format: JSON array of floating-point numbers representing the vector dimensions
+     * Example: [0.1234, -0.5678, 0.9012, ...]
+     *
+     * @var array|null AI-generated vector embedding as JSON array
+     */
+    protected ?array $embedding = null;
+
 
     /**
      * Initialize the entity and define field types
@@ -377,6 +402,8 @@ class ObjectEntity extends Entity implements JsonSerializable
         $this->addType(fieldName: 'depublished', type: 'datetime');
         $this->addType(fieldName: 'groups', type: 'json');
         $this->addType(fieldName: 'expires', type: 'datetime');
+        $this->addType(fieldName: 'text', type: 'string');
+        $this->addType(fieldName: 'embedding', type: 'json');
 
     }//end __construct()
 
@@ -469,6 +496,30 @@ class ObjectEntity extends Entity implements JsonSerializable
         return $this->validation;
 
     }//end getValidation()
+
+
+    /**
+     * Get the AI-generated text representation of the object
+     *
+     * @return string|null The text representation or null if not generated
+     */
+    public function getText(): ?string
+    {
+        return $this->text;
+
+    }//end getText()
+
+
+    /**
+     * Get the AI-generated vector embedding of the object
+     *
+     * @return array|null The vector embedding as JSON array or null if not generated
+     */
+    public function getEmbedding(): ?array
+    {
+        return $this->embedding;
+
+    }//end getEmbedding()
 
 
     /**
@@ -609,6 +660,9 @@ class ObjectEntity extends Entity implements JsonSerializable
             'published'     => $this->getFormattedDate($this->published),
             'depublished'   => $this->getFormattedDate($this->depublished),
             'deleted'       => $this->deleted,
+            'text'          => $this->text,
+            'embedding'     => $this->embedding,
+            'expires'       => $this->getFormattedDate($this->expires),
         ];
 
         // Check for '@self' in the provided object array (this is the case if the object metadata is extended).
