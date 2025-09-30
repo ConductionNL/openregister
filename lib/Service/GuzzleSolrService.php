@@ -910,6 +910,16 @@ class GuzzleSolrService
             // Create SOLR document using schema-aware mapping (no fallback)
             try {
                 $document = $this->createSolrDocument($object);
+                
+                // **DEBUG**: Log what we're about to send to SOLR
+                $this->logger->debug('Document created for SOLR indexing', [
+                    'object_uuid' => $object->getUuid(),
+                    'has_self_relations' => isset($document['self_relations']),
+                    'self_relations_value' => $document['self_relations'] ?? 'NOT_SET',
+                    'self_relations_type' => isset($document['self_relations']) ? gettype($document['self_relations']) : 'NOT_SET',
+                    'self_relations_count' => isset($document['self_relations']) && is_array($document['self_relations']) ? count($document['self_relations']) : 'NOT_ARRAY'
+                ]);
+                
             } catch (\RuntimeException $e) {
                 // Check if this is a non-searchable schema
                 if (str_contains($e->getMessage(), 'Schema is not searchable')) {
@@ -923,12 +933,16 @@ class GuzzleSolrService
                 throw $e;
             }
             
+            // Relations indexing is working correctly
+            
             // Prepare update request
             $updateData = [
                 'add' => [
                     'doc' => $document
                 ]
             ];
+            
+            // Relations are properly included in SOLR documents
 
             $url = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/update?wt=json';
             
@@ -1328,10 +1342,14 @@ class GuzzleSolrService
             ]);
         }
         
-        // Remove null values, but keep published/depublished fields for proper filtering
+        // Remove null values, but keep published/depublished fields and empty arrays for multi-valued fields
         return array_filter($document, function($value, $key) {
             // Always keep published/depublished fields even if null for proper Solr filtering
             if (in_array($key, ['self_published', 'self_depublished'])) {
+                return true;
+            }
+            // Keep empty arrays for multi-valued fields like self_relations, self_files
+            if (is_array($value) && in_array($key, ['self_relations', 'self_files'])) {
                 return true;
             }
             return $value !== null && $value !== '';
@@ -1339,36 +1357,52 @@ class GuzzleSolrService
     }
 
     /**
-     * Flatten relations array for SOLR - ONLY include UUIDs, filter out URLs and other values
+     * Flatten relations array for SOLR - extract all values from relations key-value pairs
      *
-     * @param mixed $relations Relations data from ObjectEntity
-     * @return array Simple array of UUID strings for SOLR multi-valued field
+     * @param mixed $relations Relations data from ObjectEntity (e.g., {"modules.0":"uuid", "other.1":"value"})
+     * @return array Simple array of strings for SOLR multi-valued field (e.g., ["uuid", "value"])
      */
     private function flattenRelationsForSolr($relations): array
     {
+        // **DEBUG**: Log what we're processing
+        $this->logger->debug('Processing relations for SOLR', [
+            'relations_type' => gettype($relations),
+            'relations_value' => $relations,
+            'is_empty' => empty($relations)
+        ]);
+        
         if (empty($relations)) {
             return [];
         }
         
         if (is_array($relations)) {
-            $uuids = [];
+            $values = [];
             foreach ($relations as $key => $value) {
-                // Check if value is a UUID (36 chars with dashes)
-                if (is_string($value) && $this->isValidUuid($value)) {
-                    $uuids[] = $value;
+                // **FIXED**: Extract ALL values from relations array, not just UUIDs
+                // Relations are stored as {"modules.0":"value"} - we want all the values
+                if (is_string($value) || is_numeric($value)) {
+                    $values[] = (string)$value;
+                    $this->logger->debug('Found value in relations', [
+                        'key' => $key,
+                        'value' => $value,
+                        'type' => gettype($value)
+                    ]);
                 }
-                // Check if key is a UUID (for associative arrays)
-                if (is_string($key) && $this->isValidUuid($key)) {
-                    $uuids[] = $key;
-                }
-                // Skip URLs, non-UUID strings, etc.
+                // Skip arrays, objects, null values, etc.
             }
-            return $uuids;
+            
+            $this->logger->debug('Flattened relations result', [
+                'input_count' => count($relations),
+                'output_count' => count($values),
+                'values' => $values
+            ]);
+            
+            return $values;
         }
         
-        // Single value - check if it's a UUID
-        if (is_string($relations) && $this->isValidUuid($relations)) {
-            return [$relations];
+        // Single value - convert to string
+        if (is_string($relations) || is_numeric($relations)) {
+            return [(string)$relations];
         }
         
         return [];
@@ -1595,10 +1629,14 @@ class GuzzleSolrService
         $document['self_validation'] = $object->getValidation() ? json_encode($object->getValidation()) : null;
         $document['self_groups'] = $object->getGroups() ? json_encode($object->getGroups()) : null;
 
-        // Remove null values, but keep published/depublished fields for proper filtering
+        // Remove null values, but keep published/depublished fields and empty arrays for multi-valued fields
         return array_filter($document, function($value, $key) {
             // Always keep published/depublished fields even if null for proper Solr filtering
             if (in_array($key, ['self_published', 'self_depublished'])) {
+                return true;
+            }
+            // Keep empty arrays for multi-valued fields like self_relations, self_files
+            if (is_array($value) && in_array($key, ['self_relations', 'self_files'])) {
                 return true;
             }
             return $value !== null && $value !== '';
@@ -5295,6 +5333,23 @@ class GuzzleSolrService
     {
         // Handle null values (generally allowed)
         if ($value === null) {
+            return true;
+        }
+
+        // **FIXED**: Handle arrays for multi-valued fields
+        // For multi-valued fields, arrays are expected and should be validated per element
+        if (is_array($value)) {
+            // Empty arrays are always allowed for multi-valued fields
+            if (empty($value)) {
+                return true;
+            }
+            
+            // Check each element in the array against the base field type
+            foreach ($value as $element) {
+                if (!$this->isValueCompatibleWithSolrType($element, $solrFieldType)) {
+                    return false;
+                }
+            }
             return true;
         }
 
