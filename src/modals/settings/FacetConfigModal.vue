@@ -84,11 +84,7 @@
 					<div v-if="metadataFacets.length > 0" class="facet-category">
 						<h5>Metadata Facets (@self)</h5>
 						<div class="facets-list">
-							<VueDraggable 
-								v-model="metadataFacets" 
-								@end="onMetadataFacetReorder"
-								easing="ease-in-out"
-								class="draggable-container">
+							<div class="draggable-container">
 								<div 
 									v-for="facet in metadataFacets" 
 									:key="facet.fieldName" 
@@ -176,7 +172,7 @@
 									</div>
 								</div>
 							</div>
-							</VueDraggable>
+							</div>
 						</div>
 					</div>
 
@@ -184,11 +180,7 @@
 					<div v-if="objectFieldFacets.length > 0" class="facet-category">
 						<h5>Object Field Facets</h5>
 						<div class="facets-list">
-							<VueDraggable 
-								v-model="objectFieldFacets" 
-								@end="onObjectFieldFacetReorder"
-								easing="ease-in-out"
-								class="draggable-container">
+							<div class="draggable-container">
 								<div 
 									v-for="facet in objectFieldFacets" 
 									:key="facet.fieldName" 
@@ -276,7 +268,7 @@
 									</div>
 								</div>
 							</div>
-							</VueDraggable>
+							</div>
 						</div>
 					</div>
 				</div>
@@ -335,7 +327,7 @@ import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess, showError } from '@nextcloud/dialogs'
-import { VueDraggable } from 'vue-draggable-plus'
+// import { VueDraggable } from 'vue-draggable-plus'
 
 export default {
 	name: 'FacetConfigModal',
@@ -352,7 +344,7 @@ export default {
 		Drag,
 		ChevronDown,
 		ChevronUp,
-		VueDraggable,
+		// VueDraggable,
 	},
 	props: {
 		show: {
@@ -538,32 +530,6 @@ export default {
 			} finally {
 				this.loading = false
 			}
-		},
-
-		/**
-		 * Handle metadata facet reordering
-		 */
-		onMetadataFacetReorder() {
-			console.log('🔄 Metadata facets reordered')
-			this.updateFacetOrder(this.metadataFacets, 0)
-		},
-
-		/**
-		 * Handle object field facet reordering
-		 */
-		onObjectFieldFacetReorder() {
-			console.log('🔄 Object field facets reordered')
-			this.updateFacetOrder(this.objectFieldFacets, 100)
-		},
-
-		/**
-		 * Update facet order based on array position
-		 */
-		updateFacetOrder(facets, baseOrder) {
-			facets.forEach((facet, index) => {
-				facet.config.order = baseOrder + index
-			})
-			console.log('📊 Updated facet order:', facets.map(f => ({ name: f.fieldName, order: f.config.order })))
 		},
 
 		/**
