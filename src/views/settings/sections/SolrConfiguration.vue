@@ -73,6 +73,13 @@
 							</template>
 							Inspect Index
 						</NcButton>
+						
+						<NcButton type="secondary" @click="openFacetConfigModal">
+							<template #icon>
+								<Tune :size="20" />
+							</template>
+							Configure Facets
+						</NcButton>
 					</template>
 					
 					<NcButton
@@ -1509,6 +1516,7 @@
 			:warming-up="warmingUp"
 			:completed="warmupCompleted"
 			:results="warmupResults"
+			:config="warmupConfig"
 			@close="closeWarmupModal"
 			@start-warmup="handleStartWarmup"
 		/>
@@ -1532,6 +1540,12 @@
 			@close="closeDeleteCollectionModal"
 			@deleted="handleCollectionDeleted"
 		/>
+
+		<!-- Facet Configuration Modal -->
+		<FacetConfigModal 
+			:show="showFacetConfigDialog"
+			@close="showFacetConfigDialog = false"
+		/>
 	</NcSettingsSection>
 </template>
 
@@ -1551,9 +1565,12 @@ import Delete from 'vue-material-design-icons/Delete.vue'
 import DatabaseRemove from 'vue-material-design-icons/DatabaseRemove.vue'
 import FileSearchOutline from 'vue-material-design-icons/FileSearchOutline.vue'
 import PlayIcon from 'vue-material-design-icons/Play.vue'
+import Tune from 'vue-material-design-icons/Tune.vue'
+import Magnify from 'vue-material-design-icons/Magnify.vue'
 import { SolrWarmupModal, ClearIndexModal } from '../../../modals/settings'
 import InspectIndexModal from '../../../modals/settings/InspectIndexModal.vue'
 import DeleteCollectionModal from '../../../modals/settings/DeleteCollectionModal.vue'
+import FacetConfigModal from '../../../modals/settings/FacetConfigModal.vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 
@@ -1579,10 +1596,13 @@ export default {
 		DatabaseRemove,
 		FileSearchOutline,
 		PlayIcon,
+		Tune,
+		Magnify,
 		SolrWarmupModal,
 		ClearIndexModal,
 		InspectIndexModal,
 		DeleteCollectionModal,
+		FacetConfigModal,
 	},
 
 	data() {
@@ -1614,6 +1634,12 @@ export default {
 			warmingUp: false,
 			warmupCompleted: false,
 			warmupResults: null,
+			warmupConfig: {
+				mode: 'serial',
+				maxObjects: 0,
+				batchSize: 1000,
+				collectErrors: false,
+			},
 			// Game-style loading
 			loadingTips: [
 				'🔍 SOLR is a powerful enterprise search platform built on Apache Lucene...',
@@ -1631,6 +1657,8 @@ export default {
 			currentLoadingMessage: 'Initializing SOLR setup...',
 			loadingInterval: null,
 			tipIndex: 0,
+			// Facet configuration
+			showFacetConfigDialog: false,
 		}
 	},
 
@@ -2031,6 +2059,13 @@ export default {
 			this.warmingUp = false
 			this.warmupCompleted = false
 			this.warmupResults = null
+			// Reset config to defaults
+			this.warmupConfig = {
+				mode: 'serial',
+				maxObjects: 0,
+				batchSize: 1000,
+				collectErrors: false,
+			}
 		},
 
 		openClearModal() {
@@ -2118,6 +2153,9 @@ export default {
 		},
 
 		async handleStartWarmup(config) {
+			// Store the config so it can be displayed in the modal
+			this.warmupConfig = { ...config }
+			
 			// Set loading state
 			this.warmingUp = true
 			this.warmupCompleted = false
@@ -2233,6 +2271,13 @@ export default {
 			} finally {
 				this.reindexing = false
 			}
+		},
+
+		/**
+		 * Open facet configuration modal
+		 */
+		openFacetConfigModal() {
+			this.showFacetConfigDialog = true
 		},
 	},
 }
@@ -4352,4 +4397,140 @@ export default {
 .propagation-technical summary:hover {
 	color: var(--color-primary-hover);
 }
+
+/* Facet Configuration Modal Styles */
+.facet-config-dialog {
+	padding: 20px;
+	max-height: 70vh;
+	overflow-y: auto;
+}
+
+.config-header {
+	margin-bottom: 30px;
+}
+
+.config-header h3 {
+	margin: 0 0 10px 0;
+	color: var(--color-text-dark);
+}
+
+.config-header p {
+	margin: 0;
+	color: var(--color-text-lighter);
+}
+
+.config-section {
+	margin-bottom: 30px;
+	padding: 20px;
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+	background: var(--color-background-hover);
+}
+
+.config-section h4 {
+	margin: 0 0 20px 0;
+	color: var(--color-text-dark);
+	font-size: 16px;
+}
+
+.form-row {
+	margin-bottom: 15px;
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+}
+
+.form-row label {
+	font-weight: 600;
+	color: var(--color-text-dark);
+}
+
+.form-input {
+	padding: 8px 12px;
+	border: 1px solid var(--color-border);
+	border-radius: 4px;
+	background: var(--color-main-background);
+	color: var(--color-text-dark);
+}
+
+.form-select {
+	padding: 8px 12px;
+	border: 1px solid var(--color-border);
+	border-radius: 4px;
+	background: var(--color-main-background);
+	color: var(--color-text-dark);
+	cursor: pointer;
+}
+
+.form-select:focus {
+	outline: none;
+	border-color: var(--color-primary);
+	box-shadow: 0 0 0 2px rgba(var(--color-primary), 0.2);
+}
+
+.form-textarea {
+	padding: 8px 12px;
+	border: 1px solid var(--color-border);
+	border-radius: 4px;
+	background: var(--color-main-background);
+	color: var(--color-text-dark);
+	resize: vertical;
+	font-family: inherit;
+}
+
+.no-facets {
+	text-align: center;
+	padding: 40px 20px;
+	color: var(--color-text-lighter);
+}
+
+.facets-list {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+.facet-item {
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+	padding: 15px;
+	background: var(--color-main-background);
+}
+
+.facet-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 15px;
+}
+
+.facet-header h5 {
+	margin: 0;
+	color: var(--color-text-dark);
+	font-family: monospace;
+	background: var(--color-background-dark);
+	padding: 4px 8px;
+	border-radius: 4px;
+	font-size: 14px;
+}
+
+.facet-details {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 15px;
+}
+
+.facet-details .form-row:last-child {
+	grid-column: 1 / -1;
+}
+
+.loading-container {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 40px;
+	color: var(--color-text-lighter);
+}
+
 </style>
