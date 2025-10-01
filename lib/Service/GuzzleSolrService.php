@@ -703,7 +703,7 @@ class GuzzleSolrService
      */
     public function getActiveCollectionName(): ?string
     {
-        $baseCollectionName = $this->solrConfig['core'] ?? 'openregister';
+        $baseCollectionName = $this->solrConfig['collection'] ?? 'openregister';
         $tenantCollectionName = $this->getTenantSpecificCollectionName($baseCollectionName);
 
         // Check if tenant collection exists
@@ -908,7 +908,32 @@ class GuzzleSolrService
             }
 
             // Create SOLR document using schema-aware mapping (no fallback)
-            $document = $this->createSolrDocument($object);
+            try {
+                $document = $this->createSolrDocument($object);
+                
+                // **DEBUG**: Log what we're about to send to SOLR
+                $this->logger->debug('Document created for SOLR indexing', [
+                    'object_uuid' => $object->getUuid(),
+                    'has_self_relations' => isset($document['self_relations']),
+                    'self_relations_value' => $document['self_relations'] ?? 'NOT_SET',
+                    'self_relations_type' => isset($document['self_relations']) ? gettype($document['self_relations']) : 'NOT_SET',
+                    'self_relations_count' => isset($document['self_relations']) && is_array($document['self_relations']) ? count($document['self_relations']) : 'NOT_ARRAY'
+                ]);
+                
+            } catch (\RuntimeException $e) {
+                // Check if this is a non-searchable schema
+                if (str_contains($e->getMessage(), 'Schema is not searchable')) {
+                    $this->logger->debug('Skipping indexing for non-searchable schema', [
+                        'object_id' => $object->getId(),
+                        'message' => $e->getMessage()
+                    ]);
+                    return false; // Return false to indicate object was not indexed (skipped)
+                }
+                // Re-throw other runtime exceptions
+                throw $e;
+            }
+            
+            // Relations indexing is working correctly
             
             // Prepare update request
             $updateData = [
@@ -916,6 +941,8 @@ class GuzzleSolrService
                     'doc' => $document
                 ]
             ];
+            
+            // Relations are properly included in SOLR documents
 
             $url = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/update?wt=json';
             
@@ -1089,6 +1116,20 @@ class GuzzleSolrService
             throw new \RuntimeException(
                 'Schema not found for object. Cannot create SOLR document without valid schema. ' .
                 'Object ID: ' . $object->getId() . ', Schema ID: ' . $object->getSchema()
+            );
+        }
+
+        // Check if schema is searchable - skip indexing if not
+        if (!$schema->getSearchable()) {
+            $this->logger->debug('Skipping SOLR indexing for non-searchable schema', [
+                'object_id' => $object->getId(),
+                'schema_id' => $object->getSchema(),
+                'schema_slug' => $schema->getSlug(),
+                'schema_title' => $schema->getTitle()
+            ]);
+            throw new \RuntimeException(
+                'Schema is not searchable. Objects of this schema are excluded from SOLR indexing. ' .
+                'Object ID: ' . $object->getId() . ', Schema: ' . ($schema->getTitle() ?: $schema->getSlug())
             );
         }
 
@@ -1301,10 +1342,14 @@ class GuzzleSolrService
             ]);
         }
         
-        // Remove null values, but keep published/depublished fields for proper filtering
+        // Remove null values, but keep published/depublished fields and empty arrays for multi-valued fields
         return array_filter($document, function($value, $key) {
             // Always keep published/depublished fields even if null for proper Solr filtering
             if (in_array($key, ['self_published', 'self_depublished'])) {
+                return true;
+            }
+            // Keep empty arrays for multi-valued fields like self_relations, self_files
+            if (is_array($value) && in_array($key, ['self_relations', 'self_files'])) {
                 return true;
             }
             return $value !== null && $value !== '';
@@ -1312,36 +1357,52 @@ class GuzzleSolrService
     }
 
     /**
-     * Flatten relations array for SOLR - ONLY include UUIDs, filter out URLs and other values
+     * Flatten relations array for SOLR - extract all values from relations key-value pairs
      *
-     * @param mixed $relations Relations data from ObjectEntity
-     * @return array Simple array of UUID strings for SOLR multi-valued field
+     * @param mixed $relations Relations data from ObjectEntity (e.g., {"modules.0":"uuid", "other.1":"value"})
+     * @return array Simple array of strings for SOLR multi-valued field (e.g., ["uuid", "value"])
      */
     private function flattenRelationsForSolr($relations): array
     {
+        // **DEBUG**: Log what we're processing
+        $this->logger->debug('Processing relations for SOLR', [
+            'relations_type' => gettype($relations),
+            'relations_value' => $relations,
+            'is_empty' => empty($relations)
+        ]);
+        
         if (empty($relations)) {
             return [];
         }
         
         if (is_array($relations)) {
-            $uuids = [];
+            $values = [];
             foreach ($relations as $key => $value) {
-                // Check if value is a UUID (36 chars with dashes)
-                if (is_string($value) && $this->isValidUuid($value)) {
-                    $uuids[] = $value;
+                // **FIXED**: Extract ALL values from relations array, not just UUIDs
+                // Relations are stored as {"modules.0":"value"} - we want all the values
+                if (is_string($value) || is_numeric($value)) {
+                    $values[] = (string)$value;
+                    $this->logger->debug('Found value in relations', [
+                        'key' => $key,
+                        'value' => $value,
+                        'type' => gettype($value)
+                    ]);
                 }
-                // Check if key is a UUID (for associative arrays)
-                if (is_string($key) && $this->isValidUuid($key)) {
-                    $uuids[] = $key;
-                }
-                // Skip URLs, non-UUID strings, etc.
+                // Skip arrays, objects, null values, etc.
             }
-            return $uuids;
+            
+            $this->logger->debug('Flattened relations result', [
+                'input_count' => count($relations),
+                'output_count' => count($values),
+                'values' => $values
+            ]);
+            
+            return $values;
         }
         
-        // Single value - check if it's a UUID
-        if (is_string($relations) && $this->isValidUuid($relations)) {
-            return [$relations];
+        // Single value - convert to string
+        if (is_string($relations) || is_numeric($relations)) {
+            return [(string)$relations];
         }
         
         return [];
@@ -1568,10 +1629,14 @@ class GuzzleSolrService
         $document['self_validation'] = $object->getValidation() ? json_encode($object->getValidation()) : null;
         $document['self_groups'] = $object->getGroups() ? json_encode($object->getGroups()) : null;
 
-        // Remove null values, but keep published/depublished fields for proper filtering
+        // Remove null values, but keep published/depublished fields and empty arrays for multi-valued fields
         return array_filter($document, function($value, $key) {
             // Always keep published/depublished fields even if null for proper Solr filtering
             if (in_array($key, ['self_published', 'self_depublished'])) {
+                return true;
+            }
+            // Keep empty arrays for multi-valued fields like self_relations, self_files
+            if (is_array($value) && in_array($key, ['self_relations', 'self_files'])) {
                 return true;
             }
             return $value !== null && $value !== '';
@@ -1708,24 +1773,23 @@ class GuzzleSolrService
         // Define published object condition: published is not null AND published <= now AND (depublished is null OR depublished > now)
         $publishedCondition = 'self_published:[* TO ' . $now . '] AND (-self_depublished:[* TO *] OR self_depublished:[' . $now . ' TO *])';
         
-        // Multi-tenancy filtering with published object exception
+        // Multi-tenancy filtering (removed automatic published object exception)
         if ($multi) {
             $multitenancyEnabled = $this->isMultitenancyEnabled();
             if ($multitenancyEnabled) {
                 $activeOrganisationUuid = $this->getActiveOrganisationUuid();
                 if ($activeOrganisationUuid !== null) {
-                    // Include objects from user's organisation OR published objects from any organisation
-                    $filters[] = '(self_organisation:' . $this->escapeSolrValue($activeOrganisationUuid) . ' OR ' . $publishedCondition . ')';
+                    // Only include objects from user's organisation
+                    $filters[] = 'self_organisation:' . $this->escapeSolrValue($activeOrganisationUuid);
                 }
             }
         }
         
-        // RBAC filtering with published object exception
+        // RBAC filtering (removed automatic published object exception)
         if ($rbac) {
             // Note: RBAC role filtering would be implemented here if we had role-based fields
             // For now, we assume all authenticated users have basic access
-            // Published objects bypass RBAC restrictions
-            $this->logger->debug('[SOLR] RBAC filtering applied with published object exception');
+            $this->logger->debug('[SOLR] RBAC filtering applied');
         }
         
         // Published filtering (only if explicitly requested)
@@ -4094,6 +4158,100 @@ class GuzzleSolrService
     }
 
     /**
+     * Count objects that belong to searchable schemas
+     *
+     * @param \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper The object mapper instance
+     * @return int Number of objects with searchable schemas
+     */
+    private function countSearchableObjects(\OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper): int
+    {
+        try {
+            // Use direct database query to count objects with searchable schemas
+            $db = \OC::$server->getDatabaseConnection();
+            $qb = $db->getQueryBuilder();
+            
+            $qb->select($qb->createFunction('COUNT(o.id)'))
+                ->from('openregister_objects', 'o')
+                ->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id')
+                ->where($qb->expr()->eq('s.searchable', $qb->createNamedParameter(true, \PDO::PARAM_BOOL)))
+                ->andWhere($qb->expr()->isNull('o.deleted')); // Exclude deleted objects
+            
+            $result = $qb->executeQuery();
+            $count = (int) $result->fetchOne();
+            
+            $this->logger->info('📊 Counted searchable objects', [
+                'searchable_objects' => $count
+            ]);
+            
+            return $count;
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to count searchable objects, falling back to all objects', [
+                'error' => $e->getMessage()
+            ]);
+            // Fallback to counting all objects if searchable filter fails
+            return $objectMapper->countAll(rbac: false, multi: false);
+        }
+    }
+
+    /**
+     * Fetch objects that belong to searchable schemas only
+     *
+     * @param \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper The object mapper instance
+     * @param int $limit Number of objects to fetch
+     * @param int $offset Offset for pagination
+     * @return array Array of ObjectEntity objects with searchable schemas
+     */
+    private function fetchSearchableObjects(\OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper, int $limit, int $offset): array
+    {
+        try {
+            // Use direct database query to fetch objects with searchable schemas
+            $db = \OC::$server->getDatabaseConnection();
+            $qb = $db->getQueryBuilder();
+            
+            $qb->select('o.*')
+                ->from('openregister_objects', 'o')
+                ->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id')
+                ->where($qb->expr()->eq('s.searchable', $qb->createNamedParameter(true, \PDO::PARAM_BOOL)))
+                ->andWhere($qb->expr()->isNull('o.deleted')) // Exclude deleted objects
+                ->setMaxResults($limit)
+                ->setFirstResult($offset)
+                ->orderBy('o.id', 'ASC'); // Consistent ordering for pagination
+            
+            $result = $qb->executeQuery();
+            $rows = $result->fetchAll();
+            
+            // Convert rows to ObjectEntity objects
+            $objects = [];
+            foreach ($rows as $row) {
+                $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+                $objectEntity->hydrate($row);
+                $objects[] = $objectEntity;
+            }
+            
+            $this->logger->debug('📊 Fetched searchable objects', [
+                'requested' => $limit,
+                'offset' => $offset,
+                'found' => count($objects)
+            ]);
+            
+            return $objects;
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to fetch searchable objects, falling back to all objects', [
+                'error' => $e->getMessage(),
+                'limit' => $limit,
+                'offset' => $offset
+            ]);
+            // Fallback to fetching all objects if searchable filter fails
+            return $objectMapper->findAll(
+                limit: $limit,
+                offset: $offset,
+                rbac: false,
+                multi: false
+            );
+        }
+    }
+
+    /**
      * Bulk index objects from database to Solr in batches
      *
      * @param int $batchSize Number of objects to process per batch (default: 1000)
@@ -4119,16 +4277,14 @@ class GuzzleSolrService
             $totalIndexed = 0;
             $batchCount = 0;
             $offset = 0;
+            $results = ['skipped_non_searchable' => 0];
             
             $this->logger->info('Starting sequential bulk index from database using ObjectEntityMapper directly');
             
-            // Get total count for planning using ObjectEntityMapper's countAll method
-            $totalObjects = $objectMapper->countAll(
-                rbac: false,  // Skip RBAC for performance
-                multi: false  // Skip multitenancy for performance  
-            );
-            $this->logger->info('📊 Sequential bulk index planning', [
-                'totalObjects' => $totalObjects,
+            // **IMPROVED**: Get count of only searchable objects for more accurate planning
+            $totalObjects = $this->countSearchableObjects($objectMapper);
+            $this->logger->info('📊 Sequential bulk index planning (searchable objects only)', [
+                'totalSearchableObjects' => $totalObjects,
                 'maxObjects' => $maxObjects,
                 'batchSize' => $batchSize,
                 'estimatedBatches' => $maxObjects > 0 ? ceil(min($totalObjects, $maxObjects) / $batchSize) : ceil($totalObjects / $batchSize),
@@ -4146,16 +4302,11 @@ class GuzzleSolrService
                     $currentBatchSize = min($batchSize, $remaining);
                 }
                 
-                // Fetch objects directly from ObjectEntityMapper using simpler findAll method
+                // **IMPROVED**: Fetch only objects with searchable schemas
                 $fetchStart = microtime(true);
                 // Batch fetched (logging removed for performance)
                 
-                $objects = $objectMapper->findAll(
-                    limit: $currentBatchSize,
-                    offset: $offset,
-                    rbac: false,  // Skip RBAC for performance
-                    multi: false  // Skip multitenancy for performance
-                );
+                $objects = $this->fetchSearchableObjects($objectMapper, $currentBatchSize, $offset);
                 
                 $fetchEnd = microtime(true);
                 $fetchDuration = round(($fetchEnd - $fetchStart) * 1000, 2);
@@ -4169,7 +4320,7 @@ class GuzzleSolrService
                     break; // No more objects
                 }
                 
-                // Index ALL objects (published and unpublished) for comprehensive search.
+                // **IMPROVED**: Index only searchable objects (already filtered at database level)
                 // Filtering for published-only content is now handled at query time, not index time.
                 $documents = [];
                 foreach ($objects as $object) {
@@ -4184,8 +4335,22 @@ class GuzzleSolrService
                         }
                         
                         if ($objectEntity) {
-                            $documents[] = $this->createSolrDocument($objectEntity, $solrFieldTypes);
+                            // Since we already filtered for searchable schemas at database level,
+                            // we should not encounter non-searchable schemas here
+                            $document = $this->createSolrDocument($objectEntity, $solrFieldTypes);
+                            $documents[] = $document;
                         }
+                    } catch (\RuntimeException $e) {
+                        // This should rarely happen now since we pre-filter for searchable schemas
+                        if (str_contains($e->getMessage(), 'Schema is not searchable')) {
+                            $results['skipped_non_searchable']++;
+                            $this->logger->warning('Unexpected non-searchable schema found despite pre-filtering', [
+                                'objectId' => $objectEntity ? $objectEntity->getId() : 'unknown',
+                                'error' => $e->getMessage()
+                            ]);
+                            continue;
+                        }
+                        throw $e;
                     } catch (\Exception $e) {
                         $this->logger->warning('Failed to create SOLR document', [
                             'error' => $e->getMessage(),
@@ -4236,7 +4401,8 @@ class GuzzleSolrService
                 'success' => true,
                 'indexed' => $totalIndexed,
                 'batches' => $batchCount,
-                'batch_size' => $batchSize
+                'batch_size' => $batchSize,
+                'skipped_non_searchable' => $results['skipped_non_searchable'] ?? 0
             ];
             
         } catch (\Exception $e) {
@@ -4279,19 +4445,8 @@ class GuzzleSolrService
             $startTime = microtime(true);
             // Parallel bulk indexing started (logging removed for performance)
 
-            // Get ALL object count to plan batches (since we now index all objects, not just published)
-            $totalObjects = $objectMapper->countAll(
-                filters: [],
-                search: null,
-                ids: null,
-                uses: null,
-                includeDeleted: false,
-                register: null,
-                schema: null,
-                published: null, // Count ALL objects (published and unpublished)
-                rbac: false,     // Skip RBAC for performance
-                multi: false     // Skip multitenancy for performance
-            );
+            // **IMPROVED**: Get count of only searchable objects for more accurate planning
+            $totalObjects = $this->countSearchableObjects($objectMapper);
             
             // Total objects retrieved from database
             
@@ -4408,12 +4563,8 @@ class GuzzleSolrService
         // Processing batch
         
         try {
-            // Fetch objects for this batch
-            $objects = $objectMapper->searchObjects([
-                '_offset' => $job['offset'],
-                '_limit' => $job['limit'],
-                '_bulk_operation' => true
-            ]);
+            // **IMPROVED**: Fetch only objects with searchable schemas for this batch
+            $objects = $this->fetchSearchableObjects($objectMapper, $job['limit'], $job['offset']);
 
             if (empty($objects)) {
                 return ['success' => true, 'indexed' => 0, 'batchNumber' => $job['batchNumber']];
@@ -4424,12 +4575,20 @@ class GuzzleSolrService
             foreach ($objects as $object) {
                 try {
                     if ($object instanceof ObjectEntity) {
-                        $documents[] = $this->createSolrDocument($object);
+                        $document = $this->createSolrDocument($object);
+                        $documents[] = $document;
                     } else if (is_array($object)) {
                         $entity = new ObjectEntity();
                         $entity->hydrate($object);
-                        $documents[] = $this->createSolrDocument($entity);
+                        $document = $this->createSolrDocument($entity);
+                        $documents[] = $document;
                     }
+                } catch (\RuntimeException $e) {
+                    // Skip non-searchable schemas
+                    if (str_contains($e->getMessage(), 'Schema is not searchable')) {
+                        continue;
+                    }
+                    throw $e;
                 } catch (\Exception $e) {
                     $this->logger->warning('Failed to create SOLR document', [
                         'error' => $e->getMessage(),
@@ -4525,12 +4684,20 @@ class GuzzleSolrService
             foreach ($objects as $object) {
                 try {
                     if ($object instanceof ObjectEntity) {
-                        $documents[] = $this->createSolrDocument($object);
+                        $document = $this->createSolrDocument($object);
+                        $documents[] = $document;
                     } else if (is_array($object)) {
                         $entity = new ObjectEntity();
                         $entity->hydrate($object);
-                        $documents[] = $this->createSolrDocument($entity);
+                        $document = $this->createSolrDocument($entity);
+                        $documents[] = $document;
                     }
+                } catch (\RuntimeException $e) {
+                    // Skip non-searchable schemas
+                    if (str_contains($e->getMessage(), 'Schema is not searchable')) {
+                        continue;
+                    }
+                    throw $e;
                 } catch (\Exception $e) {
                     // Log document creation errors
                 }
@@ -4633,12 +4800,22 @@ class GuzzleSolrService
             // **OPTIMIZATION**: Prepare all documents at once
             $documents = [];
             foreach ($objects as $object) {
-                if ($object instanceof ObjectEntity) {
-                    $documents[] = $this->createSolrDocument($object);
-                } else if (is_array($object)) {
-                    $entity = new ObjectEntity();
-                    $entity->hydrate($object);
-                    $documents[] = $this->createSolrDocument($entity);
+                try {
+                    if ($object instanceof ObjectEntity) {
+                        $document = $this->createSolrDocument($object);
+                        $documents[] = $document;
+                    } else if (is_array($object)) {
+                        $entity = new ObjectEntity();
+                        $entity->hydrate($object);
+                        $document = $this->createSolrDocument($entity);
+                        $documents[] = $document;
+                    }
+                } catch (\RuntimeException $e) {
+                    // Skip non-searchable schemas
+                    if (str_contains($e->getMessage(), 'Schema is not searchable')) {
+                        continue;
+                    }
+                    throw $e;
                 }
             }
 
@@ -4862,10 +5039,13 @@ class GuzzleSolrService
      *
      * @param array $schemas Array of Schema entities (not used in this implementation)
      * @param int   $maxObjects Maximum number of objects to index
+     * @param string $mode Processing mode ('serial', 'parallel', 'hyper')
+     * @param bool $collectErrors Whether to collect all errors or stop on first
+     * @param int $batchSize Number of objects to process per batch
      *
      * @return array Warmup results
      */
-    public function warmupIndex(array $schemas = [], int $maxObjects = 0, string $mode = 'serial', bool $collectErrors = false): array
+    public function warmupIndex(array $schemas = [], int $maxObjects = 0, string $mode = 'serial', bool $collectErrors = false, int $batchSize = 1000): array
     {
         if (!$this->isAvailable()) {
             return [
@@ -4978,11 +5158,11 @@ class GuzzleSolrService
             // 3. Object indexing using mode-based bulk indexing (no logging for performance)
             
             if ($mode === 'hyper') {
-                $indexResult = $this->bulkIndexFromDatabaseOptimized(2000, $maxObjects, $solrFieldTypes ?? []);
+                $indexResult = $this->bulkIndexFromDatabaseOptimized($batchSize, $maxObjects, $solrFieldTypes ?? []);
             } elseif ($mode === 'parallel') {
-                $indexResult = $this->bulkIndexFromDatabaseParallel(1000, $maxObjects, 5, $solrFieldTypes ?? []);
+                $indexResult = $this->bulkIndexFromDatabaseParallel($batchSize, $maxObjects, 5, $solrFieldTypes ?? []);
             } else {
-                $indexResult = $this->bulkIndexFromDatabase(1000, $maxObjects, $solrFieldTypes ?? []);
+                $indexResult = $this->bulkIndexFromDatabase($batchSize, $maxObjects, $solrFieldTypes ?? []);
             }
             
             // Pass collectErrors mode for potential future use
@@ -5156,6 +5336,23 @@ class GuzzleSolrService
             return true;
         }
 
+        // **FIXED**: Handle arrays for multi-valued fields
+        // For multi-valued fields, arrays are expected and should be validated per element
+        if (is_array($value)) {
+            // Empty arrays are always allowed for multi-valued fields
+            if (empty($value)) {
+                return true;
+            }
+            
+            // Check each element in the array against the base field type
+            foreach ($value as $element) {
+                if (!$this->isValueCompatibleWithSolrType($element, $solrFieldType)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         return match ($solrFieldType) {
             // Numeric types - only allow numeric values
             'pint', 'plong', 'plongs', 'pfloat', 'pdouble' => is_numeric($value),
@@ -5200,8 +5397,9 @@ class GuzzleSolrService
         $batchCount = 0;
         
         try {
-            // Get total count efficiently
-            $totalObjects = $this->objectEntityMapper->countAll();
+            // **IMPROVED**: Get count of only searchable objects for more accurate planning
+            $objectMapper = \OC::$server->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+            $totalObjects = $this->countSearchableObjects($objectMapper);
             $actualLimit = $maxObjects > 0 ? min($maxObjects, $totalObjects) : $totalObjects;
             
             $this->logger->info('🚀 Starting optimized bulk indexing', [
@@ -5216,8 +5414,8 @@ class GuzzleSolrService
                 $currentBatchSize = min($batchSize, $actualLimit - $offset);
                 $batchCount++;
                 
-                // Fetch objects efficiently
-                $objects = $this->objectEntityMapper->findAll($currentBatchSize, $offset);
+                // **IMPROVED**: Fetch only objects with searchable schemas
+                $objects = $this->fetchSearchableObjects($objectMapper, $currentBatchSize, $offset);
                 
                 if (empty($objects)) {
                     break;
@@ -5232,6 +5430,16 @@ class GuzzleSolrService
                         if (!empty($document)) {
                             $documents[] = $document;
                         }
+                    } catch (\RuntimeException $e) {
+                        // Skip non-searchable schemas
+                        if (str_contains($e->getMessage(), 'Schema is not searchable')) {
+                            continue;
+                        }
+                        $totalErrors++;
+                        $this->logger->warning('Failed to create document', [
+                            'object_id' => $object->getId(),
+                            'error' => $e->getMessage()
+                        ]);
                     } catch (\Exception $e) {
                         $totalErrors++;
                         $this->logger->warning('Failed to create document', [
@@ -6604,6 +6812,145 @@ class GuzzleSolrService
     }
     
     /**
+     * Get raw SOLR field information for facet configuration
+     * Returns unprocessed field data suitable for configuration UI
+     *
+     * @return array Raw SOLR field information grouped by category
+     * @throws \Exception If SOLR is not available or schema discovery fails
+     */
+    public function getRawSolrFieldsForFacetConfiguration(): array
+    {
+        $collectionName = $this->getActiveCollectionName();
+        if ($collectionName === null) {
+            throw new \Exception('No active SOLR collection available for field discovery');
+        }
+        
+        // Query SOLR schema API for all fields
+        $baseUrl = $this->buildSolrBaseUrl();
+        $schemaUrl = $baseUrl . "/{$collectionName}/schema/fields";
+        
+        try {
+            $response = $this->httpClient->get($schemaUrl, [
+                'query' => [
+                    'wt' => 'json'
+                ]
+            ]);
+            
+            $schemaData = json_decode($response->getBody()->getContents(), true);
+            
+            if (!isset($schemaData['fields']) || !is_array($schemaData['fields'])) {
+                throw new \Exception('Invalid schema response from SOLR');
+            }
+            
+            $rawFields = [
+                '@self' => [],
+                'object_fields' => []
+            ];
+            
+            // Process each field and return raw information for configuration
+            foreach ($schemaData['fields'] as $field) {
+                $fieldName = $field['name'] ?? 'unknown';
+                
+                // Only include fields that have docValues (facetable)
+                if (!isset($field['name']) || !isset($field['docValues']) || $field['docValues'] !== true) {
+                    continue;
+                }
+                
+                $fieldInfo = [
+                    'name' => $fieldName,
+                    'type' => $field['type'] ?? 'string',
+                    'stored' => $field['stored'] ?? false,
+                    'indexed' => $field['indexed'] ?? false,
+                    'docValues' => $field['docValues'] ?? false,
+                    'multiValued' => $field['multiValued'] ?? false,
+                    'required' => $field['required'] ?? false,
+                    // Add suggested facet type based on SOLR type
+                    'suggestedFacetType' => $this->mapSolrTypeToFacetType($field['type'] ?? 'string'),
+                    // Add suggested display types based on field characteristics
+                    'suggestedDisplayTypes' => $this->getSuggestedDisplayTypes($field)
+                ];
+                
+                // Categorize fields
+                if (str_starts_with($fieldName, 'self_')) {
+                    // Metadata field
+                    $metadataKey = substr($fieldName, 5); // Remove 'self_' prefix
+                    $fieldInfo['displayName'] = ucfirst(str_replace('_', ' ', $metadataKey));
+                    $fieldInfo['category'] = 'metadata';
+                    $rawFields['@self'][$metadataKey] = $fieldInfo;
+                } elseif (!in_array($fieldName, ['_version_', 'id', '_text_'])) {
+                    // Object field (exclude system fields)
+                    $fieldInfo['displayName'] = ucfirst(str_replace('_', ' ', $fieldName));
+                    $fieldInfo['category'] = 'object';
+                    $rawFields['object_fields'][$fieldName] = $fieldInfo;
+                }
+            }
+            
+            $this->logger->debug('Retrieved raw SOLR fields for facet configuration', [
+                'collection' => $collectionName,
+                'metadataFields' => count($rawFields['@self']),
+                'objectFields' => count($rawFields['object_fields']),
+                'totalFields' => count($schemaData['fields'])
+            ]);
+            
+            return $rawFields;
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to retrieve raw SOLR fields for facet configuration', [
+                'collection' => $collectionName,
+                'url' => $schemaUrl,
+                'error' => $e->getMessage()
+            ]);
+            
+            throw new \Exception('SOLR field discovery failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get suggested display types for a SOLR field based on its characteristics
+     *
+     * @param array $field SOLR field information
+     * @return array Suggested display types
+     */
+    private function getSuggestedDisplayTypes(array $field): array
+    {
+        $fieldType = $field['type'] ?? 'string';
+        $multiValued = $field['multiValued'] ?? false;
+        
+        $suggestions = [];
+        
+        // Based on field type
+        switch ($fieldType) {
+            case 'boolean':
+                $suggestions = ['checkbox', 'radio'];
+                break;
+            case 'pint':
+            case 'plong':
+            case 'pfloat':
+            case 'pdouble':
+            case 'int':
+            case 'long':
+            case 'float':
+            case 'double':
+                $suggestions = ['range', 'select'];
+                break;
+            case 'pdate':
+            case 'date':
+                $suggestions = ['date_range', 'select'];
+                break;
+            default:
+                // String fields
+                if ($multiValued) {
+                    $suggestions = ['multiselect', 'checkbox'];
+                } else {
+                    $suggestions = ['select', 'radio', 'checkbox'];
+                }
+                break;
+        }
+        
+        return $suggestions;
+    }
+
+    /**
      * Map SOLR field type to OpenRegister facet type
      *
      * @param string $solrType SOLR field type
@@ -7115,10 +7462,18 @@ class GuzzleSolrService
                 
                 // Add to extended data with actual values and resolved labels for metadata fields
                 $formattedData = $this->formatMetadataFacetData($facetData[$solrFieldName], $solrFieldName, $fieldInfo['type']);
-                $contextualData['extended']['@self'][$fieldInfo['name']] = array_merge(
+                $facetResult = array_merge(
                     $fieldInfo,
                     ['data' => $formattedData]
                 );
+                
+                // Apply custom facet configuration
+                $facetResult = $this->applyFacetConfiguration($facetResult, 'self_' . $solrFieldName);
+                
+                // Only include enabled facets
+                if ($facetResult['enabled'] ?? true) {
+                    $contextualData['extended']['@self'][$fieldInfo['name']] = $facetResult;
+                }
             }
         }
         
@@ -7140,12 +7495,24 @@ class GuzzleSolrService
                 $contextualData['facetable']['object_fields'][$objectFieldName] = $objectFieldInfo;
                 
                 // Add to extended data with actual values
-                $contextualData['extended']['object_fields'][$objectFieldName] = array_merge(
+                $facetResult = array_merge(
                     $objectFieldInfo,
                     ['data' => $this->formatFacetData($facetValue, 'terms')]
                 );
+                
+                // Apply custom facet configuration
+                $facetResult = $this->applyFacetConfiguration($facetResult, $objectFieldName);
+                
+                // Only include enabled facets
+                if ($facetResult['enabled'] ?? true) {
+                    $contextualData['extended']['object_fields'][$objectFieldName] = $facetResult;
+                }
             }
         }
+        
+        // Sort facets according to configuration
+        $contextualData['extended']['@self'] = $this->sortFacetsWithConfiguration($contextualData['extended']['@self']);
+        $contextualData['extended']['object_fields'] = $this->sortFacetsWithConfiguration($contextualData['extended']['object_fields']);
         
         $this->logger->debug('Processed optimized contextual facets', [
             'metadata_fields_found' => count($contextualData['extended']['@self']),
@@ -7374,6 +7741,152 @@ class GuzzleSolrService
     }
 
     /**
+     * Apply custom facet configuration to facet data
+     *
+     * @param array $facetData Processed facet data
+     * @param string $fieldName Field name
+     * @return array Facet data with custom configuration applied
+     */
+    private function applyFacetConfiguration(array $facetData, string $fieldName): array
+    {
+        try {
+            // Get facet configuration from settings service
+            $settingsService = \OC::$server->get(\OCA\OpenRegister\Service\SettingsService::class);
+            $facetConfig = $settingsService->getSolrFacetConfiguration();
+            
+            // Convert field name to configuration format if needed
+            $configFieldName = $fieldName;
+            if (str_starts_with($fieldName, 'self_')) {
+                // Convert self_fieldname to @self[fieldname] format for metadata fields
+                $metadataField = substr($fieldName, 5); // Remove 'self_' prefix
+                $configFieldName = "@self[{$metadataField}]";
+            }
+            
+            // Check if this field has custom configuration
+            if (isset($facetConfig['facets'][$configFieldName])) {
+                $customConfig = $facetConfig['facets'][$configFieldName];
+                
+                // Apply custom title
+                if (!empty($customConfig['title'])) {
+                    $facetData['title'] = $customConfig['title'];
+                }
+                
+                // Apply custom description
+                if (!empty($customConfig['description'])) {
+                    $facetData['description'] = $customConfig['description'];
+                }
+                
+                // Apply custom order
+                if (isset($customConfig['order'])) {
+                    $facetData['order'] = (int)$customConfig['order'];
+                }
+                
+                // Apply enabled/disabled state
+                if (isset($customConfig['enabled'])) {
+                    $facetData['enabled'] = (bool)$customConfig['enabled'];
+                }
+                
+                // Apply show_count setting
+                if (isset($customConfig['show_count'])) {
+                    $facetData['show_count'] = (bool)$customConfig['show_count'];
+                }
+                
+                // Apply max_items limit
+                if (isset($customConfig['max_items']) && is_array($facetData['data'])) {
+                    $maxItems = (int)$customConfig['max_items'];
+                    if ($maxItems > 0 && count($facetData['data']) > $maxItems) {
+                        $facetData['data'] = array_slice($facetData['data'], 0, $maxItems);
+                    }
+                }
+            } else {
+                // Apply default settings if no custom configuration
+                $defaultSettings = $facetConfig['default_settings'] ?? [];
+                $facetData['show_count'] = $defaultSettings['show_count'] ?? true;
+                $facetData['enabled'] = true;
+                $facetData['order'] = 0;
+                
+                // Apply default max_items
+                if (isset($defaultSettings['max_items']) && is_array($facetData['data'])) {
+                    $maxItems = (int)$defaultSettings['max_items'];
+                    if ($maxItems > 0 && count($facetData['data']) > $maxItems) {
+                        $facetData['data'] = array_slice($facetData['data'], 0, $maxItems);
+                    }
+                }
+            }
+            
+        } catch (\Exception $e) {
+            // If configuration loading fails, use defaults
+            $this->logger->warning('Failed to load facet configuration', [
+                'field' => $fieldName,
+                'error' => $e->getMessage()
+            ]);
+            $facetData['enabled'] = true;
+            $facetData['show_count'] = true;
+            $facetData['order'] = 0;
+        }
+        
+        return $facetData;
+
+    }//end applyFacetConfiguration()
+
+
+    /**
+     * Sort facets according to custom configuration
+     *
+     * @param array $facets Facet data to sort
+     * @return array Sorted facet data
+     */
+    private function sortFacetsWithConfiguration(array $facets): array
+    {
+        try {
+            // Get facet configuration from settings service
+            $settingsService = \OC::$server->get(\OCA\OpenRegister\Service\SettingsService::class);
+            $facetConfig = $settingsService->getSolrFacetConfiguration();
+            
+            // Check if global order is defined
+            if (!empty($facetConfig['global_order'])) {
+                $globalOrder = $facetConfig['global_order'];
+                $sortedFacets = [];
+                
+                // First, add facets in the specified global order
+                foreach ($globalOrder as $fieldName) {
+                    if (isset($facets[$fieldName])) {
+                        $sortedFacets[$fieldName] = $facets[$fieldName];
+                        unset($facets[$fieldName]);
+                    }
+                }
+                
+                // Then add remaining facets sorted by their individual order values
+                uasort($facets, function($a, $b) {
+                    $orderA = $a['order'] ?? 0;
+                    $orderB = $b['order'] ?? 0;
+                    return $orderA <=> $orderB;
+                });
+                
+                // Merge the globally ordered facets with the remaining ones
+                $facets = array_merge($sortedFacets, $facets);
+            } else {
+                // Sort by individual order values if no global order is set
+                uasort($facets, function($a, $b) {
+                    $orderA = $a['order'] ?? 0;
+                    $orderB = $b['order'] ?? 0;
+                    return $orderA <=> $orderB;
+                });
+            }
+            
+        } catch (\Exception $e) {
+            // If configuration loading fails, keep original order
+            $this->logger->warning('Failed to load facet configuration for sorting', [
+                'error' => $e->getMessage()
+            ]);
+        }
+        
+        return $facets;
+
+    }//end sortFacetsWithConfiguration()
+
+
+    /**
      * Process SOLR facet response and format for frontend consumption
      *
      * @param array $facetData Raw facet data from SOLR
@@ -7390,22 +7903,42 @@ class GuzzleSolrService
         // Process metadata fields
         foreach ($facetableFields['@self'] ?? [] as $fieldName => $fieldInfo) {
             if (isset($facetData[$fieldName])) {
-                $processedFacets['@self'][$fieldName] = array_merge(
+                $facetResult = array_merge(
                     $fieldInfo,
                     ['data' => $this->formatFacetData($facetData[$fieldName], $fieldInfo['type'])]
                 );
+                
+                // Apply custom facet configuration
+                $facetResult = $this->applyFacetConfiguration($facetResult, 'self_' . $fieldName);
+                
+                // Only include enabled facets
+                if ($facetResult['enabled'] ?? true) {
+                    $processedFacets['@self'][$fieldName] = $facetResult;
+                }
             }
         }
         
         // Process object fields
         foreach ($facetableFields['object_fields'] ?? [] as $fieldName => $fieldInfo) {
             if (isset($facetData[$fieldName])) {
-                $processedFacets['object_fields'][$fieldName] = array_merge(
+                $facetResult = array_merge(
                     $fieldInfo,
                     ['data' => $this->formatFacetData($facetData[$fieldName], $fieldInfo['type'])]
                 );
+                
+                // Apply custom facet configuration
+                $facetResult = $this->applyFacetConfiguration($facetResult, $fieldName);
+                
+                // Only include enabled facets
+                if ($facetResult['enabled'] ?? true) {
+                    $processedFacets['object_fields'][$fieldName] = $facetResult;
+                }
             }
         }
+        
+        // Sort facets according to configuration
+        $processedFacets['@self'] = $this->sortFacetsWithConfiguration($processedFacets['@self']);
+        $processedFacets['object_fields'] = $this->sortFacetsWithConfiguration($processedFacets['object_fields']);
         
         return $processedFacets;
     }

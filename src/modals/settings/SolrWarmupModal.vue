@@ -20,7 +20,7 @@
 					Please wait while the SOLR index is being warmed up. This process may take several minutes depending on the amount of data.
 				</p>
 				<div class="loading-details">
-					<p><strong>Mode:</strong> {{ config.mode === 'serial' ? 'Serial' : 'Parallel' }}</p>
+					<p><strong>Mode:</strong> {{ getModeDisplayName(config.mode) }}</p>
 					<p><strong>Max Objects:</strong> {{ config.maxObjects === 0 ? 'All' : config.maxObjects }}</p>
 					<p><strong>Batch Size:</strong> {{ config.batchSize }}</p>
 				</div>
@@ -116,7 +116,7 @@
 					<div class="config-grid">
 						<div class="config-item">
 							<span class="config-label">Mode:</span>
-							<span class="config-value">{{ config.mode === 'serial' ? 'Serial' : 'Parallel' }}</span>
+							<span class="config-value">{{ getModeDisplayName(config.mode) }}</span>
 						</div>
 						<div class="config-item">
 							<span class="config-label">Max Objects:</span>
@@ -161,9 +161,18 @@
 							type="radio">
 							Parallel Mode (Faster, more resource intensive)
 						</NcCheckboxRadioSwitch>
+						<NcCheckboxRadioSwitch
+							:checked.sync="localConfig.mode"
+							name="warmup_mode"
+							value="hyper"
+							type="radio">
+							Hyper Mode (Fastest, optimized for large datasets)
+						</NcCheckboxRadioSwitch>
 					</div>
 					<p class="form-description">
-						Serial mode processes objects one by one, while parallel mode processes multiple objects simultaneously for faster completion.
+						<strong>Serial:</strong> Processes objects sequentially (safest).<br>
+						<strong>Parallel:</strong> Processes objects in chunks with simulated parallelism.<br>
+						<strong>Hyper:</strong> Optimized processing with better performance monitoring (recommended for large datasets).
 					</p>
 				</div>
 
@@ -401,6 +410,21 @@ export default {
 		},
 
 		/**
+		 * Get display name for mode
+		 *
+		 * @param {string} mode Mode value
+		 * @return {string} Display name
+		 */
+		getModeDisplayName(mode) {
+			const modeNames = {
+				serial: 'Serial',
+				parallel: 'Parallel',
+				hyper: 'Hyper'
+			}
+			return modeNames[mode] || mode
+		},
+
+		/**
 		 * Estimate warmup duration based on configuration
 		 *
 		 * @return {string} Estimated duration in human-readable format
@@ -417,8 +441,13 @@ export default {
 			const batches = Math.ceil(totalObjects / this.localConfig.batchSize)
 			
 			// Rough estimates based on mode and batch size
-			// Serial: ~2-5 seconds per batch, Parallel: ~1-2 seconds per batch
-			const secondsPerBatch = this.localConfig.mode === 'serial' ? 3 : 1.5
+			// Serial: ~2-5 seconds per batch, Parallel: ~1-2 seconds per batch, Hyper: ~0.5-1 seconds per batch
+			let secondsPerBatch = 3 // Default for serial
+			if (this.localConfig.mode === 'parallel') {
+				secondsPerBatch = 1.5
+			} else if (this.localConfig.mode === 'hyper') {
+				secondsPerBatch = 0.8 // Fastest mode
+			}
 			const totalSeconds = batches * secondsPerBatch
 			
 			if (totalSeconds < 60) {
