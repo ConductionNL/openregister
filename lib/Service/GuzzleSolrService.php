@@ -879,12 +879,20 @@ class GuzzleSolrService
      */
     public function indexObject(ObjectEntity $object, bool $commit = false): bool
     {
-        // Index ALL objects (published and unpublished) for comprehensive search.
-        // Filtering for published-only content is now handled at query time, not index time.
-        $this->logger->debug('Indexing object (published and unpublished objects are both indexed)', [
+        // Only index objects that have a published date
+        if (!$object->getPublished()) {
+            $this->logger->debug('Skipping indexing of unpublished object', [
+                'object_id' => $object->getId(),
+                'object_uuid' => $object->getUuid(),
+                'published' => null
+            ]);
+            return true; // Return true to indicate successful handling (not an error)
+        }
+        
+        $this->logger->debug('Indexing published object', [
             'object_id' => $object->getId(),
             'object_uuid' => $object->getUuid(),
-            'published' => $object->getPublished() ? $object->getPublished()->format('Y-m-d\TH:i:s\Z') : null
+            'published' => $object->getPublished()->format('Y-m-d\TH:i:s\Z')
         ]);
         
         if (!$this->isAvailable()) {
@@ -1795,9 +1803,9 @@ class GuzzleSolrService
         // Published filtering (only if explicitly requested)
         if ($published) {
             // Filter for objects that have a published date AND it's in the past
-            // AND either no depublished date OR depublished date is in the future
-            $filters[] = 'self_published:[* TO ' . $now . '] AND NOT self_published:null';
-            $filters[] = '(self_depublished:null OR self_depublished:[' . $now . ' TO *])';
+            // Use existence check instead of NOT null to avoid SOLR date parsing errors
+            $filters[] = 'self_published:[* TO ' . $now . ']';
+            $filters[] = '(NOT self_depublished:[* TO *] OR self_depublished:[' . $now . ' TO *])';
         }
         
         // Deleted filtering
@@ -3746,7 +3754,88 @@ class GuzzleSolrService
      */
     public function clearIndex(): array
     {
-        return $this->deleteByQuery('*:*', true, true);
+        if (!$this->isAvailable()) {
+            return [
+                'success' => false,
+                'error' => 'SOLR service is not available',
+                'error_details' => 'SOLR connection is not configured or unavailable'
+            ];
+        }
+
+        try {
+            // Get the active collection name
+            $tenantCollectionName = $this->getActiveCollectionName();
+            if ($tenantCollectionName === null) {
+                return [
+                    'success' => false,
+                    'error' => 'No active SOLR collection available',
+                    'error_details' => 'No collection found for the current tenant'
+                ];
+            }
+
+            // For clear index, we want to delete ALL documents in the tenant collection
+            // Don't add tenant isolation since the entire collection is tenant-specific
+            $deleteData = [
+                'delete' => [
+                    'query' => '*:*'  // Delete everything in this tenant's collection
+                ]
+            ];
+
+            $url = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/update?wt=json&commit=true';
+            
+            $this->logger->info('Clearing SOLR index', [
+                'collection' => $tenantCollectionName,
+                'tenant_id' => $this->tenantId,
+                'url' => $url
+            ]);
+
+            $response = $this->httpClient->post($url, [
+                'json' => $deleteData,
+                'headers' => [
+                    'Content-Type' => 'application/json'
+                ]
+            ]);
+
+            $responseData = json_decode($response->getBody()->getContents(), true);
+            
+            if ($response->getStatusCode() === 200 && isset($responseData['responseHeader']['status']) && $responseData['responseHeader']['status'] === 0) {
+                $this->logger->info('SOLR index cleared successfully', [
+                    'collection' => $tenantCollectionName,
+                    'tenant_id' => $this->tenantId
+                ]);
+                
+                return [
+                    'success' => true,
+                    'message' => 'SOLR index cleared successfully',
+                    'deleted_docs' => 'all', // We don't get exact count from *:* delete
+                    'collection' => $tenantCollectionName
+                ];
+            } else {
+                $this->logger->error('SOLR index clear failed', [
+                    'status_code' => $response->getStatusCode(),
+                    'response' => $responseData,
+                    'collection' => $tenantCollectionName
+                ]);
+                
+                return [
+                    'success' => false,
+                    'error' => 'SOLR delete operation failed',
+                    'error_details' => $responseData['error'] ?? 'Unknown error'
+                ];
+            }
+            
+        } catch (\Exception $e) {
+            $this->logger->error('SOLR index clear exception', [
+                'error' => $e->getMessage(),
+                'tenant_id' => $this->tenantId
+            ]);
+            
+            return [
+                'success' => false,
+                'error' => 'Exception during SOLR clear: ' . $e->getMessage(),
+                'error_details' => $e->getTraceAsString()
+            ];
+        }
     }
 
     /**
@@ -4654,7 +4743,7 @@ class GuzzleSolrService
                 'limit' => $job['limit']
             ]);
 
-            // Fetch ALL objects (published and unpublished) for comprehensive indexing
+            // Fetch only published objects for indexing
             $objects = $objectMapper->findAll(
                 limit: $job['limit'],
                 offset: $job['offset'],
@@ -4668,7 +4757,7 @@ class GuzzleSolrService
                 includeDeleted: false,
                 register: null,
                 schema: null,
-                published: null, // Fetch ALL objects (published and unpublished)
+                published: true, // Only fetch published objects
                 rbac: false,     // Skip RBAC for performance
                 multi: false     // Skip multitenancy for performance
             );
@@ -5812,7 +5901,7 @@ class GuzzleSolrService
                 includeDeleted: false,
                 register: null,
                 schema: null,
-                published: null, // Reindex ALL objects (published and unpublished)
+                    published: true, // Only reindex published objects
                 rbac: false,
                 multi: false
             );
@@ -5864,7 +5953,7 @@ class GuzzleSolrService
                     includeDeleted: false,
                     register: null,
                     schema: null,
-                    published: null, // Reindex ALL objects
+                    published: true, // Only reindex published objects
                     rbac: false,
                     multi: false
                 );
