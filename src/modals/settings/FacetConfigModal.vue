@@ -390,12 +390,15 @@ export default {
 		},
 	},
 	watch: {
-		show(newVal) {
-			if (newVal) {
-				this.loadFacets()
-			} else {
-				this.resetModal()
-			}
+		show: {
+			handler(newVal) {
+				if (newVal) {
+					this.loadFacets()
+				} else {
+					this.resetModal()
+				}
+			},
+			immediate: false
 		},
 	},
 	methods: {
