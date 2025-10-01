@@ -335,7 +335,7 @@ import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess, showError } from '@nextcloud/dialogs'
-// import { VueDraggable } from 'vue-draggable-plus'
+import { VueDraggable } from 'vue-draggable-plus'
 
 export default {
 	name: 'FacetConfigModal',
@@ -352,7 +352,7 @@ export default {
 		Drag,
 		ChevronDown,
 		ChevronUp,
-		// VueDraggable,
+		VueDraggable,
 	},
 	props: {
 		show: {
