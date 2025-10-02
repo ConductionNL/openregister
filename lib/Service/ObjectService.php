@@ -764,6 +764,14 @@ class ObjectService
             }
         }
 
+        if($register === null) {
+            $register = $this->currentRegister;
+        }
+
+        if($schema === null) {
+            $schema = $this->currentSchema;
+        }
+
         // Save the object using the current register and schema.
         $savedObject = $this->saveHandler->saveObject(
             register: $this->currentRegister,
@@ -774,6 +782,10 @@ class ObjectService
             rbac: $rbac,
             multi: $multi
         );
+
+        // Fallback for the case that someone unsets register and schema
+        $this->setRegister($register);
+        $this->setSchema($schema);
 
         // Render and return the saved object.
         return $this->renderHandler->renderEntity(
@@ -2401,7 +2413,7 @@ class ObjectService
                 !isset($query['_ids']) && !isset($query['_uses'])
             )
         ) {
-            
+
             // Forward to SOLR service - let it handle availability checks and error handling
             $solrService = $this->container->get(GuzzleSolrService::class);
             $result = $solrService->searchObjectsPaginated($query, $rbac, $multi, $published, $deleted);
