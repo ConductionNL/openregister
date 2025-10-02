@@ -27,10 +27,13 @@ use OCA\OpenRegister\Db\ObjectHandlers\MariaDbSearchHandler;
 use OCA\OpenRegister\Db\ObjectHandlers\MetaDataFacetHandler;
 use OCA\OpenRegister\Db\ObjectHandlers\MariaDbFacetHandler;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
+use OCA\OpenRegister\Event\ObjectDeletingEvent;
 use OCA\OpenRegister\Event\ObjectLockedEvent;
 use OCA\OpenRegister\Event\ObjectUnlockedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\IDatabaseJsonService;
 use OCA\OpenRegister\Service\MySQLJsonService;
 use OCA\OpenRegister\Service\AuthorizationExceptionService;
@@ -362,7 +365,7 @@ class ObjectEntityMapper extends QBMapper
 
             // For query builder-based authorization, we need to add conditions for exceptions
             // This is complex because we need to handle both inclusions and exclusions
-            // at the database level. For now, we'll rely on post-processing or 
+            // at the database level. For now, we'll rely on post-processing or
             // implement simplified exception handling here.
 
             $this->logger->debug('User has authorization exceptions, applying complex filtering', [
@@ -422,7 +425,7 @@ class ObjectEntityMapper extends QBMapper
         if ($this->authorizationExceptionService !== null) {
             $schemaUuid = $schema?->getUuid() ?? $object->getSchema();
             $registerUuid = $register?->getUuid() ?? $object->getRegister();
-            
+
             $exceptionResult = $this->authorizationExceptionService->evaluateUserPermissionOptimized(
                 $userId,
                 $action,
@@ -462,7 +465,7 @@ class ObjectEntityMapper extends QBMapper
             if ($userObj !== null) {
                 $userGroups = $this->groupManager->getUserGroupIds($userObj);
                 $allowedGroups = $objectGroups[$action];
-                
+
                 if (array_intersect($userGroups, $allowedGroups)) {
                     return true;
                 }
@@ -530,7 +533,7 @@ class ObjectEntityMapper extends QBMapper
         if ($userObj !== null) {
             $userGroups = $this->groupManager->getUserGroupIds($userObj);
             $authorizedGroups = $authorization[$action] ?? [];
-            
+
             if (array_intersect($userGroups, $authorizedGroups)) {
                 return true;
             }
@@ -559,7 +562,7 @@ class ObjectEntityMapper extends QBMapper
     private function applyRbacFilters(IQueryBuilder $qb, string $objectTableAlias = 'o', string $schemaTableAlias = 's', ?string $userId = null, bool $rbac = true): void
     {
         $rbacMethodStart = microtime(true);
-        
+
         // If RBAC is disabled, skip all permission filtering
         if ($rbac === false || !$this->isRbacEnabled()) {
             $this->logger->info('🔓 RBAC DISABLED - Skipping authorization checks', [
@@ -568,7 +571,7 @@ class ObjectEntityMapper extends QBMapper
             ]);
             return;
         }
-        
+
         $this->logger->info('🔒 RBAC FILTERING - Starting authorization checks', [
             'userId' => $userId ?? 'from_session',
             'objectAlias' => $objectTableAlias,
@@ -678,7 +681,7 @@ class ObjectEntityMapper extends QBMapper
         // Removed automatic published object access from RBAC - this should be handled via explicit published filter
 
         $qb->andWhere($readConditions);
-        
+
         $rbacMethodTime = round((microtime(true) - $rbacMethodStart) * 1000, 2);
         $this->logger->info('✅ RBAC FILTERING - Authorization checks completed', [
             'rbacMethodTime' => $rbacMethodTime . 'ms',
@@ -1381,14 +1384,14 @@ class ObjectEntityMapper extends QBMapper
         // **PERFORMANCE DEBUGGING**: Start detailed timing for ObjectEntityMapper
         $mapperStartTime = microtime(true);
         $perfTimings = [];
-        
+
         $this->logger->info('🎯 MAPPER START - ObjectEntityMapper::searchObjects called', [
             'queryKeys' => array_keys($query),
             'rbac' => $rbac,
             'multi' => $multi,
             'activeOrg' => $activeOrganisationUuid ? 'set' : 'null'
         ]);
-        
+
         // Extract options from query (prefixed with _)
         $extractStart = microtime(true);
         $limit = $query['_limit'] ?? null;
@@ -1479,7 +1482,7 @@ class ObjectEntityMapper extends QBMapper
             // For count queries, use COUNT(*) and skip pagination
             $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count')
                 ->from('openregister_objects', 'o');
-                
+
             // **PERFORMANCE OPTIMIZATION**: Only join schema table if RBAC is needed (15-20% improvement)
             $needsSchemaJoin = $rbac && !$performanceBypass && !$smartBypass;
             if ($needsSchemaJoin) {
@@ -1492,12 +1495,12 @@ class ObjectEntityMapper extends QBMapper
             }
         } else {
             // **PERFORMANCE OPTIMIZATION**: Selective field loading for 500ms target
-            
+
             if ($isSimpleRequest) {
                 // **SELECTIVE LOADING**: Only essential fields for simple requests (20-30% improvement)
                 $queryBuilder->select(
                     'o.id',
-                    'o.uuid', 
+                    'o.uuid',
                     'o.register',
                     'o.schema',
                     'o.organisation',
@@ -1510,7 +1513,7 @@ class ObjectEntityMapper extends QBMapper
                     'o.description',
                     'o.summary'
                 );
-                
+
                 $this->logger->debug('🚀 PERFORMANCE: Using selective field loading', [
                     'selectedFields' => 'essential_only',
                     'expectedImprovement' => '20-30%'
@@ -1518,17 +1521,17 @@ class ObjectEntityMapper extends QBMapper
             } else {
                 // Complex requests need all fields
                 $queryBuilder->select('o.*');
-                
+
                 $this->logger->debug('📊 PERFORMANCE: Using full field loading', [
                     'selectedFields' => 'all_fields',
                     'reason' => 'complex_request'
                 ]);
             }
-            
+
             $queryBuilder->from('openregister_objects', 'o')
                 ->setMaxResults($limit)
                 ->setFirstResult($offset);
-                
+
             // **PERFORMANCE OPTIMIZATION**: Only join schema table if RBAC is needed (15-20% improvement)
             $needsSchemaJoin = $rbac && !$performanceBypass && !$smartBypass;
             if ($needsSchemaJoin) {
@@ -1562,7 +1565,7 @@ class ObjectEntityMapper extends QBMapper
             $rbacStart = microtime(true);
             $this->applyRbacFilters($queryBuilder, 'o', 's', null, $rbac);
             $perfTimings['rbac_filtering'] = round((microtime(true) - $rbacStart) * 1000, 2);
-            
+
             $this->logger->info('🔒 RBAC FILTERING COMPLETED', [
                 'rbacTime' => $perfTimings['rbac_filtering'] . 'ms',
                 'rbacEnabled' => $rbac
@@ -1572,7 +1575,7 @@ class ObjectEntityMapper extends QBMapper
             $orgStart = microtime(true);
             $this->applyOrganizationFilters($queryBuilder, 'o', $activeOrganisationUuid, $multi);
             $perfTimings['org_filtering'] = round((microtime(true) - $orgStart) * 1000, 2);
-            
+
             $this->logger->info('🏢 ORG FILTERING COMPLETED', [
                 'orgTime' => $perfTimings['org_filtering'] . 'ms',
                 'multiEnabled' => $multi,
@@ -1592,7 +1595,7 @@ class ObjectEntityMapper extends QBMapper
             $orX->add($queryBuilder->expr()->in('o.uuid', $queryBuilder->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
             $queryBuilder->andWhere($orX);
         }
-        
+
         // Handle filtering by uses in relations if provided
         if ($uses !== null) {
             $queryBuilder->andWhere(
@@ -1655,44 +1658,44 @@ class ObjectEntityMapper extends QBMapper
 
         // **PERFORMANCE TIMING**: Database execution (final bottleneck check)
         $dbExecutionStart = microtime(true);
-        
+
         // Return appropriate result based on count flag
         if ($count === true) {
             $this->logger->info('📊 EXECUTING COUNT QUERY', [
                 'totalPrepTime' => round((microtime(true) - $mapperStartTime) * 1000, 2) . 'ms'
             ]);
-            
+
             $result = $queryBuilder->executeQuery();
             $countResult = (int) $result->fetchOne();
-            
+
             $perfTimings['db_execution'] = round((microtime(true) - $dbExecutionStart) * 1000, 2);
             $perfTimings['total_mapper_time'] = round((microtime(true) - $mapperStartTime) * 1000, 2);
-            
+
             $this->logger->info('🎯 MAPPER COMPLETE - COUNT RESULT', [
                 'countResult' => $countResult,
                 'dbExecutionTime' => $perfTimings['db_execution'] . 'ms',
                 'totalMapperTime' => $perfTimings['total_mapper_time'] . 'ms',
                 'timingBreakdown' => $perfTimings
             ]);
-            
+
             return $countResult;
         } else {
             $this->logger->info('📋 EXECUTING SEARCH QUERY', [
                 'totalPrepTime' => round((microtime(true) - $mapperStartTime) * 1000, 2) . 'ms'
             ]);
-            
+
             $entities = $this->findEntities($queryBuilder);
-            
+
             $perfTimings['db_execution'] = round((microtime(true) - $dbExecutionStart) * 1000, 2);
             $perfTimings['total_mapper_time'] = round((microtime(true) - $mapperStartTime) * 1000, 2);
-            
+
             $this->logger->info('🎯 MAPPER COMPLETE - SEARCH RESULTS', [
                 'resultCount' => count($entities),
                 'dbExecutionTime' => $perfTimings['db_execution'] . 'ms',
                 'totalMapperTime' => $perfTimings['total_mapper_time'] . 'ms',
                 'timingBreakdown' => $perfTimings
             ]);
-            
+
             return $entities;
         }
 
@@ -2252,6 +2255,7 @@ class ObjectEntityMapper extends QBMapper
         unset($object['@self'], $object['id']);
         $entity->setObject($object);
         $entity->setSize(strlen(serialize($entity->jsonSerialize()))); // Set the size to the byte size of the serialized object
+        $this->eventDispatcher->dispatchTyped(new ObjectCreatingEvent($entity));
 
         $entity = parent::insert($entity);
 
@@ -2322,6 +2326,7 @@ class ObjectEntityMapper extends QBMapper
         unset($object['@self'], $object['id']);
         $entity->setObject($object);
         $entity->setSize(strlen(serialize($entity->jsonSerialize()))); // Set the size to the byte size of the serialized object
+        $this->eventDispatcher->dispatchTyped(new ObjectUpdatingEvent($entity, $oldObject));
 
         $entity = parent::update($entity);
 
@@ -2375,6 +2380,9 @@ class ObjectEntityMapper extends QBMapper
      */
     public function delete(Entity $object): ObjectEntity
     {
+        $this->eventDispatcher->dispatchTyped(
+            new ObjectDeletingEvent($object)
+        );
         $result = parent::delete($object);
 
         // Dispatch deletion event.
@@ -2594,10 +2602,10 @@ class ObjectEntityMapper extends QBMapper
 
         // **PERFORMANCE OPTIMIZATION**: Add logging for monitoring
         $startTime = microtime(true);
-        
+
         // Filter out empty values and ensure uniqueness
         $cleanIds = array_filter(array_unique($ids), fn($id) => !empty($id));
-        
+
         if (empty($cleanIds)) {
             return [];
         }
@@ -2621,7 +2629,7 @@ class ObjectEntityMapper extends QBMapper
             ->orWhere($qb->expr()->in('uri', $qb->createNamedParameter($cleanIds, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
 
         $result = $this->findEntities($qb);
-        
+
         // **PERFORMANCE OPTIMIZATION**: Log execution time
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
         $this->logger->debug('findMultiple completed', [
@@ -2629,7 +2637,7 @@ class ObjectEntityMapper extends QBMapper
             'requestedIds' => count($cleanIds),
             'foundObjects' => count($result)
         ]);
-        
+
         return $result;
 
     }//end findMultiple()
@@ -3820,7 +3828,7 @@ class ObjectEntityMapper extends QBMapper
         // Get the first object to determine column structure
         $firstObject = $insertObjects[0];
         $columns = array_keys($firstObject);
-        
+
         // DEBUG: Check for problematic 'data' key
         if (isset($firstObject['data'])) {
         }
@@ -4055,11 +4063,11 @@ class ObjectEntityMapper extends QBMapper
 
         $startTime = microtime(true);
         $updatedIds = [];
-        
+
         // MEMORY OPTIMIZATION: Get column structure once for all objects
         $firstObject = $updateObjects[0];
         $columns = $this->getEntityColumns($firstObject);
-        
+
         // Remove 'id' from updateable columns
         $updateableColumns = array_filter($columns, function($col) {
             return $col !== 'id';
@@ -4071,12 +4079,12 @@ class ObjectEntityMapper extends QBMapper
         foreach ($updateableColumns as $column) {
             $setParts[] = "`{$column}` = :param_{$column}";
         }
-        
+
         $sql = "UPDATE `{$tableName}` SET " . implode(', ', $setParts) . " WHERE `id` = :param_id";
-        
+
         // PERFORMANCE: Prepare statement once, reuse for all objects
         $stmt = $this->db->prepare($sql);
-        
+
         // MEMORY INTENSIVE: Process all objects with prepared statement reuse
         foreach ($updateObjects as $object) {
             $dbId = $object->getId();
@@ -4142,7 +4150,7 @@ class ObjectEntityMapper extends QBMapper
             $this->db,
             $this->logger
         );
-        
+
         return $optimizedHandler->ultraFastUnifiedBulkSave($insertObjects, $updateObjects);
     }//end ultraFastBulkSave()
 
@@ -4170,63 +4178,63 @@ class ObjectEntityMapper extends QBMapper
         $tableName = 'openregister_objects';
         $firstObject = $insertObjects[0];
         $columns = array_keys($firstObject);
-        
+
         // MEMORY OPTIMIZATION: Calculate larger batch sizes when memory allows
         $batchSize = min(2000, $this->calculateOptimalBatchSize($insertObjects, $columns));
         $insertedIds = [];
-        
+
         // PERFORMANCE: Pre-build column list string
         $columnList = '`' . implode('`, `', $columns) . '`';
         $baseSQL = "INSERT INTO `{$tableName}` ({$columnList}) VALUES ";
-        
+
         // Process in optimized batches
         for ($i = 0; $i < count($insertObjects); $i += $batchSize) {
             $batch = array_slice($insertObjects, $i, $batchSize);
             $batchStartTime = microtime(true);
-            
+
             // MEMORY INTENSIVE: Build large VALUES clause and parameters in memory
             $valuesClause = [];
             $parameters = [];
             $paramIndex = 0;
-            
+
             foreach ($batch as $objectData) {
                 $rowValues = [];
                 foreach ($columns as $column) {
                     $paramName = 'p' . $paramIndex; // Shorter parameter names
                     $rowValues[] = ':' . $paramName;
-                    
+
                     $value = $objectData[$column] ?? null;
                     if ($column === 'object' && is_array($value)) {
                         $value = json_encode($value, JSON_UNESCAPED_UNICODE);
                     }
-                    
+
                     $parameters[$paramName] = $value;
                     $paramIndex++;
                 }
                 $valuesClause[] = '(' . implode(',', $rowValues) . ')';
-                
+
                 // Collect UUID for return
                 if (isset($objectData['uuid'])) {
                     $insertedIds[] = $objectData['uuid'];
                 }
             }
-            
+
             // EXECUTE: Single large INSERT statement
             $fullSQL = $baseSQL . implode(',', $valuesClause);
-            
+
             try {
                 $stmt = $this->db->prepare($fullSQL);
                 $stmt->execute($parameters);
-                
+
                 $batchTime = microtime(true) - $batchStartTime;
                 $batchSpeed = count($batch) / $batchTime;
-                
+
                 $this->logger->debug('Optimized insert batch completed', [
                     'batch_size' => count($batch),
                     'time_seconds' => round($batchTime, 3),
                     'objects_per_second' => round($batchSpeed, 0)
                 ]);
-                
+
             } catch (\Exception $e) {
                 $this->logger->error('Optimized bulk insert batch failed', [
                     'batch_size' => count($batch),
@@ -4234,21 +4242,21 @@ class ObjectEntityMapper extends QBMapper
                 ]);
                 throw $e;
             }
-            
+
             // MEMORY MANAGEMENT: Clear batch variables
             unset($batch, $valuesClause, $parameters, $fullSQL);
         }
-        
+
         $totalTime = microtime(true) - $startTime;
         $totalSpeed = count($insertObjects) / $totalTime;
-        
+
         $this->logger->info('Optimized bulk insert completed', [
             'total_objects' => count($insertObjects),
             'total_time_seconds' => round($totalTime, 3),
             'objects_per_second' => round($totalSpeed, 0),
             'batches' => ceil(count($insertObjects) / $batchSize)
         ]);
-        
+
         return $insertedIds;
     }//end optimizedBulkInsert()
 
@@ -5219,10 +5227,10 @@ class ObjectEntityMapper extends QBMapper
     {
         // **OPTIMIZATION 1**: Use composite indexes for common query patterns
         $this->applyCompositeIndexOptimizations($qb, $filters);
-        
+
         // **OPTIMIZATION 2**: Optimize ORDER BY to use indexed columns
         $this->optimizeOrderBy($qb);
-        
+
         // **OPTIMIZATION 3**: Add query hints for better execution plans
         $this->addQueryHints($qb, $filters, $skipRbac);
     }
@@ -5242,13 +5250,13 @@ class ObjectEntityMapper extends QBMapper
         $hasSchema = isset($filters['schema']) || isset($filters['schema_id']);
         $hasRegister = isset($filters['registers']) || isset($filters['register']);
         $hasPublished = isset($filters['published']);
-        
+
         if ($hasSchema && $hasRegister && $hasPublished) {
             // This will use the idx_schema_register_published composite index
             // The order of WHERE clauses can help the query planner
             $this->logger->debug('🚀 QUERY OPTIMIZATION: Using composite index for schema+register+published');
         }
-        
+
         // **MULTITENANCY OPTIMIZATION**: Schema + organisation index
         $hasOrganisation = isset($filters['organisation']);
         if ($hasSchema && $hasOrganisation) {
@@ -5267,12 +5275,12 @@ class ObjectEntityMapper extends QBMapper
     {
         // **INDEX-AWARE ORDERING**: Default to indexed columns for sorting
         $orderByParts = $qb->getQueryPart('orderBy');
-        
+
         if (empty($orderByParts)) {
             // Use indexed columns for default ordering
             $qb->orderBy('updated', 'DESC')
                ->addOrderBy('id', 'DESC');
-               
+
             $this->logger->debug('🚀 QUERY OPTIMIZATION: Using indexed columns for ORDER BY');
         }
     }
@@ -5294,13 +5302,13 @@ class ObjectEntityMapper extends QBMapper
             // Small result sets should benefit from index usage
             $this->logger->debug('🚀 QUERY OPTIMIZATION: Small result set - favoring index usage');
         }
-        
+
         // **QUERY HINT 2**: For RBAC-enabled queries, suggest specific execution plan
         if (!$skipRbac) {
             // RBAC queries should prioritize owner-based indexes
             $this->logger->debug('🚀 QUERY OPTIMIZATION: RBAC enabled - using owner-based indexes');
         }
-        
+
         // **QUERY HINT 3**: For JSON queries, suggest JSON-specific optimizations
         if (isset($filters['object']) || $this->hasJsonFilters($filters)) {
             $this->logger->debug('🚀 QUERY OPTIMIZATION: JSON queries detected - using JSON indexes');
@@ -5322,7 +5330,7 @@ class ObjectEntityMapper extends QBMapper
                 return true;
             }
         }
-        
+
         return false;
     }
 
