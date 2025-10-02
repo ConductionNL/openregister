@@ -1776,12 +1776,16 @@ class GuzzleSolrService
     {
         
         $filters = $solrQuery['fq'] ?? [];
-        $now = date('Y-m-d\TH:i:s\Z');
         
-        // Define published object condition: published is not null AND published <= now AND (depublished is null OR depublished > now)
-        $publishedCondition = 'self_published:[* TO ' . $now . '] AND (-self_depublished:[* TO *] OR self_depublished:[' . $now . ' TO *])';
+        // @todo HOTFIX: Date calculation temporarily disabled along with published filtering
+        // $now = date('Y-m-d\TH:i:s\Z');
+        // $publishedCondition = 'self_published:[* TO ' . $now . '] AND (-self_depublished:[* TO *] OR self_depublished:[' . $now . ' TO *])';
         
         // Multi-tenancy filtering (removed automatic published object exception)
+        // @todo HOTFIX: Organisation filtering temporarily disabled due to environment-specific issues
+        // This filtering was causing different results between local and online environments
+        // Need to investigate user context and organisation service differences between NC 30/31
+        /*
         if ($multi) {
             $multitenancyEnabled = $this->isMultitenancyEnabled();
             if ($multitenancyEnabled) {
@@ -1792,6 +1796,7 @@ class GuzzleSolrService
                 }
             }
         }
+        */
         
         // RBAC filtering (removed automatic published object exception)
         if ($rbac) {
@@ -1801,12 +1806,18 @@ class GuzzleSolrService
         }
         
         // Published filtering (only if explicitly requested)
+        // @todo HOTFIX: Published filtering temporarily disabled due to timezone/environment issues
+        // The date() function uses server timezone which causes different behavior between environments
+        // Need to fix timezone handling: use gmdate() or proper UTC DateTime objects
+        // Also investigate why published filtering returns 0 results on NC 31 vs NC 30
+        /*
         if ($published) {
             // Filter for objects that have a published date AND it's in the past
             // Use existence check instead of NOT null to avoid SOLR date parsing errors
             $filters[] = 'self_published:[* TO ' . $now . ']';
             $filters[] = '(NOT self_depublished:[* TO *] OR self_depublished:[' . $now . ' TO *])';
         }
+        */
         
         // Deleted filtering
         // @todo: this is not working as expected so we turned it of, for now deleted items should not be indexed
