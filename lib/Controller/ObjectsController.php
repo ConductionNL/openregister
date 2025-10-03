@@ -492,6 +492,12 @@ class ObjectsController extends Controller
         ObjectService $objectService
     ): JSONResponse {
         try {
+            // DEBUG: Add unique identifier to response
+            $debugInfo = [
+                'DEBUG_CONTROLLER' => 'OpenRegister_ObjectsController',
+                'DEBUG_PARAMS' => ['register' => $register, 'schema' => $schema, 'id' => $id]
+            ];
+            
             // Resolve slugs to numeric IDs consistently
             $resolved = $this->resolveRegisterSchemaIds($register, $schema, $objectService);
         } catch (\OCA\OpenRegister\Exception\RegisterNotFoundException | \OCA\OpenRegister\Exception\SchemaNotFoundException $e) {
@@ -549,6 +555,9 @@ class ObjectsController extends Controller
                 rbac: $rbac,
                 multi: $multi
             );
+
+            // Add debug info to response
+            $renderedObject['DEBUG_INFO'] = $debugInfo;
 
             return new JSONResponse($renderedObject);
         } catch (DoesNotExistException $exception) {
@@ -687,10 +696,10 @@ class ObjectsController extends Controller
         // If admin, disable RBAC
         $multi = !$isAdmin;
         // If admin, disable multitenancy
-        // Check if the object exists and can be updated.
+        // Check if the object exists and can be updated (silent read - no audit trail).
         // @todo shouldn't this be part of the object service?
         try {
-            $existingObject = $this->objectService->find($id, [], false, null, null, $rbac, $multi);
+            $existingObject = $this->objectService->findSilent($id, [], false, null, null, $rbac, $multi);
 
             // Get the resolved register and schema IDs from the ObjectService
             // This ensures proper handling of both numeric IDs and slug identifiers

@@ -171,7 +171,8 @@ class Application extends App implements IBootstrap
                     $container->get('OCP\IGroupManager'),
                     $container->get('OCP\IUserManager'),
                     $container->get('OCP\IAppConfig'),
-                    $container->get('Psr\Log\LoggerInterface')
+                    $container->get('Psr\Log\LoggerInterface'),
+                    null // AuthorizationExceptionService
                     );
                 }
                 );
@@ -248,6 +249,7 @@ class Application extends App implements IBootstrap
                     $container->get(ObjectCacheService::class),
                     $container->get(SchemaCacheService::class),
                     $container->get(SchemaFacetCacheService::class),
+                    $container->get(SettingsService::class),
                     $container->get('Psr\Log\LoggerInterface'),
                     new \Twig\Loader\ArrayLoader([])
                     );
@@ -265,7 +267,21 @@ class Application extends App implements IBootstrap
                     $container->get(SchemaCacheService::class),
                     $container->get(SchemaFacetCacheService::class),
                     $container->get('OCA\OpenRegister\Db\AuditTrailMapper'),
+                    $container->get(SettingsService::class),
                     $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register GetObject with SettingsService dependency
+        $context->registerService(
+                GetObject::class,
+                function ($container) {
+                    return new GetObject(
+                    $container->get(ObjectEntityMapper::class),
+                    $container->get(FileService::class),
+                    $container->get('OCA\OpenRegister\Db\AuditTrailMapper'),
+                    $container->get(SettingsService::class)
                     );
                 }
                 );

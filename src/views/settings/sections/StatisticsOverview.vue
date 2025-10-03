@@ -171,7 +171,19 @@
 											{{ stats.totals.totalAuditTrails }}
 										</td>
 										<td class="stats-table-value">
-											-
+											<NcButton
+												v-if="stats.totals.totalAuditTrails > 0"
+												type="error"
+												size="small"
+												:disabled="loading || saving || rebasing || clearingAuditTrails"
+												@click="showClearAuditTrailsDialog">
+												<template #icon>
+													<NcLoadingIcon v-if="clearingAuditTrails" :size="16" />
+													<Delete v-else :size="16" />
+												</template>
+												Clear All
+											</NcButton>
+											<span v-else>-</span>
 										</td>
 									</tr>
 									<tr class="stats-table-row">
@@ -182,7 +194,19 @@
 											{{ stats.totals.totalSearchTrails }}
 										</td>
 										<td class="stats-table-value">
-											-
+											<NcButton
+												v-if="stats.totals.totalSearchTrails > 0"
+												type="error"
+												size="small"
+												:disabled="loading || saving || rebasing || clearingSearchTrails"
+												@click="showClearSearchTrailsDialog">
+												<template #icon>
+													<NcLoadingIcon v-if="clearingSearchTrails" :size="16" />
+													<Delete v-else :size="16" />
+												</template>
+												Clear All
+											</NcButton>
+											<span v-else>-</span>
 										</td>
 									</tr>
 									<tr class="stats-table-row">
@@ -345,6 +369,68 @@
 			@retry="handleRetryMassValidate"
 			@reset="handleResetMassValidate"
 		/>
+
+		<!-- Clear Audit Trails Confirmation Dialog -->
+		<NcDialog v-if="showClearAuditTrailsConfirmation"
+			:open="showClearAuditTrailsConfirmation"
+			name="Confirm Clear Audit Trails"
+			@closing="hideClearAuditTrailsDialog">
+			<div class="clear-dialog-content">
+				<h3>⚠️ Confirm Clear All Audit Trails</h3>
+				<p>
+					This operation will permanently delete all audit trail logs from the database.
+					This action cannot be undone.
+				</p>
+				<p><strong>Current audit trails: {{ stats.totals.totalAuditTrails }}</strong></p>
+				<p><strong>This operation may take some time to complete.</strong></p>
+				
+				<div class="dialog-actions">
+					<NcButton @click="hideClearAuditTrailsDialog">
+						Cancel
+					</NcButton>
+					<NcButton type="error"
+						:disabled="clearingAuditTrails"
+						@click="clearAllAuditTrails">
+						<template #icon>
+							<NcLoadingIcon v-if="clearingAuditTrails" :size="20" />
+							<Delete v-else :size="20" />
+						</template>
+						{{ clearingAuditTrails ? 'Clearing...' : 'Confirm Clear All' }}
+					</NcButton>
+				</div>
+			</div>
+		</NcDialog>
+
+		<!-- Clear Search Trails Confirmation Dialog -->
+		<NcDialog v-if="showClearSearchTrailsConfirmation"
+			:open="showClearSearchTrailsConfirmation"
+			name="Confirm Clear Search Trails"
+			@closing="hideClearSearchTrailsDialog">
+			<div class="clear-dialog-content">
+				<h3>⚠️ Confirm Clear All Search Trails</h3>
+				<p>
+					This operation will permanently delete all search trail logs from the database.
+					This action cannot be undone.
+				</p>
+				<p><strong>Current search trails: {{ stats.totals.totalSearchTrails }}</strong></p>
+				<p><strong>This operation may take some time to complete.</strong></p>
+				
+				<div class="dialog-actions">
+					<NcButton @click="hideClearSearchTrailsDialog">
+						Cancel
+					</NcButton>
+					<NcButton type="error"
+						:disabled="clearingSearchTrails"
+						@click="clearAllSearchTrails">
+						<template #icon>
+							<NcLoadingIcon v-if="clearingSearchTrails" :size="20" />
+							<Delete v-else :size="20" />
+						</template>
+						{{ clearingSearchTrails ? 'Clearing...' : 'Confirm Clear All' }}
+					</NcButton>
+				</div>
+			</div>
+		</NcDialog>
 	</NcSettingsSection>
 </template>
 
@@ -354,6 +440,7 @@ import { useSettingsStore } from '../../../store/settings.js'
 import { NcSettingsSection, NcButton, NcLoadingIcon, NcDialog } from '@nextcloud/vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
 import { MassValidateModal } from '../../../modals/settings'
 
 export default {
@@ -366,6 +453,7 @@ export default {
 		NcDialog,
 		Refresh,
 		CheckCircle,
+		Delete,
 		MassValidateModal,
 	},
 
@@ -406,6 +494,22 @@ export default {
 
 		massValidateResults() {
 			return this.settingsStore.massValidateResults
+		},
+
+		clearingAuditTrails() {
+			return this.settingsStore.clearingAuditTrails
+		},
+
+		clearingSearchTrails() {
+			return this.settingsStore.clearingSearchTrails
+		},
+
+		showClearAuditTrailsConfirmation() {
+			return this.settingsStore.showClearAuditTrailsConfirmation
+		},
+
+		showClearSearchTrailsConfirmation() {
+			return this.settingsStore.showClearSearchTrailsConfirmation
 		},
 		
 		/**
@@ -516,6 +620,42 @@ export default {
 				// Keep default prediction data
 			} finally {
 				this.memoryPredictionLoading = false
+			}
+		},
+
+		showClearAuditTrailsDialog() {
+			this.settingsStore.showClearAuditTrailsDialog()
+		},
+
+		hideClearAuditTrailsDialog() {
+			this.settingsStore.hideClearAuditTrailsDialog()
+		},
+
+		async clearAllAuditTrails() {
+			try {
+				await this.settingsStore.clearAllAuditTrails()
+				// Reload stats after clearing
+				await this.loadStats()
+			} catch (error) {
+				console.error('Failed to clear audit trails:', error)
+			}
+		},
+
+		showClearSearchTrailsDialog() {
+			this.settingsStore.showClearSearchTrailsDialog()
+		},
+
+		hideClearSearchTrailsDialog() {
+			this.settingsStore.hideClearSearchTrailsDialog()
+		},
+
+		async clearAllSearchTrails() {
+			try {
+				await this.settingsStore.clearAllSearchTrails()
+				// Reload stats after clearing
+				await this.loadStats()
+			} catch (error) {
+				console.error('Failed to clear search trails:', error)
 			}
 		},
 	},
@@ -713,5 +853,20 @@ export default {
 	justify-content: flex-end;
 	gap: 12px;
 	margin-top: 24px;
+}
+
+.clear-dialog-content {
+	padding: 20px;
+}
+
+.clear-dialog-content h3 {
+	color: var(--color-text-light);
+	margin: 0 0 16px 0;
+}
+
+.clear-dialog-content p {
+	color: var(--color-text-light);
+	line-height: 1.5;
+	margin: 0 0 12px 0;
 }
 </style>

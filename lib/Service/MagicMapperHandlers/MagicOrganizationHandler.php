@@ -153,14 +153,8 @@ class MagicOrganizationHandler
             $qb->expr()->eq($organizationColumn, $qb->createNamedParameter($activeOrganisationUuid))
         );
 
-        // If this is the system-wide default organization, include additional objects
-        if ($isSystemDefaultOrg) {
-            // Include objects with NULL organization (legacy data)
-            $orgConditions->add(
-                $qb->expr()->isNull($organizationColumn)
-            );
-
-            // Include published objects (for backwards compatibility)
+        // Include published objects from any organization if configured to do so
+        if ($this->shouldPublishedObjectsBypassMultiTenancy()) {
             $now = (new \DateTime())->format('Y-m-d H:i:s');
             $orgConditions->add(
                 $qb->expr()->andX(
@@ -174,8 +168,33 @@ class MagicOrganizationHandler
             );
         }
 
+        // If this is the system-wide default organization, include additional objects
+        if ($isSystemDefaultOrg) {
+            // Include objects with NULL organization (legacy data)
+            $orgConditions->add(
+                $qb->expr()->isNull($organizationColumn)
+            );
+        }
+
         $qb->andWhere($orgConditions);
     }
+
+    /**
+     * Check if published objects should bypass multi-tenancy restrictions
+     *
+     * @return bool True if published objects should bypass multi-tenancy, false otherwise
+     */
+    private function shouldPublishedObjectsBypassMultiTenancy(): bool
+    {
+        $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
+        if (empty($multitenancyConfig)) {
+            return false; // Default to false for security
+        }
+
+        $multitenancyData = json_decode($multitenancyConfig, true);
+        return $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false;
+
+    }//end shouldPublishedObjectsBypassMultiTenancy()
 
     /**
      * Apply organization access rules for unauthenticated users

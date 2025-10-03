@@ -594,6 +594,57 @@ class ObjectService
 
 
     /**
+     * Gets an object by its ID without creating an audit trail.
+     *
+     * This method is used internally by other operations (like UPDATE) that need to
+     * retrieve an object without logging the read action.
+     *
+     * @param string                   $id       The ID of the object to get.
+     * @param array|null               $extend   Properties to extend the object with.
+     * @param bool                     $files    Include file information.
+     * @param Register|string|int|null $register The register object or its ID/UUID.
+     * @param Schema|string|int|null   $schema   The schema object or its ID/UUID.
+     * @param bool                     $rbac     Whether to apply RBAC checks (default: true).
+     * @param bool                     $multi    Whether to apply multitenancy filtering (default: true).
+     *
+     * @return ObjectEntity The retrieved object.
+     *
+     * @throws Exception If there is an error during retrieval.
+     */
+    public function findSilent(
+        string $id,
+        ?array $extend=[],
+        bool $files=false,
+        Register | string | int | null $register=null,
+        Schema | string | int | null $schema=null,
+        bool $rbac=true,
+        bool $multi=true
+    ): ObjectEntity {
+        // Check if a register is provided and set the current register context.
+        if ($register !== null) {
+            $this->setRegister($register);
+        }
+
+        // Check if a schema is provided and set the current schema context.
+        if ($schema !== null) {
+            $this->setSchema($schema);
+        }
+
+        // Use the silent find method from the GetObject handler
+        return $this->getHandler->findSilent(
+            id: $id,
+            register: $this->currentRegister,
+            schema: $this->currentSchema,
+            extend: $extend,
+            files: $files,
+            rbac: $rbac,
+            multi: $multi
+        );
+
+    }//end findSilent()
+
+
+    /**
      * Creates a new object from an array.
      *
      * @param array                    $object   The object data to create.
@@ -602,6 +653,7 @@ class ObjectService
      * @param Schema|string|int|null   $schema   The schema object or its ID/UUID.
      * @param bool                     $rbac     Whether to apply RBAC checks (default: true).
      * @param bool                     $multi    Whether to apply multitenancy filtering (default: true).
+     * @param bool                     $silent   Whether to skip audit trail creation and events (default: false).
      *
      * @return array The created object.
      *
@@ -613,7 +665,8 @@ class ObjectService
         Register | string | int | null $register=null,
         Schema | string | int | null $schema=null,
         bool $rbac=true,
-        bool $multi=true
+        bool $multi=true,
+        bool $silent=false
     ): ObjectEntity {
         // Check if a register is provided and set the current register context.
         if ($register !== null) {
@@ -676,7 +729,9 @@ class ObjectService
             register:$this->currentRegister,
             schema: $this->currentSchema,
             uuid: $tempObject->getUuid(),
-        // $folderId
+            rbac: $rbac,
+            multi: $multi,
+            silent: $silent
         );
 
         // Fallback for the case that someone unsets register and schema
@@ -722,7 +777,8 @@ class ObjectService
         Register | string | int | null $register=null,
         Schema | string | int | null $schema=null,
         bool $rbac=true,
-        bool $multi=true
+        bool $multi=true,
+        bool $silent=false
     ): ObjectEntity {
         // Check if a register is provided and set the current register context.
         if ($register !== null) {
@@ -734,8 +790,8 @@ class ObjectService
             $this->setSchema($schema);
         }
 
-        // Retrieve the existing object by its UUID.
-        $existingObject = $this->getHandler->find(id: $id, rbac: $rbac, multi: $multi);
+        // Retrieve the existing object by its UUID (silent read - no audit trail).
+        $existingObject = $this->getHandler->findSilent(id: $id, rbac: $rbac, multi: $multi);
         if ($existingObject === null) {
             throw new \OCP\AppFramework\Db\DoesNotExistException('Object not found');
         }
@@ -780,7 +836,8 @@ class ObjectService
             uuid: $id,
             folderId: $folderId,
             rbac: $rbac,
-            multi: $multi
+            multi: $multi,
+            silent: $silent
         );
 
         // Fallback for the case that someone unsets register and schema
@@ -1053,6 +1110,7 @@ class ObjectService
      * @param string|null              $uuid     The UUID of the object to update (if updating)
      * @param bool                     $rbac     Whether to apply RBAC checks (default: true)
      * @param bool                     $multi    Whether to apply multitenancy filtering (default: true)
+     * @param bool                     $silent   Whether to skip audit trail creation and events (default: false)
      *
      * @return ObjectEntity The saved and rendered object
      *
@@ -1065,7 +1123,8 @@ class ObjectService
         Schema | string | int | null $schema=null,
         ?string $uuid=null,
         bool $rbac=true,
-        bool $multi=true
+        bool $multi=true,
+        bool $silent=false
     ): ObjectEntity {
         // Check if a register is provided and set the current register context.
         if ($register !== null) {
@@ -1177,7 +1236,9 @@ class ObjectService
             $uuid,
             $folderId,
             $rbac,
-            $multi
+            $multi,
+            true, // persist
+            $silent // silent
         );
 
         // Determine if register and schema should be passed to renderEntity.
@@ -5063,14 +5124,17 @@ class ObjectService
     private function logSearchTrail(array $query, int $resultCount, int $totalResults, float $executionTime, string $executionType='sync'): void
     {
         try {
-            // Create the search trail entry using the service with actual execution time
-            $this->searchTrailService->createSearchTrail(
-                $query,
-                $resultCount,
-                $totalResults,
-                $executionTime,
-                $executionType
-            );
+            // Only create search trail if search trails are enabled
+            if ($this->isSearchTrailsEnabled()) {
+                // Create the search trail entry using the service with actual execution time
+                $this->searchTrailService->createSearchTrail(
+                    $query,
+                    $resultCount,
+                    $totalResults,
+                    $executionTime,
+                    $executionType
+                );
+            }
         } catch (\Exception $e) {
             // Log the error but don't fail the request
         }
@@ -6588,6 +6652,24 @@ class ObjectService
         ];
 
     }//end getMetadataFacetableFields()
+
+
+    /**
+     * Check if search trails are enabled in the settings
+     *
+     * @return bool True if search trails are enabled, false otherwise
+     */
+    private function isSearchTrailsEnabled(): bool
+    {
+        try {
+            $retentionSettings = $this->settingsService->getRetentionSettingsOnly();
+            return $retentionSettings['searchTrailsEnabled'] ?? true;
+        } catch (\Exception $e) {
+            // If we can't get settings, default to enabled for safety
+            $this->logger->warning('Failed to check search trails setting, defaulting to enabled', ['error' => $e->getMessage()]);
+            return true;
+        }
+    }//end isSearchTrailsEnabled()
 
 
 }//end class

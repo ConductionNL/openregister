@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\ObjectCacheService;
 use OCA\OpenRegister\Service\SchemaCacheService;
 use OCA\OpenRegister\Service\SchemaFacetCacheService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\SettingsService;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -61,6 +62,11 @@ class DeleteObject
     private AuditTrailMapper $auditTrailMapper;
 
     /**
+     * @var SettingsService
+     */
+    private SettingsService $settingsService;
+
+    /**
      * @var LoggerInterface
      */
     private LoggerInterface $logger;
@@ -75,6 +81,7 @@ class DeleteObject
      * @param SchemaCacheService        $schemaCacheService        Schema cache service for schema entity caching.
      * @param SchemaFacetCacheService   $schemaFacetCacheService   Schema facet cache service for facet caching.
      * @param AuditTrailMapper          $auditTrailMapper          Audit trail mapper for logs.
+     * @param SettingsService           $settingsService           Settings service for accessing trail settings.
      * @param LoggerInterface           $logger                    Logger for error handling.
      */
     public function __construct(
@@ -84,9 +91,11 @@ class DeleteObject
         private readonly SchemaCacheService $schemaCacheService,
         private readonly SchemaFacetCacheService $schemaFacetCacheService,
         AuditTrailMapper $auditTrailMapper,
+        SettingsService $settingsService,
         LoggerInterface $logger
     ) {
         $this->auditTrailMapper = $auditTrailMapper;
+        $this->settingsService  = $settingsService;
         $this->logger           = $logger;
 
     }//end __construct()
@@ -132,9 +141,11 @@ class DeleteObject
             );
         }
 
-        // Create audit trail for delete and set lastLog
-        $log = $this->auditTrailMapper->createAuditTrail(old: $objectEntity, new: null, action: 'delete');
-        // $result->setLastLog($log->jsonSerialize());
+        // Create audit trail for delete if audit trails are enabled
+        if ($this->isAuditTrailsEnabled()) {
+            $log = $this->auditTrailMapper->createAuditTrail(old: $objectEntity, new: null, action: 'delete');
+            // $result->setLastLog($log->jsonSerialize());
+        }
         return $result;
 
     }//end delete()
@@ -238,6 +249,24 @@ class DeleteObject
         }
 
     }//end deleteObjectFolder()
+
+
+    /**
+     * Check if audit trails are enabled in the settings
+     *
+     * @return bool True if audit trails are enabled, false otherwise
+     */
+    private function isAuditTrailsEnabled(): bool
+    {
+        try {
+            $retentionSettings = $this->settingsService->getRetentionSettingsOnly();
+            return $retentionSettings['auditTrailsEnabled'] ?? true;
+        } catch (\Exception $e) {
+            // If we can't get settings, default to enabled for safety
+            $this->logger->warning('Failed to check audit trails setting, defaulting to enabled', ['error' => $e->getMessage()]);
+            return true;
+        }
+    }//end isAuditTrailsEnabled()
 
 
 }//end class

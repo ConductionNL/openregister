@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FileService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\SettingsService;
 
 /**
  * Handler class for retrieving objects in the OpenRegister application.
@@ -58,11 +59,13 @@ class GetObject
      * @param ObjectEntityMapper $objectEntityMapper Object entity data mapper.
      * @param FileService        $fileService        File service for managing files.
      * @param AuditTrailMapper   $auditTrailMapper   Audit trail mapper for logs.
+     * @param SettingsService    $settingsService    Settings service for accessing trail settings.
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly FileService $fileService,
-        private readonly AuditTrailMapper $auditTrailMapper
+        private readonly AuditTrailMapper $auditTrailMapper,
+        private readonly SettingsService $settingsService
     ) {
 
     }//end __construct()
@@ -100,13 +103,54 @@ class GetObject
             $object = $this->hydrateFiles($object, $this->fileService->getFiles($object));
         }
 
-        // Create an audit trail for the 'read' action
-        $log = $this->auditTrailMapper->createAuditTrail(null, $object, 'read');
-        $object->setLastLog($log->jsonSerialize());
+        // Create an audit trail for the 'read' action if audit trails are enabled
+        if ($this->isAuditTrailsEnabled()) {
+            $log = $this->auditTrailMapper->createAuditTrail(null, $object, 'read');
+            $object->setLastLog($log->jsonSerialize());
+        }
 
         return $object;
 
     }//end find()
+
+
+    /**
+     * Gets an object by its ID without creating an audit trail.
+     *
+     * This method is used internally by other operations (like UPDATE) that need to
+     * retrieve an object without logging the read action.
+     *
+     * @param string   $id       The ID of the object to get.
+     * @param Register $register The register containing the object.
+     * @param Schema   $schema   The schema of the object.
+     * @param array    $extend   Properties to extend with.
+     * @param bool     $files    Include file information.
+     * @param bool     $rbac     Whether to apply RBAC checks (default: true).
+     * @param bool     $multi    Whether to apply multitenancy filtering (default: true).
+     *
+     * @return ObjectEntity The retrieved object.
+     *
+     * @throws DoesNotExistException If object not found.
+     */
+    public function findSilent(
+        string $id,
+        ?Register $register=null,
+        ?Schema $schema=null,
+        ?array $extend=[],
+        bool $files=false,
+        bool $rbac=true,
+        bool $multi=true
+    ): ObjectEntity {
+        $object = $this->objectEntityMapper->find($id, $register, $schema, false, $rbac, $multi);
+
+        if ($files === true) {
+            $object = $this->hydrateFiles($object, $this->fileService->getFiles($object));
+        }
+
+        // No audit trail creation - this is a silent read
+        return $object;
+
+    }//end findSilent()
 
 
     /**
@@ -358,6 +402,23 @@ class GetObject
         );
 
     }//end findLogs()
+
+
+    /**
+     * Check if audit trails are enabled in the settings
+     *
+     * @return bool True if audit trails are enabled, false otherwise
+     */
+    private function isAuditTrailsEnabled(): bool
+    {
+        try {
+            $retentionSettings = $this->settingsService->getRetentionSettingsOnly();
+            return $retentionSettings['auditTrailsEnabled'] ?? true;
+        } catch (\Exception $e) {
+            // If we can't get settings, default to enabled for safety
+            return true;
+        }
+    }//end isAuditTrailsEnabled()
 
 
 }//end class
