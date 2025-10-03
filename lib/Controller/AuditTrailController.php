@@ -430,4 +430,43 @@ class AuditTrailController extends Controller
     }//end destroyMultiple()
 
 
+    /**
+     * Clear all audit trail logs
+     *
+     * @return JSONResponse A JSON response indicating success or failure
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function clearAll(): JSONResponse
+    {
+        try {
+            // Get the audit trail mapper from the container
+            $auditTrailMapper = \OC::$server->get('OCA\OpenRegister\Db\AuditTrailMapper');
+            
+                    // Use the clearAllLogs method from the mapper
+                    $result = $auditTrailMapper->clearAllLogs();
+            
+            if ($result) {
+                return new JSONResponse([
+                    'success' => true,
+                    'message' => 'All audit trails cleared successfully',
+                    'deleted' => 'All expired audit trails have been deleted'
+                ]);
+            } else {
+                return new JSONResponse([
+                    'success' => true,
+                    'message' => 'No expired audit trails found to clear',
+                    'deleted' => 0
+                ]);
+            }
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => 'Failed to clear audit trails: ' . $e->getMessage()
+            ], 500);
+        }
+    }//end clearAll()
+
+
 }//end class
