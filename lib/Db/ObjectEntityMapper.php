@@ -675,7 +675,20 @@ class ObjectEntityMapper extends QBMapper
             );
         }
 
-        // Removed automatic published object access from RBAC - this should be handled via explicit published filter
+        // Include published objects if bypass is enabled
+        if ($this->shouldPublishedObjectsBypassMultiTenancy()) {
+            $now = (new \DateTime())->format('Y-m-d H:i:s');
+            $readConditions->add(
+                $qb->expr()->andX(
+                    $qb->expr()->isNotNull("{$objectTableAlias}.published"),
+                    $qb->expr()->lte("{$objectTableAlias}.published", $qb->createNamedParameter($now)),
+                    $qb->expr()->orX(
+                        $qb->expr()->isNull("{$objectTableAlias}.depublished"),
+                        $qb->expr()->gt("{$objectTableAlias}.depublished", $qb->createNamedParameter($now))
+                    )
+                )
+            );
+        }
 
         $qb->andWhere($readConditions);
         
@@ -718,7 +731,8 @@ class ObjectEntityMapper extends QBMapper
         }
 
         // Use provided active organization UUID or fall back to null (no filtering)
-        if ($activeOrganisationUuid === null) {
+        // However, if bypass is enabled, we still need to apply the bypass logic even without an active organization
+        if ($activeOrganisationUuid === null && !$this->shouldPublishedObjectsBypassMultiTenancy()) {
             return;
         }
 
@@ -769,23 +783,37 @@ class ObjectEntityMapper extends QBMapper
         // Build organization filter conditions
         $orgConditions = $qb->expr()->orX();
 
-        // Objects explicitly belonging to the user's organization
-        $orgConditions->add(
-            $qb->expr()->eq($organizationColumn, $qb->createNamedParameter($activeOrganisationUuid))
-        );
+        // If we have an active organization, include objects from that organization
+        if ($activeOrganisationUuid !== null) {
+            // Objects explicitly belonging to the user's organization
+            $orgConditions->add(
+                $qb->expr()->eq($organizationColumn, $qb->createNamedParameter($activeOrganisationUuid))
+            );
+            $this->logger->debug('🔍 ORG FILTER: Added organization filter', [
+                'activeOrg' => $activeOrganisationUuid,
+                'tableAlias' => $objectTableAlias
+            ]);
+        }
 
-        // Include published objects from any organization (publicly available)
-        $now = (new \DateTime())->format('Y-m-d H:i:s');
-        $orgConditions->add(
-            $qb->expr()->andX(
-                $qb->expr()->isNotNull("{$objectTableAlias}.published"),
-                $qb->expr()->lte("{$objectTableAlias}.published", $qb->createNamedParameter($now)),
-                $qb->expr()->orX(
-                    $qb->expr()->isNull("{$objectTableAlias}.depublished"),
-                    $qb->expr()->gt("{$objectTableAlias}.depublished", $qb->createNamedParameter($now))
+        // Include published objects from any organization if configured to do so
+        if ($this->shouldPublishedObjectsBypassMultiTenancy()) {
+            $now = (new \DateTime())->format('Y-m-d H:i:s');
+            $orgConditions->add(
+                $qb->expr()->andX(
+                    $qb->expr()->isNotNull("{$objectTableAlias}.published"),
+                    $qb->expr()->lte("{$objectTableAlias}.published", $qb->createNamedParameter($now)),
+                    $qb->expr()->orX(
+                        $qb->expr()->isNull("{$objectTableAlias}.depublished"),
+                        $qb->expr()->gt("{$objectTableAlias}.depublished", $qb->createNamedParameter($now))
+                    )
                 )
-            )
-        );
+            );
+            $this->logger->debug('🔍 ORG FILTER: Added published objects bypass', [
+                'bypassEnabled' => true,
+                'tableAlias' => $objectTableAlias,
+                'now' => $now
+            ]);
+        }
 
         // ONLY if this is the system-wide default organization, include additional objects
         if ($isSystemDefaultOrg) {
@@ -796,8 +824,27 @@ class ObjectEntityMapper extends QBMapper
         }
 
         $qb->andWhere($orgConditions);
+        
 
     }//end applyOrganizationFilters()
+
+
+    /**
+     * Check if published objects should bypass multi-tenancy restrictions
+     *
+     * @return bool True if published objects should bypass multi-tenancy, false otherwise
+     */
+    private function shouldPublishedObjectsBypassMultiTenancy(): bool
+    {
+        $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
+        if (empty($multitenancyConfig)) {
+            return false; // Default to false for security
+        }
+
+        $multitenancyData = json_decode($multitenancyConfig, true);
+        return $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false;
+
+    }//end shouldPublishedObjectsBypassMultiTenancy()
 
 
     /**
@@ -1583,7 +1630,8 @@ class ObjectEntityMapper extends QBMapper
         // Handle basic filters - skip register/schema if they're in metadata filters (to avoid double filtering)
         $basicRegister = isset($metadataFilters['register']) ? null : $register;
         $basicSchema = isset($metadataFilters['schema']) ? null : $schema;
-        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema, 'o');
+        $bypassPublishedFilter = $this->shouldPublishedObjectsBypassMultiTenancy();
+        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema, 'o', $bypassPublishedFilter);
 
         // Handle filtering by IDs/UUIDs if provided
         if ($ids !== null && empty($ids) === false) {
@@ -1782,7 +1830,8 @@ class ObjectEntityMapper extends QBMapper
         // Handle basic filters - skip register/schema if they're in metadata filters (to avoid double filtering)
         $basicRegister = isset($metadataFilters['register']) ? null : $register;
         $basicSchema = isset($metadataFilters['schema']) ? null : $schema;
-        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema, 'o');
+        $bypassPublishedFilter = $this->shouldPublishedObjectsBypassMultiTenancy();
+        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema, 'o', $bypassPublishedFilter);
 
         // Apply organization filtering for multi-tenancy (no RBAC in count queries due to no schema join)
         $this->applyOrganizationFilters($queryBuilder, 'o', $activeOrganisationUuid, $multi);
@@ -1882,7 +1931,8 @@ class ObjectEntityMapper extends QBMapper
             $queryBuilder->select($queryBuilder->func()->sum('size'))
                 ->from($this->getTableName());
 
-            $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $register, $schema);
+            $bypassPublishedFilter = $this->shouldPublishedObjectsBypassMultiTenancy();
+            $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $register, $schema, '', $bypassPublishedFilter);
             $this->applyOrganizationFilters($queryBuilder, '', null, $multi);
 
             $result = $queryBuilder->executeQuery();
@@ -1900,7 +1950,8 @@ class ObjectEntityMapper extends QBMapper
         // Handle basic filters - skip register/schema if they're in metadata filters
         $basicRegister = isset($metadataFilters['register']) ? null : $register;
         $basicSchema = isset($metadataFilters['schema']) ? null : $schema;
-        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema, 'o');
+        $bypassPublishedFilter = $this->shouldPublishedObjectsBypassMultiTenancy();
+        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema, 'o', $bypassPublishedFilter);
 
         // Apply organization filtering for multi-tenancy
         $this->applyOrganizationFilters($queryBuilder, 'o', $activeOrganisationUuid, $multi);
@@ -1974,7 +2025,8 @@ class ObjectEntityMapper extends QBMapper
         ?bool $published,
         mixed $register,
         mixed $schema,
-        string $tableAlias = ''
+        string $tableAlias = '',
+        bool $bypassPublishedFilter = false
     ): void {
         // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true
         $deletedColumn = $tableAlias ? $tableAlias . '.deleted' : 'deleted';
@@ -1983,7 +2035,9 @@ class ObjectEntityMapper extends QBMapper
         }
 
         // If published filter is set, only include objects that are currently published
-        if ($published === true) {
+        // However, if bypassPublishedFilter is true, we don't apply this filter as published objects
+        // will be included via the organization filter bypass logic
+        if ($published === true && !$bypassPublishedFilter) {
             $now = (new \DateTime())->format('Y-m-d H:i:s');
             $publishedColumn = $tableAlias ? $tableAlias . '.published' : 'published';
             $depublishedColumn = $tableAlias ? $tableAlias . '.depublished' : 'depublished';

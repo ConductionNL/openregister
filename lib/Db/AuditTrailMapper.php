@@ -1002,6 +1002,46 @@ class AuditTrailMapper extends QBMapper
 
 
     /**
+     * Clear all audit trail logs (not just expired ones)
+     *
+     * This method deletes all audit trail logs from the database
+     *
+     * @return bool True if any logs were deleted, false otherwise
+     *
+     * @throws \Exception If the deletion fails
+     */
+    public function clearAllLogs(): bool
+    {
+        try {
+            // Get the query builder for database operations
+            $qb = $this->db->getQueryBuilder();
+
+            // Build the delete query to remove ALL audit trail logs
+            $qb->delete('openregister_audit_trails');
+
+            // Execute the query and get the number of affected rows
+            $result = $qb->executeStatement();
+
+            // Return true if any rows were affected (i.e., any logs were deleted)
+            return $result > 0;
+        } catch (\Exception $e) {
+            // Log the error for debugging purposes
+            \OC::$server->getLogger()->error(
+                    'Failed to clear all audit trail logs: '.$e->getMessage(),
+                    [
+                        'app'       => 'openregister',
+                        'exception' => $e,
+                    ]
+                    );
+
+            // Re-throw the exception so the caller knows something went wrong
+            throw $e;
+        }//end try
+
+    }//end clearAllLogs()
+
+
+    /**
      * Count audit trails with optional filters
      *
      * @param array|null $filters The filters to apply (same format as findAll)

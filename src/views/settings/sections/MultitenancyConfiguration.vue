@@ -71,6 +71,20 @@
 				</NcCheckboxRadioSwitch>
 			</div>
 
+			<!-- Published Objects Bypass -->
+			<div v-if="multitenancyOptions.enabled" class="option-section">
+				<NcCheckboxRadioSwitch
+					:checked.sync="multitenancyOptions.publishedObjectsBypassMultiTenancy"
+					:disabled="saving"
+					type="switch">
+					Published objects bypass multi-tenancy
+				</NcCheckboxRadioSwitch>
+				<p class="option-description">
+					When enabled, published objects will be visible to users from all organizations, bypassing multi-tenancy restrictions. 
+					This allows for public sharing of published content across organizational boundaries.
+				</p>
+			</div>
+
 			<!-- Default Tenants -->
 			<div v-if="multitenancyOptions.enabled">
 				<h4>Default Tenants</h4>

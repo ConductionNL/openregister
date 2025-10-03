@@ -63,6 +63,12 @@ export const useSettingsStore = defineStore('settings', {
 		showMassValidateConfirmation: false,
 		massValidateResults: null,
 		
+		// Clear logs states
+		clearingAuditTrails: false,
+		clearingSearchTrails: false,
+		showClearAuditTrailsConfirmation: false,
+		showClearSearchTrailsConfirmation: false,
+		
 		// Settings data
 		solrOptions: {
 			enabled: false,
@@ -95,6 +101,7 @@ export const useSettingsStore = defineStore('settings', {
 			enabled: false,
 			defaultUserTenant: '',
 			defaultObjectTenant: '',
+			publishedObjectsBypassMultiTenancy: false,
 		},
 		
 		retentionOptions: {
@@ -105,6 +112,8 @@ export const useSettingsStore = defineStore('settings', {
 			readLogRetention: 86400000,          // 24 hours
 			updateLogRetention: 604800000,       // 1 week
 			deleteLogRetention: 2592000000,      // 1 month
+			auditTrailsEnabled: true,            // Audit trails enabled by default
+			searchTrailsEnabled: true,           // Search trails enabled by default
 		},
 		
 		versionInfo: {
@@ -910,6 +919,80 @@ export const useSettingsStore = defineStore('settings', {
 				showError('Failed to clear cache: ' + error.message)
 			} finally {
 				this.clearingCache = false
+			}
+		},
+
+		/**
+		 * Show clear audit trails confirmation dialog
+		 */
+		showClearAuditTrailsDialog() {
+			this.showClearAuditTrailsConfirmation = true
+		},
+
+		/**
+		 * Hide clear audit trails confirmation dialog
+		 */
+		hideClearAuditTrailsDialog() {
+			this.showClearAuditTrailsConfirmation = false
+		},
+
+		/**
+		 * Clear all audit trails
+		 */
+		async clearAllAuditTrails() {
+			this.clearingAuditTrails = true
+			
+			try {
+				const response = await axios.delete(generateUrl('/apps/openregister/api/audit-trails/clear-all'))
+				
+				if (response.data.success) {
+					showSuccess(`Successfully cleared ${response.data.deleted || 0} audit trails`)
+					this.hideClearAuditTrailsDialog()
+				} else {
+					showError('Failed to clear audit trails: ' + (response.data.error || 'Unknown error'))
+				}
+			} catch (error) {
+				console.error('Failed to clear audit trails:', error)
+				showError('Failed to clear audit trails: ' + error.message)
+			} finally {
+				this.clearingAuditTrails = false
+			}
+		},
+
+		/**
+		 * Show clear search trails confirmation dialog
+		 */
+		showClearSearchTrailsDialog() {
+			this.showClearSearchTrailsConfirmation = true
+		},
+
+		/**
+		 * Hide clear search trails confirmation dialog
+		 */
+		hideClearSearchTrailsDialog() {
+			this.showClearSearchTrailsConfirmation = false
+		},
+
+		/**
+		 * Clear all search trails
+		 */
+		async clearAllSearchTrails() {
+			this.clearingSearchTrails = true
+			
+			try {
+				const response = await axios.delete(generateUrl('/apps/openregister/api/search-trails/clear-all'))
+				
+				if (response.data.success) {
+					showSuccess(`Successfully cleared ${response.data.deleted || 0} search trails`)
+					this.hideClearSearchTrailsDialog()
+				} else {
+					showError('Failed to clear search trails: ' + (response.data.error || 'Unknown error'))
+				}
+			} catch (error) {
+				console.error('Failed to clear search trails:', error)
+				showError('Failed to clear search trails: ' + error.message)
+			} finally {
+				this.clearingSearchTrails = false
 			}
 		},
 

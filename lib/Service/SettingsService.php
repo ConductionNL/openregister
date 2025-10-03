@@ -182,6 +182,24 @@ class SettingsService
 
 
     /**
+     * Check if published objects should bypass multi-tenancy restrictions
+     *
+     * @return bool True if published objects should bypass multi-tenancy, false otherwise
+     */
+    public function shouldPublishedObjectsBypassMultiTenancy(): bool
+    {
+        $multitenancyConfig = $this->config->getValueString($this->appName, 'multitenancy', '');
+        if (empty($multitenancyConfig)) {
+            return false; // Default to false for security
+        }
+
+        $multitenancyData = json_decode($multitenancyConfig, true);
+        return $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false;
+
+    }//end shouldPublishedObjectsBypassMultiTenancy()
+
+
+    /**
      * Retrieve the current settings including RBAC and Multitenancy.
      *
      * @return array The current settings configuration.
@@ -226,6 +244,7 @@ class SettingsService
                     'enabled'             => false,
                     'defaultUserTenant'   => '',
                     'defaultObjectTenant' => '',
+                    'publishedObjectsBypassMultiTenancy' => false,
                 ];
             } else {
                 $multitenancyData     = json_decode($multitenancyConfig, true);
@@ -233,6 +252,7 @@ class SettingsService
                     'enabled'             => $multitenancyData['enabled'] ?? false,
                     'defaultUserTenant'   => $multitenancyData['defaultUserTenant'] ?? '',
                     'defaultObjectTenant' => $multitenancyData['defaultObjectTenant'] ?? '',
+                    'publishedObjectsBypassMultiTenancy' => $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false,
                 ];
             }
 
@@ -263,6 +283,10 @@ class SettingsService
                 // 1 week default
                     'deleteLogRetention'     => 2592000000,
                 // 1 month default
+                    'auditTrailsEnabled'     => true,
+                // Audit trails enabled by default
+                    'searchTrailsEnabled'    => true,
+                // Search trails enabled by default
                 ];
             } else {
                 $retentionData     = json_decode($retentionConfig, true);
@@ -274,6 +298,8 @@ class SettingsService
                     'readLogRetention'       => $retentionData['readLogRetention'] ?? 86400000,
                     'updateLogRetention'     => $retentionData['updateLogRetention'] ?? 604800000,
                     'deleteLogRetention'     => $retentionData['deleteLogRetention'] ?? 2592000000,
+                    'auditTrailsEnabled'     => $retentionData['auditTrailsEnabled'] ?? true,
+                    'searchTrailsEnabled'    => $retentionData['searchTrailsEnabled'] ?? true,
                 ];
             }//end if
 
@@ -437,6 +463,7 @@ class SettingsService
                     'enabled'             => $multitenancyData['enabled'] ?? false,
                     'defaultUserTenant'   => $multitenancyData['defaultUserTenant'] ?? '',
                     'defaultObjectTenant' => $multitenancyData['defaultObjectTenant'] ?? '',
+                    'publishedObjectsBypassMultiTenancy' => $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false,
                 ];
                 $this->config->setValueString($this->appName, 'multitenancy', json_encode($multitenancyConfig));
             }
@@ -452,6 +479,8 @@ class SettingsService
                     'readLogRetention'       => $retentionData['readLogRetention'] ?? 86400000,
                     'updateLogRetention'     => $retentionData['updateLogRetention'] ?? 604800000,
                     'deleteLogRetention'     => $retentionData['deleteLogRetention'] ?? 2592000000,
+                    'auditTrailsEnabled'     => $retentionData['auditTrailsEnabled'] ?? true,
+                    'searchTrailsEnabled'    => $retentionData['searchTrailsEnabled'] ?? true,
                 ];
                 $this->config->setValueString($this->appName, 'retention', json_encode($retentionConfig));
             }
@@ -2651,6 +2680,8 @@ class SettingsService
                     'readLogRetention'       => 86400000,    // 24 hours default
                     'updateLogRetention'     => 604800000,   // 1 week default
                     'deleteLogRetention'     => 2592000000,  // 1 month default
+                    'auditTrailsEnabled'     => true,        // Audit trails enabled by default
+                    'searchTrailsEnabled'    => true,        // Search trails enabled by default
                 ];
             }
 
@@ -2663,6 +2694,8 @@ class SettingsService
                 'readLogRetention'       => $retentionData['readLogRetention'] ?? 86400000,
                 'updateLogRetention'     => $retentionData['updateLogRetention'] ?? 604800000,
                 'deleteLogRetention'     => $retentionData['deleteLogRetention'] ?? 2592000000,
+                'auditTrailsEnabled'     => $this->convertToBoolean($retentionData['auditTrailsEnabled'] ?? true),
+                'searchTrailsEnabled'    => $this->convertToBoolean($retentionData['searchTrailsEnabled'] ?? true),
             ];
         } catch (\Exception $e) {
             throw new \RuntimeException('Failed to retrieve Retention settings: '.$e->getMessage());
@@ -2687,6 +2720,8 @@ class SettingsService
                 'readLogRetention'       => $retentionData['readLogRetention'] ?? 86400000,
                 'updateLogRetention'     => $retentionData['updateLogRetention'] ?? 604800000,
                 'deleteLogRetention'     => $retentionData['deleteLogRetention'] ?? 2592000000,
+                'auditTrailsEnabled'     => $retentionData['auditTrailsEnabled'] ?? true,
+                'searchTrailsEnabled'    => $retentionData['searchTrailsEnabled'] ?? true,
             ];
             
             $this->config->setValueString($this->appName, 'retention', json_encode($retentionConfig));
@@ -2713,6 +2748,31 @@ class SettingsService
             throw new \RuntimeException('Failed to retrieve version information: '.$e->getMessage());
         }
     }
+
+
+    /**
+     * Convert various representations to boolean
+     *
+     * @param mixed $value The value to convert to boolean
+     *
+     * @return bool The boolean representation
+     */
+    private function convertToBoolean($value): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+        
+        if (is_string($value)) {
+            return in_array(strtolower($value), ['true', '1', 'yes', 'on'], true);
+        }
+        
+        if (is_numeric($value)) {
+            return (int) $value !== 0;
+        }
+        
+        return (bool) $value;
+    }//end convertToBoolean()
 
 
 }//end class
