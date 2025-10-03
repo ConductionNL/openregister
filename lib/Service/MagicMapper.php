@@ -48,6 +48,7 @@ use OCA\OpenRegister\Service\MagicMapperHandlers\MagicRbacHandler;
 use OCA\OpenRegister\Service\MagicMapperHandlers\MagicBulkHandler;
 use OCA\OpenRegister\Service\MagicMapperHandlers\MagicOrganizationHandler;
 use OCA\OpenRegister\Service\MagicMapperHandlers\MagicFacetHandler;
+use OCA\OpenRegister\Service\SettingsService;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\IConfig;
@@ -217,6 +218,7 @@ class MagicMapper
      * @param IUserManager        $userManager        User manager for user operations
      * @param IAppConfig          $appConfig          App configuration for feature flags
      * @param LoggerInterface     $logger             Logger for debugging and monitoring
+     * @param SettingsService     $settingsService    Settings service for configuration
      */
     public function __construct(
         private readonly IDBConnection $db,
@@ -228,7 +230,8 @@ class MagicMapper
         private readonly IGroupManager $groupManager,
         private readonly IUserManager $userManager,
         private readonly IAppConfig $appConfig,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly SettingsService $settingsService
     ) {
         // Initialize specialized handlers for modular functionality
         $this->initializeHandlers();

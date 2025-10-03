@@ -48,6 +48,40 @@
 				</p>
 			</div>
 
+			<!-- Enable/Disable Trail Features -->
+			<div class="option-section">
+				<h4>Trail Features</h4>
+				<p class="option-description">
+					Control which types of audit trails are enabled. Disabling trails will stop recording new entries but won't affect existing data.
+				</p>
+
+				<div class="trail-switches">
+					<div class="trail-switch-row">
+						<NcCheckboxRadioSwitch
+							:checked.sync="auditTrailsEnabled"
+							:disabled="loading || saving"
+							type="switch">
+							Audit Trails enabled
+						</NcCheckboxRadioSwitch>
+						<p class="trail-description">
+							Record all CRUD operations (create, read, update, delete) for objects and system actions
+						</p>
+					</div>
+
+					<div class="trail-switch-row">
+						<NcCheckboxRadioSwitch
+							:checked.sync="searchTrailsEnabled"
+							:disabled="loading || saving"
+							type="switch">
+							Search Trails enabled
+						</NcCheckboxRadioSwitch>
+						<p class="trail-description">
+							Record search queries and analytics for performance monitoring and usage insights
+						</p>
+					</div>
+				</div>
+			</div>
+
 			<!-- Consolidated Retention Settings -->
 			<div class="option-section">
 				<h4>Data & Log Retention Policies</h4>
@@ -231,7 +265,7 @@
 <script>
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../../store/settings.js'
-import { NcSettingsSection, NcButton, NcLoadingIcon } from '@nextcloud/vue'
+import { NcSettingsSection, NcButton, NcLoadingIcon, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Save from 'vue-material-design-icons/ContentSave.vue'
 
@@ -242,6 +276,7 @@ export default {
 		NcSettingsSection,
 		NcButton,
 		NcLoadingIcon,
+		NcCheckboxRadioSwitch,
 		Refresh,
 		Save,
 	},
@@ -255,6 +290,24 @@ export default {
 			},
 			set(value) {
 				this.settingsStore.retentionOptions = value
+			}
+		},
+
+		auditTrailsEnabled: {
+			get() {
+				return this.settingsStore.retentionOptions.auditTrailsEnabled ?? true
+			},
+			set(value) {
+				this.settingsStore.retentionOptions.auditTrailsEnabled = value
+			}
+		},
+
+		searchTrailsEnabled: {
+			get() {
+				return this.settingsStore.retentionOptions.searchTrailsEnabled ?? true
+			},
+			set(value) {
+				this.settingsStore.retentionOptions.searchTrailsEnabled = value
 			}
 		},
 
@@ -393,6 +446,30 @@ export default {
 	color: var(--color-text-light);
 	margin: 24px 0 16px 0;
 	font-size: 16px;
+}
+
+.trail-switches {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+	margin-top: 16px;
+}
+
+.trail-switch-row {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 16px;
+	background: var(--color-main-background);
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+}
+
+.trail-description {
+	color: var(--color-text-maxcontrast);
+	font-size: 14px;
+	margin: 0;
+	line-height: 1.3;
 }
 
 .retention-table {

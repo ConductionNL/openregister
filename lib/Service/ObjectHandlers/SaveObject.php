@@ -40,6 +40,7 @@ use OCA\OpenRegister\Service\ObjectCacheService;
 use OCA\OpenRegister\Service\SchemaCacheService;
 use OCA\OpenRegister\Service\SchemaFacetCacheService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\SettingsService;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -121,6 +122,7 @@ class SaveObject
      * @param ObjectCacheService        $objectCacheService        Object cache service for entity and query caching.
      * @param SchemaCacheService        $schemaCacheService        Schema cache service for schema entity caching.
      * @param SchemaFacetCacheService   $schemaFacetCacheService   Schema facet cache service for facet caching.
+     * @param SettingsService          $settingsService          Settings service for accessing trail settings.
      * @param LoggerInterface          $logger                   Logger interface for logging operations.
      * @param ArrayLoader              $arrayLoader              Twig array loader for template rendering.
      */
@@ -136,6 +138,7 @@ class SaveObject
         private readonly ObjectCacheService $objectCacheService,
         private readonly SchemaCacheService $schemaCacheService,
         private readonly SchemaFacetCacheService $schemaFacetCacheService,
+        private readonly SettingsService $settingsService,
         private readonly LoggerInterface $logger,
         ArrayLoader $arrayLoader,
     ) {
@@ -1514,6 +1517,7 @@ class SaveObject
      * @param bool                     $rbac       Whether to apply RBAC checks (default: true).
      * @param bool                     $multi      Whether to apply multitenancy filtering (default: true).
      * @param bool                     $persist    Whether to persist the object to database (default: true).
+     * @param bool                     $silent     Whether to skip audit trail creation and events (default: false).
      * @param bool                     $validation Whether to validate the object (default: true).
      *
      * @return ObjectEntity The saved object entity.
@@ -1529,6 +1533,7 @@ class SaveObject
         bool $rbac=true,
         bool $multi=true,
         bool $persist=true,
+        bool $silent=false,
         bool $validation=true
     ): ObjectEntity {
 
@@ -1604,7 +1609,7 @@ class SaveObject
                 }
 
                 // Update the object
-                return $this->updateObject(register: $register, schema: $schema, data: $data, existingObject: $preparedObject, folderId: $folderId);
+                return $this->updateObject(register: $register, schema: $schema, data: $data, existingObject: $preparedObject, folderId: $folderId, silent: $silent);
             } catch (DoesNotExistException $e) {
                 // Object not found, proceed with creating new object.
             } catch (Exception $e) {
@@ -1653,9 +1658,11 @@ class SaveObject
         // Save the object to database.
         $savedEntity = $this->objectEntityMapper->insert($preparedObject);
 
-        // Create audit trail for creation.
-        $log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity);
-        $savedEntity->setLastLog($log->jsonSerialize());
+        // Create audit trail for creation if audit trails are enabled and not in silent mode.
+        if (!$silent && $this->isAuditTrailsEnabled()) {
+            $log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity);
+            $savedEntity->setLastLog($log->jsonSerialize());
+        }
 
 
         // Update the object with the modified data (file IDs instead of content)
@@ -3045,6 +3052,7 @@ class SaveObject
      * @param array               $data           The updated object data.
      * @param ObjectEntity        $existingObject The existing object to update.
      * @param int|null            $folderId       The folder ID to set on the object (optional).
+     * @param bool                $silent         Whether to skip audit trail creation and events (default: false).
      *
      * @return ObjectEntity The updated object entity.
      *
@@ -3055,7 +3063,8 @@ class SaveObject
         Schema | int | string $schema,
         array $data,
         ObjectEntity $existingObject,
-        ?int $folderId=null
+        ?int $folderId=null,
+        bool $silent=false
     ): ObjectEntity {
 
         // Store the old state for audit trail.
@@ -3103,9 +3112,11 @@ class SaveObject
         // Save the object to database.
         $updatedEntity = $this->objectEntityMapper->update($preparedObject);
 
-        // Create audit trail for update.
-        $log = $this->auditTrailMapper->createAuditTrail(old: $oldObject, new: $updatedEntity);
-        $updatedEntity->setLastLog($log->jsonSerialize());
+        // Create audit trail for update if audit trails are enabled and not in silent mode.
+        if (!$silent && $this->isAuditTrailsEnabled()) {
+            $log = $this->auditTrailMapper->createAuditTrail(old: $oldObject, new: $updatedEntity);
+            $updatedEntity->setLastLog($log->jsonSerialize());
+        }
 
         // Handle file properties - process them and replace content with file IDs
         foreach ($data as $propertyName => $value) {
@@ -3204,6 +3215,24 @@ class SaveObject
         return true;
 
     }//end isValueNotEmpty()
+
+
+    /**
+     * Check if audit trails are enabled in the settings
+     *
+     * @return bool True if audit trails are enabled, false otherwise
+     */
+    private function isAuditTrailsEnabled(): bool
+    {
+        try {
+            $retentionSettings = $this->settingsService->getRetentionSettingsOnly();
+            return $retentionSettings['auditTrailsEnabled'] ?? true;
+        } catch (\Exception $e) {
+            // If we can't get settings, default to enabled for safety
+            $this->logger->warning('Failed to check audit trails setting, defaulting to enabled', ['error' => $e->getMessage()]);
+            return true;
+        }
+    }//end isAuditTrailsEnabled()
 
 
 }//end class
