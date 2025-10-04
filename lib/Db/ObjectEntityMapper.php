@@ -2690,6 +2690,34 @@ class ObjectEntityMapper extends QBMapper
 
 
     /**
+     * Find all objects belonging to a specific schema
+     *
+     * Retrieves all objects that belong to the specified schema ID.
+     * This method is optimized for schema exploration operations where
+     * we need to analyze all objects of a particular type.
+     *
+     * @param int $schemaId The schema ID to find objects for
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return array<int, ObjectEntity> Array of ObjectEntity objects for the schema
+     */
+    public function findBySchema(int $schemaId): array
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('o.*')
+            ->from('openregister_objects', 'o')
+            ->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id')
+            ->where($qb->expr()->eq('o.schema', $qb->createNamedParameter($schemaId, \Doctrine\DBAL\ParameterType::INTEGER)))
+            ->andWhere($qb->expr()->isNull('o.deleted')); // Exclude deleted objects
+
+        return $this->findEntities($qb);
+
+    }//end findBySchema()
+
+
+    /**
      * Get statistics for objects with optional filtering
      *
      * @param int|int[]|null $registerId The register ID(s) (null for all registers).

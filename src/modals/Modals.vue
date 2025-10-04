@@ -14,6 +14,7 @@ import { navigationStore } from '../store/store.js'
 		<ImportConfiguration />
 		<ExportConfiguration />
 		<EditSchema v-if="navigationStore.modal === 'editSchema'" />
+		<ExploreSchema v-if="navigationStore.modal === 'exploreSchema'" />
 		<DeleteSchema />
 		<UploadSchema />
 		<EditSchemaProperty v-if="navigationStore.modal === 'editSchemaProperty'" />
@@ -55,6 +56,7 @@ import DeleteConfiguration from './configuration/DeleteConfiguration.vue'
 import ImportConfiguration from './configuration/ImportConfiguration.vue'
 import ExportConfiguration from './configuration/ExportConfiguration.vue'
 import EditSchema from './schema/EditSchema.vue'
+import ExploreSchema from './schema/ExploreSchema.vue'
 import DeleteSchema from './schema/DeleteSchema.vue'
 import UploadSchema from './schema/UploadSchema.vue'
 import EditSchemaProperty from './schema/EditSchemaProperty.vue'
@@ -95,6 +97,7 @@ export default {
 		ImportConfiguration,
 		ExportConfiguration,
 		EditSchema,
+		ExploreSchema,
 		DeleteSchema,
 		UploadSchema,
 		EditSchemaProperty,

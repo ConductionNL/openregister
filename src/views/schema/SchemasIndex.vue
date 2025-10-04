@@ -113,6 +113,12 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 										</template>
 										Download
 									</NcActionButton>
+									<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('exploreSchema')">
+										<template #icon>
+											<DatabaseSearch :size="20" />
+										</template>
+										Explore Properties
+									</NcActionButton>
 									<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
 										close-after-click
 										:disabled="schema.stats?.objects?.total > 0"
@@ -236,6 +242,12 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 												</template>
 												Download
 											</NcActionButton>
+											<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('exploreSchema')">
+												<template #icon>
+													<DatabaseSearch :size="20" />
+												</template>
+												Explore Properties
+											</NcActionButton>
 											<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
 												close-after-click
 												:disabled="schema.stats?.objects?.total > 0"
@@ -283,6 +295,7 @@ import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
+import DatabaseSearch from 'vue-material-design-icons/DatabaseSearch.vue'
 
 import Plus from 'vue-material-design-icons/Plus.vue'
 
@@ -303,6 +316,7 @@ export default {
 		Download,
 		Refresh,
 		InformationOutline,
+		DatabaseSearch,
 
 		Plus,
 		PaginationComponent,

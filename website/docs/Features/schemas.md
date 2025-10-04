@@ -1022,6 +1022,240 @@ Result:
 }
 ```
 
+## Schema Exploration
+
+Open Register includes a powerful **Schema Exploration** feature that analyzes existing object data to discover properties not defined in the current schema. This is particularly useful when:
+
+- Objects were created with validation disabled
+- Data was imported from external sources
+- The schema evolved over time and some properties weren't properly documented
+- You need to discover the actual data structure within your objects
+
+### How Schema Exploration Works
+
+The exploration process involves several steps:
+
+1. **Object Retrieval**: Collects all objects belonging to a specific schema
+2. **Property Extraction**: Analyzes each object's properties and their values
+3. **Type Detection**: Determines data types, formats, and patterns from real data
+4. **Gap Analysis**: Identifies properties present in objects but missing from the schema
+5. **Confidence Scoring**: Provides confidence levels for property recommendations
+
+### Starting Schema Exploration
+
+To explore a schema's properties:
+
+1. Navigate to **Schemas** in the Open Register interface
+2. Find the schema you want to explore
+3. Click the **"Explore Properties"** action button (database search icon)
+4. Review the analysis results showing discovered properties
+5. Select which properties to add to your schema
+6. Configure property settings (types, constraints, behaviors)
+7. Apply changes to update the schema
+
+### Understanding Analysis Results
+
+The exploration results provide detailed information about each discovered property:
+
+#### Property Information
+- **Recommended Type**: Auto-detected data type (string, number, boolean, etc.)
+- **Detected Format**: Specific format like date, email, URL, UUID
+- **Type Variations**: Cases where the same property has different types across objects
+- **Confidence Score**: Reliability percentage based on data consistency
+- **Examples**: Sample values found in the data
+
+#### Advanced Analysis
+- **Numeric Range**: Min/max values and data type (integer vs float)
+- **Length Range**: Minimum and maximum string lengths
+- **String Patterns**: Detected formats like camelCase, snake_case, etc.
+- **Description**: Auto-generated description based on property usage
+
+#### Property Behaviors Table
+Discovered properties can be configured with a comprehensive set of behaviors:
+
+| Behavior | Description |
+|----------|-------------|
+| **Required field** | Property must be present in objects |
+| **Immutable** | Property cannot be changed after creation |
+| **Deprecated** | Property is marked for removal |
+| **Visible to end users** | Show property in user interfaces |
+| **Hide in collection view** | Hide property in list/grid views |
+| **Hide in form view** | Hide property in forms |
+| **Enable faceting** | Allow filtering/searching by this property |
+
+### Configuration Options
+
+For technical vs user-facing settings:
+
+#### Technical Configuration
+- **Technical Description**: For developers and administrators
+- **Property Type**: Data type with auto-detected recommendations
+- **Example Values**: Sample data from analysis
+- **Constraints**: Type-specific limits (length, range, patterns)
+
+#### User-Facing Configuration  
+- **Display Title**: Label shown to end users
+- **User Description**: Helpful text shown in forms and interfaces
+
+### Analysis Process Details
+
+The exploration analyzes each property across all objects to determine:
+
+#### Length Analysis
+```json
+{
+  "property_name": "description",
+  "min_length": 15,
+  "max_length": 256,
+  "recommended_type": "string"
+}
+```
+
+#### Format Detection
+```json
+{
+  "property_name": "email_address", 
+  "detected_format": "email",
+  "confidence_score": 95,
+  "examples": ["user@example.com", "test@domain.org"]
+}
+```
+
+#### Type Consistency
+```json
+{
+  "property_name": "score",
+  "type_variations": ["integer", "string"],
+  "recommended_type": "integer",
+  "warnings": ["Mixed types detected - consider data cleanup"]
+}
+```
+
+#### Pattern Recognition
+```json
+{
+  "property_name": "user_id",
+  "string_patterns": ["integer_string", "snake_case"],
+  "numeric_range": {"min": 1, "max": 9999, "type": "integer"}
+}
+```
+
+### Usage Workflow
+
+#### Step 1: Initiate Exploration
+```bash
+# API endpoint for exploration
+GET /api/schemas/{schemaId}/explore
+
+# Example response
+{
+  "total_objects": 242,
+  "discovered_properties": {
+    "new_field": {
+      "type": "string",
+      "confidence_score": 85,
+      "examples": ["value1", "value2"],
+      "max_length": 50
+    }
+  },
+  "analysis_date": "2025-01-10T11:30:00Z"
+}
+```
+
+#### Step 2: Configure Properties
+```json
+# Select and configure properties to add
+{
+  "properties": [
+    {
+      "property_name": "new_field",
+      "type": "string",
+      "title": "New Field",
+      "technical_description": "Field discovered through object analysis",
+      "user_description": "This is a new field",
+      "required": false,
+      "facetable": true,
+      "visible": true,
+      "max_length": 50
+    }
+  ]
+}
+```
+
+#### Step 3: Apply Changes
+```bash
+# Update schema with discovered properties
+POST /api/schemas/{schemaId}/update-from-exploration
+
+# Response
+{
+  "success": true,
+  "message": "Schema updated successfully with 3 properties",
+  "schema": { /* updated schema object */ }
+}
+```
+
+### Best Practices
+
+#### Before Exploration
+- **Validate Data Quality**: Ensure your objects have reasonably clean data
+- **Check Object Count**: Exploration works with all objects for a schema
+- **Review Existing Schema**: Understand what properties you already have defined
+
+#### During Analysis
+- **Review Confidence Scores**: Higher scores indicate more reliable recommendations
+- **Check Type Variations**: Investigate properties with inconsistent types
+- **Examine Examples**: Use sample values to understand property purpose
+
+#### After Exploration
+- **Test Validation**: Create test objects with the updated schema
+- **Update Documentation**: Document newly discovered properties
+- **Clean Data**: Address any type inconsistencies found during analysis
+
+### Monitoring and Maintenance
+
+#### Regular Exploration
+- Run exploration when importing large datasets
+- Schedule periodic exploration after schema updates
+- Use exploration after disabling validation for bulk operations
+
+#### Performance Considerations
+- **Large Schemas**: Exploration may take time with thousands of objects
+- **Progress Indicators**: UI shows analysis progress and object counts
+- **Caching**: Results are cached to avoid repeated analysis
+
+### Common Use Cases
+
+#### Data Import Discovery
+```javascript
+// After importing legacy data, discover actual structure
+const exploration = await schemaService.exploreSchemaProperties(schemaId);
+
+// Review discovered properties
+exploration.suggestions.forEach(property => {
+  console.log(`${property.property_name}: ${property.recommended_type} (${property.confidence_score}%)`);
+});
+```
+
+#### Schema Evolution
+```javascript
+// When schema changes over time, discover what developers are actually using
+const updatedSchema = await schemaService.updateSchemaFromExploration(
+  schemaId, 
+  selectedProperties
+);
+```
+
+#### Data Quality Analysis
+```javascript
+// Identify data inconsistencies
+exploration.suggestions
+  .filter(p => p.type_variations && p.type_variations.length > 1)
+  .forEach(property => {
+    console.warn(`Inconsistent types for ${property.property_name}: ${property.type_variations.join(', ')}`);
+  });
+```
+
 ## Best Practices
 
 ### When to Use Cascading
