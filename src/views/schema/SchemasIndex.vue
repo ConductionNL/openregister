@@ -117,7 +117,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 										<template #icon>
 											<DatabaseSearch :size="20" />
 										</template>
-										Explore Properties
+										Analyze Properties
 									</NcActionButton>
 									<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
 										close-after-click
@@ -242,11 +242,11 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 												</template>
 												Download
 											</NcActionButton>
-											<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('exploreSchema')">
+											<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('exploreSchema')">>
 												<template #icon>
 													<DatabaseSearch :size="20" />
 												</template>
-												Explore Properties
+												Analyze Properties
 											</NcActionButton>
 											<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
 												close-after-click

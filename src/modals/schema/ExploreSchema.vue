@@ -3,7 +3,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog :name="'Explore Schema Properties'"
+	<NcDialog :name="'Analyze Schema Properties'"
 		size="large"
 		:can-close="true"
 		@update:open="handleDialogClose">
@@ -68,7 +68,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 				</div>
 				
 				<!-- Analysis Results (inside the well) -->
-				<div v-else-if="explorationData" class="analysis-summary" style="background: #f8f9fa; border-radius: 8px; padding: 20px;">
+				<div v-else-if="explorationData" class="analysis-summary">
 					<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
 						<div style="background: white; border: 2px solid #ddd; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
 							<div style="font-size: 2rem; font-weight: bold; color: #0066cc; margin-bottom: 8px;">{{ explorationData.total_objects }}</div>
@@ -1510,7 +1510,7 @@ export default {
 
 .new-property-status {
 	background: var(--color-success);
-	color: var(--color-success-text);
+	color: white !important;
 	padding: 0.25rem 0.5rem;
 	border-radius: var(--border-radius-small);
 	font-size: 0.7rem;
@@ -1521,11 +1521,13 @@ export default {
 
 .issues-badge {
 	background: var(--color-warning);
-	color: var(--color-warning-text);
+	color: white !important;
 	padding: 0.25rem 0.5rem;
 	border-radius: var(--border-radius-small);
 	font-size: 0.7rem;
 	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
 }
 
 .type-warning {
