@@ -28,6 +28,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SchemaCacheService;
 use OCA\OpenRegister\Service\SchemaFacetCacheService;
+use OCA\OpenRegister\Service\SchemaService;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -38,6 +39,7 @@ use OCP\IAppConfig;
 use OCP\IRequest;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use Psr\Log\LoggerInterface;
 
 /**
  * Class SchemasController
@@ -60,6 +62,8 @@ class SchemasController extends Controller
      * @param OrganisationService        $organisationService        The organisation service
      * @param SchemaCacheService         $schemaCacheService         Schema cache service for schema operations
      * @param SchemaFacetCacheService    $schemaFacetCacheService    Schema facet cache service for facet operations
+     * @param SchemaService              $schemaService              Schema service for exploration operations
+     * @param LoggerInterface            $logger                     Logger for debugging
      *
      * @return void
      */
@@ -74,7 +78,9 @@ class SchemasController extends Controller
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly OrganisationService $organisationService,
         private readonly SchemaCacheService $schemaCacheService,
-        private readonly SchemaFacetCacheService $schemaFacetCacheService
+        private readonly SchemaFacetCacheService $schemaFacetCacheService,
+        private readonly SchemaService $schemaService,
+        private readonly LoggerInterface $logger
     ) {
         parent::__construct($appName, $request);
 
@@ -580,12 +586,13 @@ class SchemasController extends Controller
                 return new JSONResponse(['error' => 'Schema not found'], 404);
             }
 
+            // Get object count for this schema
+            $objectCount = count($this->objectEntityMapper->findBySchema($id));
+
             // Calculate statistics for this schema
             $stats = [
-                'objects'   => $this->objectService->getObjectStats($schema->getId()),
-                'files'     => $this->objectService->getFileStats($schema->getId()),
-                'logs'      => $this->objectService->getLogStats($schema->getId()),
-                'registers' => $this->schemaMapper->getRegisterCount($schema->getId()),
+                'objectCount' => $objectCount,
+                'objects_count' => $objectCount, // Alternative field name for compatibility
             ];
 
             return new JSONResponse($stats);
@@ -596,6 +603,84 @@ class SchemasController extends Controller
         }//end try
 
     }//end stats()
+
+
+    /**
+     * Explore schema properties to discover new properties in objects
+     *
+     * Analyzes all objects belonging to a schema to discover properties that exist
+     * in the object data but are not defined in the schema. This is useful for
+     * identifying properties that were added during imports or when validation
+     * was disabled.
+     *
+     * @param int $schemaId The ID of the schema to explore
+     *
+     * @return JSONResponse Analysis results with discovered properties and suggestions
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function explore(int $id): JSONResponse
+    {
+        try {
+            $this->logger->info('Starting schema exploration for schema ID: ' . $id);
+            
+            $explorationResults = $this->schemaService->exploreSchemaProperties($id);
+            
+            $this->logger->info('Schema exploration completed successfully');
+            
+            return new JSONResponse($explorationResults);
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Schema exploration failed: ' . $e->getMessage());
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+
+    /**
+     * Update schema properties based on exploration results
+     *
+     * Applies user-confirmed property updates to a schema based on exploration
+     * results. This allows schemas to be updated with newly discovered properties.
+     *
+     * @param int $schemaId The ID of the schema to update
+     *
+     * @return JSONResponse Success confirmation with updated schema
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function updateFromExploration(int $id): JSONResponse
+    {
+        try {
+            // Get property updates from request
+            $propertyUpdates = $this->request->getParam('properties', []);
+            
+            if (empty($propertyUpdates)) {
+                return new JSONResponse(['error' => 'No property updates provided'], 400);
+            }
+            
+            $this->logger->info('Updating schema ' . $id . ' with ' . count($propertyUpdates) . ' property updates');
+            
+            $updatedSchema = $this->schemaService->updateSchemaFromExploration($id, $propertyUpdates);
+            
+            // Clear schema cache to ensure fresh data
+            $this->schemaCacheService->clearSchemaCache($id);
+            
+            $this->logger->info('Schema ' . $id . ' successfully updated with exploration results');
+            
+            return new JSONResponse([
+                'success' => true,
+                'schema' => $updatedSchema->jsonSerialize(),
+                'message' => 'Schema updated successfully with ' . count($propertyUpdates) . ' properties'
+            ]);
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to update schema from exploration: ' . $e->getMessage());
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
 
 
 }//end class
