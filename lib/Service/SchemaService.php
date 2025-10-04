@@ -136,6 +136,10 @@ class SchemaService
         // Analyze all object data
         $propertyAnalysis = $this->analyzeObjectProperties($objects, $schema->getProperties());
 
+        // Generate suggestions for both new and existing properties
+        $newPropertySuggestions = $this->generateSuggestions($propertyAnalysis['discovered'], $schema->getProperties());
+        $existingPropertySuggestions = $this->analyzeExistingProperties($schema->getProperties(), $propertyAnalysis['discovered'], $propertyAnalysis['usage_stats']);
+        
         return [
             'schema_id' => $schemaId,
             'schema_title' => $schema->getTitle(),
@@ -143,9 +147,14 @@ class SchemaService
             'discovered_properties' => $propertyAnalysis['discovered'],
             'existing_properties' => $schema->getProperties(),
             'property_usage_stats' => $propertyAnalysis['usage_stats'],
-            'suggestions' => $this->generateSuggestions($propertyAnalysis['discovered'], $schema->getProperties()),
+            'suggestions' => array_merge($newPropertySuggestions, $existingPropertySuggestions),
             'analysis_date' => (new \DateTime())->format('c'),
-            'data_types' => $propertyAnalysis['data_types']
+            'data_types' => $propertyAnalysis['data_types'],
+            'analysis_summary' => [
+                'new_properties_count' => count($newPropertySuggestions),
+                'existing_properties_improvements' => count($existingPropertySuggestions),
+                'total_recommendations' => count($newPropertySuggestions) + count($existingPropertySuggestions)
+            ]
         ];
     }
 
@@ -766,6 +775,257 @@ class SchemaService
         });
 
         return $suggestions;
+    }
+
+    /**
+     * Analyze existing schema properties for potential improvements
+     *
+     * Compares existing schema properties with object analysis data to identify
+     * opportunities for enhancements, missing constraints, or configuration improvements.
+     *
+     * @param array $existingProperties Current schema properties
+     * @param array $discoveredProperties Properties found in object analysis
+     * @param array $usageStats Usage statistics for all properties
+     *
+     * @return array Array of improvement suggestions for existing properties
+     */
+    private function analyzeExistingProperties(array $existingProperties, array $discoveredProperties, array $usageStats): array
+    {
+        $improvements = [];
+
+        foreach ($existingProperties as $propertyName => $propertyConfig) {
+            // Skip if we don't have analysis data for this property
+            if (!isset($discoveredProperties[$propertyName])) {
+                continue;
+            }
+
+            $analysis = $discoveredProperties[$propertyName];
+            $currentConfig = $propertyConfig;
+            $improvement = $this->comparePropertyWithAnalysis($propertyName, $currentConfig, $analysis);
+
+            if (!empty($improvement['issues'])) {
+                $usagePercentage = $analysis['usage_percentage'] ?? 0;
+                $confidence = $usagePercentage >= 80 ? 'high' : ($usagePercentage >= 50 ? 'medium' : 'low');
+
+                $suggestion = [
+                    'property_name' => $propertyName,
+                    'confidence' => $confidence,
+                    'usage_percentage' => $usagePercentage,
+                    'usage_count' => $analysis['usage_count'],
+                    'recommended_type' => $improvement['recommended_type'],
+                    'current_type' => $propertyConfig['type'] ?? 'undefined',
+                    'improvement_status' => 'existing',
+                    'issues' => $improvement['issues'],
+                    'suggestions' => $improvement['suggestions'],
+                    'examples' => array_slice($analysis['examples'], 0, 3),
+                    'max_length' => $analysis['max_length'] > 0 ? $analysis['max_length'] : null,
+                    'min_length' => isset($analysis['min_length']) && $analysis['min_length'] < PHP_INT_MAX ? $analysis['min_length'] : null,
+                    'detected_format' => $analysis['detected_format'] ?? null,
+                    'string_patterns' => $analysis['string_patterns'] ?? [],
+                    'numeric_range' => $analysis['numeric_range'] ?? null,
+                    'type_variations' => count($analysis['types']) > 1 ? $analysis['types'] : null
+                ];
+
+                $improvements[] = $suggestion;
+            }
+        }
+
+        // Sort improvements by confidence and usage
+        usort($improvements, function($a, $b) {
+            $confidenceOrder = ['high' => 3, 'medium' => 2, 'low' => 1];
+            $confCompare = $confidenceOrder[$a['confidence']] - $confidenceOrder[$b['confidence']];
+            
+            if ($confCompare !== 0) {
+                return $confCompare;
+            }
+            
+            return $b['usage_percentage'] - $a['usage_percentage'];
+        });
+
+        return $improvements;
+    }
+
+    /**
+     * Compare a property configuration with analysis data to identify improvements
+     *
+     * @param string $propertyName The property name
+     * @param array $currentConfig Current property configuration
+     * @param array $analysis Analysis data from objects
+     *
+     * @return array Comparison results with issues and suggestions
+     */
+    private function comparePropertyWithAnalysis(string $propertyName, array $currentConfig, array $analysis): array
+    {
+        $issues = [];
+        $suggestions = [];
+        $recommendedType = $this->recommendPropertyType($analysis);
+
+        // Type mismatch check
+        $currentType = $currentConfig['type'] ?? null;
+        if ($currentType && $currentType !== $recommendedType) {
+            $issues[] = "type_mismatch";
+            $suggestions[] = [
+                        'type' => 'type',
+                        'field' => 'type',
+                        'current' => $currentType,
+                        'recommended' => $recommendedType,
+                        'description' => "Analysis suggests type '{$recommendedType}' but schema defines '{$currentType}'"
+            ];
+        }
+
+        // Missing constraints for strings
+        if ($recommendedType === 'string' || $currentType === 'string') {
+            $actualType = $currentType ?: $recommendedType;
+            $suggestConfig = [];
+            
+            // Check for missing maxLength
+            if (isset($analysis['max_length']) && $analysis['max_length'] > 0) {
+                $currentMaxLength = $currentConfig['maxLength'] ?? null;
+                if (!$currentMaxLength) {
+                    $issues[] = "missing_max_length";
+                    $suggestConfig['maxLength'] = min($analysis['max_length'] * 2, 1000);
+                    $suggestions[] = [
+                                'type' => 'constraint',
+                                'field' => 'maxLength',
+                                'current' => 'unlimited',
+                                'recommended' => $suggestConfig['maxLength'],
+                                'description' => "Objects have max length of {$analysis['max_length']} characters"
+                    ];
+                } elseif ($currentMaxLength < $analysis['max_length']) {
+                    $issues[] = "max_length_too_small";
+                    $suggestConfig['maxLength'] = $analysis['max_length'];
+                    $suggestions[] = [
+                                'type' => 'constraint',
+                                'field' => 'maxLength',
+                                'current' => $currentMaxLength,
+                                'recommended' => $analysis['max_length'],
+                                'description' => "Schema maxLength ({$currentMaxLength}) is smaller than observed max ({$analysis['max_length']})"
+                    ];
+                }
+            }
+
+            // Check for missing format
+            if (isset($analysis['detected_format']) && $analysis['detected_format']) {
+                $currentFormat = $currentConfig['format'] ?? null;
+                if (!$currentFormat) {
+                    $issues[] = "missing_format";
+                    $suggestions[] = [
+                                'type' => 'format',
+                                'field' => 'format',
+                                'current' => 'none',
+                                'recommended' => $analysis['detected_format'],
+                                'description' => "Objects appear to have '{$analysis['detected_format']}' format pattern"
+                    ];
+                }
+            }
+
+            // Check for missing pattern
+            if (!empty($analysis['string_patterns'])) {
+                $currentPattern = $currentConfig['pattern'] ?? null;
+                $mainPattern = $analysis['string_patterns'][0];
+                if (!$currentPattern) {
+                    $issues[] = "missing_pattern";
+                    $suggestions[] = [
+                                'type' => 'pattern',
+                                'field' => 'pattern',
+                                'current' => 'none',
+                                'recommended' => $mainPattern,
+                                'description' => "Strings follow '{$mainPattern}' pattern"
+                    ];
+                }
+            }
+        }
+
+        // Missing constraints for numbers
+        if ($recommendedType === 'number' || $recommendedType === 'integer' || $currentType === 'number' || $currentType === 'integer') {
+            $actualType = $currentType ?: $recommendedType;
+            
+            if (isset($analysis['numeric_range'])) {
+                $range = $analysis['numeric_range'];
+                
+                // Check for missing minimum
+                $currentMin = $currentConfig['minimum'] ?? null;
+                if (!$currentMin && $range['min'] !== $range['max']) {
+                    $issues[] = "missing_minimum";
+                    $suggestions[] = [
+                                'type' => 'constraint',
+                                'field' => 'minimum',
+                                'current' => 'unlimited',
+                                'recommended' => $range['min'],
+                                'description' => "Observed range starts at {$range['min']}"
+                    ];
+                } elseif ($currentMin > $range['min']) {
+                    $issues[] = "minimum_too_high";
+                    $suggestions[] = [
+                                'type' => 'constraint',
+                                'field' => 'minimum',
+                                'current' => $currentMin,
+                                'recommended' => $range['min'],
+                                'description' => "Schema minimum ({$currentMin}) is higher than observed min ({$range['min']})"
+                    ];
+                }
+
+                // Check for missing maximum
+                $currentMax = $currentConfig['maximum'] ?? null;
+                if (!$currentMax && $range['min'] !== $range['max']) {
+                    $issues[] = "missing_maximum";
+                    $suggestions[] = [
+                                'type' => 'constraint',
+                                'field' => 'maximum',
+                                'current' => 'unlimited',
+                                'recommended' => $range['max'],
+                                'description' => "Observed range ends at {$range['max']}"
+                    ];
+                } elseif ($currentMax < $range['max']) {
+                    $issues[] = "maximum_too_low";
+                    $suggestions[] = [
+                                'type' => 'constraint',
+                                'field' => 'maximum',
+                                'current' => $currentMax,
+                                'recommended' => $range['max'],
+                                'description' => "Schema maximum ({$currentMax}) is lower than observed max ({$range['max']})"
+                    ];
+                }
+            }
+        }
+
+        // Check for type variations (nullable vs required)
+        $nullableVariation = isset($analysis['nullable_variation']) && $analysis['nullable_variation'];
+        if ($nullableVariation) {
+            $currentRequired = isset($currentConfig['required']) && $currentConfig['required'];
+            if ($currentRequired) {
+                $issues[] = "inconsistent_required";
+                $suggestions[] = [
+                            'type' => 'behavior',
+                            'field' => 'required',
+                            'current' => 'true',
+                            'recommended' => 'false',
+                            'description' => "Some objects have null values for this property"
+                ];
+            }
+        }
+
+        // Check for enum-like patterns
+        if ($this->detectEnumLike($analysis)) {
+            $currentEnum = $currentConfig['enum'] ?? null;
+            if (!$currentEnum) {
+                $issues[] = "missing_enum";
+                $enumValues = $this->extractEnumValues($analysis['examples']);
+                $suggestions[] = [
+                            'type' => 'enum',
+                            'field' => 'enum',
+                            'current' => 'unlimited',
+                            'recommended' => implode(', ', $enumValues),
+                            'description' => "Property appears to have predefined values: " . implode(', ', $enumValues)
+                ];
+            }
+        }
+
+        return [
+            'issues' => $issues,
+            'suggestions' => $suggestions,
+            'recommended_type' => $recommendedType
+        ];
     }
 
     /**
