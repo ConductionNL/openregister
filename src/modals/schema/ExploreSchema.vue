@@ -20,7 +20,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 		<div v-if="!explorationData && !success" class="info-section">
 			<NcNoteCard type="info">
 				<h4>{{ t('openregister', 'This analysis may take some time') }}</h4>
-				<p>{{ t('openregister', "We'll scan all objects belonging to this schema to discover new properties. The process involves examining each object's data structure and identifying properties not defined in the current schema.") }}</p>
+				<p>{{ t('openregister', "We'll scan all objects belonging to this schema to discover new properties and analyze existing properties for potential enhancements. The process involves examining each object's data structure, identifying properties not defined in the current schema, and finding opportunities to improve existing property definitions with better constraints, formats, and validation rules.") }}</p>
 			</NcNoteCard>
 		</div>
 		
@@ -59,6 +59,8 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 								<li>{{ t('openregister', 'Extract properties from each object') }}</li>
 								<li>{{ t('openregister', 'Detect data types and patterns') }}</li>
 								<li>{{ t('openregister', 'Identify properties not in the schema') }}</li>
+								<li>{{ t('openregister', 'Analyze existing properties for improvement opportunities') }}</li>
+								<li>{{ t('openregister', 'Compare current schema with real object data') }}</li>
 								<li>{{ t('openregister', 'Generate recommendations and confidence scores') }}</li>
 							</ol>
 						</div>
@@ -66,23 +68,27 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 				</div>
 				
 				<!-- Analysis Results (inside the well) -->
-				<div v-else-if="explorationData" class="analysis-summary">
-					<div class="summary-stats">
-						<div class="stat-card">
-							<div class="stat-value">{{ explorationData.total_objects }}</div>
-							<div class="stat-label">{{ t('openregister', 'Objects Analyzed') }}</div>
+				<div v-else-if="explorationData" class="analysis-summary" style="background: #f8f9fa; border-radius: 8px; padding: 20px;">
+					<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
+						<div style="background: white; border: 2px solid #ddd; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+							<div style="font-size: 2rem; font-weight: bold; color: #0066cc; margin-bottom: 8px;">{{ explorationData.total_objects }}</div>
+							<div style="font-size: 0.9rem; color: #666; text-transform: uppercase; font-weight: 600;">{{ t('openregister', 'Objects Analyzed') }}</div>
 						</div>
-						<div class="stat-card">
-							<div class={stat-value}>{{ Object.keys(explorationData.discovered_properties || {}).length }}</div>
-							<div class="stat-label">{{ t('openregister', 'New Properties') }}</div>
+						<div style="background: white; border: 2px solid #ddd; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+							<div style="font-size: 2rem; font-weight: bold; color: #0066cc; margin-bottom: 8px;">{{ explorationData.analysis_summary?.new_properties_count || Object.keys(explorationData.discovered_properties || {}).length }}</div>
+							<div style="font-size: 0.9rem; color: #666; text-transform: uppercase; font-weight: 600;">{{ t('openregister', 'New Properties') }}</div>
 						</div>
-						<div class="stat-card">
-							<div class="stat-value">{{ selectedProperties.length }}</div>
-							<div class="stat-label">{{ t('openregister', 'Selected') }}</div>
+						<div style="background: white; border: 2px solid #ddd; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+							<div style="font-size: 2rem; font-weight: bold; color: #0066cc; margin-bottom: 8px;">{{ explorationData.analysis_summary?.existing_properties_improvements || 0 }}</div>
+							<div style="font-size: 0.9rem; color: #666; text-transform: uppercase; font-weight: 600;">{{ t('openregister', 'Existing Improvements') }}</div>
+						</div>
+						<div style="background: white; border: 2px solid #ddd; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+							<div style="font-size: 2rem; font-weight: bold; color: #0066cc; margin-bottom: 8px;">{{ selectedProperties.length }}</div>
+							<div style="font-size: 0.9rem; color: #666; text-transform: uppercase; font-weight: 600;">{{ t('openregister', 'Selected') }}</div>
 						</div>
 					</div>
-					<div class="analysis-date">
-						{{ t('openregister', 'Analysis completed: {date}', { date: new Date(explorationData.analysis_date).toLocaleString() }) }}
+					<div style="text-align: center; padding: 12px; background: #e9ecef; border-radius: 6px; border: 1px solid #ddd; color: #495057; font-size: 0.9rem;">
+						<strong>{{ t('openregister', 'Analysis completed:') }}</strong> {{ new Date(explorationData.analysis_date).toLocaleString() }}
 					</div>
 				</div>
 			</div>
@@ -117,22 +123,26 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 				
 				<!-- Filter Controls -->
 				<div class="property-filters">
-					<NcTextField
-						:label="t('openregister', 'Filter properties')"
-						:placeholder="t('openregister', 'Search property names...')"
-						v-model="propertyFilter" />
+					<div class="filter-section">
+						<label class="filter-label">{{ t('openregister', 'Filter Properties') }}</label>
+						<NcTextField
+							:placeholder="t('openregister', 'Search property names...')"
+							v-model="propertyFilter" />
+					</div>
 					
-					<NcSelect
-						:options="confidenceFilterOptions"
-						v-model="confidenceFilter"
-						:inputLabel="t('openregister', 'Confidence Level')"
-						:labelOutside="true" />
+					<div class="filter-section">
+						<label class="filter-label">{{ t('openregister', 'Confidence Level') }}</label>
+						<NcSelect
+							:options="confidenceFilterOptions"
+							v-model="confidenceFilter" />
+					</div>
 					
-					<NcCheckboxRadioSwitch
-						v-model="showOnlySelected"
-						:button-variant="true">
-						{{ t('openregister', 'Show only selected') }}
-					</NcCheckboxRadioSwitch>
+					<div class="filter-section">
+						<label class="filter-label">{{ t('openregister', 'Property Type') }}</label>
+						<NcSelect
+							:options="typeFilterOptions"
+							v-model="typeFilter" />
+					</div>
 				</div>
 
 				<!-- Properties List -->
@@ -156,6 +166,18 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 									</span>
 									<span class="usage-percentage">
 										{{ t('openregister', '{percentage}% of objects', { percentage: suggestion.usage_percentage }) }}
+									</span>
+									<!-- New Property Status -->
+									<span v-if="!suggestion.improvement_status || suggestion.improvement_status !== 'existing'" class="new-property-status">
+										{{ t('openregister', 'New Property') }}
+									</span>
+									<!-- Existing Property Improvement Status -->
+									<span v-if="suggestion.improvement_status === 'existing'" class="improvement-status">
+										{{ t('openregister', 'Improved Property') }}
+									</span>
+									<!-- Issues Badge -->
+									<span v-if="suggestion.issues && suggestion.issues.length > 0" class="issues-badge">
+										{{ t('openregister', '{count} issues', { count: suggestion.issues.length }) }}
 									</span>
 								</div>
 							</div>
@@ -210,6 +232,41 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 							<div class="detail-item">
 								<span class="detail-label">{{ t('openregister', 'Description:') }}</span>
 								<span class="detail-value">{{ suggestion.description }}</span>
+							</div>
+							<!-- Current vs Recommended Type for existing properties -->
+							<div v-if="suggestion.improvement_status === 'existing' && suggestion.current_type && suggestion.current_type !== suggestion.recommended_type" class="detail-item">
+								<span class="detail-label">{{ t('openregister', 'Current Type:') }}</span>
+								<span class="detail-value type-warning">{{ suggestion.current_type }}</span>
+							</div>
+						</div>
+
+						<!-- Improvement Details (for existing properties) -->
+						<div v-if="suggestion.improvement_status === 'existing' && suggestion.issues && suggestion.issues.length > 0" class="improvement-details">
+							<h5>{{ t('openregister', 'Detected Issues:') }}</h5>
+							<div class="issues-list">
+								<div v-for="(issue, index) in getIssueDetails(suggestion.issues)" :key="`issue-${index}`" class="issue-item">
+									<div class="issue-badge" :class="'issue-' + issue.type">
+										{{ getIssueLabel(issue.type) }}
+									</div>
+									<div class="issue-description">
+										{{ issue.description }}
+									</div>
+								</div>
+							</div>
+							
+							<h5>{{ t('openregister', 'Recommendations:') }}</h5>
+							<div class="suggestions-list">
+								<div v-for="(suggestion_item, index) in suggestion.suggestions" :key="`suggestion-${index}`" class="suggestion-item">
+									<div class="suggestion-field">
+										<strong>{{ suggestion_item.field }}:</strong>
+									</div>
+									<div class="suggestion-change">
+										<span class="current">{{ suggestion_item.current }}</span> → <span class="recommended">{{ suggestion_item.recommended }}</span>
+									</<｜Assistant｜></div>
+									<div class="suggestion-desc">
+										{{ suggestion_item.description }}
+									</div>
+								</div>
 							</div>
 						</div>
 
@@ -480,6 +537,7 @@ export default {
 			selectedPropertiesConfig: {},
 			propertyFilter: '',
 			confidenceFilter: 'all',
+			typeFilter: 'all',
 			showOnlySelected: false,
 			currentPage: 1,
 			itemsPerPage: 10,
@@ -517,7 +575,11 @@ export default {
 			
 			// Add detected format if not already in common formats
 			if (hasDetectedFormat) {
-				commonFormats.push({ label: detectedFormat.charAt(0).toUpperCase() + detectedFormat.slice(1), value: detectedFormat })
+				commonFormats.push({ 
+					label: detectedFormat.charAt(0).toUpperCase() + detectedFormat.slice(1), 
+					value: detectedFormat,
+					key: detectedFormat 
+				})
 			}
 
 			return commonFormats
@@ -529,6 +591,13 @@ export default {
 			{ label: this.t('openregister', 'High Confidence'), value: 'high', key: 'high' },
 			{ label: this.t('openregister', 'Medium Confidence'), value: 'medium', key: 'medium' },
 			{ label: this.t('openregister', 'Low Confidence'), value: 'low', key: 'low' },
+		]
+	},
+	typeFilterOptions() {
+		return [
+			{ label: this.t('openregister', 'All'), value: 'all', key: 'all' },
+			{ label: this.t('openregister', 'New Properties'), value: 'new', key: 'new' },
+			{ label: this.t('openregister', 'Existing Improvements'), value: 'existing', key: 'existing' },
 		]
 	},
 		filteredSuggestions() {
@@ -546,11 +615,25 @@ export default {
 				)
 			}
 
-			 // Filter by confidence level
+			 // Filter by confidence period
 			if (this.confidenceFilter !== 'all') {
 				filtered = filtered.filter(suggestion => 
 					suggestion.confidence === this.confidenceFilter
 				)
+			}
+
+			// Filter by property type (new vs existing improvements)
+			if (this.typeFilter !== 'all') {
+				filtered = filtered.filter(suggestion => {
+					if (this.typeFilter === 'new') {
+						// Show only new properties (not existing improvements)
+						return suggestion.improvement_status !== 'existing'
+					} else if (this.typeFilter === 'existing') {
+						// Show only existing property improvements
+						return suggestion.improvement_status === 'existing'
+					}
+					return true
+				})
 			}
 
 			 // Filter by selection status
@@ -595,6 +678,7 @@ export default {
 			this.selectedPropertiesConfig = {}
 			this.propertyFilter = ''
 			this.confidenceFilter = 'all'
+			this.typeFilter = 'all'
 			this.showOnlySelected = false
 			this.currentPage = 1
 			this.analysisStarted = false
@@ -693,11 +777,32 @@ export default {
 				if (!this.selectedPropertiesConfig[propertyName]) {
 					const suggestion = this.explorationData.suggestions.find(s => s.property_name === propertyName)
 					this.selectedPropertiesConfig[propertyName] = {
+						selected: true,
 						type: suggestion?.recommended_type || 'string',
 						title: propertyName,
 						description: suggestion?.description || '',
+						format: suggestion?.detected_format || '',
 						required: false,
+						immutable: false,
+						deprecated: false,
+						visible: true,
 						facetable: false,
+						hideOnCollection: false,
+						hideOnForm: false,
+						displayTitle: propertyName,
+						userDescription: '',
+						example: '',
+						order: 100,
+						technicalDescription: '',
+						// Constraint fields
+						pattern: '',
+						minimum: null,
+						maximum: null,
+						multipleOf: null,
+						exclusiveMin: false,
+						exclusiveMax: false,
+						maxLength: suggestion?.max_length || null,
+						minLength: suggestion?.min_length || null,
 					}
 				}
 			}
@@ -820,6 +925,62 @@ export default {
 			navigationStore.setModal(false)
 			this.resetModal()
 		},
+		getIssueDetails(issues) {
+			// Convert issue type strings to more detailed objects
+			return issues.map(issueType => {
+				return {
+					type: this.getIssueType(issueType),
+					description: this.getIssueDescription(issueType)
+				}
+			})
+		},
+		getIssueType(issueType) {
+			// Map issue types to UI-friendly categories
+			const typeMap = {
+				'type_mismatch': 'type',
+				'missing_max_length': 'constraint',
+				'max_length_too_small': 'constraint',
+				'missing_format': 'format',
+				'missing_pattern': 'pattern',
+				'missing_minimum': 'constraint',
+				'minimum_too_high': 'constraint',
+				'missing_maximum': 'constraint',
+				'maximum_too_low': 'constraint',
+				'inconsistent_required': 'behavior',
+				'missing_enum': 'enum'
+			}
+			return typeMap[issueType] || 'general'
+		},
+		getIssueLabel(issueType) {
+			// Get UI-friendly labels for issue types
+			const labelMap = {
+				'type': this.t('openregister', 'Type Issue'),
+				'constraint': this.t('openregister', 'Constraint Issue'),
+				'format': this.t('openregister', 'Format Issue'),
+				'pattern': this.t('openregister', 'Pattern Issue'),
+				'behavior': this.t('openregister', 'Behavior Issue'),
+				'enum': this.t('openregister', 'Enum Issue'),
+				'general': this.t('openregister', 'General Issue')
+			}
+			return labelMap[issueType] || this.t('openregister', 'Issue')
+		},
+		getIssueDescription(issueType) {
+			// Get descriptions for different issue types
+			const descriptionMap = {
+				'type_mismatch': this.t('openregister', 'Data type does not match observed values'),
+				'missing_max_length': this.t('openregister', 'Maximum length constraint is missing'),
+				'max_length_too_small': this.t('openregister', 'Maximum length is too restrictive'),
+				'missing_format': this.t('openregister', 'Format constraint is missing'),
+				'missing_pattern': this.t('openregister', 'Pattern constraint is missing'),
+				'missing_minimum': this.t('openregister', 'Minimum value constraint is missing'),
+				'minimum_too_high': this.t('openregister', 'Minimum value is too restrictive'),
+				'missing_maximum': this.t('openregister', 'Maximum value constraint is missing'),
+				'maximum_too_low': this.t('openregister', 'Maximum value is too restrictive'),
+				'inconsistent_required': this.t('openregister', 'Required status is inconsistent'),
+				'missing_enum': this.t('openregister', 'Enum constraint is missing')
+			}
+			return descriptionMap[issueType] || this.t('openregister', 'Property can be improved')
+		},
 	},
 }
 </script>
@@ -862,39 +1023,54 @@ export default {
 		border-radius: var(--border-radius);
 		padding: 1.5rem;
 
-		.summary-stats {
-			display: flex;
-			gap: 1rem;
-			margin-bottom: 1rem;
-
-			.stat-card {
-				flex: 1;
-				text-align: center;
-				padding: 1rem;
-				background: var(--color-main-background);
-				border-radius: var(--border-radius);
-
-				.stat-value {
-					font-size: 1.5rem;
-					font-weight: 600;
-					color: var(--color-primary);
-					margin-bottom: 0.25rem;
-				}
-
-				.stat-label {
-					font-size: 0.8rem;
-					color: var(--color-text-lighter);
-					text-transform: uppercase;
-					letter-spacing: 0.5px;
-				}
-			}
-		}
-
-		.analysis-date {
-			font-size: 0.85rem;
-			color: var(--color-text-lighter);
-			text-align: center;
-		}
+	.stats-container {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		gap: 1rem;
+		margin-bottom: 1.5rem;
+	}
+	
+	.stat-box {
+		background: white;
+		border: 2px solid #e1e5e9;
+		border-radius: 8px;
+		padding: 1rem;
+		text-align: center;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+		transition: all 0.3s ease;
+	}
+	
+	.stat-box:hover {
+		border-color: #0066cc;
+		box-shadow: 0 4px 8px rgba(0, 102, 204, 0.2);
+		transform: translateY(-2px);
+	}
+	
+	.stat-number {
+		font-size: 2rem;
+		font-weight: bold;
+		color: #0066cc;
+		margin-bottom: 0.5rem;
+		display: block;
+	}
+	
+	.stat-title {
+		font-size: 0.9rem;
+		color: #666;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		font-weight: 600;
+	}
+	
+	.analysis-timestamp {
+		text-align: center;
+		padding: 0.75rem;
+		background: #f8f9fa;
+		border-radius: 6px;
+		border: 1px solid #e1e5e9;
+		color: #495057;
+		font-size: 0.9rem;
+	}
 	}
 }
 
@@ -919,12 +1095,41 @@ export default {
 	margin-bottom: 1.5rem;
 	padding-bottom: 1rem;
 	border-bottom: 1px solid var(--color-border);
+}
 
-	.nc-text-field,
-	.nc-select {
-		flex: 1;
-		min-width: 200px;
-	}
+.filter-section {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-width: 200px;
+	gap: 0.5rem;
+}
+
+.filter-label {
+	color: var(--color-main-text);
+	font-weight: 600;
+	font-size: 0.9rem;
+	margin-bottom: 0.25rem;
+}
+
+.property-filters .nc-text-field,
+.property-filters .nc-select {
+	flex: 1;
+}
+
+/* Improve readability of filter components */
+.property-filters ::placeholder {
+	color: var(--color-text-maxcontrast) !important;
+	opacity: 0.8;
+}
+
+.property-filters .nc-select .nc-select__input-wrapper {
+	color: var(--color-main-text) !important;
+}
+
+.property-filters .nc-select .nc-select__label {
+	color: var(--color-main-text) !important;
+	font-weight: 500;
 }
 
 .properties-list {
@@ -1269,7 +1474,7 @@ export default {
 	border-top: 1px solid var(--color-border);
 }
 
-// Responsive design
+/* Responsive design */
 @media (max-width: 768px) {
 	.property-filters {
 		flex-direction: column;
@@ -1281,14 +1486,164 @@ export default {
 		}
 	}
 
-	.summary-stats {
-		flex-direction: column;
-		gap: 0.5rem;
+	.summary-stats .stat-item {
+		margin-bottom: 0.5rem;
 	}
 
 	.selection-summary .summary-actions {
 		flex-direction: column;
 		align-items: stretch;
 	}
+}
+
+/* Improvement and Issue Styles */
+.improvement-status {
+	background: var(--color-primary-element);
+	color: var(--color-primary-element-text);
+	padding: 0.25rem 0.5rem;
+	border-radius: var(--border-radius-small);
+	font-size: 0.7rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.new-property-status {
+	background: var(--color-success);
+	color: var(--color-success-text);
+	padding: 0.25rem 0.5rem;
+	border-radius: var(--border-radius-small);
+	font-size: 0.7rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.issues-badge {
+	background: var(--color-warning);
+	color: var(--color-warning-text);
+	padding: 0.25rem 0.5rem;
+	border-radius: var(--border-radius-small);
+	font-size: 0.7rem;
+	font-weight: 600;
+}
+
+.type-warning {
+	color: var(--color-warning);
+	font-weight: 600;
+}
+
+.improvement-details {
+	margin-top: 1rem;
+	padding-top: 1rem;
+	border-top: 1px solid var(--color-border);
+	
+	h5 {
+		margin: 0 0 0.75rem 0;
+		color: var(--color-text);
+		font-size: 0.9rem;
+		font-weight: 600;
+	}
+}
+
+.issues-list {
+	margin-bottom: 1.5rem;
+}
+
+.issue-item {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.75rem;
+	margin-bottom: 0.5rem;
+	
+	&:last-child {
+		margin-bottom: 0;
+	}
+}
+
+.issue-badge {
+	padding: 0.25rem 0.5rem;
+	border-radius: var(--border-radius-small);
+	font-size: 0.75rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	flex-shrink: 0;
+	
+	&.issue-type {
+		background: var(--color-error);
+		color: var(--color-error-text);
+	}
+	
+	&.issue-constraint {
+		background: var(--color-warning);
+		color: var(--color-warning-text);
+	}
+	
+	&.issue-format {
+		background: var(--color-info);
+		color: var(--color-info-text);
+	}
+	
+	&.issue-pattern {
+		background: var(--color-success);
+		color: var(--color-success-text);
+	}
+	
+	&.issue-behavior {
+		background: var(--color-text-lighter);
+		color: var(--color-main-text);
+	}
+	
+	&.issue-enum {
+		background: var(--color-primary-element);
+		color: var(--color-primary-element-text);
+	}
+}
+
+.issue-description {
+	color: var(--color-text);
+	font-size: 0.85rem;
+	line-height: 1.3;
+}
+
+.suggestions-list {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+
+.suggestion-item {
+	padding: 0.75rem;
+	background: var(--color-background-hover);
+	border-radius: var(--border-radius);
+	border-left: 3px solid var(--color-primary-element);
+}
+
+.suggestion-field {
+	font-size: 0.85rem;
+	color: var(--color-text);
+	margin-bottom: 0.25rem;
+}
+
+.suggestion-change {
+	font-size: 0.85rem;
+	margin-bottom: 0.5rem;
+	
+	.current {
+		color: var(--color-error);
+		font-weight: 600;
+	}
+	
+	.recommended {
+		color: var(--color-success);
+		font-weight: 600;
+	}
+}
+
+.suggestion-desc {
+	font-size: 0.8rem;
+	color: var(--color-text-lighter);
+	line-height: 1.3;
 }
 </style>
