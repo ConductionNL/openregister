@@ -182,6 +182,38 @@ class SchemaCacheService
     }
 
     /**
+     * Clear cache for a specific schema
+     *
+     * Removes cached data for a schema from both in-memory and database cache.
+     * This is useful when schemas are updated and cache needs to be invalidated.
+     *
+     * @param int $schemaId The schema ID to remove from cache
+     *
+     * @return void
+     */
+    public function clearSchemaCache(int $schemaId): void
+    {
+        // Clear from in-memory cache
+        foreach (self::$memoryCache as $key => $value) {
+            if (strpos($key, 'schema_' . $schemaId) !== false) {
+                unset(self::$memoryCache[$key]);
+            }
+        }
+
+        // Clear from database cache
+        $sql = 'DELETE FROM ' . self::CACHE_TABLE . ' WHERE schema_id = ?';
+        try {
+            $this->db->executeQuery($sql, [$schemaId]);
+            $this->logger->debug('Cleared schema cache', ['schemaId' => $schemaId]);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to clear schema cache', [
+                'schemaId' => $schemaId,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
      * Get multiple schemas with batch caching optimization
      *
      * @param array<int> $schemaIds Array of schema IDs to retrieve

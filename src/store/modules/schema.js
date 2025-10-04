@@ -309,11 +309,85 @@ export const useSchemaStore = defineStore('schema', {
 			document.body.removeChild(a)
 			URL.revokeObjectURL(url)
 
-			return { response }
-		},
-		// schema properties
-		setSchemaPropertyKey(schemaPropertyKey) {
-			this.schemaPropertyKey = schemaPropertyKey
-		},
+		return { response }
 	},
+
+		// Schema exploration methods
+		/**
+		 * Explore schema properties to discover new properties in objects
+		 *
+		 * @param {number} schemaId The schema ID to explore
+		 * @returns {Promise<Object>} Exploration results
+		 */
+		async exploreSchemaProperties(schemaId) {
+			console.log('Exploring schema properties for schema ID:', schemaId)
+
+			const endpoint = `/index.php/apps/openregister/api/schemas/${schemaId}/explore`
+
+			const response = await fetch(endpoint, {
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			})
+
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`)
+			}
+
+			const data = await response.json()
+
+			if (data.error) {
+				throw new Error(data.error)
+			}
+
+			console.log('Schema exploration completed:', data)
+			return data
+		},
+
+		/**
+		 * Update schema properties based on exploration results
+		 *
+		 * @param {number} schemaId The schema ID to update
+		 * @param {Object} propertyUpdates Object containing properties to add/update
+		 * @returns {Promise<Object>} Update results
+		 */
+		async updateSchemaFromExploration(schemaId, propertyUpdates) {
+			console.log('Updating schema from exploration for schema ID:', schemaId)
+
+			const endpoint = `/index.php/apps/openregister/api/schemas/${schemaId}/update-from-exploration`
+
+			const response = await fetch(endpoint, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					properties: propertyUpdates
+				}),
+			})
+
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`)
+			}
+
+			const data = await response.json()
+
+			if (data.error) {
+				throw new Error(data.error)
+			}
+
+			console.log('Schema updated from exploration:', data)
+
+			// Refresh schema store data
+			await this.refreshSchemaList()
+
+			return data
+		},
+
+	// schema properties
+	setSchemaPropertyKey(schemaPropertyKey) {
+		this.schemaPropertyKey = schemaPropertyKey
+	},
+},
 })
