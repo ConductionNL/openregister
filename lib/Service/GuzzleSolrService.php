@@ -6881,12 +6881,18 @@ class GuzzleSolrService
                     ];
                 } elseif (!in_array($fieldName, ['_version_', 'id', '_text_'])) {
                     // Object field (exclude system fields)
-                    $facetableFields['object_fields'][$fieldName] = [
-                        'name' => $fieldName,
+                    // Check if this is a suffixed field (e.g., licentietype_s) and use base name
+                    $baseFieldName = $fieldName;
+                    if (str_ends_with($fieldName, '_s') || str_ends_with($fieldName, '_t') || str_ends_with($fieldName, '_i') || str_ends_with($fieldName, '_f') || str_ends_with($fieldName, '_b')) {
+                        $baseFieldName = substr($fieldName, 0, -2); // Remove suffix
+                    }
+                    
+                    $facetableFields['object_fields'][$baseFieldName] = [
+                        'name' => $baseFieldName,
                         'type' => $this->mapSolrTypeToFacetType($fieldType),
-                        'index_field' => $fieldName,
+                        'index_field' => $fieldName, // Use the actual SOLR field name
                         'index_type' => $fieldType,
-                        'queryParameter' => $fieldName,
+                        'queryParameter' => $baseFieldName,
                         'source' => 'object'
                     ];
                 }
