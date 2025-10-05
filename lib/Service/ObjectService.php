@@ -2447,9 +2447,6 @@ class ObjectService
             $result['multi'] =  $multi;
             $result['published'] =  $published;
             $result['deleted'] =  $deleted;
-            error_log('🔥 QUERY REPORTING DEBUG: Added query reporting properties to SOLR result');
-            error_log('🔥 QUERY REPORTING DEBUG: Final result keys: ' . implode(', ', array_keys($result)));
-            error_log('🔥 QUERY REPORTING DEBUG: Query value: ' . json_encode($result['query'] ?? 'MISSING'));
             return $result;
         }
         
@@ -2457,7 +2454,6 @@ class ObjectService
         $result = $this->searchObjectsPaginatedDatabase($query, $rbac, $multi, $published, $deleted, $ids, $uses);
         $result['source'] = 'database';
         $result['query'] = $query;
-        error_log('🔥 QUERY REPORTING DEBUG: Added query reporting properties to DATABASE result');
         $result['rbac'] =  $rbac;
         $result['multi'] =  $multi;
         $result['published'] =  $published;

@@ -7759,15 +7759,6 @@ class GuzzleSolrService
                 throw new \Exception('Failed to decode SOLR JSON response: ' . json_last_error_msg());
             }
             
-            // DEBUG: Let's see what SOLR actually returned
-            var_dump('=== SOLR RAW RESPONSE DEBUG ===');
-            var_dump('Response keys:', array_keys($data));
-            if (isset($data['facets'])) {
-                var_dump('Facet keys:', array_keys($data['facets']));
-                var_dump('Object facet keys:', array_filter(array_keys($data['facets']), function($key) { return str_starts_with($key, 'object_'); }));
-            }
-            var_dump('=== END SOLR RAW RESPONSE DEBUG ===');
-            die('DEBUG: Stopping to examine SOLR response');
             
             $this->logger->debug('SOLR JSON faceting response', [
                 'response_keys' => array_keys($data),
