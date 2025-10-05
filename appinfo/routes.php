@@ -48,6 +48,9 @@ return [
         ['name' => 'settings#updateMultitenancySettings', 'url' => '/api/settings/multitenancy', 'verb' => 'PUT'],
         
         ['name' => 'settings#getRetentionSettings', 'url' => '/api/settings/retention', 'verb' => 'GET'],
+        
+        // Debug endpoints for type filtering issue
+        ['name' => 'settings#debugTypeFiltering', 'url' => '/api/debug/type-filtering', 'verb' => 'GET'],
         ['name' => 'settings#updateRetentionSettings', 'url' => '/api/settings/retention', 'verb' => 'PUT'],
         
         ['name' => 'settings#getVersionInfo', 'url' => '/api/settings/version', 'verb' => 'GET'],
