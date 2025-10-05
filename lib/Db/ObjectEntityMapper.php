@@ -290,7 +290,6 @@ class ObjectEntityMapper extends QBMapper
     {
         if ($buffer > 0 && $buffer < 1) {
             $this->maxPacketSizeBuffer = $buffer;
-        } else {
         }
     }
 
@@ -688,9 +687,6 @@ class ObjectEntityMapper extends QBMapper
                     )
                 )
             );
-            error_log("DEBUG: Added published objects bypass to RBAC filter");
-        } else {
-            error_log("DEBUG: Published objects bypass is disabled in RBAC filter");
         }
 
         $qb->andWhere($readConditions);
@@ -747,7 +743,6 @@ class ObjectEntityMapper extends QBMapper
             // Only admin users can see objects with NULL organization (legacy data)
             if ($isAdmin) {
                 $orgConditions->add($qb->expr()->isNull($organizationColumn));
-                error_log("DEBUG: Admin user can see NULL organization objects");
             }
             
             // Only include published objects if bypass is enabled
@@ -763,16 +758,13 @@ class ObjectEntityMapper extends QBMapper
                         )
                     )
                 );
-                error_log("DEBUG: Published objects bypass enabled for user with no active organization");
             }
             
             // If no conditions were added (non-admin user with bypass disabled), deny all access
             if ($orgConditions->count() === 0) {
                 $qb->andWhere($qb->expr()->eq('1', $qb->createNamedParameter('0'))); // Always false
-                error_log("DEBUG: Non-admin user with no active organization and bypass disabled - denying all access");
             } else {
                 $qb->andWhere($orgConditions);
-                error_log("DEBUG: Applied strict filtering for user with no active organization");
             }
             return;
         }
@@ -849,14 +841,11 @@ class ObjectEntityMapper extends QBMapper
                     )
                 )
             );
-            error_log("DEBUG: Added published objects bypass to organization filter");
             $this->logger->debug('🔍 ORG FILTER: Added published objects bypass', [
                 'bypassEnabled' => true,
                 'tableAlias' => $objectTableAlias,
                 'now' => $now
             ]);
-        } else {
-            error_log("DEBUG: Published objects bypass is disabled in organization filter");
         }
 
         // ONLY if this is the system-wide default organization, include additional objects
@@ -870,9 +859,7 @@ class ObjectEntityMapper extends QBMapper
                 $orgConditions->add(
                     $qb->expr()->isNull($organizationColumn)
                 );
-                error_log("DEBUG: Admin user with system default organization can see NULL organization objects");
             } else {
-                error_log("DEBUG: Non-admin user with system default organization cannot see NULL organization objects");
             }
         }
 
@@ -891,13 +878,11 @@ class ObjectEntityMapper extends QBMapper
     {
         $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
         if (empty($multitenancyConfig)) {
-            error_log("DEBUG: No multitenancy config found, returning false");
             return false; // Default to false for security
         }
 
         $multitenancyData = json_decode($multitenancyConfig, true);
         $bypassEnabled = $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false;
-        error_log("DEBUG: Published objects bypass setting: " . ($bypassEnabled ? 'true' : 'false'));
         return $bypassEnabled;
 
     }//end shouldPublishedObjectsBypassMultiTenancy()
