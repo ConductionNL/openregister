@@ -2342,7 +2342,7 @@ class GuzzleSolrService
                 if ($doc instanceof ObjectEntity) {
                     $solrDocs[] = $this->createSolrDocument($doc);
                 } elseif (is_array($doc)) {
-                    // **FIXED**: Use self_tenant instead of tenant_id, and only add if missing
+                    // **FIXED**: Use self_tenant for consistency, and only add if missing
                     if (!isset($doc['self_tenant'])) {
                         $doc['self_tenant'] = (string)$this->tenantId;
                     }
@@ -2989,6 +2989,12 @@ class GuzzleSolrService
             }
         }
 
+        // Add tenant filter (always required for multi-tenant systems)
+        $tenantId = $this->getTenantId();
+        if ($tenantId) {
+            $filters[] = 'self_tenant:' . $tenantId;
+        }
+
         // Handle multiple filter queries correctly for Guzzle
         if (!empty($filters)) {
             // Guzzle expects array values for multiple parameters with same name
@@ -3247,18 +3253,13 @@ class GuzzleSolrService
                 );
                 $response['facetable'] = $combinedFacetableFields;
                 
-                // Combine all extended facet data (metadata + object) into a single flat structure
-                $extendedData = $contextualFacetData['extended'] ?? [];
-                $combinedFacetData = array_merge(
-                    $extendedData['@self'] ?? [],
-                    $extendedData['object_fields'] ?? []
-                );
-                $response['facets'] = $combinedFacetData;
+                // Use the unified facet data directly (already flattened)
+                $response['facets'] = $contextualFacetData['extended'] ?? [];
                 
                 $this->logger->debug('Added contextual faceting data to response', [
-                    'facetableFieldCount' => count($contextualFacetData['facetable']['@self'] ?? []) + count($contextualFacetData['facetable']['object_fields'] ?? []),
-                    'metadataFacets' => count($contextualFacetData['extended']['@self'] ?? []),
-                    'objectFieldFacets' => count($contextualFacetData['extended']['object_fields'] ?? [])
+                    'facetableFieldCount' => count($contextualFacetData['facetable'] ?? []),
+                    'extendedFacetsCount' => count($contextualFacetData['extended'] ?? []),
+                    'facetNames' => array_keys($contextualFacetData['extended'] ?? [])
                 ]);
             } catch (\Exception $e) {
                 $this->logger->error('Failed to get contextual faceting data from SOLR', [
@@ -6895,6 +6896,7 @@ class GuzzleSolrService
                 'collection' => $collectionName,
                 'metadataFields' => count($facetableFields['@self']),
                 'objectFields' => count($facetableFields['object_fields']),
+                'objectFieldNames' => array_keys($facetableFields['object_fields']),
                 'totalFields' => count($schemaData['fields'])
             ]);
             
@@ -7088,6 +7090,7 @@ class GuzzleSolrService
      */
     private function getContextualFacetsFromSameQuery(array $solrQuery, array $originalQuery): array
     {
+        
         $collectionName = $this->getActiveCollectionName();
         if ($collectionName === null) {
             throw new \Exception('No active SOLR collection available for contextual faceting');
@@ -7102,6 +7105,7 @@ class GuzzleSolrService
         // Add JSON faceting for core metadata fields with domain filtering
         $filterQueries = $facetQuery['fq'] ?? [];
         $jsonFacets = $this->buildOptimizedContextualFacetQuery($filterQueries);
+        
         if (!empty($jsonFacets)) {
             $facetQuery['json.facet'] = json_encode($jsonFacets);
         }
@@ -7109,6 +7113,7 @@ class GuzzleSolrService
         // Execute the faceting query
         $baseUrl = $this->buildSolrBaseUrl();
         $queryUrl = $baseUrl . "/{$collectionName}/select";
+        
         
         try {
             $startTime = microtime(true);
@@ -7144,7 +7149,10 @@ class GuzzleSolrService
             
             // Process the facet data
             if (isset($data['facets'])) {
-                return $this->processOptimizedContextualFacets($data['facets']);
+                $contextualData = $this->processOptimizedContextualFacets($data['facets']);
+                
+                
+                return $contextualData;
             } else {
                 // Fallback: discover fields that have values in the current result set
                 return $this->discoverFieldsFromCurrentResults($data);
@@ -7478,6 +7486,7 @@ class GuzzleSolrService
         try {
             $allFacetableFields = $this->discoverFacetableFieldsFromSolr();
             
+            
             if (isset($allFacetableFields['object_fields'])) {
                 foreach ($allFacetableFields['object_fields'] as $fieldName => $fieldConfig) {
                     // Only add fields that can be faceted (have docValues)
@@ -7541,85 +7550,122 @@ class GuzzleSolrService
     private function processOptimizedContextualFacets(array $facetData): array
     {
         $contextualData = [
-            'facetable' => ['@self' => [], 'object_fields' => []],
-            'extended' => ['@self' => [], 'object_fields' => []]
+            'facetable' => [],
+            'extended' => []
         ];
         
-        // Process metadata fields with underscore prefix to avoid collisions
-        $metadataFieldMap = [
-            'register' => ['name' => '_register', 'type' => 'terms', 'index_field' => 'self_register', 'index_type' => 'pint', 'queryParameter' => '@self[register]', 'source' => 'metadata'],
-            'schema' => ['name' => '_schema', 'type' => 'terms', 'index_field' => 'self_schema', 'index_type' => 'pint', 'queryParameter' => '@self[schema]', 'source' => 'metadata'],
-            'organisation' => ['name' => '_organisation', 'type' => 'terms', 'index_field' => 'self_organisation', 'index_type' => 'string', 'queryParameter' => '@self[organisation]', 'source' => 'metadata'],
-            'application' => ['name' => '_application', 'type' => 'terms', 'index_field' => 'self_application', 'index_type' => 'string', 'queryParameter' => '@self[application]', 'source' => 'metadata'],
-            'created' => ['name' => '_created', 'type' => 'date_histogram', 'index_field' => 'self_created', 'index_type' => 'pdate', 'queryParameter' => '@self[created]', 'source' => 'metadata'],
-            'updated' => ['name' => '_updated', 'type' => 'date_histogram', 'index_field' => 'self_updated', 'index_type' => 'pdate', 'queryParameter' => '@self[updated]', 'source' => 'metadata']
-        ];
-        
-        foreach ($metadataFieldMap as $solrFieldName => $fieldInfo) {
-            if (isset($facetData[$solrFieldName]) && !empty($facetData[$solrFieldName]['buckets'])) {
-                // Add to facetable fields with underscore-prefixed name
-                $contextualData['facetable']['@self'][$fieldInfo['name']] = $fieldInfo;
-                
-                // Add to extended data with actual values and resolved labels for metadata fields
-                $formattedData = $this->formatMetadataFacetData($facetData[$solrFieldName], $solrFieldName, $fieldInfo['type']);
-                $facetResult = array_merge(
-                    $fieldInfo,
-                    ['data' => $formattedData]
-                );
-                
-                // Apply custom facet configuration
-                $facetResult = $this->applyFacetConfiguration($facetResult, 'self_' . $solrFieldName);
-                
-                // Only include enabled facets
-                if ($facetResult['enabled'] ?? true) {
-                    $contextualData['extended']['@self'][$fieldInfo['name']] = $facetResult;
-                }
-            }
-        }
-        
-        // Process object fields (they come with 'object_' prefix in facet response)
+        // Process ALL facets from SOLR using unified approach
         foreach ($facetData as $facetKey => $facetValue) {
-            if (str_starts_with($facetKey, 'object_') && !empty($facetValue['buckets'])) {
-                $objectFieldName = substr($facetKey, 7); // Remove 'object_' prefix
-                
-                $objectFieldInfo = [
-                    'name' => $objectFieldName,
-                    'type' => 'terms', // Most object fields are terms-based
-                    'index_field' => $objectFieldName,
-                    'index_type' => 'string',
-                    'queryParameter' => $objectFieldName,
-                    'source' => 'object'
-                ];
-                
-                // Add to facetable fields
-                $contextualData['facetable']['object_fields'][$objectFieldName] = $objectFieldInfo;
-                
-                // Add to extended data with actual values
-                $facetResult = array_merge(
-                    $objectFieldInfo,
-                    ['data' => $this->formatFacetData($facetValue, 'terms')]
-                );
-                
-                // Apply custom facet configuration
-                $facetResult = $this->applyFacetConfiguration($facetResult, $objectFieldName);
-                
-                // Only include enabled facets
-                if ($facetResult['enabled'] ?? true) {
-                    $contextualData['extended']['object_fields'][$objectFieldName] = $facetResult;
-                }
+            if (empty($facetValue['buckets'])) {
+                continue; // Skip facets with no data
             }
+            
+            // Determine if this is a metadata field or object field
+            $isMetadataField = in_array($facetKey, ['register', 'schema', 'organisation', 'application', 'created', 'updated']);
+            
+            if ($isMetadataField) {
+                // Handle metadata fields with underscore prefix
+                $fieldName = '_' . $facetKey;
+                $fieldInfo = $this->getMetadataFieldInfo($facetKey);
+            } else {
+                // Handle object fields (remove 'object_' prefix if present)
+                $fieldName = str_starts_with($facetKey, 'object_') ? substr($facetKey, 7) : $facetKey;
+                $fieldInfo = $this->getObjectFieldInfo($fieldName);
+            }
+            
+            // Add to facetable fields
+            $contextualData['facetable'][$fieldName] = $fieldInfo;
+            
+            // Add to extended data with actual values
+            $facetResult = array_merge(
+                $fieldInfo,
+                ['data' => $this->formatFacetData($facetValue, $fieldInfo['type'])]
+            );
+            
+            // Apply custom facet configuration (but don't filter based on enabled status)
+            $configKey = $isMetadataField ? 'self_' . $facetKey : $fieldName;
+            $facetResult = $this->applyFacetConfiguration($facetResult, $configKey);
+            
+            // Always include in extended data - let frontend handle enabled/disabled
+            $contextualData['extended'][$fieldName] = $facetResult;
         }
         
-        // Sort facets according to configuration
-        $contextualData['extended']['@self'] = $this->sortFacetsWithConfiguration($contextualData['extended']['@self']);
-        $contextualData['extended']['object_fields'] = $this->sortFacetsWithConfiguration($contextualData['extended']['object_fields']);
-        
-        $this->logger->debug('Processed optimized contextual facets', [
-            'metadata_fields_found' => count($contextualData['extended']['@self']),
-            'object_fields_found' => count($contextualData['extended']['object_fields'])
+        $this->logger->debug('Processed contextual facets using unified approach', [
+            'total_facets_found' => count($contextualData['extended']),
+            'facet_names' => array_keys($contextualData['extended'])
         ]);
         
         return $contextualData;
+    }
+    
+    /**
+     * Get metadata field information
+     *
+     * @param string $fieldKey The field key (e.g., 'register', 'schema')
+     * @return array Field information
+     */
+    private function getMetadataFieldInfo(string $fieldKey): array
+    {
+        $metadataFacetableFields = $this->getMetadataFacetableFields();
+        $metadataFields = $metadataFacetableFields['@self'] ?? [];
+        
+        $fieldMap = [
+            'register' => '_register',
+            'schema' => '_schema',
+            'organisation' => '_organisation',
+            'application' => '_application',
+            'created' => '_created',
+            'updated' => '_updated'
+        ];
+        
+        $fieldName = $fieldMap[$fieldKey] ?? '_' . $fieldKey;
+        
+        return $metadataFields[$fieldName] ?? [
+            'name' => $fieldName,
+            'type' => 'terms',
+            'title' => ucfirst(str_replace('_', ' ', $fieldName)),
+            'description' => 'Metadata field: ' . $fieldName,
+            'data_type' => 'string',
+            'index_field' => 'self_' . $fieldKey,
+            'index_type' => 'string',
+            'queryParameter' => '@self[' . $fieldKey . ']',
+            'source' => 'metadata',
+            'show_count' => true,
+            'enabled' => true,
+            'order' => 0
+        ];
+    }
+    
+    /**
+     * Get object field information
+     *
+     * @param string $fieldName The field name
+     * @return array Field information
+     */
+    private function getObjectFieldInfo(string $fieldName): array
+    {
+        // Try to get field information from schema if available
+        $objectFieldInfo = $this->getObjectFieldInfoFromSchema($fieldName);
+        
+        // If no schema info available, use defaults
+        if (empty($objectFieldInfo)) {
+            $objectFieldInfo = [
+                'name' => $fieldName,
+                'type' => 'terms', // Most object fields are terms-based
+                'title' => ucfirst(str_replace('_', ' ', $fieldName)),
+                'description' => 'Object field: ' . $fieldName,
+                'data_type' => 'string',
+                'index_field' => $fieldName,
+                'index_type' => 'string',
+                'queryParameter' => $fieldName,
+                'source' => 'object',
+                'show_count' => true,
+                'enabled' => true,
+                'order' => 0
+            ];
+        }
+        
+        return $objectFieldInfo;
     }
 
     /**
@@ -7638,6 +7684,12 @@ class GuzzleSolrService
 
         // Build JSON faceting query
         $facetQuery = $this->buildJsonFacetQuery($facetableFields);
+        
+        $this->logger->debug('Built JSON facet query', [
+            'facetQueryKeys' => array_keys($facetQuery),
+            'objectFacetKeys' => array_filter(array_keys($facetQuery), function($key) { return str_starts_with($key, 'object_'); }),
+            'facetQuerySample' => array_slice($facetQuery, 0, 3, true)
+        ]);
         
         if (empty($facetQuery)) {
             return [
@@ -7680,6 +7732,13 @@ class GuzzleSolrService
         }
 
         try {
+            // DEBUG: Let's see what we're sending to SOLR
+            $this->logger->debug('SOLR JSON faceting request', [
+                'url' => $queryUrl,
+                'queryParams' => $queryParams,
+                'jsonFacet' => json_decode($queryParams['json.facet'], true)
+            ]);
+            
             // Use POST instead of GET to avoid 414 Request-URI Too Large errors
             // when using complex JSON faceting queries
             $response = $this->httpClient->post($queryUrl, [
@@ -7700,11 +7759,24 @@ class GuzzleSolrService
                 throw new \Exception('Failed to decode SOLR JSON response: ' . json_last_error_msg());
             }
             
+            // DEBUG: Let's see what SOLR actually returned
+            var_dump('=== SOLR RAW RESPONSE DEBUG ===');
+            var_dump('Response keys:', array_keys($data));
+            if (isset($data['facets'])) {
+                var_dump('Facet keys:', array_keys($data['facets']));
+                var_dump('Object facet keys:', array_filter(array_keys($data['facets']), function($key) { return str_starts_with($key, 'object_'); }));
+            }
+            var_dump('=== END SOLR RAW RESPONSE DEBUG ===');
+            die('DEBUG: Stopping to examine SOLR response');
+            
             $this->logger->debug('SOLR JSON faceting response', [
                 'response_keys' => array_keys($data),
                 'facets_key_exists' => isset($data['facets']),
+                'facet_keys' => isset($data['facets']) ? array_keys($data['facets']) : [],
+                'object_facet_keys' => isset($data['facets']) ? array_filter(array_keys($data['facets']), function($key) { return str_starts_with($key, 'object_'); }) : [],
                 'response_sample' => array_slice($data, 0, 3, true)
             ]);
+            
             
             if (!isset($data['facets'])) {
                 // Log the full response for debugging
@@ -7860,6 +7932,9 @@ class GuzzleSolrService
                 // Convert self_fieldname to @self[fieldname] format for metadata fields
                 $metadataField = substr($fieldName, 5); // Remove 'self_' prefix
                 $configFieldName = "@self[{$metadataField}]";
+            } elseif (str_starts_with($fieldName, '_')) {
+                // Handle underscore-prefixed metadata fields
+                $configFieldName = "@self[{$fieldName}]";
             }
             
             // Check if this field has custom configuration
@@ -8243,59 +8318,124 @@ class GuzzleSolrService
         return [
             '@self' => [
                 '_register' => [
+                    'name' => '_register',
                     'type' => 'terms',
                     'title' => 'Register',
                     'description' => 'Register that contains the object',
                     'data_type' => 'integer',
+                    'index_field' => 'self_register',
+                    'index_type' => 'pint',
                     'queryParameter' => '@self[register]',
-                    'source' => 'metadata'
+                    'source' => 'metadata',
+                    'show_count' => true,
+                    'enabled' => true,
+                    'order' => 0
                 ],
                 '_schema' => [
+                    'name' => '_schema',
                     'type' => 'terms',
                     'title' => 'Schema',
                     'description' => 'Schema that defines the object structure',
                     'data_type' => 'integer',
+                    'index_field' => 'self_schema',
+                    'index_type' => 'pint',
                     'queryParameter' => '@self[schema]',
-                    'source' => 'metadata'
+                    'source' => 'metadata',
+                    'show_count' => true,
+                    'enabled' => true,
+                    'order' => 0
                 ],
                 '_organisation' => [
+                    'name' => '_organisation',
                     'type' => 'terms',
                     'title' => 'Organisation',
                     'description' => 'Organisation that owns the object',
                     'data_type' => 'string',
+                    'index_field' => 'self_organisation',
+                    'index_type' => 'string',
                     'queryParameter' => '@self[organisation]',
-                    'source' => 'metadata'
+                    'source' => 'metadata',
+                    'show_count' => true,
+                    'enabled' => true,
+                    'order' => 0
                 ],
                 '_application' => [
+                    'name' => '_application',
                     'type' => 'terms',
                     'title' => 'Application',
                     'description' => 'Application that created the object',
                     'data_type' => 'string',
+                    'index_field' => 'self_application',
+                    'index_type' => 'string',
                     'queryParameter' => '@self[application]',
-                    'source' => 'metadata'
+                    'source' => 'metadata',
+                    'show_count' => true,
+                    'enabled' => true,
+                    'order' => 0
                 ],
                 '_created' => [
+                    'name' => '_created',
                     'type' => 'date_histogram',
                     'title' => 'Created Date',
                     'description' => 'When the object was created',
                     'data_type' => 'datetime',
+                    'index_field' => 'self_created',
+                    'index_type' => 'pdate',
                     'default_interval' => 'month',
                     'supported_intervals' => ['day', 'week', 'month', 'year'],
                     'queryParameter' => '@self[created]',
-                    'source' => 'metadata'
+                    'source' => 'metadata',
+                    'show_count' => true,
+                    'enabled' => true,
+                    'order' => 0
                 ],
                 '_updated' => [
+                    'name' => '_updated',
                     'type' => 'date_histogram',
                     'title' => 'Updated Date',
                     'description' => 'When the object was last modified',
                     'data_type' => 'datetime',
+                    'index_field' => 'self_updated',
+                    'index_type' => 'pdate',
                     'default_interval' => 'month',
                     'supported_intervals' => ['day', 'week', 'month', 'year'],
                     'queryParameter' => '@self[updated]',
-                    'source' => 'metadata'
+                    'source' => 'metadata',
+                    'show_count' => true,
+                    'enabled' => true,
+                    'order' => 0
                 ]
             ]
         ];
+    }
+
+    /**
+     * Get object field information from schema properties
+     *
+     * @param string $fieldName The object field name
+     * @return array|null Field information or null if not found
+     */
+    private function getObjectFieldInfoFromSchema(string $fieldName): ?array
+    {
+        try {
+            // Try to get current schema from context if available
+            if ($this->schemaMapper === null) {
+                return null;
+            }
+            
+            // For now, we'll use a simplified approach
+            // In a full implementation, this would query the current schema context
+            // and extract field information from schema properties
+            
+            return null; // Placeholder - would need schema context to implement fully
+            
+        } catch (\Exception $e) {
+            $this->logger->debug('Failed to get object field info from schema', [
+                'field' => $fieldName,
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
     }
 
     /**
