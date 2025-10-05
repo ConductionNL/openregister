@@ -2613,6 +2613,7 @@ class SettingsService
                     'enabled'             => false,
                     'defaultUserTenant'   => '',
                     'defaultObjectTenant' => '',
+                    'publishedObjectsBypassMultiTenancy' => false,
                 ];
             } else {
                 $storedData = json_decode($multitenancyConfig, true);
@@ -2620,6 +2621,7 @@ class SettingsService
                     'enabled'             => $storedData['enabled'] ?? false,
                     'defaultUserTenant'   => $storedData['defaultUserTenant'] ?? '',
                     'defaultObjectTenant' => $storedData['defaultObjectTenant'] ?? '',
+                    'publishedObjectsBypassMultiTenancy' => $storedData['publishedObjectsBypassMultiTenancy'] ?? false,
                 ];
             }
             
@@ -2647,6 +2649,7 @@ class SettingsService
                 'enabled'             => $multitenancyData['enabled'] ?? false,
                 'defaultUserTenant'   => $multitenancyData['defaultUserTenant'] ?? '',
                 'defaultObjectTenant' => $multitenancyData['defaultObjectTenant'] ?? '',
+                'publishedObjectsBypassMultiTenancy' => $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false,
             ];
             
             $this->config->setValueString($this->appName, 'multitenancy', json_encode($multitenancyConfig));

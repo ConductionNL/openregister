@@ -293,7 +293,6 @@ class ObjectEntityMapper extends QBMapper
     {
         if ($buffer > 0 && $buffer < 1) {
             $this->maxPacketSizeBuffer = $buffer;
-        } else {
         }
     }
 
@@ -736,6 +735,40 @@ class ObjectEntityMapper extends QBMapper
         // Use provided active organization UUID or fall back to null (no filtering)
         // However, if bypass is enabled, we still need to apply the bypass logic even without an active organization
         if ($activeOrganisationUuid === null && !$this->shouldPublishedObjectsBypassMultiTenancy()) {
+            // If no active organization and bypass is disabled, apply strict filtering
+            // Only allow published objects if bypass is enabled, and NULL organization objects only for admin users
+            $orgConditions = $qb->expr()->orX();
+            
+            // Check if user is admin
+            $userGroups = $this->groupManager->getUserGroupIds($user);
+            $isAdmin = in_array('admin', $userGroups);
+            
+            // Only admin users can see objects with NULL organization (legacy data)
+            if ($isAdmin) {
+                $orgConditions->add($qb->expr()->isNull($organizationColumn));
+            }
+            
+            // Only include published objects if bypass is enabled
+            if ($this->shouldPublishedObjectsBypassMultiTenancy()) {
+                $now = (new \DateTime())->format('Y-m-d H:i:s');
+                $orgConditions->add(
+                    $qb->expr()->andX(
+                        $qb->expr()->isNotNull("{$objectTableAlias}.published"),
+                        $qb->expr()->lte("{$objectTableAlias}.published", $qb->createNamedParameter($now)),
+                        $qb->expr()->orX(
+                            $qb->expr()->isNull("{$objectTableAlias}.depublished"),
+                            $qb->expr()->gt("{$objectTableAlias}.depublished", $qb->createNamedParameter($now))
+                        )
+                    )
+                );
+            }
+            
+            // If no conditions were added (non-admin user with bypass disabled), deny all access
+            if ($orgConditions->count() === 0) {
+                $qb->andWhere($qb->expr()->eq('1', $qb->createNamedParameter('0'))); // Always false
+            } else {
+                $qb->andWhere($orgConditions);
+            }
             return;
         }
 
@@ -820,10 +853,17 @@ class ObjectEntityMapper extends QBMapper
 
         // ONLY if this is the system-wide default organization, include additional objects
         if ($isSystemDefaultOrg) {
-            // Include objects with NULL organization (legacy data)
-            $orgConditions->add(
-                $qb->expr()->isNull($organizationColumn)
-            );
+            // Check if user is admin - only admin users can see objects with NULL organization (legacy data)
+            $userGroups = $this->groupManager->getUserGroupIds($user);
+            $isAdmin = in_array('admin', $userGroups);
+            
+            if ($isAdmin) {
+                // Include objects with NULL organization (legacy data) - only for admin users
+                $orgConditions->add(
+                    $qb->expr()->isNull($organizationColumn)
+                );
+            } else {
+            }
         }
 
         $qb->andWhere($orgConditions);
@@ -845,7 +885,8 @@ class ObjectEntityMapper extends QBMapper
         }
 
         $multitenancyData = json_decode($multitenancyConfig, true);
-        return $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false;
+        $bypassEnabled = $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false;
+        return $bypassEnabled;
 
     }//end shouldPublishedObjectsBypassMultiTenancy()
 

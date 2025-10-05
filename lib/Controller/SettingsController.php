@@ -1654,7 +1654,6 @@ class SettingsController extends Controller
             }
             
             // Debug: Log field count for troubleshooting
-            error_log("OpenRegister: Fixing " . count($fieldsToFix) . " mismatched SOLR fields (dry_run: " . ($dryRun ? 'true' : 'false') . ")");
             
             // Fix the mismatched fields using the dedicated method
             $result = $guzzleSolrService->fixMismatchedFields($fieldsToFix, $dryRun);

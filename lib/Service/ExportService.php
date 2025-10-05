@@ -296,16 +296,21 @@ class ExportService
             }
         }
         
-        // Use optimized findAll with proper filters - much faster than the old version
-        $objects = $this->objectEntityMapper->findAll(
-            filters: $objectFilters,
-            search: null,
+        // Use ObjectService::searchObjects directly with proper RBAC and multi-tenancy filtering
+        // Set a very high limit to get all objects (export needs all data)
+        $query = [
+            '@self' => $objectFilters,
+            '_limit' => 999999, // Very high limit to get all objects
+            '_published' => false, // Export all objects, not just published ones
+            '_includeDeleted' => false
+        ];
+        
+        $objects = $this->objectService->searchObjects(
+            query: $query,
+            rbac: true,  // Apply RBAC filtering
+            multi: true, // Apply multi-tenancy filtering
             ids: null,
-            uses: null,
-            published: false, // Export all objects, not just published ones
-            includeDeleted: false,
-            register: null, // Already in filters
-            schema: null    // Already in filters
+            uses: null
         );
         
         foreach ($objects as $object) {
