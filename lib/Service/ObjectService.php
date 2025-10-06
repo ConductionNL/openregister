@@ -496,6 +496,19 @@ class ObjectService
 
     }//end getObject()
 
+    /**
+     * Clears the current schema and current register, so that a new call on the ObjectService does not retain old values.
+     *
+     *
+     * @deprecated Deprecated as public function, should be called from within at appropriate locations.
+     * @return void
+     */
+    public function clearCurrents(): void
+    {
+        $this->currentSchema = null;
+        $this->currentRegister = null;
+    }//end clearCurrents()
+
 
     /**
      * Finds an object by ID or UUID and renders it.
@@ -675,13 +688,13 @@ class ObjectService
         $tempObject = new ObjectEntity();
         $tempObject->setRegister($this->currentRegister->getId());
         $tempObject->setSchema($this->currentSchema->getId());
-        
+
         // Check if an ID is provided in the object data before generating new UUID
         $providedId = null;
         if (is_array($object)) {
             $providedId = $object['@self']['id'] ?? $object['id'] ?? null;
         }
-        
+
         if ($providedId && !empty(trim($providedId))) {
             // Use provided ID as UUID
             $tempObject->setUuid($providedId);
@@ -702,6 +715,14 @@ class ObjectService
             // Log error but continue - object can function without folder
         }
 
+        if($register === null) {
+            $register = $this->currentRegister;
+        }
+
+        if($schema === null) {
+            $schema = $this->currentSchema;
+        }
+
         // Save the object using the current register and schema with folder ID
         $savedObject = $this->saveObject(
             object: $object,
@@ -712,6 +733,10 @@ class ObjectService
             multi: $multi,
             silent: $silent
         );
+
+        // Fallback for the case that someone unsets register and schema
+        $this->setRegister($register);
+        $this->setSchema($schema);
 
         // Render and return the saved object.
         return $this->renderHandler->renderEntity(
@@ -795,6 +820,14 @@ class ObjectService
             }
         }
 
+        if($register === null) {
+            $register = $this->currentRegister;
+        }
+
+        if($schema === null) {
+            $schema = $this->currentSchema;
+        }
+
         // Save the object using the current register and schema.
         $savedObject = $this->saveHandler->saveObject(
             register: $this->currentRegister,
@@ -806,6 +839,10 @@ class ObjectService
             multi: $multi,
             silent: $silent
         );
+
+        // Fallback for the case that someone unsets register and schema
+        $this->setRegister($register);
+        $this->setSchema($schema);
 
         // Render and return the saved object.
         return $this->renderHandler->renderEntity(
@@ -869,15 +906,15 @@ class ObjectService
         }
 
         // Set the current register context if a register is provided, it's not an array, and it's not empty.
-        if (isset($config['filters']['register']) === true  
-            && is_array($config['filters']['register']) === false 
+        if (isset($config['filters']['register']) === true
+            && is_array($config['filters']['register']) === false
             && !empty($config['filters']['register'])) {
             $this->setRegister($config['filters']['register']);
         }
 
         // Set the current schema context if a schema is provided, it's not an array, and it's not empty.
-        if (isset($config['filters']['schema']) === true  
-            && is_array($config['filters']['schema']) === false 
+        if (isset($config['filters']['schema']) === true
+            && is_array($config['filters']['schema']) === false
             && !empty($config['filters']['schema'])) {
             $this->setSchema($config['filters']['schema']);
         }
@@ -1191,7 +1228,7 @@ class ObjectService
         // For new objects without UUID, let SaveObject generate the UUID and handle folder creation
         // Save the object using the current register and schema.
         // Let SaveObject handle the UUID logic completely
-        
+
         $savedObject = $this->saveHandler->saveObject(
             $this->currentRegister,
             $this->currentSchema,
@@ -1730,7 +1767,7 @@ class ObjectService
         if ($schema !== null) {
             $query['@self']['schema'] = (int) $schema;
         }
-        
+
         // Query structure built successfully
 
         // Extract special underscore parameters
@@ -1758,7 +1795,7 @@ class ObjectService
         if ($ids !== null) {
             $query['_ids'] = $ids;
         }
-        
+
         // Support both 'ids' and '_ids' parameters for flexibility
         if (isset($specialParams['ids'])) {
             $query['_ids'] = $specialParams['ids'];
@@ -1775,7 +1812,7 @@ class ObjectService
 
     public function searchObjects(array $query=[], bool $rbac=true, bool $multi=true, ?array $ids=null, ?string $uses=null): array|int
     {
-        
+
         // **CRITICAL PERFORMANCE OPTIMIZATION**: Detect simple vs complex rendering needs
         $hasExtend = !empty($query['_extend'] ?? []);
         $hasFields = !empty($query['_fields'] ?? null);
@@ -2418,9 +2455,9 @@ class ObjectService
     public function searchObjectsPaginated(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false, ?array $ids=null, ?string $uses=null): array
     {
         // ids and uses are passed as proper parameters, not added to query
-        
+
         $requestedSource = $query['_source'] ?? null;
-        
+
         // Simple switch: Use SOLR if explicitly requested OR if SOLR is enabled in config
         // BUT force database when ids or uses parameters are provided (relation-based searches)
         if (
@@ -2430,14 +2467,14 @@ class ObjectService
                 !isset($query['_ids']) && !isset($query['_uses'])
             ) ||
             (
-                $requestedSource === null && 
-                $this->isSolrAvailable() && 
+                $requestedSource === null &&
+                $this->isSolrAvailable() &&
                 $requestedSource !== 'database' &&
                 $ids === null && $uses === null &&
                 !isset($query['_ids']) && !isset($query['_uses'])
             )
         ) {
-            
+
             // Forward to SOLR service - let it handle availability checks and error handling
             $solrService = $this->container->get(GuzzleSolrService::class);
             $result = $solrService->searchObjectsPaginated($query, $rbac, $multi, $published, $deleted);
@@ -2449,7 +2486,7 @@ class ObjectService
             $result['deleted'] =  $deleted;
             return $result;
         }
-        
+
         // Use database search
         $result = $this->searchObjectsPaginatedDatabase($query, $rbac, $multi, $published, $deleted, $ids, $uses);
         $result['source'] = 'database';
@@ -2458,7 +2495,7 @@ class ObjectService
         $result['multi'] =  $multi;
         $result['published'] =  $published;
         $result['deleted'] =  $deleted;
-        
+
         return $result;
     }
 
@@ -2610,7 +2647,7 @@ class ObjectService
         if (isset($query['_facets']) && !empty($query['_facets'])) {
             $paginatedResults['facets'] = ['facets' => []];
         }
-        
+
         // **DEBUG**: Add query to results for debugging purposes
         if (isset($query['_debug']) && $query['_debug']) {
             $paginatedResults['query'] = $query;
@@ -6410,7 +6447,7 @@ class ObjectService
                     }
                 }
             }
-            
+
             if (!$needsRegeneration && isset($schemaFacets['object_fields'])) {
                 // Use existing facets with queryParameter
                 $facetableFields['object_fields'] = array_merge(
