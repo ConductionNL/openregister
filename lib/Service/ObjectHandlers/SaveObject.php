@@ -1890,8 +1890,8 @@ class SaveObject
                 $objectEntity->setPublished(null);
             }
         } else {
-            $this->logger->debug('No published field found in selfData, setting to null');
-            $objectEntity->setPublished(null);
+            $this->logger->debug('No published field found in selfData, setting to existing value');
+            $objectEntity->setPublished($objectEntity->getPublished());
         }
 
         // Extract and set depublished property if present
