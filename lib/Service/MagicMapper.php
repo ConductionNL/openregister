@@ -379,7 +379,7 @@ class MagicMapper
         }
 
         // Cache the table name for this register+schema combination
-        $cacheKey = $this->getCacheKey($registerId, $schemaId);
+        $cacheKey = $this->getCacheKey((int)$registerId, (int)$schemaId);
         self::$registerSchemaTableCache[$cacheKey] = $tableName;
 
         return $tableName;
@@ -567,8 +567,19 @@ class MagicMapper
     private function checkTableExistsInDatabase(string $tableName): bool
     {
         try {
-            $schemaManager = $this->db->getSchemaManager();
-            return $schemaManager->tablesExist([$tableName]);
+            // Use SQL query to check if table exists instead of schema manager
+            $qb = $this->db->getQueryBuilder();
+            $qb->select('1')
+                ->from('information_schema.tables')
+                ->where($qb->expr()->eq('table_name', $qb->createNamedParameter($tableName)))
+                ->andWhere($qb->expr()->eq('table_schema', $qb->createNamedParameter($this->getDatabaseName())))
+                ->setMaxResults(1);
+            
+            $result = $qb->executeQuery();
+            $exists = $result->fetchOne() !== false;
+            $result->closeCursor();
+            
+            return $exists;
 
         } catch (Exception $e) {
             $this->logger->warning('Failed to check table existence in database', [
@@ -581,6 +592,27 @@ class MagicMapper
 
     }//end checkTableExistsInDatabase()
 
+    /**
+     * Get the current database name
+     *
+     * @return string The database name
+     */
+    private function getDatabaseName(): string
+    {
+        try {
+            $qb = $this->db->getQueryBuilder();
+            $qb->select('DATABASE()');
+            $result = $qb->executeQuery();
+            $dbName = $result->fetchOne();
+            $result->closeCursor();
+            return $dbName ?: 'nextcloud';
+        } catch (Exception $e) {
+            $this->logger->warning('Failed to get database name, using default', [
+                'error' => $e->getMessage()
+            ]);
+            return 'nextcloud';
+        }
+    }
 
     /**
      * Invalidate table cache for specific register+schema
@@ -1913,17 +1945,25 @@ class MagicMapper
     private function getExistingTableColumns(string $tableName): array
     {
         try {
-            $schemaManager = $this->db->getSchemaManager();
-            $columns = $schemaManager->listTableColumns($tableName);
+            // Use SQL query to get column information instead of schema manager
+            $qb = $this->db->getQueryBuilder();
+            $qb->select('COLUMN_NAME', 'DATA_TYPE', 'CHARACTER_MAXIMUM_LENGTH', 'IS_NULLABLE', 'COLUMN_DEFAULT')
+                ->from('information_schema.columns')
+                ->where($qb->expr()->eq('TABLE_NAME', $qb->createNamedParameter($tableName)))
+                ->andWhere($qb->expr()->eq('TABLE_SCHEMA', $qb->createNamedParameter($this->getDatabaseName())));
+            
+            $result = $qb->executeQuery();
+            $columns = $result->fetchAll();
+            $result->closeCursor();
             
             $columnDefinitions = [];
             foreach ($columns as $column) {
-                $columnDefinitions[$column->getName()] = [
-                    'name' => $column->getName(),
-                    'type' => $column->getType()->getName(),
-                    'length' => $column->getLength(),
-                    'nullable' => !$column->getNotnull(),
-                    'default' => $column->getDefault()
+                $columnDefinitions[$column['COLUMN_NAME']] = [
+                    'name' => $column['COLUMN_NAME'],
+                    'type' => $column['DATA_TYPE'],
+                    'length' => $column['CHARACTER_MAXIMUM_LENGTH'],
+                    'nullable' => $column['IS_NULLABLE'] === 'YES',
+                    'default' => $column['COLUMN_DEFAULT']
                 ];
             }
             
@@ -2010,8 +2050,9 @@ class MagicMapper
     private function dropTable(string $tableName): void
     {
         try {
-            $schemaManager = $this->db->getSchemaManager();
-            $schemaManager->dropTable($tableName);
+            // Use SQL DROP TABLE statement instead of schema manager
+            $sql = "DROP TABLE IF EXISTS `{$tableName}`";
+            $this->db->executeStatement($sql);
             
             // Clear from cache - need to clear by table name pattern
             foreach (self::$tableExistsCache as $cacheKey => $timestamp) {
@@ -2096,8 +2137,15 @@ class MagicMapper
     public function getExistingRegisterSchemaTables(): array
     {
         try {
-            $schemaManager = $this->db->getSchemaManager();
-            $allTables = $schemaManager->listTableNames();
+            // Use SQL query to get table names instead of schema manager
+            $qb = $this->db->getQueryBuilder();
+            $qb->select('TABLE_NAME')
+                ->from('information_schema.tables')
+                ->where($qb->expr()->eq('TABLE_SCHEMA', $qb->createNamedParameter($this->getDatabaseName())));
+            
+            $result = $qb->executeQuery();
+            $allTables = array_column($result->fetchAll(), 'TABLE_NAME');
+            $result->closeCursor();
             
             $registerSchemaTables = [];
             $prefix = self::TABLE_PREFIX;
@@ -2156,12 +2204,12 @@ class MagicMapper
         // Check schema configuration for magic mapping flag
         $configuration = $schema->getConfiguration();
         
-        // Enable magic mapping if explicitly enabled in schema config
-        if (isset($configuration['magicMapping']) && $configuration['magicMapping'] === true) {
-            return true;
+        // If magic mapping is explicitly set in schema config, use that value
+        if (isset($configuration['magicMapping'])) {
+            return $configuration['magicMapping'] === true;
         }
         
-        // Check global configuration
+        // Otherwise, check global configuration
         $globalEnabled = $this->config->getAppValue('openregister', 'magic_mapping_enabled', 'false');
         
         return $globalEnabled === 'true';

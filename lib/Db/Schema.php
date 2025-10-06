@@ -776,6 +776,18 @@ class Schema extends Entity implements JsonSerializable
 
 
     /**
+     * Get the hard validation setting for the schema
+     *
+     * @return bool Whether hard validation is enabled
+     */
+    public function getHardValidation(): bool
+    {
+        return $this->hardValidation;
+
+    }//end getHardValidation()
+
+
+    /**
      * Set the icon for the schema
      *
      * @param string|null $icon The icon reference from Material Design Icons
@@ -1004,6 +1016,36 @@ class Schema extends Entity implements JsonSerializable
 
     }//end __toString()
 
+    /**
+     * Get the unique identifier for the schema
+     * Override parent method since this class uses 'uuid' instead of 'id'
+     *
+     * @return string|null The unique identifier
+     */
+    public function getId(): ?string
+    {
+        return $this->uuid;
+    }//end getId()
+
+    /**
+     * Get the title of the schema
+     * 
+     * @return string|null The schema title
+     */
+    public function getTitle(): ?string
+    {
+        return $this->title;
+    }//end getTitle()
+
+    /**
+     * Get the slug of the schema
+     * 
+     * @return string|null The schema slug
+     */
+    public function getSlug(): ?string
+    {
+        return $this->slug;
+    }//end getSlug()
 
     /**
      * Get the pre-computed facet configuration

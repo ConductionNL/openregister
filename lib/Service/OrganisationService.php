@@ -525,6 +525,7 @@ class OrganisationService
             $organisation->setUuid($uuid);
         }
 
+        $userId = null;
         if ($user !== null) {
             $userId = $user->getUID();
             if ($addCurrentUser) {
@@ -538,8 +539,8 @@ class OrganisationService
 
         $saved = $this->organisationMapper->save($organisation);
 
-        // Clear cached organisations and active organisation cache to force refresh
-        if ($addCurrentUser) {
+        // Clear cached organisations to force refresh
+        if ($addCurrentUser && $userId !== null) {
             $cacheKey = self::SESSION_USER_ORGANISATIONS.'_'.$userId;
             $this->session->remove($cacheKey);
             $this->clearActiveOrganisationCache($userId);
@@ -548,7 +549,7 @@ class OrganisationService
         $this->logger->info(
                 'Created new organisation',
                 [
-                    'organisationUuid' => $saved->getUuid(),
+                    'organisationUuid' => (string)$saved,
                     'name'             => $name,
                     'owner'            => $userId,
                     'adminUsersAdded'  => $this->getAdminGroupUsers(),
@@ -741,6 +742,17 @@ class OrganisationService
 
     }//end addAdminUsersToOrganisation()
 
+
+    /**
+     * Get organisation by UUID
+     *
+     * @param string $uuid Organisation UUID
+     * @return Organisation|null
+     */
+    public function getOrganisation(string $uuid): ?Organisation
+    {
+        return $this->organisationMapper->findByUuid($uuid);
+    }
 
     /**
      * Fetch active organisation from database (cache miss fallback)

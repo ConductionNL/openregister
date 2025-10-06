@@ -123,7 +123,7 @@ class ObjectCacheService
      *
      * @var IUserSession
      */
-    private IUserSession $userSession;
+    private ?IUserSession $userSession;
 
 
     /**
@@ -156,9 +156,7 @@ class ObjectCacheService
             }
         }
         
-        $this->userSession = $userSession ?? new class {
-            public function getUser() { return null; }
-        };
+        $this->userSession = $userSession;
 
     }//end __construct()
 
@@ -606,7 +604,7 @@ class ObjectCacheService
 
         // Cache with ID
         $this->objectCache[$object->getId()] = $object;
-        
+
         // Also cache with UUID if available
         if ($object->getUuid()) {
             $this->objectCache[$object->getUuid()] = $object;

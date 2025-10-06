@@ -21,8 +21,8 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapper;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\SearchService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\DB\Exception;
@@ -85,7 +85,6 @@ class SourcesController extends Controller
      * This method returns a JSON response containing an array of all sources in the system.
      *
      * @param ObjectService $objectService The object service
-     * @param SearchService $searchService The search service
      *
      * @return JSONResponse A JSON response containing the list of sources
      *
@@ -94,20 +93,29 @@ class SourcesController extends Controller
      * @NoCSRFRequired
      */
     public function index(
-        ObjectService $objectService,
-        SearchService $searchService
+        ObjectService $objectService
     ): JSONResponse {
         // Get request parameters for filtering and searching.
-        $filters        = $this->request->getParams();
-        $fieldsToSearch = ['title', 'description'];
-
-        // Create search parameters and conditions for filtering.
-        $searchParams     = $searchService->createMySQLSearchParams(filters: $filters);
-        $searchConditions = $searchService->createMySQLSearchConditions(
-            filters: $filters,
-            fieldsToSearch: $fieldsToSearch
-        );
-        $filters          = $searchService->unsetSpecialQueryParams(filters: $filters);
+        $filters = $this->request->getParams();
+        
+        // Create simple search conditions for title and description fields
+        $searchConditions = [];
+        $searchParams = [];
+        
+        if (isset($filters['search']) || isset($filters['q'])) {
+            $searchTerm = $filters['search'] ?? $filters['q'] ?? '';
+            if (!empty($searchTerm)) {
+                $searchConditions[] = '(title LIKE ? OR description LIKE ?)';
+                $searchParams[] = '%' . $searchTerm . '%';
+                $searchParams[] = '%' . $searchTerm . '%';
+            }
+        }
+        
+        // Remove special query parameters that are not database fields
+        $specialParams = ['limit', 'offset', 'sort', 'order', 'search', 'q'];
+        foreach ($specialParams as $param) {
+            unset($filters[$param]);
+        }
 
         // Return all sources that match the search conditions.
         return new JSONResponse(

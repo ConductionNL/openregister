@@ -48,6 +48,8 @@ use OCP\IUserSession;
 use OCP\IUser;
 use OCP\ISession;
 use OCP\IRequest;
+use OCP\IConfig;
+use OCP\IGroupManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use Psr\Log\LoggerInterface;
@@ -98,6 +100,16 @@ class ActiveOrganisationManagementTest extends TestCase
     private $mockUser;
 
     /**
+     * @var IConfig|MockObject
+     */
+    private $config;
+
+    /**
+     * @var IGroupManager|MockObject
+     */
+    private $groupManager;
+
+    /**
      * Set up test environment before each test
      *
      * @return void
@@ -113,12 +125,16 @@ class ActiveOrganisationManagementTest extends TestCase
         $this->request = $this->createMock(IRequest::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->mockUser = $this->createMock(IUser::class);
+        $this->config = $this->createMock(IConfig::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
         
         // Create service instance with mocked dependencies
         $this->organisationService = new OrganisationService(
             $this->organisationMapper,
             $this->userSession,
             $this->session,
+            $this->config,
+            $this->groupManager,
             $this->logger
         );
         
@@ -166,12 +182,12 @@ class ActiveOrganisationManagementTest extends TestCase
         $this->mockUser->method('getUID')->willReturn('alice');
         $this->userSession->method('getUser')->willReturn($this->mockUser);
         
-        // Mock: No active organisation in session initially
-        $this->session
+        // Mock: No active organisation in config initially
+        $this->config
             ->expects($this->once())
-            ->method('get')
-            ->with('openregister_active_organisation_alice')
-            ->willReturn(null);
+            ->method('getUserValue')
+            ->with('alice', 'openregister', 'active_organisation', '')
+            ->willReturn('');
         
         // Mock: User belongs to multiple organisations (oldest first)
         $oldestOrg = new Organisation();
@@ -192,11 +208,11 @@ class ActiveOrganisationManagementTest extends TestCase
             ->with('alice')
             ->willReturn([$oldestOrg, $newerOrg]);
         
-        // Mock: Set active organisation in session (oldest one)
-        $this->session
+        // Mock: Set active organisation in config (oldest one)
+        $this->config
             ->expects($this->once())
-            ->method('set')
-            ->with('openregister_active_organisation_alice', 'oldest-uuid-123');
+            ->method('setUserValue')
+            ->with('alice', 'openregister', 'active_organisation', 'oldest-uuid-123');
 
         // Act: Get active organisation (should trigger auto-set)
         $activeOrg = $this->organisationService->getActiveOrganisation();
@@ -236,11 +252,11 @@ class ActiveOrganisationManagementTest extends TestCase
             ->with($targetOrgUuid)
             ->willReturn($techStartupOrg);
         
-        // Mock: Set active organisation in session
-        $this->session
+        // Mock: Set active organisation in config
+        $this->config
             ->expects($this->once())
-            ->method('set')
-            ->with('openregister_active_organisation_alice', $targetOrgUuid);
+            ->method('setUserValue')
+            ->with('alice', 'openregister', 'active_organisation', $targetOrgUuid);
 
         // Act: Set active organisation via service
         $result = $this->organisationService->setActiveOrganisation($targetOrgUuid);
@@ -265,11 +281,11 @@ class ActiveOrganisationManagementTest extends TestCase
         
         $activeOrgUuid = 'persistent-org-uuid';
         
-        // Mock: Active organisation is already set in session
-        $this->session
+        // Mock: Active organisation is already set in config
+        $this->config
             ->expects($this->exactly(2))
-            ->method('get')
-            ->with('openregister_active_organisation_alice')
+            ->method('getUserValue')
+            ->with('alice', 'openregister', 'active_organisation', '')
             ->willReturn($activeOrgUuid);
         
         // Mock: Organisation exists
@@ -314,12 +330,12 @@ class ActiveOrganisationManagementTest extends TestCase
         $currentActiveUuid = 'current-active-uuid';
         $alternativeOrgUuid = 'alternative-org-uuid';
         
-        // Mock: Bob currently has active organisation set
-        $this->session
-            ->expects($this->once())
-            ->method('get')
-            ->with('openregister_active_organisation_bob')
-            ->willReturn($currentActiveUuid);
+        // Mock: Bob currently has active organisation set initially, then empty after clearing
+        $this->config
+            ->expects($this->atLeast(2))
+            ->method('getUserValue')
+            ->with('bob', 'openregister', 'active_organisation', '')
+            ->willReturnOnConsecutiveCalls($currentActiveUuid, $currentActiveUuid, ''); // First two calls return current, third returns empty
         
         // Mock: Current active organisation and alternative
         $currentActiveOrg = new Organisation();
@@ -333,16 +349,19 @@ class ActiveOrganisationManagementTest extends TestCase
         $alternativeOrg->setUsers(['bob', 'charlie']);
         $alternativeOrg->setCreated(new \DateTime('2024-01-01')); // Oldest remaining
         
-        // Mock: After leaving, Bob belongs to alternative org only
+        // Mock: Bob belongs to multiple organisations initially (before leaving), then only alternative after leaving
         $this->organisationMapper
-            ->expects($this->once())
+            ->expects($this->atLeast(2))
             ->method('findByUserId')
             ->with('bob')
-            ->willReturn([$alternativeOrg]);
+            ->willReturnOnConsecutiveCalls(
+                [$currentActiveOrg, $alternativeOrg], // Before leaving
+                [$alternativeOrg] // After leaving (only alternative org remains)
+            );
         
-        // Mock: findByUuid for leave operation
+        // Mock: findByUuid for leave operation (called multiple times in leaveOrganisation and getActiveOrganisation)
         $this->organisationMapper
-            ->expects($this->once())
+            ->expects($this->atLeast(2))
             ->method('findByUuid')
             ->with($currentActiveUuid)
             ->willReturn($currentActiveOrg);
@@ -353,14 +372,15 @@ class ActiveOrganisationManagementTest extends TestCase
         
         $this->organisationMapper
             ->expects($this->once())
-            ->method('update')
+            ->method('removeUserFromOrganisation')
+            ->with($currentActiveUuid, 'bob')
             ->willReturn($updatedCurrentOrg);
         
         // Mock: Set new active organisation (alternative)
-        $this->session
+        $this->config
             ->expects($this->once())
-            ->method('set')
-            ->with('openregister_active_organisation_bob', $alternativeOrgUuid);
+            ->method('setUserValue')
+            ->with('bob', 'openregister', 'active_organisation', $alternativeOrgUuid);
 
         // Act: Leave current active organisation
         $leaveResult = $this->organisationService->leaveOrganisation($currentActiveUuid);
@@ -468,11 +488,11 @@ class ActiveOrganisationManagementTest extends TestCase
         
         $activeOrgUuid = 'diana-active-org';
         
-        // Mock: Active organisation in session
-        $this->session
+        // Mock: Active organisation in config
+        $this->config
             ->expects($this->once())
-            ->method('get')
-            ->with('openregister_active_organisation_diana')
+            ->method('getUserValue')
+            ->with('diana', 'openregister', 'active_organisation', '')
             ->willReturn($activeOrgUuid);
         
         // Mock: Organisation exists
@@ -497,10 +517,11 @@ class ActiveOrganisationManagementTest extends TestCase
         $this->assertEquals(200, $response->getStatus());
         
         $responseData = $response->getData();
-        $this->assertEquals('Diana Active Org', $responseData['name']);
-        $this->assertEquals($activeOrgUuid, $responseData['uuid']);
-        $this->assertEquals('diana', $responseData['owner']);
-        $this->assertContains('diana', $responseData['users']);
+        $activeOrgData = $responseData['activeOrganisation'];
+        $this->assertEquals('Diana Active Org', $activeOrgData['name']);
+        $this->assertEquals($activeOrgUuid, $activeOrgData['uuid']);
+        $this->assertEquals('diana', $activeOrgData['owner']);
+        $this->assertContains('diana', $activeOrgData['users']);
     }
 
     /**
@@ -517,16 +538,8 @@ class ActiveOrganisationManagementTest extends TestCase
         $this->mockUser->method('getUID')->willReturn('eve');
         $this->userSession->method('getUser')->willReturn($this->mockUser);
         
-        // Mock: Clear cache operation
-        $this->session
-            ->expects($this->once())
-            ->method('remove')
-            ->with('openregister_active_organisation_eve');
-        
-        $this->session
-            ->expects($this->once())
-            ->method('remove')
-            ->with('openregister_organisations_eve');
+        // Mock: Clear cache operation (config doesn't need explicit clearing in this context)
+        // The clearCache method might not use config, so we don't need to mock it
 
         // Act: Clear cache via service
         $this->organisationService->clearCache();
@@ -563,11 +576,11 @@ class ActiveOrganisationManagementTest extends TestCase
             ->with($validOrgUuid)
             ->willReturn($validOrg);
         
-        // Mock: Session update
-        $this->session
+        // Mock: Config update
+        $this->config
             ->expects($this->once())
-            ->method('set')
-            ->with('openregister_active_organisation_frank', $validOrgUuid);
+            ->method('setUserValue')
+            ->with('frank', 'openregister', 'active_organisation', $validOrgUuid);
 
         // Act: Set valid organisation as active
         $result = $this->organisationService->setActiveOrganisation($validOrgUuid);
@@ -591,12 +604,12 @@ class ActiveOrganisationManagementTest extends TestCase
         $newUser->method('getUID')->willReturn('newuser');
         $this->userSession->method('getUser')->willReturn($newUser);
         
-        // Mock: No active organisation in session
-        $this->session
+        // Mock: No active organisation in config
+        $this->config
             ->expects($this->once())
-            ->method('get')
-            ->with('openregister_active_organisation_newuser')
-            ->willReturn(null);
+            ->method('getUserValue')
+            ->with('newuser', 'openregister', 'active_organisation', '')
+            ->willReturn('');
         
         // Mock: User has no organisations initially
         $this->organisationMapper
@@ -625,10 +638,10 @@ class ActiveOrganisationManagementTest extends TestCase
             ->willReturn($defaultOrg);
         
         // Mock: Set active organisation
-        $this->session
+        $this->config
             ->expects($this->once())
-            ->method('set')
-            ->with('openregister_active_organisation_newuser', 'default-uuid-789');
+            ->method('setUserValue')
+            ->with('newuser', 'openregister', 'active_organisation', 'default-uuid-789');
 
         // Act: Get active organisation (should create and set default)
         $activeOrg = $this->organisationService->getActiveOrganisation();

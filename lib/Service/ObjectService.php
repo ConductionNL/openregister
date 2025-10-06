@@ -6095,6 +6095,83 @@ class ObjectService
 
     }//end bulkLoadRelationships()
 
+    /**
+     * Enrich objects with properly formatted datetime fields
+     *
+     * @param array $objects Array of objects to enrich
+     * @return array Enriched objects with formatted datetime fields
+     */
+    public function enrichObjects(array $objects): array
+    {
+        foreach ($objects as &$object) {
+            // Format created datetime if it exists
+            if (isset($object['created']) && $object['created'] instanceof \DateTime) {
+                $object['created'] = $object['created']->format('Y-m-d H:i:s');
+            }
+            
+            // Format updated datetime if it exists
+            if (isset($object['updated']) && $object['updated'] instanceof \DateTime) {
+                $object['updated'] = $object['updated']->format('Y-m-d H:i:s');
+            }
+        }
+        
+        return $objects;
+    }//end enrichObjects()
+
+
+    /**
+     * Get object statistics for a schema
+     *
+     * @param int $schemaId The schema ID
+     * @return array Object statistics
+     */
+    public function getObjectStats(int $schemaId): array
+    {
+        $stats = $this->objectEntityMapper->getStatistics(schemaId: $schemaId);
+        
+        return [
+            'total_objects' => $stats['total'],
+            'active_objects' => $stats['total'] - $stats['deleted'],
+            'deleted_objects' => $stats['deleted'],
+        ];
+    }//end getObjectStats()
+
+
+    /**
+     * Get file statistics for a schema
+     *
+     * @param int $schemaId The schema ID
+     * @return array File statistics
+     */
+    public function getFileStats(int $schemaId): array
+    {
+        $stats = $this->objectEntityMapper->getStatistics(schemaId: $schemaId);
+        
+        return [
+            'total_files' => $stats['total'],
+            'total_size' => $stats['size'],
+        ];
+    }//end getFileStats()
+
+
+    /**
+     * Get log statistics for a schema
+     *
+     * @param int $schemaId The schema ID
+     * @return array Log statistics
+     */
+    public function getLogStats(int $schemaId): array
+    {
+        // Note: ObjectService doesn't have direct access to LogService or AuditTrailMapper
+        // This is a placeholder implementation that could be enhanced by injecting LogService
+        // or by using the existing ObjectEntityMapper statistics which include some log-related data
+        
+        return [
+            'total_logs' => 0, // TODO: Inject LogService or AuditTrailMapper to get actual count
+            'recent_logs' => 0, // TODO: Implement recent logs count
+        ];
+    }//end getLogStats()
+
 
     /**
      * Load relationships in parallel for maximum performance without API changes

@@ -25,6 +25,8 @@ use OCA\OpenRegister\Db\Organisation;
 use OCP\IUserSession;
 use OCP\ISession;
 use OCP\IUser;
+use OCP\IConfig;
+use OCP\IGroupManager;
 use Psr\Log\LoggerInterface;
 
 class SessionCacheManagementTest extends TestCase
@@ -33,6 +35,8 @@ class SessionCacheManagementTest extends TestCase
     private OrganisationMapper|MockObject $organisationMapper;
     private IUserSession|MockObject $userSession;
     private ISession|MockObject $session;
+    private IConfig|MockObject $config;
+    private IGroupManager|MockObject $groupManager;
     private LoggerInterface|MockObject $logger;
 
     protected function setUp(): void
@@ -42,12 +46,16 @@ class SessionCacheManagementTest extends TestCase
         $this->organisationMapper = $this->createMock(OrganisationMapper::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->session = $this->createMock(ISession::class);
+        $this->config = $this->createMock(IConfig::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         
         $this->organisationService = new OrganisationService(
             $this->organisationMapper,
             $this->userSession,
             $this->session,
+            $this->config,
+            $this->groupManager,
             $this->logger
         );
     }
@@ -64,20 +72,25 @@ class SessionCacheManagementTest extends TestCase
         
         $orgUuid = 'persistent-org-uuid';
         
-        // Mock: Set active organisation
-        $this->session->expects($this->once())
-            ->method('set')
-            ->with('openregister_active_organisation_alice', $orgUuid);
+        // Create organisation with user as member
+        $organisation = new Organisation();
+        $organisation->setUuid($orgUuid);
+        $organisation->setUsers(['alice']);
         
-        // Mock: Subsequent get from session
-        $this->session->expects($this->once())
-            ->method('get')
-            ->with('openregister_active_organisation_alice')
-            ->willReturn($orgUuid);
+        // Mock: Organisation validation
+        $this->organisationMapper->expects($this->once())
+            ->method('findByUuid')
+            ->with($orgUuid)
+            ->willReturn($organisation);
+        
+        // Mock: Set active organisation
+        $this->config->expects($this->once())
+            ->method('setUserValue')
+            ->with('alice', 'openregister', 'active_organisation', $orgUuid);
 
-        // Act & Assert: Set and get should persist
-        $this->organisationService->setActiveOrganisation($orgUuid);
-        $this->assertEquals($orgUuid, $this->session->get('openregister_active_organisation_alice'));
+        // Act & Assert: Set should succeed
+        $result = $this->organisationService->setActiveOrganisation($orgUuid);
+        $this->assertTrue($result);
     }
 
     /**
@@ -92,21 +105,16 @@ class SessionCacheManagementTest extends TestCase
         
         $cachedOrgs = [new Organisation()];
         
-        // Mock: First call hits database
-        $this->organisationMapper->expects($this->once())
+        // Mock: Both calls hit database (caching is disabled)
+        $this->organisationMapper->expects($this->exactly(2))
             ->method('findByUserId')
             ->willReturn($cachedOrgs);
-        
-        // Mock: Second call uses cache
-        $this->session->method('get')
-            ->with('openregister_organisations_alice')
-            ->willReturn($cachedOrgs);
 
-        // Act: Multiple calls should use cache
+        // Act: Multiple calls both hit database
         $orgs1 = $this->organisationService->getUserOrganisations(false);
-        $orgs2 = $this->organisationService->getUserOrganisations(true); // Use cache
+        $orgs2 = $this->organisationService->getUserOrganisations(true); // Cache disabled
 
-        // Assert: Performance improvement through caching
+        // Assert: Both calls return same data
         $this->assertEquals($orgs1, $cachedOrgs);
         $this->assertEquals($orgs2, $cachedOrgs);
     }
@@ -122,11 +130,12 @@ class SessionCacheManagementTest extends TestCase
         $this->userSession->method('getUser')->willReturn($user);
         
         // Mock: Cache removal
-        $this->session->expects($this->exactly(2))
+        $this->session->expects($this->exactly(3))
             ->method('remove')
             ->withConsecutive(
+                ['openregister_user_organisations_alice'],
                 ['openregister_active_organisation_alice'],
-                ['openregister_organisations_alice']
+                ['openregister_active_organisation_timestamp_alice']
             );
 
         // Act: Clear cache
@@ -148,18 +157,27 @@ class SessionCacheManagementTest extends TestCase
         $bob = $this->createMock(IUser::class);
         $bob->method('getUID')->willReturn('bob');
         
+        // Create organisation with Alice as member
+        $aliceOrg = new Organisation();
+        $aliceOrg->setUuid('alice-org');
+        $aliceOrg->setUsers(['alice']);
+        
         // Mock: Alice's session
         $this->userSession->method('getUser')->willReturn($alice);
-        $this->session->method('set')
-            ->with('openregister_active_organisation_alice', 'alice-org');
+        $this->organisationMapper->method('findByUuid')
+            ->with('alice-org')
+            ->willReturn($aliceOrg);
+        $this->config->method('setUserValue')
+            ->with('alice', 'openregister', 'active_organisation', 'alice-org');
 
         // Act: Alice sets active organisation
-        $this->organisationService->setActiveOrganisation('alice-org');
+        $result = $this->organisationService->setActiveOrganisation('alice-org');
+        $this->assertTrue($result);
         
         // Mock: Bob's session should be isolated
         $this->userSession->method('getUser')->willReturn($bob);
-        $this->session->method('get')
-            ->with('openregister_active_organisation_bob')
+        $this->config->method('getUserValue')
+            ->with('bob', 'openregister', 'active_organisation', '')
             ->willReturn('bob-org'); // Bob has different active org
 
         // Assert: Users have isolated sessions

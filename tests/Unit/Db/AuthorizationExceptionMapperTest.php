@@ -23,6 +23,12 @@ namespace OCA\OpenRegister\Tests\Db;
 use OCA\OpenRegister\Db\AuthorizationException;
 use OCA\OpenRegister\Db\AuthorizationExceptionMapper;
 use OCP\IDBConnection;
+use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\DB\IResult;
+use OCP\DB\QueryBuilder\IExpressionBuilder;
+use OCP\DB\QueryBuilder\ICompositeExpression;
+use OCP\DB\QueryBuilder\IFunctionBuilder;
+use OCP\DB\QueryBuilder\IQueryFunction;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
@@ -66,6 +72,34 @@ class AuthorizationExceptionMapperTest extends TestCase
 
         $this->db = $this->createMock(IDBConnection::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+
+        // Mock the query builder chain
+        $queryBuilder = $this->createMock(IQueryBuilder::class);
+        $result = $this->createMock(IResult::class);
+        
+        $this->db->method('getQueryBuilder')->willReturn($queryBuilder);
+        $queryBuilder->method('select')->willReturnSelf();
+        $queryBuilder->method('from')->willReturnSelf();
+        $queryBuilder->method('where')->willReturnSelf();
+        $queryBuilder->method('andWhere')->willReturnSelf();
+        $queryBuilder->method('orderBy')->willReturnSelf();
+        $queryBuilder->method('addOrderBy')->willReturnSelf();
+        
+        // Mock the func() method to return a mock function builder
+        $functionBuilder = $this->createMock(IFunctionBuilder::class);
+        $queryFunction = $this->createMock(IQueryFunction::class);
+        $functionBuilder->method('count')->willReturn($queryFunction);
+        $queryBuilder->method('func')->willReturn($functionBuilder);
+        $expressionBuilder = $this->createMock(IExpressionBuilder::class);
+        $compositeExpression = $this->createMock(ICompositeExpression::class);
+        $expressionBuilder->method('eq')->willReturn('expr_eq');
+        $expressionBuilder->method('isNull')->willReturn('expr_isnull');
+        $expressionBuilder->method('orX')->willReturn($compositeExpression);
+        $queryBuilder->method('expr')->willReturn($expressionBuilder);
+        $queryBuilder->method('createNamedParameter')->willReturn(':param');
+        $queryBuilder->method('execute')->willReturn($result);
+        $queryBuilder->method('executeQuery')->willReturn($result);
+        $result->method('fetch')->willReturn(false); // Simulate no results found
 
         $this->mapper = new AuthorizationExceptionMapper($this->db, $this->logger);
 

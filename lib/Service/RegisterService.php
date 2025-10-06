@@ -300,4 +300,33 @@ class RegisterService
     }//end ensureRegisterFolderExists()
 
 
+    /**
+     * Calculate statistics for a register
+     *
+     * @param Register $register The register to calculate stats for
+     * @return array Statistics data
+     */
+    public function calculateStats(Register $register): array
+    {
+        // Get basic register information
+        $registerId = $register->getId();
+        $schemas = $register->getSchemas();
+        
+        // Count total objects for this register using ObjectEntityMapper
+        $objectStats = $this->objectEntityMapper->getStatistics(registerId: $registerId);
+        
+        return [
+            'register_id' => $registerId,
+            'register_name' => $register->title ?? $register->slug ?? 'Unnamed Register',
+            'total_objects' => $objectStats['total'],
+            'total_schemas' => count($schemas),
+            'created_at' => $register->created?->format('Y-m-d H:i:s'),
+            'updated_at' => $register->updated?->format('Y-m-d H:i:s'),
+            'published_objects' => $objectStats['published'],
+            'deleted_objects' => $objectStats['deleted'],
+            'locked_objects' => $objectStats['locked'],
+        ];
+    }//end calculateStats()
+
+
 }//end class

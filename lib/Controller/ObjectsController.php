@@ -150,9 +150,9 @@ class ObjectsController extends Controller
     public function page(): TemplateResponse
     {
         return new TemplateResponse(
-            appName: 'openconnector',
-            templateName: 'index',
-            parameters: []
+            'openconnector',
+            'index',
+            []
         );
 
     }//end page()
@@ -1208,7 +1208,7 @@ class ObjectsController extends Controller
     {
         $this->objectService->setRegister($register);
         $this->objectService->setSchema($schema);
-        $this->objectService->unlock($id);
+        $this->objectService->unlockObject($id);
         return new JSONResponse(['message' => 'Object unlocked successfully']);
 
     }//end unlock()

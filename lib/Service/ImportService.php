@@ -32,7 +32,7 @@ use PhpOffice\PhpSpreadsheet\Reader\Csv;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use Psr\Log\LoggerInterface;
-use React\Async\PromiseInterface;
+use React\Promise\PromiseInterface;
 use React\Promise\Promise;
 use React\EventLoop\Loop;
 
@@ -618,38 +618,49 @@ class ImportService
         // Call saveObjects ONCE with all objects - NO ERROR SUPPRESSION!
         // This will reveal the real bulk save problem immediately
         if (!empty($allObjects) && $register !== null && $schema !== null) {
-            // Add publish date to all objects if publish is enabled
-            if ($publish) {
-                $publishDate = (new \DateTime())->format('c'); // ISO 8601 format
-                $allObjects = $this->addPublishedDateToObjects($allObjects, $publishDate);
-            }
-            
-            $saveResult = $this->objectService->saveObjects($allObjects, $register, $schema, $rbac, $multi, $validation, $events);
-            
-            // Use the structured return from saveObjects with smart deduplication
-            // saveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id
-            $summary['created'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []);
-            $summary['updated'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []);
-            
-            // TODO: Handle unchanged objects from smart deduplication (renamed from 'skipped')
-            $summary['unchanged'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['unchanged'] ?? []);
-            
-            // Add efficiency metrics from smart deduplication
-            $totalProcessed = count($summary['created']) + count($summary['updated']) + count($summary['unchanged']);
-            if ($totalProcessed > 0 && count($summary['unchanged']) > 0) {
-                $summary['deduplication_efficiency'] = round((count($summary['unchanged']) / $totalProcessed) * 100, 1) . '% operations avoided';
-            }
-            
-            // Handle validation errors if validation was enabled
-            if ($validation && !empty($saveResult['invalid'] ?? [])) {
-                foreach (($saveResult['invalid'] ?? []) as $invalidItem) {
-                    $summary['errors'][] = [
-                        'sheet' => $sheetTitle,
-                        'object' => $invalidItem['object'] ?? $invalidItem,
-                        'error' => $invalidItem['error'] ?? 'Validation failed',
-                        'type'  => $invalidItem['type'] ?? 'ValidationException',
-                    ];
+            try {
+                // Add publish date to all objects if publish is enabled
+                if ($publish) {
+                    $publishDate = (new \DateTime())->format('c'); // ISO 8601 format
+                    $allObjects = $this->addPublishedDateToObjects($allObjects, $publishDate);
                 }
+
+                $saveResult = $this->objectService->saveObjects($allObjects, $register, $schema, $rbac, $multi, $validation, $events);
+
+                // Use the structured return from saveObjects with smart deduplication
+                // saveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id
+                $summary['created'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []);
+                $summary['updated'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []);
+
+                // TODO: Handle unchanged objects from smart deduplication (renamed from 'skipped')
+                $summary['unchanged'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['unchanged'] ?? []);
+
+                // Add efficiency metrics from smart deduplication
+                $totalProcessed = count($summary['created']) + count($summary['updated']) + count($summary['unchanged']);
+                if ($totalProcessed > 0 && count($summary['unchanged']) > 0) {
+                    $summary['deduplication_efficiency'] = round((count($summary['unchanged']) / $totalProcessed) * 100, 1) . '% operations avoided';
+                }
+
+                // Handle validation errors if validation was enabled
+                if ($validation && !empty($saveResult['invalid'] ?? [])) {
+                    foreach (($saveResult['invalid'] ?? []) as $invalidItem) {
+                        $summary['errors'][] = [
+                            'sheet' => $sheetTitle,
+                            'object' => $invalidItem['object'] ?? $invalidItem,
+                            'error' => $invalidItem['error'] ?? 'Validation failed',
+                            'type'  => $invalidItem['type'] ?? 'ValidationException',
+                        ];
+                    }
+                }
+            } catch (\Exception $e) {
+                // Handle batch save errors
+                $summary['errors'][] = [
+                    'sheet' => $sheetTitle,
+                    'row' => 'batch',
+                    'object' => [],
+                    'error' => 'Batch save failed: ' . $e->getMessage(),
+                    'type' => 'BatchSaveException',
+                ];
             }
         }
 

@@ -26,6 +26,8 @@ use OCP\IDBConnection;
 use OCP\IUserSession;
 use OCP\IGroupManager;
 use OCP\IUserManager;
+use OCP\IAppConfig;
+use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 use DateTime;
 
@@ -88,6 +90,16 @@ class ObjectEntityMapperTest extends TestCase
     private $organisationService;
 
     /**
+     * @var \PHPUnit\Framework\MockObject\MockObject|IAppConfig
+     */
+    private $appConfig;
+
+    /**
+     * @var \PHPUnit\Framework\MockObject\MockObject|LoggerInterface
+     */
+    private $logger;
+
+    /**
      * Set up the test environment
      *
      * @return void
@@ -96,6 +108,7 @@ class ObjectEntityMapperTest extends TestCase
     {
         parent::setUp();
         $this->db = $this->createMock(IDBConnection::class);
+        $this->db->method('getDatabasePlatform')->willReturn($this->createMock(\Doctrine\DBAL\Platforms\MySQLPlatform::class));
         $this->jsonService = $this->createMock(MySQLJsonService::class);
         $this->eventDispatcher = $this->createMock(IEventDispatcher::class);
         $this->userSession = $this->createMock(IUserSession::class);
@@ -103,6 +116,35 @@ class ObjectEntityMapperTest extends TestCase
         $this->groupManager = $this->createMock(IGroupManager::class);
         $this->userManager = $this->createMock(IUserManager::class);
         $this->organisationService = $this->createMock(OrganisationService::class);
+        $this->appConfig = $this->createMock(IAppConfig::class);
+        $this->logger = $this->createMock(LoggerInterface::class);
+        
+        // Mock query builder for database operations
+        $qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+        $qb->method('select')->willReturnSelf();
+        $qb->method('from')->willReturnSelf();
+        $qb->method('leftJoin')->willReturnSelf();
+        $qb->method('where')->willReturnSelf();
+        $qb->method('andWhere')->willReturnSelf();
+        $qb->method('orWhere')->willReturnSelf();
+        $qb->method('setParameter')->willReturnSelf();
+        $qb->method('setMaxResults')->willReturnSelf();
+        $qb->method('setFirstResult')->willReturnSelf();
+        $qb->method('orderBy')->willReturnSelf();
+        $qb->method('groupBy')->willReturnSelf();
+        $qb->method('expr')->willReturn($this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class));
+        
+        // Mock IResult for executeQuery
+        $result = $this->createMock(\OCP\DB\IResult::class);
+        $result->method('fetchAll')->willReturn([]);
+        $result->method('fetch')->willReturn(false);
+        $result->method('fetchColumn')->willReturn('0');
+        $result->method('fetchOne')->willReturn('0');
+        $result->method('closeCursor')->willReturn(true);
+        $qb->method('executeQuery')->willReturn($result);
+        
+        $this->db->method('getQueryBuilder')->willReturn($qb);
+        
         $this->mapper = new ObjectEntityMapper(
             $this->db,
             $this->jsonService,
@@ -111,7 +153,8 @@ class ObjectEntityMapperTest extends TestCase
             $this->schemaMapper,
             $this->groupManager,
             $this->userManager,
-            $this->organisationService
+            $this->appConfig,
+            $this->logger
         );
     }
 
@@ -168,19 +211,15 @@ class ObjectEntityMapperTest extends TestCase
         $db = $this->createMock(\OCP\IDBConnection::class);
         $eventDispatcher = $this->createMock(\OCP\EventDispatcher\IEventDispatcher::class);
         $schemaMapper = $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class);
-        $registerMapper = $this->getMockBuilder(\OCA\OpenRegister\Db\RegisterMapper::class)
-            ->setConstructorArgs([$db, $schemaMapper, $eventDispatcher])
-            ->onlyMethods(['parent::delete'])
-            ->getMock();
-        $register = $this->createMock(\OCA\OpenRegister\Db\Register::class);
-        $register->method('getId')->willReturn(1);
-        // Patch ObjectEntityMapper to return stats with total > 0
         $objectEntityMapper = $this->createMock(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
         $objectEntityMapper->method('getStatistics')->willReturn(['total' => 1]);
-        // Inject the mock into the RegisterMapper
-        \Closure::bind(function () use ($objectEntityMapper) {
-            $this->objectEntityMapper = $objectEntityMapper;
-        }, $registerMapper, $registerMapper)();
+        
+        // Create RegisterMapper without mocking the delete method
+        $registerMapper = new \OCA\OpenRegister\Db\RegisterMapper($db, $schemaMapper, $eventDispatcher, $objectEntityMapper);
+        
+        $register = $this->createMock(\OCA\OpenRegister\Db\Register::class);
+        $register->id = 1;
+        
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('Cannot delete register: objects are still attached.');
         $registerMapper->delete($register);

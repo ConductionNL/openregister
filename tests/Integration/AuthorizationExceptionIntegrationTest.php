@@ -26,7 +26,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\AuthorizationExceptionService;
-use OCP\Test\TestCase;
+use Test\TestCase;
 
 /**
  * Integration test class for the authorization exception system
@@ -339,7 +339,7 @@ class AuthorizationExceptionIntegrationTest extends TestCase
                 $allowedGroups = $authorization[$action] ?? [];
                 $userGroups = $this->getUserGroups($userId);
 
-                return !empty(array_intersect($userGroups, $allowedGroups));
+                return empty(array_intersect($userGroups, $allowedGroups)) === false;
             });
 
         // Test: Owner should always have access

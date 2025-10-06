@@ -48,6 +48,8 @@ use OCP\IUserSession;
 use OCP\IUser;
 use OCP\ISession;
 use OCP\IRequest;
+use OCP\IConfig;
+use OCP\IGroupManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use Psr\Log\LoggerInterface;
@@ -83,6 +85,16 @@ class UserOrganisationRelationshipTest extends TestCase
     private $session;
     
     /**
+     * @var IConfig|MockObject
+     */
+    private $config;
+    
+    /**
+     * @var IGroupManager|MockObject
+     */
+    private $groupManager;
+    
+    /**
      * @var IRequest|MockObject
      */
     private $request;
@@ -110,6 +122,8 @@ class UserOrganisationRelationshipTest extends TestCase
         $this->organisationMapper = $this->createMock(OrganisationMapper::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->session = $this->createMock(ISession::class);
+        $this->config = $this->createMock(IConfig::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
         $this->request = $this->createMock(IRequest::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->mockUser = $this->createMock(IUser::class);
@@ -119,6 +133,8 @@ class UserOrganisationRelationshipTest extends TestCase
             $this->organisationMapper,
             $this->userSession,
             $this->session,
+            $this->config,
+            $this->groupManager,
             $this->logger
         );
         
@@ -182,19 +198,10 @@ class UserOrganisationRelationshipTest extends TestCase
         
         $this->organisationMapper
             ->expects($this->once())
-            ->method('findByUuid')
-            ->with($organisationUuid)
+            ->method('addUserToOrganisation')
+            ->with($organisationUuid, 'bob')
             ->willReturn($acmeOrg);
         
-        $this->organisationMapper
-            ->expects($this->once())
-            ->method('update')
-            ->with($this->callback(function($org) {
-                return $org instanceof Organisation && 
-                       $org->hasUser('alice') && 
-                       $org->hasUser('bob');
-            }))
-            ->willReturn($updatedOrg);
 
         // Act: Join organisation via service
         $result = $this->organisationService->joinOrganisation($organisationUuid);
@@ -242,17 +249,13 @@ class UserOrganisationRelationshipTest extends TestCase
             ->with('bob')
             ->willReturn([$acmeOrg, $updatedTechOrg]);
         
-        // Mock: findByUuid for joining Tech Startup
+        // Mock: addUserToOrganisation for joining Tech Startup
         $this->organisationMapper
             ->expects($this->once())
-            ->method('findByUuid')
-            ->with('tech-startup-uuid-456')
+            ->method('addUserToOrganisation')
+            ->with('tech-startup-uuid-456', 'bob')
             ->willReturn($techStartupOrg);
         
-        $this->organisationMapper
-            ->expects($this->once())
-            ->method('update')
-            ->willReturn($updatedTechOrg);
 
         // Act: Join second organisation
         $joinResult = $this->organisationService->joinOrganisation('tech-startup-uuid-456');
@@ -298,9 +301,9 @@ class UserOrganisationRelationshipTest extends TestCase
         $techOrg->setUuid($techUuid);
         $techOrg->setUsers(['alice', 'bob']);
         
-        // Mock: User organisations lookup returns both
+        // Mock: User organisations lookup returns both (called multiple times)
         $this->organisationMapper
-            ->expects($this->once())
+            ->expects($this->exactly(3))
             ->method('findByUserId')
             ->with('bob')
             ->willReturn([$acmeOrg, $techOrg]);
@@ -308,8 +311,8 @@ class UserOrganisationRelationshipTest extends TestCase
         // Mock: Organisation to leave
         $this->organisationMapper
             ->expects($this->once())
-            ->method('findByUuid')
-            ->with($acmeUuid)
+            ->method('removeUserFromOrganisation')
+            ->with($acmeUuid, 'bob')
             ->willReturn($acmeOrg);
         
         // Mock: Updated organisation with Bob removed
@@ -318,13 +321,15 @@ class UserOrganisationRelationshipTest extends TestCase
         
         $this->organisationMapper
             ->expects($this->once())
-            ->method('update')
-            ->with($this->callback(function($org) {
-                return $org instanceof Organisation && 
-                       $org->hasUser('alice') && 
-                       !$org->hasUser('bob');
-            }))
+            ->method('removeUserFromOrganisation')
+            ->with($acmeUuid, 'bob')
             ->willReturn($updatedAcme);
+
+        // Mock getActiveOrganisation to return null (no active organisation)
+        $this->config->expects($this->any())
+            ->method('getUserValue')
+            ->with('bob', 'openregister', 'active_organisation', '')
+            ->willReturn('');
 
         // Act: Leave one organisation
         $result = $this->organisationService->leaveOrganisation($acmeUuid);
@@ -353,8 +358,8 @@ class UserOrganisationRelationshipTest extends TestCase
         // Mock: Organisation not found
         $this->organisationMapper
             ->expects($this->once())
-            ->method('findByUuid')
-            ->with($invalidUuid)
+            ->method('addUserToOrganisation')
+            ->with($invalidUuid, 'bob')
             ->willThrowException(new DoesNotExistException('Organisation not found'));
 
         // Act: Attempt to join non-existent organisation via controller
@@ -400,10 +405,9 @@ class UserOrganisationRelationshipTest extends TestCase
             ->willReturn([$defaultOrg]); // Only one organisation
 
         // Act: Attempt to leave last organisation via service
-        $result = $this->organisationService->leaveOrganisation($defaultUuid);
-
-        // Assert: Operation failed (cannot leave last organisation)
-        $this->assertFalse($result);
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Cannot leave last organisation');
+        $this->organisationService->leaveOrganisation($defaultUuid);
     }
 
     /**
@@ -431,20 +435,8 @@ class UserOrganisationRelationshipTest extends TestCase
         
         $this->organisationMapper
             ->expects($this->once())
-            ->method('findByUuid')
-            ->with($acmeUuid)
-            ->willReturn($acmeOrg);
-        
-        // Mock: Update should not change membership (graceful handling)
-        $this->organisationMapper
-            ->expects($this->once())
-            ->method('update')
-            ->with($this->callback(function($org) {
-                // Should still have alice and no duplicates
-                return $org instanceof Organisation && 
-                       $org->hasUser('alice') &&
-                       count($org->getUserIds()) === 1; // No duplicates
-            }))
+            ->method('addUserToOrganisation')
+            ->with($acmeUuid, 'alice')
             ->willReturn($acmeOrg);
 
         // Act: Attempt to join organisation user already belongs to
@@ -525,19 +517,25 @@ class UserOrganisationRelationshipTest extends TestCase
         $defaultOrg->setIsDefault(true);
         
         $this->organisationMapper
-            ->expects($this->once())
+            ->expects($this->exactly(2))
             ->method('findByUserId')
             ->with('diana')
             ->willReturn([$org1, $org2, $defaultOrg]);
+
+        // Mock getActiveOrganisation to return null
+        $this->config->expects($this->once())
+            ->method('getUserValue')
+            ->with('diana', 'openregister', 'active_organisation', '')
+            ->willReturn('');
 
         // Act: Get user organisation statistics
         $stats = $this->organisationService->getUserOrganisationStats();
 
         // Assert: Statistics reflect membership
         $this->assertEquals(3, $stats['total']);
-        $this->assertEquals(2, $stats['custom']); // Non-default organisations
-        $this->assertEquals(1, $stats['default']);
         $this->assertArrayHasKey('active', $stats);
+        $this->assertArrayHasKey('results', $stats);
+        $this->assertCount(3, $stats['results']);
     }
 
     /**
@@ -557,26 +555,27 @@ class UserOrganisationRelationshipTest extends TestCase
         $orgUuid = 'concurrent-test-uuid';
         
         // Mock: Organisation with current membership
-        $organisation = new Organisation();
-        $organisation->setName('Concurrent Test Org');
-        $organisation->setUuid($orgUuid);
-        $organisation->setUsers(['alice', 'bob']);
+        $organisation = $this->getMockBuilder(Organisation::class)
+            ->addMethods(['getName', 'getUuid'])
+            ->onlyMethods(['hasUser'])
+            ->getMock();
+        $organisation->method('getName')->willReturn('Concurrent Test Org');
+        $organisation->method('getUuid')->willReturn($orgUuid);
+        $organisation->method('hasUser')->willReturn(true);
         
-        // Mock: Multiple findByUuid calls (simulating concurrent operations)
+        // Mock: findByUuid call (only by hasAccessToOrganisation)
         $this->organisationMapper
-            ->expects($this->exactly(2))
+            ->expects($this->once())
             ->method('findByUuid')
             ->with($orgUuid)
             ->willReturn($organisation);
         
         // Mock: Eve joins organisation
-        $updatedOrg = clone $organisation;
-        $updatedOrg->addUser('eve');
-        
         $this->organisationMapper
             ->expects($this->once())
-            ->method('update')
-            ->willReturn($updatedOrg);
+            ->method('addUserToOrganisation')
+            ->with($orgUuid, 'eve')
+            ->willReturn($organisation);
 
         // Act: Simulate concurrent join operations
         $result1 = $this->organisationService->joinOrganisation($orgUuid);

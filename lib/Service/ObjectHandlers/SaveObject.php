@@ -2009,27 +2009,22 @@ class SaveObject
      */
     public function setDefaults(ObjectEntity $objectEntity): ObjectEntity
     {
-        if ($objectEntity->getCreatedAt() === null) {
-            $objectEntity->setCreatedAt(new DateTime());
+        if ($objectEntity->getCreated() === null) {
+            $objectEntity->setCreated(new DateTime());
         }
 
-        if ($objectEntity->getUpdatedAt() === null) {
-            $objectEntity->setUpdatedAt(new DateTime());
+        if ($objectEntity->getUpdated() === null) {
+            $objectEntity->setUpdated(new DateTime());
         }
 
         if ($objectEntity->getUuid() === null) {
             $objectEntity->setUuid(Uuid::v4()->toRfc4122());
         }
 
+        // Set owner if user is available and owner is not already set
         $user = $this->userSession->getUser();
-        if ($user !== null) {
-            if ($objectEntity->getCreatedBy() === null) {
-                $objectEntity->setCreatedBy($user->getUID());
-            }
-
-            if ($objectEntity->getUpdatedBy() === null) {
-                $objectEntity->setUpdatedBy($user->getUID());
-            }
+        if ($user !== null && $objectEntity->getOwner() === null) {
+            $objectEntity->setOwner($user->getUID());
         }
 
         return $objectEntity;

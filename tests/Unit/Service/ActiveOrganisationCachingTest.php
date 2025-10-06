@@ -164,8 +164,8 @@ class ActiveOrganisationCachingTest extends TestCase
         $this->session
             ->method('get')
             ->willReturnMap([
-                ['openregister_active_organisation_alice', null, $cachedOrgData],
-                ['openregister_active_organisation_timestamp_alice', null, $currentTime - 300] // 5 minutes ago
+                ['openregister_active_organisation_alice', $cachedOrgData],
+                ['openregister_active_organisation_timestamp_alice', $currentTime - 300] // 5 minutes ago
             ]);
         
         // Assert: No database calls should be made for cache hit
@@ -204,8 +204,8 @@ class ActiveOrganisationCachingTest extends TestCase
         $this->session
             ->method('get')
             ->willReturnMap([
-                ['openregister_active_organisation_bob', null, null],
-                ['openregister_active_organisation_timestamp_bob', null, null]
+                ['openregister_active_organisation_bob', null],
+                ['openregister_active_organisation_timestamp_bob', null]
             ]);
         
         // Mock: Active organisation UUID from config
@@ -274,8 +274,8 @@ class ActiveOrganisationCachingTest extends TestCase
         $this->session
             ->method('get')
             ->willReturnMap([
-                ['openregister_active_organisation_charlie', null, $expiredCacheData],
-                ['openregister_active_organisation_timestamp_charlie', null, $expiredTime]
+                ['openregister_active_organisation_charlie', $expiredCacheData],
+                ['openregister_active_organisation_timestamp_charlie', $expiredTime]
             ]);
         
         // Mock: Fresh organisation from config and database
@@ -340,7 +340,7 @@ class ActiveOrganisationCachingTest extends TestCase
         
         // Mock: Cache invalidation and new cache storage
         $this->session
-            ->expects($this->exactly(4))
+            ->expects($this->exactly(3))
             ->method('remove')
             ->withConsecutive(
                 ['openregister_user_organisations_diana'],
