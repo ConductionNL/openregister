@@ -1887,11 +1887,12 @@ class SaveObject
                 }
             } else {
                 $this->logger->debug('Published value is empty, setting to null');
+                var_dump($objectEntity->getPublished());
                 $objectEntity->setPublished(null);
             }
         } else {
             $this->logger->debug('No published field found in selfData, setting to null');
-            $objectEntity->setPublished(null);
+            $objectEntity->setPublished($objectEntity->getPublished());
         }
 
         // Extract and set depublished property if present
