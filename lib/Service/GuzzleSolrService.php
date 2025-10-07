@@ -1208,6 +1208,36 @@ class GuzzleSolrService
         $objectData = $object->getObject(); // This contains the schema fields like 'naam', 'website', 'type'
         $schemaProperties = $schema->getProperties();
         
+        // ========================================================================
+        // **WORKAROUND/HACK**: Enrich object data from relations
+        // ========================================================================
+        // PROBLEM: Some array fields (like 'standaarden') are stored ONLY in the relations
+        // table as dot-notation entries (e.g., "standaarden.0", "standaarden.1") instead of
+        // being included in the object JSON body. This causes them to be missing from SOLR.
+        //
+        // This is a data storage issue that should be fixed at the source (ObjectService/Mapper),
+        // but as a workaround, we reconstruct these arrays from relations to ensure they get indexed.
+        //
+        // TODO: Investigate why some array fields are stored only as relations and fix the root cause
+        // in the object save logic so arrays are consistently stored in the object body.
+        // ========================================================================
+        $relations = $object->getRelations();
+        if (is_array($relations) && !empty($relations)) {
+            $extractedArrays = $this->extractArraysFromRelations($relations);
+            foreach ($extractedArrays as $fieldName => $arrayValues) {
+                // Only enrich if the field is empty or doesn't exist in object data
+                if (!isset($objectData[$fieldName]) || (is_array($objectData[$fieldName]) && empty($objectData[$fieldName]))) {
+                    $objectData[$fieldName] = $arrayValues;
+                    $this->logger->debug('[WORKAROUND] Enriched object data from relations', [
+                        'field' => $fieldName,
+                        'values' => $arrayValues,
+                        'value_count' => count($arrayValues),
+                        'reason' => 'Array data missing from object body but found in relations'
+                    ]);
+                }
+            }
+        }
+        
         // Base SOLR document with core identifiers and metadata fields using self_ prefix
         $document = [
             // Core identifiers (always present) - no prefix for SOLR system fields
@@ -1457,6 +1487,74 @@ class GuzzleSolrService
     private function isValidUuid(string $value): bool
     {
         return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1;
+    }
+
+    /**
+     * Extract array fields from dot-notation relations
+     *
+     * **WORKAROUND/HACK FOR MISSING DATA**: This method reconstructs arrays from relations
+     * because some array fields (e.g., 'standaarden') are stored ONLY as dot-notation
+     * relation entries ("standaarden.0", "standaarden.1") instead of in the object body.
+     *
+     * Converts: {"standaarden.0": "value1", "standaarden.1": "value2"}
+     * Into: {"standaarden": ["value1", "value2"]}
+     *
+     * This is a workaround for a data storage inconsistency where:
+     * - Some arrays (referentieComponenten) ARE stored in object body
+     * - Other arrays (standaarden) are ONLY stored as relations
+     * - This inconsistency should be fixed in ObjectService/Mapper
+     *
+     * @param array $relations The relations array from ObjectEntity
+     *
+     * @return array Associative array of field names to their array values
+     *
+     * @todo Fix root cause: Ensure all array fields are consistently stored in object body
+     */
+    private function extractArraysFromRelations(array $relations): array
+    {
+        $arrays = [];
+        
+        // Group relations by their base field name (before the dot)
+        foreach ($relations as $relationKey => $relationValue) {
+            // Check if this is a dot-notation array relation (e.g., "standaarden.0")
+            if (str_contains($relationKey, '.')) {
+                $parts = explode('.', $relationKey, 2);
+                $fieldName = $parts[0];
+                $index = $parts[1];
+                
+                // Initialize array if not exists
+                if (!isset($arrays[$fieldName])) {
+                    $arrays[$fieldName] = [];
+                }
+                
+                // Add value at the specified index (or skip if index is not numeric)
+                if (is_numeric($index)) {
+                    $arrays[$fieldName][(int)$index] = $relationValue;
+                } else {
+                    // Non-numeric index - this is a nested object property, not an array element
+                    $this->logger->debug('Skipping non-numeric array index in relations', [
+                        'relation_key' => $relationKey,
+                        'field_name' => $fieldName,
+                        'index' => $index
+                    ]);
+                }
+            }
+        }
+        
+        // Sort each array by index and re-index to sequential keys
+        foreach ($arrays as $fieldName => &$arrayValues) {
+            ksort($arrayValues);
+            // Re-index to sequential numeric keys (0, 1, 2, ...)
+            $arrayValues = array_values($arrayValues);
+        }
+        
+        $this->logger->debug('Extracted arrays from relations', [
+            'field_count' => count($arrays),
+            'fields' => array_keys($arrays),
+            'total_values' => array_sum(array_map('count', $arrays))
+        ]);
+        
+        return $arrays;
     }
 
     /**
