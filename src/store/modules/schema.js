@@ -385,6 +385,67 @@ export const useSchemaStore = defineStore('schema', {
 			return data
 		},
 
+		/**
+		 * Get object count for a schema
+		 * @param {number} schemaId The schema ID to get object count for
+		 * @returns {Promise<number>} The number of objects in the schema
+		 */
+		async getObjectCount(schemaId) {
+			try {
+				// Convert schemaId to string for comparison
+				const schemaIdStr = String(schemaId)
+				
+				// First check if we already have stats for this schema
+				const existingSchema = this.schemas.find(s => String(s.id) === schemaIdStr)
+				if (existingSchema?.stats?.objects?.total !== undefined) {
+					console.log('Using cached stats for schema:', schemaId, existingSchema.stats.objects.total)
+					return existingSchema.stats.objects.total
+				}
+
+				console.log('Fetching object count for schema:', schemaId)
+				
+				// Try using the objects API to count objects for this schema
+				try {
+					const countResponse = await fetch(`/index.php/apps/openregister/api/objects/count?schema=${schemaId}`)
+					if (countResponse.ok) {
+						const countData = await countResponse.json()
+						console.log('Count response data:', countData)
+						const count = countData.count || countData.total || 0
+						console.log('Extracted object count from objects API:', count)
+						return count
+					}
+				} catch (countError) {
+					console.warn('Objects count API failed, falling back to stats:', countError)
+				}
+				
+				// Fallback to stats endpoint
+				const statsResponse = await fetch(`/index.php/apps/openregister/api/schemas/${schemaId}/stats`)
+				console.log('Stats response status:', statsResponse.status)
+				
+				if (statsResponse.ok) {
+					const stats = await statsResponse.json()
+					console.log('Stats response data:', stats)
+					// The stats endpoint returns objectCount and objects_count
+					const count = stats.objectCount || stats.objects_count || 0
+					console.log('Extracted object count:', count)
+					return count
+				} else {
+					console.warn('Stats API returned error:', statsResponse.status, statsResponse.statusText)
+					// Try to get response text for debugging
+					try {
+						const errorText = await statsResponse.text()
+						console.warn('Error response body:', errorText)
+					} catch (e) {
+						// Ignore error reading response
+					}
+					return 0
+				}
+			} catch (error) {
+				console.warn('Could not fetch object count:', error)
+				return 0
+			}
+		},
+
 	// schema properties
 	setSchemaPropertyKey(schemaPropertyKey) {
 		this.schemaPropertyKey = schemaPropertyKey

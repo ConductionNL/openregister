@@ -371,4 +371,154 @@ class BulkController extends Controller
     }//end save()
 
 
+    /**
+     * Delete all objects belonging to a specific schema
+     *
+     * @param string $register The register identifier
+     * @param string $schema   The schema identifier
+     *
+     * @return JSONResponse Response with the result of the schema deletion operation
+     *
+     * @NoCSRFRequired
+     */
+    public function deleteSchema(string $register, string $schema): JSONResponse
+    {
+        try {
+            // Check if user is admin
+            if (!$this->isCurrentUserAdmin()) {
+                return new JSONResponse(
+                    ['error' => 'Insufficient permissions. Admin access required.'],
+                    Http::STATUS_FORBIDDEN
+                );
+            }
+
+            // Validate input
+            if (!is_numeric($schema)) {
+                return new JSONResponse(
+                    ['error' => 'Invalid schema ID. Must be numeric.'],
+                    Http::STATUS_BAD_REQUEST
+                );
+            }
+
+            // Set register and schema context
+            $this->objectService->setRegister($register);
+            $this->objectService->setSchema($schema);
+
+            // Perform schema deletion operation
+            $result = $this->objectService->deleteObjectsBySchema((int) $schema);
+
+            return new JSONResponse(
+                [
+                    'success' => true,
+                    'message' => 'Schema objects deletion completed successfully',
+                    'deleted_count' => $result['deleted_count'],
+                    'deleted_uuids' => $result['deleted_uuids'],
+                    'schema_id' => $result['schema_id'],
+                ]
+            );
+        } catch (Exception $e) {
+            return new JSONResponse(
+                ['error' => 'Schema objects deletion failed: '.$e->getMessage()],
+                Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }//end try
+
+    }//end deleteSchema()
+
+
+    /**
+     * Delete all objects belonging to a specific register
+     *
+     * @param string $register The register identifier
+     *
+     * @return JSONResponse Response with the result of the register deletion operation
+     *
+     * @NoCSRFRequired
+     */
+    public function deleteRegister(string $register): JSONResponse
+    {
+        try {
+            // Check if user is admin
+            if (!$this->isCurrentUserAdmin()) {
+                return new JSONResponse(
+                    ['error' => 'Insufficient permissions. Admin access required.'],
+                    Http::STATUS_FORBIDDEN
+                );
+            }
+
+            // Validate input
+            if (!is_numeric($register)) {
+                return new JSONResponse(
+                    ['error' => 'Invalid register ID. Must be numeric.'],
+                    Http::STATUS_BAD_REQUEST
+                );
+            }
+
+            // Set register context
+            $this->objectService->setRegister($register);
+
+            // Perform register deletion operation
+            $result = $this->objectService->deleteObjectsByRegister((int) $register);
+
+            return new JSONResponse(
+                [
+                    'success' => true,
+                    'message' => 'Register objects deletion completed successfully',
+                    'deleted_count' => $result['deleted_count'],
+                    'deleted_uuids' => $result['deleted_uuids'],
+                    'register_id' => $result['register_id'],
+                ]
+            );
+        } catch (Exception $e) {
+            return new JSONResponse(
+                ['error' => 'Register objects deletion failed: '.$e->getMessage()],
+                Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }//end try
+
+    }//end deleteRegister()
+
+
+    /**
+     * Validate all objects belonging to a specific schema
+     *
+     * @param string $schema The schema identifier
+     *
+     * @return JSONResponse Response with the validation results
+     *
+     * @NoCSRFRequired
+     */
+    public function validateSchema(string $schema): JSONResponse
+    {
+        try {
+            // Check if user is admin
+            if (!$this->isCurrentUserAdmin()) {
+                return new JSONResponse(
+                    ['error' => 'Insufficient permissions. Admin access required.'],
+                    Http::STATUS_FORBIDDEN
+                );
+            }
+
+            // Validate input
+            if (!is_numeric($schema)) {
+                return new JSONResponse(
+                    ['error' => 'Invalid schema ID. Must be numeric.'],
+                    Http::STATUS_BAD_REQUEST
+                );
+            }
+
+            // Perform schema validation operation and return service result directly
+            $result = $this->objectService->validateObjectsBySchema((int) $schema);
+            
+            return new JSONResponse($result);
+        } catch (Exception $e) {
+            return new JSONResponse(
+                ['error' => 'Schema validation failed: '.$e->getMessage()],
+                Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }//end try
+
+    }//end validateSchema()
+
+
 }//end class
