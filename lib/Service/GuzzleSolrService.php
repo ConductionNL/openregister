@@ -1282,12 +1282,44 @@ class GuzzleSolrService
                     $fieldValue = $this->truncateFieldValue($fieldValue, $fieldName);
                 }
                 
-                // **FILTER COMPLEX DATA**: Skip arrays and objects - they don't belong in SOLR as individual fields
-                if (is_array($fieldValue) || is_object($fieldValue)) {
-                    $this->logger->debug('Skipping complex field value', [
+                // **HANDLE ARRAYS**: Process arrays by inspecting actual content
+                if (is_array($fieldValue)) {
+                    $this->logger->debug('Processing array field', [
+                        'field' => $fieldName,
+                        'array_size' => count($fieldValue),
+                        'field_type' => $fieldType,
+                        'schema_item_type' => $fieldDefinition['items']['type'] ?? 'unknown'
+                    ]);
+                    
+                    // Extract indexable values from the array (ignores schema definition)
+                    $extractedValues = $this->extractIndexableArrayValues($fieldValue, $fieldName);
+                    
+                    if (!empty($extractedValues)) {
+                        $solrFieldName = $this->mapFieldToSolrType($fieldName, 'array', $extractedValues);
+                        if ($solrFieldName && $this->validateFieldForSolr($solrFieldName, $extractedValues, $solrFieldTypes)) {
+                            $document[$solrFieldName] = $extractedValues;
+                            $this->logger->debug('Indexed array field (content-based extraction)', [
+                                'field' => $fieldName,
+                                'solr_field' => $solrFieldName,
+                                'extracted_values' => $extractedValues,
+                                'extraction_method' => 'content-based'
+                            ]);
+                        }
+                    } else {
+                        $this->logger->debug('Skipped array field - no indexable values found', [
+                            'field' => $fieldName,
+                            'array_size' => count($fieldValue)
+                        ]);
+                    }
+                    continue; // Skip to next field after processing array
+                }
+                
+                // **FILTER OBJECTS**: Skip standalone objects (not arrays)
+                if (is_object($fieldValue)) {
+                    $this->logger->debug('Skipping object field value', [
                         'field' => $fieldName,
                         'type' => gettype($fieldValue),
-                        'reason' => 'Arrays and objects are not suitable for SOLR field indexing'
+                        'reason' => 'Standalone objects are not suitable for SOLR field indexing'
                     ]);
                     continue;
                 }
@@ -1425,6 +1457,68 @@ class GuzzleSolrService
     private function isValidUuid(string $value): bool
     {
         return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1;
+    }
+
+    /**
+     * Extract indexable values from an array for SOLR indexing
+     *
+     * This method intelligently handles mixed arrays by inspecting the actual content
+     * rather than relying on schema definitions, which may not match runtime data.
+     *
+     * @param array $arrayValue The array to extract values from
+     * @param string $fieldName Field name for logging
+     * @return array Array of indexable string values
+     */
+    private function extractIndexableArrayValues(array $arrayValue, string $fieldName): array
+    {
+        $extractedValues = [];
+        
+        foreach ($arrayValue as $item) {
+            if (is_string($item)) {
+                // Direct string value - use as-is
+                $extractedValues[] = $item;
+            } elseif (is_array($item)) {
+                // Object/array - try to extract ID/UUID
+                $idValue = $this->extractIdFromObject($item);
+                if ($idValue !== null) {
+                    $extractedValues[] = $idValue;
+                }
+            } elseif (is_scalar($item)) {
+                // Other scalar values (int, float, bool) - convert to string
+                $extractedValues[] = (string)$item;
+            }
+            // Skip null values and complex objects
+        }
+        
+        $this->logger->debug('Extracted indexable array values', [
+            'field' => $fieldName,
+            'original_count' => count($arrayValue),
+            'extracted_count' => count($extractedValues),
+            'extracted_values' => $extractedValues
+        ]);
+        
+        return $extractedValues;
+    }
+
+    /**
+     * Extract ID/UUID from an object/array
+     *
+     * @param array $object Object/array to extract ID from
+     * @return string|null Extracted ID or null if not found
+     */
+    private function extractIdFromObject(array $object): ?string
+    {
+        // Try common ID field names in order of preference
+        $idFields = ['id', 'uuid', 'identifier', 'key', 'value'];
+        
+        foreach ($idFields as $field) {
+            if (isset($object[$field]) && is_string($object[$field])) {
+                return $object[$field];
+            }
+        }
+        
+        // If no ID field found, return null
+        return null;
     }
 
     /**
@@ -3008,7 +3102,26 @@ class GuzzleSolrService
             $solrQuery['facet'] = 'true';
             $solrQuery['facet.field'] = [];
             
-            foreach ($query['_facets'] as $facetGroup => $facetConfig) {
+            // **FIX**: Handle simple string facet requests (e.g., _facets=fieldname)
+            // Convert string to proper array format before processing
+            $facets = $query['_facets'];
+            if (is_string($facets)) {
+                // Simple string facet request - convert to array format
+                $facets = [$facets => ['type' => 'terms']];
+                $this->logger->debug('Converted string facet to array format', [
+                    'original' => $query['_facets'],
+                    'converted' => $facets
+                ]);
+            } elseif (!is_array($facets)) {
+                // Invalid facet type - skip faceting
+                $this->logger->warning('Invalid _facets parameter type', [
+                    'type' => gettype($facets),
+                    'value' => $facets
+                ]);
+                $facets = [];
+            }
+            
+            foreach ($facets as $facetGroup => $facetConfig) {
                 if ($facetGroup === '@self' && is_array($facetConfig)) {
                     // Handle @self metadata facets
                     foreach ($facetConfig as $metaField => $metaConfig) {
@@ -3054,7 +3167,7 @@ class GuzzleSolrService
         
         
         try {
-            // Build the query string manually to handle multiple fq parameters correctly
+            // Build the query string manually to handle multiple fq and facet.field parameters correctly
             $queryParts = [];
             foreach ($solrQuery as $key => $value) {
                 if ($key === 'fq' && is_array($value)) {
@@ -3062,6 +3175,17 @@ class GuzzleSolrService
                     foreach ($value as $fqValue) {
                         $queryParts[] = 'fq=' . urlencode((string)$fqValue);
                     }
+                } elseif ($key === 'facet.field' && is_array($value)) {
+                    // Handle multiple facet.field parameters correctly
+                    foreach ($value as $facetField) {
+                        $queryParts[] = 'facet.field=' . urlencode((string)$facetField);
+                    }
+                } elseif (is_array($value)) {
+                    // Skip other array values to prevent "Array" string conversion
+                    $this->logger->warning('Skipping array parameter in SOLR query', [
+                        'key' => $key,
+                        'value' => $value
+                    ]);
                 } else {
                     $queryParts[] = $key . '=' . urlencode((string)$value);
                 }
