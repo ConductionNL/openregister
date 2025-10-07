@@ -7923,16 +7923,9 @@ class GuzzleSolrService
             $settingsService = \OC::$server->get(\OCA\OpenRegister\Service\SettingsService::class);
             $facetConfig = $settingsService->getSolrFacetConfiguration();
             
-            // Convert field name to configuration format if needed
+            // Use field name as-is for configuration lookup
+            // Configuration keys use 'self_*' format for metadata fields and plain names for object fields
             $configFieldName = $fieldName;
-            if (str_starts_with($fieldName, 'self_')) {
-                // Convert self_fieldname to @self[fieldname] format for metadata fields
-                $metadataField = substr($fieldName, 5); // Remove 'self_' prefix
-                $configFieldName = "@self[{$metadataField}]";
-            } elseif (str_starts_with($fieldName, '_')) {
-                // Handle underscore-prefixed metadata fields
-                $configFieldName = "@self[{$fieldName}]";
-            }
             
             // Check if this field has custom configuration
             if (isset($facetConfig['facets'][$configFieldName])) {

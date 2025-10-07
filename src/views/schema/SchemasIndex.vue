@@ -119,6 +119,12 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 										</template>
 										Analyze Properties
 									</NcActionButton>
+									<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setDialog('validateSchema')">
+										<template #icon>
+											<CheckCircle :size="20" />
+										</template>
+										Validate Objects
+									</NcActionButton>
 									<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
 										close-after-click
 										:disabled="schema.stats?.objects?.total > 0"
@@ -127,6 +133,15 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 											<TrashCanOutline :size="20" />
 										</template>
 										Delete
+									</NcActionButton>
+									<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Delete all objects in this schema' : 'No objects to delete'"
+										close-after-click
+										:disabled="schema.stats?.objects?.total === 0"
+										@click="schemaStore.setSchemaItem(schema); navigationStore.setDialog('deleteSchemaObjects')">
+										<template #icon>
+											<DeleteSweep :size="20" />
+										</template>
+										Delete Objects
 									</NcActionButton>
 									<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setSelected('schemaDetails')">
 										<template #icon>
@@ -242,11 +257,17 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 												</template>
 												Download
 											</NcActionButton>
-											<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('exploreSchema')">>
+											<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('exploreSchema')">
 												<template #icon>
 													<DatabaseSearch :size="20" />
 												</template>
 												Analyze Properties
+											</NcActionButton>
+											<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setDialog('validateSchema')">
+												<template #icon>
+													<CheckCircle :size="20" />
+												</template>
+												Validate Objects
 											</NcActionButton>
 											<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
 												close-after-click
@@ -256,6 +277,15 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 													<TrashCanOutline :size="20" />
 												</template>
 												Delete
+											</NcActionButton>
+											<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Delete all objects in this schema' : 'No objects to delete'"
+												close-after-click
+												:disabled="schema.stats?.objects?.total === 0"
+												@click="schemaStore.setSchemaItem(schema); navigationStore.setDialog('deleteSchemaObjects')">
+												<template #icon>
+													<DeleteSweep :size="20" />
+												</template>
+												Delete Objects
 											</NcActionButton>
 											<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setSelected('schemaDetails')">
 												<template #icon>
@@ -296,6 +326,8 @@ import Download from 'vue-material-design-icons/Download.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import DatabaseSearch from 'vue-material-design-icons/DatabaseSearch.vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import DeleteSweep from 'vue-material-design-icons/DeleteSweep.vue'
 
 import Plus from 'vue-material-design-icons/Plus.vue'
 
@@ -317,6 +349,8 @@ export default {
 		Refresh,
 		InformationOutline,
 		DatabaseSearch,
+		CheckCircle,
+		DeleteSweep,
 
 		Plus,
 		PaginationComponent,
