@@ -5387,6 +5387,206 @@ class ObjectService
 
 
     /**
+     * Delete all objects belonging to a specific schema
+     *
+     * This method efficiently deletes all objects that belong to the specified schema.
+     * It uses bulk operations for optimal performance and maintains data integrity.
+     *
+     * @param int $schemaId The ID of the schema whose objects should be deleted
+     *
+     * @return array Array containing statistics about the deletion operation
+     *
+     * @throws \Exception If the deletion operation fails
+     *
+     * @phpstan-return array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int}
+     * @psalm-return array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int}
+     */
+    public function deleteObjectsBySchema(int $schemaId): array
+    {
+        // Use the mapper's schema deletion operation
+        $result = $this->objectEntityMapper->deleteObjectsBySchema($schemaId);
+
+        // **BULK CACHE INVALIDATION**: Clear collection caches after bulk delete operations
+        if ($result['deleted_count'] > 0) {
+            try {
+                $this->logger->debug('Schema objects deletion cache invalidation starting', [
+                    'deletedCount' => $result['deleted_count'],
+                    'schemaId' => $schemaId,
+                    'operation' => 'schema_delete'
+                ]);
+
+                $this->objectCacheService->invalidateForObjectChange(
+                    object: null,
+                    operation: 'bulk_delete',
+                    registerId: null,
+                    schemaId: $schemaId
+                );
+
+                $this->logger->debug('Schema objects deletion cache invalidation completed', [
+                    'deletedCount' => $result['deleted_count'],
+                    'schemaId' => $schemaId
+                ]);
+            } catch (\Exception $e) {
+                $this->logger->warning('Schema objects deletion cache invalidation failed', [
+                    'error' => $e->getMessage(),
+                    'schemaId' => $schemaId,
+                    'deletedCount' => $result['deleted_count']
+                ]);
+            }
+        }
+
+        return $result;
+
+    }//end deleteObjectsBySchema()
+
+
+    /**
+     * Delete all objects belonging to a specific register
+     *
+     * This method efficiently deletes all objects that belong to the specified register.
+     * It uses bulk operations for optimal performance and maintains data integrity.
+     *
+     * @param int $registerId The ID of the register whose objects should be deleted
+     *
+     * @return array Array containing statistics about the deletion operation
+     *
+     * @throws \Exception If the deletion operation fails
+     *
+     * @phpstan-return array{deleted_count: int, deleted_uuids: array<int, string>, register_id: int}
+     * @psalm-return array{deleted_count: int, deleted_uuids: array<int, string>, register_id: int}
+     */
+    public function deleteObjectsByRegister(int $registerId): array
+    {
+        // Use the mapper's register deletion operation
+        $result = $this->objectEntityMapper->deleteObjectsByRegister($registerId);
+
+        // **BULK CACHE INVALIDATION**: Clear collection caches after bulk delete operations
+        if ($result['deleted_count'] > 0) {
+            try {
+                $this->logger->debug('Register objects deletion cache invalidation starting', [
+                    'deletedCount' => $result['deleted_count'],
+                    'registerId' => $registerId,
+                    'operation' => 'register_delete'
+                ]);
+
+                $this->objectCacheService->invalidateForObjectChange(
+                    object: null,
+                    operation: 'bulk_delete',
+                    registerId: $registerId,
+                    schemaId: null
+                );
+
+                $this->logger->debug('Register objects deletion cache invalidation completed', [
+                    'deletedCount' => $result['deleted_count'],
+                    'registerId' => $registerId
+                ]);
+            } catch (\Exception $e) {
+                $this->logger->warning('Register objects deletion cache invalidation failed', [
+                    'error' => $e->getMessage(),
+                    'registerId' => $registerId,
+                    'deletedCount' => $result['deleted_count']
+                ]);
+            }
+        }
+
+        return $result;
+
+    }//end deleteObjectsByRegister()
+
+
+    /**
+     * Validate all objects belonging to a specific schema
+     *
+     * This method validates all objects that belong to the specified schema against their schema definition.
+     * It returns detailed validation results including valid and invalid objects with error details.
+     *
+     * @param int $schemaId The ID of the schema whose objects should be validated
+     *
+     * @return array Array containing validation results
+     *
+     * @throws \Exception If the validation operation fails
+     *
+     * @phpstan-return array{valid_count: int, invalid_count: int, valid_objects: array<int, array>, invalid_objects: array<int, array>, schema_id: int}
+     * @psalm-return array{valid_count: int, invalid_count: int, valid_objects: array<int, array>, invalid_objects: array<int, array>, schema_id: int}
+     */
+    public function validateObjectsBySchema(int $schemaId): array
+    {
+        // Use the mapper's findBySchema method to get all objects for this schema
+        // This bypasses RBAC and multi-tenancy automatically
+        $objects = $this->objectEntityMapper->findBySchema($schemaId);
+        
+        $validObjects = [];
+        $invalidObjects = [];
+
+        foreach ($objects as $object) {
+            try {
+                // Get the object data for validation
+                $objectData = $object->getObject();
+                
+                // Use saveObject with silent=true to validate without actually saving
+                // This will trigger validation and return any errors
+                $savedObject = $this->saveObject(
+                    object: $objectData,
+                    register: $object->getRegister(),
+                    schema: $schemaId,
+                    uuid: $object->getUuid(),
+                    rbac: false,
+                    multi: false,
+                    silent: true
+                );
+
+                // If saveObject succeeded, the object is valid
+                $validObjects[] = [
+                    'id' => $object->getId(),
+                    'uuid' => $object->getUuid(),
+                    'name' => $object->getName(),
+                    'data' => $objectData,
+                ];
+                
+            } catch (\Exception $e) {
+                // Extract validation errors from the exception
+                $errors = [];
+                
+                // Check if it's a validation exception with detailed errors
+                if ($e instanceof \OCA\OpenRegister\Exception\ValidationException) {
+                    foreach ($e->getErrors() as $error) {
+                        $errors[] = [
+                            'path' => $error['path'] ?? 'unknown',
+                            'message' => $error['message'] ?? $error,
+                            'keyword' => $error['keyword'] ?? 'validation',
+                        ];
+                    }
+                } else {
+                    // Generic error
+                    $errors[] = [
+                        'path' => 'general',
+                        'message' => 'Validation failed: ' . $e->getMessage(),
+                        'keyword' => 'exception',
+                    ];
+                }
+                
+                $invalidObjects[] = [
+                    'id' => $object->getId(),
+                    'uuid' => $object->getUuid(),
+                    'name' => $object->getName(),
+                    'data' => $objectData,
+                    'errors' => $errors,
+                ];
+            }
+        }
+
+        return [
+            'valid_count' => count($validObjects),
+            'invalid_count' => count($invalidObjects),
+            'valid_objects' => $validObjects,
+            'invalid_objects' => $invalidObjects,
+            'schema_id' => $schemaId,
+        ];
+
+    }//end validateObjectsBySchema()
+
+
+    /**
      * Filter UUIDs based on RBAC and multi-organization permissions
      *
      * @param array $uuids Array of UUIDs to filter

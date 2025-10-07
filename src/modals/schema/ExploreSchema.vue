@@ -686,15 +686,15 @@ export default {
 		},
 		async countObjects() {
 			try {
-				// Get object count from schema stats or objects endpoint
-				const schemaId = schemaStore.schemaItem?.id
-				if (!schemaId) return
-				
-				// Try to get object count from schema stats
-				const statsResponse = await fetch(`/index.php/apps/openregister/api/schemas/${schemaId}/stats`)
-				if (statsResponse.ok) {
-					const stats = await statsResponse.json()
-					this.objectCount = stats.objectCount || stats.objects_count || 0
+				if (schemaStore.schemaItem?.id) {
+					// First try to use existing stats if available
+					if (schemaStore.schemaItem.stats?.objects?.total !== undefined) {
+						this.objectCount = schemaStore.schemaItem.stats.objects.total
+						console.log('Using schema item stats:', this.objectCount)
+					} else {
+						// Fallback to API call
+						this.objectCount = await schemaStore.getObjectCount(schemaStore.schemaItem.id)
+					}
 				}
 			} catch (error) {
 				console.warn('Could not fetch object count:', error)
