@@ -4830,6 +4830,110 @@ class ObjectEntityMapper extends QBMapper
 
 
     /**
+     * Delete all objects belonging to a specific schema
+     *
+     * This method efficiently deletes all objects that belong to the specified schema.
+     * It uses bulk operations for optimal performance and maintains data integrity.
+     *
+     * @param int $schemaId The ID of the schema whose objects should be deleted
+     *
+     * @return array Array containing statistics about the deletion operation
+     *
+     * @throws \Exception If the deletion operation fails
+     *
+     * @phpstan-return array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int}
+     * @psalm-return array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int}
+     */
+    public function deleteObjectsBySchema(int $schemaId): array
+    {
+        // First, get all UUIDs for objects belonging to this schema
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('uuid')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)))
+            ->andWhere($qb->expr()->isNull('deleted'));
+
+        $result = $qb->executeQuery();
+        $uuids = [];
+        while ($row = $result->fetch()) {
+            $uuids[] = $row['uuid'];
+        }
+        $result->closeCursor();
+
+        if (empty($uuids)) {
+            return [
+                'deleted_count' => 0,
+                'deleted_uuids' => [],
+                'schema_id' => $schemaId,
+            ];
+        }
+
+        // Use the existing bulk delete method
+        $deletedUuids = $this->deleteObjects($uuids);
+
+        return [
+            'deleted_count' => count($deletedUuids),
+            'deleted_uuids' => $deletedUuids,
+            'schema_id' => $schemaId,
+        ];
+
+    }//end deleteObjectsBySchema()
+
+
+    /**
+     * Delete all objects belonging to a specific register
+     *
+     * This method efficiently deletes all objects that belong to the specified register.
+     * It uses bulk operations for optimal performance and maintains data integrity.
+     *
+     * @param int $registerId The ID of the register whose objects should be deleted
+     *
+     * @return array Array containing statistics about the deletion operation
+     *
+     * @throws \Exception If the deletion operation fails
+     *
+     * @phpstan-return array{deleted_count: int, deleted_uuids: array<int, string>, register_id: int}
+     * @psalm-return array{deleted_count: int, deleted_uuids: array<int, string>, register_id: int}
+     */
+    public function deleteObjectsByRegister(int $registerId): array
+    {
+        // First, get all UUIDs for objects belonging to this register
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('uuid')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)))
+            ->andWhere($qb->expr()->isNull('deleted'));
+
+        $result = $qb->executeQuery();
+        $uuids = [];
+        while ($row = $result->fetch()) {
+            $uuids[] = $row['uuid'];
+        }
+        $result->closeCursor();
+
+        if (empty($uuids)) {
+            return [
+                'deleted_count' => 0,
+                'deleted_uuids' => [],
+                'register_id' => $registerId,
+            ];
+        }
+
+        // Use the existing bulk delete method
+        $deletedUuids = $this->deleteObjects($uuids);
+
+        return [
+            'deleted_count' => count($deletedUuids),
+            'deleted_uuids' => $deletedUuids,
+            'register_id' => $registerId,
+        ];
+
+    }//end deleteObjectsByRegister()
+
+
+
+
+    /**
      * Perform bulk publish operations on objects by UUID
      *
      * This method sets the published timestamp for the specified objects.
