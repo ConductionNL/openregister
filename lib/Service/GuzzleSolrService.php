@@ -1208,6 +1208,36 @@ class GuzzleSolrService
         $objectData = $object->getObject(); // This contains the schema fields like 'naam', 'website', 'type'
         $schemaProperties = $schema->getProperties();
         
+        // ========================================================================
+        // **WORKAROUND/HACK**: Enrich object data from relations
+        // ========================================================================
+        // PROBLEM: Some array fields (like 'standaarden') are stored ONLY in the relations
+        // table as dot-notation entries (e.g., "standaarden.0", "standaarden.1") instead of
+        // being included in the object JSON body. This causes them to be missing from SOLR.
+        //
+        // This is a data storage issue that should be fixed at the source (ObjectService/Mapper),
+        // but as a workaround, we reconstruct these arrays from relations to ensure they get indexed.
+        //
+        // TODO: Investigate why some array fields are stored only as relations and fix the root cause
+        // in the object save logic so arrays are consistently stored in the object body.
+        // ========================================================================
+        $relations = $object->getRelations();
+        if (is_array($relations) && !empty($relations)) {
+            $extractedArrays = $this->extractArraysFromRelations($relations);
+            foreach ($extractedArrays as $fieldName => $arrayValues) {
+                // Only enrich if the field is empty or doesn't exist in object data
+                if (!isset($objectData[$fieldName]) || (is_array($objectData[$fieldName]) && empty($objectData[$fieldName]))) {
+                    $objectData[$fieldName] = $arrayValues;
+                    $this->logger->debug('[WORKAROUND] Enriched object data from relations', [
+                        'field' => $fieldName,
+                        'values' => $arrayValues,
+                        'value_count' => count($arrayValues),
+                        'reason' => 'Array data missing from object body but found in relations'
+                    ]);
+                }
+            }
+        }
+        
         // Base SOLR document with core identifiers and metadata fields using self_ prefix
         $document = [
             // Core identifiers (always present) - no prefix for SOLR system fields
@@ -1282,12 +1312,44 @@ class GuzzleSolrService
                     $fieldValue = $this->truncateFieldValue($fieldValue, $fieldName);
                 }
                 
-                // **FILTER COMPLEX DATA**: Skip arrays and objects - they don't belong in SOLR as individual fields
-                if (is_array($fieldValue) || is_object($fieldValue)) {
-                    $this->logger->debug('Skipping complex field value', [
+                // **HANDLE ARRAYS**: Process arrays by inspecting actual content
+                if (is_array($fieldValue)) {
+                    $this->logger->debug('Processing array field', [
+                        'field' => $fieldName,
+                        'array_size' => count($fieldValue),
+                        'field_type' => $fieldType,
+                        'schema_item_type' => $fieldDefinition['items']['type'] ?? 'unknown'
+                    ]);
+                    
+                    // Extract indexable values from the array (ignores schema definition)
+                    $extractedValues = $this->extractIndexableArrayValues($fieldValue, $fieldName);
+                    
+                    if (!empty($extractedValues)) {
+                        $solrFieldName = $this->mapFieldToSolrType($fieldName, 'array', $extractedValues);
+                        if ($solrFieldName && $this->validateFieldForSolr($solrFieldName, $extractedValues, $solrFieldTypes)) {
+                            $document[$solrFieldName] = $extractedValues;
+                            $this->logger->debug('Indexed array field (content-based extraction)', [
+                                'field' => $fieldName,
+                                'solr_field' => $solrFieldName,
+                                'extracted_values' => $extractedValues,
+                                'extraction_method' => 'content-based'
+                            ]);
+                        }
+                    } else {
+                        $this->logger->debug('Skipped array field - no indexable values found', [
+                            'field' => $fieldName,
+                            'array_size' => count($fieldValue)
+                        ]);
+                    }
+                    continue; // Skip to next field after processing array
+                }
+                
+                // **FILTER OBJECTS**: Skip standalone objects (not arrays)
+                if (is_object($fieldValue)) {
+                    $this->logger->debug('Skipping object field value', [
                         'field' => $fieldName,
                         'type' => gettype($fieldValue),
-                        'reason' => 'Arrays and objects are not suitable for SOLR field indexing'
+                        'reason' => 'Standalone objects are not suitable for SOLR field indexing'
                     ]);
                     continue;
                 }
@@ -1425,6 +1487,136 @@ class GuzzleSolrService
     private function isValidUuid(string $value): bool
     {
         return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1;
+    }
+
+    /**
+     * Extract array fields from dot-notation relations
+     *
+     * **WORKAROUND/HACK FOR MISSING DATA**: This method reconstructs arrays from relations
+     * because some array fields (e.g., 'standaarden') are stored ONLY as dot-notation
+     * relation entries ("standaarden.0", "standaarden.1") instead of in the object body.
+     *
+     * Converts: {"standaarden.0": "value1", "standaarden.1": "value2"}
+     * Into: {"standaarden": ["value1", "value2"]}
+     *
+     * This is a workaround for a data storage inconsistency where:
+     * - Some arrays (referentieComponenten) ARE stored in object body
+     * - Other arrays (standaarden) are ONLY stored as relations
+     * - This inconsistency should be fixed in ObjectService/Mapper
+     *
+     * @param array $relations The relations array from ObjectEntity
+     *
+     * @return array Associative array of field names to their array values
+     *
+     * @todo Fix root cause: Ensure all array fields are consistently stored in object body
+     */
+    private function extractArraysFromRelations(array $relations): array
+    {
+        $arrays = [];
+        
+        // Group relations by their base field name (before the dot)
+        foreach ($relations as $relationKey => $relationValue) {
+            // Check if this is a dot-notation array relation (e.g., "standaarden.0")
+            if (str_contains($relationKey, '.')) {
+                $parts = explode('.', $relationKey, 2);
+                $fieldName = $parts[0];
+                $index = $parts[1];
+                
+                // Initialize array if not exists
+                if (!isset($arrays[$fieldName])) {
+                    $arrays[$fieldName] = [];
+                }
+                
+                // Add value at the specified index (or skip if index is not numeric)
+                if (is_numeric($index)) {
+                    $arrays[$fieldName][(int)$index] = $relationValue;
+                } else {
+                    // Non-numeric index - this is a nested object property, not an array element
+                    $this->logger->debug('Skipping non-numeric array index in relations', [
+                        'relation_key' => $relationKey,
+                        'field_name' => $fieldName,
+                        'index' => $index
+                    ]);
+                }
+            }
+        }
+        
+        // Sort each array by index and re-index to sequential keys
+        foreach ($arrays as $fieldName => &$arrayValues) {
+            ksort($arrayValues);
+            // Re-index to sequential numeric keys (0, 1, 2, ...)
+            $arrayValues = array_values($arrayValues);
+        }
+        
+        $this->logger->debug('Extracted arrays from relations', [
+            'field_count' => count($arrays),
+            'fields' => array_keys($arrays),
+            'total_values' => array_sum(array_map('count', $arrays))
+        ]);
+        
+        return $arrays;
+    }
+
+    /**
+     * Extract indexable values from an array for SOLR indexing
+     *
+     * This method intelligently handles mixed arrays by inspecting the actual content
+     * rather than relying on schema definitions, which may not match runtime data.
+     *
+     * @param array $arrayValue The array to extract values from
+     * @param string $fieldName Field name for logging
+     * @return array Array of indexable string values
+     */
+    private function extractIndexableArrayValues(array $arrayValue, string $fieldName): array
+    {
+        $extractedValues = [];
+        
+        foreach ($arrayValue as $item) {
+            if (is_string($item)) {
+                // Direct string value - use as-is
+                $extractedValues[] = $item;
+            } elseif (is_array($item)) {
+                // Object/array - try to extract ID/UUID
+                $idValue = $this->extractIdFromObject($item);
+                if ($idValue !== null) {
+                    $extractedValues[] = $idValue;
+                }
+            } elseif (is_scalar($item)) {
+                // Other scalar values (int, float, bool) - convert to string
+                $extractedValues[] = (string)$item;
+            }
+            // Skip null values and complex objects
+        }
+        
+        $this->logger->debug('Extracted indexable array values', [
+            'field' => $fieldName,
+            'original_count' => count($arrayValue),
+            'extracted_count' => count($extractedValues),
+            'extracted_values' => $extractedValues
+        ]);
+        
+        return $extractedValues;
+    }
+
+    /**
+     * Extract ID/UUID from an object/array
+     *
+     * @param array $object Object/array to extract ID from
+     * @return string|null Extracted ID or null if not found
+     */
+    private function extractIdFromObject(array $object): ?string
+    {
+        // Try common ID field names in order of preference
+        $idFields = ['id', 'uuid', 'identifier', 'key', 'value'];
+        
+        foreach ($idFields as $field) {
+            if (isset($object[$field]) && is_string($object[$field])) {
+                return $object[$field];
+            }
+        }
+        
+        // If no ID field found, return null
+        return null;
     }
 
     /**
@@ -3008,7 +3200,26 @@ class GuzzleSolrService
             $solrQuery['facet'] = 'true';
             $solrQuery['facet.field'] = [];
             
-            foreach ($query['_facets'] as $facetGroup => $facetConfig) {
+            // **FIX**: Handle simple string facet requests (e.g., _facets=fieldname)
+            // Convert string to proper array format before processing
+            $facets = $query['_facets'];
+            if (is_string($facets)) {
+                // Simple string facet request - convert to array format
+                $facets = [$facets => ['type' => 'terms']];
+                $this->logger->debug('Converted string facet to array format', [
+                    'original' => $query['_facets'],
+                    'converted' => $facets
+                ]);
+            } elseif (!is_array($facets)) {
+                // Invalid facet type - skip faceting
+                $this->logger->warning('Invalid _facets parameter type', [
+                    'type' => gettype($facets),
+                    'value' => $facets
+                ]);
+                $facets = [];
+            }
+            
+            foreach ($facets as $facetGroup => $facetConfig) {
                 if ($facetGroup === '@self' && is_array($facetConfig)) {
                     // Handle @self metadata facets
                     foreach ($facetConfig as $metaField => $metaConfig) {
@@ -3054,7 +3265,7 @@ class GuzzleSolrService
         
         
         try {
-            // Build the query string manually to handle multiple fq parameters correctly
+            // Build the query string manually to handle multiple fq and facet.field parameters correctly
             $queryParts = [];
             foreach ($solrQuery as $key => $value) {
                 if ($key === 'fq' && is_array($value)) {
@@ -3062,6 +3273,17 @@ class GuzzleSolrService
                     foreach ($value as $fqValue) {
                         $queryParts[] = 'fq=' . urlencode((string)$fqValue);
                     }
+                } elseif ($key === 'facet.field' && is_array($value)) {
+                    // Handle multiple facet.field parameters correctly
+                    foreach ($value as $facetField) {
+                        $queryParts[] = 'facet.field=' . urlencode((string)$facetField);
+                    }
+                } elseif (is_array($value)) {
+                    // Skip other array values to prevent "Array" string conversion
+                    $this->logger->warning('Skipping array parameter in SOLR query', [
+                        'key' => $key,
+                        'value' => $value
+                    ]);
                 } else {
                     $queryParts[] = $key . '=' . urlencode((string)$value);
                 }
