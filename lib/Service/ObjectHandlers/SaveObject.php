@@ -1540,15 +1540,15 @@ class SaveObject
         if (isset($data['@self']) && is_array($data['@self'])) {
             $selfData = $data['@self'];
         }
+        // Use @self.id as UUID if no UUID is provided
+        if ($uuid === null && (isset($selfData['id']) || $data['id'])) {
+            $uuid = $selfData['id'] ?? $data['id'];
+        }
 
         // Remove the @self property from the data.
         unset($data['@self']);
         unset($data['id']);
 
-        // Use @self.id as UUID if no UUID is provided
-        if ($uuid === null && isset($selfData['id'])) {
-            $uuid = $selfData['id'];
-        }
 
         // Debug logging can be added here if needed
         // Set schema ID based on input type.
@@ -1769,7 +1769,7 @@ class SaveObject
         // Set organisation from active organisation if not already set
         // Always respect user's active organisation regardless of multitenancy settings
         // BUT: Don't override if organisation was explicitly set via @self metadata (e.g., for organization activation)
-        if (($objectEntity->getOrganisation() === null || $objectEntity->getOrganisation() === '') 
+        if (($objectEntity->getOrganisation() === null || $objectEntity->getOrganisation() === '')
             && !isset($selfData['organisation'])) {
             $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
             $objectEntity->setOrganisation($organisationUuid);
@@ -1890,8 +1890,8 @@ class SaveObject
                 $objectEntity->setPublished(null);
             }
         } else {
-            $this->logger->debug('No published field found in selfData, setting to null');
-            $objectEntity->setPublished(null);
+            $this->logger->debug('No published field found in selfData, setting to existing value');
+            $objectEntity->setPublished($objectEntity->getPublished());
         }
 
         // Extract and set depublished property if present
