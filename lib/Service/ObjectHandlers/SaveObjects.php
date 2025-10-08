@@ -1798,7 +1798,15 @@ class SaveObjects
 
         foreach ($objects as $index => &$object) {
 
-            $selfData = $object['@self'] ?? [];
+            // CRITICAL FIX: Objects from prepareSingleSchemaObjectsOptimized are already flat $selfData arrays
+            // They don't have an '@self' key because they ARE the self data
+            // Only extract @self if it exists (mixed schema or other paths)
+            if (isset($object['@self'])) {
+                $selfData = $object['@self'];
+            } else {
+                // Object is already a flat $selfData array from prepareSingleSchemaObjectsOptimized
+                $selfData = $object;
+            }
  
             // Auto-wire @self metadata with proper UUID validation and generation
             $now = new \DateTime();

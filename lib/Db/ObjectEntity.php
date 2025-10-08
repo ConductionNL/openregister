@@ -340,6 +340,67 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     protected ?DateTime $expires = null;
 
+    /**
+     * Get the published timestamp
+     *
+     * @return DateTime|null The published timestamp
+     */
+    public function getPublished(): ?DateTime
+    {
+        return $this->published;
+    }
+
+    /**
+     * Set the published timestamp
+     *
+     * @param DateTime|string|null $published The published timestamp
+     *
+     * @return void
+     */
+    public function setPublished(DateTime|string|null $published): void
+    {
+        if (is_string($published)) {
+            try {
+                $this->published = new DateTime($published);
+            } catch (\Exception $e) {
+                // If conversion fails, set to null
+                $this->published = null;
+            }
+        } else {
+            $this->published = $published;
+        }
+    }
+
+    /**
+     * Get the depublished timestamp
+     *
+     * @return DateTime|null The depublished timestamp
+     */
+    public function getDepublished(): ?DateTime
+    {
+        return $this->depublished;
+    }
+
+    /**
+     * Set the depublished timestamp
+     *
+     * @param DateTime|string|null $depublished The depublished timestamp
+     *
+     * @return void
+     */
+    public function setDepublished(DateTime|string|null $depublished): void
+    {
+        if (is_string($depublished)) {
+            try {
+                $this->depublished = new DateTime($depublished);
+            } catch (\Exception $e) {
+                // If conversion fails, set to null
+                $this->depublished = null;
+            }
+        } else {
+            $this->depublished = $depublished;
+        }
+    }
 
     /**
      * Initialize the entity and define field types
