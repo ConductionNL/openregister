@@ -277,6 +277,8 @@
 								:loading="schemasLoading"
 								multiple
 								placeholder="Select schemas (empty = all schemas)"
+								input-label="Select schemas to warm up"
+								label-outside
 								class="schema-select">
 								<template #option="{ option }">
 									<div class="schema-option">
@@ -287,7 +289,7 @@
 							</NcSelect>
 						</div>
 					</div>
-					<div v-if="localConfig.selectedSchemas.length > 0" class="selected-schemas-summary">
+					<div v-if="localConfig.selectedSchemas && localConfig.selectedSchemas.length > 0" class="selected-schemas-summary">
 						<p><strong>Selected:</strong> {{ localConfig.selectedSchemas.length }} schema(s)</p>
 						<div class="selected-schema-list">
 							<span 

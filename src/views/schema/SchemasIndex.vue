@@ -143,6 +143,15 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 										</template>
 										Delete Objects
 									</NcActionButton>
+									<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Publish all objects in this schema' : 'No objects to publish'"
+										close-after-click
+										:disabled="schema.stats?.objects?.total === 0"
+										@click="schemaStore.setSchemaItem(schema); navigationStore.setModal('publishSchemaObjects')">
+										<template #icon>
+											<CheckCircle :size="20" />
+										</template>
+										Publish Objects
+									</NcActionButton>
 									<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setSelected('schemaDetails')">
 										<template #icon>
 											<InformationOutline :size="20" />
