@@ -1600,6 +1600,12 @@ class ImportService
                 return $this->stringToArray($value);
 
             case 'object':
+                // Check if this is a related-object that should store UUID strings directly
+                if (isset($propertyDef['objectConfiguration']['handling']) 
+                    && $propertyDef['objectConfiguration']['handling'] === 'related-object') {
+                    // For related objects, store UUID strings directly instead of wrapping in objects
+                    return (string) $value;
+                }
                 return $this->stringToObject($value);
 
             default:
