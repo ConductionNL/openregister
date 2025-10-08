@@ -780,19 +780,53 @@ class SaveObjects
             // METADATA HYDRATION: Create temporary entity for metadata extraction
             $tempEntity = new ObjectEntity();
             $tempEntity->setObject($object);
+            
+            // CRITICAL FIX: Hydrate @self data into the entity before calling hydrateObjectMetadata
+            // Convert datetime strings to DateTime objects for proper hydration
+            if (isset($object['@self']) && is_array($object['@self'])) {
+                $selfDataForHydration = $object['@self'];
+                
+                // Convert published/depublished strings to DateTime objects
+                if (isset($selfDataForHydration['published']) && is_string($selfDataForHydration['published'])) {
+                    try {
+                        $selfDataForHydration['published'] = new \DateTime($selfDataForHydration['published']);
+                    } catch (\Exception $e) {
+                        // Keep as string if conversion fails
+                    }
+                }
+                if (isset($selfDataForHydration['depublished']) && is_string($selfDataForHydration['depublished'])) {
+                    try {
+                        $selfDataForHydration['depublished'] = new \DateTime($selfDataForHydration['depublished']);
+                    } catch (\Exception $e) {
+                        // Keep as string if conversion fails
+                    }
+                }
+                
+                $tempEntity->hydrate($selfDataForHydration);
+            }
+            
             $this->saveHandler->hydrateObjectMetadata($tempEntity, $schema);
             
-            // AUTO-PUBLISH LOGIC: Only set published for NEW objects (avoid triggering false changes for existing objects)
+            // AUTO-PUBLISH LOGIC: Only set published for NEW objects if not already set from CSV
             $config = $schema->getConfiguration();
             $isNewObject = empty($selfData['id']) || !isset($selfData['id']);
             if (isset($config['autoPublish']) && $config['autoPublish'] === true && $isNewObject) {
-                if ($tempEntity->getPublished() === null) {
+                // Check if published date was already set from @self data (CSV)
+                $publishedFromCsv = isset($selfData['published']) && !empty($selfData['published']);
+                if (!$publishedFromCsv && $tempEntity->getPublished() === null) {
                     $this->logger->debug('Auto-publishing NEW object in bulk creation', [
                         'schema' => $schema->getTitle(),
                         'autoPublish' => true,
-                        'isNewObject' => true
+                        'isNewObject' => true,
+                        'publishedFromCsv' => false
                     ]);
                     $tempEntity->setPublished(new DateTime());
+                } else if ($publishedFromCsv) {
+                    $this->logger->debug('Skipping auto-publish - published date provided from CSV (mixed schema)', [
+                        'schema' => $schema->getTitle(),
+                        'publishedFromCsv' => true,
+                        'csvPublishedDate' => $selfData['published']
+                    ]);
                 }
             }
             
@@ -946,20 +980,57 @@ class SaveObjects
                 $tempEntity = new ObjectEntity();
                 $tempEntity->setObject($object);
                 
+                // CRITICAL FIX: Hydrate @self data into the entity before calling hydrateObjectMetadata
+                // Convert datetime strings to DateTime objects for proper hydration
+                if (isset($object['@self']) && is_array($object['@self'])) {
+                    $selfDataForHydration = $object['@self'];
+                    
+                    // Convert published/depublished strings to DateTime objects
+                    if (isset($selfDataForHydration['published']) && is_string($selfDataForHydration['published'])) {
+                        try {
+                            $selfDataForHydration['published'] = new \DateTime($selfDataForHydration['published']);
+                        } catch (\Exception $e) {
+                            // Keep as string if conversion fails
+                            $this->logger->warning('Failed to convert published date to DateTime', [
+                                'value' => $selfDataForHydration['published'],
+                                'error' => $e->getMessage()
+                            ]);
+                        }
+                    }
+                    if (isset($selfDataForHydration['depublished']) && is_string($selfDataForHydration['depublished'])) {
+                        try {
+                            $selfDataForHydration['depublished'] = new \DateTime($selfDataForHydration['depublished']);
+                        } catch (\Exception $e) {
+                            // Keep as string if conversion fails
+                        }
+                    }
+                    
+                    $tempEntity->hydrate($selfDataForHydration);
+                }
+                
                 $this->saveHandler->hydrateObjectMetadata($tempEntity, $schemaObj);
                 
-                // AUTO-PUBLISH LOGIC: Only set published for NEW objects (avoid triggering false changes for existing objects)
+                // AUTO-PUBLISH LOGIC: Only set published for NEW objects if not already set from CSV
                 // Note: For updates to existing objects, published status should be preserved unless explicitly changed
                 $config = $schemaObj->getConfiguration();
                 $isNewObject = empty($selfData['uuid']) || !isset($selfData['uuid']);
                 if (isset($config['autoPublish']) && $config['autoPublish'] === true && $isNewObject) {
-                    if ($tempEntity->getPublished() === null) {
+                    // Check if published date was already set from @self data (CSV)
+                    $publishedFromCsv = isset($selfData['published']) && !empty($selfData['published']);
+                    if (!$publishedFromCsv && $tempEntity->getPublished() === null) {
                         $this->logger->debug('Auto-publishing NEW object in bulk creation (single schema)', [
                             'schema' => $schemaObj->getTitle(),
                             'autoPublish' => true,
-                            'isNewObject' => true
+                            'isNewObject' => true,
+                            'publishedFromCsv' => false
                         ]);
                         $tempEntity->setPublished(new DateTime());
+                    } else if ($publishedFromCsv) {
+                        $this->logger->debug('Skipping auto-publish - published date provided from CSV', [
+                            'schema' => $schemaObj->getTitle(),
+                            'publishedFromCsv' => true,
+                            'csvPublishedDate' => $selfData['published']
+                        ]);
                     }
                 }
                 

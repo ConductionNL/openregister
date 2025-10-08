@@ -16,8 +16,8 @@ import { navigationStore } from '../store/store.js'
 		<EditSchema v-if="navigationStore.modal === 'editSchema'" />
 		<ExploreSchema v-if="navigationStore.modal === 'exploreSchema'" />
 		<DeleteSchema />
-		<ValidateSchema />
-		<DeleteSchemaObjects />
+		<ValidateSchema v-if="navigationStore.modal === 'validateSchema'" />
+		<DeleteSchemaObjects v-if="navigationStore.modal === 'deleteSchemaObjects'" />
 		<UploadSchema />
 		<EditSchemaProperty v-if="navigationStore.modal === 'editSchemaProperty'" />
 		<DeleteSchemaProperty />

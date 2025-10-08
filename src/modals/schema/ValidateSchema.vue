@@ -1,9 +1,10 @@
 <script setup>
 import { schemaStore, navigationStore, registerStore } from '../../store/store.js'
+import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.dialog === 'validateSchema'"
+	<NcDialog v-if="navigationStore.modal === 'validateSchema'"
 		name="Validate Schema Objects"
 		size="large"
 		:can-close="false">
@@ -23,15 +24,11 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 			</NcNoteCard>
 			
 			<div class="object-count-section">
-				<h4>Objects to be validated</h4>
-				<div v-if="objectCount > 0" class="object-count-centered">
-					<span class="count-value">{{ objectCount }}</span>
-					<span class="count-label">objects</span>
-				</div>
-				<div v-else class="loading-count">
-					<NcLoadingIcon :size="16" />
-					Counting objects...
-				</div>
+				<SchemaStatsBlock 
+					:object-count="objectCount"
+					:object-stats="objectStats"
+					:loading="objectCount === 0"
+					:title="t('openregister', 'Objects to be validated')" />
 			</div>
 
 			<div class="steps-section">
@@ -194,6 +191,7 @@ export default {
 		Cancel,
 		Eye,
 		DatabaseOutline,
+		SchemaStatsBlock,
 	},
 	data() {
 		return {
@@ -202,10 +200,35 @@ export default {
 			validationResults: null,
 			showOnlyInvalid: false,
 			objectCount: 0,
+			objectStats: null,
 		}
 	},
 	async mounted() {
+		console.log('ValidateSchema modal mounted, schemaItem:', schemaStore.schemaItem)
 		await this.loadObjectCount()
+	},
+	watch: {
+		// Watch for changes in schemaItem and reload count if needed
+		'schemaStore.schemaItem': {
+			handler(newSchemaItem) {
+				console.log('Schema item changed in ValidateSchema:', newSchemaItem)
+				if (newSchemaItem?.id && this.objectCount === 0) {
+					this.loadObjectCount()
+				}
+			},
+			immediate: true
+		},
+		// Watch for dialog state changes to load count when modal becomes visible
+		'navigationStore.modal': {
+			handler(newModal) {
+				console.log('Modal changed to:', newModal)
+				if (newModal === 'validateSchema' && schemaStore.schemaItem?.id) {
+					console.log('ValidateSchema modal opened, loading object count')
+					this.loadObjectCount()
+				}
+			},
+			immediate: true
+		}
 	},
 	computed: {
 		filteredResults() {
@@ -225,20 +248,25 @@ export default {
 	},
 	methods: {
 		async loadObjectCount() {
+			console.log('loadObjectCount called, schemaItem:', schemaStore.schemaItem)
 			try {
 				if (schemaStore.schemaItem?.id) {
-					// First try to use existing stats if available
-					if (schemaStore.schemaItem.stats?.objects?.total !== undefined) {
-						this.objectCount = schemaStore.schemaItem.stats.objects.total
-						console.log('Using schema item stats:', this.objectCount)
-					} else {
-						// Fallback to API call
-						this.objectCount = await schemaStore.getObjectCount(schemaStore.schemaItem.id)
-					}
+					console.log('Calling getSchemaStats for schema ID:', schemaStore.schemaItem.id)
+					// Use the upgraded stats endpoint to get detailed object counts
+					const stats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
+					console.log('Received stats:', stats)
+					this.objectStats = stats.objects
+					this.objectCount = stats.objects?.total || 0
+					console.log('Set objectCount to:', this.objectCount)
+					console.log('Set objectStats to:', this.objectStats)
+				} else {
+					console.log('No schema item ID available')
 				}
 			} catch (err) {
+				console.error('Error in loadObjectCount:', err)
 				console.warn('Could not load object count:', err)
 				this.objectCount = 0
+				this.objectStats = null
 			}
 		},
 		
@@ -285,12 +313,13 @@ export default {
 		},
 		
 		closeDialog() {
-			navigationStore.setDialog(false)
+			navigationStore.setModal(false)
 			this.loading = false
 			this.error = false
 			this.validationResults = null
 			this.showOnlyInvalid = false
 			this.objectCount = 0
+			this.objectStats = null
 		},
 	},
 }
@@ -349,6 +378,52 @@ export default {
 	justify-content: center;
 	gap: 0.5rem;
 	color: var(--color-text-lighter);
+}
+
+.object-breakdown {
+	margin-top: 1rem;
+	padding: 1rem;
+	background: var(--color-background-hover);
+	border-radius: var(--border-radius);
+	border: 1px solid var(--color-border);
+}
+
+.breakdown-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 0.5rem;
+}
+
+.breakdown-item:last-child {
+	margin-bottom: 0;
+}
+
+.breakdown-label {
+	font-weight: 500;
+	color: var(--color-text);
+}
+
+.breakdown-value {
+	font-weight: 600;
+	padding: 0.25rem 0.5rem;
+	border-radius: var(--border-radius);
+	background: var(--color-background-hover);
+}
+
+.breakdown-value.invalid {
+	color: var(--color-warning);
+	background: var(--color-warning-light);
+}
+
+.breakdown-value.deleted {
+	color: var(--color-error);
+	background: var(--color-error-light);
+}
+
+.breakdown-value.published {
+	color: var(--color-success);
+	background: var(--color-success-light);
 }
 
 .steps-section {

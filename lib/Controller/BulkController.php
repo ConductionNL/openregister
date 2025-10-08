@@ -400,12 +400,16 @@ class BulkController extends Controller
                 );
             }
 
+            // Get request data
+            $data = $this->request->getParams();
+            $hardDelete = $data['hardDelete'] ?? false;
+
             // Set register and schema context
             $this->objectService->setRegister($register);
             $this->objectService->setSchema($schema);
 
             // Perform schema deletion operation
-            $result = $this->objectService->deleteObjectsBySchema((int) $schema);
+            $result = $this->objectService->deleteObjectsBySchema((int) $schema, $hardDelete);
 
             return new JSONResponse(
                 [
@@ -414,6 +418,7 @@ class BulkController extends Controller
                     'deleted_count' => $result['deleted_count'],
                     'deleted_uuids' => $result['deleted_uuids'],
                     'schema_id' => $result['schema_id'],
+                    'hard_delete' => $hardDelete,
                 ]
             );
         } catch (Exception $e) {

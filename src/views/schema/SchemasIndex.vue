@@ -119,7 +119,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 										</template>
 										Analyze Properties
 									</NcActionButton>
-									<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setDialog('validateSchema')">
+									<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('validateSchema')">
 										<template #icon>
 											<CheckCircle :size="20" />
 										</template>
@@ -137,7 +137,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 									<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Delete all objects in this schema' : 'No objects to delete'"
 										close-after-click
 										:disabled="schema.stats?.objects?.total === 0"
-										@click="schemaStore.setSchemaItem(schema); navigationStore.setDialog('deleteSchemaObjects')">
+										@click="schemaStore.setSchemaItem(schema); navigationStore.setModal('deleteSchemaObjects')">
 										<template #icon>
 											<DeleteSweep :size="20" />
 										</template>
@@ -263,7 +263,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 												</template>
 												Analyze Properties
 											</NcActionButton>
-											<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setDialog('validateSchema')">
+											<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('validateSchema')">
 												<template #icon>
 													<CheckCircle :size="20" />
 												</template>
@@ -281,7 +281,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 											<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Delete all objects in this schema' : 'No objects to delete'"
 												close-after-click
 												:disabled="schema.stats?.objects?.total === 0"
-												@click="schemaStore.setSchemaItem(schema); navigationStore.setDialog('deleteSchemaObjects')">
+												@click="schemaStore.setSchemaItem(schema); navigationStore.setModal('deleteSchemaObjects')">
 												<template #icon>
 													<DeleteSweep :size="20" />
 												</template>
