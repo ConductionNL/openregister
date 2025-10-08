@@ -4524,7 +4524,7 @@ class GuzzleSolrService
      * @param int $offset Offset for pagination
      * @return array Array of ObjectEntity objects with searchable schemas
      */
-    private function fetchSearchableObjects(\OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper, int $limit, int $offset): array
+    private function fetchSearchableObjects(\OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper, int $limit, int $offset, array $schemaIds = []): array
     {
         try {
             // Use direct database query to fetch objects with searchable schemas
@@ -4582,7 +4582,7 @@ class GuzzleSolrService
      *
      * @return array Results of the bulk indexing operation
      */
-    public function bulkIndexFromDatabase(int $batchSize = 1000, int $maxObjects = 0, array $solrFieldTypes = []): array
+    public function bulkIndexFromDatabase(int $batchSize = 1000, int $maxObjects = 0, array $solrFieldTypes = [], array $schemaIds = []): array
     {
         if (!$this->isAvailable()) {
             return [
@@ -4748,7 +4748,7 @@ class GuzzleSolrService
      * @param int $parallelBatches Number of parallel batches to process (default: 4)
      * @return array Result with success status and statistics
      */
-    public function bulkIndexFromDatabaseParallel(int $batchSize = 1000, int $maxObjects = 0, int $parallelBatches = 4, array $solrFieldTypes = []): array
+    public function bulkIndexFromDatabaseParallel(int $batchSize = 1000, int $maxObjects = 0, int $parallelBatches = 4, array $solrFieldTypes = [], array $schemaIds = []): array
     {
         // Parallel bulk indexing method
         
@@ -5365,10 +5365,11 @@ class GuzzleSolrService
      * @param string $mode Processing mode ('serial', 'parallel', 'hyper')
      * @param bool $collectErrors Whether to collect all errors or stop on first
      * @param int $batchSize Number of objects to process per batch
+     * @param array $schemaIds Array of schema IDs to limit warmup to specific schemas (empty = all schemas)
      *
      * @return array Warmup results
      */
-    public function warmupIndex(array $schemas = [], int $maxObjects = 0, string $mode = 'serial', bool $collectErrors = false, int $batchSize = 1000): array
+    public function warmupIndex(array $schemas = [], int $maxObjects = 0, string $mode = 'serial', bool $collectErrors = false, int $batchSize = 1000, array $schemaIds = []): array
     {
         if (!$this->isAvailable()) {
             return [
@@ -5481,11 +5482,11 @@ class GuzzleSolrService
             // 3. Object indexing using mode-based bulk indexing (no logging for performance)
             
             if ($mode === 'hyper') {
-                $indexResult = $this->bulkIndexFromDatabaseOptimized($batchSize, $maxObjects, $solrFieldTypes ?? []);
+                $indexResult = $this->bulkIndexFromDatabaseOptimized($batchSize, $maxObjects, $solrFieldTypes ?? [], $schemaIds);
             } elseif ($mode === 'parallel') {
-                $indexResult = $this->bulkIndexFromDatabaseParallel($batchSize, $maxObjects, 5, $solrFieldTypes ?? []);
+                $indexResult = $this->bulkIndexFromDatabaseParallel($batchSize, $maxObjects, 5, $solrFieldTypes ?? [], $schemaIds);
             } else {
-                $indexResult = $this->bulkIndexFromDatabase($batchSize, $maxObjects, $solrFieldTypes ?? []);
+                $indexResult = $this->bulkIndexFromDatabase($batchSize, $maxObjects, $solrFieldTypes ?? [], $schemaIds);
             }
             
             // Pass collectErrors mode for potential future use
@@ -5712,7 +5713,7 @@ class GuzzleSolrService
      * @param array $solrFieldTypes Pre-fetched SOLR field types for validation
      * @return array Results with performance metrics
      */
-    public function bulkIndexFromDatabaseOptimized(int $batchSize = 1000, int $maxObjects = 0, array $solrFieldTypes = []): array
+    public function bulkIndexFromDatabaseOptimized(int $batchSize = 1000, int $maxObjects = 0, array $solrFieldTypes = [], array $schemaIds = []): array
     {
         $startTime = microtime(true);
         $totalIndexed = 0;
