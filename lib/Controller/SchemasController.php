@@ -586,13 +586,24 @@ class SchemasController extends Controller
                 return new JSONResponse(['error' => 'Schema not found'], 404);
             }
 
-            // Get object count for this schema
-            $objectCount = count($this->objectEntityMapper->findBySchema($id));
+            // Get detailed object statistics for this schema using the existing method
+            $objectStats = $this->objectEntityMapper->getStatistics(null, $id);
 
-            // Calculate statistics for this schema
+            // Calculate comprehensive statistics for this schema
             $stats = [
-                'objectCount' => $objectCount,
-                'objects_count' => $objectCount, // Alternative field name for compatibility
+                'objectCount' => $objectStats['total'], // Keep for backward compatibility
+                'objects_count' => $objectStats['total'], // Alternative field name for compatibility
+                'objects' => [
+                    'total' => $objectStats['total'],
+                    'invalid' => $objectStats['invalid'],
+                    'deleted' => $objectStats['deleted'],
+                    'published' => $objectStats['published'],
+                    'locked' => $objectStats['locked'],
+                    'size' => $objectStats['size'],
+                ],
+                'logs' => $this->auditTrailMapper->getStatistics(null, $id),
+                'files' => ['total' => 0, 'size' => 0], // Placeholder for future file statistics
+                'registers' => $this->schemaMapper->getRegisterCountPerSchema()[$id] ?? 0,
             ];
 
             return new JSONResponse($stats);
