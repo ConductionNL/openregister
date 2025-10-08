@@ -1,5 +1,6 @@
 <script setup>
 import { schemaStore, navigationStore } from '../../store/store.js'
+import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 </script>
 
 <template>
@@ -40,17 +41,11 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 				</div>
 				<div v-else-if="!explorationData" class="no-analysis">
 					<div class="analysis-info">
-						<div class="object-count-section">
-							<h4>{{ t('openregister', 'Objects to be analyzed') }}</h4>
-							<div v-if="objectCount > 0" class="object-count-centered">
-								<span class="count-value">{{ objectCount }}</span>
-								<span class="count-label">{{ t('openregister', 'objects') }}</span>
-							</div>
-							<div v-else class="loading-count">
-								<NcLoadingIcon :size="16" />
-								{{ t('openregister', 'Counting objects...') }}
-							</div>
-						</div>
+						<SchemaStatsBlock 
+							:object-count="objectCount"
+							:object-stats="objectStats"
+							:loading="false"
+							:title="t('openregister', 'Objects to be analyzed')" />
 
 						<div class="steps-section">
 							<h4>{{ t('openregister', 'Analysis steps:') }}</h4>
@@ -526,6 +521,7 @@ export default {
 		Refresh,
 		Check,
 		PaginationComponent,
+		SchemaStatsBlock,
 	},
 	data() {
 		return {
@@ -543,6 +539,7 @@ export default {
 			itemsPerPage: 10,
 			analysisStarted: false,
 			objectCount: 0,
+			objectStats: null,
 		}
 	},
 	computed: {
@@ -683,22 +680,21 @@ export default {
 			this.currentPage = 1
 			this.analysisStarted = false
 			this.objectCount = 0
+			this.objectStats = null
 		},
 		async countObjects() {
 			try {
 				if (schemaStore.schemaItem?.id) {
-					// First try to use existing stats if available
-					if (schemaStore.schemaItem.stats?.objects?.total !== undefined) {
-						this.objectCount = schemaStore.schemaItem.stats.objects.total
-						console.log('Using schema item stats:', this.objectCount)
-					} else {
-						// Fallback to API call
-						this.objectCount = await schemaStore.getObjectCount(schemaStore.schemaItem.id)
-					}
+					// Use the upgraded stats endpoint to get detailed object counts
+					const stats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
+					this.objectStats = stats.objects
+					this.objectCount = stats.objects?.total || 0
+					console.log('Loaded detailed schema stats for exploration:', stats)
 				}
 			} catch (error) {
 				console.warn('Could not fetch object count:', error)
 				this.objectCount = 0
+				this.objectStats = null
 			}
 		},
 		async startAnalysis() {
@@ -1340,6 +1336,52 @@ export default {
 	justify-content: center;
 	gap: 0.5rem;
 	color: var(--color-text-lighter);
+}
+
+.object-breakdown {
+	margin-top: 1rem;
+	padding: 1rem;
+	background: var(--color-background-hover);
+	border-radius: var(--border-radius);
+	border: 1px solid var(--color-border);
+}
+
+.breakdown-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 0.5rem;
+}
+
+.breakdown-item:last-child {
+	margin-bottom: 0;
+}
+
+.breakdown-label {
+	font-weight: 500;
+	color: var(--color-text);
+}
+
+.breakdown-value {
+	font-weight: 600;
+	padding: 0.25rem 0.5rem;
+	border-radius: var(--border-radius);
+	background: var(--color-background-hover);
+}
+
+.breakdown-value.invalid {
+	color: var(--color-warning);
+	background: var(--color-warning-light);
+}
+
+.breakdown-value.deleted {
+	color: var(--color-error);
+	background: var(--color-error-light);
+}
+
+.breakdown-value.published {
+	color: var(--color-success);
+	background: var(--color-success-light);
 }
 
 .steps-section {
