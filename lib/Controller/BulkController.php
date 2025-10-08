@@ -372,6 +372,66 @@ class BulkController extends Controller
 
 
     /**
+     * Publish all objects belonging to a specific schema
+     *
+     * @param string $register The register identifier
+     * @param string $schema   The schema identifier
+     *
+     * @return JSONResponse Response with the result of the schema publishing operation
+     *
+     * @NoCSRFRequired
+     */
+    public function publishSchema(string $register, string $schema): JSONResponse
+    {
+        try {
+            // Check if user is admin
+            if (!$this->isCurrentUserAdmin()) {
+                return new JSONResponse(
+                    ['error' => 'Insufficient permissions. Admin access required.'],
+                    Http::STATUS_FORBIDDEN
+                );
+            }
+
+            // Validate input
+            if (!is_numeric($schema)) {
+                return new JSONResponse(
+                    ['error' => 'Invalid schema ID. Must be numeric.'],
+                    Http::STATUS_BAD_REQUEST
+                );
+            }
+
+            // Get request data
+            $data = $this->request->getParams();
+            $publishAll = $data['publishAll'] ?? false;
+
+            // Set register and schema context
+            $this->objectService->setRegister($register);
+            $this->objectService->setSchema($schema);
+
+            // Perform schema publishing operation
+            $result = $this->objectService->publishObjectsBySchema((int) $schema, $publishAll);
+
+            return new JSONResponse(
+                [
+                    'success' => true,
+                    'message' => 'Schema objects publishing completed successfully',
+                    'published_count' => $result['published_count'],
+                    'published_uuids' => $result['published_uuids'],
+                    'schema_id' => $result['schema_id'],
+                    'publish_all' => $publishAll,
+                ]
+            );
+        } catch (Exception $e) {
+            return new JSONResponse(
+                ['error' => 'Schema objects publishing failed: '.$e->getMessage()],
+                Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }//end try
+
+    }//end publishSchema()
+
+
+    /**
      * Delete all objects belonging to a specific schema
      *
      * @param string $register The register identifier
