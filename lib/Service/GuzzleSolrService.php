@@ -666,7 +666,7 @@ class GuzzleSolrService
             return false;
         }
 
-        $baseCollectionName = $this->solrConfig['core'] ?? 'openregister';
+        $baseCollectionName = $this->solrConfig['collection'] ?? $this->solrConfig['core'] ?? 'openregister';
         $tenantCollectionName = $this->getTenantSpecificCollectionName($baseCollectionName);
 
         // Check if tenant collection exists
@@ -691,7 +691,8 @@ class GuzzleSolrService
         $this->logger->info('Attempting to create tenant collection', [
             'collection' => $tenantCollectionName
         ]);
-        return $this->createCollection($tenantCollectionName, 'openregister');
+        $configSet = $this->solrConfig['configSet'] ?? 'openregister';
+        return $this->createCollection($tenantCollectionName, $configSet);
     }
 
     /**
