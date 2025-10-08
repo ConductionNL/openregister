@@ -64,6 +64,7 @@
 </template>
 <script>
 import { navigationStore } from '../store/store.js'
+import { t } from '@nextcloud/l10n'
 
 import {
 	NcAppNavigation,
@@ -106,12 +107,13 @@ export default {
 		TextBoxOutline,
 		MagnifyPlus,
 	},
-	computed: {
-		navigationStore() {
-			return navigationStore
-		},
+	data() {
+		return {
+			navigationStore,
+		}
 	},
 	methods: {
+		t,
 		openLink(url, type = '') {
 			window.open(url, type)
 		},

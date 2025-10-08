@@ -87,15 +87,19 @@ export const useSchemaStore = defineStore('schema', {
 		},
 		// New function to get schema statistics
 		async getSchemaStats(id) {
+			console.log('getSchemaStats called with ID:', id)
 			const endpoint = `/index.php/apps/openregister/api/schemas/${id}/stats`
+			console.log('Making request to:', endpoint)
 			try {
 				const response = await fetch(endpoint, {
 					method: 'GET',
 				})
+				console.log('Response status:', response.status)
 				const data = await response.json()
+				console.log('Response data:', data)
 				return data
 			} catch (err) {
-				console.error(err)
+				console.error('Error in getSchemaStats:', err)
 				throw err
 			}
 		},

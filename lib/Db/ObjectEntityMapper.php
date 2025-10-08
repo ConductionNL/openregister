@@ -4495,7 +4495,7 @@ class ObjectEntityMapper extends QBMapper
      * @phpstan-return array<int, string>
      * @psalm-return array<int, string>
      */
-    private function bulkDelete(array $uuids): array
+    private function bulkDelete(array $uuids, bool $hardDelete = false): array
     {
         if (empty($uuids)) {
             return [];
@@ -4535,7 +4535,10 @@ class ObjectEntityMapper extends QBMapper
             $hardDeleteIds = [];
 
             foreach ($objects as $object) {
-                if (empty($object['deleted'])) {
+                if ($hardDelete) {
+                    // Force hard delete for all objects when hardDelete flag is set
+                    $hardDeleteIds[] = $object['id'];
+                } elseif (empty($object['deleted'])) {
                     // No deleted value set - perform soft delete
                     $softDeleteIds[] = $object['id'];
                 } else {
@@ -4788,7 +4791,7 @@ class ObjectEntityMapper extends QBMapper
      * @phpstan-return array<int, string>
      * @psalm-return array<int, string>
      */
-    public function deleteObjects(array $uuids = []): array
+    public function deleteObjects(array $uuids = [], bool $hardDelete = false): array
     {
         if (empty($uuids)) {
             return [];
@@ -4806,8 +4809,8 @@ class ObjectEntityMapper extends QBMapper
                 $transactionStarted = true;
             }
 
-            // Bulk delete objects
-            $deletedIds = $this->bulkDelete($uuids);
+            // Bulk delete objects with hard delete flag
+            $deletedIds = $this->bulkDelete($uuids, $hardDelete);
             $deletedObjectIds = array_merge($deletedObjectIds, $deletedIds);
 
             // Commit transaction only if we started it
@@ -4835,7 +4838,8 @@ class ObjectEntityMapper extends QBMapper
      * This method efficiently deletes all objects that belong to the specified schema.
      * It uses bulk operations for optimal performance and maintains data integrity.
      *
-     * @param int $schemaId The ID of the schema whose objects should be deleted
+     * @param int  $schemaId   The ID of the schema whose objects should be deleted
+     * @param bool $hardDelete Whether to force hard delete (default: false)
      *
      * @return array Array containing statistics about the deletion operation
      *
@@ -4844,14 +4848,19 @@ class ObjectEntityMapper extends QBMapper
      * @phpstan-return array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int}
      * @psalm-return array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int}
      */
-    public function deleteObjectsBySchema(int $schemaId): array
+    public function deleteObjectsBySchema(int $schemaId, bool $hardDelete = false): array
     {
         // First, get all UUIDs for objects belonging to this schema
         $qb = $this->db->getQueryBuilder();
         $qb->select('uuid')
             ->from($this->getTableName())
-            ->where($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)))
-            ->andWhere($qb->expr()->isNull('deleted'));
+            ->where($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+        
+        // When hardDelete is true, include ALL objects (both soft-deleted and not deleted)
+        // When hardDelete is false, only include objects that are not soft-deleted
+        if (!$hardDelete) {
+            $qb->andWhere($qb->expr()->isNull('deleted'));
+        }
 
         $result = $qb->executeQuery();
         $uuids = [];
@@ -4868,8 +4877,8 @@ class ObjectEntityMapper extends QBMapper
             ];
         }
 
-        // Use the existing bulk delete method
-        $deletedUuids = $this->deleteObjects($uuids);
+        // Use the existing bulk delete method with hard delete flag
+        $deletedUuids = $this->deleteObjects($uuids, $hardDelete);
 
         return [
             'deleted_count' => count($deletedUuids),

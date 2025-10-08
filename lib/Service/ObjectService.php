@@ -5392,7 +5392,8 @@ class ObjectService
      * This method efficiently deletes all objects that belong to the specified schema.
      * It uses bulk operations for optimal performance and maintains data integrity.
      *
-     * @param int $schemaId The ID of the schema whose objects should be deleted
+     * @param int  $schemaId   The ID of the schema whose objects should be deleted
+     * @param bool $hardDelete Whether to force hard delete (default: false)
      *
      * @return array Array containing statistics about the deletion operation
      *
@@ -5401,10 +5402,10 @@ class ObjectService
      * @phpstan-return array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int}
      * @psalm-return array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int}
      */
-    public function deleteObjectsBySchema(int $schemaId): array
+    public function deleteObjectsBySchema(int $schemaId, bool $hardDelete = false): array
     {
         // Use the mapper's schema deletion operation
-        $result = $this->objectEntityMapper->deleteObjectsBySchema($schemaId);
+        $result = $this->objectEntityMapper->deleteObjectsBySchema($schemaId, $hardDelete);
 
         // **BULK CACHE INVALIDATION**: Clear collection caches after bulk delete operations
         if ($result['deleted_count'] > 0) {
@@ -5412,7 +5413,8 @@ class ObjectService
                 $this->logger->debug('Schema objects deletion cache invalidation starting', [
                     'deletedCount' => $result['deleted_count'],
                     'schemaId' => $schemaId,
-                    'operation' => 'schema_delete'
+                    'operation' => 'schema_delete',
+                    'hardDelete' => $hardDelete
                 ]);
 
                 $this->objectCacheService->invalidateForObjectChange(
@@ -5424,13 +5426,15 @@ class ObjectService
 
                 $this->logger->debug('Schema objects deletion cache invalidation completed', [
                     'deletedCount' => $result['deleted_count'],
-                    'schemaId' => $schemaId
+                    'schemaId' => $schemaId,
+                    'hardDelete' => $hardDelete
                 ]);
             } catch (\Exception $e) {
                 $this->logger->warning('Schema objects deletion cache invalidation failed', [
                     'error' => $e->getMessage(),
                     'schemaId' => $schemaId,
-                    'deletedCount' => $result['deleted_count']
+                    'deletedCount' => $result['deleted_count'],
+                    'hardDelete' => $hardDelete
                 ]);
             }
         }

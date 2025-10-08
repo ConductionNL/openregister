@@ -1144,6 +1144,16 @@ class ImportService
             return $this->transformDateTimeValue($value);
         }
         
+        // Transform organisation property - ensure it's a valid UUID
+        if ($propertyName === 'organisation') {
+            // Validate UUID format
+            if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value)) {
+                return $value;
+            }
+            // If not a valid UUID, return as-is (might be a slug that needs resolution)
+            return $value;
+        }
+        
         // Return original value for other properties
         return $value;
     }
@@ -1840,8 +1850,10 @@ class ImportService
                 $object['@self'] = [];
             }
             
-            // Add published date to @self section
-            $object['@self']['published'] = $publishDate;
+            // Only add published date if not already set (from @self.published column)
+            if (!isset($object['@self']['published']) || empty($object['@self']['published'])) {
+                $object['@self']['published'] = $publishDate;
+            }
         }
         
         return $objects;
