@@ -4562,10 +4562,11 @@ class GuzzleSolrService
                 $objects[] = $objectEntity;
             }
             
-            $this->logger->debug('📊 Fetched searchable objects', [
+            $this->logger->info('🔍 WARMUP: Fetched searchable objects', [
                 'requested' => $limit,
                 'offset' => $offset,
-                'found' => count($objects)
+                'found' => count($objects),
+                'schemaIdsFilter' => empty($schemaIds) ? 'ALL' : implode(',', $schemaIds)
             ]);
             
             return $objects;
@@ -4946,8 +4947,35 @@ class GuzzleSolrService
             // Bulk index the entire batch
             $indexed = 0;
             if (!empty($documents)) {
-                $this->bulkIndex($documents, true); // Commit each batch for immediate visibility
-                $indexed = count($documents); // If we reach here, indexing succeeded
+                $this->logger->info('🔥 WARMUP: About to bulk index batch', [
+                    'batchNumber' => $job['batchNumber'],
+                    'documentCount' => count($documents),
+                    'offset' => $job['offset'],
+                    'limit' => $job['limit']
+                ]);
+                
+                $bulkResult = $this->bulkIndex($documents, true); // Commit each batch for immediate visibility
+                
+                $this->logger->info('🔥 WARMUP: Bulk index result', [
+                    'batchNumber' => $job['batchNumber'],
+                    'result' => $bulkResult,
+                    'documentCount' => count($documents)
+                ]);
+                
+                if ($bulkResult) {
+                    $indexed = count($documents); // If we reach here, indexing succeeded
+                } else {
+                    $this->logger->error('🔥 WARMUP: Bulk index returned FALSE!', [
+                        'batchNumber' => $job['batchNumber'],
+                        'documentCount' => count($documents)
+                    ]);
+                }
+            } else {
+                $this->logger->warning('🔥 WARMUP: No documents to index in batch', [
+                    'batchNumber' => $job['batchNumber'],
+                    'offset' => $job['offset'],
+                    'limit' => $job['limit']
+                ]);
             }
 
             $batchTime = round((microtime(true) - $batchStartTime) * 1000, 2);
