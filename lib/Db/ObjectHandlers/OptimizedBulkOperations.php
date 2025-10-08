@@ -576,7 +576,8 @@ class OptimizedBulkOperations
             case 'published':
             case 'depublished':
                 // Handle datetime fields that might be in ISO 8601 format
-                $value = $objectData[$dbColumn] ?? null;
+                // CRITICAL FIX: Check @self section first (from CSV import), then root level
+                $value = $objectData['@self'][$dbColumn] ?? $objectData[$dbColumn] ?? null;
                 if (!$value) {
                     return null; // These fields can be null
                 }
@@ -599,7 +600,9 @@ class OptimizedBulkOperations
                 return json_encode($value, \JSON_UNESCAPED_UNICODE);
                 
             default:
-                return $objectData[$dbColumn] ?? null;
+                // CRITICAL FIX: For metadata fields, check @self section first (from CSV import), then root level
+                // This handles fields like 'organisation', 'owner', 'slug', 'summary', 'image', 'description', etc.
+                return $objectData['@self'][$dbColumn] ?? $objectData[$dbColumn] ?? null;
         }
     }//end extractColumnValue()
 
