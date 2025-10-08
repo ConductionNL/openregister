@@ -263,6 +263,46 @@
 				</div>
 
 				<div class="form-section">
+					<h4>Schema Selection</h4>
+					<div class="form-row">
+						<label class="form-label">
+							<strong>Select Schemas to Warm Up</strong>
+							<p class="form-description">Choose which schemas to include in the warmup process. Leave empty to process all schemas.</p>
+						</label>
+						<div class="form-input">
+							<NcSelect
+								v-model="localConfig.selectedSchemas"
+								:options="availableSchemas"
+								:disabled="warmingUp"
+								:loading="schemasLoading"
+								multiple
+								placeholder="Select schemas (empty = all schemas)"
+								input-label="Select schemas to warm up"
+								label-outside
+								class="schema-select">
+								<template #option="{ option }">
+									<div class="schema-option">
+										<span class="schema-name">{{ option.label }}</span>
+										<span class="schema-objects">({{ option.objectCount || 0 }} objects)</span>
+									</div>
+								</template>
+							</NcSelect>
+						</div>
+					</div>
+					<div v-if="localConfig.selectedSchemas && localConfig.selectedSchemas.length > 0" class="selected-schemas-summary">
+						<p><strong>Selected:</strong> {{ localConfig.selectedSchemas.length }} schema(s)</p>
+						<div class="selected-schema-list">
+							<span 
+								v-for="schema in selectedSchemasDetails" 
+								:key="schema.id" 
+								class="selected-schema-tag">
+								{{ schema.label }} ({{ schema.objectCount || 0 }})
+							</span>
+						</div>
+					</div>
+				</div>
+
+				<div class="form-section">
 					<h4>Error Handling</h4>
 					<NcCheckboxRadioSwitch
 						v-model="localConfig.collectErrors"
@@ -314,7 +354,7 @@
 </template>
 
 <script>
-import { NcDialog, NcButton, NcLoadingIcon, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { NcDialog, NcButton, NcLoadingIcon, NcCheckboxRadioSwitch, NcSelect } from '@nextcloud/vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Fire from 'vue-material-design-icons/Fire.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
@@ -327,6 +367,7 @@ export default {
 		NcButton,
 		NcLoadingIcon,
 		NcCheckboxRadioSwitch,
+		NcSelect,
 		Cancel,
 		Fire,
 		Refresh,
@@ -356,6 +397,7 @@ export default {
 				maxObjects: 0,
 				batchSize: 1000,
 				collectErrors: false,
+				selectedSchemas: [],
 			}),
 		},
 		objectStats: {
@@ -375,6 +417,14 @@ export default {
 				}
 			}),
 		},
+		availableSchemas: {
+			type: Array,
+			default: () => [],
+		},
+		schemasLoading: {
+			type: Boolean,
+			default: false,
+		},
 	},
 
 	emits: ['close', 'start-warmup', 'reset'],
@@ -383,6 +433,17 @@ export default {
 		return {
 			localConfig: { ...this.config },
 		}
+	},
+
+	computed: {
+		selectedSchemasDetails() {
+			if (!this.localConfig.selectedSchemas || !this.availableSchemas) {
+				return []
+			}
+			return this.localConfig.selectedSchemas.map(schemaId => {
+				return this.availableSchemas.find(schema => schema.id === schemaId) || { id: schemaId, label: 'Unknown', objectCount: 0 }
+			})
+		},
 	},
 
 	watch: {
@@ -1175,6 +1236,59 @@ export default {
 	.radio-group > * {
 		flex: none;
 	}
+}
+
+/* Schema Selection Styles */
+.schema-select {
+	width: 100%;
+}
+
+.schema-option {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	width: 100%;
+}
+
+.schema-name {
+	font-weight: 500;
+	color: var(--color-text);
+}
+
+.schema-objects {
+	color: var(--color-text-maxcontrast);
+	font-size: 0.9rem;
+}
+
+.selected-schemas-summary {
+	background-color: var(--color-background-hover);
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	padding: 1rem;
+	margin-top: 1rem;
+}
+
+.selected-schemas-summary p {
+	margin: 0 0 0.75rem 0;
+	color: var(--color-text);
+	font-size: 0.9rem;
+}
+
+.selected-schema-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+.selected-schema-tag {
+	display: inline-flex;
+	align-items: center;
+	background-color: var(--color-primary);
+	color: var(--color-primary-text);
+	padding: 0.25rem 0.5rem;
+	border-radius: var(--border-radius-small);
+	font-size: 0.8rem;
+	font-weight: 500;
 }
 
 .modal-actions {

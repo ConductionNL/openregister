@@ -312,7 +312,17 @@ export const useSettingsStore = defineStore('settings', {
 			try {
 				const response = await axios.get(generateUrl('/apps/openregister/api/settings/solr'))
 				if (response.data) {
-					this.solrOptions = { ...this.solrOptions, ...response.data }
+					// Ensure boolean fields are properly converted from API response
+					const booleanFields = ['enabled', 'useCloud', 'autoCommit', 'enableLogging']
+					const processedData = { ...response.data }
+					
+					booleanFields.forEach(field => {
+						if (processedData[field] !== undefined) {
+							processedData[field] = Boolean(processedData[field])
+						}
+					})
+					
+					this.solrOptions = { ...this.solrOptions, ...processedData }
 				}
 			} catch (error) {
 				console.error('Failed to load SOLR settings:', error)
@@ -332,7 +342,17 @@ export const useSettingsStore = defineStore('settings', {
 				)
 				
 				if (response.data) {
-					this.solrOptions = { ...this.solrOptions, ...response.data }
+					// Ensure boolean fields are properly converted from API response
+					const booleanFields = ['enabled', 'useCloud', 'autoCommit', 'enableLogging']
+					const processedData = { ...response.data }
+					
+					booleanFields.forEach(field => {
+						if (processedData[field] !== undefined) {
+							processedData[field] = Boolean(processedData[field])
+						}
+					})
+					
+					this.solrOptions = { ...this.solrOptions, ...processedData }
 				}
 				
 				showSuccess('SOLR settings updated successfully')
@@ -421,6 +441,7 @@ export const useSettingsStore = defineStore('settings', {
 						maxObjects: options.maxObjects || 0,
 						mode: options.mode || 'serial',
 						collectErrors: options.collectErrors || false,
+						selectedSchemas: options.selectedSchemas || [],
 					}
 				)
 				
