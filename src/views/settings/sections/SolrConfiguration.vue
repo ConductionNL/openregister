@@ -133,7 +133,8 @@
 			<!-- Enable SOLR Toggle -->
 			<div class="option-section">
 				<NcCheckboxRadioSwitch
-					:checked.sync="solrOptions.enabled"
+					:checked="Boolean(solrOptions.enabled)"
+					@update:checked="solrOptions.enabled = $event"
 					:disabled="saving"
 					type="switch">
 					{{ solrOptions.enabled ? 'SOLR search enabled' : 'SOLR search disabled' }}
@@ -346,7 +347,8 @@
 				<h4>Advanced Options</h4>
 				<div class="advanced-options">
 					<NcCheckboxRadioSwitch
-						:checked.sync="solrOptions.useCloud"
+						:checked="Boolean(solrOptions.useCloud)"
+						@update:checked="solrOptions.useCloud = $event"
 						:disabled="saving"
 						type="switch">
 						{{ solrOptions.useCloud ? 'SolrCloud mode enabled' : 'Standalone SOLR mode' }}
@@ -356,7 +358,8 @@
 					</p>
 
 					<NcCheckboxRadioSwitch
-						:checked.sync="solrOptions.autoCommit"
+						:checked="Boolean(solrOptions.autoCommit)"
+						@update:checked="solrOptions.autoCommit = $event"
 						:disabled="saving"
 						type="switch">
 						{{ solrOptions.autoCommit ? 'Auto-commit enabled' : 'Auto-commit disabled' }}
@@ -381,7 +384,8 @@
 					</div>
 
 					<NcCheckboxRadioSwitch
-						:checked.sync="solrOptions.enableLogging"
+						:checked="Boolean(solrOptions.enableLogging)"
+						@update:checked="solrOptions.enableLogging = $event"
 						:disabled="saving"
 						type="switch">
 						{{ solrOptions.enableLogging ? 'SOLR logging enabled' : 'SOLR logging disabled' }}
@@ -424,20 +428,16 @@
 					<div class="stat-card">
 						<h5>Total Objects</h5>
 						<p>{{ formatNumber(solrStats.total_count || 0) }}</p>
-						<small class="object-info">
-							{{ formatNumber(solrStats.published_count || 0) }} published, 
-							{{ formatNumber(solrStats.document_count || 0) }} indexed
-						</small>
 					</div>
 
 					<div class="stat-card">
-						<h5>Active Collection</h5>
-						<p>{{ solrStats.collection || 'Unknown' }}</p>
+						<h5>Published Objects</h5>
+						<p>{{ formatNumber(solrStats.published_count || 0) }}</p>
 					</div>
 
 					<div class="stat-card">
-						<h5>Tenant ID</h5>
-						<p>{{ solrStats.tenant_id || 'Unknown' }}</p>
+						<h5>Indexed Objects</h5>
+						<p>{{ formatNumber(solrStats.document_count || 0) }}</p>
 					</div>
 				</div>
 			</div>
@@ -1517,6 +1517,8 @@
 			:completed="warmupCompleted"
 			:results="warmupResults"
 			:config="warmupConfig"
+			:available-schemas="availableSchemas"
+			:schemas-loading="schemasLoading"
 			@close="closeWarmupModal"
 			@start-warmup="handleStartWarmup"
 		/>
@@ -1639,7 +1641,10 @@ export default {
 				maxObjects: 0,
 				batchSize: 1000,
 				collectErrors: false,
+				selectedSchemas: [],
 			},
+			availableSchemas: [],
+			schemasLoading: false,
 			// Game-style loading
 			loadingTips: [
 				'🔍 SOLR is a powerful enterprise search platform built on Apache Lucene...',
@@ -2050,7 +2055,27 @@ export default {
 		async openWarmupModal() {
 			// Load object stats before opening the modal
 			await this.loadObjectStats()
+			await this.loadAvailableSchemas()
 			this.showWarmupDialog = true
+		},
+
+		async loadAvailableSchemas() {
+			this.schemasLoading = true
+			try {
+				const response = await axios.get(generateUrl('/apps/openregister/api/schemas'))
+				if (response.data && response.data.results) {
+					this.availableSchemas = response.data.results.map(schema => ({
+						id: schema.id,
+						label: schema.title || schema.name || schema.id,
+						objectCount: schema.stats?.objects?.total || 0
+					}))
+				}
+			} catch (error) {
+				console.error('Failed to load available schemas:', error)
+				this.availableSchemas = []
+			} finally {
+				this.schemasLoading = false
+			}
 		},
 
 		closeWarmupModal() {
@@ -2065,6 +2090,7 @@ export default {
 				maxObjects: 0,
 				batchSize: 1000,
 				collectErrors: false,
+				selectedSchemas: [],
 			}
 		},
 

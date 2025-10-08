@@ -4486,7 +4486,7 @@ class GuzzleSolrService
      * @param \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper The object mapper instance
      * @return int Number of objects with searchable schemas
      */
-    private function countSearchableObjects(\OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper): int
+    private function countSearchableObjects(\OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper, array $schemaIds = []): int
     {
         try {
             // Use direct database query to count objects with searchable schemas
@@ -4498,6 +4498,11 @@ class GuzzleSolrService
                 ->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id')
                 ->where($qb->expr()->eq('s.searchable', $qb->createNamedParameter(true, \PDO::PARAM_BOOL)))
                 ->andWhere($qb->expr()->isNull('o.deleted')); // Exclude deleted objects
+            
+            // Add schema filtering if schema IDs are provided
+            if (!empty($schemaIds)) {
+                $qb->andWhere($qb->expr()->in('o.schema', $qb->createNamedParameter($schemaIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
+            }
             
             $result = $qb->executeQuery();
             $count = (int) $result->fetchOne();
@@ -4524,7 +4529,7 @@ class GuzzleSolrService
      * @param int $offset Offset for pagination
      * @return array Array of ObjectEntity objects with searchable schemas
      */
-    private function fetchSearchableObjects(\OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper, int $limit, int $offset): array
+    private function fetchSearchableObjects(\OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper, int $limit, int $offset, array $schemaIds = []): array
     {
         try {
             // Use direct database query to fetch objects with searchable schemas
@@ -4535,8 +4540,14 @@ class GuzzleSolrService
                 ->from('openregister_objects', 'o')
                 ->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id')
                 ->where($qb->expr()->eq('s.searchable', $qb->createNamedParameter(true, \PDO::PARAM_BOOL)))
-                ->andWhere($qb->expr()->isNull('o.deleted')) // Exclude deleted objects
-                ->setMaxResults($limit)
+                ->andWhere($qb->expr()->isNull('o.deleted')); // Exclude deleted objects
+            
+            // Add schema filtering if schema IDs are provided
+            if (!empty($schemaIds)) {
+                $qb->andWhere($qb->expr()->in('o.schema', $qb->createNamedParameter($schemaIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
+            }
+            
+            $qb->setMaxResults($limit)
                 ->setFirstResult($offset)
                 ->orderBy('o.id', 'ASC'); // Consistent ordering for pagination
             
@@ -4582,8 +4593,13 @@ class GuzzleSolrService
      *
      * @return array Results of the bulk indexing operation
      */
-    public function bulkIndexFromDatabase(int $batchSize = 1000, int $maxObjects = 0, array $solrFieldTypes = []): array
+    public function bulkIndexFromDatabase(int $batchSize = 1000, int $maxObjects = 0, array $solrFieldTypes = [], array $schemaIds = []): array
     {
+        // Ensure schemaIds is always an array
+        if ($schemaIds === null) {
+            $schemaIds = [];
+        }
+        
         if (!$this->isAvailable()) {
             return [
                 'success' => false,
@@ -4605,7 +4621,7 @@ class GuzzleSolrService
             $this->logger->info('Starting sequential bulk index from database using ObjectEntityMapper directly');
             
             // **IMPROVED**: Get count of only searchable objects for more accurate planning
-            $totalObjects = $this->countSearchableObjects($objectMapper);
+            $totalObjects = $this->countSearchableObjects($objectMapper, $schemaIds);
             $this->logger->info('📊 Sequential bulk index planning (searchable objects only)', [
                 'totalSearchableObjects' => $totalObjects,
                 'maxObjects' => $maxObjects,
@@ -4629,7 +4645,7 @@ class GuzzleSolrService
                 $fetchStart = microtime(true);
                 // Batch fetched (logging removed for performance)
                 
-                $objects = $this->fetchSearchableObjects($objectMapper, $currentBatchSize, $offset);
+                $objects = $this->fetchSearchableObjects($objectMapper, $currentBatchSize, $offset, $schemaIds);
                 
                 $fetchEnd = microtime(true);
                 $fetchDuration = round(($fetchEnd - $fetchStart) * 1000, 2);
@@ -4748,8 +4764,13 @@ class GuzzleSolrService
      * @param int $parallelBatches Number of parallel batches to process (default: 4)
      * @return array Result with success status and statistics
      */
-    public function bulkIndexFromDatabaseParallel(int $batchSize = 1000, int $maxObjects = 0, int $parallelBatches = 4, array $solrFieldTypes = []): array
+    public function bulkIndexFromDatabaseParallel(int $batchSize = 1000, int $maxObjects = 0, int $parallelBatches = 4, array $solrFieldTypes = [], array $schemaIds = []): array
     {
+        // Ensure schemaIds is always an array
+        if ($schemaIds === null) {
+            $schemaIds = [];
+        }
+        
         // Parallel bulk indexing method
         
         if (!$this->isAvailable()) {
@@ -4769,7 +4790,7 @@ class GuzzleSolrService
             // Parallel bulk indexing started (logging removed for performance)
 
             // **IMPROVED**: Get count of only searchable objects for more accurate planning
-            $totalObjects = $this->countSearchableObjects($objectMapper);
+            $totalObjects = $this->countSearchableObjects($objectMapper, $schemaIds);
             
             // Total objects retrieved from database
             
@@ -4815,7 +4836,7 @@ class GuzzleSolrService
             // **FIX**: Process batches synchronously within each chunk to avoid ReactPHP ->wait() issues
             $chunkResults = [];
             foreach ($chunk as $job) {
-                $result = $this->processBatchDirectly($objectMapper, $job);
+                $result = $this->processBatchDirectly($objectMapper, $job, $schemaIds);
                 $chunkResults[] = $result;
             }
 
@@ -4879,7 +4900,7 @@ class GuzzleSolrService
      * @param array $job
      * @return array
      */
-    private function processBatchDirectly($objectMapper, array $job): array
+    private function processBatchDirectly($objectMapper, array $job, array $schemaIds = []): array
     {
         $batchStartTime = microtime(true);
         
@@ -4887,7 +4908,7 @@ class GuzzleSolrService
         
         try {
             // **IMPROVED**: Fetch only objects with searchable schemas for this batch
-            $objects = $this->fetchSearchableObjects($objectMapper, $job['limit'], $job['offset']);
+            $objects = $this->fetchSearchableObjects($objectMapper, $job['limit'], $job['offset'], $schemaIds);
 
             if (empty($objects)) {
                 return ['success' => true, 'indexed' => 0, 'batchNumber' => $job['batchNumber']];
@@ -5365,11 +5386,17 @@ class GuzzleSolrService
      * @param string $mode Processing mode ('serial', 'parallel', 'hyper')
      * @param bool $collectErrors Whether to collect all errors or stop on first
      * @param int $batchSize Number of objects to process per batch
+     * @param array $schemaIds Array of schema IDs to limit warmup to specific schemas (empty = all schemas)
      *
      * @return array Warmup results
      */
-    public function warmupIndex(array $schemas = [], int $maxObjects = 0, string $mode = 'serial', bool $collectErrors = false, int $batchSize = 1000): array
+    public function warmupIndex(array $schemas = [], int $maxObjects = 0, string $mode = 'serial', bool $collectErrors = false, int $batchSize = 1000, array $schemaIds = []): array
     {
+        // Ensure schemaIds is always an array
+        if ($schemaIds === null) {
+            $schemaIds = [];
+        }
+        
         if (!$this->isAvailable()) {
             return [
                 'success' => false,
@@ -5481,11 +5508,11 @@ class GuzzleSolrService
             // 3. Object indexing using mode-based bulk indexing (no logging for performance)
             
             if ($mode === 'hyper') {
-                $indexResult = $this->bulkIndexFromDatabaseOptimized($batchSize, $maxObjects, $solrFieldTypes ?? []);
+                $indexResult = $this->bulkIndexFromDatabaseOptimized($batchSize, $maxObjects, $solrFieldTypes ?? [], $schemaIds);
             } elseif ($mode === 'parallel') {
-                $indexResult = $this->bulkIndexFromDatabaseParallel($batchSize, $maxObjects, 5, $solrFieldTypes ?? []);
+                $indexResult = $this->bulkIndexFromDatabaseParallel($batchSize, $maxObjects, 5, $solrFieldTypes ?? [], $schemaIds);
             } else {
-                $indexResult = $this->bulkIndexFromDatabase($batchSize, $maxObjects, $solrFieldTypes ?? []);
+                $indexResult = $this->bulkIndexFromDatabase($batchSize, $maxObjects, $solrFieldTypes ?? [], $schemaIds);
             }
             
             // Pass collectErrors mode for potential future use
@@ -5712,8 +5739,13 @@ class GuzzleSolrService
      * @param array $solrFieldTypes Pre-fetched SOLR field types for validation
      * @return array Results with performance metrics
      */
-    public function bulkIndexFromDatabaseOptimized(int $batchSize = 1000, int $maxObjects = 0, array $solrFieldTypes = []): array
+    public function bulkIndexFromDatabaseOptimized(int $batchSize = 1000, int $maxObjects = 0, array $solrFieldTypes = [], array $schemaIds = []): array
     {
+        // Ensure schemaIds is always an array
+        if ($schemaIds === null) {
+            $schemaIds = [];
+        }
+        
         $startTime = microtime(true);
         $totalIndexed = 0;
         $totalErrors = 0;
@@ -5722,7 +5754,7 @@ class GuzzleSolrService
         try {
             // **IMPROVED**: Get count of only searchable objects for more accurate planning
             $objectMapper = \OC::$server->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
-            $totalObjects = $this->countSearchableObjects($objectMapper);
+            $totalObjects = $this->countSearchableObjects($objectMapper, $schemaIds);
             $actualLimit = $maxObjects > 0 ? min($maxObjects, $totalObjects) : $totalObjects;
             
             $this->logger->info('🚀 Starting optimized bulk indexing', [
@@ -5738,7 +5770,7 @@ class GuzzleSolrService
                 $batchCount++;
                 
                 // **IMPROVED**: Fetch only objects with searchable schemas
-                $objects = $this->fetchSearchableObjects($objectMapper, $currentBatchSize, $offset);
+                $objects = $this->fetchSearchableObjects($objectMapper, $currentBatchSize, $offset, $schemaIds);
                 
                 if (empty($objects)) {
                     break;

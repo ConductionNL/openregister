@@ -2062,6 +2062,7 @@ class SettingsController extends Controller
             $batchSize = $this->request->getParam('batchSize', 1000);
             $mode = $this->request->getParam('mode', 'serial'); // New mode parameter
             $collectErrors = $this->request->getParam('collectErrors', false); // New error collection parameter
+            $schemaIds = $this->request->getParam('selectedSchemas', []); // New schema selection parameter
             
             // Try to get from JSON body if not in query params
             if ($maxObjects === 0) {
@@ -2073,6 +2074,7 @@ class SettingsController extends Controller
                         $batchSize = $data['batchSize'] ?? 1000;
                         $mode = $data['mode'] ?? 'serial';
                         $collectErrors = $data['collectErrors'] ?? false;
+                        $schemaIds = $data['selectedSchemas'] ?? [];
                     }
                 }
             }
@@ -2091,7 +2093,7 @@ class SettingsController extends Controller
             
             // Phase 1: Use GuzzleSolrService directly for SOLR operations
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
-            $result = $guzzleSolrService->warmupIndex([], $maxObjects, $mode, $collectErrors, $batchSize);
+            $result = $guzzleSolrService->warmupIndex([], $maxObjects, $mode, $collectErrors, $batchSize, $schemaIds);
             return new JSONResponse($result);
         } catch (\Exception $e) {
             // **ERROR VISIBILITY**: Let exceptions bubble up with full details

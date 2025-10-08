@@ -4833,6 +4833,63 @@ class ObjectEntityMapper extends QBMapper
 
 
     /**
+     * Publish all objects belonging to a specific schema
+     *
+     * This method efficiently publishes all objects that belong to the specified schema.
+     * It uses bulk operations for optimal performance and maintains data integrity.
+     *
+     * @param int  $schemaId   The ID of the schema whose objects should be published
+     * @param bool $publishAll Whether to publish all objects (default: false)
+     *
+     * @return array Array containing statistics about the publishing operation
+     *
+     * @throws \Exception If the publishing operation fails
+     *
+     * @phpstan-return array{published_count: int, published_uuids: array<int, string>, schema_id: int}
+     * @psalm-return array{published_count: int, published_uuids: array<int, string>, schema_id: int}
+     */
+    public function publishObjectsBySchema(int $schemaId, bool $publishAll = false): array
+    {
+        // First, get all UUIDs for objects belonging to this schema
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('uuid')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+        
+        // When publishAll is true, include ALL objects (both published and unpublished)
+        // When publishAll is false, only include objects that are not published
+        if (!$publishAll) {
+            $qb->andWhere($qb->expr()->isNull('published'));
+        }
+
+        $result = $qb->executeQuery();
+        $uuids = [];
+        while ($row = $result->fetch()) {
+            $uuids[] = $row['uuid'];
+        }
+        $result->closeCursor();
+
+        if (empty($uuids)) {
+            return [
+                'published_count' => 0,
+                'published_uuids' => [],
+                'schema_id' => $schemaId,
+            ];
+        }
+
+        // Use the existing bulk publish method with publishAll flag
+        $publishedUuids = $this->publishObjects($uuids, true); // true = publish with current timestamp
+
+        return [
+            'published_count' => count($publishedUuids),
+            'published_uuids' => $publishedUuids,
+            'schema_id' => $schemaId,
+        ];
+
+    }//end publishObjectsBySchema()
+
+
+    /**
      * Delete all objects belonging to a specific schema
      *
      * This method efficiently deletes all objects that belong to the specified schema.

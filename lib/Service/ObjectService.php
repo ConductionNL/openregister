@@ -5387,6 +5387,64 @@ class ObjectService
 
 
     /**
+     * Publish all objects belonging to a specific schema
+     *
+     * This method efficiently publishes all objects that belong to the specified schema.
+     * It uses bulk operations for optimal performance and maintains data integrity.
+     *
+     * @param int  $schemaId   The ID of the schema whose objects should be published
+     * @param bool $publishAll Whether to publish all objects (default: false)
+     *
+     * @return array Array containing statistics about the publishing operation
+     *
+     * @throws \Exception If the publishing operation fails
+     *
+     * @phpstan-return array{published_count: int, published_uuids: array<int, string>, schema_id: int}
+     * @psalm-return array{published_count: int, published_uuids: array<int, string>, schema_id: int}
+     */
+    public function publishObjectsBySchema(int $schemaId, bool $publishAll = false): array
+    {
+        // Use the mapper's schema publishing operation
+        $result = $this->objectEntityMapper->publishObjectsBySchema($schemaId, $publishAll);
+
+        // **BULK CACHE INVALIDATION**: Clear collection caches after bulk publish operations
+        if ($result['published_count'] > 0) {
+            try {
+                $this->logger->debug('Schema objects publishing cache invalidation starting', [
+                    'publishedCount' => $result['published_count'],
+                    'schemaId' => $schemaId,
+                    'operation' => 'schema_publish',
+                    'publishAll' => $publishAll
+                ]);
+
+                $this->objectCacheService->invalidateForObjectChange(
+                    object: null,
+                    operation: 'bulk_publish',
+                    registerId: null,
+                    schemaId: $schemaId
+                );
+
+                $this->logger->debug('Schema objects publishing cache invalidation completed', [
+                    'publishedCount' => $result['published_count'],
+                    'schemaId' => $schemaId,
+                    'publishAll' => $publishAll
+                ]);
+            } catch (\Exception $e) {
+                $this->logger->warning('Schema objects publishing cache invalidation failed', [
+                    'error' => $e->getMessage(),
+                    'schemaId' => $schemaId,
+                    'publishedCount' => $result['published_count'],
+                    'publishAll' => $publishAll
+                ]);
+            }
+        }
+
+        return $result;
+
+    }//end publishObjectsBySchema()
+
+
+    /**
      * Delete all objects belonging to a specific schema
      *
      * This method efficiently deletes all objects that belong to the specified schema.
