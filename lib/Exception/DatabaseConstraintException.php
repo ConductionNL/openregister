@@ -98,9 +98,9 @@ class DatabaseConstraintException extends Exception
         if (str_contains($dbMessage, 'Duplicate entry') === true && str_contains($dbMessage, 'for key') === true) {
             // Extract constraint name for more specific messages.
             if (str_contains($dbMessage, 'schemas_organisation_slug_unique') === true) {
-                return "A schema with this slug already exists in your organization. Please choose a different slug.";
+                return "A schema with this slug already exists in your organization. Please choose a different slug or title.";
             } else if (str_contains($dbMessage, 'registers_organisation_slug_unique') === true) {
-                return "A register with this slug already exists in your organization. Please choose a different slug.";
+                return "A register with this slug already exists in your organization. Please choose a different slug or title.";
             } else if (str_contains($dbMessage, 'unique') === true) {
                 return "This {$entityType} already exists. Please check your input and try again.";
             }
