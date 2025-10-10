@@ -16,7 +16,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 					<DatabaseOutline />
 				</template>
 				<template #action>
-					<NcButton type="primary" @click="objectStore.setObjectItem(null); navigationStore.setModal('editObject')">
+					<NcButton type="primary" @click="addObject">
 						Add Object
 					</NcButton>
 				</template>
@@ -31,6 +31,7 @@ import { NcAppContent, NcEmptyContent, NcButton } from '@nextcloud/vue'
 import ObjectsList from './ObjectsList.vue'
 import ObjectDetails from './ObjectDetails.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
+import { objectStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
 
 export default {
 	name: 'ObjectsIndex',
@@ -41,6 +42,20 @@ export default {
 		ObjectsList,
 		ObjectDetails,
 		DatabaseOutline,
+	},
+	methods: {
+		addObject() {
+			// Clear any existing object and open the add object modal
+			objectStore.setObjectItem(null)
+			// Ensure register and schema are set for new object creation
+			if (registerStore.registerItem) {
+				registerStore.setRegisterItem(registerStore.registerItem)
+			}
+			if (schemaStore.schemaItem) {
+				schemaStore.setSchemaItem(schemaStore.schemaItem)
+			}
+			navigationStore.setModal('viewObject')
+		},
 	},
 }
 </script>
