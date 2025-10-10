@@ -2883,25 +2883,7 @@ class ObjectService
             }
         }
 
-        // **OPTIMIZATION 3**: Smart limit adjustment for performance (skip for bulk operations)
-        if (!($query['_bulk_operation'] ?? false)) {
-            $originalLimit = $query['_limit'] ?? 20;
-            $query['_limit'] = $this->optimizeLimit($originalLimit);
-            if ($query['_limit'] != $originalLimit) {
-                $this->logger->debug('📊 LIMIT OPTIMIZATION: Adjusted for performance', [
-                    'original' => $originalLimit,
-                    'optimized' => $query['_limit'],
-                    'reason' => 'performance_target_500ms'
-                ]);
-            }
-        } else {
-            $this->logger->debug('📊 LIMIT OPTIMIZATION: Skipped for bulk operation', [
-                'limit' => $query['_limit'] ?? 20,
-                'reason' => 'bulk_operation_bypass'
-            ]);
-        }
-
-        // **OPTIMIZATION 4**: Preload critical entities for cache warmup
+        // **OPTIMIZATION 3**: Preload critical entities for cache warmup
         $this->preloadCriticalEntities($query);
 
         $perfTimings['request_optimization'] = round((microtime(true) - $optimizeStart) * 1000, 2);
@@ -2988,26 +2970,6 @@ class ObjectService
         }
 
         return array_values($optimized);
-    }
-
-    /**
-     * Optimize limit for performance target
-     *
-     * @param int $originalLimit Original limit value
-     *
-     * @return int Optimized limit
-     */
-    private function optimizeLimit(int $originalLimit): int
-    {
-        // **PERFORMANCE TARGET**: Ensure we can hit 500ms
-        // Larger result sets exponentially increase processing time
-        if ($originalLimit > 500) {
-            return 50; // Cap at 50 for performance
-        } elseif ($originalLimit > 500) {
-            return 25; // Reduce high limits
-        }
-
-        return $originalLimit; // Keep reasonable limits as-is
     }
 
     /**
