@@ -862,6 +862,13 @@ class SaveObjects
                 $selfData['depublished'] = $depublishedFormatted;
                 $object['depublished'] = $depublishedFormatted; // TOP LEVEL for bulk SQL
             }
+            
+            // RELATIONS EXTRACTION: Scan the object data for relations (UUIDs and URLs)
+            // This ensures relations metadata is populated during bulk import
+            $objectDataForRelations = $tempEntity->getObject();
+            $relations = $this->scanForRelations($objectDataForRelations, '', $schema);
+            $selfData['relations'] = $relations;
+            
             $object['@self'] = $selfData;
             
             // Handle pre-validation cascading for inversedBy properties
@@ -1099,6 +1106,18 @@ class SaveObjects
                         'business_data_sample' => array_slice($businessData, 0, 3, true)
                     ]);
                 }
+                
+                // RELATIONS EXTRACTION: Scan the business data for relations (UUIDs and URLs)
+                // This ensures relations metadata is populated during bulk import
+                $relations = $this->scanForRelations($businessData, '', $schemaObj);
+                $selfData['relations'] = $relations;
+                
+                $this->logger->info("[SaveObjects] Relations scanned in preparation (single schema)", [
+                    'uuid' => $selfData['uuid'] ?? 'unknown',
+                    'relationCount' => count($relations),
+                    'businessDataKeys' => array_keys($businessData),
+                    'relationsPreview' => array_slice($relations, 0, 5, true)
+                ]);
                 
                 // Store the clean business data in the database object column
                 $selfData['object'] = $businessData;
@@ -1909,10 +1928,24 @@ class SaveObjects
             }
             
             // RELATIONS EXTRACTION: Scan the business data for relations (UUIDs and URLs)
-            if (isset($schemaCache[$selfData['schema']])) {
-                $schema = $schemaCache[$selfData['schema']];
-                $relations = $this->scanForRelations($businessData, '', $schema);
-                $selfData['relations'] = $relations;
+            // ONLY scan if relations weren't already set during preparation phase
+            if (!isset($selfData['relations']) || empty($selfData['relations'])) {
+                if (isset($schemaCache[$selfData['schema']])) {
+                    $schema = $schemaCache[$selfData['schema']];
+                    $relations = $this->scanForRelations($businessData, '', $schema);
+                    $selfData['relations'] = $relations;
+                    
+                    $this->logger->info("[SaveObjects] Relations scanned in transformation", [
+                        'uuid' => $selfData['uuid'] ?? 'unknown',
+                        'relationCount' => count($relations),
+                        'relations' => array_slice($relations, 0, 3, true)
+                    ]);
+                }
+            } else {
+                $this->logger->info("[SaveObjects] Relations already set from preparation", [
+                    'uuid' => $selfData['uuid'] ?? 'unknown',
+                    'relationCount' => count($selfData['relations'])
+                ]);
             }
             
             // Store the clean business data in the database object column
