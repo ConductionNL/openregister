@@ -244,7 +244,7 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 												</template>
 												View
 											</NcActionButton>
-											<NcActionButton close-after-click @click="navigationStore.setModal('editObject'); objectStore.setObjectItem(result)">
+											<NcActionButton close-after-click @click="navigationStore.setModal('viewObject'); objectStore.setObjectItem(result)">
 												<template #icon>
 													<Pencil :size="20" />
 												</template>
@@ -553,7 +553,14 @@ export default {
 		addObject() {
 			// Clear any existing object and open the add object modal
 			objectStore.setObjectItem(null)
-			navigationStore.setModal('editObject')
+			// Ensure register and schema are set for new object creation
+			if (registerStore.registerItem) {
+				registerStore.setRegisterItem(registerStore.registerItem)
+			}
+			if (schemaStore.schemaItem) {
+				schemaStore.setSchemaItem(schemaStore.schemaItem)
+			}
+			navigationStore.setModal('viewObject')
 		},
 		refreshObjects() {
 			// Refresh the object list
