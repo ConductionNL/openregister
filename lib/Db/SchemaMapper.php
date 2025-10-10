@@ -475,9 +475,7 @@ class SchemaMapper extends QBMapper
 
         $schema->hydrate($object, $this->validator);
 
-        // Clean the schema object to ensure UUID, slug, and version are set.
-        $this->cleanObject($schema);
-
+        // Update the schema in the database
         $schema = $this->update($schema);
 
         return $schema;

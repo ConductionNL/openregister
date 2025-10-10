@@ -247,18 +247,35 @@ class SchemasController extends Controller
             // Handle our custom database constraint exceptions
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getHttpStatusCode());
         } catch (Exception $e) {
+            // Log the actual error for debugging
+            $this->logger->error('Schema creation failed', [
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             // Check if this is a validation error by examining the message
             if (str_contains($e->getMessage(), 'Invalid')
                 || str_contains($e->getMessage(), 'must be')
                 || str_contains($e->getMessage(), 'required')
                 || str_contains($e->getMessage(), 'format')
+                || str_contains($e->getMessage(), 'Property at')
+                || str_contains($e->getMessage(), 'authorization')
             ) {
-                // Return 400 Bad Request for validation errors
+                // Return 400 Bad Request for validation errors with actual error message
                 return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
             }
 
-            // Re-throw other exceptions to maintain existing behavior
-            throw $e;
+            // For database constraint violations, return 409 Conflict
+            if (str_contains($e->getMessage(), 'constraint')
+                || str_contains($e->getMessage(), 'duplicate')
+                || str_contains($e->getMessage(), 'unique')
+            ) {
+                return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 409);
+            }
+
+            // Return 500 for other unexpected errors with actual error message
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }//end try
 
     }//end create()
@@ -311,18 +328,36 @@ class SchemasController extends Controller
             // Handle our custom database constraint exceptions
             return new JSONResponse(['error' => $e->getMessage()], $e->getHttpStatusCode());
         } catch (Exception $e) {
+            // Log the actual error for debugging
+            $this->logger->error('Schema update failed', [
+                'schema_id' => $id,
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             // Check if this is a validation error by examining the message
             if (str_contains($e->getMessage(), 'Invalid')
                 || str_contains($e->getMessage(), 'must be')
                 || str_contains($e->getMessage(), 'required')
                 || str_contains($e->getMessage(), 'format')
+                || str_contains($e->getMessage(), 'Property at')
+                || str_contains($e->getMessage(), 'authorization')
             ) {
-                // Return 400 Bad Request for validation errors
+                // Return 400 Bad Request for validation errors with actual error message
                 return new JSONResponse(['error' => $e->getMessage()], 400);
             }
 
-            // Re-throw other exceptions to maintain existing behavior
-            throw $e;
+            // For database constraint violations, return 409 Conflict
+            if (str_contains($e->getMessage(), 'constraint')
+                || str_contains($e->getMessage(), 'duplicate')
+                || str_contains($e->getMessage(), 'unique')
+            ) {
+                return new JSONResponse(['error' => $e->getMessage()], 409);
+            }
+
+            // Return 500 for other unexpected errors with actual error message
+            return new JSONResponse(['error' => $e->getMessage()], 500);
         }//end try
 
     }//end update()
@@ -459,18 +494,36 @@ class SchemasController extends Controller
             // Handle our custom database constraint exceptions
             return new JSONResponse(['error' => $e->getMessage()], $e->getHttpStatusCode());
         } catch (Exception $e) {
+            // Log the actual error for debugging
+            $this->logger->error('Schema upload failed', [
+                'schema_id' => $id,
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             // Check if this is a validation error by examining the message
             if (str_contains($e->getMessage(), 'Invalid')
                 || str_contains($e->getMessage(), 'must be')
                 || str_contains($e->getMessage(), 'required')
                 || str_contains($e->getMessage(), 'format')
+                || str_contains($e->getMessage(), 'Property at')
+                || str_contains($e->getMessage(), 'authorization')
             ) {
-                // Return 400 Bad Request for validation errors
+                // Return 400 Bad Request for validation errors with actual error message
                 return new JSONResponse(['error' => $e->getMessage()], 400);
             }
 
-            // Re-throw other exceptions to maintain existing behavior
-            throw $e;
+            // For database constraint violations, return 409 Conflict
+            if (str_contains($e->getMessage(), 'constraint')
+                || str_contains($e->getMessage(), 'duplicate')
+                || str_contains($e->getMessage(), 'unique')
+            ) {
+                return new JSONResponse(['error' => $e->getMessage()], 409);
+            }
+
+            // Return 500 for other unexpected errors with actual error message
+            return new JSONResponse(['error' => $e->getMessage()], 500);
         }//end try
 
     }//end upload()
