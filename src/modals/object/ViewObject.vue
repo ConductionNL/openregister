@@ -527,7 +527,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					</template>
 					Add File
 				</NcButton>
-				<NcButton @click="viewAuditTrails">
+				<NcButton @click="viewAuditTrails" v-if="!isNewObject">
 					<template #icon>
 						<TextBoxOutline :size="20" />
 					</template>
@@ -1288,9 +1288,11 @@ export default {
 					register: this.currentRegister.id,
 					schema: this.currentSchema.id,
 				})
-
+				console.log('Save object response:', response)
 				this.success = response.ok
 				if (this.success) {
+					// Re-initialize data to refresh jsonData with the newly created object
+					this.initializeData()
 					setTimeout(() => {
 						this.success = null
 					}, 2000)
