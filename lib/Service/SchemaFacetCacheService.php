@@ -265,14 +265,24 @@ class SchemaFacetCacheService
     public function invalidateForSchemaChange(int $schemaId, string $operation = 'update'): void
     {
         $startTime = microtime(true);
+        $deletedCount = 0;
         
-        // Remove from database cache
-        $qb = $this->db->getQueryBuilder();
-        $qb->delete(self::FACET_CACHE_TABLE)
-           ->where($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId)));
-        $deletedCount = $qb->executeStatement();
+        // Remove from database cache (if table exists)
+        try {
+            $qb = $this->db->getQueryBuilder();
+            $qb->delete(self::FACET_CACHE_TABLE)
+               ->where($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId)));
+            $deletedCount = $qb->executeStatement();
+        } catch (\Exception $e) {
+            // If the cache table doesn't exist yet, just log a debug message and continue
+            // This allows the app to work even if the migration hasn't been run yet
+            $this->logger->debug('Schema facet cache table does not exist yet, skipping database cache invalidation', [
+                'schemaId' => $schemaId,
+                'error' => $e->getMessage()
+            ]);
+        }
         
-        // Remove from memory cache
+        // Remove from memory cache (always safe to do)
         $memoryClearedCount = 0;
         $cacheKeys = array_keys(self::$facetConfigCache);
         foreach ($cacheKeys as $key) {
