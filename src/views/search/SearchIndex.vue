@@ -240,12 +240,6 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 										<NcActions class="actionsButton">
 											<NcActionButton close-after-click @click="navigationStore.setModal('viewObject'); objectStore.setObjectItem(result)">
 												<template #icon>
-													<Eye :size="20" />
-												</template>
-												View
-											</NcActionButton>
-											<NcActionButton close-after-click @click="navigationStore.setModal('editObject'); objectStore.setObjectItem(result)">
-												<template #icon>
 													<Pencil :size="20" />
 												</template>
 												Edit
@@ -321,7 +315,6 @@ import { VueDraggable } from 'vue-draggable-plus'
 import getValidISOstring from '../../services/getValidISOstring.js'
 import formatBytes from '../../services/formatBytes.js'
 
-import Eye from 'vue-material-design-icons/Eye.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
@@ -353,7 +346,6 @@ export default {
 		NcActionText,
 		NcCounterBubble,
 		VueDraggable,
-		Eye,
 		Pencil,
 		Delete,
 		Plus,
@@ -553,7 +545,14 @@ export default {
 		addObject() {
 			// Clear any existing object and open the add object modal
 			objectStore.setObjectItem(null)
-			navigationStore.setModal('editObject')
+			// Ensure register and schema are set for new object creation
+			if (registerStore.registerItem) {
+				registerStore.setRegisterItem(registerStore.registerItem)
+			}
+			if (schemaStore.schemaItem) {
+				schemaStore.setSchemaItem(schemaStore.schemaItem)
+			}
+			navigationStore.setModal('viewObject')
 		},
 		refreshObjects() {
 			// Refresh the object list

@@ -16,7 +16,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 							<LockOutline v-if="objectStore.objectItem.locked" :size="20" />
 							<DotsHorizontal v-else :size="20" />
 						</template>
-						<NcActionButton close-after-click @click="navigationStore.setModal('editObject')">
+						<NcActionButton close-after-click @click="navigationStore.setModal('viewObject')">
 							<template #icon>
 								<Pencil :size="20" />
 							</template>
