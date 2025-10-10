@@ -931,9 +931,10 @@ export default {
 		},
 		metadataProperties() {
 			// Return array of [key, value, hasAction] for metadata display
-			if (!objectStore?.objectItem) return []
+			// Use formData instead of objectStore.objectItem to reflect real-time changes
+			const obj = this.formData || objectStore?.objectItem
+			if (!obj) return []
 
-			const obj = objectStore.objectItem
 			const metadata = []
 
 			// ID with copy action
