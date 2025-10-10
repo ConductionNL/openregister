@@ -738,16 +738,16 @@ class ObjectEntityMapper extends QBMapper
             // If no active organization and bypass is disabled, apply strict filtering
             // Only allow published objects if bypass is enabled, and NULL organization objects only for admin users
             $orgConditions = $qb->expr()->orX();
-            
+
             // Check if user is admin
             $userGroups = $this->groupManager->getUserGroupIds($user);
             $isAdmin = in_array('admin', $userGroups);
-            
+
             // Only admin users can see objects with NULL organization (legacy data)
             if ($isAdmin) {
                 $orgConditions->add($qb->expr()->isNull($organizationColumn));
             }
-            
+
             // Only include published objects if bypass is enabled
             if ($this->shouldPublishedObjectsBypassMultiTenancy()) {
                 $now = (new \DateTime())->format('Y-m-d H:i:s');
@@ -762,7 +762,7 @@ class ObjectEntityMapper extends QBMapper
                     )
                 );
             }
-            
+
             // If no conditions were added (non-admin user with bypass disabled), deny all access
             if ($orgConditions->count() === 0) {
                 $qb->andWhere($qb->expr()->eq('1', $qb->createNamedParameter('0'))); // Always false
@@ -856,7 +856,7 @@ class ObjectEntityMapper extends QBMapper
             // Check if user is admin - only admin users can see objects with NULL organization (legacy data)
             $userGroups = $this->groupManager->getUserGroupIds($user);
             $isAdmin = in_array('admin', $userGroups);
-            
+
             if ($isAdmin) {
                 // Include objects with NULL organization (legacy data) - only for admin users
                 $orgConditions->add(
@@ -867,7 +867,7 @@ class ObjectEntityMapper extends QBMapper
         }
 
         $qb->andWhere($orgConditions);
-        
+
 
     }//end applyOrganizationFilters()
 
@@ -1127,10 +1127,14 @@ class ObjectEntityMapper extends QBMapper
             );
         }
 
+        $numericIds = array_filter($ids, function (string $id) {
+            return strlen(intval($id)) === strlen($id);
+        });
+
         // Handle filtering by IDs/UUIDs if provided.
         if ($ids !== null && empty($ids) === false) {
             $orX = $qb->expr()->orX();
-            $orX->add($qb->expr()->in('o.id', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            $orX->add($qb->expr()->in('o.id', $qb->createNamedParameter($numericIds, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
             $orX->add($qb->expr()->in('o.uuid', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
             $qb->andWhere($orX);
         }
