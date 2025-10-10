@@ -1584,37 +1584,15 @@ class ObjectEntityMapper extends QBMapper
         } else {
             // **PERFORMANCE OPTIMIZATION**: Selective field loading for 500ms target
 
-            if ($isSimpleRequest) {
-                // **SELECTIVE LOADING**: Only essential fields for simple requests (20-30% improvement)
-                $queryBuilder->select(
-                    'o.id',
-                    'o.uuid',
-                    'o.register',
-                    'o.schema',
-                    'o.organisation',
-                    'o.published',
-                    'o.owner',
-                    'o.created',
-                    'o.updated',
-                    'o.object',
-                    'o.name',
-                    'o.description',
-                    'o.summary'
-                );
+            // **SIMPLIFIED LOADING**: Always load all fields for consistency and reliability
+            // This avoids missing fields like relations, files, authorization, etc.
+            // Performance impact is minimal compared to maintenance burden of selective loading
+            $queryBuilder->select('o.*');
 
-                $this->logger->debug('🚀 PERFORMANCE: Using selective field loading', [
-                    'selectedFields' => 'essential_only',
-                    'expectedImprovement' => '20-30%'
-                ]);
-            } else {
-                // Complex requests need all fields
-                $queryBuilder->select('o.*');
-
-                $this->logger->debug('📊 PERFORMANCE: Using full field loading', [
-                    'selectedFields' => 'all_fields',
-                    'reason' => 'complex_request'
-                ]);
-            }
+            $this->logger->debug('📊 PERFORMANCE: Using full field loading', [
+                'selectedFields' => 'all_fields',
+                'reason' => 'consistency_and_reliability'
+            ]);
 
             $queryBuilder->from('openregister_objects', 'o')
                 ->setMaxResults($limit)
