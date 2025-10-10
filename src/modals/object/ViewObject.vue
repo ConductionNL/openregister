@@ -702,6 +702,7 @@ export default {
 			formData: {},
 			jsonData: '',
 			activeTab: 0,
+			isInternalUpdate: false, // Flag to prevent infinite loops during synchronization
 			objectEditors: {},
 			tabOptions: ['Properties', 'Metadata', 'Data', 'Uses', 'Used by', 'Contracts', 'Files'],
 			selectedAttachments: [],
@@ -1065,14 +1066,14 @@ export default {
 		},
 		jsonData: {
 			handler(newValue) {
-				if (this.activeTab === 1 && this.isValidJson(newValue)) {
+				if (!this.isInternalUpdate && this.isValidJson(newValue)) {
 					this.updateFormFromJson()
 				}
 			},
 		},
 		formData: {
 			handler(newValue) {
-				if (this.activeTab === 0) {
+				if (!this.isInternalUpdate) {
 					this.updateJsonFromForm()
 				}
 			},
@@ -1305,19 +1306,33 @@ export default {
 			}
 		},
 		updateFormFromJson() {
+			if (this.isInternalUpdate) return
+			
 			try {
+				this.isInternalUpdate = true
 				const parsed = JSON.parse(this.jsonData)
 				this.formData = parsed
 			} catch (e) {
 				this.error = 'Invalid JSON format'
+			} finally {
+				this.$nextTick(() => {
+					this.isInternalUpdate = false
+				})
 			}
 		},
 
 		updateJsonFromForm() {
+			if (this.isInternalUpdate) return
+			
 			try {
+				this.isInternalUpdate = true
 				this.jsonData = JSON.stringify(this.formData, null, 2)
 			} catch (e) {
 				console.error('Error updating JSON:', e)
+			} finally {
+				this.$nextTick(() => {
+					this.isInternalUpdate = false
+				})
 			}
 		},
 
