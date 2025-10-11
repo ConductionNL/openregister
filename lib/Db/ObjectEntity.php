@@ -340,67 +340,6 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     protected ?DateTime $expires = null;
 
-    /**
-     * Get the published timestamp
-     *
-     * @return DateTime|null The published timestamp
-     */
-    public function getPublished(): ?DateTime
-    {
-        return $this->published;
-    }
-
-    /**
-     * Set the published timestamp
-     *
-     * @param DateTime|string|null $published The published timestamp
-     *
-     * @return void
-     */
-    public function setPublished(DateTime|string|null $published): void
-    {
-        if (is_string($published)) {
-            try {
-                $this->published = new DateTime($published);
-            } catch (\Exception $e) {
-                // If conversion fails, set to null
-                $this->published = null;
-            }
-        } else {
-            $this->published = $published;
-        }
-    }
-
-    /**
-     * Get the depublished timestamp
-     *
-     * @return DateTime|null The depublished timestamp
-     */
-    public function getDepublished(): ?DateTime
-    {
-        return $this->depublished;
-    }
-
-    /**
-     * Set the depublished timestamp
-     *
-     * @param DateTime|string|null $depublished The depublished timestamp
-     *
-     * @return void
-     */
-    public function setDepublished(DateTime|string|null $depublished): void
-    {
-        if (is_string($depublished)) {
-            try {
-                $this->depublished = new DateTime($depublished);
-            } catch (\Exception $e) {
-                // If conversion fails, set to null
-                $this->depublished = null;
-            }
-        } else {
-            $this->depublished = $depublished;
-        }
-    }
 
     /**
      * Initialize the entity and define field types
@@ -443,7 +382,48 @@ class ObjectEntity extends Entity implements JsonSerializable
 
 
     /**
+     * Override getter to provide default empty arrays for JSON array fields
+     * 
+     * We only override this one method from parent Entity - everything else
+     * (setters, type conversion, change tracking) uses parent's implementation.
+     * 
+     * The ONLY difference: we return [] instead of null for specific JSON fields
+     * that represent collections, making code cleaner throughout the app.
+     *
+     * @param string $name The property name
+     *
+     * @return mixed The property value, or [] for unset array fields
+     */
+    protected function getter(string $name): mixed
+    {
+        // Array fields that should return [] instead of null when unset
+        $arrayFieldsWithEmptyDefault = [
+            'files',
+            'relations',
+            'authorization',
+            'validation',
+            'deleted',
+            'groups',
+            'geo',
+            'retention',
+        ];
+
+        // If this is an array field and it's null, return empty array
+        if (in_array($name, $arrayFieldsWithEmptyDefault) && property_exists($this, $name)) {
+            return $this->$name ?? [];
+        }
+
+        // Otherwise, delegate to parent's standard getter behavior
+        return parent::getter($name);
+
+    }//end getter()
+
+
+    /**
      * Get the object data and set the 'id' to the 'uuid'
+     *
+     * This getter has special logic to inject the UUID as 'id' field,
+     * so it must remain explicit rather than using the magic method.
      *
      * @return array The object data with 'id' set to 'uuid', or empty array if null
      */
@@ -458,78 +438,6 @@ class ObjectEntity extends Entity implements JsonSerializable
         return $objectData;
 
     }//end getObject()
-
-
-    /**
-     * Get the files data
-     *
-     * @return array The files data or empty array if null
-     */
-    public function getFiles(): array
-    {
-        return ($this->files ?? []);
-
-    }//end getFiles()
-
-
-    /**
-     * Get the relations data
-     *
-     * @return array The relations data or empty array if null
-     */
-    public function getRelations(): array
-    {
-        return ($this->relations ?? []);
-
-    }//end getRelations()
-
-
-    /**
-     * Get the locked data
-     *
-     * @return array The locked data or empty array if null
-     */
-    public function getlocked(): ?array
-    {
-        return $this->locked;
-
-    }//end getlocked()
-
-
-    /**
-     * Get the authorization data
-     *
-     * @return array The authorization data or empty array if null
-     */
-    public function getAuthorization(): ?array
-    {
-        return $this->authorization;
-
-    }//end getAuthorization()
-
-
-    /**
-     * Get the deleted data
-     *
-     * @return array The deleted data or null if not deleted
-     */
-    public function getDeleted(): ?array
-    {
-        return $this->deleted;
-
-    }//end getDeleted()
-
-
-    /**
-     * Get the deleted data
-     *
-     * @return array The deleted data or null if not deleted
-     */
-    public function getValidation(): ?array
-    {
-        return $this->validation;
-
-    }//end getValidation()
 
 
     /**
@@ -640,6 +548,7 @@ class ObjectEntity extends Entity implements JsonSerializable
     public function getObjectArray(array $object=[]): array
     {
         // Initialize the object array with default properties.
+        // Use getters to ensure our custom getter logic is applied (e.g., [] for null arrays)
         $objectArray = [
             'id'            => $this->uuid,
             'slug'          => $this->slug,
@@ -652,24 +561,24 @@ class ObjectEntity extends Entity implements JsonSerializable
             'register'      => $this->register,
             'schema'        => $this->schema,
             'schemaVersion' => $this->schemaVersion,
-            'files'         => $this->files,
-            'relations'     => $this->relations,
-            'locked'        => $this->locked,
+            'files'         => $this->getFiles(),
+            'relations'     => $this->getRelations(),
+            'locked'        => $this->getLocked(),
             'owner'         => $this->owner,
             'organisation'  => $this->organisation,
-            'groups'        => $this->groups,
-            'authorization' => $this->authorization,
+            'groups'        => $this->getGroups(),
+            'authorization' => $this->getAuthorization(),
             'folder'        => $this->folder,
             'application'   => $this->application,
-            'validation'    => $this->validation,
-            'geo'           => $this->geo,
-            'retention'     => $this->retention,
+            'validation'    => $this->getValidation(),
+            'geo'           => $this->getGeo(),
+            'retention'     => $this->getRetention(),
             'size'          => $this->size,
             'updated'       => $this->getFormattedDate($this->updated),
             'created'       => $this->getFormattedDate($this->created),
             'published'     => $this->getFormattedDate($this->published),
             'depublished'   => $this->getFormattedDate($this->depublished),
-            'deleted'       => $this->deleted,
+            'deleted'       => $this->getDeleted(),
         ];
 
         // Check for '@self' in the provided object array (this is the case if the object metadata is extended).
