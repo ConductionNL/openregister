@@ -1,6 +1,9 @@
 // Settings Modals
 export { default as ClearCacheModal } from './ClearCacheModal.vue'
 export { default as ClearIndexModal } from './ClearIndexModal.vue'
+export { default as ConfigSetManagementModal } from './ConfigSetManagementModal.vue'
+export { default as CollectionManagementModal } from './CollectionManagementModal.vue'
+export { default as ConnectionConfigModal } from './ConnectionConfigModal.vue'
 export { default as MassValidateModal } from './MassValidateModal.vue'
 export { default as RebaseConfirmationModal } from './RebaseConfirmationModal.vue'
 export { default as SolrSetupResultsModal } from './SolrSetupResultsModal.vue'

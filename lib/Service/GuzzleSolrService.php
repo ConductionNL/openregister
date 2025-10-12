@@ -70,12 +70,6 @@ class GuzzleSolrService
      */
     private array $solrConfig = [];
 
-    /**
-     * Tenant identifier for multi-tenancy support
-     *
-     * @var string
-     */
-    private string $tenantId;
 
     /** @var array|null Cached SOLR field types to avoid repeated API calls */
     private ?array $cachedSolrFieldTypes = null;
@@ -117,7 +111,6 @@ class GuzzleSolrService
         private readonly ?OrganisationService $organisationService = null,
         private readonly ?OrganisationMapper $organisationMapper = null,
     ) {
-        $this->tenantId = $this->generateTenantId();
         $this->initializeConfig();
         $this->initializeHttpClient();
     }
@@ -175,50 +168,15 @@ class GuzzleSolrService
     }
 
     /**
-     * Generate unique tenant ID for this Nextcloud instance
-     *
-     * @return string Tenant identifier
-     */
-    private function generateTenantId(): string
-    {
-        // First try to get tenant_id from SOLR settings
-        $solrSettings = $this->settingsService->getSolrSettings();
-        if (!empty($solrSettings['tenantId'])) {
-            return $solrSettings['tenantId'];
-        }
-        
-        // Fallback to generating from instance configuration
-        $instanceId = $this->config->getSystemValue('instanceid', 'default');
-        $overwriteHost = $this->config->getSystemValue('overwrite.cli.url', '');
-        
-        if (!empty($overwriteHost)) {
-            return 'nc_' . hash('crc32', $overwriteHost);
-        }
-        
-        return 'nc_' . substr($instanceId, 0, 8);
-    }
-
-    /**
-     * Get tenant ID for this Nextcloud instance (public accessor)
-     *
-     * @return string The tenant ID
-     */
-    public function getTenantId(): string
-    {
-        return $this->tenantId;
-    }
-    /**
-     * Generate tenant-specific collection name for SolrCloud
+     * Get collection name (previously tenant-specific, now just returns the base name)
      *
      * @param string $baseCollectionName Base collection name
-     * @return string Tenant-specific collection name (not core name)
+     * @return string Collection name
      */
     public function getTenantSpecificCollectionName(string $baseCollectionName): string
     {
-        // SOLR CLOUD: Use collection names, not core names
-        // Format: openregister_nc_f0e53393 (collection)
-        // Underlying core: openregister_nc_f0e53393_shard1_replica_n1 (handled by SolrCloud)
-        return $baseCollectionName . '_' . $this->tenantId;
+        // Simply return the collection name without any tenant suffix
+        return $baseCollectionName;
     }
 
     /**
@@ -728,31 +686,56 @@ class GuzzleSolrService
      *
      * @param string $collectionName Collection name
      * @param string $configSetName  ConfigSet name
-     * @return bool True if successful
+     * @param int $numShards Number of shards (default: 1)
+     * @param int $replicationFactor Number of replicas per shard (default: 1)
+     * @param int $maxShardsPerNode Maximum shards per node (default: 1)
+     * @return array Result array with success status and details
      * @throws \GuzzleHttp\Exception\GuzzleException When HTTP request fails
      * @throws \Exception When SOLR returns error response
      */
-    public function createCollection(string $collectionName, string $configSetName): bool
-    {
+    public function createCollection(
+        string $collectionName,
+        string $configSetName,
+        int $numShards = 1,
+        int $replicationFactor = 1,
+        int $maxShardsPerNode = 1
+    ): array {
+        $this->logger->info('📋 Creating new SOLR collection', [
+            'name' => $collectionName,
+            'configSet' => $configSetName,
+            'shards' => $numShards,
+            'replicas' => $replicationFactor
+        ]);
+
         $url = $this->buildSolrBaseUrl() . '/admin/collections?' . http_build_query([
             'action' => 'CREATE',
             'name' => $collectionName,
             'collection.configName' => $configSetName,
-            'numShards' => 1,
-            'replicationFactor' => 1,
+            'numShards' => $numShards,
+            'replicationFactor' => $replicationFactor,
+            'maxShardsPerNode' => $maxShardsPerNode,
             'wt' => 'json'
         ]);
 
-        $response = $this->httpClient->get($url, ['timeout' => 30]);
+        $response = $this->httpClient->get($url, ['timeout' => 60]);
         $data = json_decode((string)$response->getBody(), true);
 
         if (($data['responseHeader']['status'] ?? -1) === 0) {
-            $this->logger->info('SOLR collection created successfully', [
+            $this->logger->info('✅ SOLR collection created successfully', [
                 'collection' => $collectionName,
                 'configSet' => $configSetName,
-                'tenant_id' => $this->tenantId
+                'shards' => $numShards,
+                'replicas' => $replicationFactor
             ]);
-            return true;
+            
+            return [
+                'success' => true,
+                'message' => 'Collection created successfully',
+                'collection' => $collectionName,
+                'configSet' => $configSetName,
+                'shards' => $numShards,
+                'replicas' => $replicationFactor,
+            ];
         }
 
         // SOLR returned an error response - throw exception with details
@@ -762,7 +745,6 @@ class GuzzleSolrService
         $this->logger->error('SOLR collection creation failed', [
             'collection' => $collectionName,
             'configSet' => $configSetName,
-            'tenant_id' => $this->tenantId,
             'url' => $url,
             'solr_status' => $errorCode,
             'solr_error' => $data['error'] ?? null,
@@ -772,8 +754,7 @@ class GuzzleSolrService
         // Throw exception with SOLR response details
         throw new \Exception(
             "SOLR collection creation failed: {$errorMessage}",
-            $errorCode,
-            new \Exception(json_encode($data))
+            $errorCode
         );
     }
 
@@ -1022,10 +1003,7 @@ class GuzzleSolrService
 
             $deleteData = [
                 'delete' => [
-                    'query' => sprintf('id:%s AND self_tenant:%s', 
-                        (string)$objectId,
-                        $this->tenantId
-                    )
+                    'query' => sprintf('id:%s', (string)$objectId)
                 ]
             ];
 
@@ -1085,7 +1063,7 @@ class GuzzleSolrService
             }
 
             $url = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/select?' . http_build_query([
-                'q' => 'self_tenant:' . $this->tenantId,
+                'q' => '*:*',
                 'rows' => 0,
                 'wt' => 'json'
             ]);
@@ -1243,7 +1221,6 @@ class GuzzleSolrService
         $document = [
             // Core identifiers (always present) - no prefix for SOLR system fields
             'id' => $object->getUuid() ?: (string)$object->getId(),
-            'self_tenant' => (string)$this->tenantId,
             
             // Metadata fields with self_ prefix (consistent with legacy mapping)
             'self_uuid' => $object->getUuid(),
@@ -1764,7 +1741,6 @@ class GuzzleSolrService
         $document = [
             // **CRITICAL**: Always use UUID as the SOLR document ID for guaranteed uniqueness
             'id' => $uuid,
-            'self_tenant' => (string)$this->tenantId, // Consistent with schema-aware mapping
             
             // Full-text search content (at root for Solr optimization)
             '_text_' => $this->extractTextContent($object, $objectData ?: []),
@@ -2535,11 +2511,7 @@ class GuzzleSolrService
                 if ($doc instanceof ObjectEntity) {
                     $solrDocs[] = $this->createSolrDocument($doc);
                 } elseif (is_array($doc)) {
-                    // **FIXED**: Use self_tenant for consistency, and only add if missing
-                    if (!isset($doc['self_tenant'])) {
-                        $doc['self_tenant'] = (string)$this->tenantId;
-                    }
-                    // Document is already a Solr document array - don't recreate it
+                    // Document is already a Solr document array - use as-is
                     $solrDocs[] = $doc;
                 } else {
                     $this->logger->warning('Invalid document type in bulk index', ['type' => gettype($doc)]);
@@ -2806,12 +2778,9 @@ class GuzzleSolrService
                 return false;
             }
 
-            // Add tenant isolation to query
-            $tenantQuery = sprintf('(%s) AND self_tenant:%s', $query, $this->tenantId);
-
             $deleteData = [
                 'delete' => [
-                    'query' => $tenantQuery
+                    'query' => $query
                 ]
             ];
 
@@ -3180,12 +3149,6 @@ class GuzzleSolrService
                     }
                 }
             }
-        }
-
-        // Add tenant filter (always required for multi-tenant systems)
-        $tenantId = $this->getTenantId();
-        if ($tenantId) {
-            $filters[] = 'self_tenant:' . $tenantId;
         }
 
         // Handle multiple filter queries correctly for Guzzle
@@ -4103,12 +4066,9 @@ class GuzzleSolrService
                 ];
             }
 
-            // Add tenant isolation to query
-            $tenantQuery = sprintf('(%s) AND self_tenant:%s', $query, $this->tenantId);
-
             // Build search parameters
             $searchParams = [
-                'q' => $tenantQuery,
+                'q' => $query,
                 'start' => $start,
                 'rows' => $rows,
                 'wt' => 'json',
@@ -4289,8 +4249,7 @@ class GuzzleSolrService
             if ($tenantCollectionName === null) {
                 return [
                     'available' => false,
-                    'error' => 'No active collection available - tenant collection may not exist',
-                    'tenant_id' => $this->tenantId
+                    'error' => 'No active collection available - collection may not exist'
                 ];
             }
 
@@ -4360,13 +4319,26 @@ class GuzzleSolrService
                 ];
             }
 
+            // Get file counts (placeholder for future file indexing feature)
+            $totalFiles = 0;
+            $indexedFiles = 0;
+            // TODO: Implement file counting when FileMapper is available
+            // try {
+            //     $fileMapper = \OC::$server->get(\OCA\OpenRegister\Db\FileMapper::class);
+            //     $totalFiles = $fileMapper->countAll();
+            //     $indexedFiles = $fileMapper->countIndexed();
+            // } catch (\Exception $e) {
+            //     $this->logger->warning('Failed to get file counts', ['error' => $e->getMessage()]);
+            // }
+
             return [
                 'available' => true,
-                'tenant_id' => $this->tenantId,
                 'collection' => $tenantCollectionName,
                 'document_count' => $docCount,
                 'total_count' => $totalCount,
                 'published_count' => $publishedCount,
+                'total_files' => $totalFiles,
+                'indexed_files' => $indexedFiles,
                 'shards' => count($shards),
                 'index_version' => $sizeData['index']['version'] ?? 'unknown',
                 'last_modified' => $sizeData['index']['lastModified'] ?? 'unknown',
@@ -4379,8 +4351,7 @@ class GuzzleSolrService
             $this->logger->error('Exception getting dashboard stats', ['error' => $e->getMessage()]);
             return [
                 'available' => false,
-                'error' => $e->getMessage(),
-                'tenant_id' => $this->tenantId
+                'error' => $e->getMessage()
             ];
         }
     }
@@ -7644,12 +7615,6 @@ class GuzzleSolrService
         $baseQuery = '*:*';
         $filterQueries = [];
         
-        // Add tenant filter
-        $tenantId = $this->getTenantId();
-        if ($tenantId) {
-            $filterQueries[] = 'self_tenant:' . $tenantId;
-        }
-        
         // Add current filters
         foreach ($filters as $filter) {
             if (!empty($filter)) {
@@ -7990,12 +7955,6 @@ class GuzzleSolrService
         // Build base query with filters
         $baseQuery = '*:*';
         $filterQueries = [];
-        
-        // Add tenant filter
-        $tenantId = $this->getTenantId();
-        if ($tenantId) {
-            $filterQueries[] = 'self_tenant:' . $tenantId;
-        }
         
         // Add any additional filters from the query
         foreach ($filters as $filter) {
@@ -8963,5 +8922,388 @@ class GuzzleSolrService
 
         // Return 0 for unresolvable values (will be filtered out in SOLR)
         return 0;
+    }
+
+    /**
+     * List all SOLR collections with statistics
+     *
+     * Returns an array of collections with their metadata including:
+     * - Name
+     * - ConfigSet
+     * - Number of documents
+     * - Size
+     * - Shard count
+     * - Replica count
+     * - Health status
+     *
+     * @return array Array of collection information
+     * @throws \Exception If unable to fetch collection list
+     */
+    public function listCollections(): array
+    {
+        try {
+            $this->logger->info('📋 Fetching SOLR collections list');
+
+            // Check if SOLR is available first
+            if (!$this->isAvailable()) {
+                throw new \Exception('SOLR service is not available');
+            }
+
+            // Get cluster status with all collections
+            $clusterUrl = $this->buildSolrBaseUrl() . '/admin/collections?action=CLUSTERSTATUS&wt=json';
+            $response = $this->httpClient->get($clusterUrl, ['timeout' => 30]);
+            $data = json_decode((string)$response->getBody(), true);
+
+            if (!isset($data['cluster']['collections'])) {
+                $this->logger->warning('No collections found in cluster status');
+                return [];
+            }
+
+            $collections = [];
+            foreach ($data['cluster']['collections'] as $collectionName => $collectionData) {
+                // Get document count for this collection
+                $docCount = 0;
+                try {
+                    $queryUrl = $this->buildSolrBaseUrl() . '/' . $collectionName . '/select?q=*:*&rows=0&wt=json';
+                    $queryResponse = $this->httpClient->get($queryUrl, ['timeout' => 10]);
+                    $queryData = json_decode((string)$queryResponse->getBody(), true);
+                    $docCount = $queryData['response']['numFound'] ?? 0;
+                } catch (\Exception $e) {
+                    $this->logger->warning('Failed to get document count for collection', [
+                        'collection' => $collectionName,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+
+                // Calculate total shards and replicas
+                $shards = $collectionData['shards'] ?? [];
+                $shardCount = count($shards);
+                $replicaCount = 0;
+                $allActive = true;
+
+                foreach ($shards as $shard) {
+                    $replicas = $shard['replicas'] ?? [];
+                    $replicaCount += count($replicas);
+                    
+                    // Check if all replicas are active
+                    foreach ($replicas as $replica) {
+                        if (($replica['state'] ?? '') !== 'active') {
+                            $allActive = false;
+                        }
+                    }
+                }
+
+                $collections[] = [
+                    'name' => $collectionName,
+                    'configName' => $collectionData['configName'] ?? 'unknown',
+                    'documentCount' => $docCount,
+                    'shards' => $shardCount,
+                    'replicas' => $replicaCount,
+                    'router' => $collectionData['router']['name'] ?? 'compositeId',
+                    'autoAddReplicas' => $collectionData['autoAddReplicas'] ?? false,
+                    'replicationFactor' => $collectionData['replicationFactor'] ?? 1,
+                    'maxShardsPerNode' => $collectionData['maxShardsPerNode'] ?? 1,
+                    'health' => $allActive ? 'healthy' : 'degraded',
+                    'status' => $allActive ? 'active' : 'inactive',
+                ];
+            }
+
+            $this->logger->info('✅ Successfully fetched collections', ['count' => count($collections)]);
+            return $collections;
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to list SOLR collections', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw new \Exception('Failed to fetch SOLR collections: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * List all SOLR ConfigSets
+     *
+     * Returns an array of ConfigSets (configuration templates) available in SOLR
+     *
+     * @return array Array of ConfigSet names and metadata
+     * @throws \Exception If unable to fetch ConfigSet list
+     */
+    public function listConfigSets(): array
+    {
+        try {
+            $this->logger->info('📋 Fetching SOLR ConfigSets list');
+
+            // Check if SOLR is available first
+            if (!$this->isAvailable()) {
+                throw new \Exception('SOLR service is not available');
+            }
+
+            // Get list of ConfigSets
+            $configSetsUrl = $this->buildSolrBaseUrl() . '/admin/configs?action=LIST&wt=json';
+            $response = $this->httpClient->get($configSetsUrl, ['timeout' => 10]);
+            $data = json_decode((string)$response->getBody(), true);
+
+            if (!isset($data['configSets'])) {
+                $this->logger->warning('No ConfigSets found');
+                return [];
+            }
+
+            $configSets = [];
+            foreach ($data['configSets'] as $configSetName) {
+                // Count collections using this ConfigSet
+                $collections = $this->listCollections();
+                $usedByCollections = array_filter($collections, function($col) use ($configSetName) {
+                    return $col['configName'] === $configSetName;
+                });
+
+                $configSets[] = [
+                    'name' => $configSetName,
+                    'usedBy' => array_column($usedByCollections, 'name'),
+                    'usedByCount' => count($usedByCollections),
+                ];
+            }
+
+            $this->logger->info('✅ Successfully fetched ConfigSets', ['count' => count($configSets)]);
+            return $configSets;
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to list SOLR ConfigSets', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw new \Exception('Failed to fetch SOLR ConfigSets: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Create a new ConfigSet by copying an existing one (typically _default)
+     *
+     * @param string $name Name for the new ConfigSet
+     * @param string $baseConfigSet Base ConfigSet to copy from (default: _default)
+     * @return array Result of the creation operation
+     * @throws \Exception If creation fails
+     */
+    public function createConfigSet(string $name, string $baseConfigSet = '_default'): array
+    {
+        try {
+            $this->logger->info('📋 Creating new SOLR ConfigSet', [
+                'name' => $name,
+                'baseConfigSet' => $baseConfigSet
+            ]);
+
+            // Check if SOLR is available
+            if (!$this->isAvailable()) {
+                throw new \Exception('SOLR service is not available');
+            }
+
+            // Check if ConfigSet already exists
+            $existingConfigSets = $this->listConfigSets();
+            foreach ($existingConfigSets as $cs) {
+                if ($cs['name'] === $name) {
+                    throw new \Exception("ConfigSet '{$name}' already exists");
+                }
+            }
+
+            // Verify base ConfigSet exists
+            $baseExists = false;
+            foreach ($existingConfigSets as $cs) {
+                if ($cs['name'] === $baseConfigSet) {
+                    $baseExists = true;
+                    break;
+                }
+            }
+            if (!$baseExists) {
+                throw new \Exception("Base ConfigSet '{$baseConfigSet}' not found");
+            }
+
+            // Create the ConfigSet by copying the base
+            $createUrl = $this->buildSolrBaseUrl() . '/admin/configs?action=CREATE'
+                . '&name=' . urlencode($name)
+                . '&baseConfigSet=' . urlencode($baseConfigSet)
+                . '&wt=json';
+
+            $response = $this->httpClient->get($createUrl, ['timeout' => 60]);
+            $result = json_decode((string)$response->getBody(), true);
+
+            if (isset($result['failure'])) {
+                throw new \Exception('Failed to create ConfigSet: ' . json_encode($result['failure']));
+            }
+
+            $this->logger->info('✅ Successfully created ConfigSet', ['name' => $name]);
+            return [
+                'success' => true,
+                'message' => 'ConfigSet created successfully',
+                'configSet' => $name,
+                'baseConfigSet' => $baseConfigSet,
+            ];
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to create SOLR ConfigSet', [
+                'error' => $e->getMessage(),
+                'name' => $name,
+                'baseConfigSet' => $baseConfigSet
+            ]);
+            throw new \Exception('Failed to create ConfigSet: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Delete a SOLR ConfigSet
+     *
+     * @param string $name Name of the ConfigSet to delete
+     * @return array Result of the deletion operation
+     * @throws \Exception If deletion fails or ConfigSet is protected
+     */
+    public function deleteConfigSet(string $name): array
+    {
+        try {
+            $this->logger->info('🗑️ Deleting SOLR ConfigSet', ['name' => $name]);
+
+            // Protect _default ConfigSet from deletion
+            if ($name === '_default') {
+                throw new \Exception('Cannot delete the _default ConfigSet - it is protected');
+            }
+
+            // Check if SOLR is available
+            if (!$this->isAvailable()) {
+                throw new \Exception('SOLR service is not available');
+            }
+
+            // Check if ConfigSet exists and is not in use
+            $configSets = $this->listConfigSets();
+            $configSetFound = false;
+            foreach ($configSets as $cs) {
+                if ($cs['name'] === $name) {
+                    $configSetFound = true;
+                    if ($cs['usedByCount'] > 0) {
+                        throw new \Exception("Cannot delete ConfigSet '{$name}' - it is used by {$cs['usedByCount']} collection(s): " . implode(', ', $cs['usedBy']));
+                    }
+                    break;
+                }
+            }
+
+            if (!$configSetFound) {
+                throw new \Exception("ConfigSet '{$name}' not found");
+            }
+
+            // Delete the ConfigSet
+            $deleteUrl = $this->buildSolrBaseUrl() . '/admin/configs?action=DELETE'
+                . '&name=' . urlencode($name)
+                . '&wt=json';
+
+            $response = $this->httpClient->get($deleteUrl, ['timeout' => 60]);
+            $result = json_decode((string)$response->getBody(), true);
+
+            if (isset($result['failure'])) {
+                throw new \Exception('Failed to delete ConfigSet: ' . json_encode($result['failure']));
+            }
+
+            $this->logger->info('✅ Successfully deleted ConfigSet', ['name' => $name]);
+            return [
+                'success' => true,
+                'message' => 'ConfigSet deleted successfully',
+                'configSet' => $name,
+            ];
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to delete SOLR ConfigSet', [
+                'error' => $e->getMessage(),
+                'name' => $name
+            ]);
+            throw new \Exception('Failed to delete ConfigSet: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Copy a SOLR collection to create a new one
+     *
+     * @param string $sourceCollection Source collection name
+     * @param string $targetCollection Target collection name
+     * @param bool $copyData Whether to copy data (default: false, only schema/config)
+     * @return array Result of the copy operation
+     * @throws \Exception If copy operation fails
+     */
+    public function copyCollection(string $sourceCollection, string $targetCollection, bool $copyData = false): array
+    {
+        try {
+            $this->logger->info('📋 Copying SOLR collection', [
+                'source' => $sourceCollection,
+                'target' => $targetCollection,
+                'copyData' => $copyData
+            ]);
+
+            // Check if SOLR is available
+            if (!$this->isAvailable()) {
+                throw new \Exception('SOLR service is not available');
+            }
+
+            // Get source collection info
+            $collections = $this->listCollections();
+            $sourceInfo = null;
+            foreach ($collections as $col) {
+                if ($col['name'] === $sourceCollection) {
+                    $sourceInfo = $col;
+                    break;
+                }
+            }
+
+            if (!$sourceInfo) {
+                throw new \Exception("Source collection '{$sourceCollection}' not found");
+            }
+
+            // Check if target collection already exists
+            foreach ($collections as $col) {
+                if ($col['name'] === $targetCollection) {
+                    throw new \Exception("Target collection '{$targetCollection}' already exists");
+                }
+            }
+
+            // Create new collection using the same ConfigSet
+            $createUrl = $this->buildSolrBaseUrl() . '/admin/collections?action=CREATE'
+                . '&name=' . urlencode($targetCollection)
+                . '&collection.configName=' . urlencode($sourceInfo['configName'])
+                . '&numShards=' . $sourceInfo['shards']
+                . '&replicationFactor=' . $sourceInfo['replicationFactor']
+                . '&maxShardsPerNode=' . $sourceInfo['maxShardsPerNode']
+                . '&wt=json';
+
+            $response = $this->httpClient->get($createUrl, ['timeout' => 60]);
+            $result = json_decode((string)$response->getBody(), true);
+
+            if (isset($result['failure'])) {
+                throw new \Exception('Failed to create collection: ' . json_encode($result['failure']));
+            }
+
+            // If copyData is true, copy documents from source to target
+            if ($copyData && $sourceInfo['documentCount'] > 0) {
+                $this->logger->info('📋 Copying data from source to target collection');
+                
+                // Note: This is a placeholder for data copying
+                // In production, you might want to use SOLR's backup/restore feature
+                // or implement a more sophisticated data migration strategy
+                
+                $this->logger->warning('Data copying is not yet fully implemented - only schema/config was copied');
+            }
+
+            $this->logger->info('✅ Successfully copied collection');
+            return [
+                'success' => true,
+                'message' => 'Collection copied successfully',
+                'source' => $sourceCollection,
+                'target' => $targetCollection,
+                'configSet' => $sourceInfo['configName'],
+                'shards' => $sourceInfo['shards'],
+                'replicas' => $sourceInfo['replicationFactor'],
+                'dataCopied' => false // Will be true when data copying is implemented
+            ];
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to copy SOLR collection', [
+                'error' => $e->getMessage(),
+                'source' => $sourceCollection,
+                'target' => $targetCollection
+            ]);
+            throw new \Exception('Failed to copy collection: ' . $e->getMessage());
+        }
     }
 }
