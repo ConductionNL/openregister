@@ -41,6 +41,15 @@ return [
     ['name' => 'settings#testSolrSetup', 'url' => '/api/solr/test-setup', 'verb' => 'POST'],
     ['name' => 'settings#deleteSolrCollection', 'url' => '/api/solr/collection/delete', 'verb' => 'DELETE'],
         
+        // SOLR Collection and ConfigSet Management endpoints
+        ['name' => 'settings#listSolrCollections', 'url' => '/api/solr/collections', 'verb' => 'GET'],
+        ['name' => 'settings#createSolrCollection', 'url' => '/api/solr/collections', 'verb' => 'POST'],
+        ['name' => 'settings#listSolrConfigSets', 'url' => '/api/solr/configsets', 'verb' => 'GET'],
+        ['name' => 'settings#createSolrConfigSet', 'url' => '/api/solr/configsets', 'verb' => 'POST'],
+        ['name' => 'settings#deleteSolrConfigSet', 'url' => '/api/solr/configsets/{name}', 'verb' => 'DELETE'],
+        ['name' => 'settings#copySolrCollection', 'url' => '/api/solr/collections/copy', 'verb' => 'POST'],
+        ['name' => 'settings#updateSolrCollectionAssignments', 'url' => '/api/solr/collections/assignments', 'verb' => 'PUT'],
+        
         ['name' => 'settings#getRbacSettings', 'url' => '/api/settings/rbac', 'verb' => 'GET'],
         ['name' => 'settings#updateRbacSettings', 'url' => '/api/settings/rbac', 'verb' => 'PUT'],
         

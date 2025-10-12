@@ -1431,7 +1431,6 @@ class SettingsController extends Controller
                     'success' => true,
                     'message' => $result['message'],
                     'collection' => $result['collection'] ?? null,
-                    'tenant_id' => $result['tenant_id'] ?? null,
                     'response_time_ms' => $result['response_time_ms'] ?? null,
                     'next_steps' => [
                         'Run SOLR Setup to create a new collection',
@@ -2820,6 +2819,228 @@ class SettingsController extends Controller
 
         } catch (\Exception $e) {
             return new JSONResponse([
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    }
+
+    /**
+     * List all SOLR collections with statistics
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse List of collections with metadata
+     */
+    public function listSolrCollections(): JSONResponse
+    {
+        try {
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $collections = $guzzleSolrService->listCollections();
+            
+            return new JSONResponse([
+                'success' => true,
+                'collections' => $collections,
+                'count' => count($collections),
+                'timestamp' => date('c')
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    }
+
+    /**
+     * List all SOLR ConfigSets
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse List of ConfigSets with metadata
+     */
+    public function listSolrConfigSets(): JSONResponse
+    {
+        try {
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $configSets = $guzzleSolrService->listConfigSets();
+            
+            return new JSONResponse([
+                'success' => true,
+                'configSets' => $configSets,
+                'count' => count($configSets),
+                'timestamp' => date('c')
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    }
+
+    /**
+     * Create a new SOLR ConfigSet by copying an existing one
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $name Name for the new ConfigSet
+     * @param string $baseConfigSet Base ConfigSet to copy from (default: _default)
+     *
+     * @return JSONResponse Creation result
+     */
+    public function createSolrConfigSet(string $name, string $baseConfigSet = '_default'): JSONResponse
+    {
+        try {
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $result = $guzzleSolrService->createConfigSet($name, $baseConfigSet);
+            
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    /**
+     * Delete a SOLR ConfigSet
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $name Name of the ConfigSet to delete
+     *
+     * @return JSONResponse Deletion result
+     */
+    public function deleteSolrConfigSet(string $name): JSONResponse
+    {
+        try {
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $result = $guzzleSolrService->deleteConfigSet($name);
+            
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    /**
+     * Create a new SOLR collection from a ConfigSet
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $collectionName Name for the new collection
+     * @param string $configName ConfigSet to use
+     * @param int $numShards Number of shards (default: 1)
+     * @param int $replicationFactor Number of replicas (default: 1)
+     * @param int $maxShardsPerNode Maximum shards per node (default: 1)
+     *
+     * @return JSONResponse Creation result
+     */
+    public function createSolrCollection(
+        string $collectionName,
+        string $configName,
+        int $numShards = 1,
+        int $replicationFactor = 1,
+        int $maxShardsPerNode = 1
+    ): JSONResponse {
+        try {
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $result = $guzzleSolrService->createCollection(
+                $collectionName,
+                $configName,
+                $numShards,
+                $replicationFactor,
+                $maxShardsPerNode
+            );
+            
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    }
+
+    /**
+     * Copy a SOLR collection
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $sourceCollection Source collection name
+     * @param string $targetCollection Target collection name
+     * @param bool $copyData Whether to copy data (default: false)
+     *
+     * @return JSONResponse Copy operation result
+     */
+    public function copySolrCollection(string $sourceCollection, string $targetCollection, bool $copyData = false): JSONResponse
+    {
+        try {
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $result = $guzzleSolrService->copyCollection($sourceCollection, $targetCollection, $copyData);
+            
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update SOLR collection assignments (Object Collection and File Collection)
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string|null $objectCollection Collection name for objects
+     * @param string|null $fileCollection Collection name for files
+     *
+     * @return JSONResponse Update result
+     */
+    public function updateSolrCollectionAssignments(?string $objectCollection = null, ?string $fileCollection = null): JSONResponse
+    {
+        try {
+            // Get current SOLR settings
+            $solrSettings = $this->settingsService->getSolrSettingsOnly();
+            
+            // Update collection assignments
+            if ($objectCollection !== null) {
+                $solrSettings['objectCollection'] = $objectCollection;
+            }
+            if ($fileCollection !== null) {
+                $solrSettings['fileCollection'] = $fileCollection;
+            }
+            
+            // Save updated settings
+            $this->settingsService->updateSolrSettingsOnly($solrSettings);
+            
+            return new JSONResponse([
+                'success' => true,
+                'message' => 'Collection assignments updated successfully',
+                'objectCollection' => $solrSettings['objectCollection'] ?? null,
+                'fileCollection' => $solrSettings['fileCollection'] ?? null,
+                'timestamp' => date('c')
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ], 500);

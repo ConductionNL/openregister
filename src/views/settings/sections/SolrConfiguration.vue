@@ -2,107 +2,119 @@
 	<NcSettingsSection name="SOLR Search Configuration"
 		description="Configure Apache SOLR search engine for advanced search capabilities">
 		<div class="solr-options">
-			<!-- Save and Test Buttons -->
+			<!-- Actions Bar -->
 			<div class="section-header-inline">
 				<span />
 				<div class="button-group">
+					<!-- Refresh Stats Button -->
 					<NcButton
-						type="primary"
-						:disabled="loading || saving || testingConnection || warmingUpSolr || settingUpSolr"
-						@click="setupSolr">
-						<template #icon>
-							<NcLoadingIcon v-if="settingUpSolr" :size="20" />
-							<Settings v-else :size="20" />
-						</template>
-						{{ settingUpSolr ? 'Setting up...' : 'Setup SOLR' }}
-					</NcButton>
-					<NcButton
+						v-if="solrOptions.enabled"
 						type="secondary"
-						:disabled="loading || saving || testingConnection || warmingUpSolr || settingUpSolr"
-						@click="testSolrConnection">
+						:disabled="loadingStats"
+						@click="loadSolrStats">
 						<template #icon>
-							<NcLoadingIcon v-if="testingConnection" :size="20" />
-							<TestTube v-else :size="20" />
+							<NcLoadingIcon v-if="loadingStats" :size="20" />
+							<Refresh v-else :size="20" />
 						</template>
-						Test Connection
+						{{ t('openregister', 'Refresh Stats') }}
 					</NcButton>
-					<NcButton
-						type="secondary"
-						:disabled="loading || saving || testingConnection || warmingUpSolr || settingUpSolr || loadingFields"
+
+				<!-- All SOLR Actions Menu -->
+				<NcActions 
+					:aria-label="t('openregister', 'SOLR actions menu')"
+					:menu-name="t('openregister', 'Actions')">
+					<template #icon>
+						<DotsVertical :size="20" />
+					</template>
+						
+					<!-- Connection Settings -->
+					<NcActionButton @click="showConnectionDialog = true">
+						<template #icon>
+							<Connection :size="20" />
+						</template>
+						{{ t('openregister', 'Connection Settings') }}
+					</NcActionButton>
+					
+					<!-- ConfigSet Management -->
+					<NcActionButton @click="showConfigSetDialog = true">
+						<template #icon>
+							<Cog :size="20" />
+						</template>
+						{{ t('openregister', 'ConfigSet Management') }}
+					</NcActionButton>
+					
+					<!-- Collection Management -->
+					<NcActionButton @click="showCollectionDialog = true">
+						<template #icon>
+							<DatabaseCog :size="20" />
+						</template>
+						{{ t('openregister', 'Collection Management') }}
+					</NcActionButton>
+					
+					<!-- Diagnostics -->
+						<NcActionButton
+						:disabled="loading || saving || warmingUpSolr || loadingFields"
 						@click="inspectFields">
 						<template #icon>
 							<NcLoadingIcon v-if="loadingFields" :size="20" />
 							<ViewList v-else :size="20" />
 						</template>
-						Inspect Fields
-					</NcButton>
-					
-					<!-- Management Buttons (shown when SOLR is enabled) -->
-					<template v-if="solrOptions.enabled">
-						<NcButton type="secondary" @click="loadSolrStats" :disabled="loadingStats">
-							<template #icon>
-								<Refresh :size="20" />
-							</template>
-							Refresh Stats
-						</NcButton>
-						
-						<NcButton type="primary" @click="openWarmupModal">
-							<template #icon>
-								<Fire :size="20" />
-							</template>
-							Warmup Index
-						</NcButton>
-						
-						<NcButton type="secondary" @click="openClearModal">
-							<template #icon>
-								<Delete :size="20" />
-							</template>
-							Clear Index
-						</NcButton>
-						
-						<NcButton type="error" @click="openDeleteCollectionModal">
-							<template #icon>
-								<DatabaseRemove :size="20" />
-							</template>
-							Delete Collection
-						</NcButton>
-						
-						<NcButton type="secondary" @click="openInspectModal">
+							{{ t('openregister', 'Inspect Fields') }}
+						</NcActionButton>
+						<NcActionButton
+							v-if="solrOptions.enabled"
+							@click="openInspectModal">
 							<template #icon>
 								<FileSearchOutline :size="20" />
 							</template>
-							Inspect Index
-						</NcButton>
+							{{ t('openregister', 'Inspect Index') }}
+						</NcActionButton>
 						
-						<NcButton type="secondary" @click="openFacetConfigModal">
+						<!-- Index Management -->
+						<NcActionButton 
+							v-if="solrOptions.enabled"
+							@click="openWarmupModal">
+							<template #icon>
+								<Fire :size="20" />
+							</template>
+							{{ t('openregister', 'Warmup Index') }}
+						</NcActionButton>
+						<NcActionButton
+							v-if="solrOptions.enabled"
+							:disabled="loading || saving || warmingUpSolr || reindexing"
+							@click="startReindex">
+							<template #icon>
+								<NcLoadingIcon v-if="reindexing" :size="20" />
+								<Refresh v-else :size="20" />
+							</template>
+							{{ reindexing ? t('openregister', 'Reindexing...') : t('openregister', 'Reindex') }}
+						</NcActionButton>
+						<NcActionButton 
+							v-if="solrOptions.enabled"
+							@click="openClearModal">
+							<template #icon>
+								<Delete :size="20" />
+							</template>
+							{{ t('openregister', 'Clear Index') }}
+						</NcActionButton>
+						<NcActionButton
+							v-if="solrOptions.enabled"
+							@click="openFacetConfigModal">
 							<template #icon>
 								<Tune :size="20" />
 							</template>
-							Configure Facets
-						</NcButton>
-					</template>
-					
-					<NcButton
-						type="secondary"
-						:disabled="loading || saving || testingConnection || warmingUpSolr || settingUpSolr || reindexing"
-						@click="startReindex">
+							{{ t('openregister', 'Configure Facets') }}
+						</NcActionButton>
+						<NcActionButton 
+							v-if="solrOptions.enabled"
+							close-after-click
+							@click="openDeleteCollectionModal">
 						<template #icon>
-							<NcLoadingIcon v-if="reindexing" :size="20" />
-							<Refresh v-else :size="20" />
+								<DatabaseRemove :size="20" />
 						</template>
-						{{ reindexing ? 'Reindexing...' : 'Reindex' }}
-					</NcButton>
-					
-					<NcButton
-						type="primary"
-						:disabled="loading || saving || testingConnection || settingUpSolr"
-						@click="saveSettings">
-						<template #icon>
-							<NcLoadingIcon v-if="saving" :size="20" />
-							<Save v-else :size="20" />
-						</template>
-						Save
-					</NcButton>
+							{{ t('openregister', 'Delete Collection') }}
+						</NcActionButton>
+					</NcActions>
 				</div>
 			</div>
 
@@ -130,275 +142,25 @@
 				</div>
 			</div>
 
-			<!-- Enable SOLR Toggle -->
-			<div class="option-section">
-				<NcCheckboxRadioSwitch
-					:checked="Boolean(solrOptions.enabled)"
-					@update:checked="solrOptions.enabled = $event"
-					:disabled="saving"
-					type="switch">
-					{{ solrOptions.enabled ? 'SOLR search enabled' : 'SOLR search disabled' }}
-				</NcCheckboxRadioSwitch>
-			</div>
-
-			<!-- SOLR Configuration -->
-			<div v-if="solrOptions.enabled" class="solr-configuration">
-				<h4>SOLR Server Configuration</h4>
+		<!-- Enable SOLR Toggle -->
+		<div class="option-section">
+			<NcCheckboxRadioSwitch
+				v-model="solrEnabled"
+				:disabled="saving"
+				type="switch">
+				{{ solrEnabled ? t('openregister', 'SOLR search enabled') : t('openregister', 'SOLR search disabled') }}
+			</NcCheckboxRadioSwitch>
 				<p class="option-description">
-					Configure connection settings for your SOLR server. Make sure SOLR is running and accessible before enabling.
+					{{ t('openregister', 'Enable or disable SOLR search integration. Configure connection settings using the Connection Settings button above.') }}
+					<span v-if="saving" class="saving-indicator">
+						<NcLoadingIcon :size="14" /> {{ t('openregister', 'Saving...') }}
+					</span>
 				</p>
-
-				<div class="solr-config-grid">
-					<div class="config-row">
-						<label class="config-label">
-							<strong>Host</strong>
-							<p class="config-description">SOLR server hostname or IP address</p>
-						</label>
-						<div class="config-input">
-							<input
-								v-model="solrOptions.host"
-								type="text"
-								:disabled="loading || saving"
-								placeholder="localhost"
-								class="solr-input-field">
-						</div>
-					</div>
-
-					<div class="config-row">
-						<label class="config-label">
-							<strong>Port</strong>
-							<p class="config-description">SOLR server port number (optional, defaults to 8983)</p>
-						</label>
-						<div class="config-input">
-							<input
-								v-model.number="solrOptions.port"
-								type="number"
-								:disabled="loading || saving"
-								placeholder="8983 (default)"
-								class="solr-input-field">
-						</div>
-					</div>
-
-					<div class="config-row">
-						<label class="config-label">
-							<strong>Scheme</strong>
-							<p class="config-description">Connection protocol</p>
-						</label>
-						<div class="config-input">
-							<NcSelect
-								v-model="solrOptions.scheme"
-								:options="schemeOptions"
-								input-label="Scheme"
-								:disabled="loading || saving" />
-						</div>
-					</div>
-
-					<div class="config-row">
-						<label class="config-label">
-							<strong>Path</strong>
-							<p class="config-description">SOLR base path (usually /solr)</p>
-						</label>
-						<div class="config-input">
-							<input
-								v-model="solrOptions.path"
-								type="text"
-								:disabled="loading || saving"
-								placeholder="/solr"
-								class="solr-input-field">
-						</div>
-					</div>
-
-					<div class="config-row">
-						<label class="config-label">
-							<strong>Core</strong>
-							<p class="config-description">SOLR core name for standalone SOLR installations (not used in SolrCloud)</p>
-						</label>
-						<div class="config-input">
-							<input
-								v-model="solrOptions.core"
-								type="text"
-								:disabled="loading || saving"
-								placeholder="openregister"
-								class="solr-input-field">
-						</div>
-					</div>
-
-					<div class="config-row">
-						<label class="config-label">
-							<strong>ConfigSet</strong>
-							<p class="config-description">ConfigSet name for SolrCloud collections. Use '_default' for maximum compatibility, or specify a custom ConfigSet name</p>
-						</label>
-						<div class="config-input">
-							<input
-								v-model="solrOptions.configSet"
-								type="text"
-								:disabled="loading || saving"
-								placeholder="_default"
-								class="solr-input-field">
-						</div>
-					</div>
-
-					<div class="config-row">
-						<label class="config-label">
-							<strong>Username</strong>
-							<p class="config-description">Username for SOLR authentication (optional)</p>
-						</label>
-						<div class="config-input">
-							<input
-								v-model="solrOptions.username"
-								type="text"
-								:disabled="loading || saving"
-								placeholder=""
-								class="solr-input-field">
-						</div>
-					</div>
-
-					<div class="config-row">
-						<label class="config-label">
-							<strong>Password</strong>
-							<p class="config-description">Password for SOLR authentication (optional)</p>
-						</label>
-						<div class="config-input">
-							<input
-								v-model="solrOptions.password"
-								type="password"
-								:disabled="loading || saving"
-								placeholder=""
-								class="solr-input-field">
-						</div>
-					</div>
-
-					<div class="config-row">
-						<label class="config-label">
-							<strong>Timeout (seconds)</strong>
-							<p class="config-description">Connection timeout in seconds</p>
-						</label>
-						<div class="config-input">
-							<input
-								v-model.number="solrOptions.timeout"
-								type="number"
-								:disabled="loading || saving"
-								placeholder="30"
-								class="solr-input-field">
-						</div>
-					</div>
-
-					<div class="config-row">
-						<label class="config-label">
-							<strong>Zookeeper Hosts</strong>
-							<p class="config-description">Zookeeper connection string for SolrCloud</p>
-						</label>
-						<div class="config-input">
-							<input
-								v-model="solrOptions.zookeeperHosts"
-								type="text"
-								:disabled="loading || saving"
-								placeholder="zookeeper:2181"
-								class="solr-input-field">
-						</div>
-					</div>
-
-					<div class="config-row">
-						<label class="config-label">
-							<strong>Zookeeper Port</strong>
-							<p class="config-description">Zookeeper port number (optional, defaults to 2181)</p>
-						</label>
-						<div class="config-input">
-							<input
-								v-model.number="solrOptions.zookeeperPort"
-								type="number"
-								:disabled="loading || saving"
-								placeholder="2181 (default)"
-								class="solr-input-field">
-						</div>
-					</div>
-
-					<div class="config-row">
-						<label class="config-label">
-							<strong>Collection</strong>
-							<p class="config-description">SolrCloud collection name</p>
-						</label>
-						<div class="config-input">
-							<input
-								v-model="solrOptions.collection"
-								type="text"
-								:disabled="loading || saving"
-								placeholder="openregister"
-								class="solr-input-field">
-						</div>
-					</div>
-
-					<div class="config-row">
-						<label class="config-label">
-							<strong>Tenant ID</strong>
-							<p class="config-description">Unique identifier for multi-tenant isolation (auto-generated if empty)</p>
-						</label>
-						<div class="config-input">
-							<input
-								v-model="solrOptions.tenantId"
-								type="text"
-								:disabled="loading || saving"
-								placeholder="Auto-generated from Nextcloud instance"
-								class="solr-input-field">
-						</div>
-					</div>
-				</div>
-
-				<h4>Advanced Options</h4>
-				<div class="advanced-options">
-					<NcCheckboxRadioSwitch
-						:checked="Boolean(solrOptions.useCloud)"
-						@update:checked="solrOptions.useCloud = $event"
-						:disabled="saving"
-						type="switch">
-						{{ solrOptions.useCloud ? 'SolrCloud mode enabled' : 'Standalone SOLR mode' }}
-					</NcCheckboxRadioSwitch>
-					<p class="option-description">
-						Use SolrCloud with Zookeeper for distributed search
-					</p>
-
-					<NcCheckboxRadioSwitch
-						:checked="Boolean(solrOptions.autoCommit)"
-						@update:checked="solrOptions.autoCommit = $event"
-						:disabled="saving"
-						type="switch">
-						{{ solrOptions.autoCommit ? 'Auto-commit enabled' : 'Auto-commit disabled' }}
-					</NcCheckboxRadioSwitch>
-					<p class="option-description">
-						Automatically commit changes to SOLR index
-					</p>
-
-					<div class="config-row">
-						<label class="config-label">
-							<strong>Commit Within (ms)</strong>
-							<p class="config-description">Maximum time to wait before committing changes</p>
-						</label>
-						<div class="config-input">
-							<input
-								v-model.number="solrOptions.commitWithin"
-								type="number"
-								:disabled="loading || saving"
-								placeholder="1000"
-								class="solr-input-field">
-						</div>
-					</div>
-
-					<NcCheckboxRadioSwitch
-						:checked="Boolean(solrOptions.enableLogging)"
-						@update:checked="solrOptions.enableLogging = $event"
-						:disabled="saving"
-						type="switch">
-						{{ solrOptions.enableLogging ? 'SOLR logging enabled' : 'SOLR logging disabled' }}
-					</NcCheckboxRadioSwitch>
-					<p class="option-description">
-						Enable detailed logging for SOLR operations (recommended for debugging)
-					</p>
-				</div>
 			</div>
 		</div>
 
 		<!-- SOLR Management Dashboard -->
-		<div v-if="solrOptions.enabled" class="solr-management-section">
+		<div v-if="solrEnabled" class="solr-management-section">
 			<!-- Loading State -->
 			<div v-if="loadingStats" class="loading-section">
 				<NcLoadingIcon :size="32" />
@@ -439,6 +201,16 @@
 						<h5>Indexed Objects</h5>
 						<p>{{ formatNumber(solrStats.document_count || 0) }}</p>
 					</div>
+
+					<div class="stat-card">
+						<h5>Total Files</h5>
+						<p>{{ formatNumber(solrStats.total_files || 0) }}</p>
+					</div>
+
+					<div class="stat-card">
+						<h5>Indexed Files</h5>
+						<p>{{ formatNumber(solrStats.indexed_files || 0) }}</p>
+					</div>
 				</div>
 			</div>
 
@@ -454,13 +226,7 @@
 			</div>
 		</div>
 
-		<!-- Test Connection Results Dialog -->
-		<NcDialog
-			v-if="showTestDialog"
-			name="SOLR Connection Test Results"
-			:can-close="!testingConnection"
-			@closing="hideTestDialog"
-			:size="'large'">
+		<!-- Setup SOLR Results Dialog (OLD - TO BE REMOVED) -->
 			<div class="test-dialog">
 				<div v-if="testingConnection" class="test-loading">
 					<div class="loading-spinner">
@@ -1548,13 +1314,35 @@
 			:show="showFacetConfigDialog"
 			@close="showFacetConfigDialog = false"
 		/>
+
+		<!-- Connection Configuration Modal -->
+		<ConnectionConfigModal
+			:show="showConnectionDialog"
+			:config="solrOptions"
+			:scheme-options="schemeOptions"
+			:saving="saving"
+			@close="showConnectionDialog = false"
+			@save="handleConnectionSave"
+		/>
+
+		<!-- ConfigSet Management Modal -->
+		<ConfigSetManagementModal
+			:show="showConfigSetDialog"
+			@closing="showConfigSetDialog = false"
+		/>
+
+		<!-- Collection Management Modal -->
+		<CollectionManagementModal
+			:show="showCollectionDialog"
+			@closing="showCollectionDialog = false"
+		/>
 	</NcSettingsSection>
 </template>
 
 <script>
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../../store/settings.js'
-import { NcSettingsSection, NcButton, NcLoadingIcon, NcCheckboxRadioSwitch, NcSelect, NcDialog } from '@nextcloud/vue'
+import { NcSettingsSection, NcButton, NcLoadingIcon, NcCheckboxRadioSwitch, NcSelect, NcDialog, NcActions, NcActionButton } from '@nextcloud/vue'
 import Settings from 'vue-material-design-icons/ApplicationSettings.vue'
 import TestTube from 'vue-material-design-icons/TestTube.vue'
 import Save from 'vue-material-design-icons/ContentSave.vue'
@@ -1569,10 +1357,17 @@ import FileSearchOutline from 'vue-material-design-icons/FileSearchOutline.vue'
 import PlayIcon from 'vue-material-design-icons/Play.vue'
 import Tune from 'vue-material-design-icons/Tune.vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
+import DotsVertical from 'vue-material-design-icons/DotsVertical.vue'
+import Connection from 'vue-material-design-icons/Connection.vue'
+import Cog from 'vue-material-design-icons/Cog.vue'
+import DatabaseCog from 'vue-material-design-icons/DatabaseCog.vue'
 import { SolrWarmupModal, ClearIndexModal } from '../../../modals/settings'
 import InspectIndexModal from '../../../modals/settings/InspectIndexModal.vue'
 import DeleteCollectionModal from '../../../modals/settings/DeleteCollectionModal.vue'
 import FacetConfigModal from '../../../modals/settings/FacetConfigModal.vue'
+import ConnectionConfigModal from '../../../modals/settings/ConnectionConfigModal.vue'
+import ConfigSetManagementModal from '../../../modals/settings/ConfigSetManagementModal.vue'
+import CollectionManagementModal from '../../../modals/settings/CollectionManagementModal.vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 
@@ -1586,6 +1381,8 @@ export default {
 		NcCheckboxRadioSwitch,
 		NcSelect,
 		NcDialog,
+		NcActions,
+		NcActionButton,
 		Settings,
 		TestTube,
 		Save,
@@ -1600,11 +1397,18 @@ export default {
 		PlayIcon,
 		Tune,
 		Magnify,
+		DotsVertical,
+		Connection,
+		Cog,
+		DatabaseCog,
 		SolrWarmupModal,
 		ClearIndexModal,
 		InspectIndexModal,
 		DeleteCollectionModal,
 		FacetConfigModal,
+		ConnectionConfigModal,
+		ConfigSetManagementModal,
+		CollectionManagementModal,
 	},
 
 	data() {
@@ -1621,6 +1425,9 @@ export default {
 			showClearDialog: false,
 			showInspectDialog: false,
 			showDeleteCollectionDialog: false,
+			showConnectionDialog: false,
+			showConfigSetDialog: false,
+			showCollectionDialog: false,
 			solrStats: null,
 			objectStats: {
 				loading: false,
@@ -1681,6 +1488,31 @@ export default {
 			},
 			set(value) {
 				this.settingsStore.solrOptions = value
+			}
+		},
+
+		// Computed property for SOLR enabled toggle with auto-save
+		solrEnabled: {
+			get() {
+				const value = Boolean(this.solrOptions?.enabled)
+				console.log('🔍 solrEnabled getter called, returning:', value)
+				return value
+			},
+			async set(newValue) {
+				console.log('🔄 solrEnabled setter called with:', newValue)
+				// Update the store
+				this.solrOptions.enabled = newValue
+				console.log('💾 Saving settings...')
+				
+				// Auto-save the settings
+				await this.saveSettings()
+				console.log('✅ Settings saved')
+				
+				// If SOLR was just enabled, load stats
+				if (newValue) {
+					console.log('📊 SOLR enabled, loading stats...')
+					await this.loadSolrStats()
+				}
 			}
 		},
 
@@ -1810,13 +1642,33 @@ export default {
 	},
 
 	async mounted() {
+		console.log('🔧 SolrConfiguration mounted - starting initialization')
+		
+		// Wait for settings store to load first
+		try {
+			await this.settingsStore.loadSettings()
+			console.log('✅ Settings loaded')
+			console.log('🔘 SOLR enabled value:', this.solrEnabled)
+		} catch (error) {
+			console.error('❌ Failed to load settings:', error)
+		}
+		
 		// Load dashboard stats if SOLR is enabled
-		if (this.solrOptions?.enabled) {
-			// Load both SOLR stats and object stats in parallel
-			await Promise.all([
-				this.loadSolrStats(),
-				this.loadObjectStats()
-			])
+		if (this.solrEnabled) {
+			console.log('📊 SOLR is enabled, loading stats...')
+			try {
+				// Load both SOLR stats and object stats in parallel
+				await Promise.all([
+					this.loadSolrStats(),
+					this.loadObjectStats()
+				])
+				console.log('✅ Stats loaded successfully')
+			} catch (error) {
+				console.error('❌ Failed to load stats:', error)
+			}
+		} else {
+			console.log('⚠️ SOLR is not enabled, skipping stats load')
+			console.log('💡 Tip: Toggle SOLR on to load stats automatically')
 		}
 	},
 
@@ -2016,15 +1868,19 @@ export default {
 
 		// Dashboard methods
 		async loadSolrStats() {
+			console.log('📊 Loading SOLR stats...')
 			this.loadingStats = true
 			this.solrError = false
 			this.solrErrorMessage = ''
 
 			try {
 				const url = generateUrl('/apps/openregister/api/solr/dashboard/stats')
+				console.log('🌐 Making API request to:', url)
 				const response = await axios.get(url)
+				console.log('📦 API response data:', response.data)
 
 				if (response.data && response.data.available) {
+					console.log('✅ SOLR is available, storing stats')
 					// Store the complete response data (includes published_count, total_count, memory_prediction)
 					this.solrStats = {
 						...response.data,
@@ -2034,16 +1890,19 @@ export default {
 						},
 					}
 				} else {
+					console.warn('⚠️ SOLR not available:', response.data?.error)
 					this.solrError = true
 					this.solrErrorMessage = response.data?.error || 'SOLR not available'
 					this.solrStats = null
 				}
 			} catch (error) {
+				console.error('❌ Failed to load SOLR stats:', error)
 				this.solrError = true
-				this.solrErrorMessage = error.message || 'Failed to load SOLR statistics'
+				this.solrErrorMessage = error.response?.data?.error || error.message || 'Failed to load SOLR statistics'
 				this.solrStats = null
 			} finally {
 				this.loadingStats = false
+				console.log('✅ Loading stats complete. Stats:', this.solrStats)
 			}
 		},
 
@@ -2305,8 +2164,27 @@ export default {
 		openFacetConfigModal() {
 			this.showFacetConfigDialog = true
 		},
+
+		/**
+		 * Handle connection settings save
+		 * 
+		 * @param {object} updatedConfig - Updated connection configuration
+		 */
+		async handleConnectionSave(updatedConfig) {
+			// Update the local configuration
+			this.solrOptions = { ...this.solrOptions, ...updatedConfig }
+			
+			// Save the settings
+			await this.saveSettings()
+			
+			// Close the dialog
+			this.showConnectionDialog = false
+		},
+
 	},
 }
+
+
 </script>
 
 <style scoped>
@@ -2323,9 +2201,36 @@ export default {
 
 .button-group {
 	display: flex;
-	gap: 8px;
+	gap: 12px;
 	flex-wrap: wrap;
 	align-items: center;
+}
+
+/* NcActions styling */
+.button-group :deep(.action-item) {
+	display: inline-flex;
+}
+
+.button-group :deep(.action-item__menutoggle) {
+	border-radius: var(--border-radius-large);
+	background: var(--color-background-hover);
+	border: 1px solid var(--color-border);
+	transition: all 0.2s ease;
+}
+
+.button-group :deep(.action-item__menutoggle:hover) {
+	background: var(--color-primary-element-light);
+	border-color: var(--color-primary-element);
+}
+
+.button-group :deep(.action-item__menutoggle--primary) {
+	background: var(--color-primary-element);
+	border-color: var(--color-primary-element);
+	color: var(--color-primary-element-text);
+}
+
+.button-group :deep(.action-item__menutoggle--primary:hover) {
+	background: var(--color-primary-element-hover);
 }
 
 .section-description-full {
@@ -2413,6 +2318,16 @@ export default {
 	color: var(--color-text-maxcontrast);
 	margin: 8px 0 16px 0;
 	line-height: 1.4;
+}
+
+.saving-indicator {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	margin-left: 12px;
+	color: var(--color-primary);
+	font-weight: 500;
+	font-size: 13px;
 }
 
 .solr-config-grid {

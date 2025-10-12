@@ -44,6 +44,9 @@
 
 		<!-- SOLR Configuration Section -->
 		<SolrConfiguration />
+
+		<!-- Dialogs -->
+		<Dialogs />
 	</div>
 </template>
 
@@ -59,6 +62,7 @@ import CacheManagement from './sections/CacheManagement.vue'
 import RbacConfiguration from './sections/RbacConfiguration.vue'
 import MultitenancyConfiguration from './sections/MultitenancyConfiguration.vue'
 import RetentionConfiguration from './sections/RetentionConfiguration.vue'
+import Dialogs from '../../dialogs/Dialogs.vue'
 
 /**
  * @class Settings
@@ -86,6 +90,7 @@ export default {
 		RbacConfiguration,
 		MultitenancyConfiguration,
 		RetentionConfiguration,
+		Dialogs,
 	},
 
 	computed: {
