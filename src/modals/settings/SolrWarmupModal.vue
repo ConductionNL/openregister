@@ -188,27 +188,27 @@
 								<span>Loading object count...</span>
 							</div>
 						</div>
-						<div v-if="!objectStats.loading && objectStats.totalObjects > 0" class="prediction-content">
-							<div class="prediction-stats">
-								<div class="stat-item">
-									<span class="stat-label">Total Objects in Database:</span>
-									<span class="stat-value">{{ objectStats.totalObjects.toLocaleString() }}</span>
-								</div>
-								<div class="stat-item">
-									<span class="stat-label">Objects to Process:</span>
-									<span class="stat-value">
-										{{ localConfig.maxObjects === 0 ? objectStats.totalObjects.toLocaleString() : Math.min(localConfig.maxObjects, objectStats.totalObjects).toLocaleString() }}
-										<span v-if="localConfig.maxObjects > 0 && localConfig.maxObjects < objectStats.totalObjects" class="limited-indicator">
-											(limited by max objects setting)
-										</span>
+					<div v-if="!objectStats.loading && effectiveTotalObjects > 0" class="prediction-content">
+						<div class="prediction-stats">
+							<div class="stat-item">
+								<span class="stat-label">Total Objects in Database:</span>
+								<span class="stat-value">{{ objectStats.totalObjects.toLocaleString() }}</span>
+							</div>
+							<div class="stat-item">
+								<span class="stat-label">Objects to Process:</span>
+								<span class="stat-value">
+									{{ localConfig.maxObjects === 0 ? effectiveTotalObjects.toLocaleString() : Math.min(localConfig.maxObjects, effectiveTotalObjects).toLocaleString() }}
+									<span v-if="localConfig.maxObjects > 0 && localConfig.maxObjects < effectiveTotalObjects" class="limited-indicator">
+										(limited by max objects setting)
 									</span>
-								</div>
-								<div class="stat-item">
-									<span class="stat-label">Estimated Batches:</span>
-									<span class="stat-value">
-										{{ Math.ceil((localConfig.maxObjects === 0 ? objectStats.totalObjects : Math.min(localConfig.maxObjects, objectStats.totalObjects)) / localConfig.batchSize) }}
-									</span>
-								</div>
+								</span>
+							</div>
+							<div class="stat-item">
+								<span class="stat-label">Estimated Batches:</span>
+								<span class="stat-value">
+									{{ Math.ceil((localConfig.maxObjects === 0 ? effectiveTotalObjects : Math.min(localConfig.maxObjects, effectiveTotalObjects)) / localConfig.batchSize) }}
+								</span>
+							</div>
 								<div class="stat-item">
 									<span class="stat-label">Estimated Duration:</span>
 									<span class="stat-value">
@@ -451,6 +451,22 @@ export default {
 				})
 				.filter(schema => schema !== null && schema !== undefined)
 		},
+		
+		/**
+		 * Calculate the total number of objects based on selected schemas
+		 * If no schemas are selected, use the total from objectStats
+		 */
+		effectiveTotalObjects() {
+			if (!this.localConfig.selectedSchemas || this.localConfig.selectedSchemas.length === 0) {
+				// No schemas selected = all schemas, use the total count
+				return this.objectStats.totalObjects
+			}
+			
+			// Sum up object counts from selected schemas only
+			return this.selectedSchemasDetails.reduce((total, schema) => {
+				return total + (schema.objectCount || 0)
+			}, 0)
+		},
 	},
 
 	watch: {
@@ -498,13 +514,13 @@ export default {
 		 * @return {string} Estimated duration in human-readable format
 		 */
 		estimateWarmupDuration() {
-			if (this.objectStats.totalObjects === 0) {
+			if (this.effectiveTotalObjects === 0) {
 				return 'Unknown'
 			}
 
 			const totalObjects = this.localConfig.maxObjects === 0 
-				? this.objectStats.totalObjects 
-				: Math.min(this.localConfig.maxObjects, this.objectStats.totalObjects)
+				? this.effectiveTotalObjects 
+				: Math.min(this.localConfig.maxObjects, this.effectiveTotalObjects)
 			
 			const batches = Math.ceil(totalObjects / this.localConfig.batchSize)
 			
