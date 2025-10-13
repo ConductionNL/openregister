@@ -4244,22 +4244,69 @@ class GuzzleSolrService
         }
 
         try {
-            // Get the active collection name - return error if no collection exists
-            $tenantCollectionName = $this->getActiveCollectionName();
-            if ($tenantCollectionName === null) {
+            // Get both objectCollection and fileCollection from settings
+            $objectCollection = $this->solrConfig['objectCollection'] ?? null;
+            $fileCollection = $this->solrConfig['fileCollection'] ?? null;
+            
+            // Fallback to legacy collection if new collections are not configured
+            $legacyCollection = $this->solrConfig['collection'] ?? null;
+            
+            if (!$objectCollection && !$fileCollection && !$legacyCollection) {
                 return [
                     'available' => false,
-                    'error' => 'No active collection available - collection may not exist'
+                    'error' => 'No collections configured - please configure objectCollection and fileCollection'
                 ];
             }
 
-            // Get collection stats
-            $statsUrl = $this->buildSolrBaseUrl() . '/admin/collections?action=CLUSTERSTATUS&collection=' . $tenantCollectionName . '&wt=json';
-            $statsResponse = $this->httpClient->get($statsUrl, ['timeout' => 10]);
-            $statsData = json_decode((string)$statsResponse->getBody(), true);
-
-            // Get document count from Solr (indexed objects)
-            $docCount = $this->getDocumentCount();
+            // Query stats for objectCollection
+            $objectStats = null;
+            $objectDocCount = 0;
+            if ($objectCollection && $this->collectionExists($objectCollection)) {
+                try {
+                    $objectStats = $this->getCollectionStats($objectCollection);
+                    $objectDocCount = $this->getDocumentCountForCollection($objectCollection);
+                } catch (\Exception $e) {
+                    $this->logger->warning('Failed to get objectCollection stats', [
+                        'collection' => $objectCollection,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+            
+            // Query stats for fileCollection
+            $fileStats = null;
+            $fileDocCount = 0;
+            if ($fileCollection && $this->collectionExists($fileCollection)) {
+                try {
+                    $fileStats = $this->getCollectionStats($fileCollection);
+                    $fileDocCount = $this->getDocumentCountForCollection($fileCollection);
+                } catch (\Exception $e) {
+                    $this->logger->warning('Failed to get fileCollection stats', [
+                        'collection' => $fileCollection,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+            
+            // If using legacy collection, query it
+            $legacyStats = null;
+            $legacyDocCount = 0;
+            if ($legacyCollection && !$objectCollection && !$fileCollection && $this->collectionExists($legacyCollection)) {
+                try {
+                    $legacyStats = $this->getCollectionStats($legacyCollection);
+                    $legacyDocCount = $this->getDocumentCountForCollection($legacyCollection);
+                } catch (\Exception $e) {
+                    $this->logger->warning('Failed to get legacy collection stats', [
+                        'collection' => $legacyCollection,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+            
+            // Use object collection for overall stats if available, otherwise fallback
+            $primaryCollection = $objectCollection ?? $legacyCollection;
+            $primaryStats = $objectStats ?? $legacyStats;
+            $docCount = $objectDocCount + $legacyDocCount; // Combined document count
 
             // Get object counts from database using ObjectEntityMapper
             $totalCount = 0;
@@ -4299,13 +4346,23 @@ class GuzzleSolrService
                 $this->logger->warning('Failed to get object counts from database', ['error' => $e->getMessage()]);
             }
 
-            // Get index size (approximate)
-            $indexSizeUrl = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/admin/luke?wt=json&numTerms=0';
-            $sizeResponse = $this->httpClient->get($indexSizeUrl, ['timeout' => 10]);
-            $sizeData = json_decode((string)$sizeResponse->getBody(), true);
+            // Get index size (approximate) from primary collection
+            $sizeData = [];
+            if ($primaryCollection) {
+                try {
+                    $indexSizeUrl = $this->buildSolrBaseUrl() . '/' . $primaryCollection . '/admin/luke?wt=json&numTerms=0';
+                    $sizeResponse = $this->httpClient->get($indexSizeUrl, ['timeout' => 10]);
+                    $sizeData = json_decode((string)$sizeResponse->getBody(), true);
+                } catch (\Exception $e) {
+                    $this->logger->warning('Failed to get index size', ['error' => $e->getMessage()]);
+                }
+            }
 
-            $collectionInfo = $statsData['cluster']['collections'][$tenantCollectionName] ?? [];
-            $shards = $collectionInfo['shards'] ?? [];
+            // Get shard count from stats
+            $shards = [];
+            if ($primaryStats && isset($primaryStats['shards'])) {
+                $shards = $primaryStats['shards'];
+            }
 
             // Get memory prediction for warmup (using published object count)
             $memoryPrediction = [];
@@ -4333,18 +4390,33 @@ class GuzzleSolrService
 
             return [
                 'available' => true,
-                'collection' => $tenantCollectionName,
+                // Collection information
+                'objectCollection' => $objectCollection,
+                'fileCollection' => $fileCollection,
+                'legacyCollection' => (!$objectCollection && !$fileCollection) ? $legacyCollection : null,
+                'primaryCollection' => $primaryCollection,
+                // Combined document counts
                 'document_count' => $docCount,
+                'objectDocuments' => $objectDocCount,
+                'fileDocuments' => $fileDocCount,
+                // Database counts
                 'total_count' => $totalCount,
                 'published_count' => $publishedCount,
                 'total_files' => $totalFiles,
                 'indexed_files' => $indexedFiles,
+                // Infrastructure
                 'shards' => count($shards),
                 'index_version' => $sizeData['index']['version'] ?? 'unknown',
                 'last_modified' => $sizeData['index']['lastModified'] ?? 'unknown',
+                // Health and stats
                 'service_stats' => $this->stats,
-                'health' => !empty($collectionInfo) ? 'healthy' : 'degraded',
-                'memory_prediction' => $memoryPrediction
+                'health' => ($objectStats || $fileStats || $legacyStats) ? 'healthy' : 'degraded',
+                'memory_prediction' => $memoryPrediction,
+                // Detailed collection stats
+                'collections' => [
+                    'object' => $objectStats ? array_merge($objectStats, ['documentCount' => $objectDocCount]) : null,
+                    'file' => $fileStats ? array_merge($fileStats, ['documentCount' => $fileDocCount]) : null,
+                ]
             ];
 
         } catch (\Exception $e) {
@@ -4353,6 +4425,61 @@ class GuzzleSolrService
                 'available' => false,
                 'error' => $e->getMessage()
             ];
+        }
+    }
+
+    /**
+     * Get statistics for a specific collection
+     *
+     * @param string $collectionName Collection name
+     * @return array Collection statistics
+     * @throws \Exception If collection stats cannot be retrieved
+     */
+    private function getCollectionStats(string $collectionName): array
+    {
+        $statsUrl = $this->buildSolrBaseUrl() . '/admin/collections?action=CLUSTERSTATUS&collection=' . $collectionName . '&wt=json';
+        $statsResponse = $this->httpClient->get($statsUrl, ['timeout' => 10]);
+        $statsData = json_decode((string)$statsResponse->getBody(), true);
+
+        $collectionInfo = $statsData['cluster']['collections'][$collectionName] ?? [];
+        
+        return [
+            'name' => $collectionName,
+            'shards' => $collectionInfo['shards'] ?? [],
+            'configName' => $collectionInfo['configName'] ?? 'unknown',
+            'replicationFactor' => $collectionInfo['replicationFactor'] ?? 1,
+            'maxShardsPerNode' => $collectionInfo['maxShardsPerNode'] ?? 1,
+            'autoAddReplicas' => $collectionInfo['autoAddReplicas'] ?? false,
+        ];
+    }
+
+    /**
+     * Get document count for a specific collection
+     *
+     * @param string $collectionName Collection name
+     * @return int Document count
+     */
+    private function getDocumentCountForCollection(string $collectionName): int
+    {
+        try {
+            $baseUrl = $this->buildSolrBaseUrl();
+            $url = $baseUrl . '/' . $collectionName . '/select?' . http_build_query([
+                'q' => '*:*',
+                'rows' => 0,
+                'wt' => 'json'
+            ]);
+
+            $response = $this->httpClient->get($url, ['timeout' => 10]);
+            $data = json_decode((string)$response->getBody(), true);
+
+            return (int)($data['response']['numFound'] ?? 0);
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get document count for collection', [
+                'collection' => $collectionName,
+                'error' => $e->getMessage()
+            ]);
+            return 0;
         }
     }
 
