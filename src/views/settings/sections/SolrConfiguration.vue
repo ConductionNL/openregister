@@ -92,50 +92,23 @@
 							{{ t('openregister', 'Inspect Index') }}
 						</NcActionButton>
 						
-						<!-- Index Management -->
-						<NcActionButton 
-							v-if="solrOptions.enabled"
-							@click="openWarmupModal">
-							<template #icon>
-								<Fire :size="20" />
-							</template>
-							{{ t('openregister', 'Warmup Index') }}
-						</NcActionButton>
-						<NcActionButton
-							v-if="solrOptions.enabled"
-							:disabled="loading || saving || warmingUpSolr || reindexing"
-							@click="startReindex">
-							<template #icon>
-								<NcLoadingIcon v-if="reindexing" :size="20" />
-								<Refresh v-else :size="20" />
-							</template>
-							{{ reindexing ? t('openregister', 'Reindexing...') : t('openregister', 'Reindex') }}
-						</NcActionButton>
-						<NcActionButton 
-							v-if="solrOptions.enabled"
-							@click="openClearModal">
-							<template #icon>
-								<Delete :size="20" />
-							</template>
-							{{ t('openregister', 'Clear Index') }}
-						</NcActionButton>
-						<NcActionButton
-							v-if="solrOptions.enabled"
-							@click="openFacetConfigModal">
-							<template #icon>
-								<Tune :size="20" />
-							</template>
-							{{ t('openregister', 'Configure Facets') }}
-						</NcActionButton>
-						<NcActionButton 
-							v-if="solrOptions.enabled"
-							close-after-click
-							@click="openDeleteCollectionModal">
+					<!-- Index Management -->
+					<NcActionButton 
+						v-if="solrOptions.enabled"
+						@click="openWarmupModal">
 						<template #icon>
-								<DatabaseRemove :size="20" />
+							<Fire :size="20" />
 						</template>
-							{{ t('openregister', 'Delete Collection') }}
-						</NcActionButton>
+						{{ t('openregister', 'Warmup Index') }}
+					</NcActionButton>
+					<NcActionButton
+						v-if="solrOptions.enabled"
+						@click="openFacetConfigModal">
+						<template #icon>
+							<Tune :size="20" />
+						</template>
+						{{ t('openregister', 'Configure Facets') }}
+					</NcActionButton>
 					</NcActions>
 				</div>
 			</div>

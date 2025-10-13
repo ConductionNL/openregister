@@ -708,19 +708,29 @@ class VectorEmbeddingService
                 ->from('openregister_vectors');
             $total = (int) $qb->executeQuery()->fetchOne();
 
-            // By entity type
-            $qb = $this->db->getQueryBuilder();
-            $qb->select('entity_type', $qb->func()->count('id', 'count'))
-                ->from('openregister_vectors')
-                ->groupBy('entity_type');
-            $byType = $qb->executeQuery()->fetchAllKeyValue();
+        // By entity type
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('entity_type', $qb->func()->count('id', 'count'))
+            ->from('openregister_vectors')
+            ->groupBy('entity_type');
+        $result = $qb->executeQuery();
+        $byType = [];
+        while ($row = $result->fetch()) {
+            $byType[$row['entity_type']] = (int)$row['count'];
+        }
+        $result->closeCursor();
 
-            // By model
-            $qb = $this->db->getQueryBuilder();
-            $qb->select('embedding_model', $qb->func()->count('id', 'count'))
-                ->from('openregister_vectors')
-                ->groupBy('embedding_model');
-            $byModel = $qb->executeQuery()->fetchAllKeyValue();
+        // By model
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('embedding_model', $qb->func()->count('id', 'count'))
+            ->from('openregister_vectors')
+            ->groupBy('embedding_model');
+        $result = $qb->executeQuery();
+        $byModel = [];
+        while ($row = $result->fetch()) {
+            $byModel[$row['embedding_model']] = (int)$row['count'];
+        }
+        $result->closeCursor();
 
             return [
                 'total_vectors' => $total,

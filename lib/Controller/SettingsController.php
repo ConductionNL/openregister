@@ -1390,14 +1390,16 @@ class SettingsController extends Controller
     }
 
     /**
-     * Delete SOLR collection (DANGER: This will permanently delete all data in the collection)
+     * Delete a specific SOLR collection by name
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * 
+     * @param string $name The name of the collection to delete
      *
-     * @return JSONResponse The deletion results
+     * @return JSONResponse The deletion result
      */
-    public function deleteSolrCollection(): JSONResponse
+    public function deleteSpecificSolrCollection(string $name): JSONResponse
     {
         try {
             $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
@@ -1405,52 +1407,39 @@ class SettingsController extends Controller
             $logger->warning('🚨 SOLR collection deletion requested', [
                 'timestamp' => date('c'),
                 'user_id' => $this->userId ?? 'unknown',
+                'collection' => $name,
                 'request_id' => $this->request->getId() ?? 'unknown'
             ]);
             
             // Get GuzzleSolrService
             $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
             
-            // Get current collection name for logging
-            $currentCollection = $guzzleSolrService->getActiveCollectionName();
-            
-            $logger->warning('🗑️ Deleting SOLR collection', [
-                'collection' => $currentCollection,
-                'user_id' => $this->userId ?? 'unknown'
-            ]);
-            
-            // Delete the collection
-            $result = $guzzleSolrService->deleteCollection();
+            // Delete the specific collection
+            $result = $guzzleSolrService->deleteCollection($name);
             
             if ($result['success']) {
                 $logger->info('✅ SOLR collection deleted successfully', [
-                    'collection' => $result['collection'] ?? 'unknown',
+                    'collection' => $name,
                     'user_id' => $this->userId ?? 'unknown'
                 ]);
-                
+
                 return new JSONResponse([
                     'success' => true,
-                    'message' => $result['message'],
-                    'collection' => $result['collection'] ?? null,
-                    'response_time_ms' => $result['response_time_ms'] ?? null,
-                    'next_steps' => [
-                        'Run SOLR Setup to create a new collection',
-                        'Run Warmup Index to rebuild the search index',
-                        'Verify search functionality is working'
-                    ]
-                ]);
+                    'message' => 'Collection deleted successfully',
+                    'collection' => $name
+                ], 200);
             } else {
                 $logger->error('❌ SOLR collection deletion failed', [
                     'error' => $result['message'],
                     'error_code' => $result['error_code'] ?? 'unknown',
-                    'collection' => $result['collection'] ?? 'unknown'
+                    'collection' => $name
                 ]);
                 
                 return new JSONResponse([
                     'success' => false,
                     'message' => $result['message'],
                     'error_code' => $result['error_code'] ?? 'unknown',
-                    'collection' => $result['collection'] ?? null,
+                    'collection' => $name,
                     'solr_error' => $result['solr_error'] ?? null
                 ], 422);
             }
@@ -1459,13 +1448,117 @@ class SettingsController extends Controller
             $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
             $logger->error('Exception during SOLR collection deletion', [
                 'error' => $e->getMessage(),
+                'collection' => $name,
                 'trace' => $e->getTraceAsString()
             ]);
             
             return new JSONResponse([
                 'success' => false,
                 'message' => 'Collection deletion failed: ' . $e->getMessage(),
-                'error_code' => 'EXCEPTION'
+                'error_code' => 'EXCEPTION',
+                'collection' => $name
+            ], 422);
+        }
+    }
+
+    /**
+     * Clear a specific SOLR collection by name
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     * 
+     * @param string $name The name of the collection to clear
+     *
+     * @return JSONResponse The clear result
+     */
+    public function clearSpecificCollection(string $name): JSONResponse
+    {
+        try {
+            $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+            
+            // Clear the specific collection
+            $result = $guzzleSolrService->clearIndex($name);
+            
+            if ($result['success']) {
+                return new JSONResponse([
+                    'success' => true,
+                    'message' => 'Collection cleared successfully',
+                    'collection' => $name
+                ], 200);
+            } else {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => $result['message'] ?? 'Failed to clear collection',
+                    'collection' => $name
+                ], 422);
+            }
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Collection clear failed: ' . $e->getMessage(),
+                'collection' => $name
+            ], 422);
+        }
+    }
+
+    /**
+     * Reindex a specific SOLR collection by name
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     * 
+     * @param string $name The name of the collection to reindex
+     *
+     * @return JSONResponse The reindex result
+     */
+    public function reindexSpecificCollection(string $name): JSONResponse
+    {
+        try {
+            $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+            
+            // Get optional parameters from request body
+            $maxObjects = (int) ($this->request->getParam('maxObjects', 0));
+            $batchSize = (int) ($this->request->getParam('batchSize', 1000));
+            
+            // Validate parameters
+            if ($batchSize < 1 || $batchSize > 5000) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'Invalid batch size. Must be between 1 and 5000',
+                    'collection' => $name
+                ], 400);
+            }
+            
+            if ($maxObjects < 0) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'Invalid maxObjects. Must be 0 (all) or positive number',
+                    'collection' => $name
+                ], 400);
+            }
+            
+            // Reindex the specified collection
+            $result = $guzzleSolrService->reindexAll($maxObjects, $batchSize, $name);
+            
+            if ($result['success']) {
+                return new JSONResponse([
+                    'success' => true,
+                    'message' => 'Reindex completed successfully',
+                    'stats' => $result['stats'] ?? [],
+                    'collection' => $name
+                ], 200);
+            } else {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => $result['message'] ?? 'Failed to reindex collection',
+                    'collection' => $name
+                ], 422);
+            }
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Reindex failed: ' . $e->getMessage(),
+                'collection' => $name
             ], 422);
         }
     }
@@ -2343,68 +2436,6 @@ class SettingsController extends Controller
     }
 
     /**
-     * Clear SOLR index
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     * 
-     * @return JSONResponse
-     */
-    public function clearSolrIndex(): JSONResponse
-    {
-        try {
-            // Get logger and GuzzleSolrService from container
-            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
-            
-            $logger->info('Starting SOLR index clear operation');
-            
-            // Use the GuzzleSolrService to clear the index - now returns detailed result array
-            $result = $guzzleSolrService->clearIndex();
-            
-            if ($result['success']) {
-                $logger->info('SOLR index cleared successfully', [
-                    'deleted_docs' => $result['deleted_docs'] ?? 'unknown'
-                ]);
-                return new JSONResponse([
-                    'success' => true,
-                    'message' => 'SOLR index cleared successfully',
-                    'deleted_docs' => $result['deleted_docs'] ?? null
-                ]);
-            } else {
-                // Log detailed error information for debugging
-                $logger->error('Failed to clear SOLR index', [
-                    'error' => $result['error'],
-                    'error_details' => $result['error_details'] ?? null
-                ]);
-                
-                return new JSONResponse([
-                    'success' => false,
-                    'error' => $result['error'],
-                    'error_details' => $result['error_details'] ?? null
-                ], 422);
-            }
-            
-        } catch (\Exception $e) {
-            // Get logger for error logging
-            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
-            $logger->error('Exception in clearSolrIndex controller', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            return new JSONResponse([
-                'success' => false,
-                'error' => 'Controller exception: ' . $e->getMessage(),
-                'error_details' => [
-                    'exception_type' => get_class($e),
-                    'trace' => $e->getTraceAsString()
-                ]
-            ], 500);
-        }
-    }
-
-    /**
      * Inspect SOLR index documents
      *
      * @NoAdminRequired
@@ -2594,99 +2625,6 @@ class SettingsController extends Controller
             return new JSONResponse([
                 'success' => false,
                 'message' => 'Failed to delete SOLR field: ' . $e->getMessage(),
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Reindex all objects in SOLR
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse
-     */
-    public function reindexSolr(): JSONResponse
-    {
-        try {
-            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
-            
-            // Get parameters from request
-            $maxObjects = (int) ($this->request->getParam('maxObjects', 0));
-            $batchSize = (int) ($this->request->getParam('batchSize', 1000));
-            
-            // Validate parameters
-            if ($batchSize < 1 || $batchSize > 5000) {
-                return new JSONResponse([
-                    'success' => false,
-                    'message' => 'Invalid batch size. Must be between 1 and 5000'
-                ], 400);
-            }
-            
-            if ($maxObjects < 0) {
-                return new JSONResponse([
-                    'success' => false,
-                    'message' => 'Invalid maxObjects. Must be 0 (all) or positive number'
-                ], 400);
-            }
-
-            $logger->info('🔄 Starting SOLR reindex via API', [
-                'max_objects' => $maxObjects,
-                'batch_size' => $batchSize,
-                'user' => $this->userId
-            ]);
-
-            // Get GuzzleSolrService from container
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
-            
-            // Check if SOLR is available
-            if (!$guzzleSolrService->isAvailable()) {
-                return new JSONResponse([
-                    'success' => false,
-                    'message' => 'SOLR is not available or not configured'
-                ], 422);
-            }
-
-            // Start reindex operation
-            $result = $guzzleSolrService->reindexAll($maxObjects, $batchSize);
-
-            if ($result['success']) {
-                $logger->info('✅ SOLR reindex completed successfully via API', [
-                    'processed_objects' => $result['stats']['processed_objects'] ?? 0,
-                    'duration' => $result['stats']['duration_seconds'] ?? 0,
-                    'user' => $this->userId
-                ]);
-
-                return new JSONResponse([
-                    'success' => true,
-                    'message' => $result['message'],
-                    'stats' => $result['stats'] ?? []
-                ]);
-            } else {
-                $logger->warning('❌ SOLR reindex failed via API', [
-                    'error' => $result['message'],
-                    'user' => $this->userId
-                ]);
-
-                return new JSONResponse([
-                    'success' => false,
-                    'message' => $result['message'],
-                    'error' => $result['error'] ?? null
-                ], 422);
-            }
-
-        } catch (\Exception $e) {
-            $logger = $logger ?? \OC::$server->get(\Psr\Log\LoggerInterface::class);
-            $logger->error('Exception during SOLR reindex via API', [
-                'error' => $e->getMessage(),
-                'user' => $this->userId,
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return new JSONResponse([
-                'success' => false,
-                'message' => 'Failed to reindex SOLR: ' . $e->getMessage(),
                 'error' => $e->getMessage()
             ], 500);
         }
