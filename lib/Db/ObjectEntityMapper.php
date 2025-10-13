@@ -1127,12 +1127,13 @@ class ObjectEntityMapper extends QBMapper
             );
         }
 
-        $numericIds = array_filter($ids, function (string $id) {
-            return strlen(intval($id)) === strlen($id);
-        });
-
         // Handle filtering by IDs/UUIDs if provided.
         if ($ids !== null && empty($ids) === false) {
+            
+            $numericIds = array_filter($ids, function (string $id) {
+                return strlen(intval($id)) === strlen($id);
+            });
+
             $orX = $qb->expr()->orX();
             $orX->add($qb->expr()->in('o.id', $qb->createNamedParameter($numericIds, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
             $orX->add($qb->expr()->in('o.uuid', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
@@ -4837,7 +4838,7 @@ class ObjectEntityMapper extends QBMapper
         $qb->select('uuid')
             ->from($this->getTableName())
             ->where($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
-        
+
         // When publishAll is true, include ALL objects (both published and unpublished)
         // When publishAll is false, only include objects that are not published
         if (!$publishAll) {
@@ -4894,7 +4895,7 @@ class ObjectEntityMapper extends QBMapper
         $qb->select('uuid')
             ->from($this->getTableName())
             ->where($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
-        
+
         // When hardDelete is true, include ALL objects (both soft-deleted and not deleted)
         // When hardDelete is false, only include objects that are not soft-deleted
         if (!$hardDelete) {
