@@ -106,9 +106,9 @@
 						<tbody>
 							<tr v-for="collection in collections" :key="collection.name" class="collection-row">
 								<td class="collection-name">
-									<div class="name-container" :title="collection.name">
-										<strong class="name-text">{{ truncateName(collection.name) }}</strong>
-										<div class="collection-badges">
+					<div class="name-container" :title="collection.name">
+						<strong class="name-text">{{ truncateName(collection.name, 25) }}</strong>
+						<div class="collection-badges">
 											<span v-if="collection.name === selectedObjectCollection" class="badge object-badge">
 												{{ t('openregister', 'Objects') }}
 											</span>
@@ -118,27 +118,44 @@
 										</div>
 									</div>
 								</td>
-								<td class="configset-cell" :title="collection.configName">
-									{{ truncateName(collection.configName, 25) }}
-								</td>
+							<td class="configset-cell" :title="collection.configName">
+								{{ truncateName(collection.configName, 20) }}
+							</td>
 								<td class="number-cell">{{ formatNumber(collection.documentCount) }}</td>
-								<td class="number-cell">{{ collection.shards }}</td>
-								<td class="number-cell">{{ collection.replicas }}</td>
-								<td>
-									<span class="health-badge" :class="collection.health">
-										{{ collection.health === 'healthy' ? '✅ ' + t('openregister', 'Healthy') : '⚠️ ' + t('openregister', 'Degraded') }}
-									</span>
-								</td>
-								<td class="actions-cell">
-									<NcButton
-										type="secondary"
-										@click="openCopyDialog(collection)">
+							<td class="number-cell">{{ collection.shards }}</td>
+							<td class="number-cell">{{ collection.replicas }}</td>
+							<td class="health-cell">
+								<Check v-if="collection.health === 'healthy'" :size="20" class="health-icon healthy" />
+								<Close v-else :size="20" class="health-icon degraded" />
+							</td>
+							<td class="actions-cell">
+								<NcActions>
+									<NcActionButton @click="reindexCollection(collection)">
+										<template #icon>
+											<Refresh :size="20" />
+										</template>
+										{{ t('openregister', 'Reindex') }}
+									</NcActionButton>
+									<NcActionButton @click="clearCollection(collection)">
+										<template #icon>
+											<Delete :size="20" />
+										</template>
+										{{ t('openregister', 'Clear Index') }}
+									</NcActionButton>
+									<NcActionButton @click="openCopyDialog(collection)">
 										<template #icon>
 											<ContentCopy :size="20" />
 										</template>
 										{{ t('openregister', 'Copy') }}
-									</NcButton>
-								</td>
+									</NcActionButton>
+									<NcActionButton @click="deleteCollection(collection)">
+										<template #icon>
+											<DatabaseRemove :size="20" />
+										</template>
+										{{ t('openregister', 'Delete Collection') }}
+									</NcActionButton>
+								</NcActions>
+							</td>
 							</tr>
 						</tbody>
 					</table>
@@ -269,12 +286,16 @@
 </template>
 
 <script>
-import { NcDialog, NcButton, NcLoadingIcon, NcSelect } from '@nextcloud/vue'
+import { NcDialog, NcButton, NcLoadingIcon, NcSelect, NcActions, NcActionButton } from '@nextcloud/vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Database from 'vue-material-design-icons/Database.vue'
 import FileDocument from 'vue-material-design-icons/FileDocument.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
+import DatabaseRemove from 'vue-material-design-icons/DatabaseRemove.vue'
+import Check from 'vue-material-design-icons/Check.vue'
+import Close from 'vue-material-design-icons/Close.vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess, showError } from '@nextcloud/dialogs'
@@ -287,11 +308,17 @@ export default {
 		NcButton,
 		NcLoadingIcon,
 		NcSelect,
+		NcActions,
+		NcActionButton,
 		Refresh,
 		Database,
 		FileDocument,
 		ContentCopy,
 		Plus,
+		Delete,
+		DatabaseRemove,
+		Check,
+		Close,
 	},
 	
 	props: {
@@ -585,6 +612,82 @@ export default {
 			if (typeof num !== 'number') return num
 			return num.toLocaleString()
 		},
+
+		async reindexCollection(collection) {
+			if (!confirm(this.t('openregister', 'Are you sure you want to reindex collection "{name}"?\n\nThis will:\n• Rebuild the index with all objects\n• Take several minutes to complete\n• May impact search performance during reindexing', { name: collection.name }))) {
+				return
+			}
+
+			try {
+				const url = generateUrl('/apps/openregister/api/solr/collections/{name}/reindex', { name: collection.name })
+				const response = await axios.post(url)
+
+				if (response.data.success) {
+					const stats = response.data.stats || {}
+					showSuccess(this.t('openregister', 'Reindex completed! Processed {count} objects in {duration}s', {
+						count: stats.processed_objects || 0,
+						duration: stats.duration_seconds || 0
+					}))
+					await this.loadCollections()
+				} else {
+					showError(response.data.message || this.t('openregister', 'Reindex failed'))
+				}
+			} catch (error) {
+				console.error('Reindex error:', error)
+				showError(error.response?.data?.message || this.t('openregister', 'Failed to reindex collection'))
+			}
+		},
+
+		async clearCollection(collection) {
+			if (!confirm(this.t('openregister', 'Are you sure you want to clear all data from collection "{name}"?\n\nThis will:\n• Delete all indexed documents\n• Keep the collection structure intact\n• This action cannot be undone', { name: collection.name }))) {
+				return
+			}
+
+			try {
+				const url = generateUrl('/apps/openregister/api/solr/collections/{name}/clear', { name: collection.name })
+				const response = await axios.post(url)
+
+				if (response.data.success) {
+					showSuccess(this.t('openregister', 'Collection cleared successfully'))
+					await this.loadCollections()
+				} else {
+					showError(response.data.message || this.t('openregister', 'Failed to clear collection'))
+				}
+			} catch (error) {
+				console.error('Clear collection error:', error)
+				showError(error.response?.data?.message || this.t('openregister', 'Failed to clear collection'))
+			}
+		},
+
+		async deleteCollection(collection) {
+			if (!confirm(this.t('openregister', 'Are you sure you want to DELETE collection "{name}"?\n\nThis will:\n• Permanently delete the collection and all its data\n• Remove all indexed documents\n• This action cannot be undone', { name: collection.name }))) {
+				return
+			}
+
+			try {
+				const url = generateUrl('/apps/openregister/api/solr/collections/{name}', { name: collection.name })
+				const response = await axios.delete(url)
+
+				if (response.data.success) {
+					showSuccess(this.t('openregister', 'Collection deleted successfully'))
+					await this.loadCollections()
+					// If deleted collection was assigned, clear the assignment
+					if (this.selectedObjectCollection === collection.name) {
+						this.selectedObjectCollection = null
+						await this.updateAssignments()
+					}
+					if (this.selectedFileCollection === collection.name) {
+						this.selectedFileCollection = null
+						await this.updateAssignments()
+					}
+				} else {
+					showError(response.data.message || this.t('openregister', 'Failed to delete collection'))
+				}
+			} catch (error) {
+				console.error('Delete collection error:', error)
+				showError(error.response?.data?.error || this.t('openregister', 'Failed to delete collection'))
+			}
+		},
 	},
 }
 </script>
@@ -755,21 +858,21 @@ export default {
 	font-variant-numeric: tabular-nums;
 }
 
-.health-badge {
-	padding: 4px 8px;
-	border-radius: var(--border-radius-small);
-	font-size: 12px;
-	font-weight: 600;
+.health-cell {
+	text-align: center;
 }
 
-.health-badge.healthy {
-	background: var(--color-success);
-	color: white;
+.health-icon {
+	display: inline-block;
+	vertical-align: middle;
 }
 
-.health-badge.degraded {
-	background: var(--color-warning);
-	color: var(--color-main-background);
+.health-icon.healthy {
+	color: var(--color-success);
+}
+
+.health-icon.degraded {
+	color: var(--color-error);
 }
 
 .actions-cell {

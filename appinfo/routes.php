@@ -29,17 +29,19 @@ return [
 		['name' => 'settings#getSolrFields', 'url' => '/api/solr/fields', 'verb' => 'GET'],
 		['name' => 'settings#createMissingSolrFields', 'url' => '/api/solr/fields/create-missing', 'verb' => 'POST'],
 		['name' => 'settings#fixMismatchedSolrFields', 'url' => '/api/solr/fields/fix-mismatches', 'verb' => 'POST'],
-		['name' => 'settings#deleteSolrField', 'url' => '/api/solr/fields/{fieldName}', 'verb' => 'DELETE', 'requirements' => ['fieldName' => '[^/]+']],
-		['name' => 'settings#reindexSolr', 'url' => '/api/solr/reindex', 'verb' => 'POST'],
+	['name' => 'settings#deleteSolrField', 'url' => '/api/solr/fields/{fieldName}', 'verb' => 'DELETE', 'requirements' => ['fieldName' => '[^/]+']],
         
         // SOLR Dashboard Management endpoints
         ['name' => 'settings#getSolrDashboardStats', 'url' => '/api/solr/dashboard/stats', 'verb' => 'GET'],
-        ['name' => 'settings#clearSolrIndex', 'url' => '/api/settings/solr/clear', 'verb' => 'POST'],
         ['name' => 'settings#inspectSolrIndex', 'url' => '/api/settings/solr/inspect', 'verb' => 'POST'],
         ['name' => 'settings#manageSolr', 'url' => '/api/solr/manage/{operation}', 'verb' => 'POST'],
     ['name' => 'settings#setupSolr', 'url' => '/api/solr/setup', 'verb' => 'POST'],
     ['name' => 'settings#testSolrSetup', 'url' => '/api/solr/test-setup', 'verb' => 'POST'],
-    ['name' => 'settings#deleteSolrCollection', 'url' => '/api/solr/collection/delete', 'verb' => 'DELETE'],
+    
+    // Collection-specific operations (with collection name parameter)
+    ['name' => 'settings#deleteSpecificSolrCollection', 'url' => '/api/solr/collections/{name}', 'verb' => 'DELETE', 'requirements' => ['name' => '[^/]+']],
+    ['name' => 'settings#clearSpecificCollection', 'url' => '/api/solr/collections/{name}/clear', 'verb' => 'POST', 'requirements' => ['name' => '[^/]+']],
+    ['name' => 'settings#reindexSpecificCollection', 'url' => '/api/solr/collections/{name}/reindex', 'verb' => 'POST', 'requirements' => ['name' => '[^/]+']],
         
         // SOLR Collection and ConfigSet Management endpoints (SolrController)
         ['name' => 'solr#listCollections', 'url' => '/api/solr/collections', 'verb' => 'GET'],

@@ -3962,7 +3962,7 @@ class GuzzleSolrService
      *
      * @return array Result with success status and error details
      */
-    public function clearIndex(): array
+    public function clearIndex(?string $collectionName = null): array
     {
         if (!$this->isAvailable()) {
             return [
@@ -3973,29 +3973,27 @@ class GuzzleSolrService
         }
 
         try {
-            // Get the active collection name
-            $tenantCollectionName = $this->getActiveCollectionName();
-            if ($tenantCollectionName === null) {
+            // Use provided collection name or get the active collection
+            $targetCollection = $collectionName ?? $this->getActiveCollectionName();
+            if ($targetCollection === null) {
                 return [
                     'success' => false,
                     'error' => 'No active SOLR collection available',
-                    'error_details' => 'No collection found for the current tenant'
+                    'error_details' => 'No collection specified and no active collection found'
                 ];
             }
 
-            // For clear index, we want to delete ALL documents in the tenant collection
-            // Don't add tenant isolation since the entire collection is tenant-specific
+            // For clear index, we want to delete ALL documents in the collection
             $deleteData = [
                 'delete' => [
-                    'query' => '*:*'  // Delete everything in this tenant's collection
+                    'query' => '*:*'  // Delete everything in this collection
                 ]
             ];
 
-            $url = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/update?wt=json&commit=true';
+            $url = $this->buildSolrBaseUrl() . '/' . $targetCollection . '/update?wt=json&commit=true';
             
             $this->logger->info('Clearing SOLR index', [
-                'collection' => $tenantCollectionName,
-                'tenant_id' => $this->tenantId,
+                'collection' => $targetCollection,
                 'url' => $url
             ]);
 
@@ -4010,21 +4008,20 @@ class GuzzleSolrService
             
             if ($response->getStatusCode() === 200 && isset($responseData['responseHeader']['status']) && $responseData['responseHeader']['status'] === 0) {
                 $this->logger->info('SOLR index cleared successfully', [
-                    'collection' => $tenantCollectionName,
-                    'tenant_id' => $this->tenantId
+                    'collection' => $targetCollection
                 ]);
                 
                 return [
                     'success' => true,
                     'message' => 'SOLR index cleared successfully',
                     'deleted_docs' => 'all', // We don't get exact count from *:* delete
-                    'collection' => $tenantCollectionName
+                    'collection' => $targetCollection
                 ];
             } else {
                 $this->logger->error('SOLR index clear failed', [
                     'status_code' => $response->getStatusCode(),
                     'response' => $responseData,
-                    'collection' => $tenantCollectionName
+                    'collection' => $targetCollection
                 ]);
                 
                 return [
@@ -4388,17 +4385,15 @@ class GuzzleSolrService
                 ];
             }
 
-            // Get file counts (placeholder for future file indexing feature)
+            // Get file counts from Nextcloud file cache
             $totalFiles = 0;
-            $indexedFiles = 0;
-            // TODO: Implement file counting when FileMapper is available
-            // try {
-            //     $fileMapper = \OC::$server->get(\OCA\OpenRegister\Db\FileMapper::class);
-            //     $totalFiles = $fileMapper->countAll();
-            //     $indexedFiles = $fileMapper->countIndexed();
-            // } catch (\Exception $e) {
-            //     $this->logger->warning('Failed to get file counts', ['error' => $e->getMessage()]);
-            // }
+            $indexedFiles = $fileDocCount; // Files indexed in SOLR fileCollection
+            try {
+                $fileMapper = \OC::$server->get(\OCA\OpenRegister\Db\FileMapper::class);
+                $totalFiles = $fileMapper->countAllFiles();
+            } catch (\Exception $e) {
+                $this->logger->warning('Failed to get total file count from FileMapper', ['error' => $e->getMessage()]);
+            }
 
             return [
                 'available' => true,
@@ -6265,7 +6260,7 @@ class GuzzleSolrService
      * @param int $batchSize Number of objects to process per batch
      * @return array{success: bool, message: string, stats?: array, error?: string}
      */
-    public function reindexAll(int $maxObjects = 0, int $batchSize = 1000): array
+    public function reindexAll(int $maxObjects = 0, int $batchSize = 1000, ?string $collectionName = null): array
     {
         if (!$this->isAvailable()) {
             return [
@@ -6278,15 +6273,24 @@ class GuzzleSolrService
             $startTime = microtime(true);
             $startMemory = memory_get_usage(true);
 
+            // Use provided collection name or get the active collection
+            $targetCollection = $collectionName ?? $this->getActiveCollectionName();
+            if ($targetCollection === null) {
+                return [
+                    'success' => false,
+                    'message' => 'No collection specified and no active collection found'
+                ];
+            }
+
             $this->logger->info('🔄 Starting SOLR reindex operation', [
                 'max_objects' => $maxObjects,
                 'batch_size' => $batchSize,
-                'collection' => $this->getActiveCollectionName()
+                'collection' => $targetCollection
             ]);
 
             // Step 1: Clear the current index
             $this->logger->info('🗑️ Clearing current SOLR index');
-            $clearResult = $this->clearIndex();
+            $clearResult = $this->clearIndex($targetCollection);
             
             if (!$clearResult['success']) {
                 return [
