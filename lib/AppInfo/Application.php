@@ -47,6 +47,10 @@ use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\SolrService;
 use OCA\OpenRegister\Service\GuzzleSolrService;
+use OCA\OpenRegister\Service\SolrObjectService;
+use OCA\OpenRegister\Service\SolrFileService;
+use OCA\OpenRegister\Service\VectorEmbeddingService;
+use OCA\OpenRegister\Service\ChatService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\SolrSchemaService;
 use OCA\OpenRegister\Setup\SolrSetup;
@@ -490,6 +494,58 @@ class Application extends App implements IBootstrap
                     $container->get(OrganisationMapper::class) // Add OrganisationMapper for organisation label resolution
                     // Note: RenderObject removed to avoid circular dependency with ObjectCacheService
                     // SolrSchemaService will be resolved lazily to avoid circular dependency
+                    );
+                }
+                );
+
+        // Register SolrObjectService for object-specific SOLR operations
+        $context->registerService(
+                SolrObjectService::class,
+                function ($container) {
+                    return new SolrObjectService(
+                    $container->get(GuzzleSolrService::class),
+                    $container->get(SettingsService::class),
+                    $container->get(SchemaMapper::class),
+                    $container->get(RegisterMapper::class),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register SolrFileService for file-specific SOLR operations
+        $context->registerService(
+                SolrFileService::class,
+                function ($container) {
+                    return new SolrFileService(
+                    $container->get(GuzzleSolrService::class),
+                    $container->get(SettingsService::class),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register VectorEmbeddingService for vector embeddings and semantic search
+        $context->registerService(
+                VectorEmbeddingService::class,
+                function ($container) {
+                    return new VectorEmbeddingService(
+                    $container->get('OCP\IDBConnection'),
+                    $container->get(SettingsService::class),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register ChatService for AI chat conversations with RAG
+        $context->registerService(
+                ChatService::class,
+                function ($container) {
+                    return new ChatService(
+                    $container->get('OCP\IDBConnection'),
+                    $container->get(VectorEmbeddingService::class),
+                    $container->get(GuzzleSolrService::class),
+                    $container->get(SettingsService::class),
+                    $container->get('Psr\Log\LoggerInterface')
                     );
                 }
                 );

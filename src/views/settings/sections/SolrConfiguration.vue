@@ -51,6 +51,28 @@
 						{{ t('openregister', 'Collection Management') }}
 					</NcActionButton>
 					
+					<!-- AI/Vector Configuration -->
+					<NcActionButton @click="showFileManagementDialog = true">
+						<template #icon>
+							<FileDocument :size="20" />
+						</template>
+						{{ t('openregister', 'File Management') }}
+					</NcActionButton>
+					
+					<NcActionButton @click="showObjectManagementDialog = true">
+						<template #icon>
+							<CubeOutline :size="20" />
+						</template>
+						{{ t('openregister', 'Object Management') }}
+					</NcActionButton>
+					
+					<NcActionButton @click="showLLMConfigDialog = true">
+						<template #icon>
+							<Robot :size="20" />
+						</template>
+						{{ t('openregister', 'LLM Configuration') }}
+					</NcActionButton>
+					
 					<!-- Diagnostics -->
 						<NcActionButton
 						:disabled="loading || saving || warmingUpSolr || loadingFields"
@@ -1336,6 +1358,24 @@
 			:show="showCollectionDialog"
 			@closing="showCollectionDialog = false"
 		/>
+
+		<!-- File Management Modal -->
+		<FileManagementModal
+			:show="showFileManagementDialog"
+			@closing="showFileManagementDialog = false"
+		/>
+
+		<!-- Object Management Modal -->
+		<ObjectManagementModal
+			:show="showObjectManagementDialog"
+			@closing="showObjectManagementDialog = false"
+		/>
+
+		<!-- LLM Configuration Modal -->
+		<LLMConfigModal
+			:show="showLLMConfigDialog"
+			@closing="showLLMConfigDialog = false"
+		/>
 	</NcSettingsSection>
 </template>
 
@@ -1361,6 +1401,9 @@ import DotsVertical from 'vue-material-design-icons/DotsVertical.vue'
 import Connection from 'vue-material-design-icons/Connection.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import DatabaseCog from 'vue-material-design-icons/DatabaseCog.vue'
+import FileDocument from 'vue-material-design-icons/FileDocument.vue'
+import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
+import Robot from 'vue-material-design-icons/Robot.vue'
 import { SolrWarmupModal, ClearIndexModal } from '../../../modals/settings'
 import InspectIndexModal from '../../../modals/settings/InspectIndexModal.vue'
 import DeleteCollectionModal from '../../../modals/settings/DeleteCollectionModal.vue'
@@ -1368,6 +1411,9 @@ import FacetConfigModal from '../../../modals/settings/FacetConfigModal.vue'
 import ConnectionConfigModal from '../../../modals/settings/ConnectionConfigModal.vue'
 import ConfigSetManagementModal from '../../../modals/settings/ConfigSetManagementModal.vue'
 import CollectionManagementModal from '../../../modals/settings/CollectionManagementModal.vue'
+import FileManagementModal from '../../../modals/settings/FileManagementModal.vue'
+import ObjectManagementModal from '../../../modals/settings/ObjectManagementModal.vue'
+import LLMConfigModal from '../../../modals/settings/LLMConfigModal.vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 
@@ -1401,6 +1447,9 @@ export default {
 		Connection,
 		Cog,
 		DatabaseCog,
+		FileDocument,
+		CubeOutline,
+		Robot,
 		SolrWarmupModal,
 		ClearIndexModal,
 		InspectIndexModal,
@@ -1409,6 +1458,9 @@ export default {
 		ConnectionConfigModal,
 		ConfigSetManagementModal,
 		CollectionManagementModal,
+		FileManagementModal,
+		ObjectManagementModal,
+		LLMConfigModal,
 	},
 
 	data() {
@@ -1428,6 +1480,9 @@ export default {
 			showConnectionDialog: false,
 			showConfigSetDialog: false,
 			showCollectionDialog: false,
+			showFileManagementDialog: false,
+			showObjectManagementDialog: false,
+			showLLMConfigDialog: false,
 			solrStats: null,
 			objectStats: {
 				loading: false,

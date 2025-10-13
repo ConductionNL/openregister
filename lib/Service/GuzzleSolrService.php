@@ -662,7 +662,19 @@ class GuzzleSolrService
      */
     public function getActiveCollectionName(): ?string
     {
-        $baseCollectionName = $this->solrConfig['collection'] ?? 'openregister';
+        // **PHASE 2**: Prioritize objectCollection over legacy collection field
+        // objectCollection is the new standard for object-specific operations
+        $baseCollectionName = $this->solrConfig['objectCollection'] ?? null;
+        
+        // Fall back to legacy 'collection' field for backward compatibility
+        if ($baseCollectionName === null) {
+            $baseCollectionName = $this->solrConfig['collection'] ?? 'openregister';
+            $this->logger->debug('Using legacy collection field (deprecated)', [
+                'collection' => $baseCollectionName,
+                'recommendation' => 'Please configure objectCollection in SOLR settings'
+            ]);
+        }
+        
         $tenantCollectionName = $this->getTenantSpecificCollectionName($baseCollectionName);
 
         // Check if tenant collection exists

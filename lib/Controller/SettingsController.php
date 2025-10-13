@@ -27,6 +27,7 @@ use Psr\Container\ContainerInterface;
 use OCP\App\IAppManager;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\GuzzleSolrService;
+use OCA\OpenRegister\Service\VectorEmbeddingService;
 
 /**
  * Controller for handling settings-related operations in the OpenRegister.
@@ -3036,6 +3037,134 @@ class SettingsController extends Controller
                 'message' => 'Collection assignments updated successfully',
                 'objectCollection' => $solrSettings['objectCollection'] ?? null,
                 'fileCollection' => $solrSettings['fileCollection'] ?? null,
+                'timestamp' => date('c')
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    }
+
+    /**
+     * Perform semantic search using vector embeddings
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $query       Search query text
+     * @param int    $limit       Maximum number of results (default: 10)
+     * @param array  $filters     Optional filters (entity_type, entity_id, etc.)
+     * @param string|null $provider Embedding provider override
+     *
+     * @return JSONResponse Search results
+     */
+    public function semanticSearch(string $query, int $limit = 10, array $filters = [], ?string $provider = null): JSONResponse
+    {
+        try {
+            if (empty(trim($query))) {
+                return new JSONResponse([
+                    'success' => false,
+                    'error' => 'Query parameter is required'
+                ], 400);
+            }
+
+            // Get VectorEmbeddingService from container
+            $vectorService = $this->container->get(VectorEmbeddingService::class);
+            
+            // Perform semantic search
+            $results = $vectorService->semanticSearch($query, $limit, $filters, $provider);
+            
+            return new JSONResponse([
+                'success' => true,
+                'query' => $query,
+                'results' => $results,
+                'total' => count($results),
+                'limit' => $limit,
+                'filters' => $filters,
+                'timestamp' => date('c')
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    }
+
+    /**
+     * Perform hybrid search combining SOLR keyword and vector semantic search
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $query         Search query text
+     * @param int    $limit         Maximum number of results (default: 20)
+     * @param array  $solrFilters   SOLR-specific filters
+     * @param array  $weights       Search type weights ['solr' => 0.5, 'vector' => 0.5]
+     * @param string|null $provider Embedding provider override
+     *
+     * @return JSONResponse Combined search results
+     */
+    public function hybridSearch(
+        string $query,
+        int $limit = 20,
+        array $solrFilters = [],
+        array $weights = ['solr' => 0.5, 'vector' => 0.5],
+        ?string $provider = null
+    ): JSONResponse {
+        try {
+            if (empty(trim($query))) {
+                return new JSONResponse([
+                    'success' => false,
+                    'error' => 'Query parameter is required'
+                ], 400);
+            }
+
+            // Get VectorEmbeddingService from container
+            $vectorService = $this->container->get(VectorEmbeddingService::class);
+            
+            // Perform hybrid search
+            $result = $vectorService->hybridSearch($query, $solrFilters, $limit, $weights, $provider);
+            
+            return new JSONResponse([
+                'success' => true,
+                'query' => $query,
+                ...$result,
+                'timestamp' => date('c')
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get vector embedding statistics
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Vector statistics
+     */
+    public function getVectorStats(): JSONResponse
+    {
+        try {
+            // Get VectorEmbeddingService from container
+            $vectorService = $this->container->get(VectorEmbeddingService::class);
+            
+            // Get statistics
+            $stats = $vectorService->getVectorStats();
+            
+            return new JSONResponse([
+                'success' => true,
+                'stats' => $stats,
                 'timestamp' => date('c')
             ]);
         } catch (\Exception $e) {
