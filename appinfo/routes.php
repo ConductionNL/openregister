@@ -29,23 +29,55 @@ return [
 		['name' => 'settings#getSolrFields', 'url' => '/api/solr/fields', 'verb' => 'GET'],
 		['name' => 'settings#createMissingSolrFields', 'url' => '/api/solr/fields/create-missing', 'verb' => 'POST'],
 		['name' => 'settings#fixMismatchedSolrFields', 'url' => '/api/solr/fields/fix-mismatches', 'verb' => 'POST'],
-		['name' => 'settings#deleteSolrField', 'url' => '/api/solr/fields/{fieldName}', 'verb' => 'DELETE', 'requirements' => ['fieldName' => '[^/]+']],
-		['name' => 'settings#reindexSolr', 'url' => '/api/solr/reindex', 'verb' => 'POST'],
+	['name' => 'settings#deleteSolrField', 'url' => '/api/solr/fields/{fieldName}', 'verb' => 'DELETE', 'requirements' => ['fieldName' => '[^/]+']],
+		
+		// Collection-specific field management
+		['name' => 'settings#getObjectCollectionFields', 'url' => '/api/solr/collections/objects/fields', 'verb' => 'GET'],
+		['name' => 'settings#getFileCollectionFields', 'url' => '/api/solr/collections/files/fields', 'verb' => 'GET'],
+		['name' => 'settings#createMissingObjectFields', 'url' => '/api/solr/collections/objects/fields/create-missing', 'verb' => 'POST'],
+		['name' => 'settings#createMissingFileFields', 'url' => '/api/solr/collections/files/fields/create-missing', 'verb' => 'POST'],
         
         // SOLR Dashboard Management endpoints
         ['name' => 'settings#getSolrDashboardStats', 'url' => '/api/solr/dashboard/stats', 'verb' => 'GET'],
-        ['name' => 'settings#clearSolrIndex', 'url' => '/api/settings/solr/clear', 'verb' => 'POST'],
         ['name' => 'settings#inspectSolrIndex', 'url' => '/api/settings/solr/inspect', 'verb' => 'POST'],
         ['name' => 'settings#manageSolr', 'url' => '/api/solr/manage/{operation}', 'verb' => 'POST'],
     ['name' => 'settings#setupSolr', 'url' => '/api/solr/setup', 'verb' => 'POST'],
     ['name' => 'settings#testSolrSetup', 'url' => '/api/solr/test-setup', 'verb' => 'POST'],
-    ['name' => 'settings#deleteSolrCollection', 'url' => '/api/solr/collection/delete', 'verb' => 'DELETE'],
+    
+    // Collection-specific operations (with collection name parameter)
+    ['name' => 'settings#deleteSpecificSolrCollection', 'url' => '/api/solr/collections/{name}', 'verb' => 'DELETE', 'requirements' => ['name' => '[^/]+']],
+    ['name' => 'settings#clearSpecificCollection', 'url' => '/api/solr/collections/{name}/clear', 'verb' => 'POST', 'requirements' => ['name' => '[^/]+']],
+    ['name' => 'settings#reindexSpecificCollection', 'url' => '/api/solr/collections/{name}/reindex', 'verb' => 'POST', 'requirements' => ['name' => '[^/]+']],
+        
+        // SOLR Collection and ConfigSet Management endpoints (SolrController)
+        ['name' => 'solr#listCollections', 'url' => '/api/solr/collections', 'verb' => 'GET'],
+        ['name' => 'solr#createCollection', 'url' => '/api/solr/collections', 'verb' => 'POST'],
+        ['name' => 'solr#listConfigSets', 'url' => '/api/solr/configsets', 'verb' => 'GET'],
+        ['name' => 'solr#createConfigSet', 'url' => '/api/solr/configsets', 'verb' => 'POST'],
+        ['name' => 'solr#deleteConfigSet', 'url' => '/api/solr/configsets/{name}', 'verb' => 'DELETE'],
+        ['name' => 'solr#copyCollection', 'url' => '/api/solr/collections/copy', 'verb' => 'POST'],
+        ['name' => 'settings#updateSolrCollectionAssignments', 'url' => '/api/solr/collections/assignments', 'verb' => 'PUT'],
+        
+        // Vector Search endpoints (Semantic and Hybrid Search) - SolrController
+        ['name' => 'solr#semanticSearch', 'url' => '/api/search/semantic', 'verb' => 'POST'],
+        ['name' => 'solr#hybridSearch', 'url' => '/api/search/hybrid', 'verb' => 'POST'],
+        ['name' => 'solr#getVectorStats', 'url' => '/api/vectors/stats', 'verb' => 'GET'],
+        ['name' => 'solr#testVectorEmbedding', 'url' => '/api/vectors/test', 'verb' => 'POST'],
+        
+        // Object Vectorization endpoints - SolrController
+        ['name' => 'solr#vectorizeObject', 'url' => '/api/objects/{objectId}/vectorize', 'verb' => 'POST'],
+        ['name' => 'solr#bulkVectorizeObjects', 'url' => '/api/objects/vectorize/bulk', 'verb' => 'POST'],
+        ['name' => 'solr#getVectorizationStats', 'url' => '/api/objects/vectorize/stats', 'verb' => 'GET'],
         
         ['name' => 'settings#getRbacSettings', 'url' => '/api/settings/rbac', 'verb' => 'GET'],
         ['name' => 'settings#updateRbacSettings', 'url' => '/api/settings/rbac', 'verb' => 'PUT'],
         
         ['name' => 'settings#getMultitenancySettings', 'url' => '/api/settings/multitenancy', 'verb' => 'GET'],
         ['name' => 'settings#updateMultitenancySettings', 'url' => '/api/settings/multitenancy', 'verb' => 'PUT'],
+        
+        ['name' => 'settings#updateLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'POST'],
+        ['name' => 'settings#updateFileSettings', 'url' => '/api/settings/files', 'verb' => 'POST'],
+        ['name' => 'settings#updateObjectSettings', 'url' => '/api/settings/objects', 'verb' => 'POST'],
         
         ['name' => 'settings#getRetentionSettings', 'url' => '/api/settings/retention', 'verb' => 'GET'],
         
@@ -194,5 +226,34 @@ return [
         ['name' => 'organisation#leave', 'url' => '/api/organisations/{uuid}/leave', 'verb' => 'POST'],
 		// Tags
 		['name' => 'tags#getAllTags', 'url' => 'api/tags', 'verb' => 'GET'],
+		
+		// Chat - AI Assistant endpoints
+		['name' => 'chat#sendMessage', 'url' => '/api/chat/send', 'verb' => 'POST'],
+		['name' => 'chat#getHistory', 'url' => '/api/chat/history', 'verb' => 'GET'],
+		['name' => 'chat#clearHistory', 'url' => '/api/chat/history', 'verb' => 'DELETE'],
+		['name' => 'chat#sendFeedback', 'url' => '/api/chat/feedback', 'verb' => 'POST'],
+		
+		// File Text Management - Extract and manage text from files
+		['name' => 'fileText#getFileText', 'url' => '/api/files/{fileId}/text', 'verb' => 'GET', 'requirements' => ['fileId' => '\\d+']],
+		['name' => 'fileText#extractFileText', 'url' => '/api/files/{fileId}/extract', 'verb' => 'POST', 'requirements' => ['fileId' => '\\d+']],
+		['name' => 'fileText#bulkExtract', 'url' => '/api/files/extract/bulk', 'verb' => 'POST'],
+		['name' => 'fileText#getStats', 'url' => '/api/files/extraction/stats', 'verb' => 'GET'],
+		['name' => 'fileText#deleteFileText', 'url' => '/api/files/{fileId}/text', 'verb' => 'DELETE', 'requirements' => ['fileId' => '\\d+']],
+		
+		// File Chunking & Indexing - Process extracted files and index chunks in SOLR
+		['name' => 'fileText#processAndIndexExtracted', 'url' => '/api/files/chunks/process', 'verb' => 'POST'],
+		['name' => 'fileText#processAndIndexFile', 'url' => '/api/files/{fileId}/chunks/process', 'verb' => 'POST', 'requirements' => ['fileId' => '\\d+']],
+		['name' => 'fileText#getChunkingStats', 'url' => '/api/files/chunks/stats', 'verb' => 'GET'],
+		
+		// File Warmup & Indexing - Bulk process and index files in SOLR
+		['name' => 'settings#warmupFiles', 'url' => '/api/solr/warmup/files', 'verb' => 'POST'],
+		['name' => 'settings#indexFile', 'url' => '/api/solr/files/{fileId}/index', 'verb' => 'POST', 'requirements' => ['fileId' => '\\d+']],
+		['name' => 'settings#reindexFiles', 'url' => '/api/solr/files/reindex', 'verb' => 'POST'],
+		['name' => 'settings#getFileIndexStats', 'url' => '/api/solr/files/stats', 'verb' => 'GET'],
+		
+		// File Search - Keyword, semantic, and hybrid search over file contents
+		['name' => 'fileSearch#keywordSearch', 'url' => '/api/search/files/keyword', 'verb' => 'POST'],
+		['name' => 'fileSearch#semanticSearch', 'url' => '/api/search/files/semantic', 'verb' => 'POST'],
+		['name' => 'fileSearch#hybridSearch', 'url' => '/api/search/files/hybrid', 'verb' => 'POST'],
     ],
 ];

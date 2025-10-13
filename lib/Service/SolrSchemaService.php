@@ -71,7 +71,7 @@ class SolrSchemaService
     ];
 
     /**
-     * Core metadata fields that should be defined in SOLR schema
+     * Core metadata fields for OBJECT collection
      *
      * Field configuration strategy:
      * - JSON storage fields (self_object, self_authorization, etc.): stored=true, indexed=false, docValues=false
@@ -84,6 +84,9 @@ class SolrSchemaService
      * @var array<string, string> Field name => SOLR field type
      */
     private const CORE_METADATA_FIELDS = [
+        // Primary identifier (required by SOLR)
+        'id' => 'string',
+        
         // Object metadata
         'self_object_id' => 'pint',
         'self_uuid' => 'string',
@@ -129,6 +132,15 @@ class SolrSchemaService
         'self_files' => 'string',       // Multi-valued file references (multiValued=true)
         'self_authorization' => 'string', // JSON storage - not indexed, only for reconstruction
         'self_deleted' => 'string',       // JSON storage - not indexed, only for reconstruction
+        
+        // AI/ML vector metadata fields
+        // Note: Actual vector data is stored in oc_openregister_vectors table for efficiency
+        // These fields track vectorization status for hybrid search coordination
+        'vector_indexed' => 'boolean',      // Whether this object has vector embeddings
+        'vector_model' => 'string',         // Model used for embeddings (e.g., "text-embedding-3-small")
+        'vector_dimensions' => 'pint',      // Number of dimensions (e.g., 768, 1536)
+        'vector_chunk_count' => 'pint',     // Number of chunks for this object
+        'vector_updated' => 'pdate',        // When vectors were last generated
         'self_validation' => 'string',    // JSON storage - not indexed, only for reconstruction
         'self_groups' => 'string',        // JSON storage - not indexed, only for reconstruction
         
@@ -141,6 +153,87 @@ class SolrSchemaService
         '_embedding_dim_' => 'pint',      // Embedding dimension count for validation
         '_confidence_' => 'pfloat',       // ML confidence scores (0.0-1.0)
         '_classification_' => 'string'   // Auto-classification results (multiValued=true)
+    ];
+
+    /**
+     * File metadata fields for FILE collection
+     * 
+     * These fields are used for storing and searching file chunks with metadata.
+     * Supports full-text search, faceting, and vector semantic search.
+     * 
+     * @var array<string, string> Field name => SOLR field type
+     */
+    private const FILE_METADATA_FIELDS = [
+        // Primary identifier (required by SOLR)
+        'id' => 'string',
+        
+        // Nextcloud file metadata
+        'file_id' => 'plong',             // Nextcloud file ID from oc_filecache
+        'file_path' => 'string',          // Full path in Nextcloud
+        'file_name' => 'string',          // File name with extension
+        'file_basename' => 'string',      // Name without extension (for faceting)
+        'file_extension' => 'string',     // File extension (pdf, docx, txt)
+        'file_mime_type' => 'string',     // MIME type (application/pdf, text/plain)
+        'file_size' => 'plong',           // File size in bytes
+        'file_owner' => 'string',         // Nextcloud user who owns the file
+        'file_created' => 'pdate',        // File creation timestamp
+        'file_modified' => 'pdate',       // File modification timestamp
+        'file_storage' => 'pint',         // Storage ID from Nextcloud
+        'file_parent' => 'plong',         // Parent folder ID
+        'file_checksum' => 'string',      // File checksum/hash for deduplication
+        
+        // File classification and tags
+        'file_labels' => 'string',        // User-defined labels (multiValued=true)
+        'file_tags' => 'string',          // Auto-generated tags (multiValued=true)
+        'file_categories' => 'string',    // Categories (multiValued=true)
+        'file_language' => 'string',      // Detected language (en, nl, de, etc.)
+        
+        // Chunking information
+        'chunk_index' => 'pint',          // Chunk number (0-based)
+        'chunk_total' => 'pint',          // Total number of chunks for this file
+        'chunk_text' => 'text_general',   // The actual chunk text content
+        'chunk_length' => 'pint',         // Length of this chunk in characters
+        'chunk_start_offset' => 'plong',  // Start position in original file
+        'chunk_end_offset' => 'plong',    // End position in original file
+        'chunk_page_number' => 'pint',    // Page number (for PDFs, docs)
+        
+        // Full-text search fields
+        'text_content' => 'text_general', // Full extracted text for search
+        'text_preview' => 'string',       // Short preview/summary
+        'text_title' => 'text_general',   // Extracted title (from metadata or first heading)
+        'text_author' => 'string',        // Extracted author from metadata
+        'text_subject' => 'string',       // Document subject/topic
+        
+        // OCR and extraction metadata
+        'ocr_performed' => 'boolean',     // Whether OCR was performed
+        'ocr_confidence' => 'pfloat',     // OCR confidence score (0.0-1.0)
+        'extraction_method' => 'string',  // Method used (text_extract, ocr, api)
+        'extraction_date' => 'pdate',     // When text was extracted
+        
+        // Vector embedding metadata
+        'vector_indexed' => 'boolean',    // Whether this chunk has vector embeddings
+        'vector_model' => 'string',       // Model used for embeddings
+        'vector_dimensions' => 'pint',    // Number of dimensions
+        'vector_updated' => 'pdate',      // When vectors were last generated
+        
+        // Relationships and context
+        'related_object_id' => 'string',  // Related object UUID (if attached to object)
+        'related_object_type' => 'string', // Object type/schema
+        'shared_with' => 'string',        // Users/groups with access (multiValued=true)
+        'access_level' => 'string',       // Access level (public, shared, private)
+        
+        // Processing status
+        'processing_status' => 'string',  // Status (pending, processed, failed, skipped)
+        'processing_error' => 'string',   // Error message if processing failed
+        'processing_date' => 'pdate',     // When processing completed
+        
+        // AI/ML fields
+        '_text_' => 'text_general',       // Catch-all full-text search field
+        '_embedding_' => 'pfloat',        // Vector embeddings (multiValued=true)
+        '_embedding_model_' => 'string',  // Model identifier
+        '_embedding_dim_' => 'pint',      // Embedding dimension count
+        '_confidence_' => 'pfloat',       // ML confidence scores
+        '_classification_' => 'string'    // Auto-classification results (multiValued=true)
     ];
 
     /**
@@ -322,13 +415,15 @@ class SolrSchemaService
                 $fieldType = $fieldDefinition['type'] ?? 'string';
                 
                 // Skip reserved fields and metadata fields
-                if (in_array($fieldName, self::RESERVED_FIELDS) || str_starts_with($fieldName, 'self_')) {
+                // Cast fieldName to string to handle numeric keys
+                $fieldNameStr = (string)$fieldName;
+                if (in_array($fieldNameStr, self::RESERVED_FIELDS) || str_starts_with($fieldNameStr, 'self_')) {
                     continue;
                 }
 
                 // Initialize field tracking
-                if (!isset($fieldDefinitions[$fieldName])) {
-                    $fieldDefinitions[$fieldName] = [
+                if (!isset($fieldDefinitions[$fieldNameStr])) {
+                    $fieldDefinitions[$fieldNameStr] = [
                         'types' => [],
                         'schemas' => [],
                         'definitions' => []
@@ -336,24 +431,27 @@ class SolrSchemaService
                 }
 
                 // Track this field type and schema
-                if (!isset($fieldDefinitions[$fieldName]['types'][$fieldType])) {
-                    $fieldDefinitions[$fieldName]['types'][$fieldType] = 0;
+                if (!isset($fieldDefinitions[$fieldNameStr]['types'][$fieldType])) {
+                    $fieldDefinitions[$fieldNameStr]['types'][$fieldType] = 0;
                 }
-                $fieldDefinitions[$fieldName]['types'][$fieldType]++;
-                $fieldDefinitions[$fieldName]['schemas'][] = ['id' => $schemaId, 'title' => $schemaTitle];
-                $fieldDefinitions[$fieldName]['definitions'][] = $fieldDefinition;
+                $fieldDefinitions[$fieldNameStr]['types'][$fieldType]++;
+                $fieldDefinitions[$fieldNameStr]['schemas'][] = ['id' => $schemaId, 'title' => $schemaTitle];
+                $fieldDefinitions[$fieldNameStr]['definitions'][] = $fieldDefinition;
             }
         }
 
         // STEP 2: Resolve conflicts by choosing most permissive type
         foreach ($fieldDefinitions as $fieldName => $fieldInfo) {
+            // Cast fieldName to string to handle numeric keys
+            $fieldNameStr = (string)$fieldName;
+            
             $types = array_keys($fieldInfo['types']);
             
             if (count($types) > 1) {
                 // CONFLICT DETECTED - resolve with most permissive type
                 $resolvedType = $this->getMostPermissiveType($types);
                 $conflictDetails[] = [
-                    'field' => $fieldName,
+                    'field' => $fieldNameStr,
                     'conflicting_types' => $fieldInfo['types'],
                     'resolved_type' => $resolvedType,
                     'schemas' => $fieldInfo['schemas']
@@ -361,7 +459,7 @@ class SolrSchemaService
                 $conflictsResolved++;
                 
                 $this->logger->info('🔧 Field conflict resolved', [
-                    'field' => $fieldName,
+                    'field' => $fieldNameStr,
                     'conflicting_types' => $types,
                     'resolved_type' => $resolvedType,
                     'affected_schemas' => count($fieldInfo['schemas'])
@@ -372,7 +470,7 @@ class SolrSchemaService
             }
 
             // Create SOLR field definition with resolved type
-            $solrFieldName = $this->generateSolrFieldName($fieldName, $fieldInfo['definitions'][0]);
+            $solrFieldName = $this->generateSolrFieldName($fieldNameStr, $fieldInfo['definitions'][0]);
             $solrFieldType = $this->determineSolrFieldType(['type' => $resolvedType] + $fieldInfo['definitions'][0]);
             
             if ($solrFieldName && $solrFieldType) {
@@ -722,8 +820,106 @@ class SolrSchemaService
             return false; // Vector and classification fields don't need docValues for sorting
         }
         
-        if (in_array($fieldName, ['_embedding_model_', '_embedding_dim_'])) {
+        if (in_array($fieldName, ['_embedding_model_', '_embedding_dim_', 'vector_indexed', 'vector_model', 'vector_dimensions'])) {
             return true; // Metadata fields that might be used for filtering/faceting
+        }
+        
+        return in_array($fieldName, $docValuesFields);
+    }
+
+    /**
+     * Determine if a file metadata field should be multi-valued
+     * 
+     * @param string $fieldName File field name
+     * @param string $fieldType Field type
+     * @return bool True if field should be multi-valued
+     */
+    private function isFileFieldMultiValued(string $fieldName, string $fieldType): bool
+    {
+        // Multi-valued file fields
+        $multiValuedFileFields = [
+            'file_labels',       // User-defined labels
+            'file_tags',         // Auto-generated tags
+            'file_categories',   // Categories
+            'shared_with',       // Users/groups with access
+            '_embedding_',       // Vector embeddings (multi-valued floats)
+            '_classification_'   // Auto-classification results
+        ];
+        
+        return in_array($fieldName, $multiValuedFileFields);
+    }
+
+    /**
+     * Determine if a file metadata field should be indexed
+     * 
+     * @param string $fieldName File field name
+     * @return bool True if field should be indexed
+     */
+    private function shouldFileFieldBeIndexed(string $fieldName): bool
+    {
+        // Fields that should NOT be indexed (stored only for metadata/reconstruction)
+        $nonIndexedFields = [
+            'file_checksum',      // Only for deduplication, not searching
+            'processing_error',   // Only for debugging, not searching
+            '_embedding_dim_'     // Dimension count - stored for validation, not searched
+        ];
+        
+        return !in_array($fieldName, $nonIndexedFields);
+    }
+
+    /**
+     * Determine if a file metadata field should have docValues enabled
+     * 
+     * @param string $fieldName File field name
+     * @return bool True if field should have docValues enabled
+     */
+    private function shouldFileFieldHaveDocValues(string $fieldName): bool
+    {
+        // Fields that should have docValues enabled for sorting/faceting/grouping
+        $docValuesFields = [
+            // Sortable fields
+            'file_name',          // Sort by name
+            'file_size',          // Sort by size
+            'file_created',       // Sort by creation date
+            'file_modified',      // Sort by modification date
+            'chunk_index',        // Sort chunks by index
+            'vector_updated',     // Sort by vector update date
+            'processing_date',    // Sort by processing date
+            
+            // Facetable fields
+            'file_extension',     // Facet by file type
+            'file_mime_type',     // Facet by MIME type
+            'file_owner',         // Facet by owner
+            'file_labels',        // Facet by labels
+            'file_tags',          // Facet by tags
+            'file_categories',    // Facet by categories
+            'file_language',      // Facet by language
+            'processing_status',  // Facet by status
+            'access_level',       // Facet by access level
+            'extraction_method',  // Facet by extraction method
+            
+            // Vector metadata
+            'vector_indexed',     // Filter by vectorization status
+            'vector_model',       // Filter by model
+            'vector_dimensions',  // Filter by dimensions
+            
+            // Relationship fields
+            'file_id',            // Nextcloud file ID lookup
+            'related_object_id',  // Related object lookup
+            'related_object_type',// Related object type lookup
+            
+            // OCR fields
+            'ocr_performed',      // Filter by OCR status
+        ];
+        
+        // Special handling for system fields
+        if (in_array($fieldName, ['_text_', 'chunk_text', 'text_content'])) {
+            return false; // Full-text search fields don't need docValues
+        }
+        
+        // AI/ML fields configuration
+        if (in_array($fieldName, ['_embedding_', '_confidence_', '_classification_'])) {
+            return false; // Vector and classification fields don't need docValues
         }
         
         return in_array($fieldName, $docValuesFields);
@@ -777,6 +973,245 @@ class SolrSchemaService
         ]);
 
         return $successCount === count(self::CORE_METADATA_FIELDS);
+    }
+
+    /**
+     * Ensure file metadata fields exist in file collection
+     * 
+     * @param bool $force Force update existing fields
+     * @return bool Success status
+     */
+    private function ensureFileMetadataFields(bool $force = false): bool
+    {
+        $this->logger->info('🔧 Ensuring file metadata fields in SOLR schema', [
+            'field_count' => count(self::FILE_METADATA_FIELDS),
+            'force' => $force
+        ]);
+
+        $successCount = 0;
+        foreach (self::FILE_METADATA_FIELDS as $fieldName => $fieldType) {
+            try {
+                $fieldConfig = [
+                    'type' => $fieldType,
+                    'stored' => true,
+                    'indexed' => $this->shouldFileFieldBeIndexed($fieldName),
+                    'multiValued' => $this->isFileFieldMultiValued($fieldName, $fieldType),
+                    'docValues' => $this->shouldFileFieldHaveDocValues($fieldName)
+                ];
+
+                if ($this->addOrUpdateSolrField($fieldName, $fieldConfig, $force)) {
+                    $successCount++;
+                    $this->logger->debug('✅ File metadata field ensured', [
+                        'field' => $fieldName,
+                        'type' => $fieldType
+                    ]);
+                }
+            } catch (\Exception $e) {
+                $this->logger->error('❌ Failed to ensure file metadata field', [
+                    'field' => $fieldName,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        $this->logger->info('File metadata fields processing completed', [
+            'successful' => $successCount,
+            'total' => count(self::FILE_METADATA_FIELDS)
+        ]);
+
+        return $successCount === count(self::FILE_METADATA_FIELDS);
+    }
+
+    /**
+     * Get missing and extra fields in object collection
+     * 
+     * @return array{missing: array<string, array>, extra: array<string>, expected: array<string>, current: array<string>}
+     */
+    public function getObjectCollectionFieldStatus(): array
+    {
+        // Get object collection from settings
+        $settings = $this->settingsService->getSettings();
+        $objectCollection = $settings['solr']['objectCollection'] ?? null;
+        if (!$objectCollection) {
+            // Fall back to default collection if object collection not configured
+            $objectCollection = $settings['solr']['collection'] ?? 'openregister';
+        }
+        
+        // Get current fields from SOLR for object collection
+        $current = $this->getCurrentCollectionFields($objectCollection);
+        
+        // Expected fields with their config
+        $expected = self::CORE_METADATA_FIELDS;
+        $expectedNames = array_keys($expected);
+        
+        // Find missing fields (expected but not in SOLR)
+        $missingNames = array_diff($expectedNames, $current);
+        $missing = [];
+        foreach ($missingNames as $fieldName) {
+            $fieldType = $expected[$fieldName];
+            
+            // Determine if field should be multi-valued (fields ending in _ss, _is, etc.)
+            $multiValued = str_ends_with($fieldName, '_ss') || 
+                          str_ends_with($fieldName, '_is') || 
+                          str_ends_with($fieldName, '_ls') ||
+                          str_ends_with($fieldName, '_ts') ||
+                          str_ends_with($fieldName, '_ds') ||
+                          str_ends_with($fieldName, '_bs');
+            
+            // Determine if field should have docValues (for sorting/faceting)
+            // String fields and numeric fields typically need docValues for faceting
+            $docValues = in_array($fieldType, ['string', 'pint', 'plong', 'pfloat', 'pdouble', 'pdate']) &&
+                        !str_starts_with($fieldName, 'self_object') && // JSON storage fields don't need docValues
+                        !str_starts_with($fieldName, 'self_schema') &&
+                        !str_starts_with($fieldName, 'self_register') &&
+                        !str_ends_with($fieldName, '_json');
+            
+            $missing[$fieldName] = [
+                'type' => $fieldType,
+                'stored' => true,
+                'indexed' => true,
+                'multiValued' => $multiValued,
+                'docValues' => $docValues
+            ];
+        }
+        
+        // Find extra fields (in SOLR but not expected)
+        $extra = array_diff($current, $expectedNames);
+        
+        return [
+            'missing' => $missing,
+            'extra' => array_values($extra),
+            'expected' => $expectedNames,
+            'current' => $current,
+            'status' => empty($missing) ? 'complete' : 'incomplete',
+            'collection' => $objectCollection
+        ];
+    }
+
+    /**
+     * Get missing and extra fields in file collection
+     * 
+     * @return array{missing: array<string, array>, extra: array<string>, expected: array<string>, current: array<string>}
+     */
+    public function getFileCollectionFieldStatus(): array
+    {
+        // Get file collection from settings
+        $settings = $this->settingsService->getSettings();
+        $fileCollection = $settings['solr']['fileCollection'] ?? null;
+        if (!$fileCollection) {
+            // File collection might not be configured yet
+            $fileCollection = 'openregister_files';
+        }
+        
+        // Get current fields from SOLR for file collection
+        $current = $this->getCurrentCollectionFields($fileCollection);
+        
+        // Expected fields with their config
+        $expected = self::FILE_METADATA_FIELDS;
+        $expectedNames = array_keys($expected);
+        
+        // Find missing fields (expected but not in SOLR)
+        $missingNames = array_diff($expectedNames, $current);
+        $missing = [];
+        foreach ($missingNames as $fieldName) {
+            $fieldType = $expected[$fieldName];
+            
+            // Determine if field should be multi-valued (fields ending in _ss, _is, etc.)
+            $multiValued = str_ends_with($fieldName, '_ss') || 
+                          str_ends_with($fieldName, '_is') || 
+                          str_ends_with($fieldName, '_ls') ||
+                          str_ends_with($fieldName, '_ts') ||
+                          str_ends_with($fieldName, '_ds') ||
+                          str_ends_with($fieldName, '_bs');
+            
+            // Determine if field should have docValues (for sorting/faceting)
+            // String fields and numeric fields typically need docValues for faceting
+            $docValues = in_array($fieldType, ['string', 'pint', 'plong', 'pfloat', 'pdouble', 'pdate']) &&
+                        !str_ends_with($fieldName, '_text') && // Full-text fields don't need docValues
+                        !str_ends_with($fieldName, '_content') &&
+                        !str_ends_with($fieldName, '_json');
+            
+            $missing[$fieldName] = [
+                'type' => $fieldType,
+                'stored' => true,
+                'indexed' => true,
+                'multiValued' => $multiValued,
+                'docValues' => $docValues
+            ];
+        }
+        
+        // Find extra fields (in SOLR but not expected)
+        $extra = array_diff($current, $expectedNames);
+        
+        return [
+            'missing' => $missing,
+            'extra' => array_values($extra),
+            'expected' => $expectedNames,
+            'current' => $current,
+            'status' => empty($missing) ? 'complete' : 'incomplete',
+            'collection' => $fileCollection
+        ];
+    }
+
+    /**
+     * Get current field names from a specific SOLR collection
+     *
+     * @param string $collectionName Collection to query
+     * 
+     * @return array<string> Field names
+     */
+    private function getCurrentCollectionFields(string $collectionName): array
+    {
+        try {
+            // Build schema API URL for specific collection
+            $schemaUrl = $this->solrService->buildSolrBaseUrl() . "/{$collectionName}/schema";
+            
+            // Prepare request options
+            $solrConfig = $this->settingsService->getSettings()['solr'] ?? [];
+            $requestOptions = [
+                'timeout' => $solrConfig['timeout'] ?? 30,
+                'headers' => ['Accept' => 'application/json']
+            ];
+
+            // Add authentication if configured
+            if (!empty($solrConfig['username']) && !empty($solrConfig['password'])) {
+                $requestOptions['auth'] = [
+                    $solrConfig['username'],
+                    $solrConfig['password']
+                ];
+            }
+
+            // Make the schema request
+            $httpClient = \OC::$server->get(\OCP\Http\Client\IClientService::class)->newClient();
+            $response = $httpClient->get($schemaUrl, $requestOptions);
+            $responseBody = $response->getBody();
+            $schemaData = json_decode($responseBody, true);
+
+            if (!$schemaData || !isset($schemaData['schema']['fields'])) {
+                $this->logger->warning('No fields data returned from SOLR', [
+                    'collection' => $collectionName,
+                    'response' => substr($responseBody, 0, 500) // Log first 500 chars for debugging
+                ]);
+                return [];
+            }
+            
+            // Extract field names
+            $fieldNames = [];
+            foreach ($schemaData['schema']['fields'] as $field) {
+                if (isset($field['name'])) {
+                    $fieldNames[] = $field['name'];
+                }
+            }
+            
+            return $fieldNames;
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get current collection fields', [
+                'collection' => $collectionName,
+                'error' => $e->getMessage()
+            ]);
+            return [];
+        }
     }
 
     /**
@@ -962,6 +1397,166 @@ class SolrSchemaService
                 'success' => false,
                 'error' => $e->getMessage()
             ];
+        }
+    }
+
+    /**
+     * Create missing fields in a specific collection
+     *
+     * @param string $collectionType Type of collection ('objects' or 'files')
+     * @param array  $missingFields  Array of missing field configurations
+     * @param bool   $dryRun         If true, only simulate field creation
+     *
+     * @return array Creation result with statistics
+     */
+    public function createMissingFields(string $collectionType, array $missingFields, bool $dryRun = false): array
+    {
+        $this->logger->info('Creating missing fields for collection', [
+            'collection_type' => $collectionType,
+            'field_count' => count($missingFields),
+            'dry_run' => $dryRun
+        ]);
+
+        $startTime = microtime(true);
+        $created = [];
+        $errors = [];
+
+        // Get the appropriate collection name
+        $settings = $this->settingsService->getSettings();
+        $collection = $collectionType === 'files' 
+            ? ($settings['solr']['fileCollection'] ?? null)
+            : ($settings['solr']['objectCollection'] ?? $settings['solr']['collection'] ?? 'openregister');
+
+        if (!$collection) {
+            return [
+                'success' => false,
+                'message' => "No collection configured for type: {$collectionType}",
+                'created_count' => 0,
+                'error_count' => 1
+            ];
+        }
+
+        foreach ($missingFields as $fieldName => $fieldConfig) {
+            try {
+                if ($dryRun) {
+                    $created[] = $fieldName;
+                    continue;
+                }
+
+                // Add field to SOLR using the schema API
+                $result = $this->addFieldToCollection(
+                    $collection,
+                    $fieldName,
+                    $fieldConfig
+                );
+
+                if ($result) {
+                    $created[] = $fieldName;
+                    $this->logger->debug('Created field in SOLR', [
+                        'field' => $fieldName,
+                        'collection' => $collection
+                    ]);
+                } else {
+                    $errors[$fieldName] = 'Failed to create field';
+                }
+            } catch (\Exception $e) {
+                $errors[$fieldName] = $e->getMessage();
+                $this->logger->error('Failed to create field', [
+                    'field' => $fieldName,
+                    'collection' => $collection,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+
+        return [
+            'success' => empty($errors),
+            'message' => sprintf(
+                '%s: %d created, %d errors',
+                $dryRun ? 'Dry run' : 'Created fields',
+                count($created),
+                count($errors)
+            ),
+            'collection' => $collection,
+            'collection_type' => $collectionType,
+            'created' => $created,
+            'created_count' => count($created),
+            'errors' => $errors,
+            'error_count' => count($errors),
+            'execution_time_ms' => $executionTime,
+            'dry_run' => $dryRun
+        ];
+    }
+
+    /**
+     * Add a field to a SOLR collection using the Schema API
+     *
+     * @param string $collection Collection name
+     * @param string $fieldName  Field name
+     * @param array  $fieldConfig Field configuration
+     *
+     * @return bool True if successful
+     */
+    private function addFieldToCollection(string $collection, string $fieldName, array $fieldConfig): bool
+    {
+        $settings = $this->settingsService->getSettings();
+        $solrUrl = $this->solrService->buildSolrBaseUrl();
+        $schemaUrl = "{$solrUrl}/{$collection}/schema";
+
+        // Prepare field definition
+        $fieldDef = [
+            'name' => $fieldName,
+            'type' => $fieldConfig['type'],
+            'stored' => $fieldConfig['stored'] ?? true,
+            'indexed' => $fieldConfig['indexed'] ?? true
+        ];
+
+        // Add multiValued if specified
+        if (isset($fieldConfig['multiValued'])) {
+            $fieldDef['multiValued'] = $fieldConfig['multiValued'];
+        }
+
+        // Add docValues if specified
+        if (isset($fieldConfig['docValues'])) {
+            $fieldDef['docValues'] = $fieldConfig['docValues'];
+        }
+
+        $payload = ['add-field' => $fieldDef];
+
+        // Prepare request options
+        $requestOptions = [
+            'body' => json_encode($payload),
+            'timeout' => 30,
+            'headers' => [
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json'
+            ]
+        ];
+
+        // Add authentication if configured
+        $username = $settings['solr']['username'] ?? null;
+        $password = $settings['solr']['password'] ?? null;
+        if ($username && $password) {
+            $requestOptions['auth'] = [$username, $password];
+        }
+
+        try {
+            // Get HTTP client from server
+            $httpClient = \OC::$server->get(\OCP\Http\Client\IClientService::class)->newClient();
+            $response = $httpClient->post($schemaUrl, $requestOptions);
+            $responseBody = $response->getBody();
+            $data = json_decode($responseBody, true);
+            
+            return ($data['responseHeader']['status'] ?? -1) === 0;
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to add field to collection', [
+                'collection' => $collection,
+                'field' => $fieldName,
+                'error' => $e->getMessage()
+            ]);
+            return false;
         }
     }
 }
