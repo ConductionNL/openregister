@@ -73,6 +73,25 @@
 						{{ t('openregister', 'LLM Configuration') }}
 					</NcActionButton>
 					
+					<!-- File Processing -->
+					<NcActionButton 
+						v-if="solrOptions.enabled"
+						@click="openFileWarmup">
+						<template #icon>
+							<Fire :size="20" />
+						</template>
+						{{ t('openregister', 'File Warmup') }}
+					</NcActionButton>
+					
+					<NcActionButton 
+						v-if="solrOptions.enabled"
+						@click="openWarmupModal">
+						<template #icon>
+							<Fire :size="20" />
+						</template>
+						{{ t('openregister', 'Object Warmup') }}
+					</NcActionButton>
+					
 					<!-- Diagnostics -->
 						<NcActionButton
 						:disabled="loading || saving || warmingUpSolr || loadingFields"
@@ -91,16 +110,6 @@
 							</template>
 							{{ t('openregister', 'Inspect Index') }}
 						</NcActionButton>
-						
-					<!-- Index Management -->
-					<NcActionButton 
-						v-if="solrOptions.enabled"
-						@click="openWarmupModal">
-						<template #icon>
-							<Fire :size="20" />
-						</template>
-						{{ t('openregister', 'Warmup Index') }}
-					</NcActionButton>
 					<NcActionButton
 						v-if="solrOptions.enabled"
 						@click="openFacetConfigModal">
@@ -1349,6 +1358,12 @@
 			:show="showLLMConfigDialog"
 			@closing="showLLMConfigDialog = false"
 		/>
+
+		<!-- File Warmup Modal -->
+		<FileWarmupModal
+			:open="showFileWarmupDialog"
+			@close="showFileWarmupDialog = false"
+		/>
 	</NcSettingsSection>
 </template>
 
@@ -1387,6 +1402,7 @@ import CollectionManagementModal from '../../../modals/settings/CollectionManage
 import FileManagementModal from '../../../modals/settings/FileManagementModal.vue'
 import ObjectManagementModal from '../../../modals/settings/ObjectManagementModal.vue'
 import LLMConfigModal from '../../../modals/settings/LLMConfigModal.vue'
+import FileWarmupModal from '../../../modals/settings/FileWarmupModal.vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 
@@ -1434,6 +1450,7 @@ export default {
 		FileManagementModal,
 		ObjectManagementModal,
 		LLMConfigModal,
+		FileWarmupModal,
 	},
 
 	data() {
@@ -1456,6 +1473,7 @@ export default {
 			showFileManagementDialog: false,
 			showObjectManagementDialog: false,
 			showLLMConfigDialog: false,
+			showFileWarmupDialog: false,
 			solrStats: null,
 			objectStats: {
 				loading: false,
@@ -1946,19 +1964,61 @@ export default {
 			this.showWarmupDialog = true
 		},
 
+		openFileWarmup() {
+			console.log('🔥 Opening File Warmup modal...')
+			console.log('🔥 Current showFileWarmupDialog value:', this.showFileWarmupDialog)
+			this.showFileWarmupDialog = true
+			console.log('🔥 Set showFileWarmupDialog to:', this.showFileWarmupDialog)
+		},
+
 		async loadAvailableSchemas() {
 			this.schemasLoading = true
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/schemas'))
-				if (response.data && response.data.results) {
-					this.availableSchemas = response.data.results.map(schema => ({
-						id: schema.id,
-						label: schema.title || schema.name || schema.id,
-						objectCount: schema.stats?.objects?.total || 0
-					}))
+				console.log('📊 Loading schemas with stats from API...')
+				// Use _extend=@self.stats to get object counts in one call
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/schemas'),
+					{ params: { _extend: '@self.stats' } }
+				)
+				console.log('📊 Schemas API response:', response.data)
+				
+				// Handle different response formats
+				let schemaArray = []
+				if (response.data && Array.isArray(response.data.results)) {
+					schemaArray = response.data.results
+				} else if (response.data && Array.isArray(response.data)) {
+					schemaArray = response.data
+				} else if (response.data && response.data.data && Array.isArray(response.data.data)) {
+					schemaArray = response.data.data
+				}
+				
+				console.log('📋 Schema array:', schemaArray)
+				console.log('🔍 First schema structure:', schemaArray[0])
+				
+				if (schemaArray.length > 0) {
+					this.availableSchemas = schemaArray
+						.filter(schema => schema && (schema.id || schema.uuid))
+						.map(schema => {
+							const schemaId = schema.id || schema.uuid
+							const objectCount = schema.stats?.objects?.total || 0
+							
+							console.log(`📊 Schema "${schema.title || schemaId}" has ${objectCount} objects`)
+							
+							return {
+								id: schemaId,
+								label: schema.title || schema.name || schemaId || 'Unnamed Schema',
+								objectCount: objectCount
+							}
+						})
+					
+					console.log('✅ Available schemas loaded:', this.availableSchemas)
+					console.log('📊 Total schemas after filtering:', this.availableSchemas.length)
+				} else {
+					console.warn('⚠️ No schemas found in response')
+					this.availableSchemas = []
 				}
 			} catch (error) {
-				console.error('Failed to load available schemas:', error)
+				console.error('❌ Failed to load available schemas:', error)
 				this.availableSchemas = []
 			} finally {
 				this.schemasLoading = false

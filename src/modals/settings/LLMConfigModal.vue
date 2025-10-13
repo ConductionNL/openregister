@@ -19,19 +19,20 @@
 					{{ t('openregister', 'Select which provider to use for generating vector embeddings.') }}
 				</p>
 				
-				<NcSelect
-					v-model="selectedEmbeddingProvider"
-					:options="embeddingProviderOptions"
-					label="name"
-					:placeholder="t('openregister', 'Select embedding provider')"
-					@input="handleEmbeddingProviderChange">
-					<template #option="{ name, description }">
-						<div class="provider-option">
-							<strong>{{ name }}</strong>
-							<small>{{ description }}</small>
-						</div>
-					</template>
-				</NcSelect>
+			<NcSelect
+				v-model="selectedEmbeddingProvider"
+				:options="embeddingProviderOptions"
+				label="name"
+				:placeholder="t('openregister', 'Select embedding provider')"
+				:input-label="t('openregister', 'Embedding Provider')"
+				@input="handleEmbeddingProviderChange">
+				<template #option="{ name, description }">
+					<div class="provider-option">
+						<strong>{{ name }}</strong>
+						<small>{{ description }}</small>
+					</div>
+				</template>
+			</NcSelect>
 			</div>
 
 			<!-- OpenAI Configuration -->
@@ -49,21 +50,22 @@
 					<small>{{ t('openregister', 'Your OpenAI API key. Get one at') }} <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small>
 				</div>
 
-				<div class="form-group">
-					<label for="openai-model">{{ t('openregister', 'Embedding Model') }}</label>
-					<NcSelect
-						v-model="openaiConfig.model"
-						:options="openaiModelOptions"
-						label="name"
-						:placeholder="t('openregister', 'Select model')">
-						<template #option="{ name, dimensions, cost }">
-							<div class="model-option">
-								<strong>{{ name }}</strong>
-								<small>{{ dimensions }} dimensions • {{ cost }}</small>
-							</div>
-						</template>
-					</NcSelect>
-				</div>
+			<div class="form-group">
+				<label for="openai-model">{{ t('openregister', 'Embedding Model') }}</label>
+				<NcSelect
+					v-model="openaiConfig.model"
+					:options="openaiModelOptions"
+					label="name"
+					:placeholder="t('openregister', 'Select model')"
+					:label-outside="true">
+					<template #option="{ name, dimensions, cost }">
+						<div class="model-option">
+							<strong>{{ name }}</strong>
+							<small>{{ dimensions }} dimensions • {{ cost }}</small>
+						</div>
+					</template>
+				</NcSelect>
+			</div>
 
 				<div class="form-group">
 					<label for="openai-org">{{ t('openregister', 'Organization ID (Optional)') }}</label>
@@ -91,25 +93,26 @@
 					<small>{{ t('openregister', 'URL where Ollama is running') }}</small>
 				</div>
 
-			<div class="form-group">
-				<label for="ollama-model">{{ t('openregister', 'Model Name') }}</label>
-				<NcSelect
-					id="ollama-model"
-					v-model="ollamaConfig.model"
-					:options="ollamaModelOptions"
-					label="name"
-					:placeholder="t('openregister', 'Select model')"
-					:taggable="true"
-					:createOption="(option) => ({ id: option, name: option })">
-					<template #option="{ name, description }">
-						<div class="model-option">
-							<strong>{{ name }}</strong>
-							<small v-if="description">{{ description }}</small>
-						</div>
-					</template>
-				</NcSelect>
-				<small>{{ t('openregister', 'Select a model or type a custom model name') }}</small>
-		</div>
+		<div class="form-group">
+			<label for="ollama-model">{{ t('openregister', 'Model Name') }}</label>
+			<NcSelect
+				id="ollama-model"
+				v-model="ollamaConfig.model"
+				:options="ollamaModelOptions"
+				label="name"
+				:placeholder="t('openregister', 'Select model')"
+				:label-outside="true"
+				:taggable="true"
+				:createOption="(option) => ({ id: option, name: option })">
+				<template #option="{ name, description }">
+					<div class="model-option">
+						<strong>{{ name }}</strong>
+						<small v-if="description">{{ description }}</small>
+					</div>
+				</template>
+			</NcSelect>
+			<small>{{ t('openregister', 'Select a model or type a custom model name') }}</small>
+	</div>
 		</div>
 
 		<!-- Fireworks Configuration (Embedding) -->
@@ -127,21 +130,22 @@
 				<small>{{ t('openregister', 'Your Fireworks AI API key. Get one at') }} <a href="https://fireworks.ai" target="_blank">fireworks.ai</a></small>
 			</div>
 
-			<div class="form-group">
-				<label for="fireworks-embedding-model">{{ t('openregister', 'Embedding Model') }}</label>
-				<NcSelect
-					v-model="fireworksConfig.embeddingModel"
-					:options="fireworksEmbeddingModelOptions"
-					label="name"
-					:placeholder="t('openregister', 'Select model')">
-					<template #option="{ name, dimensions, cost }">
-						<div class="model-option">
-							<strong>{{ name }}</strong>
-							<small>{{ dimensions }} dimensions • {{ cost }}</small>
-						</div>
-					</template>
-				</NcSelect>
-			</div>
+		<div class="form-group">
+			<label for="fireworks-embedding-model">{{ t('openregister', 'Embedding Model') }}</label>
+			<NcSelect
+				v-model="fireworksConfig.embeddingModel"
+				:options="fireworksEmbeddingModelOptions"
+				label="name"
+				:placeholder="t('openregister', 'Select model')"
+				:label-outside="true">
+				<template #option="{ name, dimensions, cost }">
+					<div class="model-option">
+						<strong>{{ name }}</strong>
+						<small>{{ dimensions }} dimensions • {{ cost }}</small>
+					</div>
+				</template>
+			</NcSelect>
+		</div>
 
 			<div class="form-group">
 				<label for="fireworks-base-url">{{ t('openregister', 'Base URL (Optional)') }}</label>
@@ -162,18 +166,19 @@
 					{{ t('openregister', 'Select which provider to use for chat and retrieval-augmented generation.') }}
 				</p>
 				
-				<NcSelect
-					v-model="selectedChatProvider"
-					:options="chatProviderOptions"
-					label="name"
-					:placeholder="t('openregister', 'Select chat provider')">
-					<template #option="{ name, description }">
-						<div class="provider-option">
-							<strong>{{ name }}</strong>
-							<small>{{ description }}</small>
-						</div>
-					</template>
-				</NcSelect>
+			<NcSelect
+				v-model="selectedChatProvider"
+				:options="chatProviderOptions"
+				label="name"
+				:placeholder="t('openregister', 'Select chat provider')"
+				:input-label="t('openregister', 'Chat Provider')">
+				<template #option="{ name, description }">
+					<div class="provider-option">
+						<strong>{{ name }}</strong>
+						<small>{{ description }}</small>
+					</div>
+				</template>
+			</NcSelect>
 			</div>
 
 		<!-- OpenAI Chat Configuration -->
@@ -191,21 +196,22 @@
 				<small>{{ t('openregister', 'Your OpenAI API key. Get one at') }} <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small>
 			</div>
 
-			<div class="form-group">
-				<label for="openai-chat-model">{{ t('openregister', 'Chat Model') }}</label>
-				<NcSelect
-					v-model="openaiConfig.chatModel"
-					:options="openaiChatModelOptions"
-					label="name"
-					:placeholder="t('openregister', 'Select chat model')">
-					<template #option="{ name, contextWindow, cost }">
-						<div class="model-option">
-							<strong>{{ name }}</strong>
-							<small>{{ contextWindow }} tokens • {{ cost }}/1M tokens</small>
-						</div>
-					</template>
-				</NcSelect>
-			</div>
+		<div class="form-group">
+			<label for="openai-chat-model">{{ t('openregister', 'Chat Model') }}</label>
+			<NcSelect
+				v-model="openaiConfig.chatModel"
+				:options="openaiChatModelOptions"
+				label="name"
+				:placeholder="t('openregister', 'Select chat model')"
+				:label-outside="true">
+				<template #option="{ name, contextWindow, cost }">
+					<div class="model-option">
+						<strong>{{ name }}</strong>
+						<small>{{ contextWindow }} tokens • {{ cost }}/1M tokens</small>
+					</div>
+				</template>
+			</NcSelect>
+		</div>
 		</div>
 
 		<!-- Fireworks Chat Configuration -->
@@ -223,21 +229,22 @@
 				<small>{{ t('openregister', 'Your Fireworks AI API key. Get one at') }} <a href="https://fireworks.ai" target="_blank">fireworks.ai</a></small>
 			</div>
 
-			<div class="form-group">
-				<label for="fireworks-chat-model">{{ t('openregister', 'Chat Model') }}</label>
-				<NcSelect
-					v-model="fireworksConfig.chatModel"
-					:options="fireworksChatModelOptions"
-					label="name"
-					:placeholder="t('openregister', 'Select chat model')">
-					<template #option="{ name, contextWindow, cost }">
-						<div class="model-option">
-							<strong>{{ name }}</strong>
-							<small>{{ contextWindow }} tokens • {{ cost }}</small>
-						</div>
-					</template>
-				</NcSelect>
-			</div>
+		<div class="form-group">
+			<label for="fireworks-chat-model">{{ t('openregister', 'Chat Model') }}</label>
+			<NcSelect
+				v-model="fireworksConfig.chatModel"
+				:options="fireworksChatModelOptions"
+				label="name"
+				:placeholder="t('openregister', 'Select chat model')"
+				:label-outside="true">
+				<template #option="{ name, contextWindow, cost }">
+					<div class="model-option">
+						<strong>{{ name }}</strong>
+						<small>{{ contextWindow }} tokens • {{ cost }}</small>
+					</div>
+				</template>
+			</NcSelect>
+		</div>
 		</div>
 
 		<!-- Ollama Chat Configuration -->
@@ -255,25 +262,26 @@
 				<small>{{ t('openregister', 'URL where Ollama is running') }}</small>
 			</div>
 
-			<div class="form-group">
-				<label for="ollama-chat-model">{{ t('openregister', 'Chat Model') }}</label>
-				<NcSelect
-					id="ollama-chat-model"
-					v-model="ollamaConfig.chatModel"
-					:options="ollamaModelOptions"
-					label="name"
-					:placeholder="t('openregister', 'Select model')"
-					:taggable="true"
-					:createOption="(option) => ({ id: option, name: option })">
-					<template #option="{ name, description }">
-						<div class="model-option">
-							<strong>{{ name }}</strong>
-							<small v-if="description">{{ description }}</small>
-						</div>
-					</template>
-				</NcSelect>
-				<small>{{ t('openregister', 'Select a model or type a custom model name') }}</small>
-			</div>
+		<div class="form-group">
+			<label for="ollama-chat-model">{{ t('openregister', 'Chat Model') }}</label>
+			<NcSelect
+				id="ollama-chat-model"
+				v-model="ollamaConfig.chatModel"
+				:options="ollamaModelOptions"
+				label="name"
+				:placeholder="t('openregister', 'Select model')"
+				:label-outside="true"
+				:taggable="true"
+				:createOption="(option) => ({ id: option, name: option })">
+				<template #option="{ name, description }">
+					<div class="model-option">
+						<strong>{{ name }}</strong>
+						<small v-if="description">{{ description }}</small>
+					</div>
+				</template>
+			</NcSelect>
+			<small>{{ t('openregister', 'Select a model or type a custom model name') }}</small>
+		</div>
 		</div>
 
 		<!-- Test Connection -->
@@ -450,10 +458,32 @@ export default {
 			this.testResult = null
 
 			try {
+				// Build config based on selected embedding provider
+				let config = {}
+				const provider = this.selectedEmbeddingProvider?.id
+
+				if (provider === 'openai') {
+					config = {
+						apiKey: this.openaiConfig.apiKey,
+						model: this.openaiConfig.embeddingModel?.id || this.openaiConfig.embeddingModel,
+					}
+				} else if (provider === 'fireworks') {
+					config = {
+						apiKey: this.fireworksConfig.apiKey,
+						model: this.fireworksConfig.embeddingModel?.id || this.fireworksConfig.embeddingModel,
+						baseUrl: this.fireworksConfig.baseUrl,
+					}
+				} else if (provider === 'ollama') {
+					config = {
+						url: this.ollamaConfig.url,
+						model: this.ollamaConfig.model?.id || this.ollamaConfig.model,
+					}
+				}
+
 				// Test embedding generation
 				const response = await axios.post(generateUrl('/apps/openregister/api/vectors/test'), {
-					provider: this.selectedEmbeddingProvider?.id,
-					config: this.selectedEmbeddingProvider?.id === 'openai' ? this.openaiConfig : this.ollamaConfig,
+					provider: provider,
+					config: config,
 					testText: 'This is a test embedding generation.',
 				})
 

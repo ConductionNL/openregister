@@ -30,6 +30,12 @@ return [
 		['name' => 'settings#createMissingSolrFields', 'url' => '/api/solr/fields/create-missing', 'verb' => 'POST'],
 		['name' => 'settings#fixMismatchedSolrFields', 'url' => '/api/solr/fields/fix-mismatches', 'verb' => 'POST'],
 	['name' => 'settings#deleteSolrField', 'url' => '/api/solr/fields/{fieldName}', 'verb' => 'DELETE', 'requirements' => ['fieldName' => '[^/]+']],
+		
+		// Collection-specific field management
+		['name' => 'settings#getObjectCollectionFields', 'url' => '/api/solr/collections/objects/fields', 'verb' => 'GET'],
+		['name' => 'settings#getFileCollectionFields', 'url' => '/api/solr/collections/files/fields', 'verb' => 'GET'],
+		['name' => 'settings#createMissingObjectFields', 'url' => '/api/solr/collections/objects/fields/create-missing', 'verb' => 'POST'],
+		['name' => 'settings#createMissingFileFields', 'url' => '/api/solr/collections/files/fields/create-missing', 'verb' => 'POST'],
         
         // SOLR Dashboard Management endpoints
         ['name' => 'settings#getSolrDashboardStats', 'url' => '/api/solr/dashboard/stats', 'verb' => 'GET'],
@@ -56,6 +62,7 @@ return [
         ['name' => 'solr#semanticSearch', 'url' => '/api/search/semantic', 'verb' => 'POST'],
         ['name' => 'solr#hybridSearch', 'url' => '/api/search/hybrid', 'verb' => 'POST'],
         ['name' => 'solr#getVectorStats', 'url' => '/api/vectors/stats', 'verb' => 'GET'],
+        ['name' => 'solr#testVectorEmbedding', 'url' => '/api/vectors/test', 'verb' => 'POST'],
         
         // Object Vectorization endpoints - SolrController
         ['name' => 'solr#vectorizeObject', 'url' => '/api/objects/{objectId}/vectorize', 'verb' => 'POST'],
@@ -67,6 +74,10 @@ return [
         
         ['name' => 'settings#getMultitenancySettings', 'url' => '/api/settings/multitenancy', 'verb' => 'GET'],
         ['name' => 'settings#updateMultitenancySettings', 'url' => '/api/settings/multitenancy', 'verb' => 'PUT'],
+        
+        ['name' => 'settings#updateLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'POST'],
+        ['name' => 'settings#updateFileSettings', 'url' => '/api/settings/files', 'verb' => 'POST'],
+        ['name' => 'settings#updateObjectSettings', 'url' => '/api/settings/objects', 'verb' => 'POST'],
         
         ['name' => 'settings#getRetentionSettings', 'url' => '/api/settings/retention', 'verb' => 'GET'],
         
@@ -221,5 +232,23 @@ return [
 		['name' => 'chat#getHistory', 'url' => '/api/chat/history', 'verb' => 'GET'],
 		['name' => 'chat#clearHistory', 'url' => '/api/chat/history', 'verb' => 'DELETE'],
 		['name' => 'chat#sendFeedback', 'url' => '/api/chat/feedback', 'verb' => 'POST'],
+		
+		// File Text Management - Extract and manage text from files
+		['name' => 'fileText#getFileText', 'url' => '/api/files/{fileId}/text', 'verb' => 'GET', 'requirements' => ['fileId' => '\\d+']],
+		['name' => 'fileText#extractFileText', 'url' => '/api/files/{fileId}/extract', 'verb' => 'POST', 'requirements' => ['fileId' => '\\d+']],
+		['name' => 'fileText#bulkExtract', 'url' => '/api/files/extract/bulk', 'verb' => 'POST'],
+		['name' => 'fileText#getStats', 'url' => '/api/files/extraction/stats', 'verb' => 'GET'],
+		['name' => 'fileText#deleteFileText', 'url' => '/api/files/{fileId}/text', 'verb' => 'DELETE', 'requirements' => ['fileId' => '\\d+']],
+		
+		// File Warmup & Indexing - Bulk process and index files in SOLR
+		['name' => 'settings#warmupFiles', 'url' => '/api/solr/warmup/files', 'verb' => 'POST'],
+		['name' => 'settings#indexFile', 'url' => '/api/solr/files/{fileId}/index', 'verb' => 'POST', 'requirements' => ['fileId' => '\\d+']],
+		['name' => 'settings#reindexFiles', 'url' => '/api/solr/files/reindex', 'verb' => 'POST'],
+		['name' => 'settings#getFileIndexStats', 'url' => '/api/solr/files/stats', 'verb' => 'GET'],
+		
+		// File Search - Keyword, semantic, and hybrid search over file contents
+		['name' => 'fileSearch#keywordSearch', 'url' => '/api/search/files/keyword', 'verb' => 'POST'],
+		['name' => 'fileSearch#semanticSearch', 'url' => '/api/search/files/semantic', 'verb' => 'POST'],
+		['name' => 'fileSearch#hybridSearch', 'url' => '/api/search/files/hybrid', 'verb' => 'POST'],
     ],
 ];

@@ -276,13 +276,15 @@
 								:disabled="warmingUp"
 								:loading="schemasLoading"
 								multiple
+								label="label"
+								track-by="id"
 								placeholder="Select schemas (empty = all schemas)"
 								input-label="Select schemas to warm up"
-								label-outside
+								:label-outside="true"
 								class="schema-select">
-								<template #option="{ option }">
-									<div class="schema-option">
-										<span class="schema-name">{{ option.label }}</span>
+								<template #option="option">
+									<div v-if="option" class="schema-option">
+										<span class="schema-name">{{ option.label || 'Unknown' }}</span>
 										<span class="schema-objects">({{ option.objectCount || 0 }} objects)</span>
 									</div>
 								</template>
@@ -440,9 +442,14 @@ export default {
 			if (!this.localConfig.selectedSchemas || !this.availableSchemas) {
 				return []
 			}
-			return this.localConfig.selectedSchemas.map(schemaId => {
-				return this.availableSchemas.find(schema => schema.id === schemaId) || { id: schemaId, label: 'Unknown', objectCount: 0 }
-			})
+			// Handle both object and string values in selectedSchemas
+			return this.localConfig.selectedSchemas
+				.map(schemaIdOrObj => {
+					// If it's already an object with id, use it; otherwise treat as string ID
+					const schemaId = typeof schemaIdOrObj === 'object' ? schemaIdOrObj.id : schemaIdOrObj
+					return this.availableSchemas.find(schema => schema && schema.id === schemaId) || { id: schemaId, label: 'Unknown', objectCount: 0 }
+				})
+				.filter(schema => schema !== null && schema !== undefined)
 		},
 	},
 
