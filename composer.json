@@ -14,6 +14,12 @@
 			"OCA\\OpenRegister\\": "lib/"
 		}
 	},
+	"repositories": [
+		{
+			"type": "vcs",
+			"url": "https://github.com/theodo-group/LLPhant"
+		}
+	],
 	"scripts": {
 		"post-install-cmd": [
 			"@composer bin all install --ansi"
@@ -81,6 +87,7 @@
 		"react/promise": "^3.2",
 		"symfony/uid": "^6.4",
 		"symfony/yaml": "^6.4",
+		"theodo-group/llphant": "^0.9.3",
 		"twig/twig": "^3.18"
 	},
 	"require-dev": {

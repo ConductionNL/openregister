@@ -70,12 +70,6 @@ class GuzzleSolrService
      */
     private array $solrConfig = [];
 
-    /**
-     * Tenant identifier for multi-tenancy support
-     *
-     * @var string
-     */
-    private string $tenantId;
 
     /** @var array|null Cached SOLR field types to avoid repeated API calls */
     private ?array $cachedSolrFieldTypes = null;
@@ -117,7 +111,6 @@ class GuzzleSolrService
         private readonly ?OrganisationService $organisationService = null,
         private readonly ?OrganisationMapper $organisationMapper = null,
     ) {
-        $this->tenantId = $this->generateTenantId();
         $this->initializeConfig();
         $this->initializeHttpClient();
     }
@@ -175,50 +168,15 @@ class GuzzleSolrService
     }
 
     /**
-     * Generate unique tenant ID for this Nextcloud instance
-     *
-     * @return string Tenant identifier
-     */
-    private function generateTenantId(): string
-    {
-        // First try to get tenant_id from SOLR settings
-        $solrSettings = $this->settingsService->getSolrSettings();
-        if (!empty($solrSettings['tenantId'])) {
-            return $solrSettings['tenantId'];
-        }
-        
-        // Fallback to generating from instance configuration
-        $instanceId = $this->config->getSystemValue('instanceid', 'default');
-        $overwriteHost = $this->config->getSystemValue('overwrite.cli.url', '');
-        
-        if (!empty($overwriteHost)) {
-            return 'nc_' . hash('crc32', $overwriteHost);
-        }
-        
-        return 'nc_' . substr($instanceId, 0, 8);
-    }
-
-    /**
-     * Get tenant ID for this Nextcloud instance (public accessor)
-     *
-     * @return string The tenant ID
-     */
-    public function getTenantId(): string
-    {
-        return $this->tenantId;
-    }
-    /**
-     * Generate tenant-specific collection name for SolrCloud
+     * Get collection name (previously tenant-specific, now just returns the base name)
      *
      * @param string $baseCollectionName Base collection name
-     * @return string Tenant-specific collection name (not core name)
+     * @return string Collection name
      */
     public function getTenantSpecificCollectionName(string $baseCollectionName): string
     {
-        // SOLR CLOUD: Use collection names, not core names
-        // Format: openregister_nc_f0e53393 (collection)
-        // Underlying core: openregister_nc_f0e53393_shard1_replica_n1 (handled by SolrCloud)
-        return $baseCollectionName . '_' . $this->tenantId;
+        // Simply return the collection name without any tenant suffix
+        return $baseCollectionName;
     }
 
     /**
@@ -354,7 +312,6 @@ class GuzzleSolrService
                 'enabled' => $this->solrConfig['enabled'] ?? false,
                 'host' => $this->solrConfig['host'] ?? 'not set',
                 'port' => $this->solrConfig['port'] ?? 'not set',
-                'tenant_id' => $this->tenantId,
                 'force_refresh' => $forceRefresh
             ]);
             
@@ -673,7 +630,6 @@ class GuzzleSolrService
         if ($this->collectionExists($tenantCollectionName)) {
             $this->logger->debug('Tenant collection already exists', [
                 'collection' => $tenantCollectionName,
-                'tenant_id' => $this->tenantId
             ]);
             return true;
         }
@@ -682,7 +638,6 @@ class GuzzleSolrService
         if ($this->collectionExists($baseCollectionName)) {
             $this->logger->info('Using base collection as fallback (no tenant isolation)', [
                 'base_collection' => $baseCollectionName,
-                'tenant_id' => $this->tenantId
             ]);
             return true;
         }
@@ -704,7 +659,19 @@ class GuzzleSolrService
      */
     public function getActiveCollectionName(): ?string
     {
-        $baseCollectionName = $this->solrConfig['collection'] ?? 'openregister';
+        // **PHASE 2**: Prioritize objectCollection over legacy collection field
+        // objectCollection is the new standard for object-specific operations
+        $baseCollectionName = $this->solrConfig['objectCollection'] ?? null;
+        
+        // Fall back to legacy 'collection' field for backward compatibility
+        if ($baseCollectionName === null) {
+            $baseCollectionName = $this->solrConfig['collection'] ?? 'openregister';
+            $this->logger->debug('Using legacy collection field (deprecated)', [
+                'collection' => $baseCollectionName,
+                'recommendation' => 'Please configure objectCollection in SOLR settings'
+            ]);
+        }
+        
         $tenantCollectionName = $this->getTenantSpecificCollectionName($baseCollectionName);
 
         // Check if tenant collection exists
@@ -716,7 +683,6 @@ class GuzzleSolrService
         // This prevents operations on non-existent collections
         $this->logger->warning('Tenant-specific collection does not exist', [
             'tenant_collection' => $tenantCollectionName,
-            'tenant_id' => $this->tenantId,
             'base_collection' => $baseCollectionName
         ]);
         
@@ -728,31 +694,56 @@ class GuzzleSolrService
      *
      * @param string $collectionName Collection name
      * @param string $configSetName  ConfigSet name
-     * @return bool True if successful
+     * @param int $numShards Number of shards (default: 1)
+     * @param int $replicationFactor Number of replicas per shard (default: 1)
+     * @param int $maxShardsPerNode Maximum shards per node (default: 1)
+     * @return array Result array with success status and details
      * @throws \GuzzleHttp\Exception\GuzzleException When HTTP request fails
      * @throws \Exception When SOLR returns error response
      */
-    public function createCollection(string $collectionName, string $configSetName): bool
-    {
+    public function createCollection(
+        string $collectionName,
+        string $configSetName,
+        int $numShards = 1,
+        int $replicationFactor = 1,
+        int $maxShardsPerNode = 1
+    ): array {
+        $this->logger->info('📋 Creating new SOLR collection', [
+            'name' => $collectionName,
+            'configSet' => $configSetName,
+            'shards' => $numShards,
+            'replicas' => $replicationFactor
+        ]);
+
         $url = $this->buildSolrBaseUrl() . '/admin/collections?' . http_build_query([
             'action' => 'CREATE',
             'name' => $collectionName,
             'collection.configName' => $configSetName,
-            'numShards' => 1,
-            'replicationFactor' => 1,
+            'numShards' => $numShards,
+            'replicationFactor' => $replicationFactor,
+            'maxShardsPerNode' => $maxShardsPerNode,
             'wt' => 'json'
         ]);
 
-        $response = $this->httpClient->get($url, ['timeout' => 30]);
+        $response = $this->httpClient->get($url, ['timeout' => 60]);
         $data = json_decode((string)$response->getBody(), true);
 
         if (($data['responseHeader']['status'] ?? -1) === 0) {
-            $this->logger->info('SOLR collection created successfully', [
+            $this->logger->info('✅ SOLR collection created successfully', [
                 'collection' => $collectionName,
                 'configSet' => $configSetName,
-                'tenant_id' => $this->tenantId
+                'shards' => $numShards,
+                'replicas' => $replicationFactor
             ]);
-            return true;
+            
+            return [
+                'success' => true,
+                'message' => 'Collection created successfully',
+                'collection' => $collectionName,
+                'configSet' => $configSetName,
+                'shards' => $numShards,
+                'replicas' => $replicationFactor,
+            ];
         }
 
         // SOLR returned an error response - throw exception with details
@@ -762,7 +753,6 @@ class GuzzleSolrService
         $this->logger->error('SOLR collection creation failed', [
             'collection' => $collectionName,
             'configSet' => $configSetName,
-            'tenant_id' => $this->tenantId,
             'url' => $url,
             'solr_status' => $errorCode,
             'solr_error' => $data['error'] ?? null,
@@ -772,8 +762,7 @@ class GuzzleSolrService
         // Throw exception with SOLR response details
         throw new \Exception(
             "SOLR collection creation failed: {$errorMessage}",
-            $errorCode,
-            new \Exception(json_encode($data))
+            $errorCode
         );
     }
 
@@ -818,7 +807,6 @@ class GuzzleSolrService
 
             $this->logger->info('🗑️ Attempting to delete SOLR collection', [
                 'collection' => $targetCollection,
-                'tenant_id' => $this->tenantId,
                 'url' => $url
             ]);
 
@@ -828,7 +816,6 @@ class GuzzleSolrService
             if (($data['responseHeader']['status'] ?? -1) === 0) {
                 $this->logger->info('✅ SOLR collection deleted successfully', [
                     'collection' => $targetCollection,
-                    'tenant_id' => $this->tenantId,
                     'response_time' => $data['responseHeader']['QTime'] ?? 'unknown'
                 ]);
                 
@@ -836,7 +823,6 @@ class GuzzleSolrService
                     'success' => true,
                     'message' => "Collection '{$targetCollection}' deleted successfully",
                     'collection' => $targetCollection,
-                    'tenant_id' => $this->tenantId,
                     'response_time_ms' => $data['responseHeader']['QTime'] ?? null
                 ];
             }
@@ -976,7 +962,6 @@ class GuzzleSolrService
                     'object_id' => $object->getId(),
                     'uuid' => $object->getUuid(),
                     'collection' => $tenantCollectionName,
-                    'tenant_id' => $this->tenantId,
                     'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2)
                 ]);
             } else {
@@ -1022,10 +1007,7 @@ class GuzzleSolrService
 
             $deleteData = [
                 'delete' => [
-                    'query' => sprintf('id:%s AND self_tenant:%s', 
-                        (string)$objectId,
-                        $this->tenantId
-                    )
+                    'query' => sprintf('id:%s', (string)$objectId)
                 ]
             ];
 
@@ -1048,8 +1030,7 @@ class GuzzleSolrService
                 $this->stats['deletes']++;
                 $this->logger->debug('🗑️ OBJECT REMOVED FROM SOLR', [
                     'object_id' => $objectId,
-                    'collection' => $tenantCollectionName,
-                    'tenant_id' => $this->tenantId
+                    'collection' => $tenantCollectionName
                 ]);
             }
 
@@ -1085,7 +1066,7 @@ class GuzzleSolrService
             }
 
             $url = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/select?' . http_build_query([
-                'q' => 'self_tenant:' . $this->tenantId,
+                'q' => '*:*',
                 'rows' => 0,
                 'wt' => 'json'
             ]);
@@ -1243,7 +1224,6 @@ class GuzzleSolrService
         $document = [
             // Core identifiers (always present) - no prefix for SOLR system fields
             'id' => $object->getUuid() ?: (string)$object->getId(),
-            'self_tenant' => (string)$this->tenantId,
             
             // Metadata fields with self_ prefix (consistent with legacy mapping)
             'self_uuid' => $object->getUuid(),
@@ -1764,7 +1744,6 @@ class GuzzleSolrService
         $document = [
             // **CRITICAL**: Always use UUID as the SOLR document ID for guaranteed uniqueness
             'id' => $uuid,
-            'self_tenant' => (string)$this->tenantId, // Consistent with schema-aware mapping
             
             // Full-text search content (at root for Solr optimization)
             '_text_' => $this->extractTextContent($object, $objectData ?: []),
@@ -2470,8 +2449,7 @@ class GuzzleSolrService
         return [
             'success' => $success,
             'processed' => count($objects),
-            'execution_time' => $executionTime,
-            'tenant_id' => $this->tenantId
+            'execution_time' => $executionTime
         ];
     }
 
@@ -2535,11 +2513,7 @@ class GuzzleSolrService
                 if ($doc instanceof ObjectEntity) {
                     $solrDocs[] = $this->createSolrDocument($doc);
                 } elseif (is_array($doc)) {
-                    // **FIXED**: Use self_tenant for consistency, and only add if missing
-                    if (!isset($doc['self_tenant'])) {
-                        $doc['self_tenant'] = (string)$this->tenantId;
-                    }
-                    // Document is already a Solr document array - don't recreate it
+                    // Document is already a Solr document array - use as-is
                     $solrDocs[] = $doc;
                 } else {
                     $this->logger->warning('Invalid document type in bulk index', ['type' => gettype($doc)]);
@@ -2646,8 +2620,6 @@ class GuzzleSolrService
                 'status_code' => $statusCode,
                 'response_length' => strlen($responseBody),
                 'document_count' => count($solrDocs),
-                'tenant_id_type' => gettype($this->tenantId),
-                'tenant_id_value' => $this->tenantId
             ]);
             
             // **ERROR HANDLING**: Throw exception for non-20X HTTP status codes
@@ -2704,7 +2676,6 @@ class GuzzleSolrService
             $this->logger->debug('📦 BULK INDEXED IN SOLR', [
                 'document_count' => count($solrDocs),
                 'collection' => $tenantCollectionName,
-                'tenant_id' => $this->tenantId,
                 'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2)
             ]);
 
@@ -2757,8 +2728,7 @@ class GuzzleSolrService
 
             if ($success) {
                 $this->logger->debug('💾 SOLR COMMIT', [
-                    'collection' => $tenantCollectionName,
-                    'tenant_id' => $this->tenantId
+                    'collection' => $tenantCollectionName
                 ]);
             }
 
@@ -2806,12 +2776,9 @@ class GuzzleSolrService
                 return false;
             }
 
-            // Add tenant isolation to query
-            $tenantQuery = sprintf('(%s) AND self_tenant:%s', $query, $this->tenantId);
-
             $deleteData = [
                 'delete' => [
-                    'query' => $tenantQuery
+                    'query' => $query
                 ]
             ];
 
@@ -2834,8 +2801,7 @@ class GuzzleSolrService
                 $this->stats['deletes']++;
                 $this->logger->debug('🗑️ SOLR DELETE BY QUERY', [
                     'query' => $tenantQuery,
-                    'collection' => $tenantCollectionName,
-                    'tenant_id' => $this->tenantId
+                    'collection' => $tenantCollectionName
                 ]);
                 
                 if ($returnDetails) {
@@ -3180,12 +3146,6 @@ class GuzzleSolrService
                     }
                 }
             }
-        }
-
-        // Add tenant filter (always required for multi-tenant systems)
-        $tenantId = $this->getTenantId();
-        if ($tenantId) {
-            $filters[] = 'self_tenant:' . $tenantId;
         }
 
         // Handle multiple filter queries correctly for Guzzle
@@ -3799,7 +3759,6 @@ class GuzzleSolrService
                     'success' => false,
                     'message' => 'No active collection available for testing',
                     'details' => [
-                        'tenant_id' => $this->tenantId,
                         'reason' => 'Tenant collection does not exist'
                     ]
                 ];
@@ -3843,8 +3802,6 @@ class GuzzleSolrService
                             'collection_name' => $collectionName,
                             'collection_type' => strpos($collectionName, '_nc_') !== false ? 'tenant-specific' : 'base',
                             'available_collections' => array_keys($collections),
-                            'tenant_id' => $this->tenantId,
-                            'expected_pattern' => 'openregister_' . $this->tenantId
                         ]
                     ];
                 }
@@ -3884,8 +3841,6 @@ class GuzzleSolrService
                             'collection_name' => $collectionName,
                             'collection_type' => strpos($collectionName, '_nc_') !== false ? 'tenant-specific' : 'base',
                             'available_cores' => array_keys($cores),
-                            'tenant_id' => $this->tenantId,
-                            'expected_pattern' => 'openregister_' . $this->tenantId
                         ]
                     ];
                 }
@@ -3918,7 +3873,6 @@ class GuzzleSolrService
                     'success' => false,
                     'message' => 'No active collection available for query testing',
                     'details' => [
-                        'tenant_id' => $this->tenantId,
                         'reason' => 'Tenant collection does not exist'
                     ]
                 ];
@@ -3987,7 +3941,7 @@ class GuzzleSolrService
      *
      * @return array Result with success status and error details
      */
-    public function clearIndex(): array
+    public function clearIndex(?string $collectionName = null): array
     {
         if (!$this->isAvailable()) {
             return [
@@ -3998,29 +3952,27 @@ class GuzzleSolrService
         }
 
         try {
-            // Get the active collection name
-            $tenantCollectionName = $this->getActiveCollectionName();
-            if ($tenantCollectionName === null) {
+            // Use provided collection name or get the active collection
+            $targetCollection = $collectionName ?? $this->getActiveCollectionName();
+            if ($targetCollection === null) {
                 return [
                     'success' => false,
                     'error' => 'No active SOLR collection available',
-                    'error_details' => 'No collection found for the current tenant'
+                    'error_details' => 'No collection specified and no active collection found'
                 ];
             }
 
-            // For clear index, we want to delete ALL documents in the tenant collection
-            // Don't add tenant isolation since the entire collection is tenant-specific
+            // For clear index, we want to delete ALL documents in the collection
             $deleteData = [
                 'delete' => [
-                    'query' => '*:*'  // Delete everything in this tenant's collection
+                    'query' => '*:*'  // Delete everything in this collection
                 ]
             ];
 
-            $url = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/update?wt=json&commit=true';
+            $url = $this->buildSolrBaseUrl() . '/' . $targetCollection . '/update?wt=json&commit=true';
             
             $this->logger->info('Clearing SOLR index', [
-                'collection' => $tenantCollectionName,
-                'tenant_id' => $this->tenantId,
+                'collection' => $targetCollection,
                 'url' => $url
             ]);
 
@@ -4035,21 +3987,20 @@ class GuzzleSolrService
             
             if ($response->getStatusCode() === 200 && isset($responseData['responseHeader']['status']) && $responseData['responseHeader']['status'] === 0) {
                 $this->logger->info('SOLR index cleared successfully', [
-                    'collection' => $tenantCollectionName,
-                    'tenant_id' => $this->tenantId
+                    'collection' => $targetCollection
                 ]);
                 
                 return [
                     'success' => true,
                     'message' => 'SOLR index cleared successfully',
                     'deleted_docs' => 'all', // We don't get exact count from *:* delete
-                    'collection' => $tenantCollectionName
+                    'collection' => $targetCollection
                 ];
             } else {
                 $this->logger->error('SOLR index clear failed', [
                     'status_code' => $response->getStatusCode(),
                     'response' => $responseData,
-                    'collection' => $tenantCollectionName
+                    'collection' => $targetCollection
                 ]);
                 
                 return [
@@ -4062,7 +4013,6 @@ class GuzzleSolrService
         } catch (\Exception $e) {
             $this->logger->error('SOLR index clear exception', [
                 'error' => $e->getMessage(),
-                'tenant_id' => $this->tenantId
             ]);
             
             return [
@@ -4103,12 +4053,9 @@ class GuzzleSolrService
                 ];
             }
 
-            // Add tenant isolation to query
-            $tenantQuery = sprintf('(%s) AND self_tenant:%s', $query, $this->tenantId);
-
             // Build search parameters
             $searchParams = [
-                'q' => $tenantQuery,
+                'q' => $query,
                 'start' => $start,
                 'rows' => $rows,
                 'wt' => 'json',
@@ -4136,7 +4083,6 @@ class GuzzleSolrService
                 $this->logger->debug('🔍 SOLR INDEX INSPECT', [
                     'query' => $tenantQuery,
                     'collection' => $tenantCollectionName,
-                    'tenant_id' => $this->tenantId,
                     'total_results' => $totalResults,
                     'returned_docs' => count($documents)
                 ]);
@@ -4284,23 +4230,69 @@ class GuzzleSolrService
         }
 
         try {
-            // Get the active collection name - return error if no collection exists
-            $tenantCollectionName = $this->getActiveCollectionName();
-            if ($tenantCollectionName === null) {
+            // Get both objectCollection and fileCollection from settings
+            $objectCollection = $this->solrConfig['objectCollection'] ?? null;
+            $fileCollection = $this->solrConfig['fileCollection'] ?? null;
+            
+            // Fallback to legacy collection if new collections are not configured
+            $legacyCollection = $this->solrConfig['collection'] ?? null;
+            
+            if (!$objectCollection && !$fileCollection && !$legacyCollection) {
                 return [
                     'available' => false,
-                    'error' => 'No active collection available - tenant collection may not exist',
-                    'tenant_id' => $this->tenantId
+                    'error' => 'No collections configured - please configure objectCollection and fileCollection'
                 ];
             }
 
-            // Get collection stats
-            $statsUrl = $this->buildSolrBaseUrl() . '/admin/collections?action=CLUSTERSTATUS&collection=' . $tenantCollectionName . '&wt=json';
-            $statsResponse = $this->httpClient->get($statsUrl, ['timeout' => 10]);
-            $statsData = json_decode((string)$statsResponse->getBody(), true);
-
-            // Get document count from Solr (indexed objects)
-            $docCount = $this->getDocumentCount();
+            // Query stats for objectCollection
+            $objectStats = null;
+            $objectDocCount = 0;
+            if ($objectCollection && $this->collectionExists($objectCollection)) {
+                try {
+                    $objectStats = $this->getCollectionStats($objectCollection);
+                    $objectDocCount = $this->getDocumentCountForCollection($objectCollection);
+                } catch (\Exception $e) {
+                    $this->logger->warning('Failed to get objectCollection stats', [
+                        'collection' => $objectCollection,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+            
+            // Query stats for fileCollection
+            $fileStats = null;
+            $fileDocCount = 0;
+            if ($fileCollection && $this->collectionExists($fileCollection)) {
+                try {
+                    $fileStats = $this->getCollectionStats($fileCollection);
+                    $fileDocCount = $this->getDocumentCountForCollection($fileCollection);
+                } catch (\Exception $e) {
+                    $this->logger->warning('Failed to get fileCollection stats', [
+                        'collection' => $fileCollection,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+            
+            // If using legacy collection, query it
+            $legacyStats = null;
+            $legacyDocCount = 0;
+            if ($legacyCollection && !$objectCollection && !$fileCollection && $this->collectionExists($legacyCollection)) {
+                try {
+                    $legacyStats = $this->getCollectionStats($legacyCollection);
+                    $legacyDocCount = $this->getDocumentCountForCollection($legacyCollection);
+                } catch (\Exception $e) {
+                    $this->logger->warning('Failed to get legacy collection stats', [
+                        'collection' => $legacyCollection,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+            
+            // Use object collection for overall stats if available, otherwise fallback
+            $primaryCollection = $objectCollection ?? $legacyCollection;
+            $primaryStats = $objectStats ?? $legacyStats;
+            $docCount = $objectDocCount + $legacyDocCount; // Combined document count
 
             // Get object counts from database using ObjectEntityMapper
             $totalCount = 0;
@@ -4340,13 +4332,23 @@ class GuzzleSolrService
                 $this->logger->warning('Failed to get object counts from database', ['error' => $e->getMessage()]);
             }
 
-            // Get index size (approximate)
-            $indexSizeUrl = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/admin/luke?wt=json&numTerms=0';
-            $sizeResponse = $this->httpClient->get($indexSizeUrl, ['timeout' => 10]);
-            $sizeData = json_decode((string)$sizeResponse->getBody(), true);
+            // Get index size (approximate) from primary collection
+            $sizeData = [];
+            if ($primaryCollection) {
+                try {
+                    $indexSizeUrl = $this->buildSolrBaseUrl() . '/' . $primaryCollection . '/admin/luke?wt=json&numTerms=0';
+                    $sizeResponse = $this->httpClient->get($indexSizeUrl, ['timeout' => 10]);
+                    $sizeData = json_decode((string)$sizeResponse->getBody(), true);
+                } catch (\Exception $e) {
+                    $this->logger->warning('Failed to get index size', ['error' => $e->getMessage()]);
+                }
+            }
 
-            $collectionInfo = $statsData['cluster']['collections'][$tenantCollectionName] ?? [];
-            $shards = $collectionInfo['shards'] ?? [];
+            // Get shard count from stats
+            $shards = [];
+            if ($primaryStats && isset($primaryStats['shards'])) {
+                $shards = $primaryStats['shards'];
+            }
 
             // Get memory prediction for warmup (using published object count)
             $memoryPrediction = [];
@@ -4360,28 +4362,108 @@ class GuzzleSolrService
                 ];
             }
 
+            // Get file counts from Nextcloud file cache
+            $totalFiles = 0;
+            $indexedFiles = $fileDocCount; // Files indexed in SOLR fileCollection
+            try {
+                $fileMapper = \OC::$server->get(\OCA\OpenRegister\Db\FileMapper::class);
+                $totalFiles = $fileMapper->countAllFiles();
+            } catch (\Exception $e) {
+                $this->logger->warning('Failed to get total file count from FileMapper', ['error' => $e->getMessage()]);
+            }
+
             return [
                 'available' => true,
-                'tenant_id' => $this->tenantId,
-                'collection' => $tenantCollectionName,
+                // Collection information
+                'objectCollection' => $objectCollection,
+                'fileCollection' => $fileCollection,
+                'legacyCollection' => (!$objectCollection && !$fileCollection) ? $legacyCollection : null,
+                'primaryCollection' => $primaryCollection,
+                // Combined document counts
                 'document_count' => $docCount,
+                'objectDocuments' => $objectDocCount,
+                'fileDocuments' => $fileDocCount,
+                // Database counts
                 'total_count' => $totalCount,
                 'published_count' => $publishedCount,
+                'total_files' => $totalFiles,
+                'indexed_files' => $indexedFiles,
+                // Infrastructure
                 'shards' => count($shards),
                 'index_version' => $sizeData['index']['version'] ?? 'unknown',
                 'last_modified' => $sizeData['index']['lastModified'] ?? 'unknown',
+                // Health and stats
                 'service_stats' => $this->stats,
-                'health' => !empty($collectionInfo) ? 'healthy' : 'degraded',
-                'memory_prediction' => $memoryPrediction
+                'health' => ($objectStats || $fileStats || $legacyStats) ? 'healthy' : 'degraded',
+                'memory_prediction' => $memoryPrediction,
+                // Detailed collection stats
+                'collections' => [
+                    'object' => $objectStats ? array_merge($objectStats, ['documentCount' => $objectDocCount]) : null,
+                    'file' => $fileStats ? array_merge($fileStats, ['documentCount' => $fileDocCount]) : null,
+                ]
             ];
 
         } catch (\Exception $e) {
             $this->logger->error('Exception getting dashboard stats', ['error' => $e->getMessage()]);
             return [
                 'available' => false,
-                'error' => $e->getMessage(),
-                'tenant_id' => $this->tenantId
+                'error' => $e->getMessage()
             ];
+        }
+    }
+
+    /**
+     * Get statistics for a specific collection
+     *
+     * @param string $collectionName Collection name
+     * @return array Collection statistics
+     * @throws \Exception If collection stats cannot be retrieved
+     */
+    private function getCollectionStats(string $collectionName): array
+    {
+        $statsUrl = $this->buildSolrBaseUrl() . '/admin/collections?action=CLUSTERSTATUS&collection=' . $collectionName . '&wt=json';
+        $statsResponse = $this->httpClient->get($statsUrl, ['timeout' => 10]);
+        $statsData = json_decode((string)$statsResponse->getBody(), true);
+
+        $collectionInfo = $statsData['cluster']['collections'][$collectionName] ?? [];
+        
+        return [
+            'name' => $collectionName,
+            'shards' => $collectionInfo['shards'] ?? [],
+            'configName' => $collectionInfo['configName'] ?? 'unknown',
+            'replicationFactor' => $collectionInfo['replicationFactor'] ?? 1,
+            'maxShardsPerNode' => $collectionInfo['maxShardsPerNode'] ?? 1,
+            'autoAddReplicas' => $collectionInfo['autoAddReplicas'] ?? false,
+        ];
+    }
+
+    /**
+     * Get document count for a specific collection
+     *
+     * @param string $collectionName Collection name
+     * @return int Document count
+     */
+    private function getDocumentCountForCollection(string $collectionName): int
+    {
+        try {
+            $baseUrl = $this->buildSolrBaseUrl();
+            $url = $baseUrl . '/' . $collectionName . '/select?' . http_build_query([
+                'q' => '*:*',
+                'rows' => 0,
+                'wt' => 'json'
+            ]);
+
+            $response = $this->httpClient->get($url, ['timeout' => 10]);
+            $data = json_decode((string)$response->getBody(), true);
+
+            return (int)($data['response']['numFound'] ?? 0);
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get document count for collection', [
+                'collection' => $collectionName,
+                'error' => $e->getMessage()
+            ]);
+            return 0;
         }
     }
 
@@ -5448,7 +5530,7 @@ class GuzzleSolrService
         // **MEMORY TRACKING**: Capture initial memory usage and predict requirements
         $initialMemoryUsage = (int) memory_get_usage(true);
         $initialMemoryPeak = (int) memory_get_peak_usage(true);
-        $memoryPrediction = $this->predictWarmupMemoryUsage($maxObjects);
+        $memoryPrediction = $this->predictWarmupMemoryUsage($maxObjects, $schemaIds);
         
         // **CRITICAL**: Disable profiler during warmup - even with reduced logging, 26K+ queries overwhelm profiler
         $profilerWasEnabled = false;
@@ -5614,7 +5696,9 @@ class GuzzleSolrService
                 'execution_time_ms' => round($executionTime, 2),
                 'message' => 'GuzzleSolrService warmup completed with field management and optimization',
                 'total_objects_found' => $indexResult['total'] ?? 0,
+                'objects_indexed' => $indexResult['indexed'] ?? 0,
                 'batches_processed' => $indexResult['batches'] ?? 0,
+                'indexing_errors' => $indexResult['errors'] ?? 0,
                 'max_objects_limit' => $maxObjects,
                 'memory_usage' => $memoryReport
             ];
@@ -6155,7 +6239,7 @@ class GuzzleSolrService
      * @param int $batchSize Number of objects to process per batch
      * @return array{success: bool, message: string, stats?: array, error?: string}
      */
-    public function reindexAll(int $maxObjects = 0, int $batchSize = 1000): array
+    public function reindexAll(int $maxObjects = 0, int $batchSize = 1000, ?string $collectionName = null): array
     {
         if (!$this->isAvailable()) {
             return [
@@ -6168,15 +6252,24 @@ class GuzzleSolrService
             $startTime = microtime(true);
             $startMemory = memory_get_usage(true);
 
+            // Use provided collection name or get the active collection
+            $targetCollection = $collectionName ?? $this->getActiveCollectionName();
+            if ($targetCollection === null) {
+                return [
+                    'success' => false,
+                    'message' => 'No collection specified and no active collection found'
+                ];
+            }
+
             $this->logger->info('🔄 Starting SOLR reindex operation', [
                 'max_objects' => $maxObjects,
                 'batch_size' => $batchSize,
-                'collection' => $this->getActiveCollectionName()
+                'collection' => $targetCollection
             ]);
 
             // Step 1: Clear the current index
             $this->logger->info('🗑️ Clearing current SOLR index');
-            $clearResult = $this->clearIndex();
+            $clearResult = $this->clearIndex($targetCollection);
             
             if (!$clearResult['success']) {
                 return [
@@ -6628,7 +6721,6 @@ class GuzzleSolrService
 
             $this->logger->info('🔍 Retrieving SOLR field configuration', [
                 'collection' => $collectionName,
-                'tenant_id' => $this->tenantId
             ]);
 
             // Build schema API URL
@@ -6845,30 +6937,38 @@ class GuzzleSolrService
     /**
      * Predict memory usage for SOLR warmup operation
      *
-     * @param int $maxObjects Maximum number of objects to process
+     * @param int $maxObjects Maximum number of objects to process (0 = all)
+     * @param array $schemaIds Optional array of schema IDs to filter by (empty = all schemas)
      * @return array Memory usage prediction
      */
-    private function predictWarmupMemoryUsage(int $maxObjects): array
+    private function predictWarmupMemoryUsage(int $maxObjects, array $schemaIds = []): array
     {
         try {
             // Get current memory info
             $currentMemory = (int) memory_get_usage(true);
             $memoryLimit = $this->parseMemoryLimit(ini_get('memory_limit'));
             
-            // Get ALL object count for prediction (since we now index all objects, not just published)
+            // Get object count for prediction, filtered by schema if provided
             $objectMapper = \OC::$server->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
-            $totalObjects = $objectMapper->countAll(
-                filters: [],
-                search: null,
-                ids: null,
-                uses: null,
-                includeDeleted: false,
-                register: null,
-                schema: null,
-                published: null, // Count ALL objects (published and unpublished)
-                rbac: false,     // Skip RBAC for performance
-                multi: false     // Skip multitenancy for performance
-            );
+            
+            // If schema IDs are provided, use the searchable objects count (which filters by schema)
+            if (!empty($schemaIds)) {
+                $totalObjects = $this->countSearchableObjects($objectMapper, $schemaIds);
+            } else {
+                // Get ALL object count for prediction (since we now index all objects, not just published)
+                $totalObjects = $objectMapper->countAll(
+                    filters: [],
+                    search: null,
+                    ids: null,
+                    uses: null,
+                    includeDeleted: false,
+                    register: null,
+                    schema: null,
+                    published: null, // Count ALL objects (published and unpublished)
+                    rbac: false,     // Skip RBAC for performance
+                    multi: false     // Skip multitenancy for performance
+                );
+            }
             
             // Calculate objects to process
             $objectsToProcess = ($maxObjects === 0) ? $totalObjects : min($maxObjects, $totalObjects);
@@ -7644,12 +7744,6 @@ class GuzzleSolrService
         $baseQuery = '*:*';
         $filterQueries = [];
         
-        // Add tenant filter
-        $tenantId = $this->getTenantId();
-        if ($tenantId) {
-            $filterQueries[] = 'self_tenant:' . $tenantId;
-        }
-        
         // Add current filters
         foreach ($filters as $filter) {
             if (!empty($filter)) {
@@ -7990,12 +8084,6 @@ class GuzzleSolrService
         // Build base query with filters
         $baseQuery = '*:*';
         $filterQueries = [];
-        
-        // Add tenant filter
-        $tenantId = $this->getTenantId();
-        if ($tenantId) {
-            $filterQueries[] = 'self_tenant:' . $tenantId;
-        }
         
         // Add any additional filters from the query
         foreach ($filters as $filter) {
@@ -8963,5 +9051,667 @@ class GuzzleSolrService
 
         // Return 0 for unresolvable values (will be filtered out in SOLR)
         return 0;
+    }
+
+    /**
+     * List all SOLR collections with statistics
+     *
+     * Returns an array of collections with their metadata including:
+     * - Name
+     * - ConfigSet
+     * - Number of documents
+     * - Size
+     * - Shard count
+     * - Replica count
+     * - Health status
+     *
+     * @return array Array of collection information
+     * @throws \Exception If unable to fetch collection list
+     */
+    public function listCollections(): array
+    {
+        try {
+            $this->logger->info('📋 Fetching SOLR collections list');
+
+            // Check if SOLR is available first
+            if (!$this->isAvailable()) {
+                throw new \Exception('SOLR service is not available');
+            }
+
+            // Get cluster status with all collections
+            $clusterUrl = $this->buildSolrBaseUrl() . '/admin/collections?action=CLUSTERSTATUS&wt=json';
+            $response = $this->httpClient->get($clusterUrl, ['timeout' => 30]);
+            $data = json_decode((string)$response->getBody(), true);
+
+            if (!isset($data['cluster']['collections'])) {
+                $this->logger->warning('No collections found in cluster status');
+                return [];
+            }
+
+            $collections = [];
+            foreach ($data['cluster']['collections'] as $collectionName => $collectionData) {
+                // Get document count for this collection
+                $docCount = 0;
+                try {
+                    $queryUrl = $this->buildSolrBaseUrl() . '/' . $collectionName . '/select?q=*:*&rows=0&wt=json';
+                    $queryResponse = $this->httpClient->get($queryUrl, ['timeout' => 10]);
+                    $queryData = json_decode((string)$queryResponse->getBody(), true);
+                    $docCount = $queryData['response']['numFound'] ?? 0;
+                } catch (\Exception $e) {
+                    $this->logger->warning('Failed to get document count for collection', [
+                        'collection' => $collectionName,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+
+                // Calculate total shards and replicas
+                $shards = $collectionData['shards'] ?? [];
+                $shardCount = count($shards);
+                $replicaCount = 0;
+                $allActive = true;
+
+                foreach ($shards as $shard) {
+                    $replicas = $shard['replicas'] ?? [];
+                    $replicaCount += count($replicas);
+                    
+                    // Check if all replicas are active
+                    foreach ($replicas as $replica) {
+                        if (($replica['state'] ?? '') !== 'active') {
+                            $allActive = false;
+                        }
+                    }
+                }
+
+                $collections[] = [
+                    'name' => $collectionName,
+                    'configName' => $collectionData['configName'] ?? 'unknown',
+                    'documentCount' => $docCount,
+                    'shards' => $shardCount,
+                    'replicas' => $replicaCount,
+                    'router' => $collectionData['router']['name'] ?? 'compositeId',
+                    'autoAddReplicas' => $collectionData['autoAddReplicas'] ?? false,
+                    'replicationFactor' => $collectionData['replicationFactor'] ?? 1,
+                    'maxShardsPerNode' => $collectionData['maxShardsPerNode'] ?? 1,
+                    'health' => $allActive ? 'healthy' : 'degraded',
+                    'status' => $allActive ? 'active' : 'inactive',
+                ];
+            }
+
+            $this->logger->info('✅ Successfully fetched collections', ['count' => count($collections)]);
+            return $collections;
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to list SOLR collections', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw new \Exception('Failed to fetch SOLR collections: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * List all SOLR ConfigSets
+     *
+     * Returns an array of ConfigSets (configuration templates) available in SOLR
+     *
+     * @return array Array of ConfigSet names and metadata
+     * @throws \Exception If unable to fetch ConfigSet list
+     */
+    public function listConfigSets(): array
+    {
+        try {
+            $this->logger->info('📋 Fetching SOLR ConfigSets list');
+
+            // Check if SOLR is available first
+            if (!$this->isAvailable()) {
+                throw new \Exception('SOLR service is not available');
+            }
+
+            // Get list of ConfigSets
+            $configSetsUrl = $this->buildSolrBaseUrl() . '/admin/configs?action=LIST&wt=json';
+            $response = $this->httpClient->get($configSetsUrl, ['timeout' => 10]);
+            $data = json_decode((string)$response->getBody(), true);
+
+            if (!isset($data['configSets'])) {
+                $this->logger->warning('No ConfigSets found');
+                return [];
+            }
+
+            $configSets = [];
+            foreach ($data['configSets'] as $configSetName) {
+                // Count collections using this ConfigSet
+                $collections = $this->listCollections();
+                $usedByCollections = array_filter($collections, function($col) use ($configSetName) {
+                    return $col['configName'] === $configSetName;
+                });
+
+                $configSets[] = [
+                    'name' => $configSetName,
+                    'usedBy' => array_column($usedByCollections, 'name'),
+                    'usedByCount' => count($usedByCollections),
+                ];
+            }
+
+            $this->logger->info('✅ Successfully fetched ConfigSets', ['count' => count($configSets)]);
+            return $configSets;
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to list SOLR ConfigSets', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw new \Exception('Failed to fetch SOLR ConfigSets: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Create a new ConfigSet by copying an existing one (typically _default)
+     *
+     * @param string $name Name for the new ConfigSet
+     * @param string $baseConfigSet Base ConfigSet to copy from (default: _default)
+     * @return array Result of the creation operation
+     * @throws \Exception If creation fails
+     */
+    public function createConfigSet(string $name, string $baseConfigSet = '_default'): array
+    {
+        try {
+            $this->logger->info('📋 Creating new SOLR ConfigSet', [
+                'name' => $name,
+                'baseConfigSet' => $baseConfigSet
+            ]);
+
+            // Check if SOLR is available
+            if (!$this->isAvailable()) {
+                throw new \Exception('SOLR service is not available');
+            }
+
+            // Check if ConfigSet already exists
+            $existingConfigSets = $this->listConfigSets();
+            foreach ($existingConfigSets as $cs) {
+                if ($cs['name'] === $name) {
+                    throw new \Exception("ConfigSet '{$name}' already exists");
+                }
+            }
+
+            // Verify base ConfigSet exists
+            $baseExists = false;
+            foreach ($existingConfigSets as $cs) {
+                if ($cs['name'] === $baseConfigSet) {
+                    $baseExists = true;
+                    break;
+                }
+            }
+            if (!$baseExists) {
+                throw new \Exception("Base ConfigSet '{$baseConfigSet}' not found");
+            }
+
+            // Create the ConfigSet by copying the base
+            $createUrl = $this->buildSolrBaseUrl() . '/admin/configs?action=CREATE'
+                . '&name=' . urlencode($name)
+                . '&baseConfigSet=' . urlencode($baseConfigSet)
+                . '&wt=json';
+
+            $response = $this->httpClient->get($createUrl, ['timeout' => 60]);
+            $result = json_decode((string)$response->getBody(), true);
+
+            if (isset($result['failure'])) {
+                throw new \Exception('Failed to create ConfigSet: ' . json_encode($result['failure']));
+            }
+
+            $this->logger->info('✅ Successfully created ConfigSet', ['name' => $name]);
+            return [
+                'success' => true,
+                'message' => 'ConfigSet created successfully',
+                'configSet' => $name,
+                'baseConfigSet' => $baseConfigSet,
+            ];
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to create SOLR ConfigSet', [
+                'error' => $e->getMessage(),
+                'name' => $name,
+                'baseConfigSet' => $baseConfigSet
+            ]);
+            throw new \Exception('Failed to create ConfigSet: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Delete a SOLR ConfigSet
+     *
+     * @param string $name Name of the ConfigSet to delete
+     * @return array Result of the deletion operation
+     * @throws \Exception If deletion fails or ConfigSet is protected
+     */
+    public function deleteConfigSet(string $name): array
+    {
+        try {
+            $this->logger->info('🗑️ Deleting SOLR ConfigSet', ['name' => $name]);
+
+            // Protect _default ConfigSet from deletion
+            if ($name === '_default') {
+                throw new \Exception('Cannot delete the _default ConfigSet - it is protected');
+            }
+
+            // Check if SOLR is available
+            if (!$this->isAvailable()) {
+                throw new \Exception('SOLR service is not available');
+            }
+
+            // Check if ConfigSet exists and is not in use
+            $configSets = $this->listConfigSets();
+            $configSetFound = false;
+            foreach ($configSets as $cs) {
+                if ($cs['name'] === $name) {
+                    $configSetFound = true;
+                    if ($cs['usedByCount'] > 0) {
+                        throw new \Exception("Cannot delete ConfigSet '{$name}' - it is used by {$cs['usedByCount']} collection(s): " . implode(', ', $cs['usedBy']));
+                    }
+                    break;
+                }
+            }
+
+            if (!$configSetFound) {
+                throw new \Exception("ConfigSet '{$name}' not found");
+            }
+
+            // Delete the ConfigSet
+            $deleteUrl = $this->buildSolrBaseUrl() . '/admin/configs?action=DELETE'
+                . '&name=' . urlencode($name)
+                . '&wt=json';
+
+            $response = $this->httpClient->get($deleteUrl, ['timeout' => 60]);
+            $result = json_decode((string)$response->getBody(), true);
+
+            if (isset($result['failure'])) {
+                throw new \Exception('Failed to delete ConfigSet: ' . json_encode($result['failure']));
+            }
+
+            $this->logger->info('✅ Successfully deleted ConfigSet', ['name' => $name]);
+            return [
+                'success' => true,
+                'message' => 'ConfigSet deleted successfully',
+                'configSet' => $name,
+            ];
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to delete SOLR ConfigSet', [
+                'error' => $e->getMessage(),
+                'name' => $name
+            ]);
+            throw new \Exception('Failed to delete ConfigSet: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Copy a SOLR collection to create a new one
+     *
+     * @param string $sourceCollection Source collection name
+     * @param string $targetCollection Target collection name
+     * @param bool $copyData Whether to copy data (default: false, only schema/config)
+     * @return array Result of the copy operation
+     * @throws \Exception If copy operation fails
+     */
+    public function copyCollection(string $sourceCollection, string $targetCollection, bool $copyData = false): array
+    {
+        try {
+            $this->logger->info('📋 Copying SOLR collection', [
+                'source' => $sourceCollection,
+                'target' => $targetCollection,
+                'copyData' => $copyData
+            ]);
+
+            // Check if SOLR is available
+            if (!$this->isAvailable()) {
+                throw new \Exception('SOLR service is not available');
+            }
+
+            // Get source collection info
+            $collections = $this->listCollections();
+            $sourceInfo = null;
+            foreach ($collections as $col) {
+                if ($col['name'] === $sourceCollection) {
+                    $sourceInfo = $col;
+                    break;
+                }
+            }
+
+            if (!$sourceInfo) {
+                throw new \Exception("Source collection '{$sourceCollection}' not found");
+            }
+
+            // Check if target collection already exists
+            foreach ($collections as $col) {
+                if ($col['name'] === $targetCollection) {
+                    throw new \Exception("Target collection '{$targetCollection}' already exists");
+                }
+            }
+
+            // Create new collection using the same ConfigSet
+            $createUrl = $this->buildSolrBaseUrl() . '/admin/collections?action=CREATE'
+                . '&name=' . urlencode($targetCollection)
+                . '&collection.configName=' . urlencode($sourceInfo['configName'])
+                . '&numShards=' . $sourceInfo['shards']
+                . '&replicationFactor=' . $sourceInfo['replicationFactor']
+                . '&maxShardsPerNode=' . $sourceInfo['maxShardsPerNode']
+                . '&wt=json';
+
+            $response = $this->httpClient->get($createUrl, ['timeout' => 60]);
+            $result = json_decode((string)$response->getBody(), true);
+
+            if (isset($result['failure'])) {
+                throw new \Exception('Failed to create collection: ' . json_encode($result['failure']));
+            }
+
+            // If copyData is true, copy documents from source to target
+            if ($copyData && $sourceInfo['documentCount'] > 0) {
+                $this->logger->info('📋 Copying data from source to target collection');
+                
+                // Note: This is a placeholder for data copying
+                // In production, you might want to use SOLR's backup/restore feature
+                // or implement a more sophisticated data migration strategy
+                
+                $this->logger->warning('Data copying is not yet fully implemented - only schema/config was copied');
+            }
+
+            $this->logger->info('✅ Successfully copied collection');
+            return [
+                'success' => true,
+                'message' => 'Collection copied successfully',
+                'source' => $sourceCollection,
+                'target' => $targetCollection,
+                'configSet' => $sourceInfo['configName'],
+                'shards' => $sourceInfo['shards'],
+                'replicas' => $sourceInfo['replicationFactor'],
+                'dataCopied' => false // Will be true when data copying is implemented
+            ];
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to copy SOLR collection', [
+                'error' => $e->getMessage(),
+                'source' => $sourceCollection,
+                'target' => $targetCollection
+            ]);
+            throw new \Exception('Failed to copy collection: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Index file chunks in SOLR file collection
+     *
+     * @param int   $fileId   File ID
+     * @param array $chunks   Text chunks from the file
+     * @param array $metadata File metadata
+     * 
+     * @return bool Success status
+     */
+    public function indexFileChunks(int $fileId, array $chunks, array $metadata): bool
+    {
+        try {
+            // Get file collection name
+            $settings = $this->settingsService->getSettings();
+            $fileCollection = $settings['solr']['fileCollection'] ?? null;
+            if (!$fileCollection) {
+                $this->logger->warning('[GuzzleSolrService] No file collection configured');
+                return false;
+            }
+
+            $this->logger->info('[GuzzleSolrService] Indexing file chunks', [
+                'file_id' => $fileId,
+                'chunk_count' => count($chunks),
+                'collection' => $fileCollection
+            ]);
+
+            // Prepare documents for SOLR
+            $documents = [];
+            foreach ($chunks as $index => $chunk) {
+                $documents[] = [
+                    'id' => "{$fileId}_chunk_{$index}",
+                    'file_id' => $fileId,
+                    'file_path' => $metadata['file_path'] ?? '',
+                    'file_name' => $metadata['file_name'] ?? '',
+                    'mime_type' => $metadata['mime_type'] ?? '',
+                    'file_size' => $metadata['file_size'] ?? 0,
+                    'chunk_index' => $index,
+                    'chunk_total' => count($chunks),
+                    'chunk_text' => $chunk['text'] ?? '',
+                    'chunk_start_offset' => $chunk['start_offset'] ?? 0,
+                    'chunk_end_offset' => $chunk['end_offset'] ?? 0,
+                    'text_content' => $chunk['text'] ?? '', // For full-text search
+                    'indexed_at' => date('Y-m-d\TH:i:s\Z'),
+                ];
+            }
+
+            // Index documents in SOLR
+            $updateUrl = $this->buildSolrBaseUrl() . "/{$fileCollection}/update/json/docs";
+            $requestOptions = [
+                'json' => $documents,
+                'query' => ['commit' => 'true'],
+                'timeout' => $this->solrConfig['timeout'] ?? 30
+            ];
+
+            // Add authentication if configured
+            if (!empty($this->solrConfig['username']) && !empty($this->solrConfig['password'])) {
+                $requestOptions['auth'] = [
+                    $this->solrConfig['username'],
+                    $this->solrConfig['password']
+                ];
+            }
+
+            $response = $this->httpClient->post($updateUrl, $requestOptions);
+            $result = json_decode($response->getBody()->getContents(), true);
+
+            if (isset($result['responseHeader']['status']) && $result['responseHeader']['status'] === 0) {
+                $this->logger->info('[GuzzleSolrService] File chunks indexed successfully', [
+                    'file_id' => $fileId,
+                    'chunks' => count($chunks)
+                ]);
+                return true;
+            }
+
+            $this->logger->error('[GuzzleSolrService] Failed to index file chunks', [
+                'file_id' => $fileId,
+                'response' => $result
+            ]);
+            return false;
+
+        } catch (\Exception $e) {
+            $this->logger->error('[GuzzleSolrService] Exception indexing file chunks', [
+                'file_id' => $fileId,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Bulk index multiple files
+     *
+     * @param array       $fileIds          File IDs to index
+     * @param string|null $collectionName   Collection name (optional)
+     * 
+     * @return array{indexed: int, failed: int, errors: array}
+     */
+    public function indexFiles(array $fileIds, ?string $collectionName = null): array
+    {
+        $indexed = 0;
+        $failed = 0;
+        $errors = [];
+
+        $this->logger->info('[GuzzleSolrService] Bulk indexing files', [
+            'file_count' => count($fileIds),
+            'collection' => $collectionName ?? 'default'
+        ]);
+
+        foreach ($fileIds as $fileId) {
+            try {
+                // Get file text from database
+                $fileTextMapper = \OC::$server->get(\OCA\OpenRegister\Db\FileTextMapper::class);
+                $fileText = $fileTextMapper->findByFileId($fileId);
+
+                if (!$fileText || $fileText->getExtractionStatus() !== 'completed') {
+                    $errors[] = "File $fileId: No extracted text available";
+                    $failed++;
+                    continue;
+                }
+
+                // Get text content
+                $textContent = $fileText->getTextContent();
+                
+                // Chunk the text
+                $solrFileService = \OC::$server->get(\OCA\OpenRegister\Service\SolrFileService::class);
+                $chunks = $solrFileService->chunkDocument($textContent, [
+                    'chunk_size' => 1000,
+                    'chunk_overlap' => 100
+                ]);
+
+                // Prepare metadata
+                $metadata = [
+                    'file_path' => $fileText->getFilePath(),
+                    'file_name' => $fileText->getFileName(),
+                    'mime_type' => $fileText->getMimeType(),
+                    'file_size' => $fileText->getFileSize()
+                ];
+
+                // Index chunks
+                if ($this->indexFileChunks($fileId, $chunks, $metadata)) {
+                    $indexed++;
+                    
+                    // Update file text record
+                    $fileText->setIndexedInSolr(true);
+                    $fileText->setChunked(true);
+                    $fileText->setChunkCount(count($chunks));
+                    $fileText->setUpdatedAt(new \DateTime());
+                    $fileTextMapper->update($fileText);
+                } else {
+                    $errors[] = "File $fileId: Failed to index chunks";
+                    $failed++;
+                }
+
+            } catch (\Exception $e) {
+                $errors[] = "File $fileId: " . $e->getMessage();
+                $failed++;
+            }
+        }
+
+        $this->logger->info('[GuzzleSolrService] Bulk file indexing complete', [
+            'indexed' => $indexed,
+            'failed' => $failed
+        ]);
+
+        return [
+            'indexed' => $indexed,
+            'failed' => $failed,
+            'errors' => $errors
+        ];
+    }
+
+    /**
+     * Get file indexing statistics
+     *
+     * @return array File index statistics
+     */
+    public function getFileIndexStats(): array
+    {
+        try {
+            // Check if SOLR is available
+            if (!$this->isAvailable()) {
+                return [
+                    'success' => true,
+                    'total_chunks' => 0,
+                    'unique_files' => 0,
+                    'mime_types' => [],
+                    'collection' => null,
+                    'message' => 'SOLR is not configured'
+                ];
+            }
+
+            // Get file collection name
+            $settings = $this->settingsService->getSettings();
+            $fileCollection = $settings['solr']['fileCollection'] ?? null;
+            if (!$fileCollection) {
+                return [
+                    'success' => true,
+                    'total_chunks' => 0,
+                    'unique_files' => 0,
+                    'mime_types' => [],
+                    'collection' => null,
+                    'message' => 'No file collection configured'
+                ];
+            }
+
+            // Check if collection exists
+            $collections = $this->listCollections();
+            if (!in_array($fileCollection, $collections)) {
+                return [
+                    'success' => true,
+                    'total_chunks' => 0,
+                    'unique_files' => 0,
+                    'mime_types' => [],
+                    'collection' => $fileCollection,
+                    'message' => 'File collection does not exist yet'
+                ];
+            }
+
+            // Query SOLR for file stats
+            $queryUrl = $this->buildSolrBaseUrl() . "/{$fileCollection}/select";
+            $requestOptions = [
+                'query' => [
+                    'q' => '*:*',
+                    'rows' => 0,
+                    'facet' => 'true',
+                    'facet.field' => 'mime_type'
+                ],
+                'timeout' => $this->solrConfig['timeout'] ?? 30
+            ];
+
+            // Add authentication if configured
+            if (!empty($this->solrConfig['username']) && !empty($this->solrConfig['password'])) {
+                $requestOptions['auth'] = [
+                    $this->solrConfig['username'],
+                    $this->solrConfig['password']
+                ];
+            }
+
+            $response = $this->httpClient->get($queryUrl, $requestOptions);
+            $result = json_decode($response->getBody()->getContents(), true);
+
+            $totalChunks = $result['response']['numFound'] ?? 0;
+            
+            // Count unique files
+            $uniqueFilesQuery = array_merge($requestOptions['query'], [
+                'facet.field' => 'file_id',
+                'facet.limit' => -1
+            ]);
+            $requestOptions['query'] = $uniqueFilesQuery;
+            
+            $response2 = $this->httpClient->get($queryUrl, $requestOptions);
+            $result2 = json_decode($response2->getBody()->getContents(), true);
+            
+            $uniqueFiles = count($result2['facet_counts']['facet_fields']['file_id'] ?? []) / 2;
+
+            return [
+                'success' => true,
+                'total_chunks' => $totalChunks,
+                'unique_files' => (int) $uniqueFiles,
+                'mime_types' => $result['facet_counts']['facet_fields']['mime_type'] ?? [],
+                'collection' => $fileCollection
+            ];
+
+        } catch (\Exception $e) {
+            $this->logger->error('[GuzzleSolrService] Failed to get file index stats', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return [
+                'success' => true,
+                'total_chunks' => 0,
+                'unique_files' => 0,
+                'mime_types' => [],
+                'collection' => null,
+                'message' => 'Error: ' . $e->getMessage()
+            ];
+        }
     }
 }

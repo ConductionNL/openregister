@@ -57,6 +57,7 @@ use OCP\IUserManager;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\GuzzleSolrService;
+use OCA\OpenRegister\Service\SolrObjectService;
 use OCP\AppFramework\IAppContainer;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -2475,9 +2476,9 @@ class ObjectService
             )
         ) {
 
-            // Forward to SOLR service - let it handle availability checks and error handling
-            $solrService = $this->container->get(GuzzleSolrService::class);
-            $result = $solrService->searchObjectsPaginated($query, $rbac, $multi, $published, $deleted);
+            // Forward to SOLR Object service - let it handle availability checks and error handling
+            $solrService = $this->container->get(SolrObjectService::class);
+            $result = $solrService->searchObjects($query, $rbac, $multi, $published, $deleted);
             $result['source'] = 'index';
             $result['query'] = $query;
             $result['rbac'] =  $rbac;
