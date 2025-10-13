@@ -2126,12 +2126,28 @@ export default {
 			try {
 				const url = generateUrl('/apps/openregister/api/settings/solr/warmup')
 				
-				// Convert config to the expected format
-				const warmupParams = {
-					maxObjects: config.maxObjects || 0,
-					mode: config.mode || 'serial',
-					batchSize: config.batchSize || 1000,
-				}
+			// Convert config to the expected format
+			// Extract schema IDs from the selected schema objects
+			console.log('🔥 handleStartWarmup config:', config)
+			console.log('🔥 config.selectedSchemas:', config.selectedSchemas)
+			
+			const selectedSchemaIds = (config.selectedSchemas || []).map(schema => {
+				// Handle both object format {id: '123', label: '...'} and string/number format
+				const id = typeof schema === 'object' ? parseInt(schema.id) : parseInt(schema)
+				console.log('🔥 Mapping schema:', schema, '-> ID:', id)
+				return id
+			}).filter(id => !isNaN(id))
+			
+			console.log('🔥 selectedSchemaIds to send:', selectedSchemaIds)
+			
+			const warmupParams = {
+				maxObjects: config.maxObjects || 0,
+				mode: config.mode || 'serial',
+				batchSize: config.batchSize || 1000,
+				selectedSchemas: selectedSchemaIds,
+			}
+			
+			console.log('🔥 Final warmupParams:', warmupParams)
 				
 				const response = await axios.post(url, warmupParams)
 				

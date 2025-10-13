@@ -2447,6 +2447,17 @@ class SettingsController extends Controller
                 ], 400);
             }
             
+            // Debug logging for schema IDs
+            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
+            $logger->info('🔥 WARMUP: Received warmup request', [
+                'maxObjects' => $maxObjects,
+                'mode' => $mode,
+                'batchSize' => $batchSize,
+                'schemaIds' => $schemaIds,
+                'schemaIds_type' => gettype($schemaIds),
+                'schemaIds_count' => is_array($schemaIds) ? count($schemaIds) : 0
+            ]);
+            
             // Phase 1: Use GuzzleSolrService directly for SOLR operations
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
             $result = $guzzleSolrService->warmupIndex([], $maxObjects, $mode, $collectErrors, $batchSize, $schemaIds);
