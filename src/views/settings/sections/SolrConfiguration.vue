@@ -813,12 +813,12 @@
 
 				<div v-else-if="fieldsInfo" class="fields-results">
 					<!-- Mismatch Alert -->
-					<div v-if="fieldComparison && fieldComparison.summary.total_differences > 0" class="mismatch-alert">
+					<div v-if="fieldComparison && fieldComparison.total_differences > 0" class="mismatch-alert">
 						<div class="alert-content">
 							<span class="alert-icon">⚠️</span>
 							<div class="alert-text">
 								<h3>Configuration Issues Found</h3>
-								<p>{{ fieldComparison.summary.total_differences }} field configuration differences detected between schemas and SOLR.</p>
+								<p>{{ fieldComparison.total_differences }} field configuration differences detected between schemas and SOLR.</p>
 							</div>
 							<button @click="scrollToMismatches" class="alert-button">
 								View Issues
@@ -976,17 +976,17 @@
 					</div>
 
 					<!-- Schema vs SOLR Comparison -->
-					<div v-if="fieldComparison && fieldComparison.summary.total_differences > 0" class="comparison-section" id="field-mismatches">
+					<div v-if="fieldComparison && fieldComparison.total_differences > 0" class="comparison-section" id="field-mismatches">
 						<h3 class="comparison-title">
 							<span class="comparison-icon">⚠️</span>
-							Schema vs SOLR Differences ({{ fieldComparison.summary.total_differences }})
+							Schema vs SOLR Differences ({{ fieldComparison.total_differences }})
 						</h3>
 						<p class="comparison-description">
 							The following differences were detected between your OpenRegister schemas and the actual SOLR configuration:
 						</p>
 
 						<!-- Missing Fields -->
-						<div v-if="fieldComparison.missing.length > 0" class="difference-category">
+						<div v-if="fieldComparison.missing && fieldComparison.missing.length > 0" class="difference-category">
 							<h4 class="category-title missing">
 								Missing Fields ({{ fieldComparison.missing.length }})
 							</h4>
@@ -1000,16 +1000,16 @@
 									</tr>
 								</thead>
 								<tbody>
-									<tr v-for="field in fieldComparison.missing" :key="'missing-' + field.field">
-										<td class="field-name">{{ field.field }}</td>
+									<tr v-for="field in fieldComparison.missing" :key="'missing-' + field.name">
+										<td class="field-name">{{ field.name }}</td>
 										<td>
-											<span class="field-type" :class="field.expected_type">{{ field.expected_type }}</span>
+											<span class="field-type" :class="field.config && field.config.type">{{ field.config && field.config.type || field.type }}</span>
 										</td>
 										<td class="config-details">
-											<span v-if="field.expected_config.multiValued" class="config-badge multi">Multi</span>
-											<span v-if="field.expected_config.indexed" class="config-badge indexed">Indexed</span>
-											<span v-if="field.expected_config.stored" class="config-badge stored">Stored</span>
-											<span v-if="field.expected_config.docValues" class="config-badge docvalues">DocValues</span>
+											<span v-if="field.config && field.config.multiValued" class="config-badge multi">Multi</span>
+											<span v-if="field.config && field.config.indexed" class="config-badge indexed">Indexed</span>
+											<span v-if="field.config && field.config.stored" class="config-badge stored">Stored</span>
+											<span v-if="field.config && field.config.docValues" class="config-badge docvalues">DocValues</span>
 										</td>
 									</tr>
 								</tbody>
@@ -1017,7 +1017,7 @@
 						</div>
 
 						<!-- Extra Fields -->
-						<div v-if="fieldComparison.extra.length > 0" class="difference-category">
+						<div v-if="fieldComparison.extra && fieldComparison.extra.length > 0" class="difference-category">
 							<h4 class="category-title extra">
 								Extra Fields ({{ fieldComparison.extra.length }})
 							</h4>
@@ -1026,31 +1026,20 @@
 								<thead>
 									<tr>
 										<th>Field Name</th>
-										<th>Actual Type</th>
-										<th>Actual Config</th>
 										<th>Actions</th>
 									</tr>
 								</thead>
 								<tbody>
-									<tr v-for="field in fieldComparison.extra" :key="'extra-' + field.field">
-										<td class="field-name">{{ field.field }}</td>
-										<td>
-											<span class="field-type" :class="field.actual_type">{{ field.actual_type }}</span>
-										</td>
-										<td class="config-details">
-											<span v-if="field.actual_config.multiValued" class="config-badge multi">Multi</span>
-											<span v-if="field.actual_config.indexed" class="config-badge indexed">Indexed</span>
-											<span v-if="field.actual_config.stored" class="config-badge stored">Stored</span>
-											<span v-if="field.actual_config.docValues" class="config-badge docvalues">DocValues</span>
-										</td>
+									<tr v-for="fieldName in fieldComparison.extra" :key="'extra-' + fieldName">
+										<td class="field-name">{{ fieldName }}</td>
 										<td class="field-actions">
 											<NcButton
 												type="error"
-												:disabled="deletingField === field.field"
-												@click="deleteField(field.field)"
-												:aria-label="`Delete field ${field.field}`">
+												:disabled="deletingField === fieldName"
+												@click="deleteField(fieldName)"
+												:aria-label="`Delete field ${fieldName}`">
 												<template #icon>
-													<NcLoadingIcon v-if="deletingField === field.field" :size="16" />
+													<NcLoadingIcon v-if="deletingField === fieldName" :size="16" />
 													<Delete v-else :size="16" />
 												</template>
 											</NcButton>
@@ -1061,7 +1050,7 @@
 						</div>
 
 						<!-- Mismatched Fields -->
-						<div v-if="fieldComparison.mismatched.length > 0" class="difference-category">
+						<div v-if="fieldComparison.mismatched && fieldComparison.mismatched.length > 0" class="difference-category">
 							<h4 class="category-title mismatched">
 								Configuration Mismatches ({{ fieldComparison.mismatched.length }})
 							</h4>
@@ -1235,7 +1224,7 @@
 					</div>
 
 					<!-- No Differences Message -->
-					<div v-else-if="fieldComparison && fieldComparison.summary.total_differences === 0" class="no-differences">
+					<div v-else-if="fieldComparison && fieldComparison.total_differences === 0" class="no-differences">
 						<div class="success-message">
 							<span class="success-icon">✅</span>
 							<h4>Schema and SOLR in Sync</h4>

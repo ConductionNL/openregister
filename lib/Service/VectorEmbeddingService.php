@@ -1074,5 +1074,162 @@ class VectorEmbeddingService
 
         return $dotProduct / ($magnitude1 * $magnitude2);
     }
+
+    /**
+     * Vectorize file chunks
+     * 
+     * Generates embeddings for file chunks and stores them in the vector database.
+     * 
+     * @param int            $fileId   File ID
+     * @param array<string>  $chunks   Text chunks
+     * @param array          $metadata File metadata
+     * @param string|null    $provider Embedding provider (null = use default)
+     * 
+     * @return array{success: bool, vectors_created: int, errors?: array} Result
+     * 
+     * @throws \Exception If vectorization fails
+     */
+    public function vectorizeFileChunks(int $fileId, array $chunks, array $metadata = [], ?string $provider = null): array
+    {
+        $this->logger->info('Vectorizing file chunks', [
+            'file_id' => $fileId,
+            'chunk_count' => count($chunks)
+        ]);
+
+        $startTime = microtime(true);
+        $vectorsCreated = 0;
+        $errors = [];
+
+        foreach ($chunks as $index => $chunkText) {
+            try {
+                // Generate embedding
+                $embeddingData = $this->generateEmbedding($chunkText, $provider);
+
+                // Store in vector database
+                $this->storeVector(
+                    entityType: 'file_chunk',
+                    entityId: "{$fileId}_chunk_{$index}",
+                    embedding: $embeddingData['embedding'],
+                    metadata: array_merge($metadata, [
+                        'file_id' => $fileId,
+                        'chunk_index' => $index,
+                        'chunk_text' => substr($chunkText, 0, 1000), // Store first 1000 chars for preview
+                        'model' => $embeddingData['model'],
+                        'dimensions' => $embeddingData['dimensions']
+                    ])
+                );
+
+                $vectorsCreated++;
+            } catch (\Exception $e) {
+                $errors[$index] = $e->getMessage();
+                $this->logger->error('Failed to vectorize chunk', [
+                    'file_id' => $fileId,
+                    'chunk_index' => $index,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+
+        $this->logger->info('Completed file chunk vectorization', [
+            'file_id' => $fileId,
+            'vectors_created' => $vectorsCreated,
+            'errors' => count($errors),
+            'execution_time_ms' => $executionTime
+        ]);
+
+        return [
+            'success' => count($errors) === 0,
+            'vectors_created' => $vectorsCreated,
+            'errors' => $errors,
+            'execution_time_ms' => $executionTime
+        ];
+    }
+
+    /**
+     * Search file chunks by semantic similarity
+     * 
+     * @param string   $query    Search query text
+     * @param int      $limit    Maximum results to return
+     * @param float    $minScore Minimum similarity score (0-1)
+     * @param int|null $fileId   Optional file ID filter
+     * 
+     * @return array<array> Search results with scores and metadata
+     * 
+     * @throws \Exception If search fails
+     */
+    public function searchFileChunks(string $query, int $limit = 10, float $minScore = 0.7, ?int $fileId = null): array
+    {
+        $this->logger->debug('Searching file chunks', [
+            'query' => $query,
+            'limit' => $limit,
+            'min_score' => $minScore,
+            'file_id' => $fileId
+        ]);
+
+        // Generate query embedding
+        $queryEmbedding = $this->generateEmbedding($query);
+
+        // Build filter
+        $filter = ['entity_type' => 'file_chunk'];
+        if ($fileId !== null) {
+            $filter['file_id'] = $fileId;
+        }
+
+        // Search similar vectors
+        $results = $this->searchSimilarVectors(
+            $queryEmbedding['embedding'],
+            $limit,
+            $minScore,
+            $filter
+        );
+
+        return $results;
+    }
+
+    /**
+     * Get vector statistics for file chunks
+     * 
+     * @return array{total_chunks: int, unique_files: int, average_dimensions: int}
+     */
+    public function getFileChunkVectorStats(): array
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select($qb->createFunction('COUNT(*) as total'))
+            ->from('openregister_vectors')
+            ->where($qb->expr()->eq('entity_type', $qb->createNamedParameter('file_chunk')));
+
+        $result = $qb->execute();
+        $total = (int) $result->fetchOne();
+        $result->closeCursor();
+
+        // Count unique files
+        $qb = $this->db->getQueryBuilder();
+        $qb->select($qb->createFunction('COUNT(DISTINCT JSON_EXTRACT(metadata, \'$.file_id\')) as unique_files'))
+            ->from('openregister_vectors')
+            ->where($qb->expr()->eq('entity_type', $qb->createNamedParameter('file_chunk')));
+
+        $result = $qb->execute();
+        $uniqueFiles = (int) $result->fetchOne();
+        $result->closeCursor();
+
+        // Get average dimensions
+        $qb = $this->db->getQueryBuilder();
+        $qb->select($qb->createFunction('AVG(dimensions) as avg_dimensions'))
+            ->from('openregister_vectors')
+            ->where($qb->expr()->eq('entity_type', $qb->createNamedParameter('file_chunk')));
+
+        $result = $qb->execute();
+        $avgDimensions = (int) $result->fetchOne();
+        $result->closeCursor();
+
+        return [
+            'total_chunks' => $total,
+            'unique_files' => $uniqueFiles,
+            'average_dimensions' => $avgDimensions
+        ];
+    }
 }
 

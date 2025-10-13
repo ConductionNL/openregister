@@ -397,5 +397,28 @@ class FileTextService
         $this->logger->info('[FileTextService] Deleting file text', ['file_id' => $fileId]);
         $this->fileTextMapper->deleteByFileId($fileId);
     }
+
+    /**
+     * Get completed text extractions
+     * 
+     * Retrieves file texts that have been successfully extracted.
+     * 
+     * @param int|null $limit Maximum number of records to return (null = no limit)
+     * 
+     * @return FileText[] Array of FileText entities
+     */
+    public function getCompletedExtractions(?int $limit = null): array
+    {
+        $this->logger->debug('[FileTextService] Getting completed extractions', ['limit' => $limit]);
+        
+        try {
+            return $this->fileTextMapper->findCompleted($limit);
+        } catch (\Exception $e) {
+            $this->logger->error('[FileTextService] Failed to get completed extractions', [
+                'error' => $e->getMessage()
+            ]);
+            return [];
+        }
+    }
 }
 
