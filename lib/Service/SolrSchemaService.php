@@ -1030,10 +1030,11 @@ class SolrSchemaService
     public function getObjectCollectionFieldStatus(): array
     {
         // Get object collection from settings
-        $objectCollection = $this->settingsService->getSetting('solr', 'objectCollection');
+        $settings = $this->settingsService->getSettings();
+        $objectCollection = $settings['solr']['objectCollection'] ?? null;
         if (!$objectCollection) {
             // Fall back to default collection if object collection not configured
-            $objectCollection = $this->settingsService->getSetting('solr', 'collection', 'openregister');
+            $objectCollection = $settings['solr']['collection'] ?? 'openregister';
         }
         
         // Get current fields from SOLR for object collection
@@ -1047,7 +1048,31 @@ class SolrSchemaService
         $missingNames = array_diff($expectedNames, $current);
         $missing = [];
         foreach ($missingNames as $fieldName) {
-            $missing[$fieldName] = $expected[$fieldName];
+            $fieldType = $expected[$fieldName];
+            
+            // Determine if field should be multi-valued (fields ending in _ss, _is, etc.)
+            $multiValued = str_ends_with($fieldName, '_ss') || 
+                          str_ends_with($fieldName, '_is') || 
+                          str_ends_with($fieldName, '_ls') ||
+                          str_ends_with($fieldName, '_ts') ||
+                          str_ends_with($fieldName, '_ds') ||
+                          str_ends_with($fieldName, '_bs');
+            
+            // Determine if field should have docValues (for sorting/faceting)
+            // String fields and numeric fields typically need docValues for faceting
+            $docValues = in_array($fieldType, ['string', 'pint', 'plong', 'pfloat', 'pdouble', 'pdate']) &&
+                        !str_starts_with($fieldName, 'self_object') && // JSON storage fields don't need docValues
+                        !str_starts_with($fieldName, 'self_schema') &&
+                        !str_starts_with($fieldName, 'self_register') &&
+                        !str_ends_with($fieldName, '_json');
+            
+            $missing[$fieldName] = [
+                'type' => $fieldType,
+                'stored' => true,
+                'indexed' => true,
+                'multiValued' => $multiValued,
+                'docValues' => $docValues
+            ];
         }
         
         // Find extra fields (in SOLR but not expected)
@@ -1071,7 +1096,8 @@ class SolrSchemaService
     public function getFileCollectionFieldStatus(): array
     {
         // Get file collection from settings
-        $fileCollection = $this->settingsService->getSetting('solr', 'fileCollection');
+        $settings = $this->settingsService->getSettings();
+        $fileCollection = $settings['solr']['fileCollection'] ?? null;
         if (!$fileCollection) {
             // File collection might not be configured yet
             $fileCollection = 'openregister_files';
@@ -1088,7 +1114,30 @@ class SolrSchemaService
         $missingNames = array_diff($expectedNames, $current);
         $missing = [];
         foreach ($missingNames as $fieldName) {
-            $missing[$fieldName] = $expected[$fieldName];
+            $fieldType = $expected[$fieldName];
+            
+            // Determine if field should be multi-valued (fields ending in _ss, _is, etc.)
+            $multiValued = str_ends_with($fieldName, '_ss') || 
+                          str_ends_with($fieldName, '_is') || 
+                          str_ends_with($fieldName, '_ls') ||
+                          str_ends_with($fieldName, '_ts') ||
+                          str_ends_with($fieldName, '_ds') ||
+                          str_ends_with($fieldName, '_bs');
+            
+            // Determine if field should have docValues (for sorting/faceting)
+            // String fields and numeric fields typically need docValues for faceting
+            $docValues = in_array($fieldType, ['string', 'pint', 'plong', 'pfloat', 'pdouble', 'pdate']) &&
+                        !str_ends_with($fieldName, '_text') && // Full-text fields don't need docValues
+                        !str_ends_with($fieldName, '_content') &&
+                        !str_ends_with($fieldName, '_json');
+            
+            $missing[$fieldName] = [
+                'type' => $fieldType,
+                'stored' => true,
+                'indexed' => true,
+                'multiValued' => $multiValued,
+                'docValues' => $docValues
+            ];
         }
         
         // Find extra fields (in SOLR but not expected)
@@ -1115,7 +1164,7 @@ class SolrSchemaService
     {
         try {
             // Build schema API URL for specific collection
-            $schemaUrl = $this->guzzleSolrService->buildSolrBaseUrl() . "/{$collectionName}/schema";
+            $schemaUrl = $this->solrService->buildSolrBaseUrl() . "/{$collectionName}/schema";
             
             // Prepare request options
             $solrConfig = $this->settingsService->getSettings()['solr'] ?? [];
@@ -1135,11 +1184,13 @@ class SolrSchemaService
             // Make the schema request
             $httpClient = \OC::$server->get(\OCP\Http\Client\IClientService::class)->newClient();
             $response = $httpClient->get($schemaUrl, $requestOptions);
-            $schemaData = json_decode($response->getBody()->getContents(), true);
+            $responseBody = $response->getBody();
+            $schemaData = json_decode($responseBody, true);
 
             if (!$schemaData || !isset($schemaData['schema']['fields'])) {
                 $this->logger->warning('No fields data returned from SOLR', [
-                    'collection' => $collectionName
+                    'collection' => $collectionName,
+                    'response' => substr($responseBody, 0, 500) // Log first 500 chars for debugging
                 ]);
                 return [];
             }
@@ -1346,6 +1397,166 @@ class SolrSchemaService
                 'success' => false,
                 'error' => $e->getMessage()
             ];
+        }
+    }
+
+    /**
+     * Create missing fields in a specific collection
+     *
+     * @param string $collectionType Type of collection ('objects' or 'files')
+     * @param array  $missingFields  Array of missing field configurations
+     * @param bool   $dryRun         If true, only simulate field creation
+     *
+     * @return array Creation result with statistics
+     */
+    public function createMissingFields(string $collectionType, array $missingFields, bool $dryRun = false): array
+    {
+        $this->logger->info('Creating missing fields for collection', [
+            'collection_type' => $collectionType,
+            'field_count' => count($missingFields),
+            'dry_run' => $dryRun
+        ]);
+
+        $startTime = microtime(true);
+        $created = [];
+        $errors = [];
+
+        // Get the appropriate collection name
+        $settings = $this->settingsService->getSettings();
+        $collection = $collectionType === 'files' 
+            ? ($settings['solr']['fileCollection'] ?? null)
+            : ($settings['solr']['objectCollection'] ?? $settings['solr']['collection'] ?? 'openregister');
+
+        if (!$collection) {
+            return [
+                'success' => false,
+                'message' => "No collection configured for type: {$collectionType}",
+                'created_count' => 0,
+                'error_count' => 1
+            ];
+        }
+
+        foreach ($missingFields as $fieldName => $fieldConfig) {
+            try {
+                if ($dryRun) {
+                    $created[] = $fieldName;
+                    continue;
+                }
+
+                // Add field to SOLR using the schema API
+                $result = $this->addFieldToCollection(
+                    $collection,
+                    $fieldName,
+                    $fieldConfig
+                );
+
+                if ($result) {
+                    $created[] = $fieldName;
+                    $this->logger->debug('Created field in SOLR', [
+                        'field' => $fieldName,
+                        'collection' => $collection
+                    ]);
+                } else {
+                    $errors[$fieldName] = 'Failed to create field';
+                }
+            } catch (\Exception $e) {
+                $errors[$fieldName] = $e->getMessage();
+                $this->logger->error('Failed to create field', [
+                    'field' => $fieldName,
+                    'collection' => $collection,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+
+        return [
+            'success' => empty($errors),
+            'message' => sprintf(
+                '%s: %d created, %d errors',
+                $dryRun ? 'Dry run' : 'Created fields',
+                count($created),
+                count($errors)
+            ),
+            'collection' => $collection,
+            'collection_type' => $collectionType,
+            'created' => $created,
+            'created_count' => count($created),
+            'errors' => $errors,
+            'error_count' => count($errors),
+            'execution_time_ms' => $executionTime,
+            'dry_run' => $dryRun
+        ];
+    }
+
+    /**
+     * Add a field to a SOLR collection using the Schema API
+     *
+     * @param string $collection Collection name
+     * @param string $fieldName  Field name
+     * @param array  $fieldConfig Field configuration
+     *
+     * @return bool True if successful
+     */
+    private function addFieldToCollection(string $collection, string $fieldName, array $fieldConfig): bool
+    {
+        $settings = $this->settingsService->getSettings();
+        $solrUrl = $this->solrService->buildSolrBaseUrl();
+        $schemaUrl = "{$solrUrl}/{$collection}/schema";
+
+        // Prepare field definition
+        $fieldDef = [
+            'name' => $fieldName,
+            'type' => $fieldConfig['type'],
+            'stored' => $fieldConfig['stored'] ?? true,
+            'indexed' => $fieldConfig['indexed'] ?? true
+        ];
+
+        // Add multiValued if specified
+        if (isset($fieldConfig['multiValued'])) {
+            $fieldDef['multiValued'] = $fieldConfig['multiValued'];
+        }
+
+        // Add docValues if specified
+        if (isset($fieldConfig['docValues'])) {
+            $fieldDef['docValues'] = $fieldConfig['docValues'];
+        }
+
+        $payload = ['add-field' => $fieldDef];
+
+        // Prepare request options
+        $requestOptions = [
+            'body' => json_encode($payload),
+            'timeout' => 30,
+            'headers' => [
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json'
+            ]
+        ];
+
+        // Add authentication if configured
+        $username = $settings['solr']['username'] ?? null;
+        $password = $settings['solr']['password'] ?? null;
+        if ($username && $password) {
+            $requestOptions['auth'] = [$username, $password];
+        }
+
+        try {
+            // Get HTTP client from server
+            $httpClient = \OC::$server->get(\OCP\Http\Client\IClientService::class)->newClient();
+            $response = $httpClient->post($schemaUrl, $requestOptions);
+            $responseBody = $response->getBody();
+            $data = json_decode($responseBody, true);
+            
+            return ($data['responseHeader']['status'] ?? -1) === 0;
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to add field to collection', [
+                'collection' => $collection,
+                'field' => $fieldName,
+                'error' => $e->getMessage()
+            ]);
+            return false;
         }
     }
 }

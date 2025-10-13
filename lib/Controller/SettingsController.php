@@ -1706,8 +1706,9 @@ class SettingsController extends Controller
     public function createMissingSolrFields(): JSONResponse
     {
         try {
-            // Get GuzzleSolrService for field creation
+            // Get services
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $solrSchemaService = $this->container->get(SolrSchemaService::class);
             
             // Check if SOLR is available first
             if (!$guzzleSolrService->isAvailable()) {
@@ -1722,13 +1723,78 @@ class SettingsController extends Controller
             $dryRun = $this->request->getParam('dry_run', false);
             $dryRun = filter_var($dryRun, FILTER_VALIDATE_BOOLEAN);
 
-            // Get expected fields using the same method as the comparison
-            $expectedFields = $this->getExpectedSchemaFields();
-            
-            // Create missing fields
-            $result = $guzzleSolrService->createMissingFields($expectedFields, $dryRun);
-            
-            return new JSONResponse($result);
+            $startTime = microtime(true);
+            $totalCreated = 0;
+            $totalErrors = 0;
+            $results = [
+                'objects' => null,
+                'files' => null
+            ];
+
+            // Create missing fields for OBJECT collection
+            try {
+                $objectStatus = $solrSchemaService->getObjectCollectionFieldStatus();
+                if (!empty($objectStatus['missing'])) {
+                    $objectResult = $solrSchemaService->createMissingFields(
+                        'objects',
+                        $objectStatus['missing'],
+                        $dryRun
+                    );
+                    $results['objects'] = $objectResult;
+                    if (isset($objectResult['created_count'])) {
+                        $totalCreated += $objectResult['created_count'];
+                    }
+                    if (isset($objectResult['error_count'])) {
+                        $totalErrors += $objectResult['error_count'];
+                    }
+                }
+            } catch (\Exception $e) {
+                $results['objects'] = [
+                    'success' => false,
+                    'message' => 'Failed to create object fields: ' . $e->getMessage()
+                ];
+                $totalErrors++;
+            }
+
+            // Create missing fields for FILE collection
+            try {
+                $fileStatus = $solrSchemaService->getFileCollectionFieldStatus();
+                if (!empty($fileStatus['missing'])) {
+                    $fileResult = $solrSchemaService->createMissingFields(
+                        'files',
+                        $fileStatus['missing'],
+                        $dryRun
+                    );
+                    $results['files'] = $fileResult;
+                    if (isset($fileResult['created_count'])) {
+                        $totalCreated += $fileResult['created_count'];
+                    }
+                    if (isset($fileResult['error_count'])) {
+                        $totalErrors += $fileResult['error_count'];
+                    }
+                }
+            } catch (\Exception $e) {
+                $results['files'] = [
+                    'success' => false,
+                    'message' => 'Failed to create file fields: ' . $e->getMessage()
+                ];
+                $totalErrors++;
+            }
+
+            $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+
+            return new JSONResponse([
+                'success' => $totalErrors === 0,
+                'message' => sprintf(
+                    'Field creation completed: %d total fields created across both collections',
+                    $totalCreated
+                ),
+                'total_created' => $totalCreated,
+                'total_errors' => $totalErrors,
+                'results' => $results,
+                'execution_time_ms' => $executionTime,
+                'dry_run' => $dryRun
+            ]);
             
         } catch (\Exception $e) {
             return new JSONResponse([

@@ -5553,7 +5553,7 @@ class GuzzleSolrService
         // **MEMORY TRACKING**: Capture initial memory usage and predict requirements
         $initialMemoryUsage = (int) memory_get_usage(true);
         $initialMemoryPeak = (int) memory_get_peak_usage(true);
-        $memoryPrediction = $this->predictWarmupMemoryUsage($maxObjects);
+        $memoryPrediction = $this->predictWarmupMemoryUsage($maxObjects, $schemaIds);
         
         // **CRITICAL**: Disable profiler during warmup - even with reduced logging, 26K+ queries overwhelm profiler
         $profilerWasEnabled = false;
@@ -6959,30 +6959,38 @@ class GuzzleSolrService
     /**
      * Predict memory usage for SOLR warmup operation
      *
-     * @param int $maxObjects Maximum number of objects to process
+     * @param int $maxObjects Maximum number of objects to process (0 = all)
+     * @param array $schemaIds Optional array of schema IDs to filter by (empty = all schemas)
      * @return array Memory usage prediction
      */
-    private function predictWarmupMemoryUsage(int $maxObjects): array
+    private function predictWarmupMemoryUsage(int $maxObjects, array $schemaIds = []): array
     {
         try {
             // Get current memory info
             $currentMemory = (int) memory_get_usage(true);
             $memoryLimit = $this->parseMemoryLimit(ini_get('memory_limit'));
             
-            // Get ALL object count for prediction (since we now index all objects, not just published)
+            // Get object count for prediction, filtered by schema if provided
             $objectMapper = \OC::$server->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
-            $totalObjects = $objectMapper->countAll(
-                filters: [],
-                search: null,
-                ids: null,
-                uses: null,
-                includeDeleted: false,
-                register: null,
-                schema: null,
-                published: null, // Count ALL objects (published and unpublished)
-                rbac: false,     // Skip RBAC for performance
-                multi: false     // Skip multitenancy for performance
-            );
+            
+            // If schema IDs are provided, use the searchable objects count (which filters by schema)
+            if (!empty($schemaIds)) {
+                $totalObjects = $this->countSearchableObjects($objectMapper, $schemaIds);
+            } else {
+                // Get ALL object count for prediction (since we now index all objects, not just published)
+                $totalObjects = $objectMapper->countAll(
+                    filters: [],
+                    search: null,
+                    ids: null,
+                    uses: null,
+                    includeDeleted: false,
+                    register: null,
+                    schema: null,
+                    published: null, // Count ALL objects (published and unpublished)
+                    rbac: false,     // Skip RBAC for performance
+                    multi: false     // Skip multitenancy for performance
+                );
+            }
             
             // Calculate objects to process
             $objectsToProcess = ($maxObjects === 0) ? $totalObjects : min($maxObjects, $totalObjects);
@@ -9463,7 +9471,8 @@ class GuzzleSolrService
     {
         try {
             // Get file collection name
-            $fileCollection = $this->settingsService->getSetting('solr', 'fileCollection');
+            $settings = $this->settingsService->getSettings();
+            $fileCollection = $settings['solr']['fileCollection'] ?? null;
             if (!$fileCollection) {
                 $this->logger->warning('[GuzzleSolrService] No file collection configured');
                 return false;

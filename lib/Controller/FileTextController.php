@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\FileTextService;
+use OCA\OpenRegister\Service\SolrFileService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -33,12 +34,14 @@ class FileTextController extends Controller
      * @param string             $appName         App name
      * @param IRequest           $request         Request object
      * @param FileTextService    $fileTextService File text service
+     * @param SolrFileService    $solrFileService SOLR file service
      * @param LoggerInterface    $logger          Logger
      */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly FileTextService $fileTextService,
+        private readonly SolrFileService $solrFileService,
         private readonly LoggerInterface $logger
     ) {
         parent::__construct($appName, $request);
@@ -221,6 +224,115 @@ class FileTextController extends Controller
             return new JSONResponse([
                 'success' => false,
                 'message' => 'Failed to delete file text: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Process extracted files and index their chunks to SOLR
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param int|null $limit       Maximum number of files to process
+     * @param int|null $chunkSize   Chunk size in characters
+     * @param int|null $chunkOverlap Overlap between chunks in characters
+     * 
+     * @return JSONResponse Processing result with statistics
+     */
+    public function processAndIndexExtracted(?int $limit = null, ?int $chunkSize = null, ?int $chunkOverlap = null): JSONResponse
+    {
+        try {
+            $options = [];
+            if ($chunkSize !== null) {
+                $options['chunk_size'] = $chunkSize;
+            }
+            if ($chunkOverlap !== null) {
+                $options['chunk_overlap'] = $chunkOverlap;
+            }
+
+            $result = $this->solrFileService->processExtractedFiles($limit, $options);
+            
+            return new JSONResponse($result);
+            
+        } catch (\Exception $e) {
+            $this->logger->error('[FileTextController] Failed to process extracted files', [
+                'error' => $e->getMessage()
+            ]);
+            
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Failed to process extracted files: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Process and index a single extracted file
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param int      $fileId       File ID
+     * @param int|null $chunkSize    Chunk size in characters
+     * @param int|null $chunkOverlap Overlap between chunks in characters
+     * 
+     * @return JSONResponse Processing result
+     */
+    public function processAndIndexFile(int $fileId, ?int $chunkSize = null, ?int $chunkOverlap = null): JSONResponse
+    {
+        try {
+            $options = [];
+            if ($chunkSize !== null) {
+                $options['chunk_size'] = $chunkSize;
+            }
+            if ($chunkOverlap !== null) {
+                $options['chunk_overlap'] = $chunkOverlap;
+            }
+
+            $result = $this->solrFileService->processExtractedFile($fileId, $options);
+            
+            return new JSONResponse($result);
+            
+        } catch (\Exception $e) {
+            $this->logger->error('[FileTextController] Failed to process file', [
+                'file_id' => $fileId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Failed to process file: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get chunking statistics
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Chunking statistics
+     */
+    public function getChunkingStats(): JSONResponse
+    {
+        try {
+            $stats = $this->solrFileService->getChunkingStats();
+            
+            return new JSONResponse([
+                'success' => true,
+                'stats' => $stats
+            ]);
+            
+        } catch (\Exception $e) {
+            $this->logger->error('[FileTextController] Failed to get chunking stats', [
+                'error' => $e->getMessage()
+            ]);
+            
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Failed to get chunking stats: ' . $e->getMessage()
             ], 500);
         }
     }

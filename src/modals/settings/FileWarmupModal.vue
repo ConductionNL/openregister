@@ -1,8 +1,8 @@
 <template>
-	<NcDialog :open.sync="showDialog"
+	<NcDialog :open="showDialog"
 		:name="dialogTitle"
 		size="large"
-		@closing="handleClose">
+		@update:open="handleDialogUpdate">
 		<div class="file-warmup-modal">
 			<!-- Info Box -->
 			<NcNoteCard type="info" class="info-box">
@@ -314,9 +314,20 @@ export default {
 		},
 
 		/**
+		 * Handle dialog open/close state update
+		 */
+		handleDialogUpdate(isOpen) {
+			console.log('🔄 FileWarmupModal: Dialog update event, isOpen:', isOpen)
+			if (!isOpen) {
+				this.handleClose()
+			}
+		},
+
+		/**
 		 * Handle dialog close
 		 */
 		handleClose() {
+			console.log('❌ FileWarmupModal: Closing dialog...')
 			this.showDialog = false
 			this.$emit('update:open', false)
 			this.$emit('close')

@@ -128,6 +128,29 @@ class FileTextMapper extends QBMapper
     }
 
     /**
+     * Find completed extractions
+     *
+     * @param int|null $limit Maximum number of results (null = no limit)
+     * 
+     * @return array<FileText>
+     */
+    public function findCompleted(?int $limit = null): array
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('extraction_status', $qb->createNamedParameter('completed', IQueryBuilder::PARAM_STR)))
+            ->orderBy('extracted_at', 'ASC');
+
+        if ($limit !== null) {
+            $qb->setMaxResults($limit);
+        }
+
+        return $this->findEntities($qb);
+    }
+
+    /**
      * Find files not yet indexed in SOLR
      *
      * @param int $limit Maximum number of results
