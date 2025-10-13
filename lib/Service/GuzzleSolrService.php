@@ -9449,4 +9449,282 @@ class GuzzleSolrService
             throw new \Exception('Failed to copy collection: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Index file chunks in SOLR file collection
+     *
+     * @param int   $fileId   File ID
+     * @param array $chunks   Text chunks from the file
+     * @param array $metadata File metadata
+     * 
+     * @return bool Success status
+     */
+    public function indexFileChunks(int $fileId, array $chunks, array $metadata): bool
+    {
+        try {
+            // Get file collection name
+            $fileCollection = $this->settingsService->getSetting('solr', 'fileCollection');
+            if (!$fileCollection) {
+                $this->logger->warning('[GuzzleSolrService] No file collection configured');
+                return false;
+            }
+
+            $this->logger->info('[GuzzleSolrService] Indexing file chunks', [
+                'file_id' => $fileId,
+                'chunk_count' => count($chunks),
+                'collection' => $fileCollection
+            ]);
+
+            // Prepare documents for SOLR
+            $documents = [];
+            foreach ($chunks as $index => $chunk) {
+                $documents[] = [
+                    'id' => "{$fileId}_chunk_{$index}",
+                    'file_id' => $fileId,
+                    'file_path' => $metadata['file_path'] ?? '',
+                    'file_name' => $metadata['file_name'] ?? '',
+                    'mime_type' => $metadata['mime_type'] ?? '',
+                    'file_size' => $metadata['file_size'] ?? 0,
+                    'chunk_index' => $index,
+                    'chunk_total' => count($chunks),
+                    'chunk_text' => $chunk['text'] ?? '',
+                    'chunk_start_offset' => $chunk['start_offset'] ?? 0,
+                    'chunk_end_offset' => $chunk['end_offset'] ?? 0,
+                    'text_content' => $chunk['text'] ?? '', // For full-text search
+                    'indexed_at' => date('Y-m-d\TH:i:s\Z'),
+                ];
+            }
+
+            // Index documents in SOLR
+            $updateUrl = $this->buildSolrBaseUrl() . "/{$fileCollection}/update/json/docs";
+            $requestOptions = [
+                'json' => $documents,
+                'query' => ['commit' => 'true'],
+                'timeout' => $this->solrConfig['timeout'] ?? 30
+            ];
+
+            // Add authentication if configured
+            if (!empty($this->solrConfig['username']) && !empty($this->solrConfig['password'])) {
+                $requestOptions['auth'] = [
+                    $this->solrConfig['username'],
+                    $this->solrConfig['password']
+                ];
+            }
+
+            $response = $this->httpClient->post($updateUrl, $requestOptions);
+            $result = json_decode($response->getBody()->getContents(), true);
+
+            if (isset($result['responseHeader']['status']) && $result['responseHeader']['status'] === 0) {
+                $this->logger->info('[GuzzleSolrService] File chunks indexed successfully', [
+                    'file_id' => $fileId,
+                    'chunks' => count($chunks)
+                ]);
+                return true;
+            }
+
+            $this->logger->error('[GuzzleSolrService] Failed to index file chunks', [
+                'file_id' => $fileId,
+                'response' => $result
+            ]);
+            return false;
+
+        } catch (\Exception $e) {
+            $this->logger->error('[GuzzleSolrService] Exception indexing file chunks', [
+                'file_id' => $fileId,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Bulk index multiple files
+     *
+     * @param array       $fileIds          File IDs to index
+     * @param string|null $collectionName   Collection name (optional)
+     * 
+     * @return array{indexed: int, failed: int, errors: array}
+     */
+    public function indexFiles(array $fileIds, ?string $collectionName = null): array
+    {
+        $indexed = 0;
+        $failed = 0;
+        $errors = [];
+
+        $this->logger->info('[GuzzleSolrService] Bulk indexing files', [
+            'file_count' => count($fileIds),
+            'collection' => $collectionName ?? 'default'
+        ]);
+
+        foreach ($fileIds as $fileId) {
+            try {
+                // Get file text from database
+                $fileTextMapper = \OC::$server->get(\OCA\OpenRegister\Db\FileTextMapper::class);
+                $fileText = $fileTextMapper->findByFileId($fileId);
+
+                if (!$fileText || $fileText->getExtractionStatus() !== 'completed') {
+                    $errors[] = "File $fileId: No extracted text available";
+                    $failed++;
+                    continue;
+                }
+
+                // Get text content
+                $textContent = $fileText->getTextContent();
+                
+                // Chunk the text
+                $solrFileService = \OC::$server->get(\OCA\OpenRegister\Service\SolrFileService::class);
+                $chunks = $solrFileService->chunkDocument($textContent, [
+                    'chunk_size' => 1000,
+                    'chunk_overlap' => 100
+                ]);
+
+                // Prepare metadata
+                $metadata = [
+                    'file_path' => $fileText->getFilePath(),
+                    'file_name' => $fileText->getFileName(),
+                    'mime_type' => $fileText->getMimeType(),
+                    'file_size' => $fileText->getFileSize()
+                ];
+
+                // Index chunks
+                if ($this->indexFileChunks($fileId, $chunks, $metadata)) {
+                    $indexed++;
+                    
+                    // Update file text record
+                    $fileText->setIndexedInSolr(true);
+                    $fileText->setChunked(true);
+                    $fileText->setChunkCount(count($chunks));
+                    $fileText->setUpdatedAt(new \DateTime());
+                    $fileTextMapper->update($fileText);
+                } else {
+                    $errors[] = "File $fileId: Failed to index chunks";
+                    $failed++;
+                }
+
+            } catch (\Exception $e) {
+                $errors[] = "File $fileId: " . $e->getMessage();
+                $failed++;
+            }
+        }
+
+        $this->logger->info('[GuzzleSolrService] Bulk file indexing complete', [
+            'indexed' => $indexed,
+            'failed' => $failed
+        ]);
+
+        return [
+            'indexed' => $indexed,
+            'failed' => $failed,
+            'errors' => $errors
+        ];
+    }
+
+    /**
+     * Get file indexing statistics
+     *
+     * @return array File index statistics
+     */
+    public function getFileIndexStats(): array
+    {
+        try {
+            // Check if SOLR is available
+            if (!$this->isAvailable()) {
+                return [
+                    'success' => true,
+                    'total_chunks' => 0,
+                    'unique_files' => 0,
+                    'mime_types' => [],
+                    'collection' => null,
+                    'message' => 'SOLR is not configured'
+                ];
+            }
+
+            // Get file collection name
+            $settings = $this->settingsService->getSettings();
+            $fileCollection = $settings['solr']['fileCollection'] ?? null;
+            if (!$fileCollection) {
+                return [
+                    'success' => true,
+                    'total_chunks' => 0,
+                    'unique_files' => 0,
+                    'mime_types' => [],
+                    'collection' => null,
+                    'message' => 'No file collection configured'
+                ];
+            }
+
+            // Check if collection exists
+            $collections = $this->listCollections();
+            if (!in_array($fileCollection, $collections)) {
+                return [
+                    'success' => true,
+                    'total_chunks' => 0,
+                    'unique_files' => 0,
+                    'mime_types' => [],
+                    'collection' => $fileCollection,
+                    'message' => 'File collection does not exist yet'
+                ];
+            }
+
+            // Query SOLR for file stats
+            $queryUrl = $this->buildSolrBaseUrl() . "/{$fileCollection}/select";
+            $requestOptions = [
+                'query' => [
+                    'q' => '*:*',
+                    'rows' => 0,
+                    'facet' => 'true',
+                    'facet.field' => 'mime_type'
+                ],
+                'timeout' => $this->solrConfig['timeout'] ?? 30
+            ];
+
+            // Add authentication if configured
+            if (!empty($this->solrConfig['username']) && !empty($this->solrConfig['password'])) {
+                $requestOptions['auth'] = [
+                    $this->solrConfig['username'],
+                    $this->solrConfig['password']
+                ];
+            }
+
+            $response = $this->httpClient->get($queryUrl, $requestOptions);
+            $result = json_decode($response->getBody()->getContents(), true);
+
+            $totalChunks = $result['response']['numFound'] ?? 0;
+            
+            // Count unique files
+            $uniqueFilesQuery = array_merge($requestOptions['query'], [
+                'facet.field' => 'file_id',
+                'facet.limit' => -1
+            ]);
+            $requestOptions['query'] = $uniqueFilesQuery;
+            
+            $response2 = $this->httpClient->get($queryUrl, $requestOptions);
+            $result2 = json_decode($response2->getBody()->getContents(), true);
+            
+            $uniqueFiles = count($result2['facet_counts']['facet_fields']['file_id'] ?? []) / 2;
+
+            return [
+                'success' => true,
+                'total_chunks' => $totalChunks,
+                'unique_files' => (int) $uniqueFiles,
+                'mime_types' => $result['facet_counts']['facet_fields']['mime_type'] ?? [],
+                'collection' => $fileCollection
+            ];
+
+        } catch (\Exception $e) {
+            $this->logger->error('[GuzzleSolrService] Failed to get file index stats', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return [
+                'success' => true,
+                'total_chunks' => 0,
+                'unique_files' => 0,
+                'mime_types' => [],
+                'collection' => null,
+                'message' => 'Error: ' . $e->getMessage()
+            ];
+        }
+    }
 }

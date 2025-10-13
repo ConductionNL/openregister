@@ -122,6 +122,79 @@ class VectorEmbeddingService
     }
 
     /**
+     * Generate embedding with custom configuration (for testing)
+     * 
+     * This method allows testing embedding generation with custom config
+     * without saving it to settings. Useful for validating API keys and
+     * provider configuration before saving.
+     * 
+     * @param string $text   Text to embed
+     * @param array  $config Custom configuration array with:
+     *                       - provider: 'openai', 'ollama', or 'fireworks'
+     *                       - model: Model name
+     *                       - apiKey: API key (for OpenAI/Fireworks)
+     *                       - url: URL (for Ollama)
+     *                       - baseUrl: Base URL (for Fireworks)
+     * 
+     * @return array Embedding vector (array of floats)
+     * 
+     * @throws \Exception If embedding generation fails
+     */
+    public function generateEmbeddingWithCustomConfig(string $text, array $config): array
+    {
+        $this->logger->debug('Generating embedding with custom config', [
+            'text_length' => strlen($text),
+            'provider' => $config['provider'] ?? 'unknown',
+            'model' => $config['model'] ?? 'unknown'
+        ]);
+
+        try {
+            // Normalize config format (frontend uses camelCase, backend uses snake_case)
+            $normalizedConfig = [
+                'provider' => $config['provider'],
+                'model' => $config['model'] ?? null,
+                'api_key' => $config['apiKey'] ?? null,
+                'base_url' => $config['baseUrl'] ?? $config['url'] ?? null,
+            ];
+
+            // Validate required fields
+            if (empty($normalizedConfig['provider'])) {
+                throw new \Exception('Provider is required');
+            }
+
+            if (empty($normalizedConfig['model'])) {
+                throw new \Exception('Model is required');
+            }
+
+            // Validate API keys for providers that need them
+            if (in_array($normalizedConfig['provider'], ['openai', 'fireworks']) && empty($normalizedConfig['api_key'])) {
+                throw new \Exception("API key is required for {$normalizedConfig['provider']}");
+            }
+
+            // Create embedding generator
+            $generator = $this->getEmbeddingGenerator($normalizedConfig);
+            
+            // Generate embedding
+            $embedding = $generator->embedText($text);
+            
+            $this->logger->debug('Embedding generated successfully with custom config', [
+                'dimensions' => count($embedding),
+                'model' => $normalizedConfig['model']
+            ]);
+            
+            return $embedding;
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to generate embedding with custom config', [
+                'error' => $e->getMessage(),
+                'provider' => $config['provider'] ?? 'unknown',
+                'text_length' => strlen($text)
+            ]);
+            throw new \Exception('Embedding generation failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Generate embeddings for multiple texts in batch
      * 
      * More efficient than calling generateEmbedding() multiple times.
@@ -813,6 +886,7 @@ class VectorEmbeddingService
             // Create appropriate generator based on provider and model
             $generator = match ($config['provider']) {
                 'openai' => $this->createOpenAIGenerator($config['model'], $llphantConfig),
+                'fireworks' => $this->createFireworksGenerator($config['model'], $llphantConfig),
                 'ollama' => $this->createOllamaGenerator($config['model'], $llphantConfig),
                 default => throw new \Exception("Unsupported embedding provider: {$config['provider']}")
             };
@@ -846,6 +920,107 @@ class VectorEmbeddingService
             'text-embedding-3-small' => new OpenAI3SmallEmbeddingGenerator($config),
             'text-embedding-3-large' => new OpenAI3LargeEmbeddingGenerator($config),
             default => throw new \Exception("Unsupported OpenAI model: {$model}")
+        };
+    }
+
+    /**
+     * Create Fireworks AI embedding generator
+     * 
+     * Fireworks AI uses OpenAI-compatible API, so we create a custom wrapper
+     * that works with any Fireworks model.
+     * 
+     * @param string        $model  Model name (e.g., 'nomic-ai/nomic-embed-text-v1.5')
+     * @param OpenAIConfig  $config LLPhant config with API key and base URL
+     * 
+     * @return EmbeddingGeneratorInterface Generator instance
+     * 
+     * @throws \Exception If model is not supported
+     */
+    private function createFireworksGenerator(string $model, OpenAIConfig $config): EmbeddingGeneratorInterface
+    {
+        // Create a custom anonymous class that implements the EmbeddingGeneratorInterface
+        // This allows us to use any Fireworks model name without LLPhant's restrictions
+        return new class($model, $config, $this->logger) implements EmbeddingGeneratorInterface {
+            private string $model;
+            private OpenAIConfig $config;
+            private $logger;
+
+            public function __construct(string $model, OpenAIConfig $config, $logger)
+            {
+                $this->model = $model;
+                $this->config = $config;
+                $this->logger = $logger;
+            }
+
+            public function embedText(string $text): array
+            {
+                $url = rtrim($this->config->url ?? 'https://api.fireworks.ai/inference/v1', '/') . '/embeddings';
+                
+                $this->logger->debug('Calling Fireworks AI API', [
+                    'url' => $url,
+                    'model' => $this->model
+                ]);
+
+                $ch = curl_init($url);
+                curl_setopt($ch, CURLOPT_POST, true);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                    'Authorization: Bearer ' . $this->config->apiKey,
+                    'Content-Type: application/json',
+                ]);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+                    'model' => $this->model,
+                    'input' => $text,
+                ]));
+
+                $response = curl_exec($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                $error = curl_error($ch);
+                curl_close($ch);
+
+                if ($error) {
+                    throw new \Exception("Fireworks API request failed: {$error}");
+                }
+
+                if ($httpCode !== 200) {
+                    throw new \Exception("Fireworks API returned HTTP {$httpCode}: {$response}");
+                }
+
+                $data = json_decode($response, true);
+                if (!isset($data['data'][0]['embedding'])) {
+                    throw new \Exception("Unexpected Fireworks API response format: {$response}");
+                }
+
+                return $data['data'][0]['embedding'];
+            }
+
+            public function getEmbeddingLength(): int
+            {
+                // Return expected dimensions based on model
+                return match ($this->model) {
+                    'nomic-ai/nomic-embed-text-v1.5' => 768,
+                    'thenlper/gte-base' => 768,
+                    'thenlper/gte-large' => 1024,
+                    'WhereIsAI/UAE-Large-V1' => 1024,
+                    default => 768
+                };
+            }
+
+            public function embedDocument(\LLPhant\Embeddings\Document $document): \LLPhant\Embeddings\Document
+            {
+                // Embed the document content and store it back in the document
+                $document->embedding = $this->embedText($document->content);
+                return $document;
+            }
+
+            public function embedDocuments(array $documents): array
+            {
+                // Embed multiple documents
+                foreach ($documents as $document) {
+                    $document->embedding = $this->embedText($document->content);
+                }
+                return $documents;
+            }
         };
     }
 

@@ -34,32 +34,34 @@
 					<h3>{{ t('openregister', 'Active Collections') }}</h3>
 					<div class="assignments-grid">
 						<div class="assignment-card">
-							<label>{{ t('openregister', 'Object Collection') }}</label>
-							<NcSelect
-								v-model="selectedObjectCollection"
-								:options="collectionOptions"
-								:placeholder="t('openregister', 'Select collection for objects')"
-								@update:modelValue="updateAssignments">
-								<template #icon>
-									<Database :size="20" />
-								</template>
-							</NcSelect>
+					<label>{{ t('openregister', 'Object Collection') }}</label>
+						<NcSelect
+							v-model="selectedObjectCollection"
+							:options="collectionOptions"
+							:placeholder="t('openregister', 'Select collection for objects')"
+							:label-outside="true"
+							@update:modelValue="updateAssignments">
+							<template #icon>
+								<Database :size="20" />
+							</template>
+						</NcSelect>
 							<p class="assignment-hint">
 								{{ t('openregister', 'Collection used to store and index object data') }}
 							</p>
 						</div>
 
 						<div class="assignment-card">
-							<label>{{ t('openregister', 'File Collection') }}</label>
-							<NcSelect
-								v-model="selectedFileCollection"
-								:options="collectionOptions"
-								:placeholder="t('openregister', 'Select collection for files')"
-								@update:modelValue="updateAssignments">
-								<template #icon>
-									<FileDocument :size="20" />
-								</template>
-							</NcSelect>
+					<label>{{ t('openregister', 'File Collection') }}</label>
+						<NcSelect
+							v-model="selectedFileCollection"
+							:options="collectionOptions"
+							:placeholder="t('openregister', 'Select collection for files')"
+							:label-outside="true"
+							@update:modelValue="updateAssignments">
+							<template #icon>
+								<FileDocument :size="20" />
+							</template>
+						</NcSelect>
 							<p class="assignment-hint">
 								{{ t('openregister', 'Collection used to store and index file metadata and content') }}
 							</p>
@@ -184,13 +186,14 @@
 							class="collection-name-input" />
 					</div>
 
-					<div class="form-group">
-						<label>{{ t('openregister', 'ConfigSet') }}*</label>
-						<NcSelect
-							v-model="newCollectionData.configSet"
-							:options="configSetOptions"
-							:placeholder="t('openregister', 'Select ConfigSet')" />
-					</div>
+				<div class="form-group">
+					<label>{{ t('openregister', 'ConfigSet') }}*</label>
+					<NcSelect
+						v-model="newCollectionData.configSet"
+						:options="configSetOptions"
+						:placeholder="t('openregister', 'Select ConfigSet')"
+						:label-outside="true" />
+				</div>
 
 					<div class="form-group-row">
 						<div class="form-group">

@@ -2661,6 +2661,101 @@ class SettingsService
     }
 
     /**
+     * Update LLM (Large Language Model) settings only
+     *
+     * @param array $llmData LLM configuration data
+     * @return array Updated LLM configuration
+     * @throws \RuntimeException
+     */
+    public function updateLLMSettingsOnly(array $llmData): array
+    {
+        try {
+            $llmConfig = [
+                'embeddingProvider' => $llmData['embeddingProvider'] ?? null,
+                'chatProvider' => $llmData['chatProvider'] ?? null,
+                'openaiConfig' => [
+                    'apiKey' => $llmData['openaiConfig']['apiKey'] ?? '',
+                    'model' => $llmData['openaiConfig']['model'] ?? null,
+                    'chatModel' => $llmData['openaiConfig']['chatModel'] ?? null,
+                    'organizationId' => $llmData['openaiConfig']['organizationId'] ?? '',
+                ],
+                'ollamaConfig' => [
+                    'url' => $llmData['ollamaConfig']['url'] ?? 'http://localhost:11434',
+                    'model' => $llmData['ollamaConfig']['model'] ?? null,
+                    'chatModel' => $llmData['ollamaConfig']['chatModel'] ?? null,
+                ],
+                'fireworksConfig' => [
+                    'apiKey' => $llmData['fireworksConfig']['apiKey'] ?? '',
+                    'embeddingModel' => $llmData['fireworksConfig']['embeddingModel'] ?? null,
+                    'chatModel' => $llmData['fireworksConfig']['chatModel'] ?? null,
+                    'baseUrl' => $llmData['fireworksConfig']['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1',
+                ],
+            ];
+            
+            $this->config->setValueString($this->appName, 'llm', json_encode($llmConfig));
+            return $llmConfig;
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to update LLM settings: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Update File Management settings only
+     *
+     * @param array $fileData File management configuration data
+     * @return array Updated file management configuration
+     * @throws \RuntimeException
+     */
+    public function updateFileSettingsOnly(array $fileData): array
+    {
+        try {
+            $fileConfig = [
+                'vectorizationEnabled' => $fileData['vectorizationEnabled'] ?? false,
+                'provider' => $fileData['provider'] ?? null,
+                'chunkingStrategy' => $fileData['chunkingStrategy'] ?? 'RECURSIVE_CHARACTER',
+                'chunkSize' => $fileData['chunkSize'] ?? 1000,
+                'chunkOverlap' => $fileData['chunkOverlap'] ?? 200,
+                'enabledFileTypes' => $fileData['enabledFileTypes'] ?? ['pdf', 'docx', 'txt', 'md', 'html', 'json', 'xml'],
+                'ocrEnabled' => $fileData['ocrEnabled'] ?? false,
+                'maxFileSizeMB' => $fileData['maxFileSizeMB'] ?? 100,
+            ];
+            
+            $this->config->setValueString($this->appName, 'fileManagement', json_encode($fileConfig));
+            return $fileConfig;
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to update File Management settings: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Update Object Management settings only
+     *
+     * @param array $objectData Object management configuration data
+     * @return array Updated object management configuration
+     * @throws \RuntimeException
+     */
+    public function updateObjectSettingsOnly(array $objectData): array
+    {
+        try {
+            $objectConfig = [
+                'vectorizationEnabled' => $objectData['vectorizationEnabled'] ?? false,
+                'provider' => $objectData['provider'] ?? null,
+                'vectorizeOnCreate' => $objectData['vectorizeOnCreate'] ?? true,
+                'vectorizeOnUpdate' => $objectData['vectorizeOnUpdate'] ?? false,
+                'vectorizeAllSchemas' => $objectData['vectorizeAllSchemas'] ?? true,
+                'enabledSchemas' => $objectData['enabledSchemas'] ?? [],
+                'includeMetadata' => $objectData['includeMetadata'] ?? true,
+                'maxNestingDepth' => $objectData['maxNestingDepth'] ?? 10,
+            ];
+            
+            $this->config->setValueString($this->appName, 'objectManagement', json_encode($objectConfig));
+            return $objectConfig;
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to update Object Management settings: '.$e->getMessage());
+        }
+    }
+
+    /**
      * Get focused Retention settings only
      *
      * @return array Retention configuration

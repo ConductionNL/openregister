@@ -25,36 +25,38 @@
 					<small>{{ t('openregister', 'Automatically generate vector embeddings when files are uploaded') }}</small>
 				</div>
 
-				<div v-if="config.vectorizationEnabled" class="form-group">
-					<label>{{ t('openregister', 'Vectorization Provider') }}</label>
-					<NcSelect
-						v-model="config.provider"
-						:options="providerOptions"
-						label="name"
-						:placeholder="t('openregister', 'Select provider')">
-					</NcSelect>
-				</div>
+			<div v-if="config.vectorizationEnabled" class="form-group">
+				<label>{{ t('openregister', 'Vectorization Provider') }}</label>
+				<NcSelect
+					v-model="config.provider"
+					:options="providerOptions"
+					label="name"
+					:placeholder="t('openregister', 'Select provider')"
+					:label-outside="true">
+				</NcSelect>
+			</div>
 			</div>
 
 			<!-- Document Chunking -->
 			<div class="config-section">
 				<h3>{{ t('openregister', 'Document Chunking') }}</h3>
 				
-				<div class="form-group">
-					<label>{{ t('openregister', 'Chunking Strategy') }}</label>
-					<NcSelect
-						v-model="config.chunkingStrategy"
-						:options="chunkingStrategyOptions"
-						label="name"
-						:placeholder="t('openregister', 'Select strategy')">
-						<template #option="{ name, description }">
-							<div class="option-with-desc">
-								<strong>{{ name }}</strong>
-								<small>{{ description }}</small>
-							</div>
-						</template>
-					</NcSelect>
-				</div>
+			<div class="form-group">
+				<label>{{ t('openregister', 'Chunking Strategy') }}</label>
+				<NcSelect
+					v-model="config.chunkingStrategy"
+					:options="chunkingStrategyOptions"
+					label="name"
+					:placeholder="t('openregister', 'Select strategy')"
+					:label-outside="true">
+					<template #option="{ name, description }">
+						<div class="option-with-desc">
+							<strong>{{ name }}</strong>
+							<small>{{ description }}</small>
+						</div>
+					</template>
+				</NcSelect>
+			</div>
 
 				<div class="form-group">
 					<label for="chunk-size">{{ t('openregister', 'Chunk Size') }}</label>
