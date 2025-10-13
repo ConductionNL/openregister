@@ -312,7 +312,6 @@ class GuzzleSolrService
                 'enabled' => $this->solrConfig['enabled'] ?? false,
                 'host' => $this->solrConfig['host'] ?? 'not set',
                 'port' => $this->solrConfig['port'] ?? 'not set',
-                'tenant_id' => $this->tenantId,
                 'force_refresh' => $forceRefresh
             ]);
             
@@ -631,7 +630,6 @@ class GuzzleSolrService
         if ($this->collectionExists($tenantCollectionName)) {
             $this->logger->debug('Tenant collection already exists', [
                 'collection' => $tenantCollectionName,
-                'tenant_id' => $this->tenantId
             ]);
             return true;
         }
@@ -640,7 +638,6 @@ class GuzzleSolrService
         if ($this->collectionExists($baseCollectionName)) {
             $this->logger->info('Using base collection as fallback (no tenant isolation)', [
                 'base_collection' => $baseCollectionName,
-                'tenant_id' => $this->tenantId
             ]);
             return true;
         }
@@ -686,7 +683,6 @@ class GuzzleSolrService
         // This prevents operations on non-existent collections
         $this->logger->warning('Tenant-specific collection does not exist', [
             'tenant_collection' => $tenantCollectionName,
-            'tenant_id' => $this->tenantId,
             'base_collection' => $baseCollectionName
         ]);
         
@@ -811,7 +807,6 @@ class GuzzleSolrService
 
             $this->logger->info('🗑️ Attempting to delete SOLR collection', [
                 'collection' => $targetCollection,
-                'tenant_id' => $this->tenantId,
                 'url' => $url
             ]);
 
@@ -821,7 +816,6 @@ class GuzzleSolrService
             if (($data['responseHeader']['status'] ?? -1) === 0) {
                 $this->logger->info('✅ SOLR collection deleted successfully', [
                     'collection' => $targetCollection,
-                    'tenant_id' => $this->tenantId,
                     'response_time' => $data['responseHeader']['QTime'] ?? 'unknown'
                 ]);
                 
@@ -829,7 +823,6 @@ class GuzzleSolrService
                     'success' => true,
                     'message' => "Collection '{$targetCollection}' deleted successfully",
                     'collection' => $targetCollection,
-                    'tenant_id' => $this->tenantId,
                     'response_time_ms' => $data['responseHeader']['QTime'] ?? null
                 ];
             }
@@ -969,7 +962,6 @@ class GuzzleSolrService
                     'object_id' => $object->getId(),
                     'uuid' => $object->getUuid(),
                     'collection' => $tenantCollectionName,
-                    'tenant_id' => $this->tenantId,
                     'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2)
                 ]);
             } else {
@@ -1038,8 +1030,7 @@ class GuzzleSolrService
                 $this->stats['deletes']++;
                 $this->logger->debug('🗑️ OBJECT REMOVED FROM SOLR', [
                     'object_id' => $objectId,
-                    'collection' => $tenantCollectionName,
-                    'tenant_id' => $this->tenantId
+                    'collection' => $tenantCollectionName
                 ]);
             }
 
@@ -2458,8 +2449,7 @@ class GuzzleSolrService
         return [
             'success' => $success,
             'processed' => count($objects),
-            'execution_time' => $executionTime,
-            'tenant_id' => $this->tenantId
+            'execution_time' => $executionTime
         ];
     }
 
@@ -2630,8 +2620,6 @@ class GuzzleSolrService
                 'status_code' => $statusCode,
                 'response_length' => strlen($responseBody),
                 'document_count' => count($solrDocs),
-                'tenant_id_type' => gettype($this->tenantId),
-                'tenant_id_value' => $this->tenantId
             ]);
             
             // **ERROR HANDLING**: Throw exception for non-20X HTTP status codes
@@ -2688,7 +2676,6 @@ class GuzzleSolrService
             $this->logger->debug('📦 BULK INDEXED IN SOLR', [
                 'document_count' => count($solrDocs),
                 'collection' => $tenantCollectionName,
-                'tenant_id' => $this->tenantId,
                 'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2)
             ]);
 
@@ -2741,8 +2728,7 @@ class GuzzleSolrService
 
             if ($success) {
                 $this->logger->debug('💾 SOLR COMMIT', [
-                    'collection' => $tenantCollectionName,
-                    'tenant_id' => $this->tenantId
+                    'collection' => $tenantCollectionName
                 ]);
             }
 
@@ -2815,8 +2801,7 @@ class GuzzleSolrService
                 $this->stats['deletes']++;
                 $this->logger->debug('🗑️ SOLR DELETE BY QUERY', [
                     'query' => $tenantQuery,
-                    'collection' => $tenantCollectionName,
-                    'tenant_id' => $this->tenantId
+                    'collection' => $tenantCollectionName
                 ]);
                 
                 if ($returnDetails) {
@@ -3774,7 +3759,6 @@ class GuzzleSolrService
                     'success' => false,
                     'message' => 'No active collection available for testing',
                     'details' => [
-                        'tenant_id' => $this->tenantId,
                         'reason' => 'Tenant collection does not exist'
                     ]
                 ];
@@ -3818,8 +3802,6 @@ class GuzzleSolrService
                             'collection_name' => $collectionName,
                             'collection_type' => strpos($collectionName, '_nc_') !== false ? 'tenant-specific' : 'base',
                             'available_collections' => array_keys($collections),
-                            'tenant_id' => $this->tenantId,
-                            'expected_pattern' => 'openregister_' . $this->tenantId
                         ]
                     ];
                 }
@@ -3859,8 +3841,6 @@ class GuzzleSolrService
                             'collection_name' => $collectionName,
                             'collection_type' => strpos($collectionName, '_nc_') !== false ? 'tenant-specific' : 'base',
                             'available_cores' => array_keys($cores),
-                            'tenant_id' => $this->tenantId,
-                            'expected_pattern' => 'openregister_' . $this->tenantId
                         ]
                     ];
                 }
@@ -3893,7 +3873,6 @@ class GuzzleSolrService
                     'success' => false,
                     'message' => 'No active collection available for query testing',
                     'details' => [
-                        'tenant_id' => $this->tenantId,
                         'reason' => 'Tenant collection does not exist'
                     ]
                 ];
@@ -4034,7 +4013,6 @@ class GuzzleSolrService
         } catch (\Exception $e) {
             $this->logger->error('SOLR index clear exception', [
                 'error' => $e->getMessage(),
-                'tenant_id' => $this->tenantId
             ]);
             
             return [
@@ -4105,7 +4083,6 @@ class GuzzleSolrService
                 $this->logger->debug('🔍 SOLR INDEX INSPECT', [
                     'query' => $tenantQuery,
                     'collection' => $tenantCollectionName,
-                    'tenant_id' => $this->tenantId,
                     'total_results' => $totalResults,
                     'returned_docs' => count($documents)
                 ]);
@@ -5719,7 +5696,9 @@ class GuzzleSolrService
                 'execution_time_ms' => round($executionTime, 2),
                 'message' => 'GuzzleSolrService warmup completed with field management and optimization',
                 'total_objects_found' => $indexResult['total'] ?? 0,
+                'objects_indexed' => $indexResult['indexed'] ?? 0,
                 'batches_processed' => $indexResult['batches'] ?? 0,
+                'indexing_errors' => $indexResult['errors'] ?? 0,
                 'max_objects_limit' => $maxObjects,
                 'memory_usage' => $memoryReport
             ];
@@ -6742,7 +6721,6 @@ class GuzzleSolrService
 
             $this->logger->info('🔍 Retrieving SOLR field configuration', [
                 'collection' => $collectionName,
-                'tenant_id' => $this->tenantId
             ]);
 
             // Build schema API URL
