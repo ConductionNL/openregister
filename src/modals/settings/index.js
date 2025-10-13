@@ -9,3 +9,6 @@ export { default as RebaseConfirmationModal } from './RebaseConfirmationModal.vu
 export { default as SolrSetupResultsModal } from './SolrSetupResultsModal.vue'
 export { default as SolrTestResultsModal } from './SolrTestResultsModal.vue'
 export { default as SolrWarmupModal } from './SolrWarmupModal.vue'
+export { default as FileManagementModal } from './FileManagementModal.vue'
+export { default as ObjectManagementModal } from './ObjectManagementModal.vue'
+export { default as LLMConfigModal } from './LLMConfigModal.vue'

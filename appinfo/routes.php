@@ -41,14 +41,24 @@ return [
     ['name' => 'settings#testSolrSetup', 'url' => '/api/solr/test-setup', 'verb' => 'POST'],
     ['name' => 'settings#deleteSolrCollection', 'url' => '/api/solr/collection/delete', 'verb' => 'DELETE'],
         
-        // SOLR Collection and ConfigSet Management endpoints
-        ['name' => 'settings#listSolrCollections', 'url' => '/api/solr/collections', 'verb' => 'GET'],
-        ['name' => 'settings#createSolrCollection', 'url' => '/api/solr/collections', 'verb' => 'POST'],
-        ['name' => 'settings#listSolrConfigSets', 'url' => '/api/solr/configsets', 'verb' => 'GET'],
-        ['name' => 'settings#createSolrConfigSet', 'url' => '/api/solr/configsets', 'verb' => 'POST'],
-        ['name' => 'settings#deleteSolrConfigSet', 'url' => '/api/solr/configsets/{name}', 'verb' => 'DELETE'],
-        ['name' => 'settings#copySolrCollection', 'url' => '/api/solr/collections/copy', 'verb' => 'POST'],
+        // SOLR Collection and ConfigSet Management endpoints (SolrController)
+        ['name' => 'solr#listCollections', 'url' => '/api/solr/collections', 'verb' => 'GET'],
+        ['name' => 'solr#createCollection', 'url' => '/api/solr/collections', 'verb' => 'POST'],
+        ['name' => 'solr#listConfigSets', 'url' => '/api/solr/configsets', 'verb' => 'GET'],
+        ['name' => 'solr#createConfigSet', 'url' => '/api/solr/configsets', 'verb' => 'POST'],
+        ['name' => 'solr#deleteConfigSet', 'url' => '/api/solr/configsets/{name}', 'verb' => 'DELETE'],
+        ['name' => 'solr#copyCollection', 'url' => '/api/solr/collections/copy', 'verb' => 'POST'],
         ['name' => 'settings#updateSolrCollectionAssignments', 'url' => '/api/solr/collections/assignments', 'verb' => 'PUT'],
+        
+        // Vector Search endpoints (Semantic and Hybrid Search) - SolrController
+        ['name' => 'solr#semanticSearch', 'url' => '/api/search/semantic', 'verb' => 'POST'],
+        ['name' => 'solr#hybridSearch', 'url' => '/api/search/hybrid', 'verb' => 'POST'],
+        ['name' => 'solr#getVectorStats', 'url' => '/api/vectors/stats', 'verb' => 'GET'],
+        
+        // Object Vectorization endpoints - SolrController
+        ['name' => 'solr#vectorizeObject', 'url' => '/api/objects/{objectId}/vectorize', 'verb' => 'POST'],
+        ['name' => 'solr#bulkVectorizeObjects', 'url' => '/api/objects/vectorize/bulk', 'verb' => 'POST'],
+        ['name' => 'solr#getVectorizationStats', 'url' => '/api/objects/vectorize/stats', 'verb' => 'GET'],
         
         ['name' => 'settings#getRbacSettings', 'url' => '/api/settings/rbac', 'verb' => 'GET'],
         ['name' => 'settings#updateRbacSettings', 'url' => '/api/settings/rbac', 'verb' => 'PUT'],
@@ -203,5 +213,11 @@ return [
         ['name' => 'organisation#leave', 'url' => '/api/organisations/{uuid}/leave', 'verb' => 'POST'],
 		// Tags
 		['name' => 'tags#getAllTags', 'url' => 'api/tags', 'verb' => 'GET'],
+		
+		// Chat - AI Assistant endpoints
+		['name' => 'chat#sendMessage', 'url' => '/api/chat/send', 'verb' => 'POST'],
+		['name' => 'chat#getHistory', 'url' => '/api/chat/history', 'verb' => 'GET'],
+		['name' => 'chat#clearHistory', 'url' => '/api/chat/history', 'verb' => 'DELETE'],
+		['name' => 'chat#sendFeedback', 'url' => '/api/chat/feedback', 'verb' => 'POST'],
     ],
 ];
