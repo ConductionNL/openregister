@@ -2093,6 +2093,14 @@ class GuzzleSolrService
         // Handle filters
         $filterQueries = [];
         
+        // **DEBUG**: Log incoming query parameters to diagnose OR vs AND issue
+        $this->logger->debug('Building SOLR filters from query', [
+            'query_keys' => array_keys($query),
+            'query_structure' => array_map(function($v) { 
+                return is_array($v) ? 'array[' . count($v) . ']' : gettype($v); 
+            }, $query)
+        ]);
+        
         foreach ($query as $key => $value) {
             if (str_starts_with($key, '_')) {
                 continue; // Skip internal parameters
@@ -2114,7 +2122,13 @@ class GuzzleSolrService
             $solrField = $this->translateFilterField($key);
             
             if (is_array($value)) {
-                // Handle array values (OR condition)
+                // Handle array values (OR condition within same field)
+                // Example: status=[active,pending] becomes (status:active OR status:pending)
+                $this->logger->debug('Filter with OR logic (array value)', [
+                    'field' => $key,
+                    'values' => $value,
+                    'note' => 'Array values use OR logic within the same field'
+                ]);
                 $conditions = array_map(function($v) use ($solrField) {
                     if (is_numeric($v)) {
                         return $solrField . ':' . $v;
@@ -2123,7 +2137,13 @@ class GuzzleSolrService
                 }, $value);
                 $filterQueries[] = '(' . implode(' OR ', $conditions) . ')';
             } else {
-                // Handle single values
+                // Handle single values (will be ANDed with other filters)
+                // Example: status=active AND category=featured
+                $this->logger->debug('Filter with AND logic (single value)', [
+                    'field' => $key,
+                    'value' => $value,
+                    'note' => 'Single values use AND logic across different fields'
+                ]);
                 if (is_numeric($value)) {
                     $filterQueries[] = $solrField . ':' . $value;
                 } else {
@@ -2131,9 +2151,18 @@ class GuzzleSolrService
                 }
             }
         }
+        
+        // **DEBUG**: Log final filter queries that will be sent to SOLR
+        $this->logger->debug('Final SOLR filter queries (each fq uses AND logic)', [
+            'filter_count' => count($filterQueries),
+            'filters' => $filterQueries,
+            'note' => 'Multiple fq parameters are ANDed together by SOLR'
+        ]);
 
         if (!empty($filterQueries)) {
-            $solrQuery['filters'] = $filterQueries;
+            // **CRITICAL FIX**: Use 'fq' key (not 'filters') so executeSearch() can find them
+            // Multiple fq parameters are ANDed together by SOLR (drilling down)
+            $solrQuery['fq'] = $filterQueries;
         }
         
         // Filter queries built successfully
@@ -7848,7 +7877,7 @@ class GuzzleSolrService
             $facetConfig = [
                 'type' => 'terms',
                 'field' => $solrField,
-                'limit' => 50,
+                'limit' => 1000, // Increased from 50 to 1000 for better coverage
                 'mincount' => 1, // Only include if there are actual values
                 'missing' => false // Don't include missing values
             ];
@@ -7873,7 +7902,7 @@ class GuzzleSolrService
                         $objectFacetConfig = [
                             'type' => 'terms',
                             'field' => $fieldConfig['index_field'],
-                            'limit' => 50,
+                            'limit' => 1000, // Increased from 50 to 1000 for better coverage
                             'mincount' => 1, // Only include if there are actual values
                             'missing' => false // Don't include missing values
                         ];
@@ -7903,7 +7932,7 @@ class GuzzleSolrService
                 $fallbackFacetConfig = [
                     'type' => 'terms',
                     'field' => $fieldName,
-                    'limit' => 50,
+                    'limit' => 1000, // Increased from 50 to 1000 for better coverage
                     'mincount' => 1, // Only include if there are actual values
                     'missing' => false // Don't include missing values
                 ];
@@ -7933,6 +7962,9 @@ class GuzzleSolrService
             'extended' => []
         ];
         
+        // Define which metadata fields need label resolution (register, schema, organisation)
+        $metadataFieldsWithLabelResolution = ['register', 'schema', 'organisation'];
+        
         // Process ALL facets from SOLR using unified approach
         foreach ($facetData as $facetKey => $facetValue) {
             if (empty($facetValue['buckets'])) {
@@ -7955,10 +7987,23 @@ class GuzzleSolrService
             // Add to facetable fields
             $contextualData['facetable'][$fieldName] = $fieldInfo;
             
+            // Format facet data with label resolution for metadata fields that need it
+            if ($isMetadataField && in_array($facetKey, $metadataFieldsWithLabelResolution, true)) {
+                // Use specialized formatting with label resolution for register, schema, organisation
+                $formattedData = $this->formatMetadataFacetData(
+                    $facetValue, 
+                    $facetKey, 
+                    $fieldInfo['type']
+                );
+            } else {
+                // Use generic formatting for other fields
+                $formattedData = $this->formatFacetData($facetValue, $fieldInfo['type']);
+            }
+            
             // Add to extended data with actual values
             $facetResult = array_merge(
                 $fieldInfo,
-                ['data' => $this->formatFacetData($facetValue, $fieldInfo['type'])]
+                ['data' => $formattedData]
             );
             
             // Apply custom facet configuration (but don't filter based on enabled status)
@@ -8209,14 +8254,15 @@ class GuzzleSolrService
      * Build terms facet for categorical fields
      *
      * @param string $fieldName SOLR field name
+     * @param int $limit Maximum number of buckets to return (default: 1000, use -1 for unlimited)
      * @return array Terms facet configuration
      */
-    private function buildTermsFacet(string $fieldName): array
+    private function buildTermsFacet(string $fieldName, int $limit = 1000): array
     {
         return [
             'type' => 'terms',
             'field' => $fieldName,
-            'limit' => 50, // Limit to top 50 terms
+            'limit' => $limit, // Configurable limit, -1 for unlimited
             'mincount' => 1 // Only include terms with at least 1 document
         ];
     }
@@ -8432,12 +8478,29 @@ class GuzzleSolrService
             'object_fields' => []
         ];
         
+        // Define which metadata fields should have their labels resolved
+        $metadataFieldsWithLabelResolution = ['_register', '_schema', '_organisation'];
+        
         // Process metadata fields
         foreach ($facetableFields['@self'] ?? [] as $fieldName => $fieldInfo) {
             if (isset($facetData[$fieldName])) {
+                // Use specialized formatting for metadata fields that need label resolution
+                if (in_array($fieldName, $metadataFieldsWithLabelResolution, true)) {
+                    // Strip leading underscore for method parameter (register, schema, organisation)
+                    $cleanFieldName = ltrim($fieldName, '_');
+                    $formattedData = $this->formatMetadataFacetData(
+                        $facetData[$fieldName], 
+                        $cleanFieldName, 
+                        $fieldInfo['type']
+                    );
+                } else {
+                    // Use generic formatting for other metadata fields
+                    $formattedData = $this->formatFacetData($facetData[$fieldName], $fieldInfo['type']);
+                }
+                
                 $facetResult = array_merge(
                     $fieldInfo,
-                    ['data' => $this->formatFacetData($facetData[$fieldName], $fieldInfo['type'])]
+                    ['data' => $formattedData]
                 );
                 
                 // Apply custom facet configuration
@@ -8554,6 +8617,11 @@ class GuzzleSolrService
             ];
         }
         
+        // Sort buckets alphabetically by label (case-insensitive)
+        usort($formattedBuckets, function($a, $b) {
+            return strcasecmp($a['label'], $b['label']);
+        });
+        
         return [
             'type' => 'terms',
             'total_count' => $rawData['numBuckets'] ?? count($buckets),
@@ -8579,6 +8647,11 @@ class GuzzleSolrService
                 'label' => $bucket['val'] // Could be enhanced with human-readable labels
             ];
         }
+        
+        // Sort buckets alphabetically by label (case-insensitive)
+        usort($formattedBuckets, function($a, $b) {
+            return strcasecmp($a['label'], $b['label']);
+        });
         
         return [
             'type' => 'terms',
