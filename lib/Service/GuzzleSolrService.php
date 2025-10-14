@@ -3910,7 +3910,6 @@ class GuzzleSolrService
                         'total_docs' => $data['response']['numFound'] ?? 0,
                         'response_time_ms' => round($responseTime, 2),
                         'query_url' => $url,
-                        'tenant_id' => $this->tenantId
                     ]
                 ];
             } else {
@@ -4094,7 +4093,6 @@ class GuzzleSolrService
                     'start' => $start,
                     'rows' => $rows,
                     'collection' => $tenantCollectionName,
-                    'tenant_id' => $this->tenantId
                 ];
             } else {
                 $errorMsg = $data['error']['msg'] ?? 'Unknown SOLR error';
@@ -4193,7 +4191,6 @@ class GuzzleSolrService
             if ($success) {
                 $this->logger->info('⚡ SOLR INDEX OPTIMIZED', [
                     'collection' => $tenantCollectionName,
-                    'tenant_id' => $this->tenantId
                 ]);
             }
 
@@ -4476,7 +4473,6 @@ class GuzzleSolrService
     {
         return array_merge($this->stats, [
             'available' => $this->isAvailable(),
-            'tenant_id' => $this->tenantId,
             'service_type' => 'GuzzleHttp',
             'memory_usage' => 'lightweight'
         ]);
