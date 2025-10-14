@@ -43,7 +43,6 @@ quality-baseline.json
 **/clearCache*
 **/update*Settings*
 **/rebase*
-**/Solr*
 **/setup*
 
 # Temporary test files that shouldn't be committed
