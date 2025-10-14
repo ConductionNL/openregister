@@ -474,15 +474,37 @@ class SolrSchemaService
             $solrFieldType = $this->determineSolrFieldType(['type' => $resolvedType] + $fieldInfo['definitions'][0]);
             
             if ($solrFieldName && $solrFieldType) {
-                $isFacetable = $fieldInfo['definitions'][0]['facetable'] ?? true;
+                // Apply most permissive settings by checking ALL definitions
+                // If ANY schema has facetable=true, the field should support faceting
+                // If ANY schema is multi-valued, the field should be multi-valued
+                $isFacetable = false;
+                $isMultiValued = false;
+                
+                foreach ($fieldInfo['definitions'] as $definition) {
+                    if (($definition['facetable'] ?? false) === true) {
+                        $isFacetable = true;
+                    }
+                    if ($this->isMultiValued($definition)) {
+                        $isMultiValued = true;
+                    }
+                }
+                
                 $resolvedFields[$solrFieldName] = [
                     'type' => $solrFieldType,
                     'stored' => true,
                     'indexed' => true,
-                    'multiValued' => $this->isMultiValued($fieldInfo['definitions'][0]),
-                    'docValues' => $isFacetable, // docValues enabled only for facetable fields
+                    'multiValued' => $isMultiValued,
+                    'docValues' => $isFacetable, // docValues enabled when ANY schema needs faceting
                     'facetable' => $isFacetable
                 ];
+                
+                $this->logger->debug('Field definition resolved', [
+                    'field' => $solrFieldName,
+                    'type' => $solrFieldType,
+                    'multiValued' => $isMultiValued,
+                    'facetable' => $isFacetable,
+                    'definitions_checked' => count($fieldInfo['definitions'])
+                ]);
             }
         }
 
