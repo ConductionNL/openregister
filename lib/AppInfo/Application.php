@@ -524,6 +524,7 @@ class Application extends App implements IBootstrap
                     return new SolrFileService(
                     $container->get(GuzzleSolrService::class),
                     $container->get(SettingsService::class),
+                    $container->get(FileTextService::class),
                     $container->get('Psr\Log\LoggerInterface')
                     );
                 }
