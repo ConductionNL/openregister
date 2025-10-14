@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCP\AppFramework\IAppContainer;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -46,19 +47,39 @@ class SolrFileService
     private const MIN_CHUNK_SIZE = 100;           // tokens
 
     /**
+     * Lazy-loaded FileTextService to break circular dependency
+     * 
+     * @var FileTextService|null
+     */
+    private ?FileTextService $fileTextService = null;
+
+    /**
      * Constructor
      * 
      * @param GuzzleSolrService $guzzleSolrService Core SOLR operations service
      * @param SettingsService   $settingsService   Settings management service
-     * @param FileTextService   $fileTextService   File text extraction service
+     * @param IAppContainer     $container         App container for lazy service loading
      * @param LoggerInterface   $logger            PSR-3 logger
      */
     public function __construct(
         private readonly GuzzleSolrService $guzzleSolrService,
         private readonly SettingsService $settingsService,
-        private readonly FileTextService $fileTextService,
+        private readonly IAppContainer $container,
         private readonly LoggerInterface $logger,
     ) {
+    }
+
+    /**
+     * Get FileTextService instance (lazy loading to break circular dependency)
+     * 
+     * @return FileTextService
+     */
+    private function getFileTextService(): FileTextService
+    {
+        if ($this->fileTextService === null) {
+            $this->fileTextService = $this->container->get(FileTextService::class);
+        }
+        return $this->fileTextService;
     }
 
     /**
@@ -983,7 +1004,7 @@ class SolrFileService
 
         // Get extracted file texts that haven't been indexed yet
         // TODO: Add a flag to file_texts table to track indexing status
-        $fileTexts = $this->fileTextService->getCompletedExtractions($limit);
+        $fileTexts = $this->getFileTextService()->getCompletedExtractions($limit);
 
         foreach ($fileTexts as $fileText) {
             try {
@@ -1086,7 +1107,7 @@ class SolrFileService
         ]);
 
         // Get the file text
-        $fileText = $this->fileTextService->getFileText($fileId);
+        $fileText = $this->getFileTextService()->getFileText($fileId);
         if ($fileText === null) {
             throw new \Exception("File text not found for file ID: {$fileId}");
         }
@@ -1149,7 +1170,7 @@ class SolrFileService
         }
 
         // Get total extracted files
-        $extractionStats = $this->fileTextService->getExtractionStats();
+        $extractionStats = $this->getFileTextService()->getExtractionStats();
         
         // Get total chunks in SOLR
         $fileStats = $this->getFileStats();
