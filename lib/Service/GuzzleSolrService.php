@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Service\SolrSchemaService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\ObjectCacheService;
 use OCP\Http\Client\IClientService;
 use OCP\IConfig;
 use Psr\Log\LoggerInterface;
@@ -100,6 +101,9 @@ class GuzzleSolrService
      * @param IConfig                 $config              Nextcloud configuration
      * @param SchemaMapper|null       $schemaMapper        Schema mapper for database operations
      * @param RegisterMapper|null     $registerMapper      Register mapper for database operations
+     * @param OrganisationService|null $organisationService Organisation service for organisation operations
+     * @param OrganisationMapper|null $organisationMapper  Organisation mapper for database operations
+     * @param ObjectCacheService|null $objectCacheService  Object cache service for resolving object names
      */
     public function __construct(
         private readonly SettingsService $settingsService,
@@ -110,6 +114,7 @@ class GuzzleSolrService
         private readonly ?RegisterMapper $registerMapper = null,
         private readonly ?OrganisationService $organisationService = null,
         private readonly ?OrganisationMapper $organisationMapper = null,
+        private readonly ?ObjectCacheService $objectCacheService = null,
     ) {
         $this->initializeConfig();
         $this->initializeHttpClient();
@@ -496,13 +501,13 @@ class GuzzleSolrService
 
             $testResults = [
                 'success' => true,
-                'message' => 'All connection tests passed',
+                'message' => $includeCollectionTests ? 'All connection tests passed' : 'SOLR server connectivity and authentication verified',
                 'details' => [],
                 'components' => []
             ];
 
-            // Test 1: Zookeeper connectivity (if using SolrCloud)
-            if ($solrConfig['useCloud'] ?? false) {
+            // Test 1: Zookeeper connectivity (only if using SolrCloud AND doing full tests)
+            if ($includeCollectionTests && ($solrConfig['useCloud'] ?? false)) {
                 $zookeeperTest = $this->testZookeeperConnection();
                 $testResults['components']['zookeeper'] = $zookeeperTest;
                 
@@ -512,13 +517,14 @@ class GuzzleSolrService
                 }
             }
 
-            // Test 2: SOLR connectivity
+            // Test 2: SOLR connectivity and authentication
             $solrTest = $this->testSolrConnectivity();
             $testResults['components']['solr'] = $solrTest;
             
             if (!$solrTest['success']) {
                 $testResults['success'] = false;
-                $testResults['message'] = 'SOLR connection failed';
+                $testResults['message'] = 'SOLR connection or authentication failed';
+                return $testResults;
             }
 
             // Test 3: Collection/Core availability (conditional)
@@ -541,13 +547,6 @@ class GuzzleSolrService
                     $testResults['message'] = 'SOLR collection exists but query test failed';
                 }
                 }
-            } else {
-                // **CONNECTIVITY-ONLY MODE**: Skip collection tests for setup scenarios
-                $testResults['components']['collection'] = [
-                    'success' => true,
-                    'message' => 'Collection tests skipped (connectivity-only mode)',
-                    'details' => ['test_mode' => 'connectivity_only']
-                ];
             }
 
             return $testResults;
@@ -563,10 +562,11 @@ class GuzzleSolrService
     }
 
     /**
-     * Test SOLR connectivity only (for setup scenarios)
+     * Test SOLR connectivity only (for basic authentication verification)
      * 
-     * This method only tests if SOLR server and Zookeeper are reachable,
-     * without requiring collections to exist. Perfect for setup processes.
+     * This method only tests if SOLR server is reachable and authentication is working.
+     * It does NOT test collections, queries, or Zookeeper.
+     * Perfect for verifying basic connection settings.
      *
      * @return array{success: bool, message: string, details: array, components: array} Connectivity test results
      */
@@ -8632,6 +8632,8 @@ class GuzzleSolrService
     /**
      * Format terms facet data
      *
+     * Resolves UUID values to human-readable names using the object cache service.
+     *
      * @param array $rawData Raw terms facet data
      * @return array Formatted terms data
      */
@@ -8640,11 +8642,37 @@ class GuzzleSolrService
         $buckets = $rawData['buckets'] ?? [];
         $formattedBuckets = [];
         
+        // Extract all values that might be UUIDs for batch lookup
+        $values = array_map(function($bucket) { return $bucket['val']; }, $buckets);
+        
+        // Filter to only UUID-looking values (contains hyphens)
+        $potentialUuids = array_filter($values, function($value) {
+            return is_string($value) && str_contains($value, '-');
+        });
+        
+        // Resolve UUIDs to names using object cache service
+        $resolvedNames = [];
+        if (!empty($potentialUuids) && $this->objectCacheService !== null) {
+            try {
+                $resolvedNames = $this->objectCacheService->getMultipleObjectNames($potentialUuids);
+                $this->logger->debug('Resolved UUID labels for terms facet', [
+                    'uuids_checked' => count($potentialUuids),
+                    'names_resolved' => count($resolvedNames)
+                ]);
+            } catch (\Exception $e) {
+                $this->logger->warning('Failed to resolve UUID labels for terms facet', [
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+        
+        // Format buckets with resolved labels
         foreach ($buckets as $bucket) {
+            $value = $bucket['val'];
             $formattedBuckets[] = [
-                'value' => $bucket['val'],
+                'value' => $value,
                 'count' => $bucket['count'],
-                'label' => $bucket['val'] // Could be enhanced with human-readable labels
+                'label' => $resolvedNames[$value] ?? $value // Use resolved name or fallback to value
             ];
         }
         
@@ -9142,10 +9170,8 @@ class GuzzleSolrService
         try {
             $this->logger->info('📋 Fetching SOLR collections list');
 
-            // Check if SOLR is available first
-            if (!$this->isAvailable()) {
-                throw new \Exception('SOLR service is not available');
-            }
+            // NO availability check - Collection management is part of initial setup!
+            // We only need basic SOLR connectivity, which is tested in Connection Settings.
 
             // Get cluster status with all collections
             $clusterUrl = $this->buildSolrBaseUrl() . '/admin/collections?action=CLUSTERSTATUS&wt=json';
@@ -9231,10 +9257,8 @@ class GuzzleSolrService
         try {
             $this->logger->info('📋 Fetching SOLR ConfigSets list');
 
-            // Check if SOLR is available first
-            if (!$this->isAvailable()) {
-                throw new \Exception('SOLR service is not available');
-            }
+            // NO availability check - ConfigSet management is part of initial setup!
+            // We only need basic SOLR connectivity, which is tested in Connection Settings.
 
             // Get list of ConfigSets
             $configSetsUrl = $this->buildSolrBaseUrl() . '/admin/configs?action=LIST&wt=json';
@@ -9289,10 +9313,8 @@ class GuzzleSolrService
                 'baseConfigSet' => $baseConfigSet
             ]);
 
-            // Check if SOLR is available
-            if (!$this->isAvailable()) {
-                throw new \Exception('SOLR service is not available');
-            }
+            // NO availability check - ConfigSet creation is part of initial setup!
+            // We only need basic SOLR connectivity, which is tested in Connection Settings.
 
             // Check if ConfigSet already exists
             $existingConfigSets = $this->listConfigSets();
@@ -9362,10 +9384,8 @@ class GuzzleSolrService
                 throw new \Exception('Cannot delete the _default ConfigSet - it is protected');
             }
 
-            // Check if SOLR is available
-            if (!$this->isAvailable()) {
-                throw new \Exception('SOLR service is not available');
-            }
+            // NO availability check - ConfigSet deletion is a management operation!
+            // We only need basic SOLR connectivity, which is tested in Connection Settings.
 
             // Check if ConfigSet exists and is not in use
             $configSets = $this->listConfigSets();
@@ -9430,10 +9450,8 @@ class GuzzleSolrService
                 'copyData' => $copyData
             ]);
 
-            // Check if SOLR is available
-            if (!$this->isAvailable()) {
-                throw new \Exception('SOLR service is not available');
-            }
+            // NO availability check - Collection copying is a management operation!
+            // We only need basic SOLR connectivity, which is tested in Connection Settings.
 
             // Get source collection info
             $collections = $this->listCollections();

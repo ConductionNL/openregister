@@ -28,7 +28,7 @@ Each facet shows counts as if its own filter were not applied. This prevents fac
 - **Object field facets** - Based on JSON object data
 
 ### 4. Enhanced Labels with Caching
-Automatic resolution of register, schema, and organisation IDs to human-readable names using an optimized caching mechanism. Facet buckets are automatically sorted alphabetically by label for consistent, user-friendly display.
+Automatic resolution of register, schema, organisation IDs, and object UUIDs to human-readable names using an optimized caching mechanism. The system intelligently detects UUIDs in any facet and resolves them to object names (naam, name, title, etc.) using batch loading and multi-tier caching. Facet buckets are automatically sorted alphabetically by label for consistent, user-friendly display.
 
 ### 5. Facetable Field Discovery
 Automatic analysis of available fields and their characteristics to help frontends build dynamic facet interfaces.
@@ -1017,19 +1017,27 @@ class FacetingTest extends TestCase
 
 ### Overview
 
-The faceting system includes an intelligent caching mechanism that resolves metadata field IDs (registers, schemas, organisations) to human-readable names without sacrificing performance.
+The faceting system includes an intelligent caching mechanism that resolves metadata field IDs (registers, schemas, organisations) and object UUIDs to human-readable names without sacrificing performance.
 
 ### How It Works
 
 #### Label Resolution Process
 
-When facets are returned with metadata fields like '\_register', '\_schema', or '\_organisation', the system automatically:
+When facets are returned, the system automatically resolves IDs and UUIDs to human-readable names:
 
+**For metadata fields** ('\_register', '\_schema', '\_organisation'):
 1. **Collects IDs** from all facet buckets for batch processing
 2. **Batch loads entities** using optimized database queries
 3. **Caches results** to prevent repeated database calls
 4. **Resolves labels** by mapping IDs to entity names/titles
 5. **Sorts alphabetically** by label for consistent ordering (case-insensitive A-Z)
+
+**For object fields** (any field containing UUIDs):
+1. **Detects UUIDs** by checking for hyphenated values
+2. **Batch resolves** using ObjectCacheService.getMultipleObjectNames()
+3. **Searches caches** (in-memory and distributed) before database
+4. **Extracts names** from common fields (naam, name, title, etc.)
+5. **Sorts alphabetically** by resolved names for user-friendly display
 
 #### Example Response
 
@@ -1068,9 +1076,10 @@ All term-based facets are automatically sorted alphabetically by label:
 - Case-insensitive alphabetical order (A, a, B, b, etc.)
 
 **Object field facets** (status, category, type, etc.):
-- Sorted by their string values
+- Sorted by their resolved labels (UUIDs converted to object names)
 - Case-insensitive alphabetical order
 - Numeric strings sorted as text (e.g., "1", "10", "2")
+- UUIDs automatically resolved to human-readable object names using ObjectCacheService
 
 **Date histogram facets**:
 - Not sorted alphabetically (chronological order maintained)
@@ -1119,6 +1128,44 @@ Specialized batch loading methods:
 $schemas = $this->schemaMapper->findMultipleOptimized([1, 2, 3]);
 // Result: [1 => Schema1, 2 => Schema2, 3 => Schema3]
 ```
+
+#### UUID Resolution for Object Field Facets
+When object fields contain references to other objects via UUIDs, the system automatically resolves them to human-readable names:
+
+**How it works:**
+1. **Detect UUIDs** - Identifies values that look like UUIDs (contain hyphens)
+2. **Batch lookup** - Uses `ObjectCacheService.getMultipleObjectNames()` for efficient batch retrieval
+3. **Cache first** - Checks in-memory and distributed caches before database
+4. **Multi-source** - Searches both organisations and objects tables
+5. **Name extraction** - Uses common name fields (naam, name, title, contractNummer, achternaam)
+6. **Fallback gracefully** - Uses UUID if name cannot be resolved
+
+**Example transformation:**
+```json
+// Before UUID resolution:
+{
+  "customer": {
+    "buckets": [
+      { "value": "f47ac10b-58cc-4372-a567-0e02b2c3d479", "count": 42, "label": "f47ac10b-58cc-4372-a567-0e02b2c3d479" }
+    ]
+  }
+}
+
+// After UUID resolution (alphabetically sorted):
+{
+  "customer": {
+    "buckets": [
+      { "value": "f47ac10b-58cc-4372-a567-0e02b2c3d479", "count": 42, "label": "Acme Corporation" }
+    ]
+  }
+}
+```
+
+**Performance considerations:**
+- **Cached UUIDs** - Already resolved names retrieved instantly from cache
+- **Batch loading** - New UUIDs loaded together in a single query
+- **Persistent cache** - Resolved names stored in distributed cache for all users
+- **Minimal overhead** - Only processes values that look like UUIDs (contain hyphens)
 
 ### Performance Benefits
 

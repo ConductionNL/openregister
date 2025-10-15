@@ -1565,7 +1565,7 @@ class SettingsController extends Controller
     }
 
     /**
-     * Test SOLR connection with provided settings
+     * Test SOLR connection with provided settings (basic connectivity and authentication only)
      *
      * @NoAdminRequired
      * @NoCSRFRequired
@@ -1575,9 +1575,10 @@ class SettingsController extends Controller
     public function testSolrConnection(): JSONResponse
     {
         try {
-            // Phase 1: Use GuzzleSolrService directly for SOLR operations
+            // Test only basic SOLR connectivity and authentication
+            // Does NOT test collections, queries, or Zookeeper
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
-            $result = $guzzleSolrService->testConnection();
+            $result = $guzzleSolrService->testConnectivityOnly();
             
             return new JSONResponse($result);
             
