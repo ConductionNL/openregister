@@ -4,8 +4,9 @@
  * @module Modals/Settings
  * @package OpenRegister
  * 
- * Modal for configuring SOLR connection settings that don't change frequently.
- * This includes server details, authentication, and advanced connection options.
+ * Modal for configuring basic SOLR connection settings.
+ * This includes server details, authentication, Zookeeper settings, and advanced connection options.
+ * Core and Collection management should be done through their dedicated dialogs.
  * 
  * @author   Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -26,7 +27,7 @@
 			<div class="modal-header">
 				<h3>{{ t('openregister', 'SOLR Connection Settings') }}</h3>
 				<p class="header-description">
-					{{ t('openregister', 'Configure connection settings for your SOLR server. These settings are typically configured once during initial setup.') }}
+					{{ t('openregister', 'Configure basic connection settings for your SOLR server including authentication and network options. Use the separate ConfigSet and Collection Management dialogs to manage cores and collections.') }}
 				</p>
 			</div>
 
@@ -143,58 +144,6 @@
 								class="solr-input-field">
 						</div>
 					</div>
-				</div>
-			</div>
-
-			<!-- SOLR Core/Collection Settings -->
-			<div class="config-section">
-				<h4>{{ t('openregister', 'Core & Collection Settings') }}</h4>
-				<div class="config-grid">
-					<div class="config-row">
-						<label class="config-label">
-							<strong>{{ t('openregister', 'Core') }}</strong>
-							<p class="config-description">{{ t('openregister', 'SOLR core name for standalone SOLR installations (not used in SolrCloud)') }}</p>
-						</label>
-						<div class="config-input">
-							<input
-								v-model="localConfig.core"
-								type="text"
-								:disabled="saving"
-								placeholder="openregister"
-								class="solr-input-field">
-						</div>
-					</div>
-
-					<div class="config-row">
-						<label class="config-label">
-							<strong>{{ t('openregister', 'ConfigSet') }}</strong>
-							<p class="config-description">{{ t('openregister', 'ConfigSet name for SolrCloud collections. Use \'_default\' for maximum compatibility') }}</p>
-						</label>
-						<div class="config-input">
-							<input
-								v-model="localConfig.configSet"
-								type="text"
-								:disabled="saving"
-								placeholder="_default"
-								class="solr-input-field">
-						</div>
-					</div>
-
-					<div class="config-row">
-						<label class="config-label">
-							<strong>{{ t('openregister', 'Collection') }}</strong>
-							<p class="config-description">{{ t('openregister', 'SolrCloud collection name') }}</p>
-						</label>
-						<div class="config-input">
-							<input
-								v-model="localConfig.collection"
-								type="text"
-								:disabled="saving"
-								placeholder="openregister"
-								class="solr-input-field">
-						</div>
-					</div>
-
 				</div>
 			</div>
 
@@ -378,7 +327,9 @@ import { generateUrl } from '@nextcloud/router'
 /**
  * ConnectionConfigModal component
  * 
- * Provides a dialog for configuring SOLR connection settings that don't change frequently.
+ * Provides a dialog for configuring basic SOLR connection settings including
+ * server details, authentication, and Zookeeper configuration.
+ * Core and collection management is handled by separate dedicated dialogs.
  */
 export default {
 	name: 'ConnectionConfigModal',
