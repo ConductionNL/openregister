@@ -27,6 +27,8 @@ use Psr\Container\ContainerInterface;
 use OCP\App\IAppManager;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\GuzzleSolrService;
+use OCA\OpenRegister\Service\SolrSchemaService;
+use OCA\OpenRegister\Service\VectorEmbeddingService;
 
 /**
  * Controller for handling settings-related operations in the OpenRegister.
@@ -1389,14 +1391,16 @@ class SettingsController extends Controller
     }
 
     /**
-     * Delete SOLR collection (DANGER: This will permanently delete all data in the collection)
+     * Delete a specific SOLR collection by name
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * 
+     * @param string $name The name of the collection to delete
      *
-     * @return JSONResponse The deletion results
+     * @return JSONResponse The deletion result
      */
-    public function deleteSolrCollection(): JSONResponse
+    public function deleteSpecificSolrCollection(string $name): JSONResponse
     {
         try {
             $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
@@ -1404,53 +1408,39 @@ class SettingsController extends Controller
             $logger->warning('🚨 SOLR collection deletion requested', [
                 'timestamp' => date('c'),
                 'user_id' => $this->userId ?? 'unknown',
+                'collection' => $name,
                 'request_id' => $this->request->getId() ?? 'unknown'
             ]);
             
             // Get GuzzleSolrService
             $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
             
-            // Get current collection name for logging
-            $currentCollection = $guzzleSolrService->getActiveCollectionName();
-            
-            $logger->warning('🗑️ Deleting SOLR collection', [
-                'collection' => $currentCollection,
-                'user_id' => $this->userId ?? 'unknown'
-            ]);
-            
-            // Delete the collection
-            $result = $guzzleSolrService->deleteCollection();
+            // Delete the specific collection
+            $result = $guzzleSolrService->deleteCollection($name);
             
             if ($result['success']) {
                 $logger->info('✅ SOLR collection deleted successfully', [
-                    'collection' => $result['collection'] ?? 'unknown',
+                    'collection' => $name,
                     'user_id' => $this->userId ?? 'unknown'
                 ]);
-                
+
                 return new JSONResponse([
                     'success' => true,
-                    'message' => $result['message'],
-                    'collection' => $result['collection'] ?? null,
-                    'tenant_id' => $result['tenant_id'] ?? null,
-                    'response_time_ms' => $result['response_time_ms'] ?? null,
-                    'next_steps' => [
-                        'Run SOLR Setup to create a new collection',
-                        'Run Warmup Index to rebuild the search index',
-                        'Verify search functionality is working'
-                    ]
-                ]);
+                    'message' => 'Collection deleted successfully',
+                    'collection' => $name
+                ], 200);
             } else {
                 $logger->error('❌ SOLR collection deletion failed', [
                     'error' => $result['message'],
                     'error_code' => $result['error_code'] ?? 'unknown',
-                    'collection' => $result['collection'] ?? 'unknown'
+                    'collection' => $name
                 ]);
                 
                 return new JSONResponse([
                     'success' => false,
                     'message' => $result['message'],
                     'error_code' => $result['error_code'] ?? 'unknown',
-                    'collection' => $result['collection'] ?? null,
+                    'collection' => $name,
                     'solr_error' => $result['solr_error'] ?? null
                 ], 422);
             }
@@ -1459,13 +1449,117 @@ class SettingsController extends Controller
             $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
             $logger->error('Exception during SOLR collection deletion', [
                 'error' => $e->getMessage(),
+                'collection' => $name,
                 'trace' => $e->getTraceAsString()
             ]);
             
             return new JSONResponse([
                 'success' => false,
                 'message' => 'Collection deletion failed: ' . $e->getMessage(),
-                'error_code' => 'EXCEPTION'
+                'error_code' => 'EXCEPTION',
+                'collection' => $name
+            ], 422);
+        }
+    }
+
+    /**
+     * Clear a specific SOLR collection by name
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     * 
+     * @param string $name The name of the collection to clear
+     *
+     * @return JSONResponse The clear result
+     */
+    public function clearSpecificCollection(string $name): JSONResponse
+    {
+        try {
+            $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+            
+            // Clear the specific collection
+            $result = $guzzleSolrService->clearIndex($name);
+            
+            if ($result['success']) {
+                return new JSONResponse([
+                    'success' => true,
+                    'message' => 'Collection cleared successfully',
+                    'collection' => $name
+                ], 200);
+            } else {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => $result['message'] ?? 'Failed to clear collection',
+                    'collection' => $name
+                ], 422);
+            }
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Collection clear failed: ' . $e->getMessage(),
+                'collection' => $name
+            ], 422);
+        }
+    }
+
+    /**
+     * Reindex a specific SOLR collection by name
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     * 
+     * @param string $name The name of the collection to reindex
+     *
+     * @return JSONResponse The reindex result
+     */
+    public function reindexSpecificCollection(string $name): JSONResponse
+    {
+        try {
+            $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+            
+            // Get optional parameters from request body
+            $maxObjects = (int) ($this->request->getParam('maxObjects', 0));
+            $batchSize = (int) ($this->request->getParam('batchSize', 1000));
+            
+            // Validate parameters
+            if ($batchSize < 1 || $batchSize > 5000) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'Invalid batch size. Must be between 1 and 5000',
+                    'collection' => $name
+                ], 400);
+            }
+            
+            if ($maxObjects < 0) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'Invalid maxObjects. Must be 0 (all) or positive number',
+                    'collection' => $name
+                ], 400);
+            }
+            
+            // Reindex the specified collection
+            $result = $guzzleSolrService->reindexAll($maxObjects, $batchSize, $name);
+            
+            if ($result['success']) {
+                return new JSONResponse([
+                    'success' => true,
+                    'message' => 'Reindex completed successfully',
+                    'stats' => $result['stats'] ?? [],
+                    'collection' => $name
+                ], 200);
+            } else {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => $result['message'] ?? 'Failed to reindex collection',
+                    'collection' => $name
+                ], 422);
+            }
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Reindex failed: ' . $e->getMessage(),
+                'collection' => $name
             ], 422);
         }
     }
@@ -1509,7 +1603,8 @@ class SettingsController extends Controller
     public function getSolrFields(): JSONResponse
     {
         try {
-            // Use GuzzleSolrService to get field information
+            // Use SolrSchemaService to get field status for both collections
+            $solrSchemaService = $this->container->get(\OCA\OpenRegister\Service\SolrSchemaService::class);
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
             
             // Check if SOLR is available first
@@ -1521,23 +1616,75 @@ class SettingsController extends Controller
                 ], 422);
             }
 
-            // Get field configuration from SOLR
-            $fieldsData = $guzzleSolrService->getFieldsConfiguration();
+            // Get field status for both collections
+            $objectFieldStatus = $solrSchemaService->getObjectCollectionFieldStatus();
+            $fileFieldStatus = $solrSchemaService->getFileCollectionFieldStatus();
             
-            // Get expected fields based on OpenRegister schemas
-            $expectedFields = $this->getExpectedSchemaFields();
+            // Combine missing fields from both collections with collection identifier
+            $missingFields = [];
             
-            // Compare actual vs expected fields
-            $comparison = $this->compareFields(
-                actualFields: $fieldsData['fields'] ?? [], 
-                expectedFields: $expectedFields
-            );
+            foreach ($objectFieldStatus['missing'] as $fieldName => $fieldInfo) {
+                $missingFields[] = [
+                    'name' => $fieldName,
+                    'type' => $fieldInfo['type'],
+                    'config' => $fieldInfo,
+                    'collection' => 'objects',
+                    'collectionLabel' => 'Object Collection'
+                ];
+            }
             
-            // Add expected fields and comparison to response
-            $fieldsData['expected_fields'] = $expectedFields;
-            $fieldsData['comparison'] = $comparison;
+            foreach ($fileFieldStatus['missing'] as $fieldName => $fieldInfo) {
+                $missingFields[] = [
+                    'name' => $fieldName,
+                    'type' => $fieldInfo['type'],
+                    'config' => $fieldInfo,
+                    'collection' => 'files',
+                    'collectionLabel' => 'File Collection'
+                ];
+            }
             
-            return new JSONResponse($fieldsData);
+            // Combine extra fields from both collections
+            $extraFields = [];
+            
+            foreach ($objectFieldStatus['extra'] as $fieldName) {
+                $extraFields[] = [
+                    'name' => $fieldName,
+                    'collection' => 'objects',
+                    'collectionLabel' => 'Object Collection'
+                ];
+            }
+            
+            foreach ($fileFieldStatus['extra'] as $fieldName) {
+                $extraFields[] = [
+                    'name' => $fieldName,
+                    'collection' => 'files',
+                    'collectionLabel' => 'File Collection'
+                ];
+            }
+            
+            // Build comparison result
+            $comparison = [
+                'total_differences' => count($missingFields) + count($extraFields),
+                'missing_count' => count($missingFields),
+                'extra_count' => count($extraFields),
+                'missing' => $missingFields,
+                'extra' => $extraFields,
+                'object_collection' => [
+                    'missing' => count($objectFieldStatus['missing']),
+                    'extra' => count($objectFieldStatus['extra'])
+                ],
+                'file_collection' => [
+                    'missing' => count($fileFieldStatus['missing']),
+                    'extra' => count($fileFieldStatus['extra'])
+                ]
+            ];
+            
+            return new JSONResponse([
+                'success' => true,
+                'comparison' => $comparison,
+                'object_collection_status' => $objectFieldStatus,
+                'file_collection_status' => $fileFieldStatus
+            ]);
             
         } catch (\Exception $e) {
             return new JSONResponse([
@@ -1559,8 +1706,9 @@ class SettingsController extends Controller
     public function createMissingSolrFields(): JSONResponse
     {
         try {
-            // Get GuzzleSolrService for field creation
+            // Get services
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $solrSchemaService = $this->container->get(SolrSchemaService::class);
             
             // Check if SOLR is available first
             if (!$guzzleSolrService->isAvailable()) {
@@ -1575,13 +1723,78 @@ class SettingsController extends Controller
             $dryRun = $this->request->getParam('dry_run', false);
             $dryRun = filter_var($dryRun, FILTER_VALIDATE_BOOLEAN);
 
-            // Get expected fields using the same method as the comparison
-            $expectedFields = $this->getExpectedSchemaFields();
-            
-            // Create missing fields
-            $result = $guzzleSolrService->createMissingFields($expectedFields, $dryRun);
-            
-            return new JSONResponse($result);
+            $startTime = microtime(true);
+            $totalCreated = 0;
+            $totalErrors = 0;
+            $results = [
+                'objects' => null,
+                'files' => null
+            ];
+
+            // Create missing fields for OBJECT collection
+            try {
+                $objectStatus = $solrSchemaService->getObjectCollectionFieldStatus();
+                if (!empty($objectStatus['missing'])) {
+                    $objectResult = $solrSchemaService->createMissingFields(
+                        'objects',
+                        $objectStatus['missing'],
+                        $dryRun
+                    );
+                    $results['objects'] = $objectResult;
+                    if (isset($objectResult['created_count'])) {
+                        $totalCreated += $objectResult['created_count'];
+                    }
+                    if (isset($objectResult['error_count'])) {
+                        $totalErrors += $objectResult['error_count'];
+                    }
+                }
+            } catch (\Exception $e) {
+                $results['objects'] = [
+                    'success' => false,
+                    'message' => 'Failed to create object fields: ' . $e->getMessage()
+                ];
+                $totalErrors++;
+            }
+
+            // Create missing fields for FILE collection
+            try {
+                $fileStatus = $solrSchemaService->getFileCollectionFieldStatus();
+                if (!empty($fileStatus['missing'])) {
+                    $fileResult = $solrSchemaService->createMissingFields(
+                        'files',
+                        $fileStatus['missing'],
+                        $dryRun
+                    );
+                    $results['files'] = $fileResult;
+                    if (isset($fileResult['created_count'])) {
+                        $totalCreated += $fileResult['created_count'];
+                    }
+                    if (isset($fileResult['error_count'])) {
+                        $totalErrors += $fileResult['error_count'];
+                    }
+                }
+            } catch (\Exception $e) {
+                $results['files'] = [
+                    'success' => false,
+                    'message' => 'Failed to create file fields: ' . $e->getMessage()
+                ];
+                $totalErrors++;
+            }
+
+            $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+
+            return new JSONResponse([
+                'success' => $totalErrors === 0,
+                'message' => sprintf(
+                    'Field creation completed: %d total fields created across both collections',
+                    $totalCreated
+                ),
+                'total_created' => $totalCreated,
+                'total_errors' => $totalErrors,
+                'results' => $results,
+                'execution_time_ms' => $executionTime,
+                'dry_run' => $dryRun
+            ]);
             
         } catch (\Exception $e) {
             return new JSONResponse([
@@ -1591,6 +1804,149 @@ class SettingsController extends Controller
             ], 422);
         }
     }//end createMissingSolrFields()
+
+    /**
+     * Get object collection field status
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Field status for object collection
+     */
+    public function getObjectCollectionFields(): JSONResponse
+    {
+        try {
+            $solrSchemaService = $this->container->get(SolrSchemaService::class);
+            $status = $solrSchemaService->getObjectCollectionFieldStatus();
+            
+            return new JSONResponse([
+                'success' => true,
+                'collection' => 'objects',
+                'status' => $status
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Failed to get object collection field status: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get file collection field status
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Field status for file collection
+     */
+    public function getFileCollectionFields(): JSONResponse
+    {
+        try {
+            $solrSchemaService = $this->container->get(SolrSchemaService::class);
+            $status = $solrSchemaService->getFileCollectionFieldStatus();
+            
+            return new JSONResponse([
+                'success' => true,
+                'collection' => 'files',
+                'status' => $status
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Failed to get file collection field status: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Create missing fields in object collection
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Creation results
+     */
+    public function createMissingObjectFields(): JSONResponse
+    {
+        try {
+            $solrSchemaService = $this->container->get(SolrSchemaService::class);
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            
+            // Switch to object collection
+            $objectCollection = $this->settingsService->getSolrSettingsOnly()['objectCollection'] ?? null;
+            if (!$objectCollection) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'Object collection not configured'
+                ], 400);
+            }
+            
+            // Create missing fields
+            $result = $solrSchemaService->mirrorSchemas(force: true);
+            
+            return new JSONResponse([
+                'success' => true,
+                'collection' => 'objects',
+                'message' => 'Missing object fields created successfully',
+                'result' => $result
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Failed to create missing object fields: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Create missing fields in file collection
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Creation results
+     */
+    public function createMissingFileFields(): JSONResponse
+    {
+        try {
+            $solrSchemaService = $this->container->get(SolrSchemaService::class);
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            
+            // Switch to file collection
+            $fileCollection = $this->settingsService->getSolrSettingsOnly()['fileCollection'] ?? null;
+            if (!$fileCollection) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'File collection not configured'
+                ], 400);
+            }
+            
+            // Set active collection to file collection temporarily
+            $originalCollection = $guzzleSolrService->getActiveCollectionName();
+            $guzzleSolrService->setActiveCollection($fileCollection);
+            
+            // Create missing file metadata fields using reflection to call private method
+            $reflection = new \ReflectionClass($solrSchemaService);
+            $method = $reflection->getMethod('ensureFileMetadataFields');
+            $method->setAccessible(true);
+            $result = $method->invoke($solrSchemaService, true);
+            
+            // Restore original collection
+            $guzzleSolrService->setActiveCollection($originalCollection);
+            
+            return new JSONResponse([
+                'success' => $result,
+                'collection' => 'files',
+                'message' => $result ? 'Missing file fields created successfully' : 'Some file fields failed to create'
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Failed to create missing file fields: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 
     /**
      * Fix mismatched SOLR field configurations
@@ -2091,6 +2447,17 @@ class SettingsController extends Controller
                 ], 400);
             }
             
+            // Debug logging for schema IDs
+            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
+            $logger->info('🔥 WARMUP: Received warmup request', [
+                'maxObjects' => $maxObjects,
+                'mode' => $mode,
+                'batchSize' => $batchSize,
+                'schemaIds' => $schemaIds,
+                'schemaIds_type' => gettype($schemaIds),
+                'schemaIds_count' => is_array($schemaIds) ? count($schemaIds) : 0
+            ]);
+            
             // Phase 1: Use GuzzleSolrService directly for SOLR operations
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
             $result = $guzzleSolrService->warmupIndex([], $maxObjects, $mode, $collectErrors, $batchSize, $schemaIds);
@@ -2259,6 +2626,120 @@ class SettingsController extends Controller
     }
 
     /**
+     * Update LLM (Large Language Model) settings
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Updated LLM settings
+     */
+    public function updateLLMSettings(): JSONResponse
+    {
+        try {
+            $data = $this->request->getParams();
+            
+            // Extract the model IDs from the objects sent by frontend
+            if (isset($data['fireworksConfig']['embeddingModel']) && is_array($data['fireworksConfig']['embeddingModel'])) {
+                $data['fireworksConfig']['embeddingModel'] = $data['fireworksConfig']['embeddingModel']['id'] ?? null;
+            }
+            if (isset($data['fireworksConfig']['chatModel']) && is_array($data['fireworksConfig']['chatModel'])) {
+                $data['fireworksConfig']['chatModel'] = $data['fireworksConfig']['chatModel']['id'] ?? null;
+            }
+            if (isset($data['openaiConfig']['model']) && is_array($data['openaiConfig']['model'])) {
+                $data['openaiConfig']['model'] = $data['openaiConfig']['model']['id'] ?? null;
+            }
+            if (isset($data['openaiConfig']['chatModel']) && is_array($data['openaiConfig']['chatModel'])) {
+                $data['openaiConfig']['chatModel'] = $data['openaiConfig']['chatModel']['id'] ?? null;
+            }
+            if (isset($data['ollamaConfig']['model']) && is_array($data['ollamaConfig']['model'])) {
+                $data['ollamaConfig']['model'] = $data['ollamaConfig']['model']['id'] ?? null;
+            }
+            if (isset($data['ollamaConfig']['chatModel']) && is_array($data['ollamaConfig']['chatModel'])) {
+                $data['ollamaConfig']['chatModel'] = $data['ollamaConfig']['chatModel']['id'] ?? null;
+            }
+            
+            $result = $this->settingsService->updateLLMSettingsOnly($data);
+            return new JSONResponse([
+                'success' => true,
+                'message' => 'LLM settings updated successfully',
+                'data' => $result
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update File Management settings
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Updated file settings
+     */
+    public function updateFileSettings(): JSONResponse
+    {
+        try {
+            $data = $this->request->getParams();
+            
+            // Extract IDs from objects sent by frontend
+            if (isset($data['provider']) && is_array($data['provider'])) {
+                $data['provider'] = $data['provider']['id'] ?? null;
+            }
+            if (isset($data['chunkingStrategy']) && is_array($data['chunkingStrategy'])) {
+                $data['chunkingStrategy'] = $data['chunkingStrategy']['id'] ?? null;
+            }
+            
+            $result = $this->settingsService->updateFileSettingsOnly($data);
+            return new JSONResponse([
+                'success' => true,
+                'message' => 'File settings updated successfully',
+                'data' => $result
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update Object Management settings
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Updated object settings
+     */
+    public function updateObjectSettings(): JSONResponse
+    {
+        try {
+            $data = $this->request->getParams();
+            
+            // Extract IDs from objects sent by frontend
+            if (isset($data['provider']) && is_array($data['provider'])) {
+                $data['provider'] = $data['provider']['id'] ?? null;
+            }
+            
+            $result = $this->settingsService->updateObjectSettingsOnly($data);
+            return new JSONResponse([
+                'success' => true,
+                'message' => 'Object settings updated successfully',
+                'data' => $result
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Get Retention settings only
      *
      * @NoAdminRequired
@@ -2339,68 +2820,6 @@ class SettingsController extends Controller
                 'success' => false,
                 'error' => $e->getMessage()
             ], 422);
-        }
-    }
-
-    /**
-     * Clear SOLR index
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     * 
-     * @return JSONResponse
-     */
-    public function clearSolrIndex(): JSONResponse
-    {
-        try {
-            // Get logger and GuzzleSolrService from container
-            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
-            
-            $logger->info('Starting SOLR index clear operation');
-            
-            // Use the GuzzleSolrService to clear the index - now returns detailed result array
-            $result = $guzzleSolrService->clearIndex();
-            
-            if ($result['success']) {
-                $logger->info('SOLR index cleared successfully', [
-                    'deleted_docs' => $result['deleted_docs'] ?? 'unknown'
-                ]);
-                return new JSONResponse([
-                    'success' => true,
-                    'message' => 'SOLR index cleared successfully',
-                    'deleted_docs' => $result['deleted_docs'] ?? null
-                ]);
-            } else {
-                // Log detailed error information for debugging
-                $logger->error('Failed to clear SOLR index', [
-                    'error' => $result['error'],
-                    'error_details' => $result['error_details'] ?? null
-                ]);
-                
-                return new JSONResponse([
-                    'success' => false,
-                    'error' => $result['error'],
-                    'error_details' => $result['error_details'] ?? null
-                ], 422);
-            }
-            
-        } catch (\Exception $e) {
-            // Get logger for error logging
-            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
-            $logger->error('Exception in clearSolrIndex controller', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            return new JSONResponse([
-                'success' => false,
-                'error' => 'Controller exception: ' . $e->getMessage(),
-                'error_details' => [
-                    'exception_type' => get_class($e),
-                    'trace' => $e->getTraceAsString()
-                ]
-            ], 500);
         }
     }
 
@@ -2600,99 +3019,6 @@ class SettingsController extends Controller
     }
 
     /**
-     * Reindex all objects in SOLR
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse
-     */
-    public function reindexSolr(): JSONResponse
-    {
-        try {
-            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
-            
-            // Get parameters from request
-            $maxObjects = (int) ($this->request->getParam('maxObjects', 0));
-            $batchSize = (int) ($this->request->getParam('batchSize', 1000));
-            
-            // Validate parameters
-            if ($batchSize < 1 || $batchSize > 5000) {
-                return new JSONResponse([
-                    'success' => false,
-                    'message' => 'Invalid batch size. Must be between 1 and 5000'
-                ], 400);
-            }
-            
-            if ($maxObjects < 0) {
-                return new JSONResponse([
-                    'success' => false,
-                    'message' => 'Invalid maxObjects. Must be 0 (all) or positive number'
-                ], 400);
-            }
-
-            $logger->info('🔄 Starting SOLR reindex via API', [
-                'max_objects' => $maxObjects,
-                'batch_size' => $batchSize,
-                'user' => $this->userId
-            ]);
-
-            // Get GuzzleSolrService from container
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
-            
-            // Check if SOLR is available
-            if (!$guzzleSolrService->isAvailable()) {
-                return new JSONResponse([
-                    'success' => false,
-                    'message' => 'SOLR is not available or not configured'
-                ], 422);
-            }
-
-            // Start reindex operation
-            $result = $guzzleSolrService->reindexAll($maxObjects, $batchSize);
-
-            if ($result['success']) {
-                $logger->info('✅ SOLR reindex completed successfully via API', [
-                    'processed_objects' => $result['stats']['processed_objects'] ?? 0,
-                    'duration' => $result['stats']['duration_seconds'] ?? 0,
-                    'user' => $this->userId
-                ]);
-
-                return new JSONResponse([
-                    'success' => true,
-                    'message' => $result['message'],
-                    'stats' => $result['stats'] ?? []
-                ]);
-            } else {
-                $logger->warning('❌ SOLR reindex failed via API', [
-                    'error' => $result['message'],
-                    'user' => $this->userId
-                ]);
-
-                return new JSONResponse([
-                    'success' => false,
-                    'message' => $result['message'],
-                    'error' => $result['error'] ?? null
-                ], 422);
-            }
-
-        } catch (\Exception $e) {
-            $logger = $logger ?? \OC::$server->get(\Psr\Log\LoggerInterface::class);
-            $logger->error('Exception during SOLR reindex via API', [
-                'error' => $e->getMessage(),
-                'user' => $this->userId,
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return new JSONResponse([
-                'success' => false,
-                'message' => 'Failed to reindex SOLR: ' . $e->getMessage(),
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
      * Debug endpoint for type filtering issue
      * 
      * @return JSONResponse Debug information about type filtering
@@ -2822,6 +3148,589 @@ class SettingsController extends Controller
             return new JSONResponse([
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    }
+
+    /**
+     * List all SOLR collections with statistics
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse List of collections with metadata
+     */
+    public function listSolrCollections(): JSONResponse
+    {
+        try {
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $collections = $guzzleSolrService->listCollections();
+            
+            return new JSONResponse([
+                'success' => true,
+                'collections' => $collections,
+                'count' => count($collections),
+                'timestamp' => date('c')
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    }
+
+    /**
+     * List all SOLR ConfigSets
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse List of ConfigSets with metadata
+     */
+    public function listSolrConfigSets(): JSONResponse
+    {
+        try {
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $configSets = $guzzleSolrService->listConfigSets();
+            
+            return new JSONResponse([
+                'success' => true,
+                'configSets' => $configSets,
+                'count' => count($configSets),
+                'timestamp' => date('c')
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    }
+
+    /**
+     * Create a new SOLR ConfigSet by copying an existing one
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $name Name for the new ConfigSet
+     * @param string $baseConfigSet Base ConfigSet to copy from (default: _default)
+     *
+     * @return JSONResponse Creation result
+     */
+    public function createSolrConfigSet(string $name, string $baseConfigSet = '_default'): JSONResponse
+    {
+        try {
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $result = $guzzleSolrService->createConfigSet($name, $baseConfigSet);
+            
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    /**
+     * Delete a SOLR ConfigSet
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $name Name of the ConfigSet to delete
+     *
+     * @return JSONResponse Deletion result
+     */
+    public function deleteSolrConfigSet(string $name): JSONResponse
+    {
+        try {
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $result = $guzzleSolrService->deleteConfigSet($name);
+            
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    /**
+     * Create a new SOLR collection from a ConfigSet
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $collectionName Name for the new collection
+     * @param string $configName ConfigSet to use
+     * @param int $numShards Number of shards (default: 1)
+     * @param int $replicationFactor Number of replicas (default: 1)
+     * @param int $maxShardsPerNode Maximum shards per node (default: 1)
+     *
+     * @return JSONResponse Creation result
+     */
+    public function createSolrCollection(
+        string $collectionName,
+        string $configName,
+        int $numShards = 1,
+        int $replicationFactor = 1,
+        int $maxShardsPerNode = 1
+    ): JSONResponse {
+        try {
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $result = $guzzleSolrService->createCollection(
+                $collectionName,
+                $configName,
+                $numShards,
+                $replicationFactor,
+                $maxShardsPerNode
+            );
+            
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    }
+
+    /**
+     * Copy a SOLR collection
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $sourceCollection Source collection name
+     * @param string $targetCollection Target collection name
+     * @param bool $copyData Whether to copy data (default: false)
+     *
+     * @return JSONResponse Copy operation result
+     */
+    public function copySolrCollection(string $sourceCollection, string $targetCollection, bool $copyData = false): JSONResponse
+    {
+        try {
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $result = $guzzleSolrService->copyCollection($sourceCollection, $targetCollection, $copyData);
+            
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update SOLR collection assignments (Object Collection and File Collection)
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string|null $objectCollection Collection name for objects
+     * @param string|null $fileCollection Collection name for files
+     *
+     * @return JSONResponse Update result
+     */
+    public function updateSolrCollectionAssignments(?string $objectCollection = null, ?string $fileCollection = null): JSONResponse
+    {
+        try {
+            // Get current SOLR settings
+            $solrSettings = $this->settingsService->getSolrSettingsOnly();
+            
+            // Update collection assignments
+            if ($objectCollection !== null) {
+                $solrSettings['objectCollection'] = $objectCollection;
+            }
+            if ($fileCollection !== null) {
+                $solrSettings['fileCollection'] = $fileCollection;
+            }
+            
+            // Save updated settings
+            $this->settingsService->updateSolrSettingsOnly($solrSettings);
+            
+            return new JSONResponse([
+                'success' => true,
+                'message' => 'Collection assignments updated successfully',
+                'objectCollection' => $solrSettings['objectCollection'] ?? null,
+                'fileCollection' => $solrSettings['fileCollection'] ?? null,
+                'timestamp' => date('c')
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    }
+
+    /**
+     * Perform semantic search using vector embeddings
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $query       Search query text
+     * @param int    $limit       Maximum number of results (default: 10)
+     * @param array  $filters     Optional filters (entity_type, entity_id, etc.)
+     * @param string|null $provider Embedding provider override
+     *
+     * @return JSONResponse Search results
+     */
+    public function semanticSearch(string $query, int $limit = 10, array $filters = [], ?string $provider = null): JSONResponse
+    {
+        try {
+            if (empty(trim($query))) {
+                return new JSONResponse([
+                    'success' => false,
+                    'error' => 'Query parameter is required'
+                ], 400);
+            }
+
+            // Get VectorEmbeddingService from container
+            $vectorService = $this->container->get(VectorEmbeddingService::class);
+            
+            // Perform semantic search
+            $results = $vectorService->semanticSearch($query, $limit, $filters, $provider);
+            
+            return new JSONResponse([
+                'success' => true,
+                'query' => $query,
+                'results' => $results,
+                'total' => count($results),
+                'limit' => $limit,
+                'filters' => $filters,
+                'timestamp' => date('c')
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    }
+
+    /**
+     * Perform hybrid search combining SOLR keyword and vector semantic search
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $query         Search query text
+     * @param int    $limit         Maximum number of results (default: 20)
+     * @param array  $solrFilters   SOLR-specific filters
+     * @param array  $weights       Search type weights ['solr' => 0.5, 'vector' => 0.5]
+     * @param string|null $provider Embedding provider override
+     *
+     * @return JSONResponse Combined search results
+     */
+    public function hybridSearch(
+        string $query,
+        int $limit = 20,
+        array $solrFilters = [],
+        array $weights = ['solr' => 0.5, 'vector' => 0.5],
+        ?string $provider = null
+    ): JSONResponse {
+        try {
+            if (empty(trim($query))) {
+                return new JSONResponse([
+                    'success' => false,
+                    'error' => 'Query parameter is required'
+                ], 400);
+            }
+
+            // Get VectorEmbeddingService from container
+            $vectorService = $this->container->get(VectorEmbeddingService::class);
+            
+            // Perform hybrid search
+            $result = $vectorService->hybridSearch($query, $solrFilters, $limit, $weights, $provider);
+            
+            return new JSONResponse([
+                'success' => true,
+                'query' => $query,
+                ...$result,
+                'timestamp' => date('c')
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get vector embedding statistics
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Vector statistics
+     */
+    public function getVectorStats(): JSONResponse
+    {
+        try {
+            // Get VectorEmbeddingService from container
+            $vectorService = $this->container->get(VectorEmbeddingService::class);
+            
+            // Get statistics
+            $stats = $vectorService->getVectorStats();
+            
+            return new JSONResponse([
+                'success' => true,
+                'stats' => $stats,
+                'timestamp' => date('c')
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    }
+
+    /**
+     * Warmup files - Extract text and index in SOLR file collection
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Warmup results
+     */
+    public function warmupFiles(): JSONResponse
+    {
+        try {
+            // Get request parameters
+            $maxFiles = (int) $this->request->getParam('max_files', 100);
+            $batchSize = (int) $this->request->getParam('batch_size', 50);
+            $fileTypes = $this->request->getParam('file_types', []);
+            $skipIndexed = $this->request->getParam('skip_indexed', true);
+            $mode = $this->request->getParam('mode', 'parallel');
+
+            // Validate parameters
+            $maxFiles = min($maxFiles, 5000); // Max 5000 files
+            $batchSize = min($batchSize, 500); // Max 500 per batch
+
+            $this->logger->info('[SettingsController] Starting file warmup', [
+                'max_files' => $maxFiles,
+                'batch_size' => $batchSize,
+                'skip_indexed' => $skipIndexed
+            ]);
+
+            // Get FileTextService and GuzzleSolrService
+            $fileTextService = $this->container->get(\OCA\OpenRegister\Service\FileTextService::class);
+            $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+            $fileTextMapper = $this->container->get(\OCA\OpenRegister\Db\FileTextMapper::class);
+
+            // Get files that need processing
+            $filesToProcess = [];
+            if ($skipIndexed) {
+                $notIndexed = $fileTextMapper->findNotIndexedInSolr($maxFiles);
+                foreach ($notIndexed as $fileText) {
+                    if (empty($fileTypes) || in_array($fileText->getMimeType(), $fileTypes)) {
+                        $filesToProcess[] = $fileText->getFileId();
+                    }
+                }
+            } else {
+                $completed = $fileTextMapper->findByStatus('completed', $maxFiles, 0);
+                foreach ($completed as $fileText) {
+                    if (empty($fileTypes) || in_array($fileText->getMimeType(), $fileTypes)) {
+                        $filesToProcess[] = $fileText->getFileId();
+                    }
+                }
+            }
+
+            // If no files to process, return early
+            if (empty($filesToProcess)) {
+                return new JSONResponse([
+                    'success' => true,
+                    'message' => 'No files to process',
+                    'files_processed' => 0,
+                    'indexed' => 0,
+                    'failed' => 0
+                ]);
+            }
+
+            // Process files in batches
+            $totalIndexed = 0;
+            $totalFailed = 0;
+            $allErrors = [];
+            
+            $batches = array_chunk($filesToProcess, $batchSize);
+            foreach ($batches as $batch) {
+                $result = $guzzleSolrService->indexFiles($batch);
+                $totalIndexed += $result['indexed'];
+                $totalFailed += $result['failed'];
+                $allErrors = array_merge($allErrors, $result['errors']);
+            }
+
+            return new JSONResponse([
+                'success' => true,
+                'message' => 'File warmup completed',
+                'files_processed' => count($filesToProcess),
+                'indexed' => $totalIndexed,
+                'failed' => $totalFailed,
+                'errors' => array_slice($allErrors, 0, 20), // First 20 errors
+                'mode' => $mode
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logger->error('[SettingsController] File warmup failed', [
+                'error' => $e->getMessage()
+            ]);
+
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'File warmup failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Index a specific file in SOLR
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param int $fileId File ID to index
+     * 
+     * @return JSONResponse Indexing result
+     */
+    public function indexFile(int $fileId): JSONResponse
+    {
+        try {
+            $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+            
+            $result = $guzzleSolrService->indexFiles([$fileId]);
+            
+            if ($result['indexed'] > 0) {
+                return new JSONResponse([
+                    'success' => true,
+                    'message' => 'File indexed successfully',
+                    'file_id' => $fileId
+                ]);
+            } else {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => $result['errors'][0] ?? 'Failed to index file',
+                    'file_id' => $fileId
+                ], 422);
+            }
+
+        } catch (\Exception $e) {
+            $this->logger->error('[SettingsController] Failed to index file', [
+                'file_id' => $fileId,
+                'error' => $e->getMessage()
+            ]);
+
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Failed to index file: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Reindex all files
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Reindex results
+     */
+    public function reindexFiles(): JSONResponse
+    {
+        try {
+            // Get all completed file texts
+            $fileTextMapper = $this->container->get(\OCA\OpenRegister\Db\FileTextMapper::class);
+            $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+            
+            $maxFiles = (int) $this->request->getParam('max_files', 1000);
+            $batchSize = (int) $this->request->getParam('batch_size', 100);
+            
+            // Get all completed extractions
+            $allFiles = $fileTextMapper->findByStatus('completed', $maxFiles, 0);
+            $fileIds = array_map(fn($ft) => $ft->getFileId(), $allFiles);
+
+            if (empty($fileIds)) {
+                return new JSONResponse([
+                    'success' => true,
+                    'message' => 'No files to reindex',
+                    'indexed' => 0
+                ]);
+            }
+
+            // Process in batches
+            $totalIndexed = 0;
+            $totalFailed = 0;
+            $allErrors = [];
+            
+            $batches = array_chunk($fileIds, $batchSize);
+            foreach ($batches as $batch) {
+                $result = $guzzleSolrService->indexFiles($batch);
+                $totalIndexed += $result['indexed'];
+                $totalFailed += $result['failed'];
+                $allErrors = array_merge($allErrors, $result['errors']);
+            }
+
+            return new JSONResponse([
+                'success' => true,
+                'message' => 'Reindex completed',
+                'files_processed' => count($fileIds),
+                'indexed' => $totalIndexed,
+                'failed' => $totalFailed,
+                'errors' => array_slice($allErrors, 0, 20)
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logger->error('[SettingsController] Reindex files failed', [
+                'error' => $e->getMessage()
+            ]);
+
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Reindex failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get file index statistics
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse File index statistics
+     */
+    public function getFileIndexStats(): JSONResponse
+    {
+        try {
+            $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+            $stats = $guzzleSolrService->getFileIndexStats();
+            
+            return new JSONResponse($stats);
+
+        } catch (\Exception $e) {
+            $this->logger->error('[SettingsController] Failed to get file index stats', [
+                'error' => $e->getMessage()
+            ]);
+
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'Failed to get statistics: ' . $e->getMessage()
             ], 500);
         }
     }

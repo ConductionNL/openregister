@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\FileTextMapper;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -47,6 +48,11 @@ use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\SolrService;
 use OCA\OpenRegister\Service\GuzzleSolrService;
+use OCA\OpenRegister\Service\SolrObjectService;
+use OCA\OpenRegister\Service\SolrFileService;
+use OCA\OpenRegister\Service\VectorEmbeddingService;
+use OCA\OpenRegister\Service\ChatService;
+use OCA\OpenRegister\Service\FileTextService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\SolrSchemaService;
 use OCA\OpenRegister\Setup\SolrSetup;
@@ -65,7 +71,10 @@ use OCP\EventDispatcher\IEventDispatcher;
 
 use OCA\OpenRegister\EventListener\TestEventListener;
 use OCA\OpenRegister\EventListener\SolrEventListener;
+use OCA\OpenRegister\Listener\FileChangeListener;
 use OCP\User\Events\UserLoggedInEvent;
+use OCP\Files\Events\Node\NodeCreatedEvent;
+use OCP\Files\Events\Node\NodeWrittenEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -494,6 +503,84 @@ class Application extends App implements IBootstrap
                 }
                 );
 
+        // Register SolrObjectService for object-specific SOLR operations
+        $context->registerService(
+                SolrObjectService::class,
+                function ($container) {
+                    return new SolrObjectService(
+                    $container->get(GuzzleSolrService::class),
+                    $container->get(SettingsService::class),
+                    $container->get(SchemaMapper::class),
+                    $container->get(RegisterMapper::class),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register SolrFileService for file-specific SOLR operations
+        $context->registerService(
+                SolrFileService::class,
+                function ($container) {
+                    return new SolrFileService(
+                    $container->get(GuzzleSolrService::class),
+                    $container->get(SettingsService::class),
+                    $container,
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register VectorEmbeddingService for vector embeddings and semantic search
+        $context->registerService(
+                VectorEmbeddingService::class,
+                function ($container) {
+                    return new VectorEmbeddingService(
+                    $container->get('OCP\IDBConnection'),
+                    $container->get(SettingsService::class),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register ChatService for AI chat conversations with RAG
+        $context->registerService(
+                ChatService::class,
+                function ($container) {
+                    return new ChatService(
+                    $container->get('OCP\IDBConnection'),
+                    $container->get(VectorEmbeddingService::class),
+                    $container->get(GuzzleSolrService::class),
+                    $container->get(SettingsService::class),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register FileTextService for file text extraction and storage
+        $context->registerService(
+                FileTextService::class,
+                function ($container) {
+                    return new FileTextService(
+                    $container->get(FileTextMapper::class),
+                    $container->get('OCA\OpenRegister\Db\FileMapper'),
+                    $container->get(SolrFileService::class),
+                    $container->get('OCP\Files\IRootFolder'),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register FileChangeListener for automatic file text extraction
+        $context->registerService(
+                FileChangeListener::class,
+                function ($container) {
+                    return new FileChangeListener(
+                    $container->get(FileTextService::class),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
         // Register SolrSchemaService for SOLR schema operations
         $context->registerService(
                 SolrSchemaService::class,
@@ -534,6 +621,10 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(SchemaCreatedEvent::class, SolrEventListener::class);
         $context->registerEventListener(SchemaUpdatedEvent::class, SolrEventListener::class);
         $context->registerEventListener(SchemaDeletedEvent::class, SolrEventListener::class);
+
+        // Register FileChangeListener for automatic file text extraction
+        $context->registerEventListener(NodeCreatedEvent::class, FileChangeListener::class);
+        $context->registerEventListener(NodeWrittenEvent::class, FileChangeListener::class);
 
     }//end register()
 

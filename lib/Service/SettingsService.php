@@ -305,8 +305,6 @@ class SettingsService
 
             // SOLR Search Configuration
             $solrConfig = $this->config->getValueString($this->appName, 'solr', '');
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
-            $tenantId = $guzzleSolrService->getTenantId();
             
             if (empty($solrConfig)) {
                 $data['solr'] = [
@@ -323,12 +321,13 @@ class SettingsService
                     'autoCommit'     => true,
                     'commitWithin'   => 1000,
                     'enableLogging'  => true,
-                    'tenantId'       => $tenantId,
                     'zookeeperHosts' => 'zookeeper:2181',
                     'zookeeperUsername' => '',
                     'zookeeperPassword' => '',
                     'collection'     => 'openregister',
                     'useCloud'       => true,
+                    'objectCollection' => null,
+                    'fileCollection'   => null,
                 ];
             } else {
                 $solrData     = json_decode($solrConfig, true);
@@ -346,12 +345,13 @@ class SettingsService
                     'autoCommit'     => $solrData['autoCommit'] ?? true,
                     'commitWithin'   => $solrData['commitWithin'] ?? 1000,
                     'enableLogging'  => $solrData['enableLogging'] ?? true,
-                    'tenantId'       => $solrData['tenantId'] ?? $tenantId,
                     'zookeeperHosts' => $solrData['zookeeperHosts'] ?? 'zookeeper:2181',
                     'zookeeperUsername' => $solrData['zookeeperUsername'] ?? '',
                     'zookeeperPassword' => $solrData['zookeeperPassword'] ?? '',
                     'collection'     => $solrData['collection'] ?? 'openregister',
                     'useCloud'       => $solrData['useCloud'] ?? true,
+                    'objectCollection' => $solrData['objectCollection'] ?? null,
+                    'fileCollection'   => $solrData['fileCollection'] ?? null,
                 ];
             }//end if
 
@@ -487,7 +487,6 @@ class SettingsService
 
             // Handle SOLR settings
             if (isset($data['solr'])) {
-                $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
                 $solrData   = $data['solr'];
                 $solrConfig = [
                     'enabled'        => $solrData['enabled'] ?? false,
@@ -503,12 +502,13 @@ class SettingsService
                     'autoCommit'     => $solrData['autoCommit'] ?? true,
                     'commitWithin'   => (int) ($solrData['commitWithin'] ?? 1000),
                     'enableLogging'  => $solrData['enableLogging'] ?? true,
-                    'tenantId'       => $solrData['tenantId'] ?? $guzzleSolrService->getTenantId(),
                     'zookeeperHosts' => $solrData['zookeeperHosts'] ?? 'zookeeper:2181',
                     'zookeeperUsername' => $solrData['zookeeperUsername'] ?? '',
                     'zookeeperPassword' => $solrData['zookeeperPassword'] ?? '',
                     'collection'     => $solrData['collection'] ?? 'openregister',
                     'useCloud'       => $solrData['useCloud'] ?? true,
+                    'objectCollection' => $solrData['objectCollection'] ?? null,
+                    'fileCollection'   => $solrData['fileCollection'] ?? null,
                 ];
                 $this->config->setValueString($this->appName, 'solr', json_encode($solrConfig));
             }
@@ -2020,7 +2020,6 @@ class SettingsService
                 'cores' => [
                     'active_core' => 'unknown',
                     'core_status' => 'inactive',
-                    'tenant_id' => 'unknown',
                     'endpoint_url' => 'N/A',
                 ],
                 'performance' => [
@@ -2076,7 +2075,6 @@ class SettingsService
                 'cores' => [
                     'active_core' => 'unknown',
                     'core_status' => 'inactive',
-                    'tenant_id' => 'unknown',
                     'endpoint_url' => 'N/A',
                 ],
                 'performance' => [
@@ -2128,7 +2126,6 @@ class SettingsService
             'cores' => [
                 'active_core' => $rawStats['collection'] ?? 'unknown',
                 'core_status' => $rawStats['available'] ? 'active' : 'inactive',
-                'tenant_id' => $rawStats['tenant_id'] ?? 'unknown',
                 'endpoint_url' => $this->container->get(GuzzleSolrService::class)->getEndpointUrl($rawStats['collection'] ?? null),
             ],
             'performance' => [
@@ -2272,9 +2269,7 @@ class SettingsService
     public function getSolrSettingsOnly(): array
     {
         try {
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
             $solrConfig = $this->config->getValueString($this->appName, 'solr', '');
-            $tenantId = $guzzleSolrService->getTenantId();
             
             if (empty($solrConfig)) {
                 return [
@@ -2296,7 +2291,8 @@ class SettingsService
                     'zookeeperPassword' => '',
                     'collection'     => 'openregister',
                     'useCloud'       => true,
-                    'tenantId'       => $tenantId,
+                    'objectCollection' => null,
+                    'fileCollection'   => null,
                 ];
             }
 
@@ -2320,7 +2316,8 @@ class SettingsService
                 'zookeeperPassword' => $solrData['zookeeperPassword'] ?? '',
                 'collection'     => $solrData['collection'] ?? 'openregister',
                 'useCloud'       => $solrData['useCloud'] ?? true,
-                'tenantId'       => $solrData['tenantId'] ?? $tenantId,
+                'objectCollection' => $solrData['objectCollection'] ?? null,
+                'fileCollection'   => $solrData['fileCollection'] ?? null,
             ];
         } catch (\Exception $e) {
             throw new \RuntimeException('Failed to retrieve SOLR settings: '.$e->getMessage());
@@ -2337,8 +2334,6 @@ class SettingsService
     public function updateSolrSettingsOnly(array $solrData): array
     {
         try {
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
-            $tenantId = $guzzleSolrService->getTenantId();
             $solrConfig = [
                 'enabled'        => $solrData['enabled'] ?? false,
                 'host'           => $solrData['host'] ?? 'solr',
@@ -2358,7 +2353,9 @@ class SettingsService
                 'zookeeperPassword' => $solrData['zookeeperPassword'] ?? '',
                 'collection'     => $solrData['collection'] ?? 'openregister',
                 'useCloud'       => $solrData['useCloud'] ?? true,
-                'tenantId'       => $solrData['tenantId'] ?? $tenantId,
+                // Collection assignments for objects and files
+                'objectCollection' => $solrData['objectCollection'] ?? null,
+                'fileCollection'   => $solrData['fileCollection'] ?? null,
             ];
             
             $this->config->setValueString($this->appName, 'solr', json_encode($solrConfig));
@@ -2660,6 +2657,101 @@ class SettingsService
             ];
         } catch (\Exception $e) {
             throw new \RuntimeException('Failed to update Multitenancy settings: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Update LLM (Large Language Model) settings only
+     *
+     * @param array $llmData LLM configuration data
+     * @return array Updated LLM configuration
+     * @throws \RuntimeException
+     */
+    public function updateLLMSettingsOnly(array $llmData): array
+    {
+        try {
+            $llmConfig = [
+                'embeddingProvider' => $llmData['embeddingProvider'] ?? null,
+                'chatProvider' => $llmData['chatProvider'] ?? null,
+                'openaiConfig' => [
+                    'apiKey' => $llmData['openaiConfig']['apiKey'] ?? '',
+                    'model' => $llmData['openaiConfig']['model'] ?? null,
+                    'chatModel' => $llmData['openaiConfig']['chatModel'] ?? null,
+                    'organizationId' => $llmData['openaiConfig']['organizationId'] ?? '',
+                ],
+                'ollamaConfig' => [
+                    'url' => $llmData['ollamaConfig']['url'] ?? 'http://localhost:11434',
+                    'model' => $llmData['ollamaConfig']['model'] ?? null,
+                    'chatModel' => $llmData['ollamaConfig']['chatModel'] ?? null,
+                ],
+                'fireworksConfig' => [
+                    'apiKey' => $llmData['fireworksConfig']['apiKey'] ?? '',
+                    'embeddingModel' => $llmData['fireworksConfig']['embeddingModel'] ?? null,
+                    'chatModel' => $llmData['fireworksConfig']['chatModel'] ?? null,
+                    'baseUrl' => $llmData['fireworksConfig']['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1',
+                ],
+            ];
+            
+            $this->config->setValueString($this->appName, 'llm', json_encode($llmConfig));
+            return $llmConfig;
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to update LLM settings: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Update File Management settings only
+     *
+     * @param array $fileData File management configuration data
+     * @return array Updated file management configuration
+     * @throws \RuntimeException
+     */
+    public function updateFileSettingsOnly(array $fileData): array
+    {
+        try {
+            $fileConfig = [
+                'vectorizationEnabled' => $fileData['vectorizationEnabled'] ?? false,
+                'provider' => $fileData['provider'] ?? null,
+                'chunkingStrategy' => $fileData['chunkingStrategy'] ?? 'RECURSIVE_CHARACTER',
+                'chunkSize' => $fileData['chunkSize'] ?? 1000,
+                'chunkOverlap' => $fileData['chunkOverlap'] ?? 200,
+                'enabledFileTypes' => $fileData['enabledFileTypes'] ?? ['pdf', 'docx', 'txt', 'md', 'html', 'json', 'xml'],
+                'ocrEnabled' => $fileData['ocrEnabled'] ?? false,
+                'maxFileSizeMB' => $fileData['maxFileSizeMB'] ?? 100,
+            ];
+            
+            $this->config->setValueString($this->appName, 'fileManagement', json_encode($fileConfig));
+            return $fileConfig;
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to update File Management settings: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Update Object Management settings only
+     *
+     * @param array $objectData Object management configuration data
+     * @return array Updated object management configuration
+     * @throws \RuntimeException
+     */
+    public function updateObjectSettingsOnly(array $objectData): array
+    {
+        try {
+            $objectConfig = [
+                'vectorizationEnabled' => $objectData['vectorizationEnabled'] ?? false,
+                'provider' => $objectData['provider'] ?? null,
+                'vectorizeOnCreate' => $objectData['vectorizeOnCreate'] ?? true,
+                'vectorizeOnUpdate' => $objectData['vectorizeOnUpdate'] ?? false,
+                'vectorizeAllSchemas' => $objectData['vectorizeAllSchemas'] ?? true,
+                'enabledSchemas' => $objectData['enabledSchemas'] ?? [],
+                'includeMetadata' => $objectData['includeMetadata'] ?? true,
+                'maxNestingDepth' => $objectData['maxNestingDepth'] ?? 10,
+            ];
+            
+            $this->config->setValueString($this->appName, 'objectManagement', json_encode($objectConfig));
+            return $objectConfig;
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to update Object Management settings: '.$e->getMessage());
         }
     }
 

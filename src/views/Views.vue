@@ -15,6 +15,7 @@ import { navigationStore } from '../store/store.js'
 			<OrganisationsIndex v-if="navigationStore.selected === 'organisations'" />
 			<ObjectsIndex v-if="navigationStore.selected === 'objects'" />
 			<SearchIndex v-if="navigationStore.selected === 'tableSearch'" />
+			<ChatView v-if="navigationStore.selected === 'chat'" />
 			<ConfigurationsIndex v-if="navigationStore.selected === 'configurations'" />
 			<DeletedIndex v-if="navigationStore.selected === 'deleted'" />
 			<AuditTrailIndex v-if="navigationStore.selected === 'auditTrails'" />
@@ -33,6 +34,7 @@ import SchemaDetails from './schema/SchemaDetails.vue'
 import OrganisationsIndex from './organisation/OrganisationsIndex.vue'
 import ObjectsIndex from './object/ObjectsIndex.vue'
 import SearchIndex from './search/SearchIndex.vue'
+import ChatView from './ChatView.vue'
 import ConfigurationsIndex from './configuration/ConfigurationsIndex.vue'
 import RegisterDetail from './register/RegisterDetail.vue'
 import DeletedIndex from './deleted/DeletedIndex.vue'
@@ -51,6 +53,7 @@ export default {
 		OrganisationsIndex,
 		ObjectsIndex,
 		SearchIndex,
+		ChatView,
 		ConfigurationsIndex,
 		RegisterDetail,
 		DeletedIndex,
