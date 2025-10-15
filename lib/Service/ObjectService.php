@@ -1824,35 +1824,27 @@ class ObjectService
         // Get active organization context for multi-tenancy (only if multi is enabled)
         $activeOrganisationUuid = $multi ? $this->getActiveOrganisationForContext() : null;
 
-        // **PERFORMANCE OPTIMIZATION**: Use chunked queries for very large result sets
-        $limit = $query['_limit'] ?? 20;
+        // **MAPPER CALL**: Execute database search
         $dbStart = microtime(true);
+        $limit = $query['_limit'] ?? 20;
 
-        if ($limit >= 200) {
-            $this->logger->debug('Using chunked database query for large dataset', [
-                'requestedLimit' => $limit,
-                'chunkThreshold' => 200
-            ]);
-            $result = $this->executeChunkedSearch($query, $activeOrganisationUuid, $rbac, $multi, $limit);
-        } else {
-            // Use the standard method for smaller queries
-            $this->logger->info('🔍 MAPPER CALL - Starting database search', [
-                'queryKeys' => array_keys($query),
-                'rbac' => $rbac,
-                'multi' => $multi,
-                'requestUri' => $_SERVER['REQUEST_URI'] ?? 'unknown'
-            ]);
+        $this->logger->info('🔍 MAPPER CALL - Starting database search', [
+            'queryKeys' => array_keys($query),
+            'rbac' => $rbac,
+            'multi' => $multi,
+            'limit' => $limit,
+            'requestUri' => $_SERVER['REQUEST_URI'] ?? 'unknown'
+        ]);
 
-            // **MAPPER CALL TIMING**: Track how long the mapper takes
-            $mapperStart = microtime(true);
-            $result = $this->objectEntityMapper->searchObjects($query, $activeOrganisationUuid, $rbac, $multi, $ids, $uses);
+        // **MAPPER CALL TIMING**: Track how long the mapper takes
+        $mapperStart = microtime(true);
+        $result = $this->objectEntityMapper->searchObjects($query, $activeOrganisationUuid, $rbac, $multi, $ids, $uses);
 
-            $this->logger->info('✅ MAPPER CALL - Database search completed', [
-                'resultCount' => is_array($result) ? count($result) : 'non-array',
-                'mapperTime' => round((microtime(true) - $mapperStart) * 1000, 2) . 'ms',
-                'requestUri' => $_SERVER['REQUEST_URI'] ?? 'unknown'
-            ]);
-        }
+        $this->logger->info('✅ MAPPER CALL - Database search completed', [
+            'resultCount' => is_array($result) ? count($result) : 'non-array',
+            'mapperTime' => round((microtime(true) - $mapperStart) * 1000, 2) . 'ms',
+            'requestUri' => $_SERVER['REQUEST_URI'] ?? 'unknown'
+        ]);
 
         $dbTime = round((microtime(true) - $dbStart) * 1000, 2);
         $this->logger->debug('Database query completed', [
@@ -2479,23 +2471,23 @@ class ObjectService
             // Forward to SOLR Object service - let it handle availability checks and error handling
             $solrService = $this->container->get(SolrObjectService::class);
             $result = $solrService->searchObjects($query, $rbac, $multi, $published, $deleted);
-            $result['source'] = 'index';
-            $result['query'] = $query;
-            $result['rbac'] =  $rbac;
-            $result['multi'] =  $multi;
-            $result['published'] =  $published;
-            $result['deleted'] =  $deleted;
+            $result['@self']['source'] = 'index';
+            $result['@self']['query'] = $query;
+            $result['@self']['rbac'] =  $rbac;
+            $result['@self']['multi'] =  $multi;
+            $result['@self']['published'] =  $published;
+            $result['@self']['deleted'] =  $deleted;
             return $result;
         }
 
         // Use database search
         $result = $this->searchObjectsPaginatedDatabase($query, $rbac, $multi, $published, $deleted, $ids, $uses);
-        $result['source'] = 'database';
-        $result['query'] = $query;
-        $result['rbac'] =  $rbac;
-        $result['multi'] =  $multi;
-        $result['published'] =  $published;
-        $result['deleted'] =  $deleted;
+        $result['@self']['source'] = 'database';
+        $result['@self']['query'] = $query;
+        $result['@self']['rbac'] =  $rbac;
+        $result['@self']['multi'] =  $multi;
+        $result['@self']['published'] =  $published;
+        $result['@self']['deleted'] =  $deleted;
 
         return $result;
     }
@@ -5934,106 +5926,6 @@ class ObjectService
         // which is what we have with database queries and object processing
 
     }//end calculateOptimalBatchSize()
-
-
-    /**
-     * Execute chunked search for very large datasets to optimize memory and performance
-     *
-     * This method splits very large queries into smaller chunks to prevent memory
-     * exhaustion and improve overall query performance through better database
-     * resource utilization.
-     *
-     * @param array       $query                 The search query array
-     * @param string|null $activeOrganisationUuid Active organisation UUID for filtering
-     * @param bool        $rbac                  Whether to apply RBAC checks
-     * @param bool        $multi                 Whether to apply multitenancy filtering
-     * @param int         $totalLimit            Total number of records requested
-     *
-     * @return array Array of ObjectEntity objects
-     *
-     * @phpstan-param array<string, mixed> $query
-     * @phpstan-return array<ObjectEntity>
-     * @psalm-param array<string, mixed> $query
-     * @psalm-return array<ObjectEntity>
-     */
-    private function executeChunkedSearch(
-        array $query,
-        ?string $activeOrganisationUuid,
-        bool $rbac,
-        bool $multi,
-        int $totalLimit
-    ): array {
-        $chunkSize = 100; // Process in chunks of 100 for optimal performance
-        $allResults = [];
-        $offset = $query['_offset'] ?? 0;
-        $processed = 0;
-
-        $this->logger->debug('Starting chunked search execution', [
-            'totalLimit' => $totalLimit,
-            'chunkSize' => $chunkSize,
-            'startOffset' => $offset,
-            'expectedChunks' => ceil($totalLimit / $chunkSize)
-        ]);
-
-        while ($processed < $totalLimit) {
-            $currentChunkSize = min($chunkSize, $totalLimit - $processed);
-            $currentOffset = $offset + $processed;
-
-            // Create chunk-specific query
-            $chunkQuery = array_merge($query, [
-                '_limit' => $currentChunkSize,
-                '_offset' => $currentOffset
-            ]);
-
-            $this->logger->debug('Processing search chunk', [
-                'chunkNumber' => floor($processed / $chunkSize) + 1,
-                'chunkSize' => $currentChunkSize,
-                'chunkOffset' => $currentOffset
-            ]);
-
-            $startChunk = microtime(true);
-
-            // Execute chunk query
-            $chunkResults = $this->objectEntityMapper->searchObjects(
-                $chunkQuery,
-                $activeOrganisationUuid,
-                $rbac,
-                $multi,
-                null,
-                null
-            );
-
-            $chunkTime = round((microtime(true) - $startChunk) * 1000, 2);
-            $this->logger->debug('Search chunk completed', [
-                'chunkResults' => count($chunkResults),
-                'chunkTime' => $chunkTime . 'ms',
-                'totalProcessed' => $processed + count($chunkResults)
-            ]);
-
-            // If no results returned, we've reached the end
-            if (empty($chunkResults)) {
-                break;
-            }
-
-            // Add results to collection
-            $allResults = array_merge($allResults, $chunkResults);
-            $processed += count($chunkResults);
-
-            // If we got fewer results than requested, we've reached the end
-            if (count($chunkResults) < $currentChunkSize) {
-                break;
-            }
-        }
-
-        $this->logger->debug('Chunked search completed', [
-            'totalResults' => count($allResults),
-            'totalChunks' => floor($processed / $chunkSize) + (($processed % $chunkSize) > 0 ? 1 : 0),
-            'requestedLimit' => $totalLimit
-        ]);
-
-        return $allResults;
-
-    }//end executeChunkedSearch()
 
 
     /**
