@@ -122,29 +122,29 @@
 					</div>
 				</NcNoteCard>
 			</div>
-
-			<!-- Action Buttons -->
-			<template #actions>
-				<NcButton @click="handleClose">
-					Close
-				</NcButton>
-				<NcButton @click="refreshStats">
-					<template #icon>
-						<Refresh :size="20" />
-					</template>
-					Refresh Stats
-				</NcButton>
-				<NcButton type="primary"
-					:disabled="isProcessing"
-					@click="startWarmup">
-					<template #icon>
-						<NcLoadingIcon v-if="isProcessing" :size="20" />
-						<Play v-else :size="20" />
-					</template>
-					{{ isProcessing ? 'Processing...' : 'Start Warmup' }}
-				</NcButton>
-			</template>
 		</div>
+
+		<!-- Action Buttons -->
+		<template #actions>
+			<NcButton @click="handleClose">
+				Close
+			</NcButton>
+			<NcButton @click="refreshStats">
+				<template #icon>
+					<Refresh :size="20" />
+				</template>
+				Refresh Stats
+			</NcButton>
+			<NcButton type="primary"
+				:disabled="isProcessing"
+				@click="startWarmup">
+				<template #icon>
+					<NcLoadingIcon v-if="isProcessing" :size="20" />
+					<Play v-else :size="20" />
+				</template>
+				{{ isProcessing ? 'Processing...' : 'Start Warmup' }}
+			</NcButton>
+		</template>
 	</NcDialog>
 </template>
 
