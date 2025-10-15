@@ -127,6 +127,12 @@ class SchemaPropertyValidatorService
      */
     public function validateProperty(array $property, string $path=''): bool
     {
+        if (isset($property['oneOf']) === true) {
+            $types = array_column($property['oneOf'], 'type');
+
+            return $this->validateProperties($property['oneOf'], $path.'/oneOf');
+        }
+
         // Type is required.
         if (isset($property['type']) === false) {
             throw new Exception("Property at '$path' must have a 'type' field");
