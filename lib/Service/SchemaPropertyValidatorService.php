@@ -127,6 +127,11 @@ class SchemaPropertyValidatorService
      */
     public function validateProperty(array $property, string $path=''): bool
     {
+        // If property has oneOf, treat the contents as separate properties and return the result of those checks.
+        if (isset($property['oneOf']) === true) {
+            return $this->validateProperties($property['oneOf'], $path.'/oneOf');
+        }
+
         // Type is required.
         if (isset($property['type']) === false) {
             throw new Exception("Property at '$path' must have a 'type' field");
