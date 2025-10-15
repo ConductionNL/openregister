@@ -72,9 +72,13 @@ class ConfigurationsController extends Controller
         // Get request parameters for filtering and searching.
         $filters        = $this->request->getParams();
 
+        unset($filters['_route']);
+
         $searchParams     = [];
         $searchConditions = [];
         $filters          = $filters;
+
+
 
         // Return all configurations that match the search conditions.
         return new JSONResponse(
