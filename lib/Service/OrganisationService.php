@@ -509,6 +509,7 @@ class OrganisationService
     public function createOrganisation(string $name, string $description='', bool $addCurrentUser=true, string $uuid=''): Organisation
     {
         $user = $this->getCurrentUser();
+        $userId = null;
 
         // Validate UUID if provided
         if ($uuid !== '' && !Organisation::isValidUuid($uuid)) {
@@ -539,7 +540,7 @@ class OrganisationService
         $saved = $this->organisationMapper->save($organisation);
 
         // Clear cached organisations and active organisation cache to force refresh
-        if ($addCurrentUser) {
+        if ($addCurrentUser && $userId !== null) {
             $cacheKey = self::SESSION_USER_ORGANISATIONS.'_'.$userId;
             $this->session->remove($cacheKey);
             $this->clearActiveOrganisationCache($userId);

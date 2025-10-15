@@ -21,6 +21,11 @@
 					<TableMultiple :size="20" />
 				</template>
 			</NcAppNavigationItem>
+		<NcAppNavigationItem :active="navigationStore.selected === 'chat'" :name="t('openregister', 'AI Chat')" @click="navigationStore.setSelected('chat')">
+			<template #icon>
+				<Robot :size="20" />
+			</template>
+		</NcAppNavigationItem>
 			<!-- <NcAppNavigationItem :active="navigationStore.selected === 'objects'" name="Search" @click="navigationStore.setSelected('search')">
 				<template #icon>
 					<LayersSearchOutline :size="20" />
@@ -81,6 +86,7 @@ import OfficeBuildingOutline from 'vue-material-design-icons/OfficeBuildingOutli
 import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
 // import LayersSearchOutline from 'vue-material-design-icons/LayersSearchOutline.vue'
 import TableMultiple from 'vue-material-design-icons/TableMultiple.vue'
+import Robot from 'vue-material-design-icons/Robot.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import DeleteRestore from 'vue-material-design-icons/DeleteRestore.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
@@ -101,6 +107,7 @@ export default {
 		FileTreeOutline,
 		OfficeBuildingOutline,
 		TableMultiple,
+		Robot,
 		// LayersSearchOutline,
 		CogOutline,
 		DeleteRestore,

@@ -544,6 +544,29 @@ class FileMapper extends QBMapper
 
 
     /**
+     * Count all files in the Nextcloud installation
+     *
+     * @return int Total number of files in oc_filecache
+     *
+     * @phpstan-return int
+     */
+    public function countAllFiles(): int
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select($qb->func()->count('fileid', 'count'))
+            ->from('filecache')
+            ->where($qb->expr()->gte('mimetype', $qb->createNamedParameter(1, IQueryBuilder::PARAM_INT)));
+        // Exclude directories (mimetype 2 = httpd/unix-directory)
+
+        $result = $qb->executeQuery();
+        $row = $result->fetch();
+        $result->closeCursor();
+
+        return (int) ($row['count'] ?? 0);
+    }//end countAllFiles()
+
+
+    /**
      * Set file ownership at database level.
      *
      * @TODO: This is a hack to fix NextCloud file ownership issues on production
