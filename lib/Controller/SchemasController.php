@@ -101,9 +101,9 @@ class SchemasController extends Controller
     public function page(): TemplateResponse
     {
         return new TemplateResponse(
-            appName: 'openconnector',
-            templateName: 'index',
-            parameters: []
+            'openregister',
+            'index',
+            []
         );
 
     }//end page()

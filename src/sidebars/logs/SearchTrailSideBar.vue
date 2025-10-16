@@ -554,6 +554,14 @@ export default {
 		},
 	},
 	watch: {
+		// Keep component/store in sync with URL query params (single source of truth)
+		'$route.query': {
+			handler() {
+				if (this.$route.path !== '/search-trails') return
+				this.applyQueryParamsFromRoute()
+			},
+			deep: true,
+		},
 		'searchTrailStore.searchTrailList'() {
 			this.updateFilteredCount()
 		},
@@ -590,6 +598,9 @@ export default {
 
 		// Watch store changes and update count
 		this.updateFilteredCount()
+
+		// Initialize from current URL query params
+		this.applyQueryParamsFromRoute()
 	},
 	beforeDestroy() {
 		this.$root.$off('search-trail-filtered-count')
@@ -632,6 +643,9 @@ export default {
 
 			// Refresh without applying filters
 			searchTrailStore.refreshSearchTrailList()
+
+			// Reflect cleared filters in URL
+			this.updateRouteQueryFromState()
 		},
 		/**
 		 * Clear filters (alias for clearAllFilters for template compatibility)
@@ -728,6 +742,9 @@ export default {
 
 			// Also emit for legacy compatibility
 			this.$root.$emit('search-trail-filters-changed', filters)
+
+			// Reflect filters in URL
+			this.updateRouteQueryFromState()
 		},
 		/**
 		 * Debounced version of applyFilters for text input
@@ -832,6 +849,8 @@ export default {
 				console.error('Error loading activity data:', error)
 				this.currentActivityData = []
 			}
+			// Reflect activity period in URL
+			this.updateRouteQueryFromState()
 		},
 		/**
 		 * Get complexity percentage for progress bar
@@ -910,6 +929,99 @@ export default {
 				return version ? `${browser} ${version}` : browser
 			}
 			return agent.user_agent || 'Unknown Browser'
+		},
+		// Build URL query from current component/store state
+		buildQueryFromState() {
+			const query = {}
+			// Filters
+			if (registerStore.registerItem) query.register = String(registerStore.registerItem.id)
+			if (schemaStore.schemaItem) query.schema = String(schemaStore.schemaItem.id)
+			if (this.selectedSuccessStatus && this.selectedSuccessStatus.value) query.success = String(this.selectedSuccessStatus.value)
+			if (Array.isArray(this.selectedUsers) && this.selectedUsers.length > 0) query.user = this.selectedUsers.map(u => u.value || u).join(',')
+			if (this.dateFrom) query.dateFrom = this.dateFrom
+			if (this.dateTo) query.dateTo = this.dateTo
+			if (this.searchTermFilter) query.searchTerm = this.searchTermFilter
+			if (this.executionTimeFrom) query.executionTimeFrom = String(this.executionTimeFrom)
+			if (this.executionTimeTo) query.executionTimeTo = String(this.executionTimeTo)
+			if (this.resultCountFrom) query.resultCountFrom = String(this.resultCountFrom)
+			if (this.resultCountTo) query.resultCountTo = String(this.resultCountTo)
+			if (this.selectedActivityPeriod && this.selectedActivityPeriod.value) query.activityPeriod = this.selectedActivityPeriod.value
+			return query
+		},
+		// Shallow compare queries
+		queriesEqual(a, b) {
+			const ka = Object.keys(a).sort()
+			const kb = Object.keys(b || {}).sort()
+			if (ka.length !== kb.length) return false
+			for (let i = 0; i < ka.length; i++) {
+				const k = ka[i]
+				if (k !== kb[i]) return false
+				if (String(a[k]) !== String(b[k])) return false
+			}
+			return true
+		},
+		// Write current state into URL
+		updateRouteQueryFromState() {
+			if (this.$route.path !== '/search-trails') return
+			const nextQuery = this.buildQueryFromState()
+			if (this.queriesEqual(nextQuery, this.$route.query)) return
+			this.$router.replace({ path: this.$route.path, query: nextQuery })
+		},
+		// Read URL query and apply to component/store
+		applyQueryParamsFromRoute() {
+			if (this.$route.path !== '/search-trails') return
+			const q = this.$route.query || {}
+			// Success status
+			if (typeof q.success !== 'undefined') {
+				const val = String(q.success)
+				const opt = this.successOptions.find(o => String(o.value) === val)
+				this.selectedSuccessStatus = opt || null
+			}
+			// Users
+			if (typeof q.user === 'string') {
+				const users = q.user.split(',').map(s => s.trim()).filter(Boolean)
+				this.selectedUsers = users.map(u => ({ label: u, value: u }))
+			}
+			// Dates and fields
+			this.dateFrom = q.dateFrom || null
+			this.dateTo = q.dateTo || null
+			this.searchTermFilter = q.searchTerm || ''
+			this.executionTimeFrom = q.executionTimeFrom || ''
+			this.executionTimeTo = q.executionTimeTo || ''
+			this.resultCountFrom = q.resultCountFrom || ''
+			this.resultCountTo = q.resultCountTo || ''
+			// Activity period
+			if (typeof q.activityPeriod === 'string') {
+				const ap = this.activityPeriodOptions.find(o => o.value === q.activityPeriod)
+				if (ap) this.selectedActivityPeriod = ap
+			}
+			// Registers & schemas depend on lists
+			const applyRegister = () => {
+				if (!q.register) return true
+				if (!registerStore.registerList.length) return false
+				const reg = registerStore.registerList.find(r => String(r.id) === String(q.register))
+				if (reg) registerStore.setRegisterItem(reg)
+				return true
+			}
+			const applySchema = () => {
+				if (!q.schema) return true
+				if (!schemaStore.schemaList.length) return false
+				const sch = schemaStore.schemaList.find(s => String(s.id) === String(q.schema))
+				if (sch) schemaStore.setSchemaItem(sch)
+				return true
+			}
+			const tryApply = (attempt = 0) => {
+				const rOk = applyRegister()
+				const sOk = applySchema()
+				// Apply store filters once selection ready
+				if (rOk && sOk) {
+					this.applyFilters()
+					this.loadActivityData()
+					return
+				}
+				if (attempt < 10) setTimeout(() => tryApply(attempt + 1), 200)
+			}
+			tryApply()
 		},
 	},
 }

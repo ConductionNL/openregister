@@ -348,6 +348,14 @@ export default {
 		},
 	},
 	watch: {
+		// React to query param changes as single source of truth (only on /audit-trails)
+		'$route.query': {
+			handler() {
+				if (this.$route.path !== '/audit-trails') return
+				this.applyQueryParamsFromRoute()
+			},
+			deep: true,
+		},
 		'auditTrailStore.auditTrailList'() {
 			this.updateFilteredCount()
 			this.loadStatistics()
@@ -387,6 +395,9 @@ export default {
 
 		// Watch store changes and update count
 		this.updateFilteredCount()
+
+		// Initialize from query params after lists potentially load
+		this.applyQueryParamsFromRoute()
 	},
 	beforeDestroy() {
 		this.$root.$off('audit-trail-filtered-count')
@@ -405,29 +416,6 @@ export default {
 			}
 		},
 		/**
-		 * Clear all filters
-		 * @return {void}
-		 */
-		clearAllFilters() {
-			// Clear component state
-			this.selectedActions = []
-			this.selectedUsers = []
-			this.dateFrom = null
-			this.dateTo = null
-			this.objectFilter = ''
-			this.showOnlyWithChanges = false
-
-			// Clear global stores
-			registerStore.setRegisterItem(null)
-			schemaStore.setSchemaItem(null)
-
-			// Clear store filters
-			auditTrailStore.setAuditTrailFilters({})
-
-			// Refresh without applying filters through applyFilters (which might re-add them)
-			auditTrailStore.refreshAuditTrailList()
-		},
-		/**
 		 * Clear filters (alias for clearAllFilters for template compatibility)
 		 * @return {void}
 		 */
@@ -444,64 +432,11 @@ export default {
 			this.debouncedApplyFilters()
 		},
 		/**
-		 * Apply filters and emit to parent components
+		 * Apply filters and sync them to the URL query (single source of truth)
 		 * @return {void}
 		 */
 		applyFilters() {
-			const filters = {}
-
-			// Build action filter - ensure we have a real array, not just the Observer
-			if (Array.isArray(this.selectedActions) && this.selectedActions.length > 0) {
-				// Convert to plain array to avoid Observer issues
-				const actions = this.selectedActions.slice()
-				if (actions.length > 0) {
-					filters.action = actions.map(a => a.value).join(',')
-				}
-			}
-
-			// Build register filter
-			if (registerStore.registerItem) {
-				filters.register = registerStore.registerItem.id.toString()
-			}
-
-			// Build schema filter
-			if (schemaStore.schemaItem) {
-				filters.schema = schemaStore.schemaItem.id.toString()
-			}
-
-			// Build user filter - ensure we have a real array, not just the Observer
-			if (Array.isArray(this.selectedUsers) && this.selectedUsers.length > 0) {
-				// Convert to plain array to avoid Observer issues
-				const users = this.selectedUsers.slice()
-				if (users.length > 0) {
-					filters.user = users.map(u => u.value).join(',')
-				}
-			}
-
-			// Date filters
-			if (this.dateFrom) {
-				filters.dateFrom = this.dateFrom
-			}
-			if (this.dateTo) {
-				filters.dateTo = this.dateTo
-			}
-
-			// Object filter
-			if (this.objectFilter) {
-				filters.object = this.objectFilter
-			}
-
-			// Changes filter
-			if (this.showOnlyWithChanges) {
-				filters.onlyWithChanges = true
-			}
-
-			// Set filters in store and refresh data
-			auditTrailStore.setAuditTrailFilters(filters)
-			auditTrailStore.refreshAuditTrailList()
-
-			// Also emit for legacy compatibility
-			this.$root.$emit('audit-trail-filters-changed', filters)
+			this.updateRouteQueryFromState()
 		},
 		/**
 		 * Debounced version of applyFilters for text input
@@ -594,6 +529,177 @@ export default {
 		handleSchemaChange(schema) {
 			schemaStore.setSchemaItem(schema)
 			this.applyFilters()
+		},
+		/**
+		 * Build URL query object from current sidebar state
+		 * @return {object}
+		 */
+		buildQueryFromState() {
+			const query = {}
+			if (registerStore.registerItem && registerStore.registerItem.id) {
+				query.register = String(registerStore.registerItem.id)
+			}
+			if (schemaStore.schemaItem && schemaStore.schemaItem.id) {
+				query.schema = String(schemaStore.schemaItem.id)
+			}
+			if (Array.isArray(this.selectedActions) && this.selectedActions.length > 0) {
+				query.action = this.selectedActions.map(a => a.value).join(',')
+			}
+			if (Array.isArray(this.selectedUsers) && this.selectedUsers.length > 0) {
+				query.user = this.selectedUsers.map(u => u.value).join(',')
+			}
+			if (this.dateFrom) query.dateFrom = this.dateFrom
+			if (this.dateTo) query.dateTo = this.dateTo
+			if (this.objectFilter) query.object = this.objectFilter
+			if (this.showOnlyWithChanges) query.onlyWithChanges = '1'
+			return query
+		},
+		/**
+		 * Compare two shallow query objects (keys and stringified values)
+		 * @param {object} a
+		 * @param {object} b
+		 * @return {boolean}
+		 */
+		queriesEqual(a, b) {
+			const ka = Object.keys(a || {}).sort()
+			const kb = Object.keys(b || {}).sort()
+			if (ka.length !== kb.length) return false
+			for (let i = 0; i < ka.length; i++) {
+				if (ka[i] !== kb[i]) return false
+				if (String(a[ka[i]]) !== String(b[kb[i]])) return false
+			}
+			return true
+		},
+		/**
+		 * Write current state to the router query (only on /audit-trails)
+		 * @return {void}
+		 */
+		updateRouteQueryFromState() {
+			if (this.$route.path !== '/audit-trails') return
+			const nextQuery = this.buildQueryFromState()
+			if (this.queriesEqual(nextQuery, this.$route.query || {})) return
+			this.$router.replace({
+				path: this.$route.path,
+				query: nextQuery,
+			})
+		},
+		/**
+		 * Apply URL query params to component/store state and refresh list
+		 * @return {void}
+		 */
+		applyQueryParamsFromRoute() {
+			if (this.$route.path !== '/audit-trails') return
+			const { register, schema, action, user, dateFrom, dateTo, object, onlyWithChanges } = this.$route.query || {}
+
+			// Set simple fields
+			this.dateFrom = dateFrom ? String(dateFrom) : null
+			this.dateTo = dateTo ? String(dateTo) : null
+			this.objectFilter = object ? String(object) : ''
+			this.showOnlyWithChanges = !!(onlyWithChanges)
+
+			// Actions
+			if (typeof action === 'string' && action.length > 0) {
+				const values = action.split(',').map(s => s.trim()).filter(Boolean)
+				const mapByValue = Object.fromEntries(this.actionOptions.map(o => [o.value, o]))
+				this.selectedActions = values.map(v => mapByValue[v] || { value: v, label: v })
+			} else {
+				this.selectedActions = []
+			}
+
+			// Users
+			if (typeof user === 'string' && user.length > 0) {
+				const values = user.split(',').map(s => s.trim()).filter(Boolean)
+				this.selectedUsers = values.map(u => ({ value: u, label: u }))
+			} else {
+				this.selectedUsers = []
+			}
+
+			// Registers and schemas depend on lists being loaded
+			const applyRegister = () => {
+				if (!register) return true
+				if (!registerStore.registerList.length) return false
+				const reg = registerStore.registerList.find(r => String(r.id) === String(register))
+				if (reg) registerStore.setRegisterItem(reg)
+				return true
+			}
+			const applySchema = () => {
+				if (!schema) return true
+				if (!schemaStore.schemaList.length) return false
+				const sch = schemaStore.schemaList.find(s => String(s.id) === String(schema))
+				if (sch) schemaStore.setSchemaItem(sch)
+				return true
+			}
+
+			const tryApply = (attempt = 0) => {
+				const regOk = applyRegister()
+				const schOk = applySchema()
+				if (regOk && schOk) {
+					// Once state is set from URL, apply to store and refresh
+					this.applyFiltersToStore()
+					return
+				}
+				if (attempt < 10) {
+					setTimeout(() => tryApply(attempt + 1), 200)
+				}
+			}
+			tryApply()
+		},
+		/**
+		 * Build filters from state and push to store, then refresh list
+		 * @return {void}
+		 */
+		applyFiltersToStore() {
+			const filters = {}
+			if (Array.isArray(this.selectedActions) && this.selectedActions.length > 0) {
+				const actions = this.selectedActions.slice()
+				if (actions.length > 0) {
+					filters.action = actions.map(a => a.value).join(',')
+				}
+			}
+			if (registerStore.registerItem) {
+				filters.register = registerStore.registerItem.id.toString()
+			}
+			if (schemaStore.schemaItem) {
+				filters.schema = schemaStore.schemaItem.id.toString()
+			}
+			if (Array.isArray(this.selectedUsers) && this.selectedUsers.length > 0) {
+				const users = this.selectedUsers.slice()
+				if (users.length > 0) {
+					filters.user = users.map(u => u.value).join(',')
+				}
+			}
+			if (this.dateFrom) filters.dateFrom = this.dateFrom
+			if (this.dateTo) filters.dateTo = this.dateTo
+			if (this.objectFilter) filters.object = this.objectFilter
+			if (this.showOnlyWithChanges) filters.onlyWithChanges = true
+
+			auditTrailStore.setAuditTrailFilters(filters)
+			auditTrailStore.refreshAuditTrailList()
+			this.$root.$emit('audit-trail-filters-changed', filters)
+		},
+		/**
+		 * Clear all filters and sync URL
+		 * @return {void}
+		 */
+		clearAllFilters() {
+			// Clear component state
+			this.selectedActions = []
+			this.selectedUsers = []
+			this.dateFrom = null
+			this.dateTo = null
+			this.objectFilter = ''
+			this.showOnlyWithChanges = false
+
+			// Clear global stores
+			registerStore.setRegisterItem(null)
+			schemaStore.setSchemaItem(null)
+
+			// Clear store filters
+			auditTrailStore.setAuditTrailFilters({})
+			auditTrailStore.refreshAuditTrailList()
+
+			// Reflect in URL
+			this.updateRouteQueryFromState()
 		},
 	},
 }
