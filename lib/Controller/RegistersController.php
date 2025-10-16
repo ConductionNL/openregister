@@ -150,7 +150,7 @@ class RegistersController extends Controller
     public function page(): TemplateResponse
     {
         return new TemplateResponse(
-            'openconnector',
+            'openregister',
             'index',
             []
         );
