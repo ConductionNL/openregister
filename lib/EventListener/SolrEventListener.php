@@ -89,7 +89,6 @@ class SolrEventListener implements IEventListener
             } elseif ($event instanceof SchemaDeletedEvent) {
                 $this->handleSchemaDeleted($event);
             } else {
-                var_dump("🔥 Unhandled event: " . get_class($event));
                 // Log unhandled events for debugging
                 $this->logger->debug('SolrEventListener: Received unhandled event', [
                     'eventClass' => get_class($event),
@@ -97,7 +96,6 @@ class SolrEventListener implements IEventListener
                 ]);
             }
         } catch (\Exception $e) {
-            var_dump("🔥 ERROR in SolrEventListener: " . $e->getMessage());
             // Log errors but don't break the application flow
             $this->logger->error('SolrEventListener: Error handling event', [
                 'eventClass' => get_class($event),

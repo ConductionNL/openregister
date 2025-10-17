@@ -1016,113 +1016,164 @@
 							</table>
 						</div>
 
-						<!-- Extra Fields -->
-						<div v-if="fieldComparison.extra && fieldComparison.extra.length > 0" class="difference-category">
-							<h4 class="category-title extra">
-								Extra Fields ({{ fieldComparison.extra.length }})
-							</h4>
-							<p class="category-description">Fields present in SOLR but not defined in any schema:</p>
-							<table class="comparison-table">
-								<thead>
-									<tr>
-										<th>Field Name</th>
-										<th>Actions</th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr v-for="fieldName in fieldComparison.extra" :key="'extra-' + fieldName">
-										<td class="field-name">{{ fieldName }}</td>
-										<td class="field-actions">
-											<NcButton
-												type="error"
-												:disabled="deletingField === fieldName"
-												@click="deleteField(fieldName)"
-												:aria-label="`Delete field ${fieldName}`">
-												<template #icon>
-													<NcLoadingIcon v-if="deletingField === fieldName" :size="16" />
-													<Delete v-else :size="16" />
-												</template>
-											</NcButton>
-										</td>
-									</tr>
-								</tbody>
-							</table>
+					<!-- Extra Fields -->
+					<div v-if="fieldComparison.extra && fieldComparison.extra.length > 0" class="difference-category">
+						<h4 class="category-title extra">
+							Extra Fields ({{ fieldComparison.extra.length }})
+						</h4>
+						<p class="category-description">Fields present in SOLR but not defined in any schema:</p>
+						<div class="fields-controls">
+							<input 
+								v-model="extraFieldsFilter" 
+								type="text" 
+								placeholder="Search by field name..." 
+								class="field-filter">
 						</div>
+						<table class="comparison-table">
+							<thead>
+								<tr>
+									<th>Field Name</th>
+									<th>Collection</th>
+									<th>Actions</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr v-for="field in filteredExtraFields" :key="'extra-' + getFieldIdentifier(field)">
+									<td class="field-name">{{ getFieldName(field) }}</td>
+									<td>
+										<span v-if="getFieldCollection(field)" class="collection-badge">
+											{{ getFieldCollectionLabel(field) }}
+										</span>
+									</td>
+									<td class="field-actions">
+										<NcButton
+											type="error"
+											:disabled="deletingField === getFieldName(field)"
+											@click="deleteField(getFieldName(field))"
+											:aria-label="`Delete field ${getFieldName(field)}`">
+											<template #icon>
+												<NcLoadingIcon v-if="deletingField === getFieldName(field)" :size="16" />
+												<Delete v-else :size="16" />
+											</template>
+										</NcButton>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
 
-						<!-- Mismatched Fields -->
-						<div v-if="fieldComparison.mismatched && fieldComparison.mismatched.length > 0" class="difference-category">
-							<h4 class="category-title mismatched">
-								Configuration Mismatches ({{ fieldComparison.mismatched.length }})
-							</h4>
-							<p class="category-description">Fields with different configuration between schemas and SOLR:</p>
-							<div v-for="field in fieldComparison.mismatched" :key="'mismatch-' + field.field" class="field-comparison-card">
-								<div class="field-header">
-									<h5 class="field-title">{{ field.field }}</h5>
-									<NcButton
-										type="error"
-										:disabled="deletingField === field.field"
-										@click="deleteField(field.field)"
-										:aria-label="`Delete field ${field.field}`">
-										<template #icon>
-											<NcLoadingIcon v-if="deletingField === field.field" :size="16" />
-											<Delete v-else :size="16" />
-										</template>
-										Delete
-									</NcButton>
-								</div>
-								<table class="comparison-table">
-									<thead>
-										<tr>
-											<th>Property</th>
-											<th>Expected</th>
-											<th>Actual</th>
-										</tr>
-									</thead>
-									<tbody>
-										<tr>
-											<td class="property-name">Type</td>
-											<td class="field-config expected-config">
-												<span class="field-value expected-value">
-													{{ field.expected_type }}
-												</span>
-											</td>
-											<td class="field-config">
-												<span class="field-value" :class="{ 'match': field.expected_type === field.actual_type, 'mismatch': field.expected_type !== field.actual_type }">
-													{{ field.actual_type }}
-												</span>
-											</td>
-										</tr>
-										<tr>
-											<td class="property-name">Multi</td>
-											<td class="field-config expected-config">
-												<span class="field-value expected-value">
-													{{ field.expected_multiValued ? 'Yes' : 'No' }}
-												</span>
-											</td>
-											<td class="field-config">
-												<span class="field-value" :class="{ 'match': field.expected_multiValued === field.actual_multiValued, 'mismatch': field.expected_multiValued !== field.actual_multiValued }">
-													{{ field.actual_multiValued ? 'Yes' : 'No' }}
-												</span>
-											</td>
-										</tr>
-										<tr>
-											<td class="property-name">DocValues</td>
-											<td class="field-config expected-config">
-												<span class="field-value expected-value">
-													{{ field.expected_docValues ? 'Yes' : 'No' }}
-												</span>
-											</td>
-											<td class="field-config">
-												<span class="field-value" :class="{ 'match': field.expected_docValues === field.actual_docValues, 'mismatch': field.expected_docValues !== field.actual_docValues }">
-													{{ field.actual_docValues ? 'Yes' : 'No' }}
-												</span>
-											</td>
-										</tr>
-									</tbody>
-								</table>
-							</div>
-							
-							<!-- Fix Mismatches Actions -->
+					<!-- Mismatched Fields -->
+					<div v-if="fieldComparison.mismatched && fieldComparison.mismatched.length > 0" class="difference-category">
+						<h4 class="category-title mismatched">
+							Configuration Mismatches ({{ fieldComparison.mismatched.length }})
+						</h4>
+						<p class="category-description">Fields with different configuration between schemas and SOLR:</p>
+						<div class="fields-controls">
+							<input 
+								v-model="mismatchedFieldsFilter" 
+								type="text" 
+								placeholder="Search by field name..." 
+								class="field-filter">
+						</div>
+						<table class="comparison-table mismatched-table">
+							<thead>
+								<tr>
+									<th>Field Name</th>
+									<th>Collection</th>
+									<th>Property</th>
+									<th>Expected</th>
+									<th>Actual</th>
+									<th>Actions</th>
+								</tr>
+							</thead>
+						<tbody>
+							<template v-for="field in filteredMismatchedFields">
+								<tr v-if="field.expected_type !== field.actual_type" :key="'mismatch-' + field.name + '-type'">
+									<td class="field-name">{{ field.name }}</td>
+									<td>
+										<span v-if="field.collection" class="collection-badge">
+											{{ field.collectionLabel || field.collection }}
+										</span>
+									</td>
+									<td class="property-name">Type</td>
+									<td class="expected-value">
+										<span class="field-value">{{ field.expected_type }}</span>
+									</td>
+									<td class="actual-value mismatch">
+										<span class="field-value">{{ field.actual_type }}</span>
+									</td>
+									<td class="field-actions" :rowspan="getMismatchCount(field)">
+										<NcButton
+											type="error"
+											:disabled="deletingField === field.name"
+											@click="deleteField(field.name)"
+											:aria-label="`Delete field ${field.name}`">
+											<template #icon>
+												<NcLoadingIcon v-if="deletingField === field.name" :size="16" />
+												<Delete v-else :size="16" />
+											</template>
+										</NcButton>
+									</td>
+								</tr>
+								<tr v-if="field.expected_multiValued !== field.actual_multiValued" :key="'mismatch-' + field.name + '-multi'">
+									<td class="field-name">{{ field.name }}</td>
+									<td>
+										<span v-if="field.collection" class="collection-badge">
+											{{ field.collectionLabel || field.collection }}
+										</span>
+									</td>
+									<td class="property-name">Multi</td>
+									<td class="expected-value">
+										<span class="field-value">{{ field.expected_multiValued ? 'Yes' : 'No' }}</span>
+									</td>
+									<td class="actual-value mismatch">
+										<span class="field-value">{{ field.actual_multiValued ? 'Yes' : 'No' }}</span>
+									</td>
+									<td v-if="!hasPreviousMismatch(field, 'multi')" class="field-actions" :rowspan="getRemainingMismatchCount(field, 'multi')">
+										<NcButton
+											type="error"
+											:disabled="deletingField === field.name"
+											@click="deleteField(field.name)"
+											:aria-label="`Delete field ${field.name}`">
+											<template #icon>
+												<NcLoadingIcon v-if="deletingField === field.name" :size="16" />
+												<Delete v-else :size="16" />
+											</template>
+										</NcButton>
+									</td>
+								</tr>
+								<tr v-if="field.expected_docValues !== field.actual_docValues" :key="'mismatch-' + field.name + '-docvalues'">
+									<td class="field-name">{{ field.name }}</td>
+									<td>
+										<span v-if="field.collection" class="collection-badge">
+											{{ field.collectionLabel || field.collection }}
+										</span>
+									</td>
+									<td class="property-name">DocValues</td>
+									<td class="expected-value">
+										<span class="field-value">{{ field.expected_docValues ? 'Yes' : 'No' }}</span>
+									</td>
+									<td class="actual-value mismatch">
+										<span class="field-value">{{ field.actual_docValues ? 'Yes' : 'No' }}</span>
+									</td>
+									<td v-if="!hasPreviousMismatch(field, 'docValues')" class="field-actions">
+										<NcButton
+											type="error"
+											:disabled="deletingField === field.name"
+											@click="deleteField(field.name)"
+											:aria-label="`Delete field ${field.name}`">
+											<template #icon>
+												<NcLoadingIcon v-if="deletingField === field.name" :size="16" />
+												<Delete v-else :size="16" />
+											</template>
+										</NcButton>
+									</td>
+								</tr>
+							</template>
+						</tbody>
+						</table>
+						
+						<!-- Fix Mismatches Actions -->
 							<div class="fix-mismatches-section">
 								<h4 class="fix-title">Fix Configuration Issues</h4>
 								<p class="fix-description">
@@ -1446,6 +1497,8 @@ export default {
 		return {
 			fieldFilter: '',
 			fieldTypeFilter: null,
+			extraFieldsFilter: '', // Filter for extra fields search
+			mismatchedFieldsFilter: '', // Filter for mismatched fields search
 			deletingField: null, // Track which field is being deleted
 			reindexing: false, // Track reindex operation
 			// Dashboard data properties
@@ -1652,6 +1705,44 @@ export default {
 			return fields
 		},
 
+		filteredExtraFields() {
+			if (!this.fieldComparison || !this.fieldComparison.extra) {
+				return []
+			}
+
+			let fields = this.fieldComparison.extra
+			
+			// Apply text filter
+			if (this.extraFieldsFilter) {
+				const filter = this.extraFieldsFilter.toLowerCase()
+				fields = fields.filter(field => {
+					const fieldName = this.getFieldName(field).toLowerCase()
+					return fieldName.includes(filter)
+				})
+			}
+
+			return fields
+		},
+
+		filteredMismatchedFields() {
+			if (!this.fieldComparison || !this.fieldComparison.mismatched) {
+				return []
+			}
+
+			let fields = this.fieldComparison.mismatched
+			
+			// Apply text filter
+			if (this.mismatchedFieldsFilter) {
+				const filter = this.mismatchedFieldsFilter.toLowerCase()
+				fields = fields.filter(field => {
+					const fieldName = (field.name || '').toLowerCase()
+					return fieldName.includes(filter)
+				})
+			}
+
+			return fields
+		},
+
 		fieldTypeOptions() {
 			if (!this.fieldsInfo || !this.fieldsInfo.fields) {
 				return []
@@ -1713,6 +1804,82 @@ export default {
 			if (element) {
 				element.scrollIntoView({ behavior: 'smooth', block: 'start' })
 			}
+		},
+
+		// Helper methods for extra fields parsing
+		getFieldName(field) {
+			if (typeof field === 'string') {
+				// Try to parse as JSON
+				try {
+					const parsed = JSON.parse(field)
+					return parsed.name || field
+				} catch {
+					return field
+				}
+			}
+			return field.name || field
+		},
+
+		getFieldCollection(field) {
+			if (typeof field === 'string') {
+				try {
+					const parsed = JSON.parse(field)
+					return parsed.collection || null
+				} catch {
+					return null
+				}
+			}
+			return field.collection || null
+		},
+
+		getFieldCollectionLabel(field) {
+			if (typeof field === 'string') {
+				try {
+					const parsed = JSON.parse(field)
+					return parsed.collectionLabel || parsed.collection || ''
+				} catch {
+					return ''
+				}
+			}
+			return field.collectionLabel || field.collection || ''
+		},
+
+		getFieldIdentifier(field) {
+			const name = this.getFieldName(field)
+			const collection = this.getFieldCollection(field)
+			return collection ? `${name}-${collection}` : name
+		},
+
+		// Helper methods for mismatched fields table
+		getMismatchCount(field) {
+			let count = 0
+			if (field.expected_type !== field.actual_type) count++
+			if (field.expected_multiValued !== field.actual_multiValued) count++
+			if (field.expected_docValues !== field.actual_docValues) count++
+			return count || 1
+		},
+
+		hasPreviousMismatch(field, currentProperty) {
+			if (currentProperty === 'multi') {
+				return field.expected_type !== field.actual_type
+			}
+			if (currentProperty === 'docValues') {
+				return (field.expected_type !== field.actual_type) || 
+					   (field.expected_multiValued !== field.actual_multiValued)
+			}
+			return false
+		},
+
+		getRemainingMismatchCount(field, currentProperty) {
+			let count = 0
+			if (currentProperty === 'multi') {
+				if (field.expected_multiValued !== field.actual_multiValued) count++
+				if (field.expected_docValues !== field.actual_docValues) count++
+			}
+			if (currentProperty === 'docValues') {
+				if (field.expected_docValues !== field.actual_docValues) count++
+			}
+			return count || 1
 		},
 
 		async setupSolr() {
@@ -1947,11 +2114,12 @@ export default {
 		},
 
 		async openWarmupModal() {
-			// Load object stats before opening the modal
-			await this.loadObjectStats()
-			await this.loadAvailableSchemas()
-			this.showWarmupDialog = true
-		},
+		// Open dialog immediately for better UX
+		this.showWarmupDialog = true
+		// Load data asynchronously (modal will show loading states)
+		this.loadObjectStats()
+		this.loadAvailableSchemas()
+	},
 
 		openFileWarmup() {
 			console.log('🔥 Opening File Warmup modal...')
@@ -2140,12 +2308,13 @@ export default {
 			
 			console.log('🔥 selectedSchemaIds to send:', selectedSchemaIds)
 			
-			const warmupParams = {
-				maxObjects: config.maxObjects || 0,
-				mode: config.mode || 'serial',
-				batchSize: config.batchSize || 1000,
-				selectedSchemas: selectedSchemaIds,
-			}
+		const warmupParams = {
+			maxObjects: config.maxObjects || 0,
+			mode: config.mode || 'serial',
+			batchSize: config.batchSize || 1000,
+			selectedSchemas: selectedSchemaIds,
+			collectErrors: config.collectErrors || false,
+		}
 			
 			console.log('🔥 Final warmupParams:', warmupParams)
 				
@@ -2157,17 +2326,18 @@ export default {
 				
 				// Refresh stats after warmup completes
 				await this.loadSolrStats()
-			} catch (error) {
-				console.error('Warmup failed:', error)
-				
-				// Set error state
-				this.warmupCompleted = true
-				this.warmupResults = {
-					success: false,
-					message: error.response?.data?.error || error.message || 'Warmup failed',
-					error: true
-				}
-			} finally {
+		} catch (error) {
+			console.error('Warmup failed:', error)
+			
+			// Set error state with full error details
+			this.warmupCompleted = true
+			this.warmupResults = {
+				success: false,
+				message: error.response?.data?.error || error.message || 'Warmup failed',
+				error: error.response?.data?.error || error.message || 'Warmup failed',
+				error_details: error.response?.data?.trace || error.stack || null
+			}
+		} finally {
 				// Clear loading state
 				this.warmingUp = false
 			}
@@ -3483,6 +3653,16 @@ export default {
 	min-width: 150px;
 }
 
+.collection-badge {
+	display: inline-block;
+	padding: 4px 10px;
+	background: var(--color-primary-element-light);
+	color: var(--color-primary-element-text);
+	border-radius: 12px;
+	font-size: 12px;
+	font-weight: 500;
+}
+
 .fields-table-container {
 	border: 1px solid var(--color-border);
 	border-radius: 8px;
@@ -3898,6 +4078,51 @@ export default {
 .config-badge.docvalues {
 	background: #f3e5f5;
 	color: #7b1fa2;
+}
+
+/* Mismatched table specific styles */
+.mismatched-table .field-name {
+	font-weight: 600;
+	font-family: monospace;
+	font-size: 13px;
+}
+
+.mismatched-table .property-name {
+	font-weight: 500;
+	color: #6c757d;
+	font-size: 13px;
+}
+
+.mismatched-table .expected-value {
+	background: #d4edda;
+}
+
+.mismatched-table .actual-value {
+	background: #fff3cd;
+}
+
+.mismatched-table .actual-value.mismatch {
+	background: #f8d7da;
+}
+
+.mismatched-table .field-value {
+	display: inline-block;
+	padding: 4px 8px;
+	border-radius: 4px;
+	font-size: 12px;
+	font-weight: 500;
+}
+
+.mismatched-table .expected-value .field-value {
+	color: #155724;
+}
+
+.mismatched-table .actual-value .field-value {
+	color: #856404;
+}
+
+.mismatched-table .actual-value.mismatch .field-value {
+	color: #721c24;
 }
 
 .field-type.expected {

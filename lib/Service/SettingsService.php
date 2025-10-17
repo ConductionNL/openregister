@@ -2474,13 +2474,28 @@ class SettingsService
                     continue;
                 }
 
+                // Parse hidden buckets from string to array
+                $hiddenBuckets = '';
+                if (isset($facetConfig['hidden_buckets'])) {
+                    $hiddenBuckets = $facetConfig['hidden_buckets'];
+                } elseif (isset($facetConfig['hiddenBuckets'])) {
+                    $hiddenBuckets = $facetConfig['hiddenBuckets'];
+                }
+                
+                // Ensure it's stored as a string (will be parsed when needed)
+                if (is_array($hiddenBuckets)) {
+                    $hiddenBuckets = implode("\n", $hiddenBuckets);
+                }
+                
                 $validatedFacet = [
                     'title' => $facetConfig['title'] ?? $fieldName,
                     'description' => $facetConfig['description'] ?? '',
                     'order' => (int)($facetConfig['order'] ?? 0),
                     'enabled' => (bool)($facetConfig['enabled'] ?? true),
                     'show_count' => (bool)($facetConfig['show_count'] ?? true),
-                    'max_items' => (int)($facetConfig['max_items'] ?? 10)
+                    'max_items' => (int)($facetConfig['max_items'] ?? 10),
+                    'toggled_out' => (bool)($facetConfig['toggled_out'] ?? $facetConfig['toggledOut'] ?? true),
+                    'hidden_buckets' => (string)$hiddenBuckets
                 ];
 
                 $validatedConfig['facets'][$fieldName] = $validatedFacet;

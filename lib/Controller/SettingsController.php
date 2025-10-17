@@ -1621,6 +1621,106 @@ class SettingsController extends Controller
             $objectFieldStatus = $solrSchemaService->getObjectCollectionFieldStatus();
             $fileFieldStatus = $solrSchemaService->getFileCollectionFieldStatus();
             
+            // Get all current SOLR fields and expected fields to check for mismatches in BOTH collections
+            $expectedFields = $this->getExpectedSchemaFields();
+            $mismatchedFields = [];
+            
+            // Check mismatched fields for OBJECT collection
+            $objectCollection = $this->settingsService->getSolrSettingsOnly()['baseCollection'] ?? null;
+            
+            if ($objectCollection) {
+                $fieldsInfo = $guzzleSolrService->getFieldsConfiguration($objectCollection);
+                
+                if ($fieldsInfo['success']) {
+                    // Compare fields to find mismatched configurations
+                    $fieldComparison = $this->compareFields(
+                        actualFields: $fieldsInfo['fields'] ?? [], 
+                        expectedFields: $expectedFields
+                    );
+                    
+                    // Extract mismatched fields with collection info
+                    foreach ($fieldComparison['mismatched'] as $mismatch) {
+                        $mismatchedFields[] = [
+                            'name' => $mismatch['field'],
+                            'expected_type' => $mismatch['expected_type'],
+                            'actual_type' => $mismatch['actual_type'],
+                            'expected_multiValued' => $mismatch['expected_multiValued'],
+                            'actual_multiValued' => $mismatch['actual_multiValued'],
+                            'expected_docValues' => $mismatch['expected_docValues'],
+                            'actual_docValues' => $mismatch['actual_docValues'],
+                            'differences' => $mismatch['differences'],
+                            'expected_config' => $mismatch['expected_config'],
+                            'actual_config' => $mismatch['actual_config'],
+                            'collection' => 'objects',
+                            'collectionLabel' => 'Object Collection'
+                        ];
+                    }
+                }
+            }
+            
+            // Check mismatched fields for FILE collection
+            $fileCollection = $this->settingsService->getSolrSettingsOnly()['fileCollection'] ?? null;
+            
+            if ($fileCollection) {
+                $fieldsInfo = $guzzleSolrService->getFieldsConfiguration($fileCollection);
+                
+                if ($fieldsInfo['success']) {
+                    // Build expected file fields from SolrSchemaService FILE_METADATA_FIELDS
+                    // Use reflection to access the private constant
+                    $reflection = new \ReflectionClass(\OCA\OpenRegister\Service\SolrSchemaService::class);
+                    $fileMetadataFields = $reflection->getConstant('FILE_METADATA_FIELDS');
+                    
+                    // Fields that should NOT be indexed (from SolrSchemaService::shouldFileFieldBeIndexed)
+                    $nonIndexedFields = ['file_checksum', 'processing_error', '_embedding_dim_'];
+                    
+                    // Multi-valued file fields (from SolrSchemaService::isFileFieldMultiValued)
+                    $multiValuedFields = ['file_labels', 'file_tags', 'file_categories', 'shared_with', '_embedding_', '_classification_'];
+                    
+                    // Fields with docValues enabled (from SolrSchemaService::shouldFileFieldHaveDocValues)
+                    $docValuesFields = [
+                        'file_name', 'file_size', 'file_created', 'file_modified', 'chunk_index', 
+                        'vector_updated', 'processing_date', 'file_extension', 'file_mime_type', 
+                        'file_owner', 'file_labels', 'file_tags', 'file_categories', 'file_language'
+                    ];
+                    
+                    $expectedFileFields = [];
+                    foreach ($fileMetadataFields as $fieldName => $fieldType) {
+                        // Build field config matching SolrSchemaService::ensureFileMetadataFields logic
+                        $expectedFileFields[$fieldName] = [
+                            'type' => $fieldType,
+                            'stored' => true,
+                            'indexed' => !in_array($fieldName, $nonIndexedFields),
+                            'multiValued' => in_array($fieldName, $multiValuedFields),
+                            'docValues' => in_array($fieldName, $docValuesFields)
+                        ];
+                    }
+                    
+                    // Compare fields to find mismatched configurations
+                    $fieldComparison = $this->compareFields(
+                        actualFields: $fieldsInfo['fields'] ?? [], 
+                        expectedFields: $expectedFileFields
+                    );
+                    
+                    // Extract mismatched fields with collection info
+                    foreach ($fieldComparison['mismatched'] as $mismatch) {
+                        $mismatchedFields[] = [
+                            'name' => $mismatch['field'],
+                            'expected_type' => $mismatch['expected_type'],
+                            'actual_type' => $mismatch['actual_type'],
+                            'expected_multiValued' => $mismatch['expected_multiValued'],
+                            'actual_multiValued' => $mismatch['actual_multiValued'],
+                            'expected_docValues' => $mismatch['expected_docValues'],
+                            'actual_docValues' => $mismatch['actual_docValues'],
+                            'differences' => $mismatch['differences'],
+                            'expected_config' => $mismatch['expected_config'],
+                            'actual_config' => $mismatch['actual_config'],
+                            'collection' => 'files',
+                            'collectionLabel' => 'File Collection'
+                        ];
+                    }
+                }
+            }
+            
             // Combine missing fields from both collections with collection identifier
             $missingFields = [];
             
@@ -1665,11 +1765,13 @@ class SettingsController extends Controller
             
             // Build comparison result
             $comparison = [
-                'total_differences' => count($missingFields) + count($extraFields),
+                'total_differences' => count($missingFields) + count($extraFields) + count($mismatchedFields),
                 'missing_count' => count($missingFields),
                 'extra_count' => count($extraFields),
+                'mismatched_count' => count($mismatchedFields),
                 'missing' => $missingFields,
                 'extra' => $extraFields,
+                'mismatched' => $mismatchedFields,
                 'object_collection' => [
                     'missing' => count($objectFieldStatus['missing']),
                     'extra' => count($objectFieldStatus['extra'])
@@ -2054,14 +2156,12 @@ class SettingsController extends Controller
             
             // Merge user-defined schema fields with core metadata fields
             $userSchemaFields = $result['fields'] ?? [];
+            
             $expectedFields = array_merge($expectedFields, $userSchemaFields);
             
             return $expectedFields;
             
         } catch (\Exception $e) {
-            $this->logger->warning('Failed to get expected schema fields', [
-                'error' => $e->getMessage()
-            ]);
             // Return at least the core metadata fields even if schema analysis fails
             return \OCA\OpenRegister\Setup\SolrSetup::getObjectEntityFieldDefinitions();
         }
@@ -2327,6 +2427,8 @@ class SettingsController extends Controller
                             'facetType' => $existingFacetConfig['facet_type'] ?? $existingFacetConfig['facetType'] ?? $facetInfo['suggestedFacetType'] ?? 'terms',
                             'displayType' => $existingFacetConfig['display_type'] ?? $existingFacetConfig['displayType'] ?? ($facetInfo['suggestedDisplayTypes'][0] ?? 'select'),
                             'showCount' => $existingFacetConfig['show_count'] ?? $existingFacetConfig['showCount'] ?? true,
+                            'toggledOut' => $existingFacetConfig['toggled_out'] ?? $existingFacetConfig['toggledOut'] ?? true,
+                            'hiddenBuckets' => $existingFacetConfig['hidden_buckets'] ?? $existingFacetConfig['hiddenBuckets'] ?? '',
                         ]
                     ]);
                     $index++;
@@ -2350,6 +2452,8 @@ class SettingsController extends Controller
                             'facetType' => $existingFacetConfig['facet_type'] ?? $existingFacetConfig['facetType'] ?? $facetInfo['suggestedFacetType'] ?? 'terms',
                             'displayType' => $existingFacetConfig['display_type'] ?? $existingFacetConfig['displayType'] ?? ($facetInfo['suggestedDisplayTypes'][0] ?? 'select'),
                             'showCount' => $existingFacetConfig['show_count'] ?? $existingFacetConfig['showCount'] ?? true,
+                            'toggledOut' => $existingFacetConfig['toggled_out'] ?? $existingFacetConfig['toggledOut'] ?? true,
+                            'hiddenBuckets' => $existingFacetConfig['hidden_buckets'] ?? $existingFacetConfig['hiddenBuckets'] ?? '',
                         ]
                     ]);
                     $index++;

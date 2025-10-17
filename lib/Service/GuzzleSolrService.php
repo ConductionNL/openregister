@@ -7383,7 +7383,9 @@ class GuzzleSolrService
                     // Add suggested facet type based on SOLR type
                     'suggestedFacetType' => $this->mapSolrTypeToFacetType($field['type'] ?? 'string'),
                     // Add suggested display types based on field characteristics
-                    'suggestedDisplayTypes' => $this->getSuggestedDisplayTypes($field)
+                    'suggestedDisplayTypes' => $this->getSuggestedDisplayTypes($field),
+                    // Add available bucket values for this facet
+                    'availableBuckets' => []
                 ];
                 
                 // Categorize fields
@@ -7400,6 +7402,12 @@ class GuzzleSolrService
                     $rawFields['object_fields'][$fieldName] = $fieldInfo;
                 }
             }
+            
+            // Add essential metadata fields that might not be in Solr schema yet
+            $rawFields = $this->ensureEssentialMetadataFields($rawFields);
+            
+            // Fetch available bucket values for all facets
+            $rawFields = $this->enrichFieldsWithAvailableBuckets($rawFields, $collectionName);
             
             $this->logger->debug('Retrieved raw SOLR fields for facet configuration', [
                 'collection' => $collectionName,
@@ -7420,6 +7428,293 @@ class GuzzleSolrService
             throw new \Exception('SOLR field discovery failed: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Ensure essential metadata fields are included even if not in Solr schema
+     *
+     * @param array $rawFields Raw field data
+     * @return array Field data with essential metadata fields added
+     */
+    private function ensureEssentialMetadataFields(array $rawFields): array
+    {
+        // Define essential metadata fields that should always be available for faceting
+        $essentialFields = [
+            'register' => [
+                'name' => 'self_register',
+                'type' => 'pint',
+                'stored' => true,
+                'indexed' => true,
+                'docValues' => true,
+                'multiValued' => false,
+                'required' => false,
+                'suggestedFacetType' => 'terms',
+                'suggestedDisplayTypes' => ['select', 'multiselect', 'checkbox'],
+                'displayName' => 'Register',
+                'category' => 'metadata',
+                'availableBuckets' => []
+            ],
+            'schema' => [
+                'name' => 'self_schema',
+                'type' => 'pint',
+                'stored' => true,
+                'indexed' => true,
+                'docValues' => true,
+                'multiValued' => false,
+                'required' => false,
+                'suggestedFacetType' => 'terms',
+                'suggestedDisplayTypes' => ['select', 'multiselect', 'checkbox'],
+                'displayName' => 'Schema',
+                'category' => 'metadata',
+                'availableBuckets' => []
+            ],
+            'organisation' => [
+                'name' => 'self_organisation',
+                'type' => 'string',
+                'stored' => true,
+                'indexed' => true,
+                'docValues' => true,
+                'multiValued' => false,
+                'required' => false,
+                'suggestedFacetType' => 'terms',
+                'suggestedDisplayTypes' => ['select', 'multiselect', 'checkbox'],
+                'displayName' => 'Organisation',
+                'category' => 'metadata',
+                'availableBuckets' => []
+            ]
+        ];
+        
+        // Add essential fields if they don't already exist
+        foreach ($essentialFields as $key => $fieldInfo) {
+            if (!isset($rawFields['@self'][$key])) {
+                $rawFields['@self'][$key] = $fieldInfo;
+            }
+        }
+        
+        return $rawFields;
+        
+    }//end ensureEssentialMetadataFields()
+
+
+    /**
+     * Enrich facet fields with available bucket values from SOLR
+     *
+     * @param array $rawFields Raw field data
+     * @param string $collectionName SOLR collection name
+     * @return array Enriched field data with available buckets
+     */
+    private function enrichFieldsWithAvailableBuckets(array $rawFields, string $collectionName): array
+    {
+        error_log("🔍 [enrichFieldsWithAvailableBuckets] START - Collection: {$collectionName}");
+        error_log("🔍 [enrichFieldsWithAvailableBuckets] Metadata fields: " . count($rawFields['@self'] ?? []));
+        error_log("🔍 [enrichFieldsWithAvailableBuckets] Object fields: " . count($rawFields['object_fields'] ?? []));
+        
+        try {
+            // Build facet query to get top values for all facetable fields
+            $facetFields = [];
+            
+            // Collect all field names that need bucket values
+            foreach ($rawFields['@self'] ?? [] as $key => $fieldInfo) {
+                $facetFields[] = 'self_' . $key;
+            }
+            foreach ($rawFields['object_fields'] ?? [] as $fieldName => $fieldInfo) {
+                $facetFields[] = $fieldName;
+            }
+            
+            $this->logger->info('Collected facet fields for bucket enrichment', [
+                'collection' => $collectionName,
+                'facet_field_count' => count($facetFields)
+            ]);
+            
+            if (empty($facetFields)) {
+                $this->logger->warning('No facet fields to enrich - returning early', [
+                    'collection' => $collectionName
+                ]);
+                return $rawFields;
+            }
+            
+            // Query SOLR for facet values (limit to top 100 per field for performance)
+            $baseUrl = $this->buildSolrBaseUrl();
+            $selectUrl = $baseUrl . "/{$collectionName}/select";
+            
+            $this->logger->debug('Querying SOLR for facet buckets', [
+                'collection' => $collectionName,
+                'field_count' => count($facetFields),
+                'sample_fields' => array_slice($facetFields, 0, 5)
+            ]);
+            
+            $response = $this->httpClient->get($selectUrl, [
+                'query' => [
+                    'q' => '*:*',
+                    'rows' => 0,
+                    'facet' => 'true',
+                    'facet.field' => $facetFields,
+                    'facet.limit' => 100,
+                    'facet.mincount' => 1,
+                    'wt' => 'json'
+                ]
+            ]);
+            
+            $facetData = json_decode($response->getBody()->getContents(), true);
+            
+            $this->logger->debug('Received facet response from SOLR', [
+                'collection' => $collectionName,
+                'has_facet_counts' => isset($facetData['facet_counts']),
+                'has_facet_fields' => isset($facetData['facet_counts']['facet_fields']),
+                'facet_field_count' => isset($facetData['facet_counts']['facet_fields']) ? count($facetData['facet_counts']['facet_fields']) : 0
+            ]);
+            
+            if (isset($facetData['facet_counts']['facet_fields'])) {
+                $facetResults = $facetData['facet_counts']['facet_fields'];
+                
+                // Process metadata fields
+                $metadataEnriched = 0;
+                foreach ($rawFields['@self'] ?? [] as $key => &$fieldInfo) {
+                    $fullFieldName = 'self_' . $key;
+                    if (isset($facetResults[$fullFieldName])) {
+                        $bucketValues = $this->parseFacetFieldResponse($facetResults[$fullFieldName]);
+                        
+                        // For special metadata fields, resolve IDs to labels
+                        if (in_array($key, ['register', 'schema', 'organisation'])) {
+                            $bucketValues = $this->resolveBucketLabels($bucketValues, $key);
+                        }
+                        
+                        $fieldInfo['availableBuckets'] = $bucketValues;
+                        $metadataEnriched++;
+                        
+                        if ($key === 'schema' || $key === 'register') {
+                            $this->logger->debug("Enriched metadata field: {$key}", [
+                                'bucket_count' => count($bucketValues),
+                                'sample_buckets' => array_slice($bucketValues, 0, 3)
+                            ]);
+                        }
+                    }
+                }
+                
+                // Process object fields
+                $objectFieldsEnriched = 0;
+                foreach ($rawFields['object_fields'] ?? [] as $fieldName => &$fieldInfo) {
+                    if (isset($facetResults[$fieldName])) {
+                        $buckets = $this->parseFacetFieldResponse($facetResults[$fieldName]);
+                        $fieldInfo['availableBuckets'] = $buckets;
+                        $objectFieldsEnriched++;
+                        
+                        if ($fieldName === 'standaardversie') {
+                            $this->logger->debug("Enriched object field: {$fieldName}", [
+                                'bucket_count' => count($buckets),
+                                'sample_buckets' => array_slice($buckets, 0, 3)
+                            ]);
+                        }
+                    }
+                }
+                
+                $this->logger->info('Finished enriching fields with buckets', [
+                    'collection' => $collectionName,
+                    'metadata_enriched' => $metadataEnriched,
+                    'object_fields_enriched' => $objectFieldsEnriched
+                ]);
+            }
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to enrich fields with available buckets', [
+                'collection' => $collectionName,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            // Continue without bucket values - not critical
+        }
+        
+        return $rawFields;
+        
+    }//end enrichFieldsWithAvailableBuckets()
+
+
+    /**
+     * Parse SOLR facet field response into array of bucket values
+     *
+     * @param array $facetFieldData SOLR facet field response (alternating value/count)
+     * @return array Array of unique bucket values sorted alphabetically
+     */
+    private function parseFacetFieldResponse(array $facetFieldData): array
+    {
+        $buckets = [];
+        
+        // SOLR returns facets as [value1, count1, value2, count2, ...]
+        for ($i = 0; $i < count($facetFieldData); $i += 2) {
+            if (isset($facetFieldData[$i])) {
+                $value = $facetFieldData[$i];
+                // Only include non-empty string values
+                if (is_string($value) && trim($value) !== '') {
+                    $buckets[] = $value;
+                } elseif (is_numeric($value)) {
+                    $buckets[] = (string)$value;
+                }
+            }
+        }
+        
+        // Sort alphabetically for easier selection in UI
+        sort($buckets, SORT_NATURAL | SORT_FLAG_CASE);
+        
+        return array_unique($buckets);
+        
+    }//end parseFacetFieldResponse()
+
+
+    /**
+     * Resolve bucket values to human-readable labels for metadata fields
+     *
+     * @param array $bucketValues Array of bucket values (IDs)
+     * @param string $fieldType Type of field (register, schema, or organisation)
+     * @return array Array of resolved labels
+     */
+    private function resolveBucketLabels(array $bucketValues, string $fieldType): array
+    {
+        if (empty($bucketValues)) {
+            return [];
+        }
+        
+        try {
+            $labels = [];
+            
+            switch ($fieldType) {
+                case 'register':
+                    $idToLabelMap = $this->resolveRegisterLabels($bucketValues);
+                    foreach ($bucketValues as $id) {
+                        $labels[] = $idToLabelMap[$id] ?? "Register #{$id}";
+                    }
+                    break;
+                    
+                case 'schema':
+                    $idToLabelMap = $this->resolveSchemaLabels($bucketValues);
+                    foreach ($bucketValues as $id) {
+                        $labels[] = $idToLabelMap[$id] ?? "Schema #{$id}";
+                    }
+                    break;
+                    
+                case 'organisation':
+                    $idToLabelMap = $this->resolveOrganisationLabels($bucketValues);
+                    foreach ($bucketValues as $id) {
+                        $labels[] = $idToLabelMap[$id] ?? $id;
+                    }
+                    break;
+                    
+                default:
+                    $labels = $bucketValues;
+                    break;
+            }
+            
+            return $labels;
+            
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to resolve bucket labels', [
+                'fieldType' => $fieldType,
+                'error' => $e->getMessage()
+            ]);
+            // Return original values as fallback
+            return $bucketValues;
+        }
+        
+    }//end resolveBucketLabels()
+
 
     /**
      * Get suggested display types for a SOLR field based on its characteristics
@@ -8376,6 +8671,14 @@ class GuzzleSolrService
                         $facetData['data'] = array_slice($facetData['data'], 0, $maxItems);
                     }
                 }
+                
+                // Filter hidden buckets
+                if (!empty($customConfig['hidden_buckets']) && is_array($facetData['data'])) {
+                    $hiddenBuckets = $this->parseHiddenBuckets($customConfig['hidden_buckets']);
+                    if (!empty($hiddenBuckets)) {
+                        $facetData['data'] = $this->filterHiddenBuckets($facetData['data'], $hiddenBuckets);
+                    }
+                }
             } else {
                 // Apply default settings if no custom configuration
                 $defaultSettings = $facetConfig['default_settings'] ?? [];
@@ -8406,6 +8709,85 @@ class GuzzleSolrService
         return $facetData;
 
     }//end applyFacetConfiguration()
+
+
+    /**
+     * Parse hidden buckets from configuration string
+     *
+     * @param string $hiddenBucketsString Newline or comma-separated string of values to hide
+     * @return array Array of bucket values to hide
+     */
+    private function parseHiddenBuckets(string $hiddenBucketsString): array
+    {
+        if (empty($hiddenBucketsString)) {
+            return [];
+        }
+        
+        // Split by newlines first, then by commas
+        $lines = preg_split('/[\r\n]+/', $hiddenBucketsString);
+        $buckets = [];
+        
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (empty($line)) {
+                continue;
+            }
+            
+            // If line contains commas, split by comma
+            if (strpos($line, ',') !== false) {
+                $parts = explode(',', $line);
+                foreach ($parts as $part) {
+                    $part = trim($part);
+                    if (!empty($part)) {
+                        $buckets[] = $part;
+                    }
+                }
+            } else {
+                $buckets[] = $line;
+            }
+        }
+        
+        return array_unique($buckets);
+        
+    }//end parseHiddenBuckets()
+
+
+    /**
+     * Filter hidden buckets from facet data
+     *
+     * @param array $facetBuckets Array of facet buckets
+     * @param array $hiddenBuckets Array of bucket values to hide
+     * @return array Filtered facet buckets
+     */
+    private function filterHiddenBuckets(array $facetBuckets, array $hiddenBuckets): array
+    {
+        if (empty($hiddenBuckets)) {
+            return $facetBuckets;
+        }
+        
+        return array_filter($facetBuckets, function($bucket) use ($hiddenBuckets) {
+            // Get the bucket value (could be 'value' or 'label' depending on format)
+            $bucketValue = null;
+            if (is_array($bucket)) {
+                $bucketValue = $bucket['value'] ?? $bucket['label'] ?? $bucket['key'] ?? null;
+            } else {
+                $bucketValue = $bucket;
+            }
+            
+            // Convert to string for comparison
+            $bucketValue = (string)$bucketValue;
+            
+            // Check if this bucket should be hidden (case-insensitive comparison)
+            foreach ($hiddenBuckets as $hiddenValue) {
+                if (strcasecmp($bucketValue, $hiddenValue) === 0) {
+                    return false; // Hide this bucket
+                }
+            }
+            
+            return true; // Keep this bucket
+        });
+        
+    }//end filterHiddenBuckets()
 
 
     /**

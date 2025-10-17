@@ -170,6 +170,28 @@
 											Show item counts
 										</NcCheckboxRadioSwitch>
 									</div>
+									
+									<div class="form-row">
+										<label>Default Toggle Status:</label>
+										<select v-model="facet.config.toggledOut" class="form-select">
+											<option :value="true">Expanded</option>
+											<option :value="false">Collapsed</option>
+										</select>
+									</div>
+									
+									<div class="form-row-full-width">
+										<label>Hide Buckets:</label>
+										<NcSelect
+											v-model="facet.config.hiddenBucketsArray"
+											:options="facet.availableBuckets || []"
+											:multiple="true"
+											:taggable="true"
+											:close-on-select="false"
+											placeholder="Select values to hide from users"
+											label="Select bucket values to hide"
+											@update:modelValue="updateHiddenBuckets(facet)" />
+										<small class="form-help">Select facet values that should be hidden from users.</small>
+									</div>
 								</div>
 							</div>
 							</div>
@@ -266,6 +288,28 @@
 											Show item counts
 										</NcCheckboxRadioSwitch>
 									</div>
+									
+									<div class="form-row">
+										<label>Default Toggle Status:</label>
+										<select v-model="facet.config.toggledOut" class="form-select">
+											<option :value="true">Expanded</option>
+											<option :value="false">Collapsed</option>
+										</select>
+									</div>
+									
+									<div class="form-row-full-width">
+										<label>Hide Buckets:</label>
+										<NcSelect
+											v-model="facet.config.hiddenBucketsArray"
+											:options="facet.availableBuckets || []"
+											:multiple="true"
+											:taggable="true"
+											:close-on-select="false"
+											placeholder="Select values to hide from users"
+											label="Select bucket values to hide"
+											@update:modelValue="updateHiddenBuckets(facet)" />
+										<small class="form-help">Select facet values that should be hidden from users.</small>
+									</div>
 								</div>
 							</div>
 							</div>
@@ -314,6 +358,7 @@ import NcDialog from '@nextcloud/vue/dist/Components/NcDialog.js'
 import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
 import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
 import NcCheckboxRadioSwitch from '@nextcloud/vue/dist/Components/NcCheckboxRadioSwitch.js'
+import NcSelect from '@nextcloud/vue/dist/Components/NcSelect.js'
 
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
@@ -336,6 +381,7 @@ export default {
 		NcButton,
 		NcLoadingIcon,
 		NcCheckboxRadioSwitch,
+		NcSelect,
 		Magnify,
 		AlertCircle,
 		Tune,
@@ -429,23 +475,41 @@ export default {
 					// Process metadata facets into reactive data
 					this.metadataFacets = []
 					if (this.facetsData.facets['@self']) {
-						this.metadataFacets = Object.entries(this.facetsData.facets['@self']).map(([key, facetInfo]) => ({
-							fieldName: `self_${key}`,
-							...facetInfo,
-							expanded: false, // Start collapsed for better drag UX
-							config: facetInfo.config // Backend already merged the configuration
-						}))
+						this.metadataFacets = Object.entries(this.facetsData.facets['@self']).map(([key, facetInfo]) => {
+							// Convert hiddenBuckets string to array for NcSelect
+							const hiddenBucketsString = facetInfo.config.hiddenBuckets || ''
+							const hiddenBucketsArray = hiddenBucketsString ? hiddenBucketsString.split('\n').map(v => v.trim()).filter(v => v) : []
+							
+							return {
+								fieldName: `self_${key}`,
+								...facetInfo,
+								expanded: false, // Start collapsed for better drag UX
+								config: {
+									...facetInfo.config,
+									hiddenBucketsArray // Add array version for NcSelect
+								}
+							}
+						})
 					}
 					
 					// Process object field facets into reactive data
 					this.objectFieldFacets = []
 					if (this.facetsData.facets['object_fields']) {
-						this.objectFieldFacets = Object.entries(this.facetsData.facets['object_fields']).map(([key, facetInfo]) => ({
-							fieldName: key,
-							...facetInfo,
-							expanded: false, // Start collapsed for better drag UX
-							config: facetInfo.config // Backend already merged the configuration
-						}))
+						this.objectFieldFacets = Object.entries(this.facetsData.facets['object_fields']).map(([key, facetInfo]) => {
+							// Convert hiddenBuckets string to array for NcSelect
+							const hiddenBucketsString = facetInfo.config.hiddenBuckets || ''
+							const hiddenBucketsArray = hiddenBucketsString ? hiddenBucketsString.split('\n').map(v => v.trim()).filter(v => v) : []
+							
+							return {
+								fieldName: key,
+								...facetInfo,
+								expanded: false, // Start collapsed for better drag UX
+								config: {
+									...facetInfo.config,
+									hiddenBucketsArray // Add array version for NcSelect
+								}
+							}
+						})
 						
 						// Sort by order
 						this.objectFieldFacets.sort((a, b) => a.config.order - b.config.order)
@@ -529,6 +593,18 @@ export default {
 				showError(error.response?.data?.message || error.message || 'Failed to save facet configuration')
 			} finally {
 				this.loading = false
+			}
+		},
+
+		/**
+		 * Update hidden buckets when multi-select changes
+		 */
+		updateHiddenBuckets(facet) {
+			// Convert array back to newline-separated string for storage
+			if (Array.isArray(facet.config.hiddenBucketsArray)) {
+				facet.config.hiddenBuckets = facet.config.hiddenBucketsArray.join('\n')
+			} else {
+				facet.config.hiddenBuckets = ''
 			}
 		},
 
@@ -826,6 +902,25 @@ export default {
 					font-size: 14px;
 					resize: vertical;
 					min-height: 60px;
+				}
+			}
+			
+			.form-row-full-width {
+				grid-column: 1 / -1;
+				display: flex;
+				flex-direction: column;
+				gap: 6px;
+				
+				label {
+					font-weight: 500;
+					color: var(--color-main-text);
+					font-size: 13px;
+				}
+				
+				.form-help {
+					font-size: 12px;
+					color: var(--color-text-maxcontrast);
+					margin-top: 4px;
 				}
 			}
 		}
