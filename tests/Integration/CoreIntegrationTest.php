@@ -8,10 +8,17 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 
 /**
- * Integration tests for integrated file uploads using real API calls
+ * Core integration tests for OpenRegister functionality
+ * 
+ * Tests the full stack including:
+ * - Register CRUD operations
+ * - Schema CRUD operations and reusability across registers
+ * - Object CRUD operations
+ * - Integrated file uploads (multipart, base64, URL)
+ * - Schema validation and file constraints
  * 
  * These tests use Guzzle to make real HTTP requests to a running Nextcloud instance.
- * No mocking is involved - these tests verify the full stack.
+ * No mocking is involved - these tests verify end-to-end functionality.
  * 
  * Prerequisites:
  * - Nextcloud container must be running
@@ -19,9 +26,9 @@ use Psr\Http\Message\ResponseInterface;
  * - Admin credentials must be 'admin:admin'
  * 
  * Run with:
- * ./vendor/bin/phpunit tests/Integration/IntegratedFileUploadIntegrationTest.php
+ * ./vendor/bin/phpunit tests/Integration/CoreIntegrationTest.php
  */
-class IntegratedFileUploadIntegrationTest extends TestCase
+class CoreIntegrationTest extends TestCase
 {
     /** @var Client */
     private $client;
@@ -30,7 +37,10 @@ class IntegratedFileUploadIntegrationTest extends TestCase
     private $baseUrl;
 
     /** @var string */
-    private $registerSlug = 'test-file-uploads';
+    private $registerSlug;
+
+    /** @var int|null */
+    private $registerId = null;
 
     /** @var string */
     private $schemaSlug = 'document';
@@ -45,6 +55,9 @@ class IntegratedFileUploadIntegrationTest extends TestCase
     {
         parent::setUp();
 
+        // Generate unique register slug for this test to avoid conflicts
+        $this->registerSlug = 'test-file-uploads-' . uniqid();
+
         // According to global.mdc: API calls from inside container use localhost
         // These tests run inside the container via: docker exec ... phpunit
         $this->baseUrl = 'http://localhost';
@@ -54,6 +67,10 @@ class IntegratedFileUploadIntegrationTest extends TestCase
             'auth' => ['admin', 'admin'],
             'http_errors' => false, // Don't throw on 4xx/5xx
             'verify' => false, // Skip SSL verification for local dev
+            'headers' => [
+                'Authorization' => 'Basic ' . base64_encode('admin:admin'),
+                'OCS-APIRequest' => 'true',
+            ],
         ]);
 
         // Clean up any existing test register
@@ -70,10 +87,10 @@ class IntegratedFileUploadIntegrationTest extends TestCase
     {
         // Delete created objects
         foreach ($this->createdObjectIds as $uuid) {
-            $this->client->delete("/index.php/apps/openregister/api/registers/{$this->registerSlug}/schemas/{$this->schemaSlug}/objects/{$uuid}");
+            $this->client->delete("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->schemaSlug}/{$uuid}");
         }
 
-        // Delete test register (this cascades to schemas and objects)
+        // Delete test register and schemas (schemas are independent and don't cascade delete)
         $this->cleanupTestRegister();
 
         parent::tearDown();
@@ -93,12 +110,21 @@ class IntegratedFileUploadIntegrationTest extends TestCase
             ]
         ]);
 
+        // Read body once and reuse
+        $registerBody = $registerResponse->getBody()->getContents();
+        
         $this->assertEquals(201, $registerResponse->getStatusCode(), 
-            'Failed to create test register: ' . $registerResponse->getBody());
+            'Failed to create test register: ' . $registerBody);
+
+        // Save register ID for cleanup
+        $registerData = json_decode($registerBody, true);
+        $this->registerId = $registerData['id'] ?? null;
+        $this->assertNotNull($this->registerId, 'Register ID must be set after creation');
 
         // Schema 1: Strict PDF only
-        $schema1 = $this->client->post("/index.php/apps/openregister/api/registers/{$this->registerSlug}/schemas", [
+        $schema1 = $this->client->post("/index.php/apps/openregister/api/schemas", [
             'json' => [
+                'register' => $this->registerId,
                 'slug' => 'strict-pdf',
                 'title' => 'Strict PDF Document',
                 'properties' => [
@@ -114,8 +140,9 @@ class IntegratedFileUploadIntegrationTest extends TestCase
         $this->assertEquals(201, $schema1->getStatusCode());
 
         // Schema 2: Multiple file types
-        $schema2 = $this->client->post("/index.php/apps/openregister/api/registers/{$this->registerSlug}/schemas", [
+        $schema2 = $this->client->post("/index.php/apps/openregister/api/schemas", [
             'json' => [
+                'register' => $this->registerId,
                 'slug' => 'multi-type',
                 'title' => 'Multi Type Document',
                 'properties' => [
@@ -136,8 +163,9 @@ class IntegratedFileUploadIntegrationTest extends TestCase
         $this->assertEquals(201, $schema2->getStatusCode());
 
         // Schema 3: Array of files
-        $schema3 = $this->client->post("/index.php/apps/openregister/api/registers/{$this->registerSlug}/schemas", [
+        $schema3 = $this->client->post("/index.php/apps/openregister/api/schemas", [
             'json' => [
+                'register' => $this->registerId,
                 'slug' => 'gallery',
                 'title' => 'Gallery with multiple images',
                 'properties' => [
@@ -156,8 +184,9 @@ class IntegratedFileUploadIntegrationTest extends TestCase
         $this->assertEquals(201, $schema3->getStatusCode());
 
         // Main schema for most tests
-        $mainSchema = $this->client->post("/index.php/apps/openregister/api/registers/{$this->registerSlug}/schemas", [
+        $mainSchema = $this->client->post("/index.php/apps/openregister/api/schemas", [
             'json' => [
+                'register' => $this->registerId,
                 'slug' => $this->schemaSlug,
                 'title' => 'Document',
                 'properties' => [
@@ -183,7 +212,47 @@ class IntegratedFileUploadIntegrationTest extends TestCase
      */
     private function cleanupTestRegister(): void
     {
-        $this->client->delete("/index.php/apps/openregister/api/registers/{$this->registerSlug}");
+        // Clean up any orphaned schemas first (from failed previous tests)
+        $orphanedSchemas = ['strict-pdf', 'multi-type', 'gallery', $this->schemaSlug];
+        foreach ($orphanedSchemas as $schemaSlug) {
+            try {
+                // Try to find and delete by slug
+                $schemasResponse = $this->client->get("/index.php/apps/openregister/api/schemas?slug={$schemaSlug}");
+                if ($schemasResponse->getStatusCode() === 200) {
+                    $schemas = json_decode($schemasResponse->getBody()->getContents(), true);
+                    if (isset($schemas['results'])) {
+                        foreach ($schemas['results'] as $schema) {
+                            if (isset($schema['id'])) {
+                                $this->client->delete("/index.php/apps/openregister/api/schemas/{$schema['id']}");
+                            }
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                // Ignore schema cleanup errors
+            }
+        }
+
+        if ($this->registerId === null) {
+            // Register was never created, nothing more to clean up
+            return;
+        }
+
+        try {
+            $this->client->delete("/index.php/apps/openregister/api/registers/{$this->registerId}");
+        } catch (ClientException $e) {
+            // Register might not exist, that's fine
+            if ($e->getResponse()->getStatusCode() !== 404) {
+                // Only log if it's not a "not found" error
+                error_log("Failed to cleanup test register: " . $e->getMessage());
+            }
+        } catch (\Exception $e) {
+            // Ignore other cleanup errors
+            error_log("Error during cleanup: " . $e->getMessage());
+        }
+
+        // Reset register ID
+        $this->registerId = null;
     }
 
     /**
@@ -197,7 +266,7 @@ class IntegratedFileUploadIntegrationTest extends TestCase
         fwrite($tmpFile, $pdfContent);
         $tmpPath = stream_get_meta_data($tmpFile)['uri'];
 
-        $response = $this->client->post("/index.php/apps/openregister/api/registers/{$this->registerSlug}/schemas/{$this->schemaSlug}/objects", [
+        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->schemaSlug}", [
             'multipart' => [
                 ['name' => 'title', 'contents' => 'Test Document'],
                 ['name' => 'attachment', 'contents' => fopen($tmpPath, 'r'), 'filename' => 'test.pdf', 'headers' => ['Content-Type' => 'application/pdf']],
@@ -236,7 +305,7 @@ class IntegratedFileUploadIntegrationTest extends TestCase
         $pdfPath = stream_get_meta_data($pdfTmp)['uri'];
         $jpegPath = stream_get_meta_data($jpegTmp)['uri'];
 
-        $response = $this->client->post("/index.php/apps/openregister/api/registers/{$this->registerSlug}/schemas/{$this->schemaSlug}/objects", [
+        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->schemaSlug}", [
             'multipart' => [
                 ['name' => 'title', 'contents' => 'Multi-File Document'],
                 ['name' => 'attachment', 'contents' => fopen($pdfPath, 'r'), 'filename' => 'doc.pdf', 'headers' => ['Content-Type' => 'application/pdf']],
@@ -267,7 +336,7 @@ class IntegratedFileUploadIntegrationTest extends TestCase
         $base64 = base64_encode($pdfContent);
         $dataUri = "data:application/pdf;base64,{$base64}";
 
-        $response = $this->client->post("/index.php/apps/openregister/api/registers/{$this->registerSlug}/schemas/{$this->schemaSlug}/objects", [
+        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->schemaSlug}", [
             'json' => [
                 'title' => 'Base64 Document',
                 'attachment' => $dataUri,
@@ -291,7 +360,7 @@ class IntegratedFileUploadIntegrationTest extends TestCase
         // Use a public test file URL (this is a real test - will download!)
         $testUrl = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
 
-        $response = $this->client->post("/index.php/apps/openregister/api/registers/{$this->registerSlug}/schemas/{$this->schemaSlug}/objects", [
+        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->schemaSlug}", [
             'json' => [
                 'title' => 'URL Reference Document',
                 'attachment' => $testUrl,
@@ -338,7 +407,7 @@ class IntegratedFileUploadIntegrationTest extends TestCase
             ];
         }
 
-        $response = $this->client->post("/index.php/apps/openregister/api/registers/{$this->registerSlug}/schemas/gallery/objects", [
+        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/gallery", [
             'multipart' => $multipart
         ]);
 
@@ -375,7 +444,7 @@ class IntegratedFileUploadIntegrationTest extends TestCase
             $images[] = "data:image/jpeg;base64,{$base64}";
         }
 
-        $response = $this->client->post("/index.php/apps/openregister/api/registers/{$this->registerSlug}/schemas/gallery/objects", [
+        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/gallery", [
             'json' => [
                 'title' => 'Base64 Gallery',
                 'images' => $images,
@@ -401,7 +470,7 @@ class IntegratedFileUploadIntegrationTest extends TestCase
         $base64 = base64_encode($jpegContent);
         $dataUri = "data:image/jpeg;base64,{$base64}";
 
-        $response = $this->client->post("/index.php/apps/openregister/api/registers/{$this->registerSlug}/schemas/strict-pdf/objects", [
+        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/strict-pdf", [
             'json' => [
                 'title' => 'Wrong Type Test',
                 'attachment' => $dataUri, // JPEG not allowed!
@@ -424,7 +493,7 @@ class IntegratedFileUploadIntegrationTest extends TestCase
         $base64 = base64_encode($largeContent);
         $dataUri = "data:application/pdf;base64,{$base64}";
 
-        $response = $this->client->post("/index.php/apps/openregister/api/registers/{$this->registerSlug}/schemas/strict-pdf/objects", [
+        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/strict-pdf", [
             'json' => [
                 'title' => 'Too Large Test',
                 'attachment' => $dataUri,
@@ -444,7 +513,7 @@ class IntegratedFileUploadIntegrationTest extends TestCase
     {
         $corruptedData = "data:application/pdf;base64,INVALID!!!BASE64@@@";
 
-        $response = $this->client->post("/index.php/apps/openregister/api/registers/{$this->registerSlug}/schemas/{$this->schemaSlug}/objects", [
+        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->schemaSlug}", [
             'json' => [
                 'title' => 'Corrupted Test',
                 'attachment' => $corruptedData,
@@ -464,7 +533,7 @@ class IntegratedFileUploadIntegrationTest extends TestCase
         $base64 = base64_encode($pdfContent);
         $dataUri = "data:application/pdf;base64,{$base64}";
 
-        $createResponse = $this->client->post("/index.php/apps/openregister/api/registers/{$this->registerSlug}/schemas/{$this->schemaSlug}/objects", [
+        $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->schemaSlug}", [
             'json' => [
                 'title' => 'GET Test Document',
                 'attachment' => $dataUri,
@@ -477,7 +546,7 @@ class IntegratedFileUploadIntegrationTest extends TestCase
         $this->createdObjectIds[] = $uuid;
 
         // Now GET the object
-        $getResponse = $this->client->get("/index.php/apps/openregister/api/registers/{$this->registerSlug}/schemas/{$this->schemaSlug}/objects/{$uuid}");
+        $getResponse = $this->client->get("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->schemaSlug}/{$uuid}");
         
         $this->assertEquals(200, $getResponse->getStatusCode());
         
@@ -500,7 +569,7 @@ class IntegratedFileUploadIntegrationTest extends TestCase
     public function testUpdateObjectWithNewFile(): void
     {
         // Create object without file
-        $createResponse = $this->client->post("/index.php/apps/openregister/api/registers/{$this->registerSlug}/schemas/{$this->schemaSlug}/objects", [
+        $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->schemaSlug}", [
             'json' => [
                 'title' => 'Update Test',
             ]
@@ -516,7 +585,7 @@ class IntegratedFileUploadIntegrationTest extends TestCase
         $base64 = base64_encode($pdfContent);
         $dataUri = "data:application/pdf;base64,{$base64}";
 
-        $updateResponse = $this->client->put("/index.php/apps/openregister/api/registers/{$this->registerSlug}/schemas/{$this->schemaSlug}/objects/{$uuid}", [
+        $updateResponse = $this->client->put("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->schemaSlug}/{$uuid}", [
             'json' => [
                 'title' => 'Updated with File',
                 'attachment' => $dataUri,
@@ -544,7 +613,7 @@ class IntegratedFileUploadIntegrationTest extends TestCase
         $thumbnailDataUri = "data:image/jpeg;base64,{$base64}";
 
         // Multipart can mix files and form data
-        $response = $this->client->post("/index.php/apps/openregister/api/registers/{$this->registerSlug}/schemas/{$this->schemaSlug}/objects", [
+        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->schemaSlug}", [
             'multipart' => [
                 ['name' => 'title', 'contents' => 'Mixed Methods'],
                 ['name' => 'attachment', 'contents' => fopen($pdfPath, 'r'), 'filename' => 'doc.pdf', 'headers' => ['Content-Type' => 'application/pdf']],
