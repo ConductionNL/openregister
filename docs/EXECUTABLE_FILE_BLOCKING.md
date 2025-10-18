@@ -386,3 +386,5 @@ curl -X POST 'http://localhost/index.php/apps/openregister/api/registers/test/sc
 
 **Your Nextcloud instance is protected! 🛡️**
 
+
+

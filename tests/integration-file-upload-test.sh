@@ -244,3 +244,5 @@ echo ""
 echo -e "${YELLOW}Note:${NC} Test register '$TEST_REGISTER' and schema '$TEST_SCHEMA' were created."
 echo -e "${YELLOW}      You can clean them up manually if needed.${NC}"
 
+
+
