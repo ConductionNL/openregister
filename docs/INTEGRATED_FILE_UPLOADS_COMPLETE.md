@@ -419,3 +419,5 @@ Geen extra stappen nodig - code is geïmplementeerd.
 **Versie:** 1.0.0  
 **Status:** ✅ Complete & Production-Ready
 
+
+
