@@ -1640,14 +1640,7 @@ class SaveObject
             $objectEntity->setFolder((string) $folderId);
         }
 
-        // Handle file properties - process them and replace content with file IDs
-        foreach ($data as $propertyName => $value) {
-            if ($this->isFileProperty($value, $schema, $propertyName) === true) {
-                $this->handleFileProperty($objectEntity, $data, $propertyName, $schema);
-            }
-        }
-
-        // Prepare the object for creation
+        // Prepare the object for creation (WITHOUT file processing yet)
         $preparedObject = $this->prepareObjectForCreation(
             objectEntity: $objectEntity,
             schema: $schema,
@@ -1661,8 +1654,24 @@ class SaveObject
             return $preparedObject;
         }
 
-        // Save the object to database.
+        // Save the object to database FIRST (so it gets an ID)
         $savedEntity = $this->objectEntityMapper->insert($preparedObject);
+
+        // NOW handle file properties - process them and replace content with file IDs
+        // This must happen AFTER insert so the object has a database ID for FileService
+        $filePropertiesProcessed = false;
+        foreach ($data as $propertyName => $value) {
+            if ($this->isFileProperty($value, $schema, $propertyName) === true) {
+                $this->handleFileProperty($savedEntity, $data, $propertyName, $schema);
+                $filePropertiesProcessed = true;
+            }
+        }
+
+        // If files were processed, update the object with file IDs
+        if ($filePropertiesProcessed) {
+            $savedEntity->setObject($data);
+            $savedEntity = $this->objectEntityMapper->update($savedEntity);
+        }
 
         // Create audit trail for creation if audit trails are enabled and not in silent mode.
         if (!$silent && $this->isAuditTrailsEnabled()) {
