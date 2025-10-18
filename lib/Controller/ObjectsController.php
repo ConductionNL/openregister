@@ -638,7 +638,7 @@ class ObjectsController extends Controller
         }//end try
 
         // Return the created object.
-        return new JSONResponse($objectEntity->jsonSerialize());
+        return new JSONResponse($objectEntity->jsonSerialize(), 201);
 
     }//end create()
 
