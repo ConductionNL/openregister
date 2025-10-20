@@ -598,6 +598,15 @@ class ObjectsController extends Controller
             ARRAY_FILTER_USE_KEY
         );
 
+        // Extract uploaded files from multipart/form-data
+        $uploadedFiles = [];
+        foreach (array_keys($_FILES ?? []) as $fieldName) {
+            $uploadedFile = $this->request->getUploadedFile($fieldName);
+            if ($uploadedFile !== null) {
+                $uploadedFiles[$fieldName] = $uploadedFile;
+            }
+        }
+
         // Determine RBAC and multitenancy settings based on admin status
         $isAdmin = $this->isCurrentUserAdmin();
         $rbac    = !$isAdmin;
@@ -610,7 +619,8 @@ class ObjectsController extends Controller
             $objectEntity = $objectService->saveObject(
                 object: $object,
                 rbac: $rbac,
-                multi: $multi
+                multi: $multi,
+                uploadedFiles: !empty($uploadedFiles) ? $uploadedFiles : null
             );
 
             // Unlock the object after saving.
@@ -628,7 +638,7 @@ class ObjectsController extends Controller
         }//end try
 
         // Return the created object.
-        return new JSONResponse($objectEntity->jsonSerialize());
+        return new JSONResponse($objectEntity->jsonSerialize(), 201);
 
     }//end create()
 
@@ -677,6 +687,15 @@ class ObjectsController extends Controller
                 && !in_array($key, ['uuid', 'register', 'schema']),
             ARRAY_FILTER_USE_KEY
         );
+
+        // Extract uploaded files from multipart/form-data
+        $uploadedFiles = [];
+        foreach (array_keys($_FILES ?? []) as $fieldName) {
+            $uploadedFile = $this->request->getUploadedFile($fieldName);
+            if ($uploadedFile !== null) {
+                $uploadedFiles[$fieldName] = $uploadedFile;
+            }
+        }
 
         // Determine RBAC and multitenancy settings based on admin status
         $isAdmin = $this->isCurrentUserAdmin();
@@ -734,7 +753,8 @@ class ObjectsController extends Controller
                 object: $object,
                 uuid: $id,
                 rbac: $rbac,
-                multi: $multi
+                multi: $multi,
+                uploadedFiles: !empty($uploadedFiles) ? $uploadedFiles : null
             );
 
             // Unlock the object after saving.

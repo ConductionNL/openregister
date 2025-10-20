@@ -263,7 +263,7 @@ class RegistersController extends Controller
 
         try {
             // Create a new register from the data.
-            return new JSONResponse($this->registerService->createFromArray($data));
+            return new JSONResponse($this->registerService->createFromArray($data), 201);
         } catch (DBException $e) {
             // Handle database constraint violations with user-friendly messages
             $constraintException = DatabaseConstraintException::fromDatabaseException($e, 'register');

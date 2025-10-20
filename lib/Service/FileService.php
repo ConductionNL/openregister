@@ -2035,6 +2035,9 @@ class FileService
 						$content = base64_decode($content);
 					}
 
+                // Security: Block executable files
+                $this->blockExecutableFile($file->getName(), $content);
+
                 // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
                 $this->checkOwnership($file);
 
@@ -2349,6 +2352,9 @@ class FileService
             if (empty($fileName) === true) {
                 throw new Exception("Failed to create file because no filename has been provided for object " . $objectEntity->getId());
             }
+
+            // Security: Block executable files
+            $this->blockExecutableFile($fileName, $content);
 
             /**
              * @var File $file
@@ -3297,6 +3303,126 @@ class FileService
         $this->logger->info("testFileLookup: Test results: " . json_encode($results));
         return $results;
     }//end testFileLookup()
+
+    /**
+     * Blocks executable files from being uploaded for security.
+     *
+     * This method checks both file extensions and magic bytes to detect executables.
+     * This is the central security check for ALL file uploads in OpenRegister.
+     *
+     * @param string $fileName    The filename to check
+     * @param string $fileContent The file content to check
+     *
+     * @return void
+     *
+     * @throws Exception If an executable file is detected
+     */
+    private function blockExecutableFile(string $fileName, string $fileContent): void
+    {
+        // List of dangerous executable extensions
+        $dangerousExtensions = [
+            // Windows executables
+            'exe', 'bat', 'cmd', 'com', 'msi', 'scr', 'vbs', 'vbe', 'js', 'jse', 'wsf', 'wsh', 'ps1', 'dll',
+            // Unix/Linux executables
+            'sh', 'bash', 'csh', 'ksh', 'zsh', 'run', 'bin', 'app', 'deb', 'rpm',
+            // Scripts and code
+            'php', 'phtml', 'php3', 'php4', 'php5', 'phps', 'phar',
+            'py', 'pyc', 'pyo', 'pyw',
+            'pl', 'pm', 'cgi',
+            'rb', 'rbw',
+            'jar', 'war', 'ear', 'class',
+            // Containers and packages
+            'appimage', 'snap', 'flatpak',
+            // MacOS
+            'dmg', 'pkg', 'command',
+            // Android
+            'apk',
+            // Other dangerous
+            'elf', 'out', 'o', 'so', 'dylib',
+        ];
+
+        // Check file extension
+        $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+        if (in_array($extension, $dangerousExtensions, true)) {
+            $this->logger->warning('Executable file upload blocked', [
+                'app' => 'openregister',
+                'filename' => $fileName,
+                'extension' => $extension,
+            ]);
+
+            throw new Exception(
+                "File '$fileName' is an executable file (.$extension). "
+                ."Executable files are blocked for security reasons. "
+                ."Allowed formats: documents, images, archives, data files."
+            );
+        }
+
+        // Check magic bytes (file signatures) in content
+        if (!empty($fileContent)) {
+            $this->detectExecutableMagicBytes($fileContent, $fileName);
+        }
+    }//end blockExecutableFile()
+
+
+    /**
+     * Detects executable magic bytes in file content.
+     *
+     * Magic bytes are signatures at the start of files that identify the file type.
+     * This provides defense-in-depth against renamed executables.
+     *
+     * @param string $content  The file content to check
+     * @param string $fileName The filename for error messages
+     *
+     * @return void
+     *
+     * @throws Exception If executable magic bytes are detected
+     */
+    private function detectExecutableMagicBytes(string $content, string $fileName): void
+    {
+        // Common executable magic bytes
+        $magicBytes = [
+            'MZ' => 'Windows executable (PE/EXE)',
+            "\x7FELF" => 'Linux/Unix executable (ELF)',
+            "#!/bin/sh" => 'Shell script',
+            "#!/bin/bash" => 'Bash script',
+            "#!/usr/bin/env" => 'Script with env shebang',
+            "<?php" => 'PHP script',
+            "\xCA\xFE\xBA\xBE" => 'Java class file',
+        ];
+
+        foreach ($magicBytes as $signature => $description) {
+            if (strpos($content, $signature) === 0) {
+                $this->logger->warning('Executable magic bytes detected', [
+                    'app' => 'openregister',
+                    'filename' => $fileName,
+                    'type' => $description
+                ]);
+
+                throw new Exception(
+                    "File '$fileName' contains executable code ($description). "
+                    ."Executable files are blocked for security reasons."
+                );
+            }
+        }
+
+        // Check for script shebangs anywhere in first 4 lines
+        $firstLines = substr($content, 0, 1024);
+        if (preg_match('/^#!.*\/(sh|bash|zsh|ksh|csh|python|perl|ruby|php|node)/m', $firstLines)) {
+            throw new Exception(
+                "File '$fileName' contains script shebang. "
+                ."Script files are blocked for security reasons."
+            );
+        }
+
+        // Check for embedded PHP tags
+        if (preg_match('/<\?php|<\?=|<script\s+language\s*=\s*["\']php/i', $firstLines)) {
+            throw new Exception(
+                "File '$fileName' contains PHP code. "
+                ."PHP files are blocked for security reasons."
+            );
+        }
+    }//end detectExecutableMagicBytes()
+
 
     /**
      * Creates a folder for an ObjectEntity and returns the folder ID without updating the object.
