@@ -494,7 +494,14 @@ class SchemaMapper extends QBMapper
      */
     public function delete(Entity $schema): Schema
     {
-        // Proceed with deletion directly - no need to check stats on deletion
+        // Check for attached objects before deleting
+        $schemaId = method_exists($schema, 'getId') ? $schema->getId() : $schema->id;
+        $stats    = $this->objectEntityMapper->getStatistics(null, $schemaId);
+        if (($stats['total'] ?? 0) > 0) {
+            throw new \OCA\OpenRegister\Exception\ValidationException('Cannot delete schema: objects are still attached.');
+        }
+
+        // Proceed with deletion if no objects are attached
         $result = parent::delete($schema);
 
         // Dispatch deletion event.
