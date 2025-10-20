@@ -69,10 +69,8 @@ use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\EventDispatcher\IEventDispatcher;
 
-use OCA\OpenRegister\EventListener\TestEventListener;
 use OCA\OpenRegister\EventListener\SolrEventListener;
 use OCA\OpenRegister\Listener\FileChangeListener;
-use OCP\User\Events\UserLoggedInEvent;
 use OCP\Files\Events\Node\NodeCreatedEvent;
 use OCP\Files\Events\Node\NodeWrittenEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
@@ -410,17 +408,6 @@ class Application extends App implements IBootstrap
                 );
 
 
-
-        // Register TestEventListener for verifying event system works
-        $context->registerService(
-                TestEventListener::class,
-                function ($container) {
-                    return new TestEventListener(
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
-                }
-                );
-
         // Register SolrEventListener for automatic Solr indexing
         $context->registerService(
                 SolrEventListener::class,
@@ -609,9 +596,6 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register TEST event listener for easily triggerable Nextcloud events
-        $context->registerEventListener(UserLoggedInEvent::class, TestEventListener::class);
-
         // Register Solr event listeners for automatic indexing
         $context->registerEventListener(ObjectCreatedEvent::class, SolrEventListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, SolrEventListener::class);
@@ -650,11 +634,6 @@ class Application extends App implements IBootstrap
         ]);
         
         try {
-
-            
-            // Register test event listener for UserLoggedInEvent
-            $eventDispatcher->addServiceListener(UserLoggedInEvent::class, TestEventListener::class);
-            
             $logger->info('OpenRegister boot: Event listeners registered successfully');
             
             // Register recurring SOLR nightly warmup job

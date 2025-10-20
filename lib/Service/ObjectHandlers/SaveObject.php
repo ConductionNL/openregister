@@ -2885,19 +2885,19 @@ class SaveObject
             // Extract MIME type and content from data URI
             if (preg_match('/^data:([^;]+);base64,(.+)$/', $fileContent, $matches)) {
                 $mimeType = $matches[1];
-                $content  = base64_decode($matches[2]);
+                $content  = base64_decode($matches[2], true); // Strict mode
 
                 if ($content === false) {
-                    throw new Exception('Invalid base64 content in data URI');
+                    throw new \OCA\OpenRegister\Exception\ValidationException('Invalid base64 content in data URI');
                 }
             } else {
-                throw new Exception('Invalid data URI format');
+                throw new \OCA\OpenRegister\Exception\ValidationException('Invalid data URI format');
             }
         } else {
             // Handle plain base64 content
-            $content = base64_decode($fileContent);
+            $content = base64_decode($fileContent, true); // Strict mode
             if ($content === false) {
-                throw new Exception('Invalid base64 content');
+                throw new \OCA\OpenRegister\Exception\ValidationException('Invalid base64 content');
             }
 
             // Try to detect MIME type from content
@@ -2957,7 +2957,7 @@ class SaveObject
         // Validate MIME type
         if (isset($fileConfig['allowedTypes']) && !empty($fileConfig['allowedTypes'])) {
             if (!in_array($fileData['mimeType'], $fileConfig['allowedTypes'], true)) {
-                throw new Exception(
+                throw new \OCA\OpenRegister\Exception\ValidationException(
                     "$errorPrefix has invalid type '{$fileData['mimeType']}'. "."Allowed types: ".implode(', ', $fileConfig['allowedTypes'])
                 );
             }
@@ -2966,7 +2966,7 @@ class SaveObject
         // Validate file size
         if (isset($fileConfig['maxSize']) && $fileConfig['maxSize'] > 0) {
             if ($fileData['size'] > $fileConfig['maxSize']) {
-                throw new Exception(
+                throw new \OCA\OpenRegister\Exception\ValidationException(
                     "$errorPrefix exceeds maximum size ({$fileConfig['maxSize']} bytes). "."File size: {$fileData['size']} bytes"
                 );
             }
@@ -3022,7 +3022,7 @@ class SaveObject
                     'mimeType' => $fileData['mimeType'] ?? 'unknown'
                 ]);
 
-                throw new Exception(
+                throw new \OCA\OpenRegister\Exception\ValidationException(
                     "$errorPrefix is an executable file (.$extension). "
                     ."Executable files are blocked for security reasons. "
                     ."Allowed formats: documents, images, archives, data files."
@@ -3059,7 +3059,7 @@ class SaveObject
                 'mimeType' => $fileData['mimeType']
             ]);
 
-            throw new Exception(
+            throw new \OCA\OpenRegister\Exception\ValidationException(
                 "$errorPrefix has executable MIME type '{$fileData['mimeType']}'. "
                 ."Executable files are blocked for security reasons."
             );
@@ -3107,7 +3107,7 @@ class SaveObject
                     'type' => $description
                 ]);
 
-                throw new Exception(
+                throw new \OCA\OpenRegister\Exception\ValidationException(
                     "$errorPrefix contains executable code ($description). "
                     ."Executable files are blocked for security reasons."
                 );
@@ -3117,7 +3117,7 @@ class SaveObject
         // Check for script shebangs anywhere in first 4 lines
         $firstLines = substr($content, 0, 1024);
         if (preg_match('/^#!.*\/(sh|bash|zsh|ksh|csh|python|perl|ruby|php|node)/m', $firstLines)) {
-            throw new Exception(
+            throw new \OCA\OpenRegister\Exception\ValidationException(
                 "$errorPrefix contains script shebang. "
                 ."Script files are blocked for security reasons."
             );
@@ -3125,7 +3125,7 @@ class SaveObject
 
         // Check for embedded PHP tags
         if (preg_match('/<\?php|<\?=|<script\s+language\s*=\s*["\']php/i', $firstLines)) {
-            throw new Exception(
+            throw new \OCA\OpenRegister\Exception\ValidationException(
                 "$errorPrefix contains PHP code. "
                 ."PHP files are blocked for security reasons."
             );
