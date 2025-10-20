@@ -1534,7 +1534,8 @@ class SaveObject
         bool $multi=true,
         bool $persist=true,
         bool $silent=false,
-        bool $validation=true
+        bool $validation=true,
+        ?array $uploadedFiles=null
     ): ObjectEntity {
 
         if (isset($data['@self']) && is_array($data['@self'])) {
@@ -1548,6 +1549,11 @@ class SaveObject
         // Remove the @self property from the data.
         unset($data['@self']);
         unset($data['id']);
+        
+        // Process uploaded files and inject them into data
+        if ($uploadedFiles !== null && !empty($uploadedFiles)) {
+            $data = $this->processUploadedFiles($uploadedFiles, $data);
+        }
 
 
         // Debug logging can be added here if needed
@@ -1634,14 +1640,7 @@ class SaveObject
             $objectEntity->setFolder((string) $folderId);
         }
 
-        // Handle file properties - process them and replace content with file IDs
-        foreach ($data as $propertyName => $value) {
-            if ($this->isFileProperty($value, $schema, $propertyName) === true) {
-                $this->handleFileProperty($objectEntity, $data, $propertyName, $schema);
-            }
-        }
-
-        // Prepare the object for creation
+        // Prepare the object for creation (WITHOUT file processing yet)
         $preparedObject = $this->prepareObjectForCreation(
             objectEntity: $objectEntity,
             schema: $schema,
@@ -1655,8 +1654,24 @@ class SaveObject
             return $preparedObject;
         }
 
-        // Save the object to database.
+        // Save the object to database FIRST (so it gets an ID)
         $savedEntity = $this->objectEntityMapper->insert($preparedObject);
+
+        // NOW handle file properties - process them and replace content with file IDs
+        // This must happen AFTER insert so the object has a database ID for FileService
+        $filePropertiesProcessed = false;
+        foreach ($data as $propertyName => $value) {
+            if ($this->isFileProperty($value, $schema, $propertyName) === true) {
+                $this->handleFileProperty($savedEntity, $data, $propertyName, $schema);
+                $filePropertiesProcessed = true;
+            }
+        }
+
+        // If files were processed, update the object with file IDs
+        if ($filePropertiesProcessed) {
+            $savedEntity->setObject($data);
+            $savedEntity = $this->objectEntityMapper->update($savedEntity);
+        }
 
         // Create audit trail for creation if audit trails are enabled and not in silent mode.
         if (!$silent && $this->isAuditTrailsEnabled()) {
@@ -2035,6 +2050,62 @@ class SaveObject
         return $objectEntity;
 
     }//end setDefaults()
+
+
+    /**
+     * Processes uploaded files from multipart/form-data and injects them into object data.
+     *
+     * This method handles PHP's $_FILES format uploaded via multipart/form-data requests.
+     * It converts uploaded files into a format that can be processed by existing file handlers.
+     *
+     * @param array $uploadedFiles The uploaded files array (from IRequest::getUploadedFile()).
+     * @param array $data          The object data to inject files into.
+     *
+     * @return array The modified object data with file content injected.
+     *
+     * @throws Exception If file reading fails.
+     *
+     * @psalm-param    array<string, array{name: string, type: string, tmp_name: string, error: int, size: int}> $uploadedFiles
+     * @phpstan-param  array<string, array{name: string, type: string, tmp_name: string, error: int, size: int}> $uploadedFiles
+     * @psalm-param    array<string, mixed> $data
+     * @phpstan-param  array<string, mixed> $data
+     * @psalm-return   array<string, mixed>
+     * @phpstan-return array<string, mixed>
+     */
+    private function processUploadedFiles(array $uploadedFiles, array $data): array
+    {
+        foreach ($uploadedFiles as $fieldName => $fileInfo) {
+            // Skip files with upload errors
+            if ($fileInfo['error'] !== UPLOAD_ERR_OK) {
+                // Log the error but don't fail the entire request
+                $this->logger->warning('File upload error for field {field}: {error}', [
+                    'app' => 'openregister',
+                    'field' => $fieldName,
+                    'error' => $fileInfo['error'],
+                    'file' => $fileInfo['name'] ?? 'unknown'
+                ]);
+                continue;
+            }
+
+            // Read file content
+            $fileContent = file_get_contents($fileInfo['tmp_name']);
+            if ($fileContent === false) {
+                throw new Exception("Failed to read uploaded file for field '$fieldName'");
+            }
+
+            // Create a data URI from the uploaded file
+            // This allows the existing file handling logic to process it
+            $mimeType = $fileInfo['type'] ?? 'application/octet-stream';
+            $base64Content = base64_encode($fileContent);
+            $dataUri = "data:$mimeType;base64,$base64Content";
+
+            // Inject the data URI into the object data
+            // If the field already has a value in $data, the uploaded file takes precedence
+            $data[$fieldName] = $dataUri;
+        }
+
+        return $data;
+    }//end processUploadedFiles()
 
 
     /**
@@ -2877,6 +2948,12 @@ class SaveObject
     {
         $errorPrefix = $index !== null ? "File at $propertyName[$index]" : "File at $propertyName";
 
+        // Security: Block executable files (unless explicitly allowed)
+        $allowExecutables = $fileConfig['allowExecutables'] ?? false;
+        if (!$allowExecutables) {
+            $this->blockExecutableFiles($fileData, $errorPrefix);
+        }
+
         // Validate MIME type
         if (isset($fileConfig['allowedTypes']) && !empty($fileConfig['allowedTypes'])) {
             if (!in_array($fileData['mimeType'], $fileConfig['allowedTypes'], true)) {
@@ -2896,6 +2973,165 @@ class SaveObject
         }
 
     }//end validateFileAgainstConfig()
+
+
+    /**
+     * Blocks executable files from being uploaded for security.
+     *
+     * This method checks both file extensions and magic bytes to detect executables.
+     *
+     * @param array  $fileData    The file data containing content, mimeType, and filename.
+     * @param string $errorPrefix The error message prefix for context.
+     *
+     * @return void
+     *
+     * @throws Exception If an executable file is detected.
+     */
+    private function blockExecutableFiles(array $fileData, string $errorPrefix): void
+    {
+        // List of dangerous executable extensions
+        $dangerousExtensions = [
+            // Windows executables
+            'exe', 'bat', 'cmd', 'com', 'msi', 'scr', 'vbs', 'vbe', 'js', 'jse', 'wsf', 'wsh', 'ps1', 'dll',
+            // Unix/Linux executables
+            'sh', 'bash', 'csh', 'ksh', 'zsh', 'run', 'bin', 'app', 'deb', 'rpm',
+            // Scripts and code
+            'php', 'phtml', 'php3', 'php4', 'php5', 'phps', 'phar',
+            'py', 'pyc', 'pyo', 'pyw',
+            'pl', 'pm', 'cgi',
+            'rb', 'rbw',
+            'jar', 'war', 'ear', 'class',
+            // Containers and packages
+            'appimage', 'snap', 'flatpak',
+            // MacOS
+            'dmg', 'pkg', 'command',
+            // Android
+            'apk',
+            // Other dangerous
+            'elf', 'out', 'o', 'so', 'dylib',
+        ];
+
+        // Check file extension
+        if (isset($fileData['filename'])) {
+            $extension = strtolower(pathinfo($fileData['filename'], PATHINFO_EXTENSION));
+            if (in_array($extension, $dangerousExtensions, true)) {
+                $this->logger->warning('Executable file upload blocked', [
+                    'app' => 'openregister',
+                    'filename' => $fileData['filename'],
+                    'extension' => $extension,
+                    'mimeType' => $fileData['mimeType'] ?? 'unknown'
+                ]);
+
+                throw new Exception(
+                    "$errorPrefix is an executable file (.$extension). "
+                    ."Executable files are blocked for security reasons. "
+                    ."Allowed formats: documents, images, archives, data files."
+                );
+            }
+        }
+
+        // Check magic bytes (file signatures) in content
+        if (isset($fileData['content']) && !empty($fileData['content'])) {
+            $this->detectExecutableMagicBytes($fileData['content'], $errorPrefix);
+        }
+
+        // Check MIME types for executables
+        $executableMimeTypes = [
+            'application/x-executable',
+            'application/x-sharedlib',
+            'application/x-dosexec',
+            'application/x-msdownload',
+            'application/x-msdos-program',
+            'application/x-sh',
+            'application/x-shellscript',
+            'application/x-php',
+            'application/x-httpd-php',
+            'text/x-php',
+            'text/x-shellscript',
+            'text/x-script.python',
+            'application/x-python-code',
+            'application/java-archive',
+        ];
+
+        if (isset($fileData['mimeType']) && in_array($fileData['mimeType'], $executableMimeTypes, true)) {
+            $this->logger->warning('Executable MIME type blocked', [
+                'app' => 'openregister',
+                'mimeType' => $fileData['mimeType']
+            ]);
+
+            throw new Exception(
+                "$errorPrefix has executable MIME type '{$fileData['mimeType']}'. "
+                ."Executable files are blocked for security reasons."
+            );
+        }
+
+    }//end blockExecutableFiles()
+
+
+    /**
+     * Detects executable magic bytes in file content.
+     *
+     * Magic bytes are signatures at the start of files that identify the file type.
+     * This provides defense-in-depth against renamed executables.
+     *
+     * @param string $content     The file content to check.
+     * @param string $errorPrefix The error message prefix.
+     *
+     * @return void
+     *
+     * @throws Exception If executable magic bytes are detected.
+     */
+    private function detectExecutableMagicBytes(string $content, string $errorPrefix): void
+    {
+        // Common executable magic bytes
+        $magicBytes = [
+            'MZ' => 'Windows executable (PE/EXE)',
+            "\x7FELF" => 'Linux/Unix executable (ELF)',
+            "#!/bin/sh" => 'Shell script',
+            "#!/bin/bash" => 'Bash script',
+            "#!/usr/bin/env" => 'Script with env shebang',
+            "<?php" => 'PHP script',
+            "\xCA\xFE\xBA\xBE" => 'Java class file',
+            "PK\x03\x04" => false, // ZIP - need deeper inspection as JARs are ZIPs
+            "\x50\x4B\x03\x04" => false, // ZIP alternate
+        ];
+
+        foreach ($magicBytes as $signature => $description) {
+            if ($description === false) {
+                continue; // Skip patterns that need deeper inspection
+            }
+
+            if (strpos($content, $signature) === 0) {
+                $this->logger->warning('Executable magic bytes detected', [
+                    'app' => 'openregister',
+                    'type' => $description
+                ]);
+
+                throw new Exception(
+                    "$errorPrefix contains executable code ($description). "
+                    ."Executable files are blocked for security reasons."
+                );
+            }
+        }
+
+        // Check for script shebangs anywhere in first 4 lines
+        $firstLines = substr($content, 0, 1024);
+        if (preg_match('/^#!.*\/(sh|bash|zsh|ksh|csh|python|perl|ruby|php|node)/m', $firstLines)) {
+            throw new Exception(
+                "$errorPrefix contains script shebang. "
+                ."Script files are blocked for security reasons."
+            );
+        }
+
+        // Check for embedded PHP tags
+        if (preg_match('/<\?php|<\?=|<script\s+language\s*=\s*["\']php/i', $firstLines)) {
+            throw new Exception(
+                "$errorPrefix contains PHP code. "
+                ."PHP files are blocked for security reasons."
+            );
+        }
+
+    }//end detectExecutableMagicBytes()
 
 
     /**

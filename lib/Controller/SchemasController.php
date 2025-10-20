@@ -238,7 +238,7 @@ class SchemasController extends Controller
                 $schema = $this->schemaMapper->update($schema);
             }
 
-            return new JSONResponse($schema);
+            return new JSONResponse($schema, 201);
         } catch (DBException $e) {
             // Handle database constraint violations with user-friendly messages
             $constraintException = DatabaseConstraintException::fromDatabaseException($e, 'schema');
