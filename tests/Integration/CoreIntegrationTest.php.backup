@@ -276,7 +276,7 @@ class CoreIntegrationTest extends TestCase
         $this->assertEquals(201, $response->getStatusCode(), 'Failed to create object: ' . $response->getBody());
 
         $data = json_decode($response->getBody(), true);
-        $this->assertArrayHasKey('uuid', $data);
+        $this->assertArrayHasKey('id', $data, 'Response should have id key (UUID)');
         $this->assertArrayHasKey('attachment', $data);
         $this->assertIsArray($data['attachment'], 'Attachment should be hydrated to file object');
         $this->assertArrayHasKey('id', $data['attachment']);
@@ -284,7 +284,7 @@ class CoreIntegrationTest extends TestCase
         $this->assertArrayHasKey('type', $data['attachment']);
         $this->assertEquals('application/pdf', $data['attachment']['type']);
 
-        $this->createdObjectIds[] = $data['uuid'];
+        $this->createdObjectIds[] = $data['id'];
 
         fclose($tmpFile);
     }
@@ -321,7 +321,7 @@ class CoreIntegrationTest extends TestCase
         $this->assertEquals('application/pdf', $data['attachment']['type']);
         $this->assertEquals('image/jpeg', $data['thumbnail']['type']);
 
-        $this->createdObjectIds[] = $data['uuid'];
+        $this->createdObjectIds[] = $data['id'];
 
         fclose($pdfTmp);
         fclose($jpegTmp);
@@ -349,7 +349,7 @@ class CoreIntegrationTest extends TestCase
         $this->assertArrayHasKey('attachment', $data);
         $this->assertEquals('application/pdf', $data['attachment']['type']);
 
-        $this->createdObjectIds[] = $data['uuid'];
+        $this->createdObjectIds[] = $data['id'];
     }
 
     /**
@@ -371,7 +371,7 @@ class CoreIntegrationTest extends TestCase
         if ($response->getStatusCode() === 201) {
             $data = json_decode($response->getBody(), true);
             $this->assertArrayHasKey('attachment', $data);
-            $this->createdObjectIds[] = $data['uuid'];
+            $this->createdObjectIds[] = $data['id'];
         } else {
             $this->markTestSkipped('URL download failed (network issue or URL unreachable)');
         }
@@ -424,7 +424,7 @@ class CoreIntegrationTest extends TestCase
             $this->assertEquals('image/jpeg', $image['type']);
         }
 
-        $this->createdObjectIds[] = $data['uuid'];
+        $this->createdObjectIds[] = $data['id'];
 
         // Cleanup temp files
         foreach ($images as $image) {
@@ -457,7 +457,7 @@ class CoreIntegrationTest extends TestCase
         $this->assertArrayHasKey('images', $data);
         $this->assertCount(2, $data['images']);
 
-        $this->createdObjectIds[] = $data['uuid'];
+        $this->createdObjectIds[] = $data['id'];
     }
 
     /**
@@ -542,7 +542,7 @@ class CoreIntegrationTest extends TestCase
 
         $this->assertEquals(201, $createResponse->getStatusCode());
         $created = json_decode($createResponse->getBody(), true);
-        $uuid = $created['uuid'];
+        $uuid = $created['id'];
         $this->createdObjectIds[] = $uuid;
 
         // Now GET the object
@@ -577,7 +577,7 @@ class CoreIntegrationTest extends TestCase
 
         $this->assertEquals(201, $createResponse->getStatusCode());
         $created = json_decode($createResponse->getBody(), true);
-        $uuid = $created['uuid'];
+        $uuid = $created['id'];
         $this->createdObjectIds[] = $uuid;
 
         // Update with file
@@ -627,7 +627,7 @@ class CoreIntegrationTest extends TestCase
         $this->assertArrayHasKey('attachment', $data);
         $this->assertArrayHasKey('thumbnail', $data);
 
-        $this->createdObjectIds[] = $data['uuid'];
+        $this->createdObjectIds[] = $data['id'];
 
         fclose($pdfTmp);
     }
