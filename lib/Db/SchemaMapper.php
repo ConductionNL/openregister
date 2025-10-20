@@ -53,7 +53,6 @@ class SchemaMapper extends QBMapper
      */
     private $validator;
 
-
     /**
      * Constructor for the SchemaMapper
      *
@@ -494,10 +493,21 @@ class SchemaMapper extends QBMapper
      */
     public function delete(Entity $schema): Schema
     {
-        // Check for attached objects before deleting
+        // Check for attached objects before deleting (using direct database query to avoid circular dependency)
         $schemaId = method_exists($schema, 'getId') ? $schema->getId() : $schema->id;
-        $stats    = $this->objectEntityMapper->getStatistics(null, $schemaId);
-        if (($stats['total'] ?? 0) > 0) {
+        
+        // Count objects that reference this schema (excluding soft-deleted objects)
+        $qb = $this->db->getQueryBuilder();
+        $qb->select($qb->func()->count('*', 'count'))
+            ->from('openregister_objects')
+            ->where($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)))
+            ->andWhere($qb->expr()->isNull('deleted'));
+        
+        $result = $qb->executeQuery();
+        $count = (int) $result->fetchOne();
+        $result->closeCursor();
+        
+        if ($count > 0) {
             throw new \OCA\OpenRegister\Exception\ValidationException('Cannot delete schema: objects are still attached.');
         }
 

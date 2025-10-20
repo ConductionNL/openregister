@@ -1659,18 +1659,31 @@ class SaveObject
 
         // NOW handle file properties - process them and replace content with file IDs
         // This must happen AFTER insert so the object has a database ID for FileService
+        // IMPORTANT: If file processing fails, we must rollback the object insertion
         $filePropertiesProcessed = false;
-        foreach ($data as $propertyName => $value) {
-            if ($this->isFileProperty($value, $schema, $propertyName) === true) {
-                $this->handleFileProperty($savedEntity, $data, $propertyName, $schema);
-                $filePropertiesProcessed = true;
+        try {
+            foreach ($data as $propertyName => $value) {
+                if ($this->isFileProperty($value, $schema, $propertyName) === true) {
+                    $this->handleFileProperty($savedEntity, $data, $propertyName, $schema);
+                    $filePropertiesProcessed = true;
+                }
             }
-        }
 
-        // If files were processed, update the object with file IDs
-        if ($filePropertiesProcessed) {
-            $savedEntity->setObject($data);
-            $savedEntity = $this->objectEntityMapper->update($savedEntity);
+            // If files were processed, update the object with file IDs
+            if ($filePropertiesProcessed) {
+                $savedEntity->setObject($data);
+                $savedEntity = $this->objectEntityMapper->update($savedEntity);
+            }
+        } catch (\Exception $e) {
+            // ROLLBACK: Delete the object if file processing failed
+            $this->logger->warning('File processing failed, rolling back object creation', [
+                'uuid' => $savedEntity->getUuid(),
+                'error' => $e->getMessage()
+            ]);
+            $this->objectEntityMapper->delete($savedEntity);
+            
+            // Re-throw the exception so the controller can handle it
+            throw $e;
         }
 
         // Create audit trail for creation if audit trails are enabled and not in silent mode.
