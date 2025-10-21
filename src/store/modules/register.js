@@ -250,34 +250,34 @@ export const useRegisterStore = defineStore('register', {
 		 */
 		startImportHeartbeat(intervalMs = 15000, onStatusChange = null) {
 			console.log('RegisterStore: Starting import heartbeat every', intervalMs, 'ms')
-			
+
 			let heartbeatCount = 0
 			let failureCount = 0
 			let isHealthy = true
-			
+
 			const heartbeatInterval = setInterval(async () => {
 				try {
 					heartbeatCount++
 					const startTime = Date.now()
-					
+
 					// Send a lightweight request to keep the session alive
 					const response = await fetch('/index.php/apps/openregister/api/heartbeat', {
 						method: 'GET',
 						headers: {
 							'X-Requested-With': 'XMLHttpRequest',
-							'Cache-Control': 'no-cache'
+							'Cache-Control': 'no-cache',
 						},
 						// Add timeout to prevent hanging requests
-						signal: AbortSignal.timeout(10000) // 10 second timeout
+						signal: AbortSignal.timeout(10000), // 10 second timeout
 					})
-					
+
 					if (!response.ok) {
 						throw new Error(`HTTP ${response.status}: ${response.statusText}`)
 					}
-					
+
 					const duration = Date.now() - startTime
 					console.log(`RegisterStore: Heartbeat #${heartbeatCount} successful (${duration}ms)`)
-					
+
 					// Reset failure count on success
 					if (failureCount > 0) {
 						failureCount = 0
@@ -286,18 +286,18 @@ export const useRegisterStore = defineStore('register', {
 							onStatusChange({ healthy: true, failures: 0, count: heartbeatCount })
 						}
 					}
-					
+
 				} catch (error) {
 					failureCount++
 					const wasHealthy = isHealthy
 					isHealthy = failureCount < 3 // Consider unhealthy after 3 consecutive failures
-					
+
 					console.error(`RegisterStore: Heartbeat #${heartbeatCount} failed (failure ${failureCount}):`, error.message)
-					
+
 					if (onStatusChange && (!wasHealthy !== !isHealthy)) {
 						onStatusChange({ healthy: isHealthy, failures: failureCount, count: heartbeatCount, error: error.message })
 					}
-					
+
 					// If too many failures, warn user but don't stop heartbeat
 					if (failureCount === 3) {
 						console.warn('RegisterStore: Multiple heartbeat failures detected - connection may be unstable')
@@ -312,7 +312,7 @@ export const useRegisterStore = defineStore('register', {
 				},
 				getStatus() {
 					return { healthy: isHealthy, failures: failureCount, count: heartbeatCount }
-				}
+				},
 			}
 		},
 
@@ -352,7 +352,7 @@ export const useRegisterStore = defineStore('register', {
 
 			try {
 				console.log('RegisterStore: Sending import request to:', endpoint)
-				
+
 				// Create controller for potential timeout handling
 				const controller = new AbortController()
 				const timeoutId = setTimeout(() => {
@@ -365,7 +365,7 @@ export const useRegisterStore = defineStore('register', {
 					{
 						method: 'POST',
 						body: formData,
-						signal: controller.signal
+						signal: controller.signal,
 					},
 				)
 

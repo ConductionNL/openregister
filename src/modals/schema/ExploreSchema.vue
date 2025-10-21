@@ -8,15 +8,14 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 		size="large"
 		:can-close="true"
 		@update:open="handleDialogClose">
-		
 		<NcNoteCard v-if="success" type="success">
 			<p>Schema successfully updated with {{ selectedProperties.length }} properties</p>
 		</NcNoteCard>
-		
+
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
 		</NcNoteCard>
-		
+
 		<!-- Info Card - Visible only before/during analysis -->
 		<div v-if="!explorationData && !success" class="info-section">
 			<NcNoteCard type="info">
@@ -24,9 +23,8 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 				<p>{{ t('openregister', "We'll scan all objects belonging to this schema to discover new properties and analyze existing properties for potential enhancements. The process involves examining each object's data structure, identifying properties not defined in the current schema, and finding opportunities to improve existing property definitions with better constraints, formats, and validation rules.") }}</p>
 			</NcNoteCard>
 		</div>
-		
+
 		<div v-if="!success">
-			
 			<!-- Gray Well Container -->
 			<div class="well-container">
 				<NcProgressBar v-if="loading" :indeterminate="true" />
@@ -41,7 +39,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 				</div>
 				<div v-else-if="!explorationData" class="no-analysis">
 					<div class="analysis-info">
-						<SchemaStatsBlock 
+						<SchemaStatsBlock
 							:object-count="objectCount"
 							:object-stats="objectStats"
 							:loading="false"
@@ -61,25 +59,41 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 						</div>
 					</div>
 				</div>
-				
+
 				<!-- Analysis Results (inside the well) -->
 				<div v-else-if="explorationData" class="analysis-summary">
 					<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
 						<div style="background: white; border: 2px solid #ddd; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-							<div style="font-size: 2rem; font-weight: bold; color: #0066cc; margin-bottom: 8px;">{{ explorationData.total_objects }}</div>
-							<div style="font-size: 0.9rem; color: #666; text-transform: uppercase; font-weight: 600;">{{ t('openregister', 'Objects Analyzed') }}</div>
+							<div style="font-size: 2rem; font-weight: bold; color: #0066cc; margin-bottom: 8px;">
+								{{ explorationData.total_objects }}
+							</div>
+							<div style="font-size: 0.9rem; color: #666; text-transform: uppercase; font-weight: 600;">
+								{{ t('openregister', 'Objects Analyzed') }}
+							</div>
 						</div>
 						<div style="background: white; border: 2px solid #ddd; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-							<div style="font-size: 2rem; font-weight: bold; color: #0066cc; margin-bottom: 8px;">{{ explorationData.analysis_summary?.new_properties_count || Object.keys(explorationData.discovered_properties || {}).length }}</div>
-							<div style="font-size: 0.9rem; color: #666; text-transform: uppercase; font-weight: 600;">{{ t('openregister', 'New Properties') }}</div>
+							<div style="font-size: 2rem; font-weight: bold; color: #0066cc; margin-bottom: 8px;">
+								{{ explorationData.analysis_summary?.new_properties_count || Object.keys(explorationData.discovered_properties || {}).length }}
+							</div>
+							<div style="font-size: 0.9rem; color: #666; text-transform: uppercase; font-weight: 600;">
+								{{ t('openregister', 'New Properties') }}
+							</div>
 						</div>
 						<div style="background: white; border: 2px solid #ddd; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-							<div style="font-size: 2rem; font-weight: bold; color: #0066cc; margin-bottom: 8px;">{{ explorationData.analysis_summary?.existing_properties_improvements || 0 }}</div>
-							<div style="font-size: 0.9rem; color: #666; text-transform: uppercase; font-weight: 600;">{{ t('openregister', 'Existing Improvements') }}</div>
+							<div style="font-size: 2rem; font-weight: bold; color: #0066cc; margin-bottom: 8px;">
+								{{ explorationData.analysis_summary?.existing_properties_improvements || 0 }}
+							</div>
+							<div style="font-size: 0.9rem; color: #666; text-transform: uppercase; font-weight: 600;">
+								{{ t('openregister', 'Existing Improvements') }}
+							</div>
 						</div>
 						<div style="background: white; border: 2px solid #ddd; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-							<div style="font-size: 2rem; font-weight: bold; color: #0066cc; margin-bottom: 8px;">{{ selectedProperties.length }}</div>
-							<div style="font-size: 0.9rem; color: #666; text-transform: uppercase; font-weight: 600;">{{ t('openregister', 'Selected') }}</div>
+							<div style="font-size: 2rem; font-weight: bold; color: #0066cc; margin-bottom: 8px;">
+								{{ selectedProperties.length }}
+							</div>
+							<div style="font-size: 0.9rem; color: #666; text-transform: uppercase; font-weight: 600;">
+								{{ t('openregister', 'Selected') }}
+							</div>
 						</div>
 					</div>
 					<div style="text-align: center; padding: 12px; background: #e9ecef; border-radius: 6px; border: 1px solid #ddd; color: #495057; font-size: 0.9rem;">
@@ -90,9 +104,9 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 
 			<!-- Analysis Controls -->
 			<div class="analysis-controls">
-				<NcButton 
-					v-if="!explorationData && !loading" 
-					type="primary" 
+				<NcButton
+					v-if="!explorationData && !loading"
+					type="primary"
 					:disabled="!schemaStore.schemaItem"
 					@click="startAnalysis">
 					<template #icon>
@@ -100,10 +114,10 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 					</template>
 					Analyze Objects
 				</NcButton>
-				
-				<NcButton 
-					v-else-if="!loading" 
-					type="secondary" 
+
+				<NcButton
+					v-else-if="!loading"
+					type="secondary"
 					@click="startAnalysis">
 					<template #icon>
 						<Refresh :size="20" />
@@ -115,28 +129,28 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 			<!-- Discovered Properties -->
 			<div v-if="explorationData && !loading" class="discovered-properties">
 				<h3>{{ t('openregister', 'Discovered Properties') }}</h3>
-				
+
 				<!-- Filter Controls -->
 				<div class="property-filters">
 					<div class="filter-section">
 						<label class="filter-label">{{ t('openregister', 'Filter Properties') }}</label>
 						<NcTextField
-							:placeholder="t('openregister', 'Search property names...')"
-							v-model="propertyFilter" />
+							v-model="propertyFilter"
+							:placeholder="t('openregister', 'Search property names...')" />
 					</div>
-					
+
 					<div class="filter-section">
 						<label class="filter-label">{{ t('openregister', 'Confidence Level') }}</label>
 						<NcSelect
-							:options="confidenceFilterOptions"
-							v-model="confidenceFilter" />
+							v-model="confidenceFilter"
+							:options="confidenceFilterOptions" />
 					</div>
-					
+
 					<div class="filter-section">
 						<label class="filter-label">{{ t('openregister', 'Property Type') }}</label>
 						<NcSelect
-							:options="typeFilterOptions"
-							v-model="typeFilter" />
+							v-model="typeFilter"
+							:options="typeFilterOptions" />
 					</div>
 				</div>
 
@@ -145,12 +159,11 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 					<div v-if="filteredSuggestions.length === 0" class="no-results">
 						<p>{{ t('openregister', 'No properties match your filters.') }}</p>
 					</div>
-					
-					<div v-for="(suggestion, index) in paginatedSuggestions" 
-						 :key="`suggestion-${index}-${suggestion.property_name}`" 
-						 class="property-card"
-						 :class="{ selected: isPropertySelected(suggestion.property_name) }">
-						
+
+					<div v-for="(suggestion, index) in paginatedSuggestions"
+						:key="`suggestion-${index}-${suggestion.property_name}`"
+						class="property-card"
+						:class="{ selected: isPropertySelected(suggestion.property_name) }">
 						<!-- Property Header -->
 						<div class="property-header">
 							<div class="property-info">
@@ -176,7 +189,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 									</span>
 								</div>
 							</div>
-							
+
 							<div class="property-actions">
 								<NcCheckboxRadioSwitch
 									:checked="isPropertySelected(suggestion.property_name)"
@@ -190,22 +203,22 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 								<span class="detail-label">{{ t('openregister', 'Recommended Type:') }}</span>
 								<span class="detail-value">{{ suggestion.recommended_type }}</span>
 							</div>
-							
+
 							<div v-if="suggestion.detected_format" class="detail-item">
 								<span class="detail-label">{{ t('openregister', 'Detected Format:') }}</span>
 								<span class="detail-value format-badge">{{ suggestion.detected_format }}</span>
 							</div>
-							
+
 							<div v-if="suggestion.type_variations && suggestion.type_variations.length > 1" class="detail-item">
 								<span class="detail-label">{{ t('openregister', 'Type Variations:') }}</span>
 								<span class="detail-value">{{ suggestion.type_variations.join(', ') }}</span>
 							</div>
-							
+
 							<div v-if="suggestion.numeric_range" class="detail-item">
 								<span class="detail-label">{{ t('openregister', 'Numeric Range:') }}</span>
 								<span class="detail-value">{{ suggestion.numeric_range.min }} - {{ suggestion.numeric_range.max }} ({{ suggestion.numeric_range.type }})</span>
 							</div>
-							
+
 							<div v-if="suggestion.min_length !== null && suggestion.max_length !== null" class="detail-item">
 								<span class="detail-label">{{ t('openregister', 'Length Range:') }}</span>
 								<span class="detail-value">{{ suggestion.min_length }} - {{ suggestion.max_length }} characters</span>
@@ -214,7 +227,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 								<span class="detail-label">{{ t('openregister', 'Max Length:') }}</span>
 								<span class="detail-value">{{ suggestion.max_length }}</span>
 							</div>
-							
+
 							<div v-if="suggestion.string_patterns && suggestion.string_patterns.length > 0" class="detail-item">
 								<span class="detail-label">{{ t('openregister', 'Patterns:') }}</span>
 								<span class="detail-value">
@@ -223,7 +236,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 									</span>
 								</span>
 							</div>
-							
+
 							<div class="detail-item">
 								<span class="detail-label">{{ t('openregister', 'Description:') }}</span>
 								<span class="detail-value">{{ suggestion.description }}</span>
@@ -248,7 +261,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 									</div>
 								</div>
 							</div>
-							
+
 							<h5>{{ t('openregister', 'Recommendations:') }}</h5>
 							<div class="suggestions-list">
 								<div v-for="(suggestion_item, index) in suggestion.suggestions" :key="`suggestion-${index}`" class="suggestion-item">
@@ -257,7 +270,8 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 									</div>
 									<div class="suggestion-change">
 										<span class="current">{{ suggestion_item.current }}</span> → <span class="recommended">{{ suggestion_item.recommended }}</span>
-									</<｜Assistant｜></div>
+										</<｜Assistant｜>
+									</div>
 									<div class="suggestion-desc">
 										{{ suggestion_item.description }}
 									</div>
@@ -280,82 +294,82 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 						<!-- Type-specific Configuration -->
 						<div v-if="isPropertySelected(suggestion.property_name)" class="property-config">
 							<h5>{{ t('openregister', 'Property Configuration:') }}</h5>
-							
+
 							<div class="config-fields">
 								<NcTextField
-									:label="t('openregister', 'Property Title')"
 									v-model="selectedPropertiesConfig[suggestion.property_name].title"
+									:label="t('openregister', 'Property Title')"
 									:placeholder="suggestion.property_name" />
-								
+
 								<NcTextField
-									:label="t('openregister', 'Technical Description')"
 									v-model="selectedPropertiesConfig[suggestion.property_name].technicalDescription"
+									:label="t('openregister', 'Technical Description')"
 									:placeholder="t('openregister', 'Technical description for developers and administrators')" />
-								
+
 								<NcSelect
 									v-if="suggestion.recommended_type !== suggestion.type"
-									:options="typeOptions"
 									v-model="selectedPropertiesConfig[suggestion.property_name].type"
-									:inputLabel="t('openregister', 'Property Type')"
-									:labelOutside="true" />
-								
+									:options="typeOptions"
+									:input-label="t('openregister', 'Property Type')"
+									:label-outside="true" />
+
 								<NcSelect
 									v-if="suggestion.detected_format"
-									:options="formatOptions(suggestion)"
 									v-model="selectedPropertiesConfig[suggestion.property_name].format"
-									:inputLabel="t('openregister', 'Format')"
-									:labelOutside="true" />
-								
+									:options="formatOptions(suggestion)"
+									:input-label="t('openregister', 'Format')"
+									:label-outside="true" />
+
 								<!-- String constraints -->
 								<div v-if="selectedPropertiesConfig[suggestion.property_name].type === 'string'" class="constraints-section">
 									<h5>{{ t('openregister', 'String Constraints') }}</h5>
 									<NcTextField
-										:label="t('openregister', 'Max Length')"
 										v-model="selectedPropertiesConfig[suggestion.property_name].maxLength"
+										:label="t('openregister', 'Max Length')"
 										type="number"
 										:placeholder="suggestion.max_length ? suggestion.max_length.toString() : ''" />
-									
+
 									<NcTextField
-										:label="t('openregister', 'Min Length')"
 										v-model="selectedPropertiesConfig[suggestion.property_name].minLength"
+										:label="t('openregister', 'Min Length')"
 										type="number"
 										:placeholder="suggestion.min_length ? suggestion.min_length.toString() : ''" />
-									
+
 									<NcTextField
-										:label="t('openregister', 'Pattern (regex)')"
 										v-model="selectedPropertiesConfig[suggestion.property_name].pattern"
+										:label="t('openregister', 'Pattern (regex)')"
 										placeholder="^[A-Za-z]+$" />
 								</div>
-								
+
 								<!-- Number constraints -->
 								<div v-if="['number', 'integer'].includes(selectedPropertiesConfig[suggestion.property_name].type)" class="constraints-section">
 									<h5>{{ t('openregister', 'Number Constraints') }}</h5>
 									<NcTextField
-										:label="t('openregister', 'Minimum')"
 										v-model="selectedPropertiesConfig[suggestion.property_name].minimum"
+										:label="t('openregister', 'Minimum')"
 										type="number" />
-									
+
 									<NcTextField
-										:label="t('openregister', 'Maximum')"
 										v-model="selectedPropertiesConfig[suggestion.property_name].maximum"
+										:label="t('openregister', 'Maximum')"
 										type="number" />
-									
+
 									<NcTextField
-										:label="t('openregister', 'Multiple Of')"
 										v-model="selectedPropertiesConfig[suggestion.property_name].multipleOf"
+										:label="t('openregister', 'Multiple Of')"
 										type="number" />
-									
+
 									<NcCheckboxRadioSwitch
 										v-model="selectedPropertiesConfig[suggestion.property_name].exclusiveMin">
 										{{ t('openregister', 'Exclusive Minimum') }}
 									</NcCheckboxRadioSwitch>
-									
+
 									<NcCheckboxRadioSwitch
 										v-model="selectedPropertiesConfig[suggestion.property_name].exclusiveMax">
 										{{ t('openregister', 'Exclusive Maximum') }}
 									</NcCheckboxRadioSwitch>
 								</div>
-								
+
 								<!-- Property Behaviors - Compact Two Column Layout -->
 								<div class="behaviors-section">
 									<h5>{{ t('openregister', 'Property Behaviors') }}</h5>
@@ -383,7 +397,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 												</NcCheckboxRadioSwitch>
 											</div>
 										</div>
-										
+
 										<!-- Right Column -->
 										<div class="behavior-column">
 											<div class="behavior-item">
@@ -404,29 +418,29 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 										</div>
 									</div>
 								</div>
-								
+
 								<!-- Additional property configuration fields -->
 								<NcTextField
-									:label="t('openregister', 'Title')"
 									v-model="selectedPropertiesConfig[suggestion.property_name].displayTitle"
+									:label="t('openregister', 'Title')"
 									:placeholder="suggestion.property_name" />
-								
+
 								<NcTextArea
-									:label="t('openregister', 'User Description')"
 									v-model="selectedPropertiesConfig[suggestion.property_name].userDescription"
+									:label="t('openregister', 'User Description')"
 									:placeholder="t('openregister', 'User-friendly description shown in forms and help text')" />
-								
-							 <NcTextField
-									:label="t('openregister', 'Example Value')"
-									v-model="selectedPropertiesConfig[suggestion.property_name].example"
-									placeholder="Example value for this property" />
-								
+
 								<NcTextField
+									v-model="selectedPropertiesConfig[suggestion.property_name].example"
+									:label="t('openregister', 'Example Value')"
+									placeholder="Example value for this property" />
+
+								<NcTextField
+									v-model="selectedPropertiesConfig[suggestion.property_name].order"
 									:label="t('openregister', 'Order')"
 									type="number"
-									v-model="selectedPropertiesConfig[suggestion.property_name].order"
 									placeholder="0" />
-								
+
 								<div v-if="suggestion.type_variations && suggestion.type_variations.length > 1" class="config-warning">
 									<NcNoteCard type="warning">
 										<p>{{ t('openregister', "Warning: This property has inconsistent types: {types}. Consider if all objects should have the same type.", { types: suggestion.type_variations.join(', ') }) }}</p>
@@ -456,15 +470,15 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 							{{ t('openregister', 'You have selected {count} properties to add to the schema.', { count: selectedProperties.length }) }}
 						</p>
 					</NcNoteCard>
-					
+
 					<div class="summary-actions">
-						<NcButton @click="clearSelection" type="secondary">
+						<NcButton type="secondary" @click="clearSelection">
 							{{ t('openregister', 'Clear Selection') }}
 						</NcButton>
-						<NcButton @click="selectAll" type="secondary">
+						<NcButton type="secondary" @click="selectAll">
 							{{ t('openregister', 'Select All') }}
 						</NcButton>
-						<NcButton @click="updateSchema" type="primary" :disabled="loading || selectedProperties.length === 0">
+						<NcButton type="primary" :disabled="loading || selectedProperties.length === 0" @click="updateSchema">
 							<template #icon>
 								<Check :size="20" />
 							</template>
@@ -472,13 +486,13 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 						</NcButton>
 					</div>
 				</div>
-				
+
 				<!-- Analyze Objects Button (show when no analysis has been done) -->
 				<div v-if="!explorationData && !loading" class="modal-footer">
-					<NcButton 
-						@click="startAnalysis"
+					<NcButton
 						:disabled="analysisStarted"
-						type="primary">
+						type="primary"
+						@click="startAnalysis">
 						<template #icon>
 							<NcLoadingIcon v-if="analysisStarted" :size="16" />
 							<DatabaseSearch v-else :size="16" />
@@ -486,10 +500,10 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 						{{ analysisStarted ? t('openregister', 'Analyzing...') : t('openregister', 'Analyze Objects') }}
 					</NcButton>
 				</div>
-				
+
 				<!-- Close Button (show when results are available) -->
 				<div v-else-if="explorationData && explorationData.suggestions" class="modal-footer">
-					<NcButton @click="closeModal" type="secondary">
+					<NcButton type="secondary" @click="closeModal">
 						{{ t('openregister', 'Close') }}
 					</NcButton>
 				</div>
@@ -543,60 +557,60 @@ export default {
 		}
 	},
 	computed: {
-	typeOptions() {
-		return [
-			{ label: 'String', value: 'string', key: 'string' },
-			{ label: 'Integer', value: 'integer', key: 'integer' },
-			{ label: 'Number', value: 'number', key: 'number' },
-			{ label: 'Boolean', value: 'boolean', key: 'boolean' },
-			{ label: 'Array', value: 'array', key: 'array' },
-			{ label: 'Object', value: 'object', key: 'object' },
-		]
-	},
-	formatOptions() {
-		return (suggestion) => {
-			const commonFormats = [
-				{ label: 'None', value: '', key: 'none' },
-				{ label: 'Date (YYYY-MM-DD)', value: 'date', key: 'date' },
-				{ label: 'Date Time (ISO 8601)', value: 'date-time', key: 'date-time' },
-				{ label: 'Time (HH:MM:SS)', value: 'time', key: 'time' },
-				{ label: 'Email', value: 'email', key: 'email' },
-				{ label: 'URL', value: 'url', key: 'url' },
-				{ label: 'UUID', value: 'uuid', key: 'uuid' },
-				{ label: 'Hostname', value: 'hostname', key: 'hostname' },
-				{ label: 'Color (Hex)', value: 'color', key: 'color' },
+		typeOptions() {
+			return [
+				{ label: 'String', value: 'string', key: 'string' },
+				{ label: 'Integer', value: 'integer', key: 'integer' },
+				{ label: 'Number', value: 'number', key: 'number' },
+				{ label: 'Boolean', value: 'boolean', key: 'boolean' },
+				{ label: 'Array', value: 'array', key: 'array' },
+				{ label: 'Object', value: 'object', key: 'object' },
 			]
+		},
+		formatOptions() {
+			return (suggestion) => {
+				const commonFormats = [
+					{ label: 'None', value: '', key: 'none' },
+					{ label: 'Date (YYYY-MM-DD)', value: 'date', key: 'date' },
+					{ label: 'Date Time (ISO 8601)', value: 'date-time', key: 'date-time' },
+					{ label: 'Time (HH:MM:SS)', value: 'time', key: 'time' },
+					{ label: 'Email', value: 'email', key: 'email' },
+					{ label: 'URL', value: 'url', key: 'url' },
+					{ label: 'UUID', value: 'uuid', key: 'uuid' },
+					{ label: 'Hostname', value: 'hostname', key: 'hostname' },
+					{ label: 'Color (Hex)', value: 'color', key: 'color' },
+				]
 
-			const detectedFormat = suggestion.detected_format
-			const hasDetectedFormat = detectedFormat && !commonFormats.find(f => f.value === detectedFormat)
-			
-			// Add detected format if not already in common formats
-			if (hasDetectedFormat) {
-				commonFormats.push({ 
-					label: detectedFormat.charAt(0).toUpperCase() + detectedFormat.slice(1), 
-					value: detectedFormat,
-					key: detectedFormat 
-				})
+				const detectedFormat = suggestion.detected_format
+				const hasDetectedFormat = detectedFormat && !commonFormats.find(f => f.value === detectedFormat)
+
+				// Add detected format if not already in common formats
+				if (hasDetectedFormat) {
+					commonFormats.push({
+						label: detectedFormat.charAt(0).toUpperCase() + detectedFormat.slice(1),
+						value: detectedFormat,
+						key: detectedFormat,
+					})
+				}
+
+				return commonFormats
 			}
-
-			return commonFormats
-		}
-	},
-	confidenceFilterOptions() {
-		return [
-			{ label: this.t('openregister', 'All Confidence Levels'), value: 'all', key: 'all' },
-			{ label: this.t('openregister', 'High Confidence'), value: 'high', key: 'high' },
-			{ label: this.t('openregister', 'Medium Confidence'), value: 'medium', key: 'medium' },
-			{ label: this.t('openregister', 'Low Confidence'), value: 'low', key: 'low' },
-		]
-	},
-	typeFilterOptions() {
-		return [
-			{ label: this.t('openregister', 'All'), value: 'all', key: 'all' },
-			{ label: this.t('openregister', 'New Properties'), value: 'new', key: 'new' },
-			{ label: this.t('openregister', 'Existing Improvements'), value: 'existing', key: 'existing' },
-		]
-	},
+		},
+		confidenceFilterOptions() {
+			return [
+				{ label: this.t('openregister', 'All Confidence Levels'), value: 'all', key: 'all' },
+				{ label: this.t('openregister', 'High Confidence'), value: 'high', key: 'high' },
+				{ label: this.t('openregister', 'Medium Confidence'), value: 'medium', key: 'medium' },
+				{ label: this.t('openregister', 'Low Confidence'), value: 'low', key: 'low' },
+			]
+		},
+		typeFilterOptions() {
+			return [
+				{ label: this.t('openregister', 'All'), value: 'all', key: 'all' },
+				{ label: this.t('openregister', 'New Properties'), value: 'new', key: 'new' },
+				{ label: this.t('openregister', 'Existing Improvements'), value: 'existing', key: 'existing' },
+			]
+		},
 		filteredSuggestions() {
 			if (!this.explorationData?.suggestions) {
 				return []
@@ -607,15 +621,15 @@ export default {
 			// Filter by search term
 			if (this.propertyFilter) {
 				const filterLower = this.propertyFilter.toLowerCase()
-				filtered = filtered.filter(suggestion => 
-					suggestion.property_name.toLowerCase().includes(filterLower)
+				filtered = filtered.filter(suggestion =>
+					suggestion.property_name.toLowerCase().includes(filterLower),
 				)
 			}
 
 			 // Filter by confidence period
 			if (this.confidenceFilter !== 'all') {
-				filtered = filtered.filter(suggestion => 
-					suggestion.confidence === this.confidenceFilter
+				filtered = filtered.filter(suggestion =>
+					suggestion.confidence === this.confidenceFilter,
 				)
 			}
 
@@ -635,8 +649,8 @@ export default {
 
 			 // Filter by selection status
 			if (this.showOnlySelected) {
-				filtered = filtered.filter(suggestion => 
-					this.selectedProperties.includes(suggestion.property_name)
+				filtered = filtered.filter(suggestion =>
+					this.selectedProperties.includes(suggestion.property_name),
 				)
 			}
 
@@ -704,7 +718,7 @@ export default {
 
 			try {
 				const endpoint = `/index.php/apps/openregister/api/schemas/${schemaStore.schemaItem.id}/explore`
-				
+
 				const response = await fetch(endpoint, {
 					method: 'GET',
 					headers: {
@@ -723,7 +737,7 @@ export default {
 				}
 
 				this.explorationData = data
-				
+
 				// Initialize configuration for suggestions
 				data.suggestions?.forEach(suggestion => {
 					if (!this.selectedPropertiesConfig[suggestion.property_name]) {
@@ -833,7 +847,7 @@ export default {
 			try {
 				// Build property updates for selected properties
 				const propertyUpdates = {}
-				
+
 				this.selectedProperties.forEach(propertyName => {
 					const config = this.selectedPropertiesConfig[propertyName]
 					propertyUpdates[propertyName] = {
@@ -846,14 +860,14 @@ export default {
 				})
 
 				const endpoint = `/index.php/apps/openregister/api/schemas/${schemaStore.schemaItem.id}/update-from-exploration`
-				
+
 				const response = await fetch(endpoint, {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
 					},
 					body: JSON.stringify({
-						properties: propertyUpdates
+						properties: propertyUpdates,
 					}),
 				})
 
@@ -868,12 +882,12 @@ export default {
 				}
 
 				this.success = true
-				
+
 				// Update schema in store
 				if (data.schema) {
 					schemaStore.setSchemaItem(data.schema)
 				}
-				
+
 				// Refresh schema list to reflect changes
 				schemaStore.refreshSchemaList()
 
@@ -893,15 +907,15 @@ export default {
 			if (value === null || value === undefined) {
 				return 'null'
 			}
-			
+
 			if (typeof value === 'object') {
 				return '{object}'
 			}
-			
+
 			if (typeof value === 'string' && value.length > 20) {
 				return value.substring(0, 20) + '...'
 			}
-			
+
 			return String(value)
 		},
 		onPageChanged(page) {
@@ -926,54 +940,54 @@ export default {
 			return issues.map(issueType => {
 				return {
 					type: this.getIssueType(issueType),
-					description: this.getIssueDescription(issueType)
+					description: this.getIssueDescription(issueType),
 				}
 			})
 		},
 		getIssueType(issueType) {
 			// Map issue types to UI-friendly categories
 			const typeMap = {
-				'type_mismatch': 'type',
-				'missing_max_length': 'constraint',
-				'max_length_too_small': 'constraint',
-				'missing_format': 'format',
-				'missing_pattern': 'pattern',
-				'missing_minimum': 'constraint',
-				'minimum_too_high': 'constraint',
-				'missing_maximum': 'constraint',
-				'maximum_too_low': 'constraint',
-				'inconsistent_required': 'behavior',
-				'missing_enum': 'enum'
+				type_mismatch: 'type',
+				missing_max_length: 'constraint',
+				max_length_too_small: 'constraint',
+				missing_format: 'format',
+				missing_pattern: 'pattern',
+				missing_minimum: 'constraint',
+				minimum_too_high: 'constraint',
+				missing_maximum: 'constraint',
+				maximum_too_low: 'constraint',
+				inconsistent_required: 'behavior',
+				missing_enum: 'enum',
 			}
 			return typeMap[issueType] || 'general'
 		},
 		getIssueLabel(issueType) {
 			// Get UI-friendly labels for issue types
 			const labelMap = {
-				'type': this.t('openregister', 'Type Issue'),
-				'constraint': this.t('openregister', 'Constraint Issue'),
-				'format': this.t('openregister', 'Format Issue'),
-				'pattern': this.t('openregister', 'Pattern Issue'),
-				'behavior': this.t('openregister', 'Behavior Issue'),
-				'enum': this.t('openregister', 'Enum Issue'),
-				'general': this.t('openregister', 'General Issue')
+				type: this.t('openregister', 'Type Issue'),
+				constraint: this.t('openregister', 'Constraint Issue'),
+				format: this.t('openregister', 'Format Issue'),
+				pattern: this.t('openregister', 'Pattern Issue'),
+				behavior: this.t('openregister', 'Behavior Issue'),
+				enum: this.t('openregister', 'Enum Issue'),
+				general: this.t('openregister', 'General Issue'),
 			}
 			return labelMap[issueType] || this.t('openregister', 'Issue')
 		},
 		getIssueDescription(issueType) {
 			// Get descriptions for different issue types
 			const descriptionMap = {
-				'type_mismatch': this.t('openregister', 'Data type does not match observed values'),
-				'missing_max_length': this.t('openregister', 'Maximum length constraint is missing'),
-				'max_length_too_small': this.t('openregister', 'Maximum length is too restrictive'),
-				'missing_format': this.t('openregister', 'Format constraint is missing'),
-				'missing_pattern': this.t('openregister', 'Pattern constraint is missing'),
-				'missing_minimum': this.t('openregister', 'Minimum value constraint is missing'),
-				'minimum_too_high': this.t('openregister', 'Minimum value is too restrictive'),
-				'missing_maximum': this.t('openregister', 'Maximum value constraint is missing'),
-				'maximum_too_low': this.t('openregister', 'Maximum value is too restrictive'),
-				'inconsistent_required': this.t('openregister', 'Required status is inconsistent'),
-				'missing_enum': this.t('openregister', 'Enum constraint is missing')
+				type_mismatch: this.t('openregister', 'Data type does not match observed values'),
+				missing_max_length: this.t('openregister', 'Maximum length constraint is missing'),
+				max_length_too_small: this.t('openregister', 'Maximum length is too restrictive'),
+				missing_format: this.t('openregister', 'Format constraint is missing'),
+				missing_pattern: this.t('openregister', 'Pattern constraint is missing'),
+				missing_minimum: this.t('openregister', 'Minimum value constraint is missing'),
+				minimum_too_high: this.t('openregister', 'Minimum value is too restrictive'),
+				missing_maximum: this.t('openregister', 'Maximum value constraint is missing'),
+				maximum_too_low: this.t('openregister', 'Maximum value is too restrictive'),
+				inconsistent_required: this.t('openregister', 'Required status is inconsistent'),
+				missing_enum: this.t('openregister', 'Enum constraint is missing'),
 			}
 			return descriptionMap[issueType] || this.t('openregister', 'Property can be improved')
 		},
@@ -1025,7 +1039,7 @@ export default {
 		gap: 1rem;
 		margin-bottom: 1.5rem;
 	}
-	
+
 	.stat-box {
 		background: white;
 		border: 2px solid #e1e5e9;
@@ -1035,13 +1049,13 @@ export default {
 		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 		transition: all 0.3s ease;
 	}
-	
+
 	.stat-box:hover {
 		border-color: #0066cc;
 		box-shadow: 0 4px 8px rgba(0, 102, 204, 0.2);
 		transform: translateY(-2px);
 	}
-	
+
 	.stat-number {
 		font-size: 2rem;
 		font-weight: bold;
@@ -1049,7 +1063,7 @@ export default {
 		margin-bottom: 0.5rem;
 		display: block;
 	}
-	
+
 	.stat-title {
 		font-size: 0.9rem;
 		color: #666;
@@ -1057,7 +1071,7 @@ export default {
 		letter-spacing: 0.5px;
 		font-weight: 600;
 	}
-	
+
 	.analysis-timestamp {
 		text-align: center;
 		padding: 0.75rem;
@@ -1581,7 +1595,7 @@ export default {
 	margin-top: 1rem;
 	padding-top: 1rem;
 	border-top: 1px solid var(--color-border);
-	
+
 	h5 {
 		margin: 0 0 0.75rem 0;
 		color: var(--color-text);
@@ -1599,7 +1613,7 @@ export default {
 	align-items: flex-start;
 	gap: 0.75rem;
 	margin-bottom: 0.5rem;
-	
+
 	&:last-child {
 		margin-bottom: 0;
 	}
@@ -1613,32 +1627,32 @@ export default {
 	text-transform: uppercase;
 	letter-spacing: 0.5px;
 	flex-shrink: 0;
-	
+
 	&.issue-type {
 		background: var(--color-error);
 		color: var(--color-error-text);
 	}
-	
+
 	&.issue-constraint {
 		background: var(--color-warning);
 		color: var(--color-warning-text);
 	}
-	
+
 	&.issue-format {
 		background: var(--color-info);
 		color: var(--color-info-text);
 	}
-	
+
 	&.issue-pattern {
 		background: var(--color-success);
 		color: var(--color-success-text);
 	}
-	
+
 	&.issue-behavior {
 		background: var(--color-text-lighter);
 		color: var(--color-main-text);
 	}
-	
+
 	&.issue-enum {
 		background: var(--color-primary-element);
 		color: var(--color-primary-element-text);
@@ -1673,12 +1687,12 @@ export default {
 .suggestion-change {
 	font-size: 0.85rem;
 	margin-bottom: 0.5rem;
-	
+
 	.current {
 		color: var(--color-error);
 		font-weight: 600;
 	}
-	
+
 	.recommended {
 		color: var(--color-success);
 		font-weight: 600;

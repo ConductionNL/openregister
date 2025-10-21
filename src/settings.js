@@ -10,11 +10,11 @@ Vue.use(PiniaVuePlugin)
 const pinia = createPinia()
 
 // Add translation methods to Vue prototype
-Vue.mixin({ 
-	methods: { 
+Vue.mixin({
+	methods: {
 		t: translate,
 		n: translatePlural,
-	} 
+	},
 })
 
 new Vue({

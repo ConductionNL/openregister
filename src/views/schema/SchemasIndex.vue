@@ -152,7 +152,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 										</template>
 										Publish Objects
 									</NcActionButton>
-									<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setSelected('schemaDetails')">
+									<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); $router.push(`/schemas/${schema.id}`)">
 										<template #icon>
 											<InformationOutline :size="20" />
 										</template>
@@ -296,7 +296,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 												</template>
 												Delete Objects
 											</NcActionButton>
-											<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setSelected('schemaDetails')">
+											<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); $router.push(`/schemas/${schema.id}`)">
 												<template #icon>
 													<InformationOutline :size="20" />
 												</template>

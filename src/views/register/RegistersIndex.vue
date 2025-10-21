@@ -171,10 +171,12 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 									{{ t('openregister', 'Schemas') }} ({{ register.schemas?.length || 0 }})
 								</h3>
 								<div v-if="register.schemas?.length > 0" class="schemaCount">
-									<p>{{ t('openregister', 'This register contains {count} schema{plural}', { 
-										count: register.schemas.length, 
-										plural: register.schemas.length !== 1 ? 's' : '' 
-									}) }}</p>
+									<p>
+										{{ t('openregister', 'This register contains {count} schema{plural}', {
+											count: register.schemas.length,
+											plural: register.schemas.length !== 1 ? 's' : ''
+										}) }}
+									</p>
 								</div>
 								<div v-else class="emptySchemas">
 									{{ t('openregister', 'No schemas found') }}
@@ -220,8 +222,8 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 										</div>
 									</td>
 									<td class="tableColumnConstrained">
-										{{ register.schemas?.length || 0 }} {{ t('openregister', 'schema{plural}', { 
-											plural: register.schemas?.length !== 1 ? 's' : '' 
+										{{ register.schemas?.length || 0 }} {{ t('openregister', 'schema{plural}', {
+											plural: register.schemas?.length !== 1 ? 's' : ''
 										}) }}
 									</td>
 									<td>{{ register.created ? new Date(register.created).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(register.created).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}</td>
@@ -468,7 +470,7 @@ export default {
 			// Set the register ID in the register store for reference
 			registerStore.setRegisterItem({ id: register.id })
 			// Navigate to detail view which will use dashboard store data
-			navigationStore.setSelected('register-detail')
+			this.$router.push(`/registers/${register.id}`)
 		},
 
 		toggleSelectAll(checked) {

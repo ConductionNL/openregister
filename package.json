@@ -86,7 +86,8 @@
     "stylelint-webpack-plugin": "^4.1.1",
     "ts-jest": "^29.1.2",
     "ts-loader": "^9.5.1",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "vue-router": "^3.6.5"
   },
   "overrides": {
     "vue": "^2.7.16",

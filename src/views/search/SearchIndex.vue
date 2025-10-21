@@ -574,9 +574,9 @@ export default {
 		formatBytes,
 		getSourceLabel(source) {
 			const sourceLabels = {
-				'index': '🔍 SOLR Index',
-				'database': '💾 Database',
-				'auto': '🤖 Auto'
+				index: '🔍 SOLR Index',
+				database: '💾 Database',
+				auto: '🤖 Auto',
 			}
 			return sourceLabels[source] || source
 		},

@@ -19,87 +19,87 @@
 						{{ t('openregister', 'Refresh Stats') }}
 					</NcButton>
 
-				<!-- All SOLR Actions Menu -->
-				<NcActions 
-					:aria-label="t('openregister', 'SOLR actions menu')"
-					:menu-name="t('openregister', 'Actions')">
-					<template #icon>
-						<DotsVertical :size="20" />
-					</template>
-						
-					<!-- Connection Settings -->
-					<NcActionButton @click="showConnectionDialog = true">
+					<!-- All SOLR Actions Menu -->
+					<NcActions
+						:aria-label="t('openregister', 'SOLR actions menu')"
+						:menu-name="t('openregister', 'Actions')">
 						<template #icon>
-							<Connection :size="20" />
+							<DotsVertical :size="20" />
 						</template>
-						{{ t('openregister', 'Connection Settings') }}
-					</NcActionButton>
-					
-					<!-- ConfigSet Management -->
-					<NcActionButton @click="showConfigSetDialog = true">
-						<template #icon>
-							<Cog :size="20" />
-						</template>
-						{{ t('openregister', 'ConfigSet Management') }}
-					</NcActionButton>
-					
-					<!-- Collection Management -->
-					<NcActionButton @click="showCollectionDialog = true">
-						<template #icon>
-							<DatabaseCog :size="20" />
-						</template>
-						{{ t('openregister', 'Collection Management') }}
-					</NcActionButton>
-					
-					<!-- AI/Vector Configuration -->
-					<NcActionButton @click="showFileManagementDialog = true">
-						<template #icon>
-							<FileDocument :size="20" />
-						</template>
-						{{ t('openregister', 'File Management') }}
-					</NcActionButton>
-					
-					<NcActionButton @click="showObjectManagementDialog = true">
-						<template #icon>
-							<CubeOutline :size="20" />
-						</template>
-						{{ t('openregister', 'Object Management') }}
-					</NcActionButton>
-					
-					<NcActionButton @click="showLLMConfigDialog = true">
-						<template #icon>
-							<Robot :size="20" />
-						</template>
-						{{ t('openregister', 'LLM Configuration') }}
-					</NcActionButton>
-					
-					<!-- File Processing -->
-					<NcActionButton 
-						v-if="solrOptions.enabled"
-						@click="openFileWarmup">
-						<template #icon>
-							<Fire :size="20" />
-						</template>
-						{{ t('openregister', 'File Warmup') }}
-					</NcActionButton>
-					
-					<NcActionButton 
-						v-if="solrOptions.enabled"
-						@click="openWarmupModal">
-						<template #icon>
-							<Fire :size="20" />
-						</template>
-						{{ t('openregister', 'Object Warmup') }}
-					</NcActionButton>
-					
-					<!-- Diagnostics -->
+
+						<!-- Connection Settings -->
+						<NcActionButton @click="showConnectionDialog = true">
+							<template #icon>
+								<Connection :size="20" />
+							</template>
+							{{ t('openregister', 'Connection Settings') }}
+						</NcActionButton>
+
+						<!-- ConfigSet Management -->
+						<NcActionButton @click="showConfigSetDialog = true">
+							<template #icon>
+								<Cog :size="20" />
+							</template>
+							{{ t('openregister', 'ConfigSet Management') }}
+						</NcActionButton>
+
+						<!-- Collection Management -->
+						<NcActionButton @click="showCollectionDialog = true">
+							<template #icon>
+								<DatabaseCog :size="20" />
+							</template>
+							{{ t('openregister', 'Collection Management') }}
+						</NcActionButton>
+
+						<!-- AI/Vector Configuration -->
+						<NcActionButton @click="showFileManagementDialog = true">
+							<template #icon>
+								<FileDocument :size="20" />
+							</template>
+							{{ t('openregister', 'File Management') }}
+						</NcActionButton>
+
+						<NcActionButton @click="showObjectManagementDialog = true">
+							<template #icon>
+								<CubeOutline :size="20" />
+							</template>
+							{{ t('openregister', 'Object Management') }}
+						</NcActionButton>
+
+						<NcActionButton @click="showLLMConfigDialog = true">
+							<template #icon>
+								<Robot :size="20" />
+							</template>
+							{{ t('openregister', 'LLM Configuration') }}
+						</NcActionButton>
+
+						<!-- File Processing -->
 						<NcActionButton
-						:disabled="loading || saving || warmingUpSolr || loadingFields"
-						@click="inspectFields">
-						<template #icon>
-							<NcLoadingIcon v-if="loadingFields" :size="20" />
-							<ViewList v-else :size="20" />
-						</template>
+							v-if="solrOptions.enabled"
+							@click="openFileWarmup">
+							<template #icon>
+								<Fire :size="20" />
+							</template>
+							{{ t('openregister', 'File Warmup') }}
+						</NcActionButton>
+
+						<NcActionButton
+							v-if="solrOptions.enabled"
+							@click="openWarmupModal">
+							<template #icon>
+								<Fire :size="20" />
+							</template>
+							{{ t('openregister', 'Object Warmup') }}
+						</NcActionButton>
+
+						<!-- Diagnostics -->
+						<NcActionButton
+							:disabled="loading || saving || warmingUpSolr || loadingFields"
+							@click="inspectFields">
+							<template #icon>
+								<NcLoadingIcon v-if="loadingFields" :size="20" />
+								<ViewList v-else :size="20" />
+							</template>
 							{{ t('openregister', 'Inspect Fields') }}
 						</NcActionButton>
 						<NcActionButton
@@ -110,14 +110,14 @@
 							</template>
 							{{ t('openregister', 'Inspect Index') }}
 						</NcActionButton>
-					<NcActionButton
-						v-if="solrOptions.enabled"
-						@click="openFacetConfigModal">
-						<template #icon>
-							<Tune :size="20" />
-						</template>
-						{{ t('openregister', 'Configure Facets') }}
-					</NcActionButton>
+						<NcActionButton
+							v-if="solrOptions.enabled"
+							@click="openFacetConfigModal">
+							<template #icon>
+								<Tune :size="20" />
+							</template>
+							{{ t('openregister', 'Configure Facets') }}
+						</NcActionButton>
 					</NcActions>
 				</div>
 			</div>
@@ -146,14 +146,14 @@
 				</div>
 			</div>
 
-		<!-- Enable SOLR Toggle -->
-		<div class="option-section">
-			<NcCheckboxRadioSwitch
-				v-model="solrEnabled"
-				:disabled="saving"
-				type="switch">
-				{{ solrEnabled ? t('openregister', 'SOLR search enabled') : t('openregister', 'SOLR search disabled') }}
-			</NcCheckboxRadioSwitch>
+			<!-- Enable SOLR Toggle -->
+			<div class="option-section">
+				<NcCheckboxRadioSwitch
+					v-model="solrEnabled"
+					:disabled="saving"
+					type="switch">
+					{{ solrEnabled ? t('openregister', 'SOLR search enabled') : t('openregister', 'SOLR search disabled') }}
+				</NcCheckboxRadioSwitch>
 				<p class="option-description">
 					{{ t('openregister', 'Enable or disable SOLR search integration. Configure connection settings using the Connection Settings button above.') }}
 					<span v-if="saving" class="saving-indicator">
@@ -173,7 +173,9 @@
 
 			<!-- Error State -->
 			<div v-else-if="solrError" class="error-section">
-				<p class="error-message">❌ {{ solrErrorMessage }}</p>
+				<p class="error-message">
+					❌ {{ solrErrorMessage }}
+				</p>
 				<NcButton type="primary" @click="loadSolrStats">
 					<template #icon>
 						<Refresh :size="20" />
@@ -188,7 +190,9 @@
 				<div class="dashboard-stats-grid">
 					<div class="stat-card">
 						<h5>Connection Status</h5>
-						<p :class="connectionStatusClass">{{ solrStats.overview?.connection_status || 'Unknown' }}</p>
+						<p :class="connectionStatusClass">
+							{{ solrStats.overview?.connection_status || 'Unknown' }}
+						</p>
 					</div>
 
 					<div class="stat-card">
@@ -231,263 +235,271 @@
 		</div>
 
 		<!-- Setup SOLR Results Dialog (OLD - TO BE REMOVED) -->
-			<div class="test-dialog">
-				<div v-if="testingConnection" class="test-loading">
-					<div class="loading-spinner">
-						<NcLoadingIcon :size="40" />
+		<div class="test-dialog">
+			<div v-if="testingConnection" class="test-loading">
+				<div class="loading-spinner">
+					<NcLoadingIcon :size="40" />
+				</div>
+				<h4>Testing SOLR Connection...</h4>
+				<p class="loading-description">
+					Please wait while we test the connection to your SOLR server. This may take a few seconds.
+				</p>
+			</div>
+
+			<div v-else-if="testResults" class="test-results">
+				<!-- Overall Status Header -->
+				<div class="results-header">
+					<div class="status-badge" :class="testResults.success ? 'success' : 'error'">
+						<span class="status-icon">{{ testResults.success ? '✅' : '❌' }}</span>
+						<div class="status-text">
+							<h3>{{ testResults.success ? 'Connection Test Successful!' : 'Connection Test Failed' }}</h3>
+							<p>{{ testResults.message }}</p>
+						</div>
 					</div>
-					<h4>Testing SOLR Connection...</h4>
-					<p class="loading-description">
-						Please wait while we test the connection to your SOLR server. This may take a few seconds.
-					</p>
 				</div>
 
-				<div v-else-if="testResults" class="test-results">
-					<!-- Overall Status Header -->
-					<div class="results-header">
-						<div class="status-badge" :class="testResults.success ? 'success' : 'error'">
-							<span class="status-icon">{{ testResults.success ? '✅' : '❌' }}</span>
-							<div class="status-text">
-								<h3>{{ testResults.success ? 'Connection Test Successful!' : 'Connection Test Failed' }}</h3>
-								<p>{{ testResults.message }}</p>
+				<!-- Component Results Grid -->
+				<div v-if="testResults.components" class="components-grid">
+					<!-- Zookeeper Component -->
+					<div v-if="testResults.components.zookeeper" class="component-card zookeeper">
+						<div class="component-header">
+							<div class="component-icon">
+								<span class="icon-bg">🔗</span>
+								<span class="status-indicator" :class="testResults.components.zookeeper.success ? 'success' : 'error'">
+									{{ testResults.components.zookeeper.success ? '✅' : '❌' }}
+								</span>
+							</div>
+							<div class="component-info">
+								<h4>Zookeeper Coordination</h4>
+								<p class="component-status">
+									{{ testResults.components.zookeeper.message }}
+								</p>
+							</div>
+						</div>
+						<div v-if="testResults.components.zookeeper.details" class="component-metrics">
+							<div class="metric">
+								<span class="metric-label">Hosts</span>
+								<span class="metric-value">{{ testResults.components.zookeeper.details.zookeeper_hosts }}</span>
+							</div>
+							<div class="metric">
+								<span class="metric-label">Method</span>
+								<span class="metric-value">{{ testResults.components.zookeeper.details.test_method }}</span>
+							</div>
+							<div v-if="testResults.components.zookeeper.details.successful_hosts?.length" class="metric success">
+								<span class="metric-label">✅ Connected</span>
+								<span class="metric-value">{{ testResults.components.zookeeper.details.successful_hosts.length }} host(s)</span>
+							</div>
+							<div v-if="testResults.components.zookeeper.details.failed_hosts?.length" class="metric error">
+								<span class="metric-label">❌ Failed</span>
+								<span class="metric-value">{{ testResults.components.zookeeper.details.failed_hosts.length }} host(s)</span>
 							</div>
 						</div>
 					</div>
 
-					<!-- Component Results Grid -->
-					<div v-if="testResults.components" class="components-grid">
-						<!-- Zookeeper Component -->
-						<div v-if="testResults.components.zookeeper" class="component-card zookeeper">
-							<div class="component-header">
-								<div class="component-icon">
-									<span class="icon-bg">🔗</span>
-									<span class="status-indicator" :class="testResults.components.zookeeper.success ? 'success' : 'error'">
-										{{ testResults.components.zookeeper.success ? '✅' : '❌' }}
-									</span>
-								</div>
-								<div class="component-info">
-									<h4>Zookeeper Coordination</h4>
-									<p class="component-status">{{ testResults.components.zookeeper.message }}</p>
-								</div>
+					<!-- SOLR Component -->
+					<div v-if="testResults.components.solr" class="component-card solr">
+						<div class="component-header">
+							<div class="component-icon">
+								<span class="icon-bg">🔍</span>
+								<span class="status-indicator" :class="testResults.components.solr.success ? 'success' : 'error'">
+									{{ testResults.components.solr.success ? '✅' : '❌' }}
+								</span>
 							</div>
-							<div v-if="testResults.components.zookeeper.details" class="component-metrics">
-								<div class="metric">
-									<span class="metric-label">Hosts</span>
-									<span class="metric-value">{{ testResults.components.zookeeper.details.zookeeper_hosts }}</span>
-								</div>
-								<div class="metric">
-									<span class="metric-label">Method</span>
-									<span class="metric-value">{{ testResults.components.zookeeper.details.test_method }}</span>
-								</div>
-								<div v-if="testResults.components.zookeeper.details.successful_hosts?.length" class="metric success">
-									<span class="metric-label">✅ Connected</span>
-									<span class="metric-value">{{ testResults.components.zookeeper.details.successful_hosts.length }} host(s)</span>
-								</div>
-								<div v-if="testResults.components.zookeeper.details.failed_hosts?.length" class="metric error">
-									<span class="metric-label">❌ Failed</span>
-									<span class="metric-value">{{ testResults.components.zookeeper.details.failed_hosts.length }} host(s)</span>
-								</div>
+							<div class="component-info">
+								<h4>SOLR Search Engine</h4>
+								<p class="component-status">
+									{{ testResults.components.solr.message }}
+								</p>
 							</div>
 						</div>
-
-						<!-- SOLR Component -->
-						<div v-if="testResults.components.solr" class="component-card solr">
-							<div class="component-header">
-								<div class="component-icon">
-									<span class="icon-bg">🔍</span>
-									<span class="status-indicator" :class="testResults.components.solr.success ? 'success' : 'error'">
-										{{ testResults.components.solr.success ? '✅' : '❌' }}
-									</span>
-								</div>
-								<div class="component-info">
-									<h4>SOLR Search Engine</h4>
-									<p class="component-status">{{ testResults.components.solr.message }}</p>
-								</div>
+						<div v-if="testResults.components.solr.details" class="component-metrics">
+							<div class="metric highlight">
+								<span class="metric-label">⚡ Response Time</span>
+								<span class="metric-value">{{ testResults.components.solr.details.response_time_ms }}ms</span>
 							</div>
-							<div v-if="testResults.components.solr.details" class="component-metrics">
-								<div class="metric highlight">
-									<span class="metric-label">⚡ Response Time</span>
-									<span class="metric-value">{{ testResults.components.solr.details.response_time_ms }}ms</span>
-								</div>
-								<div class="metric">
-									<span class="metric-label">📄 Documents</span>
-									<span class="metric-value">{{ testResults.components.solr.details.num_found?.toLocaleString() || 'N/A' }}</span>
-								</div>
-								<div class="metric">
-									<span class="metric-label">🔗 ZK Connected</span>
-									<span class="metric-value">{{ testResults.components.solr.details.zk_connected ? 'Yes' : 'No' }}</span>
-								</div>
-								<div class="metric">
-									<span class="metric-label">☁️ Cloud Mode</span>
-									<span class="metric-value">{{ testResults.components.solr.details.use_cloud ? 'Enabled' : 'Disabled' }}</span>
-								</div>
-								<div class="metric technical">
-									<span class="metric-label">🌐 Query URL</span>
-									<span class="metric-value technical-url">{{ testResults.components.solr.details.url }}</span>
-								</div>
+							<div class="metric">
+								<span class="metric-label">📄 Documents</span>
+								<span class="metric-value">{{ testResults.components.solr.details.num_found?.toLocaleString() || 'N/A' }}</span>
 							</div>
-						</div>
-
-						<!-- Collection Component -->
-						<div v-if="testResults.components.collection" class="component-card collection">
-							<div class="component-header">
-								<div class="component-icon">
-									<span class="icon-bg">📚</span>
-									<span class="status-indicator" :class="testResults.components.collection.success ? 'success' : 'error'">
-										{{ testResults.components.collection.success ? '✅' : '❌' }}
-									</span>
-								</div>
-								<div class="component-info">
-									<h4>Collection Management</h4>
-									<p class="component-status">{{ testResults.components.collection.message }}</p>
-								</div>
+							<div class="metric">
+								<span class="metric-label">🔗 ZK Connected</span>
+								<span class="metric-value">{{ testResults.components.solr.details.zk_connected ? 'Yes' : 'No' }}</span>
 							</div>
-							<div v-if="testResults.components.collection.details" class="component-metrics">
-								<div class="metric highlight">
-									<span class="metric-label">📁 Collection Name</span>
-									<span class="metric-value">{{ testResults.components.collection.details.collection_name || testResults.components.collection.details.collection }}</span>
-								</div>
-								<div class="metric">
-									<span class="metric-label">🏷️ Type</span>
-									<span class="metric-value">{{ testResults.components.collection.details.collection_type || 'base' }}</span>
-								</div>
-								<div v-if="testResults.components.collection.details.tenant_id" class="metric">
-									<span class="metric-label">🏢 Tenant ID</span>
-									<span class="metric-value">{{ testResults.components.collection.details.tenant_id }}</span>
-								</div>
-								<div class="metric">
-									<span class="metric-label">🗂️ Shards</span>
-									<span class="metric-value">{{ testResults.components.collection.details.shards || 'Unknown' }}</span>
-								</div>
-								<div class="metric">
-									<span class="metric-label">📊 Status</span>
-									<span class="metric-value">{{ testResults.components.collection.details.status || 'Active' }}</span>
-								</div>
-								<div v-if="testResults.components.collection.details.available_collections" class="metric">
-									<span class="metric-label">📋 Available Collections</span>
-									<span class="metric-value">{{ testResults.components.collection.details.available_collections.join(', ') || 'None' }}</span>
-								</div>
+							<div class="metric">
+								<span class="metric-label">☁️ Cloud Mode</span>
+								<span class="metric-value">{{ testResults.components.solr.details.use_cloud ? 'Enabled' : 'Disabled' }}</span>
 							</div>
-						</div>
-
-						<!-- Query Component -->
-						<div v-if="testResults.components.query" class="component-card query">
-							<div class="component-header">
-								<div class="component-icon">
-									<span class="icon-bg">🔍</span>
-									<span class="status-indicator" :class="testResults.components.query.success ? 'success' : 'error'">
-										{{ testResults.components.query.success ? '✅' : '❌' }}
-									</span>
-								</div>
-								<div class="component-info">
-									<h4>Collection Query Test</h4>
-									<p class="component-status">{{ testResults.components.query.message }}</p>
-								</div>
-							</div>
-							<div v-if="testResults.components.query.details" class="component-metrics">
-								<div class="metric">
-									<span class="metric-label">📁 Collection</span>
-									<span class="metric-value">{{ testResults.components.query.details.collection_name }}</span>
-								</div>
-								<div class="metric">
-									<span class="metric-label">🏷️ Type</span>
-									<span class="metric-value">{{ testResults.components.query.details.collection_type || 'base' }}</span>
-								</div>
-								<div v-if="testResults.components.query.details.tenant_id" class="metric">
-									<span class="metric-label">🏢 Tenant ID</span>
-									<span class="metric-value">{{ testResults.components.query.details.tenant_id }}</span>
-								</div>
-								<div class="metric highlight">
-									<span class="metric-label">⚡ Response Time</span>
-									<span class="metric-value">{{ testResults.components.query.details.response_time_ms }}ms</span>
-								</div>
-								<div class="metric">
-									<span class="metric-label">📄 Documents</span>
-									<span class="metric-value">{{ testResults.components.query.details.total_docs?.toLocaleString() || 'N/A' }}</span>
-								</div>
-								<div class="metric technical">
-									<span class="metric-label">🌐 Query URL</span>
-									<span class="metric-value technical-url">{{ testResults.components.query.details.query_url }}</span>
-								</div>
+							<div class="metric technical">
+								<span class="metric-label">🌐 Query URL</span>
+								<span class="metric-value technical-url">{{ testResults.components.solr.details.url }}</span>
 							</div>
 						</div>
 					</div>
 
-					<!-- Summary Stats -->
-					<div v-if="testResults.success" class="test-summary">
-						<div class="summary-card">
-							<h5>🎯 Test Summary</h5>
-							<div class="summary-stats">
-								<div class="stat">
-									<span class="stat-number">{{ Object.keys(testResults.components || {}).length }}</span>
-									<span class="stat-label">Components Tested</span>
-								</div>
-								<div class="stat">
-									<span class="stat-number">{{ Object.values(testResults.components || {}).filter(c => c.success).length }}</span>
-									<span class="stat-label">Passed</span>
-								</div>
-								<div class="stat">
-									<span class="stat-number">{{ testResults.components?.solr?.details?.response_time_ms || 'N/A' }}ms</span>
-									<span class="stat-label">Avg Response</span>
-								</div>
+					<!-- Collection Component -->
+					<div v-if="testResults.components.collection" class="component-card collection">
+						<div class="component-header">
+							<div class="component-icon">
+								<span class="icon-bg">📚</span>
+								<span class="status-indicator" :class="testResults.components.collection.success ? 'success' : 'error'">
+									{{ testResults.components.collection.success ? '✅' : '❌' }}
+								</span>
+							</div>
+							<div class="component-info">
+								<h4>Collection Management</h4>
+								<p class="component-status">
+									{{ testResults.components.collection.message }}
+								</p>
+							</div>
+						</div>
+						<div v-if="testResults.components.collection.details" class="component-metrics">
+							<div class="metric highlight">
+								<span class="metric-label">📁 Collection Name</span>
+								<span class="metric-value">{{ testResults.components.collection.details.collection_name || testResults.components.collection.details.collection }}</span>
+							</div>
+							<div class="metric">
+								<span class="metric-label">🏷️ Type</span>
+								<span class="metric-value">{{ testResults.components.collection.details.collection_type || 'base' }}</span>
+							</div>
+							<div v-if="testResults.components.collection.details.tenant_id" class="metric">
+								<span class="metric-label">🏢 Tenant ID</span>
+								<span class="metric-value">{{ testResults.components.collection.details.tenant_id }}</span>
+							</div>
+							<div class="metric">
+								<span class="metric-label">🗂️ Shards</span>
+								<span class="metric-value">{{ testResults.components.collection.details.shards || 'Unknown' }}</span>
+							</div>
+							<div class="metric">
+								<span class="metric-label">📊 Status</span>
+								<span class="metric-value">{{ testResults.components.collection.details.status || 'Active' }}</span>
+							</div>
+							<div v-if="testResults.components.collection.details.available_collections" class="metric">
+								<span class="metric-label">📋 Available Collections</span>
+								<span class="metric-value">{{ testResults.components.collection.details.available_collections.join(', ') || 'None' }}</span>
 							</div>
 						</div>
 					</div>
 
-					<!-- Kubernetes Services Discovery -->
-					<div class="kubernetes-services">
-						<div class="services-card">
-							<h5>🌐 Kubernetes Services Discovery</h5>
-							<p class="services-description">
-								Common Kubernetes service patterns for SOLR and Zookeeper in your cluster:
-							</p>
-							<div class="service-suggestions">
-								<div class="service-group">
-									<h6>🔍 SOLR Services</h6>
-									<div class="service-examples">
-										<code>con-solr-solrcloud-common.solr.svc.cluster.local</code>
-										<code>solr-headless.solr.svc.cluster.local</code>
-										<code>solr-service.default.svc.cluster.local</code>
-									</div>
-								</div>
-								<div class="service-group">
-									<h6>🔗 Zookeeper Services</h6>
-									<div class="service-examples">
-										<code>con-zookeeper-solrcloud-common.zookeeper.svc.cluster.local</code>
-										<code>zookeeper-headless.zookeeper.svc.cluster.local</code>
-										<code>zookeeper-service.default.svc.cluster.local</code>
-									</div>
-								</div>
-								<div class="service-group">
-									<h6>💡 Service Discovery Tips</h6>
-									<div class="service-tips">
-										<p>• Use <code>kubectl get services -n &lt;namespace&gt;</code> to list services</p>
-										<p>• Format: <code>&lt;service-name&gt;.&lt;namespace&gt;.svc.cluster.local</code></p>
-										<p>• Default namespace services: <code>&lt;service-name&gt;.default.svc.cluster.local</code></p>
-									</div>
-								</div>
+					<!-- Query Component -->
+					<div v-if="testResults.components.query" class="component-card query">
+						<div class="component-header">
+							<div class="component-icon">
+								<span class="icon-bg">🔍</span>
+								<span class="status-indicator" :class="testResults.components.query.success ? 'success' : 'error'">
+									{{ testResults.components.query.success ? '✅' : '❌' }}
+								</span>
+							</div>
+							<div class="component-info">
+								<h4>Collection Query Test</h4>
+								<p class="component-status">
+									{{ testResults.components.query.message }}
+								</p>
+							</div>
+						</div>
+						<div v-if="testResults.components.query.details" class="component-metrics">
+							<div class="metric">
+								<span class="metric-label">📁 Collection</span>
+								<span class="metric-value">{{ testResults.components.query.details.collection_name }}</span>
+							</div>
+							<div class="metric">
+								<span class="metric-label">🏷️ Type</span>
+								<span class="metric-value">{{ testResults.components.query.details.collection_type || 'base' }}</span>
+							</div>
+							<div v-if="testResults.components.query.details.tenant_id" class="metric">
+								<span class="metric-label">🏢 Tenant ID</span>
+								<span class="metric-value">{{ testResults.components.query.details.tenant_id }}</span>
+							</div>
+							<div class="metric highlight">
+								<span class="metric-label">⚡ Response Time</span>
+								<span class="metric-value">{{ testResults.components.query.details.response_time_ms }}ms</span>
+							</div>
+							<div class="metric">
+								<span class="metric-label">📄 Documents</span>
+								<span class="metric-value">{{ testResults.components.query.details.total_docs?.toLocaleString() || 'N/A' }}</span>
+							</div>
+							<div class="metric technical">
+								<span class="metric-label">🌐 Query URL</span>
+								<span class="metric-value technical-url">{{ testResults.components.query.details.query_url }}</span>
 							</div>
 						</div>
 					</div>
 				</div>
 
-				<div class="dialog-actions">
-					<NcButton
-						:disabled="testingConnection"
-						@click="hideTestDialog">
-						Close
-					</NcButton>
-					<NcButton
-						v-if="!testingConnection && testResults && !testResults.success"
-						type="primary"
-						@click="retryTest">
-						<template #icon>
-							<TestTube :size="20" />
-						</template>
-						Test Again
-					</NcButton>
+				<!-- Summary Stats -->
+				<div v-if="testResults.success" class="test-summary">
+					<div class="summary-card">
+						<h5>🎯 Test Summary</h5>
+						<div class="summary-stats">
+							<div class="stat">
+								<span class="stat-number">{{ Object.keys(testResults.components || {}).length }}</span>
+								<span class="stat-label">Components Tested</span>
+							</div>
+							<div class="stat">
+								<span class="stat-number">{{ Object.values(testResults.components || {}).filter(c => c.success).length }}</span>
+								<span class="stat-label">Passed</span>
+							</div>
+							<div class="stat">
+								<span class="stat-number">{{ testResults.components?.solr?.details?.response_time_ms || 'N/A' }}ms</span>
+								<span class="stat-label">Avg Response</span>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Kubernetes Services Discovery -->
+				<div class="kubernetes-services">
+					<div class="services-card">
+						<h5>🌐 Kubernetes Services Discovery</h5>
+						<p class="services-description">
+							Common Kubernetes service patterns for SOLR and Zookeeper in your cluster:
+						</p>
+						<div class="service-suggestions">
+							<div class="service-group">
+								<h6>🔍 SOLR Services</h6>
+								<div class="service-examples">
+									<code>con-solr-solrcloud-common.solr.svc.cluster.local</code>
+									<code>solr-headless.solr.svc.cluster.local</code>
+									<code>solr-service.default.svc.cluster.local</code>
+								</div>
+							</div>
+							<div class="service-group">
+								<h6>🔗 Zookeeper Services</h6>
+								<div class="service-examples">
+									<code>con-zookeeper-solrcloud-common.zookeeper.svc.cluster.local</code>
+									<code>zookeeper-headless.zookeeper.svc.cluster.local</code>
+									<code>zookeeper-service.default.svc.cluster.local</code>
+								</div>
+							</div>
+							<div class="service-group">
+								<h6>💡 Service Discovery Tips</h6>
+								<div class="service-tips">
+									<p>• Use <code>kubectl get services -n &lt;namespace&gt;</code> to list services</p>
+									<p>• Format: <code>&lt;service-name&gt;.&lt;namespace&gt;.svc.cluster.local</code></p>
+									<p>• Default namespace services: <code>&lt;service-name&gt;.default.svc.cluster.local</code></p>
+								</div>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
+
+			<div class="dialog-actions">
+				<NcButton
+					:disabled="testingConnection"
+					@click="hideTestDialog">
+					Close
+				</NcButton>
+				<NcButton
+					v-if="!testingConnection && testResults && !testResults.success"
+					type="primary"
+					@click="retryTest">
+					<template #icon>
+						<TestTube :size="20" />
+					</template>
+					Test Again
+				</NcButton>
+			</div>
+		</div>
 		</NcDialog>
 
 		<!-- Setup SOLR Results Dialog -->
@@ -495,8 +507,8 @@
 			v-if="showSetupDialog"
 			name="SOLR Setup Results"
 			:can-close="!settingUpSolr"
-			@closing="hideSetupDialog"
-			:size="'large'">
+			:size="'large'"
+			@closing="hideSetupDialog">
 			<div class="setup-dialog">
 				<!-- Confirmation State -->
 				<div v-if="!settingUpSolr && !setupResults" class="setup-confirmation">
@@ -540,7 +552,10 @@
 					<h4>Setting up SOLR...</h4>
 					<div class="game-loading-content">
 						<div class="educational-tips">
-							<div v-for="(tip, index) in visibleTips" :key="index" class="tip-item" :class="{ 'tip-fade-in': tip.visible }">
+							<div v-for="(tip, index) in visibleTips"
+								:key="index"
+								class="tip-item"
+								:class="{ 'tip-fade-in': tip.visible }">
 								{{ tip.text }}
 							</div>
 						</div>
@@ -570,10 +585,9 @@
 						<div class="progress-summary">
 							<div class="progress-bar-container">
 								<div class="progress-bar">
-									<div class="progress-fill" 
+									<div class="progress-fill"
 										:style="{ width: (setupResults.progress.completed_steps / setupResults.progress.total_steps) * 100 + '%' }"
-										:class="setupResults.success ? 'success' : 'error'">
-									</div>
+										:class="setupResults.success ? 'success' : 'error'" />
 								</div>
 								<div class="progress-text">
 									{{ setupResults.progress.completed_steps }} / {{ setupResults.progress.total_steps }} steps completed
@@ -592,7 +606,7 @@
 						<div class="propagation-explanation">
 							<p><strong>What happened?</strong></p>
 							<p>The configuration was successfully created but is still propagating across the SOLR cluster nodes. This is normal in distributed SOLR environments.</p>
-							
+
 							<div class="propagation-details">
 								<p><strong>📊 Retry Information:</strong></p>
 								<ul v-if="setupResults.error_details?.solr_response">
@@ -612,7 +626,7 @@
 								</ol>
 							</div>
 
-							<div class="propagation-technical" v-if="setupResults.error_details?.configuration_used">
+							<div v-if="setupResults.error_details?.configuration_used" class="propagation-technical">
 								<details>
 									<summary>🔧 Technical Details</summary>
 									<div class="config-grid">
@@ -637,7 +651,7 @@
 									<span class="error-operation">{{ setupResults.error_details.operation }}</span>
 								</div>
 							</div>
-							
+
 							<div v-if="setupResults.error_details.configuration_used" class="configuration-used">
 								<h6>Configuration Used:</h6>
 								<div class="config-grid">
@@ -654,8 +668,10 @@
 					<div v-if="setupResults.steps" class="setup-steps">
 						<h4>🔧 Setup Process</h4>
 						<div class="steps-timeline">
-							<div v-for="step in setupResults.steps" :key="step.step_number" 
-								class="step-item" :class="step.status">
+							<div v-for="step in setupResults.steps"
+								:key="step.step_number"
+								class="step-item"
+								:class="step.status">
 								<div class="step-indicator">
 									<span class="step-number">{{ step.step_number }}</span>
 									<span class="step-status" :class="step.status">
@@ -664,7 +680,9 @@
 								</div>
 								<div class="step-content">
 									<h5>{{ step.step_name }}</h5>
-									<p class="step-description">{{ step.description }}</p>
+									<p class="step-description">
+										{{ step.description }}
+									</p>
 									<div v-if="step.timestamp" class="step-timestamp">
 										⏱️ {{ step.timestamp }}
 									</div>
@@ -798,8 +816,8 @@
 			v-if="showFieldsDialog"
 			name="SOLR Field Configuration"
 			:can-close="!loadingFields"
-			@closing="hideFieldsDialog"
-			:size="'large'">
+			:size="'large'"
+			@closing="hideFieldsDialog">
 			<div class="fields-dialog">
 				<div v-if="loadingFields" class="fields-loading">
 					<div class="loading-spinner">
@@ -820,7 +838,7 @@
 								<h3>Configuration Issues Found</h3>
 								<p>{{ fieldComparison.total_differences }} field configuration differences detected between schemas and SOLR.</p>
 							</div>
-							<button @click="scrollToMismatches" class="alert-button">
+							<button class="alert-button" @click="scrollToMismatches">
 								View Issues
 							</button>
 						</div>
@@ -832,16 +850,28 @@
 							<h4>📊 Fields Overview</h4>
 							<div class="overview-stats">
 								<div class="stat-card">
-									<div class="stat-number">{{ Object.keys(fieldsInfo.fields).length }}</div>
-									<div class="stat-label">Total Fields</div>
+									<div class="stat-number">
+										{{ Object.keys(fieldsInfo.fields).length }}
+									</div>
+									<div class="stat-label">
+										Total Fields
+									</div>
 								</div>
 								<div class="stat-card">
-									<div class="stat-number">{{ fieldsInfo.dynamic_fields ? Object.keys(fieldsInfo.dynamic_fields).length : 0 }}</div>
-									<div class="stat-label">Dynamic Fields</div>
+									<div class="stat-number">
+										{{ fieldsInfo.dynamic_fields ? Object.keys(fieldsInfo.dynamic_fields).length : 0 }}
+									</div>
+									<div class="stat-label">
+										Dynamic Fields
+									</div>
 								</div>
 								<div class="stat-card">
-									<div class="stat-number">{{ fieldsInfo.field_types ? Object.keys(fieldsInfo.field_types).length : 0 }}</div>
-									<div class="stat-label">Field Types</div>
+									<div class="stat-number">
+										{{ fieldsInfo.field_types ? Object.keys(fieldsInfo.field_types).length : 0 }}
+									</div>
+									<div class="stat-label">
+										Field Types
+									</div>
 								</div>
 							</div>
 						</div>
@@ -873,10 +903,10 @@
 						<div class="fields-table-section">
 							<h4>🔍 Field Details</h4>
 							<div class="fields-controls">
-								<input 
-									v-model="fieldFilter" 
-									type="text" 
-									placeholder="Filter fields..." 
+								<input
+									v-model="fieldFilter"
+									type="text"
+									placeholder="Filter fields..."
 									class="field-filter">
 								<NcSelect
 									v-model="fieldTypeFilter"
@@ -971,12 +1001,10 @@
 								</div>
 							</div>
 						</div>
-
-
 					</div>
 
 					<!-- Schema vs SOLR Comparison -->
-					<div v-if="fieldComparison && fieldComparison.total_differences > 0" class="comparison-section" id="field-mismatches">
+					<div v-if="fieldComparison && fieldComparison.total_differences > 0" id="field-mismatches" class="comparison-section">
 						<h3 class="comparison-title">
 							<span class="comparison-icon">⚠️</span>
 							Schema vs SOLR Differences ({{ fieldComparison.total_differences }})
@@ -990,7 +1018,9 @@
 							<h4 class="category-title missing">
 								Missing Fields ({{ fieldComparison.missing.length }})
 							</h4>
-							<p class="category-description">Fields defined in schemas but not present in SOLR:</p>
+							<p class="category-description">
+								Fields defined in schemas but not present in SOLR:
+							</p>
 							<table class="comparison-table">
 								<thead>
 									<tr>
@@ -1001,7 +1031,9 @@
 								</thead>
 								<tbody>
 									<tr v-for="field in fieldComparison.missing" :key="'missing-' + field.name">
-										<td class="field-name">{{ field.name }}</td>
+										<td class="field-name">
+											{{ field.name }}
+										</td>
 										<td>
 											<span class="field-type" :class="field.config && field.config.type">{{ field.config && field.config.type || field.type }}</span>
 										</td>
@@ -1021,7 +1053,9 @@
 							<h4 class="category-title extra">
 								Extra Fields ({{ fieldComparison.extra.length }})
 							</h4>
-							<p class="category-description">Fields present in SOLR but not defined in any schema:</p>
+							<p class="category-description">
+								Fields present in SOLR but not defined in any schema:
+							</p>
 							<table class="comparison-table">
 								<thead>
 									<tr>
@@ -1031,13 +1065,15 @@
 								</thead>
 								<tbody>
 									<tr v-for="fieldName in fieldComparison.extra" :key="'extra-' + fieldName">
-										<td class="field-name">{{ fieldName }}</td>
+										<td class="field-name">
+											{{ fieldName }}
+										</td>
 										<td class="field-actions">
 											<NcButton
 												type="error"
 												:disabled="deletingField === fieldName"
-												@click="deleteField(fieldName)"
-												:aria-label="`Delete field ${fieldName}`">
+												:aria-label="`Delete field ${fieldName}`"
+												@click="deleteField(fieldName)">
 												<template #icon>
 													<NcLoadingIcon v-if="deletingField === fieldName" :size="16" />
 													<Delete v-else :size="16" />
@@ -1054,15 +1090,19 @@
 							<h4 class="category-title mismatched">
 								Configuration Mismatches ({{ fieldComparison.mismatched.length }})
 							</h4>
-							<p class="category-description">Fields with different configuration between schemas and SOLR:</p>
+							<p class="category-description">
+								Fields with different configuration between schemas and SOLR:
+							</p>
 							<div v-for="field in fieldComparison.mismatched" :key="'mismatch-' + field.field" class="field-comparison-card">
 								<div class="field-header">
-									<h5 class="field-title">{{ field.field }}</h5>
+									<h5 class="field-title">
+										{{ field.field }}
+									</h5>
 									<NcButton
 										type="error"
 										:disabled="deletingField === field.field"
-										@click="deleteField(field.field)"
-										:aria-label="`Delete field ${field.field}`">
+										:aria-label="`Delete field ${field.field}`"
+										@click="deleteField(field.field)">
 										<template #icon>
 											<NcLoadingIcon v-if="deletingField === field.field" :size="16" />
 											<Delete v-else :size="16" />
@@ -1080,7 +1120,9 @@
 									</thead>
 									<tbody>
 										<tr>
-											<td class="property-name">Type</td>
+											<td class="property-name">
+												Type
+											</td>
 											<td class="field-config expected-config">
 												<span class="field-value expected-value">
 													{{ field.expected_type }}
@@ -1093,7 +1135,9 @@
 											</td>
 										</tr>
 										<tr>
-											<td class="property-name">Multi</td>
+											<td class="property-name">
+												Multi
+											</td>
 											<td class="field-config expected-config">
 												<span class="field-value expected-value">
 													{{ field.expected_multiValued ? 'Yes' : 'No' }}
@@ -1106,7 +1150,9 @@
 											</td>
 										</tr>
 										<tr>
-											<td class="property-name">DocValues</td>
+											<td class="property-name">
+												DocValues
+											</td>
 											<td class="field-config expected-config">
 												<span class="field-value expected-value">
 													{{ field.expected_docValues ? 'Yes' : 'No' }}
@@ -1121,16 +1167,18 @@
 									</tbody>
 								</table>
 							</div>
-							
+
 							<!-- Fix Mismatches Actions -->
 							<div class="fix-mismatches-section">
-								<h4 class="fix-title">Fix Configuration Issues</h4>
+								<h4 class="fix-title">
+									Fix Configuration Issues
+								</h4>
 								<p class="fix-description">
 									Update SOLR field configurations to match the expected schema definitions.
 								</p>
 								<div class="fix-actions">
-									<NcButton 
-										type="secondary" 
+									<NcButton
+										type="secondary"
 										:disabled="fixingFields"
 										@click="fixMismatchedFields(true)">
 										<template #icon>
@@ -1139,8 +1187,8 @@
 										</template>
 										Preview Changes (Dry Run)
 									</NcButton>
-									<NcButton 
-										type="primary" 
+									<NcButton
+										type="primary"
 										:disabled="fixingFields"
 										@click="fixMismatchedFields(false)">
 										<template #icon>
@@ -1164,7 +1212,7 @@
 							Create the missing fields in SOLR to resolve schema differences:
 						</p>
 						<div class="action-buttons">
-							<NcButton 
+							<NcButton
 								type="secondary"
 								:disabled="creatingFields"
 								@click="createMissingFields(true)">
@@ -1174,8 +1222,8 @@
 								</template>
 								Preview Changes (Dry Run)
 							</NcButton>
-							
-							<NcButton 
+
+							<NcButton
 								type="primary"
 								:disabled="creatingFields"
 								@click="createMissingFields(false)">
@@ -1196,13 +1244,17 @@
 							<div v-if="fieldCreationResult.dry_run && fieldCreationResult.would_create" class="dry-run-preview">
 								<p><strong>Fields that would be created:</strong></p>
 								<ul class="field-list">
-									<li v-for="field in fieldCreationResult.would_create" :key="field" class="field-item">{{ field }}</li>
+									<li v-for="field in fieldCreationResult.would_create" :key="field" class="field-item">
+										{{ field }}
+									</li>
 								</ul>
 							</div>
 							<div v-else-if="fieldCreationResult.created && fieldCreationResult.created.length > 0" class="created-fields">
 								<p><strong>Successfully created {{ fieldCreationResult.created.length }} fields:</strong></p>
 								<ul class="field-list">
-									<li v-for="field in fieldCreationResult.created" :key="field" class="field-item success">✅ {{ field }}</li>
+									<li v-for="field in fieldCreationResult.created" :key="field" class="field-item success">
+										✅ {{ field }}
+									</li>
 								</ul>
 								<div v-if="fieldCreationResult.execution_time_ms" class="execution-time">
 									<small>Completed in {{ fieldCreationResult.execution_time_ms }}ms</small>
@@ -1268,7 +1320,7 @@
 
 		<!-- Dashboard Modals -->
 		<!-- Warmup Modal -->
-		<SolrWarmupModal 
+		<SolrWarmupModal
 			:show="showWarmupDialog"
 			:object-stats="objectStats"
 			:memory-prediction="memoryPrediction"
@@ -1279,34 +1331,29 @@
 			:available-schemas="availableSchemas"
 			:schemas-loading="schemasLoading"
 			@close="closeWarmupModal"
-			@start-warmup="handleStartWarmup"
-		/>
+			@start-warmup="handleStartWarmup" />
 
 		<!-- Clear Index Modal -->
-		<ClearIndexModal 
+		<ClearIndexModal
 			:show="showClearDialog"
 			@close="showClearDialog = false"
-			@confirm="handleClearIndex"
-		/>
+			@confirm="handleClearIndex" />
 
 		<!-- Inspect Index Modal -->
-		<InspectIndexModal 
+		<InspectIndexModal
 			:show="showInspectDialog"
-			@close="showInspectDialog = false"
-		/>
+			@close="showInspectDialog = false" />
 
 		<!-- Delete Collection Modal -->
 		<DeleteCollectionModal
 			:show="showDeleteCollectionDialog"
 			@close="closeDeleteCollectionModal"
-			@deleted="handleCollectionDeleted"
-		/>
+			@deleted="handleCollectionDeleted" />
 
 		<!-- Facet Configuration Modal -->
-		<FacetConfigModal 
+		<FacetConfigModal
 			:show="showFacetConfigDialog"
-			@close="showFacetConfigDialog = false"
-		/>
+			@close="showFacetConfigDialog = false" />
 
 		<!-- Connection Configuration Modal -->
 		<ConnectionConfigModal
@@ -1315,44 +1362,37 @@
 			:scheme-options="schemeOptions"
 			:saving="saving"
 			@close="showConnectionDialog = false"
-			@save="handleConnectionSave"
-		/>
+			@save="handleConnectionSave" />
 
 		<!-- ConfigSet Management Modal -->
 		<ConfigSetManagementModal
 			:show="showConfigSetDialog"
-			@closing="showConfigSetDialog = false"
-		/>
+			@closing="showConfigSetDialog = false" />
 
 		<!-- Collection Management Modal -->
 		<CollectionManagementModal
 			:show="showCollectionDialog"
-			@closing="showCollectionDialog = false"
-		/>
+			@closing="showCollectionDialog = false" />
 
 		<!-- File Management Modal -->
 		<FileManagementModal
 			:show="showFileManagementDialog"
-			@closing="showFileManagementDialog = false"
-		/>
+			@closing="showFileManagementDialog = false" />
 
 		<!-- Object Management Modal -->
 		<ObjectManagementModal
 			:show="showObjectManagementDialog"
-			@closing="showObjectManagementDialog = false"
-		/>
+			@closing="showObjectManagementDialog = false" />
 
 		<!-- LLM Configuration Modal -->
 		<LLMConfigModal
 			:show="showLLMConfigDialog"
-			@closing="showLLMConfigDialog = false"
-		/>
+			@closing="showLLMConfigDialog = false" />
 
 		<!-- File Warmup Modal -->
 		<FileWarmupModal
 			:open="showFileWarmupDialog"
-			@close="showFileWarmupDialog = false"
-		/>
+			@close="showFileWarmupDialog = false" />
 	</NcSettingsSection>
 </template>
 
@@ -1397,7 +1437,7 @@ import { generateUrl } from '@nextcloud/router'
 
 export default {
 	name: 'SolrConfiguration',
-	
+
 	components: {
 		NcSettingsSection,
 		NcButton,
@@ -1472,8 +1512,8 @@ export default {
 				prediction_safe: true,
 				formatted: {
 					total_predicted: 'Unknown',
-					available: 'Unknown'
-				}
+					available: 'Unknown',
+				},
 			},
 			warmingUp: false,
 			warmupCompleted: false,
@@ -1498,7 +1538,7 @@ export default {
 				'📊 SOLR provides rich analytics and statistics about search performance...',
 				'🛡️ Security features include authentication, authorization, and SSL encryption...',
 				'🚀 Auto-scaling can dynamically add or remove nodes based on load...',
-				'💡 Did you know? SOLR powers search for Netflix, Apple, and many other major sites!'
+				'💡 Did you know? SOLR powers search for Netflix, Apple, and many other major sites!',
 			],
 			visibleTips: [],
 			currentLoadingMessage: 'Initializing SOLR setup...',
@@ -1523,7 +1563,7 @@ export default {
 			},
 			set(value) {
 				this.settingsStore.solrOptions = value
-			}
+			},
 		},
 
 		// Computed property for SOLR enabled toggle with auto-save
@@ -1538,17 +1578,17 @@ export default {
 				// Update the store
 				this.solrOptions.enabled = newValue
 				console.log('💾 Saving settings...')
-				
+
 				// Auto-save the settings
 				await this.saveSettings()
 				console.log('✅ Settings saved')
-				
+
 				// If SOLR was just enabled, load stats
 				if (newValue) {
 					console.log('📊 SOLR enabled, loading stats...')
 					await this.loadSolrStats()
 				}
-			}
+			},
 		},
 
 		solrConnectionStatus() {
@@ -1629,23 +1669,23 @@ export default {
 			}
 
 			let fields = this.fieldsInfo.fields
-			
+
 			// Apply text filter
 			if (this.fieldFilter) {
 				const filter = this.fieldFilter.toLowerCase()
 				fields = Object.fromEntries(
-					Object.entries(fields).filter(([name]) => 
-						name.toLowerCase().includes(filter)
-					)
+					Object.entries(fields).filter(([name]) =>
+						name.toLowerCase().includes(filter),
+					),
 				)
 			}
 
 			// Apply type filter
 			if (this.fieldTypeFilter) {
 				fields = Object.fromEntries(
-					Object.entries(fields).filter(([, field]) => 
-						field.type === this.fieldTypeFilter.value
-					)
+					Object.entries(fields).filter(([, field]) =>
+						field.type === this.fieldTypeFilter.value,
+					),
 				)
 			}
 
@@ -1660,7 +1700,7 @@ export default {
 			const types = [...new Set(Object.values(this.fieldsInfo.fields).map(field => field.type))]
 			return types.map(type => ({
 				value: type,
-				label: type
+				label: type,
 			})).sort((a, b) => a.label.localeCompare(b.label))
 		},
 
@@ -1678,7 +1718,7 @@ export default {
 
 	async mounted() {
 		console.log('🔧 SolrConfiguration mounted - starting initialization')
-		
+
 		// Wait for settings store to load first
 		try {
 			await this.settingsStore.loadSettings()
@@ -1687,7 +1727,7 @@ export default {
 		} catch (error) {
 			console.error('❌ Failed to load settings:', error)
 		}
-		
+
 		// Load dashboard stats if SOLR is enabled
 		if (this.solrEnabled) {
 			console.log('📊 SOLR is enabled, loading stats...')
@@ -1695,7 +1735,7 @@ export default {
 				// Load both SOLR stats and object stats in parallel
 				await Promise.all([
 					this.loadSolrStats(),
-					this.loadObjectStats()
+					this.loadObjectStats(),
 				])
 				console.log('✅ Stats loaded successfully')
 			} catch (error) {
@@ -1724,10 +1764,10 @@ export default {
 		async startSolrSetup() {
 			// Start the game-style loading
 			this.startGameLoading()
-			
+
 			// Actually start the SOLR setup process
 			await this.settingsStore.setupSolr()
-			
+
 			// Stop the game-style loading
 			this.stopGameLoading()
 		},
@@ -1736,10 +1776,10 @@ export default {
 			this.visibleTips = []
 			this.tipIndex = 0
 			this.currentLoadingMessage = 'Initializing SOLR setup...'
-			
+
 			// Show first tip immediately
 			this.showNextTip()
-			
+
 			// Set interval to show new tips every 3 seconds
 			this.loadingInterval = setInterval(() => {
 				this.showNextTip()
@@ -1758,10 +1798,10 @@ export default {
 			if (this.tipIndex < this.loadingTips.length) {
 				this.visibleTips.push({
 					text: this.loadingTips[this.tipIndex],
-					visible: true
+					visible: true,
 				})
 				this.tipIndex++
-				
+
 				// Keep only last 3 tips visible
 				if (this.visibleTips.length > 3) {
 					this.visibleTips.shift()
@@ -1778,16 +1818,16 @@ export default {
 				'Creating search collections...',
 				'Configuring field mappings...',
 				'Optimizing search performance...',
-				'Finalizing setup...'
+				'Finalizing setup...',
 			]
-			
+
 			const randomMessage = messages[Math.floor(Math.random() * messages.length)]
 			this.currentLoadingMessage = randomMessage
 		},
 
 		formatTime(timestamp) {
 			if (!timestamp) return 'Unknown'
-			
+
 			try {
 				const date = new Date(timestamp)
 				return date.toLocaleTimeString()
@@ -1831,7 +1871,7 @@ export default {
 		async createMissingFields(dryRun = false) {
 			try {
 				await this.settingsStore.createMissingSolrFields(dryRun)
-				
+
 				// Show success notification
 				if (this.fieldCreationResult?.success) {
 					if (dryRun) {
@@ -1850,7 +1890,7 @@ export default {
 			try {
 				// Use the dedicated fix-mismatches endpoint (automatically detects and fixes all mismatches)
 				await this.settingsStore.fixMismatchedSolrFields(dryRun)
-				
+
 				// Show success notification
 				if (this.fieldCreationResult?.success) {
 					const fixedCount = this.fieldCreationResult.fixed?.length || 0
@@ -1874,14 +1914,14 @@ export default {
 
 		getTypeClass(type) {
 			const typeMap = {
-				'string': 'type-string',
-				'text_general': 'type-text',
-				'pint': 'type-integer',
-				'pfloat': 'type-float',
-				'pdate': 'type-date',
-				'boolean': 'type-boolean',
-				'plong': 'type-long',
-				'pdouble': 'type-double',
+				string: 'type-string',
+				text_general: 'type-text',
+				pint: 'type-integer',
+				pfloat: 'type-float',
+				pdate: 'type-date',
+				boolean: 'type-boolean',
+				plong: 'type-long',
+				pdouble: 'type-double',
 			}
 			return typeMap[type] || 'type-unknown'
 		},
@@ -1967,10 +2007,10 @@ export default {
 				// Use _extend=@self.stats to get object counts in one call
 				const response = await axios.get(
 					generateUrl('/apps/openregister/api/schemas'),
-					{ params: { _extend: '@self.stats' } }
+					{ params: { _extend: '@self.stats' } },
 				)
 				console.log('📊 Schemas API response:', response.data)
-				
+
 				// Handle different response formats
 				let schemaArray = []
 				if (response.data && Array.isArray(response.data.results)) {
@@ -1980,26 +2020,26 @@ export default {
 				} else if (response.data && response.data.data && Array.isArray(response.data.data)) {
 					schemaArray = response.data.data
 				}
-				
+
 				console.log('📋 Schema array:', schemaArray)
 				console.log('🔍 First schema structure:', schemaArray[0])
-				
+
 				if (schemaArray.length > 0) {
 					this.availableSchemas = schemaArray
 						.filter(schema => schema && (schema.id || schema.uuid))
 						.map(schema => {
 							const schemaId = schema.id || schema.uuid
 							const objectCount = schema.stats?.objects?.total || 0
-							
+
 							console.log(`📊 Schema "${schema.title || schemaId}" has ${objectCount} objects`)
-							
+
 							return {
 								id: schemaId,
 								label: schema.title || schema.name || schemaId || 'Unnamed Schema',
-								objectCount: objectCount
+								objectCount,
 							}
 						})
-					
+
 					console.log('✅ Available schemas loaded:', this.availableSchemas)
 					console.log('📊 Total schemas after filtering:', this.availableSchemas.length)
 				} else {
@@ -2049,7 +2089,7 @@ export default {
 		async handleCollectionDeleted(result) {
 			// Close the modal
 			this.closeDeleteCollectionModal()
-			
+
 			// Refresh SOLR stats to reflect the deletion
 			await this.loadSolrStats()
 		},
@@ -2058,7 +2098,7 @@ export default {
 			try {
 				const url = generateUrl('/apps/openregister/api/settings/solr/clear')
 				const response = await axios.post(url)
-				
+
 				// Close modal and refresh stats
 				this.showClearDialog = false
 				await this.loadSolrStats()
@@ -2070,15 +2110,15 @@ export default {
 
 		async loadObjectStats() {
 			this.objectStats.loading = true
-			
+
 			try {
 				// Use SOLR dashboard stats to get all data needed for warmup (total count + memory prediction)
 				await this.loadSolrStats()
-				
+
 				// Get the total objects count from SOLR stats (we now index all objects, not just published)
 				const totalObjects = this.solrStats?.total_count || 0
 				this.objectStats.totalObjects = totalObjects
-				
+
 				// Get memory prediction from SOLR stats (no separate API call needed)
 				if (this.solrStats?.memory_prediction) {
 					this.memoryPrediction = this.solrStats.memory_prediction
@@ -2088,8 +2128,8 @@ export default {
 						prediction_safe: true,
 						formatted: {
 							total_predicted: 'Unknown',
-							available: 'Unknown'
-						}
+							available: 'Unknown',
+						},
 					}
 				}
 			} catch (error) {
@@ -2104,7 +2144,7 @@ export default {
 			try {
 				const url = generateUrl('/apps/openregister/api/settings/solr/memory-prediction')
 				const response = await axios.post(url, { maxObjects })
-				
+
 				if (response.data && response.data.success) {
 					this.memoryPrediction = response.data.prediction
 				}
@@ -2117,55 +2157,55 @@ export default {
 		async handleStartWarmup(config) {
 			// Store the config so it can be displayed in the modal
 			this.warmupConfig = { ...config }
-			
+
 			// Set loading state
 			this.warmingUp = true
 			this.warmupCompleted = false
 			this.warmupResults = null
-			
+
 			try {
 				const url = generateUrl('/apps/openregister/api/settings/solr/warmup')
-				
-			// Convert config to the expected format
-			// Extract schema IDs from the selected schema objects
-			console.log('🔥 handleStartWarmup config:', config)
-			console.log('🔥 config.selectedSchemas:', config.selectedSchemas)
-			
-			const selectedSchemaIds = (config.selectedSchemas || []).map(schema => {
+
+				// Convert config to the expected format
+				// Extract schema IDs from the selected schema objects
+				console.log('🔥 handleStartWarmup config:', config)
+				console.log('🔥 config.selectedSchemas:', config.selectedSchemas)
+
+				const selectedSchemaIds = (config.selectedSchemas || []).map(schema => {
 				// Handle both object format {id: '123', label: '...'} and string/number format
-				const id = typeof schema === 'object' ? parseInt(schema.id) : parseInt(schema)
-				console.log('🔥 Mapping schema:', schema, '-> ID:', id)
-				return id
-			}).filter(id => !isNaN(id))
-			
-			console.log('🔥 selectedSchemaIds to send:', selectedSchemaIds)
-			
-			const warmupParams = {
-				maxObjects: config.maxObjects || 0,
-				mode: config.mode || 'serial',
-				batchSize: config.batchSize || 1000,
-				selectedSchemas: selectedSchemaIds,
-			}
-			
-			console.log('🔥 Final warmupParams:', warmupParams)
-				
+					const id = typeof schema === 'object' ? parseInt(schema.id) : parseInt(schema)
+					console.log('🔥 Mapping schema:', schema, '-> ID:', id)
+					return id
+				}).filter(id => !isNaN(id))
+
+				console.log('🔥 selectedSchemaIds to send:', selectedSchemaIds)
+
+				const warmupParams = {
+					maxObjects: config.maxObjects || 0,
+					mode: config.mode || 'serial',
+					batchSize: config.batchSize || 1000,
+					selectedSchemas: selectedSchemaIds,
+				}
+
+				console.log('🔥 Final warmupParams:', warmupParams)
+
 				const response = await axios.post(url, warmupParams)
-				
+
 				// Set results state
 				this.warmupCompleted = true
 				this.warmupResults = response.data
-				
+
 				// Refresh stats after warmup completes
 				await this.loadSolrStats()
 			} catch (error) {
 				console.error('Warmup failed:', error)
-				
+
 				// Set error state
 				this.warmupCompleted = true
 				this.warmupResults = {
 					success: false,
 					message: error.response?.data?.error || error.message || 'Warmup failed',
-					error: true
+					error: true,
 				}
 			} finally {
 				// Clear loading state
@@ -2175,6 +2215,7 @@ export default {
 
 		/**
 		 * Delete a SOLR field
+		 * @param fieldName
 		 */
 		async deleteField(fieldName) {
 			if (!fieldName) {
@@ -2195,7 +2236,7 @@ export default {
 
 				if (response.data.success) {
 					this.$toast.success(`Field "${fieldName}" deleted successfully`)
-					
+
 					// Reload field information to reflect changes
 					await this.settingsStore.loadSolrFields()
 				} else {
@@ -2225,16 +2266,16 @@ export default {
 				const url = generateUrl('/apps/openregister/api/solr/reindex')
 				const response = await axios.post(url, {
 					maxObjects: 0, // Reindex all objects
-					batchSize: 1000 // Use default batch size
+					batchSize: 1000, // Use default batch size
 				})
 
 				if (response.data.success) {
 					const stats = response.data.stats || {}
 					this.$toast.success(`Reindex completed successfully! Processed ${stats.processed_objects || 0} objects in ${stats.duration_seconds || 0}s`)
-					
+
 					// Refresh SOLR stats to show updated document count
 					await this.loadSolrStats()
-					
+
 					// Refresh field information if the fields dialog is open
 					if (this.settingsStore.showFieldsDialog) {
 						await this.settingsStore.loadSolrFields()
@@ -2260,23 +2301,22 @@ export default {
 
 		/**
 		 * Handle connection settings save
-		 * 
+		 *
 		 * @param {object} updatedConfig - Updated connection configuration
 		 */
 		async handleConnectionSave(updatedConfig) {
 			// Update the local configuration
 			this.solrOptions = { ...this.solrOptions, ...updatedConfig }
-			
+
 			// Save the settings
 			await this.saveSettings()
-			
+
 			// Close the dialog
 			this.showConnectionDialog = false
 		},
 
 	},
 }
-
 
 </script>
 
@@ -2494,13 +2534,13 @@ export default {
 		grid-template-columns: 1fr;
 		gap: 8px;
 	}
-	
+
 	.section-header-inline {
 		flex-direction: column;
 		gap: 12px;
 		align-items: stretch;
 	}
-	
+
 	.button-group {
 		justify-content: center;
 	}
@@ -3615,8 +3655,6 @@ export default {
 	color: var(--color-text-maxcontrast);
 }
 
-
-
 /* Fields Error */
 .fields-error {
 	padding: 20px;
@@ -3657,28 +3695,28 @@ export default {
 	.fields-dialog {
 		padding: 16px;
 	}
-	
+
 	.overview-stats {
 		flex-direction: column;
 	}
-	
+
 	.info-grid {
 		grid-template-columns: 1fr;
 	}
-	
+
 	.fields-controls {
 		flex-direction: column;
 	}
-	
+
 	.fields-table {
 		font-size: 12px;
 	}
-	
+
 	.fields-table th,
 	.fields-table td {
 		padding: 8px;
 	}
-	
+
 	.dynamic-fields-grid {
 		grid-template-columns: 1fr;
 	}
@@ -4158,7 +4196,6 @@ export default {
 .dashboard-section {
 	padding: 1rem 0;
 }
-
 
 .dashboard-stats-grid {
 	display: grid;

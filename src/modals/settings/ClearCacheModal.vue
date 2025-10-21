@@ -179,7 +179,7 @@ export default {
 		flex-direction: column;
 		gap: 0.5rem;
 	}
-	
+
 	.radio-group > * {
 		flex: none;
 	}

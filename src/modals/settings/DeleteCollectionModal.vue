@@ -87,7 +87,9 @@
 				</div>
 
 				<div class="results-content">
-					<p class="result-message">{{ results.message }}</p>
+					<p class="result-message">
+						{{ results.message }}
+					</p>
 
 					<div v-if="results.success" class="success-details">
 						<div v-if="results.collection" class="detail-item">
@@ -103,7 +105,9 @@
 						<div v-if="results.next_steps" class="next-steps-reminder">
 							<h4>🚀 Next Steps:</h4>
 							<ol class="next-steps-list">
-								<li v-for="step in results.next_steps" :key="step">{{ step }}</li>
+								<li v-for="step in results.next_steps" :key="step">
+									{{ step }}
+								</li>
 							</ol>
 						</div>
 					</div>
@@ -169,7 +173,7 @@ import { showSuccess, showError } from '@nextcloud/dialogs'
 
 export default {
 	name: 'DeleteCollectionModal',
-	
+
 	components: {
 		NcModal,
 		NcButton,
@@ -225,10 +229,10 @@ export default {
 			try {
 				const url = generateUrl('/apps/openregister/api/solr/collection/delete')
 				console.log('Deleting SOLR collection via:', url)
-				
+
 				const response = await axios.delete(url)
 				console.log('Delete collection response:', response.data)
-				
+
 				this.results = response.data
 				this.completed = true
 
@@ -240,15 +244,15 @@ export default {
 				}
 			} catch (error) {
 				console.error('Delete collection failed:', error)
-				
+
 				this.results = {
 					success: false,
 					message: error.response?.data?.message || error.message || 'Unknown error occurred',
 					error_code: error.response?.data?.error_code || 'NETWORK_ERROR',
-					solr_error: error.response?.data?.solr_error || null
+					solr_error: error.response?.data?.solr_error || null,
 				}
 				this.completed = true
-				
+
 				showError('Failed to delete SOLR collection: ' + this.results.message)
 			} finally {
 				this.deleting = false
@@ -535,12 +539,12 @@ export default {
 		padding: 16px;
 		max-width: 100%;
 	}
-	
+
 	.modal-actions {
 		flex-direction: column-reverse;
 		gap: 8px;
 	}
-	
+
 	.warning-header {
 		flex-direction: column;
 		text-align: center;
