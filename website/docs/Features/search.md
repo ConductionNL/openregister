@@ -112,37 +112,37 @@ When using the publications endpoint, register and schema become regular query p
 GET /api/publications
 
 # Filter by specific register
-GET /api/publications?@self.register=5
+GET /api/publications?register=5
 
 # Filter by specific schema  
-GET /api/publications?@self.schema=24
+GET /api/publications?schema=24
 
 # Filter by both register and schema
-GET /api/publications?@self.register=5&@self.schema=24
+GET /api/publications?register=5&schema=24
 ```
 
 #### Multiple Register/Schema Filtering
 ```bash
-# Objects from multiple registers (OR logic)
-GET /api/publications?@self.register[or]=5,6,7
+# Objects from multiple registers
+GET /api/publications?register[]=5&register[]=6&register[]=7
 
-# Objects from multiple schemas (OR logic)
-GET /api/publications?@self.schema[or]=24,25
+# Objects from multiple schemas
+GET /api/publications?schema[]=24&schema[]=25
 
 # Complex combinations
-GET /api/publications?@self.register[or]=5,6&@self.schema[or]=24,25
+GET /api/publications?register[]=5&register[]=6&schema[]=24&schema[]=25
 ```
 
 #### Combined with Metadata Filters
 ```bash
 # Date filtering across multiple registers
-GET /api/publications?@self.register[or]=5,6&@self.created[gte]=2025-06-25T00:00:00
+GET /api/publications?register[]=5&register[]=6&@self[created][gte]=2025-06-25T00:00:00
 
 # Schema filtering with content search
-GET /api/publications?@self.schema=24&@self.title[~]=budget&_search=annual
+GET /api/publications?schema=24&@self[title][~]=budget&_search=annual
 
 # Complex multi-criteria search
-GET /api/publications?@self.register=5&@self.schema[or]=24,25&@self.published[exists]=true&@self.created[gte]=2025-01-01T00:00:00
+GET /api/publications?register=5&schema[]=24&schema[]=25&@self[published][exists]=true&@self[created][gte]=2025-01-01T00:00:00
 ```
 
 ### Comparison: OpenRegister vs Publications Endpoints
@@ -161,13 +161,13 @@ Convert existing OpenRegister queries to use the publications endpoint:
 
 ```bash
 # OpenRegister format
-GET /api/objects/5/24?@self.created[gte]=2025-06-25T00:00:00&@self.title[~]=budget
+GET /api/objects/5/24?@self[created][gte]=2025-06-25T00:00:00&@self[title][~]=budget
 
 # Equivalent Publications format  
-GET /api/publications?@self.register=5&@self.schema=24&@self.created[gte]=2025-06-25T00:00:00&@self.title[~]=budget
+GET /api/publications?register=5&schema=24&@self[created][gte]=2025-06-25T00:00:00&@self[title][~]=budget
 
 # Enhanced Publications format (multiple schemas)
-GET /api/publications?@self.register=5&@self.schema[or]=24,25&@self.created[gte]=2025-06-25T00:00:00&@self.title[~]=budget
+GET /api/publications?register=5&schema[]=24&schema[]=25&@self[created][gte]=2025-06-25T00:00:00&@self[title][~]=budget
 ```
 
 ### When to Use Each Endpoint
@@ -285,43 +285,43 @@ This approach maintains compatibility across different web servers and ensures r
 #### Basic Metadata Filtering
 ```
 # Filter by register
-GET /api/objects/5/24?@self.register=5
+GET /api/objects/5/24?@self[register]=5
 
 # Filter by creation date
-GET /api/objects/5/24?@self.created[gte]=2025-06-01T00:00:00
+GET /api/objects/5/24?@self[created][gte]=2025-06-01T00:00:00
 
 # Filter by name containing specific text
-GET /api/objects/5/24?@self.name[~]=budget
+GET /api/objects/5/24?@self[name][~]=budget
 
 # Filter by published objects
-GET /api/objects/5/24?@self.published[exists]=true
+GET /api/objects/5/24?@self[published][exists]=true
 ```
 
 #### Advanced Metadata Combinations
 ```
 # Objects created after date AND belonging to specific organization
-GET /api/objects/5/24?@self.created[gte]=2025-01-01T00:00:00&@self.organization=550e8400-e29b-41d4-a716-446655440000
+GET /api/objects/5/24?@self[created][gte]=2025-01-01T00:00:00&@self[organization]=550e8400-e29b-41d4-a716-446655440000
 
 # Published objects with specific name pattern
-GET /api/objects/5/24?@self.published[exists]=true&@self.name[^]=Annual
+GET /api/objects/5/24?@self[published][exists]=true&@self[name][^]=Annual
 
 # Objects updated within date range
-GET /api/objects/5/24?@self.updated[gte]=2025-06-01T00:00:00&@self.updated[lte]=2025-06-30T23:59:59
+GET /api/objects/5/24?@self[updated][gte]=2025-06-01T00:00:00&@self[updated][lte]=2025-06-30T23:59:59
 
 # Exclude draft objects
-GET /api/objects/5/24?@self.status[ne]=draft
+GET /api/objects/5/24?@self[status][ne]=draft
 ```
 
 #### Register and Schema Filtering
 ```
-# Objects from multiple registers (OR logic - when using general search endpoints)
-GET /api/search?@self.register[or]=5,6
+# Objects from multiple registers (when using general search endpoints)
+GET /api/search?@self[register][]=5&@self[register][]=6
 
 # Objects with specific schema
-GET /api/search?@self.schema=24
+GET /api/search?@self[schema]=24
 
 # Combined register, schema, and date filter
-GET /api/search?@self.register=5&@self.schema=24&@self.created[gte]=2025-06-25T00:00:00
+GET /api/search?@self[register]=5&@self[schema]=24&@self[created][gte]=2025-06-25T00:00:00
 ```
 
 ## Date Format Handling
@@ -339,13 +339,13 @@ Open Register uses ISO 8601 date format **without timezone suffixes** for optima
 
 ```
 # Objects created after June 21, 2025 at 22:00
-GET /api/objects?@self.created[gte]=2025-06-21T22:00:00
+GET /api/objects?@self[created][gte]=2025-06-21T22:00:00
 
 # Objects updated before June 25, 2025 
-GET /api/objects?@self.updated[lt]=2025-06-25T00:00:00
+GET /api/objects?@self[updated][lt]=2025-06-25T00:00:00
 
 # Objects published within a specific date range
-GET /api/objects?@self.published[gte]=2025-06-01T00:00:00&@self.published[lte]=2025-06-30T23:59:59
+GET /api/objects?@self[published][gte]=2025-06-01T00:00:00&@self[published][lte]=2025-06-30T23:59:59
 ```
 
 ### Frontend Implementation
@@ -489,145 +489,11 @@ GET /api/pets?name=nemo&type=fish
 ```
 Returns pets named "nemo" (case insensitive) AND of type "fish"
 
-### Array Filtering: AND vs OR Logic
-
-OpenRegister supports flexible array filtering with explicit AND and OR operators. Understanding the default behavior and explicit operators is crucial for building accurate queries.
-
-#### Default Behavior: AND Logic
-
-**By default, array filters use AND logic**, meaning ALL specified values must match:
-
+### OR Operations
 ```
-# Default AND: Both colors must be present
-GET /api/products?availableColours[]=red&availableColours[]=blue
+GET /api/pets?name[]=nemo&name[]=dory
 ```
-This returns only products that have **BOTH** red AND blue in their 'availableColours' array.
-
-**Example Results:**
-- ✅ Product with 'availableColours': ['red', 'blue'] - **MATCH**
-- ✅ Product with 'availableColours': ['red', 'blue', 'green'] - **MATCH**  
-- ❌ Product with 'availableColours': ['red'] - **NO MATCH** (missing blue)
-- ❌ Product with 'availableColours': ['blue'] - **NO MATCH** (missing red)
-
-#### Explicit OR Operator
-
-Use the '[or]' operator when you want to match objects with **ANY** of the specified values:
-
-```
-# Explicit OR: Either color can be present
-GET /api/products?availableColours[or]=red,blue
-```
-This returns products that have **EITHER** red OR blue (or both) in their 'availableColours' array.
-
-**Example Results:**
-- ✅ Product with 'availableColours': ['red'] - **MATCH** (has red)
-- ✅ Product with 'availableColours': ['blue'] - **MATCH** (has blue)
-- ✅ Product with 'availableColours': ['red', 'blue'] - **MATCH** (has both)
-- ❌ Product with 'availableColours': ['green'] - **NO MATCH** (has neither)
-
-#### Explicit AND Operator
-
-Use the '[and]' operator to make the AND logic explicit (same as default behavior):
-
-```
-# Explicit AND: Both colors must be present
-GET /api/products?availableColours[and]=red,blue
-```
-This is equivalent to the default array behavior but makes the intent more explicit.
-
-#### Metadata Field Array Filtering
-
-Array filtering works the same way for metadata fields like 'register' and 'schema':
-
-```
-# Default AND: Objects in BOTH registers (typically zero results)
-GET /api/objects?@self.register[]=1&@self.register[]=2
-
-# Explicit OR: Objects in EITHER register
-GET /api/objects?@self.register[or]=1,2
-
-# Explicit OR with schema filtering
-GET /api/objects?@self.schema[or]=24,25&@self.created[gte]=2025-01-01
-```
-
-:::warning Metadata AND Logic Behavior
-
-When using AND logic with single-value metadata fields like 'register' or 'schema', the query will typically return zero results because an object cannot belong to multiple registers or schemas simultaneously.
-
-**Example:**
-```
-# This will return ZERO results - an object cannot be in both registers
-GET /api/objects?@self.register[]=1&@self.register[]=2
-```
-
-Use OR logic for metadata fields when you want objects from multiple registers or schemas:
-```
-# This returns objects from EITHER register
-GET /api/objects?@self.register[or]=1,2
-```
-:::
-
-#### Complex Combinations
-
-You can combine AND and OR logic with other filters:
-
-```
-# Products with red AND blue colors, created after 2025-01-01
-GET /api/products?availableColours[and]=red,blue&@self[created][gte]=2025-01-01T00:00:00
-
-# Products with red OR blue colors, from specific schema
-GET /api/products?availableColours[or]=red,blue&@self[schema]=24
-
-# Multiple OR filters combined
-GET /api/products?colours[or]=red,blue&sizes[or]=small,medium
-```
-
-#### Practical Examples
-
-**Use Case 1: Find products available in specific color combinations**
-```
-# Must have both red and blue (for matching sets)
-GET /api/products?availableColours[and]=red,blue
-
-# Can have either red or blue (for flexible options)
-GET /api/products?availableColours[or]=red,blue
-```
-
-**Use Case 2: Search across multiple schemas**
-```
-# Publications from either article OR blog schema
-GET /api/publications?@self.schema[or]=24,25
-
-# Publications that somehow match BOTH schemas (typically impossible, returns zero)
-GET /api/publications?@self.schema[]=24&@self.schema[]=25
-```
-
-**Use Case 3: Filter by multiple tags**
-```
-# Documents tagged with BOTH 'urgent' AND 'approved'
-GET /api/documents?tags[and]=urgent,approved
-
-# Documents tagged with EITHER 'urgent' OR 'approved'
-GET /api/documents?tags[or]=urgent,approved
-```
-
-#### Summary Table
-
-| Syntax | Logic | Description | Example |
-|--------|-------|-------------|---------|
-| 'field[]=val1&field[]=val2' | AND (default) | All values must match | 'colours[]=red&colours[]=blue' |
-| 'field[and]=val1,val2' | AND (explicit) | All values must match | 'colours[and]=red,blue' |
-| 'field[or]=val1,val2' | OR | Any value can match | 'colours[or]=red,blue' |
-
-:::tip API Consistency
-
-The AND default behavior ensures API consistency:
-- Multiple separate conditions are ANDed together
-- Multiple values for the same field default to AND
-- Use explicit '[or]' when you need OR logic
-
-This makes the API predictable and easier to reason about.
-:::
+Returns pets named either "nemo" OR "dory" (case insensitive)
 
 ## Special Filters
 
@@ -690,16 +556,16 @@ Returns pets with vaccinations after January 1st, 2023
 ### Query Optimization
 ```
 # Efficient: Use indexed fields first
-GET /api/objects/5/24?@self.created[gte]=2025-01-01&@self.title[~]=budget
+GET /api/objects/5/24?@self[created][gte]=2025-01-01&@self[title][~]=budget
 
 # Less efficient: Complex string operations on large datasets
-GET /api/objects/5/24?@self.description[~]=very_specific_text
+GET /api/objects/5/24?@self[description][~]=very_specific_text
 ```
 
 ### Pagination with Metadata Filters
 ```
 # Always use pagination with filters
-GET /api/objects/5/24?@self.created[gte]=2025-01-01&_limit=50&_offset=0
+GET /api/objects/5/24?@self[created][gte]=2025-01-01&_limit=50&_offset=0
 ```
 
 ## Error Handling
@@ -707,7 +573,7 @@ GET /api/objects/5/24?@self.created[gte]=2025-01-01&_limit=50&_offset=0
 ### Invalid Field Names
 ```json
 {
-  "error": "Invalid field name: @self.invalid_field",
+  "error": "Invalid field name: @self[invalid_field]",
   "code": 400
 }
 ```
@@ -715,7 +581,7 @@ GET /api/objects/5/24?@self.created[gte]=2025-01-01&_limit=50&_offset=0
 ### Invalid Operators
 ```json
 {
-  "error": "Invalid operator: @self.created[invalid_op]",
+  "error": "Invalid operator: @self[created][invalid_op]",
   "code": 400
 }
 ```

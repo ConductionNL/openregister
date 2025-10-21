@@ -2122,61 +2122,20 @@ class GuzzleSolrService
             $solrField = $this->translateFilterField($key);
             
             if (is_array($value)) {
-                // Determine if this is an operator array ([and], [or]) or a simple value array
-                $hasOperatorKey = isset($value['and']) || isset($value['or']);
-                $isOrOperation = false;
-                $values = $value;
-                
-                if ($hasOperatorKey) {
-                    // Handle explicit operator syntax: field[and]=val1,val2 or field[or]=val1,val2
-                    if (isset($value['or'])) {
-                        $isOrOperation = true;
-                        $values = is_string($value['or']) ? array_map('trim', explode(',', $value['or'])) : (array) $value['or'];
-                    } else if (isset($value['and'])) {
-                        $isOrOperation = false;
-                        $values = is_string($value['and']) ? array_map('trim', explode(',', $value['and'])) : (array) $value['and'];
+                // Handle array values (OR condition within same field)
+                // Example: status=[active,pending] becomes (status:active OR status:pending)
+                $this->logger->debug('Filter with OR logic (array value)', [
+                    'field' => $key,
+                    'values' => $value,
+                    'note' => 'Array values use OR logic within the same field'
+                ]);
+                $conditions = array_map(function($v) use ($solrField) {
+                    if (is_numeric($v)) {
+                        return $solrField . ':' . $v;
                     }
-                } else {
-                    // For simple arrays (field[]=val1&field[]=val2), default to AND for consistency
-                    // This matches the database behavior and makes API consistent
-                    $isOrOperation = false;
-                }
-                
-                if ($isOrOperation) {
-                    // OR logic: match any value
-                    // Example: status[or]=active,pending becomes (status:active OR status:pending)
-                    $this->logger->debug('Filter with OR logic (explicit [or] operator)', [
-                        'field' => $key,
-                        'values' => $values,
-                        'note' => 'Explicit [or] operator uses OR logic within the same field'
-                    ]);
-                    $conditions = array_map(function($v) use ($solrField) {
-                        if (is_numeric($v)) {
-                            return $solrField . ':' . $v;
-                        }
-                        return $solrField . ':"' . $this->escapeSolrValue((string)$v) . '"';
-                    }, $values);
-                    $filterQueries[] = '(' . implode(' OR ', $conditions) . ')';
-                } else {
-                    // AND logic: all values must match
-                    // Example: colours[]=red&colours[]=blue or colours[and]=red,blue
-                    // For array fields: ALL values must be present
-                    // For single-value fields: creates impossible condition (no results)
-                    $this->logger->debug('Filter with AND logic (default or explicit [and] operator)', [
-                        'field' => $key,
-                        'values' => $values,
-                        'note' => 'AND logic requires ALL values to match. For array fields, all must be present. For single-value fields, typically returns zero results.'
-                    ]);
-                    
-                    // Each value becomes a separate filter query (ANDed together by Solr)
-                    foreach ($values as $v) {
-                        if (is_numeric($v)) {
-                            $filterQueries[] = $solrField . ':' . $v;
-                        } else {
-                            $filterQueries[] = $solrField . ':"' . $this->escapeSolrValue((string)$v) . '"';
-                        }
-                    }
-                }
+                    return $solrField . ':"' . $this->escapeSolrValue((string)$v) . '"';
+                }, $value);
+                $filterQueries[] = '(' . implode(' OR ', $conditions) . ')';
             } else {
                 // Handle single values (will be ANDed with other filters)
                 // Example: status=active AND category=featured

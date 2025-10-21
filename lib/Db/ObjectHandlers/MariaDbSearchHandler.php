@@ -285,73 +285,28 @@ class MariaDbSearchHandler
                     continue;
                 }//end if
 
-                // Handle array values - support [and], [or] operators and comma-separated values
+                // Handle array values (one of search) for non-date fields or simple arrays
                 if (is_array($value) === true) {
-                    // Determine if this is an operator array ([and], [or]) or a simple value array
-                    $hasOperatorKey = isset($value['and']) || isset($value['or']);
-                    $isOrOperation = false;
-                    $values = $value;
-                    
-                    if ($hasOperatorKey) {
-                        // Handle explicit operator syntax: field[and]=val1,val2 or field[or]=val1,val2
-                        if (isset($value['or'])) {
-                            $isOrOperation = true;
-                            $values = is_string($value['or']) ? array_map('trim', explode(',', $value['or'])) : (array) $value['or'];
-                        } else if (isset($value['and'])) {
-                            $isOrOperation = false;
-                            $values = is_string($value['and']) ? array_map('trim', explode(',', $value['and'])) : (array) $value['and'];
-                        }
-                    } else {
-                        // For simple arrays (field[]=val1&field[]=val2), default to AND for consistency
-                        // This means: register[]=1&register[]=2 will return objects matching BOTH (typically zero results)
-                        $isOrOperation = false;
-                    }
-                    
                     if (in_array($field, $textFields)) {
                         // Case-insensitive array search for text fields
-                        if ($isOrOperation) {
-                            // OR logic: match any value
-                            $orConditions = $queryBuilder->expr()->orX();
-                            foreach ($values as $arrayValue) {
-                                $orConditions->add(
-                                    $queryBuilder->expr()->eq(
-                                        $queryBuilder->createFunction('LOWER('.$qualifiedField.')'),
-                                        $queryBuilder->createNamedParameter(strtolower($arrayValue))
-                                    )
-                                );
-                            }
-                            $queryBuilder->andWhere($orConditions);
-                        } else {
-                            // AND logic: match all values (for single-value fields, this means exact match to one of them)
-                            // For metadata fields like register/schema, this will typically return zero results if multiple values
-                            foreach ($values as $arrayValue) {
-                                $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->eq(
-                                        $queryBuilder->createFunction('LOWER('.$qualifiedField.')'),
-                                        $queryBuilder->createNamedParameter(strtolower($arrayValue))
-                                    )
-                                );
-                            }
-                        }
-                    } else {
-                        // Numeric/other fields
-                        if ($isOrOperation) {
-                            // OR logic: match any value (IN clause)
-                            $queryBuilder->andWhere(
-                                $queryBuilder->expr()->in(
-                                    $qualifiedField,
-                                    $queryBuilder->createNamedParameter($values, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
-                                )
+                        $orConditions = $queryBuilder->expr()->orX();
+                        foreach ($value as $arrayValue) {
+                            $orConditions->add(
+                            $queryBuilder->expr()->eq(
+                                $queryBuilder->createFunction('LOWER('.$qualifiedField.')'),
+                                $queryBuilder->createNamedParameter(strtolower($arrayValue))
+                            )
                             );
-                        } else {
-                            // AND logic: match all values (multiple conditions)
-                            // For single-value fields like register/schema, this creates impossible conditions
-                            foreach ($values as $arrayValue) {
-                                $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($arrayValue))
-                                );
-                            }
                         }
+
+                        $queryBuilder->andWhere($orConditions);
+                    } else {
+                        $queryBuilder->andWhere(
+                        $queryBuilder->expr()->in(
+                            $qualifiedField,
+                            $queryBuilder->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
+                        )
+                        );
                     }//end if
                 } else {
                     // Handle single values - use case-insensitive comparison for text fields
@@ -453,129 +408,52 @@ class MariaDbSearchHandler
             return;
         }
 
-        // Handle array values - support [and], [or] operators and comma-separated values
+        // Handle array values (one of search)
         if (is_array($value) === true) {
-            // Determine if this is an operator array ([and], [or]) or a simple value array
-            $hasOperatorKey = isset($value['and']) || isset($value['or']);
-            $isOrOperation = false;
-            $values = $value;
-            
-            if ($hasOperatorKey) {
-                // Handle explicit operator syntax: field[and]=val1,val2 or field[or]=val1,val2
-                if (isset($value['or'])) {
-                    $isOrOperation = true;
-                    $values = is_string($value['or']) ? array_map('trim', explode(',', $value['or'])) : (array) $value['or'];
-                } else if (isset($value['and'])) {
-                    $isOrOperation = false;
-                    $values = is_string($value['and']) ? array_map('trim', explode(',', $value['and'])) : (array) $value['and'];
-                }
-            } else {
-                // For simple arrays (field[]=val1&field[]=val2), default to AND for consistency
-                // This means: availableColours[]=red&availableColours[]=blue requires BOTH colors present
-                $isOrOperation = false;
-            }
+            $orConditions = $queryBuilder->expr()->orX();
 
-            if ($isOrOperation) {
-                // OR logic: match any value in the array
-                $orConditions = $queryBuilder->expr()->orX();
+            foreach ($value as $arrayValue) {
+                // Use case-insensitive comparison for string values
+                if (is_string($arrayValue)) {
+                    // Check for exact match (single value)
+                    $orConditions->add(
+                        $queryBuilder->expr()->eq(
+                            $queryBuilder->createFunction(
+                                'LOWER(JSON_UNQUOTE(JSON_EXTRACT(`object`, '.$queryBuilder->createNamedParameter($jsonPath).')))'
+                            ),
+                            $queryBuilder->createNamedParameter(strtolower($arrayValue))
+                        )
+                    );
 
-                foreach ($values as $arrayValue) {
-                    // Use case-insensitive comparison for string values
-                    if (is_string($arrayValue)) {
-                        // Check for exact match (single value)
-                        $orConditions->add(
-                            $queryBuilder->expr()->eq(
-                                $queryBuilder->createFunction(
-                                    'LOWER(JSON_UNQUOTE(JSON_EXTRACT(`object`, '.$queryBuilder->createNamedParameter($jsonPath).')))'
-                                ),
-                                $queryBuilder->createNamedParameter(strtolower($arrayValue))
-                            )
-                        );
+                    // Check if the value exists within an array using JSON_CONTAINS (case-insensitive)
+                    $orConditions->add(
+                        $queryBuilder->expr()->eq(
+                            $queryBuilder->createFunction("JSON_CONTAINS(LOWER(JSON_EXTRACT(`object`, ".$queryBuilder->createNamedParameter($jsonPath).")), ".$queryBuilder->createNamedParameter(json_encode(strtolower($arrayValue))).")"),
+                            $queryBuilder->createNamedParameter(1)
+                        )
+                    );
+                } else {
+                    // Exact match for non-string values (numbers, booleans, etc.)
+                    $orConditions->add(
+                        $queryBuilder->expr()->eq(
+                            $queryBuilder->createFunction(
+                                'JSON_UNQUOTE(JSON_EXTRACT(`object`, '.$queryBuilder->createNamedParameter($jsonPath).'))'
+                            ),
+                            $queryBuilder->createNamedParameter($arrayValue)
+                        )
+                    );
 
-                        // Check if the value exists within an array using JSON_CONTAINS (case-insensitive)
-                        $orConditions->add(
-                            $queryBuilder->expr()->eq(
-                                $queryBuilder->createFunction("JSON_CONTAINS(LOWER(JSON_EXTRACT(`object`, ".$queryBuilder->createNamedParameter($jsonPath).")), ".$queryBuilder->createNamedParameter(json_encode(strtolower($arrayValue))).")"),
-                                $queryBuilder->createNamedParameter(1)
-                            )
-                        );
-                    } else {
-                        // Exact match for non-string values (numbers, booleans, etc.)
-                        $orConditions->add(
-                            $queryBuilder->expr()->eq(
-                                $queryBuilder->createFunction(
-                                    'JSON_UNQUOTE(JSON_EXTRACT(`object`, '.$queryBuilder->createNamedParameter($jsonPath).'))'
-                                ),
-                                $queryBuilder->createNamedParameter($arrayValue)
-                            )
-                        );
+                    // Check if the value exists within an array using JSON_CONTAINS
+                    $orConditions->add(
+                        $queryBuilder->expr()->eq(
+                            $queryBuilder->createFunction("JSON_CONTAINS(JSON_EXTRACT(`object`, ".$queryBuilder->createNamedParameter($jsonPath)."), ".$queryBuilder->createNamedParameter(json_encode($arrayValue)).")"),
+                            $queryBuilder->createNamedParameter(1)
+                        )
+                    );
+                }//end if
+            }//end foreach
 
-                        // Check if the value exists within an array using JSON_CONTAINS
-                        $orConditions->add(
-                            $queryBuilder->expr()->eq(
-                                $queryBuilder->createFunction("JSON_CONTAINS(JSON_EXTRACT(`object`, ".$queryBuilder->createNamedParameter($jsonPath)."), ".$queryBuilder->createNamedParameter(json_encode($arrayValue)).")"),
-                                $queryBuilder->createNamedParameter(1)
-                            )
-                        );
-                    }//end if
-                }//end foreach
-
-                $queryBuilder->andWhere($orConditions);
-            } else {
-                // AND logic: all values must be present
-                // For array properties (e.g., availableColours), check that ALL values exist
-                foreach ($values as $arrayValue) {
-                    if (is_string($arrayValue)) {
-                        // Create an OR condition for this specific value (either as single value or in array)
-                        $valueCondition = $queryBuilder->expr()->orX();
-                        
-                        // Check for exact match (when property is a single value, not an array)
-                        $valueCondition->add(
-                            $queryBuilder->expr()->eq(
-                                $queryBuilder->createFunction(
-                                    'LOWER(JSON_UNQUOTE(JSON_EXTRACT(`object`, '.$queryBuilder->createNamedParameter($jsonPath).')))'
-                                ),
-                                $queryBuilder->createNamedParameter(strtolower($arrayValue))
-                            )
-                        );
-
-                        // Check if the value exists within an array using JSON_CONTAINS (case-insensitive)
-                        $valueCondition->add(
-                            $queryBuilder->expr()->eq(
-                                $queryBuilder->createFunction("JSON_CONTAINS(LOWER(JSON_EXTRACT(`object`, ".$queryBuilder->createNamedParameter($jsonPath).")), ".$queryBuilder->createNamedParameter(json_encode(strtolower($arrayValue))).")"),
-                                $queryBuilder->createNamedParameter(1)
-                            )
-                        );
-                        
-                        // Each value must match (AND between values)
-                        $queryBuilder->andWhere($valueCondition);
-                    } else {
-                        // Create an OR condition for this specific value
-                        $valueCondition = $queryBuilder->expr()->orX();
-                        
-                        // Check for exact match (single value)
-                        $valueCondition->add(
-                            $queryBuilder->expr()->eq(
-                                $queryBuilder->createFunction(
-                                    'JSON_UNQUOTE(JSON_EXTRACT(`object`, '.$queryBuilder->createNamedParameter($jsonPath).'))'
-                                ),
-                                $queryBuilder->createNamedParameter($arrayValue)
-                            )
-                        );
-
-                        // Check if the value exists within an array using JSON_CONTAINS
-                        $valueCondition->add(
-                            $queryBuilder->expr()->eq(
-                                $queryBuilder->createFunction("JSON_CONTAINS(JSON_EXTRACT(`object`, ".$queryBuilder->createNamedParameter($jsonPath)."), ".$queryBuilder->createNamedParameter(json_encode($arrayValue)).")"),
-                                $queryBuilder->createNamedParameter(1)
-                            )
-                        );
-                        
-                        // Each value must match (AND between values)
-                        $queryBuilder->andWhere($valueCondition);
-                    }//end if
-                }//end foreach
-            }//end if
+            $queryBuilder->andWhere($orConditions);
         } else {
             // Handle single values - use case-insensitive comparison for strings
             if (is_string($value)) {
