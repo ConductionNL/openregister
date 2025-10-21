@@ -468,7 +468,7 @@ export default {
 			// Set the register ID in the register store for reference
 			registerStore.setRegisterItem({ id: register.id })
 			// Navigate to detail view which will use dashboard store data
-			navigationStore.setSelected('register-detail')
+			this.$router.push(`/registers/${register.id}`)
 		},
 
 		toggleSelectAll(checked) {

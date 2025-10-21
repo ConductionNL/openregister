@@ -52,9 +52,9 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 						:input-label="t('openregister', 'Success Status')"
 						:clearable="true"
 						@input="applyFilters">
-						<template #option="{ option }">
-							<div class="statusOption" :class="option.value">
-								{{ option.label }}
+						<template #option="{ label, value }">
+							<div class="statusOption" :class="value">
+								{{ label }}
 							</div>
 						</template>
 					</NcSelect>
@@ -70,8 +70,8 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 						:multiple="true"
 						:clearable="true"
 						@input="applyFilters">
-						<template #option="{ option }">
-							{{ option.label }}
+						<template #option="{ label }">
+							{{ label }}
 						</template>
 					</NcSelect>
 				</div>
@@ -328,8 +328,8 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 						:options="activityPeriodOptions"
 						:placeholder="t('openregister', 'Select period')"
 						@input="loadActivityData">
-						<template #option="{ option }">
-							{{ option.label }}
+						<template #option="{ label }">
+							{{ label }}
 						</template>
 					</NcSelect>
 				</div>
@@ -417,6 +417,35 @@ export default {
 	},
 	data() {
 		return {
+			successOptions: [
+				{
+					label: t('openregister', 'Successful'),
+					value: 'true',
+				},
+				{
+					label: t('openregister', 'Failed'),
+					value: 'false',
+				},
+			],
+			activityPeriodOptions: [
+				{
+					label: t('openregister', 'Hourly'),
+					value: 'hourly',
+				},
+				{
+					label: t('openregister', 'Daily'),
+					value: 'daily',
+				},
+				{
+					label: t('openregister', 'Weekly'),
+					value: 'weekly',
+				},
+				{
+					label: t('openregister', 'Monthly'),
+					value: 'monthly',
+				},
+			],
+
 			activeTab: 'filters-tab',
 			selectedSuccessStatus: null,
 			selectedUsers: [],
@@ -455,38 +484,6 @@ export default {
 		}
 	},
 	computed: {
-		successOptions() {
-			return [
-				{
-					label: this.t('openregister', 'Successful'),
-					value: 'true',
-				},
-				{
-					label: this.t('openregister', 'Failed'),
-					value: 'false',
-				},
-			]
-		},
-		activityPeriodOptions() {
-			return [
-				{
-					label: this.t('openregister', 'Hourly'),
-					value: 'hourly',
-				},
-				{
-					label: this.t('openregister', 'Daily'),
-					value: 'daily',
-				},
-				{
-					label: this.t('openregister', 'Weekly'),
-					value: 'weekly',
-				},
-				{
-					label: this.t('openregister', 'Monthly'),
-					value: 'monthly',
-				},
-			]
-		},
 		registerOptions() {
 			return {
 				options: registerStore.registerList.map(register => ({
@@ -938,14 +935,14 @@ export default {
 			if (schemaStore.schemaItem) query.schema = String(schemaStore.schemaItem.id)
 			if (this.selectedSuccessStatus && this.selectedSuccessStatus.value) query.success = String(this.selectedSuccessStatus.value)
 			if (Array.isArray(this.selectedUsers) && this.selectedUsers.length > 0) query.user = this.selectedUsers.map(u => u.value || u).join(',')
-			if (this.dateFrom) query.dateFrom = this.dateFrom
-			if (this.dateTo) query.dateTo = this.dateTo
+			// JS dates are awful, so we first check if its a valid date and then get the ISO string.
+			if (this.dateFrom) query.dateFrom = new Date(this.dateFrom).getDate() ? new Date(this.dateFrom).toISOString() : null
+			if (this.dateTo) query.dateTo = new Date(this.dateTo).getDate() ? new Date(this.dateTo).toISOString() : null
 			if (this.searchTermFilter) query.searchTerm = this.searchTermFilter
 			if (this.executionTimeFrom) query.executionTimeFrom = String(this.executionTimeFrom)
 			if (this.executionTimeTo) query.executionTimeTo = String(this.executionTimeTo)
 			if (this.resultCountFrom) query.resultCountFrom = String(this.resultCountFrom)
 			if (this.resultCountTo) query.resultCountTo = String(this.resultCountTo)
-			if (this.selectedActivityPeriod && this.selectedActivityPeriod.value) query.activityPeriod = this.selectedActivityPeriod.value
 			return query
 		},
 		// Shallow compare queries
@@ -983,18 +980,14 @@ export default {
 				this.selectedUsers = users.map(u => ({ label: u, value: u }))
 			}
 			// Dates and fields
-			this.dateFrom = q.dateFrom || null
-			this.dateTo = q.dateTo || null
+			// JS dates are awful, so we first check if its a valid date and then create the date. (q.dateFrom is a ISO string)
+			this.dateFrom = q.dateFrom && new Date(q.dateFrom).getDate() ? new Date(q.dateFrom) : null
+			this.dateTo = q.dateTo && new Date(q.dateTo).getDate() ? new Date(q.dateTo) : null
 			this.searchTermFilter = q.searchTerm || ''
 			this.executionTimeFrom = q.executionTimeFrom || ''
 			this.executionTimeTo = q.executionTimeTo || ''
 			this.resultCountFrom = q.resultCountFrom || ''
 			this.resultCountTo = q.resultCountTo || ''
-			// Activity period
-			if (typeof q.activityPeriod === 'string') {
-				const ap = this.activityPeriodOptions.find(o => o.value === q.activityPeriod)
-				if (ap) this.selectedActivityPeriod = ap
-			}
 			// Registers & schemas depend on lists
 			const applyRegister = () => {
 				if (!q.register) return true

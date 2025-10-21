@@ -54,8 +54,8 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 						:multiple="true"
 						:clearable="true"
 						@input="applyFilters">
-						<template #option="{ option }">
-							{{ option.label }}
+						<template #option="{ label }">
+							{{ label }}
 						</template>
 					</NcSelect>
 				</div>
@@ -70,8 +70,8 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 						:multiple="true"
 						:clearable="true"
 						@input="applyFilters">
-						<template #option="{ option }">
-							{{ option.label }}
+						<template #option="{ label }">
+							{{ label }}
 						</template>
 					</NcSelect>
 				</div>
@@ -242,6 +242,25 @@ export default {
 	},
 	data() {
 		return {
+			actionOptions: [
+				{
+					label: t('openregister', 'Create'),
+					value: 'create',
+				},
+				{
+					label: t('openregister', 'Read'),
+					value: 'read',
+				},
+				{
+					label: t('openregister', 'Update'),
+					value: 'update',
+				},
+				{
+					label: t('openregister', 'Delete'),
+					value: 'delete',
+				},
+			],
+
 			activeTab: 'filters-tab',
 			selectedActions: [],
 			selectedUsers: [],
@@ -260,27 +279,6 @@ export default {
 		}
 	},
 	computed: {
-		actionOptions() {
-			// Return all possible CRUD actions instead of just what's in current data
-			return [
-				{
-					label: this.t('openregister', 'Create'),
-					value: 'create',
-				},
-				{
-					label: this.t('openregister', 'Read'),
-					value: 'read',
-				},
-				{
-					label: this.t('openregister', 'Update'),
-					value: 'update',
-				},
-				{
-					label: this.t('openregister', 'Delete'),
-					value: 'delete',
-				},
-			]
-		},
 		registerOptions() {
 			return {
 				options: registerStore.registerList.map(register => ({
@@ -548,8 +546,9 @@ export default {
 			if (Array.isArray(this.selectedUsers) && this.selectedUsers.length > 0) {
 				query.user = this.selectedUsers.map(u => u.value).join(',')
 			}
-			if (this.dateFrom) query.dateFrom = this.dateFrom
-			if (this.dateTo) query.dateTo = this.dateTo
+			// JS dates are awful, so we first check if its a valid date and then get the ISO string.
+			if (this.dateFrom) query.dateFrom = new Date(this.dateFrom).getDate() ? new Date(this.dateFrom).toISOString() : null
+			if (this.dateTo) query.dateTo = new Date(this.dateTo).getDate() ? new Date(this.dateTo).toISOString() : null
 			if (this.objectFilter) query.object = this.objectFilter
 			if (this.showOnlyWithChanges) query.onlyWithChanges = '1'
 			return query
@@ -592,8 +591,9 @@ export default {
 			const { register, schema, action, user, dateFrom, dateTo, object, onlyWithChanges } = this.$route.query || {}
 
 			// Set simple fields
-			this.dateFrom = dateFrom ? String(dateFrom) : null
-			this.dateTo = dateTo ? String(dateTo) : null
+			// JS dates are awful, so we first check if its a valid date and then create the date. (dateFrom is a ISO string)
+			this.dateFrom = dateFrom && new Date(dateFrom).getDate() ? new Date(dateFrom) : null
+			this.dateTo = dateTo && new Date(dateTo).getDate() ? new Date(dateTo) : null
 			this.objectFilter = object ? String(object) : ''
 			this.showOnlyWithChanges = !!(onlyWithChanges)
 
