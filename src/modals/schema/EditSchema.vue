@@ -510,6 +510,15 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 													<template v-if="property.type === 'file' || (property.type === 'array' && property.items && property.items.type === 'file')">
 														<NcActionSeparator />
 														<NcActionCaption name="File Configuration" />
+														<NcActionCheckbox
+															:checked="getFilePropertySetting(key, 'autoShare')"
+															@update:checked="updateFilePropertySetting(key, 'autoShare', $event)">
+															Auto-Share Files
+														</NcActionCheckbox>
+														<NcActionCaption
+															v-if="getFilePropertySetting(key, 'autoShare')"
+															name="ℹ️ Files uploaded to this property will be automatically publicly shared"
+															style="color: var(--color-text-lighter); font-size: 11px;" />
 														<NcActionInput
 															:value="(property.allowedTypes || []).join(', ')"
 															label="Allowed MIME Types (comma separated)"
@@ -1677,6 +1686,34 @@ export default {
 						}
 						this.$set(this.schemaItem.properties[key].items, setting, numValue)
 					}
+				}
+				this.checkPropertiesModified()
+			}
+		},
+		getFilePropertySetting(key, setting) {
+			// Get boolean/value settings for file properties
+			const property = this.schemaItem.properties[key]
+			if (!property) return false
+
+			if (property.type === 'file') {
+				return property[setting] || false
+			} else if (property.type === 'array' && property.items) {
+				return property.items[setting] || false
+			}
+
+			return false
+		},
+		updateFilePropertySetting(key, setting, value) {
+			// Handle boolean settings like autoShare
+			if (this.schemaItem.properties[key]) {
+				// Apply to both direct file properties and array[file] properties
+				if (this.schemaItem.properties[key].type === 'file') {
+					this.$set(this.schemaItem.properties[key], setting, value)
+				} else if (this.schemaItem.properties[key].type === 'array' && this.schemaItem.properties[key].items) {
+					if (!this.schemaItem.properties[key].items) {
+						this.$set(this.schemaItem.properties[key], 'items', {})
+					}
+					this.$set(this.schemaItem.properties[key].items, setting, value)
 				}
 				this.checkPropertiesModified()
 			}

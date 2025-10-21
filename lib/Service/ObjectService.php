@@ -3749,6 +3749,19 @@ class ObjectService
                             $objectData['@self'][$metaField] = $generatedSlug;
                         }
                     }
+                } else if ($metaField === 'image') {
+                    // Special handling for image - extract share URL if it's a file object
+                    $value = $this->getValueFromPath($objectData, $sourceField);
+                    if ($value !== null) {
+                        // Check if the value is a file object (has accessUrl)
+                        if (is_array($value) && isset($value['accessUrl'])) {
+                            // Use the accessUrl as the image URL
+                            $objectData['@self'][$metaField] = $value['accessUrl'];
+                        } else {
+                            // Regular value (string URL or similar)
+                            $objectData['@self'][$metaField] = $value;
+                        }
+                    }
                 } else {
                     // Regular metadata field handling
                     $value = $this->getValueFromPath($objectData, $sourceField);

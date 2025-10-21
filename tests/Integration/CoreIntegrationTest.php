@@ -493,5 +493,225 @@ class CoreIntegrationTest extends TestCase
         $deleteRegisterResponse = $this->client->delete("/index.php/apps/openregister/api/registers/{$tempRegisterId}");
         $this->assertContains($deleteRegisterResponse->getStatusCode(), [200, 204], 'Should allow deleting register after cleanup');
     }
+
+    // ========================================
+    // NEW FEATURE TESTS (16-20)
+    // ========================================
+
+    public function testAuthenticatedUrlsForNonSharedFiles(): void
+    {
+        $pdfTmp = tmpfile();
+        fwrite($pdfTmp, '%PDF-1.4 test non-shared');
+        $pdfPath = stream_get_meta_data($pdfTmp)['uri'];
+
+        // Create object with file (not shared)
+        $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->schemaSlug}", [
+            'multipart' => [
+                ['name' => 'title', 'contents' => 'Non-Shared File Test'],
+                ['name' => 'attachment', 'contents' => fopen($pdfPath, 'r'), 'filename' => 'test.pdf', 'headers' => ['Content-Type' => 'application/pdf']],
+            ]
+        ]);
+
+        $this->assertEquals(201, $createResponse->getStatusCode());
+        $object = json_decode($createResponse->getBody(), true);
+        $this->createdObjectIds[] = $object['id'];
+
+        // Verify file object has authenticated URLs
+        $this->assertArrayHasKey('attachment', $object);
+        $file = $object['attachment'];
+        $this->assertIsArray($file);
+        $this->assertArrayHasKey('accessUrl', $file);
+        $this->assertArrayHasKey('downloadUrl', $file);
+        $this->assertNotNull($file['accessUrl']);
+        $this->assertNotNull($file['downloadUrl']);
+
+        // Verify URLs contain /api/files/ for authenticated access
+        $this->assertStringContainsString('/api/files/', $file['downloadUrl']);
+
+        fclose($pdfTmp);
+    }
+
+    public function testAutoShareFileProperty(): void
+    {
+        // Create schema with autoShare enabled
+        $autoShareSchemaResponse = $this->client->post('/index.php/apps/openregister/api/schemas', [
+            'json' => [
+                'register' => $this->registerId,
+                'slug' => 'auto-share-' . uniqid(),
+                'title' => 'Auto-Share Schema',
+                'properties' => [
+                    'title' => ['type' => 'string'],
+                    'document' => [
+                        'type' => 'file',
+                        'autoShare' => true
+                    ],
+                ],
+            ]
+        ]);
+        $this->assertEquals(201, $autoShareSchemaResponse->getStatusCode());
+        $autoShareSchema = json_decode($autoShareSchemaResponse->getBody(), true);
+
+        $pdfTmp = tmpfile();
+        fwrite($pdfTmp, '%PDF-1.4 auto-share test');
+        $pdfPath = stream_get_meta_data($pdfTmp)['uri'];
+
+        // Create object with file
+        $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$autoShareSchema['slug']}", [
+            'multipart' => [
+                ['name' => 'title', 'contents' => 'Auto-Share Test'],
+                ['name' => 'document', 'contents' => fopen($pdfPath, 'r'), 'filename' => 'test.pdf', 'headers' => ['Content-Type' => 'application/pdf']],
+            ]
+        ]);
+
+        $this->assertEquals(201, $createResponse->getStatusCode());
+        $object = json_decode($createResponse->getBody(), true);
+        $this->createdObjectIds[] = $object['id'];
+
+        // Verify file is publicly shared
+        $this->assertArrayHasKey('document', $object);
+        $file = $object['document'];
+        $this->assertIsArray($file);
+        $this->assertArrayHasKey('published', $file);
+        $this->assertNotNull($file['published'], 'File should be published when autoShare is enabled');
+
+        // Verify public share URL
+        $this->assertArrayHasKey('accessUrl', $file);
+        $this->assertStringContainsString('/index.php/s/', $file['accessUrl'], 'Should have public share URL');
+
+        fclose($pdfTmp);
+    }
+
+    public function testLogoMetadataFromFileProperty(): void
+    {
+        // Create schema with logo configuration pointing to a file property
+        $logoSchemaResponse = $this->client->post('/index.php/apps/openregister/api/schemas', [
+            'json' => [
+                'register' => $this->registerId,
+                'slug' => 'logo-test-' . uniqid(),
+                'title' => 'Logo Test Schema',
+                'properties' => [
+                    'title' => ['type' => 'string'],
+                    'logo' => [
+                        'type' => 'file',
+                        'allowedTypes' => ['image/png', 'image/jpeg'],
+                        'autoShare' => true
+                    ],
+                ],
+                'configuration' => [
+                    'objectImageField' => 'logo'
+                ]
+            ]
+        ]);
+        $this->assertEquals(201, $logoSchemaResponse->getStatusCode());
+        $logoSchema = json_decode($logoSchemaResponse->getBody(), true);
+
+        $imageTmp = tmpfile();
+        fwrite($imageTmp, "\xFF\xD8\xFF\xE0");
+        $imagePath = stream_get_meta_data($imageTmp)['uri'];
+
+        // Create object with logo file
+        $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$logoSchema['slug']}", [
+            'multipart' => [
+                ['name' => 'title', 'contents' => 'Logo Test'],
+                ['name' => 'logo', 'contents' => fopen($imagePath, 'r'), 'filename' => 'logo.jpg', 'headers' => ['Content-Type' => 'image/jpeg']],
+            ]
+        ]);
+
+        $this->assertEquals(201, $createResponse->getStatusCode());
+        $object = json_decode($createResponse->getBody(), true);
+        $this->createdObjectIds[] = $object['id'];
+
+        // Verify @self.image contains the share URL
+        $this->assertArrayHasKey('@self', $object);
+        $this->assertArrayHasKey('image', $object['@self']);
+        $this->assertIsString($object['@self']['image']);
+        $this->assertStringContainsString('/index.php/s/', $object['@self']['image'], 'Image metadata should contain share URL');
+
+        fclose($imageTmp);
+    }
+
+    public function testDeleteFileBySendingNull(): void
+    {
+        $pdfTmp = tmpfile();
+        fwrite($pdfTmp, '%PDF-1.4 to be deleted');
+        $pdfPath = stream_get_meta_data($pdfTmp)['uri'];
+
+        // Create object with file
+        $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->schemaSlug}", [
+            'multipart' => [
+                ['name' => 'title', 'contents' => 'Delete Test'],
+                ['name' => 'attachment', 'contents' => fopen($pdfPath, 'r'), 'filename' => 'test.pdf', 'headers' => ['Content-Type' => 'application/pdf']],
+            ]
+        ]);
+
+        $this->assertEquals(201, $createResponse->getStatusCode());
+        $object = json_decode($createResponse->getBody(), true);
+        $objectId = $object['id'];
+        $this->createdObjectIds[] = $objectId;
+
+        // Verify file exists
+        $this->assertArrayHasKey('attachment', $object);
+        $this->assertNotNull($object['attachment']);
+
+        // Update object with null to delete file
+        $updateResponse = $this->client->put("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->schemaSlug}/{$objectId}", [
+            'json' => [
+                'title' => 'Delete Test Updated',
+                'attachment' => null
+            ]
+        ]);
+
+        $this->assertEquals(200, $updateResponse->getStatusCode());
+        $updatedObject = json_decode($updateResponse->getBody(), true);
+
+        // Verify file is deleted (property is null)
+        $this->assertArrayHasKey('attachment', $updatedObject);
+        $this->assertNull($updatedObject['attachment'], 'Attachment should be null after deletion');
+
+        fclose($pdfTmp);
+    }
+
+    public function testDeleteFileArrayBySendingEmptyArray(): void
+    {
+        $image1Tmp = tmpfile();
+        fwrite($image1Tmp, "\xFF\xD8\xFF\xE0");
+        $image1Path = stream_get_meta_data($image1Tmp)['uri'];
+
+        // Create object with files array
+        $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/gallery", [
+            'multipart' => [
+                ['name' => 'title', 'contents' => 'Delete Array Test'],
+                ['name' => 'images[]', 'contents' => fopen($image1Path, 'r'), 'filename' => 'photo1.jpg', 'headers' => ['Content-Type' => 'image/jpeg']],
+            ]
+        ]);
+
+        $this->assertEquals(201, $createResponse->getStatusCode());
+        $object = json_decode($createResponse->getBody(), true);
+        $objectId = $object['id'];
+        $this->createdObjectIds[] = $objectId;
+
+        // Verify files exist
+        $this->assertArrayHasKey('images', $object);
+        $this->assertIsArray($object['images']);
+        $this->assertNotEmpty($object['images']);
+
+        // Update object with empty array to delete all files
+        $updateResponse = $this->client->put("/index.php/apps/openregister/api/objects/{$this->registerSlug}/gallery/{$objectId}", [
+            'json' => [
+                'title' => 'Delete Array Test Updated',
+                'images' => []
+            ]
+        ]);
+
+        $this->assertEquals(200, $updateResponse->getStatusCode());
+        $updatedObject = json_decode($updateResponse->getBody(), true);
+
+        // Verify files array is empty
+        $this->assertArrayHasKey('images', $updatedObject);
+        $this->assertIsArray($updatedObject['images']);
+        $this->assertEmpty($updatedObject['images'], 'Images array should be empty after deletion');
+
+        fclose($image1Tmp);
+    }
 }
 

@@ -506,4 +506,42 @@ class FilesController extends Controller
     }//end depublish()
 
 
+    /**
+     * Download a file by its ID (authenticated endpoint)
+     *
+     * This endpoint allows downloading a file by its file ID without needing
+     * to know the object, register, or schema. This is used for authenticated
+     * file access where the user must be logged in to Nextcloud.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param int $fileId ID of the file to download
+     *
+     * @return JSONResponse|\OCP\AppFramework\Http\StreamResponse
+     *
+     * @phpstan-param  int $fileId
+     * @phpstan-return JSONResponse|\OCP\AppFramework\Http\StreamResponse
+     */
+    public function downloadById(int $fileId): mixed
+    {
+        try {
+            // Get the file using the file service
+            $file = $this->fileService->getFileById($fileId);
+            
+            if ($file === null) {
+                return new JSONResponse(['error' => 'File not found'], 404);
+            }
+            
+            // Stream the file content back to the client
+            return $this->fileService->streamFile($file);
+        } catch (NotFoundException $e) {
+            return new JSONResponse(['error' => 'File not found'], 404);
+        } catch (Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+
+    }//end downloadById()
+
+
 }//end class
