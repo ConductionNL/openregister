@@ -110,10 +110,10 @@ jobs:
             --exclude='docs' \
             --exclude='website' \
             --exclude='node_modules' \
-            --exclude='/src' \
-            --exclude='/phpcs-custom-sniffs' \
-            --exclude='/resources' \
-            --exclude='/tests' \
+            --exclude='src' \
+            --exclude='phpcs-custom-sniffs' \
+            --exclude='resources' \
+            --exclude='tests' \
             --exclude='test' \
             --exclude='package-lock.json' \
             --exclude='composer.lock' \

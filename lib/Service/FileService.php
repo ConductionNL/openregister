@@ -2632,6 +2632,80 @@ class FileService
         return null;
     }
 
+
+    /**
+     * Get a file by its Nextcloud file ID without needing object context.
+     *
+     * This method retrieves a file directly using its Nextcloud file ID,
+     * which is useful for authenticated file access endpoints.
+     *
+     * @param int $fileId The Nextcloud file ID
+     *
+     * @return File|null The file node or null if not found
+     *
+     * @throws \Exception If there's an error accessing the file
+     *
+     * @phpstan-param  int $fileId
+     * @phpstan-return File|null
+     */
+    public function getFileById(int $fileId): ?File
+    {
+        try {
+            // Use root folder to search for file by ID
+            $nodes = $this->rootFolder->getById($fileId);
+            
+            if (empty($nodes)) {
+                return null;
+            }
+            
+            // Get the first node (file IDs are unique)
+            $node = $nodes[0];
+            
+            // Ensure it's a file, not a folder
+            if (!($node instanceof File)) {
+                return null;
+            }
+            
+            // Check ownership for NextCloud rights issues
+            $this->checkOwnership($node);
+            
+            return $node;
+        } catch (\Exception $e) {
+            $this->logger->error('getFileById: Error finding file by ID ' . $fileId . ': ' . $e->getMessage());
+            return null;
+        }
+
+    }//end getFileById()
+
+
+    /**
+     * Stream a file for download.
+     *
+     * This method creates a StreamResponse that sends the file content
+     * directly to the client with appropriate headers.
+     *
+     * @param File $file The file to stream
+     *
+     * @return \OCP\AppFramework\Http\StreamResponse The stream response
+     *
+     * @phpstan-param  File $file
+     * @phpstan-return \OCP\AppFramework\Http\StreamResponse
+     */
+    public function streamFile(File $file): \OCP\AppFramework\Http\StreamResponse
+    {
+        // Create a stream response with the file content
+        $response = new \OCP\AppFramework\Http\StreamResponse($file->fopen('r'));
+        
+        // Set appropriate headers
+        $response->addHeader('Content-Type', $file->getMimeType());
+        $response->addHeader('Content-Disposition', 'attachment; filename="' . $file->getName() . '"');
+        $response->addHeader('Content-Length', (string) $file->getSize());
+        
+        return $response;
+
+    }//end streamFile()
+
+
     /**
      * Publish a file by creating a public share link using direct database operations.
      *

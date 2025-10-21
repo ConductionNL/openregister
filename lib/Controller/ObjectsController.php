@@ -600,10 +600,29 @@ class ObjectsController extends Controller
 
         // Extract uploaded files from multipart/form-data
         $uploadedFiles = [];
-        foreach (array_keys($_FILES ?? []) as $fieldName) {
-            $uploadedFile = $this->request->getUploadedFile($fieldName);
-            if ($uploadedFile !== null) {
-                $uploadedFiles[$fieldName] = $uploadedFile;
+        foreach ($_FILES ?? [] as $fieldName => $fileData) {
+            // Check if this is an array upload (multiple files with same field name)
+            // PHP converts field names like "images[]" to "images" and structures data as arrays
+            if (is_array($fileData['name'] ?? null)) {
+                // Handle array uploads: images[] becomes images with array values
+                // We need to preserve all files, so use indexed keys: images[0], images[1], etc.
+                $fileCount = count($fileData['name']);
+                for ($i = 0; $i < $fileCount; $i++) {
+                    // Use indexed key to preserve all files: images[0], images[1], images[2]
+                    $uploadedFiles[$fieldName . '[' . $i . ']'] = [
+                        'name' => $fileData['name'][$i],
+                        'type' => $fileData['type'][$i],
+                        'tmp_name' => $fileData['tmp_name'][$i],
+                        'error' => $fileData['error'][$i],
+                        'size' => $fileData['size'][$i],
+                    ];
+                }
+            } else {
+                // Handle single file upload
+                $uploadedFile = $this->request->getUploadedFile($fieldName);
+                if ($uploadedFile !== null) {
+                    $uploadedFiles[$fieldName] = $uploadedFile;
+                }
             }
         }
 
@@ -690,10 +709,29 @@ class ObjectsController extends Controller
 
         // Extract uploaded files from multipart/form-data
         $uploadedFiles = [];
-        foreach (array_keys($_FILES ?? []) as $fieldName) {
-            $uploadedFile = $this->request->getUploadedFile($fieldName);
-            if ($uploadedFile !== null) {
-                $uploadedFiles[$fieldName] = $uploadedFile;
+        foreach ($_FILES ?? [] as $fieldName => $fileData) {
+            // Check if this is an array upload (multiple files with same field name)
+            // PHP converts field names like "images[]" to "images" and structures data as arrays
+            if (is_array($fileData['name'] ?? null)) {
+                // Handle array uploads: images[] becomes images with array values
+                // We need to preserve all files, so use indexed keys: images[0], images[1], etc.
+                $fileCount = count($fileData['name']);
+                for ($i = 0; $i < $fileCount; $i++) {
+                    // Use indexed key to preserve all files: images[0], images[1], images[2]
+                    $uploadedFiles[$fieldName . '[' . $i . ']'] = [
+                        'name' => $fileData['name'][$i],
+                        'type' => $fileData['type'][$i],
+                        'tmp_name' => $fileData['tmp_name'][$i],
+                        'error' => $fileData['error'][$i],
+                        'size' => $fileData['size'][$i],
+                    ];
+                }
+            } else {
+                // Handle single file upload
+                $uploadedFile = $this->request->getUploadedFile($fieldName);
+                if ($uploadedFile !== null) {
+                    $uploadedFiles[$fieldName] = $uploadedFile;
+                }
             }
         }
 

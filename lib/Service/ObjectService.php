@@ -3749,6 +3749,27 @@ class ObjectService
                             $objectData['@self'][$metaField] = $generatedSlug;
                         }
                     }
+                } else if ($metaField === 'image') {
+                    // Special handling for image - extract download URL if it's a file object
+                    // IMPORTANT: Object image should use downloadUrl for public access
+                    $value = $this->getValueFromPath($objectData, $sourceField);
+                    if ($value !== null) {
+                        // If value is an array of files, use the first file
+                        if (is_array($value) && isset($value[0]) && is_array($value[0])) {
+                            // Array of file objects - prefer downloadUrl, fallback to accessUrl
+                            if (isset($value[0]['downloadUrl'])) {
+                                $objectData['@self'][$metaField] = $value[0]['downloadUrl'];
+                            } else if (isset($value[0]['accessUrl'])) {
+                                $objectData['@self'][$metaField] = $value[0]['accessUrl'];
+                            }
+                        } else if (is_array($value) && (isset($value['downloadUrl']) || isset($value['accessUrl']))) {
+                            // Single file object - prefer downloadUrl, fallback to accessUrl
+                            $objectData['@self'][$metaField] = $value['downloadUrl'] ?? $value['accessUrl'];
+                        } else {
+                            // Regular value (string URL or similar)
+                            $objectData['@self'][$metaField] = $value;
+                        }
+                    }
                 } else {
                     // Regular metadata field handling
                     $value = $this->getValueFromPath($objectData, $sourceField);
