@@ -899,6 +899,9 @@ export default {
 			const filters = {}
 			if (this.searchTerms.length > 0) {
 				filters._search = this.searchTerms.join(' ')
+			} else {
+				// Ensure previously set _search is cleared when no terms remain
+				filters._search = ''
 			}
 
 			// Add source selection (only if not 'auto')

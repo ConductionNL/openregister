@@ -1424,7 +1424,7 @@ export default {
 		viewAuditTrails() {
 			// Close the current modal and navigate to audit trails
 			this.closeModal()
-			navigationStore.setSelected('auditTrails')
+			this.$router.push('/audit-trails')
 		},
 		async publishSelectedFiles() {
 			if (this.selectedAttachments.length === 0) return

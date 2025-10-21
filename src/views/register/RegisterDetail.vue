@@ -16,7 +16,7 @@ import formatBytes from '../../services/formatBytes.js'
 					:title="dashboardStore.error"
 					icon="icon-error">
 					<template #action>
-						<NcButton @click="navigationStore.setSelected('registers')">
+						<NcButton @click="$router.push('/registers')">
 							{{ t('openregister', 'Back to Registers') }}
 						</NcButton>
 					</template>
@@ -27,7 +27,7 @@ import formatBytes from '../../services/formatBytes.js'
 					:title="t('openregister', 'Register not found')"
 					icon="icon-error">
 					<template #action>
-						<NcButton @click="navigationStore.setSelected('registers')">
+						<NcButton @click="$router.push('/registers')">
 							{{ t('openregister', 'Back to Registers') }}
 						</NcButton>
 					</template>
@@ -317,11 +317,11 @@ export default {
 				await dashboardStore.fetchAllChartData()
 			} catch (error) {
 				console.error('Failed to fetch register details:', error)
-				navigationStore.setSelected('registers')
+				this.$router.push('/registers')
 			}
 		} else if (!registerStore.getRegisterItem?.id) {
 			// If no register ID at all, go back to list
-			navigationStore.setSelected('registers')
+			this.$router.push('/registers')
 		}
 
 		// Load register stats if register is available
