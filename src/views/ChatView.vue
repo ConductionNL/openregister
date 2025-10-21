@@ -8,7 +8,9 @@
 						<Robot :size="32" />
 						{{ t('openregister', 'AI Assistant') }}
 					</h1>
-					<p class="subtitle">{{ t('openregister', 'Ask questions about your data using natural language') }}</p>
+					<p class="subtitle">
+						{{ t('openregister', 'Ask questions about your data using natural language') }}
+					</p>
 				</div>
 				<div class="header-actions">
 					<NcButton
@@ -31,57 +33,63 @@
 				</div>
 			</div>
 
-		<!-- Configuration Required Message -->
-		<div v-if="checkingConfig" class="empty-state">
-			<div class="empty-icon">
-				<NcLoadingIcon :size="64" />
+			<!-- Configuration Required Message -->
+			<div v-if="checkingConfig" class="empty-state">
+				<div class="empty-icon">
+					<NcLoadingIcon :size="64" />
+				</div>
+				<h2>{{ t('openregister', 'Checking configuration...') }}</h2>
 			</div>
-			<h2>{{ t('openregister', 'Checking configuration...') }}</h2>
-		</div>
 
-		<div v-else-if="!llmConfigured" class="empty-state config-required">
-			<div class="empty-icon">
-				<InformationOutline :size="64" />
-			</div>
-			<h2>{{ t('openregister', 'Chat Provider Not Configured') }}</h2>
-			<p>{{ t('openregister', 'To chat with your data and documents, a Large Language Model (LLM) provider must be configured.') }}</p>
-			<p class="contact-admin">{{ t('openregister', 'Please contact your administrator to configure a chat provider in the LLM Configuration settings.') }}</p>
-			
-			<div class="config-hint">
-				<p><strong>{{ t('openregister', 'Administrators:') }}</strong></p>
-				<ol>
-					<li>{{ t('openregister', 'Go to Settings → OpenRegister → SOLR Configuration') }}</li>
-					<li>{{ t('openregister', 'Click "Actions" → "LLM Configuration"') }}</li>
-					<li>{{ t('openregister', 'Configure a Chat Provider (OpenAI, Ollama, etc.)') }}</li>
-				</ol>
-			</div>
-		</div>
+			<div v-else-if="!llmConfigured" class="empty-state config-required">
+				<div class="empty-icon">
+					<InformationOutline :size="64" />
+				</div>
+				<h2>{{ t('openregister', 'Chat Provider Not Configured') }}</h2>
+				<p>{{ t('openregister', 'To chat with your data and documents, a Large Language Model (LLM) provider must be configured.') }}</p>
+				<p class="contact-admin">
+					{{ t('openregister', 'Please contact your administrator to configure a chat provider in the LLM Configuration settings.') }}
+				</p>
 
-		<!-- Empty State -->
-		<div v-else-if="messages.length === 0" class="empty-state">
-			<div class="empty-icon">
-				<MessageText :size="64" />
-			</div>
-			<h2>{{ t('openregister', 'Start a conversation') }}</h2>
-			<p>{{ t('openregister', 'Ask questions about your objects, files, and data. The AI assistant uses semantic search to find relevant information.') }}</p>
-			
-			<div class="suggested-prompts">
-				<h3>{{ t('openregister', 'Try asking:') }}</h3>
-				<div class="prompt-grid">
-					<button
-						v-for="(prompt, index) in suggestedPrompts"
-						:key="index"
-						class="prompt-card"
-						@click="sendMessage(prompt.text)">
-						<div class="prompt-icon">{{ prompt.icon }}</div>
-						<div class="prompt-text">{{ prompt.text }}</div>
-					</button>
+				<div class="config-hint">
+					<p><strong>{{ t('openregister', 'Administrators:') }}</strong></p>
+					<ol>
+						<li>{{ t('openregister', 'Go to Settings → OpenRegister → SOLR Configuration') }}</li>
+						<li>{{ t('openregister', 'Click "Actions" → "LLM Configuration"') }}</li>
+						<li>{{ t('openregister', 'Configure a Chat Provider (OpenAI, Ollama, etc.)') }}</li>
+					</ol>
 				</div>
 			</div>
-		</div>
+
+			<!-- Empty State -->
+			<div v-else-if="messages.length === 0" class="empty-state">
+				<div class="empty-icon">
+					<MessageText :size="64" />
+				</div>
+				<h2>{{ t('openregister', 'Start a conversation') }}</h2>
+				<p>{{ t('openregister', 'Ask questions about your objects, files, and data. The AI assistant uses semantic search to find relevant information.') }}</p>
+
+				<div class="suggested-prompts">
+					<h3>{{ t('openregister', 'Try asking:') }}</h3>
+					<div class="prompt-grid">
+						<button
+							v-for="(prompt, index) in suggestedPrompts"
+							:key="index"
+							class="prompt-card"
+							@click="sendMessage(prompt.text)">
+							<div class="prompt-icon">
+								{{ prompt.icon }}
+							</div>
+							<div class="prompt-text">
+								{{ prompt.text }}
+							</div>
+						</button>
+					</div>
+				</div>
+			</div>
 
 			<!-- Chat Messages -->
-			<div v-else class="chat-messages" ref="messagesContainer">
+			<div v-else ref="messagesContainer" class="chat-messages">
 				<div
 					v-for="(message, index) in messages"
 					:key="index"
@@ -96,7 +104,7 @@
 							<span class="message-time">{{ formatTime(message.timestamp) }}</span>
 						</div>
 						<div class="message-text" v-html="formatMessage(message.content)" />
-						
+
 						<!-- Sources (for AI messages) -->
 						<div v-if="message.sources && message.sources.length > 0" class="message-sources">
 							<div class="sources-header">
@@ -125,14 +133,14 @@
 						<div v-if="message.role === 'assistant'" class="message-feedback">
 							<button
 								:class="['feedback-btn', { active: message.feedback === 'positive' }]"
-								@click="sendFeedback(index, 'positive')"
-								:title="t('openregister', 'Helpful')">
+								:title="t('openregister', 'Helpful')"
+								@click="sendFeedback(index, 'positive')">
 								<ThumbUp :size="16" />
 							</button>
 							<button
 								:class="['feedback-btn', { active: message.feedback === 'negative' }]"
-								@click="sendFeedback(index, 'negative')"
-								:title="t('openregister', 'Not helpful')">
+								:title="t('openregister', 'Not helpful')"
+								@click="sendFeedback(index, 'negative')">
 								<ThumbDown :size="16" />
 							</button>
 						</div>
@@ -146,42 +154,41 @@
 					</div>
 					<div class="message-content">
 						<div class="typing-indicator">
-							<span></span>
-							<span></span>
-							<span></span>
+							<span />
+							<span />
+							<span />
 						</div>
 					</div>
 				</div>
 			</div>
 
-		<!-- Chat Input (only show if configured) -->
-		<div v-if="llmConfigured && !checkingConfig" class="chat-input-container">
-			<div class="chat-input-wrapper">
-				<textarea
-					ref="messageInput"
-					v-model="currentMessage"
-					:placeholder="t('openregister', 'Ask a question...')"
-					:disabled="loading"
-					class="chat-input"
-					rows="1"
-					@keydown.enter.exact.prevent="handleSendMessage"
-					@input="autoResize"
-				/>
-				<NcButton
-					type="primary"
-					:disabled="!currentMessage.trim() || loading"
-					@click="handleSendMessage">
-					<template #icon>
-						<Send :size="20" />
-					</template>
-				</NcButton>
-			</div>
-			<div class="input-hint">
-				<InformationOutline :size="14" />
-				<span>{{ t('openregister', 'Press Enter to send, Shift+Enter for new line') }}</span>
+			<!-- Chat Input (only show if configured) -->
+			<div v-if="llmConfigured && !checkingConfig" class="chat-input-container">
+				<div class="chat-input-wrapper">
+					<textarea
+						ref="messageInput"
+						v-model="currentMessage"
+						:placeholder="t('openregister', 'Ask a question...')"
+						:disabled="loading"
+						class="chat-input"
+						rows="1"
+						@keydown.enter.exact.prevent="handleSendMessage"
+						@input="autoResize" />
+					<NcButton
+						type="primary"
+						:disabled="!currentMessage.trim() || loading"
+						@click="handleSendMessage">
+						<template #icon>
+							<Send :size="20" />
+						</template>
+					</NcButton>
+				</div>
+				<div class="input-hint">
+					<InformationOutline :size="14" />
+					<span>{{ t('openregister', 'Press Enter to send, Shift+Enter for new line') }}</span>
+				</div>
 			</div>
 		</div>
-	</div>
 
 		<!-- Chat Settings Dialog -->
 		<NcDialog
@@ -195,8 +202,7 @@
 						v-model="settings.searchMode"
 						:options="searchModeOptions"
 						label="name"
-						:placeholder="t('openregister', 'Select search mode')">
-					</NcSelect>
+						:placeholder="t('openregister', 'Select search mode')" />
 					<small>{{ t('openregister', 'How the AI should search for relevant information') }}</small>
 				</div>
 
@@ -288,7 +294,7 @@ export default {
 			showChatSettings: false,
 			llmConfigured: false,
 			checkingConfig: true,
-			
+
 			settings: {
 				searchMode: { id: 'hybrid', name: 'Hybrid (Recommended)' },
 				numSources: 5,
@@ -333,7 +339,7 @@ export default {
 			try {
 				const response = await axios.get(generateUrl('/apps/openregister/api/settings'))
 				const llmSettings = response.data.llm || {}
-				
+
 				// Check if chat provider is configured
 				this.llmConfigured = !!(llmSettings.chatProvider && llmSettings.chatProvider.type)
 				this.checkingConfig = false
@@ -398,7 +404,7 @@ export default {
 				this.scrollToBottom()
 			} catch (error) {
 				showError(this.t('openregister', 'Failed to get response: {error}', { error: error.response?.data?.error || error.message }))
-				
+
 				// Add error message
 				this.messages.push({
 					role: 'assistant',
@@ -900,4 +906,3 @@ export default {
 	}
 }
 </style>
-

@@ -483,11 +483,11 @@ export const useObjectStore = defineStore('object', {
 			// CRITICAL FIX: Don't send _facetable=true when using database source
 			// Database source doesn't support faceting and will cause errors
 			const isUsingDatabaseSource = this.filters._source === 'database'
-			
+
 			if (options.includeFacets !== false && !isUsingDatabaseSource) { // Default to true, but skip for database source
 				// Always request facetable fields discovery to show available options
 				params.push('_facetable=true')
-				
+
 				// Only send specific facet configuration if user has explicitly configured facets
 				const facetConfiguration = this.buildFacetConfiguration()
 				if (facetConfiguration?._facets) {

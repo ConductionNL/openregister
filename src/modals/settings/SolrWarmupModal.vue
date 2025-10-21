@@ -3,8 +3,8 @@
 		v-if="show"
 		name="SOLR Index Warmup"
 		:can-close="!warmingUp"
-		@closing="$emit('close')"
-		size="large">
+		size="large"
+		@closing="$emit('close')">
 		<div class="dialog-content">
 			<p class="warmup-description">
 				Configure warmup parameters for SOLR index initialization. This process will mirror schemas and index objects into SOLR for enhanced search performance.
@@ -36,7 +36,9 @@
 					<h4 :class="results.success ? 'success-text' : 'error-text'">
 						{{ results.success ? 'Warmup Completed Successfully!' : 'Warmup Failed' }}
 					</h4>
-					<p class="results-message">{{ results.message }}</p>
+					<p class="results-message">
+						{{ results.message }}
+					</p>
 				</div>
 
 				<!-- Error Details (prominent display) -->
@@ -178,7 +180,7 @@
 
 				<div class="form-section">
 					<h4>Processing Limits</h4>
-					
+
 					<!-- Object Count Prediction -->
 					<div class="object-prediction">
 						<div class="prediction-header">
@@ -188,27 +190,27 @@
 								<span>Loading object count...</span>
 							</div>
 						</div>
-					<div v-if="!objectStats.loading && effectiveTotalObjects > 0" class="prediction-content">
-						<div class="prediction-stats">
-							<div class="stat-item">
-								<span class="stat-label">Total Objects in Database:</span>
-								<span class="stat-value">{{ objectStats.totalObjects.toLocaleString() }}</span>
-							</div>
-							<div class="stat-item">
-								<span class="stat-label">Objects to Process:</span>
-								<span class="stat-value">
-									{{ localConfig.maxObjects === 0 ? effectiveTotalObjects.toLocaleString() : Math.min(localConfig.maxObjects, effectiveTotalObjects).toLocaleString() }}
-									<span v-if="localConfig.maxObjects > 0 && localConfig.maxObjects < effectiveTotalObjects" class="limited-indicator">
-										(limited by max objects setting)
+						<div v-if="!objectStats.loading && effectiveTotalObjects > 0" class="prediction-content">
+							<div class="prediction-stats">
+								<div class="stat-item">
+									<span class="stat-label">Total Objects in Database:</span>
+									<span class="stat-value">{{ objectStats.totalObjects.toLocaleString() }}</span>
+								</div>
+								<div class="stat-item">
+									<span class="stat-label">Objects to Process:</span>
+									<span class="stat-value">
+										{{ localConfig.maxObjects === 0 ? effectiveTotalObjects.toLocaleString() : Math.min(localConfig.maxObjects, effectiveTotalObjects).toLocaleString() }}
+										<span v-if="localConfig.maxObjects > 0 && localConfig.maxObjects < effectiveTotalObjects" class="limited-indicator">
+											(limited by max objects setting)
+										</span>
 									</span>
-								</span>
-							</div>
-							<div class="stat-item">
-								<span class="stat-label">Estimated Batches:</span>
-								<span class="stat-value">
-									{{ Math.ceil((localConfig.maxObjects === 0 ? effectiveTotalObjects : Math.min(localConfig.maxObjects, effectiveTotalObjects)) / localConfig.batchSize) }}
-								</span>
-							</div>
+								</div>
+								<div class="stat-item">
+									<span class="stat-label">Estimated Batches:</span>
+									<span class="stat-value">
+										{{ Math.ceil((localConfig.maxObjects === 0 ? effectiveTotalObjects : Math.min(localConfig.maxObjects, effectiveTotalObjects)) / localConfig.batchSize) }}
+									</span>
+								</div>
 								<div class="stat-item">
 									<span class="stat-label">Estimated Duration:</span>
 									<span class="stat-value">
@@ -294,9 +296,9 @@
 					<div v-if="localConfig.selectedSchemas && localConfig.selectedSchemas.length > 0" class="selected-schemas-summary">
 						<p><strong>Selected:</strong> {{ localConfig.selectedSchemas.length }} schema(s)</p>
 						<div class="selected-schema-list">
-							<span 
-								v-for="schema in selectedSchemasDetails" 
-								:key="schema.id" 
+							<span
+								v-for="schema in selectedSchemasDetails"
+								:key="schema.id"
 								class="selected-schema-tag">
 								{{ schema.label }} ({{ schema.objectCount || 0 }})
 							</span>
@@ -415,8 +417,8 @@ export default {
 				prediction_safe: true,
 				formatted: {
 					total_predicted: 'Unknown',
-					available: 'Unknown'
-				}
+					available: 'Unknown',
+				},
 			}),
 		},
 		availableSchemas: {
@@ -451,7 +453,7 @@ export default {
 				})
 				.filter(schema => schema !== null && schema !== undefined)
 		},
-		
+
 		/**
 		 * Calculate the total number of objects based on selected schemas
 		 * If no schemas are selected, use the total from objectStats
@@ -461,7 +463,7 @@ export default {
 				// No schemas selected = all schemas, use the total count
 				return this.objectStats.totalObjects
 			}
-			
+
 			// Sum up object counts from selected schemas only
 			return this.selectedSchemasDetails.reduce((total, schema) => {
 				return total + (schema.objectCount || 0)
@@ -503,7 +505,7 @@ export default {
 			const modeNames = {
 				serial: 'Serial',
 				parallel: 'Parallel',
-				hyper: 'Hyper'
+				hyper: 'Hyper',
 			}
 			return modeNames[mode] || mode
 		},
@@ -518,12 +520,12 @@ export default {
 				return 'Unknown'
 			}
 
-			const totalObjects = this.localConfig.maxObjects === 0 
-				? this.effectiveTotalObjects 
+			const totalObjects = this.localConfig.maxObjects === 0
+				? this.effectiveTotalObjects
 				: Math.min(this.localConfig.maxObjects, this.effectiveTotalObjects)
-			
+
 			const batches = Math.ceil(totalObjects / this.localConfig.batchSize)
-			
+
 			// Rough estimates based on mode and batch size
 			// Serial: ~2-5 seconds per batch, Parallel: ~1-2 seconds per batch, Hyper: ~0.5-1 seconds per batch
 			let secondsPerBatch = 3 // Default for serial
@@ -533,7 +535,7 @@ export default {
 				secondsPerBatch = 0.8 // Fastest mode
 			}
 			const totalSeconds = batches * secondsPerBatch
-			
+
 			if (totalSeconds < 60) {
 				return `~${Math.ceil(totalSeconds)} seconds`
 			} else if (totalSeconds < 3600) {
@@ -655,7 +657,7 @@ export default {
 			if (typeof status === 'number' && status > 1) {
 				return `Count: ${status.toLocaleString()}`
 			}
-			
+
 			const detailsMap = {
 				schema_mirroring: status ? 'All schemas successfully mirrored' : 'Schema mirroring was skipped or failed',
 				error_collection_mode: status ? 'Errors collected for review' : 'Stop on first error mode',
@@ -674,12 +676,12 @@ export default {
 			if (!this.memoryPrediction || this.memoryPrediction.error) {
 				return 'Unable to predict'
 			}
-			
+
 			const prediction = this.memoryPrediction.formatted
 			if (!prediction) {
 				return 'Unknown'
 			}
-			
+
 			return `${prediction.total_predicted} / ${prediction.available} available`
 		},
 
@@ -702,8 +704,8 @@ export default {
 		 * @return {boolean} True if detailed error info is available
 		 */
 		hasDetailedError() {
-			return !!(this.results?.error_details || 
-					 (this.results?.error && this.results.error.length > 100))
+			return !!(this.results?.error_details
+					 || (this.results?.error && this.results.error.length > 100))
 		},
 
 		/**
@@ -713,11 +715,11 @@ export default {
 		 */
 		formatErrorDetails() {
 			if (this.results?.error_details) {
-				return typeof this.results.error_details === 'string' 
-					? this.results.error_details 
+				return typeof this.results.error_details === 'string'
+					? this.results.error_details
 					: JSON.stringify(this.results.error_details, null, 2)
 			}
-			
+
 			return this.results?.error || 'No detailed error information available'
 		},
 	},
@@ -1229,33 +1231,33 @@ export default {
 	.config-grid {
 		grid-template-columns: 1fr;
 	}
-	
+
 	.operations-grid {
 		grid-template-columns: 1fr;
 	}
-	
+
 	.summary-item,
 	.config-item {
 		flex-direction: column;
 		align-items: flex-start;
 		gap: 0.25rem;
 	}
-	
+
 	.summary-value,
 	.config-value {
 		text-align: left;
 	}
-	
+
 	.operation-header {
 		flex-wrap: wrap;
 		gap: 0.5rem;
 	}
-	
+
 	.radio-group {
 		flex-direction: column;
 		gap: 0.5rem;
 	}
-	
+
 	.radio-group > * {
 		flex: none;
 	}

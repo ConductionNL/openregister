@@ -8,12 +8,13 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 		name="Validate Schema Objects"
 		size="large"
 		:can-close="false">
-		
 		<!-- Loading State -->
 		<div v-if="loading" class="loading-container">
 			<NcLoadingIcon :size="40" />
 			<p>Validating objects against schema '{{ schemaStore.schemaItem?.title }}'...</p>
-			<p class="loading-subtitle">This may take a moment for large datasets.</p>
+			<p class="loading-subtitle">
+				This may take a moment for large datasets.
+			</p>
 		</div>
 
 		<!-- Confirmation State -->
@@ -22,9 +23,9 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 				<h4>Validate Schema Objects</h4>
 				<p>This validation will check all objects belonging to this schema against their schema definition. The process involves examining each object's data structure and identifying any validation errors.</p>
 			</NcNoteCard>
-			
+
 			<div class="object-count-section">
-				<SchemaStatsBlock 
+				<SchemaStatsBlock
 					:object-count="objectCount"
 					:object-stats="objectStats"
 					:loading="objectCount === 0"
@@ -86,16 +87,20 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 							</tr>
 						</thead>
 						<tbody>
-							<tr v-for="object in filteredResults" :key="object.uuid" 
+							<tr v-for="object in filteredResults"
+								:key="object.uuid"
 								:class="{ 'invalid-row': object.errors && object.errors.length > 0 }">
 								<td class="status-cell">
-									<CheckCircle v-if="!object.errors || object.errors.length === 0" 
-										:size="20" class="valid-icon" />
+									<CheckCircle v-if="!object.errors || object.errors.length === 0"
+										:size="20"
+										class="valid-icon" />
 									<AlertCircle v-else :size="20" class="invalid-icon" />
 								</td>
 								<td>{{ object.id }}</td>
 								<td>{{ object.name || 'Unnamed' }}</td>
-								<td class="uuid-cell">{{ object.uuid }}</td>
+								<td class="uuid-cell">
+									{{ object.uuid }}
+								</td>
 								<td class="errors-cell">
 									<div v-if="object.errors && object.errors.length > 0" class="errors-list">
 										<div v-for="error in object.errors" :key="error.path" class="error-item">
@@ -203,9 +208,21 @@ export default {
 			objectStats: null,
 		}
 	},
-	async mounted() {
-		console.log('ValidateSchema modal mounted, schemaItem:', schemaStore.schemaItem)
-		await this.loadObjectCount()
+	computed: {
+		filteredResults() {
+			if (!this.validationResults) return []
+
+			const allResults = [
+				...this.validationResults.valid_objects.map(obj => ({ ...obj, errors: [] })),
+				...this.validationResults.invalid_objects,
+			]
+
+			if (this.showOnlyInvalid) {
+				return allResults.filter(obj => obj.errors && obj.errors.length > 0)
+			}
+
+			return allResults
+		},
 	},
 	watch: {
 		// Watch for changes in schemaItem and reload count if needed
@@ -216,7 +233,7 @@ export default {
 					this.loadObjectCount()
 				}
 			},
-			immediate: true
+			immediate: true,
 		},
 		// Watch for dialog state changes to load count when modal becomes visible
 		'navigationStore.modal': {
@@ -227,24 +244,12 @@ export default {
 					this.loadObjectCount()
 				}
 			},
-			immediate: true
-		}
-	},
-	computed: {
-		filteredResults() {
-			if (!this.validationResults) return []
-			
-			const allResults = [
-				...this.validationResults.valid_objects.map(obj => ({ ...obj, errors: [] })),
-				...this.validationResults.invalid_objects
-			]
-			
-			if (this.showOnlyInvalid) {
-				return allResults.filter(obj => obj.errors && obj.errors.length > 0)
-			}
-			
-			return allResults
+			immediate: true,
 		},
+	},
+	async mounted() {
+		console.log('ValidateSchema modal mounted, schemaItem:', schemaStore.schemaItem)
+		await this.loadObjectCount()
 	},
 	methods: {
 		async loadObjectCount() {
@@ -269,11 +274,11 @@ export default {
 				this.objectStats = null
 			}
 		},
-		
+
 		async startValidation() {
 			this.loading = true
 			this.error = false
-			
+
 			try {
 				// Call the new direct validation API
 				const response = await fetch(
@@ -283,21 +288,21 @@ export default {
 						headers: {
 							'Content-Type': 'application/json',
 						},
-					}
+					},
 				)
-				
+
 				if (!response.ok) {
 					throw new Error(`Validation failed: ${response.statusText}`)
 				}
-				
+
 				const data = await response.json()
-				
+
 				if (data.error) {
 					throw new Error(data.error)
 				}
-				
+
 				this.validationResults = data
-				
+
 			} catch (err) {
 				this.error = err.message || 'An error occurred during validation'
 				console.error('Validation error:', err)
@@ -305,13 +310,13 @@ export default {
 				this.loading = false
 			}
 		},
-		
+
 		viewObjectDetails(object) {
 			// Navigate to object details view
 			// This would need to be implemented based on your navigation structure
 			console.log('View object details:', object)
 		},
-		
+
 		closeDialog() {
 			navigationStore.setModal(false)
 			this.loading = false

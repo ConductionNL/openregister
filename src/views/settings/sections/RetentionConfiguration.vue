@@ -271,7 +271,7 @@ import Save from 'vue-material-design-icons/ContentSave.vue'
 
 export default {
 	name: 'RetentionConfiguration',
-	
+
 	components: {
 		NcSettingsSection,
 		NcButton,
@@ -290,7 +290,7 @@ export default {
 			},
 			set(value) {
 				this.settingsStore.retentionOptions = value
-			}
+			},
 		},
 
 		auditTrailsEnabled: {
@@ -299,7 +299,7 @@ export default {
 			},
 			set(value) {
 				this.settingsStore.retentionOptions.auditTrailsEnabled = value
-			}
+			},
 		},
 
 		searchTrailsEnabled: {
@@ -308,7 +308,7 @@ export default {
 			},
 			set(value) {
 				this.settingsStore.retentionOptions.searchTrailsEnabled = value
-			}
+			},
 		},
 
 		loading() {
@@ -352,7 +352,7 @@ export default {
 		 */
 		formatRetentionPeriod(ms) {
 			if (!ms || ms === 0) return 'Forever'
-			
+
 			const seconds = ms / 1000
 			const minutes = seconds / 60
 			const hours = minutes / 60
@@ -360,7 +360,7 @@ export default {
 			const weeks = days / 7
 			const months = days / 30.44 // Average month length
 			const years = days / 365.25 // Account for leap years
-			
+
 			if (years >= 1) {
 				return `${years.toFixed(1)} year${years !== 1 ? 's' : ''}`
 			} else if (months >= 1) {
@@ -565,7 +565,7 @@ export default {
 		grid-template-columns: 1fr;
 		gap: 12px;
 	}
-	
+
 	.retention-display {
 		text-align: left;
 		background: var(--color-background-hover);
@@ -573,13 +573,13 @@ export default {
 		border-radius: var(--border-radius);
 		border: 1px solid var(--color-border-dark);
 	}
-	
+
 	.section-header-inline {
 		flex-direction: column;
 		gap: 12px;
 		align-items: stretch;
 	}
-	
+
 	.button-group {
 		justify-content: center;
 	}

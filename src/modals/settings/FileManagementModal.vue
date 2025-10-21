@@ -15,7 +15,7 @@
 			<!-- Vectorization Settings -->
 			<div class="config-section">
 				<h3>{{ t('openregister', 'Vectorization Settings') }}</h3>
-				
+
 				<div class="form-group">
 					<NcCheckboxRadioSwitch
 						v-model="config.vectorizationEnabled"
@@ -25,38 +25,37 @@
 					<small>{{ t('openregister', 'Automatically generate vector embeddings when files are uploaded') }}</small>
 				</div>
 
-			<div v-if="config.vectorizationEnabled" class="form-group">
-				<label>{{ t('openregister', 'Vectorization Provider') }}</label>
-				<NcSelect
-					v-model="config.provider"
-					:options="providerOptions"
-					label="name"
-					:placeholder="t('openregister', 'Select provider')"
-					:label-outside="true">
-				</NcSelect>
-			</div>
+				<div v-if="config.vectorizationEnabled" class="form-group">
+					<label>{{ t('openregister', 'Vectorization Provider') }}</label>
+					<NcSelect
+						v-model="config.provider"
+						:options="providerOptions"
+						label="name"
+						:placeholder="t('openregister', 'Select provider')"
+						:label-outside="true" />
+				</div>
 			</div>
 
 			<!-- Document Chunking -->
 			<div class="config-section">
 				<h3>{{ t('openregister', 'Document Chunking') }}</h3>
-				
-			<div class="form-group">
-				<label>{{ t('openregister', 'Chunking Strategy') }}</label>
-				<NcSelect
-					v-model="config.chunkingStrategy"
-					:options="chunkingStrategyOptions"
-					label="name"
-					:placeholder="t('openregister', 'Select strategy')"
-					:label-outside="true">
-					<template #option="{ name, description }">
-						<div class="option-with-desc">
-							<strong>{{ name }}</strong>
-							<small>{{ description }}</small>
-						</div>
-					</template>
-				</NcSelect>
-			</div>
+
+				<div class="form-group">
+					<label>{{ t('openregister', 'Chunking Strategy') }}</label>
+					<NcSelect
+						v-model="config.chunkingStrategy"
+						:options="chunkingStrategyOptions"
+						label="name"
+						:placeholder="t('openregister', 'Select strategy')"
+						:label-outside="true">
+						<template #option="{ name, description }">
+							<div class="option-with-desc">
+								<strong>{{ name }}</strong>
+								<small>{{ description }}</small>
+							</div>
+						</template>
+					</NcSelect>
+				</div>
 
 				<div class="form-group">
 					<label for="chunk-size">{{ t('openregister', 'Chunk Size') }}</label>
@@ -88,7 +87,7 @@
 			<!-- File Type Support -->
 			<div class="config-section">
 				<h3>{{ t('openregister', 'File Type Support') }}</h3>
-				
+
 				<div class="file-types-grid">
 					<div v-for="category in fileCategoriesConfig" :key="category.name" class="file-category">
 						<h4>{{ category.name }}</h4>
@@ -107,7 +106,7 @@
 			<!-- OCR Settings -->
 			<div class="config-section">
 				<h3>{{ t('openregister', 'OCR Settings') }}</h3>
-				
+
 				<div class="form-group">
 					<NcCheckboxRadioSwitch
 						v-model="config.ocrEnabled"
@@ -121,7 +120,7 @@
 			<!-- Processing Limits -->
 			<div class="config-section">
 				<h3>{{ t('openregister', 'Processing Limits') }}</h3>
-				
+
 				<div class="form-group">
 					<label for="max-file-size">{{ t('openregister', 'Maximum File Size (MB)') }}</label>
 					<input
@@ -138,23 +137,39 @@
 			<!-- Stats -->
 			<div class="config-section">
 				<h3>{{ t('openregister', 'File Statistics') }}</h3>
-				
+
 				<div class="stats-grid">
 					<div class="stat-card">
-						<div class="stat-value">{{ stats.totalFiles }}</div>
-						<div class="stat-label">{{ t('openregister', 'Total Files') }}</div>
+						<div class="stat-value">
+							{{ stats.totalFiles }}
+						</div>
+						<div class="stat-label">
+							{{ t('openregister', 'Total Files') }}
+						</div>
 					</div>
 					<div class="stat-card">
-						<div class="stat-value">{{ stats.vectorizedFiles }}</div>
-						<div class="stat-label">{{ t('openregister', 'Vectorized Files') }}</div>
+						<div class="stat-value">
+							{{ stats.vectorizedFiles }}
+						</div>
+						<div class="stat-label">
+							{{ t('openregister', 'Vectorized Files') }}
+						</div>
 					</div>
 					<div class="stat-card">
-						<div class="stat-value">{{ stats.pendingFiles }}</div>
-						<div class="stat-label">{{ t('openregister', 'Pending') }}</div>
+						<div class="stat-value">
+							{{ stats.pendingFiles }}
+						</div>
+						<div class="stat-label">
+							{{ t('openregister', 'Pending') }}
+						</div>
 					</div>
 					<div class="stat-card">
-						<div class="stat-value">{{ stats.totalChunks }}</div>
-						<div class="stat-label">{{ t('openregister', 'Total Chunks') }}</div>
+						<div class="stat-value">
+							{{ stats.totalChunks }}
+						</div>
+						<div class="stat-label">
+							{{ t('openregister', 'Total Chunks') }}
+						</div>
 					</div>
 				</div>
 			</div>
@@ -162,23 +177,39 @@
 			<!-- Vector Embeddings Stats -->
 			<div class="config-section">
 				<h3>{{ t('openregister', 'Vector Embeddings Statistics') }}</h3>
-				
+
 				<div class="stats-grid">
 					<div class="stat-card highlight">
-						<div class="stat-value">{{ vectorStats.totalVectors }}</div>
-						<div class="stat-label">{{ t('openregister', 'Total Vectors') }}</div>
+						<div class="stat-value">
+							{{ vectorStats.totalVectors }}
+						</div>
+						<div class="stat-label">
+							{{ t('openregister', 'Total Vectors') }}
+						</div>
 					</div>
 					<div class="stat-card">
-						<div class="stat-value">{{ vectorStats.objectVectors }}</div>
-						<div class="stat-label">{{ t('openregister', 'Object Vectors') }}</div>
+						<div class="stat-value">
+							{{ vectorStats.objectVectors }}
+						</div>
+						<div class="stat-label">
+							{{ t('openregister', 'Object Vectors') }}
+						</div>
 					</div>
 					<div class="stat-card">
-						<div class="stat-value">{{ vectorStats.fileVectors }}</div>
-						<div class="stat-label">{{ t('openregister', 'File Vectors') }}</div>
+						<div class="stat-value">
+							{{ vectorStats.fileVectors }}
+						</div>
+						<div class="stat-label">
+							{{ t('openregister', 'File Vectors') }}
+						</div>
 					</div>
 					<div class="stat-card">
-						<div class="stat-value">{{ vectorStats.storageMB }}</div>
-						<div class="stat-label">{{ t('openregister', 'Storage (MB)') }}</div>
+						<div class="stat-value">
+							{{ vectorStats.storageMB }}
+						</div>
+						<div class="stat-label">
+							{{ t('openregister', 'Storage (MB)') }}
+						</div>
 					</div>
 				</div>
 
@@ -246,7 +277,7 @@ export default {
 		return {
 			loading: true,
 			saving: false,
-			
+
 			config: {
 				vectorizationEnabled: true,
 				provider: { id: 'openai', name: 'OpenAI' },
@@ -257,7 +288,7 @@ export default {
 				ocrEnabled: false,
 				maxFileSizeMB: 100,
 			},
-			
+
 			stats: {
 				totalFiles: 0,
 				vectorizedFiles: 0,
@@ -272,17 +303,17 @@ export default {
 				storageMB: '0.0',
 				byModel: {},
 			},
-			
+
 			providerOptions: [
 				{ id: 'openai', name: 'OpenAI' },
 				{ id: 'ollama', name: 'Ollama (Local)' },
 			],
-			
+
 			chunkingStrategyOptions: [
 				{ id: 'FIXED_SIZE', name: 'Fixed Size', description: 'Split by character count' },
 				{ id: 'RECURSIVE_CHARACTER', name: 'Recursive Character', description: 'Split preserving structure' },
 			],
-			
+
 			fileCategoriesConfig: [
 				{
 					name: 'Office Documents',
@@ -547,4 +578,3 @@ export default {
 	}
 }
 </style>
-

@@ -94,11 +94,11 @@ export default {
 			try {
 				const stats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
 				const totalObjects = stats.objects?.total || 0
-				
+
 				if (totalObjects > 0) {
 					// Find the first register that contains this schema for display purposes
-					const register = registerStore.registerList.find(reg => 
-						reg.schemas.includes(schemaStore.schemaItem.id)
+					const register = registerStore.registerList.find(reg =>
+						reg.schemas.includes(schemaStore.schemaItem.id),
 					)
 					if (register) {
 						this.registerName = register.title

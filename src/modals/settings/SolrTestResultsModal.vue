@@ -3,8 +3,8 @@
 		v-if="show"
 		name="SOLR Connection Test Results"
 		:can-close="!testing"
-		@closing="$emit('close')"
-		size="large">
+		size="large"
+		@closing="$emit('close')">
 		<div class="dialog-content">
 			<!-- Loading State -->
 			<div v-if="testing" class="test-loading">
@@ -27,7 +27,9 @@
 					<h4 :class="results.success ? 'success-text' : 'error-text'">
 						{{ results.success ? 'Connection Test Successful!' : 'Connection Test Failed' }}
 					</h4>
-					<p class="results-message">{{ results.message }}</p>
+					<p class="results-message">
+						{{ results.message }}
+					</p>
 				</div>
 
 				<!-- Component Details -->
@@ -43,7 +45,9 @@
 								<span class="component-icon">{{ component.success ? '✅' : '❌' }}</span>
 								<h6>{{ formatComponentName(name) }}</h6>
 							</div>
-							<p class="component-message">{{ component.message }}</p>
+							<p class="component-message">
+								{{ component.message }}
+							</p>
 							<div v-if="component.details" class="component-details">
 								<div v-for="(value, key) in component.details" :key="key" class="detail-item">
 									<span class="detail-label">{{ formatDetailLabel(key) }}:</span>
@@ -336,13 +340,13 @@ export default {
 	.component-grid {
 		grid-template-columns: 1fr;
 	}
-	
+
 	.detail-item {
 		flex-direction: column;
 		align-items: flex-start;
 		gap: 0.25rem;
 	}
-	
+
 	.detail-value {
 		text-align: left;
 	}
