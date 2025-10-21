@@ -10,10 +10,38 @@ use Psr\Http\Message\ResponseInterface;
 /**
  * Core Integration Tests for OpenRegister
  * 
- * Tests:
- * - File uploads (multipart, base64, URL)
- * - Cascade protection (registers, schemas)
- * - CRUD operations
+ * Test Groups:
+ * 
+ * GROUP 1: File Upload Tests (Tests 1-15)
+ * - Single file uploads (multipart, base64, URL)
+ * - Multiple file uploads
+ * - File arrays
+ * - Validation (MIME types, file size, corrupted data)
+ * - File metadata retrieval
+ * - File updates and deletions
+ * 
+ * GROUP 2: Cascade Protection Tests (Tests 16-18)
+ * - Register deletion protection
+ * - Schema deletion protection
+ * - Successful deletion after cleanup
+ * 
+ * GROUP 3: File Publishing Tests (Tests 19-22)
+ * - Authenticated URLs for non-shared files
+ * - Auto-publish file property
+ * - Logo metadata from file property
+ * - Image metadata from file array property
+ * - File deletion by sending null
+ * - File array deletion by sending empty array
+ * 
+ * GROUP 4: Array Filtering Tests (Tests 23-30)
+ * - Default AND logic for metadata arrays
+ * - Explicit OR logic with dot notation
+ * - Default AND logic for object array properties
+ * - Explicit OR logic for object arrays
+ * - Dot notation syntax for metadata filters
+ * - Dot notation with operators
+ * - Mixed filters (dot notation + regular)
+ * - Complex filtering scenarios
  */
 class CoreIntegrationTest extends TestCase
 {
@@ -854,6 +882,373 @@ class CoreIntegrationTest extends TestCase
         $this->assertEmpty($updatedObject['images'], 'Images array should be empty after deletion');
 
         fclose($image1Tmp);
+    }
+
+    // ========================================
+    // ARRAY FILTERING TESTS (21-28)
+    // ========================================
+
+    /**
+     * Test 21: Default AND logic for metadata array filters
+     * 
+     * Verifies that filtering with multiple values on single-value metadata fields
+     * like register returns zero results (AND logic).
+     */
+    public function testMetadataArrayFilterDefaultAndLogic(): void
+    {
+        // Create two additional registers for filtering tests
+        $reg1Response = $this->client->post('/index.php/apps/openregister/api/registers', [
+            'json' => ['slug' => 'filter-test-1-' . uniqid(), 'title' => 'Filter Test Register 1']
+        ]);
+        $this->assertEquals(201, $reg1Response->getStatusCode());
+        $reg1 = json_decode($reg1Response->getBody(), true);
+
+        $reg2Response = $this->client->post('/index.php/apps/openregister/api/registers', [
+            'json' => ['slug' => 'filter-test-2-' . uniqid(), 'title' => 'Filter Test Register 2']
+        ]);
+        $this->assertEquals(201, $reg2Response->getStatusCode());
+        $reg2 = json_decode($reg2Response->getBody(), true);
+
+        // Create schemas in both registers
+        $schema1Response = $this->client->post('/index.php/apps/openregister/api/schemas', [
+            'json' => [
+                'register' => $reg1['id'],
+                'slug' => 'filter-schema-1-' . uniqid(),
+                'title' => 'Filter Schema 1',
+                'properties' => ['title' => ['type' => 'string']],
+            ]
+        ]);
+        $this->assertEquals(201, $schema1Response->getStatusCode());
+        $schema1 = json_decode($schema1Response->getBody(), true);
+
+        $schema2Response = $this->client->post('/index.php/apps/openregister/api/schemas', [
+            'json' => [
+                'register' => $reg2['id'],
+                'slug' => 'filter-schema-2-' . uniqid(),
+                'title' => 'Filter Schema 2',
+                'properties' => ['title' => ['type' => 'string']],
+            ]
+        ]);
+        $this->assertEquals(201, $schema2Response->getStatusCode());
+        $schema2 = json_decode($schema2Response->getBody(), true);
+
+        // Create objects in each register
+        $this->client->post("/index.php/apps/openregister/api/objects/{$reg1['slug']}/{$schema1['slug']}", [
+            'json' => ['title' => 'Object in Register 1']
+        ]);
+        $this->client->post("/index.php/apps/openregister/api/objects/{$reg2['slug']}/{$schema2['slug']}", [
+            'json' => ['title' => 'Object in Register 2']
+        ]);
+
+        // Test: Filter with AND logic (default) - should return zero results
+        $url = "/index.php/apps/openregister/api/objects?@self.register[]={$reg1['id']}&@self.register[]={$reg2['id']}";
+        $filterResponse = $this->client->get($url);
+        
+        $this->assertEquals(200, $filterResponse->getStatusCode());
+        $result = json_decode($filterResponse->getBody(), true);
+        $this->assertEquals(0, $result['total'], 'AND logic should return zero results for single-value fields');
+
+        // Cleanup
+        $this->client->delete("/index.php/apps/openregister/api/schemas/{$schema1['id']}");
+        $this->client->delete("/index.php/apps/openregister/api/schemas/{$schema2['id']}");
+        $this->client->delete("/index.php/apps/openregister/api/registers/{$reg1['id']}");
+        $this->client->delete("/index.php/apps/openregister/api/registers/{$reg2['id']}");
+    }
+
+    /**
+     * Test 22: Explicit OR logic for metadata array filters using dot notation
+     * 
+     * Verifies that @self.register[or]=1,2 returns objects from EITHER register.
+     */
+    public function testMetadataArrayFilterExplicitOrLogicWithDotNotation(): void
+    {
+        // Create two registers
+        $reg1Response = $this->client->post('/index.php/apps/openregister/api/registers', [
+            'json' => ['slug' => 'or-test-1-' . uniqid(), 'title' => 'OR Test Register 1']
+        ]);
+        $reg1 = json_decode($reg1Response->getBody(), true);
+
+        $reg2Response = $this->client->post('/index.php/apps/openregister/api/registers', [
+            'json' => ['slug' => 'or-test-2-' . uniqid(), 'title' => 'OR Test Register 2']
+        ]);
+        $reg2 = json_decode($reg2Response->getBody(), true);
+
+        // Create schemas
+        $schema1Response = $this->client->post('/index.php/apps/openregister/api/schemas', [
+            'json' => [
+                'register' => $reg1['id'],
+                'slug' => 'or-schema-1-' . uniqid(),
+                'title' => 'OR Schema 1',
+                'properties' => ['title' => ['type' => 'string']],
+            ]
+        ]);
+        $schema1 = json_decode($schema1Response->getBody(), true);
+
+        $schema2Response = $this->client->post('/index.php/apps/openregister/api/schemas', [
+            'json' => [
+                'register' => $reg2['id'],
+                'slug' => 'or-schema-2-' . uniqid(),
+                'title' => 'OR Schema 2',
+                'properties' => ['title' => ['type' => 'string']],
+            ]
+        ]);
+        $schema2 = json_decode($schema2Response->getBody(), true);
+
+        // Create objects
+        $obj1Response = $this->client->post("/index.php/apps/openregister/api/objects/{$reg1['slug']}/{$schema1['slug']}", [
+            'json' => ['title' => 'Object in Register 1']
+        ]);
+        $obj1 = json_decode($obj1Response->getBody(), true);
+
+        $obj2Response = $this->client->post("/index.php/apps/openregister/api/objects/{$reg2['slug']}/{$schema2['slug']}", [
+            'json' => ['title' => 'Object in Register 2']
+        ]);
+        $obj2 = json_decode($obj2Response->getBody(), true);
+
+        // Test: Filter with OR logic using dot notation
+        $url = "/index.php/apps/openregister/api/objects?@self.register[or]={$reg1['id']},{$reg2['id']}";
+        $filterResponse = $this->client->get($url);
+        
+        $this->assertEquals(200, $filterResponse->getStatusCode());
+        $result = json_decode($filterResponse->getBody(), true);
+        
+        $this->assertGreaterThanOrEqual(2, $result['total'], 'OR logic should return objects from both registers');
+        $returnedIds = array_column($result['results'], 'id');
+        $this->assertContains($obj1['id'], $returnedIds);
+        $this->assertContains($obj2['id'], $returnedIds);
+
+        // Cleanup
+        $this->client->delete("/index.php/apps/openregister/api/schemas/{$schema1['id']}");
+        $this->client->delete("/index.php/apps/openregister/api/schemas/{$schema2['id']}");
+        $this->client->delete("/index.php/apps/openregister/api/registers/{$reg1['id']}");
+        $this->client->delete("/index.php/apps/openregister/api/registers/{$reg2['id']}");
+    }
+
+    /**
+     * Test 23: Default AND logic for object array properties
+     * 
+     * Verifies that colours[]=red&colours[]=blue returns only objects with BOTH colors.
+     */
+    public function testObjectArrayPropertyDefaultAndLogic(): void
+    {
+        // Create schema with array property
+        $schemaResponse = $this->client->post('/index.php/apps/openregister/api/schemas', [
+            'json' => [
+                'register' => $this->registerId,
+                'slug' => 'product-and-' . uniqid(),
+                'title' => 'Product AND Schema',
+                'properties' => [
+                    'title' => ['type' => 'string'],
+                    'availableColours' => [
+                        'type' => 'array',
+                        'items' => ['type' => 'string']
+                    ]
+                ],
+            ]
+        ]);
+        $schema = json_decode($schemaResponse->getBody(), true);
+        $this->createdSchemaIds[] = $schema['id'];
+
+        // Create objects with different color combinations
+        $obj1Response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$schema['slug']}", [
+            'json' => ['title' => 'Red and Blue Product', 'availableColours' => ['red', 'blue']]
+        ]);
+        $obj1 = json_decode($obj1Response->getBody(), true);
+        $this->createdObjectIds[] = $obj1['id'];
+
+        $obj2Response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$schema['slug']}", [
+            'json' => ['title' => 'Only Blue Product', 'availableColours' => ['blue']]
+        ]);
+        $obj2 = json_decode($obj2Response->getBody(), true);
+        $this->createdObjectIds[] = $obj2['id'];
+
+        $obj3Response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$schema['slug']}", [
+            'json' => ['title' => 'Red Blue Green Product', 'availableColours' => ['red', 'blue', 'green']]
+        ]);
+        $obj3 = json_decode($obj3Response->getBody(), true);
+        $this->createdObjectIds[] = $obj3['id'];
+
+        // Test: Filter with AND logic (default)
+        $url = "/index.php/apps/openregister/api/objects?availableColours[]=red&availableColours[]=blue";
+        $filterResponse = $this->client->get($url);
+        
+        $this->assertEquals(200, $filterResponse->getStatusCode());
+        $result = json_decode($filterResponse->getBody(), true);
+        
+        $returnedIds = array_column($result['results'], 'id');
+        $this->assertContains($obj1['id'], $returnedIds, 'Should include object with red and blue');
+        $this->assertContains($obj3['id'], $returnedIds, 'Should include object with red, blue, and green');
+        $this->assertNotContains($obj2['id'], $returnedIds, 'Should NOT include object with only blue');
+    }
+
+    /**
+     * Test 24: Explicit OR logic for object array properties
+     * 
+     * Verifies that colours[or]=red,blue returns objects with EITHER color.
+     */
+    public function testObjectArrayPropertyExplicitOrLogic(): void
+    {
+        // Create schema
+        $schemaResponse = $this->client->post('/index.php/apps/openregister/api/schemas', [
+            'json' => [
+                'register' => $this->registerId,
+                'slug' => 'product-or-' . uniqid(),
+                'title' => 'Product OR Schema',
+                'properties' => [
+                    'title' => ['type' => 'string'],
+                    'availableColours' => [
+                        'type' => 'array',
+                        'items' => ['type' => 'string']
+                    ]
+                ],
+            ]
+        ]);
+        $schema = json_decode($schemaResponse->getBody(), true);
+        $this->createdSchemaIds[] = $schema['id'];
+
+        // Create objects
+        $obj1Response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$schema['slug']}", [
+            'json' => ['title' => 'Red Product', 'availableColours' => ['red']]
+        ]);
+        $obj1 = json_decode($obj1Response->getBody(), true);
+        $this->createdObjectIds[] = $obj1['id'];
+
+        $obj2Response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$schema['slug']}", [
+            'json' => ['title' => 'Blue Product', 'availableColours' => ['blue']]
+        ]);
+        $obj2 = json_decode($obj2Response->getBody(), true);
+        $this->createdObjectIds[] = $obj2['id'];
+
+        $obj3Response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$schema['slug']}", [
+            'json' => ['title' => 'Green Product', 'availableColours' => ['green']]
+        ]);
+        $obj3 = json_decode($obj3Response->getBody(), true);
+        $this->createdObjectIds[] = $obj3['id'];
+
+        // Test: Filter with OR logic
+        $url = "/index.php/apps/openregister/api/objects?availableColours[or]=red,blue";
+        $filterResponse = $this->client->get($url);
+        
+        $this->assertEquals(200, $filterResponse->getStatusCode());
+        $result = json_decode($filterResponse->getBody(), true);
+        
+        $returnedIds = array_column($result['results'], 'id');
+        $this->assertContains($obj1['id'], $returnedIds, 'Should include red product');
+        $this->assertContains($obj2['id'], $returnedIds, 'Should include blue product');
+        $this->assertNotContains($obj3['id'], $returnedIds, 'Should NOT include green product');
+    }
+
+    /**
+     * Test 25: Dot notation syntax for metadata filters
+     * 
+     * Verifies that @self.field notation works correctly.
+     */
+    public function testDotNotationSyntaxForMetadataFilters(): void
+    {
+        // Test dot notation with simple equality
+        $url = "/index.php/apps/openregister/api/objects?@self.register={$this->registerId}";
+        $response = $this->client->get($url);
+        
+        $this->assertEquals(200, $response->getStatusCode());
+        $result = json_decode($response->getBody(), true);
+        $this->assertArrayHasKey('results', $result);
+        
+        // All returned objects should be from our test register
+        foreach ($result['results'] as $obj) {
+            $this->assertEquals($this->registerId, $obj['@self']['register']);
+        }
+    }
+
+    /**
+     * Test 26: Dot notation with operators
+     * 
+     * Verifies that @self.created[gte]=date syntax works.
+     */
+    public function testDotNotationWithOperators(): void
+    {
+        // Create an object
+        $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
+            'json' => ['title' => 'Date Filter Test']
+        ]);
+        $this->assertEquals(201, $createResponse->getStatusCode());
+        $object = json_decode($createResponse->getBody(), true);
+        $this->createdObjectIds[] = $object['id'];
+
+        // Test dot notation with date operator
+        $yesterday = date('Y-m-d\TH:i:s', strtotime('-1 day'));
+        $url = "/index.php/apps/openregister/api/objects?@self.created[gte]={$yesterday}";
+        $response = $this->client->get($url);
+        
+        $this->assertEquals(200, $response->getStatusCode());
+        $result = json_decode($response->getBody(), true);
+        $this->assertGreaterThan(0, $result['total'], 'Should find objects created after yesterday');
+    }
+
+    /**
+     * Test 27: Mixed dot notation and regular filters
+     * 
+     * Verifies that dot notation can be mixed with regular property filters.
+     */
+    public function testMixedDotNotationAndRegularFilters(): void
+    {
+        // Create test object
+        $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
+            'json' => ['title' => 'Mixed Filter Test']
+        ]);
+        $object = json_decode($createResponse->getBody(), true);
+        $this->createdObjectIds[] = $object['id'];
+
+        // Test mixed filters: dot notation for metadata + regular filter for property
+        $url = "/index.php/apps/openregister/api/objects?@self.register={$this->registerId}&title=Mixed Filter Test";
+        $response = $this->client->get($url);
+        
+        $this->assertEquals(200, $response->getStatusCode());
+        $result = json_decode($response->getBody(), true);
+        $this->assertGreaterThan(0, $result['total']);
+    }
+
+    /**
+     * Test 28: Complex filtering scenario
+     * 
+     * Combines multiple filter types: metadata OR, property AND, operators.
+     */
+    public function testComplexFilteringScenario(): void
+    {
+        // Create schema with tags
+        $schemaResponse = $this->client->post('/index.php/apps/openregister/api/schemas', [
+            'json' => [
+                'register' => $this->registerId,
+                'slug' => 'complex-filter-' . uniqid(),
+                'title' => 'Complex Filter Schema',
+                'properties' => [
+                    'title' => ['type' => 'string'],
+                    'tags' => [
+                        'type' => 'array',
+                        'items' => ['type' => 'string']
+                    ],
+                    'priority' => ['type' => 'integer']
+                ],
+            ]
+        ]);
+        $schema = json_decode($schemaResponse->getBody(), true);
+        $this->createdSchemaIds[] = $schema['id'];
+
+        // Create test objects
+        $obj1Response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$schema['slug']}", [
+            'json' => ['title' => 'Urgent Task', 'tags' => ['urgent', 'important'], 'priority' => 1]
+        ]);
+        $obj1 = json_decode($obj1Response->getBody(), true);
+        $this->createdObjectIds[] = $obj1['id'];
+
+        // Test complex filter: tags (AND) + priority (gte)
+        $url = "/index.php/apps/openregister/api/objects?tags[and]=urgent,important&priority[gte]=1";
+        $response = $this->client->get($url);
+        
+        $this->assertEquals(200, $response->getStatusCode());
+        $result = json_decode($response->getBody(), true);
+        
+        $returnedIds = array_column($result['results'], 'id');
+        $this->assertContains($obj1['id'], $returnedIds, 'Should find object matching all criteria');
     }
 }
 
