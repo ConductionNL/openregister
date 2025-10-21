@@ -941,7 +941,8 @@ class CoreIntegrationTest extends TestCase
         ]);
 
         // Test: Filter with AND logic (default) - should return zero results
-        $url = "/index.php/apps/openregister/api/objects?@self.register[]={$reg1['id']}&@self.register[]={$reg2['id']}";
+        // Use bracket notation: @self[register][] since PHP converts dots to underscores in query params
+        $url = "/index.php/apps/openregister/api/objects?@self[register][]={$reg1['id']}&@self[register][]={$reg2['id']}";
         $filterResponse = $this->client->get($url);
         
         $this->assertEquals(200, $filterResponse->getStatusCode());
@@ -1005,8 +1006,9 @@ class CoreIntegrationTest extends TestCase
         ]);
         $obj2 = json_decode($obj2Response->getBody(), true);
 
-        // Test: Filter with OR logic using dot notation
-        $url = "/index.php/apps/openregister/api/objects?@self.register[or]={$reg1['id']},{$reg2['id']}";
+        // Test: Filter with OR logic using bracket notation
+        // Use bracket notation: @self[register][or] since PHP converts dots to underscores
+        $url = "/index.php/apps/openregister/api/objects?@self[register][or]={$reg1['id']},{$reg2['id']}";
         $filterResponse = $this->client->get($url);
         
         $this->assertEquals(200, $filterResponse->getStatusCode());

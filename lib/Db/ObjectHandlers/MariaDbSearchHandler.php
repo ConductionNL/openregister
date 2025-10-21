@@ -150,6 +150,46 @@ class MariaDbSearchHandler
                                     $queryBuilder->andWhere($queryBuilder->expr()->isNotNull($qualifiedField));
                                 }
                                 break;
+                            case 'or':
+                                // OR logic: field matches ANY of the values
+                                $values = is_string($operatorValue) ? array_map('trim', explode(',', $operatorValue)) : $operatorValue;
+                                if (!empty($values)) {
+                                    $orConditions = $queryBuilder->expr()->orX();
+                                    foreach ($values as $val) {
+                                        if (in_array($field, $textFields)) {
+                                            $orConditions->add(
+                                                $queryBuilder->expr()->eq(
+                                                    $queryBuilder->createFunction('LOWER('.$qualifiedField.')'),
+                                                    $queryBuilder->createNamedParameter(strtolower($val))
+                                                )
+                                            );
+                                        } else {
+                                            $orConditions->add(
+                                                $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($val))
+                                            );
+                                        }
+                                    }
+                                    $queryBuilder->andWhere($orConditions);
+                                }
+                                break 2;
+                            case 'and':
+                                // AND logic: field must match ALL values (multiple andWhere calls)
+                                $values = is_string($operatorValue) ? array_map('trim', explode(',', $operatorValue)) : $operatorValue;
+                                foreach ($values as $val) {
+                                    if (in_array($field, $textFields)) {
+                                        $queryBuilder->andWhere(
+                                            $queryBuilder->expr()->eq(
+                                                $queryBuilder->createFunction('LOWER('.$qualifiedField.')'),
+                                                $queryBuilder->createNamedParameter(strtolower($val))
+                                            )
+                                        );
+                                    } else {
+                                        $queryBuilder->andWhere(
+                                            $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($val))
+                                        );
+                                    }
+                                }
+                                break 2;
                             default:
                                 // For non-text operators or unsupported operators, treat as regular array (IN clause)
                                 if (is_numeric($operator)) {
@@ -265,6 +305,28 @@ class MariaDbSearchHandler
                                     );
                                 }
                                 break;
+                            case 'or':
+                                // OR logic for date/numeric fields: field matches ANY of the values
+                                $values = is_string($operatorValue) ? array_map('trim', explode(',', $operatorValue)) : $operatorValue;
+                                if (!empty($values)) {
+                                    $orConditions = $queryBuilder->expr()->orX();
+                                    foreach ($values as $val) {
+                                        $orConditions->add(
+                                            $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($val))
+                                        );
+                                    }
+                                    $queryBuilder->andWhere($orConditions);
+                                }
+                                break 2;
+                            case 'and':
+                                // AND logic for date/numeric fields: field must match ALL values
+                                $values = is_string($operatorValue) ? array_map('trim', explode(',', $operatorValue)) : $operatorValue;
+                                foreach ($values as $val) {
+                                    $queryBuilder->andWhere(
+                                        $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($val))
+                                    );
+                                }
+                                break 2;
                             default:
                                 // For non-date operators or unsupported operators, treat as regular array (IN clause)
                                 if (is_numeric($operator)) {
@@ -284,6 +346,30 @@ class MariaDbSearchHandler
 
                     continue;
                 }//end if
+
+                // Handle [or] and [and] operators for non-text, non-date fields (e.g. schema, register)
+                if (is_array($value) && (isset($value['or']) || isset($value['and']))) {
+                    if (isset($value['or'])) {
+                        // OR logic: (field=val1 OR field=val2)
+                        $values = is_string($value['or']) ? array_map('trim', explode(',', $value['or'])) : $value['or'];
+                        $orConditions = $queryBuilder->expr()->orX();
+                        foreach ($values as $val) {
+                            $orConditions->add(
+                                $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($val))
+                            );
+                        }
+                        $queryBuilder->andWhere($orConditions);
+                    } elseif (isset($value['and'])) {
+                        // AND logic: multiple andWhere clauses
+                        $values = is_string($value['and']) ? array_map('trim', explode(',', $value['and'])) : $value['and'];
+                        foreach ($values as $val) {
+                            $queryBuilder->andWhere(
+                                $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($val))
+                            );
+                        }
+                    }
+                    continue;
+                }
 
                 // Handle array values (one of search) for non-date fields or simple arrays
                 if (is_array($value) === true) {

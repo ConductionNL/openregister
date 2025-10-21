@@ -226,63 +226,100 @@ These tests verify filtering functionality **across multiple registers and schem
 
 #### Example Tests
 
-**Default AND Logic**
+**Default AND Logic - Cross-Register Testing**
 ```php
 public function testMetadataArrayFilterDefaultAndLogic(): void
 {
-    // Create objects in different registers
-    $obj1 = createObject($register1);
-    $obj2 = createObject($register2);
+    // Step 1: Create TWO separate registers
+    $register1 = $this->client->post('/api/registers', [
+        'json' => ['slug' => 'filter-test-1', 'title' => 'Filter Test Register 1']
+    ]);
+    $register2 = $this->client->post('/api/registers', [
+        'json' => ['slug' => 'filter-test-2', 'title' => 'Filter Test Register 2']
+    ]);
     
-    // Filter with AND logic (default)
+    // Step 2: Create schemas in EACH register
+    $schema1 = createSchemaInRegister($register1['id']);
+    $schema2 = createSchemaInRegister($register2['id']);
+    
+    // Step 3: Create objects in DIFFERENT registers
+    $obj1 = createObjectInRegister($register1, $schema1); // In Register 1
+    $obj2 = createObjectInRegister($register2, $schema2); // In Register 2
+    
+    // Step 4: Filter with AND logic (default) - search across ALL registers
     $url = "/api/objects?@self.register[]={$reg1['id']}&@self.register[]={$reg2['id']}";
     $response = $this->client->get($url);
     $result = json_decode($response->getBody(), true);
     
-    // Should return zero results (object can't be in BOTH registers)
+    // Step 5: Verify zero results (object can't be in BOTH registers simultaneously)
     $this->assertEquals(0, $result['total']);
 }
 ```
 
-**Explicit OR Logic with Dot Notation**
+**Explicit OR Logic - Cross-Register Testing**
 ```php
 public function testMetadataArrayFilterExplicitOrLogicWithDotNotation(): void
 {
-    // Create objects
-    $obj1 = createObject($register1);
-    $obj2 = createObject($register2);
+    // Step 1: Create TWO separate registers
+    $register1 = createRegister('or-test-1');
+    $register2 = createRegister('or-test-2');
     
-    // Filter with OR logic using dot notation
+    // Step 2: Create schemas in EACH register
+    $schema1 = createSchemaInRegister($register1['id']);
+    $schema2 = createSchemaInRegister($register2['id']);
+    
+    // Step 3: Create objects in DIFFERENT registers
+    $obj1 = createObjectInRegister($register1, $schema1); // In Register 1
+    $obj2 = createObjectInRegister($register2, $schema2); // In Register 2
+    
+    // Step 4: Filter with OR logic using dot notation - search across ALL registers
     $url = "/api/objects?@self.register[or]={$reg1['id']},{$reg2['id']}";
     $response = $this->client->get($url);
     $result = json_decode($response->getBody(), true);
     
-    // Should return objects from BOTH registers
+    // Step 5: Verify BOTH objects returned (from register 1 OR register 2)
     $this->assertGreaterThanOrEqual(2, $result['total']);
     $returnedIds = array_column($result['results'], 'id');
-    $this->assertContains($obj1['id'], $returnedIds);
-    $this->assertContains($obj2['id'], $returnedIds);
+    $this->assertContains($obj1['id'], $returnedIds); // From Register 1
+    $this->assertContains($obj2['id'], $returnedIds); // From Register 2
 }
 ```
 
-**Object Array Property AND Logic**
+**Object Array Property AND Logic - Within Same Register/Schema**
 ```php
 public function testObjectArrayPropertyDefaultAndLogic(): void
 {
-    // Create products with different color combinations
-    $redBlue = createProduct(['red', 'blue']);        // ✅ Match
-    $onlyBlue = createProduct(['blue']);              // ❌ No match
-    $redBlueGreen = createProduct(['red', 'blue', 'green']); // ✅ Match
+    // Step 1: Create ONE register with ONE schema that has array property
+    $register = createRegister('product-test');
+    $schema = $this->client->post('/api/schemas', [
+        'json' => [
+            'register' => $register['id'],
+            'slug' => 'product-schema',
+            'properties' => [
+                'title' => ['type' => 'string'],
+                'availableColours' => [
+                    'type' => 'array',
+                    'items' => ['type' => 'string']
+                ]
+            ],
+        ]
+    ]);
     
-    // Filter for products with BOTH red AND blue
+    // Step 2: Create products with different color combinations IN SAME REGISTER
+    $redBlue = createProduct(['red', 'blue']);        // ✅ Has BOTH red AND blue
+    $onlyBlue = createProduct(['blue']);              // ❌ Has only blue, missing red
+    $redBlueGreen = createProduct(['red', 'blue', 'green']); // ✅ Has BOTH red AND blue (plus green)
+    
+    // Step 3: Filter for products with BOTH red AND blue using AND logic
     $url = "/api/objects?availableColours[]=red&availableColours[]=blue";
     $response = $this->client->get($url);
     $result = json_decode($response->getBody(), true);
     
+    // Step 4: Verify only products with BOTH colors are returned
     $returnedIds = array_column($result['results'], 'id');
-    $this->assertContains($redBlue['id'], $returnedIds);
-    $this->assertContains($redBlueGreen['id'], $returnedIds);
-    $this->assertNotContains($onlyBlue['id'], $returnedIds);
+    $this->assertContains($redBlue['id'], $returnedIds);      // Has both
+    $this->assertContains($redBlueGreen['id'], $returnedIds); // Has both + more
+    $this->assertNotContains($onlyBlue['id'], $returnedIds);  // Missing red
 }
 ```
 
@@ -484,6 +521,72 @@ DELETE FROM oc_openregister_objects WHERE register IN (
 2. **Verify app is enabled**: `php occ app:list | grep openregister`
 3. **Check database connections**
 4. **Ensure proper cleanup** between test runs
+
+## Test Scope: Cross-Register vs Within-Register
+
+Understanding test scope is important for debugging and extending tests:
+
+### Cross-Register/Schema Tests (Tests 21-22, 25-27)
+
+These tests create **multiple registers and schemas** to verify filtering works across different data boundaries:
+
+```mermaid
+graph TB
+    subgraph "Register 1"
+        S1[Schema 1]
+        O1[Object 1]
+        S1 --> O1
+    end
+    subgraph "Register 2"
+        S2[Schema 2]
+        O2[Object 2]
+        S2 --> O2
+    end
+    
+    API[API Filter Query]
+    API -->|"@self.register[or]=1,2"| O1
+    API -->|"@self.register[or]=1,2"| O2
+    
+    style API fill:#f9f,stroke:#333
+    style O1 fill:#bfb,stroke:#333
+    style O2 fill:#bfb,stroke:#333
+```
+
+**Purpose**: Verify that:
+- OR logic can retrieve objects from multiple registers
+- AND logic correctly returns zero results for single-value fields
+- Dot notation works across register boundaries
+
+### Within-Register Tests (Tests 23-24, 28)
+
+These tests use **one register with one schema** to verify array property filtering:
+
+```mermaid
+graph TB
+    subgraph "Single Register"
+        S1[Product Schema]
+        O1["Object 1<br/>colors: [red, blue]"]
+        O2["Object 2<br/>colors: [blue]"]
+        O3["Object 3<br/>colors: [red, blue, green]"]
+        S1 --> O1
+        S1 --> O2
+        S1 --> O3
+    end
+    
+    API[API Filter Query]
+    API -->|"colors[]=red&colors[]=blue"| O1
+    API -->|"colors[]=red&colors[]=blue"| O3
+    
+    style API fill:#f9f,stroke:#333
+    style O1 fill:#bfb,stroke:#333
+    style O3 fill:#bfb,stroke:#333
+    style O2 fill:#fbb,stroke:#333
+```
+
+**Purpose**: Verify that:
+- AND logic requires ALL array values to be present
+- OR logic matches ANY array value
+- Array filtering works within object properties
 
 ## Future Test Groups
 
