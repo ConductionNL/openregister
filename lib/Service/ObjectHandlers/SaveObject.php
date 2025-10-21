@@ -558,15 +558,16 @@ class SaveObject
 
         // Image field mapping
         if (isset($config['objectImageField']) === true) {
-            $image = $this->extractMetadataValue($objectData, $config['objectImageField']);
-            if ($image !== null && trim($image) !== '') {
-                $entity->setImage(trim($image));
+            // First check if the field points to a file object
+            $imageValue = $this->getValueFromPath($objectData, $config['objectImageField']);
+            if (is_array($imageValue) && isset($imageValue['accessUrl'])) {
+                // Use the accessUrl as the image URL
+                $entity->setImage($imageValue['accessUrl']);
             } else {
-                // Check if the field points to a file object
-                $imageValue = $this->getValueFromPath($objectData, $config['objectImageField']);
-                if (is_array($imageValue) && isset($imageValue['accessUrl'])) {
-                    // Use the accessUrl as the image URL
-                    $entity->setImage($imageValue['accessUrl']);
+                // Otherwise extract as regular metadata value (for templates or string URLs)
+                $image = $this->extractMetadataValue($objectData, $config['objectImageField']);
+                if ($image !== null && trim($image) !== '') {
+                    $entity->setImage(trim($image));
                 }
             }
         }
@@ -1545,11 +1546,12 @@ class SaveObject
         ?array $uploadedFiles=null
     ): ObjectEntity {
 
+        $selfData = [];
         if (isset($data['@self']) && is_array($data['@self'])) {
             $selfData = $data['@self'];
         }
         // Use @self.id as UUID if no UUID is provided
-        if ($uuid === null && (isset($selfData['id']) || $data['id'])) {
+        if ($uuid === null && (isset($selfData['id']) || isset($data['id']))) {
             $uuid = $selfData['id'] ?? $data['id'];
         }
 
@@ -1679,6 +1681,25 @@ class SaveObject
             // If files were processed, update the object with file IDs
             if ($filePropertiesProcessed) {
                 $savedEntity->setObject($data);
+                
+                // Re-hydrate image metadata if objectImageField points to a file property
+                // At this point, file properties are file IDs, but we need to check if we should
+                // clear the image metadata so it can be properly extracted during rendering
+                $config = $schema->getConfiguration();
+                if (isset($config['objectImageField'])) {
+                    $imageField = $config['objectImageField'];
+                    $schemaProperties = $schema->getProperties() ?? [];
+                    
+                    // Check if the image field is a file property
+                    if (isset($schemaProperties[$imageField])) {
+                        $propertyConfig = $schemaProperties[$imageField];
+                        if (($propertyConfig['type'] ?? '') === 'file') {
+                            // Clear the image metadata so it will be extracted from the file object during rendering
+                            $savedEntity->setImage(null);
+                        }
+                    }
+                }
+                
                 $savedEntity = $this->objectEntityMapper->update($savedEntity);
             }
         } catch (\Exception $e) {
@@ -3413,14 +3434,38 @@ class SaveObject
         }
 
         // Handle file properties - process them and replace content with file IDs
+        $filePropertiesProcessed = false;
         foreach ($data as $propertyName => $value) {
             if ($this->isFileProperty($value, $schema, $propertyName) === true) {
                 $this->handleFileProperty($updatedEntity, $data, $propertyName, $schema);
+                $filePropertiesProcessed = true;
             }
         }
 
         // Update the object with the modified data (file IDs instead of content)
-        $updatedEntity->setObject($data);
+        if ($filePropertiesProcessed) {
+            $updatedEntity->setObject($data);
+            
+            // Clear image metadata if objectImageField points to a file property
+            // This ensures the image URL is extracted from the file object during rendering
+            $config = $schema->getConfiguration();
+            if (isset($config['objectImageField'])) {
+                $imageField = $config['objectImageField'];
+                $schemaProperties = $schema->getProperties() ?? [];
+                
+                // Check if the image field is a file property
+                if (isset($schemaProperties[$imageField])) {
+                    $propertyConfig = $schemaProperties[$imageField];
+                    if (($propertyConfig['type'] ?? '') === 'file') {
+                        // Clear the image metadata so it will be extracted from the file object during rendering
+                        $updatedEntity->setImage(null);
+                    }
+                }
+            }
+            
+            // Save the updated entity with file IDs back to database
+            $updatedEntity = $this->objectEntityMapper->update($updatedEntity);
+        }
 
         return $updatedEntity;
 
