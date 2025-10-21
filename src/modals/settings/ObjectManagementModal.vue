@@ -15,7 +15,7 @@
 			<!-- Vectorization Settings -->
 			<div class="config-section">
 				<h3>{{ t('openregister', 'Vectorization Settings') }}</h3>
-				
+
 				<div class="form-group">
 					<NcCheckboxRadioSwitch
 						v-model="config.vectorizationEnabled"
@@ -31,8 +31,7 @@
 						v-model="config.provider"
 						:options="providerOptions"
 						label="name"
-						:placeholder="t('openregister', 'Select provider')">
-					</NcSelect>
+						:placeholder="t('openregister', 'Select provider')" />
 				</div>
 
 				<div v-if="config.vectorizationEnabled" class="form-group">
@@ -58,7 +57,7 @@
 				<p class="section-description">
 					{{ t('openregister', 'Configure which object schemas should be vectorized.') }}
 				</p>
-				
+
 				<div class="form-group">
 					<NcCheckboxRadioSwitch
 						v-model="config.vectorizeAllSchemas"
@@ -85,7 +84,7 @@
 			<!-- Text Extraction Settings -->
 			<div class="config-section">
 				<h3>{{ t('openregister', 'Text Extraction Settings') }}</h3>
-				
+
 				<div class="form-group">
 					<NcCheckboxRadioSwitch
 						v-model="config.includeMetadata"
@@ -111,7 +110,7 @@
 			<!-- Bulk Operations -->
 			<div class="config-section">
 				<h3>{{ t('openregister', 'Bulk Operations') }}</h3>
-				
+
 				<div class="bulk-actions">
 					<NcButton
 						type="primary"
@@ -139,23 +138,39 @@
 			<!-- Stats -->
 			<div class="config-section">
 				<h3>{{ t('openregister', 'Object Statistics') }}</h3>
-				
+
 				<div class="stats-grid">
 					<div class="stat-card">
-						<div class="stat-value">{{ stats.totalObjects }}</div>
-						<div class="stat-label">{{ t('openregister', 'Total Objects') }}</div>
+						<div class="stat-value">
+							{{ stats.totalObjects }}
+						</div>
+						<div class="stat-label">
+							{{ t('openregister', 'Total Objects') }}
+						</div>
 					</div>
 					<div class="stat-card">
-						<div class="stat-value">{{ stats.vectorizedObjects }}</div>
-						<div class="stat-label">{{ t('openregister', 'Vectorized Objects') }}</div>
+						<div class="stat-value">
+							{{ stats.vectorizedObjects }}
+						</div>
+						<div class="stat-label">
+							{{ t('openregister', 'Vectorized Objects') }}
+						</div>
 					</div>
 					<div class="stat-card">
-						<div class="stat-value">{{ stats.pendingObjects }}</div>
-						<div class="stat-label">{{ t('openregister', 'Pending') }}</div>
+						<div class="stat-value">
+							{{ stats.pendingObjects }}
+						</div>
+						<div class="stat-label">
+							{{ t('openregister', 'Pending') }}
+						</div>
 					</div>
 					<div class="stat-card">
-						<div class="stat-value">{{ stats.progressPercentage }}%</div>
-						<div class="stat-label">{{ t('openregister', 'Progress') }}</div>
+						<div class="stat-value">
+							{{ stats.progressPercentage }}%
+						</div>
+						<div class="stat-label">
+							{{ t('openregister', 'Progress') }}
+						</div>
 					</div>
 				</div>
 			</div>
@@ -163,23 +178,39 @@
 			<!-- Vector Embeddings Stats -->
 			<div class="config-section">
 				<h3>{{ t('openregister', 'Vector Embeddings Statistics') }}</h3>
-				
+
 				<div class="stats-grid">
 					<div class="stat-card highlight">
-						<div class="stat-value">{{ vectorStats.totalVectors }}</div>
-						<div class="stat-label">{{ t('openregister', 'Total Vectors') }}</div>
+						<div class="stat-value">
+							{{ vectorStats.totalVectors }}
+						</div>
+						<div class="stat-label">
+							{{ t('openregister', 'Total Vectors') }}
+						</div>
 					</div>
 					<div class="stat-card">
-						<div class="stat-value">{{ vectorStats.objectVectors }}</div>
-						<div class="stat-label">{{ t('openregister', 'Object Vectors') }}</div>
+						<div class="stat-value">
+							{{ vectorStats.objectVectors }}
+						</div>
+						<div class="stat-label">
+							{{ t('openregister', 'Object Vectors') }}
+						</div>
 					</div>
 					<div class="stat-card">
-						<div class="stat-value">{{ vectorStats.fileVectors }}</div>
-						<div class="stat-label">{{ t('openregister', 'File Vectors') }}</div>
+						<div class="stat-value">
+							{{ vectorStats.fileVectors }}
+						</div>
+						<div class="stat-label">
+							{{ t('openregister', 'File Vectors') }}
+						</div>
 					</div>
 					<div class="stat-card">
-						<div class="stat-value">{{ vectorStats.storageMB }}</div>
-						<div class="stat-label">{{ t('openregister', 'Storage (MB)') }}</div>
+						<div class="stat-value">
+							{{ vectorStats.storageMB }}
+						</div>
+						<div class="stat-label">
+							{{ t('openregister', 'Storage (MB)') }}
+						</div>
 					</div>
 				</div>
 
@@ -251,7 +282,7 @@ export default {
 			saving: false,
 			vectorizing: false,
 			vectorizationProgress: null,
-			
+
 			config: {
 				vectorizationEnabled: true,
 				provider: { id: 'openai', name: 'OpenAI' },
@@ -262,7 +293,7 @@ export default {
 				includeMetadata: true,
 				maxNestingDepth: 10,
 			},
-			
+
 			stats: {
 				totalObjects: 0,
 				vectorizedObjects: 0,
@@ -277,9 +308,9 @@ export default {
 				storageMB: '0.0',
 				byModel: {},
 			},
-			
+
 			schemas: [],
-			
+
 			providerOptions: [
 				{ id: 'openai', name: 'OpenAI' },
 				{ id: 'ollama', name: 'Ollama (Local)' },
@@ -357,12 +388,12 @@ export default {
 						{
 							limit: batchSize,
 							offset,
-						}
+						},
 					)
 
 					this.vectorizationProgress.processed += response.data.successful
 					this.vectorizationProgress.percentage = Math.round(
-						(this.vectorizationProgress.processed / this.vectorizationProgress.total) * 100
+						(this.vectorizationProgress.processed / this.vectorizationProgress.total) * 100,
 					)
 
 					hasMore = response.data.pagination?.has_more
@@ -592,4 +623,3 @@ export default {
 	}
 }
 </style>
-

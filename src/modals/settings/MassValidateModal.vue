@@ -3,8 +3,8 @@
 		v-if="show"
 		name="Mass Validate Objects"
 		:can-close="!massValidating"
-		@closing="$emit('close')"
-		size="large">
+		size="large"
+		@closing="$emit('close')">
 		<div class="dialog-content">
 			<p class="validate-description">
 				Configure mass validation parameters for object processing. This operation will re-save objects in the system to trigger business logic validation and processing according to current rules and schemas.
@@ -37,7 +37,9 @@
 					<h4 :class="results.success ? 'success-text' : 'error-text'">
 						{{ results.success ? 'Mass Validation Completed Successfully!' : 'Mass Validation Failed' }}
 					</h4>
-					<p class="results-message">{{ results.message }}</p>
+					<p class="results-message">
+						{{ results.message }}
+					</p>
 				</div>
 
 				<!-- Error Details (prominent display) -->
@@ -99,10 +101,9 @@
 					<h5>Success Rate</h5>
 					<div class="success-rate-container">
 						<div class="success-rate-bar">
-							<div class="success-rate-fill" 
+							<div class="success-rate-fill"
 								:style="{ width: getSuccessRate() + '%' }"
-								:class="getSuccessRateClass()">
-							</div>
+								:class="getSuccessRateClass()" />
 						</div>
 						<div class="success-rate-text">
 							{{ getSuccessRate().toFixed(1) }}% Success Rate
@@ -120,7 +121,9 @@
 								<span class="error-index">#{{ index + 1 }}</span>
 								<span v-if="error.object_id" class="error-object-id">Object ID: {{ error.object_id }}</span>
 							</div>
-							<div class="error-item-message">{{ error.error || error.message }}</div>
+							<div class="error-item-message">
+								{{ error.error || error.message }}
+							</div>
 						</div>
 						<div v-if="results.errors.length > 10" class="error-overflow">
 							... and {{ results.errors.length - 10 }} more errors
@@ -191,7 +194,7 @@
 
 				<div class="form-section">
 					<h4>Processing Limits</h4>
-					
+
 					<!-- Object Count Prediction -->
 					<div class="object-prediction">
 						<div class="prediction-header">
@@ -338,7 +341,7 @@ import Cancel from 'vue-material-design-icons/Cancel.vue'
 
 export default {
 	name: 'MassValidateModal',
-	
+
 	components: {
 		NcDialog,
 		NcButton,
@@ -352,26 +355,26 @@ export default {
 	props: {
 		show: {
 			type: Boolean,
-			default: false
+			default: false,
 		},
 		objectStats: {
 			type: Object,
 			default: () => ({
 				loading: false,
-				totalObjects: 0
-			})
+				totalObjects: 0,
+			}),
 		},
 		massValidating: {
 			type: Boolean,
-			default: false
+			default: false,
 		},
 		completed: {
 			type: Boolean,
-			default: false
+			default: false,
 		},
 		results: {
 			type: Object,
-			default: null
+			default: null,
 		},
 		config: {
 			type: Object,
@@ -388,8 +391,8 @@ export default {
 				prediction_safe: true,
 				formatted: {
 					total_predicted: 'Unknown',
-					available: 'Unknown'
-				}
+					available: 'Unknown',
+				},
 			}),
 		},
 		memoryPredictionLoading: {
@@ -444,17 +447,17 @@ export default {
 				return 'Unknown'
 			}
 
-			const totalObjects = this.localConfig.maxObjects === 0 
-				? this.objectStats.totalObjects 
+			const totalObjects = this.localConfig.maxObjects === 0
+				? this.objectStats.totalObjects
 				: Math.min(this.localConfig.maxObjects, this.objectStats.totalObjects)
-			
+
 			const batches = Math.ceil(totalObjects / this.localConfig.batchSize)
-			
+
 			// Rough estimates based on mode and batch size
 			// Serial: ~3-6 seconds per batch, Parallel: ~1.5-3 seconds per batch
 			const secondsPerBatch = this.localConfig.mode === 'serial' ? 4 : 2
 			const totalSeconds = batches * secondsPerBatch
-			
+
 			if (totalSeconds < 60) {
 				return `~${Math.ceil(totalSeconds)} seconds`
 			} else if (totalSeconds < 3600) {
@@ -475,7 +478,7 @@ export default {
 		 */
 		formatExecutionTime(milliseconds) {
 			if (!milliseconds) return 'Unknown'
-			
+
 			if (milliseconds < 1000) {
 				return `${milliseconds.toFixed(0)}ms`
 			} else if (milliseconds < 60000) {
@@ -496,12 +499,12 @@ export default {
 			if (!this.memoryPrediction || this.memoryPrediction.error) {
 				return 'Unable to predict'
 			}
-			
+
 			const prediction = this.memoryPrediction.formatted
 			if (!prediction) {
 				return 'Unknown'
 			}
-			
+
 			return `${prediction.total_predicted} / ${prediction.available} available`
 		},
 
@@ -524,8 +527,8 @@ export default {
 		 * @return {boolean} True if detailed error info is available
 		 */
 		hasDetailedError() {
-			return !!(this.results?.error_details || 
-					 (this.results?.error && this.results.error.length > 100))
+			return !!(this.results?.error_details
+					 || (this.results?.error && this.results.error.length > 100))
 		},
 
 		/**
@@ -535,11 +538,11 @@ export default {
 		 */
 		formatErrorDetails() {
 			if (this.results?.error_details) {
-				return typeof this.results.error_details === 'string' 
-					? this.results.error_details 
+				return typeof this.results.error_details === 'string'
+					? this.results.error_details
 					: JSON.stringify(this.results.error_details, null, 2)
 			}
-			
+
 			return this.results?.error || 'No detailed error information available'
 		},
 
@@ -555,8 +558,8 @@ export default {
 			if (rate >= 95) return 'success'
 			if (rate >= 80) return 'warning'
 			return 'error'
-		}
-	}
+		},
+	},
 }
 </script>
 
@@ -1110,24 +1113,24 @@ export default {
 	.config-grid {
 		grid-template-columns: 1fr;
 	}
-	
+
 	.summary-item,
 	.config-item {
 		flex-direction: column;
 		align-items: flex-start;
 		gap: 0.25rem;
 	}
-	
+
 	.summary-value,
 	.config-value {
 		text-align: left;
 	}
-	
+
 	.radio-group {
 		flex-direction: column;
 		gap: 0.5rem;
 	}
-	
+
 	.radio-group > * {
 		flex: none;
 	}

@@ -4,10 +4,10 @@
 		size="large"
 		@close="closeModal">
 		<div class="organisation-modal">
-			<form @submit.prevent="saveOrganisation" class="organisation-form">
+			<form class="organisation-form" @submit.prevent="saveOrganisation">
 				<div class="form-section">
 					<h3>{{ t('openregister', 'Basic Information') }}</h3>
-					
+
 					<div class="form-row">
 						<NcTextField
 							:value="formData.naam"
@@ -46,7 +46,7 @@
 
 				<div class="form-section">
 					<h3>{{ t('openregister', 'Contact Information') }}</h3>
-					
+
 					<div class="form-row">
 						<NcTextField
 							:value="formData['e-mailadres']"
@@ -67,7 +67,7 @@
 
 				<div class="form-section">
 					<h3>{{ t('openregister', 'Additional Information') }}</h3>
-					
+
 					<div class="form-row">
 						<NcTextField
 							:value="formData.oin"
@@ -105,7 +105,9 @@
 				<div v-if="success" class="success-message">
 					<CheckCircle :size="24" class="success-icon" />
 					<p>{{ successMessage }}</p>
-					<p class="auto-close-message">{{ t('openregister', 'This dialog will close automatically in 3 seconds...') }}</p>
+					<p class="auto-close-message">
+						{{ t('openregister', 'This dialog will close automatically in 3 seconds...') }}
+					</p>
 				</div>
 
 				<div class="form-actions">
@@ -113,7 +115,7 @@
 						{{ t('openregister', 'Cancel') }}
 					</NcButton>
 					<NcButton v-if="!success"
-						type="primary" 
+						type="primary"
 						:disabled="loading || !isFormValid"
 						native-type="submit">
 						<template #icon>
@@ -128,12 +130,12 @@
 </template>
 
 <script>
-import { 
+import {
 	NcModal,
 	NcTextField,
 	NcSelect,
 	NcButton,
-	NcLoadingIcon
+	NcLoadingIcon,
 } from '@nextcloud/vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import { organisationStore } from '../store/store.js'
@@ -295,7 +297,7 @@ export default {
 
 			try {
 				let result
-				
+
 				if (this.isEditMode) {
 					// Update existing organisation
 					const updateData = {
@@ -312,10 +314,10 @@ export default {
 
 				// Show success state
 				this.success = true
-				
+
 				// Refresh organisation list
 				await organisationStore.refreshOrganisationList()
-				
+
 				// Auto-close modal after 3 seconds
 				setTimeout(() => {
 					this.closeModal()

@@ -31,7 +31,7 @@
 					</NcButton>
 				</div>
 			</div>
-			
+
 			<!-- Section Description -->
 			<div class="section-description-full">
 				<p class="main-description">
@@ -60,7 +60,7 @@
 					</span>
 				</p>
 			</div>
-			
+
 			<!-- Enable Multitenancy Toggle -->
 			<div class="option-section">
 				<NcCheckboxRadioSwitch
@@ -80,7 +80,7 @@
 					Published objects bypass multi-tenancy
 				</NcCheckboxRadioSwitch>
 				<p class="option-description">
-					When enabled, published objects will be visible to users from all organizations, bypassing multi-tenancy restrictions. 
+					When enabled, published objects will be visible to users from all organizations, bypassing multi-tenancy restrictions.
 					This allows for public sharing of published content across organizational boundaries.
 				</p>
 			</div>
@@ -145,7 +145,7 @@ import Save from 'vue-material-design-icons/ContentSave.vue'
 
 export default {
 	name: 'MultitenancyConfiguration',
-	
+
 	components: {
 		NcSettingsSection,
 		NcButton,
@@ -165,7 +165,7 @@ export default {
 			},
 			set(value) {
 				this.settingsStore.multitenancyOptions = value
-			}
+			},
 		},
 
 		tenantOptions() {
@@ -313,13 +313,13 @@ export default {
 		grid-template-columns: 1fr;
 		gap: 12px;
 	}
-	
+
 	.section-header-inline {
 		flex-direction: column;
 		gap: 12px;
 		align-items: stretch;
 	}
-	
+
 	.button-group {
 		justify-content: center;
 	}

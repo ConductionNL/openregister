@@ -147,7 +147,7 @@ export default {
 
 				if (response.ok) {
 					// Navigate back to organisations list
-					navigationStore.setSelected('organisationsIndex')
+					this.$router.push('/organisation')
 					this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
 				}
 

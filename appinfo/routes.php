@@ -259,5 +259,21 @@ return [
 		['name' => 'fileSearch#keywordSearch', 'url' => '/api/search/files/keyword', 'verb' => 'POST'],
 		['name' => 'fileSearch#semanticSearch', 'url' => '/api/search/files/semantic', 'verb' => 'POST'],
 		['name' => 'fileSearch#hybridSearch', 'url' => '/api/search/files/hybrid', 'verb' => 'POST'],
+
+		// Page routes
+		['name' => 'dashboard#page', 'url' => '/', 'verb' => 'GET'],
+		['name' => 'registers#page', 'url' => '/registers', 'verb' => 'GET'],
+		['name' => 'registersDetails#page', 'url' => '/registers/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'schemas#page', 'url' => '/schemas', 'verb' => 'GET'],
+		['name' => 'schemasDetails#page', 'url' => '/schemas/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'sources#page', 'url' => '/sources', 'verb' => 'GET'],
+		['name' => 'organisation#page', 'url' => '/organisation', 'verb' => 'GET'],
+		['name' => 'objects#page', 'url' => '/objects', 'verb' => 'GET'],
+		['name' => 'tables#page', 'url' => '/tables', 'verb' => 'GET'],
+		['name' => 'chat#page', 'url' => '/chat', 'verb' => 'GET'],
+		['name' => 'configurations#page', 'url' => '/configurations', 'verb' => 'GET'],
+		['name' => 'deleted#page', 'url' => '/deleted', 'verb' => 'GET'],
+		['name' => 'auditTrail#page', 'url' => '/audit-trails', 'verb' => 'GET'],
+		['name' => 'searchTrail#page', 'url' => '/search-trails', 'verb' => 'GET'],
     ],
 ];

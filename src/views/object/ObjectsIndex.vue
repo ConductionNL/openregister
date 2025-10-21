@@ -1,5 +1,5 @@
 <script setup>
-import { objectStore, navigationStore } from '../../store/store.js'
+import { objectStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -8,7 +8,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 			<ObjectsList />
 		</template>
 		<template #default>
-			<NcEmptyContent v-if="!objectStore.objectItem || navigationStore.selected != 'objects'"
+			<NcEmptyContent v-if="!objectStore.objectItem || $route.path !== '/objects'"
 				class="detailContainer"
 				name="No object"
 				description="No object selected yet">
@@ -21,7 +21,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 					</NcButton>
 				</template>
 			</NcEmptyContent>
-			<ObjectDetails v-if="objectStore.objectItem && navigationStore.selected === 'objects'" />
+			<ObjectDetails v-if="objectStore.objectItem && $route.path === '/objects'" />
 		</template>
 	</NcAppContent>
 </template>
@@ -31,7 +31,6 @@ import { NcAppContent, NcEmptyContent, NcButton } from '@nextcloud/vue'
 import ObjectsList from './ObjectsList.vue'
 import ObjectDetails from './ObjectDetails.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
-import { objectStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
 
 export default {
 	name: 'ObjectsIndex',

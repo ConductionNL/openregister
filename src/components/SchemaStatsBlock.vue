@@ -13,7 +13,7 @@
 			<div v-else class="no-objects">
 				{{ t('openregister', 'No objects found') }}
 			</div>
-			
+
 			<!-- Show detailed breakdown if available -->
 			<div v-if="objectStats && objectCount > 0" class="object-breakdown">
 				<div class="breakdown-item">

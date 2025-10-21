@@ -2,8 +2,8 @@
 	<NcDialog
 		v-if="show"
 		:name="t('openregister', 'Collection Management')"
-		@closing="$emit('closing')"
-		:size="'large'">
+		:size="'large'"
+		@closing="$emit('closing')">
 		<div class="collection-management-modal">
 			<!-- Description -->
 			<div class="modal-description">
@@ -18,7 +18,9 @@
 
 			<!-- Error State -->
 			<div v-else-if="error" class="error-state">
-				<p class="error-message">❌ {{ errorMessage }}</p>
+				<p class="error-message">
+					❌ {{ errorMessage }}
+				</p>
 				<NcButton type="primary" @click="loadCollections">
 					<template #icon>
 						<Refresh :size="20" />
@@ -34,34 +36,34 @@
 					<h3>{{ t('openregister', 'Active Collections') }}</h3>
 					<div class="assignments-grid">
 						<div class="assignment-card">
-					<label>{{ t('openregister', 'Object Collection') }}</label>
-						<NcSelect
-							v-model="selectedObjectCollection"
-							:options="collectionOptions"
-							:placeholder="t('openregister', 'Select collection for objects')"
-							:label-outside="true"
-							@update:modelValue="updateAssignments">
-							<template #icon>
-								<Database :size="20" />
-							</template>
-						</NcSelect>
+							<label>{{ t('openregister', 'Object Collection') }}</label>
+							<NcSelect
+								v-model="selectedObjectCollection"
+								:options="collectionOptions"
+								:placeholder="t('openregister', 'Select collection for objects')"
+								:label-outside="true"
+								@update:modelValue="updateAssignments">
+								<template #icon>
+									<Database :size="20" />
+								</template>
+							</NcSelect>
 							<p class="assignment-hint">
 								{{ t('openregister', 'Collection used to store and index object data') }}
 							</p>
 						</div>
 
 						<div class="assignment-card">
-					<label>{{ t('openregister', 'File Collection') }}</label>
-						<NcSelect
-							v-model="selectedFileCollection"
-							:options="collectionOptions"
-							:placeholder="t('openregister', 'Select collection for files')"
-							:label-outside="true"
-							@update:modelValue="updateAssignments">
-							<template #icon>
-								<FileDocument :size="20" />
-							</template>
-						</NcSelect>
+							<label>{{ t('openregister', 'File Collection') }}</label>
+							<NcSelect
+								v-model="selectedFileCollection"
+								:options="collectionOptions"
+								:placeholder="t('openregister', 'Select collection for files')"
+								:label-outside="true"
+								@update:modelValue="updateAssignments">
+								<template #icon>
+									<FileDocument :size="20" />
+								</template>
+							</NcSelect>
 							<p class="assignment-hint">
 								{{ t('openregister', 'Collection used to store and index file metadata and content') }}
 							</p>
@@ -74,8 +76,8 @@
 					<div class="list-header">
 						<h3>{{ t('openregister', 'All Collections') }} ({{ collections.length }})</h3>
 						<div class="header-actions">
-							<NcButton 
-								type="primary" 
+							<NcButton
+								type="primary"
 								:disabled="loadingConfigSets"
 								@click="openCreateDialog">
 								<template #icon>
@@ -108,9 +110,9 @@
 						<tbody>
 							<tr v-for="collection in collections" :key="collection.name" class="collection-row">
 								<td class="collection-name">
-					<div class="name-container" :title="collection.name">
-						<strong class="name-text">{{ truncateName(collection.name, 25) }}</strong>
-						<div class="collection-badges">
+									<div class="name-container" :title="collection.name">
+										<strong class="name-text">{{ truncateName(collection.name, 25) }}</strong>
+										<div class="collection-badges">
 											<span v-if="collection.name === selectedObjectCollection" class="badge object-badge">
 												{{ t('openregister', 'Objects') }}
 											</span>
@@ -120,44 +122,50 @@
 										</div>
 									</div>
 								</td>
-							<td class="configset-cell" :title="collection.configName">
-								{{ truncateName(collection.configName, 20) }}
-							</td>
-								<td class="number-cell">{{ formatNumber(collection.documentCount) }}</td>
-							<td class="number-cell">{{ collection.shards }}</td>
-							<td class="number-cell">{{ collection.replicas }}</td>
-							<td class="health-cell">
-								<Check v-if="collection.health === 'healthy'" :size="20" class="health-icon healthy" />
-								<Close v-else :size="20" class="health-icon degraded" />
-							</td>
-							<td class="actions-cell">
-								<NcActions>
-									<NcActionButton @click="reindexCollection(collection)">
-										<template #icon>
-											<Refresh :size="20" />
-										</template>
-										{{ t('openregister', 'Reindex') }}
-									</NcActionButton>
-									<NcActionButton @click="clearCollection(collection)">
-										<template #icon>
-											<Delete :size="20" />
-										</template>
-										{{ t('openregister', 'Clear Index') }}
-									</NcActionButton>
-									<NcActionButton @click="openCopyDialog(collection)">
-										<template #icon>
-											<ContentCopy :size="20" />
-										</template>
-										{{ t('openregister', 'Copy') }}
-									</NcActionButton>
-									<NcActionButton @click="deleteCollection(collection)">
-										<template #icon>
-											<DatabaseRemove :size="20" />
-										</template>
-										{{ t('openregister', 'Delete Collection') }}
-									</NcActionButton>
-								</NcActions>
-							</td>
+								<td class="configset-cell" :title="collection.configName">
+									{{ truncateName(collection.configName, 20) }}
+								</td>
+								<td class="number-cell">
+									{{ formatNumber(collection.documentCount) }}
+								</td>
+								<td class="number-cell">
+									{{ collection.shards }}
+								</td>
+								<td class="number-cell">
+									{{ collection.replicas }}
+								</td>
+								<td class="health-cell">
+									<Check v-if="collection.health === 'healthy'" :size="20" class="health-icon healthy" />
+									<Close v-else :size="20" class="health-icon degraded" />
+								</td>
+								<td class="actions-cell">
+									<NcActions>
+										<NcActionButton @click="reindexCollection(collection)">
+											<template #icon>
+												<Refresh :size="20" />
+											</template>
+											{{ t('openregister', 'Reindex') }}
+										</NcActionButton>
+										<NcActionButton @click="clearCollection(collection)">
+											<template #icon>
+												<Delete :size="20" />
+											</template>
+											{{ t('openregister', 'Clear Index') }}
+										</NcActionButton>
+										<NcActionButton @click="openCopyDialog(collection)">
+											<template #icon>
+												<ContentCopy :size="20" />
+											</template>
+											{{ t('openregister', 'Copy') }}
+										</NcActionButton>
+										<NcActionButton @click="deleteCollection(collection)">
+											<template #icon>
+												<DatabaseRemove :size="20" />
+											</template>
+											{{ t('openregister', 'Delete Collection') }}
+										</NcActionButton>
+									</NcActions>
+								</td>
 							</tr>
 						</tbody>
 					</table>
@@ -172,28 +180,28 @@
 			<NcDialog
 				v-if="showCreateDialog"
 				:name="t('openregister', 'Create New Collection')"
-				@closing="closeCreateDialog"
-				:size="'normal'">
+				:size="'normal'"
+				@closing="closeCreateDialog">
 				<div class="create-dialog">
 					<p>{{ t('openregister', 'Create a new SOLR collection from an existing ConfigSet') }}</p>
-					
+
 					<div class="form-group">
 						<label>{{ t('openregister', 'Collection Name') }}*</label>
 						<input
 							v-model="newCollectionData.name"
 							type="text"
 							:placeholder="t('openregister', 'Enter collection name')"
-							class="collection-name-input" />
+							class="collection-name-input">
 					</div>
 
-				<div class="form-group">
-					<label>{{ t('openregister', 'ConfigSet') }}*</label>
-					<NcSelect
-						v-model="newCollectionData.configSet"
-						:options="configSetOptions"
-						:placeholder="t('openregister', 'Select ConfigSet')"
-						:label-outside="true" />
-				</div>
+					<div class="form-group">
+						<label>{{ t('openregister', 'ConfigSet') }}*</label>
+						<NcSelect
+							v-model="newCollectionData.configSet"
+							:options="configSetOptions"
+							:placeholder="t('openregister', 'Select ConfigSet')"
+							:label-outside="true" />
+					</div>
 
 					<div class="form-group-row">
 						<div class="form-group">
@@ -202,7 +210,7 @@
 								v-model.number="newCollectionData.shards"
 								type="number"
 								min="1"
-								class="number-input" />
+								class="number-input">
 						</div>
 
 						<div class="form-group">
@@ -211,7 +219,7 @@
 								v-model.number="newCollectionData.replicas"
 								type="number"
 								min="1"
-								class="number-input" />
+								class="number-input">
 						</div>
 
 						<div class="form-group">
@@ -220,7 +228,7 @@
 								v-model.number="newCollectionData.maxShardsPerNode"
 								type="number"
 								min="1"
-								class="number-input" />
+								class="number-input">
 						</div>
 					</div>
 
@@ -246,18 +254,18 @@
 			<NcDialog
 				v-if="showCopyDialog"
 				:name="t('openregister', 'Copy Collection')"
-				@closing="closeCopyDialog"
-				:size="'normal'">
+				:size="'normal'"
+				@closing="closeCopyDialog">
 				<div class="copy-dialog">
 					<p>{{ t('openregister', 'Create a copy of collection:') }} <strong>{{ collectionToCopy?.name }}</strong></p>
-					
+
 					<div class="form-group">
 						<label>{{ t('openregister', 'New Collection Name') }}</label>
 						<input
 							v-model="newCollectionName"
 							type="text"
 							:placeholder="t('openregister', 'Enter new collection name')"
-							class="collection-name-input" />
+							class="collection-name-input">
 					</div>
 
 					<div class="form-actions">
@@ -305,7 +313,7 @@ import { showSuccess, showError } from '@nextcloud/dialogs'
 
 export default {
 	name: 'CollectionManagementModal',
-	
+
 	components: {
 		NcDialog,
 		NcButton,
@@ -323,14 +331,14 @@ export default {
 		Check,
 		Close,
 	},
-	
+
 	props: {
 		show: {
 			type: Boolean,
 			default: false,
 		},
 	},
-	
+
 	emits: ['closing'],
 
 	data() {
@@ -435,7 +443,7 @@ export default {
 
 				if (response.data && response.data.solr) {
 					const solrSettings = response.data.solr
-					
+
 					// Set the selected collections if they exist
 					if (solrSettings.objectCollection) {
 						// Find the collection in our list and set it
@@ -444,7 +452,7 @@ export default {
 							this.selectedObjectCollection = objectCol.name
 						}
 					}
-					
+
 					if (solrSettings.fileCollection) {
 						// Find the collection in our list and set it
 						const fileCol = this.collections.find(col => col.name === solrSettings.fileCollection)
@@ -455,7 +463,7 @@ export default {
 
 					console.log('📦 Loaded current assignments:', {
 						objectCollection: this.selectedObjectCollection,
-						fileCollection: this.selectedFileCollection
+						fileCollection: this.selectedFileCollection,
 					})
 				}
 			} catch (error) {
@@ -466,15 +474,15 @@ export default {
 		async updateAssignments() {
 			try {
 				// Extract the IDs from the objects (NcSelect returns {id, label})
-				const objectCollectionId = this.selectedObjectCollection 
-					? (typeof this.selectedObjectCollection === 'object' 
-						? this.selectedObjectCollection.id 
+				const objectCollectionId = this.selectedObjectCollection
+					? (typeof this.selectedObjectCollection === 'object'
+						? this.selectedObjectCollection.id
 						: this.selectedObjectCollection)
 					: null
 
-				const fileCollectionId = this.selectedFileCollection 
-					? (typeof this.selectedFileCollection === 'object' 
-						? this.selectedFileCollection.id 
+				const fileCollectionId = this.selectedFileCollection
+					? (typeof this.selectedFileCollection === 'object'
+						? this.selectedFileCollection.id
 						: this.selectedFileCollection)
 					: null
 
@@ -500,11 +508,11 @@ export default {
 		async openCreateDialog() {
 			// Show loading state on button
 			this.loadingConfigSets = true
-			
+
 			try {
 				// Reload ConfigSets to get the latest list
 				await this.loadConfigSets()
-				
+
 				this.newCollectionData = {
 					name: '',
 					configSet: null,
@@ -540,8 +548,8 @@ export default {
 
 			try {
 				// Extract the ID from the configSet object (NcSelect returns {id, label})
-				const configSetId = typeof this.newCollectionData.configSet === 'object' 
-					? this.newCollectionData.configSet.id 
+				const configSetId = typeof this.newCollectionData.configSet === 'object'
+					? this.newCollectionData.configSet.id
 					: this.newCollectionData.configSet
 
 				const url = generateUrl('/apps/openregister/api/solr/collections')
@@ -629,7 +637,7 @@ export default {
 					const stats = response.data.stats || {}
 					showSuccess(this.t('openregister', 'Reindex completed! Processed {count} objects in {duration}s', {
 						count: stats.processed_objects || 0,
-						duration: stats.duration_seconds || 0
+						duration: stats.duration_seconds || 0,
 					}))
 					await this.loadCollections()
 				} else {

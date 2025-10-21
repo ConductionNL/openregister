@@ -4,8 +4,8 @@
 		<NcDialog
 			v-if="show && !navigationStore.dialog"
 			:name="t('openregister', 'ConfigSet Management')"
-			@closing="$emit('closing')"
-			:size="'large'">
+			:size="'large'"
+			@closing="$emit('closing')">
 			<div class="configset-management-modal">
 				<!-- Description -->
 				<div class="modal-description">
@@ -20,7 +20,9 @@
 
 				<!-- Error State -->
 				<div v-else-if="error" class="error-state">
-					<p class="error-message">❌ {{ errorMessage }}</p>
+					<p class="error-message">
+						❌ {{ errorMessage }}
+					</p>
 					<NcButton type="primary" @click="loadConfigSets">
 						<template #icon>
 							<Refresh :size="20" />
@@ -90,15 +92,15 @@
 										{{ configSet.usedByCount }}
 									</td>
 									<td class="actions-cell">
-									<NcButton
-										v-if="configSet.name !== '_default' && configSet.usedByCount === 0"
-										type="error"
-										@click="openDeleteDialog(configSet)">
-										<template #icon>
-											<Delete :size="20" />
-										</template>
-										{{ t('openregister', 'Delete') }}
-									</NcButton>
+										<NcButton
+											v-if="configSet.name !== '_default' && configSet.usedByCount === 0"
+											type="error"
+											@click="openDeleteDialog(configSet)">
+											<template #icon>
+												<Delete :size="20" />
+											</template>
+											{{ t('openregister', 'Delete') }}
+										</NcButton>
 										<span v-else-if="configSet.name === '_default'" class="protected-label">
 											{{ t('openregister', 'Protected') }}
 										</span>
@@ -138,7 +140,7 @@ import { navigationStore } from '../../store/store.js'
 
 export default {
 	name: 'ConfigSetManagementModal',
-	
+
 	components: {
 		NcDialog,
 		NcButton,
@@ -147,14 +149,14 @@ export default {
 		Plus,
 		Delete,
 	},
-	
+
 	props: {
 		show: {
 			type: Boolean,
 			default: false,
 		},
 	},
-	
+
 	emits: ['closing'],
 
 	data() {

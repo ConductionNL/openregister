@@ -464,10 +464,10 @@ export default {
 		 */
 		hasImportErrors() {
 			if (!this.importResults) return false
-			
+
 			// Check if any sheet has errors
-			return Object.values(this.importResults).some(sheetSummary => 
-				sheetSummary.errors && sheetSummary.errors.length > 0
+			return Object.values(this.importResults).some(sheetSummary =>
+				sheetSummary.errors && sheetSummary.errors.length > 0,
 			)
 		},
 	},
@@ -590,7 +590,7 @@ export default {
 			console.info('ImportRegister: Starting import, setting loading to true')
 			this.loading = true
 			this.error = null
-			
+
 			// Activate heartbeat indicator for large files (>500KB) to show timeout prevention
 			const isLargeFile = this.selectedFile.size > 500 * 1024 // 500KB threshold
 			if (isLargeFile) {
@@ -607,7 +607,7 @@ export default {
 					(status) => {
 						this.heartbeatStatus = status
 						console.info('ImportRegister: Heartbeat status updated:', status)
-					}
+					},
 				)
 
 				console.info('ImportRegister: Import completed, setting success state')
@@ -711,19 +711,19 @@ export default {
 			if (!sheetSummary.errors || !Array.isArray(sheetSummary.errors)) {
 				return false
 			}
-			
+
 			// Check for error messages that suggest cache issues
 			const cacheIndicators = [
 				'data is not a valid attribute',
 				'not a valid attribute',
 				'ProcessingException',
-				'Invalid property'
+				'Invalid property',
 			]
-			
-			return sheetSummary.errors.some(error => 
-				cacheIndicators.some(indicator => 
-					error.error && error.error.includes(indicator)
-				)
+
+			return sheetSummary.errors.some(error =>
+				cacheIndicators.some(indicator =>
+					error.error && error.error.includes(indicator),
+				),
 			)
 		},
 	},

@@ -1,13 +1,13 @@
-<!-- 
+<!--
 /**
  * @class ConnectionConfigModal
  * @module Modals/Settings
  * @package OpenRegister
- * 
+ *
  * Modal for configuring basic SOLR connection settings.
  * This includes server details, authentication, Zookeeper settings, and advanced connection options.
  * Core and Collection management should be done through their dedicated dialogs.
- * 
+ *
  * @author   Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
@@ -189,9 +189,9 @@
 				<div class="advanced-options">
 					<NcCheckboxRadioSwitch
 						:checked="Boolean(localConfig.useCloud)"
-						@update:checked="localConfig.useCloud = $event"
 						:disabled="saving"
-						type="switch">
+						type="switch"
+						@update:checked="localConfig.useCloud = $event">
 						{{ localConfig.useCloud ? t('openregister', 'SolrCloud mode enabled') : t('openregister', 'Standalone SOLR mode') }}
 					</NcCheckboxRadioSwitch>
 					<p class="option-description">
@@ -200,9 +200,9 @@
 
 					<NcCheckboxRadioSwitch
 						:checked="Boolean(localConfig.autoCommit)"
-						@update:checked="localConfig.autoCommit = $event"
 						:disabled="saving"
-						type="switch">
+						type="switch"
+						@update:checked="localConfig.autoCommit = $event">
 						{{ localConfig.autoCommit ? t('openregister', 'Auto-commit enabled') : t('openregister', 'Auto-commit disabled') }}
 					</NcCheckboxRadioSwitch>
 					<p class="option-description">
@@ -226,9 +226,9 @@
 
 					<NcCheckboxRadioSwitch
 						:checked="Boolean(localConfig.enableLogging)"
-						@update:checked="localConfig.enableLogging = $event"
 						:disabled="saving"
-						type="switch">
+						type="switch"
+						@update:checked="localConfig.enableLogging = $event">
 						{{ localConfig.enableLogging ? t('openregister', 'SOLR logging enabled') : t('openregister', 'SOLR logging disabled') }}
 					</NcCheckboxRadioSwitch>
 					<p class="option-description">
@@ -326,14 +326,14 @@ import { generateUrl } from '@nextcloud/router'
 
 /**
  * ConnectionConfigModal component
- * 
+ *
  * Provides a dialog for configuring basic SOLR connection settings including
  * server details, authentication, and Zookeeper configuration.
  * Core and collection management is handled by separate dedicated dialogs.
  */
 export default {
 	name: 'ConnectionConfigModal',
-	
+
 	components: {
 		NcDialog,
 		NcButton,
@@ -431,13 +431,13 @@ export default {
 					this.testResults = {
 						success: true,
 						message: response.data.message || 'Successfully connected to SOLR server',
-						serverInfo: response.data.server_info || response.data.serverInfo || null
+						serverInfo: response.data.server_info || response.data.serverInfo || null,
 					}
 				} else {
 					this.testResults = {
 						success: false,
 						message: response.data.message || response.data.error || 'Failed to connect to SOLR server',
-						details: response.data.details || null
+						details: response.data.details || null,
 					}
 				}
 			} catch (error) {
@@ -445,7 +445,7 @@ export default {
 				this.testResults = {
 					success: false,
 					message: error.response?.data?.message || error.message || 'Connection test failed',
-					details: error.response?.data?.details || error.toString()
+					details: error.response?.data?.details || error.toString(),
 				}
 			} finally {
 				this.testing = false
@@ -682,18 +682,17 @@ export default {
 		grid-template-columns: 1fr;
 		gap: 8px;
 	}
-	
+
 	.connection-config-modal {
 		padding: 16px;
 	}
-	
+
 	.server-info .info-grid {
 		grid-template-columns: 1fr;
 	}
-	
+
 	.modal-actions {
 		flex-direction: column;
 	}
 }
 </style>
-

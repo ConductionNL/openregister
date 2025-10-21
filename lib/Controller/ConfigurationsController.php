@@ -25,6 +25,7 @@ use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\DataDownloadResponse;
+use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Symfony\Component\Uid\Uuid;
@@ -58,6 +59,24 @@ class ConfigurationsController extends Controller
 
     }//end __construct()
 
+	/**
+	 * This returns the template of the main app's page
+	 * It adds some data to the template (app version)
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @return TemplateResponse
+	 */
+	public function page(): TemplateResponse
+	{
+        return new TemplateResponse(
+            //Application::APP_ID,
+            'openregister',
+            'index',
+            []
+        );
+	}
 
     /**
      * List all configurations
