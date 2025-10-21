@@ -20,8 +20,12 @@ class CoreIntegrationTest extends TestCase
     private Client $client;
     private string $baseUrl = 'http://localhost';
     private string $registerSlug;
-    private string $schemaSlug = 'document';
+    private string $documentSchemaSlug;
+    private string $strictPdfSchemaSlug;
+    private string $multiTypeSchemaSlug;
+    private string $gallerySchemaSlug;
     private array $createdObjectIds = [];
+    private array $createdSchemaIds = [];
     private ?int $registerId = null;
 
     protected function setUp(): void
@@ -45,18 +49,33 @@ class CoreIntegrationTest extends TestCase
 
     protected function tearDown(): void
     {
-        // Clean up created objects FIRST (before register deletion)
+        // Clean up created objects FIRST (before schema/register deletion)
         foreach ($this->createdObjectIds as $id) {
             try {
-                $schemas = [$this->schemaSlug, 'strict-pdf', 'multi-type', 'gallery'];
-                foreach ($schemas as $schema) {
+                // Try all known schema slugs to find which one this object belongs to
+                $schemaSlugs = [
+                    $this->documentSchemaSlug ?? null,
+                    $this->strictPdfSchemaSlug ?? null,
+                    $this->multiTypeSchemaSlug ?? null,
+                    $this->gallerySchemaSlug ?? null
+                ];
+                foreach (array_filter($schemaSlugs) as $schemaSlug) {
                     try {
-                        $this->client->delete("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$schema}/{$id}");
+                        $this->client->delete("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$schemaSlug}/{$id}");
                         break;
                     } catch (\Exception $e) {
                         // Try next schema
                     }
                 }
+            } catch (\Exception $e) {
+                // Ignore cleanup errors
+            }
+        }
+
+        // Clean up created schemas SECOND (after objects are deleted)
+        foreach ($this->createdSchemaIds as $schemaId) {
+            try {
+                $this->client->delete("/index.php/apps/openregister/api/schemas/{$schemaId}");
             } catch (\Exception $e) {
                 // Ignore cleanup errors
             }
@@ -68,27 +87,6 @@ class CoreIntegrationTest extends TestCase
 
     private function cleanupTestRegister(): void
     {
-        // Clean up orphaned schemas from previous failed tests
-        $orphanedSchemas = ['strict-pdf', 'multi-type', 'gallery', $this->schemaSlug];
-        foreach ($orphanedSchemas as $schemaSlug) {
-            try {
-                $schemasResponse = $this->client->get("/index.php/apps/openregister/api/schemas?slug={$schemaSlug}");
-                if ($schemasResponse->getStatusCode() === 200) {
-                    $schemasBody = $schemasResponse->getBody()->getContents();
-                    $schemas = json_decode($schemasBody, true);
-                    if (isset($schemas['results'])) {
-                        foreach ($schemas['results'] as $schema) {
-                            if (isset($schema['id'])) {
-                                $this->client->delete("/index.php/apps/openregister/api/schemas/{$schema['id']}");
-                            }
-                        }
-                    }
-                }
-            } catch (\Exception $e) {
-                // Ignore
-            }
-        }
-
         if ($this->registerId === null) {
             return;
         }
@@ -123,11 +121,14 @@ class CoreIntegrationTest extends TestCase
         $this->assertArrayHasKey('id', $registerData);
         $this->registerId = $registerData['id'];
 
-        // Main schema
+        // Generate unique schema slugs to avoid conflicts with previous test runs
+        $uniqueId = substr($this->registerSlug, -13); // Use the unique part from register slug
+
+        // Main schema (document)
         $schemaResponse = $this->client->post('/index.php/apps/openregister/api/schemas', [
             'json' => [
                 'register' => $this->registerId,
-                'slug' => $this->schemaSlug,
+                'slug' => 'document-' . $uniqueId,
                 'title' => 'Document Schema',
                 'properties' => [
                     'title' => ['type' => 'string'],
@@ -137,12 +138,15 @@ class CoreIntegrationTest extends TestCase
             ]
         ]);
         $this->assertEquals(201, $schemaResponse->getStatusCode());
+        $schemaData = json_decode($schemaResponse->getBody()->getContents(), true);
+        $this->createdSchemaIds[] = $schemaData['id'];
+        $this->documentSchemaSlug = $schemaData['slug'];
 
         // Strict PDF schema
         $strictPdfResponse = $this->client->post('/index.php/apps/openregister/api/schemas', [
             'json' => [
                 'register' => $this->registerId,
-                'slug' => 'strict-pdf',
+                'slug' => 'strict-pdf-' . $uniqueId,
                 'title' => 'Strict PDF Schema',
                 'properties' => [
                     'title' => ['type' => 'string'],
@@ -156,12 +160,15 @@ class CoreIntegrationTest extends TestCase
             ]
         ]);
         $this->assertEquals(201, $strictPdfResponse->getStatusCode());
+        $strictPdfData = json_decode($strictPdfResponse->getBody()->getContents(), true);
+        $this->createdSchemaIds[] = $strictPdfData['id'];
+        $this->strictPdfSchemaSlug = $strictPdfData['slug'];
 
         // Multi-type schema
         $multiTypeResponse = $this->client->post('/index.php/apps/openregister/api/schemas', [
             'json' => [
                 'register' => $this->registerId,
-                'slug' => 'multi-type',
+                'slug' => 'multi-type-' . $uniqueId,
                 'title' => 'Multi-Type Schema',
                 'properties' => [
                     'title' => ['type' => 'string'],
@@ -178,12 +185,15 @@ class CoreIntegrationTest extends TestCase
             ]
         ]);
         $this->assertEquals(201, $multiTypeResponse->getStatusCode());
+        $multiTypeData = json_decode($multiTypeResponse->getBody()->getContents(), true);
+        $this->createdSchemaIds[] = $multiTypeData['id'];
+        $this->multiTypeSchemaSlug = $multiTypeData['slug'];
 
         // Gallery schema
         $galleryResponse = $this->client->post('/index.php/apps/openregister/api/schemas', [
             'json' => [
                 'register' => $this->registerId,
-                'slug' => 'gallery',
+                'slug' => 'gallery-' . $uniqueId,
                 'title' => 'Gallery Schema',
                 'properties' => [
                     'title' => ['type' => 'string'],
@@ -198,6 +208,9 @@ class CoreIntegrationTest extends TestCase
             ]
         ]);
         $this->assertEquals(201, $galleryResponse->getStatusCode());
+        $galleryData = json_decode($galleryResponse->getBody()->getContents(), true);
+        $this->createdSchemaIds[] = $galleryData['id'];
+        $this->gallerySchemaSlug = $galleryData['slug'];
     }
 
     // ========================================
@@ -211,7 +224,7 @@ class CoreIntegrationTest extends TestCase
         fwrite($tmpFile, $pdfContent);
         $tmpPath = stream_get_meta_data($tmpFile)['uri'];
 
-        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->schemaSlug}", [
+        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
             'multipart' => [
                 ['name' => 'title', 'contents' => 'Test Document'],
                 ['name' => 'attachment', 'contents' => fopen($tmpPath, 'r'), 'filename' => 'test.pdf', 'headers' => ['Content-Type' => 'application/pdf']],
@@ -233,7 +246,7 @@ class CoreIntegrationTest extends TestCase
         fwrite($imageTmp, "\xFF\xD8\xFF\xE0");
         $imagePath = stream_get_meta_data($imageTmp)['uri'];
 
-        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/multi-type", [
+        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->multiTypeSchemaSlug}", [
             'multipart' => [
                 ['name' => 'title', 'contents' => 'Multi-File Document'],
                 ['name' => 'thumbnail', 'contents' => fopen($imagePath, 'r'), 'filename' => 'thumb.jpg', 'headers' => ['Content-Type' => 'image/jpeg']],
@@ -253,7 +266,7 @@ class CoreIntegrationTest extends TestCase
         $base64 = base64_encode($pdfContent);
         $dataUri = "data:application/pdf;base64,{$base64}";
 
-        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->schemaSlug}", [
+        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
             'json' => [
                 'title' => 'Base64 Document',
                 'attachment' => $dataUri
@@ -276,7 +289,7 @@ class CoreIntegrationTest extends TestCase
         fwrite($image1Tmp, "\xFF\xD8\xFF\xE0");
         $image1Path = stream_get_meta_data($image1Tmp)['uri'];
 
-        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/gallery", [
+        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->gallerySchemaSlug}", [
             'multipart' => [
                 ['name' => 'title', 'contents' => 'Photo Gallery'],
                 ['name' => 'images[]', 'contents' => fopen($image1Path, 'r'), 'filename' => 'photo1.jpg', 'headers' => ['Content-Type' => 'image/jpeg']],
@@ -293,7 +306,7 @@ class CoreIntegrationTest extends TestCase
     {
         $image1 = base64_encode("\xFF\xD8\xFF\xE0");
 
-        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/gallery", [
+        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->gallerySchemaSlug}", [
             'json' => [
                 'title' => 'Base64 Gallery',
                 'images' => ["data:image/jpeg;base64,{$image1}"]
@@ -311,7 +324,7 @@ class CoreIntegrationTest extends TestCase
         fwrite($imageTmp, "\xFF\xD8\xFF\xE0");
         $imagePath = stream_get_meta_data($imageTmp)['uri'];
 
-        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/strict-pdf", [
+        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->strictPdfSchemaSlug}", [
             'multipart' => [
                 ['name' => 'title', 'contents' => 'Wrong Type'],
                 ['name' => 'document', 'contents' => fopen($imagePath, 'r'), 'filename' => 'fake.pdf', 'headers' => ['Content-Type' => 'image/jpeg']],
@@ -329,7 +342,7 @@ class CoreIntegrationTest extends TestCase
         fwrite($tmpFile, $largePdf);
         $tmpPath = stream_get_meta_data($tmpFile)['uri'];
 
-        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/strict-pdf", [
+        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->strictPdfSchemaSlug}", [
             'multipart' => [
                 ['name' => 'title', 'contents' => 'Too Large'],
                 ['name' => 'document', 'contents' => fopen($tmpPath, 'r'), 'filename' => 'huge.pdf', 'headers' => ['Content-Type' => 'application/pdf']],
@@ -342,7 +355,7 @@ class CoreIntegrationTest extends TestCase
 
     public function testValidationCorruptedBase64(): void
     {
-        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->schemaSlug}", [
+        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
             'json' => [
                 'title' => 'Corrupted',
                 'attachment' => "data:application/pdf;base64,INVALID!!!"
@@ -358,7 +371,7 @@ class CoreIntegrationTest extends TestCase
         fwrite($pdfTmp, '%PDF-1.4 test');
         $pdfPath = stream_get_meta_data($pdfTmp)['uri'];
 
-        $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->schemaSlug}", [
+        $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
             'multipart' => [
                 ['name' => 'title', 'contents' => 'GET Test'],
                 ['name' => 'attachment', 'contents' => fopen($pdfPath, 'r'), 'filename' => 'test.pdf', 'headers' => ['Content-Type' => 'application/pdf']],
@@ -369,7 +382,7 @@ class CoreIntegrationTest extends TestCase
         $created = json_decode($createResponse->getBody(), true);
         $id = $created['id'];
 
-        $getResponse = $this->client->get("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->schemaSlug}/{$id}");
+        $getResponse = $this->client->get("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}/{$id}");
         $this->assertEquals(200, $getResponse->getStatusCode());
         
         $this->createdObjectIds[] = $id;
@@ -382,7 +395,7 @@ class CoreIntegrationTest extends TestCase
         fwrite($pdf1Tmp, '%PDF-1.4 original');
         $pdf1Path = stream_get_meta_data($pdf1Tmp)['uri'];
 
-        $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->schemaSlug}", [
+        $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
             'multipart' => [
                 ['name' => 'title', 'contents' => 'Original'],
                 ['name' => 'attachment', 'contents' => fopen($pdf1Path, 'r'), 'filename' => 'original.pdf', 'headers' => ['Content-Type' => 'application/pdf']],
@@ -396,7 +409,7 @@ class CoreIntegrationTest extends TestCase
         fwrite($pdf2Tmp, '%PDF-1.4 updated');
         $pdf2Path = stream_get_meta_data($pdf2Tmp)['uri'];
 
-        $updateResponse = $this->client->put("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->schemaSlug}/{$id}", [
+        $updateResponse = $this->client->put("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}/{$id}", [
             'multipart' => [
                 ['name' => 'title', 'contents' => 'Updated'],
                 ['name' => 'attachment', 'contents' => fopen($pdf2Path, 'r'), 'filename' => 'updated.pdf', 'headers' => ['Content-Type' => 'application/pdf']],
@@ -415,7 +428,7 @@ class CoreIntegrationTest extends TestCase
         fwrite($pdfTmp, '%PDF-1.4 test');
         $pdfPath = stream_get_meta_data($pdfTmp)['uri'];
 
-        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->schemaSlug}", [
+        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
             'multipart' => [
                 ['name' => 'title', 'contents' => 'Mixed'],
                 ['name' => 'attachment', 'contents' => fopen($pdfPath, 'r'), 'filename' => 'doc.pdf', 'headers' => ['Content-Type' => 'application/pdf']],
@@ -434,7 +447,7 @@ class CoreIntegrationTest extends TestCase
 
     public function testCannotDeleteRegisterWithObjects(): void
     {
-        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->schemaSlug}", [
+        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
             'json' => ['title' => 'Cascade Protection Test']
         ]);
         $this->assertEquals(201, $response->getStatusCode());
@@ -447,11 +460,11 @@ class CoreIntegrationTest extends TestCase
 
     public function testCannotDeleteSchemaWithObjects(): void
     {
-        $schemasResponse = $this->client->get("/index.php/apps/openregister/api/schemas?slug={$this->schemaSlug}");
+        $schemasResponse = $this->client->get("/index.php/apps/openregister/api/schemas?slug={$this->documentSchemaSlug}");
         $schemas = json_decode($schemasResponse->getBody()->getContents(), true);
         $schemaId = $schemas['results'][0]['id'];
 
-        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->schemaSlug}", [
+        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
             'json' => ['title' => 'Schema Protection Test']
         ]);
         $this->assertEquals(201, $response->getStatusCode());
@@ -505,7 +518,7 @@ class CoreIntegrationTest extends TestCase
         $pdfPath = stream_get_meta_data($pdfTmp)['uri'];
 
         // Create object with file (not shared)
-        $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->schemaSlug}", [
+        $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
             'multipart' => [
                 ['name' => 'title', 'contents' => 'Non-Shared File Test'],
                 ['name' => 'attachment', 'contents' => fopen($pdfPath, 'r'), 'filename' => 'test.pdf', 'headers' => ['Content-Type' => 'application/pdf']],
@@ -550,6 +563,7 @@ class CoreIntegrationTest extends TestCase
         ]);
         $this->assertEquals(201, $autoShareSchemaResponse->getStatusCode());
         $autoShareSchema = json_decode($autoShareSchemaResponse->getBody(), true);
+        $this->createdSchemaIds[] = $autoShareSchema['id'];
 
         $pdfTmp = tmpfile();
         fwrite($pdfTmp, '%PDF-1.4 auto-share test');
@@ -604,6 +618,7 @@ class CoreIntegrationTest extends TestCase
         ]);
         $this->assertEquals(201, $logoSchemaResponse->getStatusCode());
         $logoSchema = json_decode($logoSchemaResponse->getBody(), true);
+        $this->createdSchemaIds[] = $logoSchema['id'];
 
         $imageTmp = tmpfile();
         fwrite($imageTmp, "\xFF\xD8\xFF\xE0");
@@ -637,7 +652,7 @@ class CoreIntegrationTest extends TestCase
         $pdfPath = stream_get_meta_data($pdfTmp)['uri'];
 
         // Create object with file
-        $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->schemaSlug}", [
+        $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
             'multipart' => [
                 ['name' => 'title', 'contents' => 'Delete Test'],
                 ['name' => 'attachment', 'contents' => fopen($pdfPath, 'r'), 'filename' => 'test.pdf', 'headers' => ['Content-Type' => 'application/pdf']],
@@ -654,7 +669,7 @@ class CoreIntegrationTest extends TestCase
         $this->assertNotNull($object['attachment']);
 
         // Update object with null to delete file
-        $updateResponse = $this->client->put("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->schemaSlug}/{$objectId}", [
+        $updateResponse = $this->client->put("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}/{$objectId}", [
             'json' => [
                 'title' => 'Delete Test Updated',
                 'attachment' => null
@@ -678,7 +693,7 @@ class CoreIntegrationTest extends TestCase
         $image1Path = stream_get_meta_data($image1Tmp)['uri'];
 
         // Create object with files array
-        $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/gallery", [
+        $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->gallerySchemaSlug}", [
             'multipart' => [
                 ['name' => 'title', 'contents' => 'Delete Array Test'],
                 ['name' => 'images[]', 'contents' => fopen($image1Path, 'r'), 'filename' => 'photo1.jpg', 'headers' => ['Content-Type' => 'image/jpeg']],
@@ -696,7 +711,7 @@ class CoreIntegrationTest extends TestCase
         $this->assertNotEmpty($object['images']);
 
         // Update object with empty array to delete all files
-        $updateResponse = $this->client->put("/index.php/apps/openregister/api/objects/{$this->registerSlug}/gallery/{$objectId}", [
+        $updateResponse = $this->client->put("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->gallerySchemaSlug}/{$objectId}", [
             'json' => [
                 'title' => 'Delete Array Test Updated',
                 'images' => []
