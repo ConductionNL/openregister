@@ -2149,6 +2149,19 @@ class ObjectEntityMapper extends QBMapper
 
         // Handle arrays
         if (is_array($value) === true) {
+            // Check if this is an operator array (e.g., ['or' => '...'], ['and' => '...'])
+            // Operator keys to preserve
+            $operatorKeys = ['or', 'and', 'gte', 'lte', 'gt', 'lt', 'eq', 'ne', '~', '!~', '^', '!^', '$', '!$'];
+            
+            // If any operator key exists, preserve the entire structure
+            foreach ($operatorKeys as $opKey) {
+                if (isset($value[$opKey]) === true) {
+                    // This is an operator array, return it as-is
+                    return $value;
+                }
+            }
+            
+            // Otherwise, process as a regular value array
             $processedValues = [];
             foreach ($value as $item) {
                 if (is_object($item) === true && method_exists($item, 'getId') === true) {
