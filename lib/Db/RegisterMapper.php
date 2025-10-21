@@ -381,7 +381,7 @@ class RegisterMapper extends QBMapper
         $registerId = method_exists($entity, 'getId') ? $entity->getId() : $entity->id;
         $stats      = $this->objectEntityMapper->getStatistics($registerId, null);
         if (($stats['total'] ?? 0) > 0) {
-            throw new \Exception('Cannot delete register: objects are still attached.');
+            throw new \OCA\OpenRegister\Exception\ValidationException('Cannot delete register: objects are still attached.');
         }
 
         // Proceed with deletion if no objects are attached

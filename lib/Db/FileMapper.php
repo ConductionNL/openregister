@@ -157,9 +157,15 @@ class FileMapper extends QBMapper
 
         // Fetch all rows manually and process share information and owner data
         while ($row = $result->fetch()) {
-            // Add share-related fields
-            $row['accessUrl']   = $row['share_token'] ? $this->generateShareUrl($row['share_token']) : null;
-            $row['downloadUrl'] = $row['share_token'] ? $this->generateShareUrl($row['share_token']).'/download' : null;
+            // Add share-related fields (public URLs if shared)
+            if ($row['share_token']) {
+                $row['accessUrl']   = $this->generateShareUrl($row['share_token']);
+                $row['downloadUrl'] = $this->generateShareUrl($row['share_token']).'/download';
+            } else {
+                // Add authenticated URLs for non-shared files (requires login)
+                $row['accessUrl']   = $this->generateAuthenticatedAccessUrl($row['fileid']);
+                $row['downloadUrl'] = $this->generateAuthenticatedDownloadUrl($row['fileid']);
+            }
             $row['published']   = $row['share_stime'] ? (new DateTime())->setTimestamp($row['share_stime'])->format('c') : null;
 
             // Extract owner from storage ID (format is usually "home::username")
@@ -248,9 +254,15 @@ class FileMapper extends QBMapper
             return null;
         }
 
-        // Add share-related fields
-        $file['accessUrl']   = $file['share_token'] ? $this->generateShareUrl($file['share_token']) : null;
-        $file['downloadUrl'] = $file['share_token'] ? $this->generateShareUrl($file['share_token']).'/download' : null;
+        // Add share-related fields (public URLs if shared)
+        if ($file['share_token']) {
+            $file['accessUrl']   = $this->generateShareUrl($file['share_token']);
+            $file['downloadUrl'] = $this->generateShareUrl($file['share_token']).'/download';
+        } else {
+            // Add authenticated URLs for non-shared files (requires login)
+            $file['accessUrl']   = $this->generateAuthenticatedAccessUrl($file['fileid']);
+            $file['downloadUrl'] = $this->generateAuthenticatedDownloadUrl($file['fileid']);
+        }
         $file['published']   = $file['share_stime'] ? (new DateTime())->setTimestamp($file['share_stime'])->format('c') : null;
 
         // Extract owner from storage ID (format is usually "home::username")
@@ -360,6 +372,48 @@ class FileMapper extends QBMapper
         return $baseUrl.'/index.php/s/'.$token;
 
     }//end generateShareUrl()
+
+
+    /**
+     * Generate an authenticated access URL for a file (requires login).
+     *
+     * This URL uses Nextcloud's file preview/access endpoint which requires
+     * the user to be authenticated to access the file.
+     *
+     * @param int $fileId The file ID
+     *
+     * @return string The authenticated access URL
+     *
+     * @phpstan-param  int $fileId
+     * @phpstan-return string
+     */
+    private function generateAuthenticatedAccessUrl(int $fileId): string
+    {
+        $baseUrl = $this->urlGenerator->getBaseUrl();
+        return $baseUrl.'/index.php/core/preview?fileId='.$fileId.'&x=1920&y=1080&a=1';
+
+    }//end generateAuthenticatedAccessUrl()
+
+
+    /**
+     * Generate an authenticated download URL for a file (requires login).
+     *
+     * This URL uses Nextcloud's direct download endpoint which requires
+     * the user to be authenticated to download the file.
+     *
+     * @param int $fileId The file ID
+     *
+     * @return string The authenticated download URL
+     *
+     * @phpstan-param  int $fileId
+     * @phpstan-return string
+     */
+    private function generateAuthenticatedDownloadUrl(int $fileId): string
+    {
+        $baseUrl = $this->urlGenerator->getBaseUrl();
+        return $baseUrl.'/index.php/apps/openregister/api/files/'.$fileId.'/download';
+
+    }//end generateAuthenticatedDownloadUrl()
 
 
     /**

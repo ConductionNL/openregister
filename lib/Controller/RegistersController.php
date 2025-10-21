@@ -263,7 +263,7 @@ class RegistersController extends Controller
 
         try {
             // Create a new register from the data.
-            return new JSONResponse($this->registerService->createFromArray($data));
+            return new JSONResponse($this->registerService->createFromArray($data), 201);
         } catch (DBException $e) {
             // Handle database constraint violations with user-friendly messages
             $constraintException = DatabaseConstraintException::fromDatabaseException($e, 'register');
@@ -338,12 +338,20 @@ class RegistersController extends Controller
      */
     public function destroy(int $id): JSONResponse
     {
-        // Find the register by ID and delete it.
-        $register = $this->registerService->find((int) $id);
-        $this->registerService->delete($register);
+        try {
+            // Find the register by ID and delete it.
+            $register = $this->registerService->find((int) $id);
+            $this->registerService->delete($register);
 
-        // Return an empty response.
-        return new JSONResponse([]);
+            // Return an empty response.
+            return new JSONResponse([]);
+        } catch (\OCA\OpenRegister\Exception\ValidationException $e) {
+            // Return 409 Conflict for cascade protection (objects still attached)
+            return new JSONResponse(['error' => $e->getMessage()], 409);
+        } catch (\Exception $e) {
+            // Return 500 for other errors
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
 
     }//end destroy()
 
