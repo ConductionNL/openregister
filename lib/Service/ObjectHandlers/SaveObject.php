@@ -561,6 +561,13 @@ class SaveObject
             $image = $this->extractMetadataValue($objectData, $config['objectImageField']);
             if ($image !== null && trim($image) !== '') {
                 $entity->setImage(trim($image));
+            } else {
+                // Check if the field points to a file object
+                $imageValue = $this->getValueFromPath($objectData, $config['objectImageField']);
+                if (is_array($imageValue) && isset($imageValue['accessUrl'])) {
+                    // Use the accessUrl as the image URL
+                    $entity->setImage($imageValue['accessUrl']);
+                }
             }
         }
 
@@ -2449,6 +2456,42 @@ class SaveObject
             throw new Exception("Property '$propertyName' is not configured as a file property");
         }
 
+        // Handle file deletion: null for single files, empty array for array properties
+        if ($fileValue === null || (is_array($fileValue) && empty($fileValue))) {
+            // Get existing file IDs from the current object data
+            $currentObjectData = $objectEntity->getObject();
+            $existingFileIds = $currentObjectData[$propertyName] ?? null;
+            
+            if ($existingFileIds !== null) {
+                // Delete existing files
+                if (is_array($existingFileIds)) {
+                    // Array of file IDs
+                    foreach ($existingFileIds as $fileId) {
+                        if (is_numeric($fileId)) {
+                            try {
+                                $this->fileService->deleteFile((int) $fileId, $objectEntity);
+                            } catch (\Exception $e) {
+                                // Log but don't fail - file might already be deleted
+                                $this->logger->warning("Failed to delete file $fileId: " . $e->getMessage());
+                            }
+                        }
+                    }
+                } else if (is_numeric($existingFileIds)) {
+                    // Single file ID
+                    try {
+                        $this->fileService->deleteFile((int) $existingFileIds, $objectEntity);
+                    } catch (\Exception $e) {
+                        // Log but don't fail - file might already be deleted
+                        $this->logger->warning("Failed to delete file $existingFileIds: " . $e->getMessage());
+                    }
+                }
+            }
+            
+            // Set property to null or empty array
+            $object[$propertyName] = $isArrayProperty ? [] : null;
+            return;
+        }
+
         if ($isArrayProperty) {
             // Handle array of files
             if (!is_array($fileValue)) {
@@ -2603,13 +2646,15 @@ class SaveObject
         // Prepare auto tags
         $autoTags = $this->prepareAutoTags($fileConfig, $propertyName, $index);
 
+        // Check if auto-share is enabled in the property configuration
+        $autoShare = $fileConfig['autoShare'] ?? false;
+
         // Create the file with validation and tagging
         $file = $this->fileService->addFile(
             objectEntity: $objectEntity,
             fileName: $filename,
             content: $fileData['content'],
-            share: false,
-        // Don't auto-share, let user decide
+            share: $autoShare,
             tags: $autoTags
         );
 
