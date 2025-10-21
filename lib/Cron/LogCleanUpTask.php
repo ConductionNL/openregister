@@ -24,6 +24,7 @@ use OCP\BackgroundJob\IJobList;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
 use OCP\AppFramework\Utility\ITimeFactory;
+use Psr\Log\LoggerInterface;
 
 /**
  * Background job for cleaning up expired audit trail logs
@@ -43,21 +44,31 @@ class LogCleanUpTask extends TimedJob
      */
     private readonly AuditTrailMapper $auditTrailMapper;
 
+    /**
+     * The logger for logging operations
+     *
+     * @var LoggerInterface
+     */
+    private readonly LoggerInterface $logger;
+
 
     /**
      * Constructor for the LogCleanUpTask
      *
      * @param ITimeFactory     $time             The time factory for time operations
      * @param AuditTrailMapper $auditTrailMapper The audit trail mapper for database operations
+     * @param LoggerInterface  $logger           The logger for logging operations
      *
      * @return void
      */
     public function __construct(
         ITimeFactory $time,
         AuditTrailMapper $auditTrailMapper,
+        LoggerInterface $logger,
     ) {
         parent::__construct($time);
         $this->auditTrailMapper = $auditTrailMapper;
+        $this->logger = $logger;
 
         // Run every hour (3600 seconds)
         $this->setInterval(3600);
@@ -89,14 +100,14 @@ class LogCleanUpTask extends TimedJob
 
             // Log the result for monitoring purposes
             if ($logsCleared === true) {
-                \OC::$server->getLogger()->info(
+                $this->logger->info(
                 'Successfully cleared expired audit trail logs',
                 [
                     'app' => 'openregister',
                 ]
                 );
             } else {
-                \OC::$server->getLogger()->debug(
+                $this->logger->debug(
                 'No expired audit trail logs found to clear',
                 [
                     'app' => 'openregister',
@@ -105,7 +116,7 @@ class LogCleanUpTask extends TimedJob
             }
         } catch (\Exception $e) {
             // Log any errors that occur during cleanup
-            \OC::$server->getLogger()->error(
+            $this->logger->error(
             'Failed to clear expired audit trail logs: '.$e->getMessage(),
             [
                 'app'       => 'openregister',

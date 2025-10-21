@@ -579,6 +579,19 @@ class RenderObject
             $schemaProperties = $schema->getProperties() ?? [];
             $objectData       = $entity->getObject();
 
+            // First, ensure all file array properties exist in objectData (even if empty)
+            // This is important for properties that have been set to empty arrays
+            foreach ($schemaProperties as $propertyName => $propertyConfig) {
+                if ($this->isFilePropertyConfig($propertyConfig)) {
+                    $isArrayProperty = ($propertyConfig['type'] ?? '') === 'array';
+                    
+                    // If it's an array property and not set, initialize it as empty array
+                    if ($isArrayProperty && !isset($objectData[$propertyName])) {
+                        $objectData[$propertyName] = [];
+                    }
+                }
+            }
+
             // Process each property in the object data
             foreach ($objectData as $propertyName => $propertyValue) {
                 // Skip metadata properties
@@ -695,6 +708,79 @@ class RenderObject
         }//end if
 
     }//end hydrateFileProperty()
+
+
+    /**
+     * Hydrates metadata (@self) from file properties after they've been converted to file objects.
+     * 
+     * This method extracts metadata like image URLs from file properties that have been
+     * hydrated with accessUrl, downloadUrl, etc.
+     *
+     * @param ObjectEntity $entity The entity to hydrate metadata for.
+     *
+     * @return ObjectEntity The entity with hydrated metadata.
+     */
+    private function hydrateMetadataFromFileProperties(ObjectEntity $entity): ObjectEntity
+    {
+        try {
+            // Get the schema for this object to understand property configurations
+            $schema = $this->getSchema($entity->getSchema());
+            if ($schema === null) {
+                return $entity;
+            }
+
+            $config = $schema->getConfiguration();
+            $objectData = $entity->getObject();
+
+            // Check if objectImageField is configured
+            if (!empty($config['objectImageField'])) {
+                $imageField = $config['objectImageField'];
+                
+                // Get the value from the configured field
+                $value = $this->getValueFromPath($objectData, $imageField);
+                
+                // Check if the value is a file object (has downloadUrl or accessUrl)
+                if (is_array($value) && (isset($value['downloadUrl']) || isset($value['accessUrl']))) {
+                    // Set the image URL on the entity itself (not in object data)
+                    // This will be serialized to @self.image in jsonSerialize()
+                    // Prefer downloadUrl, fallback to accessUrl
+                    $entity->setImage($value['downloadUrl'] ?? $value['accessUrl']);
+                } else {
+                    // If the file property is null/empty, set image to null
+                    $entity->setImage(null);
+                }
+            }
+        } catch (\Exception $e) {
+            // Log error but don't break rendering - just return original entity
+        }
+
+        return $entity;
+    }//end hydrateMetadataFromFileProperties()
+
+
+    /**
+     * Helper method to get a value from a nested path in an array.
+     *
+     * @param array  $data The data array.
+     * @param string $path The path (e.g., 'logo' or 'nested.field').
+     *
+     * @return mixed|null The value at the path or null if not found.
+     */
+    private function getValueFromPath(array $data, string $path)
+    {
+        $keys = explode('.', $path);
+        $value = $data;
+
+        foreach ($keys as $key) {
+            if (is_array($value) && isset($value[$key])) {
+                $value = $value[$key];
+            } else {
+                return null;
+            }
+        }
+
+        return $value;
+    }//end getValueFromPath()
 
 
     /**
@@ -821,6 +907,9 @@ class RenderObject
 
         // Hydrate file properties (replace file IDs with file objects)
         $entity = $this->renderFileProperties($entity);
+
+        // Hydrate metadata from file properties (e.g., extract accessUrl for image metadata)
+        $entity = $this->hydrateMetadataFromFileProperties($entity);
 
         // Get the object data as an array for manipulation.
         $objectData = $entity->getObject();
