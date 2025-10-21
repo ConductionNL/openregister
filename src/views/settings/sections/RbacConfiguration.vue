@@ -61,7 +61,7 @@
 					</span>
 				</p>
 			</div>
-			
+
 			<!-- Enable RBAC Toggle -->
 			<div class="option-section">
 				<NcCheckboxRadioSwitch
@@ -158,7 +158,7 @@ import Save from 'vue-material-design-icons/ContentSave.vue'
 
 export default {
 	name: 'RbacConfiguration',
-	
+
 	components: {
 		NcSettingsSection,
 		NcButton,
@@ -178,7 +178,7 @@ export default {
 			},
 			set(value) {
 				this.settingsStore.rbacOptions = value
-			}
+			},
 		},
 
 		groupOptions() {
@@ -330,13 +330,13 @@ export default {
 		grid-template-columns: 1fr;
 		gap: 12px;
 	}
-	
+
 	.section-header-inline {
 		flex-direction: column;
 		gap: 12px;
 		align-items: stretch;
 	}
-	
+
 	.button-group {
 		justify-content: center;
 	}

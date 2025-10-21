@@ -2,8 +2,8 @@
 	<NcDialog
 		v-if="navigationStore.dialog === 'deleteConfigSet' && navigationStore.transferData"
 		:name="t('openregister', 'Delete ConfigSet')"
-		@closing="closeDialog"
-		:size="'normal'">
+		:size="'normal'"
+		@closing="closeDialog">
 		<div class="delete-configset-dialog">
 			<p>{{ t('openregister', 'Are you sure you want to delete this ConfigSet?') }}</p>
 			<div class="warning-box">
@@ -41,21 +41,21 @@ import { navigationStore } from '../../store/store.js'
 
 export default {
 	name: 'DeleteConfigSetDialog',
-	
+
 	components: {
 		NcDialog,
 		NcButton,
 		NcLoadingIcon,
 		Delete,
 	},
-	
+
 	data() {
 		return {
 			navigationStore,
 			deleting: false,
 		}
 	},
-	
+
 	methods: {
 		closeDialog() {
 			navigationStore.setDialog(false)
@@ -128,4 +128,3 @@ export default {
 	border-top: 1px solid var(--color-border);
 }
 </style>
-

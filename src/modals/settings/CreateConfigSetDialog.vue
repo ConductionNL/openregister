@@ -2,11 +2,11 @@
 	<NcDialog
 		v-if="navigationStore.dialog === 'createConfigSet'"
 		:name="t('openregister', 'Create New ConfigSet')"
-		@closing="closeDialog"
-		:size="'normal'">
+		:size="'normal'"
+		@closing="closeDialog">
 		<div class="create-configset-dialog">
 			<p>{{ t('openregister', 'Create a new ConfigSet based on the _default template') }}</p>
-			
+
 			<div class="form-group">
 				<label>{{ t('openregister', 'ConfigSet Name') }}*</label>
 				<input
@@ -14,7 +14,7 @@
 					type="text"
 					:placeholder="t('openregister', 'Enter ConfigSet name')"
 					class="configset-name-input"
-					@keyup.enter="!creating && configSetName && createConfigSet()" />
+					@keyup.enter="!creating && configSetName && createConfigSet()">
 				<p class="form-hint">
 					{{ t('openregister', 'This will copy the _default ConfigSet with the new name') }}
 				</p>
@@ -49,25 +49,20 @@ import { navigationStore } from '../../store/store.js'
 
 export default {
 	name: 'CreateConfigSetDialog',
-	
+
 	components: {
 		NcDialog,
 		NcButton,
 		NcLoadingIcon,
 		Plus,
 	},
-	
+
 	data() {
 		return {
 			navigationStore,
 			configSetName: '',
 			creating: false,
 		}
-	},
-
-	mounted() {
-		console.log('✅ CreateConfigSetDialog mounted')
-		console.log('✅ navigationStore.dialog:', navigationStore.dialog)
 	},
 
 	watch: {
@@ -79,7 +74,12 @@ export default {
 			immediate: true,
 		},
 	},
-	
+
+	mounted() {
+		console.log('✅ CreateConfigSetDialog mounted')
+		console.log('✅ navigationStore.dialog:', navigationStore.dialog)
+	},
+
 	methods: {
 		closeDialog() {
 			navigationStore.setDialog(false)
@@ -161,4 +161,3 @@ export default {
 	border-top: 1px solid var(--color-border);
 }
 </style>
-

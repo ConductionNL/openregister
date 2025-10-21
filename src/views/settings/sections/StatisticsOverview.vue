@@ -298,7 +298,7 @@
 					<div class="mass-validate-info">
 						<h4>🔄 Mass Validate Objects</h4>
 						<p class="mass-validate-description">
-							Re-save all objects in the system to trigger business logic validation and processing. 
+							Re-save all objects in the system to trigger business logic validation and processing.
 							This ensures all objects are properly processed according to current rules and schemas.
 						</p>
 						<div class="mass-validate-actions">
@@ -336,7 +336,7 @@
 					It will also assign default owners and organizations to objects that don't have them assigned.
 				</p>
 				<p><strong>This operation may take some time to complete.</strong></p>
-				
+
 				<div class="dialog-actions">
 					<NcButton @click="settingsStore.hideRebaseDialog">
 						Cancel
@@ -355,7 +355,7 @@
 		</NcDialog>
 
 		<!-- Mass Validate Modal -->
-		<MassValidateModal 
+		<MassValidateModal
 			:show="showMassValidateModal"
 			:object-stats="objectStats"
 			:mass-validating="massValidating"
@@ -367,8 +367,7 @@
 			@close="closeMassValidateModal"
 			@start-validate="handleStartMassValidate"
 			@retry="handleRetryMassValidate"
-			@reset="handleResetMassValidate"
-		/>
+			@reset="handleResetMassValidate" />
 
 		<!-- Clear Audit Trails Confirmation Dialog -->
 		<NcDialog v-if="showClearAuditTrailsConfirmation"
@@ -383,7 +382,7 @@
 				</p>
 				<p><strong>Current audit trails: {{ stats.totals.totalAuditTrails }}</strong></p>
 				<p><strong>This operation may take some time to complete.</strong></p>
-				
+
 				<div class="dialog-actions">
 					<NcButton @click="hideClearAuditTrailsDialog">
 						Cancel
@@ -414,7 +413,7 @@
 				</p>
 				<p><strong>Current search trails: {{ stats.totals.totalSearchTrails }}</strong></p>
 				<p><strong>This operation may take some time to complete.</strong></p>
-				
+
 				<div class="dialog-actions">
 					<NcButton @click="hideClearSearchTrailsDialog">
 						Cancel
@@ -445,7 +444,7 @@ import { MassValidateModal } from '../../../modals/settings'
 
 export default {
 	name: 'StatisticsOverview',
-	
+
 	components: {
 		NcSettingsSection,
 		NcButton,
@@ -459,27 +458,27 @@ export default {
 
 	computed: {
 		...mapStores(useSettingsStore),
-		
+
 		stats() {
 			return this.settingsStore.stats
 		},
-		
+
 		loadingStats() {
 			return this.settingsStore.loadingStats
 		},
-		
+
 		loading() {
 			return this.settingsStore.loading
 		},
-		
+
 		saving() {
 			return this.settingsStore.saving
 		},
-		
+
 		rebasing() {
 			return this.settingsStore.rebasing
 		},
-		
+
 		showRebaseConfirmation() {
 			return this.settingsStore.showRebaseConfirmation
 		},
@@ -511,7 +510,7 @@ export default {
 		showClearSearchTrailsConfirmation() {
 			return this.settingsStore.showClearSearchTrailsConfirmation
 		},
-		
+
 		/**
 		 * Check if there are any warnings that require attention
 		 *
@@ -540,8 +539,8 @@ export default {
 				prediction_safe: true,
 				formatted: {
 					total_predicted: 'Unknown',
-					available: 'Unknown'
-				}
+					available: 'Unknown',
+				},
 			},
 			memoryPredictionLoading: false,
 		}
@@ -555,7 +554,7 @@ export default {
 		async openMassValidateModal() {
 			// Open modal immediately for better UX
 			this.showMassValidateModal = true
-			
+
 			// Load object stats and memory prediction in background
 			this.loadObjectStats()
 			this.loadMemoryPrediction(0) // Default to all objects
@@ -570,7 +569,7 @@ export default {
 		async handleStartMassValidate(config) {
 			this.massValidateCompleted = false
 			this.massValidateConfig = { ...config }
-			
+
 			try {
 				await this.settingsStore.massValidate(config)
 				this.massValidateCompleted = true
@@ -597,7 +596,7 @@ export default {
 
 		async loadObjectStats() {
 			this.objectStats.loading = true
-			
+
 			try {
 				// Get the total objects from the store stats
 				const totalObjects = this.settingsStore.stats?.totals?.totalObjects || 0
@@ -821,13 +820,13 @@ export default {
 	.stats-grid {
 		grid-template-columns: 1fr;
 	}
-	
+
 	.section-header-inline {
 		flex-direction: column;
 		gap: 12px;
 		align-items: stretch;
 	}
-	
+
 	.button-group {
 		justify-content: center;
 	}

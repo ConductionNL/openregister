@@ -3,9 +3,8 @@
 		v-if="show"
 		name="Inspect SOLR Index"
 		:can-close="!loading"
-		@closing="$emit('close')"
-		size="large">
-		
+		size="large"
+		@closing="$emit('close')">
 		<div class="inspect-index-modal">
 			<!-- Search Controls -->
 			<div class="search-controls">
@@ -19,31 +18,30 @@
 							<Magnify :size="20" />
 						</template>
 					</NcTextField>
-					
-					<NcButton type="primary" @click="searchDocuments" :disabled="loading">
+
+					<NcButton type="primary" :disabled="loading" @click="searchDocuments">
 						<template #icon>
 							<Magnify :size="20" />
 						</template>
 						Search
 					</NcButton>
-					
-					<NcButton type="tertiary" @click="openQueryHelp" :disabled="loading">
+
+					<NcButton type="tertiary" :disabled="loading" @click="openQueryHelp">
 						<template #icon>
 							<InformationOutline :size="20" />
 						</template>
 						Query Help
 					</NcButton>
 				</div>
-				
+
 				<div class="filter-row">
 					<NcSelect
 						v-model="selectedFields"
 						:options="availableFields"
 						label="Fields to Display"
 						multiple
-						placeholder="Select fields to display">
-					</NcSelect>
-					
+						placeholder="Select fields to display" />
+
 					<div class="pagination-controls">
 						<span class="pagination-info">
 							Showing {{ startIndex + 1 }}-{{ Math.min(startIndex + pageSize, totalResults) }} of {{ totalResults }}
@@ -79,10 +77,14 @@
 				<div class="error-banner">
 					<div class="error-header">
 						<AlertCircle :size="24" class="error-icon" />
-						<h3 class="error-title">Search Failed</h3>
+						<h3 class="error-title">
+							Search Failed
+						</h3>
 					</div>
 					<div class="error-content">
-						<p class="error-message">{{ error }}</p>
+						<p class="error-message">
+							{{ error }}
+						</p>
 						<div v-if="errorDetails" class="error-details">
 							<NcButton type="tertiary" @click="showErrorDetails = !showErrorDetails">
 								<template #icon>
@@ -105,7 +107,7 @@
 					<h3>Search Results</h3>
 					<span class="results-count">{{ totalResults }} documents found</span>
 				</div>
-				
+
 				<div class="documents-list">
 					<div
 						v-for="(document, index) in documents"
@@ -113,7 +115,6 @@
 						class="document-card"
 						:class="{ 'expanded': expandedDocs.includes(index) }"
 						@click="toggleDocument(index)">
-						
 						<div class="document-header">
 							<div class="document-title">
 								<strong>Document {{ startIndex + index + 1 }}</strong>
@@ -129,7 +130,7 @@
 								</template>
 							</NcButton>
 						</div>
-						
+
 						<!-- Document Preview (always visible) -->
 						<div class="document-preview">
 							<div
@@ -140,7 +141,7 @@
 								<span class="field-value">{{ truncateValue(field.value) }}</span>
 							</div>
 						</div>
-						
+
 						<!-- Full Document (expandable) -->
 						<div v-if="expandedDocs.includes(index)" class="document-details">
 							<div class="document-fields">
@@ -269,17 +270,17 @@ export default {
 			return (document) => {
 				const previewFields = ['id', 'title', 'naam', 'name', 'self_tenant', 'created', 'updated']
 				const fields = []
-				
+
 				for (const fieldName of previewFields) {
 					if (document[fieldName] !== undefined) {
 						fields.push({
 							name: fieldName,
-							value: document[fieldName]
+							value: document[fieldName],
 						})
 						if (fields.length >= 3) break
 					}
 				}
-				
+
 				// If no standard fields found, show first 3 fields
 				if (fields.length === 0) {
 					const allFields = Object.entries(document).slice(0, 3)
@@ -287,7 +288,7 @@ export default {
 						fields.push({ name, value })
 					}
 				}
-				
+
 				return fields
 			}
 		},
@@ -327,23 +328,23 @@ export default {
 			this.loading = true
 			this.error = null
 			this.errorDetails = null
-			
+
 			try {
 				const params = {
 					query: this.searchQuery || '*:*',
 					start: this.startIndex,
 					rows: this.pageSize,
 				}
-				
+
 				if (this.selectedFields.length > 0) {
 					params.fields = this.selectedFields.map(f => f.id).join(',')
 				}
-				
+
 				const response = await axios.post(
 					generateUrl('/apps/openregister/api/settings/solr/inspect'),
-					params
+					params,
 				)
-				
+
 				if (response.data.success) {
 					this.documents = response.data.documents || []
 					this.totalResults = response.data.total || 0
@@ -352,7 +353,7 @@ export default {
 					this.error = response.data.error || 'Unknown error occurred'
 					this.errorDetails = response.data.error_details || null
 				}
-				
+
 			} catch (error) {
 				console.error('SOLR inspect search failed:', error)
 				this.error = error.response?.data?.error || error.message || 'Search request failed'
@@ -384,6 +385,7 @@ export default {
 
 		/**
 		 * Toggle document expansion
+		 * @param index
 		 */
 		toggleDocument(index) {
 			const docIndex = this.expandedDocs.indexOf(index)
@@ -396,6 +398,7 @@ export default {
 
 		/**
 		 * Truncate long values for preview
+		 * @param value
 		 */
 		truncateValue(value) {
 			if (typeof value !== 'string') {
@@ -406,6 +409,7 @@ export default {
 
 		/**
 		 * Get field type for display
+		 * @param value
 		 */
 		getFieldType(value) {
 			if (Array.isArray(value)) return 'array'
@@ -423,6 +427,7 @@ export default {
 
 		/**
 		 * Check if value is complex (object/array)
+		 * @param value
 		 */
 		isComplexValue(value) {
 			return typeof value === 'object' && value !== null
@@ -430,6 +435,7 @@ export default {
 
 		/**
 		 * Get CSS class for field based on name and type
+		 * @param fieldName
 		 */
 		getFieldClass(fieldName) {
 			if (fieldName === 'id' || fieldName.endsWith('_id')) return 'field-id'
@@ -476,34 +482,34 @@ export default {
 	margin-bottom: 20px;
 	border-bottom: 1px solid var(--color-border);
 	padding-bottom: 20px;
-	
+
 	.search-row {
 		display: flex;
 		gap: 12px;
 		margin-bottom: 16px;
 		align-items: flex-end;
-		
+
 		.text-field {
 			flex: 1;
 		}
 	}
-	
+
 	.filter-row {
 		display: flex;
 		gap: 12px;
 		align-items: center;
 		flex-wrap: wrap;
-		
+
 		.multiselect {
 			flex: 1;
 			min-width: 200px;
 		}
-		
+
 		.pagination-controls {
 			display: flex;
 			align-items: center;
 			gap: 8px;
-			
+
 			.pagination-info {
 				font-size: 14px;
 				color: var(--color-text-maxcontrast);
@@ -517,20 +523,20 @@ export default {
 	text-align: center;
 	padding: 60px 20px;
 	color: var(--color-text-maxcontrast);
-	
+
 	.loading-icon, .initial-icon, .no-results-icon {
 		margin-bottom: 16px;
 		opacity: 0.7;
 	}
-	
+
 	h3 {
 		margin-bottom: 8px;
 		color: var(--color-main-text);
 	}
-	
+
 	p {
 		margin-bottom: 8px;
-		
+
 		code {
 			background: var(--color-background-dark);
 			padding: 2px 6px;
@@ -547,35 +553,35 @@ export default {
 		border-radius: var(--border-radius-large);
 		padding: 16px;
 		margin-bottom: 20px;
-		
+
 		.error-header {
 			display: flex;
 			align-items: center;
 			gap: 12px;
 			margin-bottom: 12px;
-			
+
 			.error-icon {
 				flex-shrink: 0;
 			}
-			
+
 			.error-title {
 				margin: 0;
 				font-size: 18px;
 				font-weight: 600;
 			}
 		}
-		
+
 		.error-message {
 			margin-bottom: 12px;
 			font-weight: 500;
 		}
-		
+
 		.error-details-content {
 			margin-top: 12px;
 			background: rgba(255, 255, 255, 0.1);
 			border-radius: var(--border-radius);
 			padding: 12px;
-			
+
 			pre {
 				margin: 0;
 				font-size: 12px;
@@ -592,11 +598,11 @@ export default {
 		justify-content: space-between;
 		align-items: center;
 		margin-bottom: 16px;
-		
+
 		h3 {
 			margin: 0;
 		}
-		
+
 		.results-count {
 			color: var(--color-text-maxcontrast);
 			font-size: 14px;
@@ -612,29 +618,29 @@ export default {
 		background: var(--color-main-background);
 		transition: all 0.2s ease;
 		cursor: pointer;
-		
+
 		&:hover {
 			border-color: var(--color-primary-element);
 			box-shadow: 0 2px 8px var(--color-box-shadow);
 		}
-		
+
 		&.expanded {
 			border-color: var(--color-primary-element);
 			box-shadow: 0 4px 12px var(--color-box-shadow);
 		}
-		
+
 		.document-header {
 			display: flex;
 			justify-content: space-between;
 			align-items: center;
 			padding: 16px;
 			border-bottom: 1px solid var(--color-border);
-			
+
 			.document-title {
 				display: flex;
 				flex-direction: column;
 				gap: 4px;
-				
+
 				.document-id {
 					font-size: 12px;
 					color: var(--color-text-maxcontrast);
@@ -642,78 +648,78 @@ export default {
 				}
 			}
 		}
-		
+
 		.document-preview {
 			padding: 16px;
-			
+
 			.preview-field {
 				display: flex;
 				gap: 8px;
 				margin-bottom: 8px;
-				
+
 				&:last-child {
 					margin-bottom: 0;
 				}
-				
+
 				.field-name {
 					font-weight: 500;
 					color: var(--color-text-maxcontrast);
 					min-width: 80px;
 				}
-				
+
 				.field-value {
 					color: var(--color-main-text);
 					word-break: break-word;
 				}
 			}
 		}
-		
+
 		.document-details {
 			border-top: 1px solid var(--color-border);
 			background: var(--color-background-hover);
-			
+
 			.document-fields {
 				padding: 16px;
-				
+
 				.document-field {
 					margin-bottom: 16px;
 					padding: 12px;
 					background: var(--color-main-background);
 					border-radius: var(--border-radius);
 					border-left: 3px solid var(--color-border);
-					
+
 					&:last-child {
 						margin-bottom: 0;
 					}
-					
+
 					&.field-id {
 						border-left-color: var(--color-primary-element);
 					}
-					
+
 					&.field-tenant {
 						border-left-color: var(--color-warning);
 					}
-					
+
 					&.field-datetime {
 						border-left-color: var(--color-success);
 					}
-					
+
 					&.field-system {
 						border-left-color: var(--color-text-maxcontrast);
 					}
-					
+
 					.field-header {
 						display: flex;
 						justify-content: space-between;
 						align-items: center;
 						margin-bottom: 8px;
-						
+
 						.field-name {
 							font-weight: 600;
 							font-family: monospace;
 							color: var(--color-main-text);
 						}
-						
+
 						.field-type {
 							font-size: 12px;
 							background: var(--color-background-dark);
@@ -722,14 +728,14 @@ export default {
 							color: var(--color-text-maxcontrast);
 						}
 					}
-					
+
 					.field-content {
 						.field-value {
 							&.simple {
 								color: var(--color-main-text);
 								word-break: break-word;
 							}
-							
+
 							&.complex {
 								background: var(--color-background-dark);
 								border-radius: var(--border-radius);

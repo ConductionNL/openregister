@@ -1,7 +1,7 @@
 <template>
 	<div id="openregister_settings" class="section">
 		<h2>{{ t('openregister', 'OpenRegister Settings') }}</h2>
-		
+
 		<!-- Version Information Section -->
 		<NcSettingsSection name="Version Information"
 			description="Information about the current OpenRegister installation">
@@ -25,7 +25,6 @@
 				:size="64"
 				appearance="dark" />
 		</NcSettingsSection>
-
 
 		<!-- System Statistics Section -->
 		<StatisticsOverview />
@@ -67,7 +66,7 @@ import Dialogs from '../../dialogs/Dialogs.vue'
 /**
  * @class Settings
  * @module Components
- * @package OpenRegister
+ * @package
  * 
  * Main settings component that orchestrates all settings sections using Pinia store.
  * This component serves as a container and delegates all data management to the settings store.
@@ -80,7 +79,7 @@ import Dialogs from '../../dialogs/Dialogs.vue'
  */
 export default {
 	name: 'Settings',
-	
+
 	components: {
 		NcSettingsSection,
 		NcLoadingIcon,
@@ -103,17 +102,17 @@ export default {
 	 */
 	async created() {
 		console.log('🔧 Settings component created - loading data from store')
-		
+
 		try {
 			// Load all settings data through the store
 			await this.settingsStore.loadSettings()
-			
+
 			// Load additional data that might be needed
 			await Promise.allSettled([
 				this.settingsStore.loadStats(),
 				this.settingsStore.loadCacheStats(),
 			])
-			
+
 			console.log('✅ Settings data loaded successfully')
 		} catch (error) {
 			console.error('❌ Failed to load settings data:', error)
@@ -185,7 +184,7 @@ export default {
 	#openregister_settings {
 		padding: 10px;
 	}
-	
+
 	.version-item {
 		flex-direction: column;
 		align-items: flex-start;

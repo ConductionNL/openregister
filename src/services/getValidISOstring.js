@@ -9,14 +9,13 @@
  * @param  { string | Date } dateString The date string or Date object to be converted.
  * @return { string | null } The ISO string representation of the date or null.
  */
-export default function getValidISOstring(dateString)
-{
-    const date = new Date(dateString)
+export default function getValidISOstring(dateString) {
+	const date = new Date(dateString)
 
-    if (!isNaN(date.getTime())) {
-        return date.toISOString()
-    } else {
-        return null
-    }
+	if (!isNaN(date.getTime())) {
+		return date.toISOString()
+	} else {
+		return null
+	}
 
 }

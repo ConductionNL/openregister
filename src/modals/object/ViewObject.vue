@@ -527,7 +527,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					</template>
 					Add File
 				</NcButton>
-				<NcButton @click="viewAuditTrails" v-if="!isNewObject">
+				<NcButton v-if="!isNewObject" @click="viewAuditTrails">
 					<template #icon>
 						<TextBoxOutline :size="20" />
 					</template>
@@ -729,9 +729,9 @@ export default {
 				currentSchema: this.currentSchema,
 				isNewObject: this.isNewObject,
 				schemaId: this.currentSchema?.id,
-				schemaProperties: this.currentSchema?.properties
+				schemaProperties: this.currentSchema?.properties,
 			})
-			
+
 			// For new objects, show schema properties with default values
 			if (!objectStore?.objectItem) {
 				const schemaProperties = this.currentSchema?.properties
@@ -739,10 +739,10 @@ export default {
 					console.log('No schema properties available')
 					return []
 				}
-				
+
 				console.log('Schema properties found:', Object.keys(schemaProperties))
 				const defaultProperties = []
-				
+
 				for (const [key, schemaProperty] of Object.entries(schemaProperties)) {
 					// Add with appropriate default value based on type
 					let defaultValue
@@ -768,7 +768,7 @@ export default {
 					}
 					defaultProperties.push([key, defaultValue])
 				}
-				
+
 				console.log('objectProperties returning default properties:', defaultProperties)
 				return defaultProperties
 			}
@@ -888,9 +888,9 @@ export default {
 			console.log('formFields computed called:', {
 				currentSchema: this.currentSchema,
 				hasProperties: this.currentSchema?.properties,
-				propertiesCount: this.currentSchema?.properties ? Object.keys(this.currentSchema.properties).length : 0
+				propertiesCount: this.currentSchema?.properties ? Object.keys(this.currentSchema.properties).length : 0,
 			})
-			
+
 			// Combine schema properties and object properties
 			const fields = {}
 
@@ -1087,9 +1087,9 @@ export default {
 			objectItem: objectStore.objectItem,
 			schemaItem: schemaStore.schemaItem,
 			registerItem: registerStore.registerItem,
-			isNewObject: this.isNewObject
+			isNewObject: this.isNewObject,
 		})
-		
+
 		// Initialize data when modal opens
 		this.initializeData()
 		this.loadTitles()
@@ -1229,9 +1229,9 @@ export default {
 			console.log('initializeData called:', {
 				objectItem: objectStore.objectItem,
 				currentSchema: this.currentSchema,
-				currentRegister: this.currentRegister
+				currentRegister: this.currentRegister,
 			})
-			
+
 			// Initialize with empty data for new objects
 			if (!objectStore.objectItem) {
 				const initialData = {
@@ -1259,7 +1259,7 @@ export default {
 			const initialData = { ...objectStore.objectItem }
 			this.formData = initialData
 			this.jsonData = JSON.stringify(initialData, null, 2)
-			
+
 		},
 
 		async saveObject() {
@@ -1308,7 +1308,7 @@ export default {
 		},
 		updateFormFromJson() {
 			if (this.isInternalUpdate) return
-			
+
 			try {
 				this.isInternalUpdate = true
 				const parsed = JSON.parse(this.jsonData)
@@ -1324,7 +1324,7 @@ export default {
 
 		updateJsonFromForm() {
 			if (this.isInternalUpdate) return
-			
+
 			try {
 				this.isInternalUpdate = true
 				this.jsonData = JSON.stringify(this.formData, null, 2)
