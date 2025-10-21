@@ -287,14 +287,14 @@ Files uploaded to this property will now be automatically publicly shared.
 
 #### Configuration via API
 
-In your schema definition, add the 'autoShare' option to file properties:
+In your schema definition, add the 'autoPublish' option to file properties:
 
 ```json
 {
   'properties': {
     'productImage': {
       'type': 'file',
-      'autoShare': true,
+      'autoPublish': true,
       'allowedTypes': ['image/jpeg', 'image/png'],
       'maxSize': 5242880
     }
@@ -302,10 +302,39 @@ In your schema definition, add the 'autoShare' option to file properties:
 }
 ```
 
-When 'autoShare' is set to 'true', files uploaded to this property will automatically:
+When 'autoPublish' is set to 'true', files uploaded to this property will automatically:
 - Create a public share link
 - Set the 'published' timestamp
 - Generate a public 'accessUrl' and 'downloadUrl'
+
+#### Important: Property-Level vs Schema-Level autoPublish
+
+⚠️ **Don't confuse these two different 'autoPublish' settings:**
+
+**1. Property-Level autoPublish** (this section):
+```json
+{
+  'properties': {
+    'productImage': {
+      'type': 'file',
+      'autoPublish': true  // ← Controls if FILES are published
+    }
+  }
+}
+```
+Controls whether files uploaded to this specific property are automatically shared publicly.
+
+**2. Schema-Level autoPublish** (different setting):
+```json
+{
+  'configuration': {
+    'autoPublish': true  // ← Controls if OBJECTS are published
+  }
+}
+```
+Controls whether the object entity itself is published (has nothing to do with file sharing).
+
+**These are completely separate settings** with different purposes. Setting one does NOT affect the other.
 
 #### Example Response
 
@@ -368,7 +397,7 @@ When a schema is configured to extract metadata fields like 'image' or 'logo' fr
     'logo': {
       'type': 'file',
       'allowedTypes': ['image/png', 'image/jpeg'],
-      'autoShare': true
+      'autoPublish': true
     }
   },
   'configuration': {
@@ -453,7 +482,7 @@ This will:
 5. **Implement Retention Policies**: Define how long files should be kept
 6. **Plan for Backup**: Ensure files are included in backup strategies
 7. **Consider Performance**: Optimize file storage for your access patterns
-8. **Use Auto-Share Wisely**: Only enable 'autoShare' for files that should be publicly accessible
+8. **Use Auto-Publish Wisely**: Only enable property-level 'autoPublish' for files that should be publicly accessible. Remember: property 'autoPublish' (file sharing) is different from schema 'autoPublish' (object publishing)
 9. **Document File Deletion**: Maintain audit trails when files are deleted for compliance
 10. **Handle Authentication**: Use authenticated URLs for sensitive files
 

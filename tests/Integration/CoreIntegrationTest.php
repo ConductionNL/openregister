@@ -318,6 +318,65 @@ class CoreIntegrationTest extends TestCase
         $this->createdObjectIds[] = $data['id'];
     }
 
+    public function testArrayOfMultipleFilesMultipart(): void
+    {
+        $image1Tmp = tmpfile();
+        fwrite($image1Tmp, "\xFF\xD8\xFF\xE0\x00\x10");
+        $image1Path = stream_get_meta_data($image1Tmp)['uri'];
+
+        $image2Tmp = tmpfile();
+        fwrite($image2Tmp, "\xFF\xD8\xFF\xE0\x00\x20");
+        $image2Path = stream_get_meta_data($image2Tmp)['uri'];
+
+        $image3Tmp = tmpfile();
+        fwrite($image3Tmp, "\xFF\xD8\xFF\xE0\x00\x30");
+        $image3Path = stream_get_meta_data($image3Tmp)['uri'];
+
+        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->gallerySchemaSlug}", [
+            'multipart' => [
+                ['name' => 'title', 'contents' => 'Multiple Files Gallery'],
+                ['name' => 'images[]', 'contents' => fopen($image1Path, 'r'), 'filename' => 'photo1.jpg', 'headers' => ['Content-Type' => 'image/jpeg']],
+                ['name' => 'images[]', 'contents' => fopen($image2Path, 'r'), 'filename' => 'photo2.jpg', 'headers' => ['Content-Type' => 'image/jpeg']],
+                ['name' => 'images[]', 'contents' => fopen($image3Path, 'r'), 'filename' => 'photo3.jpg', 'headers' => ['Content-Type' => 'image/jpeg']],
+            ]
+        ]);
+
+        $this->assertEquals(201, $response->getStatusCode());
+        $data = json_decode($response->getBody(), true);
+        $this->assertArrayHasKey('images', $data);
+        $this->assertIsArray($data['images']);
+        $this->assertCount(3, $data['images'], 'Should have uploaded 3 images');
+        $this->createdObjectIds[] = $data['id'];
+        fclose($image1Tmp);
+        fclose($image2Tmp);
+        fclose($image3Tmp);
+    }
+
+    public function testArrayOfMultipleFilesBase64(): void
+    {
+        $image1 = base64_encode("\xFF\xD8\xFF\xE0\x00\x10");
+        $image2 = base64_encode("\xFF\xD8\xFF\xE0\x00\x20");
+        $image3 = base64_encode("\xFF\xD8\xFF\xE0\x00\x30");
+
+        $response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->gallerySchemaSlug}", [
+            'json' => [
+                'title' => 'Multiple Base64 Gallery',
+                'images' => [
+                    "data:image/jpeg;base64,{$image1}",
+                    "data:image/jpeg;base64,{$image2}",
+                    "data:image/jpeg;base64,{$image3}"
+                ]
+            ]
+        ]);
+
+        $this->assertEquals(201, $response->getStatusCode());
+        $data = json_decode($response->getBody(), true);
+        $this->assertArrayHasKey('images', $data);
+        $this->assertIsArray($data['images']);
+        $this->assertCount(3, $data['images'], 'Should have uploaded 3 images via base64');
+        $this->createdObjectIds[] = $data['id'];
+    }
+
     public function testValidationWrongMimeType(): void
     {
         $imageTmp = tmpfile();
@@ -546,8 +605,8 @@ class CoreIntegrationTest extends TestCase
 
     public function testAutoShareFileProperty(): void
     {
-        // Create schema with autoShare enabled
-        $autoShareSchemaResponse = $this->client->post('/index.php/apps/openregister/api/schemas', [
+        // Create schema with autoPublish enabled
+        $autoPublishSchemaResponse = $this->client->post('/index.php/apps/openregister/api/schemas', [
             'json' => [
                 'register' => $this->registerId,
                 'slug' => 'auto-share-' . uniqid(),
@@ -556,21 +615,21 @@ class CoreIntegrationTest extends TestCase
                     'title' => ['type' => 'string'],
                     'document' => [
                         'type' => 'file',
-                        'autoShare' => true
+                        'autoPublish' => true
                     ],
                 ],
             ]
         ]);
-        $this->assertEquals(201, $autoShareSchemaResponse->getStatusCode());
-        $autoShareSchema = json_decode($autoShareSchemaResponse->getBody(), true);
-        $this->createdSchemaIds[] = $autoShareSchema['id'];
+        $this->assertEquals(201, $autoPublishSchemaResponse->getStatusCode());
+        $autoPublishSchema = json_decode($autoPublishSchemaResponse->getBody(), true);
+        $this->createdSchemaIds[] = $autoPublishSchema['id'];
 
         $pdfTmp = tmpfile();
         fwrite($pdfTmp, '%PDF-1.4 auto-share test');
         $pdfPath = stream_get_meta_data($pdfTmp)['uri'];
 
         // Create object with file
-        $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$autoShareSchema['slug']}", [
+        $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$autoPublishSchema['slug']}", [
             'multipart' => [
                 ['name' => 'title', 'contents' => 'Auto-Share Test'],
                 ['name' => 'document', 'contents' => fopen($pdfPath, 'r'), 'filename' => 'test.pdf', 'headers' => ['Content-Type' => 'application/pdf']],
@@ -586,7 +645,7 @@ class CoreIntegrationTest extends TestCase
         $file = $object['document'];
         $this->assertIsArray($file);
         $this->assertArrayHasKey('published', $file);
-        $this->assertNotNull($file['published'], 'File should be published when autoShare is enabled');
+        $this->assertNotNull($file['published'], 'File should be published when autoPublish is enabled');
 
         // Verify public share URL
         $this->assertArrayHasKey('accessUrl', $file);
@@ -608,7 +667,7 @@ class CoreIntegrationTest extends TestCase
                     'logo' => [
                         'type' => 'file',
                         'allowedTypes' => ['image/png', 'image/jpeg'],
-                        'autoShare' => true
+                        'autoPublish' => true
                     ],
                 ],
                 'configuration' => [
@@ -636,13 +695,81 @@ class CoreIntegrationTest extends TestCase
         $object = json_decode($createResponse->getBody(), true);
         $this->createdObjectIds[] = $object['id'];
 
-        // Verify @self.image contains the share URL
+        // Verify @self.image contains the downloadUrl
         $this->assertArrayHasKey('@self', $object);
         $this->assertArrayHasKey('image', $object['@self']);
         $this->assertIsString($object['@self']['image']);
         $this->assertStringContainsString('/index.php/s/', $object['@self']['image'], 'Image metadata should contain share URL');
+        $this->assertStringContainsString('/download', $object['@self']['image'], 'Image should use downloadUrl for public access');
 
         fclose($imageTmp);
+    }
+
+    public function testImageMetadataFromFileArrayProperty(): void
+    {
+        // Create schema with objectImageField pointing to an array property
+        // Should use the first file in the array as the image
+        $arrayImageSchemaResponse = $this->client->post('/index.php/apps/openregister/api/schemas', [
+            'json' => [
+                'register' => $this->registerId,
+                'slug' => 'array-image-test-' . uniqid(),
+                'title' => 'Array Image Test Schema',
+                'properties' => [
+                    'title' => ['type' => 'string'],
+                    'photos' => [
+                        'type' => 'array',
+                        'items' => [
+                            'type' => 'file',
+                            'allowedTypes' => ['image/png', 'image/jpeg'],
+                            'autoPublish' => true
+                        ]
+                    ],
+                ],
+                'configuration' => [
+                    'objectImageField' => 'photos'
+                ]
+            ]
+        ]);
+        $this->assertEquals(201, $arrayImageSchemaResponse->getStatusCode());
+        $arrayImageSchema = json_decode($arrayImageSchemaResponse->getBody(), true);
+        $this->createdSchemaIds[] = $arrayImageSchema['id'];
+
+        $image1Tmp = tmpfile();
+        fwrite($image1Tmp, "\xFF\xD8\xFF\xE0\x00\x10");
+        $image1Path = stream_get_meta_data($image1Tmp)['uri'];
+
+        $image2Tmp = tmpfile();
+        fwrite($image2Tmp, "\xFF\xD8\xFF\xE0\x00\x20");
+        $image2Path = stream_get_meta_data($image2Tmp)['uri'];
+
+        // Create object with multiple photos
+        $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$arrayImageSchema['slug']}", [
+            'multipart' => [
+                ['name' => 'title', 'contents' => 'Array Image Test'],
+                ['name' => 'photos[]', 'contents' => fopen($image1Path, 'r'), 'filename' => 'photo1.jpg', 'headers' => ['Content-Type' => 'image/jpeg']],
+                ['name' => 'photos[]', 'contents' => fopen($image2Path, 'r'), 'filename' => 'photo2.jpg', 'headers' => ['Content-Type' => 'image/jpeg']],
+            ]
+        ]);
+
+        $this->assertEquals(201, $createResponse->getStatusCode());
+        $object = json_decode($createResponse->getBody(), true);
+        $this->createdObjectIds[] = $object['id'];
+
+        // Verify photos array has 2 files
+        $this->assertArrayHasKey('photos', $object);
+        $this->assertIsArray($object['photos']);
+        $this->assertCount(2, $object['photos']);
+
+        // Verify @self.image uses the FIRST photo's downloadUrl
+        $this->assertArrayHasKey('@self', $object);
+        $this->assertArrayHasKey('image', $object['@self']);
+        $this->assertIsString($object['@self']['image']);
+        // Should contain the first file's download URL (public share)
+        $this->assertStringContainsString('/index.php/s/', $object['@self']['image'], 'Image metadata should use first file from array');
+        $this->assertStringContainsString('/download', $object['@self']['image'], 'Image should use downloadUrl for public access');
+
+        fclose($image1Tmp);
+        fclose($image2Tmp);
     }
 
     public function testDeleteFileBySendingNull(): void

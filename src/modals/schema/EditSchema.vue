@@ -511,12 +511,12 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 														<NcActionSeparator />
 														<NcActionCaption name="File Configuration" />
 														<NcActionCheckbox
-															:checked="getFilePropertySetting(key, 'autoShare')"
-															@update:checked="updateFilePropertySetting(key, 'autoShare', $event)">
-															Auto-Share Files
+															:checked="getFilePropertySetting(key, 'autoPublish')"
+															@update:checked="updateFilePropertySetting(key, 'autoPublish', $event)">
+															Auto-Publish Files
 														</NcActionCheckbox>
 														<NcActionCaption
-															v-if="getFilePropertySetting(key, 'autoShare')"
+															v-if="getFilePropertySetting(key, 'autoPublish')"
 															name="ℹ️ Files uploaded to this property will be automatically publicly shared"
 															style="color: var(--color-text-lighter); font-size: 11px;" />
 														<NcActionInput
@@ -1704,7 +1704,7 @@ export default {
 			return false
 		},
 		updateFilePropertySetting(key, setting, value) {
-			// Handle boolean settings like autoShare
+			// Handle boolean settings like autoPublish
 			if (this.schemaItem.properties[key]) {
 				// Apply to both direct file properties and array[file] properties
 				if (this.schemaItem.properties[key].type === 'file') {

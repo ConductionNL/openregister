@@ -560,15 +560,108 @@ class SaveObject
         if (isset($config['objectImageField']) === true) {
             // First check if the field points to a file object
             $imageValue = $this->getValueFromPath($objectData, $config['objectImageField']);
-            if (is_array($imageValue) && isset($imageValue['accessUrl'])) {
-                // Use the accessUrl as the image URL
-                $entity->setImage($imageValue['accessUrl']);
-            } else {
-                // Otherwise extract as regular metadata value (for templates or string URLs)
-                $image = $this->extractMetadataValue($objectData, $config['objectImageField']);
-                if ($image !== null && trim($image) !== '') {
-                    $entity->setImage(trim($image));
+            
+            // Handle different value types:
+            // 1. Array of file IDs: [123, 124]
+            // 2. Array of file objects: [{accessUrl: ...}, {accessUrl: ...}]
+            // 3. Single file ID: 123
+            // 4. Single file object: {accessUrl: ...}
+            // 5. String URL
+            
+            if (is_array($imageValue) && !empty($imageValue)) {
+                // Check if first element is a file ID or file object
+                $firstElement = $imageValue[0] ?? null;
+                
+                if (is_numeric($firstElement)) {
+                    // Array of file IDs - load first file and get its download URL
+                    try {
+                        $fileNode = $this->fileService->getFile($entity, (int) $firstElement);
+                        if ($fileNode !== null) {
+                            $fileData = $this->fileService->formatFile($fileNode);
+                            
+                            // IMPORTANT: Object image requires public access
+                            // If file is not published, auto-publish it
+                            if (empty($fileData['downloadUrl'])) {
+                                $this->logger->warning(
+                                    'File configured as objectImageField is not published. Auto-publishing file.',
+                                    [
+                                        'app' => 'openregister',
+                                        'fileId' => $firstElement,
+                                        'objectId' => $entity->getId(),
+                                        'field' => $config['objectImageField']
+                                    ]
+                                );
+                                // Publish the file
+                                $this->fileService->publishFile($fileNode);
+                                // Re-fetch file data after publishing
+                                $fileData = $this->fileService->formatFile($fileNode);
+                            }
+                            
+                            if (isset($fileData['downloadUrl'])) {
+                                $entity->setImage($fileData['downloadUrl']);
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        // File not found or error loading - skip
+                        $this->logger->error('Failed to load file for objectImageField', [
+                            'app' => 'openregister',
+                            'fileId' => $firstElement,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                } else if (is_array($firstElement) && isset($firstElement['downloadUrl'])) {
+                    // Array of file objects - use first file's downloadUrl
+                    $entity->setImage($firstElement['downloadUrl']);
+                } else if (is_array($firstElement) && isset($firstElement['accessUrl'])) {
+                    // Fallback to accessUrl if downloadUrl not available
+                    $entity->setImage($firstElement['accessUrl']);
                 }
+            } else if (is_numeric($imageValue)) {
+                // Single file ID - load file and get its download URL
+                try {
+                    $fileNode = $this->fileService->getFile($entity, (int) $imageValue);
+                    if ($fileNode !== null) {
+                        $fileData = $this->fileService->formatFile($fileNode);
+                        
+                        // IMPORTANT: Object image requires public access
+                        // If file is not published, auto-publish it
+                        if (empty($fileData['downloadUrl'])) {
+                            $this->logger->warning(
+                                'File configured as objectImageField is not published. Auto-publishing file.',
+                                [
+                                    'app' => 'openregister',
+                                    'fileId' => $imageValue,
+                                    'objectId' => $entity->getId(),
+                                    'field' => $config['objectImageField']
+                                ]
+                            );
+                            // Publish the file
+                            $this->fileService->publishFile($fileNode);
+                            // Re-fetch file data after publishing
+                            $fileData = $this->fileService->formatFile($fileNode);
+                        }
+                        
+                        if (isset($fileData['downloadUrl'])) {
+                            $entity->setImage($fileData['downloadUrl']);
+                        }
+                    }
+                } catch (\Exception $e) {
+                    // File not found or error loading - skip
+                    $this->logger->error('Failed to load file for objectImageField', [
+                        'app' => 'openregister',
+                        'fileId' => $imageValue,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            } else if (is_array($imageValue) && isset($imageValue['downloadUrl'])) {
+                // Single file object - use its downloadUrl
+                $entity->setImage($imageValue['downloadUrl']);
+            } else if (is_array($imageValue) && isset($imageValue['accessUrl'])) {
+                // Fallback to accessUrl if downloadUrl not available
+                $entity->setImage($imageValue['accessUrl']);
+            } else if (is_string($imageValue) && trim($imageValue) !== '') {
+                // Regular string URL
+                $entity->setImage(trim($imageValue));
             }
         }
 
@@ -2140,9 +2233,29 @@ class SaveObject
             $base64Content = base64_encode($fileContent);
             $dataUri = "data:$mimeType;base64,$base64Content";
 
+            // Handle array field names (e.g., 'images[]' or 'images[0]' becomes 'images')
+            // Strip the array suffix/index and treat as array property
+            $isArrayField = false;
+            $cleanFieldName = $fieldName;
+            
+            // Check for array notation: images[] or images[0], images[1], etc.
+            if (preg_match('/^(.+)\[\d*\]$/', $fieldName, $matches)) {
+                $isArrayField = true;
+                $cleanFieldName = $matches[1]; // Extract 'images' from 'images[0]'
+            }
+
             // Inject the data URI into the object data
             // If the field already has a value in $data, the uploaded file takes precedence
-            $data[$fieldName] = $dataUri;
+            if ($isArrayField) {
+                // For array fields, append to array
+                if (!isset($data[$cleanFieldName])) {
+                    $data[$cleanFieldName] = [];
+                }
+                $data[$cleanFieldName][] = $dataUri;
+            } else {
+                // For single fields, set directly
+                $data[$fieldName] = $dataUri;
+            }
         }
 
         return $data;
@@ -2667,15 +2780,15 @@ class SaveObject
         // Prepare auto tags
         $autoTags = $this->prepareAutoTags($fileConfig, $propertyName, $index);
 
-        // Check if auto-share is enabled in the property configuration
-        $autoShare = $fileConfig['autoShare'] ?? false;
+        // Check if auto-publish is enabled in the property configuration
+        $autoPublish = $fileConfig['autoPublish'] ?? false;
 
         // Create the file with validation and tagging
         $file = $this->fileService->addFile(
             objectEntity: $objectEntity,
             fileName: $filename,
             content: $fileData['content'],
-            share: $autoShare,
+            share: $autoPublish,
             tags: $autoTags
         );
 
