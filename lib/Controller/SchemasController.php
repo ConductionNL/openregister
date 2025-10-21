@@ -238,7 +238,7 @@ class SchemasController extends Controller
                 $schema = $this->schemaMapper->update($schema);
             }
 
-            return new JSONResponse($schema);
+            return new JSONResponse($schema, 201);
         } catch (DBException $e) {
             // Handle database constraint violations with user-friendly messages
             $constraintException = DatabaseConstraintException::fromDatabaseException($e, 'schema');
@@ -380,16 +380,24 @@ class SchemasController extends Controller
      */
     public function destroy(int $id): JSONResponse
     {
-        // Find the schema by ID, delete it, and invalidate caches
-        $schemaToDelete = $this->schemaMapper->find(id: $id);
-        $this->schemaMapper->delete($schemaToDelete);
-        
-        // **CACHE INVALIDATION**: Clear all schema-related caches when schema is deleted
-        $this->schemaCacheService->invalidateForSchemaChange($schemaToDelete->getId(), 'delete');
-        $this->schemaFacetCacheService->invalidateForSchemaChange($schemaToDelete->getId(), 'delete');
+        try {
+            // Find the schema by ID, delete it, and invalidate caches
+            $schemaToDelete = $this->schemaMapper->find(id: $id);
+            $this->schemaMapper->delete($schemaToDelete);
+            
+            // **CACHE INVALIDATION**: Clear all schema-related caches when schema is deleted
+            $this->schemaCacheService->invalidateForSchemaChange($schemaToDelete->getId(), 'delete');
+            $this->schemaFacetCacheService->invalidateForSchemaChange($schemaToDelete->getId(), 'delete');
 
-        // Return an empty response.
-        return new JSONResponse([]);
+            // Return an empty response.
+            return new JSONResponse([]);
+        } catch (\OCA\OpenRegister\Exception\ValidationException $e) {
+            // Return 409 Conflict for cascade protection (objects still attached)
+            return new JSONResponse(['error' => $e->getMessage()], 409);
+        } catch (\Exception $e) {
+            // Return 500 for other errors
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
 
     }//end destroy()
 

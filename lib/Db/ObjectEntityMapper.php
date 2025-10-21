@@ -1474,6 +1474,9 @@ class ObjectEntityMapper extends QBMapper
      * @return array<int, ObjectEntity>|int An array of ObjectEntity objects matching the criteria, or integer count if _count is true
      */
     public function searchObjects(array $query = [], ?string $activeOrganisationUuid = null, bool $rbac = true, bool $multi = true, ?array $ids = null, ?string $uses = null): array|int {
+        // Convert dot notation (@self.field) to nested arrays (@self[field])
+        $query = $this->convertDotNotationToNestedArrays($query);
+        
         // **PERFORMANCE DEBUGGING**: Start detailed timing for ObjectEntityMapper
         $mapperStartTime = microtime(true);
         $perfTimings = [];
@@ -1800,6 +1803,9 @@ class ObjectEntityMapper extends QBMapper
      */
     public function countSearchObjects(array $query = [], ?string $activeOrganisationUuid = null, bool $rbac = true, bool $multi = true, ?array $ids = null, ?string $uses = null): int
     {
+        // Convert dot notation (@self.field) to nested arrays (@self[field])
+        $query = $this->convertDotNotationToNestedArrays($query);
+        
         // Extract options from query (prefixed with _)
         $search = $this->processSearchParameter($query['_search'] ?? null);
         $includeDeleted = $query['_includeDeleted'] ?? false;
@@ -1920,6 +1926,9 @@ class ObjectEntityMapper extends QBMapper
      */
     public function sizeSearchObjects(array $query = [], ?string $activeOrganisationUuid = null, bool $rbac = true, bool $multi = true): int
     {
+        // Convert dot notation (@self.field) to nested arrays (@self[field])
+        $query = $this->convertDotNotationToNestedArrays($query);
+        
         // Extract options from query (prefixed with _) - same as countSearchObjects
         $search = $this->processSearchParameter($query['_search'] ?? null);
         $includeDeleted = $query['_includeDeleted'] ?? false;
@@ -2123,6 +2132,62 @@ class ObjectEntityMapper extends QBMapper
         }
 
     }//end applyBasicFilters()
+
+
+    /**
+     * Convert dot notation query parameters to nested arrays
+     *
+     * Converts @self.field syntax to @self[field] nested array structure.
+     * This allows cleaner URLs: @self.register[or]=1,2 instead of @self[register][or]=1,2
+     *
+     * @param array $query The raw query parameters
+     *
+     * @phpstan-param array<string, mixed> $query
+     *
+     * @psalm-param array<string, mixed> $query
+     *
+     * @return array The query with dot notation converted to nested arrays
+     */
+    private function convertDotNotationToNestedArrays(array $query): array
+    {
+        $converted = [];
+        
+        foreach ($query as $key => $value) {
+            // Check if this is a dot notation key starting with @self.
+            if (str_starts_with($key, '@self.')) {
+                // Extract the field name after @self.
+                $fieldName = substr($key, 6); // Remove '@self.' prefix
+                
+                // Initialize @self array if it doesn't exist
+                if (!isset($converted['@self'])) {
+                    $converted['@self'] = [];
+                }
+                
+                // Add the field to the @self array
+                $converted['@self'][$fieldName] = $value;
+            } else {
+                // Keep non-dot-notation keys as-is
+                $converted[$key] = $value;
+            }
+        }
+        
+        // Merge with any existing @self array from original query
+        if (isset($query['@self']) && is_array($query['@self'])) {
+            if (!isset($converted['@self'])) {
+                $converted['@self'] = [];
+            }
+            $converted['@self'] = array_merge($query['@self'], $converted['@self']);
+        }
+        
+        // Copy over any keys that weren't processed
+        foreach ($query as $key => $value) {
+            if (!isset($converted[$key]) && !str_starts_with($key, '@self.')) {
+                $converted[$key] = $value;
+            }
+        }
+        
+        return $converted;
+    }//end convertDotNotationToNestedArrays()
 
 
     /**

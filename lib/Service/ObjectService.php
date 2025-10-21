@@ -1125,7 +1125,8 @@ class ObjectService
         ?string $uuid=null,
         bool $rbac=true,
         bool $multi=true,
-        bool $silent=false
+        bool $silent=false,
+        ?array $uploadedFiles=null
     ): ObjectEntity {
         // Check if a register is provided and set the current register context.
         if ($register !== null) {
@@ -1239,7 +1240,9 @@ class ObjectService
             $rbac,
             $multi,
             true, // persist
-            $silent // silent
+            $silent, // silent
+            true, // validation
+            $uploadedFiles // uploaded files from multipart/form-data
         );
 
         // Determine if register and schema should be passed to renderEntity.
@@ -3746,6 +3749,27 @@ class ObjectService
                             $objectData['@self'][$metaField] = $generatedSlug;
                         }
                     }
+                } else if ($metaField === 'image') {
+                    // Special handling for image - extract download URL if it's a file object
+                    // IMPORTANT: Object image should use downloadUrl for public access
+                    $value = $this->getValueFromPath($objectData, $sourceField);
+                    if ($value !== null) {
+                        // If value is an array of files, use the first file
+                        if (is_array($value) && isset($value[0]) && is_array($value[0])) {
+                            // Array of file objects - prefer downloadUrl, fallback to accessUrl
+                            if (isset($value[0]['downloadUrl'])) {
+                                $objectData['@self'][$metaField] = $value[0]['downloadUrl'];
+                            } else if (isset($value[0]['accessUrl'])) {
+                                $objectData['@self'][$metaField] = $value[0]['accessUrl'];
+                            }
+                        } else if (is_array($value) && (isset($value['downloadUrl']) || isset($value['accessUrl']))) {
+                            // Single file object - prefer downloadUrl, fallback to accessUrl
+                            $objectData['@self'][$metaField] = $value['downloadUrl'] ?? $value['accessUrl'];
+                        } else {
+                            // Regular value (string URL or similar)
+                            $objectData['@self'][$metaField] = $value;
+                        }
+                    }
                 } else {
                     // Regular metadata field handling
                     $value = $this->getValueFromPath($objectData, $sourceField);
@@ -3849,6 +3873,98 @@ class ObjectService
 
         return $text;
     }//end createSlugHelper()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Handle post-save writeBack operations for inverse relations
+     *
+     * This method processes writeBack operations after objects have been saved to the database.
+     * It uses the SaveObject handler's writeBack functionality for properties that have
+     * both inversedBy and writeBack enabled.
+     *
+     * @param array $savedObjects Array of saved ObjectEntity objects
+     * @param array $schemaCache  Cached schemas indexed by schema ID
+     *
+     * @return void
+     */
+    private function handlePostSaveInverseRelations(array $savedObjects, array $schemaCache): void
+    {
+        $writeBackCount = 0;
+        $bulkWriteBackUpdates = []; // PERFORMANCE OPTIMIZATION: Collect updates for bulk processing
+
+        foreach ($savedObjects as $savedObject) {
+            $objectData = $savedObject->getObject();
+            $schemaId   = $savedObject->getSchema();
+
+            if (!isset($schemaCache[$schemaId])) {
+                continue;
+            }
+
+            $schema           = $schemaCache[$schemaId];
+            $schemaProperties = $schema->getProperties();
+
+            foreach ($objectData as $property => $value) {
+                if (!isset($schemaProperties[$property])) {
+                    continue;
+                }
+
+                $propertyConfig = $schemaProperties[$property];
+                $items          = $propertyConfig['items'] ?? [];
+
+                // Check for writeBack enabled properties
+                $writeBack  = $propertyConfig['writeBack'] ?? ($items['writeBack'] ?? false);
+                $inversedBy = $propertyConfig['inversedBy'] ?? ($items['inversedBy'] ?? null);
+
+                if ($writeBack && $inversedBy && !empty($value)) {
+                    // Use SaveObject handler's writeBack functionality
+                    try {
+                        // Create a temporary object data array for writeBack processing
+                        $writeBackData = [$property => $value];
+                        $this->saveHandler->handleInverseRelationsWriteBack($savedObject, $schema, $writeBackData);
+                        $writeBackCount++;
+
+                        // After writeBack, update the source object's property with the current value
+                        // This ensures the source object reflects the relationship
+                        $currentObjectData = $savedObject->getObject();
+                        if (!isset($currentObjectData[$property]) || $currentObjectData[$property] !== $value) {
+                            $currentObjectData[$property] = $value;
+                            $savedObject->setObject($currentObjectData);
+
+                            // PERFORMANCE OPTIMIZATION: Collect for bulk update instead of individual UPDATE
+                            $objectUuid = $savedObject->getUuid();
+                            if (!isset($bulkWriteBackUpdates[$objectUuid])) {
+                                $bulkWriteBackUpdates[$objectUuid] = $savedObject;
+                            }
+                        }
+                    } catch (\Exception $e) {
+                    }
+                }//end if
+            }//end foreach
+        }//end foreach
+
+        // PERFORMANCE OPTIMIZATION: Execute all writeBack updates in a single bulk operation
+        if (!empty($bulkWriteBackUpdates)) {
+            $this->performBulkWriteBackUpdates(array_values($bulkWriteBackUpdates));
+        }
+
+
+    }//end handlePostSaveInverseRelations()
+
+
+
+
 
     /**
      * Filter objects based on RBAC and multi-organization permissions
