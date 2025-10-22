@@ -2110,10 +2110,48 @@ class GuzzleSolrService
             if ($key === '@self' && is_array($value)) {
                 foreach ($value as $metaKey => $metaValue) {
                     $solrField = 'self_' . $metaKey;
-                    if (is_numeric($metaValue)) {
-                        $filterQueries[] = $solrField . ':' . $metaValue;
+                    
+                    // Handle [or] and [and] operators
+                    if (is_array($metaValue)) {
+                        if (isset($metaValue['or'])) {
+                            // OR logic: (field:val1 OR field:val2)
+                            $values = is_string($metaValue['or']) ? array_map('trim', explode(',', $metaValue['or'])) : $metaValue['or'];
+                            $conditions = [];
+                            foreach ($values as $val) {
+                                if (is_numeric($val)) {
+                                    $conditions[] = $solrField . ':' . $val;
+                                } else {
+                                    $conditions[] = $solrField . ':"' . $this->escapeSolrValue((string)$val) . '"';
+                                }
+                            }
+                            $filterQueries[] = '(' . implode(' OR ', $conditions) . ')';
+                        } elseif (isset($metaValue['and'])) {
+                            // AND logic: multiple fq parameters
+                            $values = is_string($metaValue['and']) ? array_map('trim', explode(',', $metaValue['and'])) : $metaValue['and'];
+                            foreach ($values as $val) {
+                                if (is_numeric($val)) {
+                                    $filterQueries[] = $solrField . ':' . $val;
+                                } else {
+                                    $filterQueries[] = $solrField . ':"' . $this->escapeSolrValue((string)$val) . '"';
+                                }
+                            }
+                        } else {
+                            // Default AND logic for simple arrays
+                            foreach ($metaValue as $val) {
+                                if (is_numeric($val)) {
+                                    $filterQueries[] = $solrField . ':' . $val;
+                                } else {
+                                    $filterQueries[] = $solrField . ':"' . $this->escapeSolrValue((string)$val) . '"';
+                                }
+                            }
+                        }
                     } else {
-                        $filterQueries[] = $solrField . ':"' . $this->escapeSolrValue((string)$metaValue) . '"';
+                        // Single value
+                        if (is_numeric($metaValue)) {
+                            $filterQueries[] = $solrField . ':' . $metaValue;
+                        } else {
+                            $filterQueries[] = $solrField . ':"' . $this->escapeSolrValue((string)$metaValue) . '"';
+                        }
                     }
                 }
                 continue;
@@ -2122,54 +2160,45 @@ class GuzzleSolrService
             $solrField = $this->translateFilterField($key);
             
             if (is_array($value)) {
-                // Determine if this is an operator array ([and], [or]) or a simple value array
-                $hasOperatorKey = isset($value['and']) || isset($value['or']);
-                $isOrOperation = false;
-                $values = $value;
-                
-                if ($hasOperatorKey) {
-                    // Handle explicit operator syntax: field[and]=val1,val2 or field[or]=val1,val2
-                    if (isset($value['or'])) {
-                        $isOrOperation = true;
-                        $values = is_string($value['or']) ? array_map('trim', explode(',', $value['or'])) : (array) $value['or'];
-                    } else if (isset($value['and'])) {
-                        $isOrOperation = false;
-                        $values = is_string($value['and']) ? array_map('trim', explode(',', $value['and'])) : (array) $value['and'];
+                // Check for explicit [or] or [and] operators
+                if (isset($value['or'])) {
+                    // Explicit OR logic: (field:val1 OR field:val2)
+                    $values = is_string($value['or']) ? array_map('trim', explode(',', $value['or'])) : $value['or'];
+                    $this->logger->debug('Filter with explicit OR logic', [
+                        'field' => $key,
+                        'values' => $values
+                    ]);
+                    $conditions = [];
+                    foreach ($values as $v) {
+                        if (is_numeric($v)) {
+                            $conditions[] = $solrField . ':' . $v;
+                        } else {
+                            $conditions[] = $solrField . ':"' . $this->escapeSolrValue((string)$v) . '"';
+                        }
+                    }
+                    $filterQueries[] = '(' . implode(' OR ', $conditions) . ')';
+                } elseif (isset($value['and'])) {
+                    // Explicit AND logic: multiple fq parameters
+                    $values = is_string($value['and']) ? array_map('trim', explode(',', $value['and'])) : $value['and'];
+                    $this->logger->debug('Filter with explicit AND logic', [
+                        'field' => $key,
+                        'values' => $values
+                    ]);
+                    foreach ($values as $v) {
+                        if (is_numeric($v)) {
+                            $filterQueries[] = $solrField . ':' . $v;
+                        } else {
+                            $filterQueries[] = $solrField . ':"' . $this->escapeSolrValue((string)$v) . '"';
+                        }
                     }
                 } else {
-                    // For simple arrays (field[]=val1&field[]=val2), default to AND for consistency
-                    // This matches the database behavior and makes API consistent
-                    $isOrOperation = false;
-                }
-                
-                if ($isOrOperation) {
-                    // OR logic: match any value
-                    // Example: status[or]=active,pending becomes (status:active OR status:pending)
-                    $this->logger->debug('Filter with OR logic (explicit [or] operator)', [
+                    // Default AND logic for simple arrays (changed from OR to AND)
+                    $this->logger->debug('Filter with default AND logic (array value)', [
                         'field' => $key,
-                        'values' => $values,
-                        'note' => 'Explicit [or] operator uses OR logic within the same field'
+                        'values' => $value,
+                        'note' => 'Default array values use AND logic (each value must match)'
                     ]);
-                    $conditions = array_map(function($v) use ($solrField) {
-                        if (is_numeric($v)) {
-                            return $solrField . ':' . $v;
-                        }
-                        return $solrField . ':"' . $this->escapeSolrValue((string)$v) . '"';
-                    }, $values);
-                    $filterQueries[] = '(' . implode(' OR ', $conditions) . ')';
-                } else {
-                    // AND logic: all values must match
-                    // Example: colours[]=red&colours[]=blue or colours[and]=red,blue
-                    // For array fields: ALL values must be present
-                    // For single-value fields: creates impossible condition (no results)
-                    $this->logger->debug('Filter with AND logic (default or explicit [and] operator)', [
-                        'field' => $key,
-                        'values' => $values,
-                        'note' => 'AND logic requires ALL values to match. For array fields, all must be present. For single-value fields, typically returns zero results.'
-                    ]);
-                    
-                    // Each value becomes a separate filter query (ANDed together by Solr)
-                    foreach ($values as $v) {
+                    foreach ($value as $v) {
                         if (is_numeric($v)) {
                             $filterQueries[] = $solrField . ':' . $v;
                         } else {
