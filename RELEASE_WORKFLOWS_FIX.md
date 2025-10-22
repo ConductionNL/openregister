@@ -32,6 +32,11 @@ This indicated that the `openai-php/client` package was missing from the vendor 
 2. **Duplicate rsync**: Line 150-154 had a redundant rsync that ran AFTER tarball creation
 3. **Used `composer i` instead of `composer install`**: Less explicit command
 
+**CRITICAL: Rsync Exclude Bug (Both workflows):**
+1. **Global exclusions**: `--exclude='src'` and `--exclude='composer.json'` excluded these files EVERYWHERE
+2. **Vendor files lost**: This also excluded `vendor/*/src/` and `vendor/*/composer.json`
+3. **Empty packages**: Vendor packages like openai-php/client were included but empty (only LICENSE.md)
+
 ## Solution Implemented
 
 ### 1. Enhanced Composer Install (Line 96)
@@ -80,7 +85,26 @@ This indicated that the `openai-php/client` package was missing from the vendor 
 - Checks specifically for openai-php/client before creating tarball
 - Lists vendor contents if verification fails for debugging
 
-### 4. Removed Duplicate rsync (Line 175)
+### 4. Fixed Rsync Exclusions (CRITICAL!)
+```yaml
+# BEFORE (BROKEN):
+--exclude='src' \              # Excluded vendor/*/src/ too!
+--exclude='composer.json' \    # Excluded vendor/*/composer.json too!
+--exclude='tests' \            # Excluded vendor/*/tests/ too!
+
+# AFTER (FIXED):
+--exclude='/src' \             # Only excludes root-level src/
+--exclude='/composer.json' \   # Only excludes root-level composer.json
+--exclude='/tests' \           # Only excludes root-level tests/
+```
+
+**Why this matters:**
+- Without the leading `/`, rsync excludes the pattern ANYWHERE in the path
+- This was excluding `vendor/openai-php/client/src/` and `vendor/openai-php/client/composer.json`
+- Result: Vendor packages were included but **empty** (only LICENSE.md files)
+- With `/`, rsync only excludes from the root of the sync source
+
+### 5. Removed Duplicate rsync (Line 175)
 ```yaml
 # REMOVED: rsync -av --progress --exclude='package' --exclude='.git' ./ package/${{ github.event.repository.name }}/
 ```
