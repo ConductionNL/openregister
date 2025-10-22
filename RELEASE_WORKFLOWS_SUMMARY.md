@@ -58,7 +58,15 @@ composer install --no-dev --optimize-autoloader --classmap-authoritative
 - Create tarball: `openregister-X.Y.Z.tar.gz`
 - Sign tarball with OpenSSL
 
-### 6. Publishing
+### 6. Artifact Upload (NEW!)
+```bash
+# Upload tarball as workflow artifact
+✓ Upload nextcloud-release.tar.gz
+✓ Upload nextcloud-release.signature
+✓ Set 30-day retention
+```
+
+### 7. Publishing
 - Create GitHub release (beta = pre-release, prod = release)
 - Attach tarball to GitHub release
 - Upload to Nextcloud App Store
