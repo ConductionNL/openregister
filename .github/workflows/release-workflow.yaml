@@ -74,7 +74,20 @@ jobs:
       - run: npm run build
 
       # Step 7: Build composer dependencies
-      - run: composer i --no-dev
+      - run: composer install --no-dev --optimize-autoloader --classmap-authoritative
+      
+      # Step 7a: Verify critical dependencies are installed
+      - name: Verify vendor dependencies
+        run: |
+          if [ ! -d "vendor/openai-php/client" ]; then
+            echo "ERROR: openai-php/client not found in vendor directory"
+            exit 1
+          fi
+          if [ ! -d "vendor/theodo-group/llphant" ]; then
+            echo "ERROR: theodo-group/llphant not found in vendor directory"
+            exit 1
+          fi
+          echo "✓ All critical dependencies verified"
 
       # Step 8: Copy the files into the package directory
       - name: Copy the package files into the package
@@ -118,6 +131,16 @@ jobs:
             --exclude='.nvmrc' \
             ./ package/${{ github.event.repository.name }}/
 
+      # Step 8a: Verify package contents before creating tarball
+      - name: Verify package vendor directory
+        run: |
+          if [ ! -d "package/${{ github.event.repository.name }}/vendor/openai-php/client" ]; then
+            echo "ERROR: openai-php/client not found in package vendor directory"
+            ls -la package/${{ github.event.repository.name }}/vendor/ || echo "vendor directory not found"
+            exit 1
+          fi
+          echo "✓ Package vendor directory verified"
+
       # Step 9: Create the TAR.GZ archive
       - name: Create Tarball
         run: |
@@ -146,12 +169,6 @@ jobs:
       - name: Use the version
         run: |
           echo ${{ steps.version.outputs.version }}
-
-      # Step 15: Copy the package files into the package (this step seems redundant, consider removing)
-      - name: Copy the package files into the package
-        run: |
-          mkdir -p package/${{ github.event.repository.name }}
-          rsync -av --progress --exclude='package' --exclude='.git' ./ package/${{ github.event.repository.name }}/
 
       # Step 18: Create a new release on GitHub
       - name: Upload Release
@@ -185,7 +202,9 @@ jobs:
         run: |
           echo "App version: ${{ env.NEW_VERSION }}"
           echo "Tarball contents:"
-          tar -tvf nextcloud-release.tar.gz
+          tar -tvf nextcloud-release.tar.gz | head -100
+          echo "Verify vendor directory in tarball:"
+          tar -tvf nextcloud-release.tar.gz | grep "vendor/openai-php/client" | head -5 || echo "WARNING: openai-php/client not found in tarball!"
           echo "info.xml contents:"
           tar -xOf nextcloud-release.tar.gz ${{ env.APP_NAME }}/appinfo/info.xml
 
