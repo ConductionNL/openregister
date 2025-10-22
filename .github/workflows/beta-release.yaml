@@ -222,7 +222,7 @@ jobs:
 
       # Stap 13a: Upload tarball as workflow artifact for easy inspection
       - name: Upload tarball as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: nextcloud-release-${{ env.NEW_VERSION }}
           path: |
