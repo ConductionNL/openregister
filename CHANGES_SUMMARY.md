@@ -12,6 +12,7 @@ Both release workflows were missing critical verification steps, causing release
 - Lines 98-109: Added post-install vendor verification
 - Lines 159-167: Added pre-tarball package verification  
 - Line 175: **REMOVED** duplicate rsync that ran after tarball creation
+- Lines 179-187: **NEW** Upload tarball as workflow artifact for easy inspection
 - Lines 227-236: Enhanced final tarball verification
 
 ### ✅ .github/workflows/release-workflow.yaml
@@ -20,6 +21,7 @@ Both release workflows were missing critical verification steps, causing release
 - Lines 79-90: Added post-install vendor verification
 - Lines 134-142: Added pre-tarball package verification
 - Lines 150-154: **REMOVED** redundant rsync that ran after tarball creation
+- Lines 154-162: **NEW** Upload tarball as workflow artifact for easy inspection
 - Lines 201-209: Enhanced final tarball verification
 
 ## New Documentation
@@ -88,6 +90,24 @@ git push origin main
 # Download: https://github.com/ConductionNL/openregister/releases (Latest)
 ```
 
+## Workflow Artifacts (NEW!)
+
+After the next workflow run, you'll see the tarball available in **TWO places**:
+
+### 📦 Workflow Artifacts (Quick Access)
+- **Location**: Actions tab → Select workflow run → "Artifacts" section
+- **Contents**: 
+  - `nextcloud-release.tar.gz` - The app package
+  - `nextcloud-release.signature` - OpenSSL signature
+- **Retention**: 30 days
+- **Purpose**: Quick download and inspection for debugging
+
+### 🚀 Release Assets (Permanent)
+- **Location**: Releases page → Select release
+- **Contents**: Same tarball attached to the release
+- **Retention**: Permanent
+- **Purpose**: Distribution to users and Nextcloud App Store
+
 ## Expected Behavior
 
 ### ✅ Success Case
@@ -95,6 +115,7 @@ When dependencies are properly installed:
 ```
 ✓ All critical dependencies verified
 ✓ Package vendor directory verified
+✓ Tarball uploaded as artifact
 Tarball contents: [shows vendor/openai-php/client]
 ```
 
