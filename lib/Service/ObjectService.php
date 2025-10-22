@@ -1752,8 +1752,48 @@ class ObjectService
      */
     public function buildSearchQuery(array $requestParams, int | string | null $register=null, int | string | null $schema=null, ?array $ids=null): array
     {
-        // Remove system parameters that shouldn't be used as filters
-        $params = $requestParams;
+        // STEP 1: Fix PHP's dot-to-underscore mangling in query parameter names
+        // PHP converts dots to underscores in parameter names, e.g.:
+        //   @self.register → @self_register
+        //   person.address.street → person_address_street
+        // We need to reconstruct nested arrays from underscore-separated paths
+        $fixedParams = [];
+        foreach ($requestParams as $key => $value) {
+            // Skip parameters that start with underscore (system parameters like _limit, _offset)
+            if (str_starts_with($key, '_')) {
+                $fixedParams[$key] = $value;
+                continue;
+            }
+            
+            // Check if key contains underscores (indicating PHP mangled dots)
+            if (str_contains($key, '_')) {
+                // Split by underscore to reconstruct nested structure
+                $parts = explode('_', $key);
+                
+                // Build nested array structure
+                $current = &$fixedParams;
+                $lastIndex = count($parts) - 1;
+                
+                foreach ($parts as $index => $part) {
+                    if ($index === $lastIndex) {
+                        // Last part: assign the value
+                        $current[$part] = $value;
+                    } else {
+                        // Intermediate part: create nested array if needed
+                        if (!isset($current[$part]) || !is_array($current[$part])) {
+                            $current[$part] = [];
+                        }
+                        $current = &$current[$part];
+                    }
+                }
+            } else {
+                // No underscores: use as-is
+                $fixedParams[$key] = $value;
+            }
+        }
+        
+        // STEP 2: Remove system parameters that shouldn't be used as filters
+        $params = $fixedParams;
         unset($params['id'], $params['_route'], $params['rbac'], $params['multi'], $params['published'], $params['deleted']);
 
         // Build the query structure for searchObjectsPaginated
