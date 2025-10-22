@@ -93,7 +93,20 @@ jobs:
       # Stap 9: Voer npm install, build en composer install uit
       - run: npm ci
       - run: npm run build
-      - run: composer install --no-dev
+      - run: composer install --no-dev --optimize-autoloader --classmap-authoritative
+      
+      # Stap 9a: Verify critical dependencies are installed
+      - name: Verify vendor dependencies
+        run: |
+          if [ ! -d "vendor/openai-php/client" ]; then
+            echo "ERROR: openai-php/client not found in vendor directory"
+            exit 1
+          fi
+          if [ ! -d "vendor/theodo-group/llphant" ]; then
+            echo "ERROR: theodo-group/llphant not found in vendor directory"
+            exit 1
+          fi
+          echo "✓ All critical dependencies verified"
 
       # Stap 10: Kopieer de bestanden naar de package directory
       - name: Copy the package files into the package
@@ -143,36 +156,44 @@ jobs:
             --exclude='.nvmrc' \
             ./ package/${{ github.event.repository.name }}/
 
-      # Stap 11: Maak het TAR.GZ archief
+      # Stap 11: Verify package contents before creating tarball
+      - name: Verify package vendor directory
+        run: |
+          if [ ! -d "package/${{ github.event.repository.name }}/vendor/openai-php/client" ]; then
+            echo "ERROR: openai-php/client not found in package vendor directory"
+            ls -la package/${{ github.event.repository.name }}/vendor/ || echo "vendor directory not found"
+            exit 1
+          fi
+          echo "✓ Package vendor directory verified"
+      
+      # Stap 12: Maak het TAR.GZ archief
       - name: Create Tarball
         run: |
           cd package && tar -czf ../nextcloud-release.tar.gz ${{ github.event.repository.name }}
 
-      # Stap 12: Sign het TAR.GZ bestand met OpenSSL
+      # Stap 13: Sign het TAR.GZ bestand met OpenSSL
       - name: Sign the TAR.GZ file with OpenSSL
         run: |
           openssl dgst -sha512 -sign signing-key.key nextcloud-release.tar.gz | openssl base64 -out nextcloud-release.signature
 
-      # Stap 13: Genereer Git versie informatie (optioneel, voor logging)
+      # Stap 14: Genereer Git versie informatie (optioneel, voor logging)
       - name: Git Version
         id: version
         uses: codacy/git-version@2.7.1
         with:
           release-branch: beta
 
-      # Stap 14: Extraheer repository description (optioneel)
+      # Stap 15: Extraheer repository description (optioneel)
       - name: Extract repository description
         id: repo-description
         run: |
           description=$(jq -r '.description' <(curl -s https://api.github.com/repos/${{ github.repository }}))
           echo "REPO_DESCRIPTION=$description" >> $GITHUB_ENV
 
-      # Stap 15: Output de versie (voor logging)
+      # Stap 16: Output de versie (voor logging)
       - name: Use the version
         run: |
           echo "Git Version info: ${{ steps.version.outputs.version }}"
-
-          rsync -av --progress --exclude='package' --exclude='.git' ./ package/${{ github.event.repository.name }}/
 
       # Stap 17: Maak een nieuwe GitHub release (als prerelease)
       - name: Upload Beta Release
@@ -208,6 +229,8 @@ jobs:
         run: |
           echo "App version: ${{ env.NEW_VERSION }}"
           echo "Tarball contents:"
-          tar -tvf nextcloud-release.tar.gz
+          tar -tvf nextcloud-release.tar.gz | head -100
+          echo "Verify vendor directory in tarball:"
+          tar -tvf nextcloud-release.tar.gz | grep "vendor/openai-php/client" | head -5 || echo "WARNING: openai-php/client not found in tarball!"
           echo "info.xml contents:"
           tar -xOf nextcloud-release.tar.gz ${{ env.APP_NAME }}/appinfo/info.xml
