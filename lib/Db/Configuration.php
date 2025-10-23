@@ -87,6 +87,13 @@ class Configuration extends Entity implements JsonSerializable
     protected ?array $objects = [];
 
     /**
+     * Owner of the configuration (user ID)
+     *
+     * @var string|null
+     */
+    protected $owner = null;
+
+    /**
      * Creation timestamp
      *
      * @var DateTime
@@ -115,6 +122,7 @@ class Configuration extends Entity implements JsonSerializable
         $this->addType('registers', 'json');
         $this->addType('schemas', 'json');
         $this->addType('objects', 'json');
+        $this->addType('owner', 'string');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
 
@@ -292,7 +300,7 @@ class Configuration extends Entity implements JsonSerializable
             'type'        => $this->type,
             'app'         => $this->app,
             'version'     => $this->version,
-            'owner'       => $this->app, // Backwards compatibility - maps to app field
+            'owner'       => $this->owner,
             'registers'   => $this->registers,
             'schemas'     => $this->schemas,
             'objects'     => $this->objects,
