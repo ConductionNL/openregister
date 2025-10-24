@@ -1764,16 +1764,16 @@ class ObjectService
                 $fixedParams[$key] = $value;
                 continue;
             }
-            
+
             // Check if key contains underscores (indicating PHP mangled dots)
             if (str_contains($key, '_')) {
                 // Split by underscore to reconstruct nested structure
                 $parts = explode('_', $key);
-                
+
                 // Build nested array structure
                 $current = &$fixedParams;
                 $lastIndex = count($parts) - 1;
-                
+
                 foreach ($parts as $index => $part) {
                     if ($index === $lastIndex) {
                         // Last part: assign the value
@@ -1791,7 +1791,7 @@ class ObjectService
                 $fixedParams[$key] = $value;
             }
         }
-        
+
         // STEP 2: Remove system parameters that shouldn't be used as filters
         $params = $fixedParams;
         unset($params['id'], $params['_route'], $params['rbac'], $params['multi'], $params['published'], $params['deleted']);
@@ -2591,6 +2591,10 @@ class ObjectService
         $hasFacets = !empty($query['_facets']);
         $hasFacetable = ($query['_facetable'] ?? false) === true || ($query['_facetable'] ?? false) === 'true';
         $isComplexRequest = $hasFacets || $hasFacetable;
+
+        if (isset($query['_published']) === false) {
+            $query['_published'] = $published;
+        }
 
         // **PERFORMANCE OPTIMIZATION**: For complex requests, use async version for better performance
         if ($isComplexRequest) {
@@ -5595,7 +5599,7 @@ class ObjectService
         // Use the mapper's findBySchema method to get all objects for this schema
         // This bypasses RBAC and multi-tenancy automatically
         $objects = $this->objectEntityMapper->findBySchema($schemaId);
-        
+
         $validObjects = [];
         $invalidObjects = [];
 
@@ -5603,7 +5607,7 @@ class ObjectService
             try {
                 // Get the object data for validation
                 $objectData = $object->getObject();
-                
+
                 // Use saveObject with silent=true to validate without actually saving
                 // This will trigger validation and return any errors
                 $savedObject = $this->saveObject(
@@ -5623,11 +5627,11 @@ class ObjectService
                     'name' => $object->getName(),
                     'data' => $objectData,
                 ];
-                
+
             } catch (\Exception $e) {
                 // Extract validation errors from the exception
                 $errors = [];
-                
+
                 // Check if it's a validation exception with detailed errors
                 if ($e instanceof \OCA\OpenRegister\Exception\ValidationException) {
                     foreach ($e->getErrors() as $error) {
@@ -5645,7 +5649,7 @@ class ObjectService
                         'keyword' => 'exception',
                     ];
                 }
-                
+
                 $invalidObjects[] = [
                     'id' => $object->getId(),
                     'uuid' => $object->getUuid(),
