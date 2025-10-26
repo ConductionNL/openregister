@@ -61,12 +61,12 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 						{{ object.uuid }}
 					</template>
 					<template #actions>
-					<NcActionButton close-after-click @click="objectStore.setObjectItem(object); navigationStore.setModal('viewObject')">
-						<template #icon>
-							<Pencil />
-						</template>
-						Edit
-					</NcActionButton>
+						<NcActionButton close-after-click @click="objectStore.setObjectItem(object); navigationStore.setModal('viewObject')">
+							<template #icon>
+								<Pencil />
+							</template>
+							Edit
+						</NcActionButton>
 						<NcActionButton v-if="!object.locked"
 							close-after-click
 							@click="objectStore.setObjectItem(object); navigationStore.setModal('lockObject')">
@@ -147,20 +147,6 @@ export default {
 
 		}
 	},
-	methods: {
-		addObject() {
-			// Clear any existing object and open the add object modal
-			objectStore.setObjectItem(null)
-			// Ensure register and schema are set for new object creation
-			if (registerStore.registerItem) {
-				registerStore.setRegisterItem(registerStore.registerItem)
-			}
-			if (schemaStore.schemaItem) {
-				schemaStore.setSchemaItem(schemaStore.schemaItem)
-			}
-			navigationStore.setModal('viewObject')
-		},
-	},
 	watch: {
 		currentPage(newVal) {
 			this.loading = true
@@ -183,6 +169,20 @@ export default {
 		objectStore.refreshObjectList({ limit: this.limit, page: this.currentPage, search: this.search }).finally(() => {
 			this.loading = false
 		})
+	},
+	methods: {
+		addObject() {
+			// Clear any existing object and open the add object modal
+			objectStore.setObjectItem(null)
+			// Ensure register and schema are set for new object creation
+			if (registerStore.registerItem) {
+				registerStore.setRegisterItem(registerStore.registerItem)
+			}
+			if (schemaStore.schemaItem) {
+				schemaStore.setSchemaItem(schemaStore.schemaItem)
+			}
+			navigationStore.setModal('viewObject')
+		},
 	},
 }
 </script>

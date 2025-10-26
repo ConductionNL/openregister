@@ -217,7 +217,7 @@ export const useOrganisationStore = defineStore('organisation', {
 			console.log('Creating organisation...', organisationData)
 
 			const endpoint = '/index.php/apps/openregister/api/organisations'
-			
+
 			try {
 				const response = await fetch(endpoint, {
 					method: 'POST',
@@ -237,7 +237,7 @@ export const useOrganisationStore = defineStore('organisation', {
 
 				// Update local state
 				this.setOrganisationItem(savedOrganisation)
-				
+
 				// Refresh the full list to get updated stats
 				await this.refreshOrganisationList()
 
@@ -259,7 +259,7 @@ export const useOrganisationStore = defineStore('organisation', {
 
 			const organisationId = organisationData.id || organisationData.uuid
 			const endpoint = `/index.php/apps/openregister/api/organisations/${organisationId}`
-			
+
 			try {
 				const response = await fetch(endpoint, {
 					method: 'PUT',
@@ -278,13 +278,13 @@ export const useOrganisationStore = defineStore('organisation', {
 				const savedOrganisation = data.organisation || data
 
 				// Update existing in list
-				const index = this.organisationList.findIndex(org => 
-					org.uuid === organisationId || org.id === organisationId
+				const index = this.organisationList.findIndex(org =>
+					org.uuid === organisationId || org.id === organisationId,
 				)
 				if (index !== -1) {
 					this.organisationList[index] = new Organisation(savedOrganisation)
 				}
-				
+
 				// Update current item if it's the same organisation
 				if (this.organisationItem && (this.organisationItem.uuid === organisationId || this.organisationItem.id === organisationId)) {
 					this.setOrganisationItem(savedOrganisation)
@@ -304,7 +304,7 @@ export const useOrganisationStore = defineStore('organisation', {
 		// Create or update an organisation (legacy method for backward compatibility)
 		async saveOrganisation(organisationItem) {
 			const isNewOrganisation = !organisationItem.uuid && !organisationItem.id
-			
+
 			if (isNewOrganisation) {
 				return await this.createOrganisation(organisationItem)
 			} else {

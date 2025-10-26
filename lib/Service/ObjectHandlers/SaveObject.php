@@ -560,25 +560,25 @@ class SaveObject
         if (isset($config['objectImageField']) === true) {
             // First check if the field points to a file object
             $imageValue = $this->getValueFromPath($objectData, $config['objectImageField']);
-            
+
             // Handle different value types:
             // 1. Array of file IDs: [123, 124]
             // 2. Array of file objects: [{accessUrl: ...}, {accessUrl: ...}]
             // 3. Single file ID: 123
             // 4. Single file object: {accessUrl: ...}
             // 5. String URL
-            
+
             if (is_array($imageValue) && !empty($imageValue)) {
                 // Check if first element is a file ID or file object
                 $firstElement = $imageValue[0] ?? null;
-                
+
                 if (is_numeric($firstElement)) {
                     // Array of file IDs - load first file and get its download URL
                     try {
                         $fileNode = $this->fileService->getFile($entity, (int) $firstElement);
                         if ($fileNode !== null) {
                             $fileData = $this->fileService->formatFile($fileNode);
-                            
+
                             // IMPORTANT: Object image requires public access
                             // If file is not published, auto-publish it
                             if (empty($fileData['downloadUrl'])) {
@@ -596,7 +596,7 @@ class SaveObject
                                 // Re-fetch file data after publishing
                                 $fileData = $this->fileService->formatFile($fileNode);
                             }
-                            
+
                             if (isset($fileData['downloadUrl'])) {
                                 $entity->setImage($fileData['downloadUrl']);
                             }
@@ -622,7 +622,7 @@ class SaveObject
                     $fileNode = $this->fileService->getFile($entity, (int) $imageValue);
                     if ($fileNode !== null) {
                         $fileData = $this->fileService->formatFile($fileNode);
-                        
+
                         // IMPORTANT: Object image requires public access
                         // If file is not published, auto-publish it
                         if (empty($fileData['downloadUrl'])) {
@@ -640,7 +640,7 @@ class SaveObject
                             // Re-fetch file data after publishing
                             $fileData = $this->fileService->formatFile($fileNode);
                         }
-                        
+
                         if (isset($fileData['downloadUrl'])) {
                             $entity->setImage($fileData['downloadUrl']);
                         }
@@ -1643,15 +1643,20 @@ class SaveObject
         if (isset($data['@self']) && is_array($data['@self'])) {
             $selfData = $data['@self'];
         }
+
         // Use @self.id as UUID if no UUID is provided
         if ($uuid === null && (isset($selfData['id']) || isset($data['id']))) {
             $uuid = $selfData['id'] ?? $data['id'];
+        }
+        
+        if ($uuid === '') {
+            $uuid = null;
         }
 
         // Remove the @self property from the data.
         unset($data['@self']);
         unset($data['id']);
-        
+
         // Process uploaded files and inject them into data
         if ($uploadedFiles !== null && !empty($uploadedFiles)) {
             $data = $this->processUploadedFiles($uploadedFiles, $data);
@@ -1774,7 +1779,7 @@ class SaveObject
             // If files were processed, update the object with file IDs
             if ($filePropertiesProcessed) {
                 $savedEntity->setObject($data);
-                
+
                 // Re-hydrate image metadata if objectImageField points to a file property
                 // At this point, file properties are file IDs, but we need to check if we should
                 // clear the image metadata so it can be properly extracted during rendering
@@ -1782,7 +1787,7 @@ class SaveObject
                 if (isset($config['objectImageField'])) {
                     $imageField = $config['objectImageField'];
                     $schemaProperties = $schema->getProperties() ?? [];
-                    
+
                     // Check if the image field is a file property
                     if (isset($schemaProperties[$imageField])) {
                         $propertyConfig = $schemaProperties[$imageField];
@@ -1792,7 +1797,7 @@ class SaveObject
                         }
                     }
                 }
-                
+
                 $savedEntity = $this->objectEntityMapper->update($savedEntity);
             }
         } catch (\Exception $e) {
@@ -1802,7 +1807,7 @@ class SaveObject
                 'error' => $e->getMessage()
             ]);
             $this->objectEntityMapper->delete($savedEntity);
-            
+
             // Re-throw the exception so the controller can handle it
             throw $e;
         }
@@ -1857,7 +1862,6 @@ class SaveObject
         if ($objectEntity->getUuid() === null) {
             $objectEntity->setUuid(Uuid::v4()->toRfc4122());
         }
-
         $objectEntity->setUri(
             $this->urlGenerator->getAbsoluteURL(
                 $this->urlGenerator->linkToRoute(
@@ -2237,7 +2241,7 @@ class SaveObject
             // Strip the array suffix/index and treat as array property
             $isArrayField = false;
             $cleanFieldName = $fieldName;
-            
+
             // Check for array notation: images[] or images[0], images[1], etc.
             if (preg_match('/^(.+)\[\d*\]$/', $fieldName, $matches)) {
                 $isArrayField = true;
@@ -2595,7 +2599,7 @@ class SaveObject
             // Get existing file IDs from the current object data
             $currentObjectData = $objectEntity->getObject();
             $existingFileIds = $currentObjectData[$propertyName] ?? null;
-            
+
             if ($existingFileIds !== null) {
                 // Delete existing files
                 if (is_array($existingFileIds)) {
@@ -2620,7 +2624,7 @@ class SaveObject
                     }
                 }
             }
-            
+
             // Set property to null or empty array
             $object[$propertyName] = $isArrayProperty ? [] : null;
             return;
@@ -3558,14 +3562,14 @@ class SaveObject
         // Update the object with the modified data (file IDs instead of content)
         if ($filePropertiesProcessed) {
             $updatedEntity->setObject($data);
-            
+
             // Clear image metadata if objectImageField points to a file property
             // This ensures the image URL is extracted from the file object during rendering
             $config = $schema->getConfiguration();
             if (isset($config['objectImageField'])) {
                 $imageField = $config['objectImageField'];
                 $schemaProperties = $schema->getProperties() ?? [];
-                
+
                 // Check if the image field is a file property
                 if (isset($schemaProperties[$imageField])) {
                     $propertyConfig = $schemaProperties[$imageField];
@@ -3575,7 +3579,7 @@ class SaveObject
                     }
                 }
             }
-            
+
             // Save the updated entity with file IDs back to database
             $updatedEntity = $this->objectEntityMapper->update($updatedEntity);
         }

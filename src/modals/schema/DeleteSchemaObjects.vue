@@ -8,14 +8,13 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 		name="Delete Schema Objects"
 		size="normal"
 		:can-close="false">
-		
 		<!-- Confirmation State -->
 		<div v-if="!success && !loading">
 			<p>
-				Are you sure you want to delete <strong>all objects</strong> in the schema 
+				Are you sure you want to delete <strong>all objects</strong> in the schema
 				<strong>{{ schemaStore.schemaItem?.title }}</strong>?
 			</p>
-			
+
 			<!-- Dynamic Warning/Danger Messages -->
 			<div v-if="objectCount > 0" class="deletion-warning-section">
 				<!-- Soft Delete Warning (when checkbox is unchecked) -->
@@ -28,7 +27,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 					</template>
 					{{ t('openregister', 'Objects will be soft-deleted (marked as deleted but kept in database). They can be recovered later if needed.') }}
 				</NcNoteCard>
-				
+
 				<!-- Hard Delete Danger (when checkbox is checked) -->
 				<NcNoteCard v-else type="error" class="deletion-danger">
 					<template #icon>
@@ -40,14 +39,14 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 					{{ t('openregister', '⚠️ DANGER: All {total} objects will be PERMANENTLY DELETED from the database. This action is UNRECOVERABLE and cannot be undone!', { total: objectCount }) }}
 				</NcNoteCard>
 			</div>
-			
+
 			<div v-if="objectCount > 0" class="object-count-info">
-				<SchemaStatsBlock 
+				<SchemaStatsBlock
 					:object-count="objectCount"
 					:object-stats="objectStats"
 					:loading="false"
 					:title="t('openregister', 'Objects to be deleted')" />
-				
+
 				<!-- Hard Delete Option -->
 				<div v-if="objectStats && objectStats.deleted > 0" class="hard-delete-option">
 					<NcCheckboxRadioSwitch
@@ -61,9 +60,9 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 					</p>
 				</div>
 			</div>
-			
+
 			<div v-else class="no-objects-info">
-				<SchemaStatsBlock 
+				<SchemaStatsBlock
 					:object-count="0"
 					:object-stats="null"
 					:loading="false"
@@ -75,7 +74,9 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 		<div v-if="loading" class="loading-container">
 			<NcLoadingIcon :size="40" />
 			<p>Deleting objects from schema '{{ schemaStore.schemaItem?.title }}'...</p>
-			<p class="loading-subtitle">This may take a moment for large datasets.</p>
+			<p class="loading-subtitle">
+				This may take a moment for large datasets.
+			</p>
 		</div>
 
 		<!-- Success State -->
@@ -151,10 +152,6 @@ export default {
 			hardDelete: [],
 		}
 	},
-	async mounted() {
-		console.log('DeleteSchemaObjects modal mounted, schemaItem:', schemaStore.schemaItem)
-		await this.loadObjectCount()
-	},
 	watch: {
 		// Watch for changes in schemaItem and reload count if needed
 		'schemaStore.schemaItem': {
@@ -164,7 +161,7 @@ export default {
 					this.loadObjectCount()
 				}
 			},
-			immediate: true
+			immediate: true,
 		},
 		// Watch for dialog state changes to load count when modal becomes visible
 		'navigationStore.modal': {
@@ -175,8 +172,12 @@ export default {
 					this.loadObjectCount()
 				}
 			},
-			immediate: true
-		}
+			immediate: true,
+		},
+	},
+	async mounted() {
+		console.log('DeleteSchemaObjects modal mounted, schemaItem:', schemaStore.schemaItem)
+		await this.loadObjectCount()
 	},
 	methods: {
 		async loadObjectCount() {
@@ -200,22 +201,22 @@ export default {
 				this.objectStats = null
 			}
 		},
-		
+
 		async confirmDeletion() {
 			this.loading = true
 			this.error = false
-			
+
 			try {
 				// Find the register that contains this schema
 				await registerStore.refreshRegisterList()
-				const register = registerStore.registerList.find(reg => 
-					reg.schemas.includes(schemaStore.schemaItem.id)
+				const register = registerStore.registerList.find(reg =>
+					reg.schemas.includes(schemaStore.schemaItem.id),
 				)
-				
+
 				if (!register) {
 					throw new Error('Could not find register containing this schema')
 				}
-				
+
 				// Call the deletion API
 				const response = await fetch(
 					`/index.php/apps/openregister/api/bulk/${register.id}/${schemaStore.schemaItem.id}/delete-schema`,
@@ -225,27 +226,27 @@ export default {
 							'Content-Type': 'application/json',
 						},
 						body: JSON.stringify({
-							hardDelete: this.hardDelete.includes('hardDelete')
+							hardDelete: this.hardDelete.includes('hardDelete'),
 						}),
-					}
+					},
 				)
-				
+
 				if (!response.ok) {
 					throw new Error(`Deletion failed: ${response.statusText}`)
 				}
-				
+
 				const data = await response.json()
-				
+
 				if (data.error) {
 					throw new Error(data.error)
 				}
-				
+
 				this.deletionResult = data
 				this.success = true
-				
+
 				// Refresh schema stats after successful deletion
 				await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
-				
+
 			} catch (err) {
 				this.error = err.message || 'An error occurred during deletion'
 				console.error('Deletion error:', err)
@@ -253,7 +254,7 @@ export default {
 				this.loading = false
 			}
 		},
-		
+
 		closeDialog() {
 			navigationStore.setModal(false)
 			this.loading = false

@@ -2027,8 +2027,8 @@ class FileService
         }
         }
 
-        // Update the file content if provided
-        if ($content !== null) {
+        // Update the file content if provided and content is not equal to the current content.
+        if ($content !== null && $file->hash(type: 'md5') !== md5(string: $content)) {
                 try {
 					// Check if the content is base64 encoded and decode it if necessary
 					if (base64_encode(base64_decode($content, true)) === $content) {
@@ -2439,11 +2439,6 @@ class FileService
             if ($existingFile !== null) {
                 // File exists, update it
                 $this->logger->info("File $fileName already exists for object {$objectEntity->getId()}, updating...");
-
-                // Do not update the file when the existing file has the same checksum as the incoming content.
-                if($existingFile->hash(type: 'md5') === md5(string: $content)) {
-                    return $existingFile;
-                }
 
                 // Update the existing file - pass the object so updateFile can find it in the object folder
                 return $this->updateFile(

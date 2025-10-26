@@ -178,33 +178,59 @@
 							<table class="performance-table">
 								<thead>
 									<tr>
-										<th class="performance-table-header">Metric</th>
-										<th class="performance-table-header">Current</th>
-										<th class="performance-table-header">Target</th>
-										<th class="performance-table-header">Status</th>
+										<th class="performance-table-header">
+											Metric
+										</th>
+										<th class="performance-table-header">
+											Current
+										</th>
+										<th class="performance-table-header">
+											Target
+										</th>
+										<th class="performance-table-header">
+											Status
+										</th>
 									</tr>
 								</thead>
 								<tbody>
 									<tr class="performance-table-row">
-										<td class="performance-table-label">Average Hit Time</td>
-										<td class="performance-table-value">{{ cacheStats.performance.averageHitTime }}ms</td>
-										<td class="performance-table-value">< 5ms</td>
+										<td class="performance-table-label">
+											Average Hit Time
+										</td>
+										<td class="performance-table-value">
+											{{ cacheStats.performance.averageHitTime }}ms
+										</td>
+										<td class="performance-table-value">
+											< 5ms
+										</td>
 										<td class="performance-table-value" :class="cacheStats.performance.averageHitTime < 5 ? 'status-enabled' : 'status-warning'">
 											{{ cacheStats.performance.averageHitTime < 5 ? '✓ Good' : '⚠ Slow' }}
 										</td>
 									</tr>
 									<tr class="performance-table-row">
-										<td class="performance-table-label">Average Miss Time</td>
-										<td class="performance-table-value">{{ cacheStats.performance.averageMissTime }}ms</td>
-										<td class="performance-table-value">< 500ms</td>
+										<td class="performance-table-label">
+											Average Miss Time
+										</td>
+										<td class="performance-table-value">
+											{{ cacheStats.performance.averageMissTime }}ms
+										</td>
+										<td class="performance-table-value">
+											< 500ms
+										</td>
 										<td class="performance-table-value" :class="cacheStats.performance.averageMissTime < 500 ? 'status-enabled' : 'status-error'">
 											{{ cacheStats.performance.averageMissTime < 500 ? '✓ Good' : '❌ Slow' }}
 										</td>
 									</tr>
 									<tr class="performance-table-row">
-										<td class="performance-table-label">Overall Hit Rate</td>
-										<td class="performance-table-value">{{ cacheStats.overview.overallHitRate.toFixed(1) }}%</td>
-										<td class="performance-table-value">≥ {{ cacheStats.performance.optimalHitRate }}%</td>
+										<td class="performance-table-label">
+											Overall Hit Rate
+										</td>
+										<td class="performance-table-value">
+											{{ cacheStats.overview.overallHitRate.toFixed(1) }}%
+										</td>
+										<td class="performance-table-value">
+											≥ {{ cacheStats.performance.optimalHitRate }}%
+										</td>
 										<td class="performance-table-value" :class="getHitRateClass(cacheStats.overview.overallHitRate)">
 											{{ getHitRateText(cacheStats.overview.overallHitRate) }}
 										</td>
@@ -312,7 +338,7 @@ import Delete from 'vue-material-design-icons/Delete.vue'
 
 export default {
 	name: 'CacheManagement',
-	
+
 	components: {
 		NcSettingsSection,
 		NcButton,
@@ -352,7 +378,7 @@ export default {
 			},
 			set(value) {
 				this.settingsStore.clearCacheType = value
-			}
+			},
 		},
 
 		/**
@@ -402,11 +428,11 @@ export default {
 		 */
 		formatBytes(bytes) {
 			if (bytes === 0) return '0 B'
-			
+
 			const k = 1024
 			const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
 			const i = Math.floor(Math.log(bytes) / Math.log(k))
-			
+
 			return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 		},
 
@@ -467,7 +493,7 @@ export default {
 		 */
 		formatDate(dateString) {
 			if (!dateString) return 'Never'
-			
+
 			try {
 				const date = new Date(dateString)
 				return date.toLocaleString()
@@ -740,17 +766,17 @@ export default {
 	.cache-overview-cards {
 		grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 	}
-	
+
 	.cache-services-grid {
 		grid-template-columns: 1fr;
 	}
-	
+
 	.section-header-inline {
 		flex-direction: column;
 		gap: 12px;
 		align-items: stretch;
 	}
-	
+
 	.button-group {
 		justify-content: center;
 	}

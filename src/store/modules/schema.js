@@ -313,15 +313,15 @@ export const useSchemaStore = defineStore('schema', {
 			document.body.removeChild(a)
 			URL.revokeObjectURL(url)
 
-		return { response }
-	},
+			return { response }
+		},
 
 		// Schema exploration methods
 		/**
 		 * Explore schema properties to discover new properties in objects
 		 *
 		 * @param {number} schemaId The schema ID to explore
-		 * @returns {Promise<Object>} Exploration results
+		 * @return {Promise<object>} Exploration results
 		 */
 		async exploreSchemaProperties(schemaId) {
 			console.log('Exploring schema properties for schema ID:', schemaId)
@@ -353,8 +353,8 @@ export const useSchemaStore = defineStore('schema', {
 		 * Update schema properties based on exploration results
 		 *
 		 * @param {number} schemaId The schema ID to update
-		 * @param {Object} propertyUpdates Object containing properties to add/update
-		 * @returns {Promise<Object>} Update results
+		 * @param {object} propertyUpdates Object containing properties to add/update
+		 * @return {Promise<object>} Update results
 		 */
 		async updateSchemaFromExploration(schemaId, propertyUpdates) {
 			console.log('Updating schema from exploration for schema ID:', schemaId)
@@ -367,7 +367,7 @@ export const useSchemaStore = defineStore('schema', {
 					'Content-Type': 'application/json',
 				},
 				body: JSON.stringify({
-					properties: propertyUpdates
+					properties: propertyUpdates,
 				}),
 			})
 
@@ -392,13 +392,13 @@ export const useSchemaStore = defineStore('schema', {
 		/**
 		 * Get object count for a schema
 		 * @param {number} schemaId The schema ID to get object count for
-		 * @returns {Promise<number>} The number of objects in the schema
+		 * @return {Promise<number>} The number of objects in the schema
 		 */
 		async getObjectCount(schemaId) {
 			try {
 				// Convert schemaId to string for comparison
 				const schemaIdStr = String(schemaId)
-				
+
 				// First check if we already have stats for this schema
 				const existingSchema = this.schemas.find(s => String(s.id) === schemaIdStr)
 				if (existingSchema?.stats?.objects?.total !== undefined) {
@@ -407,7 +407,7 @@ export const useSchemaStore = defineStore('schema', {
 				}
 
 				console.log('Fetching object count for schema:', schemaId)
-				
+
 				// Try using the objects API to count objects for this schema
 				try {
 					const countResponse = await fetch(`/index.php/apps/openregister/api/objects/count?schema=${schemaId}`)
@@ -421,11 +421,11 @@ export const useSchemaStore = defineStore('schema', {
 				} catch (countError) {
 					console.warn('Objects count API failed, falling back to stats:', countError)
 				}
-				
+
 				// Fallback to stats endpoint
 				const statsResponse = await fetch(`/index.php/apps/openregister/api/schemas/${schemaId}/stats`)
 				console.log('Stats response status:', statsResponse.status)
-				
+
 				if (statsResponse.ok) {
 					const stats = await statsResponse.json()
 					console.log('Stats response data:', stats)
@@ -450,9 +450,9 @@ export const useSchemaStore = defineStore('schema', {
 			}
 		},
 
-	// schema properties
-	setSchemaPropertyKey(schemaPropertyKey) {
-		this.schemaPropertyKey = schemaPropertyKey
+		// schema properties
+		setSchemaPropertyKey(schemaPropertyKey) {
+			this.schemaPropertyKey = schemaPropertyKey
+		},
 	},
-},
 })

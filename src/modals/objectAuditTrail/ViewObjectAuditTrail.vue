@@ -145,13 +145,13 @@ export default {
 		goToSchema() {
 			navigationStore.setModal(null)
 			objectStore.setAuditTrailItem(null)
-			navigationStore.setSelected('schemas')
+			this.$router.push('/schemas')
 			schemaStore.setSchemaItem(this.schemaItem)
 		},
 		goToRegister() {
 			navigationStore.setModal(null)
 			objectStore.setAuditTrailItem(null)
-			navigationStore.setSelected('registers')
+			this.$router.push('/registers')
 			registerStore.setRegisterItem(this.registerItem)
 		},
 	},
