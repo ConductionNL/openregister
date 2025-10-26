@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
@@ -86,6 +87,24 @@ class OrganisationController extends Controller
 
     }//end __construct()
 
+    /**
+	 * This returns the template of the main app's page
+	 * It adds some data to the template (app version)
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @return TemplateResponse
+	 */
+	public function page(): TemplateResponse
+	{
+        return new TemplateResponse(
+            //Application::APP_ID,
+            'openregister',
+            'index',
+            []
+        );
+	}
 
     /**
      * Get user's organisations and active organisation

@@ -3,8 +3,8 @@
 		v-if="show"
 		name="SOLR Setup Results"
 		:can-close="!setting"
-		@closing="$emit('close')"
-		size="large">
+		size="large"
+		@closing="$emit('close')">
 		<div class="dialog-content">
 			<!-- Confirmation State -->
 			<div v-if="!setting && !results" class="setup-confirmation">
@@ -75,7 +75,9 @@
 					<h4 :class="results.success ? 'success-text' : 'error-text'">
 						{{ results.success ? 'SOLR Setup Completed Successfully!' : 'SOLR Setup Failed' }}
 					</h4>
-					<p class="results-message">{{ results.message }}</p>
+					<p class="results-message">
+						{{ results.message }}
+					</p>
 				</div>
 
 				<!-- Setup Steps -->
@@ -92,7 +94,9 @@
 								<h6>{{ step.step_name || step.step || `Step ${step.step_number || index + 1}` }}</h6>
 								<span class="step-status">{{ getStepStatusText(step) }}</span>
 							</div>
-							<p v-if="step.description || step.message" class="step-message">{{ step.description || step.message }}</p>
+							<p v-if="step.description || step.message" class="step-message">
+								{{ step.description || step.message }}
+							</p>
 							<div v-if="step.details" class="step-details">
 								<div v-for="(value, key) in step.details" :key="key" class="detail-item">
 									<span class="detail-label">{{ formatDetailLabel(key) }}:</span>
@@ -121,7 +125,7 @@
 						<div class="propagation-explanation">
 							<p><strong>What happened:</strong> The SOLR configSet was created successfully, but it's still propagating across the distributed SOLR cluster nodes. This is normal in production SOLR environments.</p>
 						</div>
-						
+
 						<div class="propagation-instructions">
 							<h6>🔄 Next Steps:</h6>
 							<ol>
@@ -251,13 +255,13 @@ export default {
 				'configset does not exist',
 				'Config does not exist',
 				'Could not find configSet',
-				'configSet not found'
+				'configSet not found',
 			]
 
-			return propagationPatterns.some(pattern => 
-				errorMessage.includes(pattern) || exceptionMessage.includes(pattern)
+			return propagationPatterns.some(pattern =>
+				errorMessage.includes(pattern) || exceptionMessage.includes(pattern),
 			)
-		}
+		},
 	},
 
 	methods: {
@@ -276,7 +280,7 @@ export default {
 		},
 
 		getStepStatusText(step) {
-			// Handle both step.success (boolean) and step.status (string) formats  
+			// Handle both step.success (boolean) and step.status (string) formats
 			if (step.success === true || step.status === 'completed') return 'Completed'
 			if (step.success === false || step.status === 'failed') return 'Failed'
 			if (step.status === 'started') return 'In Progress'
@@ -769,19 +773,19 @@ export default {
 	.config-grid {
 		grid-template-columns: 1fr;
 	}
-	
+
 	.config-item,
 	.detail-item {
 		flex-direction: column;
 		align-items: flex-start;
 		gap: 0.25rem;
 	}
-	
+
 	.config-value,
 	.detail-value {
 		text-align: left;
 	}
-	
+
 	.step-header {
 		flex-wrap: wrap;
 		gap: 0.5rem;

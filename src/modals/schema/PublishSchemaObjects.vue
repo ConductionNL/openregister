@@ -3,14 +3,13 @@
 		name="Publish Schema Objects"
 		size="normal"
 		:can-close="false">
-		
 		<!-- Confirmation State -->
 		<div v-if="!success && !loading">
 			<p>
-				Are you sure you want to publish <strong>all objects</strong> in the schema 
+				Are you sure you want to publish <strong>all objects</strong> in the schema
 				<strong>{{ schemaStore.schemaItem?.title }}</strong>?
 			</p>
-			
+
 			<!-- Dynamic Info Messages -->
 			<div v-if="objectCount > 0" class="publish-info-section">
 				<!-- Publish Info -->
@@ -24,17 +23,17 @@
 					{{ t('openregister', 'All {total} objects will be published with the current timestamp. Published objects become visible to users and are included in search results.', { total: objectCount }) }}
 				</NcNoteCard>
 			</div>
-			
+
 			<div v-if="objectCount > 0" class="object-count-info">
-				<SchemaStatsBlock 
+				<SchemaStatsBlock
 					:object-count="objectCount"
 					:object-stats="objectStats"
 					:loading="false"
 					:title="t('openregister', 'Objects to be published')" />
 			</div>
-			
+
 			<div v-else class="no-objects-info">
-				<SchemaStatsBlock 
+				<SchemaStatsBlock
 					:object-count="0"
 					:object-stats="null"
 					:loading="false"
@@ -46,7 +45,9 @@
 		<div v-if="loading" class="loading-container">
 			<NcLoadingIcon :size="40" />
 			<p>Publishing objects from schema '{{ schemaStore.schemaItem?.title }}'...</p>
-			<p class="loading-subtitle">This may take a moment for large datasets.</p>
+			<p class="loading-subtitle">
+				This may take a moment for large datasets.
+			</p>
 		</div>
 
 		<!-- Success State -->
@@ -83,11 +84,11 @@
 				</template>
 				{{ success ? 'Close' : 'Cancel' }}
 			</NcButton>
-			
-			<NcButton 
+
+			<NcButton
 				v-if="!success && !loading && objectCount > 0"
-				@click="confirmPublishing"
-				type="primary">
+				type="primary"
+				@click="confirmPublishing">
 				<template #icon>
 					<CheckCircle :size="20" />
 				</template>
@@ -141,10 +142,6 @@ export default {
 			objectStats: null,
 		}
 	},
-	async mounted() {
-		console.log('PublishSchemaObjects modal mounted, schemaItem:', schemaStore.schemaItem)
-		await this.loadObjectCount()
-	},
 	watch: {
 		// Watch for changes in schemaItem and reload count if needed
 		'schemaStore.schemaItem': {
@@ -154,7 +151,7 @@ export default {
 					this.loadObjectCount()
 				}
 			},
-			immediate: true
+			immediate: true,
 		},
 		// Watch for dialog state changes to load count when modal becomes visible
 		'navigationStore.modal': {
@@ -165,8 +162,12 @@ export default {
 					this.loadObjectCount()
 				}
 			},
-			immediate: true
-		}
+			immediate: true,
+		},
+	},
+	async mounted() {
+		console.log('PublishSchemaObjects modal mounted, schemaItem:', schemaStore.schemaItem)
+		await this.loadObjectCount()
 	},
 	methods: {
 		t,
@@ -191,22 +192,22 @@ export default {
 				this.objectStats = null
 			}
 		},
-		
+
 		async confirmPublishing() {
 			this.loading = true
 			this.error = false
-			
+
 			try {
 				// Find the register that contains this schema
 				await registerStore.refreshRegisterList()
-				const register = registerStore.registerList.find(reg => 
-					reg.schemas.includes(schemaStore.schemaItem.id)
+				const register = registerStore.registerList.find(reg =>
+					reg.schemas.includes(schemaStore.schemaItem.id),
 				)
-				
+
 				if (!register) {
 					throw new Error('Could not find register containing this schema')
 				}
-				
+
 				// Call the publishing API
 				const response = await fetch(
 					`/index.php/apps/openregister/api/bulk/${register.id}/${schemaStore.schemaItem.id}/publish-schema`,
@@ -216,22 +217,22 @@ export default {
 							'Content-Type': 'application/json',
 						},
 						body: JSON.stringify({
-							publishAll: true
+							publishAll: true,
 						}),
-					}
+					},
 				)
-				
+
 				if (!response.ok) {
 					throw new Error(`Publishing failed: ${response.statusText}`)
 				}
-				
+
 				const data = await response.json()
 				console.log('Publishing response:', data)
-				
+
 				this.publishResult = data
 				this.success = true
 				this.loading = false
-				
+
 			} catch (err) {
 				console.error('Publishing error:', err)
 				this.error = err.message || 'An error occurred during publishing'
@@ -240,7 +241,7 @@ export default {
 				this.loading = false
 			}
 		},
-		
+
 		closeDialog() {
 			navigationStore.setModal(false)
 			this.loading = false

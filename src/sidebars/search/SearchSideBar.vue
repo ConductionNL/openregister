@@ -93,7 +93,7 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 			<h3 class="sectionTitle">
 				{{ t('openregister', 'Advanced Filters') }}
 			</h3>
-			
+
 			<!-- Stage 1: Facet Discovery -->
 			<div v-if="!facetableFields && canSearch && !isDatabaseSource" class="facets-discovery-container">
 				<NcButton
@@ -126,11 +126,15 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 
 			<!-- Available Facets (Stage 1 Complete) -->
 			<div v-else-if="facetableFields && !isDatabaseSource" class="available-facets-container">
-				<h4 class="available-facets-title">{{ t('openregister', 'Available Filters') }}</h4>
-				
+				<h4 class="available-facets-title">
+					{{ t('openregister', 'Available Filters') }}
+				</h4>
+
 				<!-- Metadata Facets -->
 				<div v-if="facetableFields['@self']" class="facet-category">
-					<h5 class="facet-category-title">{{ t('openregister', 'Metadata Filters') }}</h5>
+					<h5 class="facet-category-title">
+						{{ t('openregister', 'Metadata Filters') }}
+					</h5>
 					<div class="facet-checkboxes">
 						<div v-for="(field, fieldName) in facetableFields['@self']" :key="`@self.${fieldName}`" class="facet-checkbox">
 							<input
@@ -148,7 +152,9 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 
 				<!-- Object Field Facets -->
 				<div v-if="facetableFields.object_fields" class="facet-category">
-					<h5 class="facet-category-title">{{ t('openregister', 'Content Filters') }}</h5>
+					<h5 class="facet-category-title">
+						{{ t('openregister', 'Content Filters') }}
+					</h5>
 					<div class="facet-checkboxes">
 						<div v-for="(field, fieldName) in facetableFields.object_fields" :key="fieldName" class="facet-checkbox">
 							<input
@@ -180,7 +186,9 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 
 			<!-- Stage 2: Facet Data (Active Filters) -->
 			<div v-else-if="facetData && Object.keys(facetData).length > 0 && !isDatabaseSource" class="active-facets-container">
-				<h4 class="active-facets-title">{{ t('openregister', 'Active Filters') }}</h4>
+				<h4 class="active-facets-title">
+					{{ t('openregister', 'Active Filters') }}
+				</h4>
 
 				<!-- Metadata facets (@self) -->
 				<div v-for="(facet, field) in facetData?.['@self'] || {}" :key="`@self.${field}`" class="facet-group">
@@ -332,18 +340,18 @@ export default {
 				{
 					value: 'auto',
 					label: '🤖 Auto (Intelligent)',
-					description: 'Automatically chooses the best data source'
+					description: 'Automatically chooses the best data source',
 				},
 				{
 					value: 'index',
 					label: '🔍 SOLR Index',
-					description: 'Fast search with advanced features, field weighting, and faceting'
+					description: 'Fast search with advanced features, field weighting, and faceting',
 				},
 				{
 					value: 'database',
 					label: '💾 Database',
-					description: 'Direct database queries (slower but always available)'
-				}
+					description: 'Direct database queries (slower but always available)',
+				},
 			]
 		},
 		selectedSourceValue() {
@@ -358,6 +366,14 @@ export default {
 		},
 	},
 	watch: {
+		// React to query param changes as single source of truth (only on /tables)
+		'$route.query': {
+			handler() {
+				if (this.$route.path !== '/tables') return
+				this.applyQueryParamsFromRoute()
+			},
+			deep: true,
+		},
 		// Watch for schema changes to initialize properties
 		// Use immediate: true equivalent in mounted
 		// This watcher will update properties when schema changes
@@ -406,9 +422,95 @@ export default {
 					objectStore.loading = false
 				})
 		}
+
+		// Initialize from query params after lists potentially load
+		this.applyQueryParamsFromRoute()
 	},
 	methods: {
 		t,
+		// Build query params from current sidebar state
+		buildQueryFromState() {
+			const query = {}
+			if (registerStore.registerItem && registerStore.registerItem.id) {
+				query.register = String(registerStore.registerItem.id)
+			}
+			if (schemaStore.schemaItem && schemaStore.schemaItem.id) {
+				query.schema = String(schemaStore.schemaItem.id)
+			}
+			if (this.searchTerms && this.searchTerms.length > 0) {
+				query.q = this.searchTerms.join(',')
+			}
+			if (this.selectedSource && this.selectedSource !== 'auto') {
+				query.source = this.selectedSource
+			}
+			return query
+		},
+		// Compare two query objects for equality (shallow, keys/values as strings)
+		queriesEqual(a, b) {
+			const ka = Object.keys(a).sort()
+			const kb = Object.keys(b).sort()
+			if (ka.length !== kb.length) return false
+			for (let i = 0; i < ka.length; i++) {
+				if (ka[i] !== kb[i]) return false
+				if (String(a[ka[i]]) !== String(b[kb[i]])) return false
+			}
+			return true
+		},
+		// Write current state to URL query (only on /tables)
+		updateRouteQueryFromState() {
+			if (this.$route.path !== '/tables') return
+			const nextQuery = this.buildQueryFromState()
+			if (this.queriesEqual(nextQuery, this.$route.query || {})) return
+			this.$router.replace({
+				path: this.$route.path,
+				query: nextQuery,
+			})
+		},
+		// Apply URL query params into component/store state
+		applyQueryParamsFromRoute() {
+			if (this.$route.path !== '/tables') return
+			const { register, schema, q, source } = this.$route.query || {}
+			// Source
+			if (source) {
+				this.selectedSource = String(source)
+			}
+			// Search terms
+			if (typeof q === 'string') {
+				const terms = q.split(',').map(s => s.trim()).filter(Boolean)
+				this.searchTerms = Array.from(new Set(terms))
+			}
+			// Registers and schemas depend on lists being loaded
+			const applyRegister = () => {
+				if (!register) return true
+				if (!registerStore.registerList.length) return false
+				const reg = registerStore.registerList.find(r => String(r.id) === String(register))
+				if (reg) registerStore.setRegisterItem(reg)
+				return true
+			}
+			const applySchema = () => {
+				if (!schema) return true
+				if (!schemaStore.schemaList.length) return false
+				const sch = schemaStore.schemaList.find(s => String(s.id) === String(schema))
+				if (sch) schemaStore.setSchemaItem(sch)
+				return true
+			}
+			// Try apply now, or retry shortly if lists not yet loaded
+			const tryApply = (attempt = 0) => {
+				const regOk = applyRegister()
+				const schOk = applySchema()
+				if (regOk && schOk) {
+					// If both selected, perform search
+					if (registerStore.registerItem && schemaStore.schemaItem) {
+						this.performSearchWithFacets()
+					}
+					return
+				}
+				if (attempt < 10) {
+					setTimeout(() => tryApply(attempt + 1), 200)
+				}
+			}
+			tryApply()
+		},
 		handleRegisterChange(option) {
 			// Set loading state when register changes
 			objectStore.loading = true
@@ -430,6 +532,8 @@ export default {
 				// Clear all facet data
 				this.resetFacets()
 				this.facetableFields = null
+				// Reflect change in URL
+				this.updateRouteQueryFromState()
 
 			} finally {
 				// Clear loading state after register change is complete
@@ -469,14 +573,18 @@ export default {
 				// Clear loading state after schema change is complete
 				objectStore.loading = false
 			}
+			// Reflect change in URL
+			this.updateRouteQueryFromState()
 		},
 		handleSourceChange(option) {
 			this.selectedSource = option.value
-			
+
 			// If we have register and schema selected, refresh the search with new source
 			if (this.canSearch) {
 				this.performSearchWithFacets()
 			}
+			// Reflect change in URL
+			this.updateRouteQueryFromState()
 		},
 		handleSearchInput() {
 			// Parse search terms from input (support comma and space separation)
@@ -498,6 +606,8 @@ export default {
 			this.handleSearchInput()
 			// Clear the input after adding terms
 			this.searchQuery = ''
+			// Reflect change in URL
+			this.updateRouteQueryFromState()
 		},
 		async removeSearchTerm(index) {
 			this.searchTerms.splice(index, 1)
@@ -509,6 +619,8 @@ export default {
 				// applyFacetFilters now manages objectStore.loading state
 				await this.applyFacetFilters()
 			}
+			// Reflect change in URL
+			this.updateRouteQueryFromState()
 		},
 		async performSearch() {
 			if (!this.canSearch) return
@@ -548,6 +660,8 @@ export default {
 				this.searchLoading = false
 				objectStore.loading = false
 			}
+			// Reflect search terms in URL
+			this.updateRouteQueryFromState()
 		},
 
 		// Complete Faceting: Load everything using _facets=extend
@@ -560,19 +674,19 @@ export default {
 				this.facetData = null
 
 				// Use _facets=extend to get complete faceting data in one call
-				const response = await objectStore.refreshObjectList({
+				await objectStore.refreshObjectList({
 					register: registerStore.registerItem.id,
 					schema: schemaStore.schemaItem.id,
 					_facets: 'extend',
-					_limit: 0 // We only want facet data, not objects
+					_limit: 0, // We only want facet data, not objects
 				})
 
 				// Extract facetable fields (for UI structure)
 				this.facetableFields = objectStore.facets?.facetable || {}
-				
+
 				// Extract extended facet data (with counts and options)
 				this.facetData = objectStore.facets?.extended || {}
-				
+
 				// Auto-enable all facets since we already have the data
 				this.enabledFacets = {}
 				Object.keys(this.facetableFields['@self'] || {}).forEach(field => {
@@ -585,7 +699,7 @@ export default {
 				this.logger?.debug('Loaded complete faceting data', {
 					metadataFields: Object.keys(this.facetableFields['@self'] || {}).length,
 					objectFields: Object.keys(this.facetableFields.object_fields || {}).length,
-					facetDataLoaded: Object.keys(this.facetData).length > 0
+					facetDataLoaded: Object.keys(this.facetData).length > 0,
 				})
 
 			} catch (error) {
@@ -604,10 +718,9 @@ export default {
 				// Facet was enabled, now being disabled
 				delete this.facetFilters[fieldName]
 			}
-			
+
 			// The v-model will handle the enabledFacets update
 		},
-
 
 		// Build facet configuration from enabled facets
 		buildFacetConfiguration() {
@@ -621,10 +734,10 @@ export default {
 					// Metadata facet
 					const field = fieldName.replace('@self.', '')
 					if (!config['@self']) config['@self'] = {}
-					
+
 					const fieldInfo = this.facetableFields?.['@self']?.[field]
 					const facetType = fieldInfo?.facet_types?.[0] || 'terms'
-					
+
 					config['@self'][field] = { type: facetType }
 					if (facetType === 'date_histogram') {
 						config['@self'][field].interval = 'month'
@@ -633,7 +746,7 @@ export default {
 					// Object field facet
 					const fieldInfo = this.facetableFields?.object_fields?.[fieldName]
 					const facetType = fieldInfo?.facet_types?.[0] || 'terms'
-					
+
 					config[fieldName] = { type: facetType }
 					if (facetType === 'date_histogram') {
 						config[fieldName].interval = 'month'
@@ -661,11 +774,6 @@ export default {
 
 				// Apply current filters and search terms to objectStore
 				this.applyFiltersToObjectStore()
-
-				// Check if we have any facet filters configured
-				const hasFacetFilters = Object.keys(this.facetFilters).some(key => 
-					this.facetFilters[key] && this.facetFilters[key].length > 0
-				)
 
 				// Always include facets discovery when searching to show available options
 				// This allows users to see what faceting options are available
@@ -703,56 +811,56 @@ export default {
 			if (!facet || !facet.data) return []
 
 			const facetData = facet.data
-			
+
 			if (facetData.type === 'terms') {
 				// Terms facet: simple buckets with value and count
 				return (facetData.buckets || []).map(bucket => ({
 					value: bucket.value,
-					label: `${bucket.label || bucket.value} (${bucket.count || 0})`
+					label: `${bucket.label || bucket.value} (${bucket.count || 0})`,
 				}))
 			} else if (facetData.type === 'range') {
 				// Range facet: numeric ranges
 				return (facetData.buckets || []).map(bucket => ({
 					value: `${bucket.from}-${bucket.to}`,
-					label: `${bucket.label || `${bucket.from} - ${bucket.to}`} (${bucket.count || 0})`
+					label: `${bucket.label || `${bucket.from} - ${bucket.to}`} (${bucket.count || 0})`,
 				}))
 			} else if (facetData.type === 'date_histogram') {
 				// Date histogram facet: multiple time brackets
 				const options = []
-				
+
 				// Add yearly options
 				if (facetData.brackets?.yearly?.buckets) {
 					facetData.brackets.yearly.buckets.forEach(bucket => {
 						options.push({
 							value: `year:${bucket.date}`,
-							label: `${bucket.label} (${bucket.count || 0})`
+							label: `${bucket.label} (${bucket.count || 0})`,
 						})
 					})
 				}
-				
+
 				// Add monthly options
 				if (facetData.brackets?.monthly?.buckets) {
 					facetData.brackets.monthly.buckets.forEach(bucket => {
 						options.push({
 							value: `month:${bucket.date}`,
-							label: `${bucket.label} (${bucket.count || 0})`
+							label: `${bucket.label} (${bucket.count || 0})`,
 						})
 					})
 				}
-				
+
 				// Add daily options (limit to recent entries to avoid clutter)
 				if (facetData.brackets?.daily?.buckets) {
 					facetData.brackets.daily.buckets.slice(0, 30).forEach(bucket => {
 						options.push({
 							value: `day:${bucket.date}`,
-							label: `${bucket.label} (${bucket.count || 0})`
+							label: `${bucket.label} (${bucket.count || 0})`,
 						})
 					})
 				}
-				
+
 				return options
 			}
-			
+
 			// Fallback for unknown facet types
 			return []
 		},
@@ -791,8 +899,11 @@ export default {
 			const filters = {}
 			if (this.searchTerms.length > 0) {
 				filters._search = this.searchTerms.join(' ')
+			} else {
+				// Ensure previously set _search is cleared when no terms remain
+				filters._search = ''
 			}
-			
+
 			// Add source selection (only if not 'auto')
 			if (this.selectedSource && this.selectedSource !== 'auto') {
 				filters._source = this.selectedSource

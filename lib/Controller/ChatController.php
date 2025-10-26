@@ -4,6 +4,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\ChatService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
@@ -56,6 +57,25 @@ class ChatController extends Controller
 		$this->chatService = $chatService;
 		$this->logger = $logger;
 		$this->userId = $userId;
+	}
+
+    /**
+	 * This returns the template of the main app's page
+	 * It adds some data to the template (app version)
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @return TemplateResponse
+	 */
+	public function page(): TemplateResponse
+	{
+        return new TemplateResponse(
+            //Application::APP_ID,
+            'openregister',
+            'index',
+            []
+        );
 	}
 
 	/**

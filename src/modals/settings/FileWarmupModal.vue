@@ -15,7 +15,7 @@
 			<!-- Configuration Section -->
 			<div class="warmup-config">
 				<h3>Warmup Configuration</h3>
-				
+
 				<!-- Max Files -->
 				<div class="form-group">
 					<label for="maxFiles">Maximum Files to Process</label>
@@ -25,7 +25,9 @@
 						min="1"
 						max="5000"
 						class="input-field">
-					<p class="hint">Maximum: 5000 files per warmup operation</p>
+					<p class="hint">
+						Maximum: 5000 files per warmup operation
+					</p>
 				</div>
 
 				<!-- Batch Size -->
@@ -37,7 +39,9 @@
 						min="10"
 						max="500"
 						class="input-field">
-					<p class="hint">Number of files to process per batch (recommended: 50-100)</p>
+					<p class="hint">
+						Number of files to process per batch (recommended: 50-100)
+					</p>
 				</div>
 
 				<!-- Skip Already Indexed -->
@@ -46,7 +50,9 @@
 						type="switch">
 						Skip Already Indexed Files
 					</NcCheckboxRadioSwitch>
-					<p class="hint">Only process files that haven't been indexed yet</p>
+					<p class="hint">
+						Only process files that haven't been indexed yet
+					</p>
 				</div>
 
 				<!-- File Type Filter -->
@@ -61,7 +67,9 @@
 							<span class="option-label">{{ label }}</span>
 						</template>
 					</NcSelect>
-					<p class="hint">Leave empty to process all supported file types</p>
+					<p class="hint">
+						Leave empty to process all supported file types
+					</p>
 				</div>
 			</div>
 
@@ -70,20 +78,36 @@
 				<h3>Current Statistics</h3>
 				<div class="stats-grid">
 					<div class="stat-card">
-						<div class="stat-value">{{ stats.total_extracted || 0 }}</div>
-						<div class="stat-label">Files Extracted</div>
+						<div class="stat-value">
+							{{ stats.total_extracted || 0 }}
+						</div>
+						<div class="stat-label">
+							Files Extracted
+						</div>
 					</div>
 					<div class="stat-card">
-						<div class="stat-value">{{ stats.total_indexed || 0 }}</div>
-						<div class="stat-label">Files Indexed</div>
+						<div class="stat-value">
+							{{ stats.total_indexed || 0 }}
+						</div>
+						<div class="stat-label">
+							Files Indexed
+						</div>
 					</div>
 					<div class="stat-card">
-						<div class="stat-value">{{ stats.pending_extraction || 0 }}</div>
-						<div class="stat-label">Pending Extraction</div>
+						<div class="stat-value">
+							{{ stats.pending_extraction || 0 }}
+						</div>
+						<div class="stat-label">
+							Pending Extraction
+						</div>
 					</div>
 					<div class="stat-card">
-						<div class="stat-value">{{ stats.pending_indexing || 0 }}</div>
-						<div class="stat-label">Pending Indexing</div>
+						<div class="stat-value">
+							{{ stats.pending_indexing || 0 }}
+						</div>
+						<div class="stat-label">
+							Pending Indexing
+						</div>
 					</div>
 				</div>
 			</div>
@@ -234,12 +258,12 @@ export default {
 				// Get extraction stats
 				const extractionResponse = await axios.get(generateUrl('/apps/openregister/api/files/extraction/stats'))
 				console.log('✅ FileWarmupModal: Extraction stats loaded:', extractionResponse.data)
-				
+
 				console.log('📊 FileWarmupModal: Fetching SOLR index stats...')
 				// Get index stats
 				const indexResponse = await axios.get(generateUrl('/apps/openregister/api/solr/files/stats'))
 				console.log('✅ FileWarmupModal: SOLR stats loaded:', indexResponse.data)
-				
+
 				this.stats = {
 					total_extracted: extractionResponse.data.stats?.completed || 0,
 					total_indexed: indexResponse.data.unique_files || 0,
@@ -283,7 +307,7 @@ export default {
 				// Call warmup API
 				const response = await axios.post(
 					generateUrl('/apps/openregister/api/solr/warmup/files'),
-					payload
+					payload,
 				)
 
 				if (response.data.success) {
@@ -315,6 +339,7 @@ export default {
 
 		/**
 		 * Handle dialog open/close state update
+		 * @param isOpen
 		 */
 		handleDialogUpdate(isOpen) {
 			console.log('🔄 FileWarmupModal: Dialog update event, isOpen:', isOpen)
@@ -504,4 +529,3 @@ export default {
 	}
 }
 </style>
-

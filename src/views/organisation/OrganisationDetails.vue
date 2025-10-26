@@ -285,7 +285,7 @@ export default {
 				await organisationStore.leaveOrganisation(organisationStore.organisationItem.uuid)
 				this.showSuccessMessage('Left organisation successfully')
 				// Navigate back to organisations list
-				navigationStore.setSelected('organisationsIndex')
+				this.$router.push('/organisation')
 			} catch (error) {
 				this.showErrorMessage('Failed to leave organisation: ' + error.message)
 			}
