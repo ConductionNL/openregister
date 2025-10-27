@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
+use Exception;
 use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\FileText;
 use OCA\OpenRegister\Db\FileTextMapper;
@@ -94,7 +95,7 @@ class FileTextService
             // Get file from Nextcloud
             $file = $this->getFileNode($fileId);
             if (!$file) {
-                throw new \Exception("File not found: $fileId");
+                throw new Exception("File not found: $fileId");
             }
 
             // Check MIME type
@@ -166,8 +167,8 @@ class FileTextService
             $internalPath = $file->getInternalPath();
             $localPath = $storage->getLocalFile($internalPath);
             
-            if (!$localPath || !file_exists($localPath)) {
-                throw new \Exception("Could not get local file path for extraction. File: " . $file->getName());
+            if ($localPath === false || file_exists($localPath) === false) {
+                throw new Exception("Could not get local file path for extraction. File: " . $file->getName());
             }
 
             $this->logger->debug('[FileTextService] File path resolved', [
@@ -194,7 +195,7 @@ class FileTextService
 
             return ['success' => true, 'fileText' => $fileText];
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error('[FileTextService] Text extraction failed', [
                 'file_id' => $fileId,
                 'error' => $e->getMessage(),
@@ -260,7 +261,7 @@ class FileTextService
                     return true; // File changed
                 }
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->warning('[FileTextService] Could not check file checksum', [
                 'file_id' => $fileId,
                 'error' => $e->getMessage(),
@@ -419,7 +420,7 @@ class FileTextService
         
         try {
             return $this->fileTextMapper->findCompleted($limit);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error('[FileTextService] Failed to get completed extractions', [
                 'error' => $e->getMessage()
             ]);

@@ -2723,7 +2723,7 @@ class SettingsController extends Controller
     {
         try {
             // Validate inputs
-            if (empty($apiEndpoint) || empty($apiKey)) {
+            if (empty($apiEndpoint) === true || empty($apiKey) === true) {
                 return new JSONResponse([
                     'success' => false,
                     'error' => 'API endpoint and API key are required',

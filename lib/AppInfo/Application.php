@@ -485,6 +485,7 @@ class Application extends App implements IBootstrap
                     $container->get(OrganisationService::class), // Add OrganisationService for multi-tenancy
                     $container->get(OrganisationMapper::class) // Add OrganisationMapper for organisation label resolution
                     // Note: RenderObject removed to avoid circular dependency with ObjectCacheService
+                    // ObjectCacheService will be resolved lazily from container to avoid circular dependency
                     // SolrSchemaService will be resolved lazily to avoid circular dependency
                     );
                 }
