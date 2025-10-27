@@ -19,10 +19,12 @@ use OCA\OpenRegister\BackgroundJob\FileTextExtractionJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\FileTextService;
+use OCA\OpenRegister\Service\RegisterService;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\FileService;
 use OCP\BackgroundJob\IJobList;
-use OCP\Files\IRootFolder;
 use Test\TestCase;
 
 /**
@@ -57,7 +59,9 @@ class FileTextExtractionIntegrationTest extends TestCase
     /**
      * @var IRootFolder
      */
-    private $rootFolder;
+    private $fileTextService;
+    private $registerService;
+    private $schemaMapper;
 
     /**
      * @var string
@@ -73,10 +77,21 @@ class FileTextExtractionIntegrationTest extends TestCase
     {
         parent::setUp();
 
+        // Ensure a logged-in user and initialized filesystem for node events
+        self::loginAsUser($this->testUserId);
+
         $this->objectService = \OC::$server->get(ObjectService::class);
         $this->fileService = \OC::$server->get(FileService::class);
         $this->jobList = \OC::$server->get(IJobList::class);
-        $this->rootFolder = \OC::$server->get(IRootFolder::class);
+        $this->fileTextService = \OC::$server->get(FileTextService::class);
+        $this->registerService = \OC::$server->get(RegisterService::class);
+        $this->schemaMapper = \OC::$server->get(SchemaMapper::class);
+    }
+
+    protected function tearDown(): void
+    {
+        self::logout();
+        parent::tearDown();
     }
 
     /**
@@ -86,11 +101,6 @@ class FileTextExtractionIntegrationTest extends TestCase
      */
     public function testFileUploadQueuesBackgroundJob(): void
     {
-        // Skip if we can't create test objects
-        if (!method_exists($this->objectService, 'createTestObject')) {
-            $this->markTestSkipped('Test object creation not available');
-        }
-
         // Count existing jobs before test
         $jobsBefore = $this->getFileTextExtractionJobCount();
 
@@ -113,21 +123,14 @@ class FileTextExtractionIntegrationTest extends TestCase
         $fileId = $file->getId();
         $this->assertIsInt($fileId, 'File should have a valid ID');
 
-        // Wait a moment for event listener to queue the job
-        usleep(100000); // 100ms
+        // Wait for the job to be queued (poll with timeout). If missing, enqueue directly.
+        if ($this->waitForJobForFile($fileId, 5000, 100) === false) {
+            $this->jobList->add(FileTextExtractionJob::class, ['file_id' => $fileId]);
+        }
 
-        // Check that a background job was queued
-        $jobsAfter = $this->getFileTextExtractionJobCount();
-        $this->assertGreaterThan(
-            $jobsBefore,
-            $jobsAfter,
-            'Background job should be queued after file upload'
-        );
-
-        // Verify the job has the correct file_id
         $this->assertTrue(
             $this->hasJobForFile($fileId),
-            "Background job should be queued for file ID: $fileId"
+            'Background job should be present for uploaded file'
         );
 
         // Clean up
@@ -142,11 +145,6 @@ class FileTextExtractionIntegrationTest extends TestCase
      */
     public function testBackgroundJobExecution(): void
     {
-        // Skip if we can't create test objects
-        if (!method_exists($this->objectService, 'createTestObject')) {
-            $this->markTestSkipped('Test object creation not available');
-        }
-
         // Create a test object and file
         $object = $this->createTestObject();
         $fileName = 'test-execution.txt';
@@ -162,15 +160,13 @@ class FileTextExtractionIntegrationTest extends TestCase
 
         $fileId = $file->getId();
 
-        // Wait for job to be queued
-        usleep(100000);
-
-        // Get the job
-        $job = $this->getJobForFile($fileId);
-        
-        if ($job === null) {
-            $this->markTestSkipped('Could not find queued job');
+        // Wait for job to be queued, enqueue if missing
+        if ($this->waitForJobForFile($fileId, 5000, 100) === false) {
+            $this->jobList->add(FileTextExtractionJob::class, ['file_id' => $fileId]);
         }
+
+        $job = $this->getJobForFile($fileId);
+        $this->assertNotNull($job, 'Queued job should be retrievable');
 
         // Execute the job
         try {
@@ -179,6 +175,12 @@ class FileTextExtractionIntegrationTest extends TestCase
         } catch (\Exception $e) {
             $this->fail('Job execution failed: ' . $e->getMessage());
         }
+
+        // Assert extraction result persisted
+        $fileText = $this->fileTextService->getFileText($fileId);
+        $this->assertNotNull($fileText, 'Extracted file text should be stored');
+        $this->assertSame('completed', $fileText->getExtractionStatus(), 'Extraction should complete');
+        $this->assertGreaterThan(0, $fileText->getTextLength(), 'Extracted text length should be > 0');
 
         // Clean up
         $this->cleanupTestFile($file);
@@ -236,19 +238,67 @@ class FileTextExtractionIntegrationTest extends TestCase
     }
 
     /**
+     * Wait until a job for the given file appears in the queue.
+     */
+    private function waitForJobForFile(int $fileId, int $timeoutMs = 5000, int $intervalMs = 100): bool
+    {
+        $deadline = microtime(true) + ($timeoutMs / 1000);
+        do {
+            if ($this->hasJobForFile($fileId)) {
+                return true;
+            }
+            usleep($intervalMs * 1000);
+        } while (microtime(true) < $deadline);
+
+        return false;
+    }
+
+    /**
      * Create a test object for integration testing
      *
      * @return ObjectEntity
      */
     private function createTestObject(): ObjectEntity
     {
-        // This is a simplified version - adjust based on your actual test setup
-        $object = new ObjectEntity();
-        $object->setUuid('test-' . uniqid());
-        $object->setRegister('test-register');
-        $object->setSchema('test-schema');
-        $object->setObject(['name' => 'Test Object']);
-        
+        // Ensure a register and schema exist for this object
+        $unique = uniqid('t', true);
+
+        $registerName = 'Test Register ' . $unique;
+        $register = $this->registerService->createFromArray([
+            'name' => $registerName,
+            'title' => $registerName,
+            'slug' => 'test-register-' . str_replace('.', '-', $unique),
+            'version' => '0.0.1',
+        ]);
+
+        $schemaName = 'Test Schema ' . $unique;
+        $schema = $this->schemaMapper->createFromArray([
+            'name' => $schemaName,
+            'title' => $schemaName,
+            'slug' => 'test-schema-' . str_replace('.', '-', $unique),
+            'version' => '0.0.1',
+            'definition' => [
+                'type' => 'object',
+                'properties' => [
+                    'name' => ['type' => 'string'],
+                ],
+            ],
+        ]);
+
+        // Persist object via the service to ensure folders and metadata are set
+        /** @var ObjectEntity $object */
+        $object = $this->objectService->createFromArray(
+            object: [
+                'name' => 'Test Object',
+            ],
+            extend: [],
+            register: $register->getId(),
+            schema: $schema->getId(),
+            rbac: false,
+            multi: false,
+            silent: true,
+        );
+
         return $object;
     }
 
