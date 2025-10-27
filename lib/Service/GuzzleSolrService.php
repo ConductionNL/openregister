@@ -93,6 +93,20 @@ class GuzzleSolrService
     ];
 
     /**
+     * Lazy-loaded ObjectCacheService instance
+     *
+     * @var ObjectCacheService|null
+     */
+    private ?ObjectCacheService $objectCacheService = null;
+
+    /**
+     * Flag to track if we've attempted to load ObjectCacheService
+     *
+     * @var bool
+     */
+    private bool $objectCacheServiceAttempted = false;
+
+    /**
      * Constructor
      *
      * @param SettingsService         $settingsService     Settings service for configuration
@@ -103,7 +117,6 @@ class GuzzleSolrService
      * @param RegisterMapper|null     $registerMapper      Register mapper for database operations
      * @param OrganisationService|null $organisationService Organisation service for organisation operations
      * @param OrganisationMapper|null $organisationMapper  Organisation mapper for database operations
-     * @param ObjectCacheService|null $objectCacheService  Object cache service for resolving object names
      */
     public function __construct(
         private readonly SettingsService $settingsService,
@@ -114,10 +127,42 @@ class GuzzleSolrService
         private readonly ?RegisterMapper $registerMapper = null,
         private readonly ?OrganisationService $organisationService = null,
         private readonly ?OrganisationMapper $organisationMapper = null,
-        private readonly ?ObjectCacheService $objectCacheService = null,
     ) {
         $this->initializeConfig();
         $this->initializeHttpClient();
+    }
+
+    /**
+     * Get ObjectCacheService lazily from container to avoid circular dependency
+     *
+     * This method lazily loads ObjectCacheService from the Nextcloud container
+     * only when needed (for UUID-to-name resolution in facets). This avoids
+     * circular dependency issues during service initialization.
+     *
+     * @return ObjectCacheService|null Object cache service or null if unavailable
+     */
+    private function getObjectCacheService(): ?ObjectCacheService
+    {
+        // Only attempt to load once to avoid repeated failures
+        if ($this->objectCacheServiceAttempted === true) {
+            return $this->objectCacheService;
+        }
+
+        $this->objectCacheServiceAttempted = true;
+
+        try {
+            // Get service from Nextcloud container
+            $this->objectCacheService = \OC::$server->get(ObjectCacheService::class);
+            $this->logger->debug('✅ ObjectCacheService loaded successfully for facet UUID resolution');
+        } catch (\Exception $e) {
+            $this->logger->warning('⚠️ Failed to load ObjectCacheService from container', [
+                'error' => $e->getMessage(),
+                'note' => 'UUID-to-name resolution in facets will not be available'
+            ]);
+            $this->objectCacheService = null;
+        }
+
+        return $this->objectCacheService;
     }
 
     /**
@@ -3088,6 +3133,10 @@ class GuzzleSolrService
     {
         // Clean the search term
         $cleanTerm = $this->cleanSearchTerm($searchTerm);
+        
+        // Force lowercase for case-insensitive search
+        // Solr text fields should use lowercase filters, but we ensure it here
+        $cleanTerm = mb_strtolower($cleanTerm);
         
         // Define field weights (higher = more important)
         // Using essential OpenRegister fields with specified weights
@@ -8741,6 +8790,11 @@ class GuzzleSolrService
         $buckets = $rawData['buckets'] ?? [];
         $formattedBuckets = [];
         
+        $this->logger->debug('FACET: Formatting terms facet data', [
+            'bucket_count' => count($buckets),
+            'first_3_buckets' => array_slice($buckets, 0, 3)
+        ]);
+        
         // Extract all values that might be UUIDs for batch lookup
         $values = array_map(function($bucket) { return $bucket['val']; }, $buckets);
         
@@ -8749,40 +8803,52 @@ class GuzzleSolrService
             return is_string($value) && str_contains($value, '-');
         });
         
+        $this->logger->debug('FACET: UUID detection', [
+            'total_values' => count($values),
+            'potential_uuids' => count($potentialUuids),
+            'uuid_samples' => array_slice($potentialUuids, 0, 5)
+        ]);
+        
         // Resolve UUIDs to names using object cache service
         $resolvedNames = [];
         if (!empty($potentialUuids)) {
+            // Lazy-load ObjectCacheService from container
+            $objectCacheService = $this->getObjectCacheService();
+            
             // Check if ObjectCacheService is available
-            if ($this->objectCacheService === null) {
-                $this->logger->warning('⚠️ ObjectCacheService not available for UUID resolution in facets', [
+            if ($objectCacheService === null) {
+                $this->logger->warning('FACET: ObjectCacheService not available for UUID resolution', [
                     'potential_uuids' => count($potentialUuids),
                     'sample_values' => array_slice($potentialUuids, 0, 3)
                 ]);
             } else {
                 try {
-                    $resolvedNames = $this->objectCacheService->getMultipleObjectNames($potentialUuids);
-                    $this->logger->debug('✅ Resolved UUID labels for terms facet', [
+                    $resolvedNames = $objectCacheService->getMultipleObjectNames($potentialUuids);
+                    $this->logger->debug('FACET: Resolved UUID labels', [
                         'uuids_checked' => count($potentialUuids),
                         'names_resolved' => count($resolvedNames),
-                        'sample_values' => array_slice($potentialUuids, 0, 3),
-                        'sample_resolved' => array_slice($resolvedNames, 0, 3)
+                        'sample_resolved' => array_slice($resolvedNames, 0, 3, true)
                     ]);
                 } catch (\Exception $e) {
-                    $this->logger->warning('❌ Failed to resolve UUID labels for terms facet', [
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString()
+                    $this->logger->warning('FACET: Failed to resolve UUID labels', [
+                        'error' => $e->getMessage()
                     ]);
                 }
             }
+        } else {
+            $this->logger->debug('FACET: No UUIDs detected in facet values', [
+                'sample_values' => array_slice($values, 0, 5)
+            ]);
         }
         
         // Format buckets with resolved labels
         foreach ($buckets as $bucket) {
             $value = $bucket['val'];
+            $label = $resolvedNames[$value] ?? $value; // Use resolved name or fallback to value
             $formattedBuckets[] = [
                 'value' => $value,
                 'count' => $bucket['count'],
-                'label' => $resolvedNames[$value] ?? $value // Use resolved name or fallback to value
+                'label' => $label
             ];
         }
         
@@ -8790,6 +8856,11 @@ class GuzzleSolrService
         usort($formattedBuckets, function($a, $b) {
             return strcasecmp($a['label'], $b['label']);
         });
+        
+        $this->logger->debug('FACET: Sorting complete', [
+            'sorted_count' => count($formattedBuckets),
+            'first_3_sorted' => array_slice($formattedBuckets, 0, 3)
+        ]);
         
         return [
             'type' => 'terms',

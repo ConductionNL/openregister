@@ -346,6 +346,15 @@ export const useSettingsStore = defineStore('settings', {
 						}
 					})
 
+					// Convert scheme string to object format for NcSelect component
+					// API returns "http" or "https", but NcSelect needs {id: "http", label: "HTTP"}
+					if (processedData.scheme && typeof processedData.scheme === 'string') {
+						const schemeOption = this.schemeOptions.find(opt => opt.id === processedData.scheme)
+						if (schemeOption) {
+							processedData.scheme = schemeOption
+						}
+					}
+
 					this.solrOptions = { ...this.solrOptions, ...processedData }
 				}
 			} catch (error) {
@@ -361,9 +370,17 @@ export const useSettingsStore = defineStore('settings', {
 		async updateSolrSettings(solrData) {
 			this.saving = true
 			try {
+				// Normalize the data before sending to API
+				const normalizedData = { ...solrData }
+				
+				// Handle scheme field - NcSelect returns {id: "http", label: "HTTP"} but we need just "http"
+				if (normalizedData.scheme && typeof normalizedData.scheme === 'object' && normalizedData.scheme.id) {
+					normalizedData.scheme = normalizedData.scheme.id
+				}
+				
 				const response = await axios.put(
 					generateUrl('/apps/openregister/api/settings/solr'),
-					solrData,
+					normalizedData,
 				)
 
 				if (response.data) {
