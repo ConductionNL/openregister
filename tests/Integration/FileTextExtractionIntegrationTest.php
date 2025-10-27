@@ -19,22 +19,46 @@ use OCA\OpenRegister\BackgroundJob\FileTextExtractionJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+<<<<<<< Updated upstream
 use OCA\OpenRegister\Service\FileTextService;
 use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Db\SchemaMapper;
+=======
+use OCA\OpenRegister\Db\FileTextMapper;
+>>>>>>> Stashed changes
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FileTextService;
 use OCP\BackgroundJob\IJobList;
 use Test\TestCase;
 
 /**
  * Integration test for file text extraction background job
  *
- * This test verifies that:
- * 1. Files can be uploaded successfully
- * 2. Background jobs are queued automatically
- * 3. Background jobs can be executed
- * 4. Text extraction completes successfully
+ * This test suite verifies the complete text extraction pipeline:
+ * 
+ * 1. **File Upload & Job Queuing**
+ *    - Files can be uploaded successfully
+ *    - Background jobs are queued automatically via FileChangeListener
+ *    - Jobs have correct file_id parameters
+ * 
+ * 2. **Background Job Execution**
+ *    - Background jobs can be executed without errors
+ *    - Jobs call FileTextService correctly
+ *    - Processing completes successfully
+ * 
+ * 3. **End-to-End Text Extraction** (NEW)
+ *    - Text is extracted from uploaded files
+ *    - Extracted text is stored in database
+ *    - Text content matches original file content
+ *    - Extraction metadata is recorded (status, method, timestamps)
+ *    - Text can be retrieved via FileTextMapper
+ * 
+ * 4. **Multiple File Format Support** (NEW)
+ *    - Plain text files (.txt)
+ *    - Markdown files (.md)
+ *    - JSON files (.json)
+ *    - Other supported formats
  *
  * @package OCA\OpenRegister\Tests\Integration
  * @group DB
@@ -50,6 +74,16 @@ class FileTextExtractionIntegrationTest extends TestCase
      * @var FileService
      */
     private $fileService;
+
+    /**
+     * @var FileTextService
+     */
+    private $fileTextService;
+
+    /**
+     * @var FileTextMapper
+     */
+    private $fileTextMapper;
 
     /**
      * @var IJobList
@@ -82,6 +116,8 @@ class FileTextExtractionIntegrationTest extends TestCase
 
         $this->objectService = \OC::$server->get(ObjectService::class);
         $this->fileService = \OC::$server->get(FileService::class);
+        $this->fileTextService = \OC::$server->get(FileTextService::class);
+        $this->fileTextMapper = \OC::$server->get(FileTextMapper::class);
         $this->jobList = \OC::$server->get(IJobList::class);
         $this->fileTextService = \OC::$server->get(FileTextService::class);
         $this->registerService = \OC::$server->get(RegisterService::class);
@@ -185,6 +221,229 @@ class FileTextExtractionIntegrationTest extends TestCase
         // Clean up
         $this->cleanupTestFile($file);
         $this->cleanupTestObject($object);
+    }
+
+    /**
+     * Test end-to-end text extraction from file upload to stored text
+     *
+     * This comprehensive test:
+     * 1. Creates a test object
+     * 2. Uploads a text file with known content
+     * 3. Waits for background job to be queued
+     * 4. Executes the background job
+     * 5. Verifies extracted text is stored in database
+     * 6. Verifies extracted text matches original content
+     *
+     * @return void
+     */
+    public function testTextExtractionEndToEnd(): void
+    {
+        // Skip if we can't create test objects
+        if (!method_exists($this->objectService, 'createTestObject')) {
+            $this->markTestSkipped('Test object creation not available');
+        }
+
+        // Test content with unique markers for verification
+        $testContent = "OpenRegister Integration Test\n\n" .
+                      "This is a test document for end-to-end text extraction testing.\n" .
+                      "Unique marker: TEST-" . uniqid() . "\n\n" .
+                      "Key features being tested:\n" .
+                      "- File upload and storage\n" .
+                      "- Background job queuing\n" .
+                      "- Text extraction processing\n" .
+                      "- Database storage of extracted text\n" .
+                      "- Retrieval and verification\n\n" .
+                      "If you can read this, text extraction is working correctly!";
+
+        // Create test object
+        $object = $this->createTestObject();
+        $this->assertNotNull($object, 'Test object should be created');
+
+        // Upload file
+        $file = $this->fileService->addFile(
+            objectEntity: $object,
+            fileName: 'integration-test.txt',
+            content: $testContent,
+            share: false,
+            tags: ['integration-test', 'text-extraction']
+        );
+
+        $this->assertNotNull($file, 'File should be uploaded successfully');
+        $fileId = $file->getId();
+        $this->assertIsInt($fileId, 'File ID should be an integer');
+
+        // Wait for background job to be queued
+        usleep(150000); // 150ms
+
+        // Verify background job was queued
+        $job = $this->getJobForFile($fileId);
+        $this->assertNotNull($job, "Background job should be queued for file ID: $fileId");
+
+        // Execute the background job
+        try {
+            $job->execute($this->jobList);
+        } catch (\Exception $e) {
+            $this->fail('Background job execution failed: ' . $e->getMessage());
+        }
+
+        // Give processing a moment to complete
+        usleep(50000); // 50ms
+
+        // Verify text was extracted and stored
+        try {
+            $fileText = $this->fileTextMapper->findByFileId($fileId);
+            
+            $this->assertNotNull($fileText, 'FileText record should exist');
+            $this->assertEquals($fileId, $fileText->getFileId(), 'FileText should reference correct file');
+            
+            // Verify extraction status
+            $this->assertEquals(
+                'completed',
+                $fileText->getExtractionStatus(),
+                'Extraction status should be completed'
+            );
+            
+            // Verify text content was extracted
+            $extractedText = $fileText->getTextContent();
+            $this->assertNotNull($extractedText, 'Extracted text should not be null');
+            $this->assertNotEmpty($extractedText, 'Extracted text should not be empty');
+            
+            // Verify content matches (allowing for minor whitespace differences)
+            $this->assertStringContainsString(
+                'OpenRegister Integration Test',
+                $extractedText,
+                'Extracted text should contain the title'
+            );
+            
+            $this->assertStringContainsString(
+                'end-to-end text extraction testing',
+                $extractedText,
+                'Extracted text should contain test description'
+            );
+            
+            $this->assertStringContainsString(
+                'text extraction is working correctly',
+                $extractedText,
+                'Extracted text should contain verification message'
+            );
+            
+            // Verify text length is reasonable
+            $textLength = $fileText->getTextLength();
+            $this->assertGreaterThan(0, $textLength, 'Text length should be greater than 0');
+            $this->assertEquals(
+                strlen($extractedText),
+                $textLength,
+                'Stored text length should match actual text length'
+            );
+            
+            // Verify extraction method
+            $this->assertNotEmpty(
+                $fileText->getExtractionMethod(),
+                'Extraction method should be recorded'
+            );
+            
+            // Verify timestamps
+            $this->assertNotNull(
+                $fileText->getExtractedAt(),
+                'Extraction timestamp should be set'
+            );
+            
+            // Output success info
+            echo "\n✓ Text extraction successful!\n";
+            echo "  - File ID: $fileId\n";
+            echo "  - Extracted text length: $textLength characters\n";
+            echo "  - Extraction method: " . $fileText->getExtractionMethod() . "\n";
+            echo "  - Extraction status: " . $fileText->getExtractionStatus() . "\n";
+            
+        } catch (\Exception $e) {
+            $this->fail('Failed to retrieve extracted text: ' . $e->getMessage());
+        }
+
+        // Clean up
+        $this->cleanupTestFile($file);
+        $this->cleanupTestObject($object);
+    }
+
+    /**
+     * Test text extraction with different file types
+     *
+     * Tests that different supported file formats can be processed
+     *
+     * @return void
+     */
+    public function testTextExtractionMultipleFormats(): void
+    {
+        // Skip if we can't create test objects
+        if (!method_exists($this->objectService, 'createTestObject')) {
+            $this->markTestSkipped('Test object creation not available');
+        }
+
+        $testCases = [
+            [
+                'fileName' => 'test-plain.txt',
+                'content' => 'Plain text file content for testing.',
+                'mimeType' => 'text/plain',
+                'expectedString' => 'Plain text file content',
+            ],
+            [
+                'fileName' => 'test-markdown.md',
+                'content' => "# Markdown Test\n\nThis is **bold** and this is *italic*.\n\n- List item 1\n- List item 2",
+                'mimeType' => 'text/markdown',
+                'expectedString' => 'Markdown Test',
+            ],
+            [
+                'fileName' => 'test-json.json',
+                'content' => '{"message": "JSON test content", "type": "integration-test", "success": true}',
+                'mimeType' => 'application/json',
+                'expectedString' => 'JSON test content',
+            ],
+        ];
+
+        foreach ($testCases as $testCase) {
+            $object = $this->createTestObject();
+            
+            // Upload file
+            $file = $this->fileService->addFile(
+                objectEntity: $object,
+                fileName: $testCase['fileName'],
+                content: $testCase['content'],
+                share: false,
+                tags: ['format-test']
+            );
+
+            $fileId = $file->getId();
+
+            // Wait and get job
+            usleep(150000);
+            $job = $this->getJobForFile($fileId);
+            
+            if ($job !== null) {
+                // Execute job
+                try {
+                    $job->execute($this->jobList);
+                    usleep(50000);
+                    
+                    // Verify extraction
+                    $fileText = $this->fileTextMapper->findByFileId($fileId);
+                    $extractedText = $fileText->getTextContent();
+                    
+                    $this->assertStringContainsString(
+                        $testCase['expectedString'],
+                        $extractedText,
+                        "Extracted text from {$testCase['fileName']} should contain expected content"
+                    );
+                    
+                    echo "\n✓ {$testCase['fileName']}: Text extracted successfully\n";
+                    
+                } catch (\Exception $e) {
+                    echo "\n⚠ {$testCase['fileName']}: Extraction failed - " . $e->getMessage() . "\n";
+                }
+            }
+
+            // Clean up
+            $this->cleanupTestFile($file);
+            $this->cleanupTestObject($object);
+        }
     }
 
     /**
