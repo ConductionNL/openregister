@@ -158,7 +158,7 @@ Open Register can generate previews for common file types:
 
 For supported file types, content can be extracted for indexing and search:
 - Text extraction from documents
-- OCR for scanned documents
+- OCR for scanned documents and images
 - Metadata extraction
 
 **Asynchronous Processing**: Text extraction happens in the background after file upload, ensuring:
@@ -167,12 +167,41 @@ For supported file types, content can be extracted for indexing and search:
 - **Reliable**: Background jobs automatically handle retries for failed extractions
 - **Resource-efficient**: Processing happens when resources are available
 
-Typical processing times:
-- Text files: < 1 second
-- PDFs: 2-10 seconds
-- Large documents or OCR: 10-60 seconds
+**Text Extraction Options**:
 
-You can check extraction status in the file's metadata after upload.
+OpenRegister supports two text extraction engines:
+
+1. **LLPhant (Default)** - PHP-based extraction:
+   - ✓ Native support: TXT, MD, HTML, JSON, XML, CSV
+   - ○ Library support: PDF, DOCX, DOC, XLSX, XLS (requires PhpOffice, PdfParser)
+   - ⚠️ Limited: PPTX, ODT, RTF
+   - ✗ No support: Image files (JPG, PNG, GIF, WebP)
+   - Best for: Privacy-conscious environments, regular documents
+   - Cost: Free (included)
+
+2. **Dolphin AI** - Advanced AI-powered extraction:
+   - ✓ All document formats with superior quality
+   - ✓ OCR for scanned documents and images (JPG, PNG, GIF, WebP)
+   - ✓ Advanced table extraction
+   - ✓ Formula recognition
+   - ✓ Multi-language OCR
+   - Best for: Complex documents, scanned materials, images with text
+   - Cost: API subscription required
+
+**Extraction Scope Options**:
+- **None**: Text extraction disabled
+- **All files**: Extract from all uploaded files
+- **Files in folders**: Extract only from files in specific folders
+- **Files attached to objects**: Extract only from files linked to objects (recommended)
+
+**Typical Processing Times**:
+- Text files: < 1 second
+- PDFs (LLPhant): 2-10 seconds
+- PDFs (Dolphin): 3-15 seconds
+- Large documents or OCR: 10-60 seconds
+- Images with OCR (Dolphin): 5-20 seconds
+
+You can configure text extraction in Settings → File Configuration. Check extraction status in the file's metadata after upload.
 
 ## Working with Files
 
