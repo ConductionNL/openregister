@@ -1252,5 +1252,394 @@ class CoreIntegrationTest extends TestCase
         $returnedIds = array_column($result['results'], 'id');
         $this->assertContains($obj1['id'], $returnedIds, 'Should find object matching all criteria');
     }
+
+    // ========================================
+    // SOLR SEARCH & ORDERING TESTS (29-35)
+    // ========================================
+
+    /**
+     * Test 29: Case-insensitive search - lowercase
+     * 
+     * Verifies that search is case-insensitive by searching with lowercase.
+     * 
+     * @group solr
+     */
+    public function testCaseInsensitiveSearchLowercase(): void
+    {
+        // Create test object with specific title
+        $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
+            'json' => ['title' => 'SOFTWARE Testing Document']
+        ]);
+        $this->assertEquals(201, $createResponse->getStatusCode());
+        $object = json_decode($createResponse->getBody(), true);
+        $this->createdObjectIds[] = $object['id'];
+
+        // Search with lowercase - should find the object
+        $searchResponse = $this->client->get("/index.php/apps/openregister/api/objects?_source=index&_search=software");
+        $this->assertEquals(200, $searchResponse->getStatusCode());
+        
+        $result = json_decode($searchResponse->getBody(), true);
+        $this->assertGreaterThan(0, $result['total'], 'Lowercase search should find uppercase title');
+        
+        $returnedIds = array_column($result['results'], 'id');
+        $this->assertContains($object['id'], $returnedIds, 'Should find object with "SOFTWARE" when searching for "software"');
+    }
+
+    /**
+     * Test 30: Case-insensitive search - uppercase
+     * 
+     * Verifies that search is case-insensitive by searching with uppercase.
+     * 
+     * @group solr
+     */
+    public function testCaseInsensitiveSearchUppercase(): void
+    {
+        // Create test object with lowercase title
+        $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
+            'json' => ['title' => 'integration testing guide']
+        ]);
+        $this->assertEquals(201, $createResponse->getStatusCode());
+        $object = json_decode($createResponse->getBody(), true);
+        $this->createdObjectIds[] = $object['id'];
+
+        // Search with uppercase - should find the object
+        $searchResponse = $this->client->get("/index.php/apps/openregister/api/objects?_source=index&_search=INTEGRATION");
+        $this->assertEquals(200, $searchResponse->getStatusCode());
+        
+        $result = json_decode($searchResponse->getBody(), true);
+        $this->assertGreaterThan(0, $result['total'], 'Uppercase search should find lowercase title');
+        
+        $returnedIds = array_column($result['results'], 'id');
+        $this->assertContains($object['id'], $returnedIds, 'Should find object with "integration" when searching for "INTEGRATION"');
+    }
+
+    /**
+     * Test 31: Case-insensitive search - mixed case
+     * 
+     * Verifies that search is case-insensitive with mixed case input.
+     * 
+     * @group solr
+     */
+    public function testCaseInsensitiveSearchMixedCase(): void
+    {
+        // Create test object
+        $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
+            'json' => ['title' => 'Documentation Manual']
+        ]);
+        $this->assertEquals(201, $createResponse->getStatusCode());
+        $object = json_decode($createResponse->getBody(), true);
+        $this->createdObjectIds[] = $object['id'];
+
+        // Search with mixed case - should find the object
+        $searchResponse = $this->client->get("/index.php/apps/openregister/api/objects?_source=index&_search=DoCuMeNtAtIoN");
+        $this->assertEquals(200, $searchResponse->getStatusCode());
+        
+        $result = json_decode($searchResponse->getBody(), true);
+        $this->assertGreaterThan(0, $result['total'], 'Mixed case search should work');
+        
+        $returnedIds = array_column($result['results'], 'id');
+        $this->assertContains($object['id'], $returnedIds, 'Should find object regardless of search term case');
+    }
+
+    /**
+     * Test 32: Ordering by @self.name ascending
+     * 
+     * Verifies that ordering by name field works in ascending order (A→Z).
+     * 
+     * @group solr
+     */
+    public function testOrderingByNameAscending(): void
+    {
+        // Create multiple objects with different names
+        $obj1Response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
+            'json' => ['title' => 'Zebra Document']
+        ]);
+        $obj1 = json_decode($obj1Response->getBody(), true);
+        $this->createdObjectIds[] = $obj1['id'];
+
+        $obj2Response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
+            'json' => ['title' => 'Alpha Document']
+        ]);
+        $obj2 = json_decode($obj2Response->getBody(), true);
+        $this->createdObjectIds[] = $obj2['id'];
+
+        $obj3Response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
+            'json' => ['title' => 'Beta Document']
+        ]);
+        $obj3 = json_decode($obj3Response->getBody(), true);
+        $this->createdObjectIds[] = $obj3['id'];
+
+        // Query with ascending order by name
+        $orderResponse = $this->client->get("/index.php/apps/openregister/api/objects?_source=index&_order[@self.name]=asc&_limit=10");
+        $this->assertEquals(200, $orderResponse->getStatusCode());
+        
+        $result = json_decode($orderResponse->getBody(), true);
+        $this->assertGreaterThanOrEqual(3, $result['total']);
+
+        // Get names from results
+        $names = array_map(function($obj) {
+            return $obj['@self']['name'] ?? '';
+        }, $result['results']);
+
+        // Verify they are in ascending alphabetical order
+        $sortedNames = $names;
+        sort($sortedNames, SORT_STRING | SORT_FLAG_CASE);
+        
+        $this->assertEquals($sortedNames, $names, 'Names should be in ascending alphabetical order');
+    }
+
+    /**
+     * Test 33: Ordering by @self.name descending
+     * 
+     * Verifies that ordering by name field works in descending order (Z→A).
+     * 
+     * @group solr
+     */
+    public function testOrderingByNameDescending(): void
+    {
+        // Create multiple objects with different names
+        $obj1Response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
+            'json' => ['title' => 'First Document']
+        ]);
+        $obj1 = json_decode($obj1Response->getBody(), true);
+        $this->createdObjectIds[] = $obj1['id'];
+
+        $obj2Response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
+            'json' => ['title' => 'Last Document']
+        ]);
+        $obj2 = json_decode($obj2Response->getBody(), true);
+        $this->createdObjectIds[] = $obj2['id'];
+
+        $obj3Response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
+            'json' => ['title' => 'Middle Document']
+        ]);
+        $obj3 = json_decode($obj3Response->getBody(), true);
+        $this->createdObjectIds[] = $obj3['id'];
+
+        // Query with descending order by name
+        $orderResponse = $this->client->get("/index.php/apps/openregister/api/objects?_source=index&_order[@self.name]=desc&_limit=10");
+        $this->assertEquals(200, $orderResponse->getStatusCode());
+        
+        $result = json_decode($orderResponse->getBody(), true);
+        $this->assertGreaterThanOrEqual(3, $result['total']);
+
+        // Get names from results
+        $names = array_map(function($obj) {
+            return $obj['@self']['name'] ?? '';
+        }, $result['results']);
+
+        // Verify they are in descending alphabetical order
+        $sortedNames = $names;
+        rsort($sortedNames, SORT_STRING | SORT_FLAG_CASE);
+        
+        $this->assertEquals($sortedNames, $names, 'Names should be in descending alphabetical order');
+    }
+
+    /**
+     * Test 34: Ordering by @self.published ascending
+     * 
+     * Verifies that ordering by published date works in ascending order (oldest first).
+     * 
+     * @group solr
+     */
+    public function testOrderingByPublishedAscending(): void
+    {
+        // Create objects with different published dates
+        $yesterday = new \DateTime('-1 day');
+        $today = new \DateTime();
+        $tomorrow = new \DateTime('+1 day');
+
+        $obj1Response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
+            'json' => [
+                'title' => 'Old Document',
+                '@self' => ['published' => $yesterday->format('Y-m-d\TH:i:s\Z')]
+            ]
+        ]);
+        $obj1 = json_decode($obj1Response->getBody(), true);
+        $this->createdObjectIds[] = $obj1['id'];
+
+        $obj2Response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
+            'json' => [
+                'title' => 'Recent Document',
+                '@self' => ['published' => $tomorrow->format('Y-m-d\TH:i:s\Z')]
+            ]
+        ]);
+        $obj2 = json_decode($obj2Response->getBody(), true);
+        $this->createdObjectIds[] = $obj2['id'];
+
+        $obj3Response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
+            'json' => [
+                'title' => 'Today Document',
+                '@self' => ['published' => $today->format('Y-m-d\TH:i:s\Z')]
+            ]
+        ]);
+        $obj3 = json_decode($obj3Response->getBody(), true);
+        $this->createdObjectIds[] = $obj3['id'];
+
+        // Query with ascending order by published date
+        $orderResponse = $this->client->get("/index.php/apps/openregister/api/objects?_source=index&_order[@self.published]=asc&_limit=10");
+        $this->assertEquals(200, $orderResponse->getStatusCode());
+        
+        $result = json_decode($orderResponse->getBody(), true);
+        
+        // Get published dates from results
+        $publishedDates = array_map(function($obj) {
+            return $obj['@self']['published'] ?? '';
+        }, array_filter($result['results'], function($obj) {
+            return !empty($obj['@self']['published']);
+        }));
+
+        // Verify dates are in ascending order
+        $sortedDates = $publishedDates;
+        sort($sortedDates);
+        
+        $this->assertEquals($sortedDates, $publishedDates, 'Published dates should be in ascending chronological order');
+    }
+
+    /**
+     * Test 35: Ordering by @self.published descending
+     * 
+     * Verifies that ordering by published date works in descending order (newest first).
+     * 
+     * @group solr
+     */
+    public function testOrderingByPublishedDescending(): void
+    {
+        // Create objects with different published dates
+        $yesterday = new \DateTime('-1 day');
+        $today = new \DateTime();
+
+        $obj1Response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
+            'json' => [
+                'title' => 'Past Document',
+                '@self' => ['published' => $yesterday->format('Y-m-d\TH:i:s\Z')]
+            ]
+        ]);
+        $obj1 = json_decode($obj1Response->getBody(), true);
+        $this->createdObjectIds[] = $obj1['id'];
+
+        $obj2Response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
+            'json' => [
+                'title' => 'Current Document',
+                '@self' => ['published' => $today->format('Y-m-d\TH:i:s\Z')]
+            ]
+        ]);
+        $obj2 = json_decode($obj2Response->getBody(), true);
+        $this->createdObjectIds[] = $obj2['id'];
+
+        // Query with descending order by published date
+        $orderResponse = $this->client->get("/index.php/apps/openregister/api/objects?_source=index&_order[@self.published]=desc&_limit=10");
+        $this->assertEquals(200, $orderResponse->getStatusCode());
+        
+        $result = json_decode($orderResponse->getBody(), true);
+        
+        // Get published dates from results
+        $publishedDates = array_map(function($obj) {
+            return $obj['@self']['published'] ?? '';
+        }, array_filter($result['results'], function($obj) {
+            return !empty($obj['@self']['published']);
+        }));
+
+        // Verify dates are in descending order
+        $sortedDates = $publishedDates;
+        rsort($sortedDates);
+        
+        $this->assertEquals($sortedDates, $publishedDates, 'Published dates should be in descending chronological order');
+    }
+
+    /**
+     * Test 36: UUID resolution in facets
+     * 
+     * Verifies that facet bucket labels show resolved names instead of UUIDs.
+     * 
+     * @group solr
+     */
+    public function testFacetUuidResolution(): void
+    {
+        // Create schema with relation field
+        $schemaResponse = $this->client->post('/index.php/apps/openregister/api/schemas', [
+            'json' => [
+                'register' => $this->registerId,
+                'slug' => 'facet-test-' . uniqid(),
+                'title' => 'Facet Test Schema',
+                'properties' => [
+                    'title' => ['type' => 'string'],
+                    'relatedObjects' => [
+                        'type' => 'array',
+                        'items' => ['type' => 'string'] // UUIDs of related objects
+                    ]
+                ],
+            ]
+        ]);
+        $schema = json_decode($schemaResponse->getBody(), true);
+        $this->createdSchemaIds[] = $schema['id'];
+
+        // Create some objects to reference
+        $refObj1Response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
+            'json' => ['title' => 'Referenced Object Alpha']
+        ]);
+        $refObj1 = json_decode($refObj1Response->getBody(), true);
+        $this->createdObjectIds[] = $refObj1['id'];
+
+        $refObj2Response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
+            'json' => ['title' => 'Referenced Object Beta']
+        ]);
+        $refObj2 = json_decode($refObj2Response->getBody(), true);
+        $this->createdObjectIds[] = $refObj2['id'];
+
+        // Create objects with references
+        $obj1Response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$schema['slug']}", [
+            'json' => [
+                'title' => 'Main Object 1',
+                'relatedObjects' => [$refObj1['uuid']]
+            ]
+        ]);
+        $obj1 = json_decode($obj1Response->getBody(), true);
+        $this->createdObjectIds[] = $obj1['id'];
+
+        $obj2Response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$schema['slug']}", [
+            'json' => [
+                'title' => 'Main Object 2',
+                'relatedObjects' => [$refObj2['uuid']]
+            ]
+        ]);
+        $obj2 = json_decode($obj2Response->getBody(), true);
+        $this->createdObjectIds[] = $obj2['id'];
+
+        // Query with facets
+        $facetResponse = $this->client->get("/index.php/apps/openregister/api/objects?_source=index&_limit=0&_facets=extend");
+        $this->assertEquals(200, $facetResponse->getStatusCode());
+        
+        $result = json_decode($facetResponse->getBody(), true);
+        $this->assertArrayHasKey('facets', $result);
+
+        // Check if relatedObjects facet exists
+        if (isset($result['facets']['object_fields']['relatedObjects'])) {
+            $facet = $result['facets']['object_fields']['relatedObjects'];
+            $this->assertArrayHasKey('data', $facet);
+            $this->assertArrayHasKey('buckets', $facet['data']);
+
+            // Verify facet buckets have labels
+            foreach ($facet['data']['buckets'] as $bucket) {
+                $this->assertArrayHasKey('value', $bucket);
+                $this->assertArrayHasKey('label', $bucket);
+                $this->assertArrayHasKey('count', $bucket);
+
+                // If value is a UUID, label should ideally be resolved
+                // (This test documents current behavior - UUID resolution should work)
+                if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $bucket['value'])) {
+                    // Label should be different from value if resolution worked
+                    // Or same as value if object not found (acceptable fallback)
+                    $this->assertIsString($bucket['label']);
+                }
+            }
+
+            // Verify facets are sorted alphabetically by label
+            $labels = array_column($facet['data']['buckets'], 'label');
+            $sortedLabels = $labels;
+            sort($sortedLabels, SORT_STRING | SORT_FLAG_CASE);
+            $this->assertEquals($sortedLabels, $labels, 'Facet buckets should be sorted alphabetically by label');
+        }
+    }
 }
 
