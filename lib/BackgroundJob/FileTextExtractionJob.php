@@ -69,7 +69,7 @@ class FileTextExtractionJob extends QueuedJob
     protected function run($argument): void
     {
         // Validate argument
-        if (!isset($argument['file_id'])) {
+        if (isset($argument['file_id']) === false) {
             $this->logger->error('[FileTextExtractionJob] Missing file_id in job arguments', [
                 'argument' => $argument,
             ]);
@@ -88,7 +88,7 @@ class FileTextExtractionJob extends QueuedJob
         try {
             // Check if extraction is still needed
             // (file might have been processed by another job or deleted)
-            if (!$this->fileTextService->needsExtraction($fileId)) {
+            if ($this->fileTextService->needsExtraction($fileId) === false) {
                 $this->logger->info('[FileTextExtractionJob] Extraction no longer needed', [
                     'file_id' => $fileId,
                     'reason' => 'Already processed or not required',
@@ -101,7 +101,7 @@ class FileTextExtractionJob extends QueuedJob
 
             $processingTime = round((microtime(true) - $startTime) * 1000, 2);
 
-            if ($result['success']) {
+            if ($result['success'] === true) {
                 $this->logger->info('[FileTextExtractionJob] Text extraction completed successfully', [
                     'file_id' => $fileId,
                     'text_length' => $result['fileText']?->getTextLength() ?? 0,

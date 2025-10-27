@@ -1,9 +1,10 @@
 <?php
 /**
- * Class ObjectsController
+ * Class FilesController
  *
- * Controller for managing object operations in the OpenRegister app.
- * Provides CRUD functionality for objects within registers and schemas.
+ * Controller for managing file operations in the OpenRegister app.
+ * Provides CRUD functionality for files associated with objects within
+ * registers and schemas.
  *
  * @category Controller
  * @package  OCA\OpenRegister\AppInfo
@@ -60,7 +61,7 @@ class FilesController extends Controller
     public function page(): TemplateResponse
     {
         return new TemplateResponse(
-            'openconnector',
+            'openregister',
             'index',
             []
         );
@@ -125,7 +126,8 @@ class FilesController extends Controller
         // Set the schema and register to the object service (forces a check if the are valid).
         $schema   = $this->objectService->setSchema($schema);
         $register = $this->objectService->setRegister($register);
-        $object   = $this->objectService->setObject($id);
+        $this->objectService->setObject($id);
+        $object   = $this->objectService->getObject();
 
         try {
             $file = $this->fileService->getFile($object, $fileId);
@@ -152,7 +154,6 @@ class FilesController extends Controller
      *
      * @param string $register The register slug or identifier
      * @param string $schema   The schema slug or identifier
-     * @param string $id       The ID of the object to retrieve files for
      * @param string $id       The ID of the object
      *
      * @return JSONResponse
@@ -165,17 +166,31 @@ class FilesController extends Controller
         // Set the schema and register to the object service (forces a check if the are valid).
         $schema   = $this->objectService->setSchema($schema);
         $register = $this->objectService->setRegister($register);
-        $object   = $this->objectService->setObject($id);
+        $this->objectService->setObject($id);
+        $object   = $this->objectService->getObject();
 
         try {
             $data   = $this->request->getParams();
-            $result = $this->fileService->addFile(objectEntity: $object, fileName: $data['name'], content: $data['content'], share: false, tags: $data['tags']);
+            if (empty($data['name']) === true) {
+                return new JSONResponse(['error' => 'File name is required'], 400);
+            }
+            if (array_key_exists('content', $data) === false) {
+                return new JSONResponse(['error' => 'File content is required'], 400);
+            }
+
+            $share = $this->parseBool($data['share'] ?? false);
+            $tags  = $this->normalizeTags($data['tags'] ?? []);
+
+            $result = $this->fileService->addFile(
+                objectEntity: $object,
+                fileName: $data['name'],
+                content: (string) $data['content'],
+                share: $share,
+                tags: $tags
+            );
             return new JSONResponse($this->fileService->formatFile($result));
         } catch (Exception $e) {
-            return new JSONResponse(
-                ['error' => $e->getMessage()],
-                400
-            );
+            return new JSONResponse(['error' => $e->getMessage()], 400);
         }//end try
 
     }//end create()
@@ -205,7 +220,8 @@ class FilesController extends Controller
         // Set the schema and register to the object service (forces a check if the are valid).
         $schema   = $this->objectService->setSchema($schema);
         $register = $this->objectService->setRegister($register);
-        $object   = $this->objectService->setObject($id);
+        $this->objectService->setObject($id);
+        $object   = $this->objectService->getObject();
 
         try {
             $data = $this->request->getParams();
@@ -215,13 +231,13 @@ class FilesController extends Controller
                 return new JSONResponse(['error' => 'File name is required'], 400);
             }
 
-            if (empty($data['content']) === true) {
+            if (array_key_exists('content', $data) === false || empty($data['content']) === true) {
                 return new JSONResponse(['error' => 'File content is required'], 400);
             }
 
             // Extract parameters with defaults
-            $fileName = $data['name'];
-            $content  = $data['content'];
+            $fileName = (string) $data['name'];
+            $content  = (string) $data['content'];
             $share    = isset($data['share']) && $data['share'] === true;
             $tags     = $data['tags'] ?? [];
 
@@ -270,7 +286,8 @@ class FilesController extends Controller
         // Set the schema and register to the object service (forces a check if the are valid).
         $schema   = $this->objectService->setSchema($schema);
         $register = $this->objectService->setRegister($register);
-        $object   = $this->objectService->setObject($id);
+        $this->objectService->setObject($id);
+        $object   = $this->objectService->getObject();
 
         $data = $this->request->getParams();
         try {
@@ -352,7 +369,7 @@ class FilesController extends Controller
 
                 // Create file
                 $results[] = $this->fileService->addFile(
-                    objectEntity: $this->objectService->getObject(),
+                    objectEntity: $object,
                     fileName: $file['name'],
                     content: $content,
                     share: $file['share'],
