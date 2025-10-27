@@ -557,12 +557,13 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register FileChangeListener for automatic file text extraction
+        // Register FileChangeListener for automatic file text extraction (async via background jobs)
         $context->registerService(
                 FileChangeListener::class,
                 function ($container) {
                     return new FileChangeListener(
                     $container->get(FileTextService::class),
+                    $container->get('OCP\BackgroundJob\IJobList'),
                     $container->get('Psr\Log\LoggerInterface')
                     );
                 }

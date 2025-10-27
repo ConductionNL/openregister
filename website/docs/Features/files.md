@@ -161,6 +161,19 @@ For supported file types, content can be extracted for indexing and search:
 - OCR for scanned documents
 - Metadata extraction
 
+**Asynchronous Processing**: Text extraction happens in the background after file upload, ensuring:
+- **Fast uploads**: Your file uploads complete instantly without waiting
+- **Non-blocking**: Users don't experience delays during file operations
+- **Reliable**: Background jobs automatically handle retries for failed extractions
+- **Resource-efficient**: Processing happens when resources are available
+
+Typical processing times:
+- Text files: < 1 second
+- PDFs: 2-10 seconds
+- Large documents or OCR: 10-60 seconds
+
+You can check extraction status in the file's metadata after upload.
+
 ## Working with Files
 
 ### Uploading Files
@@ -199,14 +212,36 @@ GET /api/objects/files/{objectId}
 
 ### Updating Files
 
-Files can be updated by uploading a new version:
+Files can be updated in two ways:
+
+#### 1. Update File Content
+
+Upload a new version of the file:
 
 ```
-PUT /api/files/{id}
-Content-Type: multipart/form-data
+PUT /api/objects/{register}/{schema}/{objectId}/files/{fileId}
+Content-Type: application/json
 
-file: [binary data]
+{
+  'content': '[base64 encoded content or raw content]',
+  'tags': ['tag1', 'tag2']
+}
 ```
+
+#### 2. Update Metadata Only
+
+Update only the file metadata (tags) without changing content:
+
+```
+PUT /api/objects/{register}/{schema}/{objectId}/files/{fileId}
+Content-Type: application/json
+
+{
+  'tags': ['updated-tag1', 'updated-tag2']
+}
+```
+
+Note: The 'content' parameter is optional. If omitted, only the metadata will be updated without modifying the file content itself.
 
 ### Deleting Files
 

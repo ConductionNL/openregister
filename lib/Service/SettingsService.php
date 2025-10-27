@@ -2661,7 +2661,49 @@ class SettingsService
     }
 
     /**
-     * Update LLM (Large Language Model) settings only
+     * Get LLM settings only
+     *
+     * @return array LLM configuration
+     * @throws \RuntimeException If LLM settings retrieval fails
+     */
+    public function getLLMSettingsOnly(): array
+    {
+        try {
+            $llmConfig = $this->config->getValueString($this->appName, 'llm', '');
+            
+            if (empty($llmConfig)) {
+                // Return default configuration
+                return [
+                    'embeddingProvider' => null,
+                    'chatProvider' => null,
+                    'openaiConfig' => [
+                        'apiKey' => '',
+                        'model' => null,
+                        'chatModel' => null,
+                        'organizationId' => '',
+                    ],
+                    'ollamaConfig' => [
+                        'url' => 'http://localhost:11434',
+                        'model' => null,
+                        'chatModel' => null,
+                    ],
+                    'fireworksConfig' => [
+                        'apiKey' => '',
+                        'embeddingModel' => null,
+                        'chatModel' => null,
+                        'baseUrl' => 'https://api.fireworks.ai/inference/v1',
+                    ],
+                ];
+            }
+            
+            return json_decode($llmConfig, true);
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to retrieve LLM settings: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Update LLM settings only
      *
      * @param array $llmData LLM configuration data
      * @return array Updated LLM configuration
@@ -2700,6 +2742,46 @@ class SettingsService
     }
 
     /**
+     * Get File Management settings only
+     *
+     * @return array File management configuration
+     * @throws \RuntimeException If File Management settings retrieval fails
+     */
+    public function getFileSettingsOnly(): array
+    {
+        try {
+            $fileConfig = $this->config->getValueString($this->appName, 'fileManagement', '');
+            
+            if (empty($fileConfig)) {
+                // Return default configuration
+                return [
+                    'vectorizationEnabled' => false,
+                    'provider' => null,
+                    'chunkingStrategy' => 'RECURSIVE_CHARACTER',
+                    'chunkSize' => 1000,
+                    'chunkOverlap' => 200,
+                    // LLPhant-friendly defaults: native PHP support + common library-based formats
+                    'enabledFileTypes' => ['txt', 'md', 'html', 'json', 'xml', 'csv', 'pdf', 'docx', 'doc', 'xlsx', 'xls'],
+                    'ocrEnabled' => false,
+                    'maxFileSizeMB' => 100,
+                    // Text extraction settings (for FileConfiguration component)
+                    'extractionScope' => 'objects', // none, all, folders, objects
+                    'textExtractor' => 'llphant', // llphant, dolphin
+                    'extractionMode' => 'background', // background, immediate, manual
+                    'maxFileSize' => 100,
+                    'batchSize' => 10,
+                    'dolphinApiEndpoint' => '',
+                    'dolphinApiKey' => '',
+                ];
+            }
+            
+            return json_decode($fileConfig, true);
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to retrieve File Management settings: '.$e->getMessage());
+        }
+    }
+
+    /**
      * Update File Management settings only
      *
      * @param array $fileData File management configuration data
@@ -2715,9 +2797,17 @@ class SettingsService
                 'chunkingStrategy' => $fileData['chunkingStrategy'] ?? 'RECURSIVE_CHARACTER',
                 'chunkSize' => $fileData['chunkSize'] ?? 1000,
                 'chunkOverlap' => $fileData['chunkOverlap'] ?? 200,
-                'enabledFileTypes' => $fileData['enabledFileTypes'] ?? ['pdf', 'docx', 'txt', 'md', 'html', 'json', 'xml'],
+                'enabledFileTypes' => $fileData['enabledFileTypes'] ?? ['txt', 'md', 'html', 'json', 'xml', 'csv', 'pdf', 'docx', 'doc', 'xlsx', 'xls'],
                 'ocrEnabled' => $fileData['ocrEnabled'] ?? false,
                 'maxFileSizeMB' => $fileData['maxFileSizeMB'] ?? 100,
+                // Text extraction settings (from FileConfiguration component)
+                'extractionScope' => $fileData['extractionScope'] ?? 'objects', // none, all, folders, objects
+                'textExtractor' => $fileData['textExtractor'] ?? 'llphant', // llphant, dolphin
+                'extractionMode' => $fileData['extractionMode'] ?? 'background', // background, immediate, manual
+                'maxFileSize' => $fileData['maxFileSize'] ?? 100,
+                'batchSize' => $fileData['batchSize'] ?? 10,
+                'dolphinApiEndpoint' => $fileData['dolphinApiEndpoint'] ?? '',
+                'dolphinApiKey' => $fileData['dolphinApiKey'] ?? '',
             ];
             
             $this->config->setValueString($this->appName, 'fileManagement', json_encode($fileConfig));

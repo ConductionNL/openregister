@@ -104,22 +104,44 @@ export const useSettingsStore = defineStore('settings', {
 			publishedObjectsBypassMultiTenancy: false,
 		},
 
-		retentionOptions: {
-			objectArchiveRetention: 31536000000, // 1 year
-			objectDeleteRetention: 63072000000, // 2 years
-			searchTrailRetention: 2592000000, // 1 month
-			createLogRetention: 2592000000, // 1 month
-			readLogRetention: 86400000, // 24 hours
-			updateLogRetention: 604800000, // 1 week
-			deleteLogRetention: 2592000000, // 1 month
-			auditTrailsEnabled: true, // Audit trails enabled by default
-			searchTrailsEnabled: true, // Search trails enabled by default
-		},
+	retentionOptions: {
+		objectArchiveRetention: 31536000000, // 1 year
+		objectDeleteRetention: 63072000000, // 2 years
+		searchTrailRetention: 2592000000, // 1 month
+		createLogRetention: 2592000000, // 1 month
+		readLogRetention: 86400000, // 24 hours
+		updateLogRetention: 604800000, // 1 week
+		deleteLogRetention: 2592000000, // 1 month
+		auditTrailsEnabled: true, // Audit trails enabled by default
+		searchTrailsEnabled: true, // Search trails enabled by default
+	},
 
-		versionInfo: {
-			appName: 'Open Register',
-			appVersion: '0.2.3',
-		},
+	llmOptions: {
+		enabled: false,
+		providerId: 'none',
+		apiEndpoint: '',
+		apiKey: '',
+		model: null,
+		temperature: 0.7,
+		maxTokens: 2000,
+		enabledFeatures: [],
+	},
+
+	fileOptions: {
+		extractionScope: 'objects', // none, all, folders, objects
+		extractionMode: 'background', // background, immediate, manual
+		maxFileSize: 100,
+		batchSize: 10,
+		enabledFileTypes: ['txt', 'pdf', 'docx', 'xlsx', 'pptx', 'html', 'md', 'json'],
+	},
+
+	loadingLlmSettings: false,
+	loadingFileSettings: false,
+
+	versionInfo: {
+		appName: 'Open Register',
+		appVersion: '0.2.3',
+	},
 
 		// Options data
 		groupOptions: [],
@@ -698,22 +720,190 @@ export const useSettingsStore = defineStore('settings', {
 			}
 		},
 
-		/**
-		 * Load version information
-		 */
-		async loadVersionInfo() {
-			try {
-				this.loadingVersionInfo = true
-				const response = await axios.get(generateUrl('/apps/openregister/api/settings/version'))
-				if (response.data) {
-					this.versionInfo = { ...this.versionInfo, ...response.data }
-				}
-			} catch (error) {
-				console.error('Failed to load version info:', error)
-			} finally {
-				this.loadingVersionInfo = false
+	/**
+	 * Get LLM settings
+	 */
+	async getLlmSettings() {
+		try {
+			this.loadingLlmSettings = true
+			const response = await axios.get(generateUrl('/apps/openregister/api/settings/llm'))
+			if (response.data) {
+				this.llmOptions = { ...this.llmOptions, ...response.data }
+				return this.llmOptions
 			}
-		},
+		} catch (error) {
+			console.error('Failed to load LLM settings:', error)
+			return this.llmOptions
+		} finally {
+			this.loadingLlmSettings = false
+		}
+	},
+
+	/**
+	 * Save LLM settings
+	 * @param llmData
+	 */
+	async saveLlmSettings(llmData) {
+		try {
+			const response = await axios.put(
+				generateUrl('/apps/openregister/api/settings/llm'),
+				llmData,
+			)
+
+			if (response.data) {
+				this.llmOptions = { ...this.llmOptions, ...response.data }
+			}
+
+			showSuccess('LLM settings saved successfully')
+			return response.data
+		} catch (error) {
+			console.error('Failed to save LLM settings:', error)
+			showError('Failed to save LLM settings: ' + error.message)
+			throw error
+		}
+	},
+
+	/**
+	 * Test LLM connection
+	 * @param connectionData
+	 */
+	async testLlmConnection(connectionData) {
+		try {
+			const response = await axios.post(
+				generateUrl('/apps/openregister/api/settings/llm/test'),
+				connectionData,
+			)
+			return response.data
+		} catch (error) {
+			console.error('Failed to test LLM connection:', error)
+			throw error
+		}
+	},
+
+	/**
+	 * Get LLM usage statistics
+	 */
+	async getLlmUsageStats() {
+		try {
+			const response = await axios.get(generateUrl('/apps/openregister/api/settings/llm/usage'))
+			return response.data
+		} catch (error) {
+			console.error('Failed to load LLM usage stats:', error)
+			return null
+		}
+	},
+
+	/**
+	 * Get file settings
+	 */
+	async getFileSettings() {
+		try {
+			this.loadingFileSettings = true
+			const response = await axios.get(generateUrl('/apps/openregister/api/settings/files'))
+			if (response.data) {
+				this.fileOptions = { ...this.fileOptions, ...response.data }
+				return this.fileOptions
+			}
+		} catch (error) {
+			console.error('Failed to load file settings:', error)
+			return this.fileOptions
+		} finally {
+			this.loadingFileSettings = false
+		}
+	},
+
+	/**
+	 * Save file settings
+	 * @param fileData
+	 */
+	async saveFileSettings(fileData) {
+		try {
+			const response = await axios.put(
+				generateUrl('/apps/openregister/api/settings/files'),
+				fileData,
+			)
+
+			if (response.data) {
+				this.fileOptions = { ...this.fileOptions, ...response.data }
+			}
+
+			showSuccess('File settings saved successfully')
+			return response.data
+		} catch (error) {
+			console.error('Failed to save file settings:', error)
+			showError('Failed to save file settings: ' + error.message)
+			throw error
+		}
+	},
+
+	/**
+	 * Get file extraction statistics
+	 */
+	async getExtractionStats() {
+		try {
+			const response = await axios.get(generateUrl('/apps/openregister/api/settings/files/stats'))
+			return response.data
+		} catch (error) {
+			console.error('Failed to load extraction stats:', error)
+			return null
+		}
+	},
+
+	/**
+	 * Trigger file extraction for pending or failed files
+	 * @param type - 'pending' or 'failed'
+	 */
+	async triggerFileExtraction(type = 'pending') {
+		try {
+			const response = await axios.post(
+				generateUrl('/apps/openregister/api/settings/files/extract'),
+				{ type },
+			)
+			showSuccess(`Started processing ${type} files`)
+			return response.data
+		} catch (error) {
+			console.error(`Failed to trigger ${type} file extraction:`, error)
+			showError(`Failed to start processing ${type} files: ` + error.message)
+			throw error
+		}
+	},
+
+	/**
+	 * Test Dolphin API connection
+	 * @param connectionData - API endpoint and key
+	 */
+	async testDolphinConnection(connectionData) {
+		try {
+			const response = await axios.post(
+				generateUrl('/apps/openregister/api/settings/files/test-dolphin'),
+				connectionData,
+			)
+			return response.data
+		} catch (error) {
+			console.error('Failed to test Dolphin connection:', error)
+			return {
+				success: false,
+				error: error.response?.data?.error || error.message,
+			}
+		}
+	},
+
+	/**
+	 * Load version information
+	 */
+	async loadVersionInfo() {
+		try {
+			this.loadingVersionInfo = true
+			const response = await axios.get(generateUrl('/apps/openregister/api/settings/version'))
+			if (response.data) {
+				this.versionInfo = { ...this.versionInfo, ...response.data }
+			}
+		} catch (error) {
+			console.error('Failed to load version info:', error)
+		} finally {
+			this.loadingVersionInfo = false
+		}
+	},
 
 		/**
 		 * Load available options (groups, users, tenants)
