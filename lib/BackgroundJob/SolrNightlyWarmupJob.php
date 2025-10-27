@@ -23,6 +23,7 @@ use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\BackgroundJob\TimedJob;
 use OCP\ILogger;
+use OCP\AppFramework\Utility\ITimeFactory;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -59,9 +60,15 @@ class SolrNightlyWarmupJob extends TimedJob
 
     /**
      * Constructor
+     *
+     * @param ITimeFactory $time Time factory for job scheduling
+     *
+     * @return void
      */
-    public function __construct()
+    public function __construct(ITimeFactory $time)
     {
+        parent::__construct($time);
+        
         // Set interval to 24 hours (daily execution)
         $this->setInterval(self::DEFAULT_INTERVAL);
         

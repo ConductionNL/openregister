@@ -334,11 +334,27 @@ class FilesController extends Controller
             // Create file using the uploaded file's content and name.
             $results = [];
             foreach ($uploadedFiles as $file) {
+                // Check for upload errors first
+                if (isset($file['error']) === true && $file['error'] !== UPLOAD_ERR_OK) {
+                    throw new Exception('File upload error for ' . $file['name'] . ': ' . $this->getUploadErrorMessage($file['error']));
+                }
+
+                // Verify the temporary file exists and is readable
+                if (file_exists($file['tmp_name']) === false || is_readable($file['tmp_name']) === false) {
+                    throw new Exception('Temporary file not found or not readable for: ' . $file['name']);
+                }
+
+                // Read the file content with error handling
+                $content = file_get_contents($file['tmp_name']);
+                if ($content === false) {
+                    throw new Exception('Failed to read uploaded file content for: ' . $file['name']);
+                }
+
                 // Create file
                 $results[] = $this->fileService->addFile(
                     objectEntity: $this->objectService->getObject(),
                     fileName: $file['name'],
-                    content: file_get_contents($file['tmp_name']),
+                    content: $content,
                     share: $file['share'],
                     tags: $file['tags']
                 );
@@ -383,8 +399,10 @@ class FilesController extends Controller
         try {
             $data = $this->request->getParams();
             // Ensure tags is set to empty array if not provided
-            $tags   = $data['tags'] ?? [];
-            $result = $this->fileService->updateFile($fileId, $data['content'], $tags, $this->objectService->getObject());
+            $tags = $data['tags'] ?? [];
+            // Content is optional for metadata-only updates
+            $content = $data['content'] ?? null;
+            $result = $this->fileService->updateFile($fileId, $content, $tags, $this->objectService->getObject());
             return new JSONResponse($this->fileService->formatFile($result));
         } catch (Exception $e) {
             return new JSONResponse(
@@ -542,6 +560,33 @@ class FilesController extends Controller
         }
 
     }//end downloadById()
+
+
+    /**
+     * Get a human-readable error message for PHP file upload errors
+     *
+     * This helper method translates PHP's file upload error codes into
+     * meaningful error messages that can be displayed to users or logged.
+     *
+     * @param int $errorCode The PHP upload error code from $_FILES['file']['error']
+     *
+     * @return string Human-readable error message
+     */
+    private function getUploadErrorMessage(int $errorCode): string
+    {
+        // Map PHP upload error codes to human-readable messages
+        return match ($errorCode) {
+            UPLOAD_ERR_INI_SIZE => 'The uploaded file exceeds the upload_max_filesize directive in php.ini',
+            UPLOAD_ERR_FORM_SIZE => 'The uploaded file exceeds the MAX_FILE_SIZE directive in the HTML form',
+            UPLOAD_ERR_PARTIAL => 'The uploaded file was only partially uploaded',
+            UPLOAD_ERR_NO_FILE => 'No file was uploaded',
+            UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder on the server',
+            UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
+            UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the file upload',
+            default => 'Unknown upload error (code: ' . $errorCode . ')',
+        };
+
+    }//end getUploadErrorMessage()
 
 
 }//end class
