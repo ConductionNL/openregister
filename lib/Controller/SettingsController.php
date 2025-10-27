@@ -2627,6 +2627,24 @@ class SettingsController extends Controller
     }
 
     /**
+     * Get LLM (Large Language Model) settings
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse LLM settings
+     */
+    public function getLLMSettings(): JSONResponse
+    {
+        try {
+            $data = $this->settingsService->getLLMSettingsOnly();
+            return new JSONResponse($data);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * Update LLM (Large Language Model) settings
      *
      * @NoAdminRequired
@@ -2669,6 +2687,88 @@ class SettingsController extends Controller
             return new JSONResponse([
                 'success' => false,
                 'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get File Management settings
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse File settings
+     */
+    public function getFileSettings(): JSONResponse
+    {
+        try {
+            $data = $this->settingsService->getFileSettingsOnly();
+            return new JSONResponse($data);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Test Dolphin API connection
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $apiEndpoint Dolphin API endpoint URL
+     * @param string $apiKey Dolphin API key
+     * @return JSONResponse
+     */
+    public function testDolphinConnection(string $apiEndpoint, string $apiKey): JSONResponse
+    {
+        try {
+            // Validate inputs
+            if (empty($apiEndpoint) || empty($apiKey)) {
+                return new JSONResponse([
+                    'success' => false,
+                    'error' => 'API endpoint and API key are required',
+                ], 400);
+            }
+
+            // Test the connection by making a simple request
+            $ch = curl_init($apiEndpoint . '/health');
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_HTTPHEADER => [
+                    'Authorization: Bearer ' . $apiKey,
+                    'Content-Type: application/json',
+                ],
+                CURLOPT_TIMEOUT => 10,
+                CURLOPT_SSL_VERIFYPEER => true,
+            ]);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+
+            if ($curlError) {
+                return new JSONResponse([
+                    'success' => false,
+                    'error' => 'Connection failed: ' . $curlError,
+                ]);
+            }
+
+            if ($httpCode === 200 || $httpCode === 201) {
+                return new JSONResponse([
+                    'success' => true,
+                    'message' => 'Dolphin connection successful',
+                ]);
+            } else {
+                return new JSONResponse([
+                    'success' => false,
+                    'error' => 'Dolphin API returned HTTP ' . $httpCode,
+                ]);
+            }
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

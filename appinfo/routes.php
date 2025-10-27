@@ -75,8 +75,11 @@ return [
         ['name' => 'settings#getMultitenancySettings', 'url' => '/api/settings/multitenancy', 'verb' => 'GET'],
         ['name' => 'settings#updateMultitenancySettings', 'url' => '/api/settings/multitenancy', 'verb' => 'PUT'],
         
+        ['name' => 'settings#getLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'GET'],
         ['name' => 'settings#updateLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'POST'],
-        ['name' => 'settings#updateFileSettings', 'url' => '/api/settings/files', 'verb' => 'POST'],
+        ['name' => 'settings#getFileSettings', 'url' => '/api/settings/files', 'verb' => 'GET'],
+        ['name' => 'settings#updateFileSettings', 'url' => '/api/settings/files', 'verb' => 'PUT'],
+        ['name' => 'settings#testDolphinConnection', 'url' => '/api/settings/files/test-dolphin', 'verb' => 'POST'],
         ['name' => 'settings#updateObjectSettings', 'url' => '/api/settings/objects', 'verb' => 'POST'],
         
         ['name' => 'settings#getRetentionSettings', 'url' => '/api/settings/retention', 'verb' => 'GET'],
