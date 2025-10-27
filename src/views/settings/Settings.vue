@@ -41,12 +41,18 @@
 		<!-- Retention Configuration Section -->
 		<RetentionConfiguration />
 
-		<!-- SOLR Configuration Section -->
-		<SolrConfiguration />
+	<!-- SOLR Configuration Section -->
+	<SolrConfiguration />
 
-		<!-- Dialogs -->
-		<Dialogs />
-	</div>
+	<!-- LLM Configuration Section -->
+	<LlmConfiguration />
+
+	<!-- File Configuration Section -->
+	<FileConfiguration />
+
+	<!-- Dialogs -->
+	<Dialogs />
+</div>
 </template>
 
 <script>
@@ -61,6 +67,8 @@ import CacheManagement from './sections/CacheManagement.vue'
 import RbacConfiguration from './sections/RbacConfiguration.vue'
 import MultitenancyConfiguration from './sections/MultitenancyConfiguration.vue'
 import RetentionConfiguration from './sections/RetentionConfiguration.vue'
+import LlmConfiguration from './sections/LlmConfiguration.vue'
+import FileConfiguration from './sections/FileConfiguration.vue'
 import Dialogs from '../../dialogs/Dialogs.vue'
 
 /**
@@ -89,6 +97,8 @@ export default {
 		RbacConfiguration,
 		MultitenancyConfiguration,
 		RetentionConfiguration,
+		LlmConfiguration,
+		FileConfiguration,
 		Dialogs,
 	},
 

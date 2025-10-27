@@ -3204,12 +3204,41 @@ class GuzzleSolrService
                 if ($metaValue !== null && $metaValue !== '') {
                     $solrField = 'self_' . $metaKey;
                     
+                    // Handle [or] and [and] operators for metadata fields
+                    if (is_array($metaValue) && (isset($metaValue['or']) || isset($metaValue['and']))) {
+                        if (isset($metaValue['or'])) {
+                            // OR logic: (field:val1 OR field:val2 OR field:val3)
+                            $values = is_string($metaValue['or']) ? array_map('trim', explode(',', $metaValue['or'])) : (array) $metaValue['or'];
+                            $orConditions = array_map(function($v) use ($solrField, $metaKey) {
+                                // Resolve schema/register names to IDs if needed
+                                if (in_array($metaKey, ['register', 'schema']) && !is_numeric($v)) {
+                                    $v = $this->resolveMetadataValueToId($metaKey, $v);
+                                }
+                                return $solrField . ':' . (is_numeric($v) ? $v : $this->escapeSolrValue((string)$v));
+                            }, $values);
+                            $filters[] = '(' . implode(' OR ', $orConditions) . ')';
+                        } elseif (isset($metaValue['and'])) {
+                            // AND logic: field:val1 AND field:val2 AND field:val3
+                            $values = is_string($metaValue['and']) ? array_map('trim', explode(',', $metaValue['and'])) : (array) $metaValue['and'];
+                            foreach ($values as $v) {
+                                // Resolve schema/register names to IDs if needed
+                                if (in_array($metaKey, ['register', 'schema']) && !is_numeric($v)) {
+                                    $v = $this->resolveMetadataValueToId($metaKey, $v);
+                                }
+                                $filters[] = $solrField . ':' . (is_numeric($v) ? $v : $this->escapeSolrValue((string)$v));
+                            }
+                        }
+                        continue; // Skip to next metadata field
+                    }
+                    
                     // Handle string values for register/schema fields by resolving to integer IDs
-                    if (in_array($metaKey, ['register', 'schema']) && !is_numeric($metaValue)) {
+                    // Skip arrays - they will be handled in the array processing block below
+                    if (in_array($metaKey, ['register', 'schema']) && !is_numeric($metaValue) && !is_array($metaValue)) {
                         $metaValue = $this->resolveMetadataValueToId($metaKey, $metaValue);
                     }
                     
                     if (is_array($metaValue)) {
+                        // Simple array (no operators) - default to OR logic
                         $conditions = array_map(function($v) use ($solrField, $metaKey) {
                             // Handle string values in arrays by resolving to integer IDs
                             if (in_array($metaKey, ['register', 'schema']) && !is_numeric($v)) {
@@ -9178,15 +9207,18 @@ class GuzzleSolrService
      * This is a temporary hotfix method that handles cases where external applications 
      * (like OpenCatalogi) pass register/schema names or slugs instead of integer IDs.
      * 
+     * IMPORTANT: This method only handles SINGLE values (string or int), NOT arrays.
+     * Arrays of schemas/registers are handled separately in the calling code.
+     * 
      * PROPER SOLUTION: The OpenCatalogi controllers should be updated to resolve
      * these values to integer IDs before calling OpenRegister APIs, rather than
      * doing this conversion at the SOLR query level.
      *
      * @param string $fieldType The metadata field type ('register' or 'schema')
-     * @param string $value The value to resolve (name, slug, or ID)
-     * @return int The resolved integer ID, or the original value if resolution fails
+     * @param string|int $value The single value to resolve (name, slug, or ID) - NOT an array
+     * @return int The resolved integer ID, or 0 if resolution fails
      */
-    private function resolveMetadataValueToId(string $fieldType, $value): int
+    private function resolveMetadataValueToId(string $fieldType, string|int $value): int
     {
         if (is_numeric($value)) {
             return (int)$value;
