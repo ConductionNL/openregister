@@ -161,13 +161,19 @@ class FileTextService
             $this->logger->debug('[FileTextService] Extracting text from file', ['file_id' => $fileId]);
             
             // Get local path for extraction
+            // Note: This service is now called via background job, so the file is guaranteed to be available
             $storage = $file->getStorage();
             $internalPath = $file->getInternalPath();
             $localPath = $storage->getLocalFile($internalPath);
             
             if (!$localPath || !file_exists($localPath)) {
-                throw new \Exception("Could not get local file path for extraction");
+                throw new \Exception("Could not get local file path for extraction. File: " . $file->getName());
             }
+
+            $this->logger->debug('[FileTextService] File path resolved', [
+                'file_id' => $fileId,
+                'local_path' => basename($localPath)
+            ]);
 
             $extractedText = $this->solrFileService->extractTextFromFile($localPath);
             $textLength = strlen($extractedText);
