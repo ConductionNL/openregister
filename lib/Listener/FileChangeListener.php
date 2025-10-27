@@ -9,7 +9,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\BackgroundJob\FileTextExtractionJob;
 use OCA\OpenRegister\Service\FileTextService;
+use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\Files\Events\Node\NodeCreatedEvent;
@@ -20,7 +22,9 @@ use Psr\Log\LoggerInterface;
 /**
  * FileChangeListener
  * 
- * Listens for file creation and update events to automatically extract text.
+ * Listens for file creation and update events to queue asynchronous text extraction.
+ * Instead of processing files synchronously (which would block user requests),
+ * this listener queues a background job for each file that needs processing.
  * 
  * @category Listener
  * @package  OCA\OpenRegister\Listener
@@ -34,11 +38,13 @@ class FileChangeListener implements IEventListener
     /**
      * Constructor
      *
-     * @param FileTextService $fileTextService File text service
+     * @param FileTextService $fileTextService File text service for checking extraction needs
+     * @param IJobList        $jobList         Job list for queuing background jobs
      * @param LoggerInterface $logger          Logger
      */
     public function __construct(
         private readonly FileTextService $fileTextService,
+        private readonly IJobList $jobList,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -66,43 +72,49 @@ class FileChangeListener implements IEventListener
 
         $fileId = $node->getId();
         $fileName = $node->getName();
+        $filePath = $node->getPath();
+
+        // Only process OpenRegister files to avoid unnecessary processing
+        // OpenRegister files are stored in paths containing 'OpenRegister/files'
+        if (strpos($filePath, 'OpenRegister/files') === false && 
+            strpos($filePath, '/Open Registers/') === false) {
+            $this->logger->debug('[FileChangeListener] Skipping non-OpenRegister file', [
+                'file_id' => $fileId,
+                'file_path' => $filePath,
+            ]);
+            return;
+        }
 
         $this->logger->debug('[FileChangeListener] File event detected', [
             'event_type' => get_class($event),
             'file_id' => $fileId,
             'file_name' => $fileName,
+            'file_path' => $filePath,
         ]);
 
-        // Process file extraction asynchronously to avoid blocking the request
+        // Queue background job for text extraction (non-blocking)
         try {
-            // Check if extraction is needed (to avoid unnecessary processing)
+            // Check if extraction is needed (to avoid unnecessary background jobs)
             if ($this->fileTextService->needsExtraction($fileId)) {
-                $this->logger->info('[FileChangeListener] Triggering text extraction', [
+                $this->logger->info('[FileChangeListener] Queueing text extraction job', [
                     'file_id' => $fileId,
                     'file_name' => $fileName,
                 ]);
 
-                // Extract and store text
-                $result = $this->fileTextService->extractAndStoreFileText($fileId);
+                // Queue the background job with file_id as argument
+                // The job will run asynchronously without blocking this request
+                $this->jobList->add(FileTextExtractionJob::class, ['file_id' => $fileId]);
 
-                if ($result['success']) {
-                    $this->logger->info('[FileChangeListener] Text extraction successful', [
-                        'file_id' => $fileId,
-                        'text_length' => $result['fileText']?->getTextLength() ?? 0,
-                    ]);
-                } else {
-                    $this->logger->warning('[FileChangeListener] Text extraction failed', [
-                        'file_id' => $fileId,
-                        'error' => $result['error'] ?? 'Unknown error',
-                    ]);
-                }
+                $this->logger->debug('[FileChangeListener] Text extraction job queued successfully', [
+                    'file_id' => $fileId,
+                ]);
             } else {
-                $this->logger->debug('[FileChangeListener] Extraction not needed', [
+                $this->logger->debug('[FileChangeListener] Extraction not needed, skipping job queue', [
                     'file_id' => $fileId,
                 ]);
             }
         } catch (\Exception $e) {
-            $this->logger->error('[FileChangeListener] Exception during text extraction', [
+            $this->logger->error('[FileChangeListener] Failed to queue text extraction job', [
                 'file_id' => $fileId,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),

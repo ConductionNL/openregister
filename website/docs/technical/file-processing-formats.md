@@ -259,19 +259,22 @@ Chunk 2: "Methodology\n\nWe used..."
 │ 1. File Upload                                          │
 │    - User uploads file to Nextcloud                     │
 │    - File stored in data directory                      │
+│    - Upload completes immediately (non-blocking)        │
 └────────────────────┬────────────────────────────────────┘
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────┐
-│ 2. File Type Detection                                  │
-│    - Check MIME type                                    │
-│    - Validate file extension                            │
-│    - Check if format is enabled                         │
+│ 2. Background Job Queued                                │
+│    - FileChangeListener detects new/updated file        │
+│    - Queues FileTextExtractionJob asynchronously        │
+│    - User request completes without delay               │
 └────────────────────┬────────────────────────────────────┘
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────┐
-│ 3. Text Extraction                                      │
+│ 3. Background Processing (non-blocking)                 │
+│    - Job runs in background (typically within seconds)  │
+│    - Check MIME type and validate format                │
 │    - Use format-specific extractor                      │
 │    - Handle encoding issues                             │
 │    - Clean/normalize text                               │
@@ -482,6 +485,38 @@ tesseract test-image.png output
 3. Reduce chunk size to decrease API calls
 4. Use faster embedding model (ada-002 vs 3-large)
 5. Consider Ollama for local processing
+
+### File Access Issues
+
+**If you see 'file not found' or 'failed to open stream' errors**:
+
+The system uses asynchronous background jobs to process files, avoiding race conditions:
+- **Non-blocking uploads**: File uploads complete immediately without waiting for text extraction
+- **Background processing**: Text extraction runs in background jobs (typically within seconds)
+- **Path filtering**: Only OpenRegister files (in 'OpenRegister/files' or 'Open Registers/' paths) are processed
+- **Automatic retries**: Failed extractions are automatically retried by the background job system
+
+**How it works**:
+1. User uploads file → Upload completes instantly
+2. FileChangeListener queues a background job
+3. Background job runs asynchronously (when file is guaranteed to be available)
+4. Text extraction completes without blocking user requests
+
+**To check background job status**:
+```bash
+# View pending background jobs
+docker exec -u 33 <nextcloud-container> php occ background-job:list
+
+# Check logs for extraction job status
+docker logs <nextcloud-container> | grep FileTextExtractionJob
+```
+
+If errors persist:
+1. Check Nextcloud storage backend configuration
+2. Verify file permissions and ownership
+3. Check for filesystem issues (disk space, mount problems)
+4. Review error logs for specific file paths causing issues
+5. Ensure background job execution is working (php occ background:cron)
 
 ### Quality Issues
 
