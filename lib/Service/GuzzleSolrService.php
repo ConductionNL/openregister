@@ -1290,7 +1290,7 @@ class GuzzleSolrService
             'self_organisation' => $object->getOrganisation(),
             'self_application' => $object->getApplication(),
             
-            // Core object fields
+            // Core object fields (text fields for search)
             'self_name' => $object->getName() ?: null,
             'self_description' => $object->getDescription() ?: null,
             'self_summary' => $object->getSummary() ?: null,
@@ -1300,6 +1300,13 @@ class GuzzleSolrService
             'self_version' => $object->getVersion() ?: null,
             'self_size' => $object->getSize() ?: null,
             'self_folder' => $object->getFolder() ?: null,
+            
+            // Sortable string variants (for ordering, not tokenized)
+            // These are single-valued string fields that Solr can sort on
+            'self_name_s' => $object->getName() ?: null,
+            'self_description_s' => $object->getDescription() ?: null,
+            'self_summary_s' => $object->getSummary() ?: null,
+            'self_slug_s' => $object->getSlug() ?: null,
             
             // Timestamps
             'self_created' => $object->getCreated()?->format('Y-m-d\\TH:i:s\\Z'),
@@ -2341,14 +2348,14 @@ class GuzzleSolrService
     private function translateSortField(array|string $order): string
     {
         if (is_string($order)) {
-            $field = $this->translateFilterField($order);
+            $field = $this->translateSortableField($order);
             return $field . ' asc';
         }
 
         if (is_array($order)) {
             $sortParts = [];
             foreach ($order as $field => $direction) {
-                $solrField = $this->translateFilterField($field);
+                $solrField = $this->translateSortableField($field);
                 $solrDirection = strtolower($direction) === 'desc' ? 'desc' : 'asc';
                 $sortParts[] = $solrField . ' ' . $solrDirection;
             }
@@ -2356,6 +2363,80 @@ class GuzzleSolrService
         }
 
         return 'self_created desc'; // Default sort
+    }
+    
+    /**
+     * Translate field name to Solr sortable field (string type, not text type)
+     * 
+     * Solr cannot sort on multivalued text fields. We use single-valued string fields (_s suffix)
+     * for text fields, and direct fields for dates/integers/UUIDs which are already sortable.
+     *
+     * @param string $field Field name from OpenRegister query
+     * @return string Solr sortable field name
+     */
+    private function translateSortableField(string $field): string
+    {
+        // Handle @self.* fields (metadata)
+        if (str_starts_with($field, '@self.')) {
+            $metadataField = substr($field, 6); // Remove '@self.'
+            
+            // Map metadata fields to their sortable Solr equivalents
+            $sortableFieldMappings = [
+                // Text fields use _s suffix (string type, single-valued, not tokenized)
+                'name' => 'self_name_s',           // Use sortable string variant
+                'title' => 'self_title_s',         // Use sortable string variant (if exists)
+                'summary' => 'self_summary_s',     // Use sortable string variant
+                'description' => 'self_description_s', // Use sortable string variant
+                'slug' => 'self_slug_s',           // Use sortable string variant
+                
+                // Date/time fields are already sortable
+                'published' => 'self_published',   // Date fields are sortable
+                'created' => 'self_created',       // Date fields are sortable
+                'updated' => 'self_updated',       // Date fields are sortable
+                'depublished' => 'self_depublished', // Date fields are sortable
+                
+                // Integer/UUID fields are already sortable
+                'register' => 'self_register',     // Integer fields are sortable
+                'schema' => 'self_schema',         // Integer fields are sortable
+                'organisation' => 'self_organisation', // UUID fields are sortable
+                'owner' => 'self_owner',           // Integer fields are sortable
+                'id' => 'id',                      // ID is always sortable
+                'uuid' => 'self_uuid'              // UUID is sortable
+            ];
+            
+            if (isset($sortableFieldMappings[$metadataField])) {
+                $this->logger->debug('SORT: Translating metadata field', [
+                    'original' => '@self.' . $metadataField,
+                    'solr_field' => $sortableFieldMappings[$metadataField]
+                ]);
+                return $sortableFieldMappings[$metadataField];
+            }
+            
+            // Default: try _s suffix for unknown metadata fields (assume they're text)
+            return 'self_' . $metadataField . '_s';
+        }
+        
+        // Handle special field mappings (for fields without @self prefix)
+        $fieldMappings = [
+            'register' => 'self_register',
+            'schema' => 'self_schema',
+            'organisation' => 'self_organisation',
+            'owner' => 'self_owner',
+            'created' => 'self_created',
+            'updated' => 'self_updated',
+            'published' => 'self_published',
+            'name' => 'self_name_s',       // Use sortable string variant
+            'title' => 'self_title_s',     // Use sortable string variant
+            'summary' => 'self_summary_s', // Use sortable string variant
+            'slug' => 'self_slug_s'        // Use sortable string variant
+        ];
+
+        if (isset($fieldMappings[$field])) {
+            return $fieldMappings[$field];
+        }
+
+        // For unknown object properties, try _s suffix (assume they're text fields)
+        return $field . '_s';
     }
 
     /**
@@ -3134,9 +3215,9 @@ class GuzzleSolrService
         // Clean the search term
         $cleanTerm = $this->cleanSearchTerm($searchTerm);
         
-        // Force lowercase for case-insensitive search
-        // Solr text fields should use lowercase filters, but we ensure it here
-        $cleanTerm = mb_strtolower($cleanTerm);
+        // Note: Case-insensitive search is handled by Solr field type configuration
+        // text_general fields use LowerCaseFilterFactory for case-insensitive matching
+        // No need to manually lowercase the search term
         
         // Define field weights (higher = more important)
         // Using essential OpenRegister fields with specified weights
@@ -3242,6 +3323,16 @@ class GuzzleSolrService
         } elseif (isset($query['_page'])) {
             $page = max(1, (int)$query['_page']);
             $solrQuery['start'] = ($page - 1) * $solrQuery['rows'];
+        }
+
+        // Handle sorting
+        if (!empty($query['_order'])) {
+            $solrQuery['sort'] = $this->translateSortField($query['_order']);
+            
+            $this->logger->debug('ORDER: Applied sort parameter', [
+                'original_order' => $query['_order'],
+                'translated_sort' => $solrQuery['sort']
+            ]);
         }
 
         // Handle filters
