@@ -120,6 +120,13 @@ class SolrSchemaService
         'self_locked' => 'boolean',
         'self_schema_version' => 'string',
         
+        // Sortable string variants (for ordering on text fields)
+        // These are single-valued, non-tokenized copies used for sorting/faceting
+        'self_name_s' => 'string',
+        'self_description_s' => 'string',
+        'self_summary_s' => 'string',
+        'self_slug_s' => 'string',
+        
         // Timestamps
         'self_created' => 'pdate',
         'self_updated' => 'pdate',
