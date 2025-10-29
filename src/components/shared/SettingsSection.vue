@@ -3,12 +3,9 @@
 		:name="name"
 		:description="description"
 		:doc-url="docUrl">
-		<!-- Action buttons positioned top-right using OpenConnector pattern -->
-		<div v-if="$slots.actions" class="section-header-inline">
-			<span />
-			<div class="button-group">
-				<slot name="actions" />
-			</div>
+		<!-- Action buttons positioned top-right -->
+		<div v-if="$slots.actions" class="action-buttons">
+			<slot name="actions" />
 		</div>
 
 		<!-- Section Description (optional detailed description box) -->
@@ -208,27 +205,25 @@ export default {
 </script>
 
 <style scoped>
-/* OpenConnector pattern: Actions positioned with relative positioning and negative margins */
-.section-header-inline {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	gap: 1rem;
-	position: relative;
-	top: -45px;
-	margin-bottom: -40px;
-	z-index: 10;
-}
-
-.button-group {
+/* 
+ * Action buttons positioned within NcSettingsSection's settings-section__desc div
+ * Using deep selector to target Nextcloud Vue's internal structure
+ */
+.action-buttons {
 	display: flex;
 	gap: 0.5rem;
 	align-items: center;
+	justify-content: flex-end;
+	float: right;
+	margin-top: -60px;
+	margin-bottom: 20px;
+	position: relative;
+	z-index: 10;
 }
 
 /* Content area */
 .section-content {
-	/* Content spacing handled by child components */
+	clear: both;
 }
 
 /* Loading state */

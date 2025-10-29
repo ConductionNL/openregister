@@ -1,34 +1,31 @@
 <template>
-	<div>
-		<NcSettingsSection name="Cache Management"
-			description="Monitor and manage API caching for optimal performance">
-			<div v-if="!loadingCache" class="cache-section">
-				<!-- Save and Rebase Buttons -->
-				<div class="section-header-inline">
-					<span />
-					<div class="button-group">
-						<NcButton
-							type="secondary"
-							:disabled="loading || clearingCache || loadingCache"
-							@click="loadCacheStats">
-							<template #icon>
-								<NcLoadingIcon v-if="loadingCache" :size="20" />
-								<Refresh v-else :size="20" />
-							</template>
-							Refresh
-						</NcButton>
-						<NcButton
-							type="error"
-							:disabled="loading || clearingCache || loadingCache || cacheStats.unavailable"
-							@click="showClearCacheDialog">
-							<template #icon>
-								<NcLoadingIcon v-if="clearingCache" :size="20" />
-								<Delete v-else :size="20" />
-							</template>
-							Clear Cache
-						</NcButton>
-					</div>
-				</div>
+	<SettingsSection 
+		name="Cache Management"
+		description="Monitor and manage API caching for optimal performance"
+		:loading="loadingCache"
+		loading-message="Loading cache statistics...">
+		<template #actions>
+			<NcButton
+				type="secondary"
+				:disabled="loading || clearingCache || loadingCache"
+				@click="loadCacheStats">
+				<template #icon>
+					<NcLoadingIcon v-if="loadingCache" :size="20" />
+					<Refresh v-else :size="20" />
+				</template>
+				Refresh
+			</NcButton>
+			<NcButton
+				type="error"
+				:disabled="loading || clearingCache || loadingCache || cacheStats.unavailable"
+				@click="showClearCacheDialog">
+				<template #icon>
+					<NcLoadingIcon v-if="clearingCache" :size="20" />
+					<Delete v-else :size="20" />
+				</template>
+				Clear Cache
+			</NcButton>
+		</template>
 
 				<!-- Cache Unavailable Message -->
 				<div v-if="cacheStats.unavailable" class="cache-unavailable">
@@ -247,15 +244,9 @@
 					</div>
 				</div>
 			</div>
+	</SettingsSection>
 
-			<!-- Loading State -->
-			<NcLoadingIcon v-else
-				class="loading-icon"
-				:size="64"
-				appearance="dark" />
-		</NcSettingsSection>
-
-		<!-- Clear Cache Confirmation Dialog -->
+	<!-- Clear Cache Confirmation Dialog -->
 		<NcDialog
 			v-if="showClearCacheConfirmation"
 			name="Clear Cache"
@@ -332,7 +323,8 @@
 <script>
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../../store/settings.js'
-import { NcSettingsSection, NcButton, NcLoadingIcon, NcDialog, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import { NcButton, NcLoadingIcon, NcDialog, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 
@@ -340,7 +332,7 @@ export default {
 	name: 'CacheManagement',
 
 	components: {
-		NcSettingsSection,
+		SettingsSection,
 		NcButton,
 		NcLoadingIcon,
 		NcDialog,
@@ -506,24 +498,7 @@ export default {
 </script>
 
 <style scoped>
-/* Include the cache-specific styles from the original Settings.vue file */
-/* OpenConnector pattern: Actions positioned with relative positioning and negative margins */
-.section-header-inline {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	gap: 1rem;
-	position: relative;
-	top: -45px;
-	margin-bottom: -40px;
-	z-index: 10;
-}
-
-.button-group {
-	display: flex;
-	gap: 0.5rem;
-	align-items: center;
-}
+/* SettingsSection handles all action button positioning and spacing */
 
 .cache-unavailable {
 	background: rgba(var(--color-warning), 0.1);

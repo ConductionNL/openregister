@@ -1,23 +1,21 @@
 <template>
-	<NcSettingsSection name="System Statistics"
-		description="Overview of your Open Register data and potential issues">
-		<div v-if="!loadingStats" class="stats-section">
-			<!-- Save and Rebase Buttons -->
-			<div class="section-header-inline">
-				<span />
-				<div class="button-group">
-					<NcButton
-						type="secondary"
-						:disabled="loading || saving || rebasing || loadingStats"
-						@click="loadStats">
-						<template #icon>
-							<NcLoadingIcon v-if="loadingStats" :size="20" />
-							<Refresh v-else :size="20" />
-						</template>
-						Refresh
-					</NcButton>
-				</div>
-			</div>
+	<SettingsSection 
+		name="System Statistics"
+		description="Overview of your Open Register data and potential issues"
+		:loading="loadingStats"
+		loading-message="Loading statistics...">
+		<template #actions>
+			<NcButton
+				type="secondary"
+				:disabled="loading || saving || rebasing || loadingStats"
+				@click="loadStats">
+				<template #icon>
+					<NcLoadingIcon v-if="loadingStats" :size="20" />
+					<Refresh v-else :size="20" />
+				</template>
+				Refresh
+			</NcButton>
+		</template>
 
 			<div class="stats-content">
 				<div class="stats-grid">
@@ -430,13 +428,14 @@
 				</div>
 			</div>
 		</NcDialog>
-	</NcSettingsSection>
+	</SettingsSection>
 </template>
 
 <script>
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../../store/settings.js'
-import { NcSettingsSection, NcButton, NcLoadingIcon, NcDialog } from '@nextcloud/vue'
+import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import { NcButton, NcLoadingIcon, NcDialog } from '@nextcloud/vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
@@ -446,7 +445,7 @@ export default {
 	name: 'StatisticsOverview',
 
 	components: {
-		NcSettingsSection,
+		SettingsSection,
 		NcButton,
 		NcLoadingIcon,
 		NcDialog,
@@ -662,23 +661,7 @@ export default {
 </script>
 
 <style scoped>
-/* OpenConnector pattern: Actions positioned with relative positioning and negative margins */
-.section-header-inline {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	gap: 1rem;
-	position: relative;
-	top: -45px;
-	margin-bottom: -40px;
-	z-index: 10;
-}
-
-.button-group {
-	display: flex;
-	gap: 0.5rem;
-	align-items: center;
-}
+/* SettingsSection handles all action button positioning and spacing */
 
 .stats-content {
 	display: flex;

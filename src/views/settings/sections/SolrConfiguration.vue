@@ -1,31 +1,30 @@
 <template>
-	<NcSettingsSection name="Search Configuration"
-		description="Configure Apache SOLR search engine for advanced search capabilities">
-		<div class="solr-options">
-			<!-- Actions Bar -->
-			<div class="section-header-inline">
-				<span />
-				<div class="button-group">
-					<!-- Refresh Stats Button -->
-					<NcButton
-						v-if="solrOptions.enabled"
-						type="secondary"
-						:disabled="loadingStats"
-						@click="loadSolrStats">
-						<template #icon>
-							<NcLoadingIcon v-if="loadingStats" :size="20" />
-							<Refresh v-else :size="20" />
-						</template>
-						{{ t('openregister', 'Refresh Stats') }}
-					</NcButton>
+	<SettingsSection 
+		name="Search Configuration"
+		description="Configure Apache SOLR search engine for advanced search capabilities"
+		:loading="loading"
+		loading-message="Loading search configuration...">
+		<template #actions>
+			<!-- Refresh Stats Button -->
+			<NcButton
+				v-if="solrOptions.enabled"
+				type="secondary"
+				:disabled="loadingStats"
+				@click="loadSolrStats">
+				<template #icon>
+					<NcLoadingIcon v-if="loadingStats" :size="20" />
+					<Refresh v-else :size="20" />
+				</template>
+				{{ t('openregister', 'Refresh Stats') }}
+			</NcButton>
 
-					<!-- All SOLR Actions Menu -->
-					<NcActions
-						:aria-label="t('openregister', 'SOLR actions menu')"
-						:menu-name="t('openregister', 'Actions')">
-						<template #icon>
-							<DotsVertical :size="20" />
-						</template>
+			<!-- All SOLR Actions Menu -->
+			<NcActions
+				:aria-label="t('openregister', 'SOLR actions menu')"
+				:menu-name="t('openregister', 'Actions')">
+				<template #icon>
+					<DotsVertical :size="20" />
+				</template>
 
 						<!-- Connection Settings -->
 						<NcActionButton @click="showConnectionDialog = true">
@@ -97,10 +96,9 @@
 							{{ t('openregister', 'Configure Facets') }}
 						</NcActionButton>
 					</NcActions>
-				</div>
-			</div>
+		</template>
 
-			<!-- Section Description -->
+		<!-- Section Description -->
 			<div class="section-description-full">
 				<p class="main-description">
 					Apache SOLR provides advanced search capabilities including full-text search, faceted search, filtering, and sorting.
@@ -1084,17 +1082,18 @@
 			:show="showCollectionDialog"
 			@closing="showCollectionDialog = false" />
 
-		<!-- File Warmup Modal -->
-		<FileWarmupModal
-			:open="showFileWarmupDialog"
-			@close="showFileWarmupDialog = false" />
-	</NcSettingsSection>
+	<!-- File Warmup Modal -->
+	<FileWarmupModal
+		:open="showFileWarmupDialog"
+		@close="showFileWarmupDialog = false" />
+	</SettingsSection>
 </template>
 
 <script>
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../../store/settings.js'
-import { NcSettingsSection, NcButton, NcLoadingIcon, NcCheckboxRadioSwitch, NcSelect, NcDialog, NcActions, NcActionButton } from '@nextcloud/vue'
+import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import { NcButton, NcLoadingIcon, NcCheckboxRadioSwitch, NcSelect, NcDialog, NcActions, NcActionButton } from '@nextcloud/vue'
 import Settings from 'vue-material-design-icons/ApplicationSettings.vue'
 import TestTube from 'vue-material-design-icons/TestTube.vue'
 import Save from 'vue-material-design-icons/ContentSave.vue'
@@ -1128,7 +1127,7 @@ export default {
 	name: 'SolrConfiguration',
 
 	components: {
-		NcSettingsSection,
+		SettingsSection,
 		NcButton,
 		NcLoadingIcon,
 		NcCheckboxRadioSwitch,
@@ -2001,30 +2000,14 @@ export default {
 </script>
 
 <style scoped>
-/* OpenConnector pattern: Actions positioned with relative positioning and negative margins */
-.section-header-inline {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	gap: 1rem;
-	position: relative;
-	top: -45px;
-	margin-bottom: -40px;
-	z-index: 10;
-}
-
-.button-group {
-	display: flex;
-	gap: 0.5rem;
-	align-items: center;
-}
+/* SettingsSection handles all action button positioning and spacing */
 
 /* NcActions styling */
-.button-group :deep(.action-item) {
+:deep(.action-item) {
 	display: inline-flex;
 }
 
-.button-group :deep(.action-item__menutoggle) {
+:deep(.action-item__menutoggle) {
 	border-radius: var(--border-radius-large);
 	background: var(--color-background-hover);
 	border: 1px solid var(--color-border);
