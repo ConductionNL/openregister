@@ -1,31 +1,32 @@
-<script setup>
-import { navigationStore } from '../store/store.js'
-</script>
-
 <template>
 	<NcAppNavigation>
 		<NcAppNavigationList>
-			<NcAppNavigationItem :active="navigationStore.selected === 'dashboard'" :name="t('openregister', 'Dashboard')" @click="navigationStore.setSelected('dashboard')">
+			<NcAppNavigationItem :active="$route.path === '/'" :name="t('openregister', 'Dashboard')" @click="handleNavigate('/')">
 				<template #icon>
 					<Finance :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="navigationStore.selected === 'registers'" :name="t('openregister', 'Registers')" @click="navigationStore.setSelected('registers')">
+			<NcAppNavigationItem :active="$route.path.startsWith('/registers')" :name="t('openregister', 'Registers')" @click="handleNavigate('/registers')">
 				<template #icon>
 					<DatabaseOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="navigationStore.selected === 'schemas'" :name="t('openregister', 'Schemas')" @click="navigationStore.setSelected('schemas')">
+			<NcAppNavigationItem :active="$route.path.startsWith('/schemas')" :name="t('openregister', 'Schemas')" @click="handleNavigate('/schemas')">
 				<template #icon>
 					<FileTreeOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="navigationStore.selected === 'tableSearch'" :name="t('openregister', 'Tables')" @click="navigationStore.setSelected('tableSearch')">
+			<NcAppNavigationItem :active="$route.path.startsWith('/tables')" :name="t('openregister', 'Tables')" @click="handleNavigate('/tables')">
 				<template #icon>
 					<TableMultiple :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<!-- <NcAppNavigationItem :active="navigationStore.selected === 'objects'" name="Search" @click="navigationStore.setSelected('search')">
+			<NcAppNavigationItem :active="$route.path.startsWith('/chat')" :name="t('openregister', 'AI Chat')" @click="handleNavigate('/chat')">
+				<template #icon>
+					<Robot :size="20" />
+				</template>
+			</NcAppNavigationItem>
+			<!-- <NcAppNavigationItem :active="$route.path.startsWith('/search')" name="Search" @click="handleNavigate('/search')">
 				<template #icon>
 					<LayersSearchOutline :size="20" />
 				</template>
@@ -33,32 +34,32 @@ import { navigationStore } from '../store/store.js'
 		</NcAppNavigationList>
 
 		<NcAppNavigationSettings>
-			<NcAppNavigationItem :active="navigationStore.selected === 'organisations'" :name="t('openregister', 'Organisations')" @click="navigationStore.setSelected('organisations')">
+			<NcAppNavigationItem :active="$route.path.startsWith('/organisation')" :name="t('openregister', 'Organisations')" @click="handleNavigate('/organisation')">
 				<template #icon>
 					<OfficeBuildingOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="navigationStore.selected === 'sources'" :name="t('openregister', 'Data sources')" @click="navigationStore.setSelected('sources')">
+			<NcAppNavigationItem :active="$route.path.startsWith('/sources')" :name="t('openregister', 'Data sources')" @click="handleNavigate('/sources')">
 				<template #icon>
 					<DatabaseArrowRightOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="navigationStore.selected === 'configurations'" :name="t('openregister', 'Configurations')" @click="navigationStore.setSelected('configurations')">
+			<NcAppNavigationItem :active="$route.path.startsWith('/configurations')" :name="t('openregister', 'Configurations')" @click="handleNavigate('/configurations')">
 				<template #icon>
 					<CogOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="navigationStore.selected === 'deleted'" :name="t('openregister', 'Deleted')" @click="navigationStore.setSelected('deleted')">
+			<NcAppNavigationItem :active="$route.path.startsWith('/deleted')" :name="t('openregister', 'Deleted')" @click="handleNavigate('/deleted')">
 				<template #icon>
 					<DeleteRestore :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="navigationStore.selected === 'auditTrails'" :name="t('openregister', 'Audit Trails')" @click="navigationStore.setSelected('auditTrails')">
+			<NcAppNavigationItem :active="$route.path.startsWith('/audit-trails')" :name="t('openregister', 'Audit Trails')" @click="handleNavigate('/audit-trails')">
 				<template #icon>
 					<TextBoxOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="navigationStore.selected === 'searchTrails'" :name="t('openregister', 'Search Trails')" @click="navigationStore.setSelected('searchTrails')">
+			<NcAppNavigationItem :active="$route.path.startsWith('/search-trails')" :name="t('openregister', 'Search Trails')" @click="handleNavigate('/search-trails')">
 				<template #icon>
 					<MagnifyPlus :size="20" />
 				</template>
@@ -67,6 +68,7 @@ import { navigationStore } from '../store/store.js'
 	</NcAppNavigation>
 </template>
 <script>
+import { t } from '@nextcloud/l10n'
 
 import {
 	NcAppNavigation,
@@ -83,6 +85,7 @@ import OfficeBuildingOutline from 'vue-material-design-icons/OfficeBuildingOutli
 import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
 // import LayersSearchOutline from 'vue-material-design-icons/LayersSearchOutline.vue'
 import TableMultiple from 'vue-material-design-icons/TableMultiple.vue'
+import Robot from 'vue-material-design-icons/Robot.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import DeleteRestore from 'vue-material-design-icons/DeleteRestore.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
@@ -103,6 +106,7 @@ export default {
 		FileTreeOutline,
 		OfficeBuildingOutline,
 		TableMultiple,
+		Robot,
 		// LayersSearchOutline,
 		CogOutline,
 		DeleteRestore,
@@ -110,6 +114,10 @@ export default {
 		MagnifyPlus,
 	},
 	methods: {
+		t,
+		handleNavigate(path) {
+			this.$router.push(path)
+		},
 		openLink(url, type = '') {
 			window.open(url, type)
 		},

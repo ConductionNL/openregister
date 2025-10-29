@@ -199,7 +199,7 @@ export default {
 		viewRegister(register) {
 			registerStore.setRegisterItem(register)
 			navigationStore.setModal(false)
-			navigationStore.setSelected('registers')
+			this.$router.push('/registers')
 		},
 		editRegister(register) {
 			registerStore.setRegisterItem(register)

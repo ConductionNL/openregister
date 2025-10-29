@@ -22,10 +22,10 @@ use OCA\OpenRegister\Db\Organisation;
 
 /**
  * Event dispatched when an organisation entity is created
- * 
+ *
  * This event is fired after an organisation entity has been successfully
  * created and committed to the database.
- * 
+ *
  * @category Event
  * @package  OCA\OpenRegister\Event
  * @author   Conduction b.v. <info@conduction.nl>
@@ -35,12 +35,14 @@ use OCA\OpenRegister\Db\Organisation;
  */
 class OrganisationCreatedEvent extends Event
 {
+
     /**
      * The organisation that was created
      *
      * @var Organisation
      */
     private Organisation $organisation;
+
 
     /**
      * OrganisationCreatedEvent constructor
@@ -51,7 +53,9 @@ class OrganisationCreatedEvent extends Event
     {
         parent::__construct();
         $this->organisation = $organisation;
-    }
+
+    }//end __construct()
+
 
     /**
      * Get the organisation that was created
@@ -61,5 +65,8 @@ class OrganisationCreatedEvent extends Event
     public function getOrganisation(): Organisation
     {
         return $this->organisation;
-    }
-} 
+
+    }//end getOrganisation()
+
+
+}//end class

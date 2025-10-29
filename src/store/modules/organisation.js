@@ -212,54 +212,104 @@ export const useOrganisationStore = defineStore('organisation', {
 
 			return { response }
 		},
-		// Create or update an organisation
-		async saveOrganisation(organisationItem) {
-			console.log('Saving organisation...')
+		// Create a new organisation
+		async createOrganisation(organisationData) {
+			console.log('Creating organisation...', organisationData)
 
-			const isNewOrganisation = !organisationItem.uuid
+			const endpoint = '/index.php/apps/openregister/api/organisations'
 
-			let endpoint = '/index.php/apps/openregister/api/organisations'
-			let method = 'POST'
-			const body = {
-				name: organisationItem.name,
-				description: organisationItem.description || '',
-			}
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(organisationData),
+				})
 
-			if (organisationItem.uuid) {
-				endpoint += `/${organisationItem.uuid}`
-				method = 'PUT'
-			}
+				if (!response.ok) {
+					const errorData = await response.json()
+					throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
+				}
 
-			const response = await fetch(endpoint, {
-				method,
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify(body),
-			})
+				const data = await response.json()
+				const savedOrganisation = data.organisation || data
 
-			const data = await response.json()
-
-			// Handle both creation and update response formats
-			const savedOrganisation = data.organisation || data
-
-			// Update local state
-			if (isNewOrganisation) {
-				// Add to list and set as item
+				// Update local state
 				this.setOrganisationItem(savedOrganisation)
-			} else {
+
+				// Refresh the full list to get updated stats
+				await this.refreshOrganisationList()
+
+				console.log('Organisation created successfully:', savedOrganisation)
+				return { response, data: savedOrganisation }
+			} catch (error) {
+				console.error('Error creating organisation:', error)
+				throw new Error(`Failed to create organisation: ${error.message}`)
+			}
+		},
+
+		// Update an existing organisation
+		async updateOrganisation(organisationData) {
+			console.log('Updating organisation...', organisationData)
+
+			if (!organisationData.id && !organisationData.uuid) {
+				throw new Error('Organisation ID is required for updates')
+			}
+
+			const organisationId = organisationData.id || organisationData.uuid
+			const endpoint = `/index.php/apps/openregister/api/organisations/${organisationId}`
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'PUT',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(organisationData),
+				})
+
+				if (!response.ok) {
+					const errorData = await response.json()
+					throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
+				}
+
+				const data = await response.json()
+				const savedOrganisation = data.organisation || data
+
 				// Update existing in list
-				const index = this.organisationList.findIndex(org => org.uuid === savedOrganisation.uuid)
+				const index = this.organisationList.findIndex(org =>
+					org.uuid === organisationId || org.id === organisationId,
+				)
 				if (index !== -1) {
 					this.organisationList[index] = new Organisation(savedOrganisation)
 				}
-				this.setOrganisationItem(savedOrganisation)
+
+				// Update current item if it's the same organisation
+				if (this.organisationItem && (this.organisationItem.uuid === organisationId || this.organisationItem.id === organisationId)) {
+					this.setOrganisationItem(savedOrganisation)
+				}
+
+				// Refresh the full list to get updated stats
+				await this.refreshOrganisationList()
+
+				console.log('Organisation updated successfully:', savedOrganisation)
+				return { response, data: savedOrganisation }
+			} catch (error) {
+				console.error('Error updating organisation:', error)
+				throw new Error(`Failed to update organisation: ${error.message}`)
 			}
+		},
 
-			// Refresh the full list to get updated stats
-			this.refreshOrganisationList()
+		// Create or update an organisation (legacy method for backward compatibility)
+		async saveOrganisation(organisationItem) {
+			const isNewOrganisation = !organisationItem.uuid && !organisationItem.id
 
-			return { response, data: savedOrganisation }
+			if (isNewOrganisation) {
+				return await this.createOrganisation(organisationItem)
+			} else {
+				return await this.updateOrganisation(organisationItem)
+			}
 		},
 		// Clean organisation data for saving - remove read-only fields
 		cleanOrganisationForSave(organisationItem) {

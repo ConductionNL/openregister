@@ -3,7 +3,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'joinOrganisation'"
+	<NcDialog
 		name="Join Organisation"
 		size="normal"
 		:can-close="true"

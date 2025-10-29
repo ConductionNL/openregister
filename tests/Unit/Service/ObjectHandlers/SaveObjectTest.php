@@ -1005,4 +1005,134 @@ class SaveObjectTest extends TestCase
         $this->assertContains($existingParentUuid, $childData['parents']);
         $this->assertContains($parentUuid, $childData['parents']);
     }
+
+    /**
+     * Test that prepareObject method works correctly without persisting
+     *
+     * @return void
+     */
+    public function testPrepareObjectWithoutPersistence(): void
+    {
+        $data = [
+            'name' => 'Test Object',
+            'description' => 'Test Description'
+        ];
+
+        // Mock schema with configuration
+        $schemaProperties = [
+            'name' => ['type' => 'string'],
+            'description' => ['type' => 'string']
+        ];
+
+        $this->mockSchema
+            ->method('getSchemaObject')
+            ->willReturn((object)[
+                'properties' => $schemaProperties
+            ]);
+
+        $this->mockSchema
+            ->method('getConfiguration')
+            ->willReturn([
+                'objectNameField' => 'name',
+                'objectDescriptionField' => 'description'
+            ]);
+
+        $this->urlGenerator
+            ->method('getAbsoluteURL')
+            ->willReturn('http://test.com/object/test');
+
+        $this->urlGenerator
+            ->method('linkToRoute')
+            ->willReturn('/object/test');
+
+        // Mock user session
+        $this->userSession
+            ->method('getUser')
+            ->willReturn($this->mockUser);
+
+        $this->mockUser
+            ->method('getUID')
+            ->willReturn('testuser');
+
+        // Execute test - should not persist to database
+        $result = $this->saveObject->prepareObject(
+            register: $this->mockRegister,
+            schema: $this->mockSchema,
+            data: $data
+        );
+
+        // Assertions
+        $this->assertInstanceOf(ObjectEntity::class, $result);
+        $this->assertNotEmpty($result->getUuid());
+        $this->assertEquals('Test Object', $result->getName());
+        $this->assertEquals('Test Description', $result->getDescription());
+        $this->assertEquals('testuser', $result->getOwner());
+        
+        // Verify that the object was not saved to database
+        $this->objectEntityMapper->expects($this->never())->method('insert');
+        $this->objectEntityMapper->expects($this->never())->method('update');
+    }
+
+    /**
+     * Test that prepareObject method handles slug generation correctly
+     *
+     * @return void
+     */
+    public function testPrepareObjectWithSlugGeneration(): void
+    {
+        $data = [
+            'title' => 'Test Object Title'
+        ];
+
+        // Mock schema with slug configuration
+        $schemaProperties = [
+            'title' => ['type' => 'string'],
+            'slug' => ['type' => 'string']
+        ];
+
+        $this->mockSchema
+            ->method('getSchemaObject')
+            ->willReturn((object)[
+                'properties' => $schemaProperties
+            ]);
+
+        $this->mockSchema
+            ->method('getConfiguration')
+            ->willReturn([
+                'objectSlugField' => 'title'
+            ]);
+
+        $this->urlGenerator
+            ->method('getAbsoluteURL')
+            ->willReturn('http://test.com/object/test');
+
+        $this->urlGenerator
+            ->method('linkToRoute')
+            ->willReturn('/object/test');
+
+        // Mock user session
+        $this->userSession
+            ->method('getUser')
+            ->willReturn($this->mockUser);
+
+        $this->mockUser
+            ->method('getUID')
+            ->willReturn('testuser');
+
+        // Execute test
+        $result = $this->saveObject->prepareObject(
+            register: $this->mockRegister,
+            schema: $this->mockSchema,
+            data: $data
+        );
+
+        // Assertions
+        $this->assertInstanceOf(ObjectEntity::class, $result);
+        $this->assertNotEmpty($result->getSlug());
+        $this->assertStringContainsString('test-object-title', $result->getSlug());
+        
+        // Verify that the object was not saved to database
+        $this->objectEntityMapper->expects($this->never())->method('insert');
+        $this->objectEntityMapper->expects($this->never())->method('update');
+    }
 } 

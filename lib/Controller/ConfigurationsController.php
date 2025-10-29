@@ -20,13 +20,12 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Service\ConfigurationService;
-use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\DataDownloadResponse;
+use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Symfony\Component\Uid\Uuid;
@@ -60,30 +59,45 @@ class ConfigurationsController extends Controller
 
     }//end __construct()
 
+	/**
+	 * This returns the template of the main app's page
+	 * It adds some data to the template (app version)
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @return TemplateResponse
+	 */
+	public function page(): TemplateResponse
+	{
+        return new TemplateResponse(
+            //Application::APP_ID,
+            'openregister',
+            'index',
+            []
+        );
+	}
 
     /**
      * List all configurations
-     *
-     * @param SearchService $searchService The search service.
      *
      * @return JSONResponse List of configurations.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function index(SearchService $searchService): JSONResponse
+    public function index(): JSONResponse
     {
         // Get request parameters for filtering and searching.
         $filters        = $this->request->getParams();
-        $fieldsToSearch = ['title', 'description'];
 
-        // Create search parameters and conditions.
-        $searchParams     = $searchService->createMySQLSearchParams($filters);
-        $searchConditions = $searchService->createMySQLSearchConditions(
-            $filters,
-            $fieldsToSearch
-        );
-        $filters          = $searchService->unsetSpecialQueryParams($filters);
+        unset($filters['_route']);
+
+        $searchParams     = [];
+        $searchConditions = [];
+        $filters          = $filters;
+
+
 
         // Return all configurations that match the search conditions.
         return new JSONResponse(

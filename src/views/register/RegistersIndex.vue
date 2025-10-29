@@ -17,7 +17,7 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 			<div class="viewActionsBar">
 				<div class="viewInfo">
 					<span class="viewTotalCount">
-						{{ t('openregister', 'Showing {showing} of {total} registers', { showing: filteredRegisters.length, total: dashboardStore.registers.length }) }}
+						{{ t('openregister', 'Showing {showing} of {total} registers', { showing: filteredRegisters.length, total: registerStore.registerList.length }) }}
 					</span>
 					<span v-if="selectedRegisters.length > 0" class="viewIndicator">
 						({{ t('openregister', '{count} selected', { count: selectedRegisters.length }) }})
@@ -61,7 +61,7 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 							</template>
 							Add Register
 						</NcActionButton>
-						<NcActionButton close-after-click @click="dashboardStore.fetchRegisters()">
+						<NcActionButton close-after-click @click="registerStore.refreshRegisterList()">
 							<template #icon>
 								<Refresh :size="20" />
 							</template>
@@ -84,11 +84,11 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 			</div>
 
 			<!-- Loading, Error, and Empty States -->
-			<NcEmptyContent v-if="dashboardStore.loading || dashboardStore.error || !filteredRegisters.length"
+			<NcEmptyContent v-if="registerStore.loading || registerStore.error || !filteredRegisters.length"
 				:name="emptyContentName"
 				:description="emptyContentDescription">
 				<template #icon>
-					<NcLoadingIcon v-if="dashboardStore.loading" :size="64" />
+					<NcLoadingIcon v-if="registerStore.loading" :size="64" />
 					<DatabaseOutline v-else :size="64" />
 				</template>
 			</NcEmptyContent>
@@ -164,145 +164,22 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 									</NcActionButton>
 								</NcActions>
 							</div>
-							<!-- Register Statistics Table -->
-							<table class="statisticsTable registerStats">
-								<thead>
-									<tr>
-										<th>{{ t('openregister', 'Type') }}</th>
-										<th>{{ t('openregister', 'Total') }}</th>
-										<th>{{ t('openregister', 'Size') }}</th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr>
-										<td>{{ t('openregister', 'Objects') }}</td>
-										<td>{{ register.stats?.objects?.total || 0 }}</td>
-										<td>{{ formatBytes(register.stats?.objects?.size || 0) }}</td>
-									</tr>
-									<tr class="subRow">
-										<td class="indented">
-											{{ t('openregister', 'Invalid') }}
-										</td>
-										<td>{{ register.stats?.objects?.invalid || 0 }}</td>
-										<td>-</td>
-									</tr>
-									<tr class="subRow">
-										<td class="indented">
-											{{ t('openregister', 'Deleted') }}
-										</td>
-										<td>{{ register.stats?.objects?.deleted || 0 }}</td>
-										<td>-</td>
-									</tr>
-									<tr class="subRow">
-										<td class="indented">
-											{{ t('openregister', 'Locked') }}
-										</td>
-										<td>{{ register.stats?.objects?.locked || 0 }}</td>
-										<td>-</td>
-									</tr>
-									<tr class="subRow">
-										<td class="indented">
-											{{ t('openregister', 'Published') }}
-										</td>
-										<td>{{ register.stats?.objects?.published || 0 }}</td>
-										<td>-</td>
-									</tr>
-									<tr>
-										<td>{{ t('openregister', 'Logs') }}</td>
-										<td>{{ register.stats?.logs?.total || 0 }}</td>
-										<td>{{ formatBytes(register.stats?.logs?.size || 0) }}</td>
-									</tr>
-									<tr>
-										<td>{{ t('openregister', 'Files') }}</td>
-										<td>{{ register.stats?.files?.total || 0 }}</td>
-										<td>{{ formatBytes(register.stats?.files?.size || 0) }}</td>
-									</tr>
-									<tr>
-										<td>{{ t('openregister', 'Schemas') }}</td>
-										<td>{{ register.schemas?.length || 0 }}</td>
-										<td>
-											<button class="toggleButton" @click.stop="toggleSchemaVisibility(register.id)">
-												{{ isSchemasVisible(register.id) ? t('openregister', 'Hide') : t('openregister', 'Show') }}
-											</button>
-										</td>
-									</tr>
-								</tbody>
-							</table>
-
-							<!-- Schemas section with v-show -->
-							<div v-show="isSchemasVisible(register.id)" class="nestedCardContainer">
-								<div v-for="schema in register.schemas" :key="schema.id" class="nestedCard">
-									<div
-										class="nestedCardHeader"
-										@click="toggleSchema(schema.id)">
-										<div class="nestedCardTitle">
-											<FileCodeOutline :size="16" />
-											<span>{{ schema.stats?.objects?.total || 0 }} </span>
-											{{ schema.title }}
-											<span class="schemaSize">({{ formatBytes(schema.stats?.objects?.size || 0) }})</span>
-										</div>
-										<button class="toggleButton">
-											<ChevronUp v-if="isSchemaExpanded(schema.id)" :size="20" />
-											<ChevronDown v-else :size="20" />
-										</button>
-									</div>
-
-									<div v-show="isSchemaExpanded(schema.id)" class="nestedCardContent">
-										<table class="statisticsTable schemaStats">
-											<thead>
-												<tr>
-													<th>{{ t('openregister', 'Type') }}</th>
-													<th>{{ t('openregister', 'Total') }}</th>
-													<th>{{ t('openregister', 'Size') }}</th>
-												</tr>
-											</thead>
-											<tbody>
-												<tr>
-													<td>{{ t('openregister', 'Objects') }}</td>
-													<td>{{ schema.stats?.objects?.total || 0 }}</td>
-													<td>{{ formatBytes(schema.stats?.objects?.size || 0) }}</td>
-												</tr>
-												<tr class="subRow">
-													<td class="indented">
-														{{ t('openregister', 'Invalid') }}
-													</td>
-													<td>{{ schema.stats?.objects?.invalid || 0 }}</td>
-													<td>-</td>
-												</tr>
-												<tr class="subRow">
-													<td class="indented">
-														{{ t('openregister', 'Deleted') }}
-													</td>
-													<td>{{ schema.stats?.objects?.deleted || 0 }}</td>
-													<td>-</td>
-												</tr>
-												<tr class="subRow">
-													<td class="indented">
-														{{ t('openregister', 'Locked') }}
-													</td>
-													<td>{{ schema.stats?.objects?.locked || 0 }}</td>
-													<td>-</td>
-												</tr>
-												<tr class="subRow">
-													<td class="indented">
-														{{ t('openregister', 'Published') }}
-													</td>
-													<td>{{ schema.stats?.objects?.published || 0 }}</td>
-													<td>-</td>
-												</tr>
-												<tr>
-													<td>{{ t('openregister', 'Logs') }}</td>
-													<td>{{ schema.stats?.logs?.total || 0 }}</td>
-													<td>{{ formatBytes(schema.stats?.logs?.size || 0) }}</td>
-												</tr>
-												<tr>
-													<td>{{ t('openregister', 'Files') }}</td>
-													<td>{{ schema.stats?.files?.total || 0 }}</td>
-													<td>{{ formatBytes(schema.stats?.files?.size || 0) }}</td>
-												</tr>
-											</tbody>
-										</table>
-									</div>
+							<!-- Schemas section -->
+							<div class="nestedCardContainer">
+								<h3>
+									<FileCodeOutline :size="16" />
+									{{ t('openregister', 'Schemas') }} ({{ register.schemas?.length || 0 }})
+								</h3>
+								<div v-if="register.schemas?.length > 0" class="schemaCount">
+									<p>
+										{{ t('openregister', 'This register contains {count} schema{plural}', {
+											count: register.schemas.length,
+											plural: register.schemas.length !== 1 ? 's' : ''
+										}) }}
+									</p>
+								</div>
+								<div v-else class="emptySchemas">
+									{{ t('openregister', 'No schemas found') }}
 								</div>
 							</div>
 						</div>
@@ -320,9 +197,6 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 											@update:checked="toggleSelectAll" />
 									</th>
 									<th>{{ t('openregister', 'Title') }}</th>
-									<th>{{ t('openregister', 'Objects (Total/Size)') }}</th>
-									<th>{{ t('openregister', 'Logs (Total/Size)') }}</th>
-									<th>{{ t('openregister', 'Files (Total/Size)') }}</th>
 									<th>{{ t('openregister', 'Schemas') }}</th>
 									<th>{{ t('openregister', 'Created') }}</th>
 									<th>{{ t('openregister', 'Updated') }}</th>
@@ -347,11 +221,10 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 											<span v-if="register.description" class="textDescription textEllipsis">{{ register.description }}</span>
 										</div>
 									</td>
-									<td>{{ register.stats?.objects?.total || 0 }}/{{ formatBytes(register.stats?.objects?.size || 0) }}</td>
-									<td>{{ register.stats?.logs?.total || 0 }}/{{ formatBytes(register.stats?.logs?.size || 0) }}</td>
-									<td>{{ register.stats?.files?.total || 0 }}/{{ formatBytes(register.stats?.files?.size || 0) }}</td>
 									<td class="tableColumnConstrained">
-										{{ register.schemas.map(schema => schema.title).join(', ') }}
+										{{ register.schemas?.length || 0 }} {{ t('openregister', 'schema{plural}', {
+											plural: register.schemas?.length !== 1 ? 's' : ''
+										}) }}
 									</td>
 									<td>{{ register.created ? new Date(register.created).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(register.created).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}</td>
 									<td>{{ register.updated ? new Date(register.updated).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(register.updated).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}</td>
@@ -442,8 +315,6 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
-import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
-import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
@@ -457,7 +328,6 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import axios from '@nextcloud/axios'
 import { showError } from '@nextcloud/dialogs'
-import formatBytes from '../../services/formatBytes.js'
 import PaginationComponent from '../../components/PaginationComponent.vue'
 
 export default {
@@ -471,8 +341,6 @@ export default {
 		NcCheckboxRadioSwitch,
 		DatabaseOutline,
 		FileCodeOutline,
-		ChevronDown,
-		ChevronUp,
 		DotsHorizontal,
 		Pencil,
 		TrashCanOutline,
@@ -488,15 +356,16 @@ export default {
 	},
 	data() {
 		return {
-			expandedSchemas: [],
 			calculating: null,
-			showSchemas: {},
 			selectedRegisters: [],
 		}
 	},
 	computed: {
+		registerStore() {
+			return registerStore
+		},
 		filteredRegisters() {
-			return dashboardStore.registers.filter(register =>
+			return registerStore.registerList.filter(register =>
 				register.title !== 'System Totals'
 				&& register.title !== 'Orphaned Items',
 			)
@@ -506,12 +375,7 @@ export default {
 			const end = start + (registerStore.pagination.limit || 20)
 			return this.filteredRegisters.slice(start, end)
 		},
-		isSchemaExpanded() {
-			return (schemaId) => this.expandedSchemas.includes(schemaId)
-		},
-		isSchemasVisible() {
-			return (registerId) => this.showSchemas[registerId] || false
-		},
+
 		allSelected() {
 			return this.filteredRegisters.length > 0 && this.filteredRegisters.every(register => this.selectedRegisters.includes(register.id))
 		},
@@ -519,8 +383,8 @@ export default {
 			return this.selectedRegisters.length > 0 && !this.allSelected
 		},
 		emptyContentName() {
-			if (dashboardStore.error) {
-				return dashboardStore.error
+			if (registerStore.error) {
+				return registerStore.error
 			} else if (!this.filteredRegisters.length) {
 				return t('openregister', 'No registers found')
 			} else {
@@ -528,7 +392,7 @@ export default {
 			}
 		},
 		emptyContentDescription() {
-			if (dashboardStore.error) {
+			if (registerStore.error) {
 				return t('openregister', 'Please try again later.')
 			} else if (!this.filteredRegisters.length) {
 				return t('openregister', 'No registers are available.')
@@ -537,8 +401,12 @@ export default {
 			}
 		},
 	},
-	mounted() {
-		dashboardStore.preload()
+	async mounted() {
+		try {
+			await registerStore.refreshRegisterList()
+		} catch (error) {
+			console.error('Failed to load registers:', error)
+		}
 	},
 	methods: {
 		onPageChanged(page) {
@@ -546,17 +414,6 @@ export default {
 		},
 		onPageSizeChanged(pageSize) {
 			registerStore.setPagination(1, pageSize)
-		},
-		toggleSchema(schemaId) {
-			const index = this.expandedSchemas.indexOf(schemaId)
-			if (index > -1) {
-				this.expandedSchemas.splice(index, 1)
-			} else {
-				this.expandedSchemas.push(schemaId)
-			}
-
-			// Force reactivity update
-			this.expandedSchemas = [...this.expandedSchemas]
 		},
 
 		async calculateSizes(register) {
@@ -569,7 +426,7 @@ export default {
 				// Call the dashboard store to calculate sizes
 				await dashboardStore.calculateSizes(register.id)
 				// Refresh the registers list to get updated sizes
-				await dashboardStore.fetchRegisters()
+				await registerStore.refreshRegisterList()
 			} catch (error) {
 				console.error('Error calculating sizes:', error)
 				showError(t('openregister', 'Failed to calculate sizes'))
@@ -603,10 +460,6 @@ export default {
 			window.open(`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`, '_blank')
 		},
 
-		toggleSchemaVisibility(registerId) {
-			this.$set(this.showSchemas, registerId, !this.showSchemas[registerId])
-		},
-
 		openAllApisDoc() {
 			const baseUrl = window.location.origin
 			const apiUrl = `${baseUrl}/apps/openregister/api/registers/oas`
@@ -617,7 +470,7 @@ export default {
 			// Set the register ID in the register store for reference
 			registerStore.setRegisterItem({ id: register.id })
 			// Navigate to detail view which will use dashboard store data
-			navigationStore.setSelected('register-detail')
+			this.$router.push(`/registers/${register.id}`)
 		},
 
 		toggleSelectAll(checked) {
@@ -644,6 +497,24 @@ export default {
 	color: var(--color-text-maxcontrast);
 	font-size: 0.9em;
 	margin-inline-start: 4px;
+}
+
+.schemaCount {
+	color: var(--color-text-maxcontrast);
+	font-size: 0.9em;
+	font-style: italic;
+	margin-top: 0.5rem;
+}
+
+.schemaCount p {
+	margin: 0;
+}
+
+.emptySchemas {
+	color: var(--color-text-maxcontrast);
+	font-size: 0.9em;
+	font-style: italic;
+	margin-top: 0.5rem;
 }
 
 /* So that the actions menu is not overlapped by the sidebar button when it is closed */

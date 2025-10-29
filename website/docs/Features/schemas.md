@@ -584,6 +584,111 @@ Open Register supports schema versioning to manage changes over time:
 2. **Major Updates**: Adding required fields, removing fields, or changing field types
 3. **Archive**: Previous versions are stored in the schema's archive property
 
+## API Property Filtering
+
+When retrieving objects via the API, OpenRegister provides several parameters to control which properties are included or excluded from the response. This is particularly useful for optimizing performance, reducing payload sizes, or filtering out sensitive information.
+
+### Available Filtering Parameters
+
+| Parameter | Purpose | Usage Example |
+|-----------|---------|---------------|
+| '_fields' | **Whitelist** - Include only specified properties | '?_fields=id,name,description' |
+| '_unset' | **Blacklist** - Remove specified properties | '?_unset=internal,private,metadata' |
+| '_filter' | **Conditional** - Filter objects by property values | '?_filter=status,active' |
+
+### Property Inclusion with '_fields'
+
+Use '_fields' to specify exactly which properties should be included in the response:
+
+```bash
+# Only return id, name, and description
+GET /api/objects/register/schema/123?_fields=id,name,description
+```
+
+**Response:**
+```json
+{
+  "id": "123",
+  "name": "Sample Object",
+  "description": "This is a sample",
+  "@self": {
+    "id": "123",
+    "name": "Sample Object",
+    "register": "1",
+    "schema": "5"
+  }
+}
+```
+
+### Property Removal with '_unset'
+
+Use '_unset' to remove specific properties from the response:
+
+```bash
+# Remove internal and metadata properties
+GET /api/objects/register/schema/123?_unset=internal,metadata,created
+```
+
+**Before '_unset':**
+```json
+{
+  "id": "123",
+  "name": "Sample Object",
+  "internal": "sensitive data",
+  "metadata": {"version": "1.0"},
+  "created": "2023-01-01T00:00:00Z",
+  "@self": {...}
+}
+```
+
+**After '_unset=internal,metadata,created':**
+```json
+{
+  "id": "123", 
+  "name": "Sample Object",
+  "@self": {...}
+}
+```
+
+### Alternative Syntax
+
+Both underscore and non-underscore versions are supported:
+
+```bash
+# These are equivalent:
+GET /api/objects/123?_unset=field1,field2
+GET /api/objects/123?unset=field1,field2
+
+GET /api/objects/123?_fields=id,name
+GET /api/objects/123?fields=id,name
+```
+
+### Collection Endpoints
+
+Property filtering works on both single object and collection endpoints:
+
+```bash
+# Remove sensitive data from all objects in collection
+GET /api/objects?_unset=password,token,internal
+
+# Only include essential fields for list view
+GET /api/objects?_fields=id,name,status
+```
+
+### Best Practices
+
+1. **Performance**: Use '_fields' for large objects to reduce response size
+2. **Security**: Use '_unset' to remove sensitive properties without affecting underlying data
+3. **Consistency**: Choose one parameter style ('_unset' vs 'unset') and use consistently
+4. **Documentation**: Document which fields can be filtered for API consumers
+
+### Important Notes
+
+- Property filtering only affects the API response, not the stored data
+- The '@self' metadata object is always included and contains core object information
+- Filtering is applied after object rendering and relationship resolution
+- Invalid property names in filtering parameters are silently ignored
+
 # Schema References and Object Cascading
 
 OpenRegister supports schema references to enable reusable schema definitions and complex object relationships. This document explains how schema references work, how they are resolved, and how to configure object cascading.
@@ -915,6 +1020,240 @@ Result:
     }
   }
 }
+```
+
+## Schema Exploration
+
+Open Register includes a powerful **Schema Exploration** feature that analyzes existing object data to discover properties not defined in the current schema. This is particularly useful when:
+
+- Objects were created with validation disabled
+- Data was imported from external sources
+- The schema evolved over time and some properties weren't properly documented
+- You need to discover the actual data structure within your objects
+
+### How Schema Exploration Works
+
+The exploration process involves several steps:
+
+1. **Object Retrieval**: Collects all objects belonging to a specific schema
+2. **Property Extraction**: Analyzes each object's properties and their values
+3. **Type Detection**: Determines data types, formats, and patterns from real data
+4. **Gap Analysis**: Identifies properties present in objects but missing from the schema
+5. **Confidence Scoring**: Provides confidence levels for property recommendations
+
+### Starting Schema Exploration
+
+To explore a schema's properties:
+
+1. Navigate to **Schemas** in the Open Register interface
+2. Find the schema you want to explore
+3. Click the **"Explore Properties"** action button (database search icon)
+4. Review the analysis results showing discovered properties
+5. Select which properties to add to your schema
+6. Configure property settings (types, constraints, behaviors)
+7. Apply changes to update the schema
+
+### Understanding Analysis Results
+
+The exploration results provide detailed information about each discovered property:
+
+#### Property Information
+- **Recommended Type**: Auto-detected data type (string, number, boolean, etc.)
+- **Detected Format**: Specific format like date, email, URL, UUID
+- **Type Variations**: Cases where the same property has different types across objects
+- **Confidence Score**: Reliability percentage based on data consistency
+- **Examples**: Sample values found in the data
+
+#### Advanced Analysis
+- **Numeric Range**: Min/max values and data type (integer vs float)
+- **Length Range**: Minimum and maximum string lengths
+- **String Patterns**: Detected formats like camelCase, snake_case, etc.
+- **Description**: Auto-generated description based on property usage
+
+#### Property Behaviors Table
+Discovered properties can be configured with a comprehensive set of behaviors:
+
+| Behavior | Description |
+|----------|-------------|
+| **Required field** | Property must be present in objects |
+| **Immutable** | Property cannot be changed after creation |
+| **Deprecated** | Property is marked for removal |
+| **Visible to end users** | Show property in user interfaces |
+| **Hide in collection view** | Hide property in list/grid views |
+| **Hide in form view** | Hide property in forms |
+| **Enable faceting** | Allow filtering/searching by this property |
+
+### Configuration Options
+
+For technical vs user-facing settings:
+
+#### Technical Configuration
+- **Technical Description**: For developers and administrators
+- **Property Type**: Data type with auto-detected recommendations
+- **Example Values**: Sample data from analysis
+- **Constraints**: Type-specific limits (length, range, patterns)
+
+#### User-Facing Configuration  
+- **Display Title**: Label shown to end users
+- **User Description**: Helpful text shown in forms and interfaces
+
+### Analysis Process Details
+
+The exploration analyzes each property across all objects to determine:
+
+#### Length Analysis
+```json
+{
+  "property_name": "description",
+  "min_length": 15,
+  "max_length": 256,
+  "recommended_type": "string"
+}
+```
+
+#### Format Detection
+```json
+{
+  "property_name": "email_address", 
+  "detected_format": "email",
+  "confidence_score": 95,
+  "examples": ["user@example.com", "test@domain.org"]
+}
+```
+
+#### Type Consistency
+```json
+{
+  "property_name": "score",
+  "type_variations": ["integer", "string"],
+  "recommended_type": "integer",
+  "warnings": ["Mixed types detected - consider data cleanup"]
+}
+```
+
+#### Pattern Recognition
+```json
+{
+  "property_name": "user_id",
+  "string_patterns": ["integer_string", "snake_case"],
+  "numeric_range": {"min": 1, "max": 9999, "type": "integer"}
+}
+```
+
+### Usage Workflow
+
+#### Step 1: Initiate Exploration
+```bash
+# API endpoint for exploration
+GET /api/schemas/{schemaId}/explore
+
+# Example response
+{
+  "total_objects": 242,
+  "discovered_properties": {
+    "new_field": {
+      "type": "string",
+      "confidence_score": 85,
+      "examples": ["value1", "value2"],
+      "max_length": 50
+    }
+  },
+  "analysis_date": "2025-01-10T11:30:00Z"
+}
+```
+
+#### Step 2: Configure Properties
+```json
+# Select and configure properties to add
+{
+  "properties": [
+    {
+      "property_name": "new_field",
+      "type": "string",
+      "title": "New Field",
+      "technical_description": "Field discovered through object analysis",
+      "user_description": "This is a new field",
+      "required": false,
+      "facetable": true,
+      "visible": true,
+      "max_length": 50
+    }
+  ]
+}
+```
+
+#### Step 3: Apply Changes
+```bash
+# Update schema with discovered properties
+POST /api/schemas/{schemaId}/update-from-exploration
+
+# Response
+{
+  "success": true,
+  "message": "Schema updated successfully with 3 properties",
+  "schema": { /* updated schema object */ }
+}
+```
+
+### Best Practices
+
+#### Before Exploration
+- **Validate Data Quality**: Ensure your objects have reasonably clean data
+- **Check Object Count**: Exploration works with all objects for a schema
+- **Review Existing Schema**: Understand what properties you already have defined
+
+#### During Analysis
+- **Review Confidence Scores**: Higher scores indicate more reliable recommendations
+- **Check Type Variations**: Investigate properties with inconsistent types
+- **Examine Examples**: Use sample values to understand property purpose
+
+#### After Exploration
+- **Test Validation**: Create test objects with the updated schema
+- **Update Documentation**: Document newly discovered properties
+- **Clean Data**: Address any type inconsistencies found during analysis
+
+### Monitoring and Maintenance
+
+#### Regular Exploration
+- Run exploration when importing large datasets
+- Schedule periodic exploration after schema updates
+- Use exploration after disabling validation for bulk operations
+
+#### Performance Considerations
+- **Large Schemas**: Exploration may take time with thousands of objects
+- **Progress Indicators**: UI shows analysis progress and object counts
+- **Caching**: Results are cached to avoid repeated analysis
+
+### Common Use Cases
+
+#### Data Import Discovery
+```javascript
+// After importing legacy data, discover actual structure
+const exploration = await schemaService.exploreSchemaProperties(schemaId);
+
+// Review discovered properties
+exploration.suggestions.forEach(property => {
+  console.log(`${property.property_name}: ${property.recommended_type} (${property.confidence_score}%)`);
+});
+```
+
+#### Schema Evolution
+```javascript
+// When schema changes over time, discover what developers are actually using
+const updatedSchema = await schemaService.updateSchemaFromExploration(
+  schemaId, 
+  selectedProperties
+);
+```
+
+#### Data Quality Analysis
+```javascript
+// Identify data inconsistencies
+exploration.suggestions
+  .filter(p => p.type_variations && p.type_variations.length > 1)
+  .forEach(property => {
+    console.warn(`Inconsistent types for ${property.property_name}: ${property.type_variations.join(', ')}`);
+  });
 ```
 
 ## Best Practices
@@ -1422,4 +1761,122 @@ The behavior toggle appears when a default value is set and shows helpful hints 
 #### Cascade Integration Fix (v1.0.0)
 **Issue**: Properties with `writeBack` were being removed by cascade operations before write-back processing.
 **Fix**: Modified cascade logic to skip properties with `writeBack` enabled.
-**Impact**: Ensures write-back operations receive the correct data for processing. 
+**Impact**: Ensures write-back operations receive the correct data for processing.
+
+## Schema Exploration & Analysis
+
+The Schema Exploration feature provides powerful automated analysis of object data to help optimize your schema definitions. It identifies both **new properties** not yet defined in schemas and **improvement opportunities** for existing properties.
+
+### Overview
+
+Schema Exploration scans all objects belonging to a schema and:
+
+1. **Discovers New Properties**: Finds properties in object data that aren't defined in the schema
+2. **Analyzes Existing Properties**: Compares schema definitions with actual object data to identify enhancement opportunities
+3. **Generates Recommendations**: Provides confidence-scored suggestions for schema improvements
+4. **Identifies Issues**: Highlights type mismatches, missing constraints, and validation improvements
+
+### Analysis Process
+
+When you trigger schema exploration, the system:
+
+1. **Retrieves all objects** for the selected schema
+2. **Extracts properties** from each object's data structure  
+3. **Detects data types and patterns** in property values
+4. **Identifies properties** not currently defined in the schema
+5. **Analyzes existing properties** for improvement opportunities
+6. **Compares current schema** with real object data
+7. **Generates recommendations** and confidence scores
+
+### Discovery Types
+
+#### New Properties
+Properties found in object data that aren't defined in the schema definition:
+- Marked with 🔵 **NEW PROPERTY** badge
+- Included when analysis detects properties missing from schema
+- Can be added to schema with recommended types and constraints
+
+#### Property Enhancements  
+Improvements identified for properties already defined in the schema:
+- Marked with 🔧 **IMPROVED PROPERTY** badge
+- Includes type mismatches, missing constraints, and optimization opportunities
+- Helps refine existing property definitions
+
+### Analysis Features
+
+#### Type Detection
+- **Automatic type inference** from object data
+- **Type variation detection** (when properties have mixed types)
+- **Format detection** for strings (date, email, URL, UUID, etc.)
+- **Pattern recognition** (camelCase, snake_case, numeric strings)
+
+#### Constraint Analysis
+- **Length analysis** for string properties (min/max length)
+- **Range analysis** for numeric properties (min/max values)
+- **Enum detection** for properties with predefined values
+- **Required field analysis** based on null value frequency
+
+#### Enhancement Opportunities
+- **Missing constraints** (maxLength, format, pattern, enum)
+- **Type improvements** (string to date, generic to specific types)
+- **Constraint adjustments** (current limits vs. actual data ranges)
+- **Validation rule additions** (regex patterns, format specifications)
+
+### Filtering & Selection
+
+The exploration interface provides multiple filtering options:
+
+- **Property Type**: Filter between All, New Properties, or Existing Improvements
+- **Confidence Level**: High, Medium, or Low confidence recommendations  
+- **Search**: Find specific properties by name
+- **Selection**: Show only selected properties for schema updates
+
+### Usage Recommendations
+
+#### For New Properties
+✅ **High Confidence**: Over 80% of objects have this property - strongly recommended for addition
+⚠️ **Medium Confidence**: 50-80% of objects have this property - consider adding if relevant
+❌ **Low Confidence**: Under 50% of objects have this property - may be legacy data or edge cases
+
+#### For Property Enhancements
+✅ **Type Issues**: Current type doesn't match data - update schema definition
+✅ **Missing Constraints**: Add length limits, formats, or patterns as indicated
+✅ **Range Adjustments**: Adjust min/max values based on actual data ranges
+✅ **Enum Additions**: Convert loose strings to enums when values are predefined
+
+### Best Practices
+
+1. **Review High Confidence Items First**: Focus on recommendations with 80%+ confidence
+2. **Validate Recommendations**: Check sample values to ensure they make sense
+3. **Test Schema Changes**: Validate updated schemas before applying to large datasets
+4. **Iterative Improvement**: Run exploration periodically as object data evolves
+5. **Monitor Impact**: Watch for validation errors after applying schema changes
+
+### Monitoring & Troubleshooting
+
+#### Large Datasets
+- Analysis time scales with object count
+- Progress indicators show current status
+- Consider sampling for very large schemas (>10K objects)
+
+#### Memory Usage
+- Analysis loads all objects temporarily
+- Ensure adequate server memory for large datasets
+- Monitor Nextcloud container resources
+
+#### Common Issues
+- **Empty Results**: No objects found - verify schema has data
+- **Memory Errors**: Reduce object count or increase container memory
+- **Slow Performance**: Close other applications to free up resources
+
+### Integration with Schema Management
+
+Schema Exploration seamlessly integrates with OpenRegister's schema management:
+
+- **Visual Property Cards**: Each discovery shows detailed analysis with badges and metadata
+- **Configuration Options**: Full property configuration (types, constraints, behaviors)
+- **Batch Updates**: Select and apply multiple properties simultaneously  
+- **Schema Validation**: Automatic validation when applying exploration results
+- **Cache Management**: Schema cache automatically cleared after updates
+
+This feature helps maintain high-quality, well-defined schemas that accurately reflect your actual data patterns and usage.

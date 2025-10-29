@@ -585,4 +585,40 @@ class OrganisationCrudTest extends TestCase
         $this->assertArrayHasKey('error', $responseData);
         $this->assertStringContainsString('not found', strtolower($responseData['error']));
     }
+
+    /**
+     * Test organisation __toString method
+     *
+     * Scenario: Test string conversion of organisation objects
+     * Expected: Proper string representation based on available data
+     *
+     * @return void
+     */
+    public function testOrganisationToString(): void
+    {
+        // Test 1: Organisation with name
+        $org1 = new Organisation();
+        $org1->setName('Test Organisation');
+        $this->assertEquals('Test Organisation', (string) $org1);
+
+        // Test 2: Organisation with slug but no name
+        $org2 = new Organisation();
+        $org2->setSlug('test-org');
+        $this->assertEquals('test-org', (string) $org2);
+
+        // Test 3: Organisation with neither name nor slug
+        $org3 = new Organisation();
+        $this->assertEquals('Organisation #unknown', (string) $org3);
+
+        // Test 4: Organisation with ID
+        $org4 = new Organisation();
+        $org4->setId(123);
+        $this->assertEquals('Organisation #123', (string) $org4);
+
+        // Test 5: Organisation with name and slug (should prioritize name)
+        $org5 = new Organisation();
+        $org5->setName('Priority Name');
+        $org5->setSlug('priority-slug');
+        $this->assertEquals('Priority Name', (string) $org5);
+    }
 } 

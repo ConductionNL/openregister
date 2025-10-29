@@ -205,7 +205,7 @@ class ConfigurationMapper extends QBMapper
      */
     public function updateFromArray(int $id, array $data): Configuration
     {
-        $object = $this->find($id);        
+        $object = $this->find($id);
 
         // Set or update the version.
         if (isset($data['version']) === false) {

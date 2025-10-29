@@ -24,6 +24,10 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\ObjectService;
+use OCP\IUserManager;
+use OCP\IGroupManager;
+use OCP\IUser;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Csv;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -56,19 +60,69 @@ class ExportService
      */
     private readonly RegisterMapper $registerMapper;
 
+    /**
+     * User manager for checking user context
+     *
+     * @var IUserManager
+     */
+    private readonly IUserManager $userManager;
+
+    /**
+     * Group manager for checking admin group membership
+     *
+     * @var IGroupManager
+     */
+    private readonly IGroupManager $groupManager;
+
+    /**
+     * Object service for optimized object operations
+     *
+     * @var ObjectService
+     */
+    private readonly ObjectService $objectService;
+
 
     /**
      * Constructor for the ExportService
      *
      * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
      * @param RegisterMapper     $registerMapper     The register mapper
+     * @param IUserManager       $userManager        The user manager
+     * @param IGroupManager      $groupManager       The group manager
+     * @param ObjectService      $objectService      The object service
      */
-    public function __construct(ObjectEntityMapper $objectEntityMapper, RegisterMapper $registerMapper)
+    public function __construct(ObjectEntityMapper $objectEntityMapper, RegisterMapper $registerMapper, IUserManager $userManager, IGroupManager $groupManager, ObjectService $objectService)
     {
         $this->objectEntityMapper = $objectEntityMapper;
         $this->registerMapper     = $registerMapper;
+        $this->userManager        = $userManager;
+        $this->groupManager       = $groupManager;
+        $this->objectService      = $objectService;
 
     }//end __construct()
+
+
+    /**
+     * Check if the given user is in the admin group
+     *
+     * @param IUser|null $user The user to check (null means anonymous/no user)
+     *
+     * @return bool True if user is admin, false otherwise
+     */
+    private function isUserAdmin(?IUser $user): bool
+    {
+        if ($user === null) {
+            return false; // Anonymous users are never admin
+        }
+
+        // Check if user is in admin group
+        $adminGroup = $this->groupManager->get('admin');
+        if ($adminGroup === null) {
+            return false; // Admin group doesn't exist
+        }
+
+        return $adminGroup->inGroup($user);
+    }//end isUserAdmin()
 
 
     /**
@@ -105,7 +159,7 @@ class ExportService
      *
      * @return Spreadsheet
      */
-    public function exportToExcel(?Register $register=null, ?Schema $schema=null, array $filters=[]): Spreadsheet
+    public function exportToExcel(?Register $register=null, ?Schema $schema=null, array $filters=[], ?IUser $currentUser=null): Spreadsheet
     {
         // Create new spreadsheet.
         $spreadsheet = new Spreadsheet();
@@ -117,11 +171,11 @@ class ExportService
             // Export all schemas in register.
             $schemas = $this->getSchemasForRegister($register);
             foreach ($schemas as $schema) {
-                $this->populateSheet(spreadsheet: $spreadsheet, register: $register, schema: $schema, filters: $filters);
+                $this->populateSheet(spreadsheet: $spreadsheet, register: $register, schema: $schema, filters: $filters, currentUser: $currentUser);
             }
         } else {
             // Export single schema.
-            $this->populateSheet(spreadsheet: $spreadsheet, register: $register, schema: $schema, filters: $filters);
+            $this->populateSheet(spreadsheet: $spreadsheet, register: $register, schema: $schema, filters: $filters, currentUser: $currentUser);
         }
 
         return $spreadsheet;
@@ -165,13 +219,13 @@ class ExportService
      *
      * @throws InvalidArgumentException If trying to export multiple schemas to CSV
      */
-    public function exportToCsv(?Register $register=null, ?Schema $schema=null, array $filters=[]): string
+    public function exportToCsv(?Register $register=null, ?Schema $schema=null, array $filters=[], ?IUser $currentUser=null): string
     {
         if ($register !== null && $schema === null) {
             throw new InvalidArgumentException('Cannot export multiple schemas to CSV format.');
         }
 
-        $spreadsheet = $this->exportToExcel(register: $register, schema: $schema, filters: $filters);
+        $spreadsheet = $this->exportToExcel(register: $register, schema: $schema, filters: $filters, currentUser: $currentUser);
         $writer      = new Csv($spreadsheet);
 
         ob_start();
@@ -195,7 +249,8 @@ class ExportService
         Spreadsheet $spreadsheet,
         ?Register $register=null,
         ?Schema $schema=null,
-        array $filters=[]
+        array $filters=[],
+        ?IUser $currentUser=null
     ): void {
         $sheet = $spreadsheet->createSheet();
 
@@ -205,7 +260,7 @@ class ExportService
             $sheet->setTitle('data');
         }
 
-        $headers = $this->getHeaders(register: $register, schema: $schema);
+        $headers = $this->getHeaders(register: $register, schema: $schema, currentUser: $currentUser);
         $row     = 1;
 
         // Set headers.
@@ -215,8 +270,49 @@ class ExportService
 
         $row++;
 
-        // Export data.
-        $objects = $this->objectEntityMapper->findAll();
+        // Export data using optimized ObjectEntityMapper query for raw ObjectEntity objects
+        // Build filters for ObjectEntityMapper->findAll() method 
+        $objectFilters = [];
+        
+        if ($register !== null) {
+            $objectFilters['register'] = $register->getId();
+        }
+        
+        if ($schema !== null) {
+            $objectFilters['schema'] = $schema->getId();
+        }
+        
+        // Apply additional filters
+        foreach ($filters as $key => $value) {
+            if (!str_starts_with($key, '@self.')) {
+                // These are JSON object property filters - not supported by findAll
+                // For now, we'll skip them to get basic functionality working
+                // TODO: Add support for JSON property filtering in ObjectEntityMapper
+                continue;
+            } else {
+                // Metadata filter - remove @self. prefix
+                $metaField = substr($key, 6);
+                $objectFilters[$metaField] = $value;
+            }
+        }
+        
+        // Use ObjectService::searchObjects directly with proper RBAC and multi-tenancy filtering
+        // Set a very high limit to get all objects (export needs all data)
+        $query = [
+            '@self' => $objectFilters,
+            '_limit' => 999999, // Very high limit to get all objects
+            '_published' => false, // Export all objects, not just published ones
+            '_includeDeleted' => false
+        ];
+        
+        $objects = $this->objectService->searchObjects(
+            query: $query,
+            rbac: true,  // Apply RBAC filtering
+            multi: true, // Apply multi-tenancy filtering
+            ids: null,
+            uses: null
+        );
+        
         foreach ($objects as $object) {
             foreach ($headers as $col => $header) {
                 $value = $this->getObjectValue(object: $object, header: $header);
@@ -237,7 +333,7 @@ class ExportService
      *
      * @return array Headers indexed by column letter with property key as value
      */
-    private function getHeaders(?Register $register=null, ?Schema $schema=null): array
+    private function getHeaders(?Register $register=null, ?Schema $schema=null, ?IUser $currentUser=null): array
     {
         // Start with id as the first column.
         // Will contain the uuid.
@@ -264,36 +360,38 @@ class ExportService
             }
         }
 
-        // Add other metadata fields at the end with @self. prefix.
-        $metadataFields = [
-            'created',
-            'updated',
-            'published',
-            'depublished',
-            'deleted',
-            'locked',
-            'owner',
-            'organisation',
-            'application',
-            'folder',
-            'size',
-            'version',
-            'schemaVersion',
-            'uri',
-            'register',
-            'schema',
-            'name',
-            'description',
-            'validation',
-            'geo',
-            'retention',
-            'authorization',
-            'groups',
-        ];
+        // REQUIREMENT: Add @self metadata fields only if user is admin
+        if ($this->isUserAdmin($currentUser)) {
+            $metadataFields = [
+                'created',
+                'updated',
+                'published',
+                'depublished',
+                'deleted',
+                'locked',
+                'owner',
+                'organisation',
+                'application',
+                'folder',
+                'size',
+                'version',
+                'schemaVersion',
+                'uri',
+                'register',
+                'schema',
+                'name',
+                'description',
+                'validation',
+                'geo',
+                'retention',
+                'authorization',
+                'groups',
+            ];
 
-        foreach ($metadataFields as $field) {
-            $headers[$col] = '@self.'.$field;
-            $col++;
+            foreach ($metadataFields as $field) {
+                $headers[$col] = '@self.'.$field;
+                $col++;
+            }
         }
 
         return $headers;

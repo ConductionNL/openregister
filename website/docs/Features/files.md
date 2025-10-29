@@ -158,8 +158,50 @@ Open Register can generate previews for common file types:
 
 For supported file types, content can be extracted for indexing and search:
 - Text extraction from documents
-- OCR for scanned documents
+- OCR for scanned documents and images
 - Metadata extraction
+
+**Asynchronous Processing**: Text extraction happens in the background after file upload, ensuring:
+- **Fast uploads**: Your file uploads complete instantly without waiting
+- **Non-blocking**: Users don't experience delays during file operations
+- **Reliable**: Background jobs automatically handle retries for failed extractions
+- **Resource-efficient**: Processing happens when resources are available
+
+**Text Extraction Options**:
+
+OpenRegister supports two text extraction engines:
+
+1. **LLPhant (Default)** - PHP-based extraction:
+   - ✓ Native support: TXT, MD, HTML, JSON, XML, CSV
+   - ○ Library support: PDF, DOCX, DOC, XLSX, XLS (requires PhpOffice, PdfParser)
+   - ⚠️ Limited: PPTX, ODT, RTF
+   - ✗ No support: Image files (JPG, PNG, GIF, WebP)
+   - Best for: Privacy-conscious environments, regular documents
+   - Cost: Free (included)
+
+2. **Dolphin AI** - Advanced AI-powered extraction:
+   - ✓ All document formats with superior quality
+   - ✓ OCR for scanned documents and images (JPG, PNG, GIF, WebP)
+   - ✓ Advanced table extraction
+   - ✓ Formula recognition
+   - ✓ Multi-language OCR
+   - Best for: Complex documents, scanned materials, images with text
+   - Cost: API subscription required
+
+**Extraction Scope Options**:
+- **None**: Text extraction disabled
+- **All files**: Extract from all uploaded files
+- **Files in folders**: Extract only from files in specific folders
+- **Files attached to objects**: Extract only from files linked to objects (recommended)
+
+**Typical Processing Times**:
+- Text files: < 1 second
+- PDFs (LLPhant): 2-10 seconds
+- PDFs (Dolphin): 3-15 seconds
+- Large documents or OCR: 10-60 seconds
+- Images with OCR (Dolphin): 5-20 seconds
+
+You can configure text extraction in Settings → File Configuration. Check extraction status in the file's metadata after upload.
 
 ## Working with Files
 
@@ -199,14 +241,36 @@ GET /api/objects/files/{objectId}
 
 ### Updating Files
 
-Files can be updated by uploading a new version:
+Files can be updated in two ways:
+
+#### 1. Update File Content
+
+Upload a new version of the file:
 
 ```
-PUT /api/files/{id}
-Content-Type: multipart/form-data
+PUT /api/objects/{register}/{schema}/{objectId}/files/{fileId}
+Content-Type: application/json
 
-file: [binary data]
+{
+  'content': '[base64 encoded content or raw content]',
+  'tags': ['tag1', 'tag2']
+}
 ```
+
+#### 2. Update Metadata Only
+
+Update only the file metadata (tags) without changing content:
+
+```
+PUT /api/objects/{register}/{schema}/{objectId}/files/{fileId}
+Content-Type: application/json
+
+{
+  'tags': ['updated-tag1', 'updated-tag2']
+}
+```
+
+Note: The 'content' parameter is optional. If omitted, only the metadata will be updated without modifying the file content itself.
 
 ### Deleting Files
 
@@ -269,6 +333,210 @@ Manage technical documents:
 - Technical specifications
 - Installation guides
 
+## Advanced File Features
+
+### 1. Auto-Share Configuration
+
+File properties can be configured to automatically share uploaded files publicly. This is useful for assets that need to be accessible without authentication, such as product images or public documents.
+
+#### Configuration via UI
+
+When editing a schema in the OpenRegister UI:
+1. Select a property with type 'file' or 'array' with items type 'file'
+2. In the property actions menu, expand the 'File Configuration' section
+3. Check the 'Auto-Share Files' checkbox
+4. Save the schema
+
+Files uploaded to this property will now be automatically publicly shared.
+
+#### Configuration via API
+
+In your schema definition, add the 'autoPublish' option to file properties:
+
+```json
+{
+  'properties': {
+    'productImage': {
+      'type': 'file',
+      'autoPublish': true,
+      'allowedTypes': ['image/jpeg', 'image/png'],
+      'maxSize': 5242880
+    }
+  }
+}
+```
+
+When 'autoPublish' is set to 'true', files uploaded to this property will automatically:
+- Create a public share link
+- Set the 'published' timestamp
+- Generate a public 'accessUrl' and 'downloadUrl'
+
+#### Important: Property-Level vs Schema-Level autoPublish
+
+⚠️ **Don't confuse these two different 'autoPublish' settings:**
+
+**1. Property-Level autoPublish** (this section):
+```json
+{
+  'properties': {
+    'productImage': {
+      'type': 'file',
+      'autoPublish': true  // ← Controls if FILES are published
+    }
+  }
+}
+```
+Controls whether files uploaded to this specific property are automatically shared publicly.
+
+**2. Schema-Level autoPublish** (different setting):
+```json
+{
+  'configuration': {
+    'autoPublish': true  // ← Controls if OBJECTS are published
+  }
+}
+```
+Controls whether the object entity itself is published (has nothing to do with file sharing).
+
+**These are completely separate settings** with different purposes. Setting one does NOT affect the other.
+
+#### Example Response
+
+```json
+{
+  'id': '12345',
+  'title': 'Product A',
+  'productImage': {
+    'id': 789,
+    'title': 'product-a.jpg',
+    'accessUrl': 'https://your-domain.com/index.php/s/AbCdEfG123',
+    'downloadUrl': 'https://your-domain.com/index.php/s/AbCdEfG123/download',
+    'published': '2024-01-15T10:30:00+00:00',
+    'size': 245678,
+    'type': 'image/jpeg'
+  }
+}
+```
+
+### 2. Authenticated File Access
+
+Files that are not publicly shared still have 'accessUrl' and 'downloadUrl' properties, but these URLs require authentication. This allows frontend applications to:
+- Display file previews for logged-in users
+- Provide download links that work within authenticated sessions
+- Maintain security while offering convenient access
+
+#### Authenticated URLs
+
+Non-shared files return URLs with the following format:
+- **Access URL**: '/index.php/core/preview?fileId={fileId}&x=1920&y=1080&a=1'
+- **Download URL**: '/index.php/apps/openregister/api/files/{fileId}/download'
+
+These URLs require the user to be authenticated to Nextcloud.
+
+#### Example Response (Non-Shared File)
+
+```json
+{
+  'attachment': {
+    'id': 456,
+    'title': 'confidential-report.pdf',
+    'accessUrl': 'https://your-domain.com/index.php/core/preview?fileId=456&x=1920&y=1080&a=1',
+    'downloadUrl': 'https://your-domain.com/index.php/apps/openregister/api/files/456/download',
+    'published': null,
+    'size': 1234567,
+    'type': 'application/pdf'
+  }
+}
+```
+
+### 3. Logo/Image Metadata from File Properties
+
+When a schema is configured to extract metadata fields like 'image' or 'logo' from file properties, the system automatically extracts the public share URL (or authenticated URL if not shared) and stores it in the object metadata.
+
+#### Configuration
+
+```json
+{
+  'properties': {
+    'logo': {
+      'type': 'file',
+      'allowedTypes': ['image/png', 'image/jpeg'],
+      'autoPublish': true
+    }
+  },
+  'configuration': {
+    'objectImageField': 'logo'
+  }
+}
+```
+
+#### Result
+
+The object's '@self.image' field will contain the share URL:
+
+```json
+{
+  'id': '12345',
+  'title': 'Company A',
+  'logo': {
+    'id': 789,
+    'accessUrl': 'https://your-domain.com/index.php/s/XyZ789',
+    'type': 'image/png'
+  },
+  '@self': {
+    'name': 'Company A',
+    'image': 'https://your-domain.com/index.php/s/XyZ789'
+  }
+}
+```
+
+This makes it easy to display company logos, product images, or other visual metadata in listings and search results.
+
+### 4. File Deletion via API
+
+Files can be deleted by setting the file property to 'null' (for single file properties) or an empty array (for array file properties).
+
+#### Single File Deletion
+
+```http
+PUT /api/objects/{register}/{schema}/{id}
+Content-Type: application/json
+
+{
+  'title': 'Updated Title',
+  'attachment': null
+}
+```
+
+This will:
+- Delete the file from Nextcloud storage
+- Remove the file record from the database
+- Set the 'attachment' property to 'null' in the object data
+
+#### File Array Deletion
+
+```http
+PUT /api/objects/{register}/{schema}/{id}
+Content-Type: application/json
+
+{
+  'title': 'Updated Gallery',
+  'images': []
+}
+```
+
+This will:
+- Delete all files in the array from Nextcloud storage
+- Remove all file records from the database
+- Set the 'images' property to an empty array in the object data
+
+#### Use Cases
+
+- **Privacy Compliance**: Remove sensitive files upon user request
+- **Storage Management**: Clean up unused files
+- **Data Lifecycle**: Remove temporary or expired files
+- **Error Correction**: Remove incorrectly uploaded files
+
 ## Best Practices
 
 1. **Define File Types**: Establish clear guidelines for what file types are allowed
@@ -278,7 +546,10 @@ Manage technical documents:
 5. **Implement Retention Policies**: Define how long files should be kept
 6. **Plan for Backup**: Ensure files are included in backup strategies
 7. **Consider Performance**: Optimize file storage for your access patterns
+8. **Use Auto-Publish Wisely**: Only enable property-level 'autoPublish' for files that should be publicly accessible. Remember: property 'autoPublish' (file sharing) is different from schema 'autoPublish' (object publishing)
+9. **Document File Deletion**: Maintain audit trails when files are deleted for compliance
+10. **Handle Authentication**: Use authenticated URLs for sensitive files
 
 ## Conclusion
 
-Files in Open Register bridge the gap between structured data and unstructured content, providing a comprehensive solution for managing all types of information in your application. By integrating files with objects, schemas, and registers, Open Register creates a unified system where all your data—structured and unstructured—works together seamlessly. 
+Files in Open Register bridge the gap between structured data and unstructured content, providing a comprehensive solution for managing all types of information in your application. With advanced features like auto-sharing, authenticated access, metadata extraction, and flexible deletion options, Open Register creates a unified system where all your data—structured and unstructured—works together seamlessly. 

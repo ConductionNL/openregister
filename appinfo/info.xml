@@ -42,7 +42,7 @@ Create a [feature request](https://github.com/OpenRegister/.github/issues/new/ch
         <database min-version="10">pgsql</database>
         <database>sqlite</database>
         <database min-version="8.0">mysql</database>
-        <nextcloud min-version="28" max-version="32"/>
+        <nextcloud min-version="28" max-version="33"/>
     </dependencies>
 
 	<background-jobs>
@@ -57,4 +57,14 @@ Create a [feature request](https://github.com/OpenRegister/.github/issues/new/ch
             <icon>app.svg</icon>
         </navigation>
     </navigations>
+
+	<settings>
+		<admin>OCA\OpenRegister\Settings\OpenRegisterAdmin</admin>
+		<admin-section>OCA\OpenRegister\Sections\OpenRegisterAdmin</admin-section>
+	</settings>
+
+	<commands>
+		<command>OCA\OpenRegister\Command\SolrDebugCommand</command>
+		<command>OCA\OpenRegister\Command\SolrManagementCommand</command>
+	</commands>
 </info>

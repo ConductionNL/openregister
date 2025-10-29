@@ -480,15 +480,22 @@ export const useObjectStore = defineStore('object', {
 			}
 
 			// Include facets and facetable fields if requested
-			if (options.includeFacets !== false) { // Default to true
-				// Request facetable fields discovery
+			// CRITICAL FIX: Don't send _facetable=true when using database source
+			// Database source doesn't support faceting and will cause errors
+			const isUsingDatabaseSource = this.filters._source === 'database'
+
+			if (options.includeFacets !== false && !isUsingDatabaseSource) { // Default to true, but skip for database source
+				// Always request facetable fields discovery to show available options
 				params.push('_facetable=true')
 
-				// Add basic facet configuration
+				// Only send specific facet configuration if user has explicitly configured facets
 				const facetConfiguration = this.buildFacetConfiguration()
 				if (facetConfiguration?._facets) {
+					// User has explicitly configured facets - add facet params
 					this.addFacetParamsToUrl(params, facetConfiguration)
 				}
+				// If no facet configuration, still send _facetable=true for discovery
+				// but don't send any specific facet parameters
 			}
 
 			if (params.length > 0) {
@@ -1561,6 +1568,15 @@ export const useObjectStore = defineStore('object', {
 				return
 			}
 
+			// CRITICAL FIX: Don't attempt to get facetable fields when using database source
+			// Database source doesn't support faceting and will cause errors
+			const isUsingDatabaseSource = this.filters._source === 'database'
+			if (isUsingDatabaseSource) {
+				console.warn('Facetable fields discovery skipped for database source')
+				this.setFacetableFields({})
+				return {}
+			}
+
 			this.setFacetsLoading(true)
 
 			try {
@@ -1613,6 +1629,15 @@ export const useObjectStore = defineStore('object', {
 			if (!register || !schema) {
 				console.warn('Register and schema are required for facets')
 				return
+			}
+
+			// CRITICAL FIX: Don't attempt to get facets when using database source
+			// Database source doesn't support faceting and will cause errors
+			const isUsingDatabaseSource = this.filters._source === 'database'
+			if (isUsingDatabaseSource) {
+				console.warn('Facets discovery skipped for database source')
+				this.setFacets({})
+				return {}
 			}
 
 			this.setFacetsLoading(true)
@@ -1685,7 +1710,7 @@ export const useObjectStore = defineStore('object', {
 
 			const config = {}
 
-			// Build from active facets - this can be expanded based on UI needs
+			// Only build from explicitly active facets - no default configuration
 			// Check for _facets property specifically since that's where our data is stored
 			if (this.activeFacets._facets && Object.keys(this.activeFacets._facets).length > 0) {
 				// eslint-disable-next-line no-console
@@ -1693,22 +1718,10 @@ export const useObjectStore = defineStore('object', {
 				config._facets = this.activeFacets._facets
 			} else {
 				// eslint-disable-next-line no-console
-				console.log('Using default facet configuration')
-				// Default facet configuration - basic terms facets for common fields
-				config._facets = {
-					'@self': {
-						register: { type: 'terms' },
-						schema: { type: 'terms' },
-						created: { type: 'date_histogram', interval: 'month' },
-					},
-				}
-
-				// Add facets for object fields that support terms faceting
-				Object.entries(this.facetableFields?.object_fields || {}).forEach(([fieldName, field]) => {
-					if (fieldName !== 'id' && field.facet_types && field.facet_types.includes('terms')) {
-						config._facets[fieldName] = { type: 'terms' }
-					}
-				})
+				console.log('No active facets configured - returning empty configuration')
+				// Return empty configuration when no facets are explicitly selected
+				// This prevents sending default facets that the user didn't request
+				return null
 			}
 
 			// eslint-disable-next-line no-console

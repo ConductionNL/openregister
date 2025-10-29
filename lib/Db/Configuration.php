@@ -87,6 +87,13 @@ class Configuration extends Entity implements JsonSerializable
     protected ?array $objects = [];
 
     /**
+     * Owner of the configuration (user ID)
+     *
+     * @var string|null
+     */
+    protected $owner = null;
+
+    /**
      * Creation timestamp
      *
      * @var DateTime
@@ -115,6 +122,7 @@ class Configuration extends Entity implements JsonSerializable
         $this->addType('registers', 'json');
         $this->addType('schemas', 'json');
         $this->addType('objects', 'json');
+        $this->addType('owner', 'string');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
 
@@ -137,7 +145,7 @@ class Configuration extends Entity implements JsonSerializable
      * Set the registers of the configuration
      *
      * @param array<int>|null $registers Array of register IDs or null
-     * 
+     *
      * @return void
      */
     public function setRegisters(?array $registers): void
@@ -163,7 +171,7 @@ class Configuration extends Entity implements JsonSerializable
      * Set the schemas of the configuration
      *
      * @param array<int>|null $schemas Array of schema IDs or null
-     * 
+     *
      * @return void
      */
     public function setSchemas(?array $schemas): void
@@ -189,7 +197,7 @@ class Configuration extends Entity implements JsonSerializable
      * Set the objects of the configuration
      *
      * @param array<int>|null $objects Array of object IDs or null
-     * 
+     *
      * @return void
      */
     public function setObjects(?array $objects): void
@@ -197,6 +205,32 @@ class Configuration extends Entity implements JsonSerializable
         $this->objects = $objects ?? [];
 
     }//end setObjects()
+
+
+    /**
+     * Get the owner of the configuration (backwards compatibility - maps to app field)
+     *
+     * @return string|null Owner/App identifier
+     */
+    public function getOwner(): ?string
+    {
+        return $this->app;
+
+    }//end getOwner()
+
+
+    /**
+     * Set the owner of the configuration (backwards compatibility - maps to app field)
+     *
+     * @param string|null $owner Owner/App identifier
+     *
+     * @return void
+     */
+    public function setOwner(?string $owner): void
+    {
+        $this->app = $owner;
+
+    }//end setOwner()
 
 
     /**
@@ -266,6 +300,7 @@ class Configuration extends Entity implements JsonSerializable
             'type'        => $this->type,
             'app'         => $this->app,
             'version'     => $this->version,
+            'owner'       => $this->owner,
             'registers'   => $this->registers,
             'schemas'     => $this->schemas,
             'objects'     => $this->objects,
@@ -274,6 +309,37 @@ class Configuration extends Entity implements JsonSerializable
         ];
 
     }//end jsonSerialize()
+
+
+    /**
+     * String representation of the configuration
+     *
+     * This magic method is required for proper entity handling in Nextcloud
+     * when the framework needs to convert the object to a string.
+     *
+     * @return string String representation of the configuration
+     */
+    public function __toString(): string
+    {
+        // Return the title if available, otherwise return a descriptive string
+        if ($this->title !== null && $this->title !== '') {
+            return $this->title;
+        }
+
+        // Fallback to type if available
+        if ($this->type !== null && $this->type !== '') {
+            return 'Config: '.$this->type;
+        }
+
+        // Fallback to ID if available
+        if ($this->id !== null) {
+            return 'Configuration #'.$this->id;
+        }
+
+        // Final fallback
+        return 'Configuration';
+
+    }//end __toString()
 
 
 }//end class

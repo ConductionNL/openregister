@@ -53,7 +53,6 @@ class SchemaMapper extends QBMapper
      */
     private $validator;
 
-
     /**
      * Constructor for the SchemaMapper
      *
@@ -67,8 +66,8 @@ class SchemaMapper extends QBMapper
         SchemaPropertyValidatorService $validator
     ) {
         parent::__construct($db, 'openregister_schemas');
-        $this->eventDispatcher    = $eventDispatcher;
-        $this->validator          = $validator;
+        $this->eventDispatcher = $eventDispatcher;
+        $this->validator       = $validator;
 
     }//end __construct()
 
@@ -126,6 +125,40 @@ class SchemaMapper extends QBMapper
         return $result;
 
     }//end findMultiple()
+
+    /**
+     * Find multiple schemas by IDs using a single optimized query
+     *
+     * This method performs a single database query to fetch multiple schemas,
+     * significantly improving performance compared to individual queries.
+     *
+     * @param array $ids Array of schema IDs to find
+     * @return array Associative array of ID => Schema entity
+     */
+    public function findMultipleOptimized(array $ids): array
+    {
+        if (empty($ids)) {
+            return [];
+        }
+
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from('openregister_schemas')
+            ->where(
+                $qb->expr()->in('id', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY))
+            );
+
+        $result = $qb->executeQuery();
+        $schemas = [];
+        
+        while ($row = $result->fetch()) {
+            $schema = new Schema();
+            $schema = $schema->fromRow($row);
+            $schemas[$row['id']] = $schema;
+        }
+        
+        return $schemas;
+    }//end findMultipleOptimized()
 
 
     /**
@@ -243,10 +276,10 @@ class SchemaMapper extends QBMapper
             $schema->setSource('internal');
         }
 
-        $properties             = ($schema->getProperties() ?? []);
-        $propertyKeys           = array_keys($properties);
-        $configuration          = $schema->getConfiguration() ?? [];
-        $objectNameField        = $configuration['objectNameField'] ?? '';
+        $properties      = ($schema->getProperties() ?? []);
+        $propertyKeys    = array_keys($properties);
+        $configuration   = $schema->getConfiguration() ?? [];
+        $objectNameField = $configuration['objectNameField'] ?? '';
         $objectDescriptionField = $configuration['objectDescriptionField'] ?? '';
 
         // If an object name field is provided, it must exist in the properties
@@ -266,13 +299,15 @@ class SchemaMapper extends QBMapper
             // Check if the property has a 'required' field set to true or the string 'true'
             if (isset($property['required']) === true) {
                 $requiredValue = $property['required'];
-                if ($requiredValue === true ||
-                    $requiredValue === 'true' ||
-                    (is_string($requiredValue) === true && strtolower(trim($requiredValue)) === 'true')) {
+                if ($requiredValue === true
+                    || $requiredValue === 'true'
+                    || (is_string($requiredValue) === true && strtolower(trim($requiredValue)) === 'true')
+                ) {
                     $requiredFields[] = $propertyKey;
                 }
             }
         }
+
         // Set the required fields on the schema
         $schema->setRequired($requiredFields);
 
@@ -318,7 +353,7 @@ class SchemaMapper extends QBMapper
     /**
      * Recursively enforce that $ref is always a string in all properties and array items
      *
-     * @param array &$properties The properties array to check
+     * @param  array &$properties The properties array to check
      * @throws \Exception If $ref is not a string or cannot be converted
      */
     private function enforceRefIsStringRecursive(array &$properties): void
@@ -328,29 +363,31 @@ class SchemaMapper extends QBMapper
             if (!is_array($property)) {
                 continue;
             }
+
             // Check $ref at this level
             if (isset($property['$ref'])) {
                 if (is_array($property['$ref']) && isset($property['$ref']['id'])) {
                     $property['$ref'] = $property['$ref']['id'];
-                } elseif (is_object($property['$ref']) && isset($property['$ref']->id)) {
+                } else if (is_object($property['$ref']) && isset($property['$ref']->id)) {
                     $property['$ref'] = $property['$ref']->id;
-                } elseif (is_int($property['$ref'])) {
-
-                }
-                elseif (!is_string($property['$ref']) && $property['$ref'] !== '') {
-                    throw new \Exception("Schema property '$key' has a \$ref that is not a string or empty: " . print_r($property['$ref'], true));
+                } else if (is_int($property['$ref'])) {
+                } else if (!is_string($property['$ref']) && $property['$ref'] !== '') {
+                    throw new \Exception("Schema property '$key' has a \$ref that is not a string or empty: ".print_r($property['$ref'], true));
                 }
             }
+
             // Check array items recursively
             if (isset($property['items']) && is_array($property['items'])) {
                 $this->enforceRefIsStringRecursive($property['items']);
             }
+
             // Check nested properties recursively
             if (isset($property['properties']) && is_array($property['properties'])) {
                 $this->enforceRefIsStringRecursive($property['properties']);
             }
-        }
-    }
+        }//end foreach
+
+    }//end enforceRefIsStringRecursive()
 
 
     /**
@@ -370,6 +407,9 @@ class SchemaMapper extends QBMapper
 
         // Clean the schema object to ensure UUID, slug, and version are set.
         $this->cleanObject($schema);
+
+        // **PERFORMANCE OPTIMIZATION**: Generate facet configuration from schema properties
+        $this->generateFacetConfiguration($schema);
 
         $schema = $this->insert($schema);
 
@@ -395,6 +435,9 @@ class SchemaMapper extends QBMapper
 
         // Clean the schema object to ensure UUID, slug, and version are set.
         $this->cleanObject($entity);
+
+        // **PERFORMANCE OPTIMIZATION**: Generate facet configuration from schema properties
+        $this->generateFacetConfiguration($entity);
 
         $entity = parent::update($entity);
 
@@ -431,9 +474,7 @@ class SchemaMapper extends QBMapper
 
         $schema->hydrate($object, $this->validator);
 
-        // Clean the schema object to ensure UUID, slug, and version are set.
-        $this->cleanObject($schema);
-
+        // Update the schema in the database
         $schema = $this->update($schema);
 
         return $schema;
@@ -452,7 +493,25 @@ class SchemaMapper extends QBMapper
      */
     public function delete(Entity $schema): Schema
     {
-        // Proceed with deletion directly - no need to check stats on deletion
+        // Check for attached objects before deleting (using direct database query to avoid circular dependency)
+        $schemaId = method_exists($schema, 'getId') ? $schema->getId() : $schema->id;
+        
+        // Count objects that reference this schema (excluding soft-deleted objects)
+        $qb = $this->db->getQueryBuilder();
+        $qb->select($qb->func()->count('*', 'count'))
+            ->from('openregister_objects')
+            ->where($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)))
+            ->andWhere($qb->expr()->isNull('deleted'));
+        
+        $result = $qb->executeQuery();
+        $count = (int) $result->fetchOne();
+        $result->closeCursor();
+        
+        if ($count > 0) {
+            throw new \OCA\OpenRegister\Exception\ValidationException('Cannot delete schema: objects are still attached.');
+        }
+
+        // Proceed with deletion if no objects are attached
         $result = parent::delete($schema);
 
         // Dispatch deletion event.
@@ -496,6 +555,7 @@ class SchemaMapper extends QBMapper
 
     }//end getRegisterCountPerSchema()
 
+
     /**
      * Get all schema ID to slug mappings
      *
@@ -507,13 +567,16 @@ class SchemaMapper extends QBMapper
         $qb->select('id', 'slug')
             ->from($this->getTableName());
 
-        $result = $qb->execute();
+        $result   = $qb->execute();
         $mappings = [];
         while ($row = $result->fetch()) {
             $mappings[$row['id']] = $row['slug'];
         }
+
         return $mappings;
-    }
+
+    }//end getIdToSlugMap()
+
 
     /**
      * Get all schema slug to ID mappings
@@ -526,13 +589,287 @@ class SchemaMapper extends QBMapper
         $qb->select('id', 'slug')
             ->from($this->getTableName());
 
-        $result = $qb->execute();
+        $result   = $qb->execute();
         $mappings = [];
         while ($row = $result->fetch()) {
             $mappings[$row['slug']] = $row['id'];
         }
+
         return $mappings;
-    }
+
+    }//end getSlugToIdMap()
+
+
+    /**
+     * Find schemas that have properties referencing the given schema
+     *
+     * This method searches through all schemas to find ones that have properties
+     * with $ref pointing to the target schema, indicating a relationship.
+     *
+     * @param Schema|int|string $schema The target schema to find references to
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If the target schema does not exist
+     * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple target schemas are found
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return array<Schema> Array of schemas that reference the target schema
+     */
+    public function getRelated(Schema|int|string $schema): array
+    {
+        // If we received a Schema entity, get its ID, otherwise find the schema
+        if ($schema instanceof Schema) {
+            $targetSchemaId   = (string) $schema->getId();
+            $targetSchemaUuid = $schema->getUuid();
+            $targetSchemaSlug = $schema->getSlug();
+        } else {
+            // Find the target schema to get all its identifiers
+            $targetSchema     = $this->find($schema);
+            $targetSchemaId   = (string) $targetSchema->getId();
+            $targetSchemaUuid = $targetSchema->getUuid();
+            $targetSchemaSlug = $targetSchema->getSlug();
+        }
+
+        // Get all schemas to search through their properties
+        $allSchemas     = $this->findAll();
+        $relatedSchemas = [];
+
+        foreach ($allSchemas as $currentSchema) {
+            // Skip the target schema itself
+            if ($currentSchema->getId() === (int) $targetSchemaId) {
+                continue;
+            }
+
+            // Get the properties of the current schema
+            $properties = $currentSchema->getProperties() ?? [];
+
+            // Search for references to the target schema
+            if ($this->hasReferenceToSchema($properties, $targetSchemaId, $targetSchemaUuid, $targetSchemaSlug)) {
+                $relatedSchemas[] = $currentSchema;
+            }
+        }
+
+        return $relatedSchemas;
+
+    }//end getRelated()
+
+
+    /**
+     * Recursively check if properties contain a reference to the target schema
+     *
+     * This method searches through properties recursively to find $ref values
+     * that match the target schema's ID, UUID, or slug.
+     *
+     * @param array  $properties       The properties array to search through
+     * @param string $targetSchemaId   The target schema ID to look for
+     * @param string $targetSchemaUuid The target schema UUID to look for
+     * @param string $targetSchemaSlug The target schema slug to look for
+     *
+     * @return bool True if a reference to the target schema is found
+     */
+    public function hasReferenceToSchema(array $properties, string $targetSchemaId, string $targetSchemaUuid, string $targetSchemaSlug): bool
+    {
+        foreach ($properties as $property) {
+            // Skip non-array properties
+            if (!is_array($property)) {
+                continue;
+            }
+
+            // Check if this property has a $ref that matches our target schema
+            if (isset($property['$ref'])) {
+                $ref = $property['$ref'];
+
+                // Check exact matches first
+                if ($ref === $targetSchemaId
+                    || $ref === $targetSchemaUuid
+                    || $ref === $targetSchemaSlug
+                    || $ref === (int) $targetSchemaId
+                ) {
+                    return true;
+                }
+
+                // Check if the ref contains the target schema slug in JSON Schema format
+                // Format: "#/components/schemas/slug" or "components/schemas/slug" etc.
+                if (is_string($ref) && !empty($targetSchemaSlug)) {
+                    if (str_contains($ref, '/schemas/'.$targetSchemaSlug)
+                        || str_contains($ref, 'schemas/'.$targetSchemaSlug)
+                        || str_ends_with($ref, '/'.$targetSchemaSlug)
+                    ) {
+                        return true;
+                    }
+                }
+
+                // Check if the ref contains the target schema UUID
+                if (is_string($ref) && !empty($targetSchemaUuid)) {
+                    if (str_contains($ref, $targetSchemaUuid)) {
+                        return true;
+                    }
+                }
+            }//end if
+
+            // Recursively check nested properties
+            if (isset($property['properties']) && is_array($property['properties'])) {
+                if ($this->hasReferenceToSchema($property['properties'], $targetSchemaId, $targetSchemaUuid, $targetSchemaSlug)) {
+                    return true;
+                }
+            }
+
+            // Check array items for references
+            if (isset($property['items']) && is_array($property['items'])) {
+                if ($this->hasReferenceToSchema([$property['items']], $targetSchemaId, $targetSchemaUuid, $targetSchemaSlug)) {
+                    return true;
+                }
+            }
+        }//end foreach
+
+        return false;
+
+    }//end hasReferenceToSchema()
+
+
+    /**
+     * Generate facet configuration from schema properties
+     *
+     * **PERFORMANCE OPTIMIZATION**: This method automatically generates facet configurations
+     * from schema properties marked with 'facetable': true, eliminating the need for
+     * runtime analysis during _facetable=true requests.
+     *
+     * Facetable fields are detected by:
+     * - Properties with 'facetable': true explicitly set
+     * - Common field names that are typically facetable (type, status, category)
+     * - Enum properties (automatically facetable as terms)
+     * - Date/datetime properties (automatically facetable as date_histogram)
+     *
+     * @param Schema $schema The schema to generate facets for
+     *
+     * @return void
+     */
+    private function generateFacetConfiguration(Schema $schema): void
+    {
+        $properties = $schema->getProperties() ?? [];
+        $facetConfig = [];
+        
+        // Add metadata facets (always available)
+        $facetConfig['@self'] = [
+            'register' => ['type' => 'terms'],
+            'schema' => ['type' => 'terms'], 
+            'created' => ['type' => 'date_histogram', 'interval' => 'month'],
+            'updated' => ['type' => 'date_histogram', 'interval' => 'month'],
+            'published' => ['type' => 'date_histogram', 'interval' => 'month'],
+            'owner' => ['type' => 'terms']
+        ];
+        
+        // Analyze properties for facetable fields
+        foreach ($properties as $fieldName => $property) {
+            if (!is_array($property)) {
+                continue;
+            }
+            
+            $facetType = $this->determineFacetTypeForProperty($property, $fieldName);
+            if ($facetType !== null) {
+                $facetConfig[$fieldName] = ['type' => $facetType];
+                
+                // Add interval for date histograms
+                if ($facetType === 'date_histogram') {
+                    $facetConfig[$fieldName]['interval'] = 'month';
+                }
+            }
+        }
+        
+        // Store the facet configuration in the schema
+        if (!empty($facetConfig)) {
+            $schema->setFacets($facetConfig);
+        }
+        
+    }//end generateFacetConfiguration()
+
+
+    /**
+     * Determine the appropriate facet type for a schema property
+     *
+     * **PERFORMANCE OPTIMIZATION**: Smart detection of facetable fields based on
+     * property characteristics, names, and explicit facetable markers.
+     *
+     * @param array  $property  The property definition
+     * @param string $fieldName The field name
+     *
+     * @return string|null The facet type ('terms', 'date_histogram') or null if not facetable
+     */
+    private function determineFacetTypeForProperty(array $property, string $fieldName): ?string
+    {
+        // Check if explicitly marked as facetable
+        if (isset($property['facetable']) && 
+            ($property['facetable'] === true || $property['facetable'] === 'true' || 
+             (is_string($property['facetable']) && strtolower(trim($property['facetable'])) === 'true'))
+        ) {
+            return $this->determineFacetTypeFromProperty($property);
+        }
+        
+        // Auto-detect common facetable field names
+        $commonFacetableFields = [
+            'type', 'status', 'category', 'tags', 'label', 'group', 
+            'department', 'location', 'priority', 'state', 'classification',
+            'genre', 'brand', 'model', 'version', 'license', 'language'
+        ];
+        
+        $lowerFieldName = strtolower($fieldName);
+        if (in_array($lowerFieldName, $commonFacetableFields)) {
+            return $this->determineFacetTypeFromProperty($property);
+        }
+        
+        // Auto-detect enum properties (good for faceting)
+        if (isset($property['enum']) && is_array($property['enum']) && count($property['enum']) > 0) {
+            return 'terms';
+        }
+        
+        // Auto-detect date/datetime fields
+        $propertyType = $property['type'] ?? '';
+        if (in_array($propertyType, ['date', 'datetime', 'date-time'])) {
+            return 'date_histogram';
+        }
+        
+        // Check for date-like field names
+        $dateFields = ['created', 'updated', 'modified', 'date', 'time', 'timestamp'];
+        foreach ($dateFields as $dateField) {
+            if (str_contains($lowerFieldName, $dateField)) {
+                return 'date_histogram';
+            }
+        }
+        
+        return null;
+        
+    }//end determineFacetTypeForProperty()
+
+
+    /**
+     * Determine facet type from property characteristics
+     *
+     * @param array $property The property definition
+     *
+     * @return string The facet type ('terms' or 'date_histogram')
+     */
+    private function determineFacetTypeFromProperty(array $property): string
+    {
+        $propertyType = $property['type'] ?? 'string';
+        
+        // Date/datetime properties use date_histogram
+        if (in_array($propertyType, ['date', 'datetime', 'date-time'])) {
+            return 'date_histogram';
+        }
+        
+        // Enum properties use terms
+        if (isset($property['enum']) && is_array($property['enum'])) {
+            return 'terms';
+        }
+        
+        // Boolean, integer, number with small ranges use terms
+        if (in_array($propertyType, ['boolean', 'integer', 'number'])) {
+            return 'terms';
+        }
+        
+        // Default to terms for other types
+        return 'terms';
+        
+    }//end determineFacetTypeFromProperty()
 
 
 }//end class

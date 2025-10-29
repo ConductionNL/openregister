@@ -38,6 +38,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
  */
 class SearchTrailService
 {
+
     /**
      * The default retention period for search trails (in days).
      * Trails older than this will be automatically deleted by self-clearing.
@@ -46,8 +47,10 @@ class SearchTrailService
 
     /**
      * Whether self-clearing (automatic cleanup) is enabled.
+     * Disabled by default - cleanup should be handled by cron jobs.
      */
-    private bool $selfClearingEnabled = true;
+    private bool $selfClearingEnabled = false;
+
 
     /**
      * Constructor for SearchTrailService
@@ -55,23 +58,26 @@ class SearchTrailService
      * @param SearchTrailMapper $searchTrailMapper Mapper for search trail database operations
      * @param RegisterMapper    $registerMapper    Mapper for register database operations
      * @param SchemaMapper      $schemaMapper      Mapper for schema database operations
-     * @param int|null          $retentionDays     Optional retention period in days for self-clearing
-     * @param bool|null         $selfClearing      Optional flag to enable/disable self-clearing
+     * @param int|null          $retentionDays     Optional retention period in days (default: 365)
+     * @param bool|null         $selfClearing      Optional flag to enable/disable self-clearing (default: false, use cron jobs instead)
      */
     public function __construct(
         private readonly SearchTrailMapper $searchTrailMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
-        ?int $retentionDays = null,
-        ?bool $selfClearing = null
+        ?int $retentionDays=null,
+        ?bool $selfClearing=null
     ) {
         if ($retentionDays !== null) {
             $this->retentionDays = $retentionDays;
         }
+
         if ($selfClearing !== null) {
             $this->selfClearingEnabled = $selfClearing;
         }
+
     }//end __construct()
+
 
     /**
      * Create a search trail log entry
@@ -109,36 +115,36 @@ class SearchTrailService
 
             // Self-clearing: automatically clean up old search trails if enabled
             if ($this->selfClearingEnabled) {
-                $this->selfClearSearchTrails();
+                $this->clearExpiredSearchTrails();
             }
 
             return $trail;
         } catch (Exception $e) {
-            error_log("Failed to create search trail: ".$e->getMessage());
             throw new Exception("Search trail creation failed: ".$e->getMessage(), 0, $e);
         }
 
     }//end createSearchTrail()
 
+
     /**
-     * Self-clearing: Automatically clean up old search trail logs based on retention policy.
+     * Clean up expired search trails
      *
-     * This method deletes search trails older than the configured retention period.
-     * It is called automatically after creating a new search trail if self-clearing is enabled.
+     * This method deletes search trails that have expired based on their expires column.
+     * Intended to be called by cron jobs or manual cleanup operations.
      *
      * @return array Cleanup results
      */
-    public function selfClearSearchTrails(): array
+    public function clearExpiredSearchTrails(): array
     {
-        $before = new DateTime('-' . $this->retentionDays . ' days');
         try {
-            $deletedCount = $this->searchTrailMapper->cleanup($before);
+            $deletedCount = $this->searchTrailMapper->clearLogs();
 
             return [
                 'success'      => true,
-                'deleted'      => $deletedCount,
-                'cleanup_date' => $before->format('Y-m-d H:i:s'),
-                'message'      => "Self-clearing: deleted {$deletedCount} old search trail entries",
+                'deleted'      => $deletedCount ? 1 : 0,
+            // clearLogs returns boolean, not count
+                'cleanup_date' => (new DateTime())->format('Y-m-d H:i:s'),
+                'message'      => "Self-clearing: ".($deletedCount ? "deleted expired search trail entries" : "no expired entries to delete"),
             ];
         } catch (Exception $e) {
             return [
@@ -148,7 +154,9 @@ class SearchTrailService
                 'message' => 'Self-clearing operation failed',
             ];
         }
-    }
+
+    }//end clearExpiredSearchTrails()
+
 
     /**
      * Get paginated search trail logs
@@ -213,10 +221,10 @@ class SearchTrailService
     public function getSearchTrail(int $id): SearchTrail
     {
         $trail = $this->searchTrailMapper->find($id);
-        
+
         // Enrich single trail with register and schema names
         $enrichedTrails = $this->enrichTrailsWithNames([$trail]);
-        
+
         return $enrichedTrails[0];
 
     }//end getSearchTrail()
@@ -240,15 +248,15 @@ class SearchTrailService
         $baseStats['success_rate'] = $baseStats['total_searches'] > 0 ? round(($baseStats['non_empty_searches'] / $baseStats['total_searches']) * 100, 2) : 0;
 
         // Get unique search terms count
-        $uniqueSearchTermsCount = $this->searchTrailMapper->getUniqueSearchTermsCount($from, $to);
+        $uniqueSearchTermsCount           = $this->searchTrailMapper->getUniqueSearchTermsCount($from, $to);
         $baseStats['unique_search_terms'] = $uniqueSearchTermsCount;
 
         // Get unique users count
-        $uniqueUsersCount = $this->searchTrailMapper->getUniqueUsersCount($from, $to);
+        $uniqueUsersCount          = $this->searchTrailMapper->getUniqueUsersCount($from, $to);
         $baseStats['unique_users'] = $uniqueUsersCount;
 
         // Get session-based statistics
-        $baseStats['avg_searches_per_session'] = $this->searchTrailMapper->getAverageSearchesPerSession($from, $to);
+        $baseStats['avg_searches_per_session']     = $this->searchTrailMapper->getAverageSearchesPerSession($from, $to);
         $baseStats['avg_object_views_per_session'] = $this->searchTrailMapper->getAverageObjectViewsPerSession($from, $to);
 
         // Get unique organizations count (placeholder for now)
@@ -256,8 +264,8 @@ class SearchTrailService
 
         // Add query complexity analysis (placeholder implementation)
         $baseStats['query_complexity'] = [
-            'simple' => $baseStats['total_searches'] > 0 ? round($baseStats['total_searches'] * 0.6) : 0,
-            'medium' => $baseStats['total_searches'] > 0 ? round($baseStats['total_searches'] * 0.3) : 0,
+            'simple'  => $baseStats['total_searches'] > 0 ? round($baseStats['total_searches'] * 0.6) : 0,
+            'medium'  => $baseStats['total_searches'] > 0 ? round($baseStats['total_searches'] * 0.3) : 0,
             'complex' => $baseStats['total_searches'] > 0 ? round($baseStats['total_searches'] * 0.1) : 0,
         ];
 
@@ -437,13 +445,16 @@ class SearchTrailService
     public function cleanupSearchTrails(?DateTime $before=null): array
     {
         try {
-            $deletedCount = $this->searchTrailMapper->cleanup($before);
+            // Note: clearLogs() only removes expired entries, ignoring the $before parameter
+            // This maintains consistency with the audit trail cleanup approach
+            $deletedCount = $this->searchTrailMapper->clearLogs();
 
             return [
                 'success'      => true,
-                'deleted'      => $deletedCount,
-                'cleanup_date' => $before?->format('Y-m-d H:i:s') ?? (new DateTime('-1 year'))->format('Y-m-d H:i:s'),
-                'message'      => "Successfully deleted {$deletedCount} old search trail entries",
+                'deleted'      => $deletedCount ? 1 : 0,
+            // clearLogs returns boolean, not count
+                'cleanup_date' => (new DateTime())->format('Y-m-d H:i:s'),
+                'message'      => $deletedCount ? "Successfully deleted expired search trail entries" : "No expired entries to delete",
             ];
         } catch (Exception $e) {
             return [
@@ -772,12 +783,13 @@ class SearchTrailService
 
         // Collect unique register and schema IDs
         $registerIds = [];
-        $schemaIds = [];
-        
+        $schemaIds   = [];
+
         foreach ($trails as $trail) {
             if ($trail->getRegister() !== null) {
                 $registerIds[] = $trail->getRegister();
             }
+
             if ($trail->getSchema() !== null) {
                 $schemaIds[] = $trail->getSchema();
             }
@@ -785,7 +797,7 @@ class SearchTrailService
 
         // Remove duplicates
         $registerIds = array_unique($registerIds);
-        $schemaIds = array_unique($schemaIds);
+        $schemaIds   = array_unique($schemaIds);
 
         // Fetch register names
         $registerNames = [];
@@ -822,6 +834,7 @@ class SearchTrailService
             if ($trail->getRegister() !== null && isset($registerNames[$trail->getRegister()])) {
                 $trail->setRegisterName($registerNames[$trail->getRegister()]);
             }
+
             if ($trail->getSchema() !== null && isset($schemaNames[$trail->getSchema()])) {
                 $trail->setSchemaName($schemaNames[$trail->getSchema()]);
             }

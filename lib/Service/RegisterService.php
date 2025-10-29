@@ -37,12 +37,13 @@ use Psr\Log\LoggerInterface;
 class RegisterService
 {
 
+
     /**
      * Constructor for RegisterService.
      *
-     * @param RegisterMapper     $registerMapper      Mapper for register operations.
-     * @param FileService        $fileService         Service for file operations.
-     * @param LoggerInterface    $logger              Logger for error handling.
+     * @param RegisterMapper      $registerMapper      Mapper for register operations.
+     * @param FileService         $fileService         Service for file operations.
+     * @param LoggerInterface     $logger              Logger for error handling.
      * @param OrganisationService $organisationService Service for organisation operations.
      */
     public function __construct(
@@ -67,7 +68,7 @@ class RegisterService
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple found
      * @throws \OCP\DB\Exception If database error occurs
      */
-    public function find(int | string $id, array $extend = []): Register
+    public function find(int | string $id, array $extend=[]): Register
     {
         return $this->registerMapper->find($id, $extend);
 
@@ -101,12 +102,12 @@ class RegisterService
      * @return array Array of found registers
      */
     public function findAll(
-        ?int $limit = null,
-        ?int $offset = null,
-        ?array $filters = [],
-        ?array $searchConditions = [],
-        ?array $searchParams = [],
-        ?array $extend = []
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $filters=[],
+        ?array $searchConditions=[],
+        ?array $searchParams=[],
+        ?array $extend=[]
     ): array {
         return $this->registerMapper->findAll(
             $limit,
@@ -265,26 +266,26 @@ class RegisterService
      *
      * @return void
      *
-     * @psalm-return void
+     * @psalm-return   void
      * @phpstan-return void
      */
     private function ensureRegisterFolderExists(Register $entity): void
     {
         $folderProperty = $entity->getFolder();
-        
+
         // Check if folder needs to be created (null, empty string, or legacy string path)
         if ($folderProperty === null || $folderProperty === '' || is_string($folderProperty)) {
             try {
                 // Create folder and get the folder node
                 $folderNode = $this->fileService->createEntityFolder($entity);
-                
+
                 if ($folderNode !== null) {
                     // Update the entity with the folder ID
                     $entity->setFolder($folderNode->getId());
-                    
+
                     // Save the entity with the new folder ID
                     $this->registerMapper->update($entity);
-                    
+
                     $this->logger->info("Created folder with ID {$folderNode->getId()} for register {$entity->getId()}");
                 } else {
                     $this->logger->warning("Failed to create folder for register {$entity->getId()}");
@@ -292,10 +293,11 @@ class RegisterService
             } catch (Exception $e) {
                 // Log the error but don't fail the register creation/update
                 // The register can still function without a folder
-                $this->logger->error("Failed to create folder for register {$entity->getId()}: " . $e->getMessage());
+                $this->logger->error("Failed to create folder for register {$entity->getId()}: ".$e->getMessage());
             }
-        }
+        }//end if
+
     }//end ensureRegisterFolderExists()
 
 
-}//end class 
+}//end class

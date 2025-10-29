@@ -1,5 +1,5 @@
 <script setup>
-import { objectStore, navigationStore } from '../../store/store.js'
+import { objectStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -8,7 +8,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 			<ObjectsList />
 		</template>
 		<template #default>
-			<NcEmptyContent v-if="!objectStore.objectItem || navigationStore.selected != 'objects'"
+			<NcEmptyContent v-if="!objectStore.objectItem || $route.path !== '/objects'"
 				class="detailContainer"
 				name="No object"
 				description="No object selected yet">
@@ -16,12 +16,12 @@ import { objectStore, navigationStore } from '../../store/store.js'
 					<DatabaseOutline />
 				</template>
 				<template #action>
-					<NcButton type="primary" @click="objectStore.setObjectItem(null); navigationStore.setModal('editObject')">
+					<NcButton type="primary" @click="addObject">
 						Add Object
 					</NcButton>
 				</template>
 			</NcEmptyContent>
-			<ObjectDetails v-if="objectStore.objectItem && navigationStore.selected === 'objects'" />
+			<ObjectDetails v-if="objectStore.objectItem && $route.path === '/objects'" />
 		</template>
 	</NcAppContent>
 </template>
@@ -41,6 +41,20 @@ export default {
 		ObjectsList,
 		ObjectDetails,
 		DatabaseOutline,
+	},
+	methods: {
+		addObject() {
+			// Clear any existing object and open the add object modal
+			objectStore.setObjectItem(null)
+			// Ensure register and schema are set for new object creation
+			if (registerStore.registerItem) {
+				registerStore.setRegisterItem(registerStore.registerItem)
+			}
+			if (schemaStore.schemaItem) {
+				schemaStore.setSchemaItem(schemaStore.schemaItem)
+			}
+			navigationStore.setModal('viewObject')
+		},
 	},
 }
 </script>

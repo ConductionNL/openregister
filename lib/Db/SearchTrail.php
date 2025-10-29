@@ -258,6 +258,13 @@ class SearchTrail extends Entity implements JsonSerializable
      */
     protected ?DateTime $expires = null;
 
+    /**
+     * The size of the search trail entry in bytes
+     *
+     * @var integer|null The size of the search trail entry in bytes
+     */
+    protected ?int $size = null;
+
 
     /**
      * Constructor for the SearchTrail class
@@ -298,6 +305,7 @@ class SearchTrail extends Entity implements JsonSerializable
         $this->addType(fieldName: 'organisationId', type: 'string');
         $this->addType(fieldName: 'organisationIdType', type: 'string');
         $this->addType(fieldName: 'expires', type: 'datetime');
+        $this->addType(fieldName: 'size', type: 'integer');
 
     }//end __construct()
 
@@ -472,10 +480,41 @@ class SearchTrail extends Entity implements JsonSerializable
             'organisationId'     => $this->organisationId,
             'organisationIdType' => $this->organisationIdType,
             'expires'            => $expires,
+            'size'               => $this->size,
         ];
 
     }//end jsonSerialize()
 
 
+    /**
+     * String representation of the search trail
+     *
+     * This magic method is required for proper entity handling in Nextcloud
+     * when the framework needs to convert the object to a string.
+     *
+     * @return string String representation of the search trail
+     */
+    public function __toString(): string
+    {
+        // Return the UUID if available, otherwise return a descriptive string
+        if ($this->uuid !== null && $this->uuid !== '') {
+            return $this->uuid;
+        }
+
+        // Fallback to search term if available
+        if ($this->searchTerm !== null && $this->searchTerm !== '') {
+            return 'Search: '.$this->searchTerm;
+        }
+
+        // Fallback to ID if available
+        if ($this->id !== null) {
+            return 'SearchTrail #'.$this->id;
+        }
+
+        // Final fallback
+        return 'Search Trail';
+
+    }//end __toString()
+
+
 }//end class
- 

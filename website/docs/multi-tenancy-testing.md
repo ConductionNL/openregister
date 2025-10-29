@@ -516,7 +516,7 @@ $this->organisationMapper
     ->expects($this->once())
     ->method('findByUuid')
     ->with($this->callback(function($uuid) {
-        error_log("Called with UUID: " . $uuid);
+        // Validation callback for UUID parameter
         return true;
     }))
     ->willReturn($expectedResult);
@@ -530,7 +530,7 @@ $this->organisationMapper
 // Debug: Check actual session keys
 $this->session->method('get')
     ->willReturnCallback(function($key) {
-        error_log("Session key requested: " . $key);
+        // Track session key requests for debugging
         return null;
     });
 ```
@@ -540,10 +540,11 @@ $this->session->method('get')
 
 **Solution**: Check actual API responses and update expectations
 ```php
-// Debug: Log actual response
+// Debug: Inspect actual response
 $response = $this->controller->create($data);
-error_log("Response status: " . $response->getStatus());
-error_log("Response data: " . json_encode($response->getData()));
+// Use assertions to verify response instead of logging
+$this->assertEquals(200, $response->getStatus());
+$this->assertArrayHasKey('uuid', $response->getData());
 ```
 
 ### Test Debugging Tools

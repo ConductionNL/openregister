@@ -18,6 +18,8 @@ Registers can also apply additional logic to objects, such as validation that is
 - 🗂️ **Register System**: Manage collections of object types.
 - 🛡️ **Validation**: Validate objects against their types.
 - 🏢 **Multi-Tenancy**: Complete organisation-based data isolation with user management and role-based access control.
+- 🔍 **SOLR Integration**: Enhanced search capabilities with improved metadata handling and configuration management.
+- 🔧 **Self-Metadata Handling**: Advanced metadata processing for better data organization and retrieval.
 - 💾 **Flexible Storage**: Store objects in Nextcloud, external databases, or object stores.
 - 🔄 **APIs**: Provide APIs for consumption.
 - 🧩 **Additional Logic**: Apply extra validation and logic beyond [`schema.json`](https://json-schema.org/).
@@ -72,6 +74,7 @@ Open Register makes these principles accessible to any organization by providing
 | ✂️ [Data Filtering](website/docs/data-filtering.md) | Select specific properties to return | Data minimalization, GDPR compliance, efficient responses |
 | 🔍 [Advanced Search](website/docs/advanced-search.md) | Filter objects using flexible property-based queries | Precise filtering, complex conditions, efficient results |
 | 🗑️ [Object Deletion](website/docs/object-deletion.md) | Soft deletion with retention and recovery | Data safety, compliance, lifecycle management |
+| ⚡ [Bulk Operations](website/docs/api/bulk-operations.md) | Perform operations on multiple objects simultaneously | Performance, efficiency, batch processing |
 
 ## Documentation
 
@@ -116,6 +119,10 @@ Please see our [Contributing Guide](CONTRIBUTING.md) for details on how to contr
 ## License
 
 This project is licensed under the EUPL License - see the [LICENSE](LICENSE) file for details.
+
+## Installation
+
+This project is designed to be installed from the [nextcloud app store](https://apps.nextcloud.com/apps/openregister). Alternativly a [docker-compose.yml](docker-compose.yml) is available in the repostory for quick testing. If you are looking to contribute then please setup your own development environment following [setting up a development environment](https://cloud.nextcloud.com/s/iyNGp8ryWxc7Efa?dir=/1%20Setting%20up%20a%20development%20environment/Tutorial%20for%20Windows&openfile=true).
 
 ## Contact
 
