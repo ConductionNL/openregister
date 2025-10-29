@@ -662,21 +662,22 @@ export default {
 </script>
 
 <style scoped>
-.stats-section {
-	margin-top: 20px;
-}
-
+/* OpenConnector pattern: Actions positioned with relative positioning and negative margins */
 .section-header-inline {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	margin-bottom: 24px;
+	gap: 1rem;
+	position: relative;
+	top: -45px;
+	margin-bottom: -40px;
+	z-index: 10;
 }
 
 .button-group {
 	display: flex;
-	gap: 8px;
-	flex-wrap: wrap;
+	gap: 0.5rem;
+	align-items: center;
 }
 
 .stats-content {
@@ -822,8 +823,9 @@ export default {
 	}
 
 	.section-header-inline {
+		position: static;
+		margin-bottom: 1rem;
 		flex-direction: column;
-		gap: 12px;
 		align-items: stretch;
 	}
 

@@ -1,6 +1,6 @@
 <template>
 	<NcDialog v-if="show"
-		:name="t('openregister', 'Object Management')"
+		:name="t('openregister', 'Object Vectorization')"
 		size="large"
 		@closing="$emit('closing')">
 		<div class="object-config-content">
@@ -8,54 +8,63 @@
 			<div class="info-box">
 				<InformationOutline :size="20" />
 				<p>
-					{{ t('openregister', 'Configure object vectorization settings for semantic object search.') }}
+					{{ t('openregister', 'Configure how database objects are converted into vector embeddings for semantic search. Objects are directly vectorized without needing text extraction.') }}
 				</p>
+			</div>
+
+			<!-- Important Note -->
+			<div class="info-box warning">
+				<AlertCircle :size="20" />
+				<div>
+					<strong>{{ t('openregister', 'Prerequisites') }}</strong>
+					<p>{{ t('openregister', 'Before object vectorization can work:') }}</p>
+					<ul>
+						<li>{{ t('openregister', 'LLM must be enabled with an embedding provider configured') }}</li>
+						<li>{{ t('openregister', 'Objects will be serialized as JSON text before vectorization') }}</li>
+					</ul>
+				</div>
 			</div>
 
 			<!-- Vectorization Settings -->
 			<div class="config-section">
-				<h3>{{ t('openregister', 'Vectorization Settings') }}</h3>
+				<h3>{{ t('openregister', '🔢 Vectorization Settings') }}</h3>
 
 				<div class="form-group">
 					<NcCheckboxRadioSwitch
 						v-model="config.vectorizationEnabled"
 						type="switch">
-						{{ t('openregister', 'Enable automatic vectorization') }}
+						{{ t('openregister', 'Enable automatic object vectorization') }}
 					</NcCheckboxRadioSwitch>
 					<small>{{ t('openregister', 'Automatically generate vector embeddings when objects are created or updated') }}</small>
 				</div>
 
-				<div v-if="config.vectorizationEnabled" class="form-group">
-					<label>{{ t('openregister', 'Vectorization Provider') }}</label>
-					<NcSelect
-						v-model="config.provider"
-						:options="providerOptions"
-						label="name"
-						:placeholder="t('openregister', 'Select provider')" />
-				</div>
+				<div v-if="config.vectorizationEnabled" class="trigger-settings">
+					<h4>{{ t('openregister', 'Vectorization Triggers') }}</h4>
+					<div class="form-group">
+						<NcCheckboxRadioSwitch
+							v-model="config.vectorizeOnCreate"
+							type="switch">
+							{{ t('openregister', 'Vectorize on object creation') }}
+						</NcCheckboxRadioSwitch>
+						<small>{{ t('openregister', 'Generate vectors immediately when new objects are created') }}</small>
+					</div>
 
-				<div v-if="config.vectorizationEnabled" class="form-group">
-					<NcCheckboxRadioSwitch
-						v-model="config.vectorizeOnCreate"
-						type="switch">
-						{{ t('openregister', 'Vectorize on object creation') }}
-					</NcCheckboxRadioSwitch>
-				</div>
-
-				<div v-if="config.vectorizationEnabled" class="form-group">
-					<NcCheckboxRadioSwitch
-						v-model="config.vectorizeOnUpdate"
-						type="switch">
-						{{ t('openregister', 'Re-vectorize on object update') }}
-					</NcCheckboxRadioSwitch>
+					<div class="form-group">
+						<NcCheckboxRadioSwitch
+							v-model="config.vectorizeOnUpdate"
+							type="switch">
+							{{ t('openregister', 'Re-vectorize on object update') }}
+						</NcCheckboxRadioSwitch>
+						<small>{{ t('openregister', 'Update vectors when object data changes (recommended for accurate search)') }}</small>
+					</div>
 				</div>
 			</div>
 
-			<!-- Schema-Specific Settings -->
-			<div class="config-section">
-				<h3>{{ t('openregister', 'Schema-Specific Settings') }}</h3>
+			<!-- Schema-Specific Settings (Cost Optimization) -->
+			<div v-if="config.vectorizationEnabled" class="config-section">
+				<h3>{{ t('openregister', '💰 Schema Selection (Cost Optimization)') }}</h3>
 				<p class="section-description">
-					{{ t('openregister', 'Configure which object schemas should be vectorized.') }}
+					{{ t('openregister', 'Control which object schemas should be vectorized to reduce API costs. Only vectorize schemas that benefit from semantic search.') }}
 				</p>
 
 				<div class="form-group">
@@ -64,26 +73,53 @@
 						type="switch">
 						{{ t('openregister', 'Vectorize all schemas') }}
 					</NcCheckboxRadioSwitch>
+					<small>{{ t('openregister', 'Enable vectorization for all existing and future schemas (may increase costs)') }}</small>
 				</div>
 
-				<div v-if="!config.vectorizeAllSchemas && schemas.length > 0" class="schema-selection">
-					<label>{{ t('openregister', 'Select schemas to vectorize:') }}</label>
-					<div class="schema-list">
+				<div v-if="!config.vectorizeAllSchemas" class="schema-selection">
+					<div class="selection-header">
+						<label>{{ t('openregister', 'Select schemas to vectorize:') }}</label>
+						<div class="selection-stats">
+							<span class="stat-badge">{{ selectedSchemasCount }} / {{ schemas.length }} {{ t('openregister', 'schemas selected') }}</span>
+							<NcButton
+								v-if="config.enabledSchemas.length > 0"
+								type="tertiary"
+								@click="config.enabledSchemas = []">
+								{{ t('openregister', 'Clear all') }}
+							</NcButton>
+						</div>
+					</div>
+
+					<div v-if="schemas.length > 0" class="schema-list">
 						<div v-for="schema in schemas" :key="schema.id" class="schema-item">
 							<NcCheckboxRadioSwitch
 								v-model="config.enabledSchemas"
 								:value="schema.id"
 								type="checkbox">
-								{{ schema.title || schema.name }}
+								<span class="schema-name">{{ schema.title || schema.name }}</span>
 							</NcCheckboxRadioSwitch>
+							<span v-if="schema.description" class="schema-description">{{ schema.description }}</span>
 						</div>
+					</div>
+
+					<div v-else class="no-schemas">
+						<AlertCircle :size="24" />
+						<p>{{ t('openregister', 'No schemas found. Create schemas first before configuring vectorization.') }}</p>
+					</div>
+
+					<div class="cost-note">
+						<InformationOutline :size="16" />
+						<small>{{ t('openregister', 'Tip: Only enable schemas that need semantic search to minimize embedding costs. Simple lookup tables rarely need vectorization.') }}</small>
 					</div>
 				</div>
 			</div>
 
-			<!-- Text Extraction Settings -->
-			<div class="config-section">
-				<h3>{{ t('openregister', 'Text Extraction Settings') }}</h3>
+			<!-- Object Serialization Settings -->
+			<div v-if="config.vectorizationEnabled" class="config-section">
+				<h3>{{ t('openregister', '📄 Object Serialization') }}</h3>
+				<p class="section-description">
+					{{ t('openregister', 'Configure how objects are converted to text before vectorization. These settings affect search quality and context.') }}
+				</p>
 
 				<div class="form-group">
 					<NcCheckboxRadioSwitch
@@ -91,7 +127,7 @@
 						type="switch">
 						{{ t('openregister', 'Include schema and register metadata') }}
 					</NcCheckboxRadioSwitch>
-					<small>{{ t('openregister', 'Include schema titles, descriptions, and register information in vector text') }}</small>
+					<small>{{ t('openregister', 'Add schema titles, descriptions, and register information to provide richer context for search') }}</small>
 				</div>
 
 				<div class="form-group">
@@ -103,154 +139,118 @@
 						min="1"
 						max="20"
 						class="input-field">
-					<small>{{ t('openregister', 'Maximum depth for extracting nested object properties (1-20)') }}</small>
+					<small>{{ t('openregister', 'How deep to traverse nested object properties (1-20). Higher values capture more detail but increase vector size.') }}</small>
+				</div>
+
+				<div class="form-group">
+					<NcCheckboxRadioSwitch
+						v-model="config.includeRelations"
+						type="switch">
+						{{ t('openregister', 'Include related object references') }}
+					</NcCheckboxRadioSwitch>
+					<small>{{ t('openregister', 'Include IDs and names of related objects for better contextual search') }}</small>
 				</div>
 			</div>
 
-			<!-- Bulk Operations -->
-			<div class="config-section">
-				<h3>{{ t('openregister', 'Bulk Operations') }}</h3>
+			<!-- Batch Processing -->
+			<div v-if="config.vectorizationEnabled" class="config-section">
+				<h3>{{ t('openregister', '⚡ Batch Processing') }}</h3>
 
-				<div class="bulk-actions">
-					<NcButton
-						type="primary"
-						:disabled="vectorizing"
-						@click="startBulkVectorization">
-						<template #icon>
-							<NcLoadingIcon v-if="vectorizing" :size="20" />
-							<Play v-else :size="20" />
-						</template>
-						{{ vectorizing ? t('openregister', 'Vectorizing...') : t('openregister', 'Vectorize All Objects') }}
-					</NcButton>
+				<div class="form-group">
+					<label for="batch-size">{{ t('openregister', 'Batch Size') }}</label>
+					<input
+						id="batch-size"
+						v-model.number="config.batchSize"
+						type="number"
+						min="1"
+						max="100"
+						step="1"
+						class="input-field">
+					<small>{{ t('openregister', 'Number of objects to vectorize in one API call. Higher = faster but more memory. Recommended: 10-50.') }}</small>
+				</div>
 
-					<div v-if="vectorizationProgress" class="progress-info">
-						<div class="progress-bar">
-							<div class="progress-fill" :style="{ width: vectorizationProgress.percentage + '%' }" />
-						</div>
-						<div class="progress-text">
-							{{ vectorizationProgress.processed }} / {{ vectorizationProgress.total }} objects
-							({{ vectorizationProgress.percentage }}%)
-						</div>
-					</div>
+				<div class="form-group">
+					<NcCheckboxRadioSwitch
+						v-model="config.autoRetry"
+						type="switch">
+						{{ t('openregister', 'Auto-retry failed vectorizations') }}
+					</NcCheckboxRadioSwitch>
+					<small>{{ t('openregister', 'Automatically retry failed vectorization attempts (max 3 retries)') }}</small>
 				</div>
 			</div>
 
-			<!-- Stats -->
+			<!-- Embedding Provider Info -->
 			<div class="config-section">
-				<h3>{{ t('openregister', 'Object Statistics') }}</h3>
+				<h3>{{ t('openregister', 'ℹ️ Current Configuration') }}</h3>
 
-				<div class="stats-grid">
-					<div class="stat-card">
-						<div class="stat-value">
-							{{ stats.totalObjects }}
-						</div>
-						<div class="stat-label">
-							{{ t('openregister', 'Total Objects') }}
-						</div>
+				<div class="info-grid">
+					<div class="info-item">
+						<span class="info-label">{{ t('openregister', 'Embedding Provider') }}</span>
+						<span class="info-value">{{ embeddingProviderName }}</span>
 					</div>
-					<div class="stat-card">
-						<div class="stat-value">
-							{{ stats.vectorizedObjects }}
-						</div>
-						<div class="stat-label">
-							{{ t('openregister', 'Vectorized Objects') }}
-						</div>
+					<div class="info-item">
+						<span class="info-label">{{ t('openregister', 'Embedding Model') }}</span>
+						<span class="info-value">{{ embeddingModelName }}</span>
 					</div>
-					<div class="stat-card">
-						<div class="stat-value">
-							{{ stats.pendingObjects }}
-						</div>
-						<div class="stat-label">
-							{{ t('openregister', 'Pending') }}
-						</div>
-					</div>
-					<div class="stat-card">
-						<div class="stat-value">
-							{{ stats.progressPercentage }}%
-						</div>
-						<div class="stat-label">
-							{{ t('openregister', 'Progress') }}
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<!-- Vector Embeddings Stats -->
-			<div class="config-section">
-				<h3>{{ t('openregister', 'Vector Embeddings Statistics') }}</h3>
-
-				<div class="stats-grid">
-					<div class="stat-card highlight">
-						<div class="stat-value">
-							{{ vectorStats.totalVectors }}
-						</div>
-						<div class="stat-label">
-							{{ t('openregister', 'Total Vectors') }}
-						</div>
-					</div>
-					<div class="stat-card">
-						<div class="stat-value">
-							{{ vectorStats.objectVectors }}
-						</div>
-						<div class="stat-label">
-							{{ t('openregister', 'Object Vectors') }}
-						</div>
-					</div>
-					<div class="stat-card">
-						<div class="stat-value">
-							{{ vectorStats.fileVectors }}
-						</div>
-						<div class="stat-label">
-							{{ t('openregister', 'File Vectors') }}
-						</div>
-					</div>
-					<div class="stat-card">
-						<div class="stat-value">
-							{{ vectorStats.storageMB }}
-						</div>
-						<div class="stat-label">
-							{{ t('openregister', 'Storage (MB)') }}
-						</div>
+					<div class="info-item">
+						<span class="info-label">{{ t('openregister', 'Vector Dimensions') }}</span>
+						<span class="info-value">{{ vectorDimensions }}</span>
 					</div>
 				</div>
 
-				<!-- Vector Models Breakdown -->
-				<div v-if="vectorStats.byModel && Object.keys(vectorStats.byModel).length > 0" class="model-breakdown">
-					<h4>{{ t('openregister', 'Vectors by Model') }}</h4>
-					<div class="model-list">
-						<div v-for="(count, model) in vectorStats.byModel" :key="model" class="model-item">
-							<span class="model-name">{{ model }}</span>
-							<span class="model-count">{{ count }} {{ t('openregister', 'vectors') }}</span>
-						</div>
-					</div>
+				<div class="info-note">
+					<small>{{ t('openregister', 'To change the embedding provider or model, go to LLM Configuration.') }}</small>
 				</div>
 			</div>
 		</div>
 
 		<!-- Dialog Actions -->
 		<template #actions>
-			<NcButton @click="$emit('closing')">
-				{{ t('openregister', 'Cancel') }}
-			</NcButton>
-			<NcButton
-				type="primary"
-				:disabled="saving"
-				@click="saveConfiguration">
-				<template #icon>
-					<NcLoadingIcon v-if="saving" :size="20" />
-					<ContentSave v-else :size="20" />
-				</template>
-				{{ saving ? t('openregister', 'Saving...') : t('openregister', 'Save Configuration') }}
-			</NcButton>
+			<div class="actions-left">
+				<NcButton
+					v-if="config.vectorizationEnabled"
+					type="secondary"
+					:disabled="vectorizing"
+					@click="startBulkVectorization">
+					<template #icon>
+						<NcLoadingIcon v-if="vectorizing" :size="20" />
+						<PlayCircle v-else :size="20" />
+					</template>
+					{{ vectorizing ? t('openregister', 'Vectorizing...') : t('openregister', 'Vectorize All Objects Now') }}
+				</NcButton>
+
+				<!-- Progress indicator -->
+				<div v-if="vectorizationProgress" class="progress-indicator">
+					<span class="progress-text">{{ vectorizationProgress.processed }} / {{ vectorizationProgress.total }}</span>
+					<NcProgressBar :value="vectorizationProgress.percentage" :max="100" />
+				</div>
+			</div>
+
+			<div class="actions-right">
+				<NcButton @click="$emit('closing')">
+					{{ t('openregister', 'Cancel') }}
+				</NcButton>
+				<NcButton
+					type="primary"
+					:disabled="saving"
+					@click="saveConfiguration">
+					<template #icon>
+						<NcLoadingIcon v-if="saving" :size="20" />
+						<ContentSave v-else :size="20" />
+					</template>
+					{{ saving ? t('openregister', 'Saving...') : t('openregister', 'Save Configuration') }}
+				</NcButton>
+			</div>
 		</template>
 	</NcDialog>
 </template>
 
 <script>
-import { NcDialog, NcButton, NcLoadingIcon, NcSelect, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { NcDialog, NcButton, NcLoadingIcon, NcCheckboxRadioSwitch, NcProgressBar } from '@nextcloud/vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
+import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
-import Play from 'vue-material-design-icons/Play.vue'
+import PlayCircle from 'vue-material-design-icons/PlayCircle.vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess, showError } from '@nextcloud/dialogs'
@@ -262,11 +262,12 @@ export default {
 		NcDialog,
 		NcButton,
 		NcLoadingIcon,
-		NcSelect,
 		NcCheckboxRadioSwitch,
+		NcProgressBar,
 		InformationOutline,
+		AlertCircle,
 		ContentSave,
-		Play,
+		PlayCircle,
 	},
 
 	props: {
@@ -285,49 +286,40 @@ export default {
 
 			config: {
 				vectorizationEnabled: true,
-				provider: { id: 'openai', name: 'OpenAI' },
 				vectorizeOnCreate: true,
 				vectorizeOnUpdate: false,
 				vectorizeAllSchemas: true,
 				enabledSchemas: [],
 				includeMetadata: true,
+				includeRelations: true,
 				maxNestingDepth: 10,
-			},
-
-			stats: {
-				totalObjects: 0,
-				vectorizedObjects: 0,
-				pendingObjects: 0,
-				progressPercentage: 0,
-			},
-
-			vectorStats: {
-				totalVectors: 0,
-				objectVectors: 0,
-				fileVectors: 0,
-				storageMB: '0.0',
-				byModel: {},
+				batchSize: 25,
+				autoRetry: true,
 			},
 
 			schemas: [],
-
-			providerOptions: [
-				{ id: 'openai', name: 'OpenAI' },
-				{ id: 'ollama', name: 'Ollama (Local)' },
-			],
+			embeddingProviderName: 'Not configured',
+			embeddingModelName: 'Not configured',
+			vectorDimensions: 'N/A',
 		}
+	},
+
+	computed: {
+		selectedSchemasCount() {
+			return this.config.enabledSchemas.length
+		},
 	},
 
 	mounted() {
 		this.loadConfiguration()
 		this.loadSchemas()
-		this.loadStats()
+		this.loadEmbeddingProviderInfo()
 	},
 
 	methods: {
 		async loadConfiguration() {
 			try {
-				// TODO: Load from backend
+				// TODO: Load object vectorization config from backend
 				this.loading = false
 			} catch (error) {
 				console.error('Failed to load configuration:', error)
@@ -341,69 +333,56 @@ export default {
 				this.schemas = response.data.results || []
 			} catch (error) {
 				console.error('Failed to load schemas:', error)
+				this.schemas = []
 			}
 		},
 
-		async loadStats() {
+		async loadEmbeddingProviderInfo() {
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/objects/vectorize/stats'))
+				// Load current LLM configuration to show embedding provider info
+				const response = await axios.get(generateUrl('/apps/openregister/api/settings/llm'))
 				const data = response.data
 
-				// Update object stats
-				if (data.objects) {
-					this.stats.totalObjects = data.objects.total_objects || 0
-					this.stats.vectorizedObjects = data.objects.vectorized_objects || 0
-					this.stats.pendingObjects = data.objects.pending_objects || 0
-					this.stats.progressPercentage = data.objects.percentage_complete || 0
-				}
-
-				// Update vector stats
-				this.vectorStats.totalVectors = data.total_vectors || 0
-				this.vectorStats.objectVectors = data.by_type?.object || 0
-				this.vectorStats.fileVectors = data.by_type?.file || 0
-				this.vectorStats.storageMB = data.storage?.total_mb?.toFixed(1) || '0.0'
-				this.vectorStats.byModel = data.by_model || {}
+				this.embeddingProviderName = data.embeddingProvider || 'Not configured'
+				this.embeddingModelName = data.embeddingModel || 'Not configured'
+				this.vectorDimensions = data.vectorDimensions || 'N/A'
 			} catch (error) {
-				console.error('Failed to load stats:', error)
+				console.error('Failed to load embedding provider info:', error)
 			}
 		},
 
 		async startBulkVectorization() {
-			if (!confirm(this.t('openregister', 'This will vectorize all objects. This may take a long time. Continue?'))) {
+			const message = this.config.vectorizeAllSchemas 
+				? this.t('openregister', 'This will vectorize all objects from all schemas. This may take a long time and incur API costs. Continue?')
+				: this.t('openregister', 'This will vectorize objects from {count} selected schema(s). This may take a long time. Continue?', { count: this.selectedSchemasCount })
+
+			if (!confirm(message)) {
 				return
 			}
 
 			this.vectorizing = true
-			this.vectorizationProgress = { processed: 0, total: this.stats.totalObjects, percentage: 0 }
 
 			try {
-				// Vectorize in batches
-				const batchSize = 100
-				let offset = 0
-				let hasMore = true
+				// Get total count first
+				const countResponse = await axios.get(generateUrl('/apps/openregister/api/objects/count'), {
+					params: {
+						schemas: this.config.vectorizeAllSchemas ? null : this.config.enabledSchemas.join(','),
+					},
+				})
 
-				while (hasMore) {
-					const response = await axios.post(
-						generateUrl('/apps/openregister/api/objects/vectorize/bulk'),
-						{
-							limit: batchSize,
-							offset,
-						},
-					)
+				const totalObjects = countResponse.data.count || 0
+				this.vectorizationProgress = { processed: 0, total: totalObjects, percentage: 0 }
 
-					this.vectorizationProgress.processed += response.data.successful
-					this.vectorizationProgress.percentage = Math.round(
-						(this.vectorizationProgress.processed / this.vectorizationProgress.total) * 100,
-					)
+				// Start background job
+				await axios.post(generateUrl('/apps/openregister/api/objects/vectorize/batch'), {
+					schemas: this.config.vectorizeAllSchemas ? null : this.config.enabledSchemas,
+					batchSize: this.config.batchSize,
+				})
 
-					hasMore = response.data.pagination?.has_more
-					offset += batchSize
-				}
-
-				showSuccess(this.t('openregister', 'Bulk vectorization completed'))
-				await this.loadStats()
+				showSuccess(this.t('openregister', 'Object vectorization started. Check the LLM Configuration section for progress.'))
+				this.$emit('closing')
 			} catch (error) {
-				showError(this.t('openregister', 'Failed to vectorize objects: {error}', { error: error.response?.data?.error || error.message }))
+				showError(this.t('openregister', 'Failed to start vectorization: {error}', { error: error.response?.data?.error || error.message }))
 			} finally {
 				this.vectorizing = false
 				this.vectorizationProgress = null
@@ -414,8 +393,8 @@ export default {
 			this.saving = true
 
 			try {
-				await axios.post(generateUrl('/apps/openregister/api/settings/objects'), this.config)
-				showSuccess(this.t('openregister', 'Object configuration saved successfully'))
+				await axios.post(generateUrl('/apps/openregister/api/settings/object-vectorization'), this.config)
+				showSuccess(this.t('openregister', 'Object vectorization configuration saved successfully'))
 				this.$emit('closing')
 			} catch (error) {
 				showError(this.t('openregister', 'Failed to save configuration: {error}', { error: error.response?.data?.error || error.message }))
@@ -447,6 +426,27 @@ export default {
 		margin: 0;
 		color: var(--color-text-maxcontrast);
 	}
+
+	ul {
+		margin: 8px 0 0 0;
+		padding-left: 20px;
+		color: var(--color-text-maxcontrast);
+
+		li {
+			margin: 4px 0;
+		}
+	}
+
+	&.warning {
+		background: var(--color-warning-light);
+		border-left: 4px solid var(--color-warning);
+
+		strong {
+			color: var(--color-main-text);
+			display: block;
+			margin-bottom: 8px;
+		}
+	}
 }
 
 .config-section {
@@ -458,11 +458,26 @@ export default {
 		font-weight: 600;
 	}
 
+	h4 {
+		margin: 16px 0 8px 0;
+		font-size: 14px;
+		font-weight: 500;
+		color: var(--color-text-maxcontrast);
+	}
+
 	.section-description {
 		margin: 0 0 16px 0;
 		color: var(--color-text-maxcontrast);
 		font-size: 14px;
+		line-height: 1.5;
 	}
+}
+
+.trigger-settings {
+	margin-top: 16px;
+	padding: 16px;
+	background: var(--color-background-dark);
+	border-radius: 8px;
 }
 
 .form-group {
@@ -498,128 +513,184 @@ export default {
 }
 
 .schema-selection {
-	margin-top: 16px;
-
-	label {
-		display: block;
-		margin-bottom: 12px;
-		font-weight: 500;
-	}
-
-	.schema-list {
-		max-height: 200px;
-		overflow-y: auto;
-		border: 1px solid var(--color-border);
-		border-radius: 6px;
-		padding: 12px;
-	}
-
-	.schema-item {
-		margin-bottom: 8px;
-	}
-}
-
-.bulk-actions {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-}
-
-.progress-info {
-	.progress-bar {
-		height: 8px;
-		background: var(--color-background-dark);
-		border-radius: 4px;
-		overflow: hidden;
-		margin-bottom: 8px;
-
-		.progress-fill {
-			height: 100%;
-			background: var(--color-primary-element);
-			transition: width 0.3s ease;
-		}
-	}
-
-	.progress-text {
-		font-size: 13px;
-		color: var(--color-text-maxcontrast);
-		text-align: center;
-	}
-}
-
-.stats-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-	gap: 16px;
-}
-
-.stat-card {
-	padding: 16px;
-	background: var(--color-background-hover);
-	border-radius: 8px;
-	text-align: center;
-
-	.stat-value {
-		font-size: 32px;
-		font-weight: 700;
-		color: var(--color-primary-element);
-		margin-bottom: 8px;
-	}
-
-	.stat-label {
-		font-size: 13px;
-		color: var(--color-text-maxcontrast);
-	}
-
-	&.highlight {
-		background: var(--color-primary-element-light);
-		border: 2px solid var(--color-primary-element);
-
-		.stat-value {
-			color: var(--color-primary-element);
-			font-size: 36px;
-		}
-	}
-}
-
-.model-breakdown {
 	margin-top: 20px;
-	padding: 16px;
-	background: var(--color-background-dark);
-	border-radius: 8px;
 
-	h4 {
-		margin: 0 0 12px 0;
-		font-size: 14px;
-		font-weight: 600;
-		color: var(--color-main-text);
-	}
-
-	.model-list {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-	}
-
-	.model-item {
+	.selection-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		padding: 8px 12px;
-		background: var(--color-background-hover);
-		border-radius: 6px;
+		margin-bottom: 12px;
 
-		.model-name {
-			font-size: 13px;
+		label {
 			font-weight: 500;
-			color: var(--color-main-text);
+			margin: 0;
 		}
 
-		.model-count {
+		.selection-stats {
+			display: flex;
+			gap: 12px;
+			align-items: center;
+
+			.stat-badge {
+				padding: 4px 12px;
+				background: var(--color-primary-element-light);
+				color: var(--color-primary-element);
+				border-radius: 12px;
+				font-size: 12px;
+				font-weight: 600;
+			}
+		}
+	}
+
+	.schema-list {
+		max-height: 300px;
+		overflow-y: auto;
+		border: 1px solid var(--color-border);
+		border-radius: 8px;
+		padding: 12px;
+		background: var(--color-background-dark);
+	}
+
+	.schema-item {
+		margin-bottom: 12px;
+		padding: 8px;
+		border-radius: 6px;
+		background: var(--color-main-background);
+
+		&:last-child {
+			margin-bottom: 0;
+		}
+
+		.schema-name {
+			font-weight: 500;
+		}
+
+		.schema-description {
+			display: block;
+			margin-top: 4px;
+			margin-left: 32px;
 			font-size: 12px;
 			color: var(--color-text-maxcontrast);
-			font-weight: 600;
 		}
+	}
+
+	.no-schemas {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 12px;
+		padding: 32px;
+		text-align: center;
+		color: var(--color-text-maxcontrast);
+		border: 2px dashed var(--color-border);
+		border-radius: 8px;
+
+		p {
+			margin: 0;
+		}
+	}
+
+	.cost-note {
+		display: flex;
+		gap: 8px;
+		align-items: flex-start;
+		margin-top: 12px;
+		padding: 12px;
+		background: var(--color-background-dark);
+		border-radius: 6px;
+
+		small {
+			color: var(--color-text-maxcontrast);
+			font-size: 13px;
+			line-height: 1.4;
+		}
+	}
+}
+
+.info-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 16px;
+	margin-bottom: 16px;
+}
+
+.info-item {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 12px;
+	background: var(--color-background-hover);
+	border-radius: 6px;
+
+	.info-label {
+		font-size: 12px;
+		color: var(--color-text-maxcontrast);
+		font-weight: 500;
+	}
+
+	.info-value {
+		font-size: 14px;
+		color: var(--color-main-text);
+		font-weight: 600;
+	}
+}
+
+.info-note {
+	padding: 12px;
+	background: var(--color-background-dark);
+	border-radius: 6px;
+	margin-top: 16px;
+
+	small {
+		color: var(--color-text-maxcontrast);
+		font-size: 13px;
+	}
+}
+
+/* Actions layout */
+:deep(.dialog__actions) {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 16px;
+	flex-wrap: wrap;
+}
+
+.actions-left {
+	display: flex;
+	gap: 12px;
+	align-items: center;
+}
+
+.actions-right {
+	display: flex;
+	gap: 8px;
+	margin-left: auto;
+}
+
+.progress-indicator {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 150px;
+
+	.progress-text {
+		font-size: 12px;
+		color: var(--color-text-maxcontrast);
+		font-weight: 500;
+	}
+}
+
+@media (max-width: 768px) {
+	:deep(.dialog__actions) {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.actions-left,
+	.actions-right {
+		width: 100%;
+		justify-content: center;
 	}
 }
 </style>

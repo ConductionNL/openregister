@@ -51,8 +51,11 @@ Open Register makes these principles accessible to any organization by providing
 - Flexible storage options
 - Built-in compliance features
 - Cost-effective implementation
+- AI-powered semantic search and content understanding
 
 ## Key Features
+
+### Core Features
 
 | Feature | Description | Benefits |
 |---------|-------------|-----------|
@@ -63,18 +66,82 @@ Open Register makes these principles accessible to any organization by providing
 | 🗑️ [Soft Deletes](website/docs/soft-deletes.md) | Safely remove objects with recovery options | Data safety, compliance, mistake recovery |
 | 🔗 [Object Relations](website/docs/object-relations.md) | Create and manage connections between objects | Complex data structures, linked information, dependencies |
 | 📎 [File Attachments](website/docs/file-attachments.md) | Manage files associated with objects | Document management, version control, previews |
-| 🔍 [Content Search](website/docs/content-search.md) | Full-text search across objects and files | Quick discovery, unified search, advanced filtering |
-| 🏷️ [Automatic Facets](website/docs/automatic-facets.md) | Dynamic filtering based on object properties | Intuitive navigation, pattern discovery, smart filtering |
 | ✅ [Schema Validation](website/docs/schema-validation.md) | Validate objects against JSON schemas | Data quality, consistency, structure enforcement |
 | 📚 [Register Management](website/docs/register-management.md) | Organize collections of related objects | Logical grouping, access control, process automation |
 | 🔐 [Access Control](website/docs/access-control.md) | Fine-grained permissions management | Security, role management, granular control |
-| ⚡ [Elasticsearch](website/docs/elasticsearch.md) | Advanced search and analytics capabilities | Performance, insights, complex queries |
 | 📋 [Schema Import & Sharing](website/docs/schema-import.md) | Import schemas from Schema.org, OAS, GGM, and share via Open Catalogi | Standards compliance, reuse, collaboration |
 | 🔔 [Events & Webhooks](website/docs/events.md) | React to object changes with events and webhooks | Integration, automation, real-time updates |
 | ✂️ [Data Filtering](website/docs/data-filtering.md) | Select specific properties to return | Data minimalization, GDPR compliance, efficient responses |
-| 🔍 [Advanced Search](website/docs/advanced-search.md) | Filter objects using flexible property-based queries | Precise filtering, complex conditions, efficient results |
-| 🗑️ [Object Deletion](website/docs/object-deletion.md) | Soft deletion with retention and recovery | Data safety, compliance, lifecycle management |
 | ⚡ [Bulk Operations](website/docs/api/bulk-operations.md) | Perform operations on multiple objects simultaneously | Performance, efficiency, batch processing |
+
+### AI & Search Features
+
+| Feature | Description | Benefits |
+|---------|-------------|-----------|
+| 🔍 [Content Search](website/docs/content-search.md) | Full-text search across objects and files with SOLR | Quick discovery, unified search, advanced filtering |
+| 🏷️ [Automatic Facets](website/docs/automatic-facets.md) | Dynamic filtering based on object properties | Intuitive navigation, pattern discovery, smart filtering |
+| 🔍 [Advanced Search](website/docs/advanced-search.md) | Filter objects using flexible property-based queries | Precise filtering, complex conditions, efficient results |
+| 🤖 **Semantic Search** | AI-powered semantic search across objects and files | Find by meaning, not just keywords, better discovery |
+| 🧮 **Vector Embeddings** | Automatic vectorization of objects and files | Enable semantic search, similarity matching, content understanding |
+| ✍️ **Text Generation** | AI-powered content generation and completion | Automated documentation, content creation, efficiency |
+| 📋 **Document Summarization** | Automatic summarization of documents and objects | Quick insights, time savings, overview generation |
+| 🌍 **Translation** | Multi-language content translation | Accessibility, international reach, localization |
+| 🏷️ **Content Classification** | Automatic content categorization and tagging | Organization, automation, metadata enrichment |
+| 📄 **File Vectorization** | Chunk and vectorize documents for semantic search | Semantic file search, RAG capabilities, content understanding |
+
+## AI-Powered Features
+
+Open Register includes powerful AI capabilities powered by Large Language Models (LLMs) that enhance content discovery, organization, and understanding.
+
+### Supported LLM Providers
+
+- **OpenAI**: GPT-4, GPT-3.5 Turbo for chat and text-embedding models
+- **Fireworks AI**: Fast, optimized inference with various open-source models
+- **Ollama**: Run models locally for privacy and cost-effectiveness
+- **Azure OpenAI**: Enterprise-grade AI through Microsoft Azure
+
+### Key AI Capabilities
+
+**🔍 Semantic Search**
+- Find content by meaning, not just keywords
+- Search across objects and files simultaneously
+- Understand context and intent
+- More accurate results than traditional keyword search
+
+**🧮 Vector Embeddings**
+- Automatic vectorization of objects on creation/update
+- Automatic vectorization of files on upload (text extraction → chunks → embeddings)
+- Multiple embedding models supported
+- Efficient vector storage and retrieval
+- **Process Flow**: File → Text Extraction → Chunks (smaller text portions) → Embeddings (vector representations)
+
+**📄 Intelligent File Processing**
+- Support for PDF, DOCX, XLSX, TXT, MD, HTML, JSON, XML
+- Image OCR support (JPG, PNG, GIF, TIFF, WebP)
+- Smart document chunking (splitting files into smaller text portions)
+- Configurable chunking strategies with overlap for better context preservation
+- Text extraction required before chunking and vectorization
+
+**✍️ Content Generation & Summarization**
+- AI-powered text generation
+- Automatic document summarization
+- Content classification and tagging
+- Multi-language translation
+
+### Configuration
+
+AI features are easily configured through the Settings page:
+
+1. **LLM Configuration**: Set up your preferred AI provider and models
+2. **File Management**: Configure which file types to vectorize and chunking settings
+3. **Object Management**: Control which schemas are vectorized and when
+
+### Privacy & Cost Management
+
+- **Local Options**: Use Ollama to run models on your own infrastructure
+- **Usage Tracking**: Monitor API usage and estimated costs
+- **Flexible Control**: Enable/disable features per your needs
+- **Selective Vectorization**: Choose which objects and files to process
 
 ## Documentation
 

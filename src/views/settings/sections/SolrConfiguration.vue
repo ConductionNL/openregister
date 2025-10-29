@@ -1,5 +1,5 @@
 <template>
-	<NcSettingsSection name="SOLR Search Configuration"
+	<NcSettingsSection name="Search Configuration"
 		description="Configure Apache SOLR search engine for advanced search capabilities">
 		<div class="solr-options">
 			<!-- Actions Bar -->
@@ -48,32 +48,10 @@
 							<template #icon>
 								<DatabaseCog :size="20" />
 							</template>
-							{{ t('openregister', 'Collection Management') }}
-						</NcActionButton>
+						{{ t('openregister', 'Collection Management') }}
+					</NcActionButton>
 
-						<!-- AI/Vector Configuration -->
-						<NcActionButton @click="showFileManagementDialog = true">
-							<template #icon>
-								<FileDocument :size="20" />
-							</template>
-							{{ t('openregister', 'File Management') }}
-						</NcActionButton>
-
-						<NcActionButton @click="showObjectManagementDialog = true">
-							<template #icon>
-								<CubeOutline :size="20" />
-							</template>
-							{{ t('openregister', 'Object Management') }}
-						</NcActionButton>
-
-						<NcActionButton @click="showLLMConfigDialog = true">
-							<template #icon>
-								<Robot :size="20" />
-							</template>
-							{{ t('openregister', 'LLM Configuration') }}
-						</NcActionButton>
-
-						<!-- File Processing -->
+					<!-- File Processing -->
 						<NcActionButton
 							v-if="solrOptions.enabled"
 							@click="openFileWarmup">
@@ -233,274 +211,6 @@
 				</NcButton>
 			</div>
 		</div>
-
-		<!-- Setup SOLR Results Dialog (OLD - TO BE REMOVED) -->
-		<div class="test-dialog">
-			<div v-if="testingConnection" class="test-loading">
-				<div class="loading-spinner">
-					<NcLoadingIcon :size="40" />
-				</div>
-				<h4>Testing SOLR Connection...</h4>
-				<p class="loading-description">
-					Please wait while we test the connection to your SOLR server. This may take a few seconds.
-				</p>
-			</div>
-
-			<div v-else-if="testResults" class="test-results">
-				<!-- Overall Status Header -->
-				<div class="results-header">
-					<div class="status-badge" :class="testResults.success ? 'success' : 'error'">
-						<span class="status-icon">{{ testResults.success ? '✅' : '❌' }}</span>
-						<div class="status-text">
-							<h3>{{ testResults.success ? 'Connection Test Successful!' : 'Connection Test Failed' }}</h3>
-							<p>{{ testResults.message }}</p>
-						</div>
-					</div>
-				</div>
-
-				<!-- Component Results Grid -->
-				<div v-if="testResults.components" class="components-grid">
-					<!-- Zookeeper Component -->
-					<div v-if="testResults.components.zookeeper" class="component-card zookeeper">
-						<div class="component-header">
-							<div class="component-icon">
-								<span class="icon-bg">🔗</span>
-								<span class="status-indicator" :class="testResults.components.zookeeper.success ? 'success' : 'error'">
-									{{ testResults.components.zookeeper.success ? '✅' : '❌' }}
-								</span>
-							</div>
-							<div class="component-info">
-								<h4>Zookeeper Coordination</h4>
-								<p class="component-status">
-									{{ testResults.components.zookeeper.message }}
-								</p>
-							</div>
-						</div>
-						<div v-if="testResults.components.zookeeper.details" class="component-metrics">
-							<div class="metric">
-								<span class="metric-label">Hosts</span>
-								<span class="metric-value">{{ testResults.components.zookeeper.details.zookeeper_hosts }}</span>
-							</div>
-							<div class="metric">
-								<span class="metric-label">Method</span>
-								<span class="metric-value">{{ testResults.components.zookeeper.details.test_method }}</span>
-							</div>
-							<div v-if="testResults.components.zookeeper.details.successful_hosts?.length" class="metric success">
-								<span class="metric-label">✅ Connected</span>
-								<span class="metric-value">{{ testResults.components.zookeeper.details.successful_hosts.length }} host(s)</span>
-							</div>
-							<div v-if="testResults.components.zookeeper.details.failed_hosts?.length" class="metric error">
-								<span class="metric-label">❌ Failed</span>
-								<span class="metric-value">{{ testResults.components.zookeeper.details.failed_hosts.length }} host(s)</span>
-							</div>
-						</div>
-					</div>
-
-					<!-- SOLR Component -->
-					<div v-if="testResults.components.solr" class="component-card solr">
-						<div class="component-header">
-							<div class="component-icon">
-								<span class="icon-bg">🔍</span>
-								<span class="status-indicator" :class="testResults.components.solr.success ? 'success' : 'error'">
-									{{ testResults.components.solr.success ? '✅' : '❌' }}
-								</span>
-							</div>
-							<div class="component-info">
-								<h4>SOLR Search Engine</h4>
-								<p class="component-status">
-									{{ testResults.components.solr.message }}
-								</p>
-							</div>
-						</div>
-						<div v-if="testResults.components.solr.details" class="component-metrics">
-							<div class="metric highlight">
-								<span class="metric-label">⚡ Response Time</span>
-								<span class="metric-value">{{ testResults.components.solr.details.response_time_ms }}ms</span>
-							</div>
-							<div class="metric">
-								<span class="metric-label">📄 Documents</span>
-								<span class="metric-value">{{ testResults.components.solr.details.num_found?.toLocaleString() || 'N/A' }}</span>
-							</div>
-							<div class="metric">
-								<span class="metric-label">🔗 ZK Connected</span>
-								<span class="metric-value">{{ testResults.components.solr.details.zk_connected ? 'Yes' : 'No' }}</span>
-							</div>
-							<div class="metric">
-								<span class="metric-label">☁️ Cloud Mode</span>
-								<span class="metric-value">{{ testResults.components.solr.details.use_cloud ? 'Enabled' : 'Disabled' }}</span>
-							</div>
-							<div class="metric technical">
-								<span class="metric-label">🌐 Query URL</span>
-								<span class="metric-value technical-url">{{ testResults.components.solr.details.url }}</span>
-							</div>
-						</div>
-					</div>
-
-					<!-- Collection Component -->
-					<div v-if="testResults.components.collection" class="component-card collection">
-						<div class="component-header">
-							<div class="component-icon">
-								<span class="icon-bg">📚</span>
-								<span class="status-indicator" :class="testResults.components.collection.success ? 'success' : 'error'">
-									{{ testResults.components.collection.success ? '✅' : '❌' }}
-								</span>
-							</div>
-							<div class="component-info">
-								<h4>Collection Management</h4>
-								<p class="component-status">
-									{{ testResults.components.collection.message }}
-								</p>
-							</div>
-						</div>
-						<div v-if="testResults.components.collection.details" class="component-metrics">
-							<div class="metric highlight">
-								<span class="metric-label">📁 Collection Name</span>
-								<span class="metric-value">{{ testResults.components.collection.details.collection_name || testResults.components.collection.details.collection }}</span>
-							</div>
-							<div class="metric">
-								<span class="metric-label">🏷️ Type</span>
-								<span class="metric-value">{{ testResults.components.collection.details.collection_type || 'base' }}</span>
-							</div>
-							<div v-if="testResults.components.collection.details.tenant_id" class="metric">
-								<span class="metric-label">🏢 Tenant ID</span>
-								<span class="metric-value">{{ testResults.components.collection.details.tenant_id }}</span>
-							</div>
-							<div class="metric">
-								<span class="metric-label">🗂️ Shards</span>
-								<span class="metric-value">{{ testResults.components.collection.details.shards || 'Unknown' }}</span>
-							</div>
-							<div class="metric">
-								<span class="metric-label">📊 Status</span>
-								<span class="metric-value">{{ testResults.components.collection.details.status || 'Active' }}</span>
-							</div>
-							<div v-if="testResults.components.collection.details.available_collections" class="metric">
-								<span class="metric-label">📋 Available Collections</span>
-								<span class="metric-value">{{ testResults.components.collection.details.available_collections.join(', ') || 'None' }}</span>
-							</div>
-						</div>
-					</div>
-
-					<!-- Query Component -->
-					<div v-if="testResults.components.query" class="component-card query">
-						<div class="component-header">
-							<div class="component-icon">
-								<span class="icon-bg">🔍</span>
-								<span class="status-indicator" :class="testResults.components.query.success ? 'success' : 'error'">
-									{{ testResults.components.query.success ? '✅' : '❌' }}
-								</span>
-							</div>
-							<div class="component-info">
-								<h4>Collection Query Test</h4>
-								<p class="component-status">
-									{{ testResults.components.query.message }}
-								</p>
-							</div>
-						</div>
-						<div v-if="testResults.components.query.details" class="component-metrics">
-							<div class="metric">
-								<span class="metric-label">📁 Collection</span>
-								<span class="metric-value">{{ testResults.components.query.details.collection_name }}</span>
-							</div>
-							<div class="metric">
-								<span class="metric-label">🏷️ Type</span>
-								<span class="metric-value">{{ testResults.components.query.details.collection_type || 'base' }}</span>
-							</div>
-							<div v-if="testResults.components.query.details.tenant_id" class="metric">
-								<span class="metric-label">🏢 Tenant ID</span>
-								<span class="metric-value">{{ testResults.components.query.details.tenant_id }}</span>
-							</div>
-							<div class="metric highlight">
-								<span class="metric-label">⚡ Response Time</span>
-								<span class="metric-value">{{ testResults.components.query.details.response_time_ms }}ms</span>
-							</div>
-							<div class="metric">
-								<span class="metric-label">📄 Documents</span>
-								<span class="metric-value">{{ testResults.components.query.details.total_docs?.toLocaleString() || 'N/A' }}</span>
-							</div>
-							<div class="metric technical">
-								<span class="metric-label">🌐 Query URL</span>
-								<span class="metric-value technical-url">{{ testResults.components.query.details.query_url }}</span>
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<!-- Summary Stats -->
-				<div v-if="testResults.success" class="test-summary">
-					<div class="summary-card">
-						<h5>🎯 Test Summary</h5>
-						<div class="summary-stats">
-							<div class="stat">
-								<span class="stat-number">{{ Object.keys(testResults.components || {}).length }}</span>
-								<span class="stat-label">Components Tested</span>
-							</div>
-							<div class="stat">
-								<span class="stat-number">{{ Object.values(testResults.components || {}).filter(c => c.success).length }}</span>
-								<span class="stat-label">Passed</span>
-							</div>
-							<div class="stat">
-								<span class="stat-number">{{ testResults.components?.solr?.details?.response_time_ms || 'N/A' }}ms</span>
-								<span class="stat-label">Avg Response</span>
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<!-- Kubernetes Services Discovery -->
-				<div class="kubernetes-services">
-					<div class="services-card">
-						<h5>🌐 Kubernetes Services Discovery</h5>
-						<p class="services-description">
-							Common Kubernetes service patterns for SOLR and Zookeeper in your cluster:
-						</p>
-						<div class="service-suggestions">
-							<div class="service-group">
-								<h6>🔍 SOLR Services</h6>
-								<div class="service-examples">
-									<code>con-solr-solrcloud-common.solr.svc.cluster.local</code>
-									<code>solr-headless.solr.svc.cluster.local</code>
-									<code>solr-service.default.svc.cluster.local</code>
-								</div>
-							</div>
-							<div class="service-group">
-								<h6>🔗 Zookeeper Services</h6>
-								<div class="service-examples">
-									<code>con-zookeeper-solrcloud-common.zookeeper.svc.cluster.local</code>
-									<code>zookeeper-headless.zookeeper.svc.cluster.local</code>
-									<code>zookeeper-service.default.svc.cluster.local</code>
-								</div>
-							</div>
-							<div class="service-group">
-								<h6>💡 Service Discovery Tips</h6>
-								<div class="service-tips">
-									<p>• Use <code>kubectl get services -n &lt;namespace&gt;</code> to list services</p>
-									<p>• Format: <code>&lt;service-name&gt;.&lt;namespace&gt;.svc.cluster.local</code></p>
-									<p>• Default namespace services: <code>&lt;service-name&gt;.default.svc.cluster.local</code></p>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<div class="dialog-actions">
-				<NcButton
-					:disabled="testingConnection"
-					@click="hideTestDialog">
-					Close
-				</NcButton>
-				<NcButton
-					v-if="!testingConnection && testResults && !testResults.success"
-					type="primary"
-					@click="retryTest">
-					<template #icon>
-						<TestTube :size="20" />
-					</template>
-					Test Again
-				</NcButton>
-			</div>
-		</div>
-		</NcDialog>
 
 		<!-- Setup SOLR Results Dialog -->
 		<NcDialog
@@ -1374,21 +1084,6 @@
 			:show="showCollectionDialog"
 			@closing="showCollectionDialog = false" />
 
-		<!-- File Management Modal -->
-		<FileManagementModal
-			:show="showFileManagementDialog"
-			@closing="showFileManagementDialog = false" />
-
-		<!-- Object Management Modal -->
-		<ObjectManagementModal
-			:show="showObjectManagementDialog"
-			@closing="showObjectManagementDialog = false" />
-
-		<!-- LLM Configuration Modal -->
-		<LLMConfigModal
-			:show="showLLMConfigDialog"
-			@closing="showLLMConfigDialog = false" />
-
 		<!-- File Warmup Modal -->
 		<FileWarmupModal
 			:open="showFileWarmupDialog"
@@ -1418,9 +1113,6 @@ import DotsVertical from 'vue-material-design-icons/DotsVertical.vue'
 import Connection from 'vue-material-design-icons/Connection.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import DatabaseCog from 'vue-material-design-icons/DatabaseCog.vue'
-import FileDocument from 'vue-material-design-icons/FileDocument.vue'
-import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
-import Robot from 'vue-material-design-icons/Robot.vue'
 import { SolrWarmupModal, ClearIndexModal } from '../../../modals/settings'
 import InspectIndexModal from '../../../modals/settings/InspectIndexModal.vue'
 import DeleteCollectionModal from '../../../modals/settings/DeleteCollectionModal.vue'
@@ -1428,9 +1120,6 @@ import FacetConfigModal from '../../../modals/settings/FacetConfigModal.vue'
 import ConnectionConfigModal from '../../../modals/settings/ConnectionConfigModal.vue'
 import ConfigSetManagementModal from '../../../modals/settings/ConfigSetManagementModal.vue'
 import CollectionManagementModal from '../../../modals/settings/CollectionManagementModal.vue'
-import FileManagementModal from '../../../modals/settings/FileManagementModal.vue'
-import ObjectManagementModal from '../../../modals/settings/ObjectManagementModal.vue'
-import LLMConfigModal from '../../../modals/settings/LLMConfigModal.vue'
 import FileWarmupModal from '../../../modals/settings/FileWarmupModal.vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
@@ -1465,9 +1154,6 @@ export default {
 		Connection,
 		Cog,
 		DatabaseCog,
-		FileDocument,
-		CubeOutline,
-		Robot,
 		SolrWarmupModal,
 		ClearIndexModal,
 		InspectIndexModal,
@@ -1476,9 +1162,6 @@ export default {
 		ConnectionConfigModal,
 		ConfigSetManagementModal,
 		CollectionManagementModal,
-		FileManagementModal,
-		ObjectManagementModal,
-		LLMConfigModal,
 		FileWarmupModal,
 	},
 
@@ -1499,9 +1182,6 @@ export default {
 			showConnectionDialog: false,
 			showConfigSetDialog: false,
 			showCollectionDialog: false,
-			showFileManagementDialog: false,
-			showObjectManagementDialog: false,
-			showLLMConfigDialog: false,
 			showFileWarmupDialog: false,
 			solrStats: null,
 			objectStats: {
@@ -2321,21 +2001,21 @@ export default {
 </script>
 
 <style scoped>
-.solr-options {
-	margin-top: 20px;
-}
-
+/* OpenConnector pattern: Actions positioned with relative positioning and negative margins */
 .section-header-inline {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	margin-bottom: 24px;
+	gap: 1rem;
+	position: relative;
+	top: -45px;
+	margin-bottom: -40px;
+	z-index: 10;
 }
 
 .button-group {
 	display: flex;
-	gap: 12px;
-	flex-wrap: wrap;
+	gap: 0.5rem;
 	align-items: center;
 }
 
@@ -2536,8 +2216,9 @@ export default {
 	}
 
 	.section-header-inline {
+		position: static;
+		margin-bottom: 1rem;
 		flex-direction: column;
-		gap: 12px;
 		align-items: stretch;
 	}
 
