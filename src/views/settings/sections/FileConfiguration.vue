@@ -2,16 +2,114 @@
 	<NcSettingsSection name="File Configuration"
 		description="Configure file upload and text extraction settings">
 		<div v-if="!settingsStore.loadingFileSettings" class="file-settings">
+			<!-- Actions Bar -->
+			<div class="section-header-inline">
+				<span />
+				<div class="button-group">
+					<!-- File Actions Menu -->
+					<NcActions
+						:aria-label="t('openregister', 'File actions menu')"
+						:menu-name="t('openregister', 'Actions')">
+						<template #icon>
+							<DotsVertical :size="20" />
+						</template>
+
+						<!-- Extract Pending Files -->
+						<NcActionButton
+							:disabled="processingFiles"
+							@click="extractAllPendingFiles">
+							<template #icon>
+								<NcLoadingIcon v-if="processingFiles" :size="20" />
+								<FileDocumentIcon v-else :size="20" />
+							</template>
+							{{ t('openregister', 'Extract Pending Files') }}
+						</NcActionButton>
+
+						<!-- Retry Failed Extractions -->
+						<NcActionButton
+							:disabled="processingFiles"
+							@click="reprocessFailedFiles">
+							<template #icon>
+								<RefreshIcon :size="20" />
+							</template>
+							{{ t('openregister', 'Retry Failed Extractions') }}
+						</NcActionButton>
+
+						<!-- View Status -->
+						<NcActionButton @click="viewExtractionStatus">
+							<template #icon>
+								<InformationIcon :size="20" />
+							</template>
+							{{ t('openregister', 'View Status') }}
+						</NcActionButton>
+					</NcActions>
+				</div>
+			</div>
+
+			<!-- Section Description -->
+			<div class="section-description-full">
+				<p class="main-description">
+					Text extraction converts files into searchable and AI-processable content. Choose from <strong>LLPhant</strong> 
+					(local PHP processing, best for simple files) or <strong>Dolphin AI</strong> (ByteDance API, best for complex 
+					documents, OCR, tables, and formulas). Extracted text is split into chunks for embeddings and semantic search.
+				</p>
+				<p class="main-description info-note">
+					<strong>📝 Note:</strong> Text extraction is <strong>required</strong> before LLM vectorization. The process flow is: 
+					File Upload → Text Extraction → Chunking → Embedding Creation. Without text extraction enabled, files cannot be 
+					vectorized for semantic search.
+				</p>
+			</div>
+
+			<!-- Extraction Statistics Dashboard -->
+			<div v-if="extractionStats" class="file-management-section">
+				<div class="dashboard-section">
+					<div class="dashboard-stats-grid">
+						<div class="stat-card">
+							<h5>Connection Status</h5>
+							<p :class="extractorStatusClass">
+								{{ extractorStatus }}
+							</p>
+						</div>
+
+						<div class="stat-card">
+							<h5>Total Files</h5>
+							<p>{{ formatNumber(extractionStats.total || 0) }}</p>
+						</div>
+
+						<div class="stat-card">
+							<h5>Files Extracted</h5>
+							<p>{{ formatNumber(extractionStats.completed || 0) }}</p>
+						</div>
+
+						<div class="stat-card">
+							<h5>Text Chunks</h5>
+							<p>{{ formatNumber(extractionStats.totalChunks || 0) }}</p>
+						</div>
+
+						<div class="stat-card">
+							<h5>Pending Extraction</h5>
+							<p>{{ formatNumber(extractionStats.pending || 0) }}</p>
+						</div>
+
+						<div class="stat-card">
+							<h5>Failed Extractions</h5>
+							<p class="status-error">{{ formatNumber(extractionStats.failed || 0) }}</p>
+						</div>
+					</div>
+				</div>
+			</div>
+
 			<!-- Text Extraction Settings -->
 			<div class="settings-card">
 				<h4>📄 Text Extraction</h4>
 				<div class="settings-group">
 					<div class="setting-item">
 						<label for="extraction-scope">Extract Text From</label>
-						<NcSelect v-model="fileSettings.extractionScope"
-							input-id="extraction-scope"
-							:options="extractionScopes"
-							@input="saveSettings">
+					<NcSelect v-model="fileSettings.extractionScope"
+						input-id="extraction-scope"
+						input-label="Extraction Scope"
+						:options="extractionScopes"
+						@input="saveSettings">
 							<template #option="{ label, description }">
 								<div class="option-item">
 									<span class="option-label">{{ label }}</span>
@@ -26,10 +124,11 @@
 
 					<div class="setting-item">
 						<label for="text-extractor">Text Extractor</label>
-						<NcSelect v-model="fileSettings.textExtractor"
-							input-id="text-extractor"
-							:disabled="fileSettings.extractionScope.id === 'none'"
-							:options="textExtractors"
+					<NcSelect v-model="fileSettings.textExtractor"
+						input-id="text-extractor"
+						input-label="Text Extraction Engine"
+						:disabled="fileSettings.extractionScope.id === 'none'"
+						:options="textExtractors"
 							@input="saveSettings">
 							<template #option="{ label, description, icon }">
 								<div class="option-item">
@@ -88,10 +187,11 @@
 
 					<div class="setting-item">
 						<label for="extraction-mode">Extraction Mode</label>
-						<NcSelect v-model="fileSettings.extractionMode"
-							input-id="extraction-mode"
-							:disabled="fileSettings.extractionScope.id === 'none'"
-							:options="extractionModes"
+					<NcSelect v-model="fileSettings.extractionMode"
+						input-id="extraction-mode"
+						input-label="Extraction Mode"
+						:disabled="fileSettings.extractionScope.id === 'none'"
+						:options="extractionModes"
 							@input="saveSettings">
 							<template #option="{ label, description }">
 								<div class="option-item">
@@ -200,56 +300,6 @@
 				</div>
 			</div>
 
-			<!-- Manual Actions -->
-			<div class="settings-card">
-				<h4>🔧 Manual Actions</h4>
-				<div class="settings-group">
-					<div class="action-buttons">
-						<NcButton type="primary"
-							:disabled="processingFiles"
-							@click="extractAllPendingFiles">
-							<template #icon>
-								<NcLoadingIcon v-if="processingFiles" :size="20" />
-								<FileDocumentIcon v-else :size="20" />
-							</template>
-							Extract Pending Files
-						</NcButton>
-
-						<NcButton type="secondary"
-							:disabled="processingFiles"
-							@click="reprocessFailedFiles">
-							<template #icon>
-								<RefreshIcon :size="20" />
-							</template>
-							Retry Failed Extractions
-						</NcButton>
-
-						<NcButton type="tertiary"
-							@click="viewExtractionStatus">
-							<template #icon>
-								<InformationIcon :size="20" />
-							</template>
-							View Status
-						</NcButton>
-					</div>
-
-					<div v-if="extractionStats" class="extraction-stats">
-						<div class="stat-item">
-							<span class="stat-label">Pending:</span>
-							<span class="stat-value">{{ extractionStats.pending }}</span>
-						</div>
-						<div class="stat-item">
-							<span class="stat-label">Completed:</span>
-							<span class="stat-value success">{{ extractionStats.completed }}</span>
-						</div>
-						<div class="stat-item">
-							<span class="stat-label">Failed:</span>
-							<span class="stat-value error">{{ extractionStats.failed }}</span>
-						</div>
-					</div>
-				</div>
-			</div>
-
 			<!-- Save Status -->
 			<div v-if="saveMessage" class="save-message" :class="saveMessageType">
 				{{ saveMessage }}
@@ -274,6 +324,8 @@ import {
 	NcSelect,
 	NcButton,
 	NcTextField,
+	NcActions,
+	NcActionButton,
 } from '@nextcloud/vue'
 
 import FileDocumentIcon from 'vue-material-design-icons/FileDocument.vue'
@@ -282,6 +334,7 @@ import InformationIcon from 'vue-material-design-icons/Information.vue'
 import KeyIcon from 'vue-material-design-icons/Key.vue'
 import CheckIcon from 'vue-material-design-icons/Check.vue'
 import AlertCircleIcon from 'vue-material-design-icons/AlertCircle.vue'
+import DotsVertical from 'vue-material-design-icons/DotsVertical.vue'
 
 /**
  * @class FileConfiguration
@@ -307,12 +360,15 @@ export default {
 		NcSelect,
 		NcButton,
 		NcTextField,
+		NcActions,
+		NcActionButton,
 		FileDocumentIcon,
 		RefreshIcon,
 		InformationIcon,
 		KeyIcon,
 		CheckIcon,
 		AlertCircleIcon,
+		DotsVertical,
 	},
 
 	data() {
@@ -417,6 +473,38 @@ export default {
 
 	computed: {
 		...mapStores(useSettingsStore),
+
+		/**
+		 * Get extractor status
+		 */
+		extractorStatus() {
+			if (this.fileSettings.extractionScope.id === 'none') {
+				return 'Disabled'
+			}
+			if (this.fileSettings.textExtractor.id === 'dolphin') {
+				return this.dolphinConnectionTested === 'success' ? 'Connected' : 
+					   this.dolphinConnectionTested === 'error' ? 'Disconnected' : 
+					   'Not Tested'
+			}
+			return 'LLPhant (Local)'
+		},
+
+		/**
+		 * Get extractor status CSS class
+		 */
+		extractorStatusClass() {
+			const status = this.extractorStatus
+			if (status === 'Connected' || status === 'LLPhant (Local)') {
+				return 'status-connected'
+			}
+			if (status === 'Disconnected') {
+				return 'status-disconnected'
+			}
+			if (status === 'Disabled') {
+				return 'status-error'
+			}
+			return 'status-unknown'
+		},
 	},
 
 	async mounted() {
@@ -597,13 +685,124 @@ export default {
 				this.saveMessage = ''
 			}, 3000)
 		},
+
+		/**
+		 * Format number with thousands separator
+		 */
+		formatNumber(num) {
+			return new Intl.NumberFormat().format(num || 0)
+		},
 	},
 }
 </script>
 
 <style scoped>
-.file-settings {
+/* OpenConnector pattern: Actions positioned with relative positioning and negative margins */
+.section-header-inline {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 1rem;
+	position: relative;
+	top: -45px;
+	margin-bottom: -40px;
+	z-index: 10;
+}
+
+.button-group {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+}
+
+.section-description-full {
+	background: var(--color-background-hover);
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius-large);
+	padding: 20px;
+	margin-bottom: 20px;
+}
+
+.main-description {
+	color: var(--color-text-light);
+	font-size: 14px;
+	line-height: 1.6;
+	margin: 0 0 16px 0;
+}
+
+.main-description.info-note {
+	background: var(--color-background-dark);
+	border-left: 4px solid var(--color-primary-element);
+	padding: 12px 16px;
+	border-radius: var(--border-radius);
+	margin-top: 16px;
+}
+
+.main-description.info-note strong {
+	color: var(--color-primary-element);
+}
+
+.file-management-section {
+	margin-bottom: 32px;
+}
+
+.dashboard-section {
 	margin-top: 20px;
+}
+
+.dashboard-stats-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 16px;
+	margin-bottom: 24px;
+}
+
+.stat-card {
+	background: var(--color-main-background);
+	border: 2px solid var(--color-border);
+	border-radius: var(--border-radius-large);
+	padding: 20px;
+	text-align: center;
+	transition: all 0.2s ease;
+}
+
+.stat-card:hover {
+	border-color: var(--color-primary-element);
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card h5 {
+	color: var(--color-text-maxcontrast);
+	font-size: 13px;
+	font-weight: 500;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	margin: 0 0 12px 0;
+}
+
+.stat-card p {
+	color: var(--color-primary-element);
+	font-size: 32px;
+	font-weight: 700;
+	margin: 0;
+	font-variant-numeric: tabular-nums;
+}
+
+.stat-card p.status-connected {
+	color: var(--color-success);
+}
+
+.stat-card p.status-disconnected {
+	color: var(--color-error);
+}
+
+.stat-card p.status-unknown {
+	color: var(--color-text-maxcontrast);
+}
+
+.stat-card p.status-error {
+	color: var(--color-error);
 }
 
 .settings-card {
@@ -775,47 +974,6 @@ export default {
 	margin: 0;
 }
 
-.action-buttons {
-	display: flex;
-	gap: 12px;
-	flex-wrap: wrap;
-}
-
-.extraction-stats {
-	display: flex;
-	gap: 24px;
-	padding: 16px;
-	background: var(--color-background-dark);
-	border-radius: var(--border-radius);
-	margin-top: 16px;
-}
-
-.stat-item {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-}
-
-.stat-label {
-	color: var(--color-text-maxcontrast);
-	font-size: 12px;
-	text-transform: uppercase;
-}
-
-.stat-value {
-	color: var(--color-text-light);
-	font-size: 24px;
-	font-weight: bold;
-}
-
-.stat-value.success {
-	color: var(--color-success);
-}
-
-.stat-value.error {
-	color: var(--color-error);
-}
-
 .save-message {
 	padding: 12px 16px;
 	border-radius: var(--border-radius);
@@ -840,17 +998,23 @@ export default {
 }
 
 @media (max-width: 768px) {
+	.section-header-inline {
+		position: static;
+		margin-bottom: 1rem;
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.button-group {
+		justify-content: center;
+	}
+
 	.file-types-grid {
 		grid-template-columns: 1fr;
 	}
 
-	.action-buttons {
-		flex-direction: column;
-	}
-
-	.extraction-stats {
-		flex-direction: column;
-		gap: 12px;
+	.dashboard-stats-grid {
+		grid-template-columns: repeat(2, 1fr);
 	}
 }
 </style>
