@@ -1,45 +1,43 @@
 <template>
-	<NcSettingsSection name="LLM Configuration"
-		description="Configure Large Language Model settings for AI features">
-		<div class="llm-settings">
-			<!-- Actions Bar -->
-			<div class="section-header-inline">
-				<span />
-				<div class="button-group">
-					<!-- LLM Actions Menu -->
-					<NcActions
-						:aria-label="t('openregister', 'LLM actions menu')"
-						:menu-name="t('openregister', 'Actions')">
-						<template #icon>
-							<DotsVertical :size="20" />
-						</template>
+	<SettingsSection 
+		name="LLM Configuration"
+		description="Configure Large Language Model settings for AI features"
+		:loading="loading"
+		loading-message="Loading LLM configuration...">
+		<template #actions>
+			<!-- LLM Actions Menu -->
+			<NcActions
+				:aria-label="t('openregister', 'LLM actions menu')"
+				:menu-name="t('openregister', 'Actions')">
+				<template #icon>
+					<DotsVertical :size="20" />
+				</template>
 
-						<!-- LLM Configuration -->
-						<NcActionButton @click="showLLMConfigDialog = true">
-							<template #icon>
-								<Robot :size="20" />
-							</template>
-							{{ t('openregister', 'LLM Configuration') }}
-						</NcActionButton>
+				<!-- LLM Configuration -->
+				<NcActionButton @click="showLLMConfigDialog = true">
+					<template #icon>
+						<Robot :size="20" />
+					</template>
+					{{ t('openregister', 'LLM Configuration') }}
+				</NcActionButton>
 
-						<!-- File Management -->
-						<NcActionButton @click="showFileManagementDialog = true">
-							<template #icon>
-								<FileDocument :size="20" />
-							</template>
-							{{ t('openregister', 'File Management') }}
-						</NcActionButton>
+				<!-- File Management -->
+				<NcActionButton @click="showFileManagementDialog = true">
+					<template #icon>
+						<FileDocument :size="20" />
+					</template>
+					{{ t('openregister', 'File Management') }}
+				</NcActionButton>
 
-						<!-- Object Management -->
-						<NcActionButton @click="showObjectManagementDialog = true">
-							<template #icon>
-								<CubeOutline :size="20" />
-							</template>
-							{{ t('openregister', 'Object Management') }}
-						</NcActionButton>
-					</NcActions>
-				</div>
-			</div>
+				<!-- Object Management -->
+				<NcActionButton @click="showObjectManagementDialog = true">
+					<template #icon>
+						<CubeOutline :size="20" />
+					</template>
+					{{ t('openregister', 'Object Management') }}
+				</NcActionButton>
+			</NcActions>
+		</template>
 
 			<!-- Section Description -->
 			<div class="section-description-full">
@@ -377,14 +375,15 @@ export default {
 
 <style scoped>
 /* OpenConnector pattern: Actions positioned with relative positioning and negative margins */
+/* Adjusted for NcSettingsSection's internal H2 structure */
 .section-header-inline {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
 	gap: 1rem;
 	position: relative;
-	top: -45px;
-	margin-bottom: -40px;
+	top: -30px; /* Pull up to align with NcSettingsSection's H2 */
+	margin-bottom: -25px; /* Compensate for pull-up */
 	z-index: 10;
 }
 
@@ -395,6 +394,7 @@ export default {
 }
 
 .section-description-full {
+	margin-top: 25px; /* Compensate for section-header-inline's negative margin */
 	background: var(--color-background-hover);
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius-large);

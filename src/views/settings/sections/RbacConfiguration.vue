@@ -1,36 +1,31 @@
 <template>
-	<NcSettingsSection name="Role Based Access Control (RBAC)">
-		<template #description>
-			Configure access permissions and user groups
+	<SettingsSection 
+		name="Role Based Access Control (RBAC)"
+		description="Configure access permissions and user groups"
+		:loading="loading"
+		loading-message="Loading RBAC settings...">
+		<template #actions>
+			<NcButton
+				type="error"
+				:disabled="loading || saving || rebasing"
+				@click="showRebaseDialog">
+				<template #icon>
+					<NcLoadingIcon v-if="rebasing" :size="20" />
+					<Refresh v-else :size="20" />
+				</template>
+				Rebase
+			</NcButton>
+			<NcButton
+				type="primary"
+				:disabled="loading || saving || rebasing"
+				@click="saveSettings">
+				<template #icon>
+					<NcLoadingIcon v-if="saving" :size="20" />
+					<Save v-else :size="20" />
+				</template>
+				Save
+			</NcButton>
 		</template>
-
-		<div v-if="!loading" class="rbac-options">
-			<!-- Save and Rebase Buttons -->
-			<div class="section-header-inline">
-				<span />
-				<div class="button-group">
-					<NcButton
-						type="error"
-						:disabled="loading || saving || rebasing"
-						@click="showRebaseDialog">
-						<template #icon>
-							<NcLoadingIcon v-if="rebasing" :size="20" />
-							<Refresh v-else :size="20" />
-						</template>
-						Rebase
-					</NcButton>
-					<NcButton
-						type="primary"
-						:disabled="loading || saving || rebasing"
-						@click="saveSettings">
-						<template #icon>
-							<NcLoadingIcon v-if="saving" :size="20" />
-							<Save v-else :size="20" />
-						</template>
-						Save
-					</NcButton>
-				</div>
-			</div>
 
 			<!-- Section Description -->
 			<div class="section-description-full">
@@ -140,19 +135,14 @@
 				</div>
 			</div>
 		</div>
-
-		<!-- Loading State -->
-		<NcLoadingIcon v-else
-			class="loading-icon"
-			:size="64"
-			appearance="dark" />
-	</NcSettingsSection>
+	</SettingsSection>
 </template>
 
 <script>
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../../store/settings.js'
-import { NcSettingsSection, NcButton, NcLoadingIcon, NcCheckboxRadioSwitch, NcSelect } from '@nextcloud/vue'
+import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import { NcButton, NcLoadingIcon, NcCheckboxRadioSwitch, NcSelect } from '@nextcloud/vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Save from 'vue-material-design-icons/ContentSave.vue'
 
@@ -160,7 +150,7 @@ export default {
 	name: 'RbacConfiguration',
 
 	components: {
-		NcSettingsSection,
+		SettingsSection,
 		NcButton,
 		NcLoadingIcon,
 		NcCheckboxRadioSwitch,
@@ -215,23 +205,7 @@ export default {
 </script>
 
 <style scoped>
-/* OpenConnector pattern: Actions positioned with relative positioning and negative margins */
-.section-header-inline {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	gap: 1rem;
-	position: relative;
-	top: -45px;
-	margin-bottom: -40px;
-	z-index: 10;
-}
-
-.button-group {
-	display: flex;
-	gap: 0.5rem;
-	align-items: center;
-}
+/* SettingsSection handles all action button positioning and spacing */
 
 .section-description-full {
 	margin-bottom: 24px;

@@ -269,10 +269,7 @@ export default {
 </script>
 
 <style scoped>
-/* Version info section - no need for action button styles, SettingsSection handles that */
-.version-info {
-	/* Content styling only */
-}
+/* SettingsSection handles all action button positioning and spacing */
 
 /* Version card with gray background */
 .version-card {

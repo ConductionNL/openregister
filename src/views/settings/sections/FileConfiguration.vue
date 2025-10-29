@@ -698,14 +698,15 @@ export default {
 
 <style scoped>
 /* OpenConnector pattern: Actions positioned with relative positioning and negative margins */
+/* Adjusted for NcSettingsSection's internal H2 structure */
 .section-header-inline {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
 	gap: 1rem;
 	position: relative;
-	top: -45px;
-	margin-bottom: -40px;
+	top: -30px; /* Pull up to align with NcSettingsSection's H2 */
+	margin-bottom: -25px; /* Compensate for pull-up */
 	z-index: 10;
 }
 
@@ -716,6 +717,7 @@ export default {
 }
 
 .section-description-full {
+	margin-top: 37px; /* Compensate for section-header-inline's negative margin */
 	background: var(--color-background-hover);
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius-large);
