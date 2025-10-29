@@ -15,15 +15,19 @@ use OCP\Migration\IOutput;
  */
 class Version1Date20250626031231 extends SimpleMigrationStep
 {
+
+
     /**
-     * @param IOutput $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array $options
+     * @param  IOutput                   $output
+     * @param  Closure(): ISchemaWrapper $schemaClosure
+     * @param  array                     $options
      * @return null|ISchemaWrapper
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        /*
+         * @var ISchemaWrapper $schema
+         */
         $schema = $schemaClosure();
 
         // Ensure the source field in openregister_registers table has proper default
@@ -47,5 +51,8 @@ class Version1Date20250626031231 extends SimpleMigrationStep
         }
 
         return $schema;
-    }
-} 
+
+    }//end changeSchema()
+
+
+}//end class

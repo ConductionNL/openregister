@@ -19,19 +19,19 @@ webpackConfig.module.rules.push({
 		options: {
 			presets: [
 				'@babel/preset-env',
-				'@babel/preset-typescript'
+				'@babel/preset-typescript',
 			],
 			plugins: [
-				'@babel/plugin-transform-typescript'
-			]
-		}
-	}
+				'@babel/plugin-transform-typescript',
+			],
+		},
+	},
 })
 
 // Add .ts and .tsx to resolve extensions
 webpackConfig.resolve = {
 	...webpackConfig.resolve,
-	extensions: ['.ts', '.tsx', '.js', '.jsx', '.vue', '.json']
+	extensions: ['.ts', '.tsx', '.js', '.jsx', '.vue', '.json'],
 }
 
 const appId = 'openregister'
@@ -39,6 +39,10 @@ webpackConfig.entry = {
 	main: {
 		import: path.join(__dirname, 'src', 'main.js'),
 		filename: appId + '-main.js',
+	},
+	adminSettings: {
+		import: path.join(__dirname, 'src', 'settings.js'),
+		filename: appId + '-settings.js',
 	},
 }
 

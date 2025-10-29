@@ -7,12 +7,25 @@ import { dashboardStore, registerStore, searchTrailStore } from '../../store/sto
 		<div class="dashboardContent">
 			<!-- Header -->
 			<div class="viewHeader">
-				<h1 class="viewHeaderTitleIndented">
-					{{ pageTitle }}
-				</h1>
-				<p>
-					{{ t('openregister', 'Overview of system analytics and search insights') }}
-				</p>
+				<div class="headerWithActions">
+					<div class="headerContent">
+						<h1 class="viewHeaderTitleIndented">
+							{{ pageTitle }}
+						</h1>
+						<p>
+							{{ t('openregister', 'Overview of system analytics and search insights') }}
+						</p>
+					</div>
+					<div class="headerActions">
+						<NcButton type="secondary" @click="refreshDashboard">
+							<template #icon>
+								<NcLoadingIcon v-if="refreshing" :size="20" />
+								<Refresh v-else :size="20" />
+							</template>
+							{{ t('openregister', 'Refresh') }}
+						</NcButton>
+					</div>
+				</div>
 			</div>
 
 			<div v-if="dashboardStore.loading || searchTrailStore.statisticsLoading" class="error">
@@ -192,11 +205,12 @@ import { dashboardStore, registerStore, searchTrailStore } from '../../store/sto
 </template>
 
 <script>
-import { NcAppContent, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
+import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcButton } from '@nextcloud/vue'
 import VueApexCharts from 'vue-apexcharts'
 import { showError } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
 
 export default {
 	name: 'DashboardIndex',
@@ -204,14 +218,17 @@ export default {
 		NcAppContent,
 		NcEmptyContent,
 		NcLoadingIcon,
+		NcButton,
 		apexchart: VueApexCharts,
 		AlertCircle,
+		Refresh,
 	},
 	data() {
 		return {
 			expandedSchemas: [],
 			calculating: null,
 			showSchemas: {},
+			refreshing: false,
 			searchTrafficChartOptions: {
 				chart: {
 					type: 'area',
@@ -530,6 +547,23 @@ export default {
 			const apiUrl = `${baseUrl}/apps/openregister/api/registers/oas`
 			window.open(`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`, '_blank')
 		},
+
+		async refreshDashboard() {
+			this.refreshing = true
+			try {
+				// Refresh dashboard data
+				await dashboardStore.preload()
+				await dashboardStore.fetchAllChartData()
+
+				// Refresh search trail data
+				await this.loadSearchTrailData()
+			} catch (error) {
+				console.error('Error refreshing dashboard:', error)
+				showError('Failed to refresh dashboard data')
+			} finally {
+				this.refreshing = false
+			}
+		},
 	},
 }
 </script>
@@ -683,5 +717,33 @@ export default {
 	.statisticsGrid {
 		grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
 	}
+
+	.headerWithActions {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 16px;
+	}
+
+	.headerActions {
+		align-self: stretch;
+	}
+}
+
+/* Header with Actions Styles */
+.headerWithActions {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 20px;
+}
+
+.headerContent {
+	flex: 1;
+}
+
+.headerActions {
+	display: flex;
+	gap: 8px;
+	align-items: center;
 }
 </style>

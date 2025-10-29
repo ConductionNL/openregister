@@ -17,20 +17,80 @@ Schemas define the structure, validation rules, and relationships for objects in
 Schemas support various configuration options that control how objects are handled and displayed:
 
 #### Object Metadata Fields
-These configuration options define which object properties should be used for common metadata:
+These configuration options define which object properties should be used for common metadata. All fields support **dot notation** for nested properties and **twig-like templates** for combining multiple fields.
 
-- **objectNameField**: (string) A dot-notation path to the field that should be used as the object's display name
-  - Example: 'person.firstName' or 'title'
+- **objectNameField**: (string) Field path or template for the object's display name
+  - Simple path: 'naam' or 'contact.naam'
+  - Twig-like template: '{{ voornaam }} {{ tussenvoegsel }} {{ achternaam }}'
   - If not configured, the object's UUID will be used as the name
   
-- **objectDescriptionField**: (string) A dot-notation path to the field that should be used as the object's description
-  - Example: 'case.summary' or 'description'
+- **objectDescriptionField**: (string) Field path or template for the object's description
+  - Simple path: 'beschrijving' or 'case.summary'
+  - Template: '{{ type }}: {{ korte_beschrijving }}'
   - Used for object previews and search results
   
-- **objectImageField**: (string) A dot-notation path to the field that contains the image representing the object. e.g. logo
-  - Example: 'profile.avatar' or 'image'
-  - Expected to contain base64 encoded image data
+- **objectSummaryField**: (string) Field path or template for the object's summary
+  - Simple path: 'beschrijvingKort' or 'samenvatting'
+  - Template: '{{ categorie }} - {{ status }}'
+  - Used for condensed object information
+  
+- **objectImageField**: (string) Field path for the object's image
+  - Simple path: 'afbeelding' or 'profile.avatar'
+  - Expected to contain base64 encoded image data or file references
   - Used for visual representation of objects in lists and details
+
+- **objectSlugField**: (string) Field path for generating URL-friendly slugs
+  - Simple path: 'naam' or 'title'
+  - Value will be automatically converted to URL-friendly format
+  - Used for creating readable URLs and identifiers
+
+- **objectPublishedField**: (string) Field path for the publication date
+  - Simple path: 'publicatieDatum' or 'published'
+  - Supports various datetime formats (ISO 8601, MySQL datetime, etc.)
+  - Controls when objects become publicly visible
+
+- **objectDepublishedField**: (string) Field path for the depublication date
+  - Simple path: 'einddatum' or 'depublished'
+  - Supports various datetime formats
+  - Controls when objects are no longer publicly visible
+
+- **autoPublish**: (boolean) Automatically set published date on object creation
+  - When set to 'true', objects will be automatically published (published date set to now) when created
+  - Only applies to new objects - existing objects being updated are not affected
+  - If an object already has a published date (from field mapping or explicit data), auto-publish is skipped
+  - Works for both individual object creation and bulk imports
+  - Default: 'false' (disabled)
+
+##### Twig-like Template Syntax
+For combining multiple fields, use the template syntax:
+
+```json
+{
+  "objectNameField": "{{ voornaam }} {{ tussenvoegsel }} {{ achternaam }}",
+  "objectDescriptionField": "{{ type }}: {{ beschrijving }}"
+}
+```
+
+- Use `{{ fieldName }}` to reference object properties
+- Supports dot notation: `{{ contact.email }}`
+- Empty/null values are handled gracefully
+- Excess whitespace is automatically cleaned up
+
+##### Example Configuration
+```json
+{
+  "configuration": {
+    "objectNameField": "{{ voornaam }} {{ achternaam }}",
+    "objectDescriptionField": "beschrijving",
+    "objectSummaryField": "beschrijvingKort", 
+    "objectImageField": "afbeelding",
+    "objectSlugField": "naam",
+    "objectPublishedField": "publicatieDatum",
+    "objectDepublishedField": "einddatum",
+    "autoPublish": true
+  }
+}
+```
 
 #### File Handling Configuration
 These options control how files are handled within the schema:

@@ -14,7 +14,9 @@
     "lint-fix": "npm run lint -- --fix",
     "test": "jest --silent",
     "test-coverage": "jest --silent --coverage",
-    "stylelint": "stylelint src/**/*.vue src/**/*.scss src/**/*.css"
+    "stylelint": "stylelint src/**/*.vue src/**/*.scss src/**/*.css",
+    "validate-oas": "spectral lint oas-*.json --fail-severity error",
+    "download-oas": "scripts/download-oas.sh"
   },
   "browserslist": [
     "extends @nextcloud/browserslist-config"
@@ -36,6 +38,7 @@
     "bootstrap-vue": "^2.23.1",
     "css-loader": "^6.8.1",
     "lodash": "^4.17.21",
+    "marked": "^16.4.0",
     "pinia": "^2.1.7",
     "remark-cli": "^11.0.0",
     "remark-lint-list-item-indent": "^3.1.1",
@@ -63,6 +66,7 @@
     "@nextcloud/stylelint-config": "^2.4.0",
     "@nextcloud/webpack-vue-config": "^5.5.0",
     "@pinia/testing": "^0.1.3",
+    "@stoplight/spectral-cli": "^6.0.0",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.17.23",
     "@vue/test-utils": "^2.4.4",
@@ -82,7 +86,8 @@
     "stylelint-webpack-plugin": "^4.1.1",
     "ts-jest": "^29.1.2",
     "ts-loader": "^9.5.1",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "vue-router": "^3.6.5"
   },
   "overrides": {
     "vue": "^2.7.16",

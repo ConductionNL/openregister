@@ -31,6 +31,7 @@ use OCA\OpenRegister\Service\ObjectService;
 class NewFacetingExample
 {
 
+
     /**
      * Constructor for NewFacetingExample
      *
@@ -39,6 +40,7 @@ class NewFacetingExample
     public function __construct(
         private readonly ObjectService $objectService
     ) {
+
     }//end __construct()
 
 
@@ -52,16 +54,16 @@ class NewFacetingExample
     public function basicTermsFaceting(): array
     {
         $query = [
-            '@self' => ['register' => 1],
-            'status' => 'active',
+            '@self'   => ['register' => 1],
+            'status'  => 'active',
             '_facets' => [
-                '@self' => [
+                '@self'    => [
                     'register' => ['type' => 'terms'],
-                    'schema' => ['type' => 'terms']
+                    'schema'   => ['type' => 'terms'],
                 ],
-                'status' => ['type' => 'terms'],
-                'category' => ['type' => 'terms']
-            ]
+                'status'   => ['type' => 'terms'],
+                'category' => ['type' => 'terms'],
+            ],
         ];
 
         return $this->objectService->getFacetsForObjects($query);
@@ -79,23 +81,23 @@ class NewFacetingExample
     public function dateHistogramFaceting(): array
     {
         $query = [
-            '@self' => ['register' => 1],
+            '@self'   => ['register' => 1],
             '_facets' => [
-                '@self' => [
+                '@self'      => [
                     'created' => [
-                        'type' => 'date_histogram',
-                        'interval' => 'month'
+                        'type'     => 'date_histogram',
+                        'interval' => 'month',
                     ],
                     'updated' => [
-                        'type' => 'date_histogram',
-                        'interval' => 'week'
-                    ]
+                        'type'     => 'date_histogram',
+                        'interval' => 'week',
+                    ],
                 ],
                 'event_date' => [
-                    'type' => 'date_histogram',
-                    'interval' => 'day'
-                ]
-            ]
+                    'type'     => 'date_histogram',
+                    'interval' => 'day',
+                ],
+            ],
         ];
 
         return $this->objectService->getFacetsForObjects($query);
@@ -113,26 +115,26 @@ class NewFacetingExample
     public function rangeFaceting(): array
     {
         $query = [
-            '@self' => ['register' => 1],
+            '@self'   => ['register' => 1],
             '_facets' => [
                 'price' => [
-                    'type' => 'range',
+                    'type'   => 'range',
                     'ranges' => [
                         ['to' => 100],
                         ['from' => 100, 'to' => 500],
                         ['from' => 500, 'to' => 1000],
-                        ['from' => 1000]
-                    ]
+                        ['from' => 1000],
+                    ],
                 ],
-                'age' => [
-                    'type' => 'range',
+                'age'   => [
+                    'type'   => 'range',
                     'ranges' => [
                         ['to' => 18],
                         ['from' => 18, 'to' => 65],
-                        ['from' => 65]
-                    ]
-                ]
-            ]
+                        ['from' => 65],
+                    ],
+                ],
+            ],
         ];
 
         return $this->objectService->getFacetsForObjects($query);
@@ -151,58 +153,60 @@ class NewFacetingExample
     {
         $query = [
             // Base filters
-            '@self' => [
-                'register' => 1, // Products register
-                'schema' => 2     // Product schema
+            '@self'      => [
+                'register' => 1,
+        // Products register
+                'schema'   => 2,
+        // Product schema
             ],
-            'category' => 'electronics',
-            'in_stock' => true,
+            'category'   => 'electronics',
+            'in_stock'   => true,
             '_published' => true,
-            '_search' => 'smartphone',
-            
+            '_search'    => 'smartphone',
+
             // Comprehensive faceting
-            '_facets' => [
+            '_facets'    => [
                 // Metadata facets
-                '@self' => [
+                '@self'        => [
                     'register' => ['type' => 'terms'],
-                    'schema' => ['type' => 'terms'],
-                    'created' => [
-                        'type' => 'date_histogram',
-                        'interval' => 'month'
-                    ]
+                    'schema'   => ['type' => 'terms'],
+                    'created'  => [
+                        'type'     => 'date_histogram',
+                        'interval' => 'month',
+                    ],
                 ],
-                
+
                 // Product attribute facets
-                'category' => ['type' => 'terms'],
-                'brand' => ['type' => 'terms'],
-                'color' => ['type' => 'terms'],
-                'size' => ['type' => 'terms'],
-                'condition' => ['type' => 'terms'],
+                'category'     => ['type' => 'terms'],
+                'brand'        => ['type' => 'terms'],
+                'color'        => ['type' => 'terms'],
+                'size'         => ['type' => 'terms'],
+                'condition'    => ['type' => 'terms'],
                 'availability' => ['type' => 'terms'],
-                
+
                 // Price range facets
-                'price' => [
-                    'type' => 'range',
+                'price'        => [
+                    'type'   => 'range',
                     'ranges' => [
                         ['to' => 50],
                         ['from' => 50, 'to' => 100],
                         ['from' => 100, 'to' => 250],
                         ['from' => 250, 'to' => 500],
-                        ['from' => 500]
-                    ]
+                        ['from' => 500],
+                    ],
                 ],
-                
+
                 // Rating range facets
-                'rating' => [
-                    'type' => 'range',
+                'rating'       => [
+                    'type'   => 'range',
                     'ranges' => [
                         ['from' => 4.5],
                         ['from' => 4.0, 'to' => 4.5],
                         ['from' => 3.0, 'to' => 4.0],
-                        ['to' => 3.0]
-                    ]
-                ]
-            ]
+                        ['to' => 3.0],
+                    ],
+                ],
+            ],
         ];
 
         return $this->objectService->getFacetsForObjects($query);
@@ -220,27 +224,27 @@ class NewFacetingExample
     public function paginatedSearchWithFacets(): array
     {
         $query = [
-            '@self' => ['register' => 1],
-            'status' => 'active',
-            '_limit' => 20,
-            '_page' => 1,
-            '_order' => [
+            '@self'   => ['register' => 1],
+            'status'  => 'active',
+            '_limit'  => 20,
+            '_page'   => 1,
+            '_order'  => [
                 '@self.created' => 'DESC',
-                'priority' => 'ASC'
+                'priority'      => 'ASC',
             ],
             '_facets' => [
-                '@self' => [
+                '@self'    => [
                     'register' => ['type' => 'terms'],
-                    'schema' => ['type' => 'terms'],
-                    'created' => [
-                        'type' => 'date_histogram',
-                        'interval' => 'month'
-                    ]
+                    'schema'   => ['type' => 'terms'],
+                    'created'  => [
+                        'type'     => 'date_histogram',
+                        'interval' => 'month',
+                    ],
                 ],
-                'status' => ['type' => 'terms'],
+                'status'   => ['type' => 'terms'],
                 'priority' => ['type' => 'terms'],
-                'category' => ['type' => 'terms']
-            ]
+                'category' => ['type' => 'terms'],
+            ],
         ];
 
         // This returns: results, total, page, pages, limit, offset, facets, next, prev
@@ -260,39 +264,38 @@ class NewFacetingExample
     {
         // OLD WAY (deprecated - don't use):
         // $oldFacets = $objectService->getFacets(['status' => 'active'], 'search term');
-        
         // NEW WAY (current approach):
         $newQuery = [
-            '@self' => [
+            '@self'   => [
                 'register' => $this->objectService->getRegister(),
-                'schema' => $this->objectService->getSchema()
+                'schema'   => $this->objectService->getSchema(),
             ],
-            'status' => 'active',
+            'status'  => 'active',
             '_search' => 'search term',
             '_facets' => [
-                '@self' => [
+                '@self'  => [
                     'register' => ['type' => 'terms'],
-                    'schema' => ['type' => 'terms']
+                    'schema'   => ['type' => 'terms'],
                 ],
-                'status' => ['type' => 'terms']
-            ]
+                'status' => ['type' => 'terms'],
+            ],
         ];
-        
+
         $newFacets = $this->objectService->getFacetsForObjects($newQuery);
-        
+
         return [
             'migration_notes' => [
                 'old_method' => 'getFacets() with simple filters',
                 'new_method' => 'getFacetsForObjects() with _facets configuration',
-                'benefits' => [
+                'benefits'   => [
                     'More flexible facet types (terms, date_histogram, range)',
                     'Better performance with disjunctive faceting',
                     'Consistent query structure with searchObjects',
                     'Enhanced metadata support',
-                    'Future-proof architecture'
-                ]
+                    'Future-proof architecture',
+                ],
             ],
-            'new_facets' => $newFacets
+            'new_facets'      => $newFacets,
         ];
 
     }//end migrationExample()
@@ -309,47 +312,53 @@ class NewFacetingExample
     {
         $query = [
             // Complex metadata filters
-            '@self' => [
-                'register' => [1, 2, 3],        // Multiple registers
-                'organisation' => 'IS NOT NULL', // Has organisation
-                'owner' => 'user123'             // Specific owner
+            '@self'        => [
+                'register'     => [1, 2, 3],
+        // Multiple registers
+                'organisation' => 'IS NOT NULL',
+        // Has organisation
+                'owner'        => 'user123',
+        // Specific owner
             ],
-            
+
             // Complex object field filters
-            'status' => ['active', 'pending'],   // Multiple statuses
-            'priority' => 'high',                // Single priority
-            'address.city' => 'Amsterdam',       // Nested field
-            'tags' => ['vip', 'customer'],       // Array search
-            
+            'status'       => ['active', 'pending'],
+            // Multiple statuses
+            'priority'     => 'high',
+            // Single priority
+            'address.city' => 'Amsterdam',
+            // Nested field
+            'tags'         => ['vip', 'customer'],
+            // Array search
             // Search and options
-            '_search' => 'important project',
-            '_published' => true,
-            
+            '_search'      => 'important project',
+            '_published'   => true,
+
             // Comprehensive faceting
-            '_facets' => [
-                '@self' => [
-                    'register' => ['type' => 'terms'],
-                    'schema' => ['type' => 'terms'],
+            '_facets'      => [
+                '@self'        => [
+                    'register'     => ['type' => 'terms'],
+                    'schema'       => ['type' => 'terms'],
                     'organisation' => ['type' => 'terms'],
-                    'created' => [
-                        'type' => 'date_histogram',
-                        'interval' => 'month'
-                    ]
+                    'created'      => [
+                        'type'     => 'date_histogram',
+                        'interval' => 'month',
+                    ],
                 ],
-                'status' => ['type' => 'terms'],
-                'priority' => ['type' => 'terms'],
-                'category' => ['type' => 'terms'],
+                'status'       => ['type' => 'terms'],
+                'priority'     => ['type' => 'terms'],
+                'category'     => ['type' => 'terms'],
                 'address.city' => ['type' => 'terms'],
-                'budget' => [
-                    'type' => 'range',
+                'budget'       => [
+                    'type'   => 'range',
                     'ranges' => [
                         ['to' => 1000],
                         ['from' => 1000, 'to' => 5000],
                         ['from' => 5000, 'to' => 10000],
-                        ['from' => 10000]
-                    ]
-                ]
-            ]
+                        ['from' => 10000],
+                    ],
+                ],
+            ],
         ];
 
         return $this->objectService->getFacetsForObjects($query);
@@ -368,31 +377,37 @@ class NewFacetingExample
     {
         $query = [
             // Use specific filters to reduce dataset
-            '@self' => [
-                'register' => 1,                 // Single register for better performance
-                'schema' => 2                    // Single schema for better performance
+            '@self'      => [
+                'register' => 1,
+        // Single register for better performance
+                'schema'   => 2,
+        // Single schema for better performance
             ],
-            'status' => 'active',                // Pre-filter to reduce dataset
-            '_published' => true,                // Only published objects
-            
+            'status'     => 'active',
+            // Pre-filter to reduce dataset
+            '_published' => true,
+            // Only published objects
             // Focused faceting - only what's needed
-            '_facets' => [
+            '_facets'    => [
                 // Only essential metadata facets
-                '@self' => [
-                    'schema' => ['type' => 'terms']  // Only schema facet needed
+                '@self'    => [
+                    'schema' => ['type' => 'terms'],
+            // Only schema facet needed
                 ],
-                
+
                 // Only essential object field facets
-                'category' => ['type' => 'terms'],   // Main category filter
-                'priority' => ['type' => 'terms']    // Priority filter
-                
+                'category' => ['type' => 'terms'],
+                // Main category filter
+                'priority' => ['type' => 'terms'],
+                // Priority filter
                 // Note: Avoid too many facets as they impact performance
                 // Note: Date histograms and ranges are more expensive than terms
-            ]
+            ],
         ];
 
         return $this->objectService->getFacetsForObjects($query);
 
     }//end performanceOptimizedFaceting()
 
-}//end class 
+
+}//end class

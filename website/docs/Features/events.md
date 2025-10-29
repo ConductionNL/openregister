@@ -61,6 +61,9 @@ Events related to object lifecycle:
 - **ObjectCreatedEvent**: Triggered when a new object is created
 - **ObjectUpdatedEvent**: Triggered when an object is updated
 - **ObjectDeletedEvent**: Triggered when an object is deleted
+- **ObjectCreatingEvent**: Triggered just before an object is created
+- **ObjectUpdatingEvent**: Triggered just before an object is updated
+- **ObjectDeletingEvent**: Triggered just before an object is deleted
 
 ### 4. File Events
 

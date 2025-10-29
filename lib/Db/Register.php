@@ -153,9 +153,9 @@ class Register extends Entity implements JsonSerializable
      *   'delete' => ['group-admin']
      * ]
      *
-     * @var array|null
+     * @var         array|null
      * @phpstan-var array<string, array<string>>|null
-     * @psalm-var array<string, list<string>>|null
+     * @psalm-var   array<string, list<string>>|null
      */
     protected ?array $groups = [];
 
@@ -219,18 +219,24 @@ class Register extends Entity implements JsonSerializable
         if (is_string($schemas)) {
             $schemas = json_decode($schemas, true) ?: [];
         }
+
         if (!is_array($schemas)) {
             $schemas = [];
         }
+
         // Only keep IDs (int or string)
-        $schemas = array_filter($schemas, function ($item) {
-            return is_int($item) || is_string($item);
-        });
+        $schemas = array_filter(
+                $schemas,
+                function ($item) {
+                    return is_int($item) || is_string($item);
+                }
+                );
 
         parent::setSchemas($schemas);
 
         return $this;
-    }
+
+    }//end setSchemas()
 
 
     /**
@@ -315,9 +321,12 @@ class Register extends Entity implements JsonSerializable
         }
 
         // Always return schemas as array of IDs (int/string)
-        $schemas = array_filter($this->schemas ?? [], function ($item) {
-            return is_int($item) || is_string($item);
-        });
+        $schemas = array_filter(
+                $this->schemas ?? [],
+                function ($item) {
+                    return is_int($item) || is_string($item);
+                }
+                );
 
         return [
             'id'            => $this->id,
@@ -341,6 +350,32 @@ class Register extends Entity implements JsonSerializable
         ];
 
     }//end jsonSerialize()
+
+
+    /**
+     * String representation of the register
+     *
+     * This magic method is required for proper entity handling in Nextcloud
+     * when the framework needs to convert the object to a string.
+     *
+     * @return string String representation of the register
+     */
+    public function __toString(): string
+    {
+        // Return the register title if available, otherwise return a descriptive string
+        if ($this->title !== null && $this->title !== '') {
+            return $this->title;
+        }
+
+        // Fallback to slug if title is not available
+        if ($this->slug !== null && $this->slug !== '') {
+            return $this->slug;
+        }
+
+        // Final fallback with ID
+        return 'Register #'.($this->id ?? 'unknown');
+
+    }//end __toString()
 
 
 }//end class

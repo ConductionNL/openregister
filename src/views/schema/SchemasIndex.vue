@@ -1,6 +1,5 @@
 <script setup>
 import { schemaStore, navigationStore } from '../../store/store.js'
-import formatBytes from '../../services/formatBytes.js'
 </script>
 
 <template>
@@ -114,6 +113,18 @@ import formatBytes from '../../services/formatBytes.js'
 										</template>
 										Download
 									</NcActionButton>
+									<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('exploreSchema')">
+										<template #icon>
+											<DatabaseSearch :size="20" />
+										</template>
+										Analyze Properties
+									</NcActionButton>
+									<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('validateSchema')">
+										<template #icon>
+											<CheckCircle :size="20" />
+										</template>
+										Validate Objects
+									</NcActionButton>
 									<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
 										close-after-click
 										:disabled="schema.stats?.objects?.total > 0"
@@ -123,7 +134,25 @@ import formatBytes from '../../services/formatBytes.js'
 										</template>
 										Delete
 									</NcActionButton>
-									<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setSelected('schemaDetails')">
+									<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Delete all objects in this schema' : 'No objects to delete'"
+										close-after-click
+										:disabled="schema.stats?.objects?.total === 0"
+										@click="schemaStore.setSchemaItem(schema); navigationStore.setModal('deleteSchemaObjects')">
+										<template #icon>
+											<DeleteSweep :size="20" />
+										</template>
+										Delete Objects
+									</NcActionButton>
+									<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Publish all objects in this schema' : 'No objects to publish'"
+										close-after-click
+										:disabled="schema.stats?.objects?.total === 0"
+										@click="schemaStore.setSchemaItem(schema); navigationStore.setModal('publishSchemaObjects')">
+										<template #icon>
+											<CheckCircle :size="20" />
+										</template>
+										Publish Objects
+									</NcActionButton>
+									<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); $router.push(`/schemas/${schema.id}`)">
 										<template #icon>
 											<InformationOutline :size="20" />
 										</template>
@@ -131,124 +160,47 @@ import formatBytes from '../../services/formatBytes.js'
 									</NcActionButton>
 								</NcActions>
 							</div>
-							<!-- Toggle between stats and properties -->
-							<div v-if="!schema.showProperties">
-								<table class="statisticsTable schemaStats">
-									<thead>
-										<tr>
-											<th>{{ t('openregister', 'Type') }}</th>
-											<th>{{ t('openregister', 'Total') }}</th>
-											<th>{{ t('openregister', 'Size') }}</th>
-										</tr>
-									</thead>
-									<tbody>
-										<tr>
-											<td>{{ t('openregister', 'Registers') }}</td>
-											<td>{{ schema.stats?.registers ?? 0 }}</td>
-											<td>-</td>
-										</tr>
-										<tr>
-											<td>{{ t('openregister', 'Properties') }}</td>
-											<td>{{ Object.keys(schema.properties).length }}</td>
-											<td>-</td>
-										</tr>
-										<tr>
-											<td>{{ t('openregister', 'Objects') }}</td>
-											<td>{{ schema.stats?.objects?.total || 0 }}</td>
-											<td>{{ formatBytes(schema.stats?.objects?.size || 0) }}</td>
-										</tr>
-										<tr class="subRow">
-											<td class="indented">
-												{{ t('openregister', 'Invalid') }}
-											</td>
-											<td>{{ schema.stats?.objects?.invalid || 0 }}</td>
-											<td>-</td>
-										</tr>
-										<tr class="subRow">
-											<td class="indented">
-												{{ t('openregister', 'Deleted') }}
-											</td>
-											<td>{{ schema.stats?.objects?.deleted || 0 }}</td>
-											<td>-</td>
-										</tr>
-										<tr class="subRow">
-											<td class="indented">
-												{{ t('openregister', 'Locked') }}
-											</td>
-											<td>{{ schema.stats?.objects?.locked || 0 }}</td>
-											<td>-</td>
-										</tr>
-										<tr class="subRow">
-											<td class="indented">
-												{{ t('openregister', 'Published') }}
-											</td>
-											<td>{{ schema.stats?.objects?.published || 0 }}</td>
-											<td>-</td>
-										</tr>
-										<tr>
-											<td>{{ t('openregister', 'Logs') }}</td>
-											<td>{{ schema.stats?.logs?.total || 0 }}</td>
-											<td>{{ formatBytes(schema.stats?.logs?.size || 0) }}</td>
-										</tr>
-										<tr>
-											<td>{{ t('openregister', 'Files') }}</td>
-											<td>{{ schema.stats?.files?.total || 0 }}</td>
-											<td>{{ formatBytes(schema.stats?.files?.size || 0) }}</td>
-										</tr>
-									</tbody>
-								</table>
-							</div>
-							<div v-else>
-								<table class="statisticsTable schemaStats">
-									<thead>
-										<tr>
-											<th>{{ t('openregister', 'Name') }}</th>
-											<th>{{ t('openregister', 'Type') }}</th>
-											<th>{{ t('openregister', 'Actions') }}</th>
-										</tr>
-									</thead>
-									<tbody>
-										<tr v-for="(property, key) in sortedProperties(schema)" :key="key">
-											<td>{{ key }} <span v-if="isPropertyRequired(schema, key)" class="required-indicator">({{ t('openregister', 'required') }})</span></td>
-											<td>{{ property.type }}</td>
-											<td>
-												<NcActions :primary="false">
-													<NcActionButton close-after-click
-														:aria-label="'Edit ' + key"
-														@click="schemaStore.setSchemaPropertyKey(key); schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchemaProperty')">
-														<template #icon>
-															<Pencil :size="16" />
-														</template>
-														Edit
-													</NcActionButton>
-													<NcActionButton close-after-click
-														:aria-label="'Delete ' + key"
-														@click="schemaStore.setSchemaPropertyKey(key); schemaStore.setSchemaItem(schema); navigationStore.setModal('deleteSchemaProperty')">
-														<template #icon>
-															<TrashCanOutline :size="16" />
-														</template>
-														Delete
-													</NcActionButton>
-												</NcActions>
-											</td>
-										</tr>
-										<tr v-if="!Object.keys(schema.properties).length">
-											<td colspan="3">
-												No properties found
-											</td>
-										</tr>
-									</tbody>
-								</table>
-							</div>
-
-							<!-- Toggle button -->
-							<NcButton @click="schema.showProperties = !schema.showProperties">
-								<template #icon>
-									<TableIcon v-if="schema.showProperties" :size="20" />
-									<ListIcon v-else :size="20" />
-								</template>
-								{{ schema.showProperties ? 'Show Stats' : 'Show Properties' }}
-							</NcButton>
+							<!-- Show properties table -->
+							<table class="statisticsTable schemaStats">
+								<thead>
+									<tr>
+										<th>{{ t('openregister', 'Name') }}</th>
+										<th>{{ t('openregister', 'Type') }}</th>
+										<th>{{ t('openregister', 'Actions') }}</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr v-for="(property, key) in sortedProperties(schema)" :key="key">
+										<td>{{ key }} <span v-if="isPropertyRequired(schema, key)" class="required-indicator">({{ t('openregister', 'required') }})</span></td>
+										<td>{{ property.type }}</td>
+										<td>
+											<NcActions :primary="false">
+												<NcActionButton close-after-click
+													:aria-label="'Edit ' + key"
+													@click="schemaStore.setSchemaPropertyKey(key); schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchemaProperty')">
+													<template #icon>
+														<Pencil :size="16" />
+													</template>
+													Edit
+												</NcActionButton>
+												<NcActionButton close-after-click
+													:aria-label="'Delete ' + key"
+													@click="schemaStore.setSchemaPropertyKey(key); schemaStore.setSchemaItem(schema); navigationStore.setModal('deleteSchemaProperty')">
+													<template #icon>
+														<TrashCanOutline :size="16" />
+													</template>
+													Delete
+												</NcActionButton>
+											</NcActions>
+										</td>
+									</tr>
+									<tr v-if="!Object.keys(schema.properties).length">
+										<td colspan="3">
+											No properties found
+										</td>
+									</tr>
+								</tbody>
+							</table>
 						</div>
 					</div>
 				</template>
@@ -264,10 +216,7 @@ import formatBytes from '../../services/formatBytes.js'
 											@update:checked="toggleSelectAll" />
 									</th>
 									<th>{{ t('openregister', 'Title') }}</th>
-									<th>{{ t('openregister', 'Objects (Total/Size)') }}</th>
-									<th>{{ t('openregister', 'Logs (Total/Size)') }}</th>
-									<th>{{ t('openregister', 'Files (Total/Size)') }}</th>
-									<th>{{ t('openregister', 'Registers') }}</th>
+									<th>{{ t('openregister', 'Properties') }}</th>
 									<th>{{ t('openregister', 'Created') }}</th>
 									<th>{{ t('openregister', 'Updated') }}</th>
 									<th class="tableColumnActions">
@@ -291,10 +240,7 @@ import formatBytes from '../../services/formatBytes.js'
 											<span v-if="schema.description" class="textDescription textEllipsis">{{ schema.description }}</span>
 										</div>
 									</td>
-									<td>{{ schema.stats?.objects?.total || 0 }}/{{ formatBytes(schema.stats?.objects?.size || 0) }}</td>
-									<td>{{ schema.stats?.logs?.total || 0 }}/{{ formatBytes(schema.stats?.logs?.size || 0) }}</td>
-									<td>{{ schema.stats?.files?.total || 0 }}/{{ formatBytes(schema.stats?.files?.size || 0) }}</td>
-									<td>{{ schema.stats?.registers|| 0 }}</td>
+									<td>{{ Object.keys(schema.properties || {}).length }}</td>
 									<td>{{ schema.created ? new Date(schema.created).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(schema.created).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}</td>
 									<td>{{ schema.updated ? new Date(schema.updated).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(schema.updated).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}</td>
 									<td class="tableColumnActions">
@@ -320,6 +266,18 @@ import formatBytes from '../../services/formatBytes.js'
 												</template>
 												Download
 											</NcActionButton>
+											<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('exploreSchema')">
+												<template #icon>
+													<DatabaseSearch :size="20" />
+												</template>
+												Analyze Properties
+											</NcActionButton>
+											<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('validateSchema')">
+												<template #icon>
+													<CheckCircle :size="20" />
+												</template>
+												Validate Objects
+											</NcActionButton>
 											<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
 												close-after-click
 												:disabled="schema.stats?.objects?.total > 0"
@@ -329,7 +287,16 @@ import formatBytes from '../../services/formatBytes.js'
 												</template>
 												Delete
 											</NcActionButton>
-											<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setSelected('schemaDetails')">
+											<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Delete all objects in this schema' : 'No objects to delete'"
+												close-after-click
+												:disabled="schema.stats?.objects?.total === 0"
+												@click="schemaStore.setSchemaItem(schema); navigationStore.setModal('deleteSchemaObjects')">
+												<template #icon>
+													<DeleteSweep :size="20" />
+												</template>
+												Delete Objects
+											</NcActionButton>
+											<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); $router.push(`/schemas/${schema.id}`)">
 												<template #icon>
 													<InformationOutline :size="20" />
 												</template>
@@ -359,7 +326,7 @@ import formatBytes from '../../services/formatBytes.js'
 </template>
 
 <script>
-import { NcAppContent, NcEmptyContent, NcActions, NcActionButton, NcCheckboxRadioSwitch, NcButton } from '@nextcloud/vue'
+import { NcAppContent, NcEmptyContent, NcActions, NcActionButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
@@ -367,8 +334,10 @@ import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
-import TableIcon from 'vue-material-design-icons/Table.vue'
-import ListIcon from 'vue-material-design-icons/FormatListBulleted.vue'
+import DatabaseSearch from 'vue-material-design-icons/DatabaseSearch.vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import DeleteSweep from 'vue-material-design-icons/DeleteSweep.vue'
+
 import Plus from 'vue-material-design-icons/Plus.vue'
 
 import PaginationComponent from '../../components/PaginationComponent.vue'
@@ -388,11 +357,12 @@ export default {
 		Download,
 		Refresh,
 		InformationOutline,
-		TableIcon,
-		ListIcon,
+		DatabaseSearch,
+		CheckCircle,
+		DeleteSweep,
+
 		Plus,
 		PaginationComponent,
-		NcButton,
 	},
 	data() {
 		return {

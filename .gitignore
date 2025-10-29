@@ -18,8 +18,38 @@
 /coverage/
 /coverage-frontend/
 
+# Quality reports
+/quality-reports/
+quality-baseline.json
+
 # Data files
 *.csv
 *.xls
 *.xlsx
 
+
+*.
+
+# Files with unusual extensions or no extensions that could be mistakes
+**/PR *
+**/adds *
+**/implements *
+**/ALL *
+**/endpoints *
+**/*Analysis*
+**/*references*
+**/*encoding*
+**/ter
+**/clearCache*
+**/update*Settings*
+**/rebase*
+**/setup*
+
+# Temporary test files that shouldn't be committed
+simple-solr-test.php
+test-solr-connection.php
+
+# Files with unusual extensions or no extensions that could be mistakes
+**/PR *
+**/adds *
+**/implements *

@@ -65,13 +65,16 @@ class MetaDataFacetHandler
      */
     public function getTermsFacet(string $field, array $baseQuery=[]): array
     {
-        $queryBuilder = $this->db->getQueryBuilder();
+        // FACET FIX: Map @self metadata field names to actual database columns
+        $actualField = $this->mapMetadataFieldToColumn($field);
         
-        // Build aggregation query
-        $queryBuilder->select($field, $queryBuilder->createFunction('COUNT(*) as doc_count'))
+        $queryBuilder = $this->db->getQueryBuilder();
+
+        // Build aggregation query using the actual database column
+        $queryBuilder->select($actualField, $queryBuilder->createFunction('COUNT(*) as doc_count'))
             ->from('openregister_objects')
-            ->where($queryBuilder->expr()->isNotNull($field))
-            ->groupBy($field)
+            ->where($queryBuilder->expr()->isNotNull($actualField))
+            ->groupBy($actualField)
             ->orderBy('doc_count', 'DESC');
         // Note: Still using doc_count in ORDER BY as it's the SQL alias
         // Apply base filters (this would be implemented to apply the base query filters)
@@ -81,9 +84,9 @@ class MetaDataFacetHandler
         $buckets = [];
 
         while ($row = $result->fetch()) {
-            $key   = $row[$field];
+            $key   = $row[$actualField];
             $label = $this->getFieldLabel($field, $key);
-            
+
             $buckets[] = [
                 'key'     => $key,
                 'results' => (int) $row['doc_count'],
@@ -97,6 +100,35 @@ class MetaDataFacetHandler
         ];
 
     }//end getTermsFacet()
+
+
+    /**
+     * Map @self metadata field names to actual database columns
+     *
+     * FACET FIX: Maps @self metadata field names (like 'register', 'schema', 'organisation')
+     * to their corresponding database column names in the openregister_objects table.
+     *
+     * @param string $field The @self metadata field name
+     *
+     * @return string The actual database column name
+     */
+    private function mapMetadataFieldToColumn(string $field): string
+    {
+        // Map @self metadata fields to database columns
+        $fieldMappings = [
+            'register' => 'register',         // @self.register -> register column (stores register ID)
+            'schema' => 'schema',             // @self.schema -> schema column (stores schema ID) 
+            'organisation' => 'organisation', // @self.organisation -> organisation column (stores org UUID)
+            'created' => 'created',           // @self.created -> created column
+            'updated' => 'updated',           // @self.updated -> updated column
+            'published' => 'published',       // @self.published -> published column
+            'owner' => 'owner',               // @self.owner -> owner column
+            // Add more mappings as needed for other @self metadata fields
+        ];
+
+        // Return the mapped column name or original field name if no mapping exists
+        return $fieldMappings[$field] ?? $field;
+    }//end mapMetadataFieldToColumn()
 
 
     /**
@@ -123,10 +155,10 @@ class MetaDataFacetHandler
     public function getDateHistogramFacet(string $field, string $interval, array $baseQuery=[]): array
     {
         $queryBuilder = $this->db->getQueryBuilder();
-        
+
         // Build date histogram query based on interval
         $dateFormat = $this->getDateFormatForInterval($interval);
-        
+
         $queryBuilder->selectAlias(
                 $queryBuilder->createFunction("DATE_FORMAT($field, '$dateFormat')"),
                 'date_key'
@@ -186,7 +218,7 @@ class MetaDataFacetHandler
 
         foreach ($ranges as $range) {
             $queryBuilder = $this->db->getQueryBuilder();
-            
+
             $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
                 ->from('openregister_objects')
                 ->where($queryBuilder->expr()->isNotNull($field));
@@ -986,12 +1018,12 @@ class MetaDataFacetHandler
         foreach ($metadataFields as $field => $config) {
             if ($this->hasFieldData($field, $baseQuery)) {
                 $fieldConfig = $config;
-                
+
                 // Add sample values for categorical fields
                 if ($config['type'] === 'categorical') {
                     $fieldConfig['sample_values'] = $this->getSampleValues($field, $baseQuery, 10);
                 }
-                
+
                 // Add date range for date fields
                 if ($config['type'] === 'date') {
                     $dateRange = $this->getDateRange($field, $baseQuery);
@@ -999,7 +1031,7 @@ class MetaDataFacetHandler
                         $fieldConfig['date_range'] = $dateRange;
                     }
                 }
-                
+
                 $facetableFields[$field] = $fieldConfig;
             }
         }
@@ -1028,7 +1060,7 @@ class MetaDataFacetHandler
     private function hasFieldData(string $field, array $baseQuery): bool
     {
         $queryBuilder = $this->db->getQueryBuilder();
-        
+
         $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count')
             ->from('openregister_objects')
             ->where($queryBuilder->expr()->isNotNull($field));
@@ -1066,7 +1098,7 @@ class MetaDataFacetHandler
     private function getSampleValues(string $field, array $baseQuery, int $limit): array
     {
         $queryBuilder = $this->db->getQueryBuilder();
-        
+
         $queryBuilder->select($field)
             ->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count')
             ->from('openregister_objects')
@@ -1084,7 +1116,7 @@ class MetaDataFacetHandler
         while ($row = $result->fetch()) {
             $value = $row[$field];
             $label = $this->getFieldLabel($field, $value);
-            
+
             $samples[] = [
                 'value' => $value,
                 'label' => $label,
@@ -1116,7 +1148,7 @@ class MetaDataFacetHandler
     private function getDateRange(string $field, array $baseQuery): ?array
     {
         $queryBuilder = $this->db->getQueryBuilder();
-        
+
         $queryBuilder->selectAlias($queryBuilder->createFunction("MIN($field)"), 'min_date')
             ->selectAlias($queryBuilder->createFunction("MAX($field)"), 'max_date')
             ->from('openregister_objects')
@@ -1140,4 +1172,4 @@ class MetaDataFacetHandler
     }//end getDateRange()
 
 
-}//end class 
+}//end class

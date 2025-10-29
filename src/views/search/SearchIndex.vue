@@ -27,6 +27,9 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 					<span v-if="objectStore.selectedObjects.length > 0" class="viewIndicator">
 						({{ t('openregister', '{count} selected', { count: objectStore.selectedObjects.length }) }})
 					</span>
+					<span v-if="objectStore.objectList?._source" class="sourceIndicator" :class="'source-' + objectStore.objectList._source">
+						{{ getSourceLabel(objectStore.objectList._source) }}
+					</span>
 				</div>
 				<div class="viewActions">
 					<!-- Mass Actions Dropdown -->
@@ -237,12 +240,6 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 										<NcActions class="actionsButton">
 											<NcActionButton close-after-click @click="navigationStore.setModal('viewObject'); objectStore.setObjectItem(result)">
 												<template #icon>
-													<Eye :size="20" />
-												</template>
-												View
-											</NcActionButton>
-											<NcActionButton close-after-click @click="navigationStore.setModal('editObject'); objectStore.setObjectItem(result)">
-												<template #icon>
 													<Pencil :size="20" />
 												</template>
 												Edit
@@ -318,7 +315,6 @@ import { VueDraggable } from 'vue-draggable-plus'
 import getValidISOstring from '../../services/getValidISOstring.js'
 import formatBytes from '../../services/formatBytes.js'
 
-import Eye from 'vue-material-design-icons/Eye.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
@@ -350,7 +346,6 @@ export default {
 		NcActionText,
 		NcCounterBubble,
 		VueDraggable,
-		Eye,
 		Pencil,
 		Delete,
 		Plus,
@@ -550,7 +545,14 @@ export default {
 		addObject() {
 			// Clear any existing object and open the add object modal
 			objectStore.setObjectItem(null)
-			navigationStore.setModal('editObject')
+			// Ensure register and schema are set for new object creation
+			if (registerStore.registerItem) {
+				registerStore.setRegisterItem(registerStore.registerItem)
+			}
+			if (schemaStore.schemaItem) {
+				schemaStore.setSchemaItem(schemaStore.schemaItem)
+			}
+			navigationStore.setModal('viewObject')
 		},
 		refreshObjects() {
 			// Refresh the object list
@@ -570,6 +572,14 @@ export default {
 		},
 		getValidISOstring,
 		formatBytes,
+		getSourceLabel(source) {
+			const sourceLabels = {
+				index: '🔍 SOLR Index',
+				database: '💾 Database',
+				auto: '🤖 Auto',
+			}
+			return sourceLabels[source] || source
+		},
 		/**
 		 * Publish a single object
 		 * @param {object} result - The object to publish
@@ -824,5 +834,30 @@ input[type="checkbox"] {
 
 .table-row-selected {
 	background-color: var(--color-primary-light) !important;
+}
+
+/* Source indicator styling */
+.sourceIndicator {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 12px;
+	font-size: 12px;
+	font-weight: 500;
+	margin-left: 8px;
+}
+
+.source-index {
+	background-color: var(--color-success-light);
+	color: var(--color-success-dark);
+}
+
+.source-database {
+	background-color: var(--color-warning-light);
+	color: var(--color-warning-dark);
+}
+
+.source-auto {
+	background-color: var(--color-info-light);
+	color: var(--color-info-dark);
 }
 </style>

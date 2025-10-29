@@ -24,35 +24,43 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 						<template #icon>
 							<DotsHorizontal :size="20" />
 						</template>
+						<NcActionButton close-after-click
+							@click="viewOrganisation">
+							<template #icon>
+								<Eye :size="20" />
+							</template>
+							View
+						</NcActionButton>
+						<NcActionButton v-if="canEdit"
+							close-after-click
+							@click="editOrganisation">
+							<template #icon>
+								<Pencil :size="20" />
+							</template>
+							Edit
+						</NcActionButton>
+						<NcActionButton close-after-click
+							@click="copyOrganisation">
+							<template #icon>
+								<ContentCopy :size="20" />
+							</template>
+							Copy
+						</NcActionButton>
+						<NcActionButton v-if="organisationStore.organisationItem?.website"
+							close-after-click
+							@click="goToOrganisation">
+							<template #icon>
+								<OpenInNew :size="20" />
+							</template>
+							Go to organisation
+						</NcActionButton>
 						<NcActionButton v-if="!isActiveOrganisation"
 							close-after-click
 							@click="setActiveOrganisation">
 							<template #icon>
 								<CheckCircle :size="20" />
 							</template>
-							Set as Active
-						</NcActionButton>
-						<NcActionButton v-if="canEdit"
-							close-after-click
-							@click="navigationStore.setModal('editOrganisation')">
-							<template #icon>
-								<Pencil :size="20" />
-							</template>
-							Edit
-						</NcActionButton>
-						<NcActionButton close-after-click @click="navigationStore.setModal('manageMembers')">
-							<template #icon>
-								<AccountGroup :size="20" />
-							</template>
-							Manage Members
-						</NcActionButton>
-						<NcActionButton v-if="canLeave"
-							close-after-click
-							@click="leaveOrganisation">
-							<template #icon>
-								<AccountMinus :size="20" />
-							</template>
-							Leave Organisation
+							Activeren
 						</NcActionButton>
 						<NcActionButton v-if="canDelete"
 							close-after-click
@@ -165,6 +173,13 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 				</div>
 			</div>
 		</div>
+
+		<!-- Organisation Management Modal -->
+		<OrganisationModal
+			:show="showOrganisationModal"
+			:organisation="organisationStore.organisationItem"
+			:mode="organisationModalMode"
+			@close="closeOrganisationModal" />
 	</NcAppContent>
 </template>
 
@@ -179,6 +194,10 @@ import AccountGroup from 'vue-material-design-icons/AccountGroup.vue'
 import AccountMinus from 'vue-material-design-icons/AccountMinus.vue'
 import Account from 'vue-material-design-icons/Account.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
+import Eye from 'vue-material-design-icons/Eye.vue'
+import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
+
+import OrganisationModal from '../../modals/OrganisationModal.vue'
 
 export default {
 	name: 'OrganisationDetails',
@@ -198,6 +217,9 @@ export default {
 		AccountMinus,
 		Account,
 		ContentCopy,
+		Eye,
+		OpenInNew,
+		OrganisationModal,
 	},
 	data() {
 		return {
@@ -207,6 +229,8 @@ export default {
 				objects: 0,
 				storage: 0,
 			},
+			showOrganisationModal: false,
+			organisationModalMode: 'edit',
 		}
 	},
 	computed: {
@@ -261,7 +285,7 @@ export default {
 				await organisationStore.leaveOrganisation(organisationStore.organisationItem.uuid)
 				this.showSuccessMessage('Left organisation successfully')
 				// Navigate back to organisations list
-				navigationStore.setSelected('organisationsIndex')
+				this.$router.push('/organisation')
 			} catch (error) {
 				this.showErrorMessage('Failed to leave organisation: ' + error.message)
 			}
@@ -316,6 +340,32 @@ export default {
 			const i = Math.floor(Math.log(bytes) / Math.log(k))
 
 			return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+		},
+		// Organisation Action Methods
+		viewOrganisation() {
+			const publicationUrl = `https://www.softwarecatalogus.nl/publicatie/${organisationStore.organisationItem.uuid}`
+			window.open(publicationUrl, '_blank')
+		},
+		editOrganisation() {
+			this.organisationModalMode = 'edit'
+			this.showOrganisationModal = true
+		},
+		copyOrganisation() {
+			this.organisationModalMode = 'copy'
+			this.showOrganisationModal = true
+		},
+		closeOrganisationModal() {
+			this.showOrganisationModal = false
+		},
+		goToOrganisation() {
+			if (organisationStore.organisationItem?.website) {
+				let websiteUrl = organisationStore.organisationItem.website
+				// Add https:// if no protocol is specified
+				if (!websiteUrl.startsWith('http://') && !websiteUrl.startsWith('https://')) {
+					websiteUrl = 'https://' + websiteUrl
+				}
+				window.open(websiteUrl, '_blank')
+			}
 		},
 		showSuccessMessage(message) {
 			// Implementation would depend on your notification system

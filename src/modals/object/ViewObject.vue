@@ -20,7 +20,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 			@update:open="handleDialogClose">
 			<div class="formContainer viewObjectDialog">
 				<!-- Display Object -->
-				<div v-if="objectStore.objectItem">
+				<div>
 					<div class="tabContainer">
 						<BTabs v-model="activeTab" content-class="mt-3" justified>
 							<BTab title="Properties" active>
@@ -137,7 +137,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									</table>
 								</div>
 							</BTab>
-							<BTab title="Metadata">
+							<BTab v-if="!isNewObject" title="Metadata">
 								<div class="viewTableContainer">
 									<table class="viewTable">
 										<thead>
@@ -233,7 +233,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									</span>
 								</div>
 							</BTab>
-							<BTab title="Uses">
+							<BTab v-if="!isNewObject" title="Uses">
 								<div v-if="objectStore.uses.results.length > 0" class="search-list-table">
 									<table class="table">
 										<thead>
@@ -269,7 +269,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									<p>No uses found for this object</p>
 								</NcNoteCard>
 							</BTab>
-							<BTab title="Used by">
+							<BTab v-if="!isNewObject" title="Used by">
 								<div v-if="objectStore.used.results.length > 0" class="search-list-table">
 									<table class="table">
 										<thead>
@@ -305,7 +305,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									<p>No objects are using this object</p>
 								</NcNoteCard>
 							</BTab>
-							<BTab title="Contracts">
+							<BTab v-if="!isNewObject" title="Contracts">
 								<div v-if="objectStore.contracts.length > 0" class="search-list-table">
 									<table class="table">
 										<thead>
@@ -341,7 +341,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									<p>No contracts found for this object</p>
 								</NcNoteCard>
 							</BTab>
-							<BTab title="Files">
+							<BTab v-if="!isNewObject" title="Files">
 								<div v-if="paginatedFiles.length > 0" class="viewTableContainer">
 									<table class="viewTable">
 										<thead>
@@ -527,7 +527,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					</template>
 					Add File
 				</NcButton>
-				<NcButton @click="viewAuditTrails">
+				<NcButton v-if="!isNewObject" @click="viewAuditTrails">
 					<template #icon>
 						<TextBoxOutline :size="20" />
 					</template>
@@ -701,8 +701,8 @@ export default {
 			success: null,
 			formData: {},
 			jsonData: '',
-			editorTab: 0,
 			activeTab: 0,
+			isInternalUpdate: false, // Flag to prevent infinite loops during synchronization
 			objectEditors: {},
 			tabOptions: ['Properties', 'Metadata', 'Data', 'Uses', 'Used by', 'Contracts', 'Files'],
 			selectedAttachments: [],
@@ -724,8 +724,54 @@ export default {
 	},
 	computed: {
 		objectProperties() {
-			// Return array of [key, value] pairs, excluding '@self' and 'id'
-			if (!objectStore?.objectItem) return []
+			console.log('objectProperties computed called:', {
+				objectItem: objectStore?.objectItem,
+				currentSchema: this.currentSchema,
+				isNewObject: this.isNewObject,
+				schemaId: this.currentSchema?.id,
+				schemaProperties: this.currentSchema?.properties,
+			})
+
+			// For new objects, show schema properties with default values
+			if (!objectStore?.objectItem) {
+				const schemaProperties = this.currentSchema?.properties
+				if (!schemaProperties) {
+					console.log('No schema properties available')
+					return []
+				}
+
+				console.log('Schema properties found:', Object.keys(schemaProperties))
+				const defaultProperties = []
+
+				for (const [key, schemaProperty] of Object.entries(schemaProperties)) {
+					// Add with appropriate default value based on type
+					let defaultValue
+					switch (schemaProperty.type) {
+					case 'string':
+						defaultValue = schemaProperty.const || ''
+						break
+					case 'number':
+					case 'integer':
+						defaultValue = 0
+						break
+					case 'boolean':
+						defaultValue = false
+						break
+					case 'array':
+						defaultValue = []
+						break
+					case 'object':
+						defaultValue = {}
+						break
+					default:
+						defaultValue = ''
+					}
+					defaultProperties.push([key, defaultValue])
+				}
+
+				console.log('objectProperties returning default properties:', defaultProperties)
+				return defaultProperties
+			}
 
 			const objectData = objectStore.objectItem
 			const schemaProperties = this.currentSchema?.properties || {}
@@ -839,6 +885,12 @@ export default {
 			return this.selectedAttachments.length > 0 && !this.allFilesSelected
 		},
 		formFields() {
+			console.log('formFields computed called:', {
+				currentSchema: this.currentSchema,
+				hasProperties: this.currentSchema?.properties,
+				propertiesCount: this.currentSchema?.properties ? Object.keys(this.currentSchema.properties).length : 0,
+			})
+
 			// Combine schema properties and object properties
 			const fields = {}
 
@@ -874,13 +926,15 @@ export default {
 				}
 			}
 
+			console.log('formFields returning:', fields)
 			return fields
 		},
 		metadataProperties() {
 			// Return array of [key, value, hasAction] for metadata display
-			if (!objectStore?.objectItem) return []
+			// Use formData instead of objectStore.objectItem to reflect real-time changes
+			const obj = this.formData || objectStore?.objectItem
+			if (!obj) return []
 
-			const obj = objectStore.objectItem
 			const metadata = []
 
 			// ID with copy action
@@ -974,7 +1028,7 @@ export default {
 			return metadata
 		},
 		isNewObject() {
-			return !objectStore?.objectItem?.id
+			return !objectStore?.objectItem || !objectStore?.objectItem['@self']?.id
 		},
 
 	},
@@ -987,35 +1041,58 @@ export default {
 			},
 			deep: true,
 		},
+		// Watch for schema changes to re-initialize data
+		currentSchema: {
+			handler(newSchema) {
+				console.log('Schema changed in ViewObject:', newSchema)
+				if (newSchema && this.isNewObject) {
+					// Re-initialize data when schema becomes available for new objects
+					this.initializeData()
+				}
+				// Force Vue to re-evaluate computed properties
+				this.$forceUpdate()
+			},
+			immediate: true,
+		},
+		// Watch for register changes to re-initialize data
+		currentRegister: {
+			handler(newRegister) {
+				console.log('Register changed in ViewObject:', newRegister)
+				if (newRegister && this.isNewObject) {
+					// Re-initialize data when register becomes available for new objects
+					this.initializeData()
+				}
+			},
+			immediate: true,
+		},
 		jsonData: {
 			handler(newValue) {
-				if (this.editorTab === 1 && this.isValidJson(newValue)) {
+				if (!this.isInternalUpdate && this.isValidJson(newValue)) {
 					this.updateFormFromJson()
 				}
 			},
 		},
 		formData: {
-			deep: true,
-			immediate: true,
-			handler(obj) {
-				// Only update JSON if we're not in JSON editor tab to avoid circular updates
-				if (this.editorTab === 0) {
-					// Create a clean copy of the form data
-					const draft = JSON.stringify(obj, null, 2)
-					// Only update if the content is different to avoid infinite loops
-					if (this.jsonData !== draft) {
-						this.jsonData = draft
-					}
-				}
-
-				// Update object editors for complex fields
-				for (const k in obj) {
-					if (typeof obj[k] === 'object' && obj[k] !== null) {
-						this.objectEditors[k] = JSON.stringify(obj[k], null, 2)
-					}
+			handler(newValue) {
+				if (!this.isInternalUpdate) {
+					this.updateJsonFromForm()
 				}
 			},
+			deep: true,
 		},
+	},
+	mounted() {
+		// Debug: Log current state when modal opens
+		console.log('ViewObject mounted:', {
+			objectItem: objectStore.objectItem,
+			schemaItem: schemaStore.schemaItem,
+			registerItem: registerStore.registerItem,
+			isNewObject: this.isNewObject,
+		})
+
+		// Initialize data when modal opens
+		this.initializeData()
+		this.loadTitles()
 	},
 	updated() {
 		if (!this.isUpdated && navigationStore.modal === 'viewObject') {
@@ -1026,7 +1103,9 @@ export default {
 	},
 	methods: {
 		getModalTitle() {
-			if (!objectStore?.objectItem) return 'View Object'
+			if (!objectStore?.objectItem || !objectStore.objectItem['@self']?.id) {
+				return 'Add Object'
+			}
 
 			const name = objectStore.objectItem['@self']?.name
 				|| objectStore.objectItem.name
@@ -1049,6 +1128,13 @@ export default {
 			return `${statusIcon}${name} (${schemaName})`
 		},
 		async loadTitles() {
+			// Only load titles if we have an existing object with @self data
+			if (!objectStore.objectItem || !objectStore.objectItem['@self']) {
+				this.registerTitle = 'Not set'
+				this.schemaTitle = 'Not set'
+				return
+			}
+
 			const register = await registerStore.getRegister(objectStore.objectItem['@self'].register)
 			const schema = await schemaStore.getSchema(objectStore.objectItem['@self'].schema)
 
@@ -1061,7 +1147,6 @@ export default {
 			this.registerTitle = ''
 			this.schemaTitle = ''
 			this.activeTab = 0
-			this.editorTab = 0
 			this.selectedAttachments = []
 			this.activeAttachment = null
 			this.success = null
@@ -1141,68 +1226,40 @@ export default {
 			}
 		},
 		initializeData() {
-			if (!objectStore.objectItem) {
-				this.formData = {}
-				this.jsonData = JSON.stringify({ data: {} }, null, 2)
-				return
-			}
-			const initial = objectStore.objectItem
-
-			const filtered = {}
-			for (const key in initial) {
-				if (key !== '@self' && key !== 'id') {
-					// Ensure we have a safe copy of the value
-					try {
-						filtered[key] = JSON.parse(JSON.stringify(initial[key]))
-					} catch (e) {
-						// If JSON serialization fails, use the original value
-						filtered[key] = initial[key]
-					}
-				}
-			}
-
-			// Ensure all form fields exist in formData, even if they're undefined in the object
-			// We need to use a timeout to ensure formFields computed property is available
-			this.$nextTick(() => {
-				if (this.formFields) {
-					for (const key in this.formFields) {
-						if (!(key in filtered)) {
-							const fieldType = this.formFields[key]?.type
-							// Initialize with appropriate default values based on type
-							switch (fieldType) {
-							case 'string':
-								filtered[key] = ''
-								break
-							case 'number':
-								filtered[key] = 0
-								break
-							case 'boolean':
-								filtered[key] = false
-								break
-							case 'array':
-								filtered[key] = []
-								break
-							case 'object':
-								filtered[key] = {}
-								break
-							default:
-								filtered[key] = ''
-							}
-						}
-					}
-					// Update formData after ensuring all fields exist
-					this.formData = { ...this.formData, ...filtered }
-				}
+			console.log('initializeData called:', {
+				objectItem: objectStore.objectItem,
+				currentSchema: this.currentSchema,
+				currentRegister: this.currentRegister,
 			})
 
-			// Create a safe copy for formData
-			try {
-				this.formData = JSON.parse(JSON.stringify(filtered))
-			} catch (e) {
-				// Fallback if JSON serialization fails
-				this.formData = { ...filtered }
+			// Initialize with empty data for new objects
+			if (!objectStore.objectItem) {
+				const initialData = {
+					'@self': {
+						id: '',
+						uuid: '',
+						uri: '',
+						register: this.currentRegister?.id || '',
+						schema: this.currentSchema?.id || '',
+						relations: '',
+						files: '',
+						folder: '',
+						updated: '',
+						created: '',
+						locked: null,
+						owner: '',
+					},
+				}
+				this.formData = initialData
+				this.jsonData = JSON.stringify(initialData, null, 2)
+				return
 			}
-			this.jsonData = JSON.stringify(filtered, null, 2)
+
+			// For existing objects, use their complete data structure (like EditObject)
+			const initialData = { ...objectStore.objectItem }
+			this.formData = initialData
+			this.jsonData = JSON.stringify(initialData, null, 2)
+
 		},
 
 		async saveObject() {
@@ -1215,30 +1272,29 @@ export default {
 			this.error = null
 
 			try {
-				let payload
-				if (this.editorTab === 1) {
-					payload = {
-						...JSON.parse(this.jsonData),
-						'@self': {
-							...objectStore.objectItem['@self'],
-						},
+				let dataToSave
+				if (this.activeTab === 1) {
+					if (!this.jsonData.trim()) {
+						throw new Error('JSON data cannot be empty')
+					}
+					try {
+						dataToSave = JSON.parse(this.jsonData)
+					} catch (e) {
+						throw new Error('Invalid JSON format: ' + e.message)
 					}
 				} else {
-					payload = {
-						...this.formData,
-						'@self': {
-							...objectStore.objectItem['@self'],
-						},
-					}
+					dataToSave = this.formData
 				}
 
-				const { response } = await objectStore.saveObject(payload, {
+				const { response } = await objectStore.saveObject(dataToSave, {
 					register: this.currentRegister.id,
 					schema: this.currentSchema.id,
 				})
-
+				console.log('Save object response:', response)
 				this.success = response.ok
 				if (this.success) {
+					// Re-initialize data to refresh jsonData with the newly created object
+					this.initializeData()
 					setTimeout(() => {
 						this.success = null
 					}, 2000)
@@ -1251,20 +1307,34 @@ export default {
 			}
 		},
 		updateFormFromJson() {
+			if (this.isInternalUpdate) return
+
 			try {
+				this.isInternalUpdate = true
 				const parsed = JSON.parse(this.jsonData)
 				this.formData = parsed
 			} catch (e) {
 				this.error = 'Invalid JSON format'
+			} finally {
+				this.$nextTick(() => {
+					this.isInternalUpdate = false
+				})
 			}
 		},
 
 		updateJsonFromForm() {
-			const draft = {
-				...objectStore.objectItem,
-				data: this.formData,
+			if (this.isInternalUpdate) return
+
+			try {
+				this.isInternalUpdate = true
+				this.jsonData = JSON.stringify(this.formData, null, 2)
+			} catch (e) {
+				console.error('Error updating JSON:', e)
+			} finally {
+				this.$nextTick(() => {
+					this.isInternalUpdate = false
+				})
 			}
-			this.jsonData = JSON.stringify(draft, null, 2)
 		},
 
 		isValidJson(str) {
@@ -1354,7 +1424,7 @@ export default {
 		viewAuditTrails() {
 			// Close the current modal and navigate to audit trails
 			this.closeModal()
-			navigationStore.setSelected('auditTrails')
+			this.$router.push('/audit-trails')
 		},
 		async publishSelectedFiles() {
 			if (this.selectedAttachments.length === 0) return
@@ -1520,7 +1590,7 @@ export default {
 
 			// Check if property exists in schema
 			const schemaProperty = this.currentSchema?.properties?.[key]
-			const existsInObject = Object.prototype.hasOwnProperty.call(objectStore.objectItem, key)
+			const existsInObject = objectStore.objectItem ? Object.prototype.hasOwnProperty.call(objectStore.objectItem, key) : false
 
 			if (!schemaProperty) {
 				// Property exists in object but not in schema - warning (yellow)
@@ -2027,7 +2097,7 @@ export default {
 			}
 
 			// If this is a schema property that doesn't exist in the object yet, show placeholder
-			if (!Object.prototype.hasOwnProperty.call(objectStore.objectItem, key) && schemaProperty) {
+			if (objectStore.objectItem && !Object.prototype.hasOwnProperty.call(objectStore.objectItem, key) && schemaProperty) {
 				return value // This will be the default value we set in objectProperties
 			}
 
@@ -2281,5 +2351,120 @@ export default {
 	padding: 8px;
 	border-radius: 4px;
 	margin: 0;
+}
+
+/* CodeMirror selection styles - matching EditObject modal */
+.codeMirrorContainer {
+	margin-block-start: 6px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	position: relative;
+}
+
+.codeMirrorContainer :deep(.cm-editor) {
+	height: 100%;
+}
+
+.codeMirrorContainer :deep(.cm-scroller) {
+	overflow: auto;
+}
+
+.codeMirrorContainer :deep(.cm-content) {
+	border-radius: 0 !important;
+	border: none !important;
+}
+
+.codeMirrorContainer :deep(.cm-editor) {
+	outline: none !important;
+}
+
+.codeMirrorContainer.light > .vue-codemirror {
+	border: 1px dotted silver;
+}
+
+.codeMirrorContainer.dark > .vue-codemirror {
+	border: 1px dotted grey;
+}
+
+/* value text color */
+/* string */
+.codeMirrorContainer.light :deep(.ͼe) {
+	color: #448c27;
+}
+.codeMirrorContainer.dark :deep(.ͼe) {
+	color: #88c379;
+}
+
+/* boolean */
+.codeMirrorContainer.light :deep(.ͼc) {
+	color: #221199;
+}
+.codeMirrorContainer.dark :deep(.ͼc) {
+	color: #8d64f7;
+}
+
+/* null */
+.codeMirrorContainer.light :deep(.ͼb) {
+	color: #770088;
+}
+.codeMirrorContainer.dark :deep(.ͼb) {
+	color: #be55cd;
+}
+
+/* number */
+.codeMirrorContainer.light :deep(.ͼd) {
+	color: #d19a66;
+}
+.codeMirrorContainer.dark :deep(.ͼd) {
+	color: #9d6c3a;
+}
+
+/* text cursor */
+.codeMirrorContainer :deep(.cm-content) * {
+	cursor: text !important;
+}
+
+/* selection color - THIS FIXES THE WHITE SELECTION ISSUE */
+.codeMirrorContainer.light :deep(.cm-line)::selection,
+.codeMirrorContainer.light :deep(.cm-line) ::selection {
+	background-color: #d7eaff !important;
+	color: black;
+}
+.codeMirrorContainer.dark :deep(.cm-line)::selection,
+.codeMirrorContainer.dark :deep(.cm-line) ::selection {
+	background-color: #8fb3e6 !important;
+	color: black;
+}
+
+/* string selection */
+.codeMirrorContainer.light :deep(.cm-line .ͼe)::selection {
+	color: #2d770f;
+}
+.codeMirrorContainer.dark :deep(.cm-line .ͼe)::selection {
+	color: #104e0c;
+}
+
+/* boolean selection */
+.codeMirrorContainer.light :deep(.cm-line .ͼc)::selection {
+	color: #221199;
+}
+.codeMirrorContainer.dark :deep(.cm-line .ͼc)::selection {
+	color: #4026af;
+}
+
+/* null selection */
+.codeMirrorContainer.light :deep(.cm-line .ͼb)::selection {
+	color: #770088;
+}
+.codeMirrorContainer.dark :deep(.cm-line .ͼb)::selection {
+	color: #770088;
+}
+
+/* number selection */
+.codeMirrorContainer.light :deep(.cm-line .ͼd)::selection {
+	color: #8c5c2c;
+}
+.codeMirrorContainer.dark :deep(.cm-line .ͼd)::selection {
+	color: #623907;
 }
 </style>

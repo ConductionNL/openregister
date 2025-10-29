@@ -373,4 +373,35 @@ class AuditTrail extends Entity implements JsonSerializable
     }//end jsonSerialize()
 
 
+    /**
+     * String representation of the audit trail
+     *
+     * This magic method is required for proper entity handling in Nextcloud
+     * when the framework needs to convert the object to a string.
+     *
+     * @return string String representation of the audit trail
+     */
+    public function __toString(): string
+    {
+        // Return the UUID if available, otherwise return a descriptive string
+        if ($this->uuid !== null && $this->uuid !== '') {
+            return $this->uuid;
+        }
+
+        // Fallback to action if available
+        if ($this->action !== null && $this->action !== '') {
+            return 'Audit: '.$this->action;
+        }
+
+        // Fallback to ID if available
+        if ($this->id !== null) {
+            return 'AuditTrail #'.$this->id;
+        }
+
+        // Final fallback
+        return 'Audit Trail';
+
+    }//end __toString()
+
+
 }//end class

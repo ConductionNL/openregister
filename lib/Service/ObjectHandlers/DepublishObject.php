@@ -30,6 +30,8 @@ use OCA\OpenRegister\Db\Schema;
  */
 class DepublishObject
 {
+
+
     /**
      * Constructor for DepublishObject
      *
@@ -38,15 +40,17 @@ class DepublishObject
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper
     ) {
-    }
+
+    }//end __construct()
+
 
     /**
      * Depublish an object
      *
-     * @param string        $uuid     The UUID of the object to depublish
-     * @param DateTime|null $date     Optional depublication date
-     * @param bool          $rbac     Whether to apply RBAC checks (default: true).
-     * @param bool          $multi    Whether to apply multitenancy filtering (default: true).
+     * @param string        $uuid  The UUID of the object to depublish
+     * @param DateTime|null $date  Optional depublication date
+     * @param bool          $rbac  Whether to apply RBAC checks (default: true).
+     * @param bool          $multi Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity The depublished object
      *
@@ -54,9 +58,9 @@ class DepublishObject
      */
     public function depublish(
         string $uuid,
-        ?DateTime $date = null,
-        bool $rbac = true,
-        bool $multi = true
+        ?DateTime $date=null,
+        bool $rbac=true,
+        bool $multi=true
     ): ObjectEntity {
         // Get the object
         $object = $this->objectEntityMapper->find($uuid);
@@ -73,5 +77,8 @@ class DepublishObject
 
         // Update the object in the database
         return $this->objectEntityMapper->update($object);
-    }
-} 
+
+    }//end depublish()
+
+
+}//end class

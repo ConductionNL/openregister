@@ -111,12 +111,16 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 																class="property-chip chip-secondary">Hidden in view</span>
 															<span v-if="property.hideOnCollection"
 																class="property-chip chip-secondary">Hidden in Collection</span>
+															<span v-if="property.hideOnForm"
+																class="property-chip chip-secondary">Hidden in Form</span>
 															<span v-if="property.const !== undefined"
 																class="property-chip chip-success">Constant</span>
 															<span v-if="property.enum && property.enum.length > 0"
 																class="property-chip chip-success">Enumeration ({{ property.enum.length }})</span>
 															<span v-if="property.facetable === true"
 																class="property-chip chip-info">Facetable</span>
+															<span v-if="hasCustomTableSettings(key)"
+																class="property-chip chip-table">Table</span>
 														</div>
 													</div>
 												</div>
@@ -172,6 +176,11 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 														:checked="property.hideOnCollection || false"
 														@update:checked="updatePropertySetting(key, 'hideOnCollection', $event)">
 														Hide in collection view
+													</NcActionCheckbox>
+													<NcActionCheckbox
+														:checked="property.hideOnForm || false"
+														@update:checked="updatePropertySetting(key, 'hideOnForm', $event)">
+														Hide in form view
 													</NcActionCheckbox>
 													<NcActionCheckbox
 														:checked="property.facetable === true"
@@ -382,21 +391,25 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 																input-label="Object Handling"
 																label="Object Handling" />
 															<NcActionInput
-																v-model="schemaItem.properties[key].items.$ref"
+																:value="schemaItem.properties[key].items.$ref"
 																type="multiselect"
 																:options="availableSchemas"
 																input-label="Schema Reference"
-																label="Schema Reference" />
+																label="Schema Reference"
+																@update:value="updateArrayItemSchemaReference(key, $event)" />
 															<NcActionCaption
 																v-if="isArrayItemRefInvalid(key)"
 																:name="`⚠️ Invalid Schema Reference: Expected string, got number (${schemaItem.properties[key].items.$ref}). This will be sent to backend as-is.`"
 																style="color: var(--color-error); font-weight: bold;" />
 															<NcActionInput
-																v-model="schemaItem.properties[key].items.register"
+																:value="getArrayItemRegisterValue(key)"
 																type="multiselect"
 																:options="availableRegisters"
-																input-label="Register (Optional)"
-																label="Register (Optional - defaults to parent register)" />
+																input-label="Register"
+																label="Register (Required when schema is selected)"
+																:required="!!schemaItem.properties[key].items.$ref"
+																:disabled="!schemaItem.properties[key].items.$ref"
+																@update:value="updateArrayItemRegisterReference(key, $event)" />
 															<NcActionInput
 																v-model="schemaItem.properties[key].items.inversedBy"
 																type="multiselect"
@@ -405,6 +418,11 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 																label="Inversed By"
 																:disabled="!schemaItem.properties[key].items.$ref"
 																@update:value="updateInversedByForArrayItems(key, $event)" />
+															<NcActionInput
+																:value="getArrayItemQueryParams(key)"
+																label="Query Parameters"
+																placeholder="e.g. gemmaType=referentiecomponent&_extend=aanbevolenStandaarden"
+																@update:value="updateArrayItemQueryParams(key, $event)" />
 															<NcActionCheckbox
 																:checked="property.items.writeBack || false"
 																@update:checked="updateArrayItemObjectConfigurationSetting(key, 'writeBack', $event)">
@@ -439,21 +457,25 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 															input-label="Object Handling"
 															label="Object Handling" />
 														<NcActionInput
-															v-model="schemaItem.properties[key].$ref"
+															:value="schemaItem.properties[key].$ref"
 															type="multiselect"
 															:options="availableSchemas"
 															input-label="Schema Reference"
-															label="Schema Reference" />
+															label="Schema Reference"
+															@update:value="updateSchemaReference(key, $event)" />
 														<NcActionCaption
 															v-if="isRefInvalid(key)"
 															:name="`⚠️ Invalid Schema Reference: Expected string, got number (${schemaItem.properties[key].$ref}). This will be sent to backend as-is.`"
 															style="color: var(--color-error); font-weight: bold;" />
 														<NcActionInput
-															v-model="schemaItem.properties[key].register"
+															:value="getRegisterValue(key)"
 															type="multiselect"
 															:options="availableRegisters"
-															input-label="Register (Optional)"
-															label="Register (Optional - defaults to parent register)" />
+															input-label="Register"
+															label="Register (Required when schema is selected)"
+															:required="!!schemaItem.properties[key].$ref"
+															:disabled="!schemaItem.properties[key].$ref"
+															@update:value="updateRegisterReference(key, $event)" />
 														<NcActionInput
 															v-model="schemaItem.properties[key].inversedBy"
 															type="multiselect"
@@ -462,6 +484,11 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 															label="Inversed By"
 															:disabled="!schemaItem.properties[key].$ref"
 															@update:value="updateInversedBy(key, $event)" />
+														<NcActionInput
+															:value="getObjectQueryParams(key)"
+															label="Query Parameters"
+															placeholder="e.g. gemmaType=referentiecomponent&_extend=aanbevolenStandaarden"
+															@update:value="updateObjectQueryParams(key, $event)" />
 														<NcActionCheckbox
 															:checked="property.writeBack || false"
 															@update:checked="updatePropertySetting(key, 'writeBack', $event)">
@@ -483,6 +510,15 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 													<template v-if="property.type === 'file' || (property.type === 'array' && property.items && property.items.type === 'file')">
 														<NcActionSeparator />
 														<NcActionCaption name="File Configuration" />
+														<NcActionCheckbox
+															:checked="getFilePropertySetting(key, 'autoPublish')"
+															@update:checked="updateFilePropertySetting(key, 'autoPublish', $event)">
+															Auto-Publish Files
+														</NcActionCheckbox>
+														<NcActionCaption
+															v-if="getFilePropertySetting(key, 'autoPublish')"
+															name="ℹ️ Files uploaded to this property will be automatically publicly shared"
+															style="color: var(--color-text-lighter); font-size: 11px;" />
 														<NcActionInput
 															:value="(property.allowedTypes || []).join(', ')"
 															label="Allowed MIME Types (comma separated)"
@@ -510,6 +546,93 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 															label="Auto Tags (automatically applied to uploaded files)"
 															multiple
 															@update:value="updateFilePropertyTags(key, 'autoTags', $event)" />
+													</template>
+
+													<!-- Property-level Table Configuration -->
+													<NcActionSeparator />
+													<NcActionCaption name="Table" />
+													<NcActionCheckbox
+														:checked="getPropertyTableSetting(key, 'default')"
+														@update:checked="updatePropertyTableSetting(key, 'default', $event)">
+														Default
+													</NcActionCheckbox>
+
+													<!-- Property-level Security Configuration -->
+													<NcActionSeparator />
+													<NcActionCaption name="Property Security" />
+
+													<template v-if="!loadingGroups">
+														<!-- Current Property Permissions List -->
+														<template v-for="permission in getPropertyPermissionsList(key)">
+															<NcActionText
+																:key="`${key}-perm-text-${permission.group}`"
+																class="property-permission-text">
+																{{ permission.group }} ({{ permission.rights }})
+															</NcActionText>
+															<NcActionButton
+																v-if="permission.groupId !== 'admin'"
+																:key="`${key}-perm-remove-${permission.group}`"
+																:aria-label="`Remove ${permission.group} permissions`"
+																class="property-permission-remove-btn"
+																@click="removePropertyGroupPermissions(key, permission.group)">
+																<template #icon>
+																	<Close :size="16" />
+																</template>
+																Remove {{ permission.group }}
+															</NcActionButton>
+														</template>
+
+														<!-- Show inheritance status if no specific permissions -->
+														<NcActionCaption
+															v-if="!hasPropertyAnyPermissions(key)"
+															name="📄 Inherits schema permissions"
+															style="color: var(--color-success); font-size: 11px;" />
+
+														<!-- Add Permission Interface -->
+														<NcActionSeparator />
+														<NcActionInput
+															v-model="propertyNewPermissionGroup"
+															type="multiselect"
+															:options="getAvailableGroupsForProperty()"
+															input-label="Group"
+															label="Add Group Permission"
+															placeholder="Select group..." />
+
+														<template v-if="propertyNewPermissionGroup">
+															<NcActionCaption name="Select Permissions:" />
+															<NcActionCheckbox
+																:checked="propertyNewPermissionCreate"
+																@update:checked="propertyNewPermissionCreate = $event">
+																Create (C)
+															</NcActionCheckbox>
+															<NcActionCheckbox
+																:checked="propertyNewPermissionRead"
+																@update:checked="propertyNewPermissionRead = $event">
+																Read (R)
+															</NcActionCheckbox>
+															<NcActionCheckbox
+																:checked="propertyNewPermissionUpdate"
+																@update:checked="propertyNewPermissionUpdate = $event">
+																Update (U)
+															</NcActionCheckbox>
+															<NcActionCheckbox
+																:checked="propertyNewPermissionDelete"
+																@update:checked="propertyNewPermissionDelete = $event">
+																Delete (D)
+															</NcActionCheckbox>
+
+															<NcActionButton
+																v-if="hasAnyPropertyNewPermissionSelected()"
+																@click="addPropertyGroupPermissions(key)">
+																<template #icon>
+																	<Plus :size="16" />
+																</template>
+																Add Permission
+															</NcActionButton>
+														</template>
+													</template>
+													<template v-else>
+														<NcActionCaption name="Loading groups..." />
 													</template>
 												</NcActions>
 											</td>
@@ -556,10 +679,21 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 								:options="propertyOptions"
 								input-label="Object Image Field"
 								placeholder="Select a property to use as object image representing the object. e.g. logo (should contain base64 encoded image)" />
+							<NcSelect
+								v-model="schemaItem.configuration.objectSummaryField"
+								:disabled="loading"
+								:options="propertyOptions"
+								input-label="Object Summary Field"
+								placeholder="Select a property to use as object summary. e.g. summary, abstract, or excerpt" />
 							<NcCheckboxRadioSwitch
 								:disabled="loading"
 								:checked.sync="schemaItem.configuration.allowFiles">
 								Allow Files
+							</NcCheckboxRadioSwitch>
+							<NcCheckboxRadioSwitch
+								:disabled="loading"
+								:checked.sync="schemaItem.configuration.autoPublish">
+								Auto-Publish Objects
 							</NcCheckboxRadioSwitch>
 							<NcTextField
 								v-model="allowedTagsInput"
@@ -580,6 +714,11 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 								:disabled="loading"
 								:checked.sync="schemaItem.immutable">
 								Immutable
+							</NcCheckboxRadioSwitch>
+							<NcCheckboxRadioSwitch
+								:disabled="loading"
+								:checked.sync="schemaItem.searchable">
+								Searchable in SOLR
 							</NcCheckboxRadioSwitch>
 						</div>
 					</BTab>
@@ -639,6 +778,34 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 												<NcCheckboxRadioSwitch
 													:checked="hasGroupPermission('public', 'delete')"
 													@update:checked="updateGroupPermission('public', 'delete', $event)" />
+											</td>
+										</tr>
+
+										<!-- User group (authenticated users) -->
+										<tr class="user-row">
+											<td class="group-name">
+												<span class="group-badge user">user</span>
+												<small>Authenticated users</small>
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="hasGroupPermission('user', 'create')"
+													@update:checked="updateGroupPermission('user', 'create', $event)" />
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="hasGroupPermission('user', 'read')"
+													@update:checked="updateGroupPermission('user', 'read', $event)" />
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="hasGroupPermission('user', 'update')"
+													@update:checked="updateGroupPermission('user', 'update', $event)" />
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="hasGroupPermission('user', 'delete')"
+													@update:checked="updateGroupPermission('user', 'delete', $event)" />
 											</td>
 										</tr>
 
@@ -760,6 +927,7 @@ import {
 	NcActionInput,
 	NcActionCaption,
 	NcActionSeparator,
+	NcActionText,
 } from '@nextcloud/vue'
 import { BTabs, BTab } from 'bootstrap-vue'
 
@@ -789,6 +957,7 @@ export default {
 		NcActionInput,
 		NcActionCaption,
 		NcActionSeparator,
+		NcActionText,
 		BTabs,
 		BTab,
 		// Icons
@@ -813,6 +982,12 @@ export default {
 			enumInputValue: '', // For entering new enum values
 			allowedTagsInput: '', // For entering allowed tags as comma-separated string
 			availableTags: [], // Available tags from the API
+			// Property-level permission interface
+			propertyNewPermissionGroup: null,
+			propertyNewPermissionCreate: false,
+			propertyNewPermissionRead: false,
+			propertyNewPermissionUpdate: false,
+			propertyNewPermissionDelete: false,
 			schemaItem: {
 				title: '',
 				version: '0.0.0',
@@ -824,12 +999,15 @@ export default {
 					objectNameField: '',
 					objectDescriptionField: '',
 					objectImageField: '',
+					objectSummaryField: '',
 					allowFiles: false,
 					allowedTags: [],
+					autoPublish: false,
 				},
 				authorization: {},
 				hardValidation: false,
 				immutable: false,
+				searchable: true,
 				maxDepth: 0,
 			},
 			createAnother: false,
@@ -978,10 +1156,22 @@ export default {
 								this.$set(this.schemaItem.properties[key].objectConfiguration, 'handling', property.objectConfiguration.handling.id)
 							}
 
+							// Convert register from object to ID
+							if (property.objectConfiguration && property.objectConfiguration.register
+								&& typeof property.objectConfiguration.register === 'object' && property.objectConfiguration.register.id) {
+								this.$set(this.schemaItem.properties[key].objectConfiguration, 'register', property.objectConfiguration.register.id)
+							}
+
 							// Convert array item object handling from object to string
 							if (property.items && property.items.objectConfiguration && property.items.objectConfiguration.handling
 								&& typeof property.items.objectConfiguration.handling === 'object' && property.items.objectConfiguration.handling.id) {
 								this.$set(this.schemaItem.properties[key].items.objectConfiguration, 'handling', property.items.objectConfiguration.handling.id)
+							}
+
+							// Convert array item register from object to ID
+							if (property.items && property.items.objectConfiguration && property.items.objectConfiguration.register
+								&& typeof property.items.objectConfiguration.register === 'object' && property.items.objectConfiguration.register.id) {
+								this.$set(this.schemaItem.properties[key].items.objectConfiguration, 'register', property.items.objectConfiguration.register.id)
 							}
 
 							// Ensure $ref is always a string
@@ -1069,6 +1259,7 @@ export default {
 						objectNameField: '',
 						objectDescriptionField: '',
 						objectImageField: '',
+						objectSummaryField: '',
 						allowFiles: false,
 						allowedTags: [],
 					}
@@ -1083,11 +1274,17 @@ export default {
 					if (!this.schemaItem.configuration.objectImageField) {
 						this.schemaItem.configuration.objectImageField = ''
 					}
+					if (!this.schemaItem.configuration.objectSummaryField) {
+						this.schemaItem.configuration.objectSummaryField = ''
+					}
 					if (this.schemaItem.configuration.allowFiles === undefined) {
 						this.schemaItem.configuration.allowFiles = false
 					}
 					if (!this.schemaItem.configuration.allowedTags) {
 						this.schemaItem.configuration.allowedTags = []
+					}
+					if (this.schemaItem.configuration.autoPublish === undefined) {
+						this.schemaItem.configuration.autoPublish = false
 					}
 				}
 
@@ -1118,9 +1315,10 @@ export default {
 					}
 				})
 
-				// Ensure all $ref values are strings
+				// Ensure all $ref values are strings and migrate old structure to new
 				Object.keys(this.schemaItem.properties || {}).forEach(key => {
 					this.ensureRefIsString(this.schemaItem.properties, key)
+					this.migratePropertyToNewStructure(key)
 				})
 
 				// Store original properties for comparison AFTER setting defaults
@@ -1131,8 +1329,10 @@ export default {
 					objectNameField: '',
 					objectDescriptionField: '',
 					objectImageField: '',
+					objectSummaryField: '',
 					allowFiles: false,
 					allowedTags: [],
+					autoPublish: false,
 				}
 				this.allowedTagsInput = ''
 				this.originalProperties = {}
@@ -1309,14 +1509,29 @@ export default {
 		async editSchema() {
 			this.loading = true
 
-			// Ensure all $ref values are strings before saving
-			Object.keys(this.schemaItem.properties || {}).forEach(key => {
-				this.ensureRefIsString(this.schemaItem.properties, key)
+			// Clean up schema properties before saving
+			const cleanedSchemaItem = { ...this.schemaItem }
+			Object.keys(cleanedSchemaItem.properties || {}).forEach(key => {
+				// Ensure all $ref values are strings
+				this.ensureRefIsString(cleanedSchemaItem.properties, key)
+
+				// Remove the old register property at root level if it exists
+				if (cleanedSchemaItem.properties[key].register
+					&& cleanedSchemaItem.properties[key].objectConfiguration
+					&& cleanedSchemaItem.properties[key].objectConfiguration.register) {
+					delete cleanedSchemaItem.properties[key].register
+				}
+
+				// Remove old register property from array items if it exists
+				if (cleanedSchemaItem.properties[key].items
+					&& cleanedSchemaItem.properties[key].items.register
+					&& cleanedSchemaItem.properties[key].items.objectConfiguration
+					&& cleanedSchemaItem.properties[key].items.objectConfiguration.register) {
+					delete cleanedSchemaItem.properties[key].items.register
+				}
 			})
 
-			schemaStore.saveSchema({
-				...this.schemaItem,
-			}).then(({ response }) => {
+			schemaStore.saveSchema(cleanedSchemaItem).then(({ response }) => {
 
 				if (this.createAnother) {
 					// since saveSchema populates the schema item, we need to clear it
@@ -1335,11 +1550,14 @@ export default {
 								objectNameField: '',
 								objectDescriptionField: '',
 								objectImageField: '',
+								objectSummaryField: '',
 								allowFiles: false,
 								allowedTags: [],
+								autoPublish: false,
 							},
 							hardValidation: false,
 							immutable: false,
+							searchable: true,
 							maxDepth: 0,
 						}
 						this.allowedTagsInput = ''
@@ -1383,24 +1601,24 @@ export default {
 					{ id: 'text', label: 'Text' },
 					{ id: 'markdown', label: 'Markdown' },
 					{ id: 'html', label: 'HTML' },
+					{ id: 'date-time', label: 'Date Time' },
 					{ id: 'date', label: 'Date' },
 					{ id: 'time', label: 'Time' },
 					{ id: 'duration', label: 'Duration' },
-					{ id: 'date-time', label: 'Date Time' },
-					{ id: 'url', label: 'URL' },
-					{ id: 'uri', label: 'URI' },
-					{ id: 'uuid', label: 'UUID' },
 					{ id: 'email', label: 'Email' },
 					{ id: 'idn-email', label: 'IDN Email' },
 					{ id: 'hostname', label: 'Hostname' },
 					{ id: 'idn-hostname', label: 'IDN Hostname' },
 					{ id: 'ipv4', label: 'IPv4' },
 					{ id: 'ipv6', label: 'IPv6' },
+					{ id: 'uri', label: 'URI' },
 					{ id: 'uri-reference', label: 'URI Reference' },
 					{ id: 'iri', label: 'IRI' },
 					{ id: 'iri-reference', label: 'IRI Reference' },
+					{ id: 'uuid', label: 'UUID' },
 					{ id: 'uri-template', label: 'URI Template' },
 					{ id: 'json-pointer', label: 'JSON Pointer' },
+					{ id: 'relative-json-pointer', label: 'Relative JSON Pointer' },
 					{ id: 'regex', label: 'Regex' },
 					{ id: 'binary', label: 'Binary' },
 					{ id: 'byte', label: 'Byte' },
@@ -1415,6 +1633,15 @@ export default {
 					{ id: 'downloadUrl', label: 'Download URL' },
 					{ id: 'extension', label: 'Extension' },
 					{ id: 'filename', label: 'Filename' },
+					{ id: 'semver', label: 'Semantic Version' },
+					{ id: 'url', label: 'URL' },
+					{ id: 'color', label: 'Color' },
+					{ id: 'color-hex', label: 'Color Hex' },
+					{ id: 'color-hex-alpha', label: 'Color Hex Alpha' },
+					{ id: 'color-rgb', label: 'Color RGB' },
+					{ id: 'color-rgba', label: 'Color RGBA' },
+					{ id: 'color-hsl', label: 'Color HSL' },
+					{ id: 'color-hsla', label: 'Color HSLA' },
 				],
 				number: [],
 				integer: [],
@@ -1459,6 +1686,34 @@ export default {
 						}
 						this.$set(this.schemaItem.properties[key].items, setting, numValue)
 					}
+				}
+				this.checkPropertiesModified()
+			}
+		},
+		getFilePropertySetting(key, setting) {
+			// Get boolean/value settings for file properties
+			const property = this.schemaItem.properties[key]
+			if (!property) return false
+
+			if (property.type === 'file') {
+				return property[setting] || false
+			} else if (property.type === 'array' && property.items) {
+				return property.items[setting] || false
+			}
+
+			return false
+		},
+		updateFilePropertySetting(key, setting, value) {
+			// Handle boolean settings like autoPublish
+			if (this.schemaItem.properties[key]) {
+				// Apply to both direct file properties and array[file] properties
+				if (this.schemaItem.properties[key].type === 'file') {
+					this.$set(this.schemaItem.properties[key], setting, value)
+				} else if (this.schemaItem.properties[key].type === 'array' && this.schemaItem.properties[key].items) {
+					if (!this.schemaItem.properties[key].items) {
+						this.$set(this.schemaItem.properties[key], 'items', {})
+					}
+					this.$set(this.schemaItem.properties[key].items, setting, value)
 				}
 				this.checkPropertiesModified()
 			}
@@ -1758,6 +2013,301 @@ export default {
 				this.checkPropertiesModified()
 			}
 		},
+		/**
+		 * Update schema reference and handle register requirement
+		 *
+		 * @param {string} key Property key
+		 * @param {object|string} value Schema reference value
+		 */
+		updateSchemaReference(key, value) {
+			if (!this.schemaItem.properties[key]) {
+				return
+			}
+
+			// Extract schema reference value
+			const schemaRef = typeof value === 'object' && value?.id ? value.id : value
+
+			// Update the $ref
+			this.$set(this.schemaItem.properties[key], '$ref', schemaRef)
+
+			// Ensure objectConfiguration exists
+			if (!this.schemaItem.properties[key].objectConfiguration) {
+				this.$set(this.schemaItem.properties[key], 'objectConfiguration', { handling: 'related-object' })
+			}
+
+			// Extract schema ID from reference and save in objectConfiguration
+			if (schemaRef) {
+				// Extract schema slug/ID from reference format like "#/components/schemas/voorzieningmodule"
+				let schemaSlug = schemaRef
+				if (schemaRef.includes('/')) {
+					schemaSlug = schemaRef.substring(schemaRef.lastIndexOf('/') + 1)
+				}
+
+				// Find the schema to get its numeric ID
+				const referencedSchema = schemaStore.schemaList.find(schema =>
+					(schema.slug && schema.slug.toLowerCase() === schemaSlug.toLowerCase())
+					|| schema.id === schemaSlug
+					|| schema.title === schemaSlug,
+				)
+
+				if (referencedSchema) {
+					this.$set(this.schemaItem.properties[key].objectConfiguration, 'schema', referencedSchema.id)
+				}
+
+				// Migrate existing register from old structure to new structure
+				if (this.schemaItem.properties[key].register && !this.schemaItem.properties[key].objectConfiguration.register) {
+					const oldRegister = this.schemaItem.properties[key].register
+					const registerId = typeof oldRegister === 'object' && oldRegister.id ? oldRegister.id : oldRegister
+					this.$set(this.schemaItem.properties[key].objectConfiguration, 'register', registerId)
+				}
+			} else {
+				// Clear schema and register from objectConfiguration if schema reference is removed
+				this.$delete(this.schemaItem.properties[key].objectConfiguration, 'schema')
+				this.$delete(this.schemaItem.properties[key].objectConfiguration, 'register')
+			}
+
+			this.checkPropertiesModified()
+		},
+		/**
+		 * Update array item schema reference and handle register requirement
+		 *
+		 * @param {string} key Property key
+		 * @param {object|string} value Schema reference value
+		 */
+		updateArrayItemSchemaReference(key, value) {
+			if (!this.schemaItem.properties[key] || !this.schemaItem.properties[key].items) {
+				return
+			}
+
+			// Extract schema reference value
+			const schemaRef = typeof value === 'object' && value?.id ? value.id : value
+
+			// Update the $ref
+			this.$set(this.schemaItem.properties[key].items, '$ref', schemaRef)
+
+			// Ensure objectConfiguration exists
+			if (!this.schemaItem.properties[key].items.objectConfiguration) {
+				this.$set(this.schemaItem.properties[key].items, 'objectConfiguration', { handling: 'related-object' })
+			}
+
+			// Extract schema ID from reference and save in objectConfiguration
+			if (schemaRef) {
+				// Extract schema slug/ID from reference format like "#/components/schemas/voorzieningmodule"
+				let schemaSlug = schemaRef
+				if (schemaRef.includes('/')) {
+					schemaSlug = schemaRef.substring(schemaRef.lastIndexOf('/') + 1)
+				}
+
+				// Find the schema to get its numeric ID
+				const referencedSchema = schemaStore.schemaList.find(schema =>
+					(schema.slug && schema.slug.toLowerCase() === schemaSlug.toLowerCase())
+					|| schema.id === schemaSlug
+					|| schema.title === schemaSlug,
+				)
+
+				if (referencedSchema) {
+					this.$set(this.schemaItem.properties[key].items.objectConfiguration, 'schema', referencedSchema.id)
+				}
+			} else {
+				// Clear schema and register from objectConfiguration if schema reference is removed
+				this.$delete(this.schemaItem.properties[key].items.objectConfiguration, 'schema')
+				this.$delete(this.schemaItem.properties[key].items.objectConfiguration, 'register')
+			}
+
+			this.checkPropertiesModified()
+		},
+		/**
+		 * Update register reference in objectConfiguration
+		 *
+		 * @param {string} key Property key
+		 * @param {object|string|number} value Register reference value
+		 */
+		updateRegisterReference(key, value) {
+			if (!this.schemaItem.properties[key]) {
+				return
+			}
+
+			// Ensure objectConfiguration exists
+			if (!this.schemaItem.properties[key].objectConfiguration) {
+				this.$set(this.schemaItem.properties[key], 'objectConfiguration', { handling: 'related-object' })
+			}
+
+			// Extract register ID from value
+			const registerId = typeof value === 'object' && value?.id ? value.id : value
+
+			if (registerId) {
+				this.$set(this.schemaItem.properties[key].objectConfiguration, 'register', registerId)
+
+				// Remove old register property if it exists
+				if (this.schemaItem.properties[key].register) {
+					this.$delete(this.schemaItem.properties[key], 'register')
+				}
+			} else {
+				this.$delete(this.schemaItem.properties[key].objectConfiguration, 'register')
+			}
+
+			this.checkPropertiesModified()
+		},
+		/**
+		 * Update register reference in array items objectConfiguration
+		 *
+		 * @param {string} key Property key
+		 * @param {object|string|number} value Register reference value
+		 */
+		updateArrayItemRegisterReference(key, value) {
+			if (!this.schemaItem.properties[key] || !this.schemaItem.properties[key].items) {
+				return
+			}
+
+			// Ensure objectConfiguration exists
+			if (!this.schemaItem.properties[key].items.objectConfiguration) {
+				this.$set(this.schemaItem.properties[key].items, 'objectConfiguration', { handling: 'related-object' })
+			}
+
+			// Extract register ID from value
+			const registerId = typeof value === 'object' && value?.id ? value.id : value
+
+			if (registerId) {
+				this.$set(this.schemaItem.properties[key].items.objectConfiguration, 'register', registerId)
+			} else {
+				this.$delete(this.schemaItem.properties[key].items.objectConfiguration, 'register')
+			}
+
+			this.checkPropertiesModified()
+		},
+		/**
+		 * Get register value, handling both old and new structure
+		 *
+		 * @param {string} key Property key
+		 * @return {number|object|null} Register value
+		 */
+		getRegisterValue(key) {
+			if (!this.schemaItem.properties[key]) {
+				return null
+			}
+
+			const property = this.schemaItem.properties[key]
+
+			// Check new structure first
+			if (property.objectConfiguration && property.objectConfiguration.register !== undefined) {
+				return property.objectConfiguration.register
+			}
+
+			// Check old structure
+			if (property.register !== undefined) {
+				return property.register
+			}
+
+			return null
+		},
+		/**
+		 * Get array item register value, handling both old and new structure
+		 *
+		 * @param {string} key Property key
+		 * @return {number|object|null} Register value
+		 */
+		getArrayItemRegisterValue(key) {
+			if (!this.schemaItem.properties[key] || !this.schemaItem.properties[key].items) {
+				return null
+			}
+
+			const items = this.schemaItem.properties[key].items
+
+			// Check new structure first
+			if (items.objectConfiguration && items.objectConfiguration.register !== undefined) {
+				return items.objectConfiguration.register
+			}
+
+			// Check old structure
+			if (items.register !== undefined) {
+				return items.register
+			}
+
+			return null
+		},
+		/**
+		 * Migrate property from old structure to new objectConfiguration structure
+		 *
+		 * @param {string} key Property key
+		 */
+		migratePropertyToNewStructure(key) {
+			if (!this.schemaItem.properties[key]) {
+				return
+			}
+
+			const property = this.schemaItem.properties[key]
+
+			// Only migrate if we have a schema reference and old register structure
+			if (property.$ref && property.register && !property.objectConfiguration?.register) {
+				// Ensure objectConfiguration exists
+				if (!property.objectConfiguration) {
+					this.$set(this.schemaItem.properties[key], 'objectConfiguration', { handling: 'related-object' })
+				}
+
+				// Extract register ID from old structure
+				const registerId = typeof property.register === 'object' && property.register.id
+					? property.register.id
+					: property.register
+
+				// Set register in objectConfiguration
+				this.$set(this.schemaItem.properties[key].objectConfiguration, 'register', registerId)
+
+				// Find and set schema ID
+				if (property.$ref) {
+					let schemaSlug = property.$ref
+					if (schemaSlug.includes('/')) {
+						schemaSlug = schemaSlug.substring(schemaSlug.lastIndexOf('/') + 1)
+					}
+
+					const referencedSchema = schemaStore.schemaList.find(schema =>
+						(schema.slug && schema.slug.toLowerCase() === schemaSlug.toLowerCase())
+						|| schema.id === schemaSlug
+						|| schema.title === schemaSlug,
+					)
+
+					if (referencedSchema) {
+						this.$set(this.schemaItem.properties[key].objectConfiguration, 'schema', referencedSchema.id)
+					}
+				}
+
+				// Don't remove the old register property yet - let the save process handle cleanup
+				// This ensures the UI still works during the transition
+			}
+
+			// Handle array items migration
+			if (property.items && property.items.$ref && property.items.register && !property.items.objectConfiguration?.register) {
+				// Ensure objectConfiguration exists for items
+				if (!property.items.objectConfiguration) {
+					this.$set(this.schemaItem.properties[key].items, 'objectConfiguration', { handling: 'related-object' })
+				}
+
+				// Extract register ID from old structure
+				const registerId = typeof property.items.register === 'object' && property.items.register.id
+					? property.items.register.id
+					: property.items.register
+
+				// Set register in objectConfiguration
+				this.$set(this.schemaItem.properties[key].items.objectConfiguration, 'register', registerId)
+
+				// Find and set schema ID
+				if (property.items.$ref) {
+					let schemaSlug = property.items.$ref
+					if (schemaSlug.includes('/')) {
+						schemaSlug = schemaSlug.substring(schemaSlug.lastIndexOf('/') + 1)
+					}
+
+					const referencedSchema = schemaStore.schemaList.find(schema =>
+						(schema.slug && schema.slug.toLowerCase() === schemaSlug.toLowerCase())
+						|| schema.id === schemaSlug
+						|| schema.title === schemaSlug,
+					)
+
+					if (referencedSchema) {
+						this.$set(this.schemaItem.properties[key].items.objectConfiguration, 'schema', referencedSchema.id)
+					}
+				}
+			}
+		},
 		// Check if a property's $ref is invalid (contains a number instead of string)
 		isRefInvalid(key) {
 			const property = this.schemaItem.properties[key]
@@ -1950,6 +2500,453 @@ export default {
 				this.$set(this.schemaItem.configuration, 'allowedTags', tags)
 			}
 		},
+
+		// Property-level RBAC Methods
+
+		/**
+		 * Check if a property has any permissions set
+		 *
+		 * @param {string} key Property key
+		 * @return {boolean} True if property has any permissions
+		 */
+		hasPropertyAnyPermissions(key) {
+			if (!this.schemaItem.properties[key] || !this.schemaItem.properties[key].authorization) {
+				return false
+			}
+			const auth = this.schemaItem.properties[key].authorization
+			return Object.keys(auth).some(action =>
+				Array.isArray(auth[action]) && auth[action].length > 0,
+			)
+		},
+
+		/**
+		 * Check if property has restrictive permissions (excludes public)
+		 *
+		 * @param {string} key Property key
+		 * @return {boolean} True if property has restrictive permissions
+		 */
+		isRestrictiveProperty(key) {
+			if (!this.schemaItem.properties[key] || !this.schemaItem.properties[key].authorization) {
+				return false
+			}
+			const auth = this.schemaItem.properties[key].authorization
+			const actions = ['create', 'read', 'update', 'delete']
+			return actions.some(action =>
+				Array.isArray(auth[action]) && auth[action].length > 0
+					&& !auth[action].includes('public'),
+			)
+		},
+
+		/**
+		 * Check if a property has permission for a specific group and action
+		 *
+		 * @param {string} key Property key
+		 * @param {string} groupId Group ID
+		 * @param {string} action CRUD action
+		 * @return {boolean} True if group has permission
+		 */
+		hasPropertyGroupPermission(key, groupId, action) {
+			if (!this.schemaItem.properties[key] || !this.schemaItem.properties[key].authorization) {
+				return false
+			}
+			const auth = this.schemaItem.properties[key].authorization
+			if (!auth[action] || !Array.isArray(auth[action])) {
+				return false
+			}
+			return auth[action].includes(groupId)
+		},
+
+		/**
+		 * Update property-level group permission
+		 *
+		 * @param {string} key Property key
+		 * @param {string} groupId Group ID
+		 * @param {string} action CRUD action
+		 * @param {boolean} hasPermission Whether group should have permission
+		 */
+		updatePropertyGroupPermission(key, groupId, action, hasPermission) {
+			if (!this.schemaItem.properties[key]) {
+				return
+			}
+
+			// Initialize property authorization object if it doesn't exist
+			if (!this.schemaItem.properties[key].authorization) {
+				this.$set(this.schemaItem.properties[key], 'authorization', {})
+			}
+
+			// Initialize action array if it doesn't exist
+			if (!this.schemaItem.properties[key].authorization[action]) {
+				this.$set(this.schemaItem.properties[key].authorization, action, [])
+			}
+
+			const currentPermissions = this.schemaItem.properties[key].authorization[action]
+			const groupIndex = currentPermissions.indexOf(groupId)
+
+			if (hasPermission && groupIndex === -1) {
+				// Add permission
+				currentPermissions.push(groupId)
+			} else if (!hasPermission && groupIndex !== -1) {
+				// Remove permission
+				currentPermissions.splice(groupIndex, 1)
+			}
+
+			// Clean up empty arrays to keep the data structure clean
+			if (currentPermissions.length === 0) {
+				this.$delete(this.schemaItem.properties[key].authorization, action)
+			}
+
+			// If authorization object is empty, remove it entirely
+			if (Object.keys(this.schemaItem.properties[key].authorization).length === 0) {
+				this.$delete(this.schemaItem.properties[key], 'authorization')
+			}
+
+			this.checkPropertiesModified()
+		},
+
+		/**
+		 * Get top user groups for property RBAC display (limit to 8 for action menu)
+		 *
+		 * @return {Array} Array of top user groups
+		 */
+		getTopUserGroupsForProperty() {
+			return this.sortedUserGroups.slice(0, 8)
+		},
+
+		/**
+		 * Get a compact list of current property permissions
+		 *
+		 * @param {string} key Property key
+		 * @return {Array} Array of permission objects with group and rights
+		 */
+		getPropertyPermissionsList(key) {
+			if (!this.schemaItem.properties[key] || !this.schemaItem.properties[key].authorization) {
+				return []
+			}
+
+			const auth = this.schemaItem.properties[key].authorization
+			const permissionsList = []
+			const processedGroups = new Set()
+
+			// Process each action to build group permissions
+			Object.keys(auth).forEach(action => {
+				if (Array.isArray(auth[action])) {
+					auth[action].forEach(groupId => {
+						if (!processedGroups.has(groupId)) {
+							const rights = []
+							if (auth.create && auth.create.includes(groupId)) rights.push('C')
+							if (auth.read && auth.read.includes(groupId)) rights.push('R')
+							if (auth.update && auth.update.includes(groupId)) rights.push('U')
+							if (auth.delete && auth.delete.includes(groupId)) rights.push('D')
+
+							permissionsList.push({
+								group: this.getDisplayGroupName(groupId),
+								groupId,
+								rights: rights.length > 0 ? rights.join(',') : 'none',
+							})
+							processedGroups.add(groupId)
+						}
+					})
+				}
+			})
+
+			// Always show admin with full rights (even though not stored explicitly)
+			permissionsList.push({
+				group: 'Admin',
+				groupId: 'admin',
+				rights: 'C,R,U,D',
+			})
+
+			return permissionsList.sort((a, b) => {
+				// Sort order: public, user, others alphabetically, admin last
+				if (a.groupId === 'public') return -1
+				if (b.groupId === 'public') return 1
+				if (a.groupId === 'user') return -1
+				if (b.groupId === 'user') return 1
+				if (a.groupId === 'admin') return 1
+				if (b.groupId === 'admin') return -1
+				return a.group.localeCompare(b.group)
+			})
+		},
+
+		/**
+		 * Get available groups for property permission selection
+		 *
+		 * @return {Array} Array of available groups including special groups
+		 */
+		getAvailableGroupsForProperty() {
+			const availableGroups = [
+				{ id: 'public', label: 'Public (Unauthenticated)' },
+				{ id: 'user', label: 'User (Authenticated)' },
+				...this.sortedUserGroups.map(group => ({
+					id: group.id,
+					label: group.displayname || group.id,
+				})),
+			]
+			return availableGroups
+		},
+
+		/**
+		 * Get display name for a group ID
+		 *
+		 * @param {string} groupId Group ID
+		 * @return {string} Display name
+		 */
+		getDisplayGroupName(groupId) {
+			if (groupId === 'public') return 'Public'
+			if (groupId === 'user') return 'User'
+			if (groupId === 'admin') return 'Admin'
+
+			const group = this.userGroups.find(g => g.id === groupId)
+			return group ? (group.displayname || group.id) : groupId
+		},
+
+		/**
+		 * Check if any new permission checkboxes are selected
+		 *
+		 * @return {boolean} True if any permission is selected
+		 */
+		hasAnyPropertyNewPermissionSelected() {
+			return this.propertyNewPermissionCreate
+				   || this.propertyNewPermissionRead
+				   || this.propertyNewPermissionUpdate
+				   || this.propertyNewPermissionDelete
+		},
+
+		/**
+		 * Add permissions for a group to a property
+		 *
+		 * @param {string} key Property key
+		 */
+		addPropertyGroupPermissions(key) {
+			if (!this.propertyNewPermissionGroup) return
+
+			const groupId = typeof this.propertyNewPermissionGroup === 'object'
+				? this.propertyNewPermissionGroup.id
+				: this.propertyNewPermissionGroup
+
+			// Initialize property authorization if needed
+			if (!this.schemaItem.properties[key].authorization) {
+				this.$set(this.schemaItem.properties[key], 'authorization', {})
+			}
+
+			// Add permissions for selected actions
+			if (this.propertyNewPermissionCreate) {
+				this.updatePropertyGroupPermission(key, groupId, 'create', true)
+			}
+			if (this.propertyNewPermissionRead) {
+				this.updatePropertyGroupPermission(key, groupId, 'read', true)
+			}
+			if (this.propertyNewPermissionUpdate) {
+				this.updatePropertyGroupPermission(key, groupId, 'update', true)
+			}
+			if (this.propertyNewPermissionDelete) {
+				this.updatePropertyGroupPermission(key, groupId, 'delete', true)
+			}
+
+			// Reset form
+			this.resetPropertyPermissionForm()
+		},
+
+		/**
+		 * Remove all permissions for a group from a property
+		 *
+		 * @param {string} key Property key
+		 * @param {string} displayName Group display name to remove
+		 */
+		removePropertyGroupPermissions(key, displayName) {
+			// Find the actual groupId from the display name
+			const permission = this.getPropertyPermissionsList(key).find(p => p.group === displayName)
+			if (!permission || permission.groupId === 'admin') {
+				return // Cannot remove admin permissions or unknown groups
+			}
+
+			const groupId = permission.groupId
+
+			if (!this.schemaItem.properties[key] || !this.schemaItem.properties[key].authorization) {
+				return
+			}
+
+			// Remove group from all actions
+			['create', 'read', 'update', 'delete'].forEach(action => {
+				this.updatePropertyGroupPermission(key, groupId, action, false)
+			})
+		},
+
+		/**
+		 * Reset the property permission form
+		 */
+		resetPropertyPermissionForm() {
+			this.propertyNewPermissionGroup = null
+			this.propertyNewPermissionCreate = false
+			this.propertyNewPermissionRead = false
+			this.propertyNewPermissionUpdate = false
+			this.propertyNewPermissionDelete = false
+		},
+
+		// Property-level Table Configuration Methods
+
+		/**
+		 * Get a table setting value for a property
+		 *
+		 * @param {string} key Property key
+		 * @param {string} setting Table setting name
+		 * @return {boolean|any} Setting value
+		 */
+		 getPropertyTableSetting(key, setting) {
+			if (!this.schemaItem.properties[key] || !this.schemaItem.properties[key].table) {
+				return false
+			}
+			return this.schemaItem.properties[key].table[setting] === true
+		},
+
+		/**
+		 * Get the original table setting value for a property
+		 *
+		 * @param {string} key Property key
+		 * @param {string} setting Table setting name
+		 * @return {boolean|any} Setting value
+		 */
+		getOriginalPropertyTableSetting(key, setting) {
+			return this.originalProperties?.[key]?.table[setting]
+		},
+
+		/**
+		 * Update a table setting for a property
+		 *
+		 * @param {string} key Property key
+		 * @param {string} setting Table setting name
+		 * @param {boolean|any} value Setting value
+		 */
+		 updatePropertyTableSetting(key, setting, value) {
+			if (!this.schemaItem.properties[key]) {
+				return
+			}
+
+			// Initialize table object if it doesn't exist
+			if (!this.schemaItem.properties[key].table) {
+				this.$set(this.schemaItem.properties[key], 'table', {})
+			}
+
+			// Update the setting
+			this.$set(this.schemaItem.properties[key].table, setting, value)
+
+			// Clean up table object if all settings are default,
+			// UNLESS this was an explicit change from true -> false (we must send false)
+			const wasTrueOriginally = this.getOriginalPropertyTableSetting(key, setting) === true
+			const becameExplicitFalse = value === false
+			const shouldKeepExplicitFalse = setting === 'default' && becameExplicitFalse && wasTrueOriginally
+
+			if (this.isTableConfigDefault(key) && !shouldKeepExplicitFalse) {
+				this.$delete(this.schemaItem.properties[key], 'table')
+			}
+
+			this.checkPropertiesModified()
+		},
+
+		/**
+		 * Check if table configuration is all default values
+		 *
+		 * @param {string} key Property key
+		 * @return {boolean} True if all table settings are default
+		 */
+		isTableConfigDefault(key) {
+			const table = this.schemaItem.properties[key]?.table
+			if (!table) return true
+
+			// Check if all known settings are default values
+			const defaults = { default: false }
+			return Object.keys(table).every(setting =>
+				table[setting] === defaults[setting],
+			)
+		},
+
+		/**
+		 * Check if a property has custom table settings (non-default)
+		 *
+		 * @param {string} key Property key
+		 * @return {boolean} True if property has custom table settings
+		 */
+		hasCustomTableSettings(key) {
+			return !this.isTableConfigDefault(key)
+		},
+
+		/**
+		 * Get query parameters for object property
+		 *
+		 * @param {string} key Property key
+		 * @return {string} Query parameters string
+		 */
+		getObjectQueryParams(key) {
+			if (!this.schemaItem.properties[key] || !this.schemaItem.properties[key].objectConfiguration) {
+				return ''
+			}
+			return this.schemaItem.properties[key].objectConfiguration.queryParams || ''
+		},
+
+		/**
+		 * Update query parameters for object property
+		 *
+		 * @param {string} key Property key
+		 * @param {string} value Query parameters string
+		 */
+		updateObjectQueryParams(key, value) {
+			if (!this.schemaItem.properties[key]) {
+				return
+			}
+
+			// Ensure objectConfiguration exists
+			if (!this.schemaItem.properties[key].objectConfiguration) {
+				this.$set(this.schemaItem.properties[key], 'objectConfiguration', { handling: 'related-object' })
+			}
+
+			// Update query parameters (remove if empty)
+			if (value && value.trim()) {
+				this.$set(this.schemaItem.properties[key].objectConfiguration, 'queryParams', value.trim())
+			} else {
+				this.$delete(this.schemaItem.properties[key].objectConfiguration, 'queryParams')
+			}
+
+			this.checkPropertiesModified()
+		},
+
+		/**
+		 * Get query parameters for array item objects
+		 *
+		 * @param {string} key Property key
+		 * @return {string} Query parameters string
+		 */
+		getArrayItemQueryParams(key) {
+			if (!this.schemaItem.properties[key] || !this.schemaItem.properties[key].items || !this.schemaItem.properties[key].items.objectConfiguration) {
+				return ''
+			}
+			return this.schemaItem.properties[key].items.objectConfiguration.queryParams || ''
+		},
+
+		/**
+		 * Update query parameters for array item objects
+		 *
+		 * @param {string} key Property key
+		 * @param {string} value Query parameters string
+		 */
+		updateArrayItemQueryParams(key, value) {
+			if (!this.schemaItem.properties[key] || !this.schemaItem.properties[key].items) {
+				return
+			}
+
+			// Ensure objectConfiguration exists
+			if (!this.schemaItem.properties[key].items.objectConfiguration) {
+				this.$set(this.schemaItem.properties[key].items, 'objectConfiguration', { handling: 'related-object' })
+			}
+
+			// Update query parameters (remove if empty)
+			if (value && value.trim()) {
+				this.$set(this.schemaItem.properties[key].items.objectConfiguration, 'queryParams', value.trim())
+			} else {
+				this.$delete(this.schemaItem.properties[key].items.objectConfiguration, 'queryParams')
+			}
+
+			this.checkPropertiesModified()
+		},
 	},
 }
 </script>
@@ -1996,6 +2993,11 @@ export default {
 
 .property-chip.chip-info {
 	background: var(--color-info);
+	color: var(--color-primary-text);
+}
+
+.property-chip.chip-table {
+	background: var(--color-primary);
 	color: var(--color-primary-text);
 }
 
@@ -2090,6 +3092,10 @@ export default {
 	background: var(--color-primary-light) !important;
 }
 
+.user-row {
+	background: var(--color-warning-light) !important;
+}
+
 .admin-row {
 	background: var(--color-success-light) !important;
 }
@@ -2119,6 +3125,11 @@ export default {
 	color: white;
 }
 
+.group-badge.user {
+	background: var(--color-warning);
+	color: white;
+}
+
 .group-badge.admin {
 	background: var(--color-success);
 	color: white;
@@ -2132,5 +3143,17 @@ export default {
 
 .rbac-summary {
 	margin-top: 20px;
+}
+
+/* Property-level RBAC Styling - Action Menu Based */
+.property-permission-text {
+	font-family: monospace;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.property-permission-remove-btn {
+	font-size: 11px;
+	color: var(--color-error);
 }
 </style>
