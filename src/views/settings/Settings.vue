@@ -49,6 +49,7 @@
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../store/settings.js'
 
+import { NcSettingsSection } from '@nextcloud/vue'
 import VersionInfoCard from '../../components/shared/VersionInfoCard.vue'
 import SolrConfiguration from './sections/SolrConfiguration.vue'
 import StatisticsOverview from './sections/StatisticsOverview.vue'
@@ -78,6 +79,7 @@ export default {
 	name: 'Settings',
 
 	components: {
+		NcSettingsSection,
 		VersionInfoCard,
 		SolrConfiguration,
 		StatisticsOverview,

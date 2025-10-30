@@ -1,53 +1,54 @@
 <template>
-	<SettingsSection 
-		name="Cache Management"
-		description="Monitor and manage API caching for optimal performance"
-		:loading="loadingCache"
-		loading-message="Loading cache statistics...">
-		<template #actions>
-			<NcButton
-				type="secondary"
-				:disabled="loading || clearingCache || loadingCache"
-				@click="loadCacheStats">
-				<template #icon>
-					<NcLoadingIcon v-if="loadingCache" :size="20" />
-					<Refresh v-else :size="20" />
-				</template>
-				Refresh
-			</NcButton>
-			<NcButton
-				type="error"
-				:disabled="loading || clearingCache || loadingCache || cacheStats.unavailable"
-				@click="showClearCacheDialog">
-				<template #icon>
-					<NcLoadingIcon v-if="clearingCache" :size="20" />
-					<Delete v-else :size="20" />
-				</template>
-				Clear Cache
-			</NcButton>
-		</template>
+	<div>
+		<SettingsSection 
+			name="Cache Management"
+			description="Monitor and manage API caching for optimal performance"
+			:loading="loadingCache"
+			loading-message="Loading cache statistics...">
+			<template #actions>
+				<NcButton
+					type="secondary"
+					:disabled="loading || clearingCache || loadingCache"
+					@click="loadCacheStats">
+					<template #icon>
+						<NcLoadingIcon v-if="loadingCache" :size="20" />
+						<Refresh v-else :size="20" />
+					</template>
+					Refresh
+				</NcButton>
+				<NcButton
+					type="error"
+					:disabled="loading || clearingCache || loadingCache || cacheStats.unavailable"
+					@click="showClearCacheDialog">
+					<template #icon>
+						<NcLoadingIcon v-if="clearingCache" :size="20" />
+						<Delete v-else :size="20" />
+					</template>
+					Clear Cache
+				</NcButton>
+			</template>
 
-				<!-- Cache Unavailable Message -->
-				<div v-if="cacheStats.unavailable" class="cache-unavailable">
-					<div class="unavailable-message">
-						<h4>⚠️ Cache Statistics Unavailable</h4>
-						<p>Cache monitoring is not available. This can happen when:</p>
-						<ul>
-							<li>Cache systems are not properly configured</li>
-							<li>Statistics collection is disabled for performance reasons</li>
-							<li>Cache backends don't support statistics</li>
-						</ul>
-						<div v-if="cacheStats.errorMessage" class="error-details">
-							<strong>Technical Details:</strong> {{ cacheStats.errorMessage }}
-						</div>
-						<p class="performance-note">
-							<strong>Note:</strong> This is normal behavior as storing cache metadata in database tables would cause performance issues.
-							Cache systems are working but detailed statistics are not collected.
-						</p>
+			<!-- Cache Unavailable Message -->
+			<div v-if="cacheStats.unavailable" class="cache-unavailable">
+				<div class="unavailable-message">
+					<h4>⚠️ Cache Statistics Unavailable</h4>
+					<p>Cache monitoring is not available. This can happen when:</p>
+					<ul>
+						<li>Cache systems are not properly configured</li>
+						<li>Statistics collection is disabled for performance reasons</li>
+						<li>Cache backends don't support statistics</li>
+					</ul>
+					<div v-if="cacheStats.errorMessage" class="error-details">
+						<strong>Technical Details:</strong> {{ cacheStats.errorMessage }}
 					</div>
+					<p class="performance-note">
+						<strong>Note:</strong> This is normal behavior as storing cache metadata in database tables would cause performance issues.
+						Cache systems are working but detailed statistics are not collected.
+					</p>
 				</div>
+			</div>
 
-				<div v-else class="cache-content">
+			<div v-else class="cache-content">
 					<!-- Cache Overview -->
 					<div class="cache-overview">
 						<div class="cache-overview-cards">
@@ -244,9 +245,9 @@
 					</div>
 				</div>
 			</div>
-	</SettingsSection>
+		</SettingsSection>
 
-	<!-- Clear Cache Confirmation Dialog -->
+		<!-- Clear Cache Confirmation Dialog -->
 		<NcDialog
 			v-if="showClearCacheConfirmation"
 			name="Clear Cache"

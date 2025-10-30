@@ -2,7 +2,7 @@
 	<SettingsSection 
 		name="LLM Configuration"
 		description="Configure Large Language Model settings for AI features"
-		:loading="loading"
+		:loading="loadingStats"
 		loading-message="Loading LLM configuration...">
 		<template #actions>
 			<!-- LLM Actions Menu -->
@@ -74,12 +74,11 @@
 					<span v-if="saving" class="saving-indicator">
 						<NcLoadingIcon :size="14" /> {{ t('openregister', 'Saving...') }}
 					</span>
-				</p>
-			</div>
+			</p>
 		</div>
 
-		<!-- LLM Dashboard -->
-		<div v-if="llmSettings.enabled" class="llm-management-section">
+	<!-- LLM Dashboard -->
+	<div v-if="llmSettings.enabled" class="llm-management-section">
 			<!-- Loading State -->
 			<div v-if="loadingStats" class="loading-section">
 				<NcLoadingIcon :size="32" />
@@ -148,19 +147,19 @@
 			:show="showFileManagementDialog"
 			@closing="showFileManagementDialog = false" />
 
-		<!-- Object Management Modal -->
-		<ObjectManagementModal
-			:show="showObjectManagementDialog"
-			@closing="showObjectManagementDialog = false" />
-	</NcSettingsSection>
+	<!-- Object Management Modal -->
+	<ObjectManagementModal
+		:show="showObjectManagementDialog"
+		@closing="showObjectManagementDialog = false" />
+	</SettingsSection>
 </template>
 
 <script>
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../../store/settings.js'
+import SettingsSection from '../../../components/shared/SettingsSection.vue'
 
 import {
-	NcSettingsSection,
 	NcLoadingIcon,
 	NcCheckboxRadioSwitch,
 	NcActions,
@@ -196,7 +195,7 @@ export default {
 	name: 'LlmConfiguration',
 
 	components: {
-		NcSettingsSection,
+		SettingsSection,
 		NcLoadingIcon,
 		NcCheckboxRadioSwitch,
 		NcActions,
@@ -374,27 +373,9 @@ export default {
 </script>
 
 <style scoped>
-/* OpenConnector pattern: Actions positioned with relative positioning and negative margins */
-/* Adjusted for NcSettingsSection's internal H2 structure */
-.section-header-inline {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	gap: 1rem;
-	position: relative;
-	top: -30px; /* Pull up to align with NcSettingsSection's H2 */
-	margin-bottom: -25px; /* Compensate for pull-up */
-	z-index: 10;
-}
-
-.button-group {
-	display: flex;
-	gap: 0.5rem;
-	align-items: center;
-}
+/* SettingsSection handles all action button positioning and spacing */
 
 .section-description-full {
-	margin-top: 25px; /* Compensate for section-header-inline's negative margin */
 	background: var(--color-background-hover);
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius-large);

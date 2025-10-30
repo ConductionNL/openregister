@@ -79,6 +79,7 @@ return [
         ['name' => 'settings#updateLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'POST'],
         ['name' => 'settings#getFileSettings', 'url' => '/api/settings/files', 'verb' => 'GET'],
         ['name' => 'settings#updateFileSettings', 'url' => '/api/settings/files', 'verb' => 'PUT'],
+        ['name' => 'settings#getFileExtractionStats', 'url' => '/api/settings/files/stats', 'verb' => 'GET'],
         ['name' => 'settings#testDolphinConnection', 'url' => '/api/settings/files/test-dolphin', 'verb' => 'POST'],
         ['name' => 'settings#updateObjectSettings', 'url' => '/api/settings/objects', 'verb' => 'POST'],
         
