@@ -1,18 +1,17 @@
 <template>
-	<NcSettingsSection name="File Configuration"
-		description="Configure file upload and text extraction settings">
-		<div v-if="!settingsStore.loadingFileSettings" class="file-settings">
-			<!-- Actions Bar -->
-			<div class="section-header-inline">
-				<span />
-				<div class="button-group">
-					<!-- File Actions Menu -->
-					<NcActions
-						:aria-label="t('openregister', 'File actions menu')"
-						:menu-name="t('openregister', 'Actions')">
-						<template #icon>
-							<DotsVertical :size="20" />
-						</template>
+	<SettingsSection 
+		name="File Configuration"
+		description="Configure file upload and text extraction settings"
+		:loading="settingsStore.loadingFileSettings"
+		loading-message="Loading file configuration...">
+		<template #actions>
+			<!-- File Actions Menu -->
+			<NcActions
+				:aria-label="t('openregister', 'File actions menu')"
+				:menu-name="t('openregister', 'Actions')">
+				<template #icon>
+					<DotsVertical :size="20" />
+				</template>
 
 						<!-- Extract Pending Files -->
 						<NcActionButton
@@ -42,11 +41,10 @@
 							</template>
 							{{ t('openregister', 'View Status') }}
 						</NcActionButton>
-					</NcActions>
-				</div>
-			</div>
+				</NcActions>
+		</template>
 
-			<!-- Section Description -->
+		<!-- Section Description -->
 			<div class="section-description-full">
 				<p class="main-description">
 					Text extraction converts files into searchable and AI-processable content. Choose from <strong>LLPhant</strong> 
@@ -57,52 +55,16 @@
 					<strong>📝 Note:</strong> Text extraction is <strong>required</strong> before LLM vectorization. The process flow is: 
 					File Upload → Text Extraction → Chunking → Embedding Creation. Without text extraction enabled, files cannot be 
 					vectorized for semantic search.
-				</p>
-			</div>
+			</p>
+		</div>
 
-			<!-- Extraction Statistics Dashboard -->
-			<div v-if="extractionStats" class="file-management-section">
-				<div class="dashboard-section">
-					<div class="dashboard-stats-grid">
-						<div class="stat-card">
-							<h5>Connection Status</h5>
-							<p :class="extractorStatusClass">
-								{{ extractorStatus }}
-							</p>
-						</div>
-
-						<div class="stat-card">
-							<h5>Total Files</h5>
-							<p>{{ formatNumber(extractionStats.total || 0) }}</p>
-						</div>
-
-						<div class="stat-card">
-							<h5>Files Extracted</h5>
-							<p>{{ formatNumber(extractionStats.completed || 0) }}</p>
-						</div>
-
-						<div class="stat-card">
-							<h5>Text Chunks</h5>
-							<p>{{ formatNumber(extractionStats.totalChunks || 0) }}</p>
-						</div>
-
-						<div class="stat-card">
-							<h5>Pending Extraction</h5>
-							<p>{{ formatNumber(extractionStats.pending || 0) }}</p>
-						</div>
-
-						<div class="stat-card">
-							<h5>Failed Extractions</h5>
-							<p class="status-error">{{ formatNumber(extractionStats.failed || 0) }}</p>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<!-- Text Extraction Settings -->
-			<div class="settings-card">
-				<h4>📄 Text Extraction</h4>
-				<div class="settings-group">
+	<!-- Text Extraction Settings -->
+	<SettingsCard 
+		title="Text Extraction"
+		icon="📄"
+		:collapsible="true"
+		:default-collapsed="true">
+		<div class="settings-group compact">
 					<div class="setting-item">
 						<label for="extraction-scope">Extract Text From</label>
 					<NcSelect v-model="fileSettings.extractionScope"
@@ -199,17 +161,111 @@
 									<span class="option-description">{{ description }}</span>
 								</div>
 							</template>
-						</NcSelect>
+					</NcSelect>
+		<p class="setting-description">
+			Control when extraction happens relative to file upload.
+		</p>
+	</div>
+	</div>
+
+	<!-- Processing Limits -->
+	<div class="processing-limits-section">
+					<h5>⚙️ Processing Limits</h5>
+					
+					<!-- First row: File size, chunking strategy, batch size -->
+					<div class="settings-group">
+						<div class="setting-item">
+							<label for="max-file-size">Maximum File Size (MB)</label>
+							<input id="max-file-size"
+								v-model.number="fileSettings.maxFileSize"
+								type="number"
+								min="1"
+								max="500"
+								@change="saveSettings">
+							<p class="setting-description">
+								Maximum file size for text extraction (1-500 MB)
+							</p>
+						</div>
+
+						<div class="setting-item">
+							<label for="chunking-strategy">Chunking Strategy</label>
+							<select id="chunking-strategy"
+								v-model="fileSettings.chunkingStrategy"
+								@change="saveSettings">
+								<option value="RECURSIVE_CHARACTER">Recursive Character Split</option>
+								<option value="CHARACTER">Character Split</option>
+								<option value="TOKEN">Token Split</option>
+								<option value="SENTENCE">Sentence Split</option>
+							</select>
+							<p class="setting-description">
+								How to split text into chunks for processing
+							</p>
+						</div>
+
+						<div class="setting-item">
+							<label for="batch-size">Batch Processing Size</label>
+							<input id="batch-size"
+								v-model.number="fileSettings.batchSize"
+								type="number"
+								min="1"
+								max="100"
+								@change="saveSettings">
+							<p class="setting-description">
+								Number of files to process in parallel background jobs
+							</p>
+						</div>
+					</div>
+
+					<!-- Second row: Chunk size and overlap -->
+					<div class="settings-group" style="margin-top: 16px;">
+						<div class="setting-item">
+							<label for="chunk-size">Chunk Size (characters)</label>
+							<input id="chunk-size"
+								v-model.number="fileSettings.chunkSize"
+								type="number"
+								min="100"
+								max="10000"
+								@change="saveSettings">
+							<p class="setting-description">
+								Size of text chunks for processing and embeddings (100-10000 characters)
+							</p>
+						</div>
+
+					<div class="setting-item">
+						<label for="chunk-overlap">Chunk Overlap (characters)</label>
+						<input id="chunk-overlap"
+							v-model.number="fileSettings.chunkOverlap"
+							type="number"
+							min="0"
+							max="1000"
+							@change="saveSettings">
 						<p class="setting-description">
-							Control when extraction happens relative to file upload.
+							Overlap between consecutive chunks to maintain context (0-1000 characters)
 						</p>
 					</div>
-				</div>
-			</div>
 
-			<!-- Supported File Types -->
-			<div class="settings-card">
-				<h4>📎 Supported File Types</h4>
+					<div class="setting-item">
+						<label>Search Integration</label>
+						<NcCheckboxRadioSwitch
+							v-model="fileSettings.includeInSearch"
+							type="switch"
+							@update:checked="saveSettings">
+							Include in Search Results
+						</NcCheckboxRadioSwitch>
+						<p class="setting-description">
+							Files appear in Nextcloud's global search
+						</p>
+					</div>
+			</div>
+		</div>
+	</SettingsCard>
+
+	<!-- Supported File Types -->
+	<SettingsCard 
+		title="Supported File Types"
+		icon="📎"
+		:collapsible="true"
+		:default-collapsed="true">
 				
 				<!-- Compatibility info based on selected extractor -->
 				<div v-if="fileSettings.textExtractor.id === 'llphant'" class="compatibility-note info-note">
@@ -262,63 +318,50 @@
 									title="Dolphin OCR enabled for scanned documents">
 									📷 OCR
 								</span>
-							</span>
-						</NcCheckboxRadioSwitch>
-					</div>
-				</div>
+						</span>
+				</NcCheckboxRadioSwitch>
+		</div>
+	</div>
+	</SettingsCard>
+
+	<!-- File Processing Statistics -->
+	<SettingsCard 
+		title="File Processing Statistics"
+		icon="📊">
+		<div class="stats-grid">
+			<div class="stat-card">
+				<div class="stat-value">{{ extractionStats.totalFiles || 0 }}</div>
+				<div class="stat-label">Total Files</div>
 			</div>
-
-			<!-- Processing Limits -->
-			<div class="settings-card">
-				<h4>⚙️ Processing Limits</h4>
-				<div class="settings-group">
-					<div class="setting-item">
-						<label for="max-file-size">Maximum File Size (MB)</label>
-						<input id="max-file-size"
-							v-model.number="fileSettings.maxFileSize"
-							type="number"
-							min="1"
-							max="500"
-							@change="saveSettings">
-						<p class="setting-description">
-							Maximum file size for text extraction (1-500 MB)
-						</p>
-					</div>
-
-					<div class="setting-item">
-						<label for="batch-size">Batch Processing Size</label>
-						<input id="batch-size"
-							v-model.number="fileSettings.batchSize"
-							type="number"
-							min="1"
-							max="100"
-							@change="saveSettings">
-						<p class="setting-description">
-							Number of files to process in parallel background jobs
-						</p>
-					</div>
-				</div>
+			<div class="stat-card highlight">
+				<div class="stat-value">{{ extractionStats.pendingFiles || 0 }}</div>
+				<div class="stat-label">Pending Files</div>
 			</div>
-
-			<!-- Save Status -->
-			<div v-if="saveMessage" class="save-message" :class="saveMessageType">
-				{{ saveMessage }}
+			<div class="stat-card">
+				<div class="stat-value">{{ extractionStats.totalChunks || 0 }}</div>
+				<div class="stat-label">Chunks</div>
+			</div>
+			<div class="stat-card">
+				<div class="stat-value">{{ extractionStats.storageMB || '0.0' }}</div>
+				<div class="stat-label">Storage (MB)</div>
 			</div>
 		</div>
+	</SettingsCard>
 
-		<NcLoadingIcon v-else
-			class="loading-icon"
-			:size="64"
-			appearance="dark" />
-	</NcSettingsSection>
+	<!-- Save Status -->
+	<div v-if="saveMessage" class="save-message" :class="saveMessageType">
+		{{ saveMessage }}
+	</div>
+	</SettingsSection>
 </template>
 
 <script>
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../../store/settings.js'
+import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import SettingsCard from '../../../components/shared/SettingsCard.vue'
 
 import {
-	NcSettingsSection,
 	NcLoadingIcon,
 	NcCheckboxRadioSwitch,
 	NcSelect,
@@ -354,7 +397,8 @@ export default {
 	name: 'FileConfiguration',
 
 	components: {
-		NcSettingsSection,
+		SettingsSection,
+		SettingsCard,
 		NcLoadingIcon,
 		NcCheckboxRadioSwitch,
 		NcSelect,
@@ -373,15 +417,19 @@ export default {
 
 	data() {
 		return {
-			fileSettings: {
-				extractionScope: { id: 'objects', label: 'Files Attached to Objects' },
-				textExtractor: { id: 'llphant', label: 'LLPhant' },
-				extractionMode: { id: 'background', label: 'Background Job' },
-				maxFileSize: 100,
-				batchSize: 10,
-				dolphinApiEndpoint: '',
-				dolphinApiKey: '',
-			},
+	fileSettings: {
+		extractionScope: { id: 'objects', label: 'Files Attached to Objects' },
+		textExtractor: { id: 'llphant', label: 'LLPhant' },
+		extractionMode: { id: 'background', label: 'Background Job' },
+		includeInSearch: true,
+		maxFileSize: 100,
+		chunkSize: 1000,
+		chunkOverlap: 200,
+		chunkingStrategy: 'RECURSIVE_CHARACTER',
+		batchSize: 10,
+		dolphinApiEndpoint: '',
+		dolphinApiKey: '',
+	},
 			fileTypes: [
 				// Native PHP support (LLPhant friendly)
 				{ extension: 'txt', label: 'Text Files', icon: '📝', enabled: true, llphantSupport: 'native', dolphinOcr: false },
@@ -462,54 +510,28 @@ export default {
 					label: 'Manual Only',
 					description: 'Only extract when manually triggered',
 				},
-			],
-			extractionStats: null,
-			processingFiles: false,
-			saveMessage: '',
-			saveMessageType: 'success',
-			dolphinConnectionTested: null, // null, 'success', 'error'
-		}
+		],
+		extractionStats: {
+			totalFiles: 0,
+			pendingFiles: 0,
+			totalChunks: 0,
+			storageMB: '0.0',
+		},
+		processingFiles: false,
+	saveMessage: '',
+	saveMessageType: 'success',
+	dolphinConnectionTested: null, // null, 'success', 'error'
+	}
 	},
 
 	computed: {
 		...mapStores(useSettingsStore),
 
-		/**
-		 * Get extractor status
-		 */
-		extractorStatus() {
-			if (this.fileSettings.extractionScope.id === 'none') {
-				return 'Disabled'
-			}
-			if (this.fileSettings.textExtractor.id === 'dolphin') {
-				return this.dolphinConnectionTested === 'success' ? 'Connected' : 
-					   this.dolphinConnectionTested === 'error' ? 'Disconnected' : 
-					   'Not Tested'
-			}
-			return 'LLPhant (Local)'
-		},
+},
 
-		/**
-		 * Get extractor status CSS class
-		 */
-		extractorStatusClass() {
-			const status = this.extractorStatus
-			if (status === 'Connected' || status === 'LLPhant (Local)') {
-				return 'status-connected'
-			}
-			if (status === 'Disconnected') {
-				return 'status-disconnected'
-			}
-			if (status === 'Disabled') {
-				return 'status-error'
-			}
-			return 'status-unknown'
-		},
-	},
-
-	async mounted() {
-		await this.loadSettings()
-		await this.loadExtractionStats()
+async mounted() {
+	await this.loadSettings()
+	await this.loadExtractionStats()
 	},
 
 	methods: {
@@ -546,11 +568,15 @@ export default {
 							|| this.extractionModes[0] // default to 'background'
 					}
 					
-					// Load other settings
-					this.fileSettings.maxFileSize = settings.maxFileSize || 100
-					this.fileSettings.batchSize = settings.batchSize || 10
-					this.fileSettings.dolphinApiEndpoint = settings.dolphinApiEndpoint || ''
-					this.fileSettings.dolphinApiKey = settings.dolphinApiKey || ''
+				// Load other settings
+				this.fileSettings.includeInSearch = settings.includeInSearch !== undefined ? settings.includeInSearch : true
+				this.fileSettings.maxFileSize = settings.maxFileSize || 100
+				this.fileSettings.chunkSize = settings.chunkSize || 1000
+				this.fileSettings.chunkOverlap = settings.chunkOverlap || 200
+				this.fileSettings.chunkingStrategy = settings.chunkingStrategy || 'RECURSIVE_CHARACTER'
+				this.fileSettings.batchSize = settings.batchSize || 10
+				this.fileSettings.dolphinApiEndpoint = settings.dolphinApiEndpoint || ''
+				this.fileSettings.dolphinApiKey = settings.dolphinApiKey || ''
 					
 					// Load file types
 					if (settings.enabledFileTypes) {
@@ -573,7 +599,11 @@ export default {
 					extractionScope: this.fileSettings.extractionScope?.id || 'objects',
 					textExtractor: this.fileSettings.textExtractor?.id || 'llphant',
 					extractionMode: this.fileSettings.extractionMode?.id || 'background',
+					includeInSearch: this.fileSettings.includeInSearch,
 					maxFileSize: this.fileSettings.maxFileSize,
+					chunkSize: this.fileSettings.chunkSize,
+					chunkOverlap: this.fileSettings.chunkOverlap,
+					chunkingStrategy: this.fileSettings.chunkingStrategy,
 					batchSize: this.fileSettings.batchSize,
 					dolphinApiEndpoint: this.fileSettings.dolphinApiEndpoint || '',
 					dolphinApiKey: this.fileSettings.dolphinApiKey || '',
@@ -582,7 +612,7 @@ export default {
 						.map(ft => ft.extension),
 				})
 				
-				this.showSaveMessage('Settings saved successfully', 'success')
+				// Settings saved silently - no success message
 			} catch (error) {
 				console.error('Failed to save file settings:', error)
 				this.showSaveMessage('Failed to save settings', 'error')
@@ -686,38 +716,42 @@ export default {
 			}, 3000)
 		},
 
-		/**
-		 * Format number with thousands separator
-		 */
-		formatNumber(num) {
-			return new Intl.NumberFormat().format(num || 0)
-		},
+/**
+ * Load extraction statistics
+ */
+async loadExtractionStats() {
+	try {
+		const stats = await this.settingsStore.getExtractionStats()
+		if (stats) {
+			this.extractionStats = {
+				totalFiles: stats.total || 0,
+				pendingFiles: stats.pending || 0,
+				totalChunks: stats.chunks || stats.totalChunks || 0,
+				storageMB: stats.storage || stats.storageMB || '0.0',
+			}
+		}
+	} catch (error) {
+		console.error('Failed to load extraction stats:', error)
+	}
+},
+
+/**
+ * Toggle section collapsed state
+ */
+	/**
+	 * Format number with thousands separator
+	 */
+	formatNumber(num) {
+		return new Intl.NumberFormat().format(num || 0)
+	},
 	},
 }
 </script>
 
 <style scoped>
-/* OpenConnector pattern: Actions positioned with relative positioning and negative margins */
-/* Adjusted for NcSettingsSection's internal H2 structure */
-.section-header-inline {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	gap: 1rem;
-	position: relative;
-	top: -30px; /* Pull up to align with NcSettingsSection's H2 */
-	margin-bottom: -25px; /* Compensate for pull-up */
-	z-index: 10;
-}
-
-.button-group {
-	display: flex;
-	gap: 0.5rem;
-	align-items: center;
-}
+/* SettingsSection handles all action button positioning and spacing */
 
 .section-description-full {
-	margin-top: 37px; /* Compensate for section-header-inline's negative margin */
 	background: var(--color-background-hover);
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius-large);
@@ -744,81 +778,43 @@ export default {
 	color: var(--color-primary-element);
 }
 
-.file-management-section {
-	margin-bottom: 32px;
+/* Compact Layout */
+.settings-group.compact {
+	gap: 12px;
 }
 
-.dashboard-section {
-	margin-top: 20px;
+.settings-group.compact .setting-item {
+	gap: 6px;
 }
 
-.dashboard-stats-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-	gap: 16px;
-	margin-bottom: 24px;
+.settings-group.compact .setting-description {
+	font-size: 12px;
+	margin-top: 4px;
 }
 
-.stat-card {
-	background: var(--color-main-background);
-	border: 2px solid var(--color-border);
-	border-radius: var(--border-radius-large);
-	padding: 20px;
-	text-align: center;
-	transition: all 0.2s ease;
+.processing-limits-section {
+	margin-top: 24px;
+	padding-top: 24px;
+	border-top: 1px solid var(--color-border);
 }
 
-.stat-card:hover {
-	border-color: var(--color-primary-element);
-	transform: translateY(-2px);
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.stat-card h5 {
-	color: var(--color-text-maxcontrast);
-	font-size: 13px;
-	font-weight: 500;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
-	margin: 0 0 12px 0;
-}
-
-.stat-card p {
-	color: var(--color-primary-element);
-	font-size: 32px;
-	font-weight: 700;
-	margin: 0;
-	font-variant-numeric: tabular-nums;
-}
-
-.stat-card p.status-connected {
-	color: var(--color-success);
-}
-
-.stat-card p.status-disconnected {
-	color: var(--color-error);
-}
-
-.stat-card p.status-unknown {
-	color: var(--color-text-maxcontrast);
-}
-
-.stat-card p.status-error {
-	color: var(--color-error);
-}
-
-.settings-card {
-	background: var(--color-background-hover);
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	padding: 20px;
-	margin-bottom: 20px;
-}
-
-.settings-card h4 {
+.processing-limits-section h5 {
 	color: var(--color-text-light);
 	margin: 0 0 16px 0;
-	font-size: 16px;
+	font-size: 15px;
+	font-weight: 500;
+}
+
+.processing-limits-section .settings-group {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 16px;
+}
+
+@media (max-width: 768px) {
+	.processing-limits-section .settings-group {
+		grid-template-columns: 1fr;
+	}
 }
 
 .settings-group {
@@ -839,13 +835,19 @@ export default {
 	font-size: 14px;
 }
 
-.setting-item input[type="number"] {
+.setting-item input[type="number"],
+.setting-item select {
 	max-width: 200px;
 	padding: 8px 12px;
 	border: 1px solid var(--color-border-dark);
 	border-radius: var(--border-radius);
 	background: var(--color-main-background);
 	color: var(--color-text-light);
+}
+
+.setting-item select {
+	min-width: 200px;
+	cursor: pointer;
 }
 
 .setting-description {
@@ -1015,9 +1017,54 @@ export default {
 		grid-template-columns: 1fr;
 	}
 
-	.dashboard-stats-grid {
+	.stats-grid {
 		grid-template-columns: repeat(2, 1fr);
 	}
+}
+
+/* Vectorization Statistics */
+.stats-grid {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 16px;
+	margin-top: 16px;
+}
+
+.stat-card {
+	background: var(--color-background-hover);
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius-large);
+	padding: 20px;
+	text-align: center;
+	transition: all 0.2s ease;
+}
+
+.stat-card:hover {
+	border-color: var(--color-primary-element);
+	transform: translateY(-2px);
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card.highlight {
+	background: var(--color-primary-light);
+	border-color: var(--color-primary-element);
+}
+
+.stat-value {
+	font-size: 32px;
+	font-weight: bold;
+	color: var(--color-primary-element);
+	margin-bottom: 8px;
+}
+
+.stat-card.highlight .stat-value {
+	color: var(--color-primary-element);
+}
+
+.stat-label {
+	font-size: 14px;
+	color: var(--color-text-maxcontrast);
+	font-weight: 500;
 }
 </style>
 

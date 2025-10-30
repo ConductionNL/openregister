@@ -1,21 +1,22 @@
 <template>
-	<SettingsSection 
-		name="System Statistics"
-		description="Overview of your Open Register data and potential issues"
-		:loading="loadingStats"
-		loading-message="Loading statistics...">
-		<template #actions>
-			<NcButton
-				type="secondary"
-				:disabled="loading || saving || rebasing || loadingStats"
-				@click="loadStats">
-				<template #icon>
-					<NcLoadingIcon v-if="loadingStats" :size="20" />
-					<Refresh v-else :size="20" />
-				</template>
-				Refresh
-			</NcButton>
-		</template>
+	<div>
+		<SettingsSection 
+			name="System Statistics"
+			description="Overview of your Open Register data and potential issues"
+			:loading="loadingStats"
+			loading-message="Loading statistics...">
+			<template #actions>
+				<NcButton
+					type="secondary"
+					:disabled="loading || saving || rebasing || loadingStats"
+					@click="loadStats">
+					<template #icon>
+						<NcLoadingIcon v-if="loadingStats" :size="20" />
+						<Refresh v-else :size="20" />
+					</template>
+					Refresh
+				</NcButton>
+			</template>
 
 			<div class="stats-content">
 				<div class="stats-grid">
@@ -314,13 +315,8 @@
 					</div>
 				</div>
 			</div>
-		</div>
-
-		<!-- Loading State -->
-		<NcLoadingIcon v-else
-			class="loading-icon"
-			:size="64"
-			appearance="dark" />
+			</div>
+		</SettingsSection>
 
 		<!-- Rebase Confirmation Dialog -->
 		<NcDialog v-if="showRebaseConfirmation"
@@ -428,7 +424,7 @@
 				</div>
 			</div>
 		</NcDialog>
-	</SettingsSection>
+	</div>
 </template>
 
 <script>

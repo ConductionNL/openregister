@@ -203,6 +203,104 @@ OpenRegister supports two text extraction engines:
 
 You can configure text extraction in Settings → File Configuration. Check extraction status in the file's metadata after upload.
 
+### Technical Implementation
+
+**Background Job Processing**:
+
+Text extraction uses Nextcloud's background job system for reliable, async processing:
+
+1. **File Upload** - User uploads a file
+2. **Job Queuing** - 'FileChangeListener' automatically queues 'FileTextExtractionJob'
+3. **Job Execution** - Background job system processes the file when resources are available
+4. **Text Extraction** - Selected extractor (LLPhant or Dolphin) processes the file
+5. **Storage** - Extracted text stored in 'FileText' entity for searching
+6. **Completion** - Status updated to 'completed' or 'failed'
+
+**File Type Compatibility Matrix**:
+
+**LLPhant Support:**
+- ✓ **Native** (TXT, MD, HTML, JSON, XML, CSV) - Perfect quality, very fast
+- ○ **Library** (PDF, DOCX, DOC, XLSX, XLS) - Good quality, medium speed
+- ⚠️ **Limited** (PPTX, ODT, RTF) - Basic text only, use Dolphin for better results
+- ✗ **No Support** (JPG, PNG, GIF, WebP) - Requires Dolphin with OCR
+
+**Dolphin AI Support:**
+- ✓ All formats with superior quality
+- ✓ OCR for scanned documents and images
+- ✓ Table extraction with structure preserved
+- ✓ Formula recognition (LaTeX format)
+- ✓ Multi-language support
+- ✓ Layout understanding (multi-column, etc.)
+
+**OCR-Specific Use Cases (Dolphin only)**:
+1. **Document Digitization** - Scanning paper archives into searchable text
+2. **Receipt Processing** - Photo receipts from mobile devices
+3. **Screenshot Analysis** - Extract text from application screenshots
+4. **Infographic Text** - Extract text from images with embedded text
+5. **Historical Documents** - Digitize old scanned materials
+
+**Quality Requirements for OCR**:
+- Minimum: 150 DPI resolution
+- Recommended: 300+ DPI
+- Clear, high-contrast images
+- Minimal blur or distortion
+- Properly oriented (not rotated)
+
+**Extraction Configuration Options**:
+
+Configure in Settings → File Configuration:
+
+1. **Text Extractor Selection**:
+   - LLPhant (default) - Local, free, privacy-friendly
+   - Dolphin - Advanced AI, requires API key
+
+2. **Extraction Scope**:
+   - None - Disabled
+   - All files - Every uploaded file
+   - Files in folders - Specific folders only
+   - Files attached to objects - Only object attachments (recommended)
+
+3. **Extraction Mode**:
+   - Background (default) - Async via background jobs
+   - Immediate - Synchronous during upload (slower)
+   - Manual - Triggered by admin action only
+
+4. **Enabled File Types**:
+   - Select which file extensions to process
+   - Different for LLPhant vs Dolphin
+   - Enable OCR formats (images) only if using Dolphin
+
+**Integration Tests**:
+
+The file text extraction system includes comprehensive integration tests:
+
+```bash
+# Run file extraction tests
+vendor/bin/phpunit tests/Integration/FileTextExtractionIntegrationTest.php
+
+# Test cases covered:
+# - File upload queues background job
+# - Background job execution completes
+# - Text extraction end-to-end with content verification
+# - Multiple file format support (TXT, MD, JSON)
+# - Extraction metadata recording (status, method, timestamps)
+```
+
+**Monitoring Extraction**:
+
+Check extraction status via logs:
+
+```bash
+# Watch extraction progress
+docker logs -f nextcloud-container | grep FileTextExtractionJob
+
+# Check for errors
+docker logs nextcloud-container | grep "extraction failed"
+
+# View extraction statistics
+# Settings → File Configuration → Statistics section
+```
+
 ## Working with Files
 
 ### Uploading Files
@@ -552,4 +650,481 @@ This will:
 
 ## Conclusion
 
-Files in Open Register bridge the gap between structured data and unstructured content, providing a comprehensive solution for managing all types of information in your application. With advanced features like auto-sharing, authenticated access, metadata extraction, and flexible deletion options, Open Register creates a unified system where all your data—structured and unstructured—works together seamlessly. 
+Files in Open Register bridge the gap between structured data and unstructured content, providing a comprehensive solution for managing all types of information in your application. With advanced features like auto-sharing, authenticated access, metadata extraction, and flexible deletion options, Open Register creates a unified system where all your data—structured and unstructured—works together seamlessly.
+
+---
+
+## Technical Architecture
+
+This section provides detailed visualization of the file handling system's architecture and data flow.
+
+### File Upload and Processing Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API
+    participant ObjectService
+    participant SaveObject
+    participant FileService
+    participant Nextcloud
+    participant DB
+    participant BgJob
+    participant Extractor
+    participant Solr
+    
+    Client->>API: POST /objects with file data
+    API->>ObjectService: saveObject(data)
+    
+    ObjectService->>SaveObject: handle(data, uploadedFiles)
+    
+    Note over SaveObject: 1. Detect file properties
+    SaveObject->>SaveObject: detectFileProperties(schema)
+    
+    Note over SaveObject: 2. Process file data
+    SaveObject->>SaveObject: processFileProperty(fileData)
+    
+    alt Base64 data
+        SaveObject->>SaveObject: decodeBase64()
+    else URL
+        SaveObject->>SaveObject: fetchFromURL()
+    else File object
+        SaveObject->>SaveObject: validateFileObject()
+    end
+    
+    Note over SaveObject: 3. Create file
+    SaveObject->>FileService: createFile(objectEntity, data)
+    
+    FileService->>FileService: determineFolder()
+    FileService->>Nextcloud: createFolder(path)
+    Nextcloud-->>FileService: Folder created
+    
+    FileService->>Nextcloud: writeFile(path, content)
+    Nextcloud-->>FileService: File ID
+    
+    FileService->>FileService: applyAutoTags()
+    FileService->>FileService: createShareLink()
+    
+    FileService-->>SaveObject: File metadata
+    
+    Note over SaveObject: 4. Update object data
+    SaveObject->>SaveObject: replaceFileDataWithIds()
+    
+    SaveObject->>DB: INSERT/UPDATE object
+    DB-->>SaveObject: Object saved
+    
+    SaveObject-->>ObjectService: ObjectEntity
+    ObjectService-->>API: Response
+    API-->>Client: Object with file IDs
+    
+    Note over BgJob: Background Processing
+    Nextcloud->>BgJob: FileChangeListener
+    BgJob->>Extractor: extractText(fileId)
+    
+    alt LLPhant
+        Extractor->>Extractor: extractWithLLPhant()
+    else Dolphin AI
+        Extractor->>Extractor: extractWithDolphin()
+    end
+    
+    Extractor-->>BgJob: Extracted text
+    BgJob->>DB: Store extracted text
+    BgJob->>Solr: Index file chunks
+    Solr-->>BgJob: Indexed
+```
+
+### File Property Processing Pipeline
+
+```mermaid
+graph TD
+    A[Object with File Property] --> B{Property Type}
+    B -->|type=file| C[Single File]
+    B -->|type=array items.type=file| D[Multiple Files]
+    
+    C --> E{Data Type?}
+    D --> E
+    
+    E -->|Base64 String| F[Decode Base64]
+    E -->|URL String| G[Fetch from URL]
+    E -->|File Object| H[Validate File Object]
+    E -->|File ID| I[Load Existing File]
+    
+    F --> J[Validate MIME Type]
+    G --> J
+    H --> J
+    I --> J
+    
+    J --> K{Size Check?}
+    K -->|Too Large| L[Reject Upload]
+    K -->|OK| M[Create File Entity]
+    
+    M --> N[Determine Folder Path]
+    N --> O[/register/schema/object_uuid/]
+    
+    O --> P[Write to Nextcloud]
+    P --> Q[Generate Filename]
+    Q --> R[Apply Auto Tags]
+    
+    R --> S{Auto Publish?}
+    S -->|Yes| T[Create Share Link]
+    S -->|No| U[Skip Sharing]
+    
+    T --> V[Store File Metadata]
+    U --> V
+    
+    V --> W[Return File ID]
+    W --> X[Update Object Data]
+    
+    L --> Y[Return Error]
+    
+    style J fill:#e1f5ff
+    style P fill:#ffe1e1
+    style T fill:#fff4e1
+```
+
+### Text Extraction Process
+
+```mermaid
+sequenceDiagram
+    participant NC as Nextcloud
+    participant Listener as FileChangeListener
+    participant Job as FileTextExtractionJob
+    participant Service as FileTextExtractionService
+    participant LLPhant as LLPhant Extractor
+    participant Dolphin as Dolphin AI API
+    participant DB as Database
+    participant Solr as Solr Index
+    
+    Note over NC: File uploaded/modified
+    NC->>Listener: post_create / post_update event
+    
+    Listener->>Listener: Check extraction scope
+    alt Scope matches
+        Listener->>Job: Queue FileTextExtractionJob
+        Job-->>Listener: Job queued
+    else Scope doesn't match
+        Listener->>Listener: Skip extraction
+    end
+    
+    Note over Job: Background job execution
+    Job->>Service: extractText(fileId)
+    
+    Service->>Service: Check extraction mode
+    alt Mode=background
+        Service->>Service: Process immediately
+    else Mode=immediate
+        Service->>Service: Process in request
+    else Mode=manual
+        Service->>Service: Skip until manual trigger
+    end
+    
+    Service->>DB: Get file info
+    DB-->>Service: File metadata
+    
+    Service->>Service: Validate file type
+    
+    alt LLPhant Selected
+        Service->>LLPhant: extract(filePath)
+        
+        alt Native format (TXT, MD, HTML)
+            LLPhant->>LLPhant: Read directly
+        else PDF/DOCX
+            LLPhant->>LLPhant: Use library parser
+        else Image (JPG, PNG)
+            LLPhant->>LLPhant: Not supported
+        end
+        
+        LLPhant-->>Service: Extracted text
+    else Dolphin AI Selected
+        Service->>Dolphin: POST /extract
+        
+        Dolphin->>Dolphin: AI processing
+        alt Document
+            Dolphin->>Dolphin: Text + layout extraction
+        else Image
+            Dolphin->>Dolphin: OCR processing
+        end
+        
+        Dolphin-->>Service: Extracted text + metadata
+    end
+    
+    Service->>DB: Store FileText entity
+    Service->>Service: Chunk document
+    Service->>Solr: Index chunks
+    Solr-->>Service: Indexed
+    
+    Service->>DB: Update status=completed
+    DB-->>Service: Success
+    
+    Service-->>Job: Extraction complete
+```
+
+### File Storage Architecture
+
+```mermaid
+graph TB
+    A[File Upload] --> B[FileService]
+    B --> C{Storage Backend?}
+    
+    C -->|Nextcloud| D[Nextcloud Files API]
+    C -->|S3| E[S3 Compatible Storage]
+    C -->|Database| F[Direct DB Storage]
+    
+    D --> G[Folder Structure]
+    G --> H[/openregister/]
+    H --> I[/register_id/]
+    I --> J[/schema_id/]
+    J --> K[/object_uuid/]
+    K --> L[file_timestamp.ext]
+    
+    E --> M[Bucket Structure]
+    M --> N[openregister/register/schema/object/file]
+    
+    F --> O[file_data BLOB]
+    
+    L --> P[File Metadata]
+    N --> P
+    O --> P
+    
+    P --> Q[(File Registry)]
+    Q --> R[file_id]
+    Q --> S[file_path]
+    Q --> T[share_link]
+    Q --> U[checksum]
+    Q --> V[tags]
+    
+    style B fill:#e1f5ff
+    style Q fill:#ffe1e1
+```
+
+### File Type Compatibility Matrix
+
+```mermaid
+graph TD
+    A[File Type] --> B{Extraction Engine}
+    
+    B -->|LLPhant| C[LLPhant Support]
+    B -->|Dolphin AI| D[Dolphin Support]
+    
+    C --> E[Native: TXT, MD, HTML, JSON, XML, CSV]
+    C --> F[Library: PDF, DOCX, DOC, XLSX, XLS]
+    C --> G[Limited: PPTX, ODT, RTF]
+    C --> H[Not Supported: Images JPG, PNG, GIF, WebP]
+    
+    D --> I[Full Support: All Documents]
+    D --> J[OCR: Images JPG, PNG, GIF, WebP]
+    D --> K[Advanced: Tables, Formulas]
+    D --> L[Multi-language OCR]
+    
+    E --> M[✅ Instant]
+    F --> N[✅ 2-10s]
+    G --> O[⚠️ May Fail]
+    H --> P[❌ No Support]
+    
+    I --> Q[✅ 3-15s]
+    J --> R[✅ 5-20s OCR]
+    K --> S[✅ Superior Quality]
+    L --> T[✅ 100+ Languages]
+    
+    style C fill:#fff4e1
+    style D fill:#e1ffe1
+```
+
+### File Text Extraction Settings
+
+```mermaid
+graph LR
+    A[Settings] --> B{Extraction Engine}
+    B -->|llphant| C[LLPhant Extractor]
+    B -->|dolphin| D[Dolphin AI API]
+    
+    A --> E{Extraction Scope}
+    E -->|none| F[Disabled]
+    E -->|all| G[All Files]
+    E -->|folders| H[Specific Folders]
+    E -->|objects| I[Object Files Only]
+    
+    A --> J{Extraction Mode}
+    J -->|background| K[Async Processing]
+    J -->|immediate| L[Sync Processing]
+    J -->|manual| M[Manual Trigger]
+    
+    C --> N{File Type}
+    D --> N
+    
+    N -->|Supported| O[Extract Text]
+    N -->|Unsupported| P[Skip Extraction]
+    
+    O --> Q[Store in FileText]
+    Q --> R[Index in Solr]
+    
+    style B fill:#e1f5ff
+    style E fill:#fff4e1
+    style J fill:#ffe1e1
+```
+
+### File Chunking for Solr
+
+```mermaid
+graph TD
+    A[Extracted Text] --> B[Chunk Document]
+    B --> C{Chunking Strategy}
+    
+    C -->|Fixed Size| D[1000 chars per chunk]
+    C -->|Overlap| E[100 char overlap]
+    
+    D --> F[Create Chunks]
+    E --> F
+    
+    F --> G[Chunk 1: 0-1000]
+    F --> H[Chunk 2: 900-1900]
+    F --> I[Chunk 3: 1800-2800]
+    F --> J[...]
+    
+    G --> K[Solr Document]
+    H --> K
+    I --> K
+    J --> K
+    
+    K --> L[Index Fields]
+    L --> M[file_id]
+    L --> N[chunk_index]
+    L --> O[chunk_text]
+    L --> P[chunk_start_offset]
+    L --> Q[chunk_end_offset]
+    
+    M --> R[(Solr Index)]
+    N --> R
+    O --> R
+    P --> R
+    Q --> R
+    
+    style F fill:#e1f5ff
+    style R fill:#e1ffe1
+```
+
+### Performance Characteristics
+
+**File Upload Performance:**
+```
+Small files (<1MB):      ~100-200ms
+Medium files (1-10MB):   ~500ms-2s
+Large files (>10MB):     ~2-10s
+Very large (>100MB):     ~10-60s
+```
+
+**Text Extraction Performance:**
+```
+LLPhant:
+- TXT/MD/HTML:    <1s    (instant)
+- PDF (10 pages): 2-5s   (library parsing)
+- DOCX:           3-8s   (library parsing)
+- Images:         N/A    (not supported)
+
+Dolphin AI:
+- TXT/MD/HTML:    1-2s   (API latency)
+- PDF (10 pages): 5-10s  (AI processing)
+- DOCX:           4-8s   (AI processing)
+- Images (OCR):   5-15s  (OCR + AI)
+```
+
+**Chunking and Indexing:**
+```
+Text chunking:     <100ms  for 100KB text
+Solr indexing:     ~50-200ms per document (10 chunks)
+Batch indexing:    ~500ms for 100 chunks
+```
+
+### Code Examples
+
+#### Processing File Upload
+
+```php
+use OCA\OpenRegister\Service\FileService;
+
+// Create file from base64
+$fileMetadata = $fileService->createFile(
+    objectEntity: $object,
+    fileData: [
+        'content' => 'data:image/jpeg;base64,/9j/4AAQ...',
+        'tags' => ['profile', 'avatar']
+    ]
+);
+
+// Create file from URL
+$fileMetadata = $fileService->createFile(
+    objectEntity: $object,
+    fileData: [
+        'url' => 'https://example.com/document.pdf',
+        'tags' => ['imported', 'external']
+    ]
+);
+
+// Access file metadata
+$fileId = $fileMetadata['id'];
+$shareLinkUrl = $fileMetadata['accessUrl'];
+$downloadUrl = $fileMetadata['downloadUrl'];
+```
+
+#### Text Extraction
+
+```php
+use OCA\OpenRegister\Service\FileTextExtractionService;
+
+// Extract text from file
+$extractionService->extractText($fileId);
+
+// Get extraction status
+$fileText = $fileTextMapper->findByFileId($fileId);
+$status = $fileText->getExtractionStatus(); // 'pending', 'processing', 'completed', 'failed'
+$text = $fileText->getTextContent();
+
+// Manually trigger extraction
+$extractionService->queueExtraction($fileId);
+```
+
+#### Searching File Content
+
+```php
+// Search across file content in Solr
+$results = $solrService->searchFiles([
+    '_search' => 'contract terms',
+    'mime_type' => 'application/pdf',
+    '_limit' => 20
+]);
+
+// Access chunk results
+foreach ($results['hits'] as $hit) {
+    $fileId = $hit['file_id'];
+    $chunkIndex = $hit['chunk_index'];
+    $text = $hit['chunk_text'];
+    $highlighted = $hit['highlighted_text'];
+}
+```
+
+### Testing
+
+```bash
+# Run file handling tests
+vendor/bin/phpunit tests/Service/FileServiceTest.php
+
+# Test text extraction
+vendor/bin/phpunit tests/Service/FileTextExtractionServiceTest.php
+
+# Test specific scenarios
+vendor/bin/phpunit --filter testBase64FileUpload
+vendor/bin/phpunit --filter testTextExtraction
+vendor/bin/phpunit --filter testFileChunking
+
+# Integration tests
+vendor/bin/phpunit tests/Integration/FileIntegrationTest.php
+```
+
+**Test Coverage:**
+- File upload (base64, URL, file object)
+- File property processing
+- Text extraction (LLPhant, Dolphin)
+- Chunking and Solr indexing
+- File deletion
+- Share link generation
+- Auto-tagging 

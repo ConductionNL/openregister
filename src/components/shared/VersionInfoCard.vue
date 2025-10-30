@@ -181,13 +181,6 @@ export default {
 			default: false,
 		},
 
-		/**
-		 * Update button text
-		 */
-		updateButtonText: {
-			type: String,
-			default: 'Update',
-		},
 
 		/**
 		 * Updating state
@@ -250,6 +243,21 @@ export default {
 		 */
 		updateButtonDisabled() {
 			return this.isUpToDate || this.updating
+		},
+
+		/**
+		 * Update button text based on status
+		 * 
+		 * @return {string}
+		 */
+		updateButtonText() {
+			if (this.updating) {
+				return 'Updating...'
+			}
+			if (this.isUpToDate) {
+				return 'Up to date'
+			}
+			return 'Update'
 		},
 	},
 

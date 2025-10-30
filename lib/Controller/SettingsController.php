@@ -3836,4 +3836,60 @@ class SettingsController extends Controller
         }
     }
 
+    /**
+     * Get file extraction statistics
+     * 
+     * Combines database stats (extraction status) with SOLR stats (chunks).
+     * This endpoint provides comprehensive file processing statistics for the UI.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse File extraction statistics
+     */
+    public function getFileExtractionStats(): JSONResponse
+    {
+        try {
+            // Get database statistics
+            $fileTextMapper = $this->container->get(\OCA\OpenRegister\Db\FileTextMapper::class);
+            $dbStats = $fileTextMapper->getStats();
+
+            // Get SOLR statistics
+            $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+            $solrStats = $guzzleSolrService->getFileIndexStats();
+
+            // Calculate storage in MB
+            $storageMB = round($dbStats['total_text_size'] / 1024 / 1024, 2);
+
+            return new JSONResponse([
+                'success' => true,
+                'totalFiles' => $dbStats['total'],
+                'pendingFiles' => $dbStats['pending'],
+                'totalChunks' => $solrStats['total_chunks'] ?? 0,
+                'storageMB' => number_format($storageMB, 2),
+                'completed' => $dbStats['completed'],
+                'failed' => $dbStats['failed'],
+                'indexed' => $dbStats['indexed'],
+                'processing' => $dbStats['processing'],
+                'vectorized' => $dbStats['vectorized'],
+            ]);
+
+        } catch (\Exception $e) {
+            // Return zeros instead of error to avoid breaking UI
+            return new JSONResponse([
+                'success' => true,
+                'totalFiles' => 0,
+                'pendingFiles' => 0,
+                'totalChunks' => 0,
+                'storageMB' => '0.00',
+                'completed' => 0,
+                'failed' => 0,
+                'indexed' => 0,
+                'processing' => 0,
+                'vectorized' => 0,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
 }//end class

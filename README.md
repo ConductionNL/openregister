@@ -25,12 +25,32 @@ Registers can also apply additional logic to objects, such as validation that is
 - 🧩 **Additional Logic**: Apply extra validation and logic beyond [`schema.json`](https://json-schema.org/).
 - 🗑️ [Object Deletion](website/docs/object-deletion.md) | Soft deletion with retention and recovery | Data safety, compliance, lifecycle management
 
+## Comprehensive Feature Documentation
+
+Detailed technical and user documentation for all features is available in the feature documentation:
+
+**Core Features:**
+- [Objects](website/docs/Features/objects.md) - Object management, lifecycle, and relationships
+- [Schemas](website/docs/Features/schemas.md) - Schema definition, validation, and management
+- [Registers](website/docs/Features/registers.md) - Register configuration and organization
+- [Files](website/docs/Features/files.md) - File attachments, text extraction (LLPhant & Dolphin AI), OCR support
+- [Events](website/docs/Features/events.md) - Event system and webhooks
+- [Multi-Tenancy](website/docs/Features/multi-tenancy.md) - Organization-based isolation and access control
+- [Access Control](website/docs/Features/access-control.md) - Role-based permissions and security
+
+**Search & Discovery:**
+- [Search](website/docs/Features/search.md) - Full-text search, case-insensitive search, metadata filtering, ordering
+- [Faceting](website/docs/Features/faceting.md) - Automatic facets, UUID resolution, dynamic filtering
+- [Search Trails](website/docs/Features/search-trails.md) - Search history and analytics
+
+**Additional Resources:**
+- [Developer Guide](website/docs/developers.md) - Development setup and guidelines
+- [Styleguide](website/docs/styleguide.md) - Coding standards and best practices
+- [Enhanced Validation Errors](website/docs/Features/enhanced-validation-errors.md) - Detailed error messages
+
+Full documentation site: [https://openregisters.app/](https://openregisters.app/)
+
 ## Documentation
-
-For more detailed information, please refer to the documentation files in the `docs` folder:
-
-- [Developer Guide](website/docs/developers.md)
-- [Styleguide](website/docs/styleguide.md)
 
 # Open Register
 
