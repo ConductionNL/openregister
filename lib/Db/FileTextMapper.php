@@ -77,7 +77,37 @@ class FileTextMapper extends QBMapper
     }
 
     /**
-     * Find all files with specific extraction status
+     * Find all file texts with pagination, excluding directories
+     *
+     * @param int|null $limit  Maximum number of results
+     * @param int|null $offset Offset for pagination
+     * 
+     * @return array<FileText>
+     */
+    public function findAll(?int $limit = 100, ?int $offset = 0): array
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('ft.*')
+            ->from($this->getTableName(), 'ft')
+            ->leftJoin('ft', 'filecache', 'fc', $qb->expr()->eq('ft.file_id', 'fc.fileid'))
+            ->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
+            ->where($qb->expr()->neq('mt.mimetype', $qb->createNamedParameter('httpd/unix-directory', IQueryBuilder::PARAM_STR)))
+            ->orderBy('ft.created_at', 'DESC');
+
+        if ($limit !== null) {
+            $qb->setMaxResults($limit);
+        }
+
+        if ($offset !== null && $offset > 0) {
+            $qb->setFirstResult($offset);
+        }
+
+        return $this->findEntities($qb);
+    }
+
+    /**
+     * Find all files with specific extraction status, excluding directories
      *
      * @param string $status Status to filter by (pending, processing, completed, failed)
      * @param int    $limit  Maximum number of results
@@ -89,12 +119,15 @@ class FileTextMapper extends QBMapper
     {
         $qb = $this->db->getQueryBuilder();
 
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('extraction_status', $qb->createNamedParameter($status, IQueryBuilder::PARAM_STR)))
+        $qb->select('ft.*')
+            ->from($this->getTableName(), 'ft')
+            ->leftJoin('ft', 'filecache', 'fc', $qb->expr()->eq('ft.file_id', 'fc.fileid'))
+            ->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
+            ->where($qb->expr()->eq('ft.extraction_status', $qb->createNamedParameter($status, IQueryBuilder::PARAM_STR)))
+            ->andWhere($qb->expr()->neq('mt.mimetype', $qb->createNamedParameter('httpd/unix-directory', IQueryBuilder::PARAM_STR)))
             ->setMaxResults($limit)
             ->setFirstResult($offset)
-            ->orderBy('created_at', 'ASC');
+            ->orderBy('ft.created_at', 'ASC');
 
         return $this->findEntities($qb);
     }

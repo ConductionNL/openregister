@@ -13,35 +13,39 @@
 					<DotsVertical :size="20" />
 				</template>
 
-						<!-- Extract Pending Files -->
-						<NcActionButton
-							:disabled="processingFiles"
-							@click="extractAllPendingFiles">
-							<template #icon>
-								<NcLoadingIcon v-if="processingFiles" :size="20" />
-								<FileDocumentIcon v-else :size="20" />
-							</template>
-							{{ t('openregister', 'Extract Pending Files') }}
-						</NcActionButton>
+				<!-- Discover Files -->
+				<NcActionButton
+					:disabled="isProcessing"
+					@click="discoverFiles">
+					<template #icon>
+						<NcLoadingIcon v-if="discoveringFiles" :size="20" />
+						<MagnifyIcon v-else :size="20" />
+					</template>
+					{{ t('openregister', 'Discover Files') }}
+				</NcActionButton>
 
-						<!-- Retry Failed Extractions -->
-						<NcActionButton
-							:disabled="processingFiles"
-							@click="reprocessFailedFiles">
-							<template #icon>
-								<RefreshIcon :size="20" />
-							</template>
-							{{ t('openregister', 'Retry Failed Extractions') }}
-						</NcActionButton>
+				<!-- Extract Pending Files -->
+				<NcActionButton
+					:disabled="isProcessing"
+					@click="extractAllPendingFiles">
+					<template #icon>
+						<NcLoadingIcon v-if="extractingFiles" :size="20" />
+						<FileDocumentIcon v-else :size="20" />
+					</template>
+					{{ t('openregister', 'Extract Pending Files') }}
+				</NcActionButton>
 
-						<!-- View Status -->
-						<NcActionButton @click="viewExtractionStatus">
-							<template #icon>
-								<InformationIcon :size="20" />
-							</template>
-							{{ t('openregister', 'View Status') }}
-						</NcActionButton>
-				</NcActions>
+				<!-- Retry Failed Extractions -->
+				<NcActionButton
+					:disabled="isProcessing"
+					@click="reprocessFailedFiles">
+					<template #icon>
+						<NcLoadingIcon v-if="retryingFiles" :size="20" />
+						<RefreshIcon v-else :size="20" />
+					</template>
+					{{ t('openregister', 'Retry Failed Extractions') }}
+				</NcActionButton>
+		</NcActions>
 		</template>
 
 		<!-- Section Description -->
@@ -328,22 +332,30 @@
 	<SettingsCard 
 		title="File Processing Statistics"
 		icon="📊">
-		<div class="stats-grid">
+		<div class="stats-grid stats-grid-6">
 			<div class="stat-card">
 				<div class="stat-value">{{ extractionStats.totalFiles || 0 }}</div>
 				<div class="stat-label">Total Files</div>
 			</div>
-			<div class="stat-card highlight">
-				<div class="stat-value">{{ extractionStats.pendingFiles || 0 }}</div>
-				<div class="stat-label">Pending Files</div>
+			<div class="stat-card">
+				<div class="stat-value">{{ extractionStats.untrackedFiles || 0 }}</div>
+				<div class="stat-label">Untracked</div>
 			</div>
 			<div class="stat-card">
+				<div class="stat-value">{{ extractionStats.pendingFiles || 0 }}</div>
+				<div class="stat-label">Pending</div>
+			</div>
+			<div class="stat-card highlight success">
+				<div class="stat-value">{{ extractionStats.processedFiles || 0 }}</div>
+				<div class="stat-label">Processed</div>
+			</div>
+			<div class="stat-card highlight error">
+				<div class="stat-value">{{ extractionStats.failedFiles || 0 }}</div>
+				<div class="stat-label">Failed</div>
+			</div>
+			<div class="stat-card highlight">
 				<div class="stat-value">{{ extractionStats.totalChunks || 0 }}</div>
 				<div class="stat-label">Chunks</div>
-			</div>
-			<div class="stat-card">
-				<div class="stat-value">{{ extractionStats.storageMB || '0.0' }}</div>
-				<div class="stat-label">Storage (MB)</div>
 			</div>
 		</div>
 	</SettingsCard>
@@ -373,6 +385,7 @@ import {
 
 import FileDocumentIcon from 'vue-material-design-icons/FileDocument.vue'
 import RefreshIcon from 'vue-material-design-icons/Refresh.vue'
+import MagnifyIcon from 'vue-material-design-icons/Magnify.vue'
 import InformationIcon from 'vue-material-design-icons/Information.vue'
 import KeyIcon from 'vue-material-design-icons/Key.vue'
 import CheckIcon from 'vue-material-design-icons/Check.vue'
@@ -406,14 +419,15 @@ export default {
 		NcTextField,
 		NcActions,
 		NcActionButton,
-		FileDocumentIcon,
-		RefreshIcon,
-		InformationIcon,
-		KeyIcon,
-		CheckIcon,
-		AlertCircleIcon,
-		DotsVertical,
-	},
+	FileDocumentIcon,
+	RefreshIcon,
+	MagnifyIcon,
+	InformationIcon,
+	KeyIcon,
+	CheckIcon,
+	AlertCircleIcon,
+	DotsVertical,
+},
 
 	data() {
 		return {
@@ -511,13 +525,17 @@ export default {
 					description: 'Only extract when manually triggered',
 				},
 		],
-		extractionStats: {
-			totalFiles: 0,
-			pendingFiles: 0,
-			totalChunks: 0,
-			storageMB: '0.0',
-		},
-		processingFiles: false,
+	extractionStats: {
+		totalFiles: 0,
+		untrackedFiles: 0,
+		pendingFiles: 0,
+		processedFiles: 0,
+		failedFiles: 0,
+		totalChunks: 0,
+	},
+	discoveringFiles: false,
+	extractingFiles: false,
+	retryingFiles: false,
 	saveMessage: '',
 	saveMessageType: 'success',
 	dolphinConnectionTested: null, // null, 'success', 'error'
@@ -527,7 +545,13 @@ export default {
 	computed: {
 		...mapStores(useSettingsStore),
 
-},
+		/**
+		 * Check if any file operation is currently running
+		 */
+		isProcessing() {
+			return this.discoveringFiles || this.extractingFiles || this.retryingFiles
+		},
+	},
 
 async mounted() {
 	await this.loadSettings()
@@ -652,62 +676,114 @@ async mounted() {
 			}
 		},
 
-		/**
-		 * Load extraction statistics
-		 */
-		async loadExtractionStats() {
-			try {
-				this.extractionStats = await this.settingsStore.getExtractionStats()
-			} catch (error) {
-				console.error('Failed to load extraction stats:', error)
+	/**
+	 * Load extraction statistics
+	 */
+	async loadExtractionStats() {
+		try {
+			const stats = await this.settingsStore.getExtractionStats()
+			if (stats) {
+				this.extractionStats = {
+					totalFiles: stats.totalFiles || 0,
+					untrackedFiles: stats.untrackedFiles || 0,
+					pendingFiles: stats.pendingFiles || 0,
+					processedFiles: stats.processedFiles || 0,
+					failedFiles: stats.failed || 0,
+					totalChunks: stats.totalChunks || 0,
+				}
 			}
-		},
+		} catch (error) {
+			console.error('Failed to load extraction stats:', error)
+		}
+	},
 
-		/**
-		 * Extract all pending files
-		 */
-		async extractAllPendingFiles() {
-			this.processingFiles = true
-			try {
-				await this.settingsStore.triggerFileExtraction('pending')
-				this.showSaveMessage('Started processing pending files', 'success')
-				await this.loadExtractionStats()
-			} catch (error) {
-				console.error('Failed to process files:', error)
-				this.showSaveMessage('Failed to start processing', 'error')
-			} finally {
-				this.processingFiles = false
+	/**
+	 * Discover files in Nextcloud that aren't tracked yet
+	 */
+	async discoverFiles() {
+		this.discoveringFiles = true
+		try {
+			const result = await this.settingsStore.discoverFiles()
+			
+			// Show detailed feedback about what happened
+			const data = result?.data || {}
+			const discovered = data.discovered || 0
+			const failed = data.failed || 0
+			
+			let message = `Discovered ${discovered} new files`
+			if (failed > 0) {
+				message += `, ${failed} failed to stage`
 			}
-		},
+			
+			this.showSaveMessage(message, failed > 0 ? 'error' : 'success')
+			await this.loadExtractionStats()
+		} catch (error) {
+			console.error('Failed to discover files:', error)
+			this.showSaveMessage('Failed to discover files', 'error')
+		} finally {
+			this.discoveringFiles = false
+		}
+	},
 
-		/**
-		 * Retry failed file extractions
-		 */
-		async reprocessFailedFiles() {
-			this.processingFiles = true
-			try {
-				await this.settingsStore.triggerFileExtraction('failed')
-				this.showSaveMessage('Started reprocessing failed files', 'success')
-				await this.loadExtractionStats()
-			} catch (error) {
-				console.error('Failed to reprocess files:', error)
-				this.showSaveMessage('Failed to start reprocessing', 'error')
-			} finally {
-				this.processingFiles = false
+	/**
+	 * Extract pending files (files already staged with status='pending')
+	 */
+	async extractAllPendingFiles() {
+		this.extractingFiles = true
+		try {
+			const result = await this.settingsStore.triggerFileExtraction('pending')
+			
+			// Show detailed feedback about what happened
+			const data = result?.data || {}
+			const processed = data.processed || 0
+			const failed = data.failed || 0
+			
+			let message = `Processed ${processed} pending files`
+			if (failed > 0) {
+				message += `, ${failed} failed`
 			}
-		},
+			
+			this.showSaveMessage(message, failed > 0 ? 'error' : 'success')
+			await this.loadExtractionStats()
+		} catch (error) {
+			console.error('Failed to process files:', error)
+			this.showSaveMessage('Failed to extract files', 'error')
+		} finally {
+			this.extractingFiles = false
+		}
+	},
 
-		/**
-		 * View extraction status
-		 */
-		viewExtractionStatus() {
-			// Navigate to a detailed status view or open a dialog
-			this.$router.push({ name: 'file-extraction-status' })
-		},
+	/**
+	 * Retry failed file extractions
+	 */
+	async reprocessFailedFiles() {
+		this.retryingFiles = true
+		try {
+			const result = await this.settingsStore.triggerFileExtraction('failed')
+			
+			// Show detailed feedback about what happened
+			const data = result?.data || {}
+			const retried = data.retried || 0
+			const failed = data.failed || 0
+			
+			let message = `Retried ${retried} failed extractions`
+			if (failed > 0) {
+				message += `, ${failed} failed again`
+			}
+			
+			this.showSaveMessage(message, failed > 0 ? 'error' : 'success')
+			await this.loadExtractionStats()
+		} catch (error) {
+			console.error('Failed to reprocess files:', error)
+			this.showSaveMessage('Failed to retry extractions', 'error')
+		} finally {
+			this.retryingFiles = false
+		}
+	},
 
-		/**
-		 * Show save message
-		 */
+	/**
+	 * Show save message
+	 */
 		showSaveMessage(message, type = 'success') {
 			this.saveMessage = message
 			this.saveMessageType = type
@@ -716,28 +792,6 @@ async mounted() {
 			}, 3000)
 		},
 
-/**
- * Load extraction statistics
- */
-async loadExtractionStats() {
-	try {
-		const stats = await this.settingsStore.getExtractionStats()
-		if (stats) {
-			this.extractionStats = {
-				totalFiles: stats.total || 0,
-				pendingFiles: stats.pending || 0,
-				totalChunks: stats.chunks || stats.totalChunks || 0,
-				storageMB: stats.storage || stats.storageMB || '0.0',
-			}
-		}
-	} catch (error) {
-		console.error('Failed to load extraction stats:', error)
-	}
-},
-
-/**
- * Toggle section collapsed state
- */
 	/**
 	 * Format number with thousands separator
 	 */
@@ -1030,6 +1084,14 @@ async loadExtractionStats() {
 	margin-top: 16px;
 }
 
+.stats-grid-5 {
+	grid-template-columns: repeat(5, 1fr);
+}
+
+.stats-grid-6 {
+	grid-template-columns: repeat(6, 1fr);
+}
+
 .stat-card {
 	background: var(--color-background-hover);
 	border: 1px solid var(--color-border);
@@ -1047,7 +1109,37 @@ async loadExtractionStats() {
 
 .stat-card.highlight {
 	background: var(--color-primary-light);
+	border: 2px solid var(--color-primary-element);
+	box-shadow: 0 2px 8px rgba(0, 123, 255, 0.15);
+}
+
+.stat-card.success {
+	background: var(--color-success-light);
+	border-color: var(--color-success);
+}
+
+.stat-card.error {
+	background: var(--color-error-light);
+	border-color: var(--color-error);
+}
+
+.stat-card.info {
+	background: var(--color-primary-element-light);
 	border-color: var(--color-primary-element);
+}
+
+/* Highlight with success keeps green background but adds prominent border */
+.stat-card.highlight.success {
+	background: var(--color-success-light);
+	border: 2px solid var(--color-primary-element);
+	box-shadow: 0 2px 8px rgba(0, 123, 255, 0.15);
+}
+
+/* Highlight with error keeps red background but adds prominent border */
+.stat-card.highlight.error {
+	background: var(--color-error-light);
+	border: 2px solid var(--color-primary-element);
+	box-shadow: 0 2px 8px rgba(0, 123, 255, 0.15);
 }
 
 .stat-value {
@@ -1058,6 +1150,18 @@ async loadExtractionStats() {
 }
 
 .stat-card.highlight .stat-value {
+	color: var(--color-primary-element);
+}
+
+.stat-card.success .stat-value {
+	color: var(--color-success);
+}
+
+.stat-card.error .stat-value {
+	color: var(--color-error);
+}
+
+.stat-card.info .stat-value {
 	color: var(--color-primary-element);
 }
 

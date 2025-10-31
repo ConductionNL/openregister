@@ -83,6 +83,15 @@ return [
         ['name' => 'settings#testDolphinConnection', 'url' => '/api/settings/files/test-dolphin', 'verb' => 'POST'],
         ['name' => 'settings#updateObjectSettings', 'url' => '/api/settings/objects', 'verb' => 'POST'],
         
+        // Core file extraction endpoints (use fileExtraction controller to avoid conflict with files controller)
+        ['name' => 'fileExtraction#index', 'url' => '/api/files', 'verb' => 'GET'],
+        ['name' => 'fileExtraction#show', 'url' => '/api/files/{id}', 'verb' => 'GET'],
+        ['name' => 'fileExtraction#discover', 'url' => '/api/files/discover', 'verb' => 'POST'],
+        ['name' => 'fileExtraction#extract', 'url' => '/api/files/{id}/extract', 'verb' => 'POST'],
+        ['name' => 'fileExtraction#extractAll', 'url' => '/api/files/extract', 'verb' => 'POST'],
+        ['name' => 'fileExtraction#retryFailed', 'url' => '/api/files/retry-failed', 'verb' => 'POST'],
+        ['name' => 'fileExtraction#stats', 'url' => '/api/files/stats', 'verb' => 'GET'],
+        
         ['name' => 'settings#getRetentionSettings', 'url' => '/api/settings/retention', 'verb' => 'GET'],
         
         // Debug endpoints for type filtering issue
@@ -272,10 +281,12 @@ return [
 		['name' => 'schemasDetails#page', 'url' => '/schemas/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'sources#page', 'url' => '/sources', 'verb' => 'GET'],
 		['name' => 'organisation#page', 'url' => '/organisation', 'verb' => 'GET'],
-		['name' => 'objects#page', 'url' => '/objects', 'verb' => 'GET'],
-		['name' => 'tables#page', 'url' => '/tables', 'verb' => 'GET'],
-		['name' => 'chat#page', 'url' => '/chat', 'verb' => 'GET'],
-		['name' => 'configurations#page', 'url' => '/configurations', 'verb' => 'GET'],
+	['name' => 'objects#page', 'url' => '/objects', 'verb' => 'GET'],
+	['name' => 'tables#page', 'url' => '/tables', 'verb' => 'GET'],
+	['name' => 'chat#page', 'url' => '/chat', 'verb' => 'GET'],
+	['name' => 'files#page', 'url' => '/files', 'verb' => 'GET'],
+	['name' => 'agents#page', 'url' => '/agents', 'verb' => 'GET'],
+	['name' => 'configurations#page', 'url' => '/configurations', 'verb' => 'GET'],
 		['name' => 'deleted#page', 'url' => '/deleted', 'verb' => 'GET'],
 		['name' => 'auditTrail#page', 'url' => '/audit-trails', 'verb' => 'GET'],
 		['name' => 'searchTrail#page', 'url' => '/search-trails', 'verb' => 'GET'],

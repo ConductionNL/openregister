@@ -3839,18 +3839,33 @@ class SettingsController extends Controller
     /**
      * Get file extraction statistics
      * 
-     * Combines database stats (extraction status) with SOLR stats (chunks).
-     * This endpoint provides comprehensive file processing statistics for the UI.
+     * Combines multiple data sources for comprehensive file statistics:
+     * - FileMapper: Total files in Nextcloud (from oc_filecache, bypasses rights logic)
+     * - FileTextMapper: Extraction status (from oc_openregister_file_texts)
+     * - GuzzleSolrService: Chunk statistics (from SOLR index)
+     * 
+     * This provides accurate statistics without dealing with Nextcloud's extensive rights logic.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @return JSONResponse File extraction statistics
+     * @return JSONResponse File extraction statistics including:
+     *                      - totalFiles: All files in Nextcloud (from oc_filecache)
+     *                      - processedFiles: Files tracked in extraction system (from oc_openregister_file_texts)
+     *                      - pendingFiles: Files discovered and waiting for extraction (status='pending')
+     *                      - untrackedFiles: Files in Nextcloud not yet discovered
+     *                      - totalChunks: Number of text chunks in SOLR (one file = multiple chunks)
+     *                      - completed, failed, indexed, processing, vectorized: Detailed processing status counts
      */
     public function getFileExtractionStats(): JSONResponse
     {
         try {
-            // Get database statistics
+            // Get total files from Nextcloud filecache (bypasses rights logic)
+            $fileMapper = $this->container->get(\OCA\OpenRegister\Db\FileMapper::class);
+            $totalFilesInNextcloud = $fileMapper->countAllFiles();
+            $totalFilesSize = $fileMapper->getTotalFilesSize();
+
+            // Get extraction statistics from our file_texts table
             $fileTextMapper = $this->container->get(\OCA\OpenRegister\Db\FileTextMapper::class);
             $dbStats = $fileTextMapper->getStats();
 
@@ -3859,14 +3874,21 @@ class SettingsController extends Controller
             $solrStats = $guzzleSolrService->getFileIndexStats();
 
             // Calculate storage in MB
-            $storageMB = round($dbStats['total_text_size'] / 1024 / 1024, 2);
+            $extractedTextStorageMB = round($dbStats['total_text_size'] / 1024 / 1024, 2);
+            $totalFilesStorageMB = round($totalFilesSize / 1024 / 1024, 2);
 
+            // Calculate untracked files (files in Nextcloud not yet discovered)
+            $untrackedFiles = $totalFilesInNextcloud - $dbStats['total'];
+            
             return new JSONResponse([
                 'success' => true,
-                'totalFiles' => $dbStats['total'],
-                'pendingFiles' => $dbStats['pending'],
+                'totalFiles' => $totalFilesInNextcloud,
+                'processedFiles' => $dbStats['completed'], // Files successfully extracted (status='completed')
+                'pendingFiles' => $dbStats['pending'], // Files discovered and waiting for extraction
+                'untrackedFiles' => max(0, $untrackedFiles), // Files not yet discovered
                 'totalChunks' => $solrStats['total_chunks'] ?? 0,
-                'storageMB' => number_format($storageMB, 2),
+                'extractedTextStorageMB' => number_format($extractedTextStorageMB, 2),
+                'totalFilesStorageMB' => number_format($totalFilesStorageMB, 2),
                 'completed' => $dbStats['completed'],
                 'failed' => $dbStats['failed'],
                 'indexed' => $dbStats['indexed'],
@@ -3879,9 +3901,12 @@ class SettingsController extends Controller
             return new JSONResponse([
                 'success' => true,
                 'totalFiles' => 0,
+                'processedFiles' => 0,
                 'pendingFiles' => 0,
+                'untrackedFiles' => 0,
                 'totalChunks' => 0,
-                'storageMB' => '0.00',
+                'extractedTextStorageMB' => '0.00',
+                'totalFilesStorageMB' => '0.00',
                 'completed' => 0,
                 'failed' => 0,
                 'indexed' => 0,
