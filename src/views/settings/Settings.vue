@@ -31,21 +31,22 @@
 		<!-- Retention Configuration Section -->
 		<RetentionConfiguration />
 
-	<!-- SOLR Configuration Section -->
-	<SolrConfiguration />
+		<!-- SOLR Configuration Section -->
+		<SolrConfiguration />
 
-	<!-- LLM Configuration Section -->
-	<LlmConfiguration />
+		<!-- LLM Configuration Section -->
+		<LlmConfiguration />
 
-	<!-- File Configuration Section -->
-	<FileConfiguration />
+		<!-- File Configuration Section -->
+		<FileConfiguration />
 
-	<!-- Dialogs -->
-	<Dialogs />
-</div>
+		<!-- Dialogs -->
+		<Dialogs />
+	</div>
 </template>
 
 <script>
+/* eslint-disable no-console */
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../store/settings.js'
 
@@ -62,18 +63,8 @@ import FileConfiguration from './sections/FileConfiguration.vue'
 import Dialogs from '../../dialogs/Dialogs.vue'
 
 /**
- * @class Settings
- * @module Components
- * @package
- * 
  * Main settings component that orchestrates all settings sections using Pinia store.
  * This component serves as a container and delegates all data management to the settings store.
- * 
- * @author   Conduction Development Team <info@conduction.nl>
- * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version  GIT: <git_id>
- * @link     https://www.OpenRegister.nl
  */
 export default {
 	name: 'Settings',
