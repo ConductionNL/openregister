@@ -607,10 +607,11 @@ class FileMapper extends QBMapper
     public function countAllFiles(): int
     {
         $qb = $this->db->getQueryBuilder();
-        $qb->select($qb->func()->count('fileid', 'count'))
-            ->from('filecache')
-            ->where($qb->expr()->gte('mimetype', $qb->createNamedParameter(1, IQueryBuilder::PARAM_INT)));
-        // Exclude directories (mimetype 2 = httpd/unix-directory)
+        $qb->select($qb->func()->count('fc.fileid', 'count'))
+            ->from('filecache', 'fc')
+            ->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
+            ->where($qb->expr()->neq('mt.mimetype', $qb->createNamedParameter('httpd/unix-directory', IQueryBuilder::PARAM_STR)));
+        // Exclude directories
 
         $result = $qb->executeQuery();
         $row = $result->fetch();
@@ -618,6 +619,79 @@ class FileMapper extends QBMapper
 
         return (int) ($row['count'] ?? 0);
     }//end countAllFiles()
+
+
+    /**
+     * Get total storage size of all files in the Nextcloud installation
+     *
+     * @return int Total size in bytes of all files in oc_filecache
+     *
+     * @phpstan-return int
+     */
+    public function getTotalFilesSize(): int
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select($qb->func()->sum('fc.size', 'total_size'))
+            ->from('filecache', 'fc')
+            ->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
+            ->where($qb->expr()->neq('mt.mimetype', $qb->createNamedParameter('httpd/unix-directory', IQueryBuilder::PARAM_STR)));
+        // Exclude directories
+
+        $result = $qb->executeQuery();
+        $row = $result->fetch();
+        $result->closeCursor();
+
+        return (int) ($row['total_size'] ?? 0);
+    }//end getTotalFilesSize()
+
+
+    /**
+     * Find files in Nextcloud that are not tracked in the extraction system yet
+     *
+     * This queries oc_filecache for files that don't have a corresponding record
+     * in oc_openregister_file_texts. These are "untracked" files that need to be
+     * added to the extraction system.
+     *
+     * @param int $limit Maximum number of untracked files to return
+     *
+     * @return array List of untracked files with basic metadata
+     *
+     * @phpstan-param  int $limit
+     * @phpstan-return list<array{fileid: int, path: string, name: string, mimetype: string, size: int, mtime: int, checksum: string|null}>
+     */
+    public function findUntrackedFiles(int $limit = 100): array
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        // Select files from oc_filecache that don't exist in oc_openregister_file_texts
+        $qb->select(
+                'fc.fileid',
+                'fc.path',
+                'fc.name',
+                'mt.mimetype',
+                'fc.size',
+                'fc.mtime',
+                'fc.checksum'
+            )
+            ->from('filecache', 'fc')
+            ->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
+            ->leftJoin('fc', 'openregister_file_texts', 'ft', $qb->expr()->eq('fc.fileid', 'ft.file_id'))
+            ->where($qb->expr()->isNull('ft.id'))  // No corresponding record in file_texts
+            ->andWhere($qb->expr()->neq('mt.mimetype', $qb->createNamedParameter('httpd/unix-directory', IQueryBuilder::PARAM_STR))) // Exclude directories
+            ->setMaxResults($limit)
+            ->orderBy('fc.fileid', 'ASC');
+
+        $result = $qb->executeQuery();
+        $files  = [];
+
+        while ($row = $result->fetch()) {
+            $files[] = $row;
+        }
+
+        $result->closeCursor();
+
+        return $files;
+    }//end findUntrackedFiles()
 
 
     /**
