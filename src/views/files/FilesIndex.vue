@@ -52,7 +52,7 @@
 			<!-- Files Table -->
 			<div class="tableContainer">
 				<NcLoadingIcon v-if="loading" :size="64" />
-				
+
 				<NcEmptyContent
 					v-else-if="!filesList.length"
 					:name="t('openregister', 'No files found')"
@@ -65,14 +65,30 @@
 				<table v-else class="filesTable">
 					<thead>
 						<tr>
-							<th class="column-filename">{{ t('openregister', 'File Name') }}</th>
-							<th class="column-path">{{ t('openregister', 'Path') }}</th>
-							<th class="column-mimetype">{{ t('openregister', 'Type') }}</th>
-							<th class="column-size">{{ t('openregister', 'Size') }}</th>
-							<th class="column-status">{{ t('openregister', 'Extraction Status') }}</th>
-							<th class="column-chunks">{{ t('openregister', 'Chunks') }}</th>
-							<th class="column-extracted">{{ t('openregister', 'Extracted At') }}</th>
-							<th class="column-actions">{{ t('openregister', 'Actions') }}</th>
+							<th class="column-filename">
+								{{ t('openregister', 'File Name') }}
+							</th>
+							<th class="column-path">
+								{{ t('openregister', 'Path') }}
+							</th>
+							<th class="column-mimetype">
+								{{ t('openregister', 'Type') }}
+							</th>
+							<th class="column-size">
+								{{ t('openregister', 'Size') }}
+							</th>
+							<th class="column-status">
+								{{ t('openregister', 'Extraction Status') }}
+							</th>
+							<th class="column-chunks">
+								{{ t('openregister', 'Chunks') }}
+							</th>
+							<th class="column-extracted">
+								{{ t('openregister', 'Extracted At') }}
+							</th>
+							<th class="column-actions">
+								{{ t('openregister', 'Actions') }}
+							</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -185,17 +201,7 @@ import FilterVariant from 'vue-material-design-icons/FilterVariant.vue'
 import FilesSidebar from '../../components/FilesSidebar.vue'
 
 /**
- * FilesIndex
- * @module Views
- * @package OpenRegister
- * 
  * Main view for managing and monitoring file text extraction status
- * 
- * @author   Conduction Development Team <info@conduction.nl>
- * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version  GIT: <git_id>
- * @link     https://www.OpenRegister.nl
  */
 export default {
 	name: 'FilesIndex',
@@ -227,7 +233,7 @@ export default {
 	computed: {
 		/**
 		 * Get current page number
-		 * 
+		 *
 		 * @return {number} Current page
 		 */
 		currentPage() {
@@ -236,7 +242,7 @@ export default {
 
 		/**
 		 * Get total number of pages
-		 * 
+		 *
 		 * @return {number} Total pages
 		 */
 		totalPages() {
@@ -251,7 +257,7 @@ export default {
 
 		/**
 		 * Toggle sidebar visibility
-		 * 
+		 *
 		 * @return {void}
 		 */
 		toggleSidebar() {
@@ -260,7 +266,7 @@ export default {
 
 		/**
 		 * Handle search query update
-		 * 
+		 *
 		 * @param {string} query - Search query
 		 * @return {void}
 		 */
@@ -272,7 +278,7 @@ export default {
 
 		/**
 		 * Handle status filter update
-		 * 
+		 *
 		 * @param {string|null} status - Status filter
 		 * @return {void}
 		 */
@@ -284,7 +290,7 @@ export default {
 
 		/**
 		 * Load files from the API
-		 * 
+		 *
 		 * @return {Promise<void>}
 		 */
 		async loadFiles() {
@@ -305,7 +311,7 @@ export default {
 
 				const response = await axios.get(
 					generateUrl('/apps/openregister/api/files'),
-					{ params }
+					{ params },
 				)
 
 				if (response.data.success) {
@@ -322,7 +328,7 @@ export default {
 
 		/**
 		 * Refresh the files list
-		 * 
+		 *
 		 * @return {void}
 		 */
 		refreshFiles() {
@@ -331,7 +337,7 @@ export default {
 
 		/**
 		 * Go to previous page
-		 * 
+		 *
 		 * @return {void}
 		 */
 		previousPage() {
@@ -343,7 +349,7 @@ export default {
 
 		/**
 		 * Go to next page
-		 * 
+		 *
 		 * @return {void}
 		 */
 		nextPage() {
@@ -355,7 +361,7 @@ export default {
 
 		/**
 		 * Retry extraction for a failed file
-		 * 
+		 *
 		 * @param {number} fileId - File ID
 		 * @return {Promise<void>}
 		 */
@@ -363,7 +369,7 @@ export default {
 			try {
 				await axios.post(
 					generateUrl(`/apps/openregister/api/files/${fileId}/extract`),
-					{ forceReExtract: true }
+					{ forceReExtract: true },
 				)
 				showSuccess(t('openregister', 'File extraction queued'))
 				this.loadFiles()
@@ -375,7 +381,7 @@ export default {
 
 		/**
 		 * Show error details for a failed file
-		 * 
+		 *
 		 * @param {object} file - File object
 		 * @return {void}
 		 */
@@ -385,13 +391,13 @@ export default {
 					file: file.fileName,
 					error: file.extractionError || 'Unknown error',
 				}),
-				{ timeout: 10000 }
+				{ timeout: 10000 },
 			)
 		},
 
 		/**
 		 * Format file size in human-readable format
-		 * 
+		 *
 		 * @param {number} bytes - File size in bytes
 		 * @return {string} Formatted file size
 		 */
@@ -405,7 +411,7 @@ export default {
 
 		/**
 		 * Format extraction status
-		 * 
+		 *
 		 * @param {string} status - Extraction status
 		 * @return {string} Formatted status
 		 */
@@ -421,7 +427,7 @@ export default {
 
 		/**
 		 * Format mime type for display
-		 * 
+		 *
 		 * @param {string} mimeType - MIME type
 		 * @return {string} Formatted MIME type
 		 */
@@ -433,7 +439,7 @@ export default {
 
 		/**
 		 * Format date for display
-		 * 
+		 *
 		 * @param {string} date - Date string
 		 * @return {string} Formatted date
 		 */
@@ -639,4 +645,3 @@ export default {
 	font-size: 14px;
 }
 </style>
-

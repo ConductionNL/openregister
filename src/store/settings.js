@@ -9,15 +9,6 @@
  * - Retention policies
  * - Cache management
  * - System statistics
- *
- * @category Store
- * @package
- *
- * @author   Conduction Development Team <info@conduction.nl>
- * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version  GIT: <git_id>
- * @link     https://www.OpenRegister.nl
  */
 
 import { defineStore } from 'pinia'
@@ -104,44 +95,44 @@ export const useSettingsStore = defineStore('settings', {
 			publishedObjectsBypassMultiTenancy: false,
 		},
 
-	retentionOptions: {
-		objectArchiveRetention: 31536000000, // 1 year
-		objectDeleteRetention: 63072000000, // 2 years
-		searchTrailRetention: 2592000000, // 1 month
-		createLogRetention: 2592000000, // 1 month
-		readLogRetention: 86400000, // 24 hours
-		updateLogRetention: 604800000, // 1 week
-		deleteLogRetention: 2592000000, // 1 month
-		auditTrailsEnabled: true, // Audit trails enabled by default
-		searchTrailsEnabled: true, // Search trails enabled by default
-	},
+		retentionOptions: {
+			objectArchiveRetention: 31536000000, // 1 year
+			objectDeleteRetention: 63072000000, // 2 years
+			searchTrailRetention: 2592000000, // 1 month
+			createLogRetention: 2592000000, // 1 month
+			readLogRetention: 86400000, // 24 hours
+			updateLogRetention: 604800000, // 1 week
+			deleteLogRetention: 2592000000, // 1 month
+			auditTrailsEnabled: true, // Audit trails enabled by default
+			searchTrailsEnabled: true, // Search trails enabled by default
+		},
 
-	llmOptions: {
-		enabled: false,
-		providerId: 'none',
-		apiEndpoint: '',
-		apiKey: '',
-		model: null,
-		temperature: 0.7,
-		maxTokens: 2000,
-		enabledFeatures: [],
-	},
+		llmOptions: {
+			enabled: false,
+			providerId: 'none',
+			apiEndpoint: '',
+			apiKey: '',
+			model: null,
+			temperature: 0.7,
+			maxTokens: 2000,
+			enabledFeatures: [],
+		},
 
-	fileOptions: {
-		extractionScope: 'objects', // none, all, folders, objects
-		extractionMode: 'background', // background, immediate, manual
-		maxFileSize: 100,
-		batchSize: 10,
-		enabledFileTypes: ['txt', 'pdf', 'docx', 'xlsx', 'pptx', 'html', 'md', 'json'],
-	},
+		fileOptions: {
+			extractionScope: 'objects', // none, all, folders, objects
+			extractionMode: 'background', // background, immediate, manual
+			maxFileSize: 100,
+			batchSize: 10,
+			enabledFileTypes: ['txt', 'pdf', 'docx', 'xlsx', 'pptx', 'html', 'md', 'json'],
+		},
 
-	loadingLlmSettings: false,
-	loadingFileSettings: false,
+		loadingLlmSettings: false,
+		loadingFileSettings: false,
 
-	versionInfo: {
-		appName: 'Open Register',
-		appVersion: '0.2.3',
-	},
+		versionInfo: {
+			appName: 'Open Register',
+			appVersion: '0.2.3',
+		},
 
 		// Options data
 		groupOptions: [],
@@ -231,9 +222,6 @@ export const useSettingsStore = defineStore('settings', {
 
 		// Dialog states
 		showRebaseConfirmation: false,
-		showMassValidateConfirmation: false,
-		massValidating: false,
-		massValidateResults: null,
 
 		// Connection status
 		solrConnectionStatus: null,
@@ -242,7 +230,7 @@ export const useSettingsStore = defineStore('settings', {
 	getters: {
 		/**
 		 * Check if there are any warning items requiring attention
-		 * @param state
+		 * @param {object} state - The state of the stats
 		 */
 		hasWarnings: (state) => {
 			const warnings = state.stats.warnings
@@ -251,7 +239,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Get retention status information
-		 * @param state
+		 * @param {object} state - The state of the retention settings
 		 */
 		retentionStatusClass: (state) => {
 			const hasIssues = state.stats.warnings.auditTrailsWithoutExpiry > 0
@@ -365,19 +353,19 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Update SOLR settings
-		 * @param solrData
+		 * @param {object} solrData - The SOLR settings to save
 		 */
 		async updateSolrSettings(solrData) {
 			this.saving = true
 			try {
 				// Normalize the data before sending to API
 				const normalizedData = { ...solrData }
-				
+
 				// Handle scheme field - NcSelect returns {id: "http", label: "HTTP"} but we need just "http"
 				if (normalizedData.scheme && typeof normalizedData.scheme === 'object' && normalizedData.scheme.id) {
 					normalizedData.scheme = normalizedData.scheme.id
 				}
-				
+
 				const response = await axios.put(
 					generateUrl('/apps/openregister/api/settings/solr'),
 					normalizedData,
@@ -409,70 +397,8 @@ export const useSettingsStore = defineStore('settings', {
 		},
 
 		/**
-		 * Test SOLR connection using currently configured settings
-		 */
-		async testSolrConnection() {
-			this.testingConnection = true
-			this.showTestDialog = true
-			try {
-				const response = await axios.post(
-					generateUrl('/apps/openregister/api/settings/solr/test'),
-				)
-
-				this.testResults = response.data
-				this.solrConnectionStatus = response.data
-				return response.data
-			} catch (error) {
-				console.error('SOLR connection test failed:', error)
-				const errorData = {
-					success: false,
-					message: 'Connection test failed: ' + error.message,
-					details: { error: error.message },
-				}
-				this.testResults = errorData
-				this.solrConnectionStatus = errorData
-				return errorData
-			} finally {
-				this.testingConnection = false
-			}
-		},
-
-		/**
-		 * Setup SOLR
-		 */
-		async setupSolr() {
-			this.settingUpSolr = true
-			this.showSetupDialog = true
-			try {
-				const response = await axios.post(generateUrl('/apps/openregister/api/solr/setup'))
-
-				this.setupResults = response.data
-
-				if (response.data.success) {
-					showSuccess('SOLR setup completed successfully')
-				} else {
-					showError('SOLR setup failed: ' + response.data.message)
-				}
-
-				return response.data
-			} catch (error) {
-				console.error('SOLR setup failed:', error)
-				const errorData = {
-					success: false,
-					message: 'SOLR setup failed: ' + error.message,
-					details: { error: error.message },
-				}
-				this.setupResults = errorData
-				showError('SOLR setup failed: ' + error.message)
-				throw error
-			} finally {
-				this.settingUpSolr = false
-			}
-		},
-
-		/**
 		 * Warmup SOLR index
-		 * @param options
+		 * @param {object} options - The options for the warmup operation
 		 */
 		async warmupSolrIndex(options = {}) {
 			this.warmingUpSolr = true
@@ -506,7 +432,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Mass validate objects with advanced configuration
-		 * @param options
+		 * @param {object} options - The options for the mass validate operation
 		 */
 		async massValidate(options = {}) {
 			this.massValidating = true
@@ -559,7 +485,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Load memory prediction for mass validation
-		 * @param maxObjects
+		 * @param {number} maxObjects - The maximum number of objects to validate
 		 */
 		async loadMassValidateMemoryPrediction(maxObjects = 0) {
 			try {
@@ -594,15 +520,16 @@ export const useSettingsStore = defineStore('settings', {
 		 */
 		hideMassValidateDialog() {
 			this.showMassValidateConfirmation = false
+			this.massValidateResults = null
 		},
 
 		/**
 		 * Confirm mass validate operation
-		 * @param options
+		 * @param {object} options - The options for the mass validate operation
 		 */
 		async confirmMassValidate(options = {}) {
 			this.hideMassValidateDialog()
-			return await this.massValidate(options)
+			return this.massValidate(options)
 		},
 
 		/**
@@ -627,7 +554,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Update RBAC settings
-		 * @param rbacData
+		 * @param {object} rbacData - The RBAC settings to save
 		 */
 		async updateRbacSettings(rbacData) {
 			this.saving = true
@@ -671,7 +598,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Update Multitenancy settings
-		 * @param multitenancyData
+		 * @param {object} multitenancyData - The multitenancy settings to save
 		 */
 		async updateMultitenancySettings(multitenancyData) {
 			this.saving = true
@@ -712,7 +639,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Update Retention settings
-		 * @param retentionData
+		 * @param {object} retentionData - The retention settings to save
 		 */
 		async updateRetentionSettings(retentionData) {
 			this.saving = true
@@ -737,208 +664,208 @@ export const useSettingsStore = defineStore('settings', {
 			}
 		},
 
-	/**
-	 * Get LLM settings
-	 */
-	async getLlmSettings() {
-		try {
-			this.loadingLlmSettings = true
-			const response = await axios.get(generateUrl('/apps/openregister/api/settings/llm'))
-			if (response.data) {
-				this.llmOptions = { ...this.llmOptions, ...response.data }
+		/**
+		 * Get LLM settings
+		 */
+		async getLlmSettings() {
+			try {
+				this.loadingLlmSettings = true
+				const response = await axios.get(generateUrl('/apps/openregister/api/settings/llm'))
+				if (response.data) {
+					this.llmOptions = { ...this.llmOptions, ...response.data }
+					return this.llmOptions
+				}
+			} catch (error) {
+				console.error('Failed to load LLM settings:', error)
 				return this.llmOptions
+			} finally {
+				this.loadingLlmSettings = false
 			}
-		} catch (error) {
-			console.error('Failed to load LLM settings:', error)
-			return this.llmOptions
-		} finally {
-			this.loadingLlmSettings = false
-		}
-	},
+		},
 
-	/**
-	 * Save LLM settings
-	 * @param llmData
-	 */
-	async saveLlmSettings(llmData) {
-		try {
-			const response = await axios.put(
-				generateUrl('/apps/openregister/api/settings/llm'),
-				llmData,
-			)
+		/**
+		 * Save LLM settings
+		 * @param {object} llmData - The LLM settings to save
+		 */
+		async saveLlmSettings(llmData) {
+			try {
+				const response = await axios.put(
+					generateUrl('/apps/openregister/api/settings/llm'),
+					llmData,
+				)
 
-			if (response.data) {
-				this.llmOptions = { ...this.llmOptions, ...response.data }
+				if (response.data) {
+					this.llmOptions = { ...this.llmOptions, ...response.data }
+				}
+
+				showSuccess('LLM settings saved successfully')
+				return response.data
+			} catch (error) {
+				console.error('Failed to save LLM settings:', error)
+				showError('Failed to save LLM settings: ' + error.message)
+				throw error
 			}
+		},
 
-			showSuccess('LLM settings saved successfully')
-			return response.data
-		} catch (error) {
-			console.error('Failed to save LLM settings:', error)
-			showError('Failed to save LLM settings: ' + error.message)
-			throw error
-		}
-	},
+		/**
+		 * Test LLM connection
+		 * @param {object} connectionData - The connection data to test
+		 */
+		async testLlmConnection(connectionData) {
+			try {
+				const response = await axios.post(
+					generateUrl('/apps/openregister/api/settings/llm/test'),
+					connectionData,
+				)
+				return response.data
+			} catch (error) {
+				console.error('Failed to test LLM connection:', error)
+				throw error
+			}
+		},
 
-	/**
-	 * Test LLM connection
-	 * @param connectionData
-	 */
-	async testLlmConnection(connectionData) {
-		try {
-			const response = await axios.post(
-				generateUrl('/apps/openregister/api/settings/llm/test'),
-				connectionData,
-			)
-			return response.data
-		} catch (error) {
-			console.error('Failed to test LLM connection:', error)
-			throw error
-		}
-	},
+		/**
+		 * Get LLM usage statistics
+		 */
+		async getLlmUsageStats() {
+			try {
+				const response = await axios.get(generateUrl('/apps/openregister/api/settings/llm/usage'))
+				return response.data
+			} catch (error) {
+				console.error('Failed to load LLM usage stats:', error)
+				return null
+			}
+		},
 
-	/**
-	 * Get LLM usage statistics
-	 */
-	async getLlmUsageStats() {
-		try {
-			const response = await axios.get(generateUrl('/apps/openregister/api/settings/llm/usage'))
-			return response.data
-		} catch (error) {
-			console.error('Failed to load LLM usage stats:', error)
-			return null
-		}
-	},
-
-	/**
-	 * Get file settings
-	 */
-	async getFileSettings() {
-		try {
-			this.loadingFileSettings = true
-			const response = await axios.get(generateUrl('/apps/openregister/api/settings/files'))
-			if (response.data) {
-				this.fileOptions = { ...this.fileOptions, ...response.data }
+		/**
+		 * Get file settings
+		 */
+		async getFileSettings() {
+			try {
+				this.loadingFileSettings = true
+				const response = await axios.get(generateUrl('/apps/openregister/api/settings/files'))
+				if (response.data) {
+					this.fileOptions = { ...this.fileOptions, ...response.data }
+					return this.fileOptions
+				}
+			} catch (error) {
+				console.error('Failed to load file settings:', error)
 				return this.fileOptions
+			} finally {
+				this.loadingFileSettings = false
 			}
-		} catch (error) {
-			console.error('Failed to load file settings:', error)
-			return this.fileOptions
-		} finally {
-			this.loadingFileSettings = false
-		}
-	},
+		},
 
-	/**
-	 * Save file settings
-	 * @param fileData
-	 */
-	async saveFileSettings(fileData) {
-		try {
-			const response = await axios.put(
-				generateUrl('/apps/openregister/api/settings/files'),
-				fileData,
-			)
+		/**
+		 * Save file settings
+		 * @param {object} fileData - The file settings to save
+		 */
+		async saveFileSettings(fileData) {
+			try {
+				const response = await axios.put(
+					generateUrl('/apps/openregister/api/settings/files'),
+					fileData,
+				)
 
-			if (response.data) {
-				this.fileOptions = { ...this.fileOptions, ...response.data }
+				if (response.data) {
+					this.fileOptions = { ...this.fileOptions, ...response.data }
+				}
+
+				showSuccess('File settings saved successfully')
+				return response.data
+			} catch (error) {
+				console.error('Failed to save file settings:', error)
+				showError('Failed to save file settings: ' + error.message)
+				throw error
 			}
+		},
 
-			showSuccess('File settings saved successfully')
-			return response.data
-		} catch (error) {
-			console.error('Failed to save file settings:', error)
-			showError('Failed to save file settings: ' + error.message)
-			throw error
-		}
-	},
+		/**
+		 * Get file extraction statistics
+		 */
+		async getExtractionStats() {
+			try {
+				const response = await axios.get(generateUrl('/apps/openregister/api/settings/files/stats'))
+				return response.data
+			} catch (error) {
+				console.error('Failed to load extraction stats:', error)
+				return null
+			}
+		},
 
-	/**
-	 * Get file extraction statistics
-	 */
-	async getExtractionStats() {
-		try {
-			const response = await axios.get(generateUrl('/apps/openregister/api/settings/files/stats'))
-			return response.data
-		} catch (error) {
-			console.error('Failed to load extraction stats:', error)
-			return null
-		}
-	},
+		/**
+		 * Discover files in Nextcloud that aren't tracked yet
+		 */
+		async discoverFiles() {
+			try {
+				const response = await axios.post(
+					generateUrl('/apps/openregister/api/files/discover'),
+					{ limit: 100 },
+				)
+				return response.data
+			} catch (error) {
+				console.error('Failed to discover files:', error)
+				showError('Failed to discover files: ' + error.message)
+				throw error
+			}
+		},
 
-	/**
-	 * Discover files in Nextcloud that aren't tracked yet
-	 */
-	async discoverFiles() {
-		try {
-			const response = await axios.post(
-				generateUrl('/apps/openregister/api/files/discover'),
-				{ limit: 100 }
-			)
-			return response.data
-		} catch (error) {
-			console.error('Failed to discover files:', error)
-			showError('Failed to discover files: ' + error.message)
-			throw error
-		}
-	},
-
-	/**
-	 * Trigger file extraction for pending or failed files
-	 * @param type - 'pending' or 'failed'
-	 */
-	async triggerFileExtraction(type = 'pending') {
-		try {
+		/**
+		 * Trigger file extraction for pending or failed files
+		 * @param {string} type - 'pending' or 'failed'
+		 */
+		async triggerFileExtraction(type = 'pending') {
+			try {
 			// Use new core file extraction endpoints
-			const endpoint = type === 'failed' 
-				? '/apps/openregister/api/files/retry-failed'
-				: '/apps/openregister/api/files/extract'
-			
-			const response = await axios.post(generateUrl(endpoint), { limit: 100 })
-			return response.data
-		} catch (error) {
-			console.error(`Failed to trigger ${type} file extraction:`, error)
-			showError(`Failed to start processing ${type} files: ` + error.message)
-			throw error
-		}
-	},
+				const endpoint = type === 'failed'
+					? '/apps/openregister/api/files/retry-failed'
+					: '/apps/openregister/api/files/extract'
 
-	/**
-	 * Test Dolphin API connection
-	 * @param connectionData - API endpoint and key
-	 */
-	async testDolphinConnection(connectionData) {
-		try {
-			const response = await axios.post(
-				generateUrl('/apps/openregister/api/settings/files/test-dolphin'),
-				connectionData,
-			)
-			return response.data
-		} catch (error) {
-			console.error('Failed to test Dolphin connection:', error)
-			return {
-				success: false,
-				error: error.response?.data?.error || error.message,
+				const response = await axios.post(generateUrl(endpoint), { limit: 100 })
+				return response.data
+			} catch (error) {
+				console.error(`Failed to trigger ${type} file extraction:`, error)
+				showError(`Failed to start processing ${type} files: ` + error.message)
+				throw error
 			}
-		}
-	},
+		},
 
-	/**
-	 * Load version information
-	 */
-	async loadVersionInfo() {
-		try {
-			this.loadingVersionInfo = true
-			const response = await axios.get(generateUrl('/apps/openregister/api/settings/version'))
-			if (response.data) {
-				this.versionInfo = { ...this.versionInfo, ...response.data }
+		/**
+		 * Test Dolphin API connection
+		 * @param {object} connectionData - API endpoint and key
+		 */
+		async testDolphinConnection(connectionData) {
+			try {
+				const response = await axios.post(
+					generateUrl('/apps/openregister/api/settings/files/test-dolphin'),
+					connectionData,
+				)
+				return response.data
+			} catch (error) {
+				console.error('Failed to test Dolphin connection:', error)
+				return {
+					success: false,
+					error: error.response?.data?.error || error.message,
+				}
 			}
-		} catch (error) {
-			console.error('Failed to load version info:', error)
-		} finally {
-			this.loadingVersionInfo = false
-		}
-	},
+		},
+
+		/**
+		 * Load version information
+		 */
+		async loadVersionInfo() {
+			try {
+				this.loadingVersionInfo = true
+				const response = await axios.get(generateUrl('/apps/openregister/api/settings/version'))
+				if (response.data) {
+					this.versionInfo = { ...this.versionInfo, ...response.data }
+				}
+			} catch (error) {
+				console.error('Failed to load version info:', error)
+			} finally {
+				this.loadingVersionInfo = false
+			}
+		},
 
 		/**
 		 * Load available options (groups, users, tenants)
@@ -992,7 +919,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Clear specific cache type
-		 * @param type
+		 * @param {string} type - The type of cache to clear
 		 */
 		async clearSpecificCache(type) {
 			this.clearingCache = type
@@ -1081,7 +1008,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Save general settings (legacy method for backwards compatibility)
-		 * @param data
+		 * @param {object} data - The data to save
 		 */
 		async saveSettings(data) {
 			this.saving = true
@@ -1133,32 +1060,8 @@ export const useSettingsStore = defineStore('settings', {
 		},
 
 		/**
-		 * Show mass validate confirmation dialog
-		 */
-		showMassValidateDialog() {
-			this.showMassValidateConfirmation = true
-		},
-
-		/**
-		 * Hide mass validate confirmation dialog
-		 */
-		hideMassValidateDialog() {
-			this.showMassValidateConfirmation = false
-			this.massValidateResults = null
-		},
-
-		/**
-		 * Confirm and execute mass validate
-		 * @param options
-		 */
-		async confirmMassValidate(options = {}) {
-			this.hideMassValidateDialog()
-			await this.massValidate(options)
-		},
-
-		/**
 		 * Clear cache of specified type
-		 * @param type
+		 * @param {string} type - The type of cache to clear
 		 */
 		async clearCache(type = 'all') {
 			this.clearingCache = true
@@ -1277,31 +1180,10 @@ export const useSettingsStore = defineStore('settings', {
 		},
 
 		/**
-		 * Hide test dialog
-		 */
-		hideTestDialog() {
-			this.showTestDialog = false
-		},
-
-		/**
 		 * Retry test connection
 		 */
 		retryTest() {
 			this.testSolrConnection()
-		},
-
-		/**
-		 * Hide setup dialog
-		 */
-		hideSetupDialog() {
-			this.showSetupDialog = false
-		},
-
-		/**
-		 * Retry SOLR setup
-		 */
-		retrySetup() {
-			this.setupSolr()
 		},
 
 		/**
@@ -1353,7 +1235,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Create missing SOLR fields
-		 * @param dryRun
+		 * @param {boolean} dryRun - Whether to run the operation in dry run mode
 		 */
 		async createMissingSolrFields(dryRun = false) {
 			this.creatingFields = true
@@ -1388,7 +1270,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Fix mismatched SOLR field configurations
-		 * @param dryRun
+		 * @param {boolean} dryRun - Whether to run the operation in dry run mode
 		 */
 		async fixMismatchedSolrFields(dryRun = false) {
 			this.fixingFields = true
@@ -1533,13 +1415,6 @@ export const useSettingsStore = defineStore('settings', {
 		 */
 		retrySetup() {
 			this.setupSolr()
-		},
-
-		/**
-		 * Retry test
-		 */
-		retryTest() {
-			this.testSolrConnection()
 		},
 	},
 })

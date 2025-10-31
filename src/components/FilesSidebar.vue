@@ -72,22 +72,9 @@ import { NcTextField, NcCheckboxRadioSwitch, NcButton } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import { t } from '@nextcloud/l10n'
 
-/**
- * FilesSidebar
- * @module Components
- * @package OpenRegister
- * 
- * Sidebar component for searching and filtering files
- * 
- * @author   Conduction Development Team <info@conduction.nl>
- * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version  GIT: <git_id>
- * @link     https://www.OpenRegister.nl
- */
 export default {
 	name: 'FilesSidebar',
-	
+
 	components: {
 		NcTextField,
 		NcCheckboxRadioSwitch,
@@ -117,7 +104,7 @@ export default {
 	computed: {
 		/**
 		 * Check if there are active filters
-		 * 
+		 *
 		 * @return {boolean} True if filters are active
 		 */
 		hasActiveFilters() {
@@ -139,7 +126,7 @@ export default {
 
 		/**
 		 * Handle search input with debouncing
-		 * 
+		 *
 		 * @param {string} value - The search value
 		 * @return {void}
 		 */
@@ -152,10 +139,10 @@ export default {
 
 		/**
 		 * Update the selected status filter
-		 * 
+		 *
 		 * @param {string|null} status - The status to filter by
 		 * @return {void}
-		*/
+		 */
 		updateStatus(status) {
 			this.selectedStatus = status
 			this.$emit('update:status', status)
@@ -163,7 +150,7 @@ export default {
 
 		/**
 		 * Clear all filters
-		 * 
+		 *
 		 * @return {void}
 		 */
 		clearFilters() {
@@ -227,4 +214,3 @@ export default {
 	width: 100%;
 }
 </style>
-
