@@ -301,6 +301,37 @@ docker logs nextcloud-container | grep "extraction failed"
 # Settings → File Configuration → Statistics section
 ```
 
+**Core File Extraction API**:
+
+OpenRegister provides dedicated API endpoints for file text extraction (moved from settings to core functionality):
+
+- 'GET /api/files' - List all tracked files with extraction status
+- 'GET /api/files/{id}' - Get single file extraction information
+- 'POST /api/files/{id}/extract' - Extract text from specific file
+- 'POST /api/files/extract' - Extract all pending files (batch processing)
+- 'POST /api/files/retry-failed' - Retry all failed extractions
+- 'GET /api/files/stats' - Get extraction statistics
+
+**Smart Re-Extraction**:
+
+The system automatically detects when files need re-extraction by comparing:
+- File modification time ('mtime' from Nextcloud's 'oc_filecache')
+- Last extraction time ('extractedAt' from 'oc_openregister_file_texts')
+
+If 'mtime > extractedAt', the file is re-extracted to ensure content is up-to-date.
+
+**File Tracking Table**:
+
+Extracted text and metadata are stored in 'oc_openregister_file_texts' with:
+- 'file_id' - Links to Nextcloud's 'oc_filecache' table
+- 'extraction_status' - pending, processing, completed, failed
+- 'extractedAt' - Timestamp of last extraction
+- 'text_content' - Extracted text
+- 'text_length' - Character count
+- 'chunk_count' - Number of chunks created
+- 'extraction_method' - LLPhant or Dolphin
+- Plus SOLR indexing and vectorization tracking
+
 ## Working with Files
 
 ### Uploading Files

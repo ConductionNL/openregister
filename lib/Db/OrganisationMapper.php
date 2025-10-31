@@ -326,14 +326,48 @@ class OrganisationMapper extends QBMapper
      *
      * @return array Array of matching organisations
      */
-    public function findByName(string $name): array
+    /**
+     * Find all organisations with pagination
+     *
+     * @param int $limit  Maximum number of results to return (default 50)
+     * @param int $offset Number of results to skip (default 0)
+     *
+     * @return array List of organisation entities
+     */
+    public function findAll(int $limit=50, int $offset=0): array
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->orderBy('name', 'ASC')
+            ->setMaxResults($limit)
+            ->setFirstResult($offset);
+
+        return $this->findEntities($qb);
+
+    }//end findAll()
+
+
+    /**
+     * Find organisations by name with pagination
+     *
+     * @param string $name   The name pattern to search for
+     * @param int    $limit  Maximum number of results to return
+     * @param int    $offset Number of results to skip
+     *
+     * @return array List of organisation entities
+     */
+    public function findByName(string $name, int $limit=50, int $offset=0): array
     {
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
             ->from($this->getTableName())
             ->where($qb->expr()->like('name', $qb->createNamedParameter('%'.$name.'%')))
-            ->orderBy('name', 'ASC');
+            ->orderBy('name', 'ASC')
+            ->setMaxResults($limit)
+            ->setFirstResult($offset);
 
         return $this->findEntities($qb);
 

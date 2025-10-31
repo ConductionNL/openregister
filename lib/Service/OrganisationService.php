@@ -412,27 +412,41 @@ class OrganisationService
 
 
     /**
-     * Add current user to an organisation
+     * Add a user to an organisation
      *
      * @param string $organisationUuid The organisation UUID
+     * @param string|null $targetUserId Optional user ID to add. If null, current user is added.
      *
      * @return bool True if successfully added
      *
-     * @throws Exception If organisation not found or user not logged in
+     * @throws Exception If organisation not found, user not logged in, or target user does not exist
      */
-    public function joinOrganisation(string $organisationUuid): bool
+    public function joinOrganisation(string $organisationUuid, ?string $targetUserId = null): bool
     {
-        $user = $this->getCurrentUser();
-        if ($user === null) {
+        // Get current user (for authentication)
+        $currentUser = $this->getCurrentUser();
+        if ($currentUser === null) {
             throw new Exception('No user logged in');
         }
 
-        $userId = $user->getUID();
+        // Determine which user to add
+        // If targetUserId is provided, use it; otherwise use current user
+        $userId = $targetUserId ?? $currentUser->getUID();
 
         try {
+            // Validate that target user exists if different from current user
+            if ($targetUserId !== null && $targetUserId !== $currentUser->getUID()) {
+                // Check if target user exists
+                $targetUser = $this->userManager->get($targetUserId);
+                if ($targetUser === null) {
+                    throw new Exception('Target user not found');
+                }
+            }
+
+            // Add user to organisation
             $this->organisationMapper->addUserToOrganisation($organisationUuid, $userId);
 
-            // Clear cached organisations to force refresh
+            // Clear cached organisations to force refresh for the affected user
             $cacheKey = self::SESSION_USER_ORGANISATIONS.'_'.$userId;
             $this->session->remove($cacheKey);
 
