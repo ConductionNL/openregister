@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
+use Exception;
 use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\FileText;
 use OCA\OpenRegister\Db\FileTextMapper;
@@ -75,7 +76,7 @@ class TextExtractionService
      * @return FileText The FileText entity with extraction results
      *
      * @throws NotFoundException If file doesn't exist in Nextcloud
-     * @throws \Exception If extraction fails
+     * @throws Exception If extraction fails
      */
     public function extractFile(int $fileId, bool $forceReExtract = false): FileText
     {
@@ -99,7 +100,7 @@ class TextExtractionService
         // Determine if extraction is needed
         $needsExtraction = $this->needsExtraction($existingFileText, $ncFile, $forceReExtract);
 
-        if (!$needsExtraction && $existingFileText !== null) {
+        if ($needsExtraction === false && $existingFileText !== null) {
             $this->logger->info('[TextExtractionService] File already extracted and up-to-date', ['fileId' => $fileId]);
             return $existingFileText;
         }
@@ -156,7 +157,7 @@ class TextExtractionService
                             'errors' => $indexResult['errors'] ?? []
                         ]);
                     }
-                } catch (\Exception $indexError) {
+                } catch (Exception $indexError) {
                     // Log but don't fail the extraction if SOLR indexing fails
                     $this->logger->error('[TextExtractionService] SOLR indexing error', [
                         'fileId' => $fileId,
@@ -176,7 +177,7 @@ class TextExtractionService
                 $fileText = $this->fileTextMapper->update($fileText);
             }
             
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Extraction failed with exception
             $fileText->setExtractionStatus('failed');
             $fileText->setExtractionError($e->getMessage());
@@ -205,7 +206,7 @@ class TextExtractionService
      *
      * @return string|null Extracted text content, or null if extraction not possible
      *
-     * @throws \Exception If file cannot be read
+     * @throws Exception If file cannot be read
      */
     private function performTextExtraction(int $fileId, array $ncFile): ?string
     {
@@ -223,14 +224,14 @@ class TextExtractionService
             // Get file by ID using Nextcloud's file system
             $nodes = $this->rootFolder->getById($fileId);
             
-            if (empty($nodes)) {
-                throw new \Exception("File not found in Nextcloud file system");
+            if (empty($nodes) === true) {
+                throw new Exception("File not found in Nextcloud file system");
             }
             
             $file = $nodes[0];
             
-            if (!($file instanceof \OCP\Files\File)) {
-                throw new \Exception("Node is not a file");
+            if ($file instanceof \OCP\Files\File === false) {
+                throw new Exception("Node is not a file");
             }
             
             // Extract text based on mime type
@@ -250,7 +251,7 @@ class TextExtractionService
                 'application/x-yaml',
             ];
             
-            if (in_array($mimeType, $textMimeTypes) || strpos($mimeType, 'text/') === 0) {
+            if (in_array($mimeType, $textMimeTypes) === true || strpos($mimeType, 'text/') === 0) {
                 // Read text file directly
                 $extractedText = $file->getContent();
                 
@@ -271,7 +272,7 @@ class TextExtractionService
             
             return $extractedText;
             
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error('[TextExtractionService] Failed to read file', [
                 'fileId' => $fileId,
                 'error' => $e->getMessage()
@@ -309,7 +310,7 @@ class TextExtractionService
         }
 
         // Force re-extraction requested
-        if ($forceReExtract) {
+        if ($forceReExtract === true) {
             $this->logger->info('[TextExtractionService] Force re-extraction requested', ['fileId' => $ncFile['fileid']]);
             return true;
         }
@@ -395,7 +396,7 @@ class TextExtractionService
                         'fileId' => $ncFile['fileid'],
                         'path' => $ncFile['path'] ?? 'unknown'
                     ]);
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $failed++;
                     $this->logger->error('[TextExtractionService] Failed to track file', [
                         'fileId' => $ncFile['fileid'] ?? 'unknown',
@@ -414,7 +415,7 @@ class TextExtractionService
                 'failed' => $failed,
                 'total' => count($untrackedFiles)
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error('[TextExtractionService] Discovery failed', ['error' => $e->getMessage()]);
             return [
                 'discovered' => 0,
@@ -460,7 +461,7 @@ class TextExtractionService
                 // Trigger extraction for this file
                 $this->extractFile($fileText->getFileId(), false);
                 $processed++;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $failed++;
                 $this->logger->error('[TextExtractionService] Failed to extract file', [
                     'fileId' => $fileText->getFileId(),
@@ -507,7 +508,7 @@ class TextExtractionService
             try {
                 $this->extractFile($fileText->getFileId(), true);
                 $retried++;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $failed++;
                 $this->logger->error('[TextExtractionService] Retry failed for file', [
                     'fileId' => $fileText->getFileId(),
