@@ -867,16 +867,34 @@ export const useSettingsStore = defineStore('settings', {
 	},
 
 	/**
+	 * Discover files in Nextcloud that aren't tracked yet
+	 */
+	async discoverFiles() {
+		try {
+			const response = await axios.post(
+				generateUrl('/apps/openregister/api/files/discover'),
+				{ limit: 100 }
+			)
+			return response.data
+		} catch (error) {
+			console.error('Failed to discover files:', error)
+			showError('Failed to discover files: ' + error.message)
+			throw error
+		}
+	},
+
+	/**
 	 * Trigger file extraction for pending or failed files
 	 * @param type - 'pending' or 'failed'
 	 */
 	async triggerFileExtraction(type = 'pending') {
 		try {
-			const response = await axios.post(
-				generateUrl('/apps/openregister/api/settings/files/extract'),
-				{ type },
-			)
-			showSuccess(`Started processing ${type} files`)
+			// Use new core file extraction endpoints
+			const endpoint = type === 'failed' 
+				? '/apps/openregister/api/files/retry-failed'
+				: '/apps/openregister/api/files/extract'
+			
+			const response = await axios.post(generateUrl(endpoint), { limit: 100 })
 			return response.data
 		} catch (error) {
 			console.error(`Failed to trigger ${type} file extraction:`, error)

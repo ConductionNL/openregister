@@ -143,12 +143,25 @@ export const useOrganisationStore = defineStore('organisation', {
 				throw new Error(`Failed to set active organisation: ${error.message}`)
 			}
 		},
-		// Join an organisation
-		async joinOrganisation(uuid) {
+		/**
+		 * Join an organisation with optional user selection
+		 *
+		 * @param {string} uuid - Organisation UUID to join
+		 * @param {string|null} userId - Optional user ID to join the organisation. If null, current user joins.
+		 * @return {Promise<{response: Response, data: object}>} API response
+		 */
+		async joinOrganisation(uuid, userId = null) {
 			const endpoint = `/index.php/apps/openregister/api/organisations/${uuid}/join`
 			try {
+				// Prepare request body with optional userId
+				const requestBody = userId ? { userId } : {}
+
 				const response = await fetch(endpoint, {
 					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(requestBody),
 				})
 
 				if (!response.ok) {
@@ -325,13 +338,24 @@ export const useOrganisationStore = defineStore('organisation', {
 
 			return cleaned
 		},
-		// Search organisations by name
-		async searchOrganisations(query = '') {
-			if (!query.trim()) {
-				return []
+		/**
+		 * Search organisations by name with pagination support
+		 * 
+		 * @param {string} query - Search query (empty returns all)
+		 * @param {number} limit - Maximum number of results to return
+		 * @param {number} offset - Number of results to skip
+		 * @return {Promise<Array>} List of organisations
+		 */
+		async searchOrganisations(query = '', limit = 50, offset = 0) {
+			// Build query parameters
+			const params = new URLSearchParams()
+			if (query.trim()) {
+				params.append('query', query.trim())
 			}
+			params.append('_limit', limit)
+			params.append('_offset', offset)
 
-			const endpoint = `/index.php/apps/openregister/api/organisations/search?query=${encodeURIComponent(query.trim())}`
+			const endpoint = `/index.php/apps/openregister/api/organisations/search?${params.toString()}`
 
 			try {
 				const response = await fetch(endpoint, {

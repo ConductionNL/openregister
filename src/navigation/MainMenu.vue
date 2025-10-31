@@ -21,17 +21,27 @@
 					<TableMultiple :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="$route.path.startsWith('/chat')" :name="t('openregister', 'AI Chat')" @click="handleNavigate('/chat')">
-				<template #icon>
-					<Robot :size="20" />
-				</template>
-			</NcAppNavigationItem>
-			<!-- <NcAppNavigationItem :active="$route.path.startsWith('/search')" name="Search" @click="handleNavigate('/search')">
-				<template #icon>
-					<LayersSearchOutline :size="20" />
-				</template>
-			</NcAppNavigationItem> -->
-		</NcAppNavigationList>
+		<NcAppNavigationItem :active="$route.path.startsWith('/chat')" :name="t('openregister', 'AI Chat')" @click="handleNavigate('/chat')">
+			<template #icon>
+				<Robot :size="20" />
+			</template>
+		</NcAppNavigationItem>
+		<NcAppNavigationItem :active="$route.path.startsWith('/files')" :name="t('openregister', 'Files')" @click="handleNavigate('/files')">
+			<template #icon>
+				<FileDocumentMultipleOutline :size="20" />
+			</template>
+		</NcAppNavigationItem>
+		<NcAppNavigationItem :active="$route.path.startsWith('/agents')" :name="t('openregister', 'Agents')" @click="handleNavigate('/agents')">
+			<template #icon>
+				<RobotOutline :size="20" />
+			</template>
+		</NcAppNavigationItem>
+		<!-- <NcAppNavigationItem :active="$route.path.startsWith('/search')" name="Search" @click="handleNavigate('/search')">
+			<template #icon>
+				<LayersSearchOutline :size="20" />
+			</template>
+		</NcAppNavigationItem> -->
+	</NcAppNavigationList>
 
 		<NcAppNavigationSettings>
 			<NcAppNavigationItem :active="$route.path.startsWith('/organisation')" :name="t('openregister', 'Organisations')" @click="handleNavigate('/organisation')">
@@ -86,6 +96,8 @@ import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRi
 // import LayersSearchOutline from 'vue-material-design-icons/LayersSearchOutline.vue'
 import TableMultiple from 'vue-material-design-icons/TableMultiple.vue'
 import Robot from 'vue-material-design-icons/Robot.vue'
+import RobotOutline from 'vue-material-design-icons/RobotOutline.vue'
+import FileDocumentMultipleOutline from 'vue-material-design-icons/FileDocumentMultipleOutline.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import DeleteRestore from 'vue-material-design-icons/DeleteRestore.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
@@ -107,6 +119,8 @@ export default {
 		OfficeBuildingOutline,
 		TableMultiple,
 		Robot,
+		RobotOutline,
+		FileDocumentMultipleOutline,
 		// LayersSearchOutline,
 		CogOutline,
 		DeleteRestore,

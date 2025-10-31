@@ -62,6 +62,14 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							</template>
 							Activeren
 						</NcActionButton>
+						<NcActionButton
+							close-after-click
+							@click="openJoinModal">
+							<template #icon>
+								<AccountPlus :size="20" />
+							</template>
+							Add User
+						</NcActionButton>
 						<NcActionButton v-if="canDelete"
 							close-after-click
 							@click="navigationStore.setDialog('deleteOrganisation')">
@@ -192,6 +200,7 @@ import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import AccountGroup from 'vue-material-design-icons/AccountGroup.vue'
 import AccountMinus from 'vue-material-design-icons/AccountMinus.vue'
+import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
 import Account from 'vue-material-design-icons/Account.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
@@ -215,6 +224,7 @@ export default {
 		CheckCircle,
 		AccountGroup,
 		AccountMinus,
+		AccountPlus,
 		Account,
 		ContentCopy,
 		Eye,
@@ -353,6 +363,14 @@ export default {
 		copyOrganisation() {
 			this.organisationModalMode = 'copy'
 			this.showOrganisationModal = true
+		},
+		openJoinModal() {
+			// Set the transfer data with the current organisation UUID
+			navigationStore.setTransferData({
+				organisationUuid: organisationStore.organisationItem?.uuid,
+			})
+			// Open the join organisation modal
+			navigationStore.setModal('joinOrganisation')
 		},
 		closeOrganisationModal() {
 			this.showOrganisationModal = false

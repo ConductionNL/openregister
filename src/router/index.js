@@ -12,6 +12,8 @@ import OrganisationsIndex from '../views/organisation/OrganisationsIndex.vue'
 import ObjectsIndex from '../views/object/ObjectsIndex.vue'
 import SearchIndex from '../views/search/SearchIndex.vue'
 import ChatView from '../views/ChatView.vue'
+import FilesIndex from '../views/files/FilesIndex.vue'
+import AgentsIndex from '../views/agents/AgentsIndex.vue'
 import ConfigurationsIndex from '../views/configuration/ConfigurationsIndex.vue'
 import DeletedIndex from '../views/deleted/DeletedIndex.vue'
 import AuditTrailIndex from '../views/logs/AuditTrailIndex.vue'
@@ -29,6 +31,8 @@ export const routeKeyByPath = {
 	'/objects': 'objects',
 	'/tables': 'tableSearch',
 	'/chat': 'chat',
+	'/files': 'files',
+	'/agents': 'agents',
 	'/configurations': 'configurations',
 	'/deleted': 'deleted',
 	'/audit-trails': 'auditTrails',
@@ -49,6 +53,8 @@ const router = new Router({
 		{ path: '/objects', component: ObjectsIndex },
 		{ path: '/tables', component: SearchIndex },
 		{ path: '/chat', component: ChatView },
+		{ path: '/files', component: FilesIndex },
+		{ path: '/agents', component: AgentsIndex },
 		{ path: '/configurations', component: ConfigurationsIndex },
 		{ path: '/deleted', component: DeletedIndex },
 		{ path: '/audit-trails', component: AuditTrailIndex },

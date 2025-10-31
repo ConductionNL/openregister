@@ -85,7 +85,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							<template #icon>
 								<AccountPlus :size="20" />
 							</template>
-							Organisatie Deelnemen
+							Add User to Organisation
 						</NcActionButton>
 						<NcActionButton
 							close-after-click
@@ -164,6 +164,14 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 											<CheckCircle :size="20" />
 										</template>
 										Activeren
+									</NcActionButton>
+									<NcActionButton
+										close-after-click
+										@click="openJoinModal(organisation)">
+										<template #icon>
+											<AccountMultiplePlus :size="20" />
+										</template>
+										Add User
 									</NcActionButton>
 									<NcActionButton v-if="canDeleteOrganisation(organisation)"
 										close-after-click
@@ -294,6 +302,22 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 												</template>
 												Activeren
 											</NcActionButton>
+											<NcActionButton
+												close-after-click
+												@click="openJoinModal(organisation)">
+												<template #icon>
+													<AccountMultiplePlus :size="20" />
+												</template>
+												Add User
+											</NcActionButton>
+											<NcActionButton v-if="canDeleteOrganisation(organisation)"
+												close-after-click
+												@click="organisationStore.setOrganisationItem(organisation); navigationStore.setModal('deleteOrganisation')">
+												<template #icon>
+													<TrashCanOutline :size="20" />
+												</template>
+												Verwijderen
+											</NcActionButton>
 										</NcActions>
 									</td>
 								</tr>
@@ -357,6 +381,7 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
+import AccountMultiplePlus from 'vue-material-design-icons/AccountMultiplePlus.vue'
 import AccountMinus from 'vue-material-design-icons/AccountMinus.vue'
 import SwapHorizontal from 'vue-material-design-icons/SwapHorizontal.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
@@ -385,6 +410,7 @@ export default {
 		InformationOutline,
 		CheckCircle,
 		AccountPlus,
+		AccountMultiplePlus,
 		AccountMinus,
 		SwapHorizontal,
 		Plus,
@@ -528,6 +554,14 @@ export default {
 			this.selectedOrganisation = organisation
 			this.organisationModalMode = 'copy'
 			this.showOrganisationModal = true
+		},
+		openJoinModal(organisation) {
+			// Set the transfer data with the organisation UUID
+			navigationStore.setTransferData({
+				organisationUuid: organisation.uuid,
+			})
+			// Open the join organisation modal
+			navigationStore.setModal('joinOrganisation')
 		},
 		closeOrganisationModal() {
 			this.showOrganisationModal = false

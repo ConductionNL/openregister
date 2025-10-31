@@ -17,6 +17,7 @@ Multi-tenancy enables organizations to:
 ### Organisation Management
 - **Organisation Creation**: Create and manage organisations with names, descriptions, and settings
 - **User Membership**: Manage which users belong to which organisations
+- **User Selection for Joining**: Optionally specify which user to add when joining an organisation (defaults to current user)
 - **Default Organisation**: Automatic fallback organisation for users without specific memberships
 - **Organisation Statistics**: Track usage, user counts, and system metrics
 
@@ -70,7 +71,7 @@ graph LR
 - `POST /api/organisations/{uuid}/set-active` - Set active organisation
 
 ### User-Organisation Relationships
-- `POST /api/organisations/{uuid}/join` - Join organisation
+- `POST /api/organisations/{uuid}/join` - Join organisation (with optional user selection)
 - `POST /api/organisations/{uuid}/leave` - Leave organisation
 
 ### System Management

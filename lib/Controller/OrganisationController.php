@@ -301,7 +301,12 @@ class OrganisationController extends Controller
     public function join(string $uuid): JSONResponse
     {
         try {
-            $success = $this->organisationService->joinOrganisation($uuid);
+            // Get optional userId from request body
+            $requestData = $this->request->getParams();
+            $userId = $requestData['userId'] ?? null;
+
+            // Join organisation with optional userId parameter
+            $success = $this->organisationService->joinOrganisation($uuid, $userId);
 
             if ($success) {
                 return new JSONResponse(
@@ -323,6 +328,7 @@ class OrganisationController extends Controller
                     'Failed to join organisation',
                     [
                         'uuid'  => $uuid,
+                        'userId' => $requestData['userId'] ?? 'current_user',
                         'error' => $e->getMessage(),
                     ]
                     );
@@ -508,28 +514,33 @@ class OrganisationController extends Controller
 
 
     /**
-     * Search organisations by name (for joining)
+     * Search organisations by name with pagination (for joining)
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
      * @param string $query Search query
      *
-     * @return JSONResponse List of matching organisations
+     * @return JSONResponse List of matching organisations with pagination info
      */
     public function search(string $query=''): JSONResponse
     {
         try {
-            if (empty(trim($query))) {
-                return new JSONResponse(
-                        [
-                            'organisations' => [],
-                        ],
-                        Http::STATUS_OK
-                        );
-            }
+            // Get pagination parameters from request
+            $limit  = (int) $this->request->getParam('_limit', 50);
+            $offset = (int) $this->request->getParam('_offset', 0);
 
-            $organisations = $this->organisationMapper->findByName(trim($query));
+            // Validate pagination parameters
+            $limit  = max(1, min($limit, 100)); // Between 1 and 100
+            $offset = max(0, $offset);
+
+            // If query is empty, return all organisations
+            // Otherwise search by name
+            if (empty(trim($query))) {
+                $organisations = $this->organisationMapper->findAll($limit, $offset);
+            } else {
+                $organisations = $this->organisationMapper->findByName(trim($query), $limit, $offset);
+            }
 
             // Remove user information for privacy
             $publicData = array_map(
@@ -547,6 +558,9 @@ class OrganisationController extends Controller
             return new JSONResponse(
                     [
                         'organisations' => $publicData,
+                        'limit'         => $limit,
+                        'offset'        => $offset,
+                        'count'         => count($publicData),
                     ],
                     Http::STATUS_OK
                     );
