@@ -1,5 +1,5 @@
 <template>
-	<SettingsSection 
+	<SettingsSection
 		:name="title"
 		:description="description"
 		:doc-url="docUrl"
@@ -54,7 +54,7 @@
 						<span class="version-label">{{ item.label }}:</span>
 						<span class="version-value" :class="item.statusClass">{{ item.value }}</span>
 					</div>
-					
+
 					<!-- Optional additional items slot -->
 					<slot name="additional-items" />
 				</div>
@@ -76,24 +76,14 @@ import Check from 'vue-material-design-icons/Check.vue'
 import Update from 'vue-material-design-icons/Update.vue'
 
 /**
- * @class VersionInfoCard
- * @module Components/Shared
- * @package OpenRegister
- * 
  * Reusable version information card component for displaying application information
  * across all Conduction Nextcloud apps (OpenRegister, OpenConnector, OpenCatalogi, SoftwareCatalog).
- * 
+ *
  * Features:
  * - Displays app name, version, and status
  * - Conditional update button (error style if needs update, disabled if up to date)
  * - Actions slot for additional buttons (e.g., Reset Auto-Config, Load Schemas)
  * - Clean, left-aligned layout matching Software Catalog style
- * 
- * @author   Conduction Development Team <info@conduction.nl>
- * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version  GIT: <git_id>
- * @link     https://www.conduction.nl
  */
 export default {
 	name: 'VersionInfoCard',
@@ -181,7 +171,6 @@ export default {
 			default: false,
 		},
 
-
 		/**
 		 * Updating state
 		 */
@@ -226,7 +215,7 @@ export default {
 
 		/**
 		 * Update button type based on status
-		 * 
+		 *
 		 * @return {string}
 		 */
 		updateButtonType() {
@@ -238,7 +227,7 @@ export default {
 
 		/**
 		 * Update button should be disabled if up to date or updating
-		 * 
+		 *
 		 * @return {boolean}
 		 */
 		updateButtonDisabled() {
@@ -247,7 +236,7 @@ export default {
 
 		/**
 		 * Update button text based on status
-		 * 
+		 *
 		 * @return {string}
 		 */
 		updateButtonText() {
@@ -264,7 +253,7 @@ export default {
 	methods: {
 		/**
 		 * Handle update button click
-		 * 
+		 *
 		 * @return {void}
 		 */
 		handleUpdateClick() {
@@ -361,4 +350,3 @@ export default {
 	}
 }
 </style>
-

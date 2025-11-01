@@ -352,7 +352,7 @@ export default {
 		},
 
 		async startBulkVectorization() {
-			const message = this.config.vectorizeAllSchemas 
+			const message = this.config.vectorizeAllSchemas
 				? this.t('openregister', 'This will vectorize all objects from all schemas. This may take a long time and incur API costs. Continue?')
 				: this.t('openregister', 'This will vectorize objects from {count} selected schema(s). This may take a long time. Continue?', { count: this.selectedSchemasCount })
 

@@ -289,7 +289,7 @@
 			<!-- Model Configuration -->
 			<div v-if="selectedChatProvider && selectedChatProvider.id !== 'none'" class="config-section">
 				<h3>{{ t('openregister', '⚙️ Model Configuration') }}</h3>
-				
+
 				<div class="form-group">
 					<label for="temperature">{{ t('openregister', 'Temperature') }}: {{ temperature }}</label>
 					<input
@@ -591,7 +591,7 @@ export default {
 					}
 				}
 
-				const response = await axios.post(generateUrl('/apps/openregister/api/vectors/test-embedding'), {
+				await axios.post(generateUrl('/apps/openregister/api/vectors/test-embedding'), {
 					provider,
 					config,
 					testText: 'This is a test embedding generation.',
@@ -639,7 +639,7 @@ export default {
 					}
 				}
 
-				const response = await axios.post(generateUrl('/apps/openregister/api/llm/test-chat'), {
+				await axios.post(generateUrl('/apps/openregister/api/llm/test-chat'), {
 					provider,
 					config,
 					testMessage: 'Hello! Please respond with a brief greeting.',

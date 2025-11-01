@@ -1,5 +1,5 @@
 <template>
-	<NcSettingsSection 
+	<NcSettingsSection
 		:name="name"
 		:description="description"
 		:doc-url="docUrl">
@@ -11,7 +11,8 @@
 		<!-- Section Description (optional detailed description box) -->
 		<div v-if="$slots.description || detailedDescription" class="section-description-full">
 			<slot name="description">
-				<p v-if="detailedDescription" class="main-description" v-html="detailedDescription" />
+				<!-- eslint-disable-next-line vue/no-v-html -->
+				<p v-if="detailedDescription" class="main-description" v-html="sanitizeHtml(detailedDescription)" />
 			</slot>
 		</div>
 
@@ -20,34 +21,34 @@
 			<slot />
 		</div>
 
-			<!-- Loading State -->
-			<div v-if="loading" class="loading-section">
-				<NcLoadingIcon :size="32" />
-				<p>{{ loadingMessage }}</p>
-			</div>
+		<!-- Loading State -->
+		<div v-if="loading" class="loading-section">
+			<NcLoadingIcon :size="32" />
+			<p>{{ loadingMessage }}</p>
+		</div>
 
-			<!-- Error State -->
-			<div v-if="error && !loading" class="error-section">
-				<p class="error-message">
-					❌ {{ errorMessage }}
-				</p>
-				<NcButton v-if="onRetry" type="primary" @click="onRetry">
-					<template #icon>
-						<Refresh :size="20" />
-					</template>
-					{{ retryButtonText }}
-				</NcButton>
-			</div>
+		<!-- Error State -->
+		<div v-if="error && !loading" class="error-section">
+			<p class="error-message">
+				❌ {{ errorMessage }}
+			</p>
+			<NcButton v-if="onRetry" type="primary" @click="onRetry">
+				<template #icon>
+					<Refresh :size="20" />
+				</template>
+				{{ retryButtonText }}
+			</NcButton>
+		</div>
 
-			<!-- Empty State -->
-			<div v-if="empty && !loading && !error" class="empty-section">
-				<slot name="empty">
-					<div class="empty-content">
-						<InformationOutline :size="48" />
-						<p>{{ emptyMessage }}</p>
-					</div>
-				</slot>
-			</div>
+		<!-- Empty State -->
+		<div v-if="empty && !loading && !error" class="empty-section">
+			<slot name="empty">
+				<div class="empty-content">
+					<InformationOutline :size="48" />
+					<p>{{ emptyMessage }}</p>
+				</div>
+			</slot>
+		</div>
 
 		<!-- Footer Actions -->
 		<div v-if="$slots.footer" class="section-footer">
@@ -62,24 +63,14 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 
 /**
- * @class SettingsSection
- * @module Components/Shared
- * @package OpenRegister
- * 
  * Reusable settings section wrapper component that provides consistent layout and functionality
  * across all Conduction Nextcloud apps (OpenRegister, OpenConnector, OpenCatalogi, SoftwareCatalog).
- * 
+ *
  * Features:
  * - Consistent action menu positioning (top-right, aligned with title)
  * - Built-in loading, error, and empty states
  * - Flexible slots for customization
  * - Responsive design
- * 
- * @author   Conduction Development Team <info@conduction.nl>
- * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version  GIT: <git_id>
- * @link     https://www.conduction.nl
  */
 export default {
 	name: 'SettingsSection',
@@ -201,11 +192,22 @@ export default {
 	computed: {
 		// Removed hasActions - not needed anymore
 	},
+
+    methods: {
+        // quick and dirty way to sanitize HTML.
+        // this guarantees that no dangerous HTML is rendered, though it'll make the output ugly.
+        // @TODO: Implement production ready sanitization.
+        sanitizeHtml(html) {
+            const div = document.createElement('div');
+            div.textContent = html;
+            return div.innerHTML;
+        },
+    },
 }
 </script>
 
 <style scoped>
-/* 
+/*
  * Action buttons positioned within NcSettingsSection's settings-section__desc div
  * Using deep selector to target Nextcloud Vue's internal structure
  */
@@ -299,4 +301,3 @@ export default {
 	}
 }
 </style>
-

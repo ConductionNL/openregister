@@ -1,5 +1,5 @@
 <template>
-	<SettingsSection 
+	<SettingsSection
 		name="LLM Configuration"
 		description="Configure Large Language Model settings for AI features"
 		:loading="loadingStats"
@@ -39,46 +39,46 @@
 			</NcActions>
 		</template>
 
-			<!-- Section Description -->
-			<div class="section-description-full">
-				<p class="main-description">
-					Large Language Models (LLMs) power AI features including semantic search, text generation, document summarization,
-					and content classification. When enabled, OpenRegister will automatically vectorize objects and files for semantic
-					search capabilities and provide AI-powered content understanding. Choose from providers like OpenAI, Fireworks AI,
-					Ollama (local), or Azure OpenAI.
-				</p>
-				<p class="main-description info-note">
-					<strong>📝 Note:</strong> File vectorization requires text extraction to be enabled. Large files are split into smaller 
-					<strong>chunks</strong> (text portions), which are then converted into <strong>embeddings</strong> (vector representations) 
-					for semantic search. Without text extraction, files cannot be processed into chunks and embeddings.
-				</p>
-				<p class="toggle-status">
-					<strong>Current Status:</strong>
-					<span :class="llmSettings.enabled ? 'status-enabled' : 'status-disabled'">
-						{{ llmSettings.enabled ? 'LLM features enabled' : 'LLM features disabled' }}
-					</span>
-				</p>
-			</div>
-
-			<!-- Enable LLM Toggle -->
-			<div class="option-section">
-				<NcCheckboxRadioSwitch
-					v-model="llmSettings.enabled"
-					:disabled="saving"
-					type="switch"
-					@update:checked="onLlmEnabledChange">
-					{{ llmSettings.enabled ? t('openregister', 'LLM features enabled') : t('openregister', 'LLM features disabled') }}
-				</NcCheckboxRadioSwitch>
-				<p class="option-description">
-					{{ t('openregister', 'Enable or disable LLM features. Configure providers and models using the LLM Configuration button above.') }}
-					<span v-if="saving" class="saving-indicator">
-						<NcLoadingIcon :size="14" /> {{ t('openregister', 'Saving...') }}
-					</span>
+		<!-- Section Description -->
+		<div class="section-description-full">
+			<p class="main-description">
+				Large Language Models (LLMs) power AI features including semantic search, text generation, document summarization,
+				and content classification. When enabled, OpenRegister will automatically vectorize objects and files for semantic
+				search capabilities and provide AI-powered content understanding. Choose from providers like OpenAI, Fireworks AI,
+				Ollama (local), or Azure OpenAI.
+			</p>
+			<p class="main-description info-note">
+				<strong>📝 Note:</strong> File vectorization requires text extraction to be enabled. Large files are split into smaller
+				<strong>chunks</strong> (text portions), which are then converted into <strong>embeddings</strong> (vector representations)
+				for semantic search. Without text extraction, files cannot be processed into chunks and embeddings.
+			</p>
+			<p class="toggle-status">
+				<strong>Current Status:</strong>
+				<span :class="llmSettings.enabled ? 'status-enabled' : 'status-disabled'">
+					{{ llmSettings.enabled ? 'LLM features enabled' : 'LLM features disabled' }}
+				</span>
 			</p>
 		</div>
 
-	<!-- LLM Dashboard -->
-	<div v-if="llmSettings.enabled" class="llm-management-section">
+		<!-- Enable LLM Toggle -->
+		<div class="option-section">
+			<NcCheckboxRadioSwitch
+				v-model="llmSettings.enabled"
+				:disabled="saving"
+				type="switch"
+				@update:checked="onLlmEnabledChange">
+				{{ llmSettings.enabled ? t('openregister', 'LLM features enabled') : t('openregister', 'LLM features disabled') }}
+			</NcCheckboxRadioSwitch>
+			<p class="option-description">
+				{{ t('openregister', 'Enable or disable LLM features. Configure providers and models using the LLM Configuration button above.') }}
+				<span v-if="saving" class="saving-indicator">
+					<NcLoadingIcon :size="14" /> {{ t('openregister', 'Saving...') }}
+				</span>
+			</p>
+		</div>
+
+		<!-- LLM Dashboard -->
+		<div v-if="llmSettings.enabled" class="llm-management-section">
 			<!-- Loading State -->
 			<div v-if="loadingStats" class="loading-section">
 				<NcLoadingIcon :size="32" />
@@ -147,10 +147,10 @@
 			:show="showFileManagementDialog"
 			@closing="showFileManagementDialog = false" />
 
-	<!-- Object Management Modal -->
-	<ObjectManagementModal
-		:show="showObjectManagementDialog"
-		@closing="showObjectManagementDialog = false" />
+		<!-- Object Management Modal -->
+		<ObjectManagementModal
+			:show="showObjectManagementDialog"
+			@closing="showObjectManagementDialog = false" />
 	</SettingsSection>
 </template>
 
@@ -178,18 +178,8 @@ import FileManagementModal from '../../../modals/settings/FileManagementModal.vu
 import ObjectManagementModal from '../../../modals/settings/ObjectManagementModal.vue'
 
 /**
- * @class LlmConfiguration
- * @module Components
- * @package Settings
- * 
  * LLM configuration settings component for managing AI/LLM integration.
  * Allows users to configure LLM providers, models, and AI features.
- * 
- * @author   Conduction Development Team <info@conduction.nl>
- * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version  GIT: <git_id>
- * @link     https://www.OpenRegister.nl
  */
 export default {
 	name: 'LlmConfiguration',
@@ -318,17 +308,17 @@ export default {
 		 */
 		async loadVectorStats() {
 			if (!this.llmSettings.enabled) return
-			
+
 			this.loadingStats = true
 			this.llmError = false
 			this.llmErrorMessage = ''
-			
+
 			try {
 				const response = await this.settingsStore.getVectorStats()
 				if (response) {
 					// Update connection status
 					this.llmConnectionStatus = response.connection_status || 'Connected'
-					
+
 					// Update vector stats
 					this.vectorStats.totalVectors = response.total_vectors || 0
 					this.vectorStats.objectVectors = response.by_type?.object || 0
@@ -364,6 +354,7 @@ export default {
 
 		/**
 		 * Format number with thousands separator
+		 * @param {number} num - The number to format
 		 */
 		formatNumber(num) {
 			return new Intl.NumberFormat().format(num)

@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<SettingsSection 
+		<SettingsSection
 			name="Cache Management"
 			description="Monitor and manage API caching for optimal performance"
 			:loading="loadingCache"
@@ -49,200 +49,199 @@
 			</div>
 
 			<div v-else class="cache-content">
-					<!-- Cache Overview -->
-					<div class="cache-overview">
-						<div class="cache-overview-cards">
-							<div class="cache-overview-card">
-								<h4>📈 Hit Rate</h4>
-								<div class="cache-metric">
-									<span class="metric-value" :class="hitRateClass">{{ cacheStats.overview.overallHitRate.toFixed(1) }}%</span>
-									<span class="metric-label">Overall Success</span>
+				<!-- Cache Overview -->
+				<div class="cache-overview">
+					<div class="cache-overview-cards">
+						<div class="cache-overview-card">
+							<h4>📈 Hit Rate</h4>
+							<div class="cache-metric">
+								<span class="metric-value" :class="hitRateClass">{{ cacheStats.overview.overallHitRate.toFixed(1) }}%</span>
+								<span class="metric-label">Overall Success</span>
+							</div>
+						</div>
+						<div class="cache-overview-card">
+							<h4>💾 Total Size</h4>
+							<div class="cache-metric">
+								<span class="metric-value">{{ formatBytes(cacheStats.overview.totalCacheSize) }}</span>
+								<span class="metric-label">Memory Used</span>
+							</div>
+						</div>
+						<div class="cache-overview-card">
+							<h4>🗃️ Entries</h4>
+							<div class="cache-metric">
+								<span class="metric-value">{{ cacheStats.overview.totalCacheEntries.toLocaleString() }}</span>
+								<span class="metric-label">Cache Items</span>
+							</div>
+						</div>
+						<div class="cache-overview-card">
+							<h4>⚡ Performance</h4>
+							<div class="cache-metric">
+								<span class="metric-value performance-gain">{{ cacheStats.performance.performanceGain.toFixed(0) }}x</span>
+								<span class="metric-label">Speed Boost</span>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Cache Services Details -->
+				<div class="cache-services">
+					<h4>🔧 Cache Services</h4>
+					<div class="cache-services-grid">
+						<!-- Object Cache -->
+						<div class="cache-service-card">
+							<h5>Object Cache</h5>
+							<div class="service-stats">
+								<div class="service-stat">
+									<span class="stat-label">Entries:</span>
+									<span class="stat-value">{{ (cacheStats.services.object.entries || 0).toLocaleString() }}</span>
+								</div>
+								<div class="service-stat">
+									<span class="stat-label">Hit Rate:</span>
+									<span class="stat-value" :class="getHitRateClass(getServiceHitRate(cacheStats.services.object))">
+										{{ getServiceHitRate(cacheStats.services.object).toFixed(1) }}%
+									</span>
+								</div>
+								<div class="service-stat">
+									<span class="stat-label">Memory:</span>
+									<span class="stat-value">{{ formatBytes(cacheStats.services.object.memoryUsage || 0) }}</span>
 								</div>
 							</div>
-							<div class="cache-overview-card">
-								<h4>💾 Total Size</h4>
-								<div class="cache-metric">
-									<span class="metric-value">{{ formatBytes(cacheStats.overview.totalCacheSize) }}</span>
-									<span class="metric-label">Memory Used</span>
+						</div>
+
+						<!-- Schema Cache -->
+						<div class="cache-service-card">
+							<h5>Schema Cache</h5>
+							<div class="service-stats">
+								<div class="service-stat">
+									<span class="stat-label">Entries:</span>
+									<span class="stat-value">{{ (cacheStats.services.schema.entries || 0).toLocaleString() }}</span>
+								</div>
+								<div class="service-stat">
+									<span class="stat-label">Hit Rate:</span>
+									<span class="stat-value" :class="getHitRateClass(getServiceHitRate(cacheStats.services.schema))">
+										{{ getServiceHitRate(cacheStats.services.schema).toFixed(1) }}%
+									</span>
+								</div>
+								<div class="service-stat">
+									<span class="stat-label">Memory:</span>
+									<span class="stat-value">{{ formatBytes(cacheStats.services.schema.memoryUsage || 0) }}</span>
 								</div>
 							</div>
-							<div class="cache-overview-card">
-								<h4>🗃️ Entries</h4>
-								<div class="cache-metric">
-									<span class="metric-value">{{ cacheStats.overview.totalCacheEntries.toLocaleString() }}</span>
-									<span class="metric-label">Cache Items</span>
+						</div>
+
+						<!-- Facet Cache -->
+						<div class="cache-service-card">
+							<h5>Facet Cache</h5>
+							<div class="service-stats">
+								<div class="service-stat">
+									<span class="stat-label">Entries:</span>
+									<span class="stat-value">{{ (cacheStats.services.facet.entries || 0).toLocaleString() }}</span>
+								</div>
+								<div class="service-stat">
+									<span class="stat-label">Hit Rate:</span>
+									<span class="stat-value" :class="getHitRateClass(getServiceHitRate(cacheStats.services.facet))">
+										{{ getServiceHitRate(cacheStats.services.facet).toFixed(1) }}%
+									</span>
+								</div>
+								<div class="service-stat">
+									<span class="stat-label">Memory:</span>
+									<span class="stat-value">{{ formatBytes(cacheStats.services.facet.memoryUsage || 0) }}</span>
 								</div>
 							</div>
-							<div class="cache-overview-card">
-								<h4>⚡ Performance</h4>
-								<div class="cache-metric">
-									<span class="metric-value performance-gain">{{ cacheStats.performance.performanceGain.toFixed(0) }}x</span>
-									<span class="metric-label">Speed Boost</span>
+						</div>
+
+						<!-- Distributed Cache -->
+						<div class="cache-service-card">
+							<h5>Distributed Cache</h5>
+							<div class="service-stats">
+								<div class="service-stat">
+									<span class="stat-label">Backend:</span>
+									<span class="stat-value">{{ getDistributedCacheBackend() }}</span>
+								</div>
+								<div class="service-stat">
+									<span class="stat-label">Status:</span>
+									<span class="stat-value" :class="cacheStats.distributed.available ? 'status-enabled' : 'status-disabled'">
+										{{ cacheStats.distributed.available ? 'Available' : 'Unavailable' }}
+									</span>
 								</div>
 							</div>
 						</div>
 					</div>
+				</div>
 
-					<!-- Cache Services Details -->
-					<div class="cache-services">
-						<h4>🔧 Cache Services</h4>
-						<div class="cache-services-grid">
-							<!-- Object Cache -->
-							<div class="cache-service-card">
-								<h5>Object Cache</h5>
-								<div class="service-stats">
-									<div class="service-stat">
-										<span class="stat-label">Entries:</span>
-										<span class="stat-value">{{ (cacheStats.services.object.entries || 0).toLocaleString() }}</span>
-									</div>
-									<div class="service-stat">
-										<span class="stat-label">Hit Rate:</span>
-										<span class="stat-value" :class="getHitRateClass(getServiceHitRate(cacheStats.services.object))">
-											{{ getServiceHitRate(cacheStats.services.object).toFixed(1) }}%
-										</span>
-									</div>
-									<div class="service-stat">
-										<span class="stat-label">Memory:</span>
-										<span class="stat-value">{{ formatBytes(cacheStats.services.object.memoryUsage || 0) }}</span>
-									</div>
-								</div>
-							</div>
-
-							<!-- Schema Cache -->
-							<div class="cache-service-card">
-								<h5>Schema Cache</h5>
-								<div class="service-stats">
-									<div class="service-stat">
-										<span class="stat-label">Entries:</span>
-										<span class="stat-value">{{ (cacheStats.services.schema.entries || 0).toLocaleString() }}</span>
-									</div>
-									<div class="service-stat">
-										<span class="stat-label">Hit Rate:</span>
-										<span class="stat-value" :class="getHitRateClass(getServiceHitRate(cacheStats.services.schema))">
-											{{ getServiceHitRate(cacheStats.services.schema).toFixed(1) }}%
-										</span>
-									</div>
-									<div class="service-stat">
-										<span class="stat-label">Memory:</span>
-										<span class="stat-value">{{ formatBytes(cacheStats.services.schema.memoryUsage || 0) }}</span>
-									</div>
-								</div>
-							</div>
-
-							<!-- Facet Cache -->
-							<div class="cache-service-card">
-								<h5>Facet Cache</h5>
-								<div class="service-stats">
-									<div class="service-stat">
-										<span class="stat-label">Entries:</span>
-										<span class="stat-value">{{ (cacheStats.services.facet.entries || 0).toLocaleString() }}</span>
-									</div>
-									<div class="service-stat">
-										<span class="stat-label">Hit Rate:</span>
-										<span class="stat-value" :class="getHitRateClass(getServiceHitRate(cacheStats.services.facet))">
-											{{ getServiceHitRate(cacheStats.services.facet).toFixed(1) }}%
-										</span>
-									</div>
-									<div class="service-stat">
-										<span class="stat-label">Memory:</span>
-										<span class="stat-value">{{ formatBytes(cacheStats.services.facet.memoryUsage || 0) }}</span>
-									</div>
-								</div>
-							</div>
-
-							<!-- Distributed Cache -->
-							<div class="cache-service-card">
-								<h5>Distributed Cache</h5>
-								<div class="service-stats">
-									<div class="service-stat">
-										<span class="stat-label">Backend:</span>
-										<span class="stat-value">{{ getDistributedCacheBackend() }}</span>
-									</div>
-									<div class="service-stat">
-										<span class="stat-label">Status:</span>
-										<span class="stat-value" :class="cacheStats.distributed.available ? 'status-enabled' : 'status-disabled'">
-											{{ cacheStats.distributed.available ? 'Available' : 'Unavailable' }}
-										</span>
-									</div>
-								</div>
-							</div>
-						</div>
+				<!-- Performance Metrics -->
+				<div class="cache-performance">
+					<h4>📊 Performance Metrics</h4>
+					<div class="performance-table-container">
+						<table class="performance-table">
+							<thead>
+								<tr>
+									<th class="performance-table-header">
+										Metric
+									</th>
+									<th class="performance-table-header">
+										Current
+									</th>
+									<th class="performance-table-header">
+										Target
+									</th>
+									<th class="performance-table-header">
+										Status
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr class="performance-table-row">
+									<td class="performance-table-label">
+										Average Hit Time
+									</td>
+									<td class="performance-table-value">
+										{{ cacheStats.performance.averageHitTime }}ms
+									</td>
+									<td class="performance-table-value">
+										&lt; 5ms
+									</td>
+									<td class="performance-table-value" :class="cacheStats.performance.averageHitTime < 5 ? 'status-enabled' : 'status-warning'">
+										{{ cacheStats.performance.averageHitTime < 5 ? '✓ Good' : '⚠ Slow' }}
+									</td>
+								</tr>
+								<tr class="performance-table-row">
+									<td class="performance-table-label">
+										Average Miss Time
+									</td>
+									<td class="performance-table-value">
+										{{ cacheStats.performance.averageMissTime }}ms
+									</td>
+									<td class="performance-table-value">
+										&lt; 500ms
+									</td>
+									<td class="performance-table-value" :class="cacheStats.performance.averageMissTime < 500 ? 'status-enabled' : 'status-error'">
+										{{ cacheStats.performance.averageMissTime < 500 ? '✓ Good' : '❌ Slow' }}
+									</td>
+								</tr>
+								<tr class="performance-table-row">
+									<td class="performance-table-label">
+										Overall Hit Rate
+									</td>
+									<td class="performance-table-value">
+										{{ cacheStats.overview.overallHitRate.toFixed(1) }}%
+									</td>
+									<td class="performance-table-value">
+										≥ {{ cacheStats.performance.optimalHitRate }}%
+									</td>
+									<td class="performance-table-value" :class="getHitRateClass(cacheStats.overview.overallHitRate)">
+										{{ getHitRateText(cacheStats.overview.overallHitRate) }}
+									</td>
+								</tr>
+							</tbody>
+						</table>
 					</div>
+				</div>
 
-					<!-- Performance Metrics -->
-					<div class="cache-performance">
-						<h4>📊 Performance Metrics</h4>
-						<div class="performance-table-container">
-							<table class="performance-table">
-								<thead>
-									<tr>
-										<th class="performance-table-header">
-											Metric
-										</th>
-										<th class="performance-table-header">
-											Current
-										</th>
-										<th class="performance-table-header">
-											Target
-										</th>
-										<th class="performance-table-header">
-											Status
-										</th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr class="performance-table-row">
-										<td class="performance-table-label">
-											Average Hit Time
-										</td>
-										<td class="performance-table-value">
-											{{ cacheStats.performance.averageHitTime }}ms
-										</td>
-										<td class="performance-table-value">
-											< 5ms
-										</td>
-										<td class="performance-table-value" :class="cacheStats.performance.averageHitTime < 5 ? 'status-enabled' : 'status-warning'">
-											{{ cacheStats.performance.averageHitTime < 5 ? '✓ Good' : '⚠ Slow' }}
-										</td>
-									</tr>
-									<tr class="performance-table-row">
-										<td class="performance-table-label">
-											Average Miss Time
-										</td>
-										<td class="performance-table-value">
-											{{ cacheStats.performance.averageMissTime }}ms
-										</td>
-										<td class="performance-table-value">
-											< 500ms
-										</td>
-										<td class="performance-table-value" :class="cacheStats.performance.averageMissTime < 500 ? 'status-enabled' : 'status-error'">
-											{{ cacheStats.performance.averageMissTime < 500 ? '✓ Good' : '❌ Slow' }}
-										</td>
-									</tr>
-									<tr class="performance-table-row">
-										<td class="performance-table-label">
-											Overall Hit Rate
-										</td>
-										<td class="performance-table-value">
-											{{ cacheStats.overview.overallHitRate.toFixed(1) }}%
-										</td>
-										<td class="performance-table-value">
-											≥ {{ cacheStats.performance.optimalHitRate }}%
-										</td>
-										<td class="performance-table-value" :class="getHitRateClass(cacheStats.overview.overallHitRate)">
-											{{ getHitRateText(cacheStats.overview.overallHitRate) }}
-										</td>
-									</tr>
-								</tbody>
-							</table>
-						</div>
-					</div>
-
-					<div class="cache-footer">
-						<p class="cache-updated">
-							Last updated: {{ formatDate(cacheStats.lastUpdated) }}
-						</p>
-					</div>
+				<div class="cache-footer">
+					<p class="cache-updated">
+						Last updated: {{ formatDate(cacheStats.lastUpdated) }}
+					</p>
 				</div>
 			</div>
 		</SettingsSection>

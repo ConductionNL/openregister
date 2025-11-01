@@ -1,5 +1,5 @@
 <template>
-	<SettingsSection 
+	<SettingsSection
 		name="Search Configuration"
 		description="Configure Apache SOLR search engine for advanced search capabilities"
 		:loading="loading"
@@ -26,117 +26,116 @@
 					<DotsVertical :size="20" />
 				</template>
 
-						<!-- Connection Settings -->
-						<NcActionButton @click="showConnectionDialog = true">
-							<template #icon>
-								<Connection :size="20" />
-							</template>
-							{{ t('openregister', 'Connection Settings') }}
-						</NcActionButton>
+				<!-- Connection Settings -->
+				<NcActionButton @click="showConnectionDialog = true">
+					<template #icon>
+						<Connection :size="20" />
+					</template>
+					{{ t('openregister', 'Connection Settings') }}
+				</NcActionButton>
 
-						<!-- ConfigSet Management -->
-						<NcActionButton @click="showConfigSetDialog = true">
-							<template #icon>
-								<Cog :size="20" />
-							</template>
-							{{ t('openregister', 'ConfigSet Management') }}
-						</NcActionButton>
+				<!-- ConfigSet Management -->
+				<NcActionButton @click="showConfigSetDialog = true">
+					<template #icon>
+						<Cog :size="20" />
+					</template>
+					{{ t('openregister', 'ConfigSet Management') }}
+				</NcActionButton>
 
-						<!-- Collection Management -->
-						<NcActionButton @click="showCollectionDialog = true">
-							<template #icon>
-								<DatabaseCog :size="20" />
-							</template>
-						{{ t('openregister', 'Collection Management') }}
-					</NcActionButton>
+				<!-- Collection Management -->
+				<NcActionButton @click="showCollectionDialog = true">
+					<template #icon>
+						<DatabaseCog :size="20" />
+					</template>
+					{{ t('openregister', 'Collection Management') }}
+				</NcActionButton>
 
-					<!-- File Processing -->
-						<NcActionButton
-							v-if="solrOptions.enabled"
-							@click="openFileWarmup">
-							<template #icon>
-								<Fire :size="20" />
-							</template>
-							{{ t('openregister', 'File Warmup') }}
-						</NcActionButton>
+				<!-- File Processing -->
+				<NcActionButton
+					v-if="solrOptions.enabled"
+					@click="openFileWarmup">
+					<template #icon>
+						<Fire :size="20" />
+					</template>
+					{{ t('openregister', 'File Warmup') }}
+				</NcActionButton>
 
-						<NcActionButton
-							v-if="solrOptions.enabled"
-							@click="openWarmupModal">
-							<template #icon>
-								<Fire :size="20" />
-							</template>
-							{{ t('openregister', 'Object Warmup') }}
-						</NcActionButton>
+				<NcActionButton
+					v-if="solrOptions.enabled"
+					@click="openWarmupModal">
+					<template #icon>
+						<Fire :size="20" />
+					</template>
+					{{ t('openregister', 'Object Warmup') }}
+				</NcActionButton>
 
-						<!-- Diagnostics -->
-						<NcActionButton
-							:disabled="loading || saving || warmingUpSolr || loadingFields"
-							@click="inspectFields">
-							<template #icon>
-								<NcLoadingIcon v-if="loadingFields" :size="20" />
-								<ViewList v-else :size="20" />
-							</template>
-							{{ t('openregister', 'Inspect Fields') }}
-						</NcActionButton>
-						<NcActionButton
-							v-if="solrOptions.enabled"
-							@click="openInspectModal">
-							<template #icon>
-								<FileSearchOutline :size="20" />
-							</template>
-							{{ t('openregister', 'Inspect Index') }}
-						</NcActionButton>
-						<NcActionButton
-							v-if="solrOptions.enabled"
-							@click="openFacetConfigModal">
-							<template #icon>
-								<Tune :size="20" />
-							</template>
-							{{ t('openregister', 'Configure Facets') }}
-						</NcActionButton>
-					</NcActions>
+				<!-- Diagnostics -->
+				<NcActionButton
+					:disabled="loading || saving || warmingUpSolr || loadingFields"
+					@click="inspectFields">
+					<template #icon>
+						<NcLoadingIcon v-if="loadingFields" :size="20" />
+						<ViewList v-else :size="20" />
+					</template>
+					{{ t('openregister', 'Inspect Fields') }}
+				</NcActionButton>
+				<NcActionButton
+					v-if="solrOptions.enabled"
+					@click="openInspectModal">
+					<template #icon>
+						<FileSearchOutline :size="20" />
+					</template>
+					{{ t('openregister', 'Inspect Index') }}
+				</NcActionButton>
+				<NcActionButton
+					v-if="solrOptions.enabled"
+					@click="openFacetConfigModal">
+					<template #icon>
+						<Tune :size="20" />
+					</template>
+					{{ t('openregister', 'Configure Facets') }}
+				</NcActionButton>
+			</NcActions>
 		</template>
 
 		<!-- Section Description -->
-			<div class="section-description-full">
-				<p class="main-description">
-					Apache SOLR provides advanced search capabilities including full-text search, faceted search, filtering, and sorting.
-					When enabled, OpenRegister will index objects to SOLR for faster and more sophisticated search operations.
-					This is recommended for production environments with large datasets.
-				</p>
-				<p class="toggle-status">
-					<strong>Current Status:</strong>
-					<span :class="solrOptions.enabled ? 'status-enabled' : 'status-disabled'">
-						{{ solrOptions.enabled ? 'SOLR search enabled' : 'SOLR search disabled' }}
-					</span>
-				</p>
-				<div v-if="solrConnectionStatus && solrConnectionStatus.message" class="connection-status" :class="solrConnectionStatus.success ? 'status-success' : 'status-error'">
-					<p><strong>Connection Status:</strong> {{ solrConnectionStatus.message }}</p>
-					<div v-if="solrConnectionStatus.details && Object.keys(solrConnectionStatus.details).length > 0" class="connection-details">
-						<details>
-							<summary>Connection Details</summary>
-							<pre>{{ JSON.stringify(solrConnectionStatus.details, null, 2) }}</pre>
-						</details>
-					</div>
+		<div class="section-description-full">
+			<p class="main-description">
+				Apache SOLR provides advanced search capabilities including full-text search, faceted search, filtering, and sorting.
+				When enabled, OpenRegister will index objects to SOLR for faster and more sophisticated search operations.
+				This is recommended for production environments with large datasets.
+			</p>
+			<p class="toggle-status">
+				<strong>Current Status:</strong>
+				<span :class="solrOptions.enabled ? 'status-enabled' : 'status-disabled'">
+					{{ solrOptions.enabled ? 'SOLR search enabled' : 'SOLR search disabled' }}
+				</span>
+			</p>
+			<div v-if="solrConnectionStatus && solrConnectionStatus.message" class="connection-status" :class="solrConnectionStatus.success ? 'status-success' : 'status-error'">
+				<p><strong>Connection Status:</strong> {{ solrConnectionStatus.message }}</p>
+				<div v-if="solrConnectionStatus.details && Object.keys(solrConnectionStatus.details).length > 0" class="connection-details">
+					<details>
+						<summary>Connection Details</summary>
+						<pre>{{ JSON.stringify(solrConnectionStatus.details, null, 2) }}</pre>
+					</details>
 				</div>
 			</div>
+		</div>
 
-			<!-- Enable SOLR Toggle -->
-			<div class="option-section">
-				<NcCheckboxRadioSwitch
-					v-model="solrEnabled"
-					:disabled="saving"
-					type="switch">
-					{{ solrEnabled ? t('openregister', 'SOLR search enabled') : t('openregister', 'SOLR search disabled') }}
-				</NcCheckboxRadioSwitch>
-				<p class="option-description">
-					{{ t('openregister', 'Enable or disable SOLR search integration. Configure connection settings using the Connection Settings button above.') }}
-					<span v-if="saving" class="saving-indicator">
-						<NcLoadingIcon :size="14" /> {{ t('openregister', 'Saving...') }}
-					</span>
-				</p>
-			</div>
+		<!-- Enable SOLR Toggle -->
+		<div class="option-section">
+			<NcCheckboxRadioSwitch
+				v-model="solrEnabled"
+				:disabled="saving"
+				type="switch">
+				{{ solrEnabled ? t('openregister', 'SOLR search enabled') : t('openregister', 'SOLR search disabled') }}
+			</NcCheckboxRadioSwitch>
+			<p class="option-description">
+				{{ t('openregister', 'Enable or disable SOLR search integration. Configure connection settings using the Connection Settings button above.') }}
+				<span v-if="saving" class="saving-indicator">
+					<NcLoadingIcon :size="14" /> {{ t('openregister', 'Saving...') }}
+				</span>
+			</p>
 		</div>
 
 		<!-- SOLR Management Dashboard -->
@@ -1082,10 +1081,10 @@
 			:show="showCollectionDialog"
 			@closing="showCollectionDialog = false" />
 
-	<!-- File Warmup Modal -->
-	<FileWarmupModal
-		:open="showFileWarmupDialog"
-		@close="showFileWarmupDialog = false" />
+		<!-- File Warmup Modal -->
+		<FileWarmupModal
+			:open="showFileWarmupDialog"
+			@close="showFileWarmupDialog = false" />
 	</SettingsSection>
 </template>
 
@@ -1095,24 +1094,20 @@ import { useSettingsStore } from '../../../store/settings.js'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
 import { NcButton, NcLoadingIcon, NcCheckboxRadioSwitch, NcSelect, NcDialog, NcActions, NcActionButton } from '@nextcloud/vue'
 import Settings from 'vue-material-design-icons/ApplicationSettings.vue'
-import TestTube from 'vue-material-design-icons/TestTube.vue'
-import Save from 'vue-material-design-icons/ContentSave.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import ViewList from 'vue-material-design-icons/ViewList.vue'
 import Wrench from 'vue-material-design-icons/Wrench.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import Fire from 'vue-material-design-icons/Fire.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
-import DatabaseRemove from 'vue-material-design-icons/DatabaseRemove.vue'
 import FileSearchOutline from 'vue-material-design-icons/FileSearchOutline.vue'
 import PlayIcon from 'vue-material-design-icons/Play.vue'
 import Tune from 'vue-material-design-icons/Tune.vue'
-import Magnify from 'vue-material-design-icons/Magnify.vue'
 import DotsVertical from 'vue-material-design-icons/DotsVertical.vue'
 import Connection from 'vue-material-design-icons/Connection.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import DatabaseCog from 'vue-material-design-icons/DatabaseCog.vue'
-import { SolrWarmupModal, ClearIndexModal } from '../../../modals/settings'
+import { SolrWarmupModal, ClearIndexModal } from '../../../modals/settings/index.js'
 import InspectIndexModal from '../../../modals/settings/InspectIndexModal.vue'
 import DeleteCollectionModal from '../../../modals/settings/DeleteCollectionModal.vue'
 import FacetConfigModal from '../../../modals/settings/FacetConfigModal.vue'
@@ -1122,6 +1117,7 @@ import CollectionManagementModal from '../../../modals/settings/CollectionManage
 import FileWarmupModal from '../../../modals/settings/FileWarmupModal.vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { showSuccess, showError } from '@nextcloud/dialogs'
 
 export default {
 	name: 'SolrConfiguration',
@@ -1136,19 +1132,15 @@ export default {
 		NcActions,
 		NcActionButton,
 		Settings,
-		TestTube,
-		Save,
 		Refresh,
 		ViewList,
 		Wrench,
 		Eye,
 		Fire,
 		Delete,
-		DatabaseRemove,
 		FileSearchOutline,
 		PlayIcon,
 		Tune,
-		Magnify,
 		DotsVertical,
 		Connection,
 		Cog,
@@ -1248,23 +1240,17 @@ export default {
 		// Computed property for SOLR enabled toggle with auto-save
 		solrEnabled: {
 			get() {
-				const value = Boolean(this.solrOptions?.enabled)
-				console.log('🔍 solrEnabled getter called, returning:', value)
-				return value
+				return Boolean(this.solrOptions?.enabled)
 			},
 			async set(newValue) {
-				console.log('🔄 solrEnabled setter called with:', newValue)
 				// Update the store
 				this.solrOptions.enabled = newValue
-				console.log('💾 Saving settings...')
 
 				// Auto-save the settings
 				await this.saveSettings()
-				console.log('✅ Settings saved')
 
 				// If SOLR was just enabled, load stats
 				if (newValue) {
-					console.log('📊 SOLR enabled, loading stats...')
 					await this.loadSolrStats()
 				}
 			},
@@ -1396,33 +1382,24 @@ export default {
 	},
 
 	async mounted() {
-		console.log('🔧 SolrConfiguration mounted - starting initialization')
-
 		// Wait for settings store to load first
 		try {
 			await this.settingsStore.loadSettings()
-			console.log('✅ Settings loaded')
-			console.log('🔘 SOLR enabled value:', this.solrEnabled)
 		} catch (error) {
 			console.error('❌ Failed to load settings:', error)
 		}
 
 		// Load dashboard stats if SOLR is enabled
 		if (this.solrEnabled) {
-			console.log('📊 SOLR is enabled, loading stats...')
 			try {
 				// Load both SOLR stats and object stats in parallel
 				await Promise.all([
 					this.loadSolrStats(),
 					this.loadObjectStats(),
 				])
-				console.log('✅ Stats loaded successfully')
 			} catch (error) {
 				console.error('❌ Failed to load stats:', error)
 			}
-		} else {
-			console.log('⚠️ SOLR is not enabled, skipping stats load')
-			console.log('💡 Tip: Toggle SOLR on to load stats automatically')
 		}
 	},
 
@@ -1622,19 +1599,15 @@ export default {
 
 		// Dashboard methods
 		async loadSolrStats() {
-			console.log('📊 Loading SOLR stats...')
 			this.loadingStats = true
 			this.solrError = false
 			this.solrErrorMessage = ''
 
 			try {
 				const url = generateUrl('/apps/openregister/api/solr/dashboard/stats')
-				console.log('🌐 Making API request to:', url)
 				const response = await axios.get(url)
-				console.log('📦 API response data:', response.data)
 
 				if (response.data && response.data.available) {
-					console.log('✅ SOLR is available, storing stats')
 					// Store the complete response data (includes published_count, total_count, memory_prediction)
 					this.solrStats = {
 						...response.data,
@@ -1656,7 +1629,6 @@ export default {
 				this.solrStats = null
 			} finally {
 				this.loadingStats = false
-				console.log('✅ Loading stats complete. Stats:', this.solrStats)
 			}
 		},
 
@@ -1673,22 +1645,17 @@ export default {
 		},
 
 		openFileWarmup() {
-			console.log('🔥 Opening File Warmup modal...')
-			console.log('🔥 Current showFileWarmupDialog value:', this.showFileWarmupDialog)
 			this.showFileWarmupDialog = true
-			console.log('🔥 Set showFileWarmupDialog to:', this.showFileWarmupDialog)
 		},
 
 		async loadAvailableSchemas() {
 			this.schemasLoading = true
 			try {
-				console.log('📊 Loading schemas with stats from API...')
 				// Use _extend=@self.stats to get object counts in one call
 				const response = await axios.get(
 					generateUrl('/apps/openregister/api/schemas'),
 					{ params: { _extend: '@self.stats' } },
 				)
-				console.log('📊 Schemas API response:', response.data)
 
 				// Handle different response formats
 				let schemaArray = []
@@ -1700,9 +1667,6 @@ export default {
 					schemaArray = response.data.data
 				}
 
-				console.log('📋 Schema array:', schemaArray)
-				console.log('🔍 First schema structure:', schemaArray[0])
-
 				if (schemaArray.length > 0) {
 					this.availableSchemas = schemaArray
 						.filter(schema => schema && (schema.id || schema.uuid))
@@ -1710,17 +1674,12 @@ export default {
 							const schemaId = schema.id || schema.uuid
 							const objectCount = schema.stats?.objects?.total || 0
 
-							console.log(`📊 Schema "${schema.title || schemaId}" has ${objectCount} objects`)
-
 							return {
 								id: schemaId,
 								label: schema.title || schema.name || schemaId || 'Unnamed Schema',
 								objectCount,
 							}
 						})
-
-					console.log('✅ Available schemas loaded:', this.availableSchemas)
-					console.log('📊 Total schemas after filtering:', this.availableSchemas.length)
 				} else {
 					console.warn('⚠️ No schemas found in response')
 					this.availableSchemas = []
@@ -1776,7 +1735,7 @@ export default {
 		async handleClearIndex() {
 			try {
 				const url = generateUrl('/apps/openregister/api/settings/solr/clear')
-				const response = await axios.post(url)
+				await axios.post(url)
 
 				// Close modal and refresh stats
 				this.showClearDialog = false
@@ -1828,7 +1787,7 @@ export default {
 					this.memoryPrediction = response.data.prediction
 				}
 			} catch (error) {
-				console.warn('Failed to load memory prediction:', error)
+				console.error('Failed to load memory prediction:', error)
 				// Keep default prediction data
 			}
 		},
@@ -1847,17 +1806,11 @@ export default {
 
 				// Convert config to the expected format
 				// Extract schema IDs from the selected schema objects
-				console.log('🔥 handleStartWarmup config:', config)
-				console.log('🔥 config.selectedSchemas:', config.selectedSchemas)
-
 				const selectedSchemaIds = (config.selectedSchemas || []).map(schema => {
 				// Handle both object format {id: '123', label: '...'} and string/number format
 					const id = typeof schema === 'object' ? parseInt(schema.id) : parseInt(schema)
-					console.log('🔥 Mapping schema:', schema, '-> ID:', id)
 					return id
 				}).filter(id => !isNaN(id))
-
-				console.log('🔥 selectedSchemaIds to send:', selectedSchemaIds)
 
 				const warmupParams = {
 					maxObjects: config.maxObjects || 0,
@@ -1865,8 +1818,6 @@ export default {
 					batchSize: config.batchSize || 1000,
 					selectedSchemas: selectedSchemaIds,
 				}
-
-				console.log('🔥 Final warmupParams:', warmupParams)
 
 				const response = await axios.post(url, warmupParams)
 
@@ -1894,7 +1845,7 @@ export default {
 
 		/**
 		 * Delete a SOLR field
-		 * @param fieldName
+		 * @param {string} fieldName - The name of the field to delete
 		 */
 		async deleteField(fieldName) {
 			if (!fieldName) {

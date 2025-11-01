@@ -1,5 +1,5 @@
 <template>
-	<SettingsSection 
+	<SettingsSection
 		name="File Configuration"
 		description="Configure file upload and text extraction settings"
 		:loading="settingsStore.loadingFileSettings"
@@ -45,195 +45,207 @@
 					</template>
 					{{ t('openregister', 'Retry Failed Extractions') }}
 				</NcActionButton>
-		</NcActions>
+			</NcActions>
 		</template>
 
 		<!-- Section Description -->
-			<div class="section-description-full">
-				<p class="main-description">
-					Text extraction converts files into searchable and AI-processable content. Choose from <strong>LLPhant</strong> 
-					(local PHP processing, best for simple files) or <strong>Dolphin AI</strong> (ByteDance API, best for complex 
-					documents, OCR, tables, and formulas). Extracted text is split into chunks for embeddings and semantic search.
-				</p>
-				<p class="main-description info-note">
-					<strong>📝 Note:</strong> Text extraction is <strong>required</strong> before LLM vectorization. The process flow is: 
-					File Upload → Text Extraction → Chunking → Embedding Creation. Without text extraction enabled, files cannot be 
-					vectorized for semantic search.
+		<div class="section-description-full">
+			<p class="main-description">
+				Text extraction converts files into searchable and AI-processable content. Choose from <strong>LLPhant</strong>
+				(local PHP processing, best for simple files) or <strong>Dolphin AI</strong> (ByteDance API, best for complex
+				documents, OCR, tables, and formulas). Extracted text is split into chunks for embeddings and semantic search.
+			</p>
+			<p class="main-description info-note">
+				<strong>📝 Note:</strong> Text extraction is <strong>required</strong> before LLM vectorization. The process flow is:
+				File Upload → Text Extraction → Chunking → Embedding Creation. Without text extraction enabled, files cannot be
+				vectorized for semantic search.
 			</p>
 		</div>
 
-	<!-- Text Extraction Settings -->
-	<SettingsCard 
-		title="Text Extraction"
-		icon="📄"
-		:collapsible="true"
-		:default-collapsed="true">
-		<div class="settings-group compact">
-					<div class="setting-item">
-						<label for="extraction-scope">Extract Text From</label>
+		<!-- Text Extraction Settings -->
+		<SettingsCard
+			title="Text Extraction"
+			icon="📄"
+			:collapsible="true"
+			:default-collapsed="true">
+			<div class="settings-group compact">
+				<div class="setting-item">
+					<label for="extraction-scope">Extract Text From</label>
 					<NcSelect v-model="fileSettings.extractionScope"
 						input-id="extraction-scope"
 						input-label="Extraction Scope"
 						:options="extractionScopes"
 						@input="saveSettings">
-							<template #option="{ label, description }">
-								<div class="option-item">
-									<span class="option-label">{{ label }}</span>
-									<span class="option-description">{{ description }}</span>
-								</div>
-							</template>
-						</NcSelect>
-						<p class="setting-description">
-							Choose which files should have text extracted for search and AI features.
-						</p>
-					</div>
+						<template #option="{ label, description }">
+							<div class="option-item">
+								<span class="option-label">{{ label }}</span>
+								<span class="option-description">{{ description }}</span>
+							</div>
+						</template>
+					</NcSelect>
+					<p class="setting-description">
+						Choose which files should have text extracted for search and AI features.
+					</p>
+				</div>
 
-					<div class="setting-item">
-						<label for="text-extractor">Text Extractor</label>
+				<div class="setting-item">
+					<label for="text-extractor">Text Extractor</label>
 					<NcSelect v-model="fileSettings.textExtractor"
 						input-id="text-extractor"
 						input-label="Text Extraction Engine"
 						:disabled="fileSettings.extractionScope.id === 'none'"
 						:options="textExtractors"
-							@input="saveSettings">
-							<template #option="{ label, description, icon }">
-								<div class="option-item">
-									<span class="option-icon">{{ icon }}</span>
-									<span class="option-label">{{ label }}</span>
-									<span class="option-description">{{ description }}</span>
-								</div>
-							</template>
-						</NcSelect>
-						<p class="setting-description">
-							Choose the text extraction engine for processing documents.
-						</p>
-					</div>
-
-					<!-- Dolphin API Configuration (only shown when Dolphin is selected) -->
-					<div v-if="fileSettings.textExtractor.id === 'dolphin'" class="setting-item api-config">
-						<div class="api-fields">
-							<div class="field-group">
-								<label for="dolphin-endpoint">Dolphin API Endpoint</label>
-								<NcTextField id="dolphin-endpoint"
-									v-model="fileSettings.dolphinApiEndpoint"
-									placeholder="https://api.your-dolphin-instance.com"
-									@update:value="saveSettings">
-									<template #trailing-button-icon>
-										<InformationIcon :size="20" />
-									</template>
-								</NcTextField>
-								<p class="field-hint">URL to your Dolphin API instance</p>
+						@input="saveSettings">
+						<template #option="{ label, description, icon }">
+							<div class="option-item">
+								<span class="option-icon">{{ icon }}</span>
+								<span class="option-label">{{ label }}</span>
+								<span class="option-description">{{ description }}</span>
 							</div>
+						</template>
+					</NcSelect>
+					<p class="setting-description">
+						Choose the text extraction engine for processing documents.
+					</p>
+				</div>
 
-							<div class="field-group">
-								<label for="dolphin-key">Dolphin API Key</label>
-								<NcTextField id="dolphin-key"
-									v-model="fileSettings.dolphinApiKey"
-									type="password"
-									placeholder="Enter your API key"
-									@update:value="saveSettings">
-									<template #trailing-button-icon>
-										<KeyIcon :size="20" />
-									</template>
-								</NcTextField>
-								<p class="field-hint">Your Dolphin API authentication key</p>
-							</div>
-
-							<NcButton type="secondary"
-								@click="testDolphinConnection">
-								<template #icon>
-									<CheckIcon v-if="dolphinConnectionTested === 'success'" :size="20" />
-									<AlertCircleIcon v-else-if="dolphinConnectionTested === 'error'" :size="20" />
-									<RefreshIcon v-else :size="20" />
+				<!-- Dolphin API Configuration (only shown when Dolphin is selected) -->
+				<div v-if="fileSettings.textExtractor.id === 'dolphin'" class="setting-item api-config">
+					<div class="api-fields">
+						<div class="field-group">
+							<label for="dolphin-endpoint">Dolphin API Endpoint</label>
+							<NcTextField id="dolphin-endpoint"
+								v-model="fileSettings.dolphinApiEndpoint"
+								placeholder="https://api.your-dolphin-instance.com"
+								@update:value="saveSettings">
+								<template #trailing-button-icon>
+									<InformationIcon :size="20" />
 								</template>
-								Test Connection
-							</NcButton>
+							</NcTextField>
+							<p class="field-hint">
+								URL to your Dolphin API instance
+							</p>
 						</div>
-					</div>
 
-					<div class="setting-item">
-						<label for="extraction-mode">Extraction Mode</label>
+						<div class="field-group">
+							<label for="dolphin-key">Dolphin API Key</label>
+							<NcTextField id="dolphin-key"
+								v-model="fileSettings.dolphinApiKey"
+								type="password"
+								placeholder="Enter your API key"
+								@update:value="saveSettings">
+								<template #trailing-button-icon>
+									<KeyIcon :size="20" />
+								</template>
+							</NcTextField>
+							<p class="field-hint">
+								Your Dolphin API authentication key
+							</p>
+						</div>
+
+						<NcButton type="secondary"
+							@click="testDolphinConnection">
+							<template #icon>
+								<CheckIcon v-if="dolphinConnectionTested === 'success'" :size="20" />
+								<AlertCircleIcon v-else-if="dolphinConnectionTested === 'error'" :size="20" />
+								<RefreshIcon v-else :size="20" />
+							</template>
+							Test Connection
+						</NcButton>
+					</div>
+				</div>
+
+				<div class="setting-item">
+					<label for="extraction-mode">Extraction Mode</label>
 					<NcSelect v-model="fileSettings.extractionMode"
 						input-id="extraction-mode"
 						input-label="Extraction Mode"
 						:disabled="fileSettings.extractionScope.id === 'none'"
 						:options="extractionModes"
-							@input="saveSettings">
-							<template #option="{ label, description }">
-								<div class="option-item">
-									<span class="option-label">{{ label }}</span>
-									<span class="option-description">{{ description }}</span>
-								</div>
-							</template>
+						@input="saveSettings">
+						<template #option="{ label, description }">
+							<div class="option-item">
+								<span class="option-label">{{ label }}</span>
+								<span class="option-description">{{ description }}</span>
+							</div>
+						</template>
 					</NcSelect>
-		<p class="setting-description">
-			Control when extraction happens relative to file upload.
-		</p>
-	</div>
-	</div>
+					<p class="setting-description">
+						Control when extraction happens relative to file upload.
+					</p>
+				</div>
+			</div>
 
-	<!-- Processing Limits -->
-	<div class="processing-limits-section">
-					<h5>⚙️ Processing Limits</h5>
-					
-					<!-- First row: File size, chunking strategy, batch size -->
-					<div class="settings-group">
-						<div class="setting-item">
-							<label for="max-file-size">Maximum File Size (MB)</label>
-							<input id="max-file-size"
-								v-model.number="fileSettings.maxFileSize"
-								type="number"
-								min="1"
-								max="500"
-								@change="saveSettings">
-							<p class="setting-description">
-								Maximum file size for text extraction (1-500 MB)
-							</p>
-						</div>
+			<!-- Processing Limits -->
+			<div class="processing-limits-section">
+				<h5>⚙️ Processing Limits</h5>
 
-						<div class="setting-item">
-							<label for="chunking-strategy">Chunking Strategy</label>
-							<select id="chunking-strategy"
-								v-model="fileSettings.chunkingStrategy"
-								@change="saveSettings">
-								<option value="RECURSIVE_CHARACTER">Recursive Character Split</option>
-								<option value="CHARACTER">Character Split</option>
-								<option value="TOKEN">Token Split</option>
-								<option value="SENTENCE">Sentence Split</option>
-							</select>
-							<p class="setting-description">
-								How to split text into chunks for processing
-							</p>
-						</div>
-
-						<div class="setting-item">
-							<label for="batch-size">Batch Processing Size</label>
-							<input id="batch-size"
-								v-model.number="fileSettings.batchSize"
-								type="number"
-								min="1"
-								max="100"
-								@change="saveSettings">
-							<p class="setting-description">
-								Number of files to process in parallel background jobs
-							</p>
-						</div>
+				<!-- First row: File size, chunking strategy, batch size -->
+				<div class="settings-group">
+					<div class="setting-item">
+						<label for="max-file-size">Maximum File Size (MB)</label>
+						<input id="max-file-size"
+							v-model.number="fileSettings.maxFileSize"
+							type="number"
+							min="1"
+							max="500"
+							@change="saveSettings">
+						<p class="setting-description">
+							Maximum file size for text extraction (1-500 MB)
+						</p>
 					</div>
 
-					<!-- Second row: Chunk size and overlap -->
-					<div class="settings-group" style="margin-top: 16px;">
-						<div class="setting-item">
-							<label for="chunk-size">Chunk Size (characters)</label>
-							<input id="chunk-size"
-								v-model.number="fileSettings.chunkSize"
-								type="number"
-								min="100"
-								max="10000"
-								@change="saveSettings">
-							<p class="setting-description">
-								Size of text chunks for processing and embeddings (100-10000 characters)
-							</p>
-						</div>
+					<div class="setting-item">
+						<label for="chunking-strategy">Chunking Strategy</label>
+						<select id="chunking-strategy"
+							v-model="fileSettings.chunkingStrategy"
+							@change="saveSettings">
+							<option value="RECURSIVE_CHARACTER">
+								Recursive Character Split
+							</option>
+							<option value="CHARACTER">
+								Character Split
+							</option>
+							<option value="TOKEN">
+								Token Split
+							</option>
+							<option value="SENTENCE">
+								Sentence Split
+							</option>
+						</select>
+						<p class="setting-description">
+							How to split text into chunks for processing
+						</p>
+					</div>
+
+					<div class="setting-item">
+						<label for="batch-size">Batch Processing Size</label>
+						<input id="batch-size"
+							v-model.number="fileSettings.batchSize"
+							type="number"
+							min="1"
+							max="100"
+							@change="saveSettings">
+						<p class="setting-description">
+							Number of files to process in parallel background jobs
+						</p>
+					</div>
+				</div>
+
+				<!-- Second row: Chunk size and overlap -->
+				<div class="settings-group" style="margin-top: 16px;">
+					<div class="setting-item">
+						<label for="chunk-size">Chunk Size (characters)</label>
+						<input id="chunk-size"
+							v-model.number="fileSettings.chunkSize"
+							type="number"
+							min="100"
+							max="10000"
+							@change="saveSettings">
+						<p class="setting-description">
+							Size of text chunks for processing and embeddings (100-10000 characters)
+						</p>
+					</div>
 
 					<div class="setting-item">
 						<label for="chunk-overlap">Chunk Overlap (characters)</label>
@@ -260,110 +272,133 @@
 							Files appear in Nextcloud's global search
 						</p>
 					</div>
+				</div>
 			</div>
-		</div>
-	</SettingsCard>
+		</SettingsCard>
 
-	<!-- Supported File Types -->
-	<SettingsCard 
-		title="Supported File Types"
-		icon="📎"
-		:collapsible="true"
-		:default-collapsed="true">
-				
-				<!-- Compatibility info based on selected extractor -->
-				<div v-if="fileSettings.textExtractor.id === 'llphant'" class="compatibility-note info-note">
-					<InformationIcon :size="20" />
-					<div>
-						<strong>LLPhant compatibility:</strong>
-						<ul>
-							<li>✓ Native: TXT, MD, HTML, JSON, XML, CSV</li>
-							<li>○ Library: PDF, DOCX, DOC, XLSX, XLS (requires PhpOffice, PdfParser)</li>
-							<li>⚠️ Limited: PPTX, ODT, RTF (consider using Dolphin)</li>
-							<li>✗ No support: Image files (JPG, PNG, GIF, WebP) - Use Dolphin for OCR</li>
-						</ul>
-					</div>
+		<!-- Supported File Types -->
+		<SettingsCard
+			title="Supported File Types"
+			icon="📎"
+			:collapsible="true"
+			:default-collapsed="true">
+			<!-- Compatibility info based on selected extractor -->
+			<div v-if="fileSettings.textExtractor.id === 'llphant'" class="compatibility-note info-note">
+				<InformationIcon :size="20" />
+				<div>
+					<strong>LLPhant compatibility:</strong>
+					<ul>
+						<li>✓ Native: TXT, MD, HTML, JSON, XML, CSV</li>
+						<li>○ Library: PDF, DOCX, DOC, XLSX, XLS (requires PhpOffice, PdfParser)</li>
+						<li>⚠️ Limited: PPTX, ODT, RTF (consider using Dolphin)</li>
+						<li>✗ No support: Image files (JPG, PNG, GIF, WebP) - Use Dolphin for OCR</li>
+					</ul>
 				</div>
-				<div v-else-if="fileSettings.textExtractor.id === 'dolphin'" class="compatibility-note success-note">
-					<CheckIcon :size="20" />
-					<div>
-						<strong>Dolphin AI:</strong> All file types fully supported with advanced parsing for tables, formulas, and complex layouts.
-						<strong>Includes OCR for scanned documents and images</strong> (JPG, PNG, GIF, WebP).
-					</div>
+			</div>
+			<div v-else-if="fileSettings.textExtractor.id === 'dolphin'" class="compatibility-note success-note">
+				<CheckIcon :size="20" />
+				<div>
+					<strong>Dolphin AI:</strong> All file types fully supported with advanced parsing for tables, formulas, and complex layouts.
+					<strong>Includes OCR for scanned documents and images</strong> (JPG, PNG, GIF, WebP).
 				</div>
-				
-				<div class="settings-group">
-					<div class="file-types-grid">
-						<NcCheckboxRadioSwitch v-for="fileType in fileTypes"
-							:key="fileType.extension"
-							:checked.sync="fileType.enabled"
-							type="checkbox"
-							@update:checked="saveSettings">
-							<span class="file-type-label">
-								{{ fileType.icon }} {{ fileType.label }}
-								<span class="file-type-extension">(.{{ fileType.extension }})</span>
-								<span v-if="fileType.llphantSupport === 'none' && fileSettings.textExtractor.id === 'llphant'" 
-									class="support-indicator error"
-									title="No LLPhant support - requires Dolphin with OCR">
-									✗ Dolphin only
-								</span>
-								<span v-else-if="fileType.llphantSupport === 'limited' && fileSettings.textExtractor.id === 'llphant'" 
-									class="support-indicator warning"
-									title="Limited support with LLPhant - consider using Dolphin">
-									⚠️
-								</span>
-								<span v-else-if="fileType.llphantSupport === 'native' && fileSettings.textExtractor.id === 'llphant'" 
-									class="support-indicator success"
-									title="Native PHP support - works great!">
-									✓
-								</span>
-								<span v-else-if="fileType.dolphinOcr && fileSettings.textExtractor.id === 'dolphin'"
-									class="support-indicator ocr"
-									title="Dolphin OCR enabled for scanned documents">
-									📷 OCR
-								</span>
+			</div>
+
+			<div class="settings-group">
+				<div class="file-types-grid">
+					<NcCheckboxRadioSwitch v-for="fileType in fileTypes"
+						:key="fileType.extension"
+						:checked.sync="fileType.enabled"
+						type="checkbox"
+						@update:checked="saveSettings">
+						<span class="file-type-label">
+							{{ fileType.icon }} {{ fileType.label }}
+							<span class="file-type-extension">(.{{ fileType.extension }})</span>
+							<span v-if="fileType.llphantSupport === 'none' && fileSettings.textExtractor.id === 'llphant'"
+								class="support-indicator error"
+								title="No LLPhant support - requires Dolphin with OCR">
+								✗ Dolphin only
+							</span>
+							<span v-else-if="fileType.llphantSupport === 'limited' && fileSettings.textExtractor.id === 'llphant'"
+								class="support-indicator warning"
+								title="Limited support with LLPhant - consider using Dolphin">
+								⚠️
+							</span>
+							<span v-else-if="fileType.llphantSupport === 'native' && fileSettings.textExtractor.id === 'llphant'"
+								class="support-indicator success"
+								title="Native PHP support - works great!">
+								✓
+							</span>
+							<span v-else-if="fileType.dolphinOcr && fileSettings.textExtractor.id === 'dolphin'"
+								class="support-indicator ocr"
+								title="Dolphin OCR enabled for scanned documents">
+								📷 OCR
+							</span>
 						</span>
-				</NcCheckboxRadioSwitch>
-		</div>
-	</div>
-	</SettingsCard>
+					</NcCheckboxRadioSwitch>
+				</div>
+			</div>
+		</SettingsCard>
 
-	<!-- File Processing Statistics -->
-	<SettingsCard 
-		title="File Processing Statistics"
-		icon="📊">
-		<div class="stats-grid stats-grid-6">
-			<div class="stat-card">
-				<div class="stat-value">{{ extractionStats.totalFiles || 0 }}</div>
-				<div class="stat-label">Total Files</div>
+		<!-- File Processing Statistics -->
+		<SettingsCard
+			title="File Processing Statistics"
+			icon="📊">
+			<div class="stats-grid stats-grid-6">
+				<div class="stat-card">
+					<div class="stat-value">
+						{{ extractionStats.totalFiles || 0 }}
+					</div>
+					<div class="stat-label">
+						Total Files
+					</div>
+				</div>
+				<div class="stat-card">
+					<div class="stat-value">
+						{{ extractionStats.untrackedFiles || 0 }}
+					</div>
+					<div class="stat-label">
+						Untracked
+					</div>
+				</div>
+				<div class="stat-card">
+					<div class="stat-value">
+						{{ extractionStats.pendingFiles || 0 }}
+					</div>
+					<div class="stat-label">
+						Pending
+					</div>
+				</div>
+				<div class="stat-card highlight success">
+					<div class="stat-value">
+						{{ extractionStats.processedFiles || 0 }}
+					</div>
+					<div class="stat-label">
+						Processed
+					</div>
+				</div>
+				<div class="stat-card highlight error">
+					<div class="stat-value">
+						{{ extractionStats.failedFiles || 0 }}
+					</div>
+					<div class="stat-label">
+						Failed
+					</div>
+				</div>
+				<div class="stat-card highlight">
+					<div class="stat-value">
+						{{ extractionStats.totalChunks || 0 }}
+					</div>
+					<div class="stat-label">
+						Chunks
+					</div>
+				</div>
 			</div>
-			<div class="stat-card">
-				<div class="stat-value">{{ extractionStats.untrackedFiles || 0 }}</div>
-				<div class="stat-label">Untracked</div>
-			</div>
-			<div class="stat-card">
-				<div class="stat-value">{{ extractionStats.pendingFiles || 0 }}</div>
-				<div class="stat-label">Pending</div>
-			</div>
-			<div class="stat-card highlight success">
-				<div class="stat-value">{{ extractionStats.processedFiles || 0 }}</div>
-				<div class="stat-label">Processed</div>
-			</div>
-			<div class="stat-card highlight error">
-				<div class="stat-value">{{ extractionStats.failedFiles || 0 }}</div>
-				<div class="stat-label">Failed</div>
-			</div>
-			<div class="stat-card highlight">
-				<div class="stat-value">{{ extractionStats.totalChunks || 0 }}</div>
-				<div class="stat-label">Chunks</div>
-			</div>
-		</div>
-	</SettingsCard>
+		</SettingsCard>
 
-	<!-- Save Status -->
-	<div v-if="saveMessage" class="save-message" :class="saveMessageType">
-		{{ saveMessage }}
-	</div>
+		<!-- Save Status -->
+		<div v-if="saveMessage" class="save-message" :class="saveMessageType">
+			{{ saveMessage }}
+		</div>
 	</SettingsSection>
 </template>
 
@@ -393,18 +428,8 @@ import AlertCircleIcon from 'vue-material-design-icons/AlertCircle.vue'
 import DotsVertical from 'vue-material-design-icons/DotsVertical.vue'
 
 /**
- * @class FileConfiguration
- * @module Components
- * @package Settings
- * 
  * File configuration settings component for managing file upload and text extraction.
  * Allows users to control when and how text extraction occurs.
- * 
- * @author   Conduction Development Team <info@conduction.nl>
- * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version  GIT: <git_id>
- * @link     https://www.OpenRegister.nl
  */
 export default {
 	name: 'FileConfiguration',
@@ -419,31 +444,31 @@ export default {
 		NcTextField,
 		NcActions,
 		NcActionButton,
-	FileDocumentIcon,
-	RefreshIcon,
-	MagnifyIcon,
-	InformationIcon,
-	KeyIcon,
-	CheckIcon,
-	AlertCircleIcon,
-	DotsVertical,
-},
+		FileDocumentIcon,
+		RefreshIcon,
+		MagnifyIcon,
+		InformationIcon,
+		KeyIcon,
+		CheckIcon,
+		AlertCircleIcon,
+		DotsVertical,
+	},
 
 	data() {
 		return {
-	fileSettings: {
-		extractionScope: { id: 'objects', label: 'Files Attached to Objects' },
-		textExtractor: { id: 'llphant', label: 'LLPhant' },
-		extractionMode: { id: 'background', label: 'Background Job' },
-		includeInSearch: true,
-		maxFileSize: 100,
-		chunkSize: 1000,
-		chunkOverlap: 200,
-		chunkingStrategy: 'RECURSIVE_CHARACTER',
-		batchSize: 10,
-		dolphinApiEndpoint: '',
-		dolphinApiKey: '',
-	},
+			fileSettings: {
+				extractionScope: { id: 'objects', label: 'Files Attached to Objects' },
+				textExtractor: { id: 'llphant', label: 'LLPhant' },
+				extractionMode: { id: 'background', label: 'Background Job' },
+				includeInSearch: true,
+				maxFileSize: 100,
+				chunkSize: 1000,
+				chunkOverlap: 200,
+				chunkingStrategy: 'RECURSIVE_CHARACTER',
+				batchSize: 10,
+				dolphinApiEndpoint: '',
+				dolphinApiKey: '',
+			},
 			fileTypes: [
 				// Native PHP support (LLPhant friendly)
 				{ extension: 'txt', label: 'Text Files', icon: '📝', enabled: true, llphantSupport: 'native', dolphinOcr: false },
@@ -452,21 +477,21 @@ export default {
 				{ extension: 'json', label: 'JSON Files', icon: '📦', enabled: true, llphantSupport: 'native', dolphinOcr: false },
 				{ extension: 'xml', label: 'XML Files', icon: '📰', enabled: true, llphantSupport: 'native', dolphinOcr: false },
 				{ extension: 'csv', label: 'CSV Files', icon: '📊', enabled: true, llphantSupport: 'native', dolphinOcr: false },
-				
+
 				// Requires PHP libraries (LLPhant with dependencies)
 				{ extension: 'pdf', label: 'PDF Documents', icon: '📄', enabled: true, llphantSupport: 'library', dolphinOcr: true },
 				{ extension: 'docx', label: 'Word Documents', icon: '📘', enabled: true, llphantSupport: 'library', dolphinOcr: false },
 				{ extension: 'doc', label: 'Word (Legacy)', icon: '📘', enabled: true, llphantSupport: 'library', dolphinOcr: false },
 				{ extension: 'xlsx', label: 'Excel Spreadsheets', icon: '📊', enabled: true, llphantSupport: 'library', dolphinOcr: false },
 				{ extension: 'xls', label: 'Excel (Legacy)', icon: '📊', enabled: true, llphantSupport: 'library', dolphinOcr: false },
-				
+
 				// Image formats (Dolphin OCR)
 				{ extension: 'jpg', label: 'JPEG Images', icon: '🖼️', enabled: false, llphantSupport: 'none', dolphinOcr: true },
 				{ extension: 'jpeg', label: 'JPEG Images', icon: '🖼️', enabled: false, llphantSupport: 'none', dolphinOcr: true },
 				{ extension: 'png', label: 'PNG Images', icon: '🖼️', enabled: false, llphantSupport: 'none', dolphinOcr: true },
 				{ extension: 'gif', label: 'GIF Images', icon: '🖼️', enabled: false, llphantSupport: 'none', dolphinOcr: true },
 				{ extension: 'webp', label: 'WebP Images', icon: '🖼️', enabled: false, llphantSupport: 'none', dolphinOcr: true },
-				
+
 				// Limited support (better with Dolphin)
 				{ extension: 'pptx', label: 'PowerPoint', icon: '📽️', enabled: false, llphantSupport: 'limited', dolphinOcr: false },
 				{ extension: 'odt', label: 'OpenDocument Text', icon: '📄', enabled: false, llphantSupport: 'limited', dolphinOcr: false },
@@ -524,22 +549,22 @@ export default {
 					label: 'Manual Only',
 					description: 'Only extract when manually triggered',
 				},
-		],
-	extractionStats: {
-		totalFiles: 0,
-		untrackedFiles: 0,
-		pendingFiles: 0,
-		processedFiles: 0,
-		failedFiles: 0,
-		totalChunks: 0,
-	},
-	discoveringFiles: false,
-	extractingFiles: false,
-	retryingFiles: false,
-	saveMessage: '',
-	saveMessageType: 'success',
-	dolphinConnectionTested: null, // null, 'success', 'error'
-	}
+			],
+			extractionStats: {
+				totalFiles: 0,
+				untrackedFiles: 0,
+				pendingFiles: 0,
+				processedFiles: 0,
+				failedFiles: 0,
+				totalChunks: 0,
+			},
+			discoveringFiles: false,
+			extractingFiles: false,
+			retryingFiles: false,
+			saveMessage: '',
+			saveMessageType: 'success',
+			dolphinConnectionTested: null, // null, 'success', 'error'
+		}
 	},
 
 	computed: {
@@ -553,9 +578,9 @@ export default {
 		},
 	},
 
-async mounted() {
-	await this.loadSettings()
-	await this.loadExtractionStats()
+	async mounted() {
+		await this.loadSettings()
+		await this.loadExtractionStats()
 	},
 
 	methods: {
@@ -568,13 +593,13 @@ async mounted() {
 				if (settings) {
 					// Convert scope and mode IDs to objects for NcSelect
 					if (settings.extractionScope) {
-						const scopeId = typeof settings.extractionScope === 'string' 
-							? settings.extractionScope 
+						const scopeId = typeof settings.extractionScope === 'string'
+							? settings.extractionScope
 							: settings.extractionScope.id
-						this.fileSettings.extractionScope = this.extractionScopes.find(s => s.id === scopeId) 
+						this.fileSettings.extractionScope = this.extractionScopes.find(s => s.id === scopeId)
 							|| this.extractionScopes[3] // default to 'objects'
 					}
-					
+
 					// Load text extractor
 					if (settings.textExtractor) {
 						const extractorId = typeof settings.textExtractor === 'string'
@@ -583,7 +608,7 @@ async mounted() {
 						this.fileSettings.textExtractor = this.textExtractors.find(e => e.id === extractorId)
 							|| this.textExtractors[0] // default to 'llphant'
 					}
-					
+
 					if (settings.extractionMode) {
 						const modeId = typeof settings.extractionMode === 'string'
 							? settings.extractionMode
@@ -591,17 +616,17 @@ async mounted() {
 						this.fileSettings.extractionMode = this.extractionModes.find(m => m.id === modeId)
 							|| this.extractionModes[0] // default to 'background'
 					}
-					
-				// Load other settings
-				this.fileSettings.includeInSearch = settings.includeInSearch !== undefined ? settings.includeInSearch : true
-				this.fileSettings.maxFileSize = settings.maxFileSize || 100
-				this.fileSettings.chunkSize = settings.chunkSize || 1000
-				this.fileSettings.chunkOverlap = settings.chunkOverlap || 200
-				this.fileSettings.chunkingStrategy = settings.chunkingStrategy || 'RECURSIVE_CHARACTER'
-				this.fileSettings.batchSize = settings.batchSize || 10
-				this.fileSettings.dolphinApiEndpoint = settings.dolphinApiEndpoint || ''
-				this.fileSettings.dolphinApiKey = settings.dolphinApiKey || ''
-					
+
+					// Load other settings
+					this.fileSettings.includeInSearch = settings.includeInSearch !== undefined ? settings.includeInSearch : true
+					this.fileSettings.maxFileSize = settings.maxFileSize || 100
+					this.fileSettings.chunkSize = settings.chunkSize || 1000
+					this.fileSettings.chunkOverlap = settings.chunkOverlap || 200
+					this.fileSettings.chunkingStrategy = settings.chunkingStrategy || 'RECURSIVE_CHARACTER'
+					this.fileSettings.batchSize = settings.batchSize || 10
+					this.fileSettings.dolphinApiEndpoint = settings.dolphinApiEndpoint || ''
+					this.fileSettings.dolphinApiKey = settings.dolphinApiKey || ''
+
 					// Load file types
 					if (settings.enabledFileTypes) {
 						this.fileTypes.forEach(ft => {
@@ -635,7 +660,7 @@ async mounted() {
 						.filter(ft => ft.enabled)
 						.map(ft => ft.extension),
 				})
-				
+
 				// Settings saved silently - no success message
 			} catch (error) {
 				console.error('Failed to save file settings:', error)
@@ -649,19 +674,19 @@ async mounted() {
 		async testDolphinConnection() {
 			try {
 				this.dolphinConnectionTested = null
-				
+
 				if (!this.fileSettings.dolphinApiEndpoint || !this.fileSettings.dolphinApiKey) {
 					this.showSaveMessage('Please provide both API endpoint and API key', 'error')
 					this.dolphinConnectionTested = 'error'
 					return
 				}
-				
+
 				// Test connection via backend
 				const response = await this.settingsStore.testDolphinConnection({
 					apiEndpoint: this.fileSettings.dolphinApiEndpoint,
 					apiKey: this.fileSettings.dolphinApiKey,
 				})
-				
+
 				if (response.success) {
 					this.showSaveMessage('Dolphin connection successful!', 'success')
 					this.dolphinConnectionTested = 'success'
@@ -676,114 +701,116 @@ async mounted() {
 			}
 		},
 
-	/**
-	 * Load extraction statistics
-	 */
-	async loadExtractionStats() {
-		try {
-			const stats = await this.settingsStore.getExtractionStats()
-			if (stats) {
-				this.extractionStats = {
-					totalFiles: stats.totalFiles || 0,
-					untrackedFiles: stats.untrackedFiles || 0,
-					pendingFiles: stats.pendingFiles || 0,
-					processedFiles: stats.processedFiles || 0,
-					failedFiles: stats.failed || 0,
-					totalChunks: stats.totalChunks || 0,
+		/**
+		 * Load extraction statistics
+		 */
+		async loadExtractionStats() {
+			try {
+				const stats = await this.settingsStore.getExtractionStats()
+				if (stats) {
+					this.extractionStats = {
+						totalFiles: stats.totalFiles || 0,
+						untrackedFiles: stats.untrackedFiles || 0,
+						pendingFiles: stats.pendingFiles || 0,
+						processedFiles: stats.processedFiles || 0,
+						failedFiles: stats.failed || 0,
+						totalChunks: stats.totalChunks || 0,
+					}
 				}
+			} catch (error) {
+				console.error('Failed to load extraction stats:', error)
 			}
-		} catch (error) {
-			console.error('Failed to load extraction stats:', error)
-		}
-	},
+		},
 
-	/**
-	 * Discover files in Nextcloud that aren't tracked yet
-	 */
-	async discoverFiles() {
-		this.discoveringFiles = true
-		try {
-			const result = await this.settingsStore.discoverFiles()
-			
-			// Show detailed feedback about what happened
-			const data = result?.data || {}
-			const discovered = data.discovered || 0
-			const failed = data.failed || 0
-			
-			let message = `Discovered ${discovered} new files`
-			if (failed > 0) {
-				message += `, ${failed} failed to stage`
+		/**
+		 * Discover files in Nextcloud that aren't tracked yet
+		 */
+		async discoverFiles() {
+			this.discoveringFiles = true
+			try {
+				const result = await this.settingsStore.discoverFiles()
+
+				// Show detailed feedback about what happened
+				const data = result?.data || {}
+				const discovered = data.discovered || 0
+				const failed = data.failed || 0
+
+				let message = `Discovered ${discovered} new files`
+				if (failed > 0) {
+					message += `, ${failed} failed to stage`
+				}
+
+				this.showSaveMessage(message, failed > 0 ? 'error' : 'success')
+				await this.loadExtractionStats()
+			} catch (error) {
+				console.error('Failed to discover files:', error)
+				this.showSaveMessage('Failed to discover files', 'error')
+			} finally {
+				this.discoveringFiles = false
 			}
-			
-			this.showSaveMessage(message, failed > 0 ? 'error' : 'success')
-			await this.loadExtractionStats()
-		} catch (error) {
-			console.error('Failed to discover files:', error)
-			this.showSaveMessage('Failed to discover files', 'error')
-		} finally {
-			this.discoveringFiles = false
-		}
-	},
+		},
 
-	/**
-	 * Extract pending files (files already staged with status='pending')
-	 */
-	async extractAllPendingFiles() {
-		this.extractingFiles = true
-		try {
-			const result = await this.settingsStore.triggerFileExtraction('pending')
-			
-			// Show detailed feedback about what happened
-			const data = result?.data || {}
-			const processed = data.processed || 0
-			const failed = data.failed || 0
-			
-			let message = `Processed ${processed} pending files`
-			if (failed > 0) {
-				message += `, ${failed} failed`
+		/**
+		 * Extract pending files (files already staged with status='pending')
+		 */
+		async extractAllPendingFiles() {
+			this.extractingFiles = true
+			try {
+				const result = await this.settingsStore.triggerFileExtraction('pending')
+
+				// Show detailed feedback about what happened
+				const data = result?.data || {}
+				const processed = data.processed || 0
+				const failed = data.failed || 0
+
+				let message = `Processed ${processed} pending files`
+				if (failed > 0) {
+					message += `, ${failed} failed`
+				}
+
+				this.showSaveMessage(message, failed > 0 ? 'error' : 'success')
+				await this.loadExtractionStats()
+			} catch (error) {
+				console.error('Failed to process files:', error)
+				this.showSaveMessage('Failed to extract files', 'error')
+			} finally {
+				this.extractingFiles = false
 			}
-			
-			this.showSaveMessage(message, failed > 0 ? 'error' : 'success')
-			await this.loadExtractionStats()
-		} catch (error) {
-			console.error('Failed to process files:', error)
-			this.showSaveMessage('Failed to extract files', 'error')
-		} finally {
-			this.extractingFiles = false
-		}
-	},
+		},
 
-	/**
-	 * Retry failed file extractions
-	 */
-	async reprocessFailedFiles() {
-		this.retryingFiles = true
-		try {
-			const result = await this.settingsStore.triggerFileExtraction('failed')
-			
-			// Show detailed feedback about what happened
-			const data = result?.data || {}
-			const retried = data.retried || 0
-			const failed = data.failed || 0
-			
-			let message = `Retried ${retried} failed extractions`
-			if (failed > 0) {
-				message += `, ${failed} failed again`
+		/**
+		 * Retry failed file extractions
+		 */
+		async reprocessFailedFiles() {
+			this.retryingFiles = true
+			try {
+				const result = await this.settingsStore.triggerFileExtraction('failed')
+
+				// Show detailed feedback about what happened
+				const data = result?.data || {}
+				const retried = data.retried || 0
+				const failed = data.failed || 0
+
+				let message = `Retried ${retried} failed extractions`
+				if (failed > 0) {
+					message += `, ${failed} failed again`
+				}
+
+				this.showSaveMessage(message, failed > 0 ? 'error' : 'success')
+				await this.loadExtractionStats()
+			} catch (error) {
+				console.error('Failed to reprocess files:', error)
+				this.showSaveMessage('Failed to retry extractions', 'error')
+			} finally {
+				this.retryingFiles = false
 			}
-			
-			this.showSaveMessage(message, failed > 0 ? 'error' : 'success')
-			await this.loadExtractionStats()
-		} catch (error) {
-			console.error('Failed to reprocess files:', error)
-			this.showSaveMessage('Failed to retry extractions', 'error')
-		} finally {
-			this.retryingFiles = false
-		}
-	},
+		},
 
-	/**
-	 * Show save message
-	 */
+		/**
+		 * Show save message
+		 * @param {string} message - The message to show
+		 * @param {string} type - The type of message to show
+		 */
 		showSaveMessage(message, type = 'success') {
 			this.saveMessage = message
 			this.saveMessageType = type
@@ -792,12 +819,13 @@ async mounted() {
 			}, 3000)
 		},
 
-	/**
-	 * Format number with thousands separator
-	 */
-	formatNumber(num) {
-		return new Intl.NumberFormat().format(num || 0)
-	},
+		/**
+		 * Format number with thousands separator
+		 * @param {number} num - The number to format
+		 */
+		formatNumber(num) {
+			return new Intl.NumberFormat().format(num || 0)
+		},
 	},
 }
 </script>
@@ -1171,4 +1199,3 @@ async mounted() {
 	font-weight: 500;
 }
 </style>
-

@@ -1,5 +1,5 @@
 <template>
-	<SettingsSection 
+	<SettingsSection
 		name="Multitenancy"
 		description="Configure multi-organization support and tenant isolation"
 		:loading="loading"
@@ -27,97 +27,96 @@
 			</NcButton>
 		</template>
 
-			<!-- Section Description -->
-			<div class="section-description-full">
-				<p class="main-description">
-					Multitenancy enables multiple organizations to use the same Open Register instance while keeping their data completely separate.
-					Each tenant (organization) has isolated access to their own registers, schemas, and objects, ensuring data privacy and security.
-				</p>
-				<p class="toggle-status">
-					<strong>Current Status:</strong>
-					<span :class="multitenancyOptions.enabled ? 'status-enabled' : 'status-disabled'">
-						{{ multitenancyOptions.enabled ? 'Multitenancy enabled' : 'Multitenancy disabled' }}
-					</span>
-				</p>
-				<p class="impact-description">
-					<strong>{{ multitenancyOptions.enabled ? 'Disabling' : 'Enabling' }} Multitenancy will:</strong><br>
-					<span v-if="!multitenancyOptions.enabled">
-						• Enable multiple organizations to share the same system instance<br>
-						• Provide complete data isolation between different tenants<br>
-						• Allow centralized management while maintaining security boundaries<br>
-						• Reduce infrastructure costs by sharing resources across organizations
-					</span>
-					<span v-else>
-						• Merge all tenant data into a single shared environment<br>
-						• Remove data isolation between organizations<br>
-						• Simplify the system to single-tenant mode<br>
-						• May expose sensitive data to unauthorized users
-					</span>
-				</p>
-			</div>
-
-			<!-- Enable Multitenancy Toggle -->
-			<div class="option-section">
-				<NcCheckboxRadioSwitch
-					:checked.sync="multitenancyOptions.enabled"
-					:disabled="saving"
-					type="switch">
+		<!-- Section Description -->
+		<div class="section-description-full">
+			<p class="main-description">
+				Multitenancy enables multiple organizations to use the same Open Register instance while keeping their data completely separate.
+				Each tenant (organization) has isolated access to their own registers, schemas, and objects, ensuring data privacy and security.
+			</p>
+			<p class="toggle-status">
+				<strong>Current Status:</strong>
+				<span :class="multitenancyOptions.enabled ? 'status-enabled' : 'status-disabled'">
 					{{ multitenancyOptions.enabled ? 'Multitenancy enabled' : 'Multitenancy disabled' }}
-				</NcCheckboxRadioSwitch>
-			</div>
+				</span>
+			</p>
+			<p class="impact-description">
+				<strong>{{ multitenancyOptions.enabled ? 'Disabling' : 'Enabling' }} Multitenancy will:</strong><br>
+				<span v-if="!multitenancyOptions.enabled">
+					• Enable multiple organizations to share the same system instance<br>
+					• Provide complete data isolation between different tenants<br>
+					• Allow centralized management while maintaining security boundaries<br>
+					• Reduce infrastructure costs by sharing resources across organizations
+				</span>
+				<span v-else>
+					• Merge all tenant data into a single shared environment<br>
+					• Remove data isolation between organizations<br>
+					• Simplify the system to single-tenant mode<br>
+					• May expose sensitive data to unauthorized users
+				</span>
+			</p>
+		</div>
 
-			<!-- Published Objects Bypass -->
-			<div v-if="multitenancyOptions.enabled" class="option-section">
-				<NcCheckboxRadioSwitch
-					:checked.sync="multitenancyOptions.publishedObjectsBypassMultiTenancy"
-					:disabled="saving"
-					type="switch">
-					Published objects bypass multi-tenancy
-				</NcCheckboxRadioSwitch>
-				<p class="option-description">
-					When enabled, published objects will be visible to users from all organizations, bypassing multi-tenancy restrictions.
-					This allows for public sharing of published content across organizational boundaries.
-				</p>
-			</div>
+		<!-- Enable Multitenancy Toggle -->
+		<div class="option-section">
+			<NcCheckboxRadioSwitch
+				:checked.sync="multitenancyOptions.enabled"
+				:disabled="saving"
+				type="switch">
+				{{ multitenancyOptions.enabled ? 'Multitenancy enabled' : 'Multitenancy disabled' }}
+			</NcCheckboxRadioSwitch>
+		</div>
 
-			<!-- Default Tenants -->
-			<div v-if="multitenancyOptions.enabled">
-				<h4>Default Tenants</h4>
-				<p class="option-description">
-					Configure default tenant assignments for users and objects
-				</p>
+		<!-- Published Objects Bypass -->
+		<div v-if="multitenancyOptions.enabled" class="option-section">
+			<NcCheckboxRadioSwitch
+				:checked.sync="multitenancyOptions.publishedObjectsBypassMultiTenancy"
+				:disabled="saving"
+				type="switch">
+				Published objects bypass multi-tenancy
+			</NcCheckboxRadioSwitch>
+			<p class="option-description">
+				When enabled, published objects will be visible to users from all organizations, bypassing multi-tenancy restrictions.
+				This allows for public sharing of published content across organizational boundaries.
+			</p>
+		</div>
 
-				<div class="groups-table">
-					<div class="groups-row">
-						<div class="group-label">
-							<strong>Default User Tenant</strong>
-							<p class="user-type-description">
-								The tenant assigned to users who are not part of any specific organization
-							</p>
-						</div>
-						<div class="group-select">
-							<NcSelect
-								v-model="multitenancyOptions.defaultUserTenant"
-								:options="tenantOptions"
-								input-label="Default User Tenant"
-								:disabled="loading || saving" />
-						</div>
+		<!-- Default Tenants -->
+		<div v-if="multitenancyOptions.enabled">
+			<h4>Default Tenants</h4>
+			<p class="option-description">
+				Configure default tenant assignments for users and objects
+			</p>
+
+			<div class="groups-table">
+				<div class="groups-row">
+					<div class="group-label">
+						<strong>Default User Tenant</strong>
+						<p class="user-type-description">
+							The tenant assigned to users who are not part of any specific organization
+						</p>
 					</div>
+					<div class="group-select">
+						<NcSelect
+							v-model="multitenancyOptions.defaultUserTenant"
+							:options="tenantOptions"
+							input-label="Default User Tenant"
+							:disabled="loading || saving" />
+					</div>
+				</div>
 
-					<div class="groups-row">
-						<div class="group-label">
-							<strong>Default Object Tenant</strong>
-							<p class="user-type-description">
-								The tenant assigned to objects when no specific organization is specified
-							</p>
-						</div>
-						<div class="group-select">
-							<NcSelect
-								v-model="multitenancyOptions.defaultObjectTenant"
-								:options="tenantOptions"
-								input-label="Default Object Tenant"
-								:disabled="loading || saving" />
-						</div>
+				<div class="groups-row">
+					<div class="group-label">
+						<strong>Default Object Tenant</strong>
+						<p class="user-type-description">
+							The tenant assigned to objects when no specific organization is specified
+						</p>
+					</div>
+					<div class="group-select">
+						<NcSelect
+							v-model="multitenancyOptions.defaultObjectTenant"
+							:options="tenantOptions"
+							input-label="Default Object Tenant"
+							:disabled="loading || saving" />
 					</div>
 				</div>
 			</div>
