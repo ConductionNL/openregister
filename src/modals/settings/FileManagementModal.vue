@@ -297,20 +297,20 @@ export default {
 			vectorDimensions: 'N/A',
 
 			chunkingStrategyOptions: [
-				{ 
-					id: 'FIXED_SIZE', 
-					name: 'Fixed Size', 
-					description: 'Simple character-based splitting (faster, less context-aware)' 
+				{
+					id: 'FIXED_SIZE',
+					name: 'Fixed Size',
+					description: 'Simple character-based splitting (faster, less context-aware)',
 				},
-				{ 
-					id: 'RECURSIVE_CHARACTER', 
-					name: 'Recursive Character', 
-					description: 'Smart splitting that preserves paragraphs and sentences (recommended)' 
+				{
+					id: 'RECURSIVE_CHARACTER',
+					name: 'Recursive Character',
+					description: 'Smart splitting that preserves paragraphs and sentences (recommended)',
 				},
-				{ 
-					id: 'SEMANTIC', 
-					name: 'Semantic', 
-					description: 'AI-powered splitting based on meaning (slower, best quality)' 
+				{
+					id: 'SEMANTIC',
+					name: 'Semantic',
+					description: 'AI-powered splitting based on meaning (slower, best quality)',
 				},
 			],
 		}

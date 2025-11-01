@@ -1,5 +1,5 @@
 <template>
-	<SettingsSection 
+	<SettingsSection
 		name="Role Based Access Control (RBAC)"
 		description="Configure access permissions and user groups"
 		:loading="loading"
@@ -27,109 +27,108 @@
 			</NcButton>
 		</template>
 
-			<!-- Section Description -->
-			<div class="section-description-full">
-				<p class="main-description">
-					Role Based Access Control (RBAC) allows you to control who can access and modify different parts of your Open Register.
-					When enabled, users are assigned to specific Nextcloud groups that determine their permissions for registers, schemas, and objects.
-					Note: This system uses Nextcloud's built-in group functionality rather than separate roles.
-				</p>
-				<p class="toggle-status">
-					<strong>Current Status:</strong>
-					<span :class="rbacOptions.enabled ? 'status-enabled' : 'status-disabled'">
-						{{ rbacOptions.enabled ? 'Role Based Access Control enabled' : 'Role Based Access Control disabled' }}
-					</span>
-				</p>
-				<p class="impact-description">
-					<strong>{{ rbacOptions.enabled ? 'Disabling' : 'Enabling' }} RBAC will:</strong><br>
-					<span v-if="!rbacOptions.enabled">
-						• Provide fine-grained access control over registers and schemas<br>
-						• Allow you to assign users to specific Nextcloud groups (Viewer, Editor, Admin)<br>
-						• Enable secure multi-user environments with proper permission boundaries<br>
-						• Require group assignment for new users accessing the system
-					</span>
-					<span v-else>
-						• Remove all group-based restrictions and permissions<br>
-						• Grant all users full access to all registers and schemas<br>
-						• Simplify user management but reduce security controls<br>
-						• Allow unrestricted access to sensitive data and configurations
-					</span>
-				</p>
-			</div>
+		<!-- Section Description -->
+		<div class="section-description-full">
+			<p class="main-description">
+				Role Based Access Control (RBAC) allows you to control who can access and modify different parts of your Open Register.
+				When enabled, users are assigned to specific Nextcloud groups that determine their permissions for registers, schemas, and objects.
+				Note: This system uses Nextcloud's built-in group functionality rather than separate roles.
+			</p>
+			<p class="toggle-status">
+				<strong>Current Status:</strong>
+				<span :class="rbacOptions.enabled ? 'status-enabled' : 'status-disabled'">
+					{{ rbacOptions.enabled ? 'Role Based Access Control enabled' : 'Role Based Access Control disabled' }}
+				</span>
+			</p>
+			<p class="impact-description">
+				<strong>{{ rbacOptions.enabled ? 'Disabling' : 'Enabling' }} RBAC will:</strong><br>
+				<span v-if="!rbacOptions.enabled">
+					• Provide fine-grained access control over registers and schemas<br>
+					• Allow you to assign users to specific Nextcloud groups (Viewer, Editor, Admin)<br>
+					• Enable secure multi-user environments with proper permission boundaries<br>
+					• Require group assignment for new users accessing the system
+				</span>
+				<span v-else>
+					• Remove all group-based restrictions and permissions<br>
+					• Grant all users full access to all registers and schemas<br>
+					• Simplify user management but reduce security controls<br>
+					• Allow unrestricted access to sensitive data and configurations
+				</span>
+			</p>
+		</div>
 
-			<!-- Enable RBAC Toggle -->
-			<div class="option-section">
+		<!-- Enable RBAC Toggle -->
+		<div class="option-section">
+			<NcCheckboxRadioSwitch
+				:checked.sync="rbacOptions.enabled"
+				:disabled="saving"
+				type="switch">
+				{{ rbacOptions.enabled ? 'Role Based Access Control enabled' : 'Role Based Access Control disabled' }}
+			</NcCheckboxRadioSwitch>
+
+			<!-- Admin Override -->
+			<div v-if="rbacOptions.enabled">
 				<NcCheckboxRadioSwitch
-					:checked.sync="rbacOptions.enabled"
+					:checked.sync="rbacOptions.adminOverride"
 					:disabled="saving"
 					type="switch">
-					{{ rbacOptions.enabled ? 'Role Based Access Control enabled' : 'Role Based Access Control disabled' }}
+					{{ rbacOptions.adminOverride ? 'Admin override enabled' : 'Admin override disabled' }}
 				</NcCheckboxRadioSwitch>
+				<p class="option-description">
+					Allow administrators to bypass all RBAC restrictions
+				</p>
 
-				<!-- Admin Override -->
-				<div v-if="rbacOptions.enabled">
-					<NcCheckboxRadioSwitch
-						:checked.sync="rbacOptions.adminOverride"
-						:disabled="saving"
-						type="switch">
-						{{ rbacOptions.adminOverride ? 'Admin override enabled' : 'Admin override disabled' }}
-					</NcCheckboxRadioSwitch>
-					<p class="option-description">
-						Allow administrators to bypass all RBAC restrictions
-					</p>
+				<h4>Default User Groups</h4>
+				<p class="option-description">
+					Configure which Nextcloud groups different types of users are assigned to by default
+				</p>
 
-					<h4>Default User Groups</h4>
-					<p class="option-description">
-						Configure which Nextcloud groups different types of users are assigned to by default
-					</p>
-
-					<div class="groups-table">
-						<div class="groups-row">
-							<div class="group-label">
-								<strong>Anonymous Users</strong>
-								<p class="user-type-description">
-									Unidentified, non-logged-in users who access public content without authentication
-								</p>
-							</div>
-							<div class="group-select">
-								<NcSelect
-									v-model="rbacOptions.anonymousGroup"
-									:options="groupOptions"
-									input-label="Anonymous Group"
-									:disabled="loading || saving" />
-							</div>
+				<div class="groups-table">
+					<div class="groups-row">
+						<div class="group-label">
+							<strong>Anonymous Users</strong>
+							<p class="user-type-description">
+								Unidentified, non-logged-in users who access public content without authentication
+							</p>
 						</div>
-
-						<div class="groups-row">
-							<div class="group-label">
-								<strong>Default New Users</strong>
-								<p class="user-type-description">
-									Authenticated users who have logged in but haven't been assigned to specific groups yet
-								</p>
-							</div>
-							<div class="group-select">
-								<NcSelect
-									v-model="rbacOptions.defaultNewUserGroup"
-									:options="groupOptions"
-									input-label="New User Group"
-									:disabled="loading || saving" />
-							</div>
+						<div class="group-select">
+							<NcSelect
+								v-model="rbacOptions.anonymousGroup"
+								:options="groupOptions"
+								input-label="Anonymous Group"
+								:disabled="loading || saving" />
 						</div>
+					</div>
 
-						<div class="groups-row">
-							<div class="group-label">
-								<strong>Default Object Owner</strong>
-								<p class="user-type-description">
-									Default user assigned as owner when creating new objects without explicit ownership
-								</p>
-							</div>
-							<div class="group-select">
-								<NcSelect
-									v-model="rbacOptions.defaultObjectOwner"
-									:options="userOptions"
-									input-label="Default Owner"
-									:disabled="loading || saving" />
-							</div>
+					<div class="groups-row">
+						<div class="group-label">
+							<strong>Default New Users</strong>
+							<p class="user-type-description">
+								Authenticated users who have logged in but haven't been assigned to specific groups yet
+							</p>
+						</div>
+						<div class="group-select">
+							<NcSelect
+								v-model="rbacOptions.defaultNewUserGroup"
+								:options="groupOptions"
+								input-label="New User Group"
+								:disabled="loading || saving" />
+						</div>
+					</div>
+
+					<div class="groups-row">
+						<div class="group-label">
+							<strong>Default Object Owner</strong>
+							<p class="user-type-description">
+								Default user assigned as owner when creating new objects without explicit ownership
+							</p>
+						</div>
+						<div class="group-select">
+							<NcSelect
+								v-model="rbacOptions.defaultObjectOwner"
+								:options="userOptions"
+								input-label="Default Owner"
+								:disabled="loading || saving" />
 						</div>
 					</div>
 				</div>

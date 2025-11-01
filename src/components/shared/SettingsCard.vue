@@ -1,30 +1,30 @@
 <template>
 	<div class="settings-card" :class="{ 'collapsible-section': collapsible }">
-		<h4 
+		<h4
 			v-if="title"
 			:class="{ 'collapsible-header': collapsible }"
 			@click="collapsible ? toggleCollapsed() : null">
 			<span>{{ icon }} {{ title }}</span>
-			<ChevronDown 
-				v-if="collapsible && !isCollapsed" 
-				:size="20" 
-				class="chevron-icon" 
+			<ChevronDown
+				v-if="collapsible && !isCollapsed"
+				:size="20"
+				class="chevron-icon"
 				:class="{ 'rotate': !isCollapsed }" />
-			<ChevronUp 
-				v-if="collapsible && isCollapsed" 
-				:size="20" 
-				class="chevron-icon" 
+			<ChevronUp
+				v-if="collapsible && isCollapsed"
+				:size="20"
+				class="chevron-icon"
 				:class="{ 'rotate': isCollapsed }" />
 		</h4>
-		
+
 		<transition v-if="collapsible" name="slide-fade">
 			<div v-show="!isCollapsed" class="collapsible-content">
-				<slot></slot>
+				<slot />
 			</div>
 		</transition>
-		
+
 		<div v-else class="card-content">
-			<slot></slot>
+			<slot />
 		</div>
 	</div>
 </template>
@@ -150,4 +150,3 @@ export default {
 	opacity: 0;
 }
 </style>
-

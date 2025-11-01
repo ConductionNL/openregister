@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<SettingsSection 
+		<SettingsSection
 			name="System Statistics"
 			description="Overview of your Open Register data and potential issues"
 			:loading="loadingStats"
@@ -315,7 +315,6 @@
 					</div>
 				</div>
 			</div>
-			</div>
 		</SettingsSection>
 
 		<!-- Rebase Confirmation Dialog -->
@@ -435,7 +434,7 @@ import { NcButton, NcLoadingIcon, NcDialog } from '@nextcloud/vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
-import { MassValidateModal } from '../../../modals/settings'
+import MassValidateModal from '../../../modals/settings/MassValidateModal.vue'
 
 export default {
 	name: 'StatisticsOverview',
@@ -449,6 +448,31 @@ export default {
 		CheckCircle,
 		Delete,
 		MassValidateModal,
+	},
+
+	data() {
+		return {
+			showMassValidateModal: false,
+			massValidateCompleted: false,
+			objectStats: {
+				loading: false,
+				totalObjects: 0,
+			},
+			massValidateConfig: {
+				mode: 'serial',
+				maxObjects: 0,
+				batchSize: 1000,
+				collectErrors: false,
+			},
+			memoryPrediction: {
+				prediction_safe: true,
+				formatted: {
+					total_predicted: 'Unknown',
+					available: 'Unknown',
+				},
+			},
+			memoryPredictionLoading: false,
+		}
 	},
 
 	computed: {
@@ -514,31 +538,6 @@ export default {
 		hasWarnings() {
 			return this.settingsStore.hasWarnings
 		},
-	},
-
-	data() {
-		return {
-			showMassValidateModal: false,
-			massValidateCompleted: false,
-			objectStats: {
-				loading: false,
-				totalObjects: 0,
-			},
-			massValidateConfig: {
-				mode: 'serial',
-				maxObjects: 0,
-				batchSize: 1000,
-				collectErrors: false,
-			},
-			memoryPrediction: {
-				prediction_safe: true,
-				formatted: {
-					total_predicted: 'Unknown',
-					available: 'Unknown',
-				},
-			},
-			memoryPredictionLoading: false,
-		}
 	},
 
 	methods: {

@@ -357,7 +357,6 @@ import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
-import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
 import AccountMultiplePlus from 'vue-material-design-icons/AccountMultiplePlus.vue'
@@ -386,7 +385,6 @@ export default {
 		Pencil,
 		TrashCanOutline,
 		Refresh,
-		InformationOutline,
 		CheckCircle,
 		AccountPlus,
 		AccountMultiplePlus,

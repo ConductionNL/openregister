@@ -38,7 +38,9 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 									<span class="organisation-name">{{ name }}</span>
 									<span v-if="isDefault" class="badge badge-default">Default</span>
 								</div>
-								<p v-if="description" class="organisation-description">{{ description }}</p>
+								<p v-if="description" class="organisation-description">
+									{{ description }}
+								</p>
 								<span class="organisation-meta">{{ userCount || 0 }} members</span>
 							</div>
 						</template>
@@ -72,7 +74,9 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							<span>{{ displayName }}</span>
 						</template>
 					</NcSelect>
-					<p class="helper-text">Defaults to current user. Select a different user if needed.</p>
+					<p class="helper-text">
+						Defaults to current user. Select a different user if needed.
+					</p>
 				</div>
 
 				<div class="info-help">
@@ -112,7 +116,6 @@ import {
 	NcSelect,
 	NcLoadingIcon,
 	NcNoteCard,
-	NcEmptyContent,
 } from '@nextcloud/vue'
 
 import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
@@ -126,7 +129,6 @@ export default {
 		NcButton,
 		NcLoadingIcon,
 		NcNoteCard,
-		NcEmptyContent,
 		// Icons
 		AccountPlus,
 		Cancel,
@@ -152,13 +154,13 @@ export default {
 	async mounted() {
 		// Set default user to current user
 		this.setDefaultUser()
-		
+
 		// Load initial organisations list
 		await this.loadInitialOrganisations()
-		
+
 		// Load initial users list
 		await this.loadInitialUsers()
-		
+
 		// If organisation is pre-selected (passed via transferData), set it
 		const transferData = navigationStore.getTransferData()
 		if (transferData?.organisationUuid) {
@@ -206,7 +208,7 @@ export default {
 				this.searchLoading = true
 				// Load first 20 organisations (empty query returns all, paginated)
 				const results = await organisationStore.searchOrganisations('', 20, 0)
-				
+
 				// Transform results to NcSelect format with all necessary fields
 				this.organisationOptions = results.map(org => ({
 					id: org.uuid || org.id,
@@ -226,16 +228,17 @@ export default {
 		},
 		/**
 		 * Load a preselected organisation
+		 * @param {string} uuid - The UUID of the organisation to load
 		 */
 		async loadPreselectedOrganisation(uuid) {
 			try {
 				// Find the organisation in already loaded options
 				let orgOption = this.organisationOptions.find(org => org.uuid === uuid || org.id === uuid)
-				
+
 				// If not found in options, fetch it
 				if (!orgOption) {
 					const organisation = await organisationStore.getOrganisation(uuid)
-					
+
 					if (organisation) {
 						orgOption = {
 							id: organisation.uuid,
@@ -252,7 +255,7 @@ export default {
 						}
 					}
 				}
-				
+
 				// Select the organisation
 				if (orgOption) {
 					this.selectedOrganisation = orgOption
@@ -263,6 +266,7 @@ export default {
 		},
 		/**
 		 * Handle organisation search with pagination
+		 * @param {string} query - The query to search for
 		 */
 		async handleOrganisationSearch(query) {
 			// Clear previous timeout
@@ -288,7 +292,7 @@ export default {
 				try {
 					// Search with limit of 20 results
 					const results = await organisationStore.searchOrganisations(query.trim(), 20, 0)
-					
+
 					// Transform results to NcSelect format with all necessary fields
 					this.organisationOptions = results.map(org => ({
 						id: org.uuid || org.id,
@@ -322,7 +326,7 @@ export default {
 					{
 						headers: {
 							'OCS-APIRequest': 'true',
-							'Accept': 'application/json',
+							Accept: 'application/json',
 						},
 					},
 				)
@@ -348,11 +352,11 @@ export default {
 						...currentUser,
 						label: currentUser.displayName,
 					}
-					
+
 					if (!this.userOptions.some(u => u.id === currentUser.id)) {
 						this.userOptions.unshift(currentUserOption)
 					}
-					
+
 					// Keep current user as selected
 					this.selectedUser = currentUserOption
 				}
@@ -365,6 +369,7 @@ export default {
 		},
 		/**
 		 * Handle user search with pagination
+		 * @param {string} query - The query to search for
 		 */
 		async handleUserSearch(query) {
 			// Clear previous timeout
@@ -393,7 +398,7 @@ export default {
 						{
 							headers: {
 								'OCS-APIRequest': 'true',
-								'Accept': 'application/json',
+								Accept: 'application/json',
 							},
 						},
 					)
@@ -430,11 +435,14 @@ export default {
 		},
 		/**
 		 * Filter organisation for local filtering
+		 * @param {object} option - The organisation option to filter
+		 * @param {string} label - The label of the organisation option
+		 * @param {string} search - The search query
 		 */
 		filterOrganisation(option, label, search) {
 			return (
-				option.name?.toLowerCase().includes(search.toLowerCase()) ||
-				option.description?.toLowerCase().includes(search.toLowerCase())
+				option.name?.toLowerCase().includes(search.toLowerCase())
+				|| option.description?.toLowerCase().includes(search.toLowerCase())
 			)
 		},
 		/**

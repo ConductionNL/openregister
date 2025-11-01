@@ -345,7 +345,7 @@ export const useOrganisationStore = defineStore('organisation', {
 		},
 		/**
 		 * Search organisations by name with pagination support
-		 * 
+		 *
 		 * @param {string} query - Search query (empty returns all)
 		 * @param {number} limit - Maximum number of results to return
 		 * @param {number} offset - Number of results to skip
