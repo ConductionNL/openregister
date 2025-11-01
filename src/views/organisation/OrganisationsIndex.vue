@@ -155,42 +155,34 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 										<template #icon>
 											<OpenInNew :size="20" />
 										</template>
-										Ga naar organisatie
-									</NcActionButton>
-									<NcActionButton v-if="!isActiveOrganisation(organisation)"
-										close-after-click
-										@click="setActiveOrganisation(organisation.uuid)">
-										<template #icon>
-											<CheckCircle :size="20" />
-										</template>
-										Activeren
-									</NcActionButton>
-									<NcActionButton
-										close-after-click
-										@click="openJoinModal(organisation)">
-										<template #icon>
-											<AccountMultiplePlus :size="20" />
-										</template>
-										Add User
-									</NcActionButton>
-									<NcActionButton v-if="canDeleteOrganisation(organisation)"
-										close-after-click
-										@click="organisationStore.setOrganisationItem(organisation); navigationStore.setModal('deleteOrganisation')">
-										<template #icon>
-											<TrashCanOutline :size="20" />
-										</template>
-										Verwijderen
-									</NcActionButton>
-								</NcActions>
-							</div>
+							Ga naar organisatie
+						</NcActionButton>
+						<NcActionButton
+							close-after-click
+							@click="openJoinModal(organisation)">
+							<template #icon>
+								<AccountMultiplePlus :size="20" />
+							</template>
+							Add User
+						</NcActionButton>
+						<NcActionButton v-if="canDeleteOrganisation(organisation)"
+							close-after-click
+							@click="organisationStore.setOrganisationItem(organisation); navigationStore.setModal('deleteOrganisation')">
+							<template #icon>
+								<TrashCanOutline :size="20" />
+							</template>
+							Verwijderen
+						</NcActionButton>
+					</NcActions>
+				</div>
 
-							<div class="organisationInfo">
-								<p v-if="organisation.description" class="description">
-									{{ organisation.description }}
-								</p>
-								<div class="organisationStats">
-									<div class="stat">
-										<span class="statLabel">Leden:</span>
+				<div class="organisationInfo">
+					<p v-if="organisation.description" class="description">
+						{{ organisation.description }}
+					</p>
+					<div class="organisationStats">
+						<div class="stat">
+							<span class="statLabel">Leden:</span>
 										<span class="statValue">{{ organisation.userCount || 0 }}</span>
 									</div>
 									<div class="stat">
@@ -294,35 +286,27 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 												</template>
 												Ga naar organisatie
 											</NcActionButton>
-											<NcActionButton v-if="!isActiveOrganisation(organisation)"
-												close-after-click
-												@click="setActiveOrganisation(organisation.uuid)">
-												<template #icon>
-													<CheckCircle :size="20" />
-												</template>
-												Activeren
-											</NcActionButton>
-											<NcActionButton
-												close-after-click
-												@click="openJoinModal(organisation)">
-												<template #icon>
-													<AccountMultiplePlus :size="20" />
-												</template>
-												Add User
-											</NcActionButton>
-											<NcActionButton v-if="canDeleteOrganisation(organisation)"
-												close-after-click
-												@click="organisationStore.setOrganisationItem(organisation); navigationStore.setModal('deleteOrganisation')">
-												<template #icon>
-													<TrashCanOutline :size="20" />
-												</template>
-												Verwijderen
-											</NcActionButton>
-										</NcActions>
-									</td>
-								</tr>
-							</tbody>
-						</table>
+										<NcActionButton
+											close-after-click
+											@click="openJoinModal(organisation)">
+											<template #icon>
+												<AccountMultiplePlus :size="20" />
+											</template>
+											Add User
+										</NcActionButton>
+										<NcActionButton v-if="canDeleteOrganisation(organisation)"
+											close-after-click
+											@click="organisationStore.setOrganisationItem(organisation); navigationStore.setModal('deleteOrganisation')">
+											<template #icon>
+												<TrashCanOutline :size="20" />
+											</template>
+											Verwijderen
+										</NcActionButton>
+									</NcActions>
+								</td>
+							</tr>
+						</tbody>
+					</table>
 					</div>
 				</template>
 			</div>
@@ -363,11 +347,6 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 		</NcModal>
 
 		<!-- Organisation Management Modal -->
-		<OrganisationModal
-			:show="showOrganisationModal"
-			:organisation="selectedOrganisation"
-			:mode="organisationModalMode"
-			@close="closeOrganisationModal" />
 	</NcAppContent>
 </template>
 
@@ -382,6 +361,7 @@ import InformationOutline from 'vue-material-design-icons/InformationOutline.vue
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
 import AccountMultiplePlus from 'vue-material-design-icons/AccountMultiplePlus.vue'
+import AccountGroupOutline from 'vue-material-design-icons/AccountGroupOutline.vue'
 import AccountMinus from 'vue-material-design-icons/AccountMinus.vue'
 import SwapHorizontal from 'vue-material-design-icons/SwapHorizontal.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
@@ -390,7 +370,6 @@ import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 
 import PaginationComponent from '../../components/PaginationComponent.vue'
-import OrganisationModal from '../../modals/OrganisationModal.vue'
 
 export default {
 	name: 'OrganisationsIndex',
@@ -411,6 +390,7 @@ export default {
 		CheckCircle,
 		AccountPlus,
 		AccountMultiplePlus,
+		AccountGroupOutline,
 		AccountMinus,
 		SwapHorizontal,
 		Plus,
@@ -418,15 +398,11 @@ export default {
 		ContentCopy,
 		OpenInNew,
 		PaginationComponent,
-		OrganisationModal,
 	},
 	data() {
 		return {
 			selectedOrganisations: [],
 			showOrganisationSwitcher: false,
-			showOrganisationModal: false,
-			selectedOrganisation: null,
-			organisationModalMode: 'create', // 'create', 'edit', 'copy'
 		}
 	},
 	computed: {
@@ -541,19 +517,12 @@ export default {
 		},
 		// Organisation Modal Methods
 		createOrganisation() {
-			this.selectedOrganisation = null
-			this.organisationModalMode = 'create'
-			this.showOrganisationModal = true
+			organisationStore.setOrganisationItem(null)
+			navigationStore.setModal('editOrganisation')
 		},
 		editOrganisation(organisation) {
-			this.selectedOrganisation = organisation
-			this.organisationModalMode = 'edit'
-			this.showOrganisationModal = true
-		},
-		copyOrganisation(organisation) {
-			this.selectedOrganisation = organisation
-			this.organisationModalMode = 'copy'
-			this.showOrganisationModal = true
+			organisationStore.setOrganisationItem(organisation)
+			navigationStore.setModal('editOrganisation')
 		},
 		openJoinModal(organisation) {
 			// Set the transfer data with the organisation UUID
@@ -563,10 +532,11 @@ export default {
 			// Open the join organisation modal
 			navigationStore.setModal('joinOrganisation')
 		},
-		closeOrganisationModal() {
-			this.showOrganisationModal = false
-			this.selectedOrganisation = null
-			this.organisationModalMode = 'create'
+		openManageRolesModal(organisation) {
+			// Set the organisation item in store
+			organisationStore.setOrganisationItem(organisation)
+			// Open the manage organisation roles modal
+			navigationStore.setModal('manageOrganisationRoles')
 		},
 		// Organisation Action Methods
 		viewOrganisation(organisation) {

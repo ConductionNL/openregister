@@ -6,6 +6,7 @@ return [
         'Schemas' => ['url' => 'api/schemas'],
         'Sources' => ['url' => 'api/sources'],
         'Configurations' => ['url' => 'api/configurations'],
+        'Applications' => ['url' => 'api/applications'],
     ],
     'routes' => [
         // Settings - Legacy endpoints (kept for compatibility)
@@ -227,6 +228,9 @@ return [
         // Configurations
         ['name' => 'configurations#export', 'url' => '/api/configurations/{id}/export', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'configurations#import', 'url' => '/api/configurations/import', 'verb' => 'POST'],
+        // Applications
+        ['name' => 'applications#page', 'url' => '/applications', 'verb' => 'GET'],
+        ['name' => 'applications#stats', 'url' => '/api/applications/stats', 'verb' => 'GET'],
         // Search
         ['name' => 'search#search', 'url' => '/api/search', 'verb' => 'GET'],
         // Organisations - Multi-tenancy management

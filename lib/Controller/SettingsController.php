@@ -2590,6 +2590,43 @@ class SettingsController extends Controller
     }
 
     /**
+     * Get Organisation settings only
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Organisation configuration
+     */
+    public function getOrganisationSettings(): JSONResponse
+    {
+        try {
+            $data = $this->settingsService->getOrganisationSettingsOnly();
+            return new JSONResponse($data);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Update Organisation settings only
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Updated Organisation configuration
+     */
+    public function updateOrganisationSettings(): JSONResponse
+    {
+        try {
+            $data = $this->request->getParams();
+            $result = $this->settingsService->updateOrganisationSettingsOnly($data);
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * Get Multitenancy settings only
      *
      * @NoAdminRequired

@@ -446,22 +446,21 @@ export default {
 				return
 			}
 
+			if (!this.selectedUser) {
+				this.error = 'Please select a user'
+				return
+			}
+
 			this.joining = true
 			this.error = null
 
 			try {
-				// Check if already a member
-				const isAlreadyMember = organisationStore.userStats.list.some(
-					userOrg => userOrg.uuid === this.selectedOrganisation.uuid,
-				)
-
-				if (isAlreadyMember) {
-					this.error = 'You are already a member of this organisation'
-					return
-				}
-
 				// Get userId - use selected user or default to current user
 				const userId = this.selectedUser?.id || null
+
+				// Check if the SELECTED USER (not logged-in user) is already a member
+				// We can't easily check this client-side, so we'll rely on the backend to validate
+				// and return an appropriate error message
 
 				await organisationStore.joinOrganisation(this.selectedOrganisation.uuid, userId)
 
@@ -471,7 +470,7 @@ export default {
 				this.closeModalTimeout = setTimeout(this.closeModal, 3000)
 			} catch (error) {
 				console.error('Error joining organisation:', error)
-				this.error = error.message || 'Failed to join organisation'
+				this.error = error.message || 'Failed to add user to organisation'
 			} finally {
 				this.joining = false
 			}

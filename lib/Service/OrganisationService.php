@@ -127,6 +127,13 @@ class OrganisationService
      */
     private LoggerInterface $logger;
 
+    /**
+     * Settings service for application configuration
+     *
+     * @var SettingsService|null
+     */
+    private ?SettingsService $settingsService = null;
+
 
     /**
      * OrganisationService constructor
@@ -137,6 +144,7 @@ class OrganisationService
      * @param IConfig            $config             Configuration service for persistent storage
      * @param IGroupManager      $groupManager       Group manager service
      * @param LoggerInterface    $logger             Logger service
+     * @param SettingsService|null $settingsService  Settings service (optional to avoid circular dependency)
      */
     public function __construct(
         OrganisationMapper $organisationMapper,
@@ -144,7 +152,8 @@ class OrganisationService
         ISession $session,
         IConfig $config,
         IGroupManager $groupManager,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        ?SettingsService $settingsService = null
     ) {
         $this->organisationMapper = $organisationMapper;
         $this->userSession        = $userSession;
@@ -152,6 +161,7 @@ class OrganisationService
         $this->config       = $config;
         $this->groupManager = $groupManager;
         $this->logger       = $logger;
+        $this->settingsService = $settingsService;
 
     }//end __construct()
 
@@ -193,8 +203,57 @@ class OrganisationService
      */
     private function fetchDefaultOrganisationFromDatabase(): Organisation
     {
+        // Try to get default organisation UUID from settings
+        $defaultOrgUuid = null;
+        if ($this->settingsService !== null) {
+            $defaultOrgUuid = $this->settingsService->getDefaultOrganisationUuid();
+        }
+
         try {
-            $defaultOrg = $this->organisationMapper->findDefault();
+            // If we have a UUID in settings, fetch that organisation
+            if ($defaultOrgUuid !== null) {
+                try {
+                    $defaultOrg = $this->organisationMapper->findByUuid($defaultOrgUuid);
+                    $this->logger->info('Found default organisation from settings', [
+                        'uuid' => $defaultOrgUuid,
+                        'name' => $defaultOrg->getName(),
+                    ]);
+                } catch (DoesNotExistException $e) {
+                    $this->logger->warning('Default organisation UUID in settings not found, falling back to creation', [
+                        'uuid' => $defaultOrgUuid,
+                    ]);
+                    // UUID in settings doesn't exist, create new default
+                    $defaultOrg = $this->organisationMapper->createDefault();
+                    
+                    // Update settings with new UUID
+                    if ($this->settingsService !== null) {
+                        $this->settingsService->setDefaultOrganisationUuid($defaultOrg->getUuid());
+                    }
+                }
+            } else {
+                // No UUID in settings, check if there's an organisation with is_default flag (legacy)
+                try {
+                    $defaultOrg = $this->organisationMapper->findDefault();
+                    $this->logger->info('Found legacy default organisation with is_default flag', [
+                        'uuid' => $defaultOrg->getUuid(),
+                    ]);
+                    
+                    // Migrate to settings
+                    if ($this->settingsService !== null) {
+                        $this->settingsService->setDefaultOrganisationUuid($defaultOrg->getUuid());
+                        $this->logger->info('Migrated default organisation to settings');
+                    }
+                } catch (DoesNotExistException $e) {
+                    // No default found at all, create new one
+                    $this->logger->info('No default organisation found, creating new one');
+                    $defaultOrg = $this->organisationMapper->createDefault();
+                    
+                    // Store in settings
+                    if ($this->settingsService !== null) {
+                        $this->settingsService->setDefaultOrganisationUuid($defaultOrg->getUuid());
+                    }
+                }
+            }
 
             // Ensure admin users are added to existing default organisation
             $adminUsers = $this->getAdminGroupUsers();
@@ -220,15 +279,12 @@ class OrganisationService
             }
 
             return $defaultOrg;
-        } catch (DoesNotExistException $e) {
-            $this->logger->info('Creating default organisation');
-            $defaultOrg = $this->organisationMapper->createDefault();
-
-            // Add all admin group users to the new default organisation
-            $defaultOrg = $this->addAdminUsersToOrganisation($defaultOrg);
-            $defaultOrg = $this->organisationMapper->update($defaultOrg);
-
-            return $defaultOrg;
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to fetch or create default organisation', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            throw $e;
         }//end try
         
     }//end fetchDefaultOrganisationFromDatabase()

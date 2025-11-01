@@ -87,6 +87,13 @@ class Configuration extends Entity implements JsonSerializable
     protected ?array $objects = [];
 
     /**
+     * Organisation ID associated with this configuration
+     *
+     * @var int|null
+     */
+    protected $organisation = null;
+
+    /**
      * Owner of the configuration (user ID)
      *
      * @var string|null
@@ -122,6 +129,7 @@ class Configuration extends Entity implements JsonSerializable
         $this->addType('registers', 'json');
         $this->addType('schemas', 'json');
         $this->addType('objects', 'json');
+        $this->addType('organisation', 'integer');
         $this->addType('owner', 'string');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
@@ -267,9 +275,19 @@ class Configuration extends Entity implements JsonSerializable
     {
         $jsonFields = $this->getJsonFields();
 
+        // Map 'application' to 'app' for frontend compatibility
+        if (isset($object['application']) && !isset($object['app'])) {
+            $object['app'] = $object['application'];
+        }
+
         foreach ($object as $key => $value) {
             if (in_array($key, $jsonFields) === true && $value === []) {
                 $value = null;
+            }
+
+            // Skip 'application' as it's already mapped to 'app'
+            if ($key === 'application') {
+                continue;
             }
 
             $method = 'set'.ucfirst($key);
@@ -294,18 +312,20 @@ class Configuration extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         return [
-            'id'          => $this->id,
-            'title'       => $this->title,
-            'description' => $this->description,
-            'type'        => $this->type,
-            'app'         => $this->app,
-            'version'     => $this->version,
-            'owner'       => $this->owner,
-            'registers'   => $this->registers,
-            'schemas'     => $this->schemas,
-            'objects'     => $this->objects,
-            'created'     => ($this->created !== null) ? $this->created->format('c') : null,
-            'updated'     => ($this->updated !== null) ? $this->updated->format('c') : null,
+            'id'           => $this->id,
+            'title'        => $this->title,
+            'description'  => $this->description,
+            'type'         => $this->type,
+            'app'          => $this->app,
+            'application'  => $this->app, // Alias for frontend compatibility
+            'version'      => $this->version,
+            'organisation' => $this->organisation,
+            'owner'        => $this->owner,
+            'registers'    => $this->registers,
+            'schemas'      => $this->schemas,
+            'objects'      => $this->objects,
+            'created'      => ($this->created !== null) ? $this->created->format('c') : null,
+            'updated'      => ($this->updated !== null) ? $this->updated->format('c') : null,
         ];
 
     }//end jsonSerialize()

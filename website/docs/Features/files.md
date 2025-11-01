@@ -295,11 +295,52 @@ Check extraction status via logs:
 docker logs -f nextcloud-container | grep FileTextExtractionJob
 
 # Check for errors
-docker logs nextcloud-container | grep "extraction failed"
+docker logs nextcloud-container | grep 'extraction failed'
 
 # View extraction statistics
 # Settings → File Configuration → Statistics section
 ```
+
+## Files Management Page
+
+The Files page provides a centralized view of all files tracked in the text extraction system.
+
+**Accessing the Files Page**:
+
+Navigate to **Files** in the main menu to view all files with their extraction status.
+
+**Features**:
+
+1. **File List Table**:
+   - File name and path
+   - File type and size
+   - Extraction status (Pending, Processing, Completed, Failed)
+   - Number of text chunks created
+   - Last extraction timestamp
+
+2. **Status Indicators**:
+   - 🟠 **Pending**: File discovered but not yet extracted
+   - 🔵 **Processing**: Extraction in progress
+   - 🟢 **Completed**: Successfully extracted
+   - 🔴 **Failed**: Extraction error occurred
+
+3. **File Actions**:
+   - **Retry**: Re-extract failed files
+   - **View Error**: See detailed error message for failed extractions
+
+4. **Pagination**:
+   - Browse through large file lists (50 files per page)
+   - Navigate between pages
+
+5. **Refresh**:
+   - Update the list to see latest extraction status
+
+**Use Cases**:
+
+- Monitor extraction progress across all files
+- Identify and retry failed extractions
+- View error details for troubleshooting
+- Verify which files have been processed
 
 **Core File Extraction API**:
 

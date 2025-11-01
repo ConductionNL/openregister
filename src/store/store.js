@@ -13,6 +13,7 @@ import { useAuditTrailStore } from './modules/auditTrail.js'
 import { useSearchTrailStore } from './modules/searchTrail.js'
 import { useDeletedStore } from './modules/deleted.js'
 import { useOrganisationStore } from './modules/organisation.js'
+import { useApplicationStore } from './modules/application.js'
 
 const navigationStore = useNavigationStore(pinia)
 const searchStore = useSearchStore(pinia)
@@ -26,6 +27,7 @@ const auditTrailStore = useAuditTrailStore(pinia)
 const searchTrailStore = useSearchTrailStore(pinia)
 const deletedStore = useDeletedStore(pinia)
 const organisationStore = useOrganisationStore(pinia)
+const applicationStore = useApplicationStore(pinia)
 
 export {
 	// generic
@@ -41,4 +43,5 @@ export {
 	searchTrailStore,
 	deletedStore,
 	organisationStore,
+	applicationStore,
 }

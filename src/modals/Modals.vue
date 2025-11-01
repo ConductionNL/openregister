@@ -45,6 +45,8 @@ import { navigationStore } from '../store/store.js'
 		<JoinOrganisation v-if="navigationStore.modal === 'joinOrganisation'" />
 		<EditOrganisation v-if="navigationStore.modal === 'editOrganisation'" />
 		<DeleteOrganisation v-if="navigationStore.modal === 'deleteOrganisation'" />
+		<ManageOrganisationRoles v-if="navigationStore.modal === 'manageOrganisationRoles'" />
+		<EditApplication v-if="navigationStore.modal === 'editApplication'" />
 	</div>
 </template>
 
@@ -89,6 +91,8 @@ import ViewConfiguration from './configuration/ViewConfiguration.vue'
 import JoinOrganisation from './organisation/JoinOrganisation.vue'
 import EditOrganisation from './organisation/EditOrganisation.vue'
 import DeleteOrganisation from './organisation/DeleteOrganisation.vue'
+import ManageOrganisationRoles from './organisation/ManageOrganisationRoles.vue'
+import EditApplication from './application/EditApplication.vue'
 export default {
 	name: 'Modals',
 	components: {
@@ -132,6 +136,8 @@ export default {
 		JoinOrganisation,
 		EditOrganisation,
 		DeleteOrganisation,
+		ManageOrganisationRoles,
+		EditApplication,
 	},
 }
 </script>
