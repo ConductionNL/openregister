@@ -25,11 +25,14 @@
 		<!-- RBAC Configuration Section -->
 		<RbacConfiguration />
 
-		<!-- Multitenancy Configuration Section -->
-		<MultitenancyConfiguration />
+	<!-- Organisation Configuration Section -->
+	<OrganisationConfiguration />
 
-		<!-- Retention Configuration Section -->
-		<RetentionConfiguration />
+	<!-- Multitenancy Configuration Section -->
+	<MultitenancyConfiguration />
+
+	<!-- Retention Configuration Section -->
+	<RetentionConfiguration />
 
 	<!-- SOLR Configuration Section -->
 	<SolrConfiguration />
@@ -55,6 +58,7 @@ import SolrConfiguration from './sections/SolrConfiguration.vue'
 import StatisticsOverview from './sections/StatisticsOverview.vue'
 import CacheManagement from './sections/CacheManagement.vue'
 import RbacConfiguration from './sections/RbacConfiguration.vue'
+import OrganisationConfiguration from './sections/OrganisationConfiguration.vue'
 import MultitenancyConfiguration from './sections/MultitenancyConfiguration.vue'
 import RetentionConfiguration from './sections/RetentionConfiguration.vue'
 import LlmConfiguration from './sections/LlmConfiguration.vue'
@@ -85,6 +89,7 @@ export default {
 		StatisticsOverview,
 		CacheManagement,
 		RbacConfiguration,
+		OrganisationConfiguration,
 		MultitenancyConfiguration,
 		RetentionConfiguration,
 		LlmConfiguration,

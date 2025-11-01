@@ -43,17 +43,22 @@
 		</NcAppNavigationItem> -->
 	</NcAppNavigationList>
 
-		<NcAppNavigationSettings>
-			<NcAppNavigationItem :active="$route.path.startsWith('/organisation')" :name="t('openregister', 'Organisations')" @click="handleNavigate('/organisation')">
-				<template #icon>
-					<OfficeBuildingOutline :size="20" />
-				</template>
-			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="$route.path.startsWith('/sources')" :name="t('openregister', 'Data sources')" @click="handleNavigate('/sources')">
-				<template #icon>
-					<DatabaseArrowRightOutline :size="20" />
-				</template>
-			</NcAppNavigationItem>
+	<NcAppNavigationSettings>
+		<NcAppNavigationItem :active="$route.path.startsWith('/organisation')" :name="t('openregister', 'Organisations')" @click="handleNavigate('/organisation')">
+			<template #icon>
+				<OfficeBuildingOutline :size="20" />
+			</template>
+		</NcAppNavigationItem>
+		<NcAppNavigationItem :active="$route.path.startsWith('/applications')" :name="t('openregister', 'Applications')" @click="handleNavigate('/applications')">
+			<template #icon>
+				<ApplicationOutline :size="20" />
+			</template>
+		</NcAppNavigationItem>
+		<NcAppNavigationItem :active="$route.path.startsWith('/sources')" :name="t('openregister', 'Data sources')" @click="handleNavigate('/sources')">
+			<template #icon>
+				<DatabaseArrowRightOutline :size="20" />
+			</template>
+		</NcAppNavigationItem>
 			<NcAppNavigationItem :active="$route.path.startsWith('/configurations')" :name="t('openregister', 'Configurations')" @click="handleNavigate('/configurations')">
 				<template #icon>
 					<CogOutline :size="20" />
@@ -92,6 +97,7 @@ import Finance from 'vue-material-design-icons/Finance.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import OfficeBuildingOutline from 'vue-material-design-icons/OfficeBuildingOutline.vue'
+import ApplicationOutline from 'vue-material-design-icons/ApplicationOutline.vue'
 import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
 // import LayersSearchOutline from 'vue-material-design-icons/LayersSearchOutline.vue'
 import TableMultiple from 'vue-material-design-icons/TableMultiple.vue'
@@ -117,6 +123,7 @@ export default {
 		DatabaseArrowRightOutline,
 		FileTreeOutline,
 		OfficeBuildingOutline,
+		ApplicationOutline,
 		TableMultiple,
 		Robot,
 		RobotOutline,

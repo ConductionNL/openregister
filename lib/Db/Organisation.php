@@ -30,6 +30,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * Manages organisational data and user relationships for multi-tenancy.
  * Each organisation can have multiple users, and users can belong to multiple organisations.
+ * Organisations can define custom roles/groups for role-based access control (RBAC).
  *
  * @package OCA\OpenRegister\Db
  */
@@ -72,6 +73,13 @@ class Organisation extends Entity implements JsonSerializable
     protected ?array $users = [];
 
     /**
+     * Array of roles/groups specific to this organisation
+     *
+     * @var array|null Array of role definitions for this organisation
+     */
+    protected ?array $roles = [];
+
+    /**
      * Owner of the organisation (user ID)
      *
      * @var string|null The user ID who owns this organisation
@@ -106,6 +114,30 @@ class Organisation extends Entity implements JsonSerializable
      */
     protected ?bool $active = true;
 
+    /**
+     * Storage quota allocated to this organisation in bytes
+     * NULL = unlimited storage
+     *
+     * @var int|null Storage quota in bytes
+     */
+    protected ?int $storageQuota = null;
+
+    /**
+     * Bandwidth/traffic quota allocated to this organisation in bytes per month
+     * NULL = unlimited bandwidth
+     *
+     * @var int|null Bandwidth quota in bytes per month
+     */
+    protected ?int $bandwidthQuota = null;
+
+    /**
+     * API request quota allocated to this organisation per day
+     * NULL = unlimited API requests
+     *
+     * @var int|null API request quota per day
+     */
+    protected ?int $requestQuota = null;
+
 
     /**
      * Organisation constructor
@@ -119,11 +151,15 @@ class Organisation extends Entity implements JsonSerializable
         $this->addType('name', 'string');
         $this->addType('description', 'string');
         $this->addType('users', 'json');
+        $this->addType('roles', 'json');
         $this->addType('owner', 'string');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
         $this->addType('is_default', 'boolean');
         $this->addType('active', 'boolean');
+        $this->addType('storage_quota', 'integer');
+        $this->addType('bandwidth_quota', 'integer');
+        $this->addType('request_quota', 'integer');
 
     }//end __construct()
 
@@ -223,6 +259,146 @@ class Organisation extends Entity implements JsonSerializable
 
 
     /**
+     * Add a role to this organisation
+     *
+     * @param array $role The role definition to add (e.g., ['id' => 'admin', 'name' => 'Administrator', 'permissions' => [...]])
+     *
+     * @return self Returns this organisation for method chaining
+     */
+    public function addRole(array $role): self
+    {
+        if ($this->roles === null) {
+            $this->roles = [];
+        }
+
+        // Check if role with same ID already exists
+        $roleId = $role['id'] ?? $role['name'] ?? null;
+        if ($roleId !== null) {
+            $exists = false;
+            foreach ($this->roles as $existingRole) {
+                $existingId = $existingRole['id'] ?? $existingRole['name'] ?? null;
+                if ($existingId === $roleId) {
+                    $exists = true;
+                    break;
+                }
+            }
+            
+            if (!$exists) {
+                $this->roles[] = $role;
+            }
+        }
+
+        return $this;
+
+    }//end addRole()
+
+
+    /**
+     * Remove a role from this organisation
+     *
+     * @param string $roleId The role ID or name to remove
+     *
+     * @return self Returns this organisation for method chaining
+     */
+    public function removeRole(string $roleId): self
+    {
+        if ($this->roles === null) {
+            return $this;
+        }
+
+        $this->roles = array_values(
+                array_filter(
+                $this->roles,
+                function ($role) use ($roleId) {
+                    $currentId = $role['id'] ?? $role['name'] ?? null;
+                    return $currentId !== $roleId;
+                }
+                )
+                );
+
+        return $this;
+
+    }//end removeRole()
+
+
+    /**
+     * Check if a role exists in this organisation
+     *
+     * @param string $roleId The role ID or name to check
+     *
+     * @return bool True if role exists in this organisation
+     */
+    public function hasRole(string $roleId): bool
+    {
+        if ($this->roles === null) {
+            return false;
+        }
+
+        foreach ($this->roles as $role) {
+            $currentId = $role['id'] ?? $role['name'] ?? null;
+            if ($currentId === $roleId) {
+                return true;
+            }
+        }
+
+        return false;
+
+    }//end hasRole()
+
+
+    /**
+     * Get a specific role by ID or name
+     *
+     * @param string $roleId The role ID or name to retrieve
+     *
+     * @return array|null The role definition or null if not found
+     */
+    public function getRole(string $roleId): ?array
+    {
+        if ($this->roles === null) {
+            return null;
+        }
+
+        foreach ($this->roles as $role) {
+            $currentId = $role['id'] ?? $role['name'] ?? null;
+            if ($currentId === $roleId) {
+                return $role;
+            }
+        }
+
+        return null;
+
+    }//end getRole()
+
+
+    /**
+     * Get all roles in this organisation
+     *
+     * @return array Array of role definitions
+     */
+    public function getRoles(): array
+    {
+        return $this->roles ?? [];
+
+    }//end getRoles()
+
+
+    /**
+     * Set all roles for this organisation
+     *
+     * @param array|null $roles Array of role definitions
+     *
+     * @return self Returns this organisation for method chaining
+     */
+    public function setRoles(?array $roles): self
+    {
+        $this->roles = $roles ?? [];
+        return $this;
+
+    }//end setRoles()
+
+
+    /**
      * Get whether this organisation is the default
      *
      * @return bool Whether this is the default organisation
@@ -291,6 +467,8 @@ class Organisation extends Entity implements JsonSerializable
             'description' => $this->description,
             'users'       => $this->getUserIds(),
             'userCount'   => count($this->getUserIds()),
+            'roles'       => $this->getRoles(),
+            'roleCount'   => count($this->getRoles()),
             'owner'       => $this->owner,
             'isDefault'   => $this->getIsDefault(),
             'active'      => $this->getActive(),

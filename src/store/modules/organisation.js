@@ -75,6 +75,11 @@ export const useOrganisationStore = defineStore('organisation', {
 
 			const data = await response.json()
 			this.setUserStats(data)
+			
+			// Also populate the organisationList for use in dropdowns
+			if (data.results) {
+				this.setOrganisationList(data.results)
+			}
 
 			return { response, data }
 		},

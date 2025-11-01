@@ -9,6 +9,8 @@ import SchemasIndex from '../views/schema/SchemasIndex.vue'
 import SchemaDetails from '../views/schema/SchemaDetails.vue'
 import SourcesIndex from '../views/source/SourcesIndex.vue'
 import OrganisationsIndex from '../views/organisation/OrganisationsIndex.vue'
+import ApplicationsIndex from '../views/application/ApplicationsIndex.vue'
+import ApplicationDetails from '../views/application/ApplicationDetails.vue'
 import ObjectsIndex from '../views/object/ObjectsIndex.vue'
 import SearchIndex from '../views/search/SearchIndex.vue'
 import ChatView from '../views/ChatView.vue'
@@ -28,6 +30,7 @@ export const routeKeyByPath = {
 	'/schemas': 'schemas',
 	'/sources': 'sources',
 	'/organisation': 'organisations',
+	'/applications': 'applications',
 	'/objects': 'objects',
 	'/tables': 'tableSearch',
 	'/chat': 'chat',
@@ -50,6 +53,8 @@ const router = new Router({
 		{ path: '/schemas/:id', component: SchemaDetails },
 		{ path: '/sources', component: SourcesIndex },
 		{ path: '/organisation', component: OrganisationsIndex },
+		{ path: '/applications', name: 'applications', component: ApplicationsIndex },
+		{ path: '/applications/:id', name: 'applicationDetails', component: ApplicationDetails },
 		{ path: '/objects', component: ObjectsIndex },
 		{ path: '/tables', component: SearchIndex },
 		{ path: '/chat', component: ChatView },

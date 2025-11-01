@@ -4,7 +4,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 
 <template>
 	<NcDialog :name="organisationStore.organisationItem?.uuid && !createAnother ? 'Edit Organisation' : 'Create Organisation'"
-		size="normal"
+		size="large"
 		:can-close="true"
 		@update:open="handleDialogClose">
 		<NcNoteCard v-if="success" type="success">
@@ -14,65 +14,105 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 			<p>{{ error }}</p>
 		</NcNoteCard>
 		<div v-if="createAnother || !success">
-			<!-- Metadata Display -->
-			<div v-if="organisationItem.uuid" class="detail-grid">
-				<div class="detail-item id-card">
-					<div class="id-card-header">
-						<span class="detail-label">UUID:</span>
-						<NcButton class="copy-button" @click="copyToClipboard(organisationItem.uuid)">
-							<template #icon>
-								<Check v-if="isCopied" :size="20" />
-								<ContentCopy v-else :size="20" />
-							</template>
-							{{ isCopied ? 'Copied' : 'Copy' }}
-						</NcButton>
-					</div>
-					<span class="detail-value">{{ organisationItem.uuid }}</span>
-				</div>
-				<div v-if="organisationItem.created" class="detail-item">
-					<span class="detail-label">Created:</span>
-					<span class="detail-value">{{ new Date(organisationItem.created).toLocaleString() }}</span>
-				</div>
-				<div v-if="organisationItem.updated" class="detail-item">
-					<span class="detail-label">Updated:</span>
-					<span class="detail-value">{{ new Date(organisationItem.updated).toLocaleString() }}</span>
-				</div>
-				<div v-if="organisationItem.owner" class="detail-item">
-					<span class="detail-label">Owner:</span>
-					<span class="detail-value">{{ organisationItem.owner }}</span>
-				</div>
-				<div v-if="organisationItem.userCount" class="detail-item">
-					<span class="detail-label">Members:</span>
-					<span class="detail-value">{{ organisationItem.userCount }}</span>
-				</div>
-			</div>
+			<!-- Tabs -->
+			<div class="tabContainer">
+				<BTabs v-model="activeTab" content-class="mt-3" justified>
+					<BTab title="Basic Information" active>
+						<div class="form-editor">
+							<NcTextField
+								:disabled="loading"
+								label="Name *"
+								:value.sync="organisationItem.name"
+								:error="!organisationItem.name.trim()"
+								placeholder="Enter organisation name" />
 
-			<!-- Organisation Form -->
-			<div class="form-editor">
-				<NcTextField
-					:disabled="loading"
-					label="Organisation Name *"
-					:value.sync="organisationItem.name"
-					:error="!organisationItem.name.trim()"
-					placeholder="Enter organisation name" />
+							<NcTextField
+								:disabled="loading"
+								label="Slug"
+								:value.sync="organisationItem.slug"
+								placeholder="Optional URL-friendly identifier" />
 
-				<NcTextArea
-					:disabled="loading"
-					label="Description"
-					:value.sync="organisationItem.description"
-					placeholder="Optional description for the organisation"
-					:rows="3" />
+							<NcTextArea
+								:disabled="loading"
+								label="Description"
+								:value.sync="organisationItem.description"
+								placeholder="Enter organisation description (optional)"
+								:rows="4" />
+						</div>
+					</BTab>
 
-				<NcCheckboxRadioSwitch
-					v-if="organisationItem.uuid && canEditDefaultFlag"
-					:disabled="loading"
-					:checked.sync="organisationItem.isDefault">
-					Default Organisation
-				</NcCheckboxRadioSwitch>
+					<BTab title="Settings">
+						<div class="form-editor">
+							<NcCheckboxRadioSwitch
+								v-if="organisationItem.uuid && canEditDefaultFlag"
+								:disabled="loading"
+								:checked.sync="organisationItem.isDefault">
+								Default Organisation
+							</NcCheckboxRadioSwitch>
 
-				<NcNoteCard v-if="organisationItem.isDefault" type="info">
-					<p>This is the default organisation. New users without specific organisation membership will be automatically added to this organisation.</p>
-				</NcNoteCard>
+							<NcNoteCard v-if="organisationItem.isDefault" type="info">
+								<p>New users without specific organisation membership will be automatically added to this organisation</p>
+							</NcNoteCard>
+
+							<NcCheckboxRadioSwitch
+								:disabled="loading"
+								:checked.sync="organisationItem.active">
+								Active
+							</NcCheckboxRadioSwitch>
+
+							<NcNoteCard v-if="!organisationItem.active" type="warning">
+								<p>Inactive organisations cannot be used</p>
+							</NcNoteCard>
+						</div>
+					</BTab>
+
+					<BTab title="Resource Allocation">
+						<div class="form-editor">
+							<NcNoteCard type="info">
+								<p><strong>Resource Quotas</strong></p>
+								<p>Set limits for storage, bandwidth, and API usage. Use 0 for unlimited resources.</p>
+							</NcNoteCard>
+
+							<NcTextField
+								:disabled="loading"
+								label="Storage Quota (MB)"
+								type="number"
+								placeholder="0 = unlimited"
+								:value="storageQuotaMB"
+								@update:value="updateStorageQuota" />
+
+							<NcTextField
+								:disabled="loading"
+								label="Bandwidth Quota (MB/month)"
+								type="number"
+								placeholder="0 = unlimited"
+								:value="bandwidthQuotaMB"
+								@update:value="updateBandwidthQuota" />
+
+							<NcTextField
+								:disabled="loading"
+								label="API Request Quota (requests/day)"
+								type="number"
+								placeholder="0 = unlimited"
+								:value="organisationItem.requestQuota || 0"
+								@update:value="updateRequestQuota" />
+						</div>
+					</BTab>
+
+					<BTab title="Groups">
+						<div class="form-editor">
+							<NcNoteCard type="info">
+								<p><strong>Nextcloud Group Access</strong></p>
+								<p>Select which Nextcloud groups have access to this organisation</p>
+							</NcNoteCard>
+
+							<!-- Group selection would go here -->
+							<p style="color: var(--color-text-lighter); font-style: italic;">
+								Group management feature coming soon
+							</p>
+						</div>
+					</BTab>
+				</BTabs>
 			</div>
 		</div>
 
@@ -115,12 +155,11 @@ import {
 	NcNoteCard,
 	NcCheckboxRadioSwitch,
 } from '@nextcloud/vue'
+import { BTabs, BTab } from 'bootstrap-vue'
 
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
-import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
-import Check from 'vue-material-design-icons/Check.vue'
 
 export default {
 	name: 'EditOrganisation',
@@ -132,20 +171,25 @@ export default {
 		NcLoadingIcon,
 		NcNoteCard,
 		NcCheckboxRadioSwitch,
+		BTabs,
+		BTab,
 		// Icons
 		ContentSaveOutline,
 		Cancel,
 		Plus,
-		ContentCopy,
-		Check,
 	},
 	data() {
 		return {
-			isCopied: false,
+			activeTab: 0,
 			organisationItem: {
 				name: '',
+				slug: '',
 				description: '',
 				isDefault: false,
+				active: true,
+				storageQuota: 0,
+				bandwidthQuota: 0,
+				requestQuota: 0,
 			},
 			createAnother: false,
 			success: false,
@@ -160,6 +204,14 @@ export default {
 			// This is a simplified check - in reality would need proper permission checks
 			return this.organisationItem.isDefault || this.getCurrentUser() === 'admin'
 		},
+		storageQuotaMB() {
+			if (!this.organisationItem.storageQuota) return 0
+			return Math.round(this.organisationItem.storageQuota / (1024 * 1024))
+		},
+		bandwidthQuotaMB() {
+			if (!this.organisationItem.bandwidthQuota) return 0
+			return Math.round(this.organisationItem.bandwidthQuota / (1024 * 1024))
+		},
 	},
 	mounted() {
 		this.initializeOrganisationItem()
@@ -170,6 +222,7 @@ export default {
 				this.organisationItem = {
 					...this.organisationItem, // Keep default structure
 					...organisationStore.organisationItem,
+					active: organisationStore.organisationItem.active ?? true,
 				}
 			}
 		},
@@ -177,19 +230,25 @@ export default {
 			// Implementation would depend on how you get current user
 			return 'current-user' // Placeholder
 		},
-		async copyToClipboard(text) {
-			try {
-				await navigator.clipboard.writeText(text)
-				this.isCopied = true
-				setTimeout(() => { this.isCopied = false }, 2000)
-			} catch (err) {
-				console.error('Failed to copy text:', err)
-			}
+		updateStorageQuota(value) {
+			// Convert MB to bytes (0 = unlimited)
+			const mbValue = value ? parseInt(value) : 0
+			this.organisationItem.storageQuota = mbValue * 1024 * 1024
+		},
+		updateBandwidthQuota(value) {
+			// Convert MB to bytes (0 = unlimited)
+			const mbValue = value ? parseInt(value) : 0
+			this.organisationItem.bandwidthQuota = mbValue * 1024 * 1024
+		},
+		updateRequestQuota(value) {
+			// 0 = unlimited
+			this.organisationItem.requestQuota = value ? parseInt(value) : 0
 		},
 		closeModal() {
 			this.success = false
 			this.error = null
 			this.createAnother = false
+			this.activeTab = 0
 			navigationStore.setModal(false)
 			navigationStore.setDialog(false)
 			clearTimeout(this.closeModalTimeout)
@@ -215,9 +274,15 @@ export default {
 					setTimeout(() => {
 						this.organisationItem = {
 							name: '',
+							slug: '',
 							description: '',
 							isDefault: false,
+							active: true,
+							storageQuota: null,
+							bandwidthQuota: null,
+							requestQuota: null,
 						}
+						this.activeTab = 0
 					}, 500)
 
 					this.success = response.ok
@@ -252,69 +317,18 @@ export default {
 
 <style scoped>
 /* EditOrganisation-specific styles */
-.detail-grid {
-	display: grid;
-	grid-template-columns: 1fr 1fr;
-	gap: 16px;
-	margin-bottom: 24px;
-	padding: 16px;
-	background: var(--color-background-dark);
-	border-radius: 8px;
-	border: 1px solid var(--color-border);
-}
-
-.detail-item {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-}
-
-.id-card {
-	grid-column: 1 / -1;
-}
-
-.id-card-header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-}
-
-.detail-label {
-	font-size: 12px;
-	font-weight: 600;
-	color: var(--color-text-lighter);
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
-}
-
-.detail-value {
-	font-size: 14px;
-	color: var(--color-text-dark);
-	word-break: break-all;
-}
-
-.copy-button {
-	min-width: auto !important;
-	padding: 4px 8px !important;
+.tabContainer {
+	margin-top: 20px;
 }
 
 .form-editor {
 	display: flex;
 	flex-direction: column;
 	gap: 16px;
+	padding: 16px 0;
 }
 
 .create-another-checkbox {
 	margin-right: auto;
-}
-
-@media screen and (max-width: 768px) {
-	.detail-grid {
-		grid-template-columns: 1fr;
-	}
-
-	.id-card {
-		grid-column: 1;
-	}
 }
 </style>

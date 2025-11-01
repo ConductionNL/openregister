@@ -2580,6 +2580,97 @@ class SettingsService
     }
 
     /**
+     * Get Organisation settings only
+     *
+     * @return array Organisation configuration
+     * @throws \RuntimeException If Organisation settings retrieval fails
+     */
+    public function getOrganisationSettingsOnly(): array
+    {
+        try {
+            $organisationConfig = $this->config->getValueString($this->appName, 'organisation', '');
+            
+            $organisationData = [];
+            if (empty($organisationConfig)) {
+                $organisationData = [
+                    'default_organisation'              => null,
+                    'auto_create_default_organisation' => true,
+                ];
+            } else {
+                $storedData = json_decode($organisationConfig, true);
+                $organisationData = [
+                    'default_organisation'              => $storedData['default_organisation'] ?? null,
+                    'auto_create_default_organisation' => $storedData['auto_create_default_organisation'] ?? true,
+                ];
+            }
+            
+            return [
+                'organisation' => $organisationData,
+            ];
+        } catch (Exception $e) {
+            throw new \RuntimeException('Failed to retrieve Organisation settings: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Update Organisation settings only
+     *
+     * @param array $organisationData Organisation configuration data
+     * @return array Updated Organisation configuration
+     * @throws \RuntimeException If Organisation settings update fails
+     */
+    public function updateOrganisationSettingsOnly(array $organisationData): array
+    {
+        try {
+            $organisationConfig = [
+                'default_organisation'              => $organisationData['default_organisation'] ?? null,
+                'auto_create_default_organisation' => $organisationData['auto_create_default_organisation'] ?? true,
+            ];
+            
+            $this->config->setValueString($this->appName, 'organisation', json_encode($organisationConfig));
+            
+            return [
+                'organisation' => $organisationConfig,
+            ];
+        } catch (Exception $e) {
+            throw new \RuntimeException('Failed to update Organisation settings: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Get default organisation UUID from settings
+     *
+     * @return string|null Default organisation UUID or null if not set
+     */
+    public function getDefaultOrganisationUuid(): ?string
+    {
+        try {
+            $settings = $this->getOrganisationSettingsOnly();
+            return $settings['organisation']['default_organisation'] ?? null;
+        } catch (Exception $e) {
+            $this->logger->warning('Failed to get default organisation UUID: '.$e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Set default organisation UUID in settings
+     *
+     * @param string|null $uuid Default organisation UUID
+     * @return void
+     */
+    public function setDefaultOrganisationUuid(?string $uuid): void
+    {
+        try {
+            $settings = $this->getOrganisationSettingsOnly();
+            $settings['organisation']['default_organisation'] = $uuid;
+            $this->updateOrganisationSettingsOnly($settings['organisation']);
+        } catch (Exception $e) {
+            $this->logger->error('Failed to set default organisation UUID: '.$e->getMessage());
+        }
+    }
+
+    /**
      * Get focused Multitenancy settings only
      *
      * @return array Multitenancy configuration with available tenants
