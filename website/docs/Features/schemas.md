@@ -1763,6 +1763,368 @@ The behavior toggle appears when a default value is set and shows helpful hints 
 **Fix**: Modified cascade logic to skip properties with `writeBack` enabled.
 **Impact**: Ensures write-back operations receive the correct data for processing.
 
+## Schema Extension (Inheritance)
+
+Schema Extension allows one schema to inherit from another schema, enabling schema reusability and maintaining DRY (Don't Repeat Yourself) principles. When a schema extends another, it inherits all properties from the parent and can override or add new properties.
+
+### Core Concept
+
+Schema extension implements an inheritance pattern where:
+
+1. **Parent Schema**: The base schema that defines shared properties
+2. **Child Schema**: The schema that extends the parent, adding or overriding properties
+3. **Delta Storage**: Only differences (delta) from the parent are stored in the child schema
+4. **Resolution**: When retrieving a child schema, properties from the parent are automatically merged
+
+### How It Works
+
+#### Storage (Delta Approach)
+
+When you save a schema that extends another:
+
+1. The system compares the child schema properties with the parent schema
+2. Only the differences (new properties or property overrides) are stored in the database
+3. The 'extend' property stores the reference to the parent schema (ID, UUID, or slug)
+
+**Example:**
+
+```json
+// Parent Schema (id: 42, slug: 'person')
+{
+  'title': 'Person',
+  'properties': {
+    'firstName': { 'type': 'string', 'minLength': 2 },
+    'lastName': { 'type': 'string', 'minLength': 2 },
+    'email': { 'type': 'string', 'format': 'email' }
+  },
+  'required': ['firstName', 'lastName']
+}
+
+// Child Schema (stored in database)
+{
+  'title': 'Employee',
+  'extend': '42',  // References parent schema
+  'properties': {
+    'employeeId': { 'type': 'string' },  // New property
+    'email': { 'type': 'string', 'format': 'email', 'required': true }  // Override
+  },
+  'required': ['employeeId']  // Additional required field
+}
+```
+
+#### Retrieval (Automatic Resolution)
+
+When you retrieve a schema that extends another:
+
+1. The system automatically detects the 'extend' property
+2. The parent schema is loaded and resolved (supporting multi-level inheritance)
+3. Parent properties are merged with child properties (child overrides parent)
+4. Required fields are merged (union of both)
+5. The fully resolved schema is returned
+
+**Resolved Child Schema (returned by API):**
+
+```json
+{
+  'title': 'Employee',
+  'extend': '42',
+  'properties': {
+    'firstName': { 'type': 'string', 'minLength': 2 },  // From parent
+    'lastName': { 'type': 'string', 'minLength': 2 },   // From parent
+    'email': { 'type': 'string', 'format': 'email', 'required': true },  // Overridden
+    'employeeId': { 'type': 'string' }  // New property
+  },
+  'required': ['firstName', 'lastName', 'employeeId']  // Merged
+}
+```
+
+### Property Merging Rules
+
+When merging parent and child properties:
+
+1. **New Properties**: Properties only in child are included
+2. **Inherited Properties**: Properties only in parent are included
+3. **Overridden Properties**: Properties in both - child values override parent values
+4. **Deep Merge**: For nested objects, properties are recursively merged
+5. **Array Replacement**: Arrays (like enum values) are replaced, not merged
+
+**Example: Deep Property Merge**
+
+```json
+// Parent property
+'address': {
+  'type': 'object',
+  'properties': {
+    'street': { 'type': 'string' },
+    'city': { 'type': 'string' }
+  }
+}
+
+// Child property (adds postal code, overrides city)
+'address': {
+  'properties': {
+    'city': { 'type': 'string', 'minLength': 2 },
+    'postalCode': { 'type': 'string' }
+  }
+}
+
+// Merged result
+'address': {
+  'type': 'object',
+  'properties': {
+    'street': { 'type': 'string' },  // From parent
+    'city': { 'type': 'string', 'minLength': 2 },  // Overridden
+    'postalCode': { 'type': 'string' }  // New
+  }
+}
+```
+
+### Multi-Level Inheritance
+
+OpenRegister supports multi-level schema inheritance where schemas can form inheritance chains:
+
+```
+BaseSchema (person)
+    ↓ extends
+ContactSchema (adds email, phone)
+    ↓ extends
+EmployeeSchema (adds employeeId, department)
+```
+
+The system automatically resolves the entire chain:
+
+1. Loads BaseSchema
+2. Applies ContactSchema delta
+3. Applies EmployeeSchema delta
+4. Returns fully resolved EmployeeSchema with all properties
+
+### Using Schema Extension
+
+#### Creating an Extended Schema
+
+**Via API:**
+
+```json
+POST /api/schemas
+{
+  'title': 'Employee',
+  'extend': '42',  // ID of parent schema
+  'properties': {
+    'employeeId': { 'type': 'string' },
+    'department': { 'type': 'string' }
+  },
+  'required': ['employeeId']
+}
+```
+
+**Via Frontend:**
+
+1. Navigate to Schemas → Add Schema
+2. Go to Configuration tab
+3. Select parent schema from 'Extends Schema' dropdown
+4. Add or override properties as needed
+5. Save the schema
+
+#### Updating an Extended Schema
+
+When updating a schema that extends another:
+
+1. Edit the schema normally
+2. Changes are automatically compared with the parent
+3. Only the delta is saved
+4. Full schema is returned after save
+
+### Preventing Circular References
+
+OpenRegister includes protection against circular schema references:
+
+- **Self-Reference**: A schema cannot extend itself
+- **Circular Chains**: Schema A → Schema B → Schema C → Schema A is detected and prevented
+- **Error Messages**: Clear error messages when circular references are detected
+
+### Performance Considerations
+
+Schema extension is designed for performance:
+
+1. **Read Optimization**: Schemas are resolved at retrieval time, ensuring fresh data
+2. **Write Optimization**: Delta extraction happens at save time once
+3. **Caching**: Resolved schemas can be cached by ID to avoid repeated resolution
+4. **Database Efficiency**: Storing only deltas reduces database size
+
+### Use Cases
+
+#### 1. Entity Hierarchies
+
+Create base entities and specialized versions:
+
+```
+Person (base)
+  → Customer (adds customerNumber, preferences)
+  → Supplier (adds supplierCode, paymentTerms)
+  → Employee (adds employeeId, department)
+```
+
+#### 2. Versioned Schemas
+
+Extend schemas to create new versions:
+
+```
+ProductV1
+  → ProductV2 (adds new fields, maintains backward compatibility)
+    → ProductV3 (further enhancements)
+```
+
+#### 3. Domain-Specific Extensions
+
+Create general schemas and domain-specific variants:
+
+```
+Document (base: title, content, created)
+  → LegalDocument (adds caseNumber, court, ruling)
+  → TechnicalDocument (adds version, author, reviewers)
+  → FinancialDocument (adds amount, currency, fiscalYear)
+```
+
+#### 4. Multi-Tenant Customization
+
+Base schema for all tenants, customizations per tenant:
+
+```
+OrganisationBase
+  → OrganisationTenantA (custom fields for Tenant A)
+  → OrganisationTenantB (custom fields for Tenant B)
+```
+
+### Best Practices
+
+#### 1. Design Clear Hierarchies
+
+- Start with a well-designed base schema
+- Add properties that are truly common to all children
+- Avoid overly deep inheritance chains (3-4 levels maximum)
+
+#### 2. Document Extension Purpose
+
+- Use schema 'description' to explain why extension is used
+- Document which properties are overridden and why
+- Maintain clear naming conventions
+
+#### 3. Consider Maintenance
+
+- Changes to parent schemas affect all children
+- Test child schemas when updating parents
+- Use versioning for breaking changes
+
+#### 4. Property Override Strategy
+
+- Only override when necessary
+- Document overridden properties clearly
+- Prefer adding new properties over overriding
+
+#### 5. Required Fields
+
+- Be careful with required fields in parents
+- Consider impact on all children
+- Child schemas can make additional fields required
+
+### Limitations
+
+1. **Single Parent**: A schema can only extend one parent schema (no multiple inheritance)
+2. **Property Removal**: Child schemas cannot remove parent properties, only override them
+3. **Type Changes**: Changing property types in overrides should be done carefully
+4. **Performance**: Very deep inheritance chains may impact performance
+
+### Troubleshooting
+
+#### Schema Not Found
+
+**Error**: 'Parent schema [id] not found'
+
+**Solution**: Verify the parent schema exists and the extend property contains a valid ID, UUID, or slug
+
+#### Circular Reference
+
+**Error**: 'Circular schema extension detected'
+
+**Solution**: Check the inheritance chain for circular references (A → B → A)
+
+#### Property Conflicts
+
+**Issue**: Unexpected property values after extension
+
+**Solution**: Review property override rules and check parent schema properties
+
+#### Resolution Issues
+
+**Issue**: Schema properties not merging correctly
+
+**Solution**: Ensure both parent and child properties are valid JSON Schema format
+
+### API Examples
+
+#### Get Extended Schema (Resolved)
+
+```bash
+GET /api/schemas/employee-schema
+
+# Returns fully resolved schema with parent properties merged
+```
+
+#### Get Raw Schema (Delta Only)
+
+```bash
+# Not directly available - schemas are always resolved on retrieval
+# To see raw delta, query the database directly (for debugging only)
+```
+
+#### Update Extended Schema
+
+```bash
+PUT /api/schemas/employee-schema
+{
+  'properties': {
+    'salary': { 'type': 'number' }
+  }
+}
+
+# System automatically extracts delta before saving
+```
+
+### Advanced Topics
+
+#### Custom Merge Logic
+
+The default merge logic can handle most cases. For special requirements, the SchemaMapper class provides protected methods that can be extended:
+
+- 'mergeSchemaProperties()' - Controls property merging
+- 'deepMergeProperty()' - Controls deep property merging
+- 'extractPropertyDelta()' - Controls delta extraction
+
+#### Migration Strategies
+
+When refactoring schemas to use extension:
+
+1. Create base schema with common properties
+2. Create extended schemas with specific properties
+3. Migrate objects to use new schema structure
+4. Remove duplicate properties from old schemas
+
+#### Testing Extended Schemas
+
+Test schemas with extension:
+
+```bash
+# Create test object with extended schema
+POST /api/objects/{register}/{extended-schema}
+{
+  'firstName': 'John',  # From parent
+  'employeeId': 'EMP123'  # From child
+}
+
+# Verify object validates against resolved schema
+# Verify all properties (parent + child) are available
+```
+
 ## Schema Exploration & Analysis
 
 The Schema Exploration feature provides powerful automated analysis of object data to help optimize your schema definitions. It identifies both **new properties** not yet defined in schemas and **improvement opportunities** for existing properties.

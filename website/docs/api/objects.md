@@ -167,9 +167,41 @@ Retrieves a paginated list of objects across all registers and schemas that the 
 
 #### Parameters
 
-Same as the register/schema specific endpoint, except:
-- No `register` or `schema` parameters (searches across all)
-- Respects RBAC and multitenancy settings
+Same as the register/schema specific endpoint, with additional filtering options:
+
+##### Multi-Register/Schema Search
+
+You can filter by specific registers and schemas using query parameters:
+
+- **'register'**: Single register ID or array of register IDs
+- **'schema'**: Single schema ID or array of schema IDs
+
+**Examples:**
+
+```bash
+# Search in single register and schema
+GET /api/objects?register=1&schema=3
+
+# Search in multiple registers
+GET /api/objects?register[]=1&register[]=2&schema=3
+
+# Search in multiple schemas
+GET /api/objects?register=1&schema[]=3&schema[]=4
+
+# Search across multiple registers and schemas
+GET /api/objects?register[]=1&register[]=2&schema[]=3&schema[]=4&schema[]=5
+
+# Combine with other filters
+GET /api/objects?register[]=1&register[]=2&schema[]=3&_search=test&_limit=50
+```
+
+**Use Cases:**
+- Search across all publication types (articles, books, reports) at once
+- Query multiple data sources simultaneously
+- Build unified views across related schemas
+- Compare data across different registers
+
+**Note:** The backend automatically uses SQL 'IN' clauses for efficient filtering when arrays are provided.
 
 ### Get Single Object
 

@@ -1,41 +1,41 @@
 <template>
 	<NcAppNavigation>
 		<NcAppNavigationList>
-			<NcAppNavigationItem :active="$route.path === '/'" :name="t('openregister', 'Dashboard')" @click="handleNavigate('/')">
-				<template #icon>
-					<Finance :size="20" />
-				</template>
-			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="$route.path.startsWith('/registers')" :name="t('openregister', 'Registers')" @click="handleNavigate('/registers')">
-				<template #icon>
-					<DatabaseOutline :size="20" />
-				</template>
-			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="$route.path.startsWith('/schemas')" :name="t('openregister', 'Schemas')" @click="handleNavigate('/schemas')">
-				<template #icon>
-					<FileTreeOutline :size="20" />
-				</template>
-			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="$route.path.startsWith('/tables')" :name="t('openregister', 'Tables')" @click="handleNavigate('/tables')">
-				<template #icon>
-					<TableMultiple :size="20" />
-				</template>
-			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="$route.path.startsWith('/chat')" :name="t('openregister', 'AI Chat')" @click="handleNavigate('/chat')">
-				<template #icon>
-					<Robot :size="20" />
-				</template>
-			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="$route.path.startsWith('/files')" :name="t('openregister', 'Files')" @click="handleNavigate('/files')">
-				<template #icon>
-					<FileDocumentMultipleOutline :size="20" />
-				</template>
-			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="$route.path.startsWith('/agents')" :name="t('openregister', 'Agents')" @click="handleNavigate('/agents')">
-				<template #icon>
-					<RobotOutline :size="20" />
-				</template>
-			</NcAppNavigationItem>
+		<NcAppNavigationItem :active="$route.path === '/'" :name="t('openregister', 'Dashboard')" @click="handleNavigate('/')">
+			<template #icon>
+				<Finance :size="20" />
+			</template>
+		</NcAppNavigationItem>
+		<NcAppNavigationItem :active="$route.path.startsWith('/chat')" :name="t('openregister', 'AI Chat')" @click="handleNavigate('/chat')">
+			<template #icon>
+				<MessageTextOutline :size="20" />
+			</template>
+		</NcAppNavigationItem>
+		<NcAppNavigationItem :active="$route.path.startsWith('/registers')" :name="t('openregister', 'Registers')" @click="handleNavigate('/registers')">
+			<template #icon>
+				<DatabaseOutline :size="20" />
+			</template>
+		</NcAppNavigationItem>
+		<NcAppNavigationItem :active="$route.path.startsWith('/schemas')" :name="t('openregister', 'Schemas')" @click="handleNavigate('/schemas')">
+			<template #icon>
+				<FileTreeOutline :size="20" />
+			</template>
+		</NcAppNavigationItem>
+		<NcAppNavigationItem :active="$route.path.startsWith('/tables')" :name="t('openregister', 'Search / Views')" @click="handleNavigate('/tables')">
+			<template #icon>
+				<Magnify :size="20" />
+			</template>
+		</NcAppNavigationItem>
+		<NcAppNavigationItem :active="$route.path.startsWith('/files')" :name="t('openregister', 'Files')" @click="handleNavigate('/files')">
+			<template #icon>
+				<FileDocumentMultipleOutline :size="20" />
+			</template>
+		</NcAppNavigationItem>
+		<NcAppNavigationItem :active="$route.path.startsWith('/agents')" :name="t('openregister', 'Agents')" @click="handleNavigate('/agents')">
+			<template #icon>
+				<RobotOutline :size="20" />
+			</template>
+		</NcAppNavigationItem>
 		<!-- <NcAppNavigationItem :active="$route.path.startsWith('/search')" name="Search" @click="handleNavigate('/search')">
 			<template #icon>
 				<LayersSearchOutline :size="20" />
@@ -99,9 +99,8 @@ import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import OfficeBuildingOutline from 'vue-material-design-icons/OfficeBuildingOutline.vue'
 import ApplicationOutline from 'vue-material-design-icons/ApplicationOutline.vue'
 import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
-// import LayersSearchOutline from 'vue-material-design-icons/LayersSearchOutline.vue'
-import TableMultiple from 'vue-material-design-icons/TableMultiple.vue'
-import Robot from 'vue-material-design-icons/Robot.vue'
+import Magnify from 'vue-material-design-icons/Magnify.vue'
+import MessageTextOutline from 'vue-material-design-icons/MessageTextOutline.vue'
 import RobotOutline from 'vue-material-design-icons/RobotOutline.vue'
 import FileDocumentMultipleOutline from 'vue-material-design-icons/FileDocumentMultipleOutline.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
@@ -124,11 +123,10 @@ export default {
 		FileTreeOutline,
 		OfficeBuildingOutline,
 		ApplicationOutline,
-		TableMultiple,
-		Robot,
+		Magnify,
+		MessageTextOutline,
 		RobotOutline,
 		FileDocumentMultipleOutline,
-		// LayersSearchOutline,
 		CogOutline,
 		DeleteRestore,
 		TextBoxOutline,

@@ -247,6 +247,16 @@ class Schema extends Entity implements JsonSerializable
      */
     protected ?array $groups = [];
 
+    /**
+     * The ID or UUID of the parent schema that this schema extends.
+     * When set, this schema inherits all properties from the parent schema
+     * and can override or add new properties. Only the differences (delta)
+     * are stored in this schema's properties field.
+     *
+     * @var string|null The ID, UUID, or slug of the parent schema
+     */
+    protected ?string $extend = null;
+
 
     /**
      * Constructor for the Schema class
@@ -281,6 +291,7 @@ class Schema extends Entity implements JsonSerializable
         $this->addType(fieldName: 'deleted', type: 'datetime');
         $this->addType(fieldName: 'configuration', type: 'json');
         $this->addType(fieldName: 'groups', type: 'json');
+        $this->addType(fieldName: 'extend', type: 'string');
 
     }//end __construct()
 
@@ -671,6 +682,7 @@ class Schema extends Entity implements JsonSerializable
             'authorization'  => $this->authorization,
             'deleted'        => $deleted,
             'configuration'  => $this->configuration,
+            'extend'         => $this->extend,
         ];
 
     }//end jsonSerialize()
@@ -1260,6 +1272,40 @@ class Schema extends Entity implements JsonSerializable
         return 'terms';
         
     }//end determineFacetTypeFromPropertyType()
+
+
+    /**
+     * Get the ID or UUID of the parent schema that this schema extends
+     *
+     * Returns null if this schema does not extend another schema.
+     * When set, this schema inherits properties from the parent schema.
+     *
+     * @return string|null The ID, UUID, or slug of the parent schema
+     */
+    public function getExtend(): ?string
+    {
+        return $this->extend;
+
+    }//end getExtend()
+
+
+    /**
+     * Set the ID or UUID of the parent schema that this schema extends
+     *
+     * When set, this schema will inherit all properties from the parent schema
+     * and can override or add new properties. Only the differences (delta) will
+     * be stored in this schema's properties field.
+     *
+     * @param string|null $extend The ID, UUID, or slug of the parent schema
+     *
+     * @return void
+     */
+    public function setExtend(?string $extend): void
+    {
+        $this->extend = $extend;
+        $this->markFieldUpdated('extend');
+
+    }//end setExtend()
 
 
 }//end class

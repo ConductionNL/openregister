@@ -75,10 +75,14 @@ class SchemaMapper extends QBMapper
     /**
      * Finds a schema by id, with optional extension for statistics
      *
+     * This method automatically resolves schema extensions. If the schema has
+     * an 'extend' property set, it will load the parent schema and merge its
+     * properties with the current schema, providing the complete resolved schema.
+     *
      * @param int|string $id     The id of the schema
      * @param array      $extend Optional array of extensions (e.g., ['@self.stats'])
      *
-     * @return Schema The schema, possibly with stats
+     * @return Schema The schema, possibly with stats and resolved extensions
      */
     public function find(string | int $id, ?array $extend=[]): Schema
     {
@@ -92,8 +96,15 @@ class SchemaMapper extends QBMapper
                     $qb->expr()->eq('slug', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR))
                 )
             );
-        // Just return the entity; do not attach stats here
-        return $this->findEntity(query: $qb);
+        // Get the schema entity
+        $schema = $this->findEntity(query: $qb);
+        
+        // Resolve schema extension if present
+        if ($schema->getExtend() !== null) {
+            $schema = $this->resolveSchemaExtension($schema);
+        }
+        
+        return $schema;
 
     }//end find()
 
@@ -393,6 +404,9 @@ class SchemaMapper extends QBMapper
     /**
      * Creates a schema from an array
      *
+     * This method handles schema extension by extracting only the delta
+     * (differences from parent schema) before saving when the schema extends another.
+     *
      * @param array $object The object to create
      *
      * @throws \OCP\DB\Exception If a database error occurs
@@ -407,6 +421,12 @@ class SchemaMapper extends QBMapper
 
         // Clean the schema object to ensure UUID, slug, and version are set.
         $this->cleanObject($schema);
+        
+        // **SCHEMA EXTENSION**: Extract delta if schema extends another
+        // This ensures we only store the differences, not the full resolved schema
+        if ($schema->getExtend() !== null) {
+            $schema = $this->extractSchemaDelta($schema);
+        }
 
         // **PERFORMANCE OPTIMIZATION**: Generate facet configuration from schema properties
         $this->generateFacetConfiguration($schema);
@@ -420,6 +440,9 @@ class SchemaMapper extends QBMapper
 
     /**
      * Updates a schema entity in the database
+     *
+     * This method handles schema extension by extracting only the delta
+     * (differences from parent schema) before saving when the schema extends another.
      *
      * @param Entity $entity The entity to update
      *
@@ -435,6 +458,12 @@ class SchemaMapper extends QBMapper
 
         // Clean the schema object to ensure UUID, slug, and version are set.
         $this->cleanObject($entity);
+        
+        // **SCHEMA EXTENSION**: Extract delta if schema extends another
+        // This ensures we only store the differences, not the full resolved schema
+        if ($entity->getExtend() !== null) {
+            $entity = $this->extractSchemaDelta($entity);
+        }
 
         // **PERFORMANCE OPTIMIZATION**: Generate facet configuration from schema properties
         $this->generateFacetConfiguration($entity);
@@ -870,6 +899,338 @@ class SchemaMapper extends QBMapper
         return 'terms';
         
     }//end determineFacetTypeFromProperty()
+
+
+    /**
+     * Resolve schema extension by merging parent schema properties with child schema properties
+     *
+     * This method implements schema inheritance by:
+     * 1. Loading the parent schema specified in the 'extend' property
+     * 2. Recursively resolving any parent extensions (multi-level inheritance)
+     * 3. Merging parent properties with child properties (child overrides parent)
+     * 4. Merging required fields
+     * 5. Preserving child schema metadata (title, description, etc.)
+     *
+     * The method handles circular references by tracking visited schemas.
+     *
+     * @param Schema $schema The schema to resolve
+     * @param array  $visited Array of visited schema IDs to prevent circular references
+     *
+     * @throws \Exception If circular reference is detected or parent schema not found
+     *
+     * @return Schema The resolved schema with merged properties
+     */
+    private function resolveSchemaExtension(Schema $schema, array $visited = []): Schema
+    {
+        // Get the parent schema identifier
+        $parentId = $schema->getExtend();
+        
+        // If no parent, return the schema as-is
+        if ($parentId === null) {
+            return $schema;
+        }
+        
+        // Check for circular references
+        // We use the current schema's ID to track visited schemas
+        $currentId = $schema->getId() ?? $schema->getUuid() ?? 'unknown';
+        if (in_array($currentId, $visited)) {
+            throw new \Exception("Circular schema extension detected: schema '{$currentId}' creates a loop");
+        }
+        
+        // Add current schema to visited list
+        $visited[] = $currentId;
+        
+        // Check if parent is the same as current (self-reference)
+        if ($parentId === $currentId || $parentId === $schema->getId() || $parentId === $schema->getUuid() || $parentId === $schema->getSlug()) {
+            throw new \Exception("Schema '{$currentId}' cannot extend itself");
+        }
+        
+        try {
+            // Load the parent schema without resolving its extensions first
+            // We'll resolve parent extensions recursively below
+            $qb = $this->db->getQueryBuilder();
+            $qb->select('*')
+                ->from('openregister_schemas')
+                ->where(
+                    $qb->expr()->orX(
+                        $qb->expr()->eq('id', $qb->createNamedParameter(value: $parentId, type: IQueryBuilder::PARAM_INT)),
+                        $qb->expr()->eq('uuid', $qb->createNamedParameter(value: $parentId, type: IQueryBuilder::PARAM_STR)),
+                        $qb->expr()->eq('slug', $qb->createNamedParameter(value: $parentId, type: IQueryBuilder::PARAM_STR))
+                    )
+                );
+            $parentSchema = $this->findEntity(query: $qb);
+            
+            // Recursively resolve parent extensions (multi-level inheritance)
+            if ($parentSchema->getExtend() !== null) {
+                $parentSchema = $this->resolveSchemaExtension($parentSchema, $visited);
+            }
+            
+            // Merge properties: parent properties + child properties (child overrides parent)
+            $mergedProperties = $this->mergeSchemaProperties(
+                $parentSchema->getProperties(),
+                $schema->getProperties()
+            );
+            
+            // Merge required fields (union of both, removing duplicates)
+            $mergedRequired = array_unique(
+                array_merge(
+                    $parentSchema->getRequired(),
+                    $schema->getRequired()
+                )
+            );
+            
+            // Create a new resolved schema with merged properties
+            // Keep the child schema's metadata (title, description, etc.) but use merged properties
+            $resolvedSchema = clone $schema;
+            $resolvedSchema->setProperties($mergedProperties);
+            $resolvedSchema->setRequired($mergedRequired);
+            
+            return $resolvedSchema;
+            
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            throw new \Exception("Parent schema '{$parentId}' not found for schema '{$currentId}'");
+        }
+
+    }//end resolveSchemaExtension()
+
+
+    /**
+     * Merge parent and child schema properties
+     *
+     * This method performs a deep merge of schema properties where:
+     * - Properties present in both parent and child: child values override parent values
+     * - Properties only in parent: included in result
+     * - Properties only in child: included in result
+     * - For nested properties (objects), performs recursive merge
+     *
+     * @param array $parentProperties Parent schema properties
+     * @param array $childProperties  Child schema properties (overrides)
+     *
+     * @return array Merged properties array
+     */
+    private function mergeSchemaProperties(array $parentProperties, array $childProperties): array
+    {
+        // Start with parent properties as the base
+        $merged = $parentProperties;
+        
+        // Apply child properties on top (overriding parent where present)
+        foreach ($childProperties as $propertyName => $propertyDefinition) {
+            if (isset($merged[$propertyName]) && is_array($propertyDefinition) && is_array($merged[$propertyName])) {
+                // If property exists in both and both are arrays, perform deep merge
+                $merged[$propertyName] = $this->deepMergeProperty($merged[$propertyName], $propertyDefinition);
+            } else {
+                // Otherwise, child property completely replaces parent property
+                $merged[$propertyName] = $propertyDefinition;
+            }
+        }
+        
+        return $merged;
+
+    }//end mergeSchemaProperties()
+
+
+    /**
+     * Perform deep merge of a single property definition
+     *
+     * This method recursively merges property definitions, allowing child schemas
+     * to override specific aspects of a property while preserving others.
+     *
+     * Examples:
+     * - Parent has 'minLength': 5, child has 'maxLength': 100 -> both are preserved
+     * - Parent has 'title': 'Name', child has 'title': 'Full Name' -> child overrides
+     * - For nested objects/arrays, performs recursive merge
+     *
+     * @param array $parentProperty Parent property definition
+     * @param array $childProperty  Child property definition (overrides)
+     *
+     * @return array Merged property definition
+     */
+    private function deepMergeProperty(array $parentProperty, array $childProperty): array
+    {
+        $merged = $parentProperty;
+        
+        foreach ($childProperty as $key => $value) {
+            if (isset($merged[$key]) && is_array($value) && is_array($merged[$key])) {
+                // Recursively merge nested arrays
+                // Special handling for 'properties' and 'items' which need deep merge
+                if ($key === 'properties' || $key === 'items') {
+                    $merged[$key] = $this->deepMergeProperty($merged[$key], $value);
+                } else {
+                    // For other arrays (like enum, required at property level), child replaces parent
+                    $merged[$key] = $value;
+                }
+            } else {
+                // Scalar values: child overrides parent
+                $merged[$key] = $value;
+            }
+        }
+        
+        return $merged;
+
+    }//end deepMergeProperty()
+
+
+    /**
+     * Extract the delta (differences) between parent and child schema properties
+     *
+     * This method is called before saving a schema that extends another schema.
+     * It removes any properties that are identical to the parent, keeping only
+     * the differences (delta) in the child schema. This ensures we only store
+     * what's actually changed, making the schema extension more maintainable.
+     *
+     * @param Schema $schema The schema to extract delta from
+     *
+     * @throws \Exception If parent schema cannot be loaded
+     *
+     * @return Schema The schema with only delta properties
+     */
+    private function extractSchemaDelta(Schema $schema): Schema
+    {
+        // If schema doesn't extend another, return as-is
+        if ($schema->getExtend() === null) {
+            return $schema;
+        }
+        
+        try {
+            // Load parent schema (without resolving extensions - we want the raw parent)
+            $parentId = $schema->getExtend();
+            $qb = $this->db->getQueryBuilder();
+            $qb->select('*')
+                ->from('openregister_schemas')
+                ->where(
+                    $qb->expr()->orX(
+                        $qb->expr()->eq('id', $qb->createNamedParameter(value: $parentId, type: IQueryBuilder::PARAM_INT)),
+                        $qb->expr()->eq('uuid', $qb->createNamedParameter(value: $parentId, type: IQueryBuilder::PARAM_STR)),
+                        $qb->expr()->eq('slug', $qb->createNamedParameter(value: $parentId, type: IQueryBuilder::PARAM_STR))
+                    )
+                );
+            $parentSchema = $this->findEntity(query: $qb);
+            
+            // Recursively resolve parent to get its full properties
+            if ($parentSchema->getExtend() !== null) {
+                $parentSchema = $this->resolveSchemaExtension($parentSchema);
+            }
+            
+            // Extract only the properties that differ from parent
+            $deltaProperties = $this->extractPropertyDelta(
+                $parentSchema->getProperties(),
+                $schema->getProperties()
+            );
+            
+            // Extract only the required fields that differ from parent
+            $deltaRequired = array_diff(
+                $schema->getRequired(),
+                $parentSchema->getRequired()
+            );
+            
+            // Update the schema with delta only
+            $schema->setProperties($deltaProperties);
+            $schema->setRequired(array_values($deltaRequired)); // Re-index array
+            
+            return $schema;
+            
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            throw new \Exception("Cannot extract delta: parent schema '{$parentId}' not found");
+        }
+
+    }//end extractSchemaDelta()
+
+
+    /**
+     * Extract properties that differ from parent
+     *
+     * This method compares child properties with parent properties and returns
+     * only the properties that are new or different.
+     *
+     * @param array $parentProperties Parent schema properties
+     * @param array $childProperties  Child schema properties
+     *
+     * @return array Properties that differ from parent (delta)
+     */
+    private function extractPropertyDelta(array $parentProperties, array $childProperties): array
+    {
+        $delta = [];
+        
+        foreach ($childProperties as $propertyName => $childProperty) {
+            // If property doesn't exist in parent, it's new - include in delta
+            if (!isset($parentProperties[$propertyName])) {
+                $delta[$propertyName] = $childProperty;
+                continue;
+            }
+            
+            // If property exists in parent, check if it's different
+            $parentProperty = $parentProperties[$propertyName];
+            
+            // Deep comparison: if properties are different, include in delta
+            if ($this->arePropertiesDifferent($parentProperty, $childProperty)) {
+                // For objects with nested properties, extract nested delta
+                if (is_array($childProperty) && is_array($parentProperty)) {
+                    $delta[$propertyName] = $this->extractNestedPropertyDelta($parentProperty, $childProperty);
+                } else {
+                    $delta[$propertyName] = $childProperty;
+                }
+            }
+            // If properties are identical, don't include in delta
+        }
+        
+        return $delta;
+
+    }//end extractPropertyDelta()
+
+
+    /**
+     * Check if two property definitions are different
+     *
+     * Performs deep comparison of property definitions to determine if they differ.
+     *
+     * @param mixed $parentProperty Parent property definition
+     * @param mixed $childProperty  Child property definition
+     *
+     * @return bool True if properties are different
+     */
+    private function arePropertiesDifferent($parentProperty, $childProperty): bool
+    {
+        // Use JSON encoding for deep comparison
+        // This handles arrays, nested objects, and scalar values uniformly
+        return json_encode($parentProperty) !== json_encode($childProperty);
+
+    }//end arePropertiesDifferent()
+
+
+    /**
+     * Extract nested property delta for object properties
+     *
+     * When a property is an object with nested properties, extract only
+     * the nested properties that differ from the parent.
+     *
+     * @param array $parentProperty Parent property definition
+     * @param array $childProperty  Child property definition
+     *
+     * @return array Property definition with only delta fields
+     */
+    private function extractNestedPropertyDelta(array $parentProperty, array $childProperty): array
+    {
+        $delta = [];
+        
+        foreach ($childProperty as $key => $value) {
+            if (!isset($parentProperty[$key])) {
+                // New field in child
+                $delta[$key] = $value;
+            } else if ($this->arePropertiesDifferent($parentProperty[$key], $value)) {
+                // Changed field
+                if ($key === 'properties' && is_array($value) && is_array($parentProperty[$key])) {
+                    // Recursively extract delta for nested properties
+                    $delta[$key] = $this->extractPropertyDelta($parentProperty[$key], $value);
+                } else {
+                    $delta[$key] = $value;
+                }
+            }
+            // If field is identical, don't include in delta
+        }
+        
+        return $delta;
+
+    }//end extractNestedPropertyDelta()
 
 
 }//end class

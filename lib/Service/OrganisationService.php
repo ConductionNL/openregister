@@ -668,6 +668,11 @@ class OrganisationService
                 return false;
             }
 
+            // Admin users have access to all organisations
+            if ($this->groupManager->isAdmin($user->getUID())) {
+                return true;
+            }
+
             return $organisation->hasUser($user->getUID());
         } catch (DoesNotExistException $e) {
             return false;

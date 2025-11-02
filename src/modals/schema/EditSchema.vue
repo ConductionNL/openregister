@@ -658,15 +658,35 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 							<NcTextArea :disabled="loading"
 								label="Summary"
 								:value.sync="schemaItem.summary" />
-							<NcTextField :disabled="loading"
-								label="Slug"
-								:value.sync="schemaItem.slug" />
-							<NcSelect
-								v-model="schemaItem.configuration.objectNameField"
-								:disabled="loading"
-								:options="propertyOptions"
-								input-label="Object Name Field"
-								placeholder="Select a property to use as object name" />
+						<NcTextField :disabled="loading"
+							label="Slug"
+							:value.sync="schemaItem.slug" />
+						<NcSelect
+							v-model="schemaItem.extend"
+							:disabled="loading"
+							:options="availableSchemas"
+							:clearable="true"
+							label="title"
+							track-by="id"
+							input-label="Extends Schema"
+							placeholder="Select a schema to extend (optional)">
+							<template #option="{ id, title, description }">
+								<div class="schema-option">
+									<span class="schema-title">{{ title }}</span>
+									<span v-if="description" class="schema-description">{{ description }}</span>
+								</div>
+							</template>
+						</NcSelect>
+						<NcNoteCard v-if="schemaItem.extend" type="info" class="extend-info">
+							<p><strong>Schema Extension</strong></p>
+							<p>This schema extends another schema and inherits its properties. Only the differences (delta) are stored. When retrieved, properties from the parent schema will be merged with this schema's properties.</p>
+						</NcNoteCard>
+						<NcSelect
+							v-model="schemaItem.configuration.objectNameField"
+							:disabled="loading"
+							:options="propertyOptions"
+							input-label="Object Name Field"
+							placeholder="Select a property to use as object name" />
 							<NcSelect
 								v-model="schemaItem.configuration.objectDescriptionField"
 								:disabled="loading"
@@ -1102,10 +1122,28 @@ export default {
 		availableSchemas() {
 			// Return all schemas regardless of register selection
 			// The register selection is optional and used for explicit register specification
-			return schemaStore.schemaList.map(schema => ({
-				id: `#/components/schemas/${schema.slug || schema.title || schema.id}`,
-				label: schema.title || schema.name || schema.id,
-			}))
+			// Exclude the current schema to prevent self-extension
+			return schemaStore.schemaList
+				.filter(schema => {
+					// Exclude current schema by checking id, uuid, and slug
+					const currentId = this.schemaItem.id
+					const currentUuid = this.schemaItem.uuid
+					const currentSlug = this.schemaItem.slug
+					
+					return schema.id !== currentId 
+						&& schema.uuid !== currentUuid 
+						&& schema.slug !== currentSlug
+				})
+				.map(schema => ({
+					// Use schema ID as the value (what gets stored in extend property)
+					id: schema.id || schema.uuid || schema.slug,
+					// Display title for user-friendly selection
+					title: schema.title || schema.name || `Schema ${schema.id}`,
+					// Add description for additional context
+					description: schema.description || schema.summary || '',
+					// Keep reference format for other uses (like property references)
+					reference: `#/components/schemas/${schema.slug || schema.title || schema.id}`,
+				}))
 		},
 		availableTagsOptions() {
 			// Return available tags for multiselect
