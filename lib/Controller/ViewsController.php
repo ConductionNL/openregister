@@ -333,6 +333,23 @@ class ViewsController extends Controller
     
     
     /**
+     * Patch view details (alias for update)
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $id View ID
+     *
+     * @return JSONResponse Updated view data
+     */
+    public function patch(string $id): JSONResponse
+    {
+        return $this->update($id);
+
+    }//end patch()
+    
+    
+    /**
      * Toggle favorite status for a view
      *
      * @param string $id The view ID

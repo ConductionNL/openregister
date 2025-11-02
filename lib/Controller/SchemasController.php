@@ -142,6 +142,14 @@ class SchemasController extends Controller
             extend: []
         );
         $schemasArr = array_map(fn($schema) => $schema->jsonSerialize(), $schemas);
+        
+        // Add extendedBy property to each schema showing UUIDs of schemas that extend it
+        foreach ($schemasArr as &$schema) {
+            $schema['@self'] = $schema['@self'] ?? [];
+            $schema['@self']['extendedBy'] = $this->schemaMapper->findExtendedBy($schema['id']);
+        }
+        unset($schema); // Break the reference
+        
         // If '@self.stats' is requested, attach statistics to each schema
         if (in_array('@self.stats', $extend, true)) {
             // Get register counts for all schemas in one call
@@ -181,6 +189,11 @@ class SchemasController extends Controller
 
         $schema    = $this->schemaMapper->find($id, []);
         $schemaArr = $schema->jsonSerialize();
+        
+        // Add extendedBy property showing UUIDs of schemas that extend this schema
+        $schemaArr['@self'] = $schemaArr['@self'] ?? [];
+        $schemaArr['@self']['extendedBy'] = $this->schemaMapper->findExtendedBy($id);
+        
         // If '@self.stats' is requested, attach statistics to the schema
         if (in_array('@self.stats', $extend, true)) {
             // Get register counts for all schemas in one call
