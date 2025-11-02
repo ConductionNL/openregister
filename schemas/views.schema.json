@@ -1,0 +1,139 @@
+{
+  "$id": "https://openregister.app/schemas/views.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "1.0.0",
+  "title": "View",
+  "description": "A saved search configuration for filtering and displaying objects across multiple registers and schemas",
+  "type": "object",
+  "required": ["name", "configuration"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "The name of the view",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "description": {
+      "type": "string",
+      "description": "A description of what this view displays",
+      "maxLength": 1000
+    },
+    "configuration": {
+      "type": "object",
+      "description": "The search configuration for this view",
+      "required": [],
+      "properties": {
+        "registers": {
+          "type": "array",
+          "description": "Array of register IDs to search within",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 0
+        },
+        "schemas": {
+          "type": "array",
+          "description": "Array of schema IDs to search within",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 0
+        },
+        "source": {
+          "type": "string",
+          "description": "Data source to search (auto, database, or index/solr)",
+          "enum": ["auto", "database", "index", "solr"],
+          "default": "auto"
+        },
+        "searchTerms": {
+          "type": "array",
+          "description": "Array of search terms",
+          "items": {
+            "type": "string"
+          }
+        },
+        "facetFilters": {
+          "type": "object",
+          "description": "Applied facet filters",
+          "additionalProperties": true
+        },
+        "enabledFacets": {
+          "type": "object",
+          "description": "Which facets are enabled",
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        },
+        "advancedFilters": {
+          "type": "object",
+          "description": "Advanced filter configuration",
+          "additionalProperties": true
+        },
+        "pagination": {
+          "type": "object",
+          "description": "Pagination settings",
+          "properties": {
+            "page": {
+              "type": "integer",
+              "default": 1,
+              "minimum": 1
+            },
+            "limit": {
+              "type": "integer",
+              "default": 20,
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        },
+        "sorting": {
+          "type": "object",
+          "description": "Sorting configuration",
+          "properties": {
+            "field": {
+              "type": "string",
+              "description": "Field to sort by"
+            },
+            "direction": {
+              "type": "string",
+              "enum": ["asc", "desc"],
+              "default": "asc"
+            }
+          }
+        },
+        "columns": {
+          "type": "object",
+          "description": "Column visibility and order configuration",
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "isDefault": {
+      "type": "boolean",
+      "description": "Whether this is the default view",
+      "default": false
+    },
+    "isPublic": {
+      "type": "boolean",
+      "description": "Whether this view is shared with other users",
+      "default": false
+    },
+    "owner": {
+      "type": "string",
+      "description": "The user ID of the view owner"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the view was created"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the view was last updated"
+    }
+  }
+}
+

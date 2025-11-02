@@ -30,6 +30,7 @@ The search system enables:
 - Metadata search
 - File content search
 - Advanced query options
+- **[Saved Views](./views.md)** - Save and reuse complex search configurations
 
 ## Key Benefits
 

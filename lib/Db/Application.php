@@ -132,6 +132,14 @@ class Application extends Entity implements JsonSerializable
     protected ?int $requestQuota = null;
 
     /**
+     * Array of Nextcloud group IDs that have access to this application
+     * Stored as simple array of group ID strings for efficiency
+     *
+     * @var array|null Array of group IDs (strings)
+     */
+    protected ?array $groups = [];
+
+    /**
      * Date when the application was created
      *
      * @var DateTime|null Creation timestamp
@@ -166,6 +174,7 @@ class Application extends Entity implements JsonSerializable
         $this->addType('storage_quota', 'integer');
         $this->addType('bandwidth_quota', 'integer');
         $this->addType('request_quota', 'integer');
+        $this->addType('groups', 'json');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
 
@@ -213,6 +222,7 @@ class Application extends Entity implements JsonSerializable
     public function setConfigurations(?array $configurations): self
     {
         $this->configurations = $configurations ?? [];
+        $this->markFieldUpdated('configurations');
         return $this;
 
     }//end setConfigurations()
@@ -240,6 +250,7 @@ class Application extends Entity implements JsonSerializable
     public function setRegisters(?array $registers): self
     {
         $this->registers = $registers ?? [];
+        $this->markFieldUpdated('registers');
         return $this;
 
     }//end setRegisters()
@@ -267,6 +278,7 @@ class Application extends Entity implements JsonSerializable
     public function setSchemas(?array $schemas): self
     {
         $this->schemas = $schemas ?? [];
+        $this->markFieldUpdated('schemas');
         return $this;
 
     }//end setSchemas()
@@ -294,9 +306,38 @@ class Application extends Entity implements JsonSerializable
     public function setActive(?bool $active): self
     {
         $this->active = $active ?? true;
+        $this->markFieldUpdated('active');
         return $this;
 
     }//end setActive()
+
+
+    /**
+     * Get groups that have access to this application
+     *
+     * @return array Array of group definitions
+     */
+    public function getGroups(): array
+    {
+        return $this->groups ?? [];
+
+    }//end getGroups()
+
+
+    /**
+     * Set groups that have access to this application
+     *
+     * @param array|null $groups Array of group definitions
+     *
+     * @return self Returns this application for method chaining
+     */
+    public function setGroups(?array $groups): self
+    {
+        $this->groups = $groups ?? [];
+        $this->markFieldUpdated('groups');
+        return $this;
+
+    }//end setGroups()
 
 
     /**
@@ -371,6 +412,7 @@ class Application extends Entity implements JsonSerializable
             'schemas'        => $this->getSchemas(),
             'owner'          => $this->owner,
             'active'         => $this->getActive(),
+            'groups'         => $this->getGroups(),
             'created'        => $this->created ? $this->created->format('c') : null,
             'updated'        => $this->updated ? $this->updated->format('c') : null,
         ];

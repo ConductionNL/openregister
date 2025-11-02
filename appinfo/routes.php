@@ -7,6 +7,7 @@ return [
         'Sources' => ['url' => 'api/sources'],
         'Configurations' => ['url' => 'api/configurations'],
         'Applications' => ['url' => 'api/applications'],
+        'Agents' => ['url' => 'api/agents'],
     ],
     'routes' => [
         // Settings - Legacy endpoints (kept for compatibility)
@@ -231,6 +232,9 @@ return [
         // Applications
         ['name' => 'applications#page', 'url' => '/applications', 'verb' => 'GET'],
         ['name' => 'applications#stats', 'url' => '/api/applications/stats', 'verb' => 'GET'],
+        // Agents
+        ['name' => 'agents#page', 'url' => '/agents', 'verb' => 'GET'],
+        ['name' => 'agents#stats', 'url' => '/api/agents/stats', 'verb' => 'GET'],
         // Search
         ['name' => 'search#search', 'url' => '/api/search', 'verb' => 'GET'],
         // Organisations - Multi-tenancy management
@@ -247,6 +251,14 @@ return [
         ['name' => 'organisation#leave', 'url' => '/api/organisations/{uuid}/leave', 'verb' => 'POST'],
 		// Tags
 		['name' => 'tags#getAllTags', 'url' => 'api/tags', 'verb' => 'GET'],
+		
+		// Views - Saved search configurations
+		['name' => 'views#index', 'url' => '/api/views', 'verb' => 'GET'],
+		['name' => 'views#show', 'url' => '/api/views/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'views#create', 'url' => '/api/views', 'verb' => 'POST'],
+		['name' => 'views#update', 'url' => '/api/views/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'views#favorite', 'url' => '/api/views/{id}/favorite', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'views#destroy', 'url' => '/api/views/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
 		
 		// Chat - AI Assistant endpoints
 		['name' => 'chat#sendMessage', 'url' => '/api/chat/send', 'verb' => 'POST'],
@@ -289,7 +301,6 @@ return [
 	['name' => 'tables#page', 'url' => '/tables', 'verb' => 'GET'],
 	['name' => 'chat#page', 'url' => '/chat', 'verb' => 'GET'],
 	['name' => 'files#page', 'url' => '/files', 'verb' => 'GET'],
-	['name' => 'agents#page', 'url' => '/agents', 'verb' => 'GET'],
 	['name' => 'configurations#page', 'url' => '/configurations', 'verb' => 'GET'],
 		['name' => 'deleted#page', 'url' => '/deleted', 'verb' => 'GET'],
 		['name' => 'auditTrail#page', 'url' => '/audit-trails', 'verb' => 'GET'],

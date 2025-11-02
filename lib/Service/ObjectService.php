@@ -1750,7 +1750,7 @@ class ObjectService
      * @psalm-param    array<string, mixed> $requestParams
      * @psalm-return   array<string, mixed>
      */
-    public function buildSearchQuery(array $requestParams, int | string | null $register=null, int | string | null $schema=null, ?array $ids=null): array
+    public function buildSearchQuery(array $requestParams, int | string | array | null $register=null, int | string | array | null $schema=null, ?array $ids=null): array
     {
         // STEP 1: Fix PHP's dot-to-underscore mangling in query parameter names
         // PHP converts dots to underscores in parameter names, e.g.:
@@ -1803,13 +1803,24 @@ class ObjectService
         $metadataFields = ['register', 'schema', 'uuid', 'organisation', 'owner', 'application', 'created', 'updated', 'published', 'depublished', 'deleted'];
         $query['@self'] = [];
 
-        // Add register and schema to @self if provided (ensure they are integers)
+        // Add register and schema to @self if provided
+        // Support both single values and arrays for multi-register/schema filtering
         if ($register !== null) {
-            $query['@self']['register'] = (int) $register;
+            if (is_array($register)) {
+                // Convert array values to integers
+                $query['@self']['register'] = array_map('intval', $register);
+            } else {
+                $query['@self']['register'] = (int) $register;
+            }
         }
 
         if ($schema !== null) {
-            $query['@self']['schema'] = (int) $schema;
+            if (is_array($schema)) {
+                // Convert array values to integers
+                $query['@self']['schema'] = array_map('intval', $schema);
+            } else {
+                $query['@self']['schema'] = (int) $schema;
+            }
         }
 
         // Query structure built successfully

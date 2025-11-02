@@ -54,6 +54,19 @@ This JSON field stores an array of group definitions:
 
 ### Via UI
 
+There are two ways to manage organisation roles through the user interface:
+
+#### Method 1: Edit Organisation Modal
+
+1. Navigate to **Organisation Details** or **Organisation List**
+2. Click **Edit** on an organisation or **Create Organisation** to add a new one
+3. In the **Edit Organisation** modal:
+   - **Basic Information Tab**: Use the 'Nextcloud Groups' multi-select dropdown to quickly add or remove groups
+   - **Security Tab**: View the complete list of assigned groups with the ability to remove individual groups
+4. Click **Save** or **Create** to persist changes
+
+#### Method 2: Manage Roles Action (Legacy)
+
 1. Navigate to **Organisation Details** or **Organisation List**
 2. Click the **Actions** menu (three dots)
 3. Select **Manage Roles**
@@ -62,6 +75,8 @@ This JSON field stores an array of group definitions:
    - Add new groups from the dropdown
    - Remove groups by clicking the X icon
    - Click **Save Roles** to persist changes
+
+**Recommended Approach**: Use the Edit Organisation modal (Method 1) for a streamlined experience where you can manage groups alongside other organisation settings.
 
 ### Via API
 

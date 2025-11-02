@@ -73,9 +73,10 @@ class Organisation extends Entity implements JsonSerializable
     protected ?array $users = [];
 
     /**
-     * Array of roles/groups specific to this organisation
+     * Array of Nextcloud group IDs (roles) assigned to this organisation
+     * Stored as simple array of group ID strings for efficiency
      *
-     * @var array|null Array of role definitions for this organisation
+     * @var array|null Array of group IDs (strings)
      */
     protected ?array $roles = [];
 
