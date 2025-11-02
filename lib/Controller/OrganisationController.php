@@ -345,7 +345,7 @@ class OrganisationController extends Controller
 
 
     /**
-     * Leave an organisation by UUID
+     * Leave an organisation by UUID (or remove specified user from organisation)
      *
      * @NoAdminRequired
      * @NoCSRFRequired
@@ -357,12 +357,19 @@ class OrganisationController extends Controller
     public function leave(string $uuid): JSONResponse
     {
         try {
-            $success = $this->organisationService->leaveOrganisation($uuid);
+            // Check if a specific userId is provided in the request body
+            $data = $this->request->getParams();
+            $userId = $data['userId'] ?? null;
+            
+            $success = $this->organisationService->leaveOrganisation($uuid, $userId);
 
             if ($success) {
+                $message = $userId 
+                    ? "Successfully removed user from organisation" 
+                    : "Successfully left organisation";
                 return new JSONResponse(
                         [
-                            'message' => 'Successfully left organisation',
+                            'message' => $message,
                         ],
                         Http::STATUS_OK
                         );
@@ -379,6 +386,7 @@ class OrganisationController extends Controller
                     'Failed to leave organisation',
                     [
                         'uuid'  => $uuid,
+                        'userId' => $userId ?? 'current-user',
                         'error' => $e->getMessage(),
                     ]
                     );
@@ -451,13 +459,11 @@ class OrganisationController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param string $uuid        Organisation UUID
-     * @param string $name        New organisation name (optional)
-     * @param string $description New organisation description (optional)
+     * @param string $uuid Organisation UUID
      *
      * @return JSONResponse Updated organisation data
      */
-    public function update(string $uuid, string $name='', string $description=''): JSONResponse
+    public function update(string $uuid): JSONResponse
     {
         try {
             // Check if user has access to this organisation
@@ -471,46 +477,93 @@ class OrganisationController extends Controller
             }
 
             $organisation = $this->organisationMapper->findByUuid($uuid);
+            
+            // Get all parameters from request body
+            $data = $this->request->getParams();
+            unset($data['_route']);
 
             // Update fields if provided
-            if (!empty(trim($name))) {
-                $organisation->setName(trim($name));
+            if (isset($data['name']) && !empty(trim($data['name']))) {
+                $organisation->setName(trim($data['name']));
+                
+                // Auto-generate slug from name if slug is not provided or is empty
+                if (!isset($data['slug']) || empty(trim($data['slug']))) {
+                    $slug = $this->generateSlug(trim($data['name']));
+                    $organisation->setSlug($slug);
+                }
             }
 
-            if (!empty(trim($description))) {
-                $organisation->setDescription(trim($description));
-            } else if ($description === '') {
-                // Allow clearing description
-                $organisation->setDescription('');
+            if (isset($data['description'])) {
+                $organisation->setDescription(trim($data['description']));
+            }
+            
+            if (isset($data['slug']) && !empty(trim($data['slug']))) {
+                $organisation->setSlug(trim($data['slug']));
+            }
+            
+            if (isset($data['active'])) {
+                $organisation->setActive((bool)$data['active']);
+            }
+            
+            if (isset($data['isDefault'])) {
+                $organisation->setIsDefault((bool)$data['isDefault']);
+            }
+            
+            if (isset($data['storageQuota'])) {
+                $organisation->setStorageQuota($data['storageQuota']);
+            }
+            
+            if (isset($data['bandwidthQuota'])) {
+                $organisation->setBandwidthQuota($data['bandwidthQuota']);
+            }
+            
+            if (isset($data['requestQuota'])) {
+                $organisation->setRequestQuota($data['requestQuota']);
+            }
+            
+            if (isset($data['roles']) && is_array($data['roles'])) {
+                $organisation->setRoles($data['roles']);
             }
 
             $updated = $this->organisationMapper->save($organisation);
 
-            return new JSONResponse(
-                    [
-                        'message'      => 'Organisation updated successfully',
-                        'organisation' => $updated->jsonSerialize(),
-                    ],
-                    Http::STATUS_OK
-                    );
+            return new JSONResponse($updated->jsonSerialize(), Http::STATUS_OK);
         } catch (Exception $e) {
             $this->logger->error(
                     'Failed to update organisation',
                     [
                         'uuid'  => $uuid,
                         'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
                     ]
                     );
 
             return new JSONResponse(
                     [
-                        'error' => 'Failed to update organisation',
+                        'error' => 'Failed to update organisation: ' . $e->getMessage(),
                     ],
                     Http::STATUS_BAD_REQUEST
                     );
         }//end try
 
     }//end update()
+
+
+    /**
+     * Patch organisation details (alias for update)
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $uuid Organisation UUID
+     *
+     * @return JSONResponse Updated organisation data
+     */
+    public function patch(string $uuid): JSONResponse
+    {
+        return $this->update($uuid);
+
+    }//end patch()
 
 
     /**
@@ -658,6 +711,32 @@ class OrganisationController extends Controller
         }//end try
 
     }//end stats()
+
+
+    /**
+     * Generate a URL-friendly slug from a name
+     *
+     * @param string $name The name to slugify
+     *
+     * @return string The generated slug
+     */
+    private function generateSlug(string $name): string
+    {
+        // Convert to lowercase
+        $slug = strtolower($name);
+        
+        // Replace spaces and special characters with hyphens
+        $slug = preg_replace('/[^a-z0-9]+/', '-', $slug);
+        
+        // Remove leading/trailing hyphens
+        $slug = trim($slug, '-');
+        
+        // Limit length to 100 characters
+        $slug = substr($slug, 0, 100);
+        
+        return $slug;
+
+    }//end generateSlug()
 
 
 }//end class

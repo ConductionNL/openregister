@@ -17,7 +17,11 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 			<!-- Tabs -->
 			<div class="tabContainer">
 				<BTabs v-model="activeTab" content-class="mt-3" justified>
-					<BTab title="Basic Information" active>
+					<BTab active>
+						<template #title>
+							<Cog :size="16" />
+							<span>Settings</span>
+						</template>
 						<div class="form-editor">
 							<NcTextField
 								:disabled="loading"
@@ -75,13 +79,12 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 						</div>
 					</BTab>
 
-					<BTab title="Resource Allocation">
+					<BTab>
+						<template #title>
+							<Database :size="16" />
+							<span>Resources</span>
+						</template>
 						<div class="form-editor">
-							<NcNoteCard type="info">
-								<p><strong>Resource Quotas</strong></p>
-								<p>Set limits for storage, bandwidth, and API usage. Use 0 for unlimited resources.</p>
-							</NcNoteCard>
-
 							<NcTextField
 								:disabled="loading"
 								label="Storage Quota (MB)"
@@ -108,7 +111,11 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 						</div>
 					</BTab>
 
-					<BTab title="Security">
+					<BTab>
+						<template #title>
+							<Shield :size="16" />
+							<span>Security</span>
+						</template>
 						<div class="security-section">
 							<NcNoteCard type="info">
 								<p><strong>Group Access Control</strong></p>
@@ -184,6 +191,9 @@ import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Close from 'vue-material-design-icons/Close.vue'
+import Cog from 'vue-material-design-icons/Cog.vue'
+import Database from 'vue-material-design-icons/Database.vue'
+import Shield from 'vue-material-design-icons/Shield.vue'
 
 export default {
 	name: 'EditApplication',
@@ -202,6 +212,9 @@ export default {
 		Cancel,
 		Plus,
 		Close,
+		Cog,
+		Database,
+		Shield,
 	},
 	data() {
 		return {
@@ -481,6 +494,14 @@ export default {
 /* EditApplication-specific styles */
 .tabContainer {
 	margin-top: 20px;
+}
+
+/* Tab title styling with icons */
+.tabContainer :deep(.nav-link) {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	justify-content: center;
 }
 
 .form-editor {

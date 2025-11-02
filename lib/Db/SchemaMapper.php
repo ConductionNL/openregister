@@ -1233,4 +1233,74 @@ class SchemaMapper extends QBMapper
     }//end extractNestedPropertyDelta()
 
 
+    /**
+     * Find schemas that extend a given schema
+     *
+     * Returns an array of schema UUIDs for schemas that have their 'extend'
+     * property set to the ID, UUID, or slug of the given schema.
+     *
+     * @param int|string $schemaIdentifier The ID, UUID, or slug of the schema
+     *
+     * @return array Array of schema UUIDs that extend this schema
+     */
+    public function findExtendedBy(int|string $schemaIdentifier): array
+    {
+        // First, get the target schema to know all its identifiers
+        try {
+            $targetSchema = $this->find($schemaIdentifier);
+        } catch (\Exception $e) {
+            // If schema not found, return empty array
+            return [];
+        }
+
+        $targetId = (string) $targetSchema->getId();
+        $targetUuid = $targetSchema->getUuid();
+        $targetSlug = $targetSchema->getSlug();
+
+        // Build query to find schemas that extend this schema
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('uuid')
+            ->from($this->getTableName())
+            ->where($qb->expr()->isNotNull('extend'));
+
+        // Add conditions for all possible ways to reference the schema
+        $orConditions = [];
+        
+        // Check for ID match
+        if ($targetId) {
+            $orConditions[] = $qb->expr()->eq('extend', $qb->createNamedParameter($targetId));
+        }
+        
+        // Check for UUID match
+        if ($targetUuid) {
+            $orConditions[] = $qb->expr()->eq('extend', $qb->createNamedParameter($targetUuid));
+        }
+        
+        // Check for slug match
+        if ($targetSlug) {
+            $orConditions[] = $qb->expr()->eq('extend', $qb->createNamedParameter($targetSlug));
+        }
+
+        if (empty($orConditions)) {
+            return [];
+        }
+
+        $qb->andWhere($qb->expr()->orX(...$orConditions));
+
+        $result = $qb->executeQuery();
+        $uuids = [];
+        
+        while ($row = $result->fetch()) {
+            if (isset($row['uuid'])) {
+                $uuids[] = $row['uuid'];
+            }
+        }
+        
+        $result->closeCursor();
+
+        return $uuids;
+
+    }//end findExtendedBy()
+
+
 }//end class

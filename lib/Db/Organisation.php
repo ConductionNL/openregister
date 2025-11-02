@@ -199,6 +199,7 @@ class Organisation extends Entity implements JsonSerializable
 
         if (!in_array($userId, $this->users)) {
             $this->users[] = $userId;
+            $this->markFieldUpdated('users');
         }
 
         return $this;
@@ -219,6 +220,7 @@ class Organisation extends Entity implements JsonSerializable
             return $this;
         }
 
+        $originalCount = count($this->users);
         $this->users = array_values(
                 array_filter(
                 $this->users,
@@ -227,6 +229,11 @@ class Organisation extends Entity implements JsonSerializable
                 }
                 )
                 );
+
+        // Only mark as updated if a user was actually removed
+        if (count($this->users) !== $originalCount) {
+            $this->markFieldUpdated('users');
+        }
 
         return $this;
 
@@ -394,6 +401,7 @@ class Organisation extends Entity implements JsonSerializable
     public function setRoles(?array $roles): self
     {
         $this->roles = $roles ?? [];
+        $this->markFieldUpdated('roles');
         return $this;
 
     }//end setRoles()
@@ -421,6 +429,7 @@ class Organisation extends Entity implements JsonSerializable
     public function setIsDefault(?bool $isDefault): self
     {
         $this->isDefault = $isDefault ?? false;
+        $this->markFieldUpdated('isDefault');
         return $this;
 
     }//end setIsDefault()
@@ -448,6 +457,7 @@ class Organisation extends Entity implements JsonSerializable
     public function setActive(?bool $active): self
     {
         parent::setActive($active ?? true);
+        $this->markFieldUpdated('active');
         return $this;
 
     }//end setActive()

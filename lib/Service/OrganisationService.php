@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCP\IUserSession;
 use OCP\IUser;
+use OCP\IUserManager;
 use OCP\ISession;
 use OCP\IGroupManager;
 use OCP\IConfig;
@@ -121,6 +122,13 @@ class OrganisationService
     private IGroupManager $groupManager;
 
     /**
+     * User manager for accessing Nextcloud users
+     *
+     * @var IUserManager
+     */
+    private IUserManager $userManager;
+
+    /**
      * Logger for debugging and error tracking
      *
      * @var LoggerInterface
@@ -143,6 +151,7 @@ class OrganisationService
      * @param ISession           $session            Session storage service for caching
      * @param IConfig            $config             Configuration service for persistent storage
      * @param IGroupManager      $groupManager       Group manager service
+     * @param IUserManager       $userManager        User manager service
      * @param LoggerInterface    $logger             Logger service
      * @param SettingsService|null $settingsService  Settings service (optional to avoid circular dependency)
      */
@@ -152,6 +161,7 @@ class OrganisationService
         ISession $session,
         IConfig $config,
         IGroupManager $groupManager,
+        IUserManager $userManager,
         LoggerInterface $logger,
         ?SettingsService $settingsService = null
     ) {
@@ -160,6 +170,7 @@ class OrganisationService
         $this->session            = $session;
         $this->config       = $config;
         $this->groupManager = $groupManager;
+        $this->userManager = $userManager;
         $this->logger       = $logger;
         $this->settingsService = $settingsService;
 
@@ -515,27 +526,34 @@ class OrganisationService
 
 
     /**
-     * Remove current user from an organisation
+     * Remove current user or specified user from an organisation
      *
      * @param string $organisationUuid The organisation UUID
+     * @param string|null $targetUserId Optional user ID to remove. If null, current user is removed.
      *
      * @return bool True if successfully removed
      *
      * @throws Exception If organisation not found, user not logged in, or trying to leave last organisation
      */
-    public function leaveOrganisation(string $organisationUuid): bool
+    public function leaveOrganisation(string $organisationUuid, ?string $targetUserId = null): bool
     {
-        $user = $this->getCurrentUser();
-        if ($user === null) {
+        $currentUser = $this->getCurrentUser();
+        if ($currentUser === null) {
             throw new Exception('No user logged in');
         }
 
-        $userId   = $user->getUID();
-        $userOrgs = $this->getUserOrganisations(false);
-        // Don't use cache
-        // Prevent user from leaving all organisations
-        if (count($userOrgs) <= 1) {
-            throw new Exception('Cannot leave last organisation');
+        // Determine which user to remove
+        // If targetUserId is provided, use it; otherwise use current user
+        $userId = $targetUserId ?? $currentUser->getUID();
+        
+        // If removing current user, check if it's their last organisation
+        if ($userId === $currentUser->getUID()) {
+            $userOrgs = $this->getUserOrganisations(false);
+            // Don't use cache
+            // Prevent user from leaving all organisations
+            if (count($userOrgs) <= 1) {
+                throw new Exception('Cannot leave last organisation');
+            }
         }
 
         try {
@@ -565,6 +583,32 @@ class OrganisationService
 
 
     /**
+     * Generate a URL-friendly slug from a name
+     *
+     * @param string $name The name to slugify
+     *
+     * @return string The generated slug
+     */
+    private function generateSlug(string $name): string
+    {
+        // Convert to lowercase
+        $slug = strtolower($name);
+        
+        // Replace spaces and special characters with hyphens
+        $slug = preg_replace('/[^a-z0-9]+/', '-', $slug);
+        
+        // Remove leading/trailing hyphens
+        $slug = trim($slug, '-');
+        
+        // Limit length to 100 characters
+        $slug = substr($slug, 0, 100);
+        
+        return $slug;
+
+    }//end generateSlug()
+
+
+    /**
      * Create a new organisation
      *
      * @param string $name           Organisation name
@@ -590,6 +634,9 @@ class OrganisationService
         $organisation->setName($name);
         $organisation->setDescription($description);
         $organisation->setIsDefault(false);
+        
+        // Auto-generate slug from name if not provided
+        $organisation->setSlug($this->generateSlug($name));
 
         // Set UUID if provided
         if ($uuid !== '') {
