@@ -21,7 +21,7 @@ export const useOrganisationStore = defineStore('organisation', {
 	}),
 	getters: {
 		getViewMode: (state) => state.viewMode,
-		getActiveOrganisation: (state) => state.activeOrganisation,
+		activeOrganisationGetter: (state) => state.activeOrganisation,
 		getUserOrganisations: (state) => state.userStats.list,
 	},
 	actions: {
@@ -272,11 +272,15 @@ export const useOrganisationStore = defineStore('organisation', {
 			console.log('Updating organisation...', organisationData)
 
 			if (!organisationData.id && !organisationData.uuid) {
-				throw new Error('Organisation ID is required for updates')
+				throw new Error('Organisation UUID is required for updates')
 			}
 
-			const organisationId = organisationData.id || organisationData.uuid
+			// API expects UUID, not ID
+			const organisationId = organisationData.uuid || organisationData.id
 			const endpoint = `/index.php/apps/openregister/api/organisations/${organisationId}`
+
+			// Clean the data before sending - remove read-only fields
+			const cleanedData = this.cleanOrganisationForSave(organisationData)
 
 			try {
 				const response = await fetch(endpoint, {
@@ -284,7 +288,7 @@ export const useOrganisationStore = defineStore('organisation', {
 					headers: {
 						'Content-Type': 'application/json',
 					},
-					body: JSON.stringify(organisationData),
+					body: JSON.stringify(cleanedData),
 				})
 
 				if (!response.ok) {
@@ -338,8 +342,23 @@ export const useOrganisationStore = defineStore('organisation', {
 			delete cleaned.uuid
 			delete cleaned.users
 			delete cleaned.userCount
+			delete cleaned.groupCount
+			delete cleaned.owner
 			delete cleaned.created
 			delete cleaned.updated
+
+			// Remove empty slug to avoid database errors
+			if (cleaned.slug === '' || cleaned.slug === null) {
+				delete cleaned.slug
+			}
+
+			// Remove isDefault as it's now managed via config, not database
+			delete cleaned.isDefault
+
+			// Ensure boolean fields are actually booleans, not empty strings
+			if (cleaned.active !== undefined) {
+				cleaned.active = cleaned.active === '' ? true : Boolean(cleaned.active)
+			}
 
 			return cleaned
 		},

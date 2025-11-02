@@ -73,12 +73,12 @@ class Organisation extends Entity implements JsonSerializable
     protected ?array $users = [];
 
     /**
-     * Array of Nextcloud group IDs (roles) assigned to this organisation
+     * Array of Nextcloud group IDs assigned to this organisation
      * Stored as simple array of group ID strings for efficiency
      *
      * @var array|null Array of group IDs (strings)
      */
-    protected ?array $roles = [];
+    protected ?array $groups = [];
 
     /**
      * Owner of the organisation (user ID)
@@ -100,13 +100,6 @@ class Organisation extends Entity implements JsonSerializable
      * @var DateTime|null Last update timestamp
      */
     protected ?DateTime $updated = null;
-
-    /**
-     * Whether this organisation is the default organisation
-     *
-     * @var boolean|null Whether this is the default organisation
-     */
-    protected ?bool $isDefault = false;
 
     /**
      * Whether this organisation is active
@@ -152,11 +145,10 @@ class Organisation extends Entity implements JsonSerializable
         $this->addType('name', 'string');
         $this->addType('description', 'string');
         $this->addType('users', 'json');
-        $this->addType('roles', 'json');
+        $this->addType('groups', 'json');
         $this->addType('owner', 'string');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
-        $this->addType('is_default', 'boolean');
         $this->addType('active', 'boolean');
         $this->addType('storage_quota', 'integer');
         $this->addType('bandwidth_quota', 'integer');
@@ -380,59 +372,33 @@ class Organisation extends Entity implements JsonSerializable
 
 
     /**
-     * Get all roles in this organisation
+     * Get all groups in this organisation
      *
-     * @return array Array of role definitions
+     * @return array Array of Nextcloud group IDs
      */
-    public function getRoles(): array
+    public function getGroups(): array
     {
-        return $this->roles ?? [];
+        return $this->groups ?? [];
 
-    }//end getRoles()
+    }//end getGroups()
 
 
     /**
-     * Set all roles for this organisation
+     * Set all groups for this organisation
      *
-     * @param array|null $roles Array of role definitions
+     * @param array|null $groups Array of Nextcloud group IDs
      *
      * @return self Returns this organisation for method chaining
      */
-    public function setRoles(?array $roles): self
+    public function setGroups(?array $groups): self
     {
-        $this->roles = $roles ?? [];
-        $this->markFieldUpdated('roles');
+        $this->groups = $groups ?? [];
+        $this->markFieldUpdated('groups');
         return $this;
 
-    }//end setRoles()
+    }//end setGroups()
 
 
-    /**
-     * Get whether this organisation is the default
-     *
-     * @return bool Whether this is the default organisation
-     */
-    public function getIsDefault(): bool
-    {
-        return $this->isDefault ?? false;
-
-    }//end getIsDefault()
-
-
-    /**
-     * Set whether this organisation is the default
-     *
-     * @param bool|null $isDefault Whether this should be the default organisation
-     *
-     * @return self Returns this organisation for method chaining
-     */
-    public function setIsDefault(?bool $isDefault): self
-    {
-        $this->isDefault = $isDefault ?? false;
-        $this->markFieldUpdated('isDefault');
-        return $this;
-
-    }//end setIsDefault()
 
 
     /**
@@ -450,13 +416,18 @@ class Organisation extends Entity implements JsonSerializable
     /**
      * Set whether this organisation is active
      *
-     * @param bool|null $active Whether this should be the active organisation
+     * @param bool|null|string $active Whether this should be the active organisation
      *
      * @return self Returns this organisation for method chaining
      */
-    public function setActive(?bool $active): self
+    public function setActive(mixed $active): self
     {
-        parent::setActive($active ?? true);
+        // Handle various input types defensively (including empty strings from API)
+        if ($active === '' || $active === null) {
+            parent::setActive(true); // Default to true for organisations
+        } else {
+            parent::setActive((bool)$active);
+        }
         $this->markFieldUpdated('active');
         return $this;
 
@@ -478,10 +449,9 @@ class Organisation extends Entity implements JsonSerializable
             'description' => $this->description,
             'users'       => $this->getUserIds(),
             'userCount'   => count($this->getUserIds()),
-            'roles'       => $this->getRoles(),
-            'roleCount'   => count($this->getRoles()),
+            'groups'      => $this->getGroups(),
+            'groupCount'  => count($this->getGroups()),
             'owner'       => $this->owner,
-            'isDefault'   => $this->getIsDefault(),
             'active'      => $this->getActive(),
             'created'     => $this->created ? $this->created->format('c') : null,
             'updated'     => $this->updated ? $this->updated->format('c') : null,

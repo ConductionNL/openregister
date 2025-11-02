@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -74,6 +75,28 @@ class FileTextMapper extends QBMapper
         } catch (DoesNotExistException $e) {
             return false;
         }
+    }
+
+    /**
+     * Insert a new file text entity
+     *
+     * @param Entity $entity FileText entity to insert
+     *
+     * @return Entity The inserted file text with updated ID
+     */
+    public function insert(Entity $entity): Entity
+    {
+        if ($entity instanceof FileText) {
+            // Generate UUID if not set
+            if (empty($entity->getUuid())) {
+                $entity->setUuid(\OC::$server->get(\OCP\Security\ISecureRandom::class)->generate(
+                    36,
+                    \OCP\Security\ISecureRandom::CHAR_ALPHANUMERIC
+                ));
+            }
+        }
+
+        return parent::insert($entity);
     }
 
     /**

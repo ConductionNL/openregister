@@ -4,9 +4,10 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 
 <template>
 	<NcDialog :name="applicationStore.applicationItem?.uuid ? 'Edit Application' : 'Create Application'"
+		:open="true"
 		size="large"
 		:can-close="true"
-		@update:open="handleDialogClose">
+		@update:open="handleDialogOpen">
 		<NcNoteCard v-if="success" type="success">
 			<p>Application successfully {{ applicationStore.applicationItem?.uuid ? 'updated' : 'created' }}</p>
 		</NcNoteCard>
@@ -479,12 +480,16 @@ export default {
 		},
 
 		/**
-		 * Handle dialog close event
+		 * Handle dialog open/close event
 		 * 
+		 * @param {boolean} isOpen - Whether the dialog is open
 		 * @return {void}
 		 */
-		handleDialogClose() {
-			this.closeModal()
+		handleDialogOpen(isOpen) {
+			// Only close the modal if the dialog is being closed (isOpen = false)
+			if (!isOpen) {
+				this.closeModal()
+			}
 		},
 	},
 }

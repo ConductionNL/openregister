@@ -197,7 +197,6 @@ class OrganisationMapper extends QBMapper
                     'description' => $organisation->getDescription(),
                     'owner'       => $organisation->getOwner(),
                     'users'       => $organisation->getUsers(),
-                    'isDefault'   => $organisation->getIsDefault(),
                 ]
                 );
 
@@ -208,17 +207,16 @@ class OrganisationMapper extends QBMapper
             $this->logger->info(
                     '[OrganisationMapper] Entity state before insert:',
                     [
-                        'id'          => $organisation->getId(),
-                        'uuid'        => $organisation->getUuid(),
-                        'name'        => $organisation->getName(),
-                        'description' => $organisation->getDescription(),
-                        'owner'       => $organisation->getOwner(),
-                        'users'       => $organisation->getUsers(),
-                        'isDefault'   => $organisation->getIsDefault(),
-                        'created'     => $organisation->getCreated(),
-                        'updated'     => $organisation->getUpdated(),
-                    ]
-                    );
+                    'id'          => $organisation->getId(),
+                    'uuid'        => $organisation->getUuid(),
+                    'name'        => $organisation->getName(),
+                    'description' => $organisation->getDescription(),
+                    'owner'       => $organisation->getOwner(),
+                    'users'       => $organisation->getUsers(),
+                    'created'     => $organisation->getCreated(),
+                    'updated'     => $organisation->getUpdated(),
+                ]
+                );
 
             try {
                 $result = $this->insert($organisation);
@@ -460,6 +458,8 @@ class OrganisationMapper extends QBMapper
 
     /**
      * Find the default organisation
+     * 
+     * @deprecated Use OrganisationService::getDefaultOrganisation() instead
      *
      * @return Organisation The default organisation
      *
@@ -467,20 +467,16 @@ class OrganisationMapper extends QBMapper
      */
     public function findDefault(): Organisation
     {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('is_default', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)))
-            ->setMaxResults(1);
-
-        return $this->findEntity($qb);
+        // Default organisation is now managed via config, not database
+        throw new \Exception('findDefault() is deprecated. Use OrganisationService::getDefaultOrganisation() instead.');
 
     }//end findDefault()
 
 
     /**
      * Find the default organisation for a specific user
+     *
+     * @deprecated Use OrganisationService::getDefaultOrganisation() instead
      *
      * @param string $userId The user ID
      *
@@ -490,15 +486,8 @@ class OrganisationMapper extends QBMapper
      */
     public function findDefaultForUser(string $userId): Organisation
     {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('is_default', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)))
-            ->andWhere($qb->expr()->like('users', $qb->createNamedParameter('%"'.$userId.'"%')))
-            ->setMaxResults(1);
-
-        return $this->findEntity($qb);
+        // Default organisation is now managed via config, not database
+        throw new \Exception('findDefaultForUser() is deprecated. Use OrganisationService::getDefaultOrganisation() instead.');
 
     }//end findDefaultForUser()
 
@@ -506,18 +495,14 @@ class OrganisationMapper extends QBMapper
     /**
      * Create a default organisation
      *
+     * @deprecated Use OrganisationService::createOrganisation() and setDefaultOrganisationId() instead
+     *
      * @return Organisation The created default organisation
      */
     public function createDefault(): Organisation
     {
-        $organisation = new Organisation();
-        $organisation->setName('Default Organisation');
-        $organisation->setDescription('Default organisation for the system');
-        $organisation->setIsDefault(true);
-        $organisation->setOwner('admin');
-        $organisation->setUsers(['admin']);
-
-        return $this->save($organisation);
+        // Default organisation is now managed via config, not database
+        throw new \Exception('createDefault() is deprecated. Use OrganisationService::createOrganisation() and setDefaultOrganisationId() instead.');
 
     }//end createDefault()
 
@@ -541,8 +526,7 @@ class OrganisationMapper extends QBMapper
         string $description='',
         string $uuid='',
         string $owner='',
-        array $users=[],
-        bool $isDefault=false
+        array $users=[]
     ): Organisation {
         // Debug logging
         $this->logger->info(
@@ -553,7 +537,6 @@ class OrganisationMapper extends QBMapper
                     'uuid'        => $uuid,
                     'owner'       => $owner,
                     'users'       => $users,
-                    'isDefault'   => $isDefault,
                 ]
                 );
 
@@ -562,7 +545,6 @@ class OrganisationMapper extends QBMapper
         $organisation->setDescription($description);
         $organisation->setOwner($owner);
         $organisation->setUsers($users);
-        $organisation->setIsDefault($isDefault);
 
         // Set UUID if provided, otherwise let save() generate one
         if ($uuid !== '') {
@@ -588,39 +570,8 @@ class OrganisationMapper extends QBMapper
      */
     public function setAsDefault(Organisation $organisation): bool
     {
-        // First, unset any existing default organisation
-        $qb = $this->db->getQueryBuilder();
-        $qb->update($this->getTableName())
-            ->set('is_default', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL))
-            ->where($qb->expr()->eq('is_default', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)));
-        $qb->execute();
-
-        // Set the new default organisation
-        $organisation->setIsDefault(true);
-        $this->update($organisation);
-
-        // Update all registers without organisation
-        $qb = $this->db->getQueryBuilder();
-        $qb->update('openregister_registers')
-            ->set('organisation', $qb->createNamedParameter($organisation->getUuid()))
-            ->where($qb->expr()->isNull('organisation'));
-        $qb->execute();
-
-        // Update all schemas without organisation
-        $qb = $this->db->getQueryBuilder();
-        $qb->update('openregister_schemas')
-            ->set('organisation', $qb->createNamedParameter($organisation->getUuid()))
-            ->where($qb->expr()->isNull('organisation'));
-        $qb->execute();
-
-        // Update all objects without organisation
-        $qb = $this->db->getQueryBuilder();
-        $qb->update('openregister_objects')
-            ->set('organisation', $qb->createNamedParameter($organisation->getUuid()))
-            ->where($qb->expr()->isNull('organisation'));
-        $qb->execute();
-
-        return true;
+        // Default organisation is now managed via config, not database
+        throw new \Exception('setAsDefault() is deprecated. Use OrganisationService::setDefaultOrganisationId() instead.');
 
     }//end setAsDefault()
 

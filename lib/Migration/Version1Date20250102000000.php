@@ -82,18 +82,18 @@ class Version1Date20250102000000 extends SimpleMigrationStep
         /** @var ISchemaWrapper $schema */
         $schema = $schemaClosure();
 
-        // Add roles field to organisations table
+        // Add groups field to organisations table
         if ($schema->hasTable('openregister_organisations')) {
             $table = $schema->getTable('openregister_organisations');
             
-            // Add roles field (JSON array of role definitions)
-            if (!$table->hasColumn('roles')) {
-                $table->addColumn('roles', Types::JSON, [
+            // Add groups field (JSON array of Nextcloud group IDs)
+            if (!$table->hasColumn('groups')) {
+                $table->addColumn('groups', Types::JSON, [
                     'notnull' => false,
                     'default' => '[]',
-                    'comment' => 'Organisation-specific roles and groups for RBAC'
+                    'comment' => 'Array of Nextcloud group IDs that have access to this organisation'
                 ]);
-                $output->info('Added roles column to organisations table');
+                $output->info('Added groups column to organisations table');
             }
         }
 

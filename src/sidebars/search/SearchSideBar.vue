@@ -377,7 +377,7 @@ import { navigationStore, objectStore, registerStore, schemaStore, viewsStore } 
 							<NcButton
 								type="secondary"
 								:aria-label="t('openregister', 'Edit view')"
-								@click="showEditDialog(view)">
+								@click="openEditDialog(view)">
 								<template #icon>
 									<Pencil :size="20" />
 								</template>
@@ -408,6 +408,65 @@ import { navigationStore, objectStore, registerStore, schemaStore, viewsStore } 
 							<strong>{{ t('openregister', 'Search terms:') }}</strong> {{ (view.query || view.configuration).searchTerms.length }}
 						</span>
 					</div>
+				</div>
+			</div>
+		</div>
+	</NcAppSidebarTab>
+
+	<!-- Columns Tab -->
+	<NcAppSidebarTab
+		id="columns-tab"
+		:name="t('openregister', 'Columns')"
+		:order="3">
+		<template #icon>
+			<FormatColumns :size="20" />
+		</template>
+
+		<div class="columnsSection">
+			<h3>{{ t('openregister', 'Column Visibility') }}</h3>
+			<p class="columnsDescription">
+				{{ t('openregister', 'Select which columns to display in the table') }}
+			</p>
+
+			<!-- Schema Properties Sections -->
+			<div v-if="selectedSchemasWithProperties.length > 0">
+				<div v-for="schemaData in selectedSchemasWithProperties" :key="`schema_${schemaData.id}`" class="columnGroup collapsible">
+					<div class="columnGroupHeader" @click="toggleSchemaGroup(schemaData.id)">
+						<ChevronDown v-if="expandedSchemas[schemaData.id]" :size="20" />
+						<ChevronRight v-else :size="20" />
+						<h4>{{ schemaData.title }}</h4>
+					</div>
+					<div v-if="expandedSchemas[schemaData.id]" class="columnGroupContent">
+						<NcCheckboxRadioSwitch
+							v-for="(property, propertyName) in schemaData.properties"
+							:key="`schema_${schemaData.id}_prop_${propertyName}`"
+							:checked="objectStore.columnFilters[`schema_${schemaData.id}_prop_${propertyName}`]"
+							@update:checked="(status) => objectStore.updateColumnFilter(`schema_${schemaData.id}_prop_${propertyName}`, status)">
+							{{ property.title || property.label || propertyName }}
+						</NcCheckboxRadioSwitch>
+					</div>
+				</div>
+			</div>
+
+			<NcNoteCard v-else type="info">
+				{{ t('openregister', 'No properties available. Select a schema to view properties.') }}
+			</NcNoteCard>
+
+			<!-- Metadata Section (Collapsible) -->
+			<div class="columnGroup collapsible">
+				<div class="columnGroupHeader" @click="metadataExpanded = !metadataExpanded">
+					<ChevronDown v-if="metadataExpanded" :size="20" />
+					<ChevronRight v-else :size="20" />
+					<h4>{{ t('openregister', 'Metadata') }}</h4>
+				</div>
+				<div v-if="metadataExpanded" class="columnGroupContent">
+					<NcCheckboxRadioSwitch
+						v-for="meta in metadataColumns"
+						:key="`meta_${meta.id}`"
+						:checked="objectStore.columnFilters[`meta_${meta.id}`]"
+						@update:checked="(status) => objectStore.updateColumnFilter(`meta_${meta.id}`, status)">
+						{{ meta.label }}
+					</NcCheckboxRadioSwitch>
 				</div>
 			</div>
 		</div>
@@ -449,7 +508,7 @@ import { navigationStore, objectStore, registerStore, schemaStore, viewsStore } 
 </template>
 
 <script>
-import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcNoteCard, NcTextField, NcButton, NcLoadingIcon } from '@nextcloud/vue'
+import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcNoteCard, NcTextField, NcButton, NcLoadingIcon, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import Close from 'vue-material-design-icons/Close.vue'
 import FilterIcon from 'vue-material-design-icons/Filter.vue'
@@ -460,6 +519,9 @@ import FolderOpenOutline from 'vue-material-design-icons/FolderOpenOutline.vue'
 import Star from 'vue-material-design-icons/Star.vue'
 import StarOutline from 'vue-material-design-icons/StarOutline.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
+import FormatColumns from 'vue-material-design-icons/FormatColumns.vue'
+import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
+import ChevronRight from 'vue-material-design-icons/ChevronRight.vue'
 import { translate as t } from '@nextcloud/l10n'
 
 export default {
@@ -472,6 +534,7 @@ export default {
 		NcTextField,
 		NcButton,
 		NcLoadingIcon,
+		NcCheckboxRadioSwitch,
 		Magnify,
 		Close,
 		FilterIcon,
@@ -482,6 +545,9 @@ export default {
 		Star,
 		StarOutline,
 		Pencil,
+		FormatColumns,
+		ChevronDown,
+		ChevronRight,
 	},
 	data() {
 		return {
@@ -515,6 +581,9 @@ export default {
 		editingView: null,
 		editViewName: '',
 		editViewDescription: '',
+		// Column visibility collapsible state
+		expandedSchemas: {}, // Track which schema groups are expanded
+		metadataExpanded: true, // Metadata section expanded by default
 		}
 	},
 	computed: {
@@ -664,6 +733,39 @@ export default {
 		hasEnabledFacets() {
 			return Object.values(this.enabledFacets).some(enabled => enabled)
 		},
+		metadataColumns() {
+			return Object.entries(objectStore.metadata).map(([id, meta]) => ({
+				id,
+				...meta,
+			}))
+		},
+		/**
+		 * Get properties for all selected schemas
+		 *
+		 * Returns an array of objects containing schema info and properties
+		 *
+		 * @return {Array} Array of schema data with properties
+		 */
+		selectedSchemasWithProperties() {
+			if (!this.selectedSchemas || this.selectedSchemas.length === 0) {
+				return []
+			}
+
+			return this.selectedSchemas
+				.map(schemaId => {
+					const schema = schemaStore.schemaList.find(s => s.id === schemaId)
+					if (!schema || !schema.properties) {
+						return null
+					}
+
+					return {
+						id: schema.id,
+						title: schema.title || schema.name || `Schema ${schema.id}`,
+						properties: schema.properties,
+					}
+				})
+				.filter(Boolean) // Remove null entries
+		},
 	},
 	watch: {
 		// React to query param changes as single source of truth (only on /tables)
@@ -684,6 +786,23 @@ export default {
 				} else {
 					objectStore.properties = {}
 					objectStore.initializeColumnFilters()
+				}
+			},
+			deep: true,
+		},
+		// Watch for selected schemas changes to auto-expand new schemas
+		selectedSchemas: {
+			handler(newSchemas, oldSchemas) {
+				// Auto-expand newly selected schemas
+				if (newSchemas && newSchemas.length > 0) {
+					const newExpanded = { ...this.expandedSchemas }
+					newSchemas.forEach(schemaId => {
+						// Only auto-expand if not already in the list
+						if (!oldSchemas || !oldSchemas.includes(schemaId)) {
+							newExpanded[schemaId] = true
+						}
+					})
+					this.expandedSchemas = newExpanded
 				}
 			},
 			deep: true,
@@ -1203,6 +1322,20 @@ export default {
 				.replace(/^./, str => str.toUpperCase()) // Capitalize first letter
 		},
 
+		/**
+		 * Toggle schema group expanded/collapsed state
+		 *
+		 * @param {number} schemaId - The schema ID
+		 * @return {void}
+		 */
+		toggleSchemaGroup(schemaId) {
+			// Toggle the expanded state for this schema
+			this.expandedSchemas = {
+				...this.expandedSchemas,
+				[schemaId]: !this.expandedSchemas[schemaId],
+			}
+		},
+
 		// View Management Methods
 		async handleViewChange(option) {
 			if (!option) {
@@ -1403,7 +1536,7 @@ export default {
 			}
 		},
 
-		showEditDialog(view) {
+		openEditDialog(view) {
 			this.editingView = view
 			this.editViewName = view.name
 			this.editViewDescription = view.description || ''
@@ -1967,5 +2100,83 @@ export default {
 	gap: 8px;
 	justify-content: flex-end;
 	margin-top: 24px;
+}
+
+/* Columns Tab */
+.columnsSection {
+	padding: 16px;
+}
+
+.columnsSection h3 {
+	margin-top: 0;
+	margin-bottom: 8px;
+	font-size: 18px;
+	font-weight: 600;
+}
+
+.columnsDescription {
+	color: var(--color-text-maxcontrast);
+	margin-bottom: 16px;
+	font-size: 14px;
+}
+
+.columnGroup {
+	margin-bottom: 24px;
+}
+
+.columnGroup h4 {
+	margin-top: 0;
+	margin-bottom: 12px;
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--color-text-light);
+	border-bottom: 1px solid var(--color-border);
+	padding-bottom: 8px;
+}
+
+.columnGroup :deep(.checkbox-radio-switch) {
+	margin-bottom: 8px;
+}
+
+.columnGroup :deep(.checkbox-radio-switch__content) {
+	padding: 4px 0;
+}
+
+/* Collapsible Column Groups */
+.columnGroup.collapsible {
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	padding: 0;
+	margin-bottom: 12px;
+}
+
+.columnGroupHeader {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 12px;
+	cursor: pointer;
+	user-select: none;
+	transition: background-color 0.2s ease;
+}
+
+.columnGroupHeader:hover {
+	background-color: var(--color-background-hover);
+}
+
+.columnGroupHeader h4 {
+	margin: 0;
+	padding: 0;
+	border: none;
+	flex: 1;
+	color: var(--color-main-text);
+}
+
+.columnGroupContent {
+	padding: 12px;
+	border-top: 1px solid var(--color-border);
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
 }
 </style>

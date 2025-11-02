@@ -497,16 +497,16 @@ class OrganisationController extends Controller
                 $organisation->setDescription(trim($data['description']));
             }
             
-            if (isset($data['slug']) && !empty(trim($data['slug']))) {
+            // Only set slug if it's provided and not empty
+            // Empty strings should not override existing slug
+            if (isset($data['slug']) && trim($data['slug']) !== '') {
                 $organisation->setSlug(trim($data['slug']));
             }
             
             if (isset($data['active'])) {
-                $organisation->setActive((bool)$data['active']);
-            }
-            
-            if (isset($data['isDefault'])) {
-                $organisation->setIsDefault((bool)$data['isDefault']);
+                // Handle empty string as false
+                $active = $data['active'] === '' ? false : (bool)$data['active'];
+                $organisation->setActive($active);
             }
             
             if (isset($data['storageQuota'])) {
@@ -521,8 +521,8 @@ class OrganisationController extends Controller
                 $organisation->setRequestQuota($data['requestQuota']);
             }
             
-            if (isset($data['roles']) && is_array($data['roles'])) {
-                $organisation->setRoles($data['roles']);
+            if (isset($data['groups']) && is_array($data['groups'])) {
+                $organisation->setGroups($data['groups']);
             }
 
             $updated = $this->organisationMapper->save($organisation);
