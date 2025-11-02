@@ -164,6 +164,9 @@ export const useApplicationStore = defineStore('application', {
 				: `/index.php/apps/openregister/api/applications/${applicationItem.id}`
 			const method = isNewApplication ? 'POST' : 'PUT'
 
+			// Clean the data before sending - remove read-only fields
+			const cleanedData = this.cleanApplicationForSave(applicationItem)
+
 			try {
 				const response = await fetch(
 					endpoint,
@@ -172,7 +175,7 @@ export const useApplicationStore = defineStore('application', {
 						headers: {
 							'Content-Type': 'application/json',
 						},
-						body: JSON.stringify(applicationItem),
+						body: JSON.stringify(cleanedData),
 					},
 				)
 
@@ -194,6 +197,24 @@ export const useApplicationStore = defineStore('application', {
 			} finally {
 				this.loading = false
 			}
+		},
+		// Clean application data for saving - remove read-only fields
+		cleanApplicationForSave(applicationItem) {
+			const cleaned = { ...applicationItem }
+
+			// Remove read-only/calculated fields that should not be sent to the server
+			delete cleaned.id
+			delete cleaned.uuid
+			delete cleaned.owner
+			delete cleaned.created
+			delete cleaned.updated
+
+			// Ensure boolean fields are actually booleans, not empty strings
+			if (cleaned.active !== undefined) {
+				cleaned.active = cleaned.active === '' ? true : Boolean(cleaned.active)
+			}
+
+			return cleaned
 		},
 	},
 })

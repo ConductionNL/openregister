@@ -107,6 +107,12 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 										</template>
 										Add Property
 									</NcActionButton>
+									<NcActionButton close-after-click @click="createExtendedSchema(schema)">
+										<template #icon>
+											<CallSplit :size="20" />
+										</template>
+										Extend Schema
+									</NcActionButton>
 									<NcActionButton close-after-click @click="schemaStore.downloadSchema(schema)">
 										<template #icon>
 											<Download :size="20" />
@@ -260,6 +266,12 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 												</template>
 												Add Property
 											</NcActionButton>
+											<NcActionButton close-after-click @click="createExtendedSchema(schema)">
+												<template #icon>
+													<CallSplit :size="20" />
+												</template>
+												Extend Schema
+											</NcActionButton>
 											<NcActionButton close-after-click @click="schemaStore.downloadSchema(schema)">
 												<template #icon>
 													<Download :size="20" />
@@ -337,6 +349,7 @@ import InformationOutline from 'vue-material-design-icons/InformationOutline.vue
 import DatabaseSearch from 'vue-material-design-icons/DatabaseSearch.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import DeleteSweep from 'vue-material-design-icons/DeleteSweep.vue'
+import CallSplit from 'vue-material-design-icons/CallSplit.vue'
 
 import Plus from 'vue-material-design-icons/Plus.vue'
 
@@ -360,6 +373,7 @@ export default {
 		DatabaseSearch,
 		CheckCircle,
 		DeleteSweep,
+		CallSplit,
 
 		Plus,
 		PaginationComponent,
@@ -407,6 +421,19 @@ export default {
 	methods: {
 		isPropertyRequired(schema, key) {
 			return schema.required && schema.required.includes(key)
+		},
+		createExtendedSchema(parentSchema) {
+			// Create a new schema that extends the parent schema
+			const newSchema = {
+				title: `Extended ${parentSchema.title}`,
+				description: `Schema extending ${parentSchema.title}`,
+				extend: parentSchema.id, // Set the parent schema ID
+				properties: {}, // Start with empty properties (will inherit from parent)
+				required: [],
+			}
+			// Set the new schema and open the edit modal
+			schemaStore.setSchemaItem(newSchema)
+			navigationStore.setModal('editSchema')
 		},
 		toggleSelectAll(checked) {
 			if (checked) {

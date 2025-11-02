@@ -116,8 +116,8 @@ export const useConfigurationStore = defineStore('configuration', {
 				: `/index.php/apps/openregister/api/configurations/${configurationItem.id}`
 			const method = isNewConfiguration ? 'POST' : 'PUT'
 
-			// change updated to current date as a singular iso date string
-			configurationItem.updated = new Date().toISOString()
+			// Clean the data before sending - remove read-only fields
+			const cleanedData = this.cleanConfigurationForSave(configurationItem)
 
 			try {
 				const response = await fetch(
@@ -127,7 +127,7 @@ export const useConfigurationStore = defineStore('configuration', {
 						headers: {
 							'Content-Type': 'application/json',
 						},
-						body: JSON.stringify(configurationItem),
+						body: JSON.stringify(cleanedData),
 					},
 				)
 
@@ -151,6 +151,18 @@ export const useConfigurationStore = defineStore('configuration', {
 				console.error('Error saving configuration:', error)
 				throw new Error(`Failed to save configuration: ${error.message}`)
 			}
+		},
+		// Clean configuration data for saving - remove read-only fields
+		cleanConfigurationForSave(configurationItem) {
+			const cleaned = { ...configurationItem }
+
+			// Remove read-only/calculated fields that should not be sent to the server
+			delete cleaned.id
+			delete cleaned.uuid
+			delete cleaned.created
+			delete cleaned.updated
+
+			return cleaned
 		},
 		async uploadConfiguration(configuration) {
 			if (!configuration) {

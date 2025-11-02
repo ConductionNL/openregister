@@ -299,13 +299,18 @@ class Application extends Entity implements JsonSerializable
     /**
      * Set whether this application is active
      *
-     * @param bool|null $active Whether this should be active
+     * @param bool|null|string $active Whether this should be active
      *
      * @return self Returns this application for method chaining
      */
-    public function setActive(?bool $active): self
+    public function setActive(mixed $active): self
     {
-        $this->active = $active ?? true;
+        // Handle various input types defensively (including empty strings from API)
+        if ($active === '' || $active === null) {
+            $this->active = true; // Default to true for applications
+        } else {
+            $this->active = (bool)$active;
+        }
         $this->markFieldUpdated('active');
         return $this;
 

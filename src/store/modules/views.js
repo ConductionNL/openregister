@@ -228,13 +228,16 @@ export const useViewsStore = defineStore('views', {
 			this.loading = true
 			this.error = null
 
+			// Clean the data before sending - remove read-only fields
+			const cleanedData = this.cleanViewForSave(viewData)
+
 			try {
 				const response = await fetch(`/index.php/apps/openregister/api/views/${id}`, {
 					method: 'PUT',
 					headers: {
 						'Content-Type': 'application/json',
 					},
-					body: JSON.stringify(viewData),
+					body: JSON.stringify(cleanedData),
 				})
 
 				if (!response.ok) {
@@ -263,6 +266,23 @@ export const useViewsStore = defineStore('views', {
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Clean view data for saving - remove read-only fields
+		 * @param {object} viewData - The view data to clean
+		 * @return {object} Cleaned view data
+		 */
+		cleanViewForSave(viewData) {
+			const cleaned = { ...viewData }
+
+			// Remove read-only/calculated fields that should not be sent to the server
+			delete cleaned.id
+			delete cleaned.uuid
+			delete cleaned.created
+			delete cleaned.updated
+
+			return cleaned
 		},
 
 		/**

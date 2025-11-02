@@ -134,6 +134,14 @@ class ConfigurationMapper extends QBMapper
     public function insert(Entity $entity): Entity
     {
         if ($entity instanceof Configuration) {
+            // Generate UUID if not set
+            if (empty($entity->getUuid())) {
+                $entity->setUuid(\OC::$server->get(\OCP\Security\ISecureRandom::class)->generate(
+                    36,
+                    \OCP\Security\ISecureRandom::CHAR_ALPHANUMERIC
+                ));
+            }
+            
             $entity->setCreated(new DateTime());
             $entity->setUpdated(new DateTime());
         }

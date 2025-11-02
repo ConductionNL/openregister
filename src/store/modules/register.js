@@ -163,8 +163,8 @@ export const useRegisterStore = defineStore('register', {
 				: `/index.php/apps/openregister/api/registers/${registerItem.id}`
 			const method = isNewRegister ? 'POST' : 'PUT'
 
-			// change updated to current date as a singular iso date string
-			registerItem.updated = new Date().toISOString()
+			// Clean the data before sending - remove read-only fields
+			const cleanedData = this.cleanRegisterForSave(registerItem)
 
 			try {
 				const response = await fetch(
@@ -174,7 +174,7 @@ export const useRegisterStore = defineStore('register', {
 						headers: {
 							'Content-Type': 'application/json',
 						},
-						body: JSON.stringify(registerItem),
+						body: JSON.stringify(cleanedData),
 					},
 				)
 
@@ -198,6 +198,18 @@ export const useRegisterStore = defineStore('register', {
 				console.error('Error saving register:', error)
 				throw new Error(`Failed to save register: ${error.message}`)
 			}
+		},
+		// Clean register data for saving - remove read-only fields
+		cleanRegisterForSave(registerItem) {
+			const cleaned = { ...registerItem }
+
+			// Remove read-only/calculated fields that should not be sent to the server
+			delete cleaned.id
+			delete cleaned.uuid
+			delete cleaned.created
+			delete cleaned.updated
+
+			return cleaned
 		},
 		// Create or save a register from store
 		async uploadRegister(register) {

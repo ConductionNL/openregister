@@ -12,6 +12,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * FileText Entity
@@ -23,6 +24,8 @@ use OCP\AppFramework\Db\Entity;
  * @author   OpenRegister Team
  * @license  AGPL-3.0-or-later
  * 
+ * @method string|null getUuid()
+ * @method void setUuid(?string $uuid)
  * @method int getFileId()
  * @method void setFileId(int $fileId)
  * @method string getFilePath()
@@ -62,6 +65,7 @@ use OCP\AppFramework\Db\Entity;
  */
 class FileText extends Entity implements JsonSerializable
 {
+    protected ?string $uuid = null;
     protected ?int $fileId = null;
     protected ?string $filePath = null;
     protected ?string $fileName = null;
@@ -83,6 +87,7 @@ class FileText extends Entity implements JsonSerializable
 
     public function __construct()
     {
+        $this->addType('uuid', 'string');
         $this->addType('fileId', 'integer');
         $this->addType('filePath', 'string');
         $this->addType('fileName', 'string');
@@ -103,10 +108,28 @@ class FileText extends Entity implements JsonSerializable
         $this->addType('extractedAt', 'datetime');
     }
 
+    /**
+     * Validate UUID format
+     *
+     * @param string $uuid The UUID to validate
+     *
+     * @return bool True if UUID format is valid
+     */
+    public static function isValidUuid(string $uuid): bool
+    {
+        try {
+            Uuid::fromString($uuid);
+            return true;
+        } catch (\InvalidArgumentException $e) {
+            return false;
+        }
+    }
+
     public function jsonSerialize(): array
     {
         return [
             'id' => $this->id,
+            'uuid' => $this->uuid,
             'fileId' => $this->fileId,
             'filePath' => $this->filePath,
             'fileName' => $this->fileName,

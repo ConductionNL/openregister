@@ -2090,6 +2090,64 @@ PUT /api/schemas/employee-schema
 # System automatically extracts delta before saving
 ```
 
+#### Check Which Schemas Extend This Schema
+
+All schema endpoints automatically include an '@self.extendedBy' property that lists the UUIDs of schemas that extend the current schema:
+
+```bash
+GET /api/schemas/person-schema
+
+# Returns:
+{
+  'id': 42,
+  'uuid': 'abc-123',
+  'title': 'Person',
+  '@self': {
+    'extendedBy': [
+      'employee-uuid-456',
+      'customer-uuid-789'
+    ]
+  },
+  'properties': { ... }
+}
+```
+
+This is useful for:
+- **Understanding Schema Usage**: See which schemas depend on this one
+- **Impact Analysis**: Identify which child schemas will be affected by changes
+- **Schema Management**: Track schema relationships and dependencies
+- **Refactoring**: Plan schema restructuring with full visibility of dependencies
+
+The 'extendedBy' property is automatically populated for:
+- Individual schema endpoint: 'GET /api/schemas/{id}'
+- Collection endpoint: 'GET /api/schemas'
+
+**Example Response for Collection:**
+
+```json
+{
+  'results': [
+    {
+      'id': 42,
+      'title': 'Person',
+      '@self': {
+        'extendedBy': ['employee-uuid', 'customer-uuid']
+      },
+      'properties': { ... }
+    },
+    {
+      'id': 43,
+      'title': 'Employee',
+      'extend': '42',
+      '@self': {
+        'extendedBy': []  // No schemas extend Employee
+      },
+      'properties': { ... }
+    }
+  ]
+}
+```
+
 ### Advanced Topics
 
 #### Custom Merge Logic

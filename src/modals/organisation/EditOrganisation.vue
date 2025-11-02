@@ -6,7 +6,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 	<NcDialog :name="organisationStore.organisationItem?.uuid && !createAnother ? 'Edit Organisation' : 'Create Organisation'"
 		size="large"
 		:can-close="true"
-		@update:open="handleDialogClose">
+		@update:open="handleDialogOpen">
 		<NcNoteCard v-if="success" type="success">
 			<p>Organisation successfully {{ organisationStore.organisationItem?.uuid && !createAnother ? 'updated' : 'created' }}</p>
 		</NcNoteCard>
@@ -65,17 +65,6 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 									Select which Nextcloud groups have access to this organisation
 								</p>
 							</div>
-
-							<NcCheckboxRadioSwitch
-								v-if="organisationItem.uuid && canEditDefaultFlag"
-								:disabled="loading"
-								:checked.sync="organisationItem.isDefault">
-								Default Organisation
-							</NcCheckboxRadioSwitch>
-
-							<NcNoteCard v-if="organisationItem.isDefault" type="info">
-								<p>New users without specific organisation membership will be automatically added to this organisation</p>
-							</NcNoteCard>
 
 							<NcCheckboxRadioSwitch
 								:disabled="loading"
@@ -247,38 +236,13 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 				{{ organisationStore.organisationItem?.uuid && !createAnother ? 'Save' : 'Create' }}
 			</NcButton>
 		</template>
+		<RemoveUserDialog
+			:show="showRemoveUserDialog"
+			:user-id="userToRemove"
+			:removing="removingUser !== null"
+			@cancel="cancelRemoveUser"
+			@confirm="confirmRemoveUser" />
 	</NcDialog>
-
-	<!-- Remove User Confirmation Dialog -->
-	<NcDialog
-		v-if="showRemoveUserDialog"
-		:name="'Remove User'"
-		:can-close="!removingUser"
-		@closing="cancelRemoveUser">
-		<p>Are you sure you want to remove user <strong>{{ userToRemove }}</strong> from this organisation?</p>
-
-		<template #actions>
-			<NcButton
-				:disabled="removingUser"
-				@click="cancelRemoveUser">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				Cancel
-			</NcButton>
-			<NcButton
-				:disabled="removingUser"
-				type="error"
-				@click="confirmRemoveUser">
-				<template #icon>
-					<NcLoadingIcon v-if="removingUser" :size="20" />
-					<AccountMinus v-else :size="20" />
-				</template>
-				Remove User
-			</NcButton>
-		</template>
-	</NcDialog>
-
 </template>
 
 <script>
@@ -307,6 +271,8 @@ import Database from 'vue-material-design-icons/Database.vue'
 import AccountMultiple from 'vue-material-design-icons/AccountMultiple.vue'
 import Shield from 'vue-material-design-icons/Shield.vue'
 
+import RemoveUserDialog from './RemoveUserDialog.vue'
+
 export default {
 	name: 'EditOrganisation',
 	components: {
@@ -320,6 +286,7 @@ export default {
 		NcCheckboxRadioSwitch,
 		BTabs,
 		BTab,
+		RemoveUserDialog,
 		// Icons
 		ContentSaveOutline,
 		Cancel,
@@ -340,12 +307,11 @@ export default {
 				name: '',
 				slug: '',
 				description: '',
-				isDefault: false,
 				active: true,
 				storageQuota: 0,
 				bandwidthQuota: 0,
 				requestQuota: 0,
-				roles: [],
+				groups: [],
 			},
 			selectedGroups: [],
 			availableGroups: [],
@@ -364,11 +330,6 @@ export default {
 		}
 	},
 	computed: {
-		canEditDefaultFlag() {
-			// Only system admin or already default organisation can edit default flag
-			// This is a simplified check - in reality would need proper permission checks
-			return this.organisationItem.isDefault || this.getCurrentUser() === 'admin'
-		},
 		storageQuotaMB() {
 			if (!this.organisationItem.storageQuota) return 0
 			return Math.round(this.organisationItem.storageQuota / (1024 * 1024))
@@ -376,6 +337,22 @@ export default {
 		bandwidthQuotaMB() {
 			if (!this.organisationItem.bandwidthQuota) return 0
 			return Math.round(this.organisationItem.bandwidthQuota / (1024 * 1024))
+		},
+	},
+	watch: {
+		// Watch for changes in the store's organisationItem (e.g., when clicking edit on different organisations)
+		'organisationStore.organisationItem': {
+			handler(newVal, oldVal) {
+				// Only reinitialize if the UUID changed (different organisation) or went from null to something
+				if (newVal && (!oldVal || newVal.uuid !== oldVal?.uuid)) {
+					this.initializeOrganisationItem()
+					// Reload users for the new organisation
+					if (newVal.uuid) {
+						this.loadOrganisationUsers()
+					}
+				}
+			},
+			deep: true,
 		},
 	},
 	async mounted() {
@@ -440,10 +417,10 @@ export default {
 					active: organisationStore.organisationItem.active ?? true,
 				}
 
-				// Load existing roles/groups selection
-				// Roles can be stored as either an array of IDs or array of objects (for backwards compatibility)
-				if (Array.isArray(this.organisationItem.roles) && this.organisationItem.roles.length > 0) {
-					this.selectedGroups = this.organisationItem.roles
+				// Load existing groups selection
+				// Groups can be stored as either an array of IDs or array of objects (for backwards compatibility)
+				if (Array.isArray(this.organisationItem.groups) && this.organisationItem.groups.length > 0) {
+					this.selectedGroups = this.organisationItem.groups
 						.map(role => {
 							// Handle both formats: string IDs or objects
 							const roleId = typeof role === 'string' ? role : (role.id || role.name)
@@ -591,7 +568,7 @@ export default {
 		updateGroups(groups) {
 			this.selectedGroups = groups || []
 			// Store only the group IDs, not the full objects
-			this.organisationItem.roles = this.selectedGroups.map(group => group.id)
+			this.organisationItem.groups = this.selectedGroups.map(group => group.id)
 		},
 
 		/**
@@ -603,7 +580,7 @@ export default {
 		removeGroup(groupToRemove) {
 			this.selectedGroups = this.selectedGroups.filter(g => g.id !== groupToRemove.id)
 			// Store only the group IDs, not the full objects
-			this.organisationItem.roles = this.selectedGroups.map(group => group.id)
+			this.organisationItem.groups = this.selectedGroups.map(group => group.id)
 		},
 
 		/**
@@ -682,15 +659,14 @@ export default {
 					// Clear the form after successful creation
 					setTimeout(() => {
 						this.organisationItem = {
-							name: '',
-							slug: '',
-							description: '',
-							isDefault: false,
-							active: true,
+						name: '',
+						slug: '',
+						description: '',
+						active: true,
 							storageQuota: null,
 							bandwidthQuota: null,
 							requestQuota: null,
-							roles: [],
+							groups: [],
 						}
 						this.selectedGroups = []
 						this.activeTab = 0
@@ -721,12 +697,16 @@ export default {
 		},
 
 		/**
-		 * Handle dialog close event
+		 * Handle dialog open/close event
 		 * 
+		 * @param {boolean} isOpen - Whether the dialog is open
 		 * @return {void}
 		 */
-		handleDialogClose() {
-			this.closeModal()
+		handleDialogOpen(isOpen) {
+			// Only close the modal if the dialog is being closed (isOpen = false)
+			if (!isOpen) {
+				this.closeModal()
+			}
 		},
 	},
 }

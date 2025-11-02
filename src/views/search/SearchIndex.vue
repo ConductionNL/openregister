@@ -10,13 +10,13 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 				<h1 class="viewHeaderTitleIndented">
 					{{ pageTitle }}
 				</h1>
-				<p v-if="registerStore.registerItem && schemaStore.schemaItem">
-					{{ t('openregister', 'Search and browse objects in this schema') }}
-				</p>
-			</div>
+			<p v-if="hasSelectedRegisters && hasSelectedSchemas">
+				{{ t('openregister', 'Search and browse objects in this schema') }}
+			</p>
+		</div>
 
-			<!-- Actions Bar -->
-			<div v-if="registerStore.registerItem && schemaStore.schemaItem" class="viewActionsBar">
+		<!-- Actions Bar -->
+		<div v-if="hasSelectedRegisters && hasSelectedSchemas" class="viewActionsBar">
 				<div class="viewInfo">
 					<span v-if="objectStore.objectList?.results?.length" class="viewTotalCount">
 						{{ t('openregister', 'Showing {showing} of {total} objects', {
@@ -120,43 +120,6 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 							Refresh
 						</NcActionButton>
 					</NcActions>
-
-					<!-- Columns Actions -->
-					<NcActions
-						:force-name="true"
-						:inline="1"
-						menu-name="Columns">
-						<template #icon>
-							<FormatColumns :size="20" />
-						</template>
-
-						<!-- Properties Section -->
-						<NcActionCaption name="Properties" />
-						<NcActionCheckbox
-							v-for="(property, propertyName) in objectStore.properties"
-							:key="`prop_${propertyName}`"
-							:checked="objectStore.columnFilters[`prop_${propertyName}`]"
-							@update:checked="(status) => objectStore.updateColumnFilter(`prop_${propertyName}`, status)">
-							{{ property.label }}
-						</NcActionCheckbox>
-
-						<template v-if="!Object.keys(objectStore.properties || {}).length">
-							<NcActionText>
-								No properties available. Select a schema to view properties.
-							</NcActionText>
-						</template>
-
-						<!-- Metadata Section -->
-						<NcActionSeparator />
-						<NcActionCaption name="Metadata" />
-						<NcActionCheckbox
-							v-for="meta in metadataColumns"
-							:key="`meta_${meta.id}`"
-							:checked="objectStore.columnFilters[`meta_${meta.id}`]"
-							@update:checked="(status) => objectStore.updateColumnFilter(`meta_${meta.id}`, status)">
-							{{ meta.label }}
-						</NcActionCheckbox>
-					</NcActions>
 				</div>
 			</div>
 
@@ -170,8 +133,8 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 				</template>
 			</NcEmptyContent>
 
-			<!-- Search List Content -->
-			<div v-else-if="objectStore.objectList?.results?.length && registerStore.registerItem && schemaStore.schemaItem" class="searchList">
+		<!-- Search List Content -->
+		<div v-else-if="objectStore.objectList?.results?.length && hasSelectedRegisters && hasSelectedSchemas" class="searchList">
 				<div class="viewTableContainer">
 					<VueDraggable v-model="objectStore.enabledColumns"
 						target=".sort-target"
@@ -310,7 +273,7 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 </template>
 
 <script>
-import { NcAppContent, NcLoadingIcon, NcEmptyContent, NcCheckboxRadioSwitch, NcActions, NcActionButton, NcActionCheckbox, NcActionCaption, NcActionSeparator, NcActionText, NcCounterBubble } from '@nextcloud/vue'
+import { NcAppContent, NcLoadingIcon, NcEmptyContent, NcCheckboxRadioSwitch, NcActions, NcActionButton, NcCounterBubble } from '@nextcloud/vue'
 import { VueDraggable } from 'vue-draggable-plus'
 import getValidISOstring from '../../services/getValidISOstring.js'
 import formatBytes from '../../services/formatBytes.js'
@@ -323,7 +286,6 @@ import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import Merge from 'vue-material-design-icons/Merge.vue'
 import DatabaseExport from 'vue-material-design-icons/DatabaseExport.vue'
 import FormatListChecks from 'vue-material-design-icons/FormatListChecks.vue'
-import FormatColumns from 'vue-material-design-icons/FormatColumns.vue'
 import Publish from 'vue-material-design-icons/Publish.vue'
 import PublishOff from 'vue-material-design-icons/PublishOff.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
@@ -340,10 +302,6 @@ export default {
 		NcCheckboxRadioSwitch,
 		NcActions,
 		NcActionButton,
-		NcActionCheckbox,
-		NcActionCaption,
-		NcActionSeparator,
-		NcActionText,
 		NcCounterBubble,
 		VueDraggable,
 		Pencil,
@@ -355,7 +313,6 @@ export default {
 		Merge,
 		DatabaseExport,
 		FormatListChecks,
-		FormatColumns,
 		Publish,
 		PublishOff,
 		CheckCircle,
@@ -368,32 +325,81 @@ export default {
 		}
 	},
 	computed: {
+		// Check if registers are selected from URL query params (multi-select)
+		selectedRegisterIds() {
+			const registerParam = this.$route.query.register
+			if (!registerParam) return []
+			return Array.isArray(registerParam) 
+				? registerParam.map(r => parseInt(r))
+				: registerParam.split(',').map(r => parseInt(r.trim()))
+		},
+
+		// Check if schemas are selected from URL query params (multi-select)
+		selectedSchemaIds() {
+			const schemaParam = this.$route.query.schema
+			if (!schemaParam) return []
+			return Array.isArray(schemaParam)
+				? schemaParam.map(s => parseInt(s))
+				: schemaParam.split(',').map(s => parseInt(s.trim()))
+		},
+
+		hasSelectedRegisters() {
+			return this.selectedRegisterIds.length > 0
+		},
+
+		hasSelectedSchemas() {
+			return this.selectedSchemaIds.length > 0
+		},
+
 		pageTitle() {
-			if (!registerStore.registerItem) {
+			if (!this.hasSelectedRegisters) {
 				return 'No register selected'
 			}
 
-			const registerName = (registerStore.registerItem.label || registerStore.registerItem.title).charAt(0).toUpperCase()
-		+ (registerStore.registerItem.label || registerStore.registerItem.title).slice(1)
-
-			if (!schemaStore.schemaItem) {
-				return `${registerName} / No schema selected`
+			// Get register names
+			const registerNames = this.selectedRegisterIds
+				.map(id => {
+					const reg = registerStore.registerList.find(r => r.id === id)
+					return reg ? (reg.label || reg.title) : null
+				})
+				.filter(Boolean)
+			
+			if (registerNames.length === 0) {
+				return 'No register selected'
 			}
 
-			const schemaName = (schemaStore.schemaItem.label || schemaStore.schemaItem.title).charAt(0).toUpperCase()
-		+ (schemaStore.schemaItem.label || schemaStore.schemaItem.title).slice(1)
-			return `${registerName} / ${schemaName}`
+			const registerTitle = registerNames.length === 1 
+				? registerNames[0].charAt(0).toUpperCase() + registerNames[0].slice(1)
+				: `${registerNames.length} Registers (${registerNames.join(', ')})`
+
+			if (!this.hasSelectedSchemas) {
+				return `${registerTitle} / No schema selected`
+			}
+
+			// Get schema names
+			const schemaNames = this.selectedSchemaIds
+				.map(id => {
+					const schema = schemaStore.schemaList.find(s => s.id === id)
+					return schema ? (schema.label || schema.title) : null
+				})
+				.filter(Boolean)
+
+			const schemaTitle = schemaNames.length === 1
+				? schemaNames[0].charAt(0).toUpperCase() + schemaNames[0].slice(1)
+				: `${schemaNames.length} Schemas (${schemaNames.join(', ')})`
+
+			return `${registerTitle} / ${schemaTitle}`
 		},
 
 		showNoRegisterWarning() {
-			return !registerStore.registerItem
+			return !this.hasSelectedRegisters
 		},
 		showNoSchemaWarning() {
-			return registerStore.registerItem && !schemaStore.schemaItem
+			return this.hasSelectedRegisters && !this.hasSelectedSchemas
 		},
 		showNoObjectsMessage() {
-			return registerStore.registerItem
-				&& schemaStore.schemaItem
+			return this.hasSelectedRegisters
+				&& this.hasSelectedSchemas
 				&& !objectStore.loading
 				&& !objectStore.objectList?.results?.length
 		},
@@ -431,12 +437,6 @@ export default {
 				return 'There are no objects that match this filter'
 			}
 			return ''
-		},
-		metadataColumns() {
-			return Object.entries(objectStore.metadata).map(([id, meta]) => ({
-				id,
-				...meta,
-			}))
 		},
 	},
 	watch: {

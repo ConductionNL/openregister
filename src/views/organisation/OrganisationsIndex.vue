@@ -142,13 +142,6 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 										</template>
 										Bewerken
 									</NcActionButton>
-									<NcActionButton close-after-click
-										@click="copyOrganisation(organisation)">
-										<template #icon>
-											<ContentCopy :size="20" />
-										</template>
-										Kopiëren
-									</NcActionButton>
 									<NcActionButton v-if="organisation.website"
 										close-after-click
 										@click="goToOrganisation(organisation)">
@@ -270,13 +263,6 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 													<Pencil :size="20" />
 												</template>
 												Bewerken
-											</NcActionButton>
-											<NcActionButton close-after-click
-												@click="copyOrganisation(organisation)">
-												<template #icon>
-													<ContentCopy :size="20" />
-												</template>
-												Kopiëren
 											</NcActionButton>
 											<NcActionButton v-if="organisation.website"
 												close-after-click
@@ -419,13 +405,7 @@ export default {
 	async mounted() {
 		try {
 			await organisationStore.refreshOrganisationList()
-
-			// Check if the method exists before calling it
-			if (typeof organisationStore.getActiveOrganisation === 'function') {
-				await organisationStore.getActiveOrganisation()
-			} else {
-				console.warn('getActiveOrganisation method not available in organisationStore')
-			}
+			await organisationStore.getActiveOrganisation()
 		} catch (error) {
 			console.error('Error loading organisation data:', error)
 		}

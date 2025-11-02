@@ -633,7 +633,6 @@ class OrganisationService
         $organisation = new Organisation();
         $organisation->setName($name);
         $organisation->setDescription($description);
-        $organisation->setIsDefault(false);
         
         // Auto-generate slug from name if not provided
         $organisation->setSlug($this->generateSlug($name));
@@ -655,6 +654,12 @@ class OrganisationService
         $organisation = $this->addAdminUsersToOrganisation($organisation);
 
         $saved = $this->organisationMapper->save($organisation);
+        
+        // If there's no default organisation set, make this one the default
+        $defaultOrgId = $this->config->getAppValue('openregister', 'defaultOrganisation', '');
+        if (empty($defaultOrgId)) {
+            $this->config->setAppValue('openregister', 'defaultOrganisation', $saved->getUuid());
+        }
 
         // Clear cached organisations and active organisation cache to force refresh
         if ($addCurrentUser && $userId !== null) {
@@ -838,7 +843,10 @@ class OrganisationService
     private function addAdminUsersToOrganisation(Organisation $organisation): Organisation
     {
         $adminUsers = $this->getAdminGroupUsers();
-        $isDefaultOrg = $organisation->getIsDefault();
+        
+        // Check if this is the default organisation
+        $defaultOrgId = $this->config->getAppValue('openregister', 'defaultOrganisation', '');
+        $isDefaultOrg = ($organisation->getUuid() === $defaultOrgId);
 
         foreach ($adminUsers as $adminUserId) {
             $organisation->addUser($adminUserId);
@@ -973,7 +981,6 @@ class OrganisationService
             'uuid' => $organisation->getUuid(),
             'name' => $organisation->getName(),
             'description' => $organisation->getDescription(),
-            'isDefault' => $organisation->getIsDefault(),
             'owner' => $organisation->getOwner(),
             'users' => $organisation->getUsers(),
             'created' => $organisation->getCreated() ? $organisation->getCreated()->format('Y-m-d H:i:s') : null,
@@ -1015,9 +1022,6 @@ class OrganisationService
         }
         if (isset($cachedData['description'])) {
             $organisation->setDescription($cachedData['description']);
-        }
-        if (isset($cachedData['isDefault'])) {
-            $organisation->setIsDefault($cachedData['isDefault']);
         }
         if (isset($cachedData['owner'])) {
             $organisation->setOwner($cachedData['owner']);
@@ -1088,6 +1092,59 @@ class OrganisationService
         return $defaultOrg->getUuid();
 
     }//end getOrganisationForNewEntity()
+
+
+    /**
+     * Get the default organisation UUID from config
+     *
+     * @return string|null The UUID of the default organisation, or null if not set
+     */
+    public function getDefaultOrganisationId(): ?string
+    {
+        $defaultOrgId = $this->config->getAppValue('openregister', 'defaultOrganisation', '');
+        return $defaultOrgId !== '' ? $defaultOrgId : null;
+
+    }//end getDefaultOrganisationId()
+
+
+    /**
+     * Set the default organisation UUID in config
+     *
+     * @param string $uuid The UUID of the organisation to set as default
+     *
+     * @return void
+     */
+    public function setDefaultOrganisationId(string $uuid): void
+    {
+        $this->config->setAppValue('openregister', 'defaultOrganisation', $uuid);
+        $this->clearDefaultOrganisationCache();
+
+    }//end setDefaultOrganisationId()
+
+
+    /**
+     * Get the default organisation object
+     *
+     * @return Organisation|null The default organisation, or null if not set
+     */
+    public function getDefaultOrganisation(): ?Organisation
+    {
+        $defaultOrgId = $this->getDefaultOrganisationId();
+        if ($defaultOrgId === null) {
+            return null;
+        }
+
+        try {
+            return $this->organisationMapper->findByUuid($defaultOrgId);
+        } catch (\Exception $e) {
+            $this->logger->warning('Default organisation not found', [
+                'uuid' => $defaultOrgId,
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
+
+    }//end getDefaultOrganisation()
 
 
 }//end class

@@ -23,12 +23,20 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * Configuration entity class
  */
 class Configuration extends Entity implements JsonSerializable
 {
+
+    /**
+     * Unique identifier for the configuration
+     *
+     * @var string|null UUID of the configuration
+     */
+    protected ?string $uuid = null;
 
     /**
      * Title of the configuration
@@ -121,6 +129,7 @@ class Configuration extends Entity implements JsonSerializable
     public function __construct()
     {
         $this->addType('id', 'integer');
+        $this->addType('uuid', 'string');
         $this->addType('title', 'string');
         $this->addType('description', 'string');
         $this->addType('type', 'string');
@@ -135,6 +144,25 @@ class Configuration extends Entity implements JsonSerializable
         $this->addType('updated', 'datetime');
 
     }//end __construct()
+
+
+    /**
+     * Validate UUID format
+     *
+     * @param string $uuid The UUID to validate
+     *
+     * @return bool True if UUID format is valid
+     */
+    public static function isValidUuid(string $uuid): bool
+    {
+        try {
+            Uuid::fromString($uuid);
+            return true;
+        } catch (\InvalidArgumentException $e) {
+            return false;
+        }
+
+    }//end isValidUuid()
 
 
     /**
@@ -313,6 +341,7 @@ class Configuration extends Entity implements JsonSerializable
     {
         return [
             'id'           => $this->id,
+            'uuid'         => $this->uuid,
             'title'        => $this->title,
             'description'  => $this->description,
             'type'         => $this->type,
