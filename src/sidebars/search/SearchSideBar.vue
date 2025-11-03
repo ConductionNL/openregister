@@ -3,6 +3,7 @@ import { navigationStore, objectStore, registerStore, schemaStore, viewsStore } 
 </script>
 
 <template>
+	<div>
 	<NcAppSidebar
 		ref="sidebar"
 		v-model="activeTab"
@@ -463,17 +464,9 @@ import { navigationStore, objectStore, registerStore, schemaStore, viewsStore } 
 					<p v-if="view.description" class="viewRowDescription">
 						{{ view.description }}
 					</p>
-					<div class="viewRowMeta">
-						<span class="viewMetaItem">
-							<strong>{{ t('openregister', 'Registers:') }}</strong> {{ (view.query || view.configuration)?.registers?.length || 0 }}
-						</span>
-						<span class="viewMetaItem">
-							<strong>{{ t('openregister', 'Schemas:') }}</strong> {{ (view.query || view.configuration)?.schemas?.length || 0 }}
-						</span>
-						<span v-if="(view.query || view.configuration)?.searchTerms?.length" class="viewMetaItem">
-							<strong>{{ t('openregister', 'Search terms:') }}</strong> {{ (view.query || view.configuration).searchTerms.length }}
-						</span>
-					</div>
+					<p v-else class="viewRowDescription viewRowDescription--empty">
+						{{ t('openregister', 'No description provided') }}
+					</p>
 				</div>
 			</div>
 		</div>
@@ -538,13 +531,16 @@ import { navigationStore, objectStore, registerStore, schemaStore, viewsStore } 
 		</div>
 	</NcAppSidebarTab>
 	
-	<!-- Edit View Dialog (as a modal overlay) -->
-	<div v-if="showEditDialog" class="editViewModal">
-		<div class="editViewModalContent">
-			<h3>{{ t('openregister', 'Edit View') }}</h3>
-			
+	</NcAppSidebar>
+
+	<!-- Edit View Dialog -->
+	<NcDialog
+		v-if="showEditDialog"
+		:name="t('openregister', 'Edit View')"
+		@closing="cancelEditView">
+		<div class="editViewDialogContent">
 			<NcTextField
-				:value.sync="editViewName"
+				v-model="editViewName"
 				:label="t('openregister', 'View Name')"
 				:placeholder="t('openregister', 'Enter view name...')"
 				:required="true"
@@ -554,7 +550,7 @@ import { navigationStore, objectStore, registerStore, schemaStore, viewsStore } 
 				class="editViewField" />
 			
 			<NcTextField
-				:value.sync="editViewDescription"
+				v-model="editViewDescription"
 				:label="t('openregister', 'Description')"
 				:placeholder="t('openregister', 'Enter description (optional)...')"
 				class="editViewField" />
@@ -573,12 +569,12 @@ import { navigationStore, objectStore, registerStore, schemaStore, viewsStore } 
 				</NcButton>
 			</div>
 		</div>
+	</NcDialog>
 	</div>
-	</NcAppSidebar>
 </template>
 
 <script>
-import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcNoteCard, NcTextField, NcButton, NcLoadingIcon, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcNoteCard, NcTextField, NcButton, NcLoadingIcon, NcCheckboxRadioSwitch, NcDialog } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import Close from 'vue-material-design-icons/Close.vue'
 import FilterIcon from 'vue-material-design-icons/Filter.vue'
@@ -594,6 +590,7 @@ import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 import ChevronRight from 'vue-material-design-icons/ChevronRight.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import { translate as t } from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
 
 export default {
 	name: 'SearchSideBar',
@@ -606,6 +603,7 @@ export default {
 		NcButton,
 		NcLoadingIcon,
 		NcCheckboxRadioSwitch,
+		NcDialog,
 		Magnify,
 		Close,
 		FilterIcon,
@@ -1697,11 +1695,11 @@ export default {
 					: [...currentFavoredBy, currentUser]
 
 				// Use PATCH to update only the favoredBy property
-				const response = await fetch(`/apps/openregister/api/views/${view.id || view.uuid}`, {
+				const response = await fetch(generateUrl(`/apps/openregister/api/views/${view.id || view.uuid}`), {
 					method: 'PATCH',
 					headers: {
 						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
+						'requesttoken': OC.requestToken,
 					},
 					body: JSON.stringify({ 
 						favoredBy: updatedFavoredBy 
@@ -2030,6 +2028,10 @@ export default {
 	font-style: italic;
 }
 
+.viewRowDescription--empty {
+	opacity: 0.6;
+}
+
 .viewRowMeta {
 	display: flex;
 	flex-wrap: wrap;
@@ -2312,31 +2314,9 @@ export default {
 }
 
 /* Edit View Modal */
-.editViewModal {
-	position: fixed;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-	background-color: rgba(0, 0, 0, 0.5);
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	z-index: 10000;
-}
-
-.editViewModalContent {
-	background-color: var(--color-main-background);
-	border-radius: var(--border-radius-large);
-	padding: 24px;
-	max-width: 500px;
-	width: 90%;
-	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-}
-
-.editViewModalContent h3 {
-	margin-top: 0;
-	margin-bottom: 16px;
+.editViewDialogContent {
+	padding: 16px;
+	min-width: 400px;
 }
 
 .editViewField {
