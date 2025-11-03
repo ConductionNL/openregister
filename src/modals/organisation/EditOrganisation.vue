@@ -49,20 +49,26 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 									v-model="selectedGroups"
 									:disabled="loading || loadingGroups"
 									:options="availableGroups"
-									input-label="Select groups with access to this organisation"
 									label="name"
 									track-by="id"
 									:multiple="true"
-									placeholder="Select groups (optional)"
+									:label-outside="true"
+									:filterable="false"
+									placeholder="Search groups..."
+									@search-change="searchGroups"
 									@input="updateGroups">
 									<template #option="{ name }">
 										<div class="group-option">
 											<span class="group-name">{{ name }}</span>
 										</div>
 									</template>
+									<template #no-options>
+										<span v-if="loadingGroups">Loading groups...</span>
+										<span v-else>No groups found. Try a different search.</span>
+									</template>
 								</NcSelect>
 								<p class="field-hint">
-									Select which Nextcloud groups have access to this organisation
+									Only members of selected groups can access this organisation
 								</p>
 							</div>
 
@@ -81,7 +87,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 					<BTab>
 						<template #title>
 							<Database :size="16" />
-							<span>Resources</span>
+							<span>Quota</span>
 						</template>
 						<div class="form-editor">
 							<NcTextField
@@ -105,7 +111,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 								label="API Request Quota (requests/day)"
 								type="number"
 								placeholder="0 = unlimited"
-								:value="organisationItem.requestQuota || 0"
+								:value="organisationItem.quota?.requests || 0"
 								@update:value="updateRequestQuota" />
 						</div>
 					</BTab>
@@ -175,8 +181,13 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 						</template>
 						<div class="security-section">
 							<NcNoteCard type="info">
-								<p><strong>Group Access Control</strong></p>
-								<p>The following Nextcloud groups have access to this organisation.</p>
+								<p><strong>Role-Based Access Control</strong></p>
+								<ul>
+									<li>Configure CRUD permissions per entity type</li>
+									<li>Grant special rights for advanced features</li>
+									<li>Empty permissions = open access for all organisation members</li>
+									<li>The 'admin' group always has full access</li>
+								</ul>
 							</NcNoteCard>
 
 							<div v-if="loadingGroups" class="loading-groups">
@@ -184,25 +195,149 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 								<span>Loading user groups...</span>
 							</div>
 
-							<div v-else-if="selectedGroups.length > 0" class="groups-list">
-								<h3>Selected Groups</h3>
-								<div class="group-items">
-									<div v-for="group in selectedGroups" :key="group.id" class="group-item">
-										<span class="group-badge">{{ group.name }}</span>
-										<NcButton
-											type="tertiary"
-											:disabled="loading"
-											@click="removeGroup(group)">
-											<template #icon>
-												<Close :size="16" />
-											</template>
-										</NcButton>
-									</div>
-								</div>
-							</div>
+							<div v-else class="rbac-container">
+								<!-- Entity-level permissions tabs -->
+								<div class="rbac-section">
+									<h3>Entity Permissions</h3>
+									<p class="rbac-description">Control who can create, read, update, and delete specific entity types</p>
+									
+									<BTabs content-class="mt-3" pills>
+										<!-- Registers -->
+										<BTab title="Registers">
+											<RbacTable
+												entity-type="register"
+												:authorization="organisationItem.authorization || {}"
+												:available-groups="availableGroups"
+												@update="updateEntityPermission" />
+										</BTab>
 
-							<div v-else class="no-groups">
-								<p>No groups selected. All users will have access to this organisation.</p>
+										<!-- Schemas -->
+										<BTab title="Schemas">
+											<RbacTable
+												entity-type="schema"
+												:authorization="organisationItem.authorization || {}"
+												:available-groups="availableGroups"
+												@update="updateEntityPermission" />
+										</BTab>
+
+										<!-- Objects -->
+										<BTab title="Objects">
+											<RbacTable
+												entity-type="object"
+												:authorization="organisationItem.authorization || {}"
+												:available-groups="availableGroups"
+												@update="updateEntityPermission" />
+										</BTab>
+
+										<!-- Views -->
+										<BTab title="Views">
+											<RbacTable
+												entity-type="view"
+												:authorization="organisationItem.authorization || {}"
+												:available-groups="availableGroups"
+												@update="updateEntityPermission" />
+										</BTab>
+
+										<!-- Agents -->
+										<BTab title="Agents">
+											<RbacTable
+												entity-type="agent"
+												:authorization="organisationItem.authorization || {}"
+												:available-groups="availableGroups"
+												@update="updateEntityPermission" />
+										</BTab>
+									</BTabs>
+								</div>
+
+								<!-- Special Rights -->
+								<div class="rbac-section">
+									<h3>Special Rights</h3>
+									<p class="rbac-description">Grant additional permissions beyond standard CRUD operations</p>
+									
+									<table class="rbac-table special-rights-table">
+										<thead>
+											<tr>
+												<th>Right</th>
+												<th>Description</th>
+												<th>Groups</th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr>
+												<td class="right-name">
+													<span class="right-badge">object_publish</span>
+												</td>
+												<td class="right-description">
+													Publish objects to make them publicly available
+												</td>
+												<td class="right-groups">
+													<NcSelect
+														v-model="selectedSpecialRights.object_publish"
+														:options="availableGroups"
+														label="name"
+														track-by="id"
+														:multiple="true"
+														placeholder="Select groups..."
+														@input="updateSpecialRight('object_publish', $event)" />
+												</td>
+											</tr>
+											<tr>
+												<td class="right-name">
+													<span class="right-badge">agent_use</span>
+												</td>
+												<td class="right-description">
+													Use AI agents for processing and analysis
+												</td>
+												<td class="right-groups">
+													<NcSelect
+														v-model="selectedSpecialRights.agent_use"
+														:options="availableGroups"
+														label="name"
+														track-by="id"
+														:multiple="true"
+														placeholder="Select groups..."
+														@input="updateSpecialRight('agent_use', $event)" />
+												</td>
+											</tr>
+											<tr>
+												<td class="right-name">
+													<span class="right-badge">dashboard_view</span>
+												</td>
+												<td class="right-description">
+													Access organisation dashboard and analytics
+												</td>
+												<td class="right-groups">
+													<NcSelect
+														v-model="selectedSpecialRights.dashboard_view"
+														:options="availableGroups"
+														label="name"
+														track-by="id"
+														:multiple="true"
+														placeholder="Select groups..."
+														@input="updateSpecialRight('dashboard_view', $event)" />
+												</td>
+											</tr>
+											<tr>
+												<td class="right-name">
+													<span class="right-badge">llm_use</span>
+												</td>
+												<td class="right-description">
+													Use Large Language Model features
+												</td>
+												<td class="right-groups">
+													<NcSelect
+														v-model="selectedSpecialRights.llm_use"
+														:options="availableGroups"
+														label="name"
+														track-by="id"
+														:multiple="true"
+														placeholder="Select groups..."
+														@input="updateSpecialRight('llm_use', $event)" />
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
 							</div>
 						</div>
 					</BTab>
@@ -272,6 +407,7 @@ import AccountMultiple from 'vue-material-design-icons/AccountMultiple.vue'
 import Shield from 'vue-material-design-icons/Shield.vue'
 
 import RemoveUserDialog from './RemoveUserDialog.vue'
+import RbacTable from '../../components/RbacTable.vue'
 
 export default {
 	name: 'EditOrganisation',
@@ -287,6 +423,7 @@ export default {
 		BTabs,
 		BTab,
 		RemoveUserDialog,
+		RbacTable,
 		// Icons
 		ContentSaveOutline,
 		Cancel,
@@ -308,14 +445,23 @@ export default {
 				slug: '',
 				description: '',
 				active: true,
-				storageQuota: 0,
-				bandwidthQuota: 0,
-				requestQuota: 0,
+				quota: {
+					storage: 0,
+					bandwidth: 0,
+					requests: 0,
+				},
 				groups: [],
 			},
 			selectedGroups: [],
 			availableGroups: [],
 			loadingGroups: false,
+			groupSearchDebounce: null,
+			selectedSpecialRights: {
+				object_publish: [],
+				agent_use: [],
+				dashboard_view: [],
+				llm_use: [],
+			},
 			organisationUsers: [],
 			loadingUsers: false,
 			removingUser: null,
@@ -331,12 +477,12 @@ export default {
 	},
 	computed: {
 		storageQuotaMB() {
-			if (!this.organisationItem.storageQuota) return 0
-			return Math.round(this.organisationItem.storageQuota / (1024 * 1024))
+			if (!this.organisationItem.quota?.storage) return 0
+			return Math.round(this.organisationItem.quota.storage / (1024 * 1024))
 		},
 		bandwidthQuotaMB() {
-			if (!this.organisationItem.bandwidthQuota) return 0
-			return Math.round(this.organisationItem.bandwidthQuota / (1024 * 1024))
+			if (!this.organisationItem.quota?.bandwidth) return 0
+			return Math.round(this.organisationItem.quota.bandwidth / (1024 * 1024))
 		},
 	},
 	watch: {
@@ -346,62 +492,106 @@ export default {
 				// Only reinitialize if the UUID changed (different organisation) or went from null to something
 				if (newVal && (!oldVal || newVal.uuid !== oldVal?.uuid)) {
 					this.initializeOrganisationItem()
-					// Reload users for the new organisation
-					if (newVal.uuid) {
-						this.loadOrganisationUsers()
-					}
+					// Users are already included in the organisation object, no need to fetch separately
 				}
 			},
 			deep: true,
 		},
 	},
-	async mounted() {
-		await this.loadNextcloudGroups()
-		// Initialize after groups are loaded so we can map IDs to objects
+	mounted() {
+		// Use cached Nextcloud groups from store (preloaded on index page)
+		// If not available, they'll be loaded asynchronously
+		this.loadNextcloudGroupsFromStore()
+		// Initialize with cached groups - users are already included in the organisation object from the store
 		this.initializeOrganisationItem()
-		// Load users if editing existing organisation
-		if (this.organisationItem.uuid) {
-			await this.loadOrganisationUsers()
-		}
 	},
 	methods: {
 		/**
-		 * Load available Nextcloud groups
+		 * Load available Nextcloud groups from store (or fetch if not cached)
+		 * Groups are preloaded on the index page for better performance
 		 * 
-		 * @return {Promise<void>}
+		 * @return {void}
 		 */
-		async loadNextcloudGroups() {
-			this.loadingGroups = true
-			try {
-				// Fetch groups from Nextcloud OCS API (using v1 for compatibility)
-				// Use fetch() with direct path since OCS API is at root level, not under /index.php/
-				const response = await fetch('/ocs/v1.php/cloud/groups?format=json', {
-					headers: {
-						'OCS-APIRequest': 'true',
-					},
-				})
-
-				if (response.ok) {
-					const data = await response.json()
-
-					// v1 API returns groups as a simple array of group IDs
-					if (data.ocs?.data?.groups) {
-						this.availableGroups = data.ocs.data.groups.map(groupId => ({
-							id: groupId,
-							name: groupId,
-							userCount: 0, // v1 API doesn't provide user count in list
-						}))
-					}
-				} else {
-					console.warn('Failed to load user groups:', response.statusText)
-					this.error = 'Failed to load Nextcloud groups'
-				}
-			} catch (error) {
-				console.error('Error loading Nextcloud groups:', error)
-				this.error = 'Failed to load Nextcloud groups'
-			} finally {
+		loadNextcloudGroupsFromStore() {
+			// If groups are already cached in store, use them immediately
+			if (organisationStore.nextcloudGroups && organisationStore.nextcloudGroups.length > 0) {
+				this.availableGroups = organisationStore.nextcloudGroups
 				this.loadingGroups = false
+				console.log('Using cached Nextcloud groups from store:', this.availableGroups.length)
+			} else {
+				// Groups not cached yet - load them (fallback for direct navigation)
+				console.log('Groups not cached, loading from API...')
+				this.loadingGroups = true
+				organisationStore.loadNextcloudGroups().then(() => {
+					this.availableGroups = organisationStore.nextcloudGroups
+					this.loadingGroups = false
+					// Re-initialize to map groups now that they're loaded
+					this.initializeOrganisationItem()
+				}).catch(error => {
+					console.error('Error loading Nextcloud groups:', error)
+					this.error = 'Failed to load Nextcloud groups'
+					this.loadingGroups = false
+				})
 			}
+		},
+
+		/**
+		 * Search for Nextcloud groups with debouncing
+		 * 
+		 * @param {string} searchQuery - The search query entered by user
+		 * @return {void}
+		 */
+		searchGroups(searchQuery) {
+			// Clear existing debounce timer
+			if (this.groupSearchDebounce) {
+				clearTimeout(this.groupSearchDebounce)
+			}
+
+			// If search is empty, load all cached groups
+			if (!searchQuery || searchQuery.trim() === '') {
+				this.loadNextcloudGroupsFromStore()
+				return
+			}
+
+			// Debounce the search by 300ms
+			this.groupSearchDebounce = setTimeout(async () => {
+				this.loadingGroups = true
+				try {
+					// Query Nextcloud OCS API with search parameter
+					const response = await fetch(`/ocs/v1.php/cloud/groups?format=json&search=${encodeURIComponent(searchQuery)}`, {
+						headers: {
+							'OCS-APIRequest': 'true',
+						},
+					})
+
+					if (response.ok) {
+						const data = await response.json()
+						if (data.ocs?.data?.groups) {
+							// Transform group IDs into objects
+							const searchResults = data.ocs.data.groups.map(groupId => ({
+								id: groupId,
+								name: groupId,
+								userCount: 0,
+							}))
+
+							// Merge with already selected groups to ensure they remain visible
+							const selectedGroupIds = this.selectedGroups.map(g => g.id)
+							const mergedGroups = [
+								...this.selectedGroups,
+								...searchResults.filter(g => !selectedGroupIds.includes(g.id)),
+							]
+
+							this.availableGroups = mergedGroups
+						}
+					} else {
+						console.warn('Failed to search groups:', response.statusText)
+					}
+				} catch (error) {
+					console.error('Error searching Nextcloud groups:', error)
+				} finally {
+					this.loadingGroups = false
+				}
+			}, 300)
 		},
 
 		/**
@@ -445,32 +635,6 @@ export default {
 				if (Array.isArray(this.organisationItem.users)) {
 					this.organisationUsers = [...this.organisationItem.users]
 				}
-			}
-		},
-
-		/**
-		 * Load organisation users
-		 * 
-		 * @return {Promise<void>}
-		 */
-		async loadOrganisationUsers() {
-			if (!this.organisationItem.uuid) return
-			
-			this.loadingUsers = true
-			try {
-				const response = await fetch(`/index.php/apps/openregister/api/organisations/${this.organisationItem.uuid}`)
-				if (response.ok) {
-					const data = await response.json()
-					if (data.organisation?.users) {
-						this.organisationUsers = data.organisation.users
-					}
-				} else {
-					console.warn('Failed to load organisation users:', response.statusText)
-				}
-			} catch (error) {
-				console.error('Error loading organisation users:', error)
-			} finally {
-				this.loadingUsers = false
 			}
 		},
 
@@ -592,7 +756,10 @@ export default {
 		updateStorageQuota(value) {
 			// Convert MB to bytes (0 = unlimited)
 			const mbValue = value ? parseInt(value) : 0
-			this.organisationItem.storageQuota = mbValue * 1024 * 1024
+			if (!this.organisationItem.quota) {
+				this.organisationItem.quota = { storage: 0, bandwidth: 0, requests: 0 }
+			}
+			this.organisationItem.quota.storage = mbValue * 1024 * 1024
 		},
 
 		/**
@@ -604,7 +771,10 @@ export default {
 		updateBandwidthQuota(value) {
 			// Convert MB to bytes (0 = unlimited)
 			const mbValue = value ? parseInt(value) : 0
-			this.organisationItem.bandwidthQuota = mbValue * 1024 * 1024
+			if (!this.organisationItem.quota) {
+				this.organisationItem.quota = { storage: 0, bandwidth: 0, requests: 0 }
+			}
+			this.organisationItem.quota.bandwidth = mbValue * 1024 * 1024
 		},
 
 		/**
@@ -615,7 +785,10 @@ export default {
 		 */
 		updateRequestQuota(value) {
 			// 0 = unlimited
-			this.organisationItem.requestQuota = value ? parseInt(value) : 0
+			if (!this.organisationItem.quota) {
+				this.organisationItem.quota = { storage: 0, bandwidth: 0, requests: 0 }
+			}
+			this.organisationItem.quota.requests = value ? parseInt(value) : 0
 		},
 
 		/**
@@ -659,13 +832,15 @@ export default {
 					// Clear the form after successful creation
 					setTimeout(() => {
 						this.organisationItem = {
-						name: '',
-						slug: '',
-						description: '',
-						active: true,
-							storageQuota: null,
-							bandwidthQuota: null,
-							requestQuota: null,
+							name: '',
+							slug: '',
+							description: '',
+							active: true,
+							quota: {
+								storage: null,
+								bandwidth: null,
+								requests: null,
+							},
 							groups: [],
 						}
 						this.selectedGroups = []

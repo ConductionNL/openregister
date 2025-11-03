@@ -12,6 +12,7 @@ export const useOrganisationStore = defineStore('organisation', {
 			active: null,
 			list: [],
 		},
+		nextcloudGroups: [], // Cached Nextcloud groups for organisation access control
 		viewMode: 'cards',
 		filters: [], // List of query
 		pagination: {
@@ -416,6 +417,39 @@ export const useOrganisationStore = defineStore('organisation', {
 			} catch (error) {
 				console.error('Error clearing cache:', error)
 				throw new Error(`Failed to clear cache: ${error.message}`)
+			}
+		},
+		/**
+		 * Load and cache Nextcloud groups for organisation access control
+		 * This should be called on the organisations index page to preload groups
+		 * 
+		 * @return {Promise<void>}
+		 */
+		async loadNextcloudGroups() {
+			try {
+				// Fetch groups from Nextcloud OCS API (using v1 for compatibility)
+				const response = await fetch('/ocs/v1.php/cloud/groups?format=json', {
+					headers: {
+						'OCS-APIRequest': 'true',
+					},
+				})
+
+				if (response.ok) {
+					const data = await response.json()
+					if (data.ocs?.data?.groups) {
+						// Transform group IDs into objects with additional info
+						this.nextcloudGroups = data.ocs.data.groups.map(groupId => ({
+							id: groupId,
+							name: groupId,
+							userCount: 0, // Could be fetched separately if needed
+						}))
+						console.log('Loaded', this.nextcloudGroups.length, 'Nextcloud groups into organisation store')
+					}
+				} else {
+					console.warn('Failed to load Nextcloud groups:', response.statusText)
+				}
+			} catch (error) {
+				console.error('Error loading Nextcloud groups:', error)
 			}
 		},
 	},

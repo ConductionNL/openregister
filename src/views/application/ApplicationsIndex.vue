@@ -303,7 +303,10 @@ export default {
 			return ''
 		},
 	},
-	mounted() {
+	async mounted() {
+		// Load Nextcloud groups into store first (needed for edit modal)
+		await applicationStore.loadNextcloudGroups()
+		// Then load applications
 		applicationStore.refreshApplicationList()
 	},
 	methods: {

@@ -140,6 +140,21 @@ class Application extends Entity implements JsonSerializable
     protected ?array $groups = [];
 
     /**
+     * Authorization rules for this application
+     * 
+     * Simple CRUD structure defining permissions:
+     * {
+     *   "create": [],
+     *   "read": [],
+     *   "update": [],
+     *   "delete": []
+     * }
+     *
+     * @var array|null Authorization rules as JSON structure
+     */
+    protected ?array $authorization = null;
+
+    /**
      * Date when the application was created
      *
      * @var DateTime|null Creation timestamp
@@ -175,6 +190,7 @@ class Application extends Entity implements JsonSerializable
         $this->addType('bandwidth_quota', 'integer');
         $this->addType('request_quota', 'integer');
         $this->addType('groups', 'json');
+        $this->addType('authorization', 'json');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
 
@@ -399,12 +415,33 @@ class Application extends Entity implements JsonSerializable
 
 
     /**
+     * Get default authorization structure for applications
+     *
+     * Provides sensible defaults with empty arrays for all CRUD permissions
+     *
+     * @return array Default authorization structure
+     */
+    private function getDefaultAuthorization(): array
+    {
+        return [
+            'create' => [],
+            'read'   => [],
+            'update' => [],
+            'delete' => [],
+        ];
+
+    }//end getDefaultAuthorization()
+
+
+    /**
      * JSON serialization for API responses
      *
      * @return array Serialized application data
      */
     public function jsonSerialize(): array
     {
+        $groups = $this->getGroups();
+
         return [
             'id'             => $this->id,
             'uuid'           => $this->uuid,
@@ -417,7 +454,22 @@ class Application extends Entity implements JsonSerializable
             'schemas'        => $this->getSchemas(),
             'owner'          => $this->owner,
             'active'         => $this->getActive(),
-            'groups'         => $this->getGroups(),
+            'groups'         => $groups,
+            'quota'          => [
+                'storage'   => $this->storageQuota,
+                'bandwidth' => $this->bandwidthQuota,
+                'requests'  => $this->requestQuota,
+                'users'     => null, // To be set via admin configuration
+                'groups'    => null, // To be set via admin configuration
+            ],
+            'usage'          => [
+                'storage'   => 0, // To be calculated from actual usage
+                'bandwidth' => 0, // To be calculated from actual usage
+                'requests'  => 0, // To be calculated from actual usage
+                'users'     => 0, // Applications don't have direct users
+                'groups'    => count($groups),
+            ],
+            'authorization'  => $this->authorization ?? $this->getDefaultAuthorization(),
             'created'        => $this->created ? $this->created->format('c') : null,
             'updated'        => $this->updated ? $this->updated->format('c') : null,
         ];

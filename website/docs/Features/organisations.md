@@ -25,8 +25,9 @@ graph TB
         A --> C[Schemas]
         A --> D[Objects]
         A --> E[Users]
-        A --> F[Groups/Roles]
+        A --> F[Groups]
         A --> G[Resource Quotas]
+        A --> H[Authorization/RBAC]
     end
     
     style A fill:#e3f2fd
@@ -36,6 +37,7 @@ graph TB
     style E fill:#f3e5f5
     style F fill:#e1f5fe
     style G fill:#fff9c4
+    style H fill:#ffcdd2
 ```
 
 ## Key Features
@@ -61,6 +63,14 @@ graph TB
 - **Storage Quota**: Limit total storage per organisation (0 = unlimited)
 - **Bandwidth Quota**: Monthly bandwidth limits (0 = unlimited)
 - **API Request Quota**: Daily API request limits (0 = unlimited)
+- **User Quota**: Maximum number of users (configurable)
+- **Group Quota**: Maximum number of groups (configurable)
+
+### Authorization & RBAC (Role-Based Access Control)
+- **Hierarchical Permissions**: Define CRUD permissions per entity type (register, schema, object, view, agent)
+- **Special Rights**: Grant special permissions like object_publish, agent_use, dashboard_view, llm_use
+- **Group-Based**: Assign permissions to Nextcloud groups
+- **Quick Authorization Checks**: Use singular entity names for efficient permission checking
 
 ## Creating an Organisation
 
@@ -86,7 +96,11 @@ graph TB
 - **API Request Quota (requests/day)**: Set daily API request limit (0 = unlimited)
 
 #### Security Tab
-View and manage the list of Nextcloud groups that have access to this organisation
+Configure fine-grained RBAC permissions:
+- **Entity-Level Permissions**: Set CRUD permissions for registers, schemas, objects, views, and agents
+- **Special Rights**: Grant special permissions like object publishing, agent use, dashboard view, and LLM access
+- **Group Assignment**: Assign permissions to specific Nextcloud groups
+- View current authorization configuration in an easy-to-read table format
 
 4. Click **Create** to save the organisation
 
@@ -225,40 +239,221 @@ The Organisation entity includes these fields:
 | 'name' | VARCHAR(255) | Organisation name (required) |
 | 'slug' | VARCHAR(255) | URL-friendly identifier (optional) |
 | 'description' | TEXT | Detailed description |
-| 'is_default' | BOOLEAN | Whether this is the default organisation |
 | 'active' | BOOLEAN | Whether the organisation is active |
-| 'roles' | JSON | Array of Nextcloud group definitions |
+| 'users' | JSON | Array of user IDs belonging to organisation |
+| 'groups' | JSON | Array of Nextcloud group IDs with access |
+| 'authorization' | JSON | RBAC permissions structure (see Authorization section) |
 | 'storage_quota' | BIGINT | Storage limit in bytes (NULL = unlimited) |
 | 'bandwidth_quota' | BIGINT | Monthly bandwidth in bytes (NULL = unlimited) |
 | 'request_quota' | INTEGER | Daily API requests (NULL = unlimited) |
+| 'owner' | VARCHAR(255) | User ID of the organisation owner |
 | 'created' | DATETIME | Creation timestamp |
 | 'updated' | DATETIME | Last update timestamp |
 
-### Roles/Groups JSON Structure
+### Groups JSON Structure
 
-Roles (groups) are stored as a simple array of group ID strings:
-
-```json
-{
-  'roles': [
-    'group-id-1',
-    'group-id-2',
-    'group-id-3'
-  ]
-}
-```
-
-Example:
+Groups are stored as a simple array of group ID strings for basic access control:
 
 ```json
 {
-  'roles': [
+  'groups': [
     'engineers',
     'managers',
     'viewers'
   ]
 }
 ```
+
+### Authorization JSON Structure
+
+The authorization field contains the complete RBAC configuration:
+
+```json
+{
+  'authorization': {
+    'register': {
+      'create': ['admin', 'register-manager'],
+      'read': ['admin', 'register-manager', 'viewer'],
+      'update': ['admin', 'register-manager'],
+      'delete': ['admin']
+    },
+    'schema': {
+      'create': ['admin'],
+      'read': ['admin', 'developer', 'viewer'],
+      'update': ['admin'],
+      'delete': ['admin']
+    },
+    'object': {
+      'create': ['admin', 'editor'],
+      'read': ['admin', 'editor', 'viewer'],
+      'update': ['admin', 'editor'],
+      'delete': ['admin']
+    },
+    'view': {
+      'create': ['admin'],
+      'read': ['admin', 'user'],
+      'update': ['admin'],
+      'delete': ['admin']
+    },
+    'agent': {
+      'create': ['admin'],
+      'read': ['admin', 'developer'],
+      'update': ['admin'],
+      'delete': ['admin']
+    },
+    'object_publish': ['admin', 'publisher'],
+    'agent_use': ['admin', 'ai-user'],
+    'dashboard_view': ['admin', 'manager'],
+    'llm_use': ['admin', 'ai-user']
+  }
+}
+```
+
+## Authorization & RBAC System
+
+Organisations use a hierarchical Role-Based Access Control (RBAC) system to manage permissions at a granular level.
+
+### Authorization Structure
+
+The authorization system uses **singular entity names** for easier permission checking:
+
+```json
+{
+  'authorization': {
+    'register': {
+      'create': ['admin', 'register-manager'],
+      'read': ['admin', 'register-manager', 'viewer'],
+      'update': ['admin', 'register-manager'],
+      'delete': ['admin']
+    },
+    'schema': {
+      'create': ['admin', 'schema-designer'],
+      'read': ['admin', 'schema-designer', 'developer'],
+      'update': ['admin', 'schema-designer'],
+      'delete': ['admin']
+    },
+    'object': {
+      'create': ['admin', 'editor', 'contributor'],
+      'read': ['admin', 'editor', 'contributor', 'viewer'],
+      'update': ['admin', 'editor'],
+      'delete': ['admin']
+    },
+    'view': {
+      'create': ['admin', 'view-designer'],
+      'read': ['admin', 'view-designer', 'user'],
+      'update': ['admin', 'view-designer'],
+      'delete': ['admin']
+    },
+    'agent': {
+      'create': ['admin', 'ai-specialist'],
+      'read': ['admin', 'ai-specialist', 'developer'],
+      'update': ['admin', 'ai-specialist'],
+      'delete': ['admin']
+    },
+    'object_publish': ['admin', 'publisher'],
+    'agent_use': ['admin', 'ai-user', 'developer'],
+    'dashboard_view': ['admin', 'manager', 'viewer'],
+    'llm_use': ['admin', 'ai-user']
+  }
+}
+```
+
+### Entity-Level Permissions
+
+Each entity type has four standard CRUD permissions:
+
+| Entity | Create | Read | Update | Delete |
+|--------|--------|------|--------|--------|
+| **register** | Who can create registers | Who can view registers | Who can modify registers | Who can delete registers |
+| **schema** | Who can create schemas | Who can view schemas | Who can modify schemas | Who can delete schemas |
+| **object** | Who can create objects | Who can view objects | Who can modify objects | Who can delete objects |
+| **view** | Who can create views | Who can view views | Who can modify views | Who can delete views |
+| **agent** | Who can create agents | Who can view agents | Who can modify agents | Who can delete agents |
+
+### Special Rights
+
+Beyond CRUD operations, special rights grant additional capabilities:
+
+| Right | Description | Common Groups |
+|-------|-------------|---------------|
+| **object_publish** | Publish objects to make them publicly available | 'publisher', 'editor', 'admin' |
+| **agent_use** | Use AI agents for processing and analysis | 'ai-user', 'developer', 'admin' |
+| **dashboard_view** | Access organisation dashboard and analytics | 'manager', 'admin', 'analyst' |
+| **llm_use** | Use Large Language Model features | 'ai-user', 'researcher', 'admin' |
+
+### Permission Check Example
+
+```php
+// Quick authorization check using singular entity names
+$canCreateRegister = $organisationService->hasPermission(
+    $organisation,
+    'register',  // Entity type (singular)
+    'create',    // Action
+    $userId
+);
+
+// Check special right
+$canPublish = $organisationService->hasSpecialRight(
+    $organisation,
+    'object_publish',
+    $userId
+);
+```
+
+### Authorization Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant System
+    participant Organisation
+    participant Authorization
+    participant Groups as Nextcloud Groups
+    
+    User->>System: Request action (e.g., create register)
+    System->>Organisation: Get organisation context
+    Organisation->>Authorization: Check permission
+    
+    Authorization->>Authorization: Extract entity type (register) and action (create)
+    Authorization->>Groups: Get user's group memberships
+    Groups-->>Authorization: User groups list
+    
+    Authorization->>Authorization: Check if user groups overlap with allowed groups
+    
+    alt User in allowed group
+        Authorization-->>System: Permission granted
+        System->>System: Execute action
+        System-->>User: Success response
+    else User not in allowed group
+        Authorization-->>System: Permission denied
+        System-->>User: 403 Forbidden
+    end
+```
+
+### Best Practices
+
+#### Permission Design
+- ✅ Use hierarchical permissions (admin → manager → user)
+- ✅ Grant least privilege - start restrictive, add as needed
+- ✅ Use descriptive group names that reflect permissions
+- ✅ Document why specific groups have specific permissions
+- ❌ Don't grant 'delete' permissions to regular users
+- ❌ Don't mix unrelated permissions in a single group
+
+#### Group Structure
+```
+admin                  # Full access to everything
+  ├─ register-manager  # Manage registers and schemas
+  ├─ content-editor    # Create and edit objects
+  ├─ publisher         # Publish objects
+  └─ viewer            # Read-only access
+```
+
+#### Permission Auditing
+- Review permissions quarterly
+- Remove permissions from inactive groups
+- Monitor permission usage in logs
+- Update documentation when permissions change
 
 ## Use Cases
 
@@ -435,7 +630,7 @@ use OCA\OpenRegister\Service\OrganisationService;
 $organisations = $organisationService->getUserOrganisations();
 ```
 
-### Create Organisation with Groups
+### Create Organisation with Groups and Authorization
 
 ```php
 $organisation = $organisationService->createOrganisation(
@@ -443,10 +638,48 @@ $organisation = $organisationService->createOrganisation(
     'Handles all research activities'
 );
 
-// Assign groups (just the IDs)
-$organisation->setRoles([
+// Assign groups for basic access
+$organisation->setGroups([
     'researchers',
     'lab-managers'
+]);
+
+// Set authorization permissions
+$organisation->setAuthorization([
+    'register' => [
+        'create' => ['lab-managers'],
+        'read'   => ['researchers', 'lab-managers'],
+        'update' => ['lab-managers'],
+        'delete' => ['lab-managers'],
+    ],
+    'schema' => [
+        'create' => ['lab-managers'],
+        'read'   => ['researchers', 'lab-managers'],
+        'update' => ['lab-managers'],
+        'delete' => ['lab-managers'],
+    ],
+    'object' => [
+        'create' => ['researchers', 'lab-managers'],
+        'read'   => ['researchers', 'lab-managers'],
+        'update' => ['researchers', 'lab-managers'],
+        'delete' => ['lab-managers'],
+    ],
+    'view' => [
+        'create' => ['lab-managers'],
+        'read'   => ['researchers', 'lab-managers'],
+        'update' => ['lab-managers'],
+        'delete' => ['lab-managers'],
+    ],
+    'agent' => [
+        'create' => ['lab-managers'],
+        'read'   => ['researchers', 'lab-managers'],
+        'update' => ['lab-managers'],
+        'delete' => ['lab-managers'],
+    ],
+    'object_publish' => ['lab-managers'],
+    'agent_use'      => ['researchers', 'lab-managers'],
+    'dashboard_view' => ['lab-managers'],
+    'llm_use'        => ['researchers', 'lab-managers'],
 ]);
 
 $organisationMapper->update($organisation);

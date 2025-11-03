@@ -810,6 +810,20 @@ class Agent extends Entity implements JsonSerializable
             'ragNumSources'      => $this->ragNumSources,
             'ragIncludeFiles'    => $this->ragIncludeFiles,
             'ragIncludeObjects'  => $this->ragIncludeObjects,
+            'quota'              => [
+                'storage'   => null, // To be set via admin configuration
+                'bandwidth' => null, // To be set via admin configuration
+                'requests'  => null, // To be set via admin configuration (AI API calls)
+                'users'     => null, // To be set via admin configuration
+                'groups'    => null, // To be set via admin configuration
+            ],
+            'usage'              => [
+                'storage'   => 0, // To be calculated from actual usage
+                'bandwidth' => 0, // To be calculated from actual usage
+                'requests'  => 0, // To be calculated from actual AI API calls
+                'users'     => 0, // Agents don't have direct users
+                'groups'    => 0, // Agents don't have groups
+            ],
             'created'            => isset($this->created) === true ? $this->created->format('c') : null,
             'updated'            => isset($this->updated) === true ? $this->updated->format('c') : null,
         ];

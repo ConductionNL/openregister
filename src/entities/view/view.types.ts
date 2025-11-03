@@ -1,5 +1,5 @@
 /**
- * Agent entity type definitions
+ * View entity type definitions
  *
  * @category Entities
  * @package  openregister
@@ -10,26 +10,16 @@
  * @link     https://www.openregister.nl
  */
 
-export type TAgent = {
+export type TView = {
 	id?: number
 	uuid?: string
 	name: string
 	description?: string
-	type?: string
-	provider?: string
-	model?: string
-	prompt?: string
-	temperature?: number
-	maxTokens?: number
-	configuration?: Record<string, any>
-	organisation?: number
 	owner?: string
-	active?: boolean
-	enableRag?: boolean
-	ragSearchMode?: string
-	ragNumSources?: number
-	ragIncludeFiles?: boolean
-	ragIncludeObjects?: boolean
+	isPublic?: boolean
+	isDefault?: boolean
+	query?: Record<string, any>
+	favoredBy?: string[]
 	quota?: {
 		storage?: number | null
 		bandwidth?: number | null
@@ -48,8 +38,8 @@ export type TAgent = {
 	updated?: string
 }
 
-export type TAgentPath = {
-	agentId?: string
+export type TViewPath = {
+	viewId?: string
 }
 
 

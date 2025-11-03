@@ -404,6 +404,9 @@ export default {
 	},
 	async mounted() {
 		try {
+			// Load Nextcloud groups into store first (needed for edit modal)
+			await organisationStore.loadNextcloudGroups()
+			// Then load organisations
 			await organisationStore.refreshOrganisationList()
 			await organisationStore.getActiveOrganisation()
 		} catch (error) {

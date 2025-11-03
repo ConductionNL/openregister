@@ -43,7 +43,7 @@ class ViewMapper extends QBMapper
     public function __construct(
         IDBConnection $db
     ) {
-        parent::__construct($db, 'openregister_views');
+        parent::__construct($db, 'openregister_view');
     }//end __construct()
 
 

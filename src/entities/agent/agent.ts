@@ -34,6 +34,8 @@ export class Agent implements TAgent {
 	public ragNumSources?: number
 	public ragIncludeFiles?: boolean
 	public ragIncludeObjects?: boolean
+	public quota?: TAgent['quota']
+	public usage?: TAgent['usage']
 	public created?: string
 	public updated?: string
 
@@ -57,6 +59,20 @@ export class Agent implements TAgent {
 		this.ragNumSources = agent.ragNumSources || 5
 		this.ragIncludeFiles = agent.ragIncludeFiles || false
 		this.ragIncludeObjects = agent.ragIncludeObjects || false
+		this.quota = agent.quota || {
+			storage: null,
+			bandwidth: null,
+			requests: null,
+			users: null,
+			groups: null,
+		}
+		this.usage = agent.usage || {
+			storage: 0,
+			bandwidth: 0,
+			requests: 0,
+			users: 0,
+			groups: 0,
+		}
 		this.created = agent.created || ''
 		this.updated = agent.updated || ''
 	}
@@ -82,6 +98,20 @@ export class Agent implements TAgent {
 			ragNumSources: z.number().positive().optional(),
 			ragIncludeFiles: z.boolean().optional(),
 			ragIncludeObjects: z.boolean().optional(),
+			quota: z.object({
+				storage: z.number().nullable().optional(),
+				bandwidth: z.number().nullable().optional(),
+				requests: z.number().nullable().optional(),
+				users: z.number().nullable().optional(),
+				groups: z.number().nullable().optional(),
+			}).optional(),
+			usage: z.object({
+				storage: z.number().optional(),
+				bandwidth: z.number().optional(),
+				requests: z.number().optional(),
+				users: z.number().optional(),
+				groups: z.number().optional(),
+			}).optional(),
 			created: z.string().optional(),
 			updated: z.string().optional(),
 		})
