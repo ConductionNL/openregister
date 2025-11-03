@@ -148,26 +148,26 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 										<template #icon>
 											<OpenInNew :size="20" />
 										</template>
-							Ga naar organisatie
-						</NcActionButton>
-						<NcActionButton
-							close-after-click
-							@click="openJoinModal(organisation)">
-							<template #icon>
-								<AccountMultiplePlus :size="20" />
-							</template>
-							Add User
-						</NcActionButton>
-						<NcActionButton v-if="canDeleteOrganisation(organisation)"
-							close-after-click
-							@click="organisationStore.setOrganisationItem(organisation); navigationStore.setModal('deleteOrganisation')">
-							<template #icon>
-								<TrashCanOutline :size="20" />
-							</template>
-							Verwijderen
-						</NcActionButton>
-					</NcActions>
-				</div>
+										Ga naar organisatie
+									</NcActionButton>
+									<NcActionButton
+										close-after-click
+										@click="openJoinModal(organisation)">
+										<template #icon>
+											<AccountMultiplePlus :size="20" />
+										</template>
+										Add User
+									</NcActionButton>
+									<NcActionButton v-if="canDeleteOrganisation(organisation)"
+										close-after-click
+										@click="organisationStore.setOrganisationItem(organisation); navigationStore.setModal('deleteOrganisation')">
+										<template #icon>
+											<TrashCanOutline :size="20" />
+										</template>
+										Verwijderen
+									</NcActionButton>
+								</NcActions>
+							</div>
 
 				<div class="organisationInfo">
 					<p v-if="organisation.description" class="description">
@@ -272,27 +272,27 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 												</template>
 												Ga naar organisatie
 											</NcActionButton>
-										<NcActionButton
-											close-after-click
-											@click="openJoinModal(organisation)">
-											<template #icon>
-												<AccountMultiplePlus :size="20" />
-											</template>
-											Add User
-										</NcActionButton>
-										<NcActionButton v-if="canDeleteOrganisation(organisation)"
-											close-after-click
-											@click="organisationStore.setOrganisationItem(organisation); navigationStore.setModal('deleteOrganisation')">
-											<template #icon>
-												<TrashCanOutline :size="20" />
-											</template>
-											Verwijderen
-										</NcActionButton>
-									</NcActions>
-								</td>
-							</tr>
-						</tbody>
-					</table>
+											<NcActionButton
+												close-after-click
+												@click="openJoinModal(organisation)">
+												<template #icon>
+													<AccountMultiplePlus :size="20" />
+												</template>
+												Add User
+											</NcActionButton>
+											<NcActionButton v-if="canDeleteOrganisation(organisation)"
+												close-after-click
+												@click="organisationStore.setOrganisationItem(organisation); navigationStore.setModal('deleteOrganisation')">
+												<template #icon>
+													<TrashCanOutline :size="20" />
+												</template>
+												Verwijderen
+											</NcActionButton>
+										</NcActions>
+									</td>
+								</tr>
+							</tbody>
+						</table>
 					</div>
 				</template>
 			</div>
@@ -343,15 +343,11 @@ import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
-import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
 import AccountMultiplePlus from 'vue-material-design-icons/AccountMultiplePlus.vue'
-import AccountGroupOutline from 'vue-material-design-icons/AccountGroupOutline.vue'
-import AccountMinus from 'vue-material-design-icons/AccountMinus.vue'
 import SwapHorizontal from 'vue-material-design-icons/SwapHorizontal.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
-import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 
 import PaginationComponent from '../../components/PaginationComponent.vue'
@@ -371,15 +367,11 @@ export default {
 		Pencil,
 		TrashCanOutline,
 		Refresh,
-		CheckCircle,
 		AccountPlus,
 		AccountMultiplePlus,
-		AccountGroupOutline,
-		AccountMinus,
 		SwapHorizontal,
 		Plus,
 		Eye,
-		ContentCopy,
 		OpenInNew,
 		PaginationComponent,
 	},
