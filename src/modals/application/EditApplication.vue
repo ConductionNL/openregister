@@ -108,54 +108,48 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 								:value="bandwidthQuotaMB"
 								@update:value="updateBandwidthQuota" />
 
-							<NcTextField
-								:disabled="loading"
-								label="API Request Quota (requests/day)"
-								type="number"
-								placeholder="0 = unlimited"
-								:value="applicationItem.quota?.requests || 0"
-								@update:value="updateRequestQuota" />
-						</div>
-					</BTab>
+						<NcTextField
+							:disabled="loading"
+							label="API Request Quota (requests/day)"
+							type="number"
+							placeholder="0 = unlimited"
+							:value="applicationItem.quota?.requests || 0"
+							@update:value="updateRequestQuota" />
 
-					<BTab>
-						<template #title>
-							<Shield :size="16" />
-							<span>Security</span>
-						</template>
-						<div class="security-section">
-							<NcNoteCard type="info">
-								<p><strong>Group Access Control</strong></p>
-								<p>The following Nextcloud groups have access to this application.</p>
-							</NcNoteCard>
+						<NcTextField
+							:disabled="loading"
+							label="Group Quota"
+							type="number"
+							placeholder="0 = unlimited"
+							:value="applicationItem.quota?.groups || 0"
+							@update:value="updateGroupQuota" />
+					</div>
+				</BTab>
 
-							<div v-if="loadingGroups" class="loading-groups">
-								<NcLoadingIcon :size="20" />
-								<span>Loading user groups...</span>
-							</div>
-
-							<div v-else-if="selectedGroups.length > 0" class="groups-list">
-								<h3>Selected Groups</h3>
-								<div class="group-items">
-									<div v-for="group in selectedGroups" :key="group.id" class="group-item">
-										<span class="group-badge">{{ group.name }}</span>
-										<NcButton
-											type="tertiary"
-											:disabled="loading"
-											@click="removeGroup(group)">
-											<template #icon>
-												<Close :size="16" />
-											</template>
-										</NcButton>
-									</div>
-								</div>
-							</div>
-
-							<div v-else class="no-groups">
-								<p>No groups selected. All users will have access to this application.</p>
+				<BTab>
+					<template #title>
+						<Shield :size="16" />
+						<span>Security</span>
+					</template>
+					<div class="security-section">
+						<div class="rbac-container">
+							<div class="rbac-section">
+								<p class="rbac-description">
+									Configure CRUD permissions for this application.
+									Empty permissions = open access for all application groups.
+									The 'admin' group always has full access.
+								</p>
+								
+								<RbacTable
+									entity-type="application"
+									:authorization="applicationItem.authorization"
+									:available-groups="availableGroups"
+									:organisation-groups="filteredAvailableGroups"
+									@update="updateApplicationPermission" />
 							</div>
 						</div>
-					</BTab>
+					</div>
+				</BTab>
 				</BTabs>
 			</div>
 		</div>
@@ -202,6 +196,8 @@ import Cog from 'vue-material-design-icons/Cog.vue'
 import Database from 'vue-material-design-icons/Database.vue'
 import Shield from 'vue-material-design-icons/Shield.vue'
 
+import RbacTable from '../../components/RbacTable.vue'
+
 export default {
 	name: 'EditApplication',
 	components: {
@@ -214,6 +210,7 @@ export default {
 		NcNoteCard,
 		BTabs,
 		BTab,
+		RbacTable,
 		// Icons
 		ContentSaveOutline,
 		Cancel,
@@ -226,17 +223,25 @@ export default {
 	data() {
 		return {
 			activeTab: 0,
-			applicationItem: {
-				name: '',
-				description: '',
-				organisation: null,
-				quota: {
-					storage: 0,
-					bandwidth: 0,
-					requests: 0,
-				},
-				groups: [],
+		applicationItem: {
+			name: '',
+			description: '',
+			organisation: null,
+			quota: {
+				storage: 0,
+				bandwidth: 0,
+				requests: 0,
+				users: 0,
+				groups: 0,
 			},
+			groups: [],
+			authorization: {
+				create: [],
+				read: [],
+				update: [],
+				delete: [],
+			},
+		},
 			selectedOrganisation: null,
 			selectedGroups: [],
 			availableGroups: [],
@@ -260,11 +265,18 @@ export default {
 			if (!this.applicationItem.quota?.storage) return 0
 			return Math.round(this.applicationItem.quota.storage / (1024 * 1024))
 		},
-		bandwidthQuotaMB() {
-			if (!this.applicationItem.quota?.bandwidth) return 0
-			return Math.round(this.applicationItem.quota.bandwidth / (1024 * 1024))
-		},
+	bandwidthQuotaMB() {
+		if (!this.applicationItem.quota?.bandwidth) return 0
+		return Math.round(this.applicationItem.quota.bandwidth / (1024 * 1024))
 	},
+	filteredAvailableGroups() {
+		// Filter available groups to only show groups assigned to the application
+		if (!this.applicationItem.groups || this.applicationItem.groups.length === 0) {
+			return this.availableGroups
+		}
+		return this.availableGroups.filter(group => this.applicationItem.groups.includes(group.id))
+	},
+},
 	async mounted() {
 		await this.fetchOrganisations()
 		// Use cached Nextcloud groups from store (preloaded on index page)
@@ -445,61 +457,110 @@ export default {
 		 * @param {object} groupToRemove - Group to remove
 		 * @return {void}
 		 */
-		removeGroup(groupToRemove) {
-			this.selectedGroups = this.selectedGroups.filter(g => g.id !== groupToRemove.id)
-			// Store only the group IDs, not the full objects
-			this.applicationItem.groups = this.selectedGroups.map(group => group.id)
-		},
+	removeGroup(groupToRemove) {
+		this.selectedGroups = this.selectedGroups.filter(g => g.id !== groupToRemove.id)
+		// Store only the group IDs, not the full objects
+		this.applicationItem.groups = this.selectedGroups.map(group => group.id)
+	},
 
-		/**
-		 * Update storage quota (converts MB to bytes)
-		 * 
-		 * @param {number} value - Quota in MB
-		 * @return {void}
-		 */
-		updateStorageQuota(value) {
-			// Convert MB to bytes (0 = unlimited)
-			const mbValue = value ? parseInt(value) : 0
-			if (!this.applicationItem.quota) {
-				this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0 }
+	/**
+	 * Update CRUD permission for application
+	 * 
+	 * @param {object} payload - Permission update payload
+	 * @return {void}
+	 */
+	updateApplicationPermission(payload) {
+		const { groupId, action, hasPermission } = payload
+
+		// Initialize authorization if not present
+		if (!this.applicationItem.authorization) {
+			this.applicationItem.authorization = {
+				create: [],
+				read: [],
+				update: [],
+				delete: [],
 			}
-			this.applicationItem.quota.storage = mbValue * 1024 * 1024
-		},
+		}
 
-		/**
-		 * Update bandwidth quota (converts MB to bytes)
-		 * 
-		 * @param {number} value - Quota in MB
-		 * @return {void}
-		 */
-		updateBandwidthQuota(value) {
-			// Convert MB to bytes (0 = unlimited)
-			const mbValue = value ? parseInt(value) : 0
-			if (!this.applicationItem.quota) {
-				this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0 }
-			}
-			this.applicationItem.quota.bandwidth = mbValue * 1024 * 1024
-		},
+		// Ensure the action array exists
+		if (!Array.isArray(this.applicationItem.authorization[action])) {
+			this.applicationItem.authorization[action] = []
+		}
 
-		/**
-		 * Update request quota
-		 * 
-		 * @param {number} value - Quota value
-		 * @return {void}
-		 */
-		updateRequestQuota(value) {
-			// 0 = unlimited
-			if (!this.applicationItem.quota) {
-				this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0 }
-			}
-			this.applicationItem.quota.requests = value ? parseInt(value) : 0
-		},
+		// Update the permission
+		const groupIndex = this.applicationItem.authorization[action].indexOf(groupId)
+		if (hasPermission && groupIndex === -1) {
+			// Add the group
+			this.applicationItem.authorization[action].push(groupId)
+		} else if (!hasPermission && groupIndex !== -1) {
+			// Remove the group
+			this.applicationItem.authorization[action].splice(groupIndex, 1)
+		}
+	},
 
-		/**
-		 * Close the modal and reset state
-		 * 
-		 * @return {void}
-		 */
+	/**
+	 * Update storage quota (converts MB to bytes)
+	 * 
+	 * @param {number} value - Quota in MB
+	 * @return {void}
+	 */
+	updateStorageQuota(value) {
+		// Convert MB to bytes (0 = unlimited)
+		const mbValue = value ? parseInt(value) : 0
+		if (!this.applicationItem.quota) {
+			this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
+		}
+		this.applicationItem.quota.storage = mbValue * 1024 * 1024
+	},
+
+	/**
+	 * Update bandwidth quota (converts MB to bytes)
+	 * 
+	 * @param {number} value - Quota in MB
+	 * @return {void}
+	 */
+	updateBandwidthQuota(value) {
+		// Convert MB to bytes (0 = unlimited)
+		const mbValue = value ? parseInt(value) : 0
+		if (!this.applicationItem.quota) {
+			this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
+		}
+		this.applicationItem.quota.bandwidth = mbValue * 1024 * 1024
+	},
+
+	/**
+	 * Update request quota
+	 * 
+	 * @param {number} value - Quota value
+	 * @return {void}
+	 */
+	updateRequestQuota(value) {
+		// 0 = unlimited
+		if (!this.applicationItem.quota) {
+			this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
+		}
+		this.applicationItem.quota.requests = value ? parseInt(value) : 0
+	},
+
+	/**
+	 * Update group quota
+	 * 
+	 * @param {number} value - Quota value
+	 * @return {void}
+	 */
+	updateGroupQuota(value) {
+		// 0 = unlimited
+		if (!this.applicationItem.quota) {
+			this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
+		}
+		this.applicationItem.quota.groups = value ? parseInt(value) : 0
+	},
+
+	/**
+	 * Close the modal and reset state
+	 * 
+	 * @return {void}
+	 */
 		closeModal() {
 			this.success = false
 			this.error = null
@@ -633,6 +694,25 @@ export default {
 	flex-direction: column;
 	gap: 16px;
 	padding: 16px 0;
+}
+
+.rbac-container {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	padding: 0;
+}
+
+.rbac-section {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.rbac-description {
+	font-size: 14px;
+	color: var(--color-text-lighter);
+	margin: 0 0 16px 0;
 }
 
 .loading-groups {

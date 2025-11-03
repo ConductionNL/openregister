@@ -176,7 +176,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 					<div class="organisationStats">
 						<div class="stat">
 							<span class="statLabel">Leden:</span>
-										<span class="statValue">{{ organisation.userCount || 0 }}</span>
+										<span class="statValue">{{ organisation.users?.length || 0 }}</span>
 									</div>
 									<div class="stat">
 										<span class="statLabel">Eigenaar:</span>
@@ -236,7 +236,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 											<span v-if="organisation.description" class="textDescription textEllipsis">{{ organisation.description }}</span>
 										</div>
 									</td>
-									<td>{{ organisation.userCount || 0 }}</td>
+									<td>{{ organisation.users?.length || 0 }}</td>
 									<td>{{ organisation.owner || 'System' }}</td>
 									<td>
 										<span v-if="isActiveOrganisation(organisation)" class="statusActive">Actief</span>

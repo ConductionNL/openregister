@@ -106,15 +106,31 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 								:value="bandwidthQuotaMB"
 								@update:value="updateBandwidthQuota" />
 
-							<NcTextField
-								:disabled="loading"
-								label="API Request Quota (requests/day)"
-								type="number"
-								placeholder="0 = unlimited"
-								:value="organisationItem.quota?.requests || 0"
-								@update:value="updateRequestQuota" />
-						</div>
-					</BTab>
+						<NcTextField
+							:disabled="loading"
+							label="API Request Quota (requests/day)"
+							type="number"
+							placeholder="0 = unlimited"
+							:value="organisationItem.quota?.requests || 0"
+							@update:value="updateRequestQuota" />
+
+						<NcTextField
+							:disabled="loading"
+							label="User Quota"
+							type="number"
+							placeholder="0 = unlimited"
+							:value="organisationItem.quota?.users || 0"
+							@update:value="updateUserQuota" />
+
+						<NcTextField
+							:disabled="loading"
+							label="Group Quota"
+							type="number"
+							placeholder="0 = unlimited"
+							:value="organisationItem.quota?.groups || 0"
+							@update:value="updateGroupQuota" />
+					</div>
+				</BTab>
 
 					<BTab :disabled="!organisationItem.uuid">
 						<template #title>
@@ -180,81 +196,69 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							<span>Security</span>
 						</template>
 						<div class="security-section">
-							<NcNoteCard type="info">
-								<p><strong>Role-Based Access Control</strong></p>
-								<ul>
-									<li>Configure CRUD permissions per entity type</li>
-									<li>Grant special rights for advanced features</li>
-									<li>Empty permissions = open access for all organisation members</li>
-									<li>The 'admin' group always has full access</li>
-								</ul>
-							</NcNoteCard>
-
 							<div v-if="loadingGroups" class="loading-groups">
 								<NcLoadingIcon :size="20" />
 								<span>Loading user groups...</span>
 							</div>
 
 							<div v-else class="rbac-container">
-								<!-- Entity-level permissions tabs -->
-								<div class="rbac-section">
-									<h3>Entity Permissions</h3>
-									<p class="rbac-description">Control who can create, read, update, and delete specific entity types</p>
-									
-									<BTabs content-class="mt-3" pills>
-										<!-- Registers -->
-										<BTab title="Registers">
-											<RbacTable
-												entity-type="register"
-												:authorization="organisationItem.authorization || {}"
-												:available-groups="availableGroups"
-												@update="updateEntityPermission" />
-										</BTab>
+								<BTabs content-class="mt-3" pills>
+									<!-- Registers -->
+									<BTab title="Registers">
+										<RbacTable
+											entity-type="register"
+											:authorization="organisationItem.authorization || {}"
+											:available-groups="availableGroups"
+											:organisation-groups="organisationItem.groups || []"
+											@update="updateEntityPermission" />
+									</BTab>
 
-										<!-- Schemas -->
-										<BTab title="Schemas">
-											<RbacTable
-												entity-type="schema"
-												:authorization="organisationItem.authorization || {}"
-												:available-groups="availableGroups"
-												@update="updateEntityPermission" />
-										</BTab>
+									<!-- Schemas -->
+									<BTab title="Schemas">
+										<RbacTable
+											entity-type="schema"
+											:authorization="organisationItem.authorization || {}"
+											:available-groups="availableGroups"
+											:organisation-groups="organisationItem.groups || []"
+											@update="updateEntityPermission" />
+									</BTab>
 
-										<!-- Objects -->
-										<BTab title="Objects">
-											<RbacTable
-												entity-type="object"
-												:authorization="organisationItem.authorization || {}"
-												:available-groups="availableGroups"
-												@update="updateEntityPermission" />
-										</BTab>
+									<!-- Objects -->
+									<BTab title="Objects">
+										<RbacTable
+											entity-type="object"
+											:authorization="organisationItem.authorization || {}"
+											:available-groups="availableGroups"
+											:organisation-groups="organisationItem.groups || []"
+											@update="updateEntityPermission" />
+									</BTab>
 
-										<!-- Views -->
-										<BTab title="Views">
-											<RbacTable
-												entity-type="view"
-												:authorization="organisationItem.authorization || {}"
-												:available-groups="availableGroups"
-												@update="updateEntityPermission" />
-										</BTab>
+									<!-- Views -->
+									<BTab title="Views">
+										<RbacTable
+											entity-type="view"
+											:authorization="organisationItem.authorization || {}"
+											:available-groups="availableGroups"
+											:organisation-groups="organisationItem.groups || []"
+											@update="updateEntityPermission" />
+									</BTab>
 
-										<!-- Agents -->
-										<BTab title="Agents">
-											<RbacTable
-												entity-type="agent"
-												:authorization="organisationItem.authorization || {}"
-												:available-groups="availableGroups"
-												@update="updateEntityPermission" />
-										</BTab>
-									</BTabs>
-								</div>
+									<!-- Agents -->
+									<BTab title="Agents">
+										<RbacTable
+											entity-type="agent"
+											:authorization="organisationItem.authorization || {}"
+											:available-groups="availableGroups"
+											:organisation-groups="organisationItem.groups || []"
+											@update="updateEntityPermission" />
+									</BTab>
 
-								<!-- Special Rights -->
-								<div class="rbac-section">
-									<h3>Special Rights</h3>
-									<p class="rbac-description">Grant additional permissions beyond standard CRUD operations</p>
-									
-									<table class="rbac-table special-rights-table">
+									<!-- Special Rights -->
+									<BTab title="Special Rights">
+										<div class="special-rights-container">
+											<p class="rbac-description">Grant additional permissions beyond standard CRUD operations</p>
+											
+											<table class="rbac-table special-rights-table">
 										<thead>
 											<tr>
 												<th>Right</th>
@@ -273,7 +277,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 												<td class="right-groups">
 													<NcSelect
 														v-model="selectedSpecialRights.object_publish"
-														:options="availableGroups"
+														:options="filteredAvailableGroups"
 														label="name"
 														track-by="id"
 														:multiple="true"
@@ -291,7 +295,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 												<td class="right-groups">
 													<NcSelect
 														v-model="selectedSpecialRights.agent_use"
-														:options="availableGroups"
+														:options="filteredAvailableGroups"
 														label="name"
 														track-by="id"
 														:multiple="true"
@@ -309,7 +313,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 												<td class="right-groups">
 													<NcSelect
 														v-model="selectedSpecialRights.dashboard_view"
-														:options="availableGroups"
+														:options="filteredAvailableGroups"
 														label="name"
 														track-by="id"
 														:multiple="true"
@@ -327,7 +331,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 												<td class="right-groups">
 													<NcSelect
 														v-model="selectedSpecialRights.llm_use"
-														:options="availableGroups"
+														:options="filteredAvailableGroups"
 														label="name"
 														track-by="id"
 														:multiple="true"
@@ -337,7 +341,9 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 											</tr>
 										</tbody>
 									</table>
-								</div>
+										</div>
+									</BTab>
+								</BTabs>
 							</div>
 						</div>
 					</BTab>
@@ -440,18 +446,20 @@ export default {
 	data() {
 		return {
 			activeTab: 0,
-			organisationItem: {
-				name: '',
-				slug: '',
-				description: '',
-				active: true,
-				quota: {
-					storage: 0,
-					bandwidth: 0,
-					requests: 0,
-				},
-				groups: [],
+		organisationItem: {
+			name: '',
+			slug: '',
+			description: '',
+			active: true,
+			quota: {
+				storage: 0,
+				bandwidth: 0,
+				requests: 0,
+				users: 0,
+				groups: 0,
 			},
+			groups: [],
+		},
 			selectedGroups: [],
 			availableGroups: [],
 			loadingGroups: false,
@@ -484,6 +492,22 @@ export default {
 			if (!this.organisationItem.quota?.bandwidth) return 0
 			return Math.round(this.organisationItem.quota.bandwidth / (1024 * 1024))
 		},
+		/**
+		 * Filter available groups to only show those assigned to the organisation
+		 * 
+		 * @return {Array} Filtered array of groups
+		 */
+		filteredAvailableGroups() {
+			// If no groups assigned yet, show all available groups
+			if (!this.organisationItem.groups || this.organisationItem.groups.length === 0) {
+				return this.availableGroups
+			}
+
+			// Only show groups that are in the organisation's groups list
+			return this.availableGroups.filter(group => 
+				this.organisationItem.groups.includes(group.id),
+			)
+		},
 	},
 	watch: {
 		// Watch for changes in the store's organisationItem (e.g., when clicking edit on different organisations)
@@ -504,6 +528,8 @@ export default {
 		this.loadNextcloudGroupsFromStore()
 		// Initialize with cached groups - users are already included in the organisation object from the store
 		this.initializeOrganisationItem()
+		// Initialize special rights from authorization
+		this.initializeSpecialRights()
 	},
 	methods: {
 		/**
@@ -635,6 +661,9 @@ export default {
 				if (Array.isArray(this.organisationItem.users)) {
 					this.organisationUsers = [...this.organisationItem.users]
 				}
+
+				// Initialize special rights from authorization
+				this.initializeSpecialRights()
 			}
 		},
 
@@ -753,29 +782,29 @@ export default {
 		 * @param {number} value - Quota in MB
 		 * @return {void}
 		 */
-		updateStorageQuota(value) {
-			// Convert MB to bytes (0 = unlimited)
-			const mbValue = value ? parseInt(value) : 0
-			if (!this.organisationItem.quota) {
-				this.organisationItem.quota = { storage: 0, bandwidth: 0, requests: 0 }
-			}
-			this.organisationItem.quota.storage = mbValue * 1024 * 1024
-		},
+	updateStorageQuota(value) {
+		// Convert MB to bytes (0 = unlimited)
+		const mbValue = value ? parseInt(value) : 0
+		if (!this.organisationItem.quota) {
+			this.organisationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
+		}
+		this.organisationItem.quota.storage = mbValue * 1024 * 1024
+	},
 
-		/**
-		 * Update bandwidth quota (converts MB to bytes)
-		 * 
-		 * @param {number} value - Quota in MB
-		 * @return {void}
-		 */
-		updateBandwidthQuota(value) {
-			// Convert MB to bytes (0 = unlimited)
-			const mbValue = value ? parseInt(value) : 0
-			if (!this.organisationItem.quota) {
-				this.organisationItem.quota = { storage: 0, bandwidth: 0, requests: 0 }
-			}
-			this.organisationItem.quota.bandwidth = mbValue * 1024 * 1024
-		},
+	/**
+	 * Update bandwidth quota (converts MB to bytes)
+	 * 
+	 * @param {number} value - Quota in MB
+	 * @return {void}
+	 */
+	updateBandwidthQuota(value) {
+		// Convert MB to bytes (0 = unlimited)
+		const mbValue = value ? parseInt(value) : 0
+		if (!this.organisationItem.quota) {
+			this.organisationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
+		}
+		this.organisationItem.quota.bandwidth = mbValue * 1024 * 1024
+	},
 
 		/**
 		 * Update request quota
@@ -783,19 +812,47 @@ export default {
 		 * @param {number} value - Quota value
 		 * @return {void}
 		 */
-		updateRequestQuota(value) {
-			// 0 = unlimited
-			if (!this.organisationItem.quota) {
-				this.organisationItem.quota = { storage: 0, bandwidth: 0, requests: 0 }
-			}
-			this.organisationItem.quota.requests = value ? parseInt(value) : 0
-		},
+	updateRequestQuota(value) {
+		// 0 = unlimited
+		if (!this.organisationItem.quota) {
+			this.organisationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
+		}
+		this.organisationItem.quota.requests = value ? parseInt(value) : 0
+	},
 
-		/**
-		 * Close the modal and reset state
-		 * 
-		 * @return {void}
-		 */
+	/**
+	 * Update user quota
+	 * 
+	 * @param {number} value - Quota value
+	 * @return {void}
+	 */
+	updateUserQuota(value) {
+		// 0 = unlimited
+		if (!this.organisationItem.quota) {
+			this.organisationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
+		}
+		this.organisationItem.quota.users = value ? parseInt(value) : 0
+	},
+
+	/**
+	 * Update group quota
+	 * 
+	 * @param {number} value - Quota value
+	 * @return {void}
+	 */
+	updateGroupQuota(value) {
+		// 0 = unlimited
+		if (!this.organisationItem.quota) {
+			this.organisationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
+		}
+		this.organisationItem.quota.groups = value ? parseInt(value) : 0
+	},
+
+	/**
+	 * Close the modal and reset state
+	 * 
+	 * @return {void}
+	 */
 		closeModal() {
 			this.success = false
 			this.error = null
@@ -882,6 +939,91 @@ export default {
 			if (!isOpen) {
 				this.closeModal()
 			}
+		},
+
+		/**
+		 * Update entity permission
+		 * 
+		 * @param {Object} payload - The permission update payload
+		 * @param {string} payload.entityType - The entity type (register, schema, object, view, agent)
+		 * @param {string} payload.groupId - The group ID
+		 * @param {string} payload.action - The action (create, read, update, delete)
+		 * @param {boolean} payload.hasPermission - Whether to grant or revoke permission
+		 * @return {void}
+		 */
+		updateEntityPermission({ entityType, groupId, action, hasPermission }) {
+			// Initialize authorization object if it doesn't exist
+			if (!this.organisationItem.authorization) {
+				this.$set(this.organisationItem, 'authorization', {})
+			}
+
+			// Initialize entity type if it doesn't exist
+			if (!this.organisationItem.authorization[entityType]) {
+				this.$set(this.organisationItem.authorization, entityType, {})
+			}
+
+			// Initialize action array if it doesn't exist
+			if (!this.organisationItem.authorization[entityType][action]) {
+				this.$set(this.organisationItem.authorization[entityType], action, [])
+			}
+
+			const currentPermissions = this.organisationItem.authorization[entityType][action]
+			const groupIndex = currentPermissions.indexOf(groupId)
+
+			if (hasPermission && groupIndex === -1) {
+				// Add permission
+				currentPermissions.push(groupId)
+			} else if (!hasPermission && groupIndex !== -1) {
+				// Remove permission
+				currentPermissions.splice(groupIndex, 1)
+			}
+		},
+
+		/**
+		 * Update special right
+		 * 
+		 * @param {string} right - The special right (object_publish, agent_use, dashboard_view, llm_use)
+		 * @param {Array} groups - Array of group objects with {id, name}
+		 * @return {void}
+		 */
+		updateSpecialRight(right, groups) {
+			// Initialize authorization if it doesn't exist
+			if (!this.organisationItem.authorization) {
+				this.$set(this.organisationItem, 'authorization', {})
+			}
+
+			// Convert group objects to array of group IDs
+			const groupIds = groups.map(g => g.id)
+
+			// Update the authorization
+			this.$set(this.organisationItem.authorization, right, groupIds)
+
+			// Update the selected special rights for UI binding
+			this.selectedSpecialRights[right] = groups
+		},
+
+		/**
+		 * Initialize special rights from organization authorization
+		 * 
+		 * @return {void}
+		 */
+		initializeSpecialRights() {
+			const auth = this.organisationItem.authorization || {}
+			const specialRightKeys = ['object_publish', 'agent_use', 'dashboard_view', 'llm_use']
+
+			specialRightKeys.forEach(right => {
+				if (auth[right] && Array.isArray(auth[right])) {
+					// Map group IDs to group objects
+					this.selectedSpecialRights[right] = auth[right]
+						.map(groupId => {
+							const group = this.availableGroups.find(g => g.id === groupId)
+							return group || { id: groupId, name: groupId }
+						})
+						.filter(g => g !== null)
+				} else {
+					this.selectedSpecialRights[right] = []
+				}
+			})
 		},
 	},
 }
@@ -1091,5 +1233,94 @@ export default {
 
 .no-users p {
 	margin: 0;
+}
+
+/* RBAC Security Tab Styling */
+.rbac-container {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	padding: 16px 0;
+}
+
+.rbac-section {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.rbac-section h3 {
+	margin: 0;
+	font-size: 18px;
+	font-weight: 600;
+	color: var(--color-main-text);
+}
+
+.rbac-description {
+	font-size: 14px;
+	color: var(--color-text-lighter);
+	margin: 0 0 16px 0;
+}
+
+.special-rights-container {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 8px 0;
+}
+
+.special-rights-table {
+	width: 100%;
+	border-collapse: collapse;
+	border: 1px solid var(--color-border-dark);
+	border-radius: 8px;
+	overflow: hidden;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.special-rights-table thead tr {
+	background: var(--color-background-dark);
+}
+
+.special-rights-table th {
+	color: var(--color-text-dark);
+	font-weight: 600;
+	padding: 12px 16px;
+	text-align: left;
+	border-bottom: 2px solid var(--color-border-dark);
+}
+
+.special-rights-table td {
+	padding: 12px 16px;
+	border-bottom: 1px solid var(--color-border);
+	vertical-align: middle;
+}
+
+.special-rights-table tbody tr:hover {
+	background: var(--color-background-hover);
+}
+
+.right-name {
+	width: 20%;
+}
+
+.right-badge {
+	display: inline-block;
+	padding: 4px 12px;
+	border-radius: 12px;
+	font-size: 12px;
+	font-weight: 600;
+	background: var(--color-primary-element);
+	color: var(--color-primary-text);
+}
+
+.right-description {
+	width: 40%;
+	font-size: 13px;
+	color: var(--color-text-lighter);
+}
+
+.right-groups {
+	width: 40%;
 }
 </style>

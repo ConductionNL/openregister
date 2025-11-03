@@ -166,16 +166,38 @@ export default {
 			type: Array,
 			required: true,
 		},
+		/**
+		 * Groups assigned to the organisation (used to filter display)
+		 */
+		organisationGroups: {
+			type: Array,
+			default: () => [],
+		},
 	},
 	computed: {
 		/**
-		 * Get sorted groups (excluding admin and public)
+		 * Get sorted groups (only showing groups assigned to the organisation)
 		 * 
 		 * @return {Array} Sorted array of groups
 		 */
 		sortedGroups() {
+			// If no organisation groups specified, show all available groups
+			if (!this.organisationGroups || this.organisationGroups.length === 0) {
+				return this.availableGroups
+					.filter(group => group.id !== 'admin' && group.id !== 'public' && group.id !== 'user')
+					.sort((a, b) => a.name.localeCompare(b.name))
+			}
+
+			// Filter to only show groups that are assigned to the organisation
 			return this.availableGroups
-				.filter(group => group.id !== 'admin' && group.id !== 'public' && group.id !== 'user')
+				.filter(group => {
+					// Exclude special groups
+					if (group.id === 'admin' || group.id === 'public' || group.id === 'user') {
+						return false
+					}
+					// Only include groups that are in the organisation's groups list
+					return this.organisationGroups.includes(group.id)
+				})
 				.sort((a, b) => a.name.localeCompare(b.name))
 		},
 
