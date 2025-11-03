@@ -334,36 +334,36 @@ export const useOrganisationStore = defineStore('organisation', {
 				return await this.updateOrganisation(organisationItem)
 			}
 		},
-	// Clean organisation data for saving - remove read-only fields
-	cleanOrganisationForSave(organisationItem) {
-		const cleaned = { ...organisationItem }
+		// Clean organisation data for saving - remove read-only fields
+		cleanOrganisationForSave(organisationItem) {
+			const cleaned = { ...organisationItem }
 
-		// Remove read-only/calculated fields that should not be sent to the server
-		delete cleaned.id
-		delete cleaned.uuid
-		delete cleaned.users
-		delete cleaned.userCount
-		delete cleaned.groupCount
-		delete cleaned.usage // Usage is calculated by backend, not set by frontend
-		delete cleaned.owner
-		delete cleaned.created
-		delete cleaned.updated
+			// Remove read-only/calculated fields that should not be sent to the server
+			delete cleaned.id
+			delete cleaned.uuid
+			delete cleaned.users
+			delete cleaned.userCount
+			delete cleaned.groupCount
+			delete cleaned.usage // Usage is calculated by backend, not set by frontend
+			delete cleaned.owner
+			delete cleaned.created
+			delete cleaned.updated
 
-		// Remove empty slug to avoid database errors
-		if (cleaned.slug === '' || cleaned.slug === null) {
-			delete cleaned.slug
-		}
+			// Remove empty slug to avoid database errors
+			if (cleaned.slug === '' || cleaned.slug === null) {
+				delete cleaned.slug
+			}
 
-		// Remove isDefault as it's now managed via config, not database
-		delete cleaned.isDefault
+			// Remove isDefault as it's now managed via config, not database
+			delete cleaned.isDefault
 
-		// Ensure boolean fields are actually booleans, not empty strings
-		if (cleaned.active !== undefined) {
-			cleaned.active = cleaned.active === '' ? true : Boolean(cleaned.active)
-		}
+			// Ensure boolean fields are actually booleans, not empty strings
+			if (cleaned.active !== undefined) {
+				cleaned.active = cleaned.active === '' ? true : Boolean(cleaned.active)
+			}
 
-		return cleaned
-	},
+			return cleaned
+		},
 		/**
 		 * Search organisations by name with pagination support
 		 *
