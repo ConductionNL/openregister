@@ -68,13 +68,13 @@ export const useApplicationStore = defineStore('application', {
 			console.log('ApplicationStore: Starting refreshApplicationList')
 			this.loading = true
 			this.error = null
-			
+
 			try {
 				let endpoint = '/index.php/apps/openregister/api/applications'
 				if (search !== null && search !== '') {
 					endpoint = endpoint + '?_search=' + encodeURIComponent(search)
 				}
-				
+
 				const response = await fetch(endpoint, {
 					method: 'GET',
 				})
@@ -104,11 +104,11 @@ export const useApplicationStore = defineStore('application', {
 				const response = await fetch(endpoint, {
 					method: 'GET',
 				})
-				
+
 				if (!response.ok) {
 					throw new Error(`HTTP error! status: ${response.status}`)
 				}
-				
+
 				const data = await response.json()
 				this.setApplicationItem(data)
 				return data
@@ -220,7 +220,7 @@ export const useApplicationStore = defineStore('application', {
 		/**
 		 * Load and cache Nextcloud groups for application access control
 		 * This should be called on the applications index page to preload groups
-		 * 
+		 *
 		 * @return {Promise<void>}
 		 */
 		async loadNextcloudGroups() {
@@ -252,4 +252,3 @@ export const useApplicationStore = defineStore('application', {
 		},
 	},
 })
-

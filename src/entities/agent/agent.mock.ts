@@ -1,13 +1,13 @@
 /**
  * Agent entity mock data for testing
  *
- * @category Entities
- * @package  openregister
+ * @module Entities
+ * @package
  * @author   Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license  EUPL-1.2
  * @version  1.0.0
- * @link     https://www.openregister.nl
+ * @see      https://www.openregister.nl
  */
 
 import { TAgent } from './agent.types'
@@ -53,5 +53,3 @@ export const mockAgentData = (): TAgent[] => [
 ]
 
 export const mockAgent = (data: TAgent[] = mockAgentData()): Agent[] => data.map(item => new Agent(item))
-
-

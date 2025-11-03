@@ -369,4 +369,3 @@ export default {
 	color: var(--color-text-lighter);
 }
 </style>
-

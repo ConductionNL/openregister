@@ -20,6 +20,7 @@ export class Organisation implements TOrganisation {
 		users?: number | null
 		groups?: number | null
 	}
+
 	public usage?: {
 		storage?: number
 		bandwidth?: number
@@ -27,6 +28,7 @@ export class Organisation implements TOrganisation {
 		users?: number
 		groups?: number
 	}
+
 	public authorization?: TOrganisation['authorization']
 	public created?: string
 	public updated?: string

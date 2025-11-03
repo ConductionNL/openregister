@@ -76,7 +76,7 @@ export const useOrganisationStore = defineStore('organisation', {
 
 			const data = await response.json()
 			this.setUserStats(data)
-			
+
 			// Also populate the organisationList for use in dropdowns
 			if (data.results) {
 				this.setOrganisationList(data.results)
@@ -422,7 +422,7 @@ export const useOrganisationStore = defineStore('organisation', {
 		/**
 		 * Load and cache Nextcloud groups for organisation access control
 		 * This should be called on the organisations index page to preload groups
-		 * 
+		 *
 		 * @return {Promise<void>}
 		 */
 		async loadNextcloudGroups() {

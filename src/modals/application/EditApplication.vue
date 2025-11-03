@@ -275,7 +275,7 @@ export default {
 	methods: {
 		/**
 		 * Fetch available organisations from the store
-		 * 
+		 *
 		 * @return {Promise<void>}
 		 */
 		async fetchOrganisations() {
@@ -285,7 +285,7 @@ export default {
 		/**
 		 * Load available Nextcloud groups from store (or fetch if not cached)
 		 * Groups are preloaded on the index page for better performance
-		 * 
+		 *
 		 * @return {void}
 		 */
 		loadNextcloudGroupsFromStore() {
@@ -293,10 +293,10 @@ export default {
 			if (applicationStore.nextcloudGroups && applicationStore.nextcloudGroups.length > 0) {
 				this.availableGroups = applicationStore.nextcloudGroups
 				this.loadingGroups = false
-				console.log('Using cached Nextcloud groups from application store:', this.availableGroups.length)
+				console.info('Using cached Nextcloud groups from application store:', this.availableGroups.length)
 			} else {
 				// Groups not cached yet - load them (fallback for direct navigation)
-				console.log('Groups not cached in application store, loading from API...')
+				console.info('Groups not cached in application store, loading from API...')
 				this.loadingGroups = true
 				applicationStore.loadNextcloudGroups().then(() => {
 					this.availableGroups = applicationStore.nextcloudGroups
@@ -313,7 +313,7 @@ export default {
 
 		/**
 		 * Search for Nextcloud groups with debouncing
-		 * 
+		 *
 		 * @param {string} searchQuery - The search query entered by user
 		 * @return {void}
 		 */
@@ -372,7 +372,7 @@ export default {
 
 		/**
 		 * Initialize application item from store
-		 * 
+		 *
 		 * @return {void}
 		 */
 		initializeApplicationItem() {
@@ -419,7 +419,7 @@ export default {
 
 		/**
 		 * Update organisation selection
-		 * 
+		 *
 		 * @param {object} value - Selected organisation
 		 * @return {void}
 		 */
@@ -429,7 +429,7 @@ export default {
 
 		/**
 		 * Update groups selection
-		 * 
+		 *
 		 * @param {Array} groups - Selected groups
 		 * @return {void}
 		 */
@@ -441,7 +441,7 @@ export default {
 
 		/**
 		 * Remove a group from selection
-		 * 
+		 *
 		 * @param {object} groupToRemove - Group to remove
 		 * @return {void}
 		 */
@@ -453,7 +453,7 @@ export default {
 
 		/**
 		 * Update storage quota (converts MB to bytes)
-		 * 
+		 *
 		 * @param {number} value - Quota in MB
 		 * @return {void}
 		 */
@@ -468,7 +468,7 @@ export default {
 
 		/**
 		 * Update bandwidth quota (converts MB to bytes)
-		 * 
+		 *
 		 * @param {number} value - Quota in MB
 		 * @return {void}
 		 */
@@ -483,7 +483,7 @@ export default {
 
 		/**
 		 * Update request quota
-		 * 
+		 *
 		 * @param {number} value - Quota value
 		 * @return {void}
 		 */
@@ -497,7 +497,7 @@ export default {
 
 		/**
 		 * Close the modal and reset state
-		 * 
+		 *
 		 * @return {void}
 		 */
 		closeModal() {
@@ -513,7 +513,7 @@ export default {
 
 		/**
 		 * Save the application
-		 * 
+		 *
 		 * @return {Promise<void>}
 		 */
 		async saveApplication() {
@@ -549,7 +549,7 @@ export default {
 
 		/**
 		 * Handle dialog open/close event
-		 * 
+		 *
 		 * @param {boolean} isOpen - Whether the dialog is open
 		 * @return {void}
 		 */

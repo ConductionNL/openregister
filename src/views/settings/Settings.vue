@@ -25,14 +25,14 @@
 		<!-- RBAC Configuration Section -->
 		<RbacConfiguration />
 
-	<!-- Organisation Configuration Section -->
-	<OrganisationConfiguration />
+		<!-- Organisation Configuration Section -->
+		<OrganisationConfiguration />
 
-	<!-- Multitenancy Configuration Section -->
-	<MultitenancyConfiguration />
+		<!-- Multitenancy Configuration Section -->
+		<MultitenancyConfiguration />
 
-	<!-- Retention Configuration Section -->
-	<RetentionConfiguration />
+		<!-- Retention Configuration Section -->
+		<RetentionConfiguration />
 
 		<!-- SOLR Configuration Section -->
 		<SolrConfiguration />
