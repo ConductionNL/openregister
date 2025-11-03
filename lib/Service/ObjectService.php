@@ -4625,9 +4625,9 @@ class ObjectService
                         if (is_array($item) && !$this->isUuid($item)) {
                             // This is a nested object, create it first
                             $createdUuid = $this->createRelatedObject($item, $definition['items'], $uuid);
-                            if ($createdUuid) {
-                                $createdUuids[] = $createdUuid;
-                            }
+
+                            // If creation failed, keep original item to avoid empty array
+                            $createdUuids[] = $createdUuid ?? $item;
                         } else if (is_string($item) && $this->isUuid($item)) {
                             // This is already a UUID, keep it
                             $createdUuids[] = $item;
@@ -4638,13 +4638,13 @@ class ObjectService
                 }
             }
             // Handle single object properties
-            else if (isset($definition['inversedBy']) && !($definition['type'] === 'array')) {
+            else if (isset($definition['inversedBy']) && $definition['type'] !== 'array') {
                 if (is_array($propertyValue) && !$this->isUuid($propertyValue)) {
                     // This is a nested object, create it first
                     $createdUuid = $this->createRelatedObject($propertyValue, $definition, $uuid);
-                    if ($createdUuid) {
-                        $object[$propertyName] = $createdUuid;
-                    }
+
+                    // Only overwrite if creation succeeded
+                    $object[$propertyName] = $createdUuid ?? $propertyValue;
                 }
             }
         }//end foreach
