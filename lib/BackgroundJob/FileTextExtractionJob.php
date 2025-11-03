@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 use OCA\OpenRegister\Service\FileTextService;
 use OCP\BackgroundJob\QueuedJob;
 use OCP\AppFramework\Utility\ITimeFactory;
+use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -51,7 +52,8 @@ class FileTextExtractionJob extends QueuedJob
     public function __construct(
         ITimeFactory $timeFactory,
         private readonly FileTextService $fileTextService,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly IAppConfig $config,
     ) {
         parent::__construct($timeFactory);
     }
@@ -68,6 +70,12 @@ class FileTextExtractionJob extends QueuedJob
      */
     protected function run($argument): void
     {
+        if ($this->config->hasKey(app: 'openregister', key: 'fileManagement') === false || json_decode($this->config->getValueString(app: 'openregister', key: 'fileManagement'), true)['extractionScope'] === 'none') {
+            $this->logger->info('[FileTextExtractionJob] File extraction is disabled. Not extracting text from files.');
+            return;
+        }
+
+
         // Validate argument
         if (isset($argument['file_id']) === false) {
             $this->logger->error('[FileTextExtractionJob] Missing file_id in job arguments', [
