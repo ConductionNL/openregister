@@ -17,11 +17,10 @@ import { configurationStore, navigationStore, registerStore, schemaStore, organi
 				label="Title *"
 				placeholder="Enter configuration title"
 				:value="configurationStore.configurationItem?.title"
-				:error="!configurationStore.configurationItem?.title?.trim()"
+				:error="!configurationStore.configurationItem?.title?.trim?.()"
 				@update:value="updateTitle" />
 
-			<NcTextField
-				type="textarea"
+			<NcTextArea
 				label="Description"
 				placeholder="Enter configuration description (optional)"
 				:value="configurationStore.configurationItem?.description"
@@ -133,6 +132,7 @@ import {
 	NcNoteCard,
 	NcSelect,
 	NcTextField,
+	NcTextArea,
 } from '@nextcloud/vue'
 
 import Cancel from 'vue-material-design-icons/Cancel.vue'
@@ -147,6 +147,7 @@ export default {
 		NcNoteCard,
 		NcSelect,
 		NcTextField,
+		NcTextArea,
 		// Icons
 		Cancel,
 		ContentSave,
@@ -166,10 +167,16 @@ export default {
 			return Boolean(item?.title?.trim())
 		},
 		registerOptions() {
-			return registerStore.registerList || []
+			const selectedIds = this.selectedRegisters.map(r => r.id)
+			return (registerStore.registerList || []).filter(
+				register => !selectedIds.includes(register.id),
+			)
 		},
 		schemaOptions() {
-			return schemaStore.schemaList || []
+			const selectedIds = this.selectedSchemas.map(s => s.id)
+			return (schemaStore.schemaList || []).filter(
+				schema => !selectedIds.includes(schema.id),
+			)
 		},
 		organisationOptions() {
 			return organisationStore.organisationList || []
@@ -333,5 +340,8 @@ export default {
 .option-description {
 	font-size: 0.875rem;
 	color: var(--color-text-maxcontrast);
+	max-width: 100%;
+	white-space: normal;
+	word-break: break-word;
 }
 </style>

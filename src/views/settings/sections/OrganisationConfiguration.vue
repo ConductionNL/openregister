@@ -29,18 +29,18 @@
 					label-outside
 					input-label="Default Organisation"
 					@input="handleDefaultOrganisationChange">
-				<template #option="{ name, users, owner }">
-					<div class="organisation-option">
-						<OfficeBuilding :size="20" />
-						<div class="organisation-info">
-							<span class="organisation-name">{{ name }}</span>
-							<span class="organisation-meta">
-								{{ (users?.length || 0) }} {{ t('openregister', 'members') }} · 
-								{{ t('openregister', 'Owner:') }} {{ owner || 'System' }}
-							</span>
+					<template #option="{ name, users, owner }">
+						<div class="organisation-option">
+							<OfficeBuilding :size="20" />
+							<div class="organisation-info">
+								<span class="organisation-name">{{ name }}</span>
+								<span class="organisation-meta">
+									{{ (users?.length || 0) }} {{ t('openregister', 'members') }} ·
+									{{ t('openregister', 'Owner:') }} {{ owner || 'System' }}
+								</span>
+							</div>
 						</div>
-					</div>
-				</template>
+					</template>
 				</NcSelect>
 			</div>
 		</div>
