@@ -199,8 +199,10 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 								<!-- Entity-level permissions tabs -->
 								<div class="rbac-section">
 									<h3>Entity Permissions</h3>
-									<p class="rbac-description">Control who can create, read, update, and delete specific entity types</p>
-									
+									<p class="rbac-description">
+										Control who can create, read, update, and delete specific entity types
+									</p>
+
 									<BTabs content-class="mt-3" pills>
 										<!-- Registers -->
 										<BTab title="Registers">
@@ -252,8 +254,10 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 								<!-- Special Rights -->
 								<div class="rbac-section">
 									<h3>Special Rights</h3>
-									<p class="rbac-description">Grant additional permissions beyond standard CRUD operations</p>
-									
+									<p class="rbac-description">
+										Grant additional permissions beyond standard CRUD operations
+									</p>
+
 									<table class="rbac-table special-rights-table">
 										<thead>
 											<tr>
@@ -397,7 +401,6 @@ import { showSuccess, showError } from '@nextcloud/dialogs'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
-import Close from 'vue-material-design-icons/Close.vue'
 import AccountCircle from 'vue-material-design-icons/AccountCircle.vue'
 import AccountMinus from 'vue-material-design-icons/AccountMinus.vue'
 import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
@@ -428,7 +431,6 @@ export default {
 		ContentSaveOutline,
 		Cancel,
 		Plus,
-		Close,
 		AccountCircle,
 		AccountMinus,
 		AccountPlus,
@@ -509,7 +511,7 @@ export default {
 		/**
 		 * Load available Nextcloud groups from store (or fetch if not cached)
 		 * Groups are preloaded on the index page for better performance
-		 * 
+		 *
 		 * @return {void}
 		 */
 		loadNextcloudGroupsFromStore() {
@@ -517,10 +519,10 @@ export default {
 			if (organisationStore.nextcloudGroups && organisationStore.nextcloudGroups.length > 0) {
 				this.availableGroups = organisationStore.nextcloudGroups
 				this.loadingGroups = false
-				console.log('Using cached Nextcloud groups from store:', this.availableGroups.length)
+				console.info('Using cached Nextcloud groups from store:', this.availableGroups.length)
 			} else {
 				// Groups not cached yet - load them (fallback for direct navigation)
-				console.log('Groups not cached, loading from API...')
+				console.info('Groups not cached, loading from API...')
 				this.loadingGroups = true
 				organisationStore.loadNextcloudGroups().then(() => {
 					this.availableGroups = organisationStore.nextcloudGroups
@@ -537,7 +539,7 @@ export default {
 
 		/**
 		 * Search for Nextcloud groups with debouncing
-		 * 
+		 *
 		 * @param {string} searchQuery - The search query entered by user
 		 * @return {void}
 		 */
@@ -596,7 +598,7 @@ export default {
 
 		/**
 		 * Initialize organisation item from store
-		 * 
+		 *
 		 * @return {void}
 		 */
 		initializeOrganisationItem() {
@@ -614,7 +616,7 @@ export default {
 						.map(role => {
 							// Handle both formats: string IDs or objects
 							const roleId = typeof role === 'string' ? role : (role.id || role.name)
-							
+
 							// Find the group in availableGroups
 							const group = this.availableGroups.find(g => g.id === roleId)
 							if (group) {
@@ -640,7 +642,7 @@ export default {
 
 		/**
 		 * Show confirmation dialog before removing a user
-		 * 
+		 *
 		 * @param {string} userId - User ID to remove
 		 * @return {void}
 		 */
@@ -653,7 +655,7 @@ export default {
 
 		/**
 		 * Cancel user removal and close dialog
-		 * 
+		 *
 		 * @return {void}
 		 */
 		cancelRemoveUser() {
@@ -663,7 +665,7 @@ export default {
 
 		/**
 		 * Confirm and execute user removal
-		 * 
+		 *
 		 * @return {Promise<void>}
 		 */
 		async confirmRemoveUser() {
@@ -693,11 +695,11 @@ export default {
 					}
 					// Refresh organisation store
 					await organisationStore.refreshOrganisations()
-					
+
 					// Close dialog
 					this.showRemoveUserDialog = false
 					this.userToRemove = null
-					
+
 					showSuccess(this.$t('openregister', 'User removed successfully'))
 				} else {
 					const errorData = await response.json()
@@ -715,7 +717,7 @@ export default {
 
 		/**
 		 * Get current user
-		 * 
+		 *
 		 * @return {string}
 		 */
 		getCurrentUser() {
@@ -725,7 +727,7 @@ export default {
 
 		/**
 		 * Update groups selection
-		 * 
+		 *
 		 * @param {Array} groups - Selected groups
 		 * @return {void}
 		 */
@@ -737,7 +739,7 @@ export default {
 
 		/**
 		 * Remove a group from selection
-		 * 
+		 *
 		 * @param {object} groupToRemove - Group to remove
 		 * @return {void}
 		 */
@@ -749,7 +751,7 @@ export default {
 
 		/**
 		 * Update storage quota (converts MB to bytes)
-		 * 
+		 *
 		 * @param {number} value - Quota in MB
 		 * @return {void}
 		 */
@@ -764,7 +766,7 @@ export default {
 
 		/**
 		 * Update bandwidth quota (converts MB to bytes)
-		 * 
+		 *
 		 * @param {number} value - Quota in MB
 		 * @return {void}
 		 */
@@ -779,7 +781,7 @@ export default {
 
 		/**
 		 * Update request quota
-		 * 
+		 *
 		 * @param {number} value - Quota value
 		 * @return {void}
 		 */
@@ -793,7 +795,7 @@ export default {
 
 		/**
 		 * Close the modal and reset state
-		 * 
+		 *
 		 * @return {void}
 		 */
 		closeModal() {
@@ -809,7 +811,7 @@ export default {
 
 		/**
 		 * Save the organisation
-		 * 
+		 *
 		 * @return {Promise<void>}
 		 */
 		async saveOrganisation() {
@@ -873,7 +875,7 @@ export default {
 
 		/**
 		 * Handle dialog open/close event
-		 * 
+		 *
 		 * @param {boolean} isOpen - Whether the dialog is open
 		 * @return {void}
 		 */

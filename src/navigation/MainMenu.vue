@@ -1,41 +1,41 @@
 <template>
 	<NcAppNavigation>
 		<NcAppNavigationList>
-		<NcAppNavigationItem :active="$route.path === '/'" :name="t('openregister', 'Dashboard')" @click="handleNavigate('/')">
-			<template #icon>
-				<Finance :size="20" />
-			</template>
-		</NcAppNavigationItem>
-		<NcAppNavigationItem :active="$route.path.startsWith('/chat')" :name="t('openregister', 'AI Chat')" @click="handleNavigate('/chat')">
-			<template #icon>
-				<MessageTextOutline :size="20" />
-			</template>
-		</NcAppNavigationItem>
-		<NcAppNavigationItem :active="$route.path.startsWith('/registers')" :name="t('openregister', 'Registers')" @click="handleNavigate('/registers')">
-			<template #icon>
-				<DatabaseOutline :size="20" />
-			</template>
-		</NcAppNavigationItem>
-		<NcAppNavigationItem :active="$route.path.startsWith('/schemas')" :name="t('openregister', 'Schemas')" @click="handleNavigate('/schemas')">
-			<template #icon>
-				<FileTreeOutline :size="20" />
-			</template>
-		</NcAppNavigationItem>
-		<NcAppNavigationItem :active="$route.path.startsWith('/tables')" :name="t('openregister', 'Search / Views')" @click="handleNavigate('/tables')">
-			<template #icon>
-				<Magnify :size="20" />
-			</template>
-		</NcAppNavigationItem>
-		<NcAppNavigationItem :active="$route.path.startsWith('/files')" :name="t('openregister', 'Files')" @click="handleNavigate('/files')">
-			<template #icon>
-				<FileDocumentMultipleOutline :size="20" />
-			</template>
-		</NcAppNavigationItem>
-		<NcAppNavigationItem :active="$route.path.startsWith('/agents')" :name="t('openregister', 'Agents')" @click="handleNavigate('/agents')">
-			<template #icon>
-				<RobotOutline :size="20" />
-			</template>
-		</NcAppNavigationItem>
+			<NcAppNavigationItem :active="$route.path === '/'" :name="t('openregister', 'Dashboard')" @click="handleNavigate('/')">
+				<template #icon>
+					<Finance :size="20" />
+				</template>
+			</NcAppNavigationItem>
+			<NcAppNavigationItem :active="$route.path.startsWith('/chat')" :name="t('openregister', 'AI Chat')" @click="handleNavigate('/chat')">
+				<template #icon>
+					<MessageTextOutline :size="20" />
+				</template>
+			</NcAppNavigationItem>
+			<NcAppNavigationItem :active="$route.path.startsWith('/registers')" :name="t('openregister', 'Registers')" @click="handleNavigate('/registers')">
+				<template #icon>
+					<DatabaseOutline :size="20" />
+				</template>
+			</NcAppNavigationItem>
+			<NcAppNavigationItem :active="$route.path.startsWith('/schemas')" :name="t('openregister', 'Schemas')" @click="handleNavigate('/schemas')">
+				<template #icon>
+					<FileTreeOutline :size="20" />
+				</template>
+			</NcAppNavigationItem>
+			<NcAppNavigationItem :active="$route.path.startsWith('/tables')" :name="t('openregister', 'Search / Views')" @click="handleNavigate('/tables')">
+				<template #icon>
+					<Magnify :size="20" />
+				</template>
+			</NcAppNavigationItem>
+			<NcAppNavigationItem :active="$route.path.startsWith('/files')" :name="t('openregister', 'Files')" @click="handleNavigate('/files')">
+				<template #icon>
+					<FileDocumentMultipleOutline :size="20" />
+				</template>
+			</NcAppNavigationItem>
+			<NcAppNavigationItem :active="$route.path.startsWith('/agents')" :name="t('openregister', 'Agents')" @click="handleNavigate('/agents')">
+				<template #icon>
+					<RobotOutline :size="20" />
+				</template>
+			</NcAppNavigationItem>
 		<!-- <NcAppNavigationItem :active="$route.path.startsWith('/search')" name="Search" @click="handleNavigate('/search')">
 			<template #icon>
 				<LayersSearchOutline :size="20" />
@@ -43,22 +43,22 @@
 		</NcAppNavigationItem> -->
 		</NcAppNavigationList>
 
-	<NcAppNavigationSettings>
-		<NcAppNavigationItem :active="$route.path.startsWith('/organisation')" :name="t('openregister', 'Organisations')" @click="handleNavigate('/organisation')">
-			<template #icon>
-				<OfficeBuildingOutline :size="20" />
-			</template>
-		</NcAppNavigationItem>
-		<NcAppNavigationItem :active="$route.path.startsWith('/applications')" :name="t('openregister', 'Applications')" @click="handleNavigate('/applications')">
-			<template #icon>
-				<ApplicationOutline :size="20" />
-			</template>
-		</NcAppNavigationItem>
-		<NcAppNavigationItem :active="$route.path.startsWith('/sources')" :name="t('openregister', 'Data sources')" @click="handleNavigate('/sources')">
-			<template #icon>
-				<DatabaseArrowRightOutline :size="20" />
-			</template>
-		</NcAppNavigationItem>
+		<NcAppNavigationSettings>
+			<NcAppNavigationItem :active="$route.path.startsWith('/organisation')" :name="t('openregister', 'Organisations')" @click="handleNavigate('/organisation')">
+				<template #icon>
+					<OfficeBuildingOutline :size="20" />
+				</template>
+			</NcAppNavigationItem>
+			<NcAppNavigationItem :active="$route.path.startsWith('/applications')" :name="t('openregister', 'Applications')" @click="handleNavigate('/applications')">
+				<template #icon>
+					<ApplicationOutline :size="20" />
+				</template>
+			</NcAppNavigationItem>
+			<NcAppNavigationItem :active="$route.path.startsWith('/sources')" :name="t('openregister', 'Data sources')" @click="handleNavigate('/sources')">
+				<template #icon>
+					<DatabaseArrowRightOutline :size="20" />
+				</template>
+			</NcAppNavigationItem>
 			<NcAppNavigationItem :active="$route.path.startsWith('/configurations')" :name="t('openregister', 'Configurations')" @click="handleNavigate('/configurations')">
 				<template #icon>
 					<CogOutline :size="20" />

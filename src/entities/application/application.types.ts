@@ -38,4 +38,3 @@ export type TApplication = {
 export type TApplicationPath = {
 	applicationId?: string
 }
-

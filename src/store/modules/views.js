@@ -3,11 +3,11 @@ import { defineStore } from 'pinia'
 
 /**
  * Store for managing saved search views
- * 
+ *
  * This store handles creating, reading, updating, and deleting saved search views.
  * Views allow users to save complex search configurations including multiple
  * registers, schemas, filters, and display settings.
- * 
+ *
  * @module Store
  * @package
  * @author Conduction Development Team
@@ -422,4 +422,3 @@ export const useViewsStore = defineStore('views', {
 		},
 	},
 })
-

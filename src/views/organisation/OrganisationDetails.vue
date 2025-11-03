@@ -62,22 +62,22 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							</template>
 							Activeren
 						</NcActionButton>
-					<NcActionButton
-						close-after-click
-						@click="openJoinModal">
-						<template #icon>
-							<AccountPlus :size="20" />
-						</template>
-						Add User
-					</NcActionButton>
-					<NcActionButton v-if="canDelete"
-						close-after-click
-						@click="navigationStore.setDialog('deleteOrganisation')">
-						<template #icon>
-							<TrashCanOutline :size="20" />
-						</template>
-						Delete
-					</NcActionButton>
+						<NcActionButton
+							close-after-click
+							@click="openJoinModal">
+							<template #icon>
+								<AccountPlus :size="20" />
+							</template>
+							Add User
+						</NcActionButton>
+						<NcActionButton v-if="canDelete"
+							close-after-click
+							@click="navigationStore.setDialog('deleteOrganisation')">
+							<template #icon>
+								<TrashCanOutline :size="20" />
+							</template>
+							Delete
+						</NcActionButton>
 					</NcActions>
 				</div>
 			</span>
@@ -196,12 +196,10 @@ import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import AccountGroup from 'vue-material-design-icons/AccountGroup.vue'
 import AccountMinus from 'vue-material-design-icons/AccountMinus.vue'
 import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
-import AccountGroupOutline from 'vue-material-design-icons/AccountGroupOutline.vue'
 import Account from 'vue-material-design-icons/Account.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
-
 
 export default {
 	name: 'OrganisationDetails',
@@ -220,7 +218,6 @@ export default {
 		AccountGroup,
 		AccountMinus,
 		AccountPlus,
-		AccountGroupOutline,
 		Account,
 		ContentCopy,
 		Eye,

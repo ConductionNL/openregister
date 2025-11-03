@@ -20,6 +20,7 @@ export class Application implements TApplication {
 		users?: number | null
 		groups?: number | null
 	}
+
 	public usage?: {
 		storage?: number
 		bandwidth?: number
@@ -27,6 +28,7 @@ export class Application implements TApplication {
 		users?: number
 		groups?: number
 	}
+
 	public authorization?: TApplication['authorization']
 	public owner?: string
 	public active?: boolean
@@ -112,4 +114,3 @@ export class Application implements TApplication {
 	}
 
 }
-

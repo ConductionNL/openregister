@@ -193,16 +193,16 @@ export default {
 		// Removed hasActions - not needed anymore
 	},
 
-    methods: {
-        // quick and dirty way to sanitize HTML.
-        // this guarantees that no dangerous HTML is rendered, though it'll make the output ugly.
-        // @TODO: Implement production ready sanitization.
-        sanitizeHtml(html) {
-            const div = document.createElement('div');
-            div.textContent = html;
-            return div.innerHTML;
-        },
-    },
+	methods: {
+		// quick and dirty way to sanitize HTML.
+		// this guarantees that no dangerous HTML is rendered, though it'll make the output ugly.
+		// @TODO: Implement production ready sanitization.
+		sanitizeHtml(html) {
+			const div = document.createElement('div')
+			div.textContent = html
+			return div.innerHTML
+		},
+	},
 }
 </script>
 
