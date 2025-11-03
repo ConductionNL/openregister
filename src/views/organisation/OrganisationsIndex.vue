@@ -169,13 +169,13 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 								</NcActions>
 							</div>
 
-				<div class="organisationInfo">
-					<p v-if="organisation.description" class="description">
-						{{ organisation.description }}
-					</p>
-					<div class="organisationStats">
-						<div class="stat">
-							<span class="statLabel">Leden:</span>
+							<div class="organisationInfo">
+								<p v-if="organisation.description" class="description">
+									{{ organisation.description }}
+								</p>
+								<div class="organisationStats">
+									<div class="stat">
+										<span class="statLabel">Leden:</span>
 										<span class="statValue">{{ organisation.users?.length || 0 }}</span>
 									</div>
 									<div class="stat">

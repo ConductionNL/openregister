@@ -108,48 +108,48 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 								:value="bandwidthQuotaMB"
 								@update:value="updateBandwidthQuota" />
 
-						<NcTextField
-							:disabled="loading"
-							label="API Request Quota (requests/day)"
-							type="number"
-							placeholder="0 = unlimited"
-							:value="applicationItem.quota?.requests || 0"
-							@update:value="updateRequestQuota" />
+							<NcTextField
+								:disabled="loading"
+								label="API Request Quota (requests/day)"
+								type="number"
+								placeholder="0 = unlimited"
+								:value="applicationItem.quota?.requests || 0"
+								@update:value="updateRequestQuota" />
 
-						<NcTextField
-							:disabled="loading"
-							label="Group Quota"
-							type="number"
-							placeholder="0 = unlimited"
-							:value="applicationItem.quota?.groups || 0"
-							@update:value="updateGroupQuota" />
-					</div>
-				</BTab>
+							<NcTextField
+								:disabled="loading"
+								label="Group Quota"
+								type="number"
+								placeholder="0 = unlimited"
+								:value="applicationItem.quota?.groups || 0"
+								@update:value="updateGroupQuota" />
+						</div>
+					</BTab>
 
-				<BTab>
-					<template #title>
-						<Shield :size="16" />
-						<span>Security</span>
-					</template>
-					<div class="security-section">
-						<div class="rbac-container">
-							<div class="rbac-section">
-								<p class="rbac-description">
-									Configure CRUD permissions for this application.
-									Empty permissions = open access for all application groups.
-									The 'admin' group always has full access.
-								</p>
-								
-								<RbacTable
-									entity-type="application"
-									:authorization="applicationItem.authorization"
-									:available-groups="availableGroups"
-									:organisation-groups="filteredAvailableGroups"
-									@update="updateApplicationPermission" />
+					<BTab>
+						<template #title>
+							<Shield :size="16" />
+							<span>Security</span>
+						</template>
+						<div class="security-section">
+							<div class="rbac-container">
+								<div class="rbac-section">
+									<p class="rbac-description">
+										Configure CRUD permissions for this application.
+										Empty permissions = open access for all application groups.
+										The 'admin' group always has full access.
+									</p>
+
+									<RbacTable
+										entity-type="application"
+										:authorization="applicationItem.authorization"
+										:available-groups="availableGroups"
+										:organisation-groups="filteredAvailableGroups"
+										@update="updateApplicationPermission" />
+								</div>
 							</div>
 						</div>
-					</div>
-				</BTab>
+					</BTab>
 				</BTabs>
 			</div>
 		</div>
@@ -191,7 +191,6 @@ import { BTabs, BTab } from 'bootstrap-vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
-import Close from 'vue-material-design-icons/Close.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import Database from 'vue-material-design-icons/Database.vue'
 import Shield from 'vue-material-design-icons/Shield.vue'
@@ -215,7 +214,6 @@ export default {
 		ContentSaveOutline,
 		Cancel,
 		Plus,
-		Close,
 		Cog,
 		Database,
 		Shield,
@@ -223,25 +221,25 @@ export default {
 	data() {
 		return {
 			activeTab: 0,
-		applicationItem: {
-			name: '',
-			description: '',
-			organisation: null,
-			quota: {
-				storage: 0,
-				bandwidth: 0,
-				requests: 0,
-				users: 0,
-				groups: 0,
+			applicationItem: {
+				name: '',
+				description: '',
+				organisation: null,
+				quota: {
+					storage: 0,
+					bandwidth: 0,
+					requests: 0,
+					users: 0,
+					groups: 0,
+				},
+				groups: [],
+				authorization: {
+					create: [],
+					read: [],
+					update: [],
+					delete: [],
+				},
 			},
-			groups: [],
-			authorization: {
-				create: [],
-				read: [],
-				update: [],
-				delete: [],
-			},
-		},
 			selectedOrganisation: null,
 			selectedGroups: [],
 			availableGroups: [],
@@ -265,18 +263,18 @@ export default {
 			if (!this.applicationItem.quota?.storage) return 0
 			return Math.round(this.applicationItem.quota.storage / (1024 * 1024))
 		},
-	bandwidthQuotaMB() {
-		if (!this.applicationItem.quota?.bandwidth) return 0
-		return Math.round(this.applicationItem.quota.bandwidth / (1024 * 1024))
-	},
-	filteredAvailableGroups() {
+		bandwidthQuotaMB() {
+			if (!this.applicationItem.quota?.bandwidth) return 0
+			return Math.round(this.applicationItem.quota.bandwidth / (1024 * 1024))
+		},
+		filteredAvailableGroups() {
 		// Filter available groups to only show groups assigned to the application
-		if (!this.applicationItem.groups || this.applicationItem.groups.length === 0) {
-			return this.availableGroups
-		}
-		return this.availableGroups.filter(group => this.applicationItem.groups.includes(group.id))
+			if (!this.applicationItem.groups || this.applicationItem.groups.length === 0) {
+				return this.availableGroups
+			}
+			return this.availableGroups.filter(group => this.applicationItem.groups.includes(group.id))
+		},
 	},
-},
 	async mounted() {
 		await this.fetchOrganisations()
 		// Use cached Nextcloud groups from store (preloaded on index page)
@@ -457,110 +455,110 @@ export default {
 		 * @param {object} groupToRemove - Group to remove
 		 * @return {void}
 		 */
-	removeGroup(groupToRemove) {
-		this.selectedGroups = this.selectedGroups.filter(g => g.id !== groupToRemove.id)
-		// Store only the group IDs, not the full objects
-		this.applicationItem.groups = this.selectedGroups.map(group => group.id)
-	},
+		removeGroup(groupToRemove) {
+			this.selectedGroups = this.selectedGroups.filter(g => g.id !== groupToRemove.id)
+			// Store only the group IDs, not the full objects
+			this.applicationItem.groups = this.selectedGroups.map(group => group.id)
+		},
 
-	/**
-	 * Update CRUD permission for application
-	 * 
-	 * @param {object} payload - Permission update payload
-	 * @return {void}
-	 */
-	updateApplicationPermission(payload) {
-		const { groupId, action, hasPermission } = payload
+		/**
+		 * Update CRUD permission for application
+		 *
+		 * @param {object} payload - Permission update payload
+		 * @return {void}
+		 */
+		updateApplicationPermission(payload) {
+			const { groupId, action, hasPermission } = payload
 
-		// Initialize authorization if not present
-		if (!this.applicationItem.authorization) {
-			this.applicationItem.authorization = {
-				create: [],
-				read: [],
-				update: [],
-				delete: [],
+			// Initialize authorization if not present
+			if (!this.applicationItem.authorization) {
+				this.applicationItem.authorization = {
+					create: [],
+					read: [],
+					update: [],
+					delete: [],
+				}
 			}
-		}
 
-		// Ensure the action array exists
-		if (!Array.isArray(this.applicationItem.authorization[action])) {
-			this.applicationItem.authorization[action] = []
-		}
+			// Ensure the action array exists
+			if (!Array.isArray(this.applicationItem.authorization[action])) {
+				this.applicationItem.authorization[action] = []
+			}
 
-		// Update the permission
-		const groupIndex = this.applicationItem.authorization[action].indexOf(groupId)
-		if (hasPermission && groupIndex === -1) {
+			// Update the permission
+			const groupIndex = this.applicationItem.authorization[action].indexOf(groupId)
+			if (hasPermission && groupIndex === -1) {
 			// Add the group
-			this.applicationItem.authorization[action].push(groupId)
-		} else if (!hasPermission && groupIndex !== -1) {
+				this.applicationItem.authorization[action].push(groupId)
+			} else if (!hasPermission && groupIndex !== -1) {
 			// Remove the group
-			this.applicationItem.authorization[action].splice(groupIndex, 1)
-		}
-	},
+				this.applicationItem.authorization[action].splice(groupIndex, 1)
+			}
+		},
 
-	/**
-	 * Update storage quota (converts MB to bytes)
-	 * 
-	 * @param {number} value - Quota in MB
-	 * @return {void}
-	 */
-	updateStorageQuota(value) {
+		/**
+		 * Update storage quota (converts MB to bytes)
+		 *
+		 * @param {number} value - Quota in MB
+		 * @return {void}
+		 */
+		updateStorageQuota(value) {
 		// Convert MB to bytes (0 = unlimited)
-		const mbValue = value ? parseInt(value) : 0
-		if (!this.applicationItem.quota) {
-			this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
-		}
-		this.applicationItem.quota.storage = mbValue * 1024 * 1024
-	},
+			const mbValue = value ? parseInt(value) : 0
+			if (!this.applicationItem.quota) {
+				this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
+			}
+			this.applicationItem.quota.storage = mbValue * 1024 * 1024
+		},
 
-	/**
-	 * Update bandwidth quota (converts MB to bytes)
-	 * 
-	 * @param {number} value - Quota in MB
-	 * @return {void}
-	 */
-	updateBandwidthQuota(value) {
+		/**
+		 * Update bandwidth quota (converts MB to bytes)
+		 *
+		 * @param {number} value - Quota in MB
+		 * @return {void}
+		 */
+		updateBandwidthQuota(value) {
 		// Convert MB to bytes (0 = unlimited)
-		const mbValue = value ? parseInt(value) : 0
-		if (!this.applicationItem.quota) {
-			this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
-		}
-		this.applicationItem.quota.bandwidth = mbValue * 1024 * 1024
-	},
+			const mbValue = value ? parseInt(value) : 0
+			if (!this.applicationItem.quota) {
+				this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
+			}
+			this.applicationItem.quota.bandwidth = mbValue * 1024 * 1024
+		},
 
-	/**
-	 * Update request quota
-	 * 
-	 * @param {number} value - Quota value
-	 * @return {void}
-	 */
-	updateRequestQuota(value) {
+		/**
+		 * Update request quota
+		 *
+		 * @param {number} value - Quota value
+		 * @return {void}
+		 */
+		updateRequestQuota(value) {
 		// 0 = unlimited
-		if (!this.applicationItem.quota) {
-			this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
-		}
-		this.applicationItem.quota.requests = value ? parseInt(value) : 0
-	},
+			if (!this.applicationItem.quota) {
+				this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
+			}
+			this.applicationItem.quota.requests = value ? parseInt(value) : 0
+		},
 
-	/**
-	 * Update group quota
-	 * 
-	 * @param {number} value - Quota value
-	 * @return {void}
-	 */
-	updateGroupQuota(value) {
+		/**
+		 * Update group quota
+		 *
+		 * @param {number} value - Quota value
+		 * @return {void}
+		 */
+		updateGroupQuota(value) {
 		// 0 = unlimited
-		if (!this.applicationItem.quota) {
-			this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
-		}
-		this.applicationItem.quota.groups = value ? parseInt(value) : 0
-	},
+			if (!this.applicationItem.quota) {
+				this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
+			}
+			this.applicationItem.quota.groups = value ? parseInt(value) : 0
+		},
 
-	/**
-	 * Close the modal and reset state
-	 * 
-	 * @return {void}
-	 */
+		/**
+		 * Close the modal and reset state
+		 *
+		 * @return {void}
+		 */
 		closeModal() {
 			this.success = false
 			this.error = null

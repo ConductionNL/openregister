@@ -106,31 +106,31 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 								:value="bandwidthQuotaMB"
 								@update:value="updateBandwidthQuota" />
 
-						<NcTextField
-							:disabled="loading"
-							label="API Request Quota (requests/day)"
-							type="number"
-							placeholder="0 = unlimited"
-							:value="organisationItem.quota?.requests || 0"
-							@update:value="updateRequestQuota" />
+							<NcTextField
+								:disabled="loading"
+								label="API Request Quota (requests/day)"
+								type="number"
+								placeholder="0 = unlimited"
+								:value="organisationItem.quota?.requests || 0"
+								@update:value="updateRequestQuota" />
 
-						<NcTextField
-							:disabled="loading"
-							label="User Quota"
-							type="number"
-							placeholder="0 = unlimited"
-							:value="organisationItem.quota?.users || 0"
-							@update:value="updateUserQuota" />
+							<NcTextField
+								:disabled="loading"
+								label="User Quota"
+								type="number"
+								placeholder="0 = unlimited"
+								:value="organisationItem.quota?.users || 0"
+								@update:value="updateUserQuota" />
 
-						<NcTextField
-							:disabled="loading"
-							label="Group Quota"
-							type="number"
-							placeholder="0 = unlimited"
-							:value="organisationItem.quota?.groups || 0"
-							@update:value="updateGroupQuota" />
-					</div>
-				</BTab>
+							<NcTextField
+								:disabled="loading"
+								label="Group Quota"
+								type="number"
+								placeholder="0 = unlimited"
+								:value="organisationItem.quota?.groups || 0"
+								@update:value="updateGroupQuota" />
+						</div>
+					</BTab>
 
 					<BTab :disabled="!organisationItem.uuid">
 						<template #title>
@@ -256,91 +256,93 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 									<!-- Special Rights -->
 									<BTab title="Special Rights">
 										<div class="special-rights-container">
-											<p class="rbac-description">Grant additional permissions beyond standard CRUD operations</p>
-											
+											<p class="rbac-description">
+												Grant additional permissions beyond standard CRUD operations
+											</p>
+
 											<table class="rbac-table special-rights-table">
-										<thead>
-											<tr>
-												<th>Right</th>
-												<th>Description</th>
-												<th>Groups</th>
-											</tr>
-										</thead>
-										<tbody>
-											<tr>
-												<td class="right-name">
-													<span class="right-badge">object_publish</span>
-												</td>
-												<td class="right-description">
-													Publish objects to make them publicly available
-												</td>
-												<td class="right-groups">
-													<NcSelect
-														v-model="selectedSpecialRights.object_publish"
-														:options="filteredAvailableGroups"
-														label="name"
-														track-by="id"
-														:multiple="true"
-														placeholder="Select groups..."
-														@input="updateSpecialRight('object_publish', $event)" />
-												</td>
-											</tr>
-											<tr>
-												<td class="right-name">
-													<span class="right-badge">agent_use</span>
-												</td>
-												<td class="right-description">
-													Use AI agents for processing and analysis
-												</td>
-												<td class="right-groups">
-													<NcSelect
-														v-model="selectedSpecialRights.agent_use"
-														:options="filteredAvailableGroups"
-														label="name"
-														track-by="id"
-														:multiple="true"
-														placeholder="Select groups..."
-														@input="updateSpecialRight('agent_use', $event)" />
-												</td>
-											</tr>
-											<tr>
-												<td class="right-name">
-													<span class="right-badge">dashboard_view</span>
-												</td>
-												<td class="right-description">
-													Access organisation dashboard and analytics
-												</td>
-												<td class="right-groups">
-													<NcSelect
-														v-model="selectedSpecialRights.dashboard_view"
-														:options="filteredAvailableGroups"
-														label="name"
-														track-by="id"
-														:multiple="true"
-														placeholder="Select groups..."
-														@input="updateSpecialRight('dashboard_view', $event)" />
-												</td>
-											</tr>
-											<tr>
-												<td class="right-name">
-													<span class="right-badge">llm_use</span>
-												</td>
-												<td class="right-description">
-													Use Large Language Model features
-												</td>
-												<td class="right-groups">
-													<NcSelect
-														v-model="selectedSpecialRights.llm_use"
-														:options="filteredAvailableGroups"
-														label="name"
-														track-by="id"
-														:multiple="true"
-														placeholder="Select groups..."
-														@input="updateSpecialRight('llm_use', $event)" />
-												</td>
-											</tr>
-										</tbody>
-									</table>
+												<thead>
+													<tr>
+														<th>Right</th>
+														<th>Description</th>
+														<th>Groups</th>
+													</tr>
+												</thead>
+												<tbody>
+													<tr>
+														<td class="right-name">
+															<span class="right-badge">object_publish</span>
+														</td>
+														<td class="right-description">
+															Publish objects to make them publicly available
+														</td>
+														<td class="right-groups">
+															<NcSelect
+																v-model="selectedSpecialRights.object_publish"
+																:options="filteredAvailableGroups"
+																label="name"
+																track-by="id"
+																:multiple="true"
+																placeholder="Select groups..."
+																@input="updateSpecialRight('object_publish', $event)" />
+														</td>
+													</tr>
+													<tr>
+														<td class="right-name">
+															<span class="right-badge">agent_use</span>
+														</td>
+														<td class="right-description">
+															Use AI agents for processing and analysis
+														</td>
+														<td class="right-groups">
+															<NcSelect
+																v-model="selectedSpecialRights.agent_use"
+																:options="filteredAvailableGroups"
+																label="name"
+																track-by="id"
+																:multiple="true"
+																placeholder="Select groups..."
+																@input="updateSpecialRight('agent_use', $event)" />
+														</td>
+													</tr>
+													<tr>
+														<td class="right-name">
+															<span class="right-badge">dashboard_view</span>
+														</td>
+														<td class="right-description">
+															Access organisation dashboard and analytics
+														</td>
+														<td class="right-groups">
+															<NcSelect
+																v-model="selectedSpecialRights.dashboard_view"
+																:options="filteredAvailableGroups"
+																label="name"
+																track-by="id"
+																:multiple="true"
+																placeholder="Select groups..."
+																@input="updateSpecialRight('dashboard_view', $event)" />
+														</td>
+													</tr>
+													<tr>
+														<td class="right-name">
+															<span class="right-badge">llm_use</span>
+														</td>
+														<td class="right-description">
+															Use Large Language Model features
+														</td>
+														<td class="right-groups">
+															<NcSelect
+																v-model="selectedSpecialRights.llm_use"
+																:options="filteredAvailableGroups"
+																label="name"
+																track-by="id"
+																:multiple="true"
+																placeholder="Select groups..."
+																@input="updateSpecialRight('llm_use', $event)" />
+														</td>
+													</tr>
+												</tbody>
+											</table>
 										</div>
 									</BTab>
 								</BTabs>
@@ -444,20 +446,20 @@ export default {
 	data() {
 		return {
 			activeTab: 0,
-		organisationItem: {
-			name: '',
-			slug: '',
-			description: '',
-			active: true,
-			quota: {
-				storage: 0,
-				bandwidth: 0,
-				requests: 0,
-				users: 0,
-				groups: 0,
+			organisationItem: {
+				name: '',
+				slug: '',
+				description: '',
+				active: true,
+				quota: {
+					storage: 0,
+					bandwidth: 0,
+					requests: 0,
+					users: 0,
+					groups: 0,
+				},
+				groups: [],
 			},
-			groups: [],
-		},
 			selectedGroups: [],
 			availableGroups: [],
 			loadingGroups: false,
@@ -492,7 +494,7 @@ export default {
 		},
 		/**
 		 * Filter available groups to only show those assigned to the organisation
-		 * 
+		 *
 		 * @return {Array} Filtered array of groups
 		 */
 		filteredAvailableGroups() {
@@ -502,7 +504,7 @@ export default {
 			}
 
 			// Only show groups that are in the organisation's groups list
-			return this.availableGroups.filter(group => 
+			return this.availableGroups.filter(group =>
 				this.organisationItem.groups.includes(group.id),
 			)
 		},
@@ -780,29 +782,29 @@ export default {
 		 * @param {number} value - Quota in MB
 		 * @return {void}
 		 */
-	updateStorageQuota(value) {
+		updateStorageQuota(value) {
 		// Convert MB to bytes (0 = unlimited)
-		const mbValue = value ? parseInt(value) : 0
-		if (!this.organisationItem.quota) {
-			this.organisationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
-		}
-		this.organisationItem.quota.storage = mbValue * 1024 * 1024
-	},
+			const mbValue = value ? parseInt(value) : 0
+			if (!this.organisationItem.quota) {
+				this.organisationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
+			}
+			this.organisationItem.quota.storage = mbValue * 1024 * 1024
+		},
 
-	/**
-	 * Update bandwidth quota (converts MB to bytes)
-	 * 
-	 * @param {number} value - Quota in MB
-	 * @return {void}
-	 */
-	updateBandwidthQuota(value) {
+		/**
+		 * Update bandwidth quota (converts MB to bytes)
+		 *
+		 * @param {number} value - Quota in MB
+		 * @return {void}
+		 */
+		updateBandwidthQuota(value) {
 		// Convert MB to bytes (0 = unlimited)
-		const mbValue = value ? parseInt(value) : 0
-		if (!this.organisationItem.quota) {
-			this.organisationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
-		}
-		this.organisationItem.quota.bandwidth = mbValue * 1024 * 1024
-	},
+			const mbValue = value ? parseInt(value) : 0
+			if (!this.organisationItem.quota) {
+				this.organisationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
+			}
+			this.organisationItem.quota.bandwidth = mbValue * 1024 * 1024
+		},
 
 		/**
 		 * Update request quota
@@ -810,47 +812,47 @@ export default {
 		 * @param {number} value - Quota value
 		 * @return {void}
 		 */
-	updateRequestQuota(value) {
+		updateRequestQuota(value) {
 		// 0 = unlimited
-		if (!this.organisationItem.quota) {
-			this.organisationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
-		}
-		this.organisationItem.quota.requests = value ? parseInt(value) : 0
-	},
+			if (!this.organisationItem.quota) {
+				this.organisationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
+			}
+			this.organisationItem.quota.requests = value ? parseInt(value) : 0
+		},
 
-	/**
-	 * Update user quota
-	 * 
-	 * @param {number} value - Quota value
-	 * @return {void}
-	 */
-	updateUserQuota(value) {
+		/**
+		 * Update user quota
+		 *
+		 * @param {number} value - Quota value
+		 * @return {void}
+		 */
+		updateUserQuota(value) {
 		// 0 = unlimited
-		if (!this.organisationItem.quota) {
-			this.organisationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
-		}
-		this.organisationItem.quota.users = value ? parseInt(value) : 0
-	},
+			if (!this.organisationItem.quota) {
+				this.organisationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
+			}
+			this.organisationItem.quota.users = value ? parseInt(value) : 0
+		},
 
-	/**
-	 * Update group quota
-	 * 
-	 * @param {number} value - Quota value
-	 * @return {void}
-	 */
-	updateGroupQuota(value) {
+		/**
+		 * Update group quota
+		 *
+		 * @param {number} value - Quota value
+		 * @return {void}
+		 */
+		updateGroupQuota(value) {
 		// 0 = unlimited
-		if (!this.organisationItem.quota) {
-			this.organisationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
-		}
-		this.organisationItem.quota.groups = value ? parseInt(value) : 0
-	},
+			if (!this.organisationItem.quota) {
+				this.organisationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
+			}
+			this.organisationItem.quota.groups = value ? parseInt(value) : 0
+		},
 
-	/**
-	 * Close the modal and reset state
-	 * 
-	 * @return {void}
-	 */
+		/**
+		 * Close the modal and reset state
+		 *
+		 * @return {void}
+		 */
 		closeModal() {
 			this.success = false
 			this.error = null
@@ -941,8 +943,8 @@ export default {
 
 		/**
 		 * Update entity permission
-		 * 
-		 * @param {Object} payload - The permission update payload
+		 *
+		 * @param {object} payload - The permission update payload
 		 * @param {string} payload.entityType - The entity type (register, schema, object, view, agent)
 		 * @param {string} payload.groupId - The group ID
 		 * @param {string} payload.action - The action (create, read, update, delete)
@@ -979,7 +981,7 @@ export default {
 
 		/**
 		 * Update special right
-		 * 
+		 *
 		 * @param {string} right - The special right (object_publish, agent_use, dashboard_view, llm_use)
 		 * @param {Array} groups - Array of group objects with {id, name}
 		 * @return {void}
@@ -1002,7 +1004,7 @@ export default {
 
 		/**
 		 * Initialize special rights from organization authorization
-		 * 
+		 *
 		 * @return {void}
 		 */
 		initializeSpecialRights() {
