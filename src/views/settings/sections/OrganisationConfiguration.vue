@@ -29,18 +29,18 @@
 					label-outside
 					input-label="Default Organisation"
 					@input="handleDefaultOrganisationChange">
-					<template #option="{ name, users, owner }">
-						<div class="organisation-option">
-							<OfficeBuilding :size="20" />
-							<div class="organisation-info">
-								<span class="organisation-name">{{ name }}</span>
-								<span class="organisation-meta">
-									{{ (users?.length || 0) }} {{ t('openregister', 'members') }} ·
-									{{ t('openregister', 'Owner:') }} {{ owner || 'System' }}
-								</span>
-							</div>
+				<template #option="{ name, users, owner }">
+					<div class="organisation-option">
+						<OfficeBuilding :size="20" />
+						<div class="organisation-info">
+							<span class="organisation-name">{{ name }}</span>
+							<span class="organisation-meta">
+								{{ (users?.length || 0) }} {{ t('openregister', 'members') }} · 
+								{{ t('openregister', 'Owner:') }} {{ owner || 'System' }}
+							</span>
 						</div>
-					</template>
+					</div>
+				</template>
 				</NcSelect>
 			</div>
 		</div>
@@ -69,36 +69,20 @@
 			<h3>{{ t('openregister', 'Organisation Statistics') }}</h3>
 			<div class="stats-grid">
 				<div class="stat-card">
-					<div class="stat-value">
-						{{ stats.totalOrganisations }}
-					</div>
-					<div class="stat-label">
-						{{ t('openregister', 'Total Organisations') }}
-					</div>
+					<div class="stat-value">{{ stats.totalOrganisations }}</div>
+					<div class="stat-label">{{ t('openregister', 'Total Organisations') }}</div>
 				</div>
 				<div class="stat-card">
-					<div class="stat-value">
-						{{ stats.activeOrganisations }}
-					</div>
-					<div class="stat-label">
-						{{ t('openregister', 'Active Organisations') }}
-					</div>
+					<div class="stat-value">{{ stats.activeOrganisations }}</div>
+					<div class="stat-label">{{ t('openregister', 'Active Organisations') }}</div>
 				</div>
 				<div class="stat-card">
-					<div class="stat-value">
-						{{ stats.totalMembers }}
-					</div>
-					<div class="stat-label">
-						{{ t('openregister', 'Total Members') }}
-					</div>
+					<div class="stat-value">{{ stats.totalMembers }}</div>
+					<div class="stat-label">{{ t('openregister', 'Total Members') }}</div>
 				</div>
 				<div class="stat-card">
-					<div class="stat-value">
-						{{ stats.averageMembersPerOrg }}
-					</div>
-					<div class="stat-label">
-						{{ t('openregister', 'Avg Members/Org') }}
-					</div>
+					<div class="stat-value">{{ stats.averageMembersPerOrg }}</div>
+					<div class="stat-label">{{ t('openregister', 'Avg Members/Org') }}</div>
 				</div>
 			</div>
 		</div>
@@ -155,20 +139,22 @@ import UndoVariant from 'vue-material-design-icons/UndoVariant.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
 
+import { settingsStore, organisationStore } from '../../../store/store.js'
 import { generateUrl } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
 
 /**
  * OrganisationConfiguration
- * Settings section for organisation-related configuration
- *
  * @module Components
- * @package
+ * @package OpenRegister
+ * 
+ * Settings section for organisation-related configuration
+ * 
  * @author   Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2
- * @version  1.0.0
- * @see      https://www.OpenRegister.nl
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version  GIT: <git_id>
+ * @link     https://www.OpenRegister.nl
  */
 export default {
 	name: 'OrganisationConfiguration',
@@ -190,15 +176,15 @@ export default {
 			// Current values
 			selectedDefaultOrganisation: null,
 			autoCreateDefault: true,
-
+			
 			// Original values for change detection
 			originalDefaultOrganisation: null,
 			originalAutoCreateDefault: true,
-
+			
 			// Organisations list
 			organisations: [],
 			loadingOrganisations: false,
-
+			
 			// Statistics
 			stats: {
 				totalOrganisations: 0,
@@ -206,7 +192,7 @@ export default {
 				totalMembers: 0,
 				averageMembersPerOrg: 0,
 			},
-
+			
 			// UI state
 			saving: false,
 			saveSuccess: false,
@@ -217,7 +203,7 @@ export default {
 	computed: {
 		/**
 		 * Format organisations for NcSelect
-		 *
+		 * 
 		 * @return {Array} Formatted organisation options
 		 */
 		organisationOptions() {
@@ -230,7 +216,7 @@ export default {
 
 		/**
 		 * Check if there are unsaved changes
-		 *
+		 * 
 		 * @return {boolean} True if there are changes
 		 */
 		hasChanges() {
@@ -247,7 +233,7 @@ export default {
 	methods: {
 		/**
 		 * Load all data
-		 *
+		 * 
 		 * @return {Promise<void>}
 		 */
 		async loadData() {
@@ -260,16 +246,16 @@ export default {
 
 		/**
 		 * Load organisations list
-		 *
+		 * 
 		 * @return {Promise<void>}
 		 */
 		async loadOrganisations() {
 			this.loadingOrganisations = true
 			try {
 				const response = await axios.get(
-					generateUrl('/apps/openregister/api/organisations'),
+					generateUrl('/apps/openregister/api/organisations')
 				)
-
+				
 				if (response.data?.results) {
 					this.organisations = response.data.results
 				}
@@ -283,17 +269,17 @@ export default {
 
 		/**
 		 * Load current settings
-		 *
+		 * 
 		 * @return {Promise<void>}
 		 */
 		async loadSettings() {
 			try {
 				const response = await axios.get(
-					generateUrl('/apps/openregister/api/settings/organisation'),
+					generateUrl('/apps/openregister/api/settings/organisation')
 				)
-
+				
 				const settings = response.data?.organisation || {}
-
+				
 				// Load default organisation UUID
 				const defaultOrgUuid = settings.default_organisation
 				if (defaultOrgUuid && this.organisations.length > 0) {
@@ -307,11 +293,11 @@ export default {
 						this.originalDefaultOrganisation = { ...this.selectedDefaultOrganisation }
 					}
 				}
-
+				
 				// Load auto-create setting
 				this.autoCreateDefault = settings.auto_create_default_organisation !== false
 				this.originalAutoCreateDefault = this.autoCreateDefault
-
+				
 			} catch (error) {
 				console.error('Error loading settings:', error)
 			}
@@ -319,15 +305,15 @@ export default {
 
 		/**
 		 * Load organisation statistics
-		 *
+		 * 
 		 * @return {Promise<void>}
 		 */
 		async loadStatistics() {
 			try {
 				const response = await axios.get(
-					generateUrl('/apps/openregister/api/organisations/statistics'),
+					generateUrl('/apps/openregister/api/organisations/statistics')
 				)
-
+				
 				if (response.data) {
 					this.stats = {
 						totalOrganisations: response.data.total || 0,
@@ -344,7 +330,7 @@ export default {
 
 		/**
 		 * Handle default organisation change
-		 *
+		 * 
 		 * @param {object} organisation - Selected organisation
 		 * @return {void}
 		 */
@@ -356,7 +342,7 @@ export default {
 
 		/**
 		 * Handle auto-create default change
-		 *
+		 * 
 		 * @param {boolean} value - New value
 		 * @return {void}
 		 */
@@ -368,7 +354,7 @@ export default {
 
 		/**
 		 * Save settings
-		 *
+		 * 
 		 * @return {Promise<void>}
 		 */
 		async saveSettings() {
@@ -382,7 +368,7 @@ export default {
 					{
 						default_organisation: this.selectedDefaultOrganisation?.uuid || null,
 						auto_create_default_organisation: this.autoCreateDefault,
-					},
+					}
 				)
 
 				this.saveSuccess = true
@@ -397,7 +383,7 @@ export default {
 
 			} catch (error) {
 				console.error('Error saving settings:', error)
-				this.saveError = error.response?.data?.message
+				this.saveError = error.response?.data?.message 
 					|| this.t('openregister', 'Failed to save settings')
 			} finally {
 				this.saving = false
@@ -406,7 +392,7 @@ export default {
 
 		/**
 		 * Reset changes to original values
-		 *
+		 * 
 		 * @return {void}
 		 */
 		resetSettings() {
@@ -418,7 +404,7 @@ export default {
 
 		/**
 		 * Refresh all data
-		 *
+		 * 
 		 * @return {Promise<void>}
 		 */
 		async refreshData() {
@@ -539,3 +525,4 @@ export default {
 	border-top: 1px solid var(--color-border);
 }
 </style>
+

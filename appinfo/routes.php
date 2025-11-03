@@ -259,7 +259,6 @@ return [
 		['name' => 'views#create', 'url' => '/api/views', 'verb' => 'POST'],
 		['name' => 'views#update', 'url' => '/api/views/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'views#patch', 'url' => '/api/views/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'views#favorite', 'url' => '/api/views/{id}/favorite', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'views#destroy', 'url' => '/api/views/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
 		
 		// Chat - AI Assistant endpoints

@@ -190,6 +190,26 @@ class Version1Date20251102160000 extends SimpleMigrationStep
                 'comment' => 'Include objects in RAG search'
             ]);
             
+            // Resource Quotas
+            $table->addColumn('request_quota', Types::INTEGER, [
+                'notnull' => false,
+                'default' => null,
+                'comment' => 'API request quota per day (0 = unlimited)'
+            ]);
+            
+            $table->addColumn('token_quota', Types::INTEGER, [
+                'notnull' => false,
+                'default' => null,
+                'comment' => 'Token quota per request (0 = unlimited)'
+            ]);
+            
+            // Access Control
+            $table->addColumn('groups', Types::JSON, [
+                'notnull' => false,
+                'default' => null,
+                'comment' => 'Nextcloud group IDs with access to this agent'
+            ]);
+            
             // Timestamps
             $table->addColumn('created', Types::DATETIME, [
                 'notnull' => true,

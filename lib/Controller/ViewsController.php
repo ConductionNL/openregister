@@ -333,7 +333,10 @@ class ViewsController extends Controller
     
     
     /**
-     * Patch view details (alias for update)
+     * Patch view details (partial update)
+     *
+     * Updates only the fields provided in the request.
+     * This is different from PUT (update) which requires all fields.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
@@ -343,23 +346,6 @@ class ViewsController extends Controller
      * @return JSONResponse Updated view data
      */
     public function patch(string $id): JSONResponse
-    {
-        return $this->update($id);
-
-    }//end patch()
-    
-    
-    /**
-     * Toggle favorite status for a view
-     *
-     * @param string $id The view ID
-     *
-     * @return JSONResponse A JSON response with updated view
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     */
-    public function favorite(string $id): JSONResponse
     {
         try {
             $user = $this->userSession->getUser();
@@ -371,30 +357,66 @@ class ViewsController extends Controller
                 ], 401);
             }
             
-            $data = $this->request->getParams();
-            $favor = $data['favor'] ?? true; // Default to true (add favorite)
+            // Get existing view
+            $view = $this->viewService->find($id, $userId);
             
-            $view = $this->viewService->toggleFavorite($id, $userId, $favor);
+            $data = $this->request->getParams();
+            
+            // Use existing values for fields not provided
+            $name = $data['name'] ?? $view->getName();
+            $description = $data['description'] ?? $view->getDescription();
+            $isPublic = isset($data['isPublic']) ? $data['isPublic'] : $view->getIsPublic();
+            $isDefault = isset($data['isDefault']) ? $data['isDefault'] : $view->getIsDefault();
+            $favoredBy = $data['favoredBy'] ?? $view->getFavoredBy();
+            
+            // Handle query parameter
+            $query = $view->getQuery() ?? [];
+            if (isset($data['configuration']) && is_array($data['configuration'])) {
+                $config = $data['configuration'];
+                $query = [
+                    'registers' => $config['registers'] ?? [],
+                    'schemas' => $config['schemas'] ?? [],
+                    'source' => $config['source'] ?? 'auto',
+                    'searchTerms' => $config['searchTerms'] ?? [],
+                    'facetFilters' => $config['facetFilters'] ?? [],
+                    'enabledFacets' => $config['enabledFacets'] ?? [],
+                ];
+            } elseif (isset($data['query']) && is_array($data['query'])) {
+                $query = $data['query'];
+            }
+            
+            // Update view
+            $updatedView = $this->viewService->update(
+                id: $id,
+                name: $name,
+                description: $description,
+                owner: $userId,
+                isPublic: $isPublic,
+                isDefault: $isDefault,
+                query: $query,
+                favoredBy: $favoredBy
+            );
             
             return new JSONResponse([
-                'view' => $view->jsonSerialize(),
+                'view' => $updatedView->jsonSerialize(),
             ]);
         } catch (DoesNotExistException $e) {
             return new JSONResponse([
                 'error' => 'View not found',
             ], 404);
         } catch (\Exception $e) {
-            $this->logger->error('Error toggling favorite', [
+            $this->logger->error('Error patching view', [
                 'id' => $id,
                 'exception' => $e->getMessage(),
             ]);
             return new JSONResponse([
-                'error' => 'Failed to toggle favorite',
+                'error' => 'Failed to patch view',
                 'message' => $e->getMessage(),
             ], 500);
         }//end try
         
-    }//end favorite()
+    }//end patch()
+    
     
     
     /**

@@ -177,7 +177,7 @@ export default {
 	computed: {
 		/**
 		 * Get sorted groups (only showing groups assigned to the organisation)
-		 *
+		 * 
 		 * @return {Array} Sorted array of groups
 		 */
 		sortedGroups() {
@@ -201,21 +201,33 @@ export default {
 				.sort((a, b) => a.name.localeCompare(b.name))
 		},
 
-		/**
-		 * Check if any permissions are set for this entity type
-		 *
-		 * @return {boolean} True if permissions are set
-		 */
-		hasAnyPermissions() {
-			const entityAuth = this.authorization[this.entityType] || {}
-			return Object.keys(entityAuth).some(action =>
-				Array.isArray(entityAuth[action]) && entityAuth[action].length > 0,
-			)
-		},
+	/**
+	 * Check if any permissions are set for this entity type
+	 * 
+	 * @return {boolean} True if permissions are set
+	 */
+	hasAnyPermissions() {
+		// For applications, authorization is flat (just {create: [], read: [], ...})
+		// For organisations, authorization is nested ({register: {create: [], ...}, ...})
+		let entityAuth
+		if (this.authorization[this.entityType]) {
+			// Nested structure (organisations)
+			entityAuth = this.authorization[this.entityType]
+		} else if (this.entityType === 'application' && this.authorization.create !== undefined) {
+			// Flat structure (applications)
+			entityAuth = this.authorization
+		} else {
+			entityAuth = {}
+		}
+		
+		return Object.keys(entityAuth).some(action =>
+			Array.isArray(entityAuth[action]) && entityAuth[action].length > 0,
+		)
+	},
 
 		/**
 		 * Check if access is restrictive (has specific permissions)
-		 *
+		 * 
 		 * @return {boolean} True if restrictive
 		 */
 		isRestrictive() {
@@ -223,24 +235,36 @@ export default {
 		},
 	},
 	methods: {
-		/**
-		 * Check if a group has a specific permission
-		 *
-		 * @param {string} groupId - The group ID
-		 * @param {string} action - The action (create, read, update, delete)
-		 * @return {boolean} True if group has permission
-		 */
-		hasPermission(groupId, action) {
-			const entityAuth = this.authorization[this.entityType] || {}
-			if (!entityAuth[action] || !Array.isArray(entityAuth[action])) {
-				return false
-			}
-			return entityAuth[action].includes(groupId)
-		},
+	/**
+	 * Check if a group has a specific permission
+	 * 
+	 * @param {string} groupId - The group ID
+	 * @param {string} action - The action (create, read, update, delete)
+	 * @return {boolean} True if group has permission
+	 */
+	hasPermission(groupId, action) {
+		// For applications, authorization is flat (just {create: [], read: [], ...})
+		// For organisations, authorization is nested ({register: {create: [], ...}, ...})
+		let entityAuth
+		if (this.authorization[this.entityType]) {
+			// Nested structure (organisations)
+			entityAuth = this.authorization[this.entityType]
+		} else if (this.entityType === 'application' && this.authorization.create !== undefined) {
+			// Flat structure (applications)
+			entityAuth = this.authorization
+		} else {
+			entityAuth = {}
+		}
+		
+		if (!entityAuth[action] || !Array.isArray(entityAuth[action])) {
+			return false
+		}
+		return entityAuth[action].includes(groupId)
+	},
 
 		/**
 		 * Update a permission for a group
-		 *
+		 * 
 		 * @param {string} groupId - The group ID
 		 * @param {string} action - The action (create, read, update, delete)
 		 * @param {boolean} hasPermission - Whether to grant or revoke permission
@@ -360,3 +384,4 @@ export default {
 	margin-top: 16px;
 }
 </style>
+

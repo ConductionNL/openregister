@@ -158,7 +158,8 @@ class ViewService
         string $owner,
         bool $isPublic,
         bool $isDefault,
-        array $query
+        array $query,
+        ?array $favoredBy = null
     ): View {
         try {
             $view = $this->find($id, $owner);
@@ -173,6 +174,11 @@ class ViewService
             $view->setIsPublic($isPublic);
             $view->setIsDefault($isDefault);
             $view->setQuery($query);
+            
+            // Update favoredBy if provided
+            if ($favoredBy !== null) {
+                $view->setFavoredBy($favoredBy);
+            }
 
             return $this->viewMapper->update($view);
         } catch (Exception $e) {

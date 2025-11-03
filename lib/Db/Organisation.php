@@ -498,6 +498,18 @@ class Organisation extends Entity implements JsonSerializable
                 'update' => [],
                 'delete' => [],
             ],
+            'configuration'  => [
+                'create' => [],
+                'read'   => [],
+                'update' => [],
+                'delete' => [],
+            ],
+            'application'    => [
+                'create' => [],
+                'read'   => [],
+                'update' => [],
+                'delete' => [],
+            ],
             'object_publish' => [],
             'agent_use'      => [],
             'dashboard_view' => [],
