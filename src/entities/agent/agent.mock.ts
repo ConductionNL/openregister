@@ -54,3 +54,4 @@ export const mockAgentData = (): TAgent[] => [
 
 export const mockAgent = (data: TAgent[] = mockAgentData()): Agent[] => data.map(item => new Agent(item))
 
+

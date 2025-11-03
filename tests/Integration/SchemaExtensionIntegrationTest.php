@@ -1484,3 +1484,4 @@ class SchemaExtensionIntegrationTest extends TestCase
 
 }//end class
 
+
