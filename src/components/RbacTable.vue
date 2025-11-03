@@ -177,7 +177,7 @@ export default {
 	computed: {
 		/**
 		 * Get sorted groups (only showing groups assigned to the organisation)
-		 * 
+		 *
 		 * @return {Array} Sorted array of groups
 		 */
 		sortedGroups() {
