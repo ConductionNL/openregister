@@ -122,6 +122,31 @@ class View extends Entity implements JsonSerializable
 
 
     /**
+     * Get the favoredBy array
+     *
+     * @return array Array of user IDs who favorited this view
+     */
+    public function getFavoredBy(): array
+    {
+        return $this->favoredBy ?? [];
+    }//end getFavoredBy()
+
+
+    /**
+     * Set the favoredBy array
+     *
+     * @param array $favoredBy Array of user IDs who favorited this view
+     *
+     * @return void
+     */
+    public function setFavoredBy(array $favoredBy): void
+    {
+        $this->favoredBy = $favoredBy;
+        $this->markFieldUpdated('favoredBy');
+    }//end setFavoredBy()
+
+
+    /**
      * Get the array version of this entity
      *
      * Converts the entity to an array representation

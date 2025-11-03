@@ -213,6 +213,23 @@ class ConfigurationsController extends Controller
 
 
     /**
+     * Patch (partially update) a configuration
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param int $id The ID of the configuration to patch
+     *
+     * @return JSONResponse The updated configuration data
+     */
+    public function patch(int $id): JSONResponse
+    {
+        return $this->update($id);
+
+    }//end patch()
+
+
+    /**
      * Delete a configuration
      *
      * @param int $id Configuration ID

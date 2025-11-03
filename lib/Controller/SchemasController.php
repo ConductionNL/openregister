@@ -114,28 +114,37 @@ class SchemasController extends Controller
      *
      * This method returns a JSON response containing an array of all schemas in the system.
      *
-     * @param ObjectService $objectService The object service
-     *
      * @return JSONResponse A JSON response containing the list of schemas
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      */
-    public function index(
-        ObjectService $objectService
-    ): JSONResponse {
+    public function index(): JSONResponse {
         // Get request parameters for filtering and searching.
-        $filters = $this->request->getParam(key: 'filters', default: []);
-        $search  = $this->request->getParam(key: '_search', default: '');
-        $extend  = $this->request->getParam(key: '_extend', default: []);
+        $params = $this->request->getParams();
+        
+        // Extract pagination and search parameters
+        $limit  = isset($params['_limit']) ? (int) $params['_limit'] : null;
+        $offset = isset($params['_offset']) ? (int) $params['_offset'] : null;
+        $page   = isset($params['_page']) ? (int) $params['_page'] : null;
+        $search = $params['_search'] ?? '';
+        $extend = $params['_extend'] ?? [];
         if (is_string($extend)) {
             $extend = [$extend];
         }
+        
+        // Convert page to offset if provided
+        if ($page !== null && $limit !== null) {
+            $offset = ($page - 1) * $limit;
+        }
+        
+        // Extract filters
+        $filters = $params['filters'] ?? [];
 
         $schemas    = $this->schemaMapper->findAll(
-            limit: null,
-            offset: null,
+            limit: $limit,
+            offset: $offset,
             filters: $filters,
             searchConditions: [],
             searchParams: [],
@@ -374,6 +383,23 @@ class SchemasController extends Controller
         }//end try
 
     }//end update()
+
+
+    /**
+     * Patch (partially update) a schema
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param int $id The ID of the schema to patch
+     *
+     * @return JSONResponse The updated schema data
+     */
+    public function patch(int $id): JSONResponse
+    {
+        return $this->update($id);
+
+    }//end patch()
 
 
     /**

@@ -108,11 +108,32 @@ class ViewsController extends Controller
                 ], 401);
             }
             
+            $params = $this->request->getParams();
+            
+            // Extract pagination and search parameters (for future use)
+            $limit  = isset($params['_limit']) ? (int) $params['_limit'] : null;
+            $offset = isset($params['_offset']) ? (int) $params['_offset'] : null;
+            $page   = isset($params['_page']) ? (int) $params['_page'] : null;
+            $search = $params['_search'] ?? '';
+            
             $views = $this->viewService->findAll($userId);
+            
+            // Apply client-side pagination if parameters are provided
+            $total = count($views);
+            if ($limit !== null) {
+                if ($page !== null) {
+                    $offset = ($page - 1) * $limit;
+                }
+                if ($offset !== null) {
+                    $views = array_slice($views, $offset, $limit);
+                } else {
+                    $views = array_slice($views, 0, $limit);
+                }
+            }
             
             return new JSONResponse([
                 'results' => array_map(fn($view) => $view->jsonSerialize(), $views),
-                'total' => count($views),
+                'total' => $total,
             ]);
         } catch (\Exception $e) {
             $this->logger->error('Error fetching views', [

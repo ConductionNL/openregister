@@ -1,5 +1,5 @@
 <script setup>
-import { configurationStore, navigationStore, registerStore, schemaStore, organisationStore, applicationStore, sourceStore, viewsStore, agentStore } from '../../store/store.js'
+import { configurationStore, navigationStore, registerStore, schemaStore, organisationStore, applicationStore, sourceStore, viewsStore, agentStore, objectStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -98,18 +98,25 @@ import { configurationStore, navigationStore, registerStore, schemaStore, organi
 							id="registers-select"
 							v-model="selectedRegisters"
 							:options="registerOptions"
+							:loading="loadingRegisters"
 							:multiple="true"
 							label="title"
 							track-by="id"
 							:label-outside="true"
-							placeholder="Select registers..."
+							:filterable="false"
+							placeholder="Search registers..."
 							:close-on-select="false"
+							@search-change="searchRegisters"
 							@input="updateRegisters">
 							<template #option="{ title, description }">
 								<div class="option-content">
 									<span class="option-title">{{ title }}</span>
 									<span v-if="description" class="option-description">{{ description }}</span>
 								</div>
+							</template>
+							<template #no-options>
+								<span v-if="loadingRegisters">Searching...</span>
+								<span v-else>No registers found</span>
 							</template>
 						</NcSelect>
 						<p class="field-hint">
@@ -123,12 +130,15 @@ import { configurationStore, navigationStore, registerStore, schemaStore, organi
 							id="schemas-select"
 							v-model="selectedSchemas"
 							:options="schemaOptions"
+							:loading="loadingSchemas"
 							:multiple="true"
 							label="title"
 							track-by="id"
 							:label-outside="true"
-							placeholder="Select schemas..."
+							:filterable="false"
+							placeholder="Search schemas..."
 							:close-on-select="false"
+							@search-change="searchSchemas"
 							@input="updateSchemas">
 							<template #option="{ title, description }">
 								<div class="option-content">
@@ -136,9 +146,48 @@ import { configurationStore, navigationStore, registerStore, schemaStore, organi
 									<span v-if="description" class="option-description">{{ description }}</span>
 								</div>
 							</template>
+							<template #no-options>
+								<span v-if="loadingSchemas">Searching...</span>
+								<span v-else>No schemas found</span>
+							</template>
 						</NcSelect>
 						<p class="field-hint">
 							{{ selectedSchemas.length }} schema(s) selected
+						</p>
+					</div>
+
+					<div class="selectField">
+						<label for="objects-select">Objects</label>
+						<NcSelect
+							id="objects-select"
+							v-model="selectedObjects"
+							:options="objectOptions"
+							:loading="loadingObjects"
+							:multiple="true"
+							label="title"
+							track-by="id"
+							:label-outside="true"
+							:filterable="false"
+							placeholder="Search objects..."
+							:close-on-select="false"
+							:disabled="selectedRegisters.length === 0 && selectedSchemas.length === 0"
+							@search-change="searchObjects"
+							@input="updateObjects">
+							<template #option="{ title, description }">
+								<div class="option-content">
+									<span class="option-title">{{ title }}</span>
+									<span v-if="description" class="option-description">{{ description }}</span>
+								</div>
+							</template>
+							<template #no-options>
+								<span v-if="loadingObjects">Searching...</span>
+								<span v-else-if="selectedRegisters.length === 0 && selectedSchemas.length === 0">Please select registers or schemas first</span>
+								<span v-else>No objects found</span>
+							</template>
+						</NcSelect>
+						<p class="field-hint">
+							{{ selectedObjects.length }} object(s) selected
+							<span v-if="selectedRegisters.length === 0 && selectedSchemas.length === 0"> - filtered by selected registers/schemas</span>
 						</p>
 					</div>
 
@@ -148,18 +197,25 @@ import { configurationStore, navigationStore, registerStore, schemaStore, organi
 							id="sources-select"
 							v-model="selectedSources"
 							:options="sourceOptions"
+							:loading="loadingSources"
 							:multiple="true"
 							label="name"
 							track-by="id"
 							:label-outside="true"
-							placeholder="Select data sources..."
+							:filterable="false"
+							placeholder="Search data sources..."
 							:close-on-select="false"
+							@search-change="searchSources"
 							@input="updateSources">
 							<template #option="{ name, description }">
 								<div class="option-content">
 									<span class="option-title">{{ name }}</span>
 									<span v-if="description" class="option-description">{{ description }}</span>
 								</div>
+							</template>
+							<template #no-options>
+								<span v-if="loadingSources">Searching...</span>
+								<span v-else>No sources found</span>
 							</template>
 						</NcSelect>
 						<p class="field-hint">
@@ -173,18 +229,25 @@ import { configurationStore, navigationStore, registerStore, schemaStore, organi
 							id="agents-select"
 							v-model="selectedAgents"
 							:options="agentOptions"
+							:loading="loadingAgents"
 							:multiple="true"
 							label="name"
 							track-by="id"
 							:label-outside="true"
-							placeholder="Select agents..."
+							:filterable="false"
+							placeholder="Search agents..."
 							:close-on-select="false"
+							@search-change="searchAgents"
 							@input="updateAgents">
 							<template #option="{ name, description }">
 								<div class="option-content">
 									<span class="option-title">{{ name }}</span>
 									<span v-if="description" class="option-description">{{ description }}</span>
 								</div>
+							</template>
+							<template #no-options>
+								<span v-if="loadingAgents">Searching...</span>
+								<span v-else>No agents found</span>
 							</template>
 						</NcSelect>
 						<p class="field-hint">
@@ -198,18 +261,25 @@ import { configurationStore, navigationStore, registerStore, schemaStore, organi
 							id="views-select"
 							v-model="selectedViews"
 							:options="viewOptions"
+							:loading="loadingViews"
 							:multiple="true"
 							label="name"
 							track-by="id"
 							:label-outside="true"
-							placeholder="Select views..."
+							:filterable="false"
+							placeholder="Search views..."
 							:close-on-select="false"
+							@search-change="searchViews"
 							@input="updateViews">
 							<template #option="{ name, description }">
 								<div class="option-content">
 									<span class="option-title">{{ name }}</span>
 									<span v-if="description" class="option-description">{{ description }}</span>
 								</div>
+							</template>
+							<template #no-options>
+								<span v-if="loadingViews">Searching...</span>
+								<span v-else>No views found</span>
 							</template>
 						</NcSelect>
 						<p class="field-hint">
@@ -285,11 +355,33 @@ export default {
 			activeTab: 0,
 			selectedRegisters: [],
 			selectedSchemas: [],
+			selectedObjects: [],
 			selectedSources: [],
 			selectedAgents: [],
 			selectedViews: [],
 			selectedOrganisation: null,
 			selectedApplication: null,
+			// Loading states for searches
+			loadingRegisters: false,
+			loadingSchemas: false,
+			loadingObjects: false,
+			loadingSources: false,
+			loadingAgents: false,
+			loadingViews: false,
+			// Search results
+			registerOptions: [],
+			schemaOptions: [],
+			objectOptions: [],
+			sourceOptions: [],
+			agentOptions: [],
+			viewOptions: [],
+			// Debounce timers
+			registerSearchDebounce: null,
+			schemaSearchDebounce: null,
+			objectSearchDebounce: null,
+			sourceSearchDebounce: null,
+			agentSearchDebounce: null,
+			viewSearchDebounce: null,
 		}
 	},
 	computed: {
@@ -297,45 +389,26 @@ export default {
 			const item = configurationStore.configurationItem
 			return Boolean(item?.title?.trim())
 		},
-		registerOptions() {
-			const selectedIds = this.selectedRegisters.map(r => r.id)
-			return (registerStore.registerList || []).filter(
-				register => !selectedIds.includes(register.id),
-			)
+		organisationOptions() {
+			return organisationStore.organisationList || []
 		},
-		schemaOptions() {
-			const selectedIds = this.selectedSchemas.map(s => s.id)
-			return (schemaStore.schemaList || []).filter(
-				schema => !selectedIds.includes(schema.id),
-			)
+		applicationOptions() {
+			return applicationStore.applicationList || []
 		},
-	organisationOptions() {
-		return organisationStore.organisationList || []
-	},
-	applicationOptions() {
-		return applicationStore.applicationList || []
-	},
-	sourceOptions() {
-		return sourceStore.sourceList || []
-	},
-	agentOptions() {
-		return agentStore.agentList || []
-	},
-	viewOptions() {
-		return viewsStore.viewsList || []
-	},
 	},
 	async created() {
-		// Load all required lists
+		// Load organisations and applications for Settings tab
 		await Promise.all([
-			registerStore.refreshRegisterList(),
-			schemaStore.refreshSchemaList(),
 			organisationStore.refreshOrganisationList(),
 			applicationStore.refreshApplicationList(),
-			sourceStore.refreshSourceList(),
-			agentStore.refreshAgentList(),
-			viewsStore.refreshViewsList(),
 		])
+		
+		// Perform initial searches for Configuration tab entities (load top 10)
+		this.searchRegisters('')
+		this.searchSchemas('')
+		this.searchSources('')
+		this.searchAgents('')
+		this.searchViews('')
 
 		// Initialize configurationItem if it doesn't exist
 		if (!configurationStore.configurationItem) {
@@ -347,12 +420,14 @@ export default {
 				organisation: null,
 				registers: [],
 				schemas: [],
+				objects: [],
 				sources: [],
 				agents: [],
 				views: [],
 			}
 			this.selectedRegisters = []
 			this.selectedSchemas = []
+			this.selectedObjects = []
 			this.selectedSources = []
 			this.selectedAgents = []
 			this.selectedViews = []
@@ -408,6 +483,14 @@ export default {
 			configurationStore.configurationItem.schemas = value.map(s => parseInt(s.id))
 			this.selectedSchemas = value
 		},
+		updateObjects(value) {
+			if (!configurationStore.configurationItem) {
+				configurationStore.configurationItem = {}
+			}
+			// Extract IDs from selected object objects
+			configurationStore.configurationItem.objects = value.map(o => parseInt(o.id))
+			this.selectedObjects = value
+		},
 		updateSources(value) {
 			if (!configurationStore.configurationItem) {
 				configurationStore.configurationItem = {}
@@ -432,53 +515,253 @@ export default {
 			configurationStore.configurationItem.views = value.map(v => parseInt(v.id))
 			this.selectedViews = value
 		},
-		loadExistingSelections() {
+		async loadExistingSelections() {
 			const item = configurationStore.configurationItem
 			if (item) {
-				// Load selected application
+				// Load selected application (from already loaded list)
 				if (item.application) {
 					this.selectedApplication = applicationStore.applicationList.find(
 						a => a.uuid === item.application,
 					) || null
 				}
-				// Load selected organisation
+				// Load selected organisation (from already loaded list)
 				if (item.organisation) {
 					this.selectedOrganisation = organisationStore.organisationList.find(
 						o => parseInt(o.id) === parseInt(item.organisation),
 					) || null
 				}
-				// Load selected registers
-				if (item.registers && Array.isArray(item.registers)) {
-					this.selectedRegisters = registerStore.registerList.filter(
-						r => item.registers.includes(parseInt(r.id)),
-					)
+				
+				// Load selected registers by fetching them individually
+				if (item.registers && Array.isArray(item.registers) && item.registers.length > 0) {
+					try {
+						const promises = item.registers.map(id => 
+							fetch(`/index.php/apps/openregister/api/registers/${id}`).then(r => r.json())
+						)
+						this.selectedRegisters = await Promise.all(promises)
+					} catch (error) {
+						console.error('Error loading selected registers:', error)
+					}
 				}
-			// Load selected schemas
-			if (item.schemas && Array.isArray(item.schemas)) {
-				this.selectedSchemas = schemaStore.schemaList.filter(
-					s => item.schemas.includes(parseInt(s.id)),
-				)
+				
+				// Load selected schemas by fetching them individually
+				if (item.schemas && Array.isArray(item.schemas) && item.schemas.length > 0) {
+					try {
+						const promises = item.schemas.map(id => 
+							fetch(`/index.php/apps/openregister/api/schemas/${id}`).then(r => r.json())
+						)
+						this.selectedSchemas = await Promise.all(promises)
+					} catch (error) {
+						console.error('Error loading selected schemas:', error)
+					}
+				}
+				
+				// Load selected objects by fetching them individually
+				if (item.objects && Array.isArray(item.objects) && item.objects.length > 0) {
+					try {
+						const promises = item.objects.map(id => 
+							fetch(`/index.php/apps/openregister/api/objects/${id}`).then(r => r.json())
+						)
+						this.selectedObjects = await Promise.all(promises)
+					} catch (error) {
+						console.error('Error loading selected objects:', error)
+					}
+				}
+				
+				// Load selected sources by fetching them individually
+				if (item.sources && Array.isArray(item.sources) && item.sources.length > 0) {
+					try {
+						const promises = item.sources.map(id => 
+							fetch(`/index.php/apps/openregister/api/sources/${id}`).then(r => r.json())
+						)
+						this.selectedSources = await Promise.all(promises)
+					} catch (error) {
+						console.error('Error loading selected sources:', error)
+					}
+				}
+				
+				// Load selected agents by fetching them individually
+				if (item.agents && Array.isArray(item.agents) && item.agents.length > 0) {
+					try {
+						const promises = item.agents.map(id => 
+							fetch(`/index.php/apps/openregister/api/agents/${id}`).then(r => r.json())
+						)
+						this.selectedAgents = await Promise.all(promises)
+					} catch (error) {
+						console.error('Error loading selected agents:', error)
+					}
+				}
+				
+				// Load selected views by fetching them individually
+				if (item.views && Array.isArray(item.views) && item.views.length > 0) {
+					try {
+						const promises = item.views.map(id => 
+							fetch(`/index.php/apps/openregister/api/views/${id}`).then(r => r.json())
+						)
+						this.selectedViews = await Promise.all(promises)
+					} catch (error) {
+						console.error('Error loading selected views:', error)
+					}
+				}
 			}
-			// Load selected sources
-			if (item.sources && Array.isArray(item.sources)) {
-				this.selectedSources = sourceStore.sourceList.filter(
-					s => item.sources.includes(parseInt(s.id)),
-				)
-			}
-			// Load selected agents
-			if (item.agents && Array.isArray(item.agents)) {
-				this.selectedAgents = agentStore.agentList.filter(
-					a => item.agents.includes(parseInt(a.id)),
-				)
-			}
-			// Load selected views
-			if (item.views && Array.isArray(item.views)) {
-				this.selectedViews = viewsStore.viewsList.filter(
-					v => item.views.includes(parseInt(v.id)),
-				)
-			}
-		}
-	},
+		},
+		// Search methods with debouncing
+		searchRegisters(query) {
+			clearTimeout(this.registerSearchDebounce)
+			this.registerSearchDebounce = setTimeout(async () => {
+				this.loadingRegisters = true
+				try {
+					const response = await fetch(`/index.php/apps/openregister/api/registers?_search=${encodeURIComponent(query)}&_limit=10`)
+					const data = await response.json()
+					this.registerOptions = data.results || data || []
+					// Include already selected items
+					const selectedIds = this.selectedRegisters.map(r => r.id)
+					this.selectedRegisters.forEach(selected => {
+						if (!this.registerOptions.find(r => r.id === selected.id)) {
+							this.registerOptions.unshift(selected)
+						}
+					})
+				} catch (error) {
+					console.error('Error searching registers:', error)
+					this.registerOptions = []
+				} finally {
+					this.loadingRegisters = false
+				}
+			}, 300)
+		},
+		searchSchemas(query) {
+			clearTimeout(this.schemaSearchDebounce)
+			this.schemaSearchDebounce = setTimeout(async () => {
+				this.loadingSchemas = true
+				try {
+					const response = await fetch(`/index.php/apps/openregister/api/schemas?_search=${encodeURIComponent(query)}&_limit=10`)
+					const data = await response.json()
+					this.schemaOptions = data.results || data || []
+					// Include already selected items
+					const selectedIds = this.selectedSchemas.map(s => s.id)
+					this.selectedSchemas.forEach(selected => {
+						if (!this.schemaOptions.find(s => s.id === selected.id)) {
+							this.schemaOptions.unshift(selected)
+						}
+					})
+				} catch (error) {
+					console.error('Error searching schemas:', error)
+					this.schemaOptions = []
+				} finally {
+					this.loadingSchemas = false
+				}
+			}, 300)
+		},
+		searchObjects(query) {
+			clearTimeout(this.objectSearchDebounce)
+			this.objectSearchDebounce = setTimeout(async () => {
+				this.loadingObjects = true
+				try {
+					// Build filter params based on selected registers and schemas
+					const params = new URLSearchParams()
+					params.append('_search', query)
+					params.append('_limit', '10')
+					
+					// Filter by selected registers
+					if (this.selectedRegisters.length > 0) {
+						this.selectedRegisters.forEach(register => {
+							params.append('_register[]', register.id)
+						})
+					}
+					
+					// Filter by selected schemas
+					if (this.selectedSchemas.length > 0) {
+						this.selectedSchemas.forEach(schema => {
+							params.append('_schema[]', schema.id)
+						})
+					}
+					
+					const response = await fetch(`/index.php/apps/openregister/api/objects?${params.toString()}`)
+					const data = await response.json()
+					this.objectOptions = data.results || data || []
+					// Include already selected items
+					const selectedIds = this.selectedObjects.map(o => o.id)
+					this.selectedObjects.forEach(selected => {
+						if (!this.objectOptions.find(o => o.id === selected.id)) {
+							this.objectOptions.unshift(selected)
+						}
+					})
+				} catch (error) {
+					console.error('Error searching objects:', error)
+					this.objectOptions = []
+				} finally {
+					this.loadingObjects = false
+				}
+			}, 300)
+		},
+		searchSources(query) {
+			clearTimeout(this.sourceSearchDebounce)
+			this.sourceSearchDebounce = setTimeout(async () => {
+				this.loadingSources = true
+				try {
+					const response = await fetch(`/index.php/apps/openregister/api/sources?_search=${encodeURIComponent(query)}&_limit=10`)
+					const data = await response.json()
+					this.sourceOptions = data.results || data || []
+					// Include already selected items
+					const selectedIds = this.selectedSources.map(s => s.id)
+					this.selectedSources.forEach(selected => {
+						if (!this.sourceOptions.find(s => s.id === selected.id)) {
+							this.sourceOptions.unshift(selected)
+						}
+					})
+				} catch (error) {
+					console.error('Error searching sources:', error)
+					this.sourceOptions = []
+				} finally {
+					this.loadingSources = false
+				}
+			}, 300)
+		},
+		searchAgents(query) {
+			clearTimeout(this.agentSearchDebounce)
+			this.agentSearchDebounce = setTimeout(async () => {
+				this.loadingAgents = true
+				try {
+					const response = await fetch(`/index.php/apps/openregister/api/agents?_search=${encodeURIComponent(query)}&_limit=10`)
+					const data = await response.json()
+					this.agentOptions = data.results || data || []
+					// Include already selected items
+					const selectedIds = this.selectedAgents.map(a => a.id)
+					this.selectedAgents.forEach(selected => {
+						if (!this.agentOptions.find(a => a.id === selected.id)) {
+							this.agentOptions.unshift(selected)
+						}
+					})
+				} catch (error) {
+					console.error('Error searching agents:', error)
+					this.agentOptions = []
+				} finally {
+					this.loadingAgents = false
+				}
+			}, 300)
+		},
+		searchViews(query) {
+			clearTimeout(this.viewSearchDebounce)
+			this.viewSearchDebounce = setTimeout(async () => {
+				this.loadingViews = true
+				try {
+					const response = await fetch(`/index.php/apps/openregister/api/views?_search=${encodeURIComponent(query)}&_limit=10`)
+					const data = await response.json()
+					this.viewOptions = data.results || data || []
+					// Include already selected items
+					const selectedIds = this.selectedViews.map(v => v.id)
+					this.selectedViews.forEach(selected => {
+						if (!this.viewOptions.find(v => v.id === selected.id)) {
+							this.viewOptions.unshift(selected)
+						}
+					})
+				} catch (error) {
+					console.error('Error searching views:', error)
+					this.viewOptions = []
+				} finally {
+					this.loadingViews = false
+				}
+			}, 300)
+		},
 		handleDialogClose() {
 			this.closeModal()
 		},
@@ -488,7 +771,12 @@ export default {
 			this.error = null
 			this.selectedRegisters = []
 			this.selectedSchemas = []
+			this.selectedObjects = []
+			this.selectedSources = []
+			this.selectedAgents = []
+			this.selectedViews = []
 			this.selectedOrganisation = null
+			this.selectedApplication = null
 		},
 		async saveConfiguration() {
 			this.loading = true

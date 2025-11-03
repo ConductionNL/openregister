@@ -105,12 +105,26 @@ class AgentsController extends Controller
     public function index(): JSONResponse
     {
         try {
-            $filters = $this->request->getParams();
-            unset($filters['_route']);
+            $params = $this->request->getParams();
+            
+            // Extract pagination and search parameters
+            $limit  = isset($params['_limit']) ? (int) $params['_limit'] : null;
+            $offset = isset($params['_offset']) ? (int) $params['_offset'] : null;
+            $page   = isset($params['_page']) ? (int) $params['_page'] : null;
+            $search = $params['_search'] ?? '';
+            
+            // Convert page to offset if provided
+            if ($page !== null && $limit !== null) {
+                $offset = ($page - 1) * $limit;
+            }
+            
+            // Remove special query params from filters
+            $filters = $params;
+            unset($filters['_limit'], $filters['_offset'], $filters['_page'], $filters['_search'], $filters['_route']);
 
             $agents = $this->agentMapper->findAll(
-                null,
-                null,
+                $limit,
+                $offset,
                 $filters
             );
 
@@ -245,6 +259,23 @@ class AgentsController extends Controller
         }
 
     }//end update()
+
+
+    /**
+     * Patch (partially update) an agent
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param int $id The ID of the agent to patch
+     *
+     * @return JSONResponse The updated agent data
+     */
+    public function patch(int $id): JSONResponse
+    {
+        return $this->update($id);
+
+    }//end patch()
 
 
     /**

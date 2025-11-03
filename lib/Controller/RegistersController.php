@@ -163,26 +163,35 @@ class RegistersController extends Controller
      *
      * This method returns a JSON response containing an array of all registers in the system.
      *
-     * @param ObjectService $objectService The object service
-     *
      * @return JSONResponse A JSON response containing the list of registers
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      */
-    public function index(
-        ObjectService $objectService
-    ): JSONResponse {
+    public function index(): JSONResponse {
         // Get request parameters for filtering and searching.
-        $filters = $this->request->getParam(key: 'filters', default: []);
-        $search  = $this->request->getParam(key: '_search', default: '');
-        $extend  = $this->request->getParam(key: '_extend', default: []);
+        $params = $this->request->getParams();
+        
+        // Extract pagination and search parameters
+        $limit  = isset($params['_limit']) ? (int) $params['_limit'] : null;
+        $offset = isset($params['_offset']) ? (int) $params['_offset'] : null;
+        $page   = isset($params['_page']) ? (int) $params['_page'] : null;
+        $search = $params['_search'] ?? '';
+        $extend = $params['_extend'] ?? [];
         if (is_string($extend)) {
             $extend = [$extend];
         }
-
-        $registers    = $this->registerService->findAll(null, null, $filters, [], [], []);
+        
+        // Convert page to offset if provided
+        if ($page !== null && $limit !== null) {
+            $offset = ($page - 1) * $limit;
+        }
+        
+        // Extract filters
+        $filters = $params['filters'] ?? [];
+        
+        $registers    = $this->registerService->findAll($limit, $offset, $filters, [], [], []);
         $registersArr = array_map(fn($register) => $register->jsonSerialize(), $registers);
         // If '@self.stats' is requested, attach statistics to each register
         if (in_array('@self.stats', $extend, true)) {
@@ -319,6 +328,29 @@ class RegistersController extends Controller
         }
 
     }//end update()
+
+
+    /**
+     * Patch (partially update) a register
+     *
+     * This method handles partial updates (PATCH requests) by updating only
+     * the fields provided in the request body. This is different from PUT
+     * which typically requires all fields to be provided.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param int $id The ID of the register to patch
+     *
+     * @return JSONResponse The updated register data
+     */
+    public function patch(int $id): JSONResponse
+    {
+        // PATCH works the same as PUT for this resource
+        // The service layer handles partial updates automatically
+        return $this->update($id);
+
+    }//end patch()
 
 
     /**
