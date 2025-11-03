@@ -32,18 +32,18 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 						placeholder="Type to search for organisations"
 						label-outside
 						@search="handleOrganisationSearch">
-						<template #option="{ name, description, userCount, isDefault }">
-							<div class="organisation-option">
-								<div class="organisation-header">
-									<span class="organisation-name">{{ name }}</span>
-									<span v-if="isDefault" class="badge badge-default">Default</span>
-								</div>
-								<p v-if="description" class="organisation-description">
-									{{ description }}
-								</p>
-								<span class="organisation-meta">{{ userCount || 0 }} members</span>
+					<template #option="{ name, description, users, isDefault }">
+						<div class="organisation-option">
+							<div class="organisation-header">
+								<span class="organisation-name">{{ name }}</span>
+								<span v-if="isDefault" class="badge badge-default">Default</span>
 							</div>
-						</template>
+							<p v-if="description" class="organisation-description">
+								{{ description }}
+							</p>
+							<span class="organisation-meta">{{ (users?.length || 0) }} members</span>
+						</div>
+					</template>
 						<template #selected-option="{ name }">
 							<span>{{ name }}</span>
 						</template>
@@ -216,7 +216,7 @@ export default {
 					name: org.name,
 					label: org.name,
 					description: org.description,
-					userCount: org.userCount,
+					users: org.users || [],
 					isDefault: org.isDefault,
 				}))
 			} catch (error) {
@@ -246,7 +246,7 @@ export default {
 							name: organisation.name,
 							label: organisation.name,
 							description: organisation.description,
-							userCount: organisation.userCount,
+							users: organisation.users || [],
 							isDefault: organisation.isDefault,
 						}
 						// Add to options if not already there
@@ -293,24 +293,24 @@ export default {
 					// Search with limit of 20 results
 					const results = await organisationStore.searchOrganisations(query.trim(), 20, 0)
 
-					// Transform results to NcSelect format with all necessary fields
-					this.organisationOptions = results.map(org => ({
-						id: org.uuid || org.id,
-						uuid: org.uuid || org.id,
-						name: org.name,
-						label: org.name,
-						description: org.description,
-						userCount: org.userCount,
-						isDefault: org.isDefault,
-					}))
-				} catch (error) {
-					console.error('Error searching organisations:', error)
-					this.error = 'Failed to search organisations: ' + error.message
-					this.organisationOptions = []
-				} finally {
-					this.searchLoading = false
-				}
-			}, 500)
+				// Transform results to NcSelect format with all necessary fields
+				this.organisationOptions = results.map(org => ({
+					id: org.uuid || org.id,
+					uuid: org.uuid || org.id,
+					name: org.name,
+					label: org.name,
+					description: org.description,
+					users: org.users || [],
+					isDefault: org.isDefault,
+				}))
+			} catch (error) {
+				console.error('Error searching organisations:', error)
+				this.error = 'Failed to search organisations: ' + error.message
+				this.organisationOptions = []
+			} finally {
+				this.searchLoading = false
+			}
+		}, 500)
 		},
 		/**
 		 * Load initial list of users (first 20)

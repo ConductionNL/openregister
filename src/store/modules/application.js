@@ -199,24 +199,25 @@ export const useApplicationStore = defineStore('application', {
 				this.loading = false
 			}
 		},
-		// Clean application data for saving - remove read-only fields
-		cleanApplicationForSave(applicationItem) {
-			const cleaned = { ...applicationItem }
+	// Clean application data for saving - remove read-only fields
+	cleanApplicationForSave(applicationItem) {
+		const cleaned = { ...applicationItem }
 
-			// Remove read-only/calculated fields that should not be sent to the server
-			delete cleaned.id
-			delete cleaned.uuid
-			delete cleaned.owner
-			delete cleaned.created
-			delete cleaned.updated
+		// Remove read-only/calculated fields that should not be sent to the server
+		delete cleaned.id
+		delete cleaned.uuid
+		delete cleaned.usage // Usage is calculated by backend, not set by frontend
+		delete cleaned.owner
+		delete cleaned.created
+		delete cleaned.updated
 
-			// Ensure boolean fields are actually booleans, not empty strings
-			if (cleaned.active !== undefined) {
-				cleaned.active = cleaned.active === '' ? true : Boolean(cleaned.active)
-			}
+		// Ensure boolean fields are actually booleans, not empty strings
+		if (cleaned.active !== undefined) {
+			cleaned.active = cleaned.active === '' ? true : Boolean(cleaned.active)
+		}
 
-			return cleaned
-		},
+		return cleaned
+	},
 		/**
 		 * Load and cache Nextcloud groups for application access control
 		 * This should be called on the applications index page to preload groups

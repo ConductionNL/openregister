@@ -521,11 +521,15 @@ class OrganisationController extends Controller
                 $organisation->setRequestQuota($data['requestQuota']);
             }
             
-            if (isset($data['groups']) && is_array($data['groups'])) {
-                $organisation->setGroups($data['groups']);
-            }
+        if (isset($data['groups']) && is_array($data['groups'])) {
+            $organisation->setGroups($data['groups']);
+        }
+        
+        if (isset($data['authorization']) && is_array($data['authorization'])) {
+            $organisation->setAuthorization($data['authorization']);
+        }
 
-            $updated = $this->organisationMapper->save($organisation);
+        $updated = $this->organisationMapper->save($organisation);
 
             return new JSONResponse($updated->jsonSerialize(), Http::STATUS_OK);
         } catch (Exception $e) {

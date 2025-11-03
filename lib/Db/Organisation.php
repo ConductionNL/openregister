@@ -508,6 +508,34 @@ class Organisation extends Entity implements JsonSerializable
 
 
     /**
+     * Get authorization rules for this organisation
+     *
+     * @return array Authorization rules structure
+     */
+    public function getAuthorization(): array
+    {
+        return $this->authorization ?? $this->getDefaultAuthorization();
+
+    }//end getAuthorization()
+
+
+    /**
+     * Set authorization rules for this organisation
+     *
+     * @param array|null $authorization Authorization rules structure
+     *
+     * @return self Returns this organisation for method chaining
+     */
+    public function setAuthorization(?array $authorization): self
+    {
+        $this->authorization = $authorization ?? $this->getDefaultAuthorization();
+        $this->markFieldUpdated('authorization');
+        return $this;
+
+    }//end setAuthorization()
+
+
+    /**
      * JSON serialization for API responses
      *
      * @return array Serialized organisation data

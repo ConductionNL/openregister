@@ -102,10 +102,10 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							<strong>{{ t('openregister', 'Owner:') }}</strong>
 							<span>{{ organisationStore.organisationItem.owner || 'System' }}</span>
 						</div>
-						<div class="metaRow">
-							<strong>{{ t('openregister', 'Members:') }}</strong>
-							<span>{{ organisationStore.organisationItem.userCount || 0 }}</span>
-						</div>
+					<div class="metaRow">
+						<strong>{{ t('openregister', 'Members:') }}</strong>
+						<span>{{ organisationStore.organisationItem.users?.length || 0 }}</span>
+					</div>
 						<div v-if="organisationStore.organisationItem.created" class="metaRow">
 							<strong>{{ t('openregister', 'Created:') }}</strong>
 							<span>{{ formatDate(organisationStore.organisationItem.created) }}</span>
