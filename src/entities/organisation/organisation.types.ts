@@ -54,6 +54,18 @@ export type TOrganisation = {
             update?: string[]
             delete?: string[]
         }
+        configuration?: {
+            create?: string[]
+            read?: string[]
+            update?: string[]
+            delete?: string[]
+        }
+        application?: {
+            create?: string[]
+            read?: string[]
+            update?: string[]
+            delete?: string[]
+        }
         object_publish?: string[]
         agent_use?: string[]
         dashboard_view?: string[]

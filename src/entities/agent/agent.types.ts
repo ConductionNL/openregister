@@ -1,13 +1,13 @@
 /**
  * Agent entity type definitions
  *
- * @module Entities
- * @package
+ * @category Entities
+ * @package  openregister
  * @author   Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license  EUPL-1.2
  * @version  1.0.0
- * @see      https://www.openregister.nl
+ * @link     https://www.openregister.nl
  */
 
 export type TAgent = {
@@ -30,20 +30,9 @@ export type TAgent = {
 	ragNumSources?: number
 	ragIncludeFiles?: boolean
 	ragIncludeObjects?: boolean
-	quota?: {
-		storage?: number | null
-		bandwidth?: number | null
-		requests?: number | null
-		users?: number | null
-		groups?: number | null
-	}
-	usage?: {
-		storage?: number
-		bandwidth?: number
-		requests?: number
-		users?: number
-		groups?: number
-	}
+	requestQuota?: number
+	tokenQuota?: number
+	groups?: string[]
 	created?: string
 	updated?: string
 }
@@ -51,3 +40,5 @@ export type TAgent = {
 export type TAgentPath = {
 	agentId?: string
 }
+
+

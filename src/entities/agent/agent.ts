@@ -1,13 +1,13 @@
 /**
  * Agent entity class
  *
- * @module Entities
- * @package
+ * @category Entities
+ * @package  openregister
  * @author   Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license  EUPL-1.2
  * @version  1.0.0
- * @see      https://www.openregister.nl
+ * @link     https://www.openregister.nl
  */
 
 import { SafeParseReturnType, z } from 'zod'
@@ -34,8 +34,9 @@ export class Agent implements TAgent {
 	public ragNumSources?: number
 	public ragIncludeFiles?: boolean
 	public ragIncludeObjects?: boolean
-	public quota?: TAgent['quota']
-	public usage?: TAgent['usage']
+	public requestQuota?: number
+	public tokenQuota?: number
+	public groups?: string[]
 	public created?: string
 	public updated?: string
 
@@ -59,20 +60,9 @@ export class Agent implements TAgent {
 		this.ragNumSources = agent.ragNumSources || 5
 		this.ragIncludeFiles = agent.ragIncludeFiles || false
 		this.ragIncludeObjects = agent.ragIncludeObjects || false
-		this.quota = agent.quota || {
-			storage: null,
-			bandwidth: null,
-			requests: null,
-			users: null,
-			groups: null,
-		}
-		this.usage = agent.usage || {
-			storage: 0,
-			bandwidth: 0,
-			requests: 0,
-			users: 0,
-			groups: 0,
-		}
+		this.requestQuota = agent.requestQuota || 0
+		this.tokenQuota = agent.tokenQuota || 0
+		this.groups = agent.groups || []
 		this.created = agent.created || ''
 		this.updated = agent.updated || ''
 	}
@@ -98,20 +88,9 @@ export class Agent implements TAgent {
 			ragNumSources: z.number().positive().optional(),
 			ragIncludeFiles: z.boolean().optional(),
 			ragIncludeObjects: z.boolean().optional(),
-			quota: z.object({
-				storage: z.number().nullable().optional(),
-				bandwidth: z.number().nullable().optional(),
-				requests: z.number().nullable().optional(),
-				users: z.number().nullable().optional(),
-				groups: z.number().nullable().optional(),
-			}).optional(),
-			usage: z.object({
-				storage: z.number().optional(),
-				bandwidth: z.number().optional(),
-				requests: z.number().optional(),
-				users: z.number().optional(),
-				groups: z.number().optional(),
-			}).optional(),
+			requestQuota: z.number().nonnegative().optional(),
+			tokenQuota: z.number().nonnegative().optional(),
+			groups: z.array(z.string()).optional(),
 			created: z.string().optional(),
 			updated: z.string().optional(),
 		})
@@ -120,3 +99,5 @@ export class Agent implements TAgent {
 	}
 
 }
+
+

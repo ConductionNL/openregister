@@ -243,18 +243,38 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 											@update="updateEntityPermission" />
 									</BTab>
 
-									<!-- Agents -->
-									<BTab title="Agents">
-										<RbacTable
-											entity-type="agent"
-											:authorization="organisationItem.authorization || {}"
-											:available-groups="availableGroups"
-											:organisation-groups="organisationItem.groups || []"
-											@update="updateEntityPermission" />
-									</BTab>
+								<!-- Agents -->
+								<BTab title="Agents">
+									<RbacTable
+										entity-type="agent"
+										:authorization="organisationItem.authorization || {}"
+										:available-groups="availableGroups"
+										:organisation-groups="organisationItem.groups || []"
+										@update="updateEntityPermission" />
+								</BTab>
 
-									<!-- Special Rights -->
-									<BTab title="Special Rights">
+								<!-- Configurations -->
+								<BTab title="Configurations">
+									<RbacTable
+										entity-type="configuration"
+										:authorization="organisationItem.authorization || {}"
+										:available-groups="availableGroups"
+										:organisation-groups="organisationItem.groups || []"
+										@update="updateEntityPermission" />
+								</BTab>
+
+								<!-- Applications -->
+								<BTab title="Applications">
+									<RbacTable
+										entity-type="application"
+										:authorization="organisationItem.authorization || {}"
+										:available-groups="availableGroups"
+										:organisation-groups="organisationItem.groups || []"
+										@update="updateEntityPermission" />
+								</BTab>
+
+								<!-- Special Rights -->
+								<BTab title="Special Rights">
 										<div class="special-rights-container">
 											<p class="rbac-description">
 												Grant additional permissions beyond standard CRUD operations

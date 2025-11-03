@@ -166,6 +166,27 @@ class Agent extends Entity implements JsonSerializable
     protected bool $ragIncludeObjects = false;
 
     /**
+     * API request quota per day (0 = unlimited)
+     *
+     * @var int|null Daily request limit
+     */
+    protected ?int $requestQuota = null;
+
+    /**
+     * Token quota per request (0 = unlimited)
+     *
+     * @var int|null Maximum tokens per request
+     */
+    protected ?int $tokenQuota = null;
+
+    /**
+     * Array of Nextcloud group IDs with access to this agent
+     *
+     * @var array|null Group IDs
+     */
+    protected ?array $groups = null;
+
+    /**
      * Date when the agent was created
      *
      * @var DateTime|null Creation timestamp
@@ -205,6 +226,9 @@ class Agent extends Entity implements JsonSerializable
         $this->addType('ragNumSources', 'integer');
         $this->addType('ragIncludeFiles', 'boolean');
         $this->addType('ragIncludeObjects', 'boolean');
+        $this->addType('requestQuota', 'integer');
+        $this->addType('tokenQuota', 'integer');
+        $this->addType('groups', 'json');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
 
@@ -699,6 +723,84 @@ class Agent extends Entity implements JsonSerializable
 
 
     /**
+     * Get the request quota
+     *
+     * @return int|null The request quota
+     */
+    public function getRequestQuota(): ?int
+    {
+        return $this->requestQuota;
+
+    }//end getRequestQuota()
+
+
+    /**
+     * Set the request quota
+     *
+     * @param int|null $requestQuota The request quota
+     *
+     * @return void
+     */
+    public function setRequestQuota(?int $requestQuota): void
+    {
+        $this->requestQuota = $requestQuota;
+
+    }//end setRequestQuota()
+
+
+    /**
+     * Get the token quota
+     *
+     * @return int|null The token quota
+     */
+    public function getTokenQuota(): ?int
+    {
+        return $this->tokenQuota;
+
+    }//end getTokenQuota()
+
+
+    /**
+     * Set the token quota
+     *
+     * @param int|null $tokenQuota The token quota
+     *
+     * @return void
+     */
+    public function setTokenQuota(?int $tokenQuota): void
+    {
+        $this->tokenQuota = $tokenQuota;
+
+    }//end setTokenQuota()
+
+
+    /**
+     * Get the groups
+     *
+     * @return array|null The groups
+     */
+    public function getGroups(): ?array
+    {
+        return $this->groups;
+
+    }//end getGroups()
+
+
+    /**
+     * Set the groups
+     *
+     * @param array|null $groups The groups
+     *
+     * @return void
+     */
+    public function setGroups(?array $groups): void
+    {
+        $this->groups = $groups;
+
+    }//end setGroups()
+
+
+    /**
      * Get the creation date
      *
      * @return DateTime|null The creation date
@@ -777,6 +879,9 @@ class Agent extends Entity implements JsonSerializable
         $this->setRagNumSources($object['ragNumSources'] ?? $object['rag_num_sources'] ?? null);
         $this->setRagIncludeFiles($object['ragIncludeFiles'] ?? $object['rag_include_files'] ?? false);
         $this->setRagIncludeObjects($object['ragIncludeObjects'] ?? $object['rag_include_objects'] ?? false);
+        $this->setRequestQuota($object['requestQuota'] ?? $object['request_quota'] ?? null);
+        $this->setTokenQuota($object['tokenQuota'] ?? $object['token_quota'] ?? null);
+        $this->setGroups($object['groups'] ?? null);
 
         return $this;
 
@@ -810,20 +915,9 @@ class Agent extends Entity implements JsonSerializable
             'ragNumSources'      => $this->ragNumSources,
             'ragIncludeFiles'    => $this->ragIncludeFiles,
             'ragIncludeObjects'  => $this->ragIncludeObjects,
-            'quota'              => [
-                'storage'   => null, // To be set via admin configuration
-                'bandwidth' => null, // To be set via admin configuration
-                'requests'  => null, // To be set via admin configuration (AI API calls)
-                'users'     => null, // To be set via admin configuration
-                'groups'    => null, // To be set via admin configuration
-            ],
-            'usage'              => [
-                'storage'   => 0, // To be calculated from actual usage
-                'bandwidth' => 0, // To be calculated from actual usage
-                'requests'  => 0, // To be calculated from actual AI API calls
-                'users'     => 0, // Agents don't have direct users
-                'groups'    => 0, // Agents don't have groups
-            ],
+            'requestQuota'       => $this->requestQuota,
+            'tokenQuota'         => $this->tokenQuota,
+            'groups'             => $this->groups,
             'created'            => isset($this->created) === true ? $this->created->format('c') : null,
             'updated'            => isset($this->updated) === true ? $this->updated->format('c') : null,
         ];

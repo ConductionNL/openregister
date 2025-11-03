@@ -1,13 +1,13 @@
 /**
  * Agent Store Module
  *
- * @module Store
- * @package
+ * @category Store
+ * @package  openregister
  * @author   Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license  EUPL-1.2
  * @version  1.0.0
- * @see      https://www.openregister.nl
+ * @link     https://www.openregister.nl
  */
 
 /* eslint-disable no-console */
@@ -64,7 +64,7 @@ export const useAgentStore = defineStore('agent', {
 		/**
 		 * Set the agent list
 		 *
-		 * @param {Array} agentList - Array of agent objects
+		 * @param {array} agentList - Array of agent objects
 		 */
 		setAgentList(agentList) {
 			this.agentList = agentList.map(
@@ -95,20 +95,20 @@ export const useAgentStore = defineStore('agent', {
 		 * Refresh the agent list from the API
 		 *
 		 * @param {string|null} search - Optional search term
-		 * @return {Promise} Promise with response and data
+		 * @returns {Promise} Promise with response and data
 		 */
 		/* istanbul ignore next */
 		async refreshAgentList(search = null) {
 			console.log('AgentStore: Starting refreshAgentList')
 			this.loading = true
 			this.error = null
-
+			
 			try {
 				let endpoint = '/index.php/apps/openregister/api/agents'
 				if (search !== null && search !== '') {
 					endpoint = endpoint + '?_search=' + encodeURIComponent(search)
 				}
-
+				
 				const response = await fetch(endpoint, {
 					method: 'GET',
 				})
@@ -135,7 +135,7 @@ export const useAgentStore = defineStore('agent', {
 		 * Get a single agent by ID
 		 *
 		 * @param {number} id - Agent ID
-		 * @return {Promise} Promise with agent data
+		 * @returns {Promise} Promise with agent data
 		 */
 		async getAgent(id) {
 			const endpoint = `/index.php/apps/openregister/api/agents/${id}`
@@ -144,11 +144,11 @@ export const useAgentStore = defineStore('agent', {
 				const response = await fetch(endpoint, {
 					method: 'GET',
 				})
-
+				
 				if (!response.ok) {
 					throw new Error(`HTTP error! status: ${response.status}`)
 				}
-
+				
 				const data = await response.json()
 				this.setAgentItem(data)
 				return data
@@ -164,7 +164,7 @@ export const useAgentStore = defineStore('agent', {
 		 * Delete an agent
 		 *
 		 * @param {object} agentItem - The agent to delete
-		 * @return {Promise} Promise with response
+		 * @returns {Promise} Promise with response
 		 */
 		async deleteAgent(agentItem) {
 			if (!agentItem.id) {
@@ -201,7 +201,7 @@ export const useAgentStore = defineStore('agent', {
 		 * Save (create or update) an agent
 		 *
 		 * @param {object} agentItem - The agent to save
-		 * @return {Promise} Promise with response and data
+		 * @returns {Promise} Promise with response and data
 		 */
 		async saveAgent(agentItem) {
 			if (!agentItem) {
@@ -251,7 +251,7 @@ export const useAgentStore = defineStore('agent', {
 		/**
 		 * Get agent statistics
 		 *
-		 * @return {Promise} Promise with statistics data
+		 * @returns {Promise} Promise with statistics data
 		 */
 		async getStats() {
 			const endpoint = '/index.php/apps/openregister/api/agents/stats'
@@ -259,11 +259,11 @@ export const useAgentStore = defineStore('agent', {
 				const response = await fetch(endpoint, {
 					method: 'GET',
 				})
-
+				
 				if (!response.ok) {
 					throw new Error(`HTTP error! status: ${response.status}`)
 				}
-
+				
 				return await response.json()
 			} catch (err) {
 				console.error('Error fetching agent stats:', err)
@@ -272,3 +272,5 @@ export const useAgentStore = defineStore('agent', {
 		},
 	},
 })
+
+

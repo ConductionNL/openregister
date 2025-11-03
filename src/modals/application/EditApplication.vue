@@ -108,23 +108,31 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 								:value="bandwidthQuotaMB"
 								@update:value="updateBandwidthQuota" />
 
-							<NcTextField
-								:disabled="loading"
-								label="API Request Quota (requests/day)"
-								type="number"
-								placeholder="0 = unlimited"
-								:value="applicationItem.quota?.requests || 0"
-								@update:value="updateRequestQuota" />
+						<NcTextField
+							:disabled="loading"
+							label="API Request Quota (requests/day)"
+							type="number"
+							placeholder="0 = unlimited"
+							:value="applicationItem.quota?.requests || 0"
+							@update:value="updateRequestQuota" />
 
-							<NcTextField
-								:disabled="loading"
-								label="Group Quota"
-								type="number"
-								placeholder="0 = unlimited"
-								:value="applicationItem.quota?.groups || 0"
-								@update:value="updateGroupQuota" />
-						</div>
-					</BTab>
+						<NcTextField
+							:disabled="loading"
+							label="User Quota"
+							type="number"
+							placeholder="0 = unlimited (not applicable for applications)"
+							:value="applicationItem.quota?.users || 0"
+							@update:value="updateUserQuota" />
+
+						<NcTextField
+							:disabled="loading"
+							label="Group Quota"
+							type="number"
+							placeholder="0 = unlimited"
+							:value="applicationItem.quota?.groups || 0"
+							@update:value="updateGroupQuota" />
+					</div>
+				</BTab>
 
 					<BTab>
 						<template #title>
@@ -144,7 +152,7 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 										entity-type="application"
 										:authorization="applicationItem.authorization"
 										:available-groups="availableGroups"
-										:organisation-groups="filteredAvailableGroups"
+										:organisation-groups="applicationItem.groups || []"
 										@update="updateApplicationPermission" />
 								</div>
 							</div>
@@ -461,40 +469,46 @@ export default {
 			this.applicationItem.groups = this.selectedGroups.map(group => group.id)
 		},
 
-		/**
-		 * Update CRUD permission for application
-		 *
-		 * @param {object} payload - Permission update payload
-		 * @return {void}
-		 */
-		updateApplicationPermission(payload) {
-			const { groupId, action, hasPermission } = payload
+	/**
+	 * Update CRUD permission for application
+	 *
+	 * @param {object} payload - Permission update payload
+	 * @return {void}
+	 */
+	updateApplicationPermission(payload) {
+		const { groupId, action, hasPermission } = payload
+		console.log('Updating application permission:', { groupId, action, hasPermission })
 
-			// Initialize authorization if not present
-			if (!this.applicationItem.authorization) {
-				this.applicationItem.authorization = {
-					create: [],
-					read: [],
-					update: [],
-					delete: [],
-				}
+		// Initialize authorization if not present
+		if (!this.applicationItem.authorization) {
+			this.applicationItem.authorization = {
+				create: [],
+				read: [],
+				update: [],
+				delete: [],
 			}
+		}
 
-			// Ensure the action array exists
-			if (!Array.isArray(this.applicationItem.authorization[action])) {
-				this.applicationItem.authorization[action] = []
-			}
+		// Ensure the action array exists
+		if (!Array.isArray(this.applicationItem.authorization[action])) {
+			this.applicationItem.authorization[action] = []
+		}
 
-			// Update the permission
-			const groupIndex = this.applicationItem.authorization[action].indexOf(groupId)
-			if (hasPermission && groupIndex === -1) {
+		// Update the permission
+		const groupIndex = this.applicationItem.authorization[action].indexOf(groupId)
+		if (hasPermission && groupIndex === -1) {
 			// Add the group
-				this.applicationItem.authorization[action].push(groupId)
-			} else if (!hasPermission && groupIndex !== -1) {
+			this.applicationItem.authorization[action].push(groupId)
+			console.log(`Added ${groupId} to ${action}:`, this.applicationItem.authorization[action])
+		} else if (!hasPermission && groupIndex !== -1) {
 			// Remove the group
-				this.applicationItem.authorization[action].splice(groupIndex, 1)
-			}
-		},
+			this.applicationItem.authorization[action].splice(groupIndex, 1)
+			console.log(`Removed ${groupId} from ${action}:`, this.applicationItem.authorization[action])
+		}
+		
+		// Force Vue to detect the change
+		this.$set(this.applicationItem, 'authorization', { ...this.applicationItem.authorization })
+	},
 
 		/**
 		 * Update storage quota (converts MB to bytes)
@@ -532,21 +546,35 @@ export default {
 		 * @param {number} value - Quota value
 		 * @return {void}
 		 */
-		updateRequestQuota(value) {
-		// 0 = unlimited
-			if (!this.applicationItem.quota) {
-				this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
-			}
-			this.applicationItem.quota.requests = value ? parseInt(value) : 0
-		},
+	updateRequestQuota(value) {
+	// 0 = unlimited
+		if (!this.applicationItem.quota) {
+			this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
+		}
+		this.applicationItem.quota.requests = value ? parseInt(value) : 0
+	},
 
-		/**
-		 * Update group quota
-		 *
-		 * @param {number} value - Quota value
-		 * @return {void}
-		 */
-		updateGroupQuota(value) {
+	/**
+	 * Update user quota
+	 *
+	 * @param {number} value - Quota value
+	 * @return {void}
+	 */
+	updateUserQuota(value) {
+		// 0 = unlimited (not applicable for applications, but kept for consistency)
+		if (!this.applicationItem.quota) {
+			this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
+		}
+		this.applicationItem.quota.users = value ? parseInt(value) : 0
+	},
+
+	/**
+	 * Update group quota
+	 *
+	 * @param {number} value - Quota value
+	 * @return {void}
+	 */
+	updateGroupQuota(value) {
 		// 0 = unlimited
 			if (!this.applicationItem.quota) {
 				this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }

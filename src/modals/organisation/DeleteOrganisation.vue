@@ -98,13 +98,13 @@ export default {
 			const currentUser = this.getCurrentUser()
 			return organisationStore.organisationItem?.owner === currentUser
 		},
-		hasMembers() {
+	hasMembers() {
 		// Check if organisation has members (excluding the owner)
-			return (organisationStore.organisationItem?.users?.length || 0) > 1
-		},
-		memberCount() {
-			return organisationStore.organisationItem?.users?.length || 0
-		},
+		return (organisationStore.organisationItem?.users?.length || 0) > 1
+	},
+	memberCount() {
+		return organisationStore.organisationItem?.users?.length || 0
+	},
 		isActiveOrganisation() {
 			// Check if this is the currently active organisation
 			return organisationStore.userStats.active

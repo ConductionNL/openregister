@@ -10,13 +10,13 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 				<h1 class="viewHeaderTitleIndented">
 					{{ pageTitle }}
 				</h1>
-				<p v-if="hasSelectedRegisters && hasSelectedSchemas">
-					{{ t('openregister', 'Search and browse objects in this schema') }}
-				</p>
-			</div>
+			<p v-if="hasSelectedRegisters && hasSelectedSchemas">
+				{{ t('openregister', 'Search and browse objects in this schema') }}
+			</p>
+		</div>
 
-			<!-- Actions Bar -->
-			<div v-if="hasSelectedRegisters && hasSelectedSchemas" class="viewActionsBar">
+		<!-- Actions Bar -->
+		<div v-if="hasSelectedRegisters && hasSelectedSchemas" class="viewActionsBar">
 				<div class="viewInfo">
 					<span v-if="objectStore.objectList?.results?.length" class="viewTotalCount">
 						{{ t('openregister', 'Showing {showing} of {total} objects', {
@@ -133,8 +133,8 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 				</template>
 			</NcEmptyContent>
 
-			<!-- Search List Content -->
-			<div v-else-if="objectStore.objectList?.results?.length && hasSelectedRegisters && hasSelectedSchemas" class="searchList">
+		<!-- Search List Content -->
+		<div v-else-if="objectStore.objectList?.results?.length && hasSelectedRegisters && hasSelectedSchemas" class="searchList">
 				<div class="viewTableContainer">
 					<VueDraggable v-model="objectStore.enabledColumns"
 						target=".sort-target"
@@ -329,7 +329,7 @@ export default {
 		selectedRegisterIds() {
 			const registerParam = this.$route.query.register
 			if (!registerParam) return []
-			return Array.isArray(registerParam)
+			return Array.isArray(registerParam) 
 				? registerParam.map(r => parseInt(r))
 				: registerParam.split(',').map(r => parseInt(r.trim()))
 		},
@@ -363,12 +363,12 @@ export default {
 					return reg ? (reg.label || reg.title) : null
 				})
 				.filter(Boolean)
-
+			
 			if (registerNames.length === 0) {
 				return 'No register selected'
 			}
 
-			const registerTitle = registerNames.length === 1
+			const registerTitle = registerNames.length === 1 
 				? registerNames[0].charAt(0).toUpperCase() + registerNames[0].slice(1)
 				: `${registerNames.length} Registers (${registerNames.join(', ')})`
 

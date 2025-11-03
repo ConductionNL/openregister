@@ -30,10 +30,13 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 					<span class="detail-value">{{ schemaItem.id }}</span>
 					<span v-if="schemaItem.uuid && schemaItem.uuid !== schemaItem.id" class="detail-value uuid-value">{{ schemaItem.uuid }}</span>
 				</div>
-				<div class="detail-item">
+				<div class="detail-item title-with-badge">
 					<NcTextField :disabled="loading"
 						label="Title *"
 						:value.sync="schemaItem.title" />
+					<span v-if="schemaItem.extend" class="statusPill statusPill--alert">
+						{{ t('openregister', 'Extended') }}
+					</span>
 				</div>
 				<div v-if="schemaItem.created" class="detail-item">
 					<span class="detail-label">Created:</span>
@@ -676,8 +679,16 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 								</template>
 							</NcSelect>
 							<NcNoteCard v-if="schemaItem.extend" type="info" class="extend-info">
-								<p><strong>Schema Extension</strong></p>
-								<p>This schema extends another schema and inherits its properties. Only the differences (delta) are stored. When retrieved, properties from the parent schema will be merged with this schema's properties.</p>
+								<p><strong>{{ t('openregister', 'Schema Extension') }}</strong></p>
+								<p v-if="parentSchemaName">
+									{{ t('openregister', 'This schema extends "{parent}" and inherits its properties. Only the differences (delta) are stored. When retrieved, properties from the parent schema will be merged with this schema\'s properties.', { parent: parentSchemaName }) }}
+								</p>
+								<p v-else>
+									{{ t('openregister', 'This schema extends another schema and inherits its properties. Only the differences (delta) are stored. When retrieved, properties from the parent schema will be merged with this schema\'s properties.') }}
+								</p>
+								<div v-if="parentSchemaName" class="parent-schema-link">
+									<strong>{{ t('openregister', 'Parent Schema:') }}</strong> {{ parentSchemaName }}
+								</div>
 							</NcNoteCard>
 							<NcSelect
 								v-model="schemaItem.configuration.objectNameField"
@@ -1149,6 +1160,25 @@ export default {
 				id: tag,
 				label: tag,
 			}))
+		},
+		/**
+		 * Get the parent schema name if this schema extends another
+		 *
+		 * @return {string|null} Parent schema title or null
+		 */
+		parentSchemaName() {
+			if (!this.schemaItem.extend) {
+				return null
+			}
+
+			// Find the parent schema by ID, UUID, or slug
+			const parentSchema = schemaStore.schemaList.find(schema =>
+				schema.id === this.schemaItem.extend
+				|| schema.uuid === this.schemaItem.extend
+				|| schema.slug === this.schemaItem.extend
+			)
+
+			return parentSchema ? (parentSchema.title || parentSchema.name || `Schema ${parentSchema.id}`) : null
 		},
 	},
 	watch: {
@@ -3191,5 +3221,67 @@ export default {
 .property-permission-remove-btn {
 	font-size: 11px;
 	color: var(--color-error);
+}
+
+/* Schema Extension Status Pill */
+.statusPill {
+	display: inline-block;
+	padding: 4px 12px;
+	border-radius: 12px;
+	font-size: 0.75em;
+	font-weight: 600;
+	text-transform: uppercase;
+	margin-left: 8px;
+	white-space: nowrap;
+	vertical-align: middle;
+}
+
+.statusPill--alert {
+	background-color: var(--color-warning);
+	color: var(--color-main-background);
+}
+
+/* Title with badge layout */
+.title-with-badge {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+.title-with-badge > :first-child {
+	flex: 1;
+	min-width: 0;
+}
+
+/* Parent schema link styling */
+.parent-schema-link {
+	margin-top: 12px;
+	padding: 8px 12px;
+	background-color: var(--color-background-dark);
+	border-radius: var(--border-radius);
+	font-size: 0.9em;
+}
+
+.parent-schema-link strong {
+	color: var(--color-text-dark);
+}
+
+/* Extend info card styling */
+.extend-info {
+	margin-top: 12px;
+	margin-bottom: 12px;
+}
+
+.extend-info p {
+	margin: 8px 0;
+}
+
+.extend-info p:first-of-type {
+	margin-top: 0;
+}
+
+.extend-info p:last-of-type {
+	margin-bottom: 0;
 }
 </style>
