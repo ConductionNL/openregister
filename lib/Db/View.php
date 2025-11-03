@@ -130,6 +130,8 @@ class View extends Entity implements JsonSerializable
      */
     public function jsonSerialize(): array
     {
+        $favoredBy = $this->favoredBy ?? [];
+
         return [
             'id'          => $this->id,
             'uuid'        => $this->uuid,
@@ -139,7 +141,21 @@ class View extends Entity implements JsonSerializable
             'isPublic'    => $this->isPublic,
             'isDefault'   => $this->isDefault,
             'query'       => $this->query,
-            'favoredBy'   => $this->favoredBy ?? [],
+            'favoredBy'   => $favoredBy,
+            'quota'       => [
+                'storage'   => null, // To be set via admin configuration
+                'bandwidth' => null, // To be set via admin configuration
+                'requests'  => null, // To be set via admin configuration
+                'users'     => null, // To be set via admin configuration
+                'groups'    => null, // To be set via admin configuration
+            ],
+            'usage'       => [
+                'storage'   => 0, // To be calculated from actual usage
+                'bandwidth' => 0, // To be calculated from actual usage
+                'requests'  => 0, // To be calculated from actual usage (query executions)
+                'users'     => count($favoredBy), // Number of users who favorited this view
+                'groups'    => 0, // Views don't have groups
+            ],
             'created'     => isset($this->created) === true ? $this->created->format('c') : null,
             'updated'     => isset($this->updated) === true ? $this->updated->format('c') : null,
         ];

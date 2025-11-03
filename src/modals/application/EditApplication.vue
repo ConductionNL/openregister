@@ -61,20 +61,26 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 									v-model="selectedGroups"
 									:disabled="loading || loadingGroups"
 									:options="availableGroups"
-									input-label="Select groups with access to this application"
 									label="name"
 									track-by="id"
 									:multiple="true"
-									placeholder="Select groups (optional)"
+									:label-outside="true"
+									:filterable="false"
+									placeholder="Search groups..."
+									@search-change="searchGroups"
 									@input="updateGroups">
 									<template #option="{ name }">
 										<div class="group-option">
 											<span class="group-name">{{ name }}</span>
 										</div>
 									</template>
+									<template #no-options>
+										<span v-if="loadingGroups">Loading groups...</span>
+										<span v-else>No groups found. Try a different search.</span>
+									</template>
 								</NcSelect>
 								<p class="field-hint">
-									Select which Nextcloud groups have access to this application
+									Only members of selected groups can access this application
 								</p>
 							</div>
 						</div>
@@ -83,7 +89,7 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 					<BTab>
 						<template #title>
 							<Database :size="16" />
-							<span>Resources</span>
+							<span>Quota</span>
 						</template>
 						<div class="form-editor">
 							<NcTextField
@@ -107,7 +113,7 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 								label="API Request Quota (requests/day)"
 								type="number"
 								placeholder="0 = unlimited"
-								:value="applicationItem.requestQuota || 0"
+								:value="applicationItem.quota?.requests || 0"
 								@update:value="updateRequestQuota" />
 						</div>
 					</BTab>
@@ -224,15 +230,18 @@ export default {
 				name: '',
 				description: '',
 				organisation: null,
-				storageQuota: 0,
-				bandwidthQuota: 0,
-				requestQuota: 0,
+				quota: {
+					storage: 0,
+					bandwidth: 0,
+					requests: 0,
+				},
 				groups: [],
 			},
 			selectedOrganisation: null,
 			selectedGroups: [],
 			availableGroups: [],
 			loadingGroups: false,
+			groupSearchDebounce: null,
 			success: false,
 			loading: false,
 			error: false,
@@ -248,18 +257,19 @@ export default {
 			}))
 		},
 		storageQuotaMB() {
-			if (!this.applicationItem.storageQuota) return 0
-			return Math.round(this.applicationItem.storageQuota / (1024 * 1024))
+			if (!this.applicationItem.quota?.storage) return 0
+			return Math.round(this.applicationItem.quota.storage / (1024 * 1024))
 		},
 		bandwidthQuotaMB() {
-			if (!this.applicationItem.bandwidthQuota) return 0
-			return Math.round(this.applicationItem.bandwidthQuota / (1024 * 1024))
+			if (!this.applicationItem.quota?.bandwidth) return 0
+			return Math.round(this.applicationItem.quota.bandwidth / (1024 * 1024))
 		},
 	},
 	async mounted() {
 		await this.fetchOrganisations()
-		await this.loadNextcloudGroups()
-		// Initialize after groups are loaded so we can map IDs to objects
+		// Use cached Nextcloud groups from store (preloaded on index page)
+		this.loadNextcloudGroupsFromStore()
+		// Initialize after groups are loaded
 		this.initializeApplicationItem()
 	},
 	methods: {
@@ -273,42 +283,91 @@ export default {
 		},
 
 		/**
-		 * Load available Nextcloud groups
+		 * Load available Nextcloud groups from store (or fetch if not cached)
+		 * Groups are preloaded on the index page for better performance
 		 * 
-		 * @return {Promise<void>}
+		 * @return {void}
 		 */
-		async loadNextcloudGroups() {
-			this.loadingGroups = true
-			try {
-				// Fetch groups from Nextcloud OCS API (using v1 for compatibility)
-				// Use fetch() with direct path since OCS API is at root level, not under /index.php/
-				const response = await fetch('/ocs/v1.php/cloud/groups?format=json', {
-					headers: {
-						'OCS-APIRequest': 'true',
-					},
-				})
-
-				if (response.ok) {
-					const data = await response.json()
-
-					// v1 API returns groups as a simple array of group IDs
-					if (data.ocs?.data?.groups) {
-						this.availableGroups = data.ocs.data.groups.map(groupId => ({
-							id: groupId,
-							name: groupId,
-							userCount: 0, // v1 API doesn't provide user count in list
-						}))
-					}
-				} else {
-					console.warn('Failed to load user groups:', response.statusText)
-					this.error = 'Failed to load Nextcloud groups'
-				}
-			} catch (error) {
-				console.error('Error loading Nextcloud groups:', error)
-				this.error = 'Failed to load Nextcloud groups'
-			} finally {
+		loadNextcloudGroupsFromStore() {
+			// If groups are already cached in store, use them immediately
+			if (applicationStore.nextcloudGroups && applicationStore.nextcloudGroups.length > 0) {
+				this.availableGroups = applicationStore.nextcloudGroups
 				this.loadingGroups = false
+				console.log('Using cached Nextcloud groups from application store:', this.availableGroups.length)
+			} else {
+				// Groups not cached yet - load them (fallback for direct navigation)
+				console.log('Groups not cached in application store, loading from API...')
+				this.loadingGroups = true
+				applicationStore.loadNextcloudGroups().then(() => {
+					this.availableGroups = applicationStore.nextcloudGroups
+					this.loadingGroups = false
+					// Re-initialize to map groups now that they're loaded
+					this.initializeApplicationItem()
+				}).catch(error => {
+					console.error('Error loading Nextcloud groups:', error)
+					this.error = 'Failed to load Nextcloud groups'
+					this.loadingGroups = false
+				})
 			}
+		},
+
+		/**
+		 * Search for Nextcloud groups with debouncing
+		 * 
+		 * @param {string} searchQuery - The search query entered by user
+		 * @return {void}
+		 */
+		searchGroups(searchQuery) {
+			// Clear existing debounce timer
+			if (this.groupSearchDebounce) {
+				clearTimeout(this.groupSearchDebounce)
+			}
+
+			// If search is empty, load all cached groups
+			if (!searchQuery || searchQuery.trim() === '') {
+				this.loadNextcloudGroupsFromStore()
+				return
+			}
+
+			// Debounce the search by 300ms
+			this.groupSearchDebounce = setTimeout(async () => {
+				this.loadingGroups = true
+				try {
+					// Query Nextcloud OCS API with search parameter
+					const response = await fetch(`/ocs/v1.php/cloud/groups?format=json&search=${encodeURIComponent(searchQuery)}`, {
+						headers: {
+							'OCS-APIRequest': 'true',
+						},
+					})
+
+					if (response.ok) {
+						const data = await response.json()
+						if (data.ocs?.data?.groups) {
+							// Transform group IDs into objects
+							const searchResults = data.ocs.data.groups.map(groupId => ({
+								id: groupId,
+								name: groupId,
+								userCount: 0,
+							}))
+
+							// Merge with already selected groups to ensure they remain visible
+							const selectedGroupIds = this.selectedGroups.map(g => g.id)
+							const mergedGroups = [
+								...this.selectedGroups,
+								...searchResults.filter(g => !selectedGroupIds.includes(g.id)),
+							]
+
+							this.availableGroups = mergedGroups
+						}
+					} else {
+						console.warn('Failed to search groups:', response.statusText)
+					}
+				} catch (error) {
+					console.error('Error searching Nextcloud groups:', error)
+				} finally {
+					this.loadingGroups = false
+				}
+			}, 300)
 		},
 
 		/**
@@ -401,7 +460,10 @@ export default {
 		updateStorageQuota(value) {
 			// Convert MB to bytes (0 = unlimited)
 			const mbValue = value ? parseInt(value) : 0
-			this.applicationItem.storageQuota = mbValue * 1024 * 1024
+			if (!this.applicationItem.quota) {
+				this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0 }
+			}
+			this.applicationItem.quota.storage = mbValue * 1024 * 1024
 		},
 
 		/**
@@ -413,7 +475,10 @@ export default {
 		updateBandwidthQuota(value) {
 			// Convert MB to bytes (0 = unlimited)
 			const mbValue = value ? parseInt(value) : 0
-			this.applicationItem.bandwidthQuota = mbValue * 1024 * 1024
+			if (!this.applicationItem.quota) {
+				this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0 }
+			}
+			this.applicationItem.quota.bandwidth = mbValue * 1024 * 1024
 		},
 
 		/**
@@ -424,7 +489,10 @@ export default {
 		 */
 		updateRequestQuota(value) {
 			// 0 = unlimited
-			this.applicationItem.requestQuota = value ? parseInt(value) : 0
+			if (!this.applicationItem.quota) {
+				this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0 }
+			}
+			this.applicationItem.quota.requests = value ? parseInt(value) : 0
 		},
 
 		/**

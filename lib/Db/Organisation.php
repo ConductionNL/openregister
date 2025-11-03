@@ -132,6 +132,28 @@ class Organisation extends Entity implements JsonSerializable
      */
     protected ?int $requestQuota = null;
 
+    /**
+     * Authorization rules for this organisation
+     * 
+     * Hierarchical structure defining CRUD permissions per entity type
+     * and special rights. Uses singular entity names for easier authorization checks.
+     * Structure:
+     * {
+     *   "register": {"create": [], "read": [], "update": [], "delete": []},
+     *   "schema": {"create": [], "read": [], "update": [], "delete": []},
+     *   "object": {"create": [], "read": [], "update": [], "delete": []},
+     *   "view": {"create": [], "read": [], "update": [], "delete": []},
+     *   "agent": {"create": [], "read": [], "update": [], "delete": []},
+     *   "object_publish": [],
+     *   "agent_use": [],
+     *   "dashboard_view": [],
+     *   "llm_use": []
+     * }
+     *
+     * @var array|null Authorization rules as JSON structure
+     */
+    protected ?array $authorization = null;
+
 
     /**
      * Organisation constructor
@@ -153,6 +175,7 @@ class Organisation extends Entity implements JsonSerializable
         $this->addType('storage_quota', 'integer');
         $this->addType('bandwidth_quota', 'integer');
         $this->addType('request_quota', 'integer');
+        $this->addType('authorization', 'json');
 
     }//end __construct()
 
@@ -435,26 +458,92 @@ class Organisation extends Entity implements JsonSerializable
 
 
     /**
+     * Get default authorization structure for organisations
+     *
+     * Provides sensible defaults with empty arrays for all permissions
+     * Uses singular entity names for easier authorization checks based on entity type
+     *
+     * @return array Default authorization structure
+     */
+    private function getDefaultAuthorization(): array
+    {
+        return [
+            'register'       => [
+                'create' => [],
+                'read'   => [],
+                'update' => [],
+                'delete' => [],
+            ],
+            'schema'         => [
+                'create' => [],
+                'read'   => [],
+                'update' => [],
+                'delete' => [],
+            ],
+            'object'         => [
+                'create' => [],
+                'read'   => [],
+                'update' => [],
+                'delete' => [],
+            ],
+            'view'           => [
+                'create' => [],
+                'read'   => [],
+                'update' => [],
+                'delete' => [],
+            ],
+            'agent'          => [
+                'create' => [],
+                'read'   => [],
+                'update' => [],
+                'delete' => [],
+            ],
+            'object_publish' => [],
+            'agent_use'      => [],
+            'dashboard_view' => [],
+            'llm_use'        => [],
+        ];
+
+    }//end getDefaultAuthorization()
+
+
+    /**
      * JSON serialization for API responses
      *
      * @return array Serialized organisation data
      */
     public function jsonSerialize(): array
     {
+        $users = $this->getUserIds();
+        $groups = $this->getGroups();
+
         return [
-            'id'          => $this->id,
-            'uuid'        => $this->uuid,
-            'slug'        => $this->slug,
-            'name'        => $this->name,
-            'description' => $this->description,
-            'users'       => $this->getUserIds(),
-            'userCount'   => count($this->getUserIds()),
-            'groups'      => $this->getGroups(),
-            'groupCount'  => count($this->getGroups()),
-            'owner'       => $this->owner,
-            'active'      => $this->getActive(),
-            'created'     => $this->created ? $this->created->format('c') : null,
-            'updated'     => $this->updated ? $this->updated->format('c') : null,
+            'id'            => $this->id,
+            'uuid'          => $this->uuid,
+            'slug'          => $this->slug,
+            'name'          => $this->name,
+            'description'   => $this->description,
+            'users'         => $users,
+            'groups'        => $groups,
+            'owner'         => $this->owner,
+            'active'        => $this->getActive(),
+            'quota'         => [
+                'storage'   => $this->storageQuota,
+                'bandwidth' => $this->bandwidthQuota,
+                'requests'  => $this->requestQuota,
+                'users'     => null, // To be set via admin configuration
+                'groups'    => null, // To be set via admin configuration
+            ],
+            'usage'         => [
+                'storage'   => 0, // To be calculated from actual usage
+                'bandwidth' => 0, // To be calculated from actual usage
+                'requests'  => 0, // To be calculated from actual usage
+                'users'     => count($users),
+                'groups'    => count($groups),
+            ],
+            'authorization' => $this->authorization ?? $this->getDefaultAuthorization(),
+            'created'       => $this->created ? $this->created->format('c') : null,
+            'updated'       => $this->updated ? $this->updated->format('c') : null,
         ];
 
     }//end jsonSerialize()

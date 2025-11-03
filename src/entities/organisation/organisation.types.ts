@@ -5,13 +5,60 @@ export type TOrganisation = {
     slug?: string
     description?: string
     users?: string[]
-    userCount?: number
+    groups?: string[]
     isDefault?: boolean
     active?: boolean
     owner?: string
-    storageQuota?: number | null
-    bandwidthQuota?: number | null
-    requestQuota?: number | null
+    quota?: {
+        storage?: number | null
+        bandwidth?: number | null
+        requests?: number | null
+        users?: number | null
+        groups?: number | null
+    }
+    usage?: {
+        storage?: number
+        bandwidth?: number
+        requests?: number
+        users?: number
+        groups?: number
+    }
+    authorization?: {
+        register?: {
+            create?: string[]
+            read?: string[]
+            update?: string[]
+            delete?: string[]
+        }
+        schema?: {
+            create?: string[]
+            read?: string[]
+            update?: string[]
+            delete?: string[]
+        }
+        object?: {
+            create?: string[]
+            read?: string[]
+            update?: string[]
+            delete?: string[]
+        }
+        view?: {
+            create?: string[]
+            read?: string[]
+            update?: string[]
+            delete?: string[]
+        }
+        agent?: {
+            create?: string[]
+            read?: string[]
+            update?: string[]
+            delete?: string[]
+        }
+        object_publish?: string[]
+        agent_use?: string[]
+        dashboard_view?: string[]
+        llm_use?: string[]
+    }
     created?: string
     updated?: string
 }
