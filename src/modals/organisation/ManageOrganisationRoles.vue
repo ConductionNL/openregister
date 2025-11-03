@@ -49,7 +49,7 @@
 					label-outside
 					input-label="Nextcloud Groups"
 					@input="addRole">
-					<template #option="{ id, name, userCount }">
+					<template #option="{ name, userCount }">
 						<div class="group-option">
 							<AccountGroup :size="20" />
 							<div class="group-info">
@@ -103,16 +103,15 @@ import axios from '@nextcloud/axios'
 
 /**
  * ManageOrganisationRoles
- * @module Components
- * @package OpenRegister
- * 
  * Modal component for managing organisation roles using Nextcloud groups
- * 
+ *
+ * @module Components
+ * @package
  * @author   Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version  GIT: <git_id>
- * @link     https://www.OpenRegister.nl
+ * @license EUPL-1.2
+ * @version  1.0.0
+ * @see      https://www.openregister.nl
  */
 export default {
 	name: 'ManageOrganisationRoles',
@@ -148,7 +147,7 @@ export default {
 	computed: {
 		/**
 		 * Get available groups that haven't been selected yet
-		 * 
+		 *
 		 * @return {Array} Available groups
 		 */
 		availableGroupOptions() {
@@ -163,7 +162,7 @@ export default {
 
 		/**
 		 * Check if there are unsaved changes
-		 * 
+		 *
 		 * @return {boolean} True if there are changes
 		 */
 		hasChanges() {
@@ -179,7 +178,7 @@ export default {
 	methods: {
 		/**
 		 * Initialize organisation data
-		 * 
+		 *
 		 * @return {void}
 		 */
 		initializeOrganisationItem() {
@@ -188,10 +187,10 @@ export default {
 					...this.organisationItem,
 					...organisationStore.organisationItem,
 				}
-				
+
 				// Initialize selected roles from organisation
-				this.selectedRoles = Array.isArray(this.organisationItem.roles) 
-					? [...this.organisationItem.roles] 
+				this.selectedRoles = Array.isArray(this.organisationItem.roles)
+					? [...this.organisationItem.roles]
 					: []
 				this.originalRoles = [...this.selectedRoles]
 			}
@@ -199,7 +198,7 @@ export default {
 
 		/**
 		 * Load available Nextcloud groups
-		 * 
+		 *
 		 * @return {Promise<void>}
 		 */
 		async loadNextcloudGroups() {
@@ -211,9 +210,9 @@ export default {
 					{
 						headers: {
 							'OCS-APIRequest': 'true',
-							'Accept': 'application/json',
+							Accept: 'application/json',
 						},
-					}
+					},
 				)
 
 				// v1 API returns groups as a simple array of group IDs
@@ -234,7 +233,7 @@ export default {
 
 		/**
 		 * Add a role/group to the organisation
-		 * 
+		 *
 		 * @param {object} group - The group to add
 		 * @return {void}
 		 */
@@ -251,7 +250,7 @@ export default {
 
 		/**
 		 * Remove a role/group from the organisation
-		 * 
+		 *
 		 * @param {object} role - The role to remove
 		 * @return {void}
 		 */
@@ -261,7 +260,7 @@ export default {
 
 		/**
 		 * Save the roles to the organisation
-		 * 
+		 *
 		 * @return {Promise<void>}
 		 */
 		async saveRoles() {
@@ -290,7 +289,7 @@ export default {
 
 		/**
 		 * Close the modal
-		 * 
+		 *
 		 * @return {void}
 		 */
 		closeModal() {
@@ -303,7 +302,7 @@ export default {
 
 		/**
 		 * Handle dialog close
-		 * 
+		 *
 		 * @return {void}
 		 */
 		handleDialogClose() {
@@ -406,4 +405,3 @@ export default {
 	color: var(--color-text-maxcontrast);
 }
 </style>
-

@@ -203,7 +203,7 @@ export default {
 
 		/**
 		 * Check if any permissions are set for this entity type
-		 * 
+		 *
 		 * @return {boolean} True if permissions are set
 		 */
 		hasAnyPermissions() {
@@ -215,7 +215,7 @@ export default {
 
 		/**
 		 * Check if access is restrictive (has specific permissions)
-		 * 
+		 *
 		 * @return {boolean} True if restrictive
 		 */
 		isRestrictive() {
@@ -225,7 +225,7 @@ export default {
 	methods: {
 		/**
 		 * Check if a group has a specific permission
-		 * 
+		 *
 		 * @param {string} groupId - The group ID
 		 * @param {string} action - The action (create, read, update, delete)
 		 * @return {boolean} True if group has permission
@@ -240,7 +240,7 @@ export default {
 
 		/**
 		 * Update a permission for a group
-		 * 
+		 *
 		 * @param {string} groupId - The group ID
 		 * @param {string} action - The action (create, read, update, delete)
 		 * @param {boolean} hasPermission - Whether to grant or revoke permission
@@ -360,4 +360,3 @@ export default {
 	margin-top: 16px;
 }
 </style>
-

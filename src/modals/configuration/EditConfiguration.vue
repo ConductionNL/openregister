@@ -251,19 +251,19 @@ export default {
 				// Load selected organisation
 				if (item.organisation) {
 					this.selectedOrganisation = organisationStore.organisationList.find(
-						o => parseInt(o.id) === parseInt(item.organisation)
+						o => parseInt(o.id) === parseInt(item.organisation),
 					) || null
 				}
 				// Load selected registers
 				if (item.registers && Array.isArray(item.registers)) {
 					this.selectedRegisters = registerStore.registerList.filter(
-						r => item.registers.includes(parseInt(r.id))
+						r => item.registers.includes(parseInt(r.id)),
 					)
 				}
 				// Load selected schemas
 				if (item.schemas && Array.isArray(item.schemas)) {
 					this.selectedSchemas = schemaStore.schemaList.filter(
-						s => item.schemas.includes(parseInt(s.id))
+						s => item.schemas.includes(parseInt(s.id)),
 					)
 				}
 			}

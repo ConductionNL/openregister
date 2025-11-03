@@ -73,7 +73,9 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 
 			<!-- Description -->
 			<div v-if="applicationStore.applicationItem.description" class="detailsSection">
-				<p class="description">{{ applicationStore.applicationItem.description }}</p>
+				<p class="description">
+					{{ applicationStore.applicationItem.description }}
+				</p>
 			</div>
 
 			<!-- Details Grid -->
@@ -368,4 +370,3 @@ export default {
 	color: var(--color-text-lighter);
 }
 </style>
-
