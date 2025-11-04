@@ -46,29 +46,6 @@ class FilesController extends Controller
 
     }//end __construct()
 
-
-    /**
-     * Returns the template of the main app's page
-     *
-     * This method renders the main page of the application, adding any necessary data to the template.
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return TemplateResponse The rendered template response
-     */
-    public function page(): TemplateResponse
-    {
-        return new TemplateResponse(
-            'openregister',
-            'index',
-            []
-        );
-
-    }//end page()
-
-
      /**
       * Get all files associated with a specific object
       *
