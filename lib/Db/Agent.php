@@ -319,7 +319,10 @@ class Agent extends Entity implements JsonSerializable
      */
     public function setUuid(?string $uuid): void
     {
-        $this->uuid = $uuid;
+        // Never allow setting UUID to null or empty - skip if invalid
+        if ($uuid !== null && $uuid !== '' && trim($uuid) !== '') {
+            $this->uuid = $uuid;
+        }
 
     }//end setUuid()
 
@@ -1097,7 +1100,10 @@ class Agent extends Entity implements JsonSerializable
      */
     public function hydrate(array $object): self
     {
-        $this->setUuid($object['uuid'] ?? null);
+        // Only set UUID if it's provided and not empty
+        if (isset($object['uuid']) && !empty($object['uuid'])) {
+            $this->setUuid($object['uuid']);
+        }
         $this->setName($object['name'] ?? null);
         $this->setDescription($object['description'] ?? null);
         $this->setType($object['type'] ?? null);

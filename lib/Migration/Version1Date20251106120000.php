@@ -15,6 +15,7 @@ declare(strict_types=1);
  * - openregister_applications: organisation int → string UUID
  * - openregister_views: ADD organisation string UUID column
  * - openregister_sources: ADD organisation string UUID column
+ * - openregister_registers: ADD organisation string UUID column
  * - openregister_schemas: organisation already string UUID (verify only)
  *
  * @category Migration
@@ -79,8 +80,8 @@ class Version1Date20251106120000 extends SimpleMigrationStep
                     $output->info('  📝 Updating configurations.organisation: int → string UUID');
                     
                     // Change column type to string UUID
-                    $column->setType(\OCP\DB\Types::getType(Types::STRING));
-                    $column->setLength(255);
+                    $column->setType(\Doctrine\DBAL\Types\Type::getType(Types::STRING));
+                    $column->setLength(36);
                     $column->setNotnull(false);
                     $column->setDefault(null);
                     $column->setComment('Organisation UUID for multi-tenancy');
@@ -190,6 +191,30 @@ class Version1Date20251106120000 extends SimpleMigrationStep
         }
 
         // ============================================================
+        // Add openregister_registers.organisation column
+        // ============================================================
+        if ($schema->hasTable('openregister_registers')) {
+            $table = $schema->getTable('openregister_registers');
+            
+            if (!$table->hasColumn('organisation')) {
+                $output->info('  📝 Adding registers.organisation column');
+                
+                $table->addColumn('organisation', Types::STRING, [
+                    'notnull' => false,
+                    'length'  => 255,
+                    'default' => null,
+                    'comment' => 'Organisation UUID for multi-tenancy',
+                ]);
+                
+                // Add index for faster filtering
+                $table->addIndex(['organisation'], 'registers_organisation_idx');
+                
+                $output->info('    ✅ registers.organisation added');
+                $updated = true;
+            }
+        }
+
+        // ============================================================
         // Verify openregister_schemas.organisation (should already be string)
         // ============================================================
         if ($schema->hasTable('openregister_schemas')) {
@@ -224,6 +249,7 @@ class Version1Date20251106120000 extends SimpleMigrationStep
             $output->info('   • Applications: organisation updated to string UUID');
             $output->info('   • Views: organisation column added (string UUID)');
             $output->info('   • Sources: organisation column added (string UUID)');
+            $output->info('   • Registers: organisation column added (string UUID)');
             $output->info('   • Schemas: organisation verified as string UUID');
             $output->info('');
             $output->info('✅ All entities now support multi-tenancy with organisation UUIDs');

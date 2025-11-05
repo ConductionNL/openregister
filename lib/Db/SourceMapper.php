@@ -103,7 +103,7 @@ class SourceMapper extends QBMapper
                 $qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
             );
 
-        // Apply organisation filter (admins see all, others see only their org)
+        // Apply organisation filter (all users including admins must have active org)
         $this->applyOrganisationFilter($qb);
 
         return $this->findEntity(query: $qb);
@@ -157,7 +157,7 @@ class SourceMapper extends QBMapper
             }
         }
 
-        // Apply organisation filter (admins see all, others see only their org)
+        // Apply organisation filter (all users including admins must have active org)
         $this->applyOrganisationFilter($qb);
 
         return $this->findEntities(query: $qb);

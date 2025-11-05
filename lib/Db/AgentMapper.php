@@ -109,7 +109,7 @@ class AgentMapper extends QBMapper
             ->from($this->tableName)
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
-        // Apply organisation filter (admins see all, others see only their org)
+        // Apply organisation filter (all users including admins must have active org)
         $this->applyOrganisationFilter($qb);
 
         return $this->findEntity($qb);
@@ -382,7 +382,7 @@ class AgentMapper extends QBMapper
             $qb->setFirstResult($offset);
         }
 
-        // Apply organisation filter (admins see all, others see only their org)
+        // Apply organisation filter (all users including admins must have active org)
         $this->applyOrganisationFilter($qb);
 
         return $this->findEntities($qb);
@@ -404,16 +404,24 @@ class AgentMapper extends QBMapper
         $this->verifyRbacPermission('create', 'agent');
 
         if ($entity instanceof Agent) {
-            // Generate UUID if not set
-            if (empty($entity->getUuid())) {
-                $entity->setUuid(\OC::$server->get(\OCP\Security\ISecureRandom::class)->generate(
-                    36,
-                    \OCP\Security\ISecureRandom::CHAR_ALPHANUMERIC
-                ));
+            // CRITICAL: Always ensure UUID is set before insert
+            $currentUuid = $entity->getUuid();
+            if ($currentUuid === null || $currentUuid === '' || trim($currentUuid ?? '') === '') {
+                $newUuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
+                // Force set the UUID directly on the property to bypass any setter logic
+                $reflection = new \ReflectionClass($entity);
+                $property = $reflection->getProperty('uuid');
+                $property->setAccessible(true);
+                $property->setValue($entity, $newUuid);
             }
             
-            $entity->setCreated(new DateTime());
-            $entity->setUpdated(new DateTime());
+            // Set timestamps if not already set
+            if ($entity->getCreated() === null) {
+                $entity->setCreated(new DateTime());
+            }
+            if ($entity->getUpdated() === null) {
+                $entity->setUpdated(new DateTime());
+            }
         }
 
         // Auto-set organisation from active session
@@ -479,6 +487,11 @@ class AgentMapper extends QBMapper
      */
     public function createFromArray(array $data): Agent
     {
+        // ALWAYS generate UUID first before creating entity
+        if (!isset($data['uuid']) || $data['uuid'] === null || $data['uuid'] === '' || trim($data['uuid'] ?? '') === '') {
+            $data['uuid'] = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
+        }
+        
         $agent = new Agent();
         $agent->hydrate($data);
 
@@ -520,7 +533,7 @@ class AgentMapper extends QBMapper
             }
         }
 
-        // Apply organisation filter (admins see all, others see only their org)
+        // Apply organisation filter (all users including admins must have active org)
         $this->applyOrganisationFilter($qb);
 
         return (int) $qb->executeQuery()->fetchOne();

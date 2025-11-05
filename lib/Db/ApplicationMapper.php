@@ -109,7 +109,7 @@ class ApplicationMapper extends QBMapper
             ->from($this->tableName)
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
-        // Apply organisation filter (admins see all, others see only their org)
+        // Apply organisation filter (all users including admins must have active org)
         $this->applyOrganisationFilter($qb);
 
         return $this->findEntity($qb);
@@ -214,7 +214,7 @@ class ApplicationMapper extends QBMapper
             }
         }
 
-        // Apply organisation filter (admins see all, others see only their org)
+        // Apply organisation filter (all users including admins must have active org)
         $this->applyOrganisationFilter($qb);
 
         return $this->findEntities($qb);
@@ -238,10 +238,7 @@ class ApplicationMapper extends QBMapper
         if ($entity instanceof Application) {
             // Generate UUID if not set
             if (empty($entity->getUuid())) {
-                $entity->setUuid(\OC::$server->get(\OCP\Security\ISecureRandom::class)->generate(
-                    36,
-                    \OCP\Security\ISecureRandom::CHAR_ALPHANUMERIC
-                ));
+                $entity->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
             }
             
             $entity->setCreated(new DateTime());
@@ -382,7 +379,7 @@ class ApplicationMapper extends QBMapper
         $qb->select($qb->createFunction('COUNT(*)'))
             ->from($this->tableName);
 
-        // Apply organisation filter (admins see all, others see only their org)
+        // Apply organisation filter (all users including admins must have active org)
         $this->applyOrganisationFilter($qb);
 
         $result = $qb->executeQuery();
