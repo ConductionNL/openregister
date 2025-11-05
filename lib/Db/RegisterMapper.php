@@ -22,21 +22,27 @@ namespace OCA\OpenRegister\Db;
 use OCA\OpenRegister\Event\RegisterCreatedEvent;
 use OCA\OpenRegister\Event\RegisterDeletedEvent;
 use OCA\OpenRegister\Event\RegisterUpdatedEvent;
+use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
+use OCP\IGroupManager;
+use OCP\IUserSession;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 
 /**
  * The RegisterMapper class
  *
+ * Handles database operations for Register entities with multi-tenancy support.
+ *
  * @package OCA\OpenRegister\Db
  */
 class RegisterMapper extends QBMapper
 {
+    use MultiTenancyTrait;
 
     /**
      * The schema mapper instance
@@ -70,10 +76,13 @@ class RegisterMapper extends QBMapper
     /**
      * Constructor for RegisterMapper
      *
-     * @param IDBConnection      $db                 The database connection
-     * @param SchemaMapper       $schemaMapper       The schema mapper
-     * @param IEventDispatcher   $eventDispatcher    The event dispatcher
-     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
+     * @param IDBConnection        $db                  The database connection
+     * @param SchemaMapper         $schemaMapper        The schema mapper
+     * @param IEventDispatcher     $eventDispatcher     The event dispatcher
+     * @param ObjectEntityMapper   $objectEntityMapper  The object entity mapper
+     * @param OrganisationService  $organisationService The organisation service (for multi-tenancy)
+     * @param IUserSession         $userSession         The user session (for multi-tenancy)
+     * @param IGroupManager        $groupManager        The group manager (for RBAC)
      *
      * @return void
      */
@@ -81,12 +90,20 @@ class RegisterMapper extends QBMapper
         IDBConnection $db,
         SchemaMapper $schemaMapper,
         IEventDispatcher $eventDispatcher,
-        ObjectEntityMapper $objectEntityMapper
+        ObjectEntityMapper $objectEntityMapper,
+        OrganisationService $organisationService,
+        IUserSession $userSession,
+        IGroupManager $groupManager
     ) {
         parent::__construct($db, 'openregister_registers');
         $this->schemaMapper       = $schemaMapper;
         $this->eventDispatcher    = $eventDispatcher;
         $this->objectEntityMapper = $objectEntityMapper;
+        
+        // Initialize multi-tenancy trait dependencies
+        $this->organisationService = $organisationService;
+        $this->userSession         = $userSession;
+        $this->groupManager        = $groupManager;
 
     }//end __construct()
 
@@ -94,13 +111,20 @@ class RegisterMapper extends QBMapper
     /**
      * Find a register by its ID, with optional extension for statistics
      *
+     * Includes RBAC and organisation filtering for multi-tenancy.
+     *
      * @param int|string $id     The ID of the register to find
      * @param array      $extend Optional array of extensions (e.g., ['@self.stats'])
      *
      * @return Register The found register, possibly with stats
+     *
+     * @throws \Exception If RBAC permission check fails
      */
     public function find(string | int $id, ?array $extend=[]): Register
     {
+        // Verify RBAC permission to read registers
+        $this->verifyRbacPermission('read', 'register');
+
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from('openregister_registers')
@@ -111,6 +135,10 @@ class RegisterMapper extends QBMapper
                     $qb->expr()->eq('slug', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR))
                 )
             );
+        
+        // Apply organisation filter (all users including admins must have active org)
+        $this->applyOrganisationFilter($qb);
+        
         // Just return the entity; do not attach stats here
         return $this->findEntity(query: $qb);
 
@@ -200,11 +228,18 @@ class RegisterMapper extends QBMapper
         ?array $searchParams=[],
         ?array $extend=[]
     ): array {
+        // Verify RBAC permission to read registers
+        $this->verifyRbacPermission('read', 'register');
+
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from('openregister_registers')
             ->setMaxResults($limit)
             ->setFirstResult($offset);
+        
+        // Apply organisation filter (all users including admins must have active org)
+        $this->applyOrganisationFilter($qb);
+        
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
@@ -231,12 +266,22 @@ class RegisterMapper extends QBMapper
     /**
      * Insert a new entity
      *
+     * Includes RBAC permission check and auto-sets organisation from active session.
+     *
      * @param Entity $entity The entity to insert
      *
      * @return Entity The inserted entity
+     *
+     * @throws \Exception If RBAC permission check fails
      */
     public function insert(Entity $entity): Entity
     {
+        // Verify RBAC permission to create registers
+        $this->verifyRbacPermission('create', 'register');
+
+        // Auto-set organisation from active session
+        $this->setOrganisationOnCreate($entity);
+
         $entity = parent::insert($entity);
 
         // Dispatch creation event.
@@ -320,6 +365,12 @@ class RegisterMapper extends QBMapper
      */
     public function update(Entity $entity): Entity
     {
+        // Verify RBAC permission to update registers
+        $this->verifyRbacPermission('update', 'register');
+
+        // Verify entity belongs to active organisation
+        $this->verifyOrganisationAccess($entity);
+
         $oldSchema = $this->find($entity->getId());
 
         // Clean the register object to ensure UUID, slug, and version are set.
@@ -377,6 +428,12 @@ class RegisterMapper extends QBMapper
      */
     public function delete(Entity $entity): Register
     {
+        // Verify RBAC permission to delete registers
+        $this->verifyRbacPermission('delete', 'register');
+
+        // Verify entity belongs to active organisation
+        $this->verifyOrganisationAccess($entity);
+
         // Check for attached objects before deleting
         $registerId = method_exists($entity, 'getId') ? $entity->getId() : $entity->id;
         $stats      = $this->objectEntityMapper->getStatistics($registerId, null);

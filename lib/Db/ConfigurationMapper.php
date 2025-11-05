@@ -109,7 +109,7 @@ class ConfigurationMapper extends QBMapper
             ->from($this->tableName)
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
-        // Apply organisation filter (admins see all, others see only their org)
+        // Apply organisation filter (all users including admins must have active org)
         $this->applyOrganisationFilter($qb);
 
         return $this->findEntity($qb);
@@ -197,10 +197,12 @@ class ConfigurationMapper extends QBMapper
         if ($entity instanceof Configuration) {
             // Generate UUID if not set
             if (empty($entity->getUuid())) {
-                $entity->setUuid(\OC::$server->get(\OCP\Security\ISecureRandom::class)->generate(
-                    36,
-                    \OCP\Security\ISecureRandom::CHAR_ALPHANUMERIC
-                ));
+                $entity->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
+            }
+            
+            // Set default type if not provided (required by database)
+            if (empty($entity->getType())) {
+                $entity->setType('default');
             }
             
             $entity->setCreated(new DateTime());
@@ -405,7 +407,7 @@ class ConfigurationMapper extends QBMapper
             }
         }
 
-        // Apply organisation filter (admins see all, others see only their org)
+        // Apply organisation filter (all users including admins must have active org)
         $this->applyOrganisationFilter($qb);
 
         // Execute the query and return the results.

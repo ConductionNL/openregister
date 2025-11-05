@@ -101,7 +101,8 @@ trait MultiTenancyTrait
      * Apply organisation filter to a query builder.
      *
      * Filters results to only show entities from the active organisation.
-     * Admins bypass this filter and see all organisations.
+     * This applies to ALL users including admins - admins must set an active
+     * organisation to work within that organisational context.
      *
      * @param IQueryBuilder $qb              The query builder
      * @param string        $columnName      The column name for organisation (default: 'organisation')
@@ -111,14 +112,10 @@ trait MultiTenancyTrait
      */
     protected function applyOrganisationFilter(IQueryBuilder $qb, string $columnName='organisation', bool $allowNullOrg=false): void
     {
-        // Admins see everything, skip filtering
-        if ($this->isCurrentUserAdmin()) {
-            return;
-        }
-
         $activeOrgUuid = $this->getActiveOrganisationUuid();
         if ($activeOrgUuid === null) {
-            // No active organisation, return empty results for non-admins
+            // No active organisation, return empty results
+            // Admins must also have an active organisation set
             $qb->andWhere($qb->expr()->eq('1', $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT)));
             return;
         }
@@ -172,21 +169,16 @@ trait MultiTenancyTrait
      * Verify that an entity belongs to the active organisation.
      *
      * Throws an exception if the entity's organisation doesn't match
-     * the active organisation (unless user is admin).
+     * the active organisation. This applies to ALL users including admins.
      *
      * @param Entity $entity The entity to verify
      *
      * @return void
      *
-     * @throws \Exception If organisation doesn't match and user is not admin
+     * @throws \Exception If organisation doesn't match
      */
     protected function verifyOrganisationAccess(Entity $entity): void
     {
-        // Admins can access all organisations
-        if ($this->isCurrentUserAdmin()) {
-            return;
-        }
-
         // Check if entity has organisation property
         if (!method_exists($entity, 'getOrganisation')) {
             return;
@@ -200,7 +192,7 @@ trait MultiTenancyTrait
             return;
         }
 
-        // Verify the organisations match
+        // Verify the organisations match (applies to everyone including admins)
         if ($entityOrgUuid !== $activeOrgUuid) {
             throw new \Exception(
                 'Security violation: You do not have permission to access this resource from a different organisation.',

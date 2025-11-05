@@ -181,7 +181,7 @@ class YourMapper extends QBMapper
             ->from($this->tableName)
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
         
-        // Apply organisation filter (admins see all, others see only their org)
+        // Apply organisation filter (all users including admins must have active org)
         $this->applyOrganisationFilter($qb);
         
         return $this->findEntity($qb);
@@ -292,8 +292,8 @@ Applies organisation filtering to a query builder.
 - '$allowNullOrg': Whether to include entities with null organisation
 
 **Behavior:**
-- Admins: See all entities regardless of organisation
-- Non-admins: See only entities from their active organisation
+- All users (including admins) see only entities from their active organisation
+- Admins must set an active organisation to access data
 
 ### setOrganisationOnCreate()
 
@@ -370,11 +370,14 @@ try {
 }
 ```
 
-### 7. Admin Bypass
+### 7. Admin Privileges
 
-Admins (users in the 'admin' group) automatically bypass:
-- Organisation filtering (see all organisations)
-- RBAC checks (have all permissions)
+Admins (users in the 'admin' group) have special privileges:
+- **RBAC Bypass**: Admins bypass all RBAC permission checks (create, read, update, delete)
+- **Organisation Access**: Admins can see ALL organisations and set ANY organisation as active
+- **Data Filtering**: Once an admin sets an active organisation, they ONLY see data from that organisation (no bypass)
+
+This ensures admins work within an organisational context while having full permissions within that context.
 
 ### 8. Default Organisation
 
@@ -384,11 +387,11 @@ Users without organisations are automatically added to the default organisation 
 
 ### Test Cases to Cover
 
-1. **Create**: Entity gets organisation UUID set automatically
-2. **Read (Admin)**: Admin sees all organisations
-3. **Read (User)**: User sees only their organisation
-4. **Update (Same Org)**: Succeeds
-5. **Update (Different Org)**: Fails with 403
+1. **Create**: Entity gets organisation UUID set automatically (from active org)
+2. **Read (Admin with Active Org)**: Admin sees only data from active organisation
+3. **Read (User)**: User sees only data from their active organisation
+4. **Update (Same Org)**: Succeeds (admin bypasses RBAC, user needs permission)
+5. **Update (Different Org)**: Fails with 403 (for both admin and user)
 6. **Delete (Same Org)**: Succeeds
 7. **Delete (Different Org)**: Fails with 403
 8. **RBAC Create**: Only users with 'create' permission can create
@@ -412,9 +415,9 @@ Users without organisations are automatically added to the default organisation 
 
 ### Issue: Admin can't access entities
 
-**Cause:** Organisation filter applied to admins
+**Cause:** Admin doesn't have an active organisation set
 
-**Solution:** 'isCurrentUserAdmin()' check should skip filtering - verify trait is properly injected
+**Solution:** Admins must set an active organisation to access data. Check that 'OrganisationService.getActiveOrganisation()' returns a valid organisation.
 
 ### Issue: RBAC always denies access
 
