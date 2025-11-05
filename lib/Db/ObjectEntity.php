@@ -859,4 +859,66 @@ class ObjectEntity extends Entity implements JsonSerializable
     }//end __toString()
 
 
+    /**
+     * Check if this object is managed by any configuration
+     *
+     * This method checks if the object's ID is present in the objects array
+     * of any provided configuration entities.
+     *
+     * @param array<Configuration> $configurations Array of Configuration entities to check against
+     *
+     * @return bool True if this object is managed by at least one configuration
+     *
+     * @phpstan-param array<Configuration> $configurations
+     * @psalm-param   array<Configuration> $configurations
+     */
+    public function isManagedByConfiguration(array $configurations): bool
+    {
+        if (empty($configurations) === true || $this->id === null) {
+            return false;
+        }
+
+        foreach ($configurations as $configuration) {
+            $objects = $configuration->getObjects();
+            if (in_array($this->id, $objects, true) === true) {
+                return true;
+            }
+        }
+
+        return false;
+
+    }//end isManagedByConfiguration()
+
+
+    /**
+     * Get the configuration that manages this object
+     *
+     * Returns the first configuration that has this object's ID in its objects array.
+     * Returns null if the object is not managed by any configuration.
+     *
+     * @param array<Configuration> $configurations Array of Configuration entities to check against
+     *
+     * @return Configuration|null The configuration managing this object, or null
+     *
+     * @phpstan-param array<Configuration> $configurations
+     * @psalm-param   array<Configuration> $configurations
+     */
+    public function getManagedByConfiguration(array $configurations): ?Configuration
+    {
+        if (empty($configurations) === true || $this->id === null) {
+            return null;
+        }
+
+        foreach ($configurations as $configuration) {
+            $objects = $configuration->getObjects();
+            if (in_array($this->id, $objects, true) === true) {
+                return $configuration;
+            }
+        }
+
+        return null;
+
+    }//end getManagedByConfiguration()
+
+
 }//end class

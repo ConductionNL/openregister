@@ -391,7 +391,528 @@ The configuration is stored in the 'oc_openregister_configurations' table with t
 - [Import/Export](../technical/import-export.md) - Detailed import/export documentation
 - [Multi-Tenancy](multi-tenancy.md) - Multi-tenancy implementation details
 
+## Configuration Management System
+
+The Configuration Management System provides advanced features for managing configurations from remote sources, tracking versions, and keeping configurations synchronized.
+
+### Overview
+
+The configuration management system allows you to:
+
+- Link configurations to remote sources (GitHub, GitLab, URL)
+- Track local and remote versions automatically
+- Preview changes before importing
+- Selectively import only the changes you want
+- Set up automatic updates when new versions are detected
+- Receive Nextcloud notifications when updates are available
+- Push local configurations to GitHub repositories
+
+```mermaid
+graph TD
+    A[Remote Config Source] -->|Check Version| B[Configuration Entity]
+    B -->|Preview Changes| C[Preview Modal]
+    C -->|User Approval| D[Selective Import]
+    D -->|Update Entities| E[Local Registers/Schemas]
+    
+    F[Cron Job] -->|Hourly Check| B
+    B -->|Update Available| G[Notification]
+    G -->|Notify| H[Admins & Groups]
+    
+    style A fill:#e3f2fd
+    style B fill:#fff3e0
+    style C fill:#ffe0b2
+    style D fill:#c8e6c9
+    style E fill:#bbdefb
+    style F fill:#f3e5f5
+    style G fill:#ffecb3
+    style H fill:#c8e6c9
+```
+
+### Source Types
+
+Configurations can be managed from different source types:
+
+#### Local Source
+
+A locally managed configuration that is not synchronized with any remote source. This is the default type and is suitable for:
+
+- Custom configurations specific to your installation
+- Configurations used for exporting to other systems
+- Development and testing purposes
+
+#### GitHub Source
+
+Configuration synchronized with a GitHub repository. Requires:
+
+- A GitHub Personal Access Token (configured in user settings)
+- Repository name in format 'owner/repo'
+- Branch name (e.g., 'main', 'develop')
+- File path within the repository
+
+#### GitLab Source
+
+Configuration synchronized with a GitLab repository. Works similarly to GitHub with GitLab-specific authentication.
+
+#### URL Source
+
+Configuration fetched from any publicly accessible URL. The URL should point to a raw JSON or YAML configuration file.
+
+### Version Tracking
+
+The system tracks two version numbers for each configuration:
+
+#### Local Version
+
+The version currently installed in your system. This is updated automatically when you:
+
+- Import a configuration
+- Make manual changes to managed entities
+- Apply updates from a remote source
+
+#### Remote Version
+
+The latest version available from the remote source. The system:
+
+- Checks this automatically via the cron job
+- Compares it with the local version using semantic versioning
+- Shows an update notification if a newer version is available
+
+```mermaid
+sequenceDiagram
+    participant Cron as Cron Job
+    participant Service as ConfigurationService
+    participant Remote as Remote Source
+    participant DB as Database
+    participant Notif as Notification System
+    
+    Cron->>Service: Run version check
+    Service->>DB: Load configurations
+    DB-->>Service: Configurations with remote sources
+    
+    loop For each configuration
+        Service->>Remote: Fetch remote config
+        Remote-->>Service: Remote configuration data
+        Service->>Service: Extract version info
+        Service->>Service: Compare versions
+        
+        alt Update available
+            Service->>DB: Update remoteVersion field
+            Service->>Notif: Send notification
+            Notif->>Notif: Notify admins & groups
+        end
+    end
+```
+
+### Previewing Configuration Changes
+
+Before importing or updating a configuration, you can preview all changes that will be applied:
+
+#### Preview Modal Features
+
+The preview modal shows:
+
+1. **Summary Information**
+   - Configuration title and description
+   - Local and remote version numbers
+   - Total number of changes
+
+2. **Change Details by Entity Type**
+   - Registers: What will be created or updated
+   - Schemas: What will be created or updated
+   - Objects: What will be created or updated
+
+3. **Action Indicators**
+   - **Create**: New entity will be created
+   - **Update**: Existing entity will be modified
+   - **Skip**: No changes detected
+
+4. **Version Comparison**
+   - Current version of each entity
+   - Proposed version from remote configuration
+
+5. **Field-Level Differences**
+   - Shows exactly which fields will change
+   - Displays old and new values
+   - Highlights additions and deletions
+
+#### Selective Import
+
+You can choose which changes to apply:
+
+- **Select All** button: Selects all proposed changes
+- **Deselect All** button: Clears all selections
+- **Individual Selection**: Check/uncheck specific entities
+- **Import Selected** button: Applies only the selected changes
+
+```mermaid
+graph LR
+    A[Configuration] -->|Preview| B[Change Detection]
+    B --> C[Register Changes]
+    B --> D[Schema Changes]
+    B --> E[Object Changes]
+    
+    C --> F[User Selection]
+    D --> F
+    E --> F
+    
+    F -->|Import Selected| G[Apply Changes]
+    G --> H[Update Local Entities]
+    
+    style A fill:#e3f2fd
+    style B fill:#fff3e0
+    style F fill:#ffe0b2
+    style G fill:#c8e6c9
+    style H fill:#bbdefb
+```
+
+### Auto-Update Functionality
+
+Configurations can be set to automatically update when new versions are detected:
+
+#### Enabling Auto-Update
+
+1. Edit the configuration
+2. Navigate to the **Management** tab
+3. Check **Enable Auto-Update**
+4. Save the configuration
+
+When auto-update is enabled:
+
+- The cron job checks for updates hourly
+- If a newer version is found, it is automatically imported
+- All changes are applied without requiring user approval
+- No preview or selection is performed
+- Admins are notified after the update completes
+
+**Important**: Use auto-update only for trusted sources where you want all changes applied automatically.
+
+### Notification System
+
+The system can notify users when configuration updates are available:
+
+#### Notification Groups
+
+Configure which groups receive notifications:
+
+1. **Admin Group** (always included): System administrators
+2. **Custom Groups**: Add any Nextcloud groups
+
+#### Notification Behavior
+
+- Notifications are sent when a newer remote version is detected
+- Auto-update configurations bypass the notification (update happens automatically)
+- Clicking a notification takes you to the configuration preview
+- Notifications are dismissed once the update is applied
+
+### Managed Entities
+
+Entities (Registers, Schemas, Objects) that are created from a configuration are marked as **managed**:
+
+#### Restrictions on Managed Entities
+
+- Cannot be edited directly through their detail pages
+- Edit buttons are disabled in the UI
+- API attempts to modify them return an error
+- Only the configuration that manages them can update them
+
+#### Identifying Managed Entities
+
+Managed entities display a pill badge showing:
+
+- **Configuration Name**: Which configuration manages the entity
+- **Version**: The current version from that configuration
+
+Entities without a configuration show a **Manual** badge, indicating they can be edited freely.
+
+```mermaid
+graph TD
+    A[Entity] --> B{Is Managed?}
+    
+    B -->|Yes| C[Check Configuration]
+    C --> D[Show Config Badge]
+    D --> E[Disable Edit]
+    
+    B -->|No| F[Show Manual Badge]
+    F --> G[Allow Edit]
+    
+    style A fill:#e3f2fd
+    style C fill:#fff3e0
+    style D fill:#ffe0b2
+    style E fill:#ffcdd2
+    style F fill:#c8e6c9
+    style G fill:#a5d6a7
+```
+
+### GitHub Integration
+
+The system provides deep integration with GitHub for configuration management:
+
+#### Push to GitHub
+
+Export your configuration directly to a GitHub repository:
+
+1. Navigate to the configuration detail page
+2. Click **Actions** → **Push to GitHub**
+3. The configuration is committed to the configured repository
+
+Requirements:
+
+- GitHub Personal Access Token set in user settings
+- Repository, branch, and path configured in the configuration
+- Write access to the target repository
+
+#### Create Pull Request
+
+Create a pull request for your configuration changes:
+
+1. Make changes to a configuration
+2. Click **Actions** → **Create Pull Request**
+3. A new PR is created in the configured repository
+
+This allows for review workflows before changes are merged.
+
+### Configuration Management Tab
+
+The configuration edit modal includes a **Management** tab with these fields:
+
+#### Source Settings
+
+- **Source Type**: Choose from Local, GitHub, GitLab, or URL
+- **Source URL**: The URL to the remote configuration file (for remote types)
+
+#### Version Settings
+
+- **Local Version**: The currently installed version (editable)
+- **Remote Version**: Latest version from remote source (read-only, auto-detected)
+
+#### Update Settings
+
+- **Enable Auto-Update**: Checkbox to enable automatic updates
+- **Notification Groups**: Select which groups receive update notifications
+
+#### GitHub Settings (when Source Type is GitHub)
+
+- **GitHub Repository**: Format 'owner/repo'
+- **GitHub Branch**: The branch to use (default: 'main')
+- **GitHub Path**: Path to the configuration file within the repository
+
+### API Endpoints
+
+#### Check Remote Version
+
+```http
+GET /index.php/apps/openregister/api/configurations/{id}/check-version
+```
+
+Checks the remote source for a newer version and updates the 'remoteVersion' field.
+
+Response:
+
+```json
+{
+  'localVersion': '1.0.0',
+  'remoteVersion': '1.1.0',
+  'hasUpdate': true,
+  'lastChecked': '2025-01-15T10:30:00Z'
+}
+```
+
+#### Preview Configuration Changes
+
+```http
+GET /index.php/apps/openregister/api/configurations/{id}/preview
+```
+
+Generates a preview of changes that would be applied if the remote configuration were imported.
+
+Response:
+
+```json
+{
+  'metadata': {
+    'localVersion': '1.0.0',
+    'remoteVersion': '1.1.0',
+    'totalChanges': 5
+  },
+  'registers': [
+    {
+      'slug': 'myregister',
+      'title': 'My Register',
+      'action': 'update',
+      'current': { 'version': '1.0.0' },
+      'proposed': { 'version': '1.1.0' },
+      'changes': [
+        {
+          'field': 'description',
+          'current': 'Old description',
+          'proposed': 'New description'
+        }
+      ]
+    }
+  ],
+  'schemas': [...],
+  'objects': [...]
+}
+```
+
+#### Import with Selection
+
+```http
+POST /index.php/apps/openregister/api/configurations/{id}/import
+Content-Type: application/json
+
+{
+  'selection': {
+    'registers': ['register1', 'register2'],
+    'schemas': ['schema1'],
+    'objects': ['register1:schema1:object1']
+  }
+}
+```
+
+Imports only the selected entities from the remote configuration.
+
+Response:
+
+```json
+{
+  'registersCount': 2,
+  'schemasCount': 1,
+  'objectsCount': 1,
+  'localVersion': '1.1.0'
+}
+```
+
+#### Export Configuration
+
+```http
+GET /index.php/apps/openregister/api/configurations/{id}/export?format=json
+```
+
+Exports the configuration with all managed entities.
+
+Query Parameters:
+
+- 'format': 'json' or 'yaml'
+- 'includeObjects': 'true' or 'false' (default: false)
+
+### Background Jobs
+
+The system includes a cron job that runs hourly (configurable):
+
+#### Configuration Check Job
+
+Purpose: Check all remote configurations for updates
+
+Behavior:
+
+1. Loads all configurations with remote sources
+2. For each configuration, fetches the remote file
+3. Compares remote version with local version
+4. If auto-update is enabled: Automatically imports the new version
+5. If auto-update is disabled: Sends notification to configured groups
+6. Updates the 'lastChecked' timestamp
+
+Configuration:
+
+Set the check interval in Nextcloud admin settings (in seconds, 0 to disable):
+
+```php
+'openregister.configuration.check_interval' => 3600  // 1 hour
+```
+
+### Best Practices
+
+#### Version Management
+
+- Use semantic versioning (MAJOR.MINOR.PATCH)
+- Increment PATCH for bug fixes and minor changes
+- Increment MINOR for new features (backward compatible)
+- Increment MAJOR for breaking changes
+- Always update the version in your remote configuration when making changes
+
+#### Source Selection
+
+- Use **Local** for configurations you manage entirely within Nextcloud
+- Use **GitHub** when collaborating with others or tracking changes in version control
+- Use **URL** for read-only configurations from external sources
+- Use **GitLab** if your organization uses GitLab
+
+#### Auto-Update Usage
+
+- Enable for trusted, stable configuration sources
+- Disable for production systems where you want to review changes first
+- Test configurations in a staging environment before enabling auto-update in production
+- Always keep backups before enabling auto-update
+
+#### Notification Strategy
+
+- Add your DevOps team to notification groups for all configurations
+- Create specific groups for different configuration types
+- Review and apply updates promptly to stay current with remote sources
+
+### Troubleshooting
+
+#### Remote Version Not Updating
+
+**Problem**: The remote version field shows '-' or an old version
+
+**Solution**:
+
+- Click **Actions** → **Check Version** to manually trigger a check
+- Verify the source URL is correct and accessible
+- Check that the remote file has a 'version' or 'info.version' field
+- Review server logs for connection errors
+
+#### Preview Shows No Changes
+
+**Problem**: Preview modal shows no changes even though you expect updates
+
+**Solution**:
+
+- Verify the remote version is actually newer than the local version
+- Check that entity slugs match between local and remote configurations
+- Ensure the remote configuration uses the same structure
+
+#### Import Fails with Selection
+
+**Problem**: Importing selected entities returns an error
+
+**Solution**:
+
+- Check that all referenced schemas and registers exist
+- Verify you have write permissions for the configuration
+- Review the preview for any validation errors
+- Check server logs for detailed error messages
+
+#### Managed Entity Cannot Be Edited
+
+**Problem**: Edit button is disabled on a schema or register
+
+**Solution**:
+
+- This is expected behavior for managed entities
+- To edit, modify the source configuration and re-import
+- Alternatively, remove the entity from the configuration to make it editable
+- For local configurations, edit through the configuration itself
+
 ## Changelog
+
+### Version 0.2.8 (2025-01-15)
+
+- Added Configuration Management System
+- Source type support (Local, GitHub, GitLab, URL)
+- Version tracking (local and remote versions)
+- Configuration preview with change detection
+- Selective import functionality
+- Auto-update feature with configurable behavior
+- Notification system for update alerts
+- GitHub integration (push, create PR)
+- Managed entity enforcement
+- Cron job for automated version checking
+- Enhanced configuration modal with Management tab
+- API endpoints for version checking, preview, and import
+- Full integration tests and unit tests
 
 ### Version 0.2.7 (2025-01-01)
 

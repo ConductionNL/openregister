@@ -99,6 +99,13 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 								<h2 v-tooltip.bottom="configuration.description">
 									<CogOutline :size="20" />
 									{{ configuration.title }}
+									<span v-if="hasUpdateAvailable(configuration)" class="updatePill">
+										<Update :size="16" />
+										Update Available
+									</span>
+									<span v-else-if="isManualConfiguration(configuration)" class="manualPill">
+										Manual
+									</span>
 								</h2>
 								<NcActions :primary="true" menu-name="Actions">
 									<template #icon>
@@ -115,6 +122,18 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 											<Pencil :size="20" />
 										</template>
 										Edit
+									</NcActionButton>
+									<NcActionButton v-if="isRemoteConfiguration(configuration)" close-after-click @click="checkVersion(configuration)">
+										<template #icon>
+											<Sync :size="20" />
+										</template>
+										Check Version
+									</NcActionButton>
+									<NcActionButton v-if="hasUpdateAvailable(configuration)" close-after-click @click="previewUpdate(configuration)">
+										<template #icon>
+											<EyeOutline :size="20" />
+										</template>
+										Preview Update
 									</NcActionButton>
 									<NcActionButton close-after-click @click="configurationStore.setConfigurationItem(configuration); navigationStore.setModal('exportConfiguration')">
 										<template #icon>
@@ -137,16 +156,24 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 								</p>
 								<div class="configurationInfo">
 									<div class="configurationInfoItem">
-										<strong>{{ t('openregister', 'Type') }}:</strong>
-										<span>{{ configuration.type || 'Unknown' }}</span>
+										<strong>{{ t('openregister', 'Source') }}:</strong>
+										<span>{{ getSourceTypeLabel(configuration.sourceType) }}</span>
 									</div>
-									<div v-if="configuration.owner" class="configurationInfoItem">
-										<strong>{{ t('openregister', 'Owner') }}:</strong>
-										<span>{{ configuration.owner }}</span>
+									<div v-if="configuration.sourceUrl" class="configurationInfoItem">
+										<strong>{{ t('openregister', 'URL') }}:</strong>
+										<span class="urlText">{{ configuration.sourceUrl }}</span>
 									</div>
-									<div v-if="configuration.configuration" class="configurationInfoItem">
-										<strong>{{ t('openregister', 'Configuration Keys') }}:</strong>
-										<span>{{ Object.keys(configuration.configuration || {}).length }} keys</span>
+									<div v-if="configuration.localVersion" class="configurationInfoItem">
+										<strong>{{ t('openregister', 'Local Version') }}:</strong>
+										<span>{{ configuration.localVersion }}</span>
+									</div>
+									<div v-if="configuration.remoteVersion" class="configurationInfoItem">
+										<strong>{{ t('openregister', 'Remote Version') }}:</strong>
+										<span>{{ configuration.remoteVersion }}</span>
+									</div>
+									<div v-if="configuration.autoUpdate" class="configurationInfoItem">
+										<strong>{{ t('openregister', 'Auto-Update') }}:</strong>
+										<span class="badge-success">Enabled</span>
 									</div>
 								</div>
 							</div>
@@ -165,10 +192,10 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 											@update:checked="toggleSelectAll" />
 									</th>
 									<th>{{ t('openregister', 'Title') }}</th>
-									<th>{{ t('openregister', 'Type') }}</th>
-									<th>{{ t('openregister', 'Owner') }}</th>
-									<th>{{ t('openregister', 'Config Keys') }}</th>
-									<th>{{ t('openregister', 'Created') }}</th>
+									<th>{{ t('openregister', 'Source') }}</th>
+									<th>{{ t('openregister', 'Local Version') }}</th>
+									<th>{{ t('openregister', 'Remote Version') }}</th>
+									<th>{{ t('openregister', 'Status') }}</th>
 									<th>{{ t('openregister', 'Updated') }}</th>
 									<th class="tableColumnActions">
 										{{ t('openregister', 'Actions') }}
@@ -191,10 +218,24 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 											<span v-if="configuration.description" class="textDescription textEllipsis">{{ configuration.description }}</span>
 										</div>
 									</td>
-									<td>{{ configuration.type || 'Unknown' }}</td>
-									<td>{{ configuration.owner || '-' }}</td>
-									<td>{{ Object.keys(configuration.configuration || {}).length }}</td>
-									<td>{{ configuration.created ? new Date(configuration.created).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(configuration.created).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}</td>
+									<td>{{ getSourceTypeLabel(configuration.sourceType) }}</td>
+									<td>{{ configuration.localVersion || '-' }}</td>
+									<td>{{ configuration.remoteVersion || '-' }}</td>
+									<td>
+										<span v-if="hasUpdateAvailable(configuration)" class="tablePill tablePill-warning">
+											<Update :size="16" />
+											Update Available
+										</span>
+										<span v-else-if="configuration.autoUpdate" class="tablePill tablePill-success">
+											Auto-Update
+										</span>
+										<span v-else-if="isManualConfiguration(configuration)" class="tablePill tablePill-default">
+											Manual
+										</span>
+										<span v-else class="tablePill tablePill-success">
+											Up to Date
+										</span>
+									</td>
 									<td>{{ configuration.updated ? new Date(configuration.updated).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(configuration.updated).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}</td>
 									<td class="tableColumnActions">
 										<NcActions :primary="false">
@@ -212,6 +253,18 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 													<Pencil :size="20" />
 												</template>
 												Edit
+											</NcActionButton>
+											<NcActionButton v-if="isRemoteConfiguration(configuration)" close-after-click @click="checkVersion(configuration)">
+												<template #icon>
+													<Sync :size="20" />
+												</template>
+												Check Version
+											</NcActionButton>
+											<NcActionButton v-if="hasUpdateAvailable(configuration)" close-after-click @click="previewUpdate(configuration)">
+												<template #icon>
+													<EyeOutline :size="20" />
+												</template>
+												Preview Update
 											</NcActionButton>
 											<NcActionButton close-after-click @click="configurationStore.setConfigurationItem(configuration); navigationStore.setModal('exportConfiguration')">
 												<template #icon>
@@ -250,6 +303,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 
 <script>
 import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
@@ -259,8 +313,13 @@ import Upload from 'vue-material-design-icons/Upload.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
+import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
+import Update from 'vue-material-design-icons/Update.vue'
+import Sync from 'vue-material-design-icons/Sync.vue'
 
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 
 export default {
 	name: 'ConfigurationsIndex',
@@ -280,6 +339,9 @@ export default {
 		Refresh,
 		Plus,
 		Eye,
+		EyeOutline,
+		Update,
+		Sync,
 		PaginationComponent,
 	},
 	data() {
@@ -350,6 +412,54 @@ export default {
 			this.pagination.page = 1
 			this.pagination.limit = pageSize
 		},
+		hasUpdateAvailable(configuration) {
+			if (!configuration.localVersion || !configuration.remoteVersion) {
+				return false
+			}
+			// Simple version comparison - remote version different from local
+			return configuration.remoteVersion !== configuration.localVersion
+		},
+		isRemoteConfiguration(configuration) {
+			return configuration.sourceType && configuration.sourceType !== 'local'
+		},
+		isManualConfiguration(configuration) {
+			return !configuration.sourceType || configuration.sourceType === 'local'
+		},
+		getSourceTypeLabel(sourceType) {
+			const labels = {
+				local: 'Local',
+				github: 'GitHub',
+				gitlab: 'GitLab',
+				url: 'URL',
+			}
+			return labels[sourceType] || 'Unknown'
+		},
+		async checkVersion(configuration) {
+			try {
+				const response = await axios.post(
+					generateUrl(`/apps/openregister/api/configurations/${configuration.id}/check-version`)
+				)
+				
+				if (response.data.hasUpdate) {
+					showSuccess(
+						`Update available: ${response.data.localVersion} → ${response.data.remoteVersion}`
+					)
+				} else {
+					showSuccess('Configuration is up to date')
+				}
+				
+				// Refresh the list to show updated version info
+				await configurationStore.refreshConfigurationList()
+			} catch (error) {
+				console.error('Failed to check version:', error)
+				showError('Failed to check version: ' + (error.response?.data?.error || error.message))
+			}
+		},
+		previewUpdate(configuration) {
+			// Set the configuration and open preview modal
+			configurationStore.setConfigurationItem(configuration)
+			navigationStore.setModal('previewConfiguration')
+		},
 	},
 }
 </script>
@@ -377,5 +487,73 @@ export default {
 
 .configurationInfoItem strong {
 	min-width: 120px;
+}
+
+.urlText {
+	font-family: monospace;
+	font-size: 0.9em;
+	color: var(--color-primary);
+	word-break: break-all;
+}
+
+.badge-success {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 10px;
+	background-color: var(--color-success);
+	color: white;
+	font-size: 0.85em;
+	font-weight: 500;
+}
+
+/* Pills for cards */
+.updatePill,
+.manualPill {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 12px;
+	border-radius: 12px;
+	font-size: 0.85em;
+	font-weight: 500;
+	margin-left: 12px;
+	vertical-align: middle;
+}
+
+.updatePill {
+	background-color: var(--color-warning);
+	color: var(--color-main-text);
+}
+
+.manualPill {
+	background-color: var(--color-background-dark);
+	color: var(--color-text-lighter);
+}
+
+/* Pills for table */
+.tablePill {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 10px;
+	border-radius: 10px;
+	font-size: 0.8em;
+	font-weight: 500;
+	white-space: nowrap;
+}
+
+.tablePill-warning {
+	background-color: var(--color-warning);
+	color: var(--color-main-text);
+}
+
+.tablePill-success {
+	background-color: var(--color-success);
+	color: white;
+}
+
+.tablePill-default {
+	background-color: var(--color-background-dark);
+	color: var(--color-text-lighter);
 }
 </style>

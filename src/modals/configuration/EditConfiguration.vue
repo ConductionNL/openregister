@@ -288,6 +288,140 @@ import { configurationStore, navigationStore, registerStore, schemaStore, organi
 					</div>
 					</div>
 				</BTab>
+
+				<!-- Management Tab -->
+				<BTab>
+					<template #title>
+						<CloudSync :size="16" />
+						<span>Management</span>
+					</template>
+
+					<div class="form-editor">
+						<div class="selectField">
+							<label for="source-type-select">Source Type *</label>
+							<NcSelect
+								id="source-type-select"
+								v-model="selectedSourceType"
+								:options="sourceTypeOptions"
+								label="label"
+								track-by="value"
+								:label-outside="true"
+								placeholder="Select source type..."
+								@input="updateSourceType">
+								<template #option="{ label, description }">
+									<div class="option-content">
+										<span class="option-title">{{ label }}</span>
+										<span v-if="description" class="option-description">{{ description }}</span>
+									</div>
+								</template>
+							</NcSelect>
+							<p class="field-hint">
+								Determines where the configuration is managed
+							</p>
+						</div>
+
+						<NcTextField
+							v-if="selectedSourceType && selectedSourceType.value !== 'local'"
+							label="Source URL"
+							placeholder="https://raw.githubusercontent.com/..."
+							:value="configurationStore.configurationItem?.sourceUrl || ''"
+							@update:value="updateSourceUrl">
+							<template #helper-text-message>
+								<p>The URL to the remote configuration file (JSON or YAML)</p>
+							</template>
+						</NcTextField>
+
+						<NcTextField
+							label="Local Version"
+							placeholder="1.0.0"
+							:value="configurationStore.configurationItem?.localVersion || ''"
+							@update:value="updateLocalVersion">
+							<template #helper-text-message>
+								<p>Current version installed locally (semantic versioning)</p>
+							</template>
+						</NcTextField>
+
+						<NcTextField
+							v-if="configurationStore.configurationItem?.remoteVersion"
+							label="Remote Version (Read-only)"
+							:value="configurationStore.configurationItem?.remoteVersion || '-'"
+							:disabled="true">
+							<template #helper-text-message>
+								<p>Last checked version from remote source</p>
+							</template>
+						</NcTextField>
+
+						<div class="checkboxField">
+							<NcCheckboxRadioSwitch
+								:checked="configurationStore.configurationItem?.autoUpdate || false"
+								@update:checked="updateAutoUpdate">
+								Enable Auto-Update
+							</NcCheckboxRadioSwitch>
+							<p class="field-hint">
+								Automatically import updates when a new version is detected
+							</p>
+						</div>
+
+						<div class="selectField">
+							<label for="notification-groups-select">Notification Groups</label>
+							<NcSelect
+								id="notification-groups-select"
+								v-model="selectedNotificationGroups"
+								:options="notificationGroupOptions"
+								:multiple="true"
+								label="label"
+								track-by="value"
+								:label-outside="true"
+								placeholder="Select groups to notify..."
+								:close-on-select="false"
+								@input="updateNotificationGroups">
+								<template #option="{ label }">
+									<span>{{ label }}</span>
+								</template>
+							</NcSelect>
+							<p class="field-hint">
+								Groups that will receive notifications when updates are available (admin is always included)
+							</p>
+						</div>
+
+						<NcNoteCard v-if="selectedSourceType && selectedSourceType.value === 'github'" type="info">
+							<p>GitHub Integration Settings</p>
+						</NcNoteCard>
+
+						<NcTextField
+							v-if="selectedSourceType && selectedSourceType.value === 'github'"
+							label="GitHub Repository"
+							placeholder="owner/repository"
+							:value="configurationStore.configurationItem?.githubRepo || ''"
+							@update:value="updateGithubRepo">
+							<template #helper-text-message>
+								<p>Repository in format: owner/repo</p>
+							</template>
+						</NcTextField>
+
+						<NcTextField
+							v-if="selectedSourceType && selectedSourceType.value === 'github'"
+							label="GitHub Branch"
+							placeholder="main"
+							:value="configurationStore.configurationItem?.githubBranch || 'main'"
+							@update:value="updateGithubBranch">
+							<template #helper-text-message>
+								<p>Branch to push/pull configurations</p>
+							</template>
+						</NcTextField>
+
+						<NcTextField
+							v-if="selectedSourceType && selectedSourceType.value === 'github'"
+							label="GitHub Path"
+							placeholder="configs/configuration.json"
+							:value="configurationStore.configurationItem?.githubPath || ''"
+							@update:value="updateGithubPath">
+							<template #helper-text-message>
+								<p>Path within the repository for the configuration file</p>
+							</template>
+						</NcTextField>
+					</div>
+				</BTab>
 			</BTabs>
 		</div>
 
@@ -329,6 +463,7 @@ import Cancel from 'vue-material-design-icons/Cancel.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import Database from 'vue-material-design-icons/Database.vue'
+import CloudSync from 'vue-material-design-icons/CloudSync.vue'
 
 export default {
 	name: 'EditConfiguration',
@@ -347,6 +482,7 @@ export default {
 		ContentSave,
 		Cog,
 		Database,
+		CloudSync,
 	},
 	data() {
 		return {
@@ -361,6 +497,9 @@ export default {
 			selectedViews: [],
 			selectedOrganisation: null,
 			selectedApplication: null,
+			// Management tab selections
+			selectedSourceType: null,
+			selectedNotificationGroups: [],
 			// Loading states for searches
 			loadingRegisters: false,
 			loadingSchemas: false,
@@ -395,6 +534,22 @@ export default {
 		applicationOptions() {
 			return applicationStore.applicationList || []
 		},
+		sourceTypeOptions() {
+			return [
+				{ value: 'local', label: 'Local', description: 'Manually managed configuration' },
+				{ value: 'github', label: 'GitHub', description: 'Configuration from GitHub repository' },
+				{ value: 'gitlab', label: 'GitLab', description: 'Configuration from GitLab repository' },
+				{ value: 'url', label: 'URL', description: 'Configuration from any URL' },
+			]
+		},
+		notificationGroupOptions() {
+			// In a real implementation, this would fetch from Nextcloud groups API
+			// For now, return common groups
+			return [
+				{ value: 'admin', label: 'Administrators' },
+				{ value: 'users', label: 'All Users' },
+			]
+		},
 	},
 	async created() {
 		// Load organisations and applications for Settings tab
@@ -424,6 +579,16 @@ export default {
 				sources: [],
 				agents: [],
 				views: [],
+				// Management tab defaults
+				sourceType: 'local',
+				sourceUrl: null,
+				localVersion: '1.0.0',
+				remoteVersion: null,
+				autoUpdate: false,
+				notificationGroups: [],
+				githubRepo: null,
+				githubBranch: 'main',
+				githubPath: null,
 			}
 			this.selectedRegisters = []
 			this.selectedSchemas = []
@@ -433,6 +598,9 @@ export default {
 			this.selectedViews = []
 			this.selectedOrganisation = null
 			this.selectedApplication = null
+			// Management tab defaults
+			this.selectedSourceType = this.sourceTypeOptions[0] // 'local'
+			this.selectedNotificationGroups = []
 		} else {
 			// Load existing selections
 			this.loadExistingSelections()
@@ -515,6 +683,57 @@ export default {
 			configurationStore.configurationItem.views = value.map(v => parseInt(v.id))
 			this.selectedViews = value
 		},
+		// Management tab update methods
+		updateSourceType(value) {
+			if (!configurationStore.configurationItem) {
+				configurationStore.configurationItem = {}
+			}
+			configurationStore.configurationItem.sourceType = value ? value.value : 'local'
+			this.selectedSourceType = value
+		},
+		updateSourceUrl(value) {
+			if (!configurationStore.configurationItem) {
+				configurationStore.configurationItem = {}
+			}
+			configurationStore.configurationItem.sourceUrl = value
+		},
+		updateLocalVersion(value) {
+			if (!configurationStore.configurationItem) {
+				configurationStore.configurationItem = {}
+			}
+			configurationStore.configurationItem.localVersion = value
+		},
+		updateAutoUpdate(value) {
+			if (!configurationStore.configurationItem) {
+				configurationStore.configurationItem = {}
+			}
+			configurationStore.configurationItem.autoUpdate = value
+		},
+		updateNotificationGroups(value) {
+			if (!configurationStore.configurationItem) {
+				configurationStore.configurationItem = {}
+			}
+			configurationStore.configurationItem.notificationGroups = value.map(g => g.value)
+			this.selectedNotificationGroups = value
+		},
+		updateGithubRepo(value) {
+			if (!configurationStore.configurationItem) {
+				configurationStore.configurationItem = {}
+			}
+			configurationStore.configurationItem.githubRepo = value
+		},
+		updateGithubBranch(value) {
+			if (!configurationStore.configurationItem) {
+				configurationStore.configurationItem = {}
+			}
+			configurationStore.configurationItem.githubBranch = value
+		},
+		updateGithubPath(value) {
+			if (!configurationStore.configurationItem) {
+				configurationStore.configurationItem = {}
+			}
+			configurationStore.configurationItem.githubPath = value
+		},
 		async loadExistingSelections() {
 			const item = configurationStore.configurationItem
 			if (item) {
@@ -529,6 +748,18 @@ export default {
 					this.selectedOrganisation = organisationStore.organisationList.find(
 						o => parseInt(o.id) === parseInt(item.organisation),
 					) || null
+				}
+				
+				// Load Management tab selections
+				if (item.sourceType) {
+					this.selectedSourceType = this.sourceTypeOptions.find(
+						st => st.value === item.sourceType
+					) || null
+				}
+				if (item.notificationGroups && Array.isArray(item.notificationGroups)) {
+					this.selectedNotificationGroups = item.notificationGroups.map(groupValue => 
+						this.notificationGroupOptions.find(g => g.value === groupValue)
+					).filter(Boolean)
 				}
 				
 				// Load selected registers by fetching them individually
@@ -816,6 +1047,12 @@ export default {
 .selectField label {
 	font-weight: 500;
 	color: var(--color-text-maxcontrast);
+}
+
+.checkboxField {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
 }
 
 .field-hint {
