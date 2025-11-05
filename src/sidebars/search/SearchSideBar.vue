@@ -533,48 +533,22 @@ import { navigationStore, objectStore, registerStore, schemaStore, viewsStore } 
 	
 	</NcAppSidebar>
 
-	<!-- Edit View Dialog -->
-	<NcDialog
+	<!-- Edit View Modal -->
+	<EditView
 		v-if="showEditDialog"
-		:name="t('openregister', 'Edit View')"
-		@closing="cancelEditView">
-		<div class="editViewDialogContent">
-			<NcTextField
-				v-model="editViewName"
-				:label="t('openregister', 'View Name')"
-				:placeholder="t('openregister', 'Enter view name...')"
-				:required="true"
-				:error="editViewName.trim() === '' && editViewNameTouched"
-				:helper-text="editViewName.trim() === '' && editViewNameTouched ? t('openregister', 'View name is required') : ''"
-				@blur="editViewNameTouched = true"
-				class="editViewField" />
-			
-			<NcTextField
-				v-model="editViewDescription"
-				:label="t('openregister', 'Description')"
-				:placeholder="t('openregister', 'Enter description (optional)...')"
-				class="editViewField" />
-			
-			<div class="editViewActions">
-				<NcButton
-					type="primary"
-					:disabled="!editViewName.trim()"
-					@click="updateView()">
-					{{ t('openregister', 'Save') }}
-				</NcButton>
-				<NcButton
-					type="secondary"
-					@click="cancelEditView()">
-					{{ t('openregister', 'Cancel') }}
-				</NcButton>
-			</div>
-		</div>
-	</NcDialog>
+		:view="editingView"
+		@close="cancelEditView" />
+
+	<!-- Delete View Modal -->
+	<DeleteView
+		v-if="showDeleteDialog"
+		:view="viewToDelete"
+		@close="handleDeleteClose" />
 	</div>
 </template>
 
 <script>
-import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcNoteCard, NcTextField, NcButton, NcLoadingIcon, NcCheckboxRadioSwitch, NcDialog } from '@nextcloud/vue'
+import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcNoteCard, NcTextField, NcButton, NcLoadingIcon, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import Close from 'vue-material-design-icons/Close.vue'
 import FilterIcon from 'vue-material-design-icons/Filter.vue'
@@ -591,6 +565,8 @@ import ChevronRight from 'vue-material-design-icons/ChevronRight.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
+import EditView from '../../modals/view/EditView.vue'
+import DeleteView from '../../modals/view/DeleteView.vue'
 
 export default {
 	name: 'SearchSideBar',
@@ -603,7 +579,6 @@ export default {
 		NcButton,
 		NcLoadingIcon,
 		NcCheckboxRadioSwitch,
-		NcDialog,
 		Magnify,
 		Close,
 		FilterIcon,
@@ -618,6 +593,8 @@ export default {
 		ChevronDown,
 		ChevronRight,
 		CogOutline,
+		EditView,
+		DeleteView,
 	},
 	data() {
 		return {
@@ -651,9 +628,9 @@ export default {
 		// Edit view dialog
 		showEditDialog: false,
 		editingView: null,
-		editViewName: '',
-		editViewNameTouched: false,
-		editViewDescription: '',
+		// Delete view dialog
+		showDeleteDialog: false,
+		viewToDelete: null,
 		// Column visibility collapsible state
 		expandedSchemas: {}, // Track which schema groups are expanded
 		metadataExpanded: true, // Metadata section expanded by default
@@ -1587,45 +1564,12 @@ export default {
 			this.openEditDialog(viewsStore.activeView)
 		},
 
-		async confirmDeleteActiveView() {
+		confirmDeleteActiveView() {
 			if (!viewsStore.activeView) return
-
-			const confirmed = confirm(this.t('openregister', 'Are you sure you want to delete the view "{name}"?', { name: viewsStore.activeView.name || 'Untitled View' }))
-			if (!confirmed) return
-
-			try {
-				await viewsStore.deleteView(viewsStore.activeView.id || viewsStore.activeView.uuid)
-				
-				// Clear active view and refresh the view list
-				viewsStore.activeView = null
-				this.activeViewName = ''
-				await viewsStore.fetchViews()
-				
-				OC.Notification.showTemporary(this.t('openregister', 'View deleted successfully!'))
-			} catch (error) {
-				console.error('Error deleting view:', error)
-				OC.Notification.showTemporary(this.t('openregister', 'Failed to delete view: {error}', { error: error.message }))
-			}
+			this.viewToDelete = viewsStore.activeView
+			this.showDeleteDialog = true
 		},
 
-		async deleteCurrentView() {
-			if (!viewsStore.activeView) return
-
-			const confirmed = confirm(`Are you sure you want to delete the view "${viewsStore.activeView.name}"?`)
-			if (!confirmed) return
-
-			try {
-				await viewsStore.deleteView(viewsStore.activeView.id || viewsStore.activeView.uuid)
-				
-				// Refresh the view list to remove the deleted view
-				await viewsStore.fetchViews()
-				
-				OC.Notification.showTemporary(this.t('openregister', 'View deleted successfully!'))
-			} catch (error) {
-				console.error('Error deleting view:', error)
-				OC.Notification.showTemporary(this.t('openregister', 'Failed to delete view: {error}', { error: error.message }))
-			}
-		},
 
 		async loadView(view) {
 			try {
@@ -1647,21 +1591,9 @@ export default {
 			}
 		},
 
-		async confirmDeleteView(view) {
-			const confirmed = confirm(`Are you sure you want to delete the view "${view.name}"?`)
-			if (!confirmed) return
-
-			try {
-				await viewsStore.deleteView(view.id || view.uuid)
-				
-				// Refresh the view list to remove the deleted view
-				await viewsStore.fetchViews()
-				
-				OC.Notification.showTemporary(this.t('openregister', 'View deleted successfully!'))
-			} catch (error) {
-				console.error('Error deleting view:', error)
-				OC.Notification.showTemporary(this.t('openregister', 'Failed to delete view: {error}', { error: error.message }))
-			}
+		confirmDeleteView(view) {
+			this.viewToDelete = view
+			this.showDeleteDialog = true
 		},
 
 		isActiveView(view) {
@@ -1726,50 +1658,29 @@ export default {
 
 		openEditDialog(view) {
 			this.editingView = view
-			this.editViewName = view.name || ''
-			this.editViewNameTouched = false
-			this.editViewDescription = view.description || ''
 			this.showEditDialog = true
-		},
-
-		async updateView() {
-			if (!this.editingView || !this.editViewName.trim()) return
-
-			try {
-				const viewData = {
-					name: this.editViewName.trim(),
-					description: this.editViewDescription || '',
-					isPublic: this.editingView.isPublic,
-					isDefault: this.editingView.isDefault,
-					query: this.editingView.query || this.editingView.configuration,
-				}
-
-				await viewsStore.updateView(this.editingView.id || this.editingView.uuid, viewData)
-
-				// Refresh the view list to show the updated view
-				await viewsStore.fetchViews()
-
-				// Clear form and hide dialog
-				this.showEditDialog = false
-				this.editingView = null
-				this.editViewName = ''
-				this.editViewNameTouched = false
-				this.editViewDescription = ''
-
-				// Show success message
-				OC.Notification.showTemporary(this.t('openregister', 'View updated successfully!'))
-			} catch (error) {
-				console.error('Error updating view:', error)
-				OC.Notification.showTemporary(this.t('openregister', 'Failed to update view: {error}', { error: error.message }))
-			}
 		},
 
 		cancelEditView() {
 			this.showEditDialog = false
 			this.editingView = null
-			this.editViewName = ''
-			this.editViewNameTouched = false
-			this.editViewDescription = ''
+		},
+
+		async handleDeleteClose() {
+			const wasActiveView = this.viewToDelete && viewsStore.activeView && 
+				(this.viewToDelete.id === viewsStore.activeView.id || this.viewToDelete.uuid === viewsStore.activeView.uuid)
+
+			this.showDeleteDialog = false
+			this.viewToDelete = null
+
+			// Refresh the view list
+			await viewsStore.fetchViews()
+
+			// If the deleted view was the active view, clear it
+			if (wasActiveView) {
+				viewsStore.activeView = null
+				this.activeViewName = ''
+			}
 		},
 
 		updateFacetFilter(field, selectedValues) {
@@ -2315,19 +2226,73 @@ export default {
 
 /* Edit View Modal */
 .editViewDialogContent {
-	padding: 16px;
-	min-width: 400px;
+	padding: 0;
+	min-width: 500px;
+	max-width: 700px;
+}
+
+.editViewTabs {
+	display: flex;
+	border-bottom: 1px solid var(--color-border);
+	background-color: var(--color-background-hover);
+}
+
+.editViewTab {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 12px 24px;
+	cursor: pointer;
+	border-bottom: 2px solid transparent;
+	transition: all 0.2s ease;
+	color: var(--color-text-maxcontrast);
+}
+
+.editViewTab:hover {
+	background-color: var(--color-background-dark);
+	color: var(--color-main-text);
+}
+
+.editViewTab.active {
+	border-bottom-color: var(--color-primary-element);
+	color: var(--color-primary-element);
+	font-weight: 600;
+}
+
+.editViewTabContent {
+	padding: 24px;
+	max-height: 60vh;
+	overflow-y: auto;
 }
 
 .editViewField {
 	margin-bottom: 16px;
 }
 
+.fieldHint {
+	margin-top: -8px;
+	margin-bottom: 16px;
+	font-size: 0.9em;
+	color: var(--color-text-maxcontrast);
+}
+
+.shareSection {
+	margin-bottom: 24px;
+}
+
+.shareSection h4 {
+	margin-bottom: 12px;
+	font-weight: 600;
+	color: var(--color-main-text);
+}
+
 .editViewActions {
 	display: flex;
 	gap: 8px;
 	justify-content: flex-end;
-	margin-top: 24px;
+	padding: 16px 24px;
+	border-top: 1px solid var(--color-border);
+	background-color: var(--color-background-hover);
 }
 
 /* Columns Tab */
