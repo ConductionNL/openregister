@@ -69,6 +69,13 @@ class View extends Entity implements JsonSerializable
     protected ?string $organisation = null;
 
     /**
+     * Configuration that manages this view (transient, not stored in DB)
+     *
+     * @var Configuration|null
+     */
+    private ?Configuration $managedByConfiguration = null;
+
+    /**
      * Whether the view is public
      *
      * @var bool Whether the view is public
@@ -219,6 +226,11 @@ class View extends Entity implements JsonSerializable
             ],
             'created'     => isset($this->created) === true ? $this->created->format('c') : null,
             'updated'     => isset($this->updated) === true ? $this->updated->format('c') : null,
+            'managedByConfiguration' => $this->managedByConfiguration !== null ? [
+                'id' => $this->managedByConfiguration->getId(),
+                'uuid' => $this->managedByConfiguration->getUuid(),
+                'title' => $this->managedByConfiguration->getTitle(),
+            ] : null,
         ];
     }//end jsonSerialize()
 
@@ -245,6 +257,93 @@ class View extends Entity implements JsonSerializable
 
         return $this;
     }//end hydrate()
+
+
+    /**
+     * Get the configuration that manages this view (transient property)
+     *
+     * @return Configuration|null The managing configuration or null
+     */
+    public function getManagedByConfigurationEntity(): ?Configuration
+    {
+        return $this->managedByConfiguration;
+
+    }//end getManagedByConfigurationEntity()
+
+
+    /**
+     * Set the configuration that manages this view (transient property)
+     *
+     * @param Configuration|null $configuration The managing configuration
+     *
+     * @return void
+     */
+    public function setManagedByConfigurationEntity(?Configuration $configuration): void
+    {
+        $this->managedByConfiguration = $configuration;
+
+    }//end setManagedByConfigurationEntity()
+
+
+    /**
+     * Check if this view is managed by a configuration
+     *
+     * Returns true if this view's ID appears in any of the provided configurations' views arrays.
+     *
+     * @param array<Configuration> $configurations Array of Configuration entities to check against
+     *
+     * @return bool True if managed by a configuration, false otherwise
+     *
+     * @phpstan-param array<Configuration> $configurations
+     * @psalm-param   array<Configuration> $configurations
+     */
+    public function isManagedByConfiguration(array $configurations): bool
+    {
+        if (empty($configurations) === true || $this->id === null) {
+            return false;
+        }
+
+        foreach ($configurations as $configuration) {
+            $views = $configuration->getViews();
+            if (in_array($this->id, $views, true) === true) {
+                return true;
+            }
+        }
+
+        return false;
+
+    }//end isManagedByConfiguration()
+
+
+    /**
+     * Get the configuration that manages this view
+     *
+     * Returns the first configuration that has this view's ID in its views array.
+     * Returns null if the view is not managed by any configuration.
+     *
+     * @param array<Configuration> $configurations Array of Configuration entities to check against
+     *
+     * @return Configuration|null The configuration managing this view, or null
+     *
+     * @phpstan-param array<Configuration> $configurations
+     * @psalm-param   array<Configuration> $configurations
+     */
+    public function getManagedByConfiguration(array $configurations): ?Configuration
+    {
+        if (empty($configurations) === true || $this->id === null) {
+            return null;
+        }
+
+        foreach ($configurations as $configuration) {
+            $views = $configuration->getViews();
+            if (in_array($this->id, $views, true) === true) {
+                return $configuration;
+            }
+        }
+
+        return null;
+
+    }//end getManagedByConfiguration()
 
 
 }//end class

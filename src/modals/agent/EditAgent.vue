@@ -91,63 +91,81 @@ import { agentStore, organisationStore, navigationStore } from '../../store/stor
 						</div>
 					</BTab>
 
-					<BTab title="RAG Configuration">
-						<div class="form-editor">
-							<NcNoteCard type="info">
-								<p><strong>Retrieval-Augmented Generation (RAG)</strong></p>
-								<p>Enable context retrieval from your data to enhance agent responses.</p>
-							</NcNoteCard>
+				<BTab title="RAG Configuration">
+					<div class="form-editor">
+						<NcCheckboxRadioSwitch
+							:checked="agentItem.enableRag"
+							type="switch"
+							@update:checked="agentItem.enableRag = $event">
+							Enable RAG
+						</NcCheckboxRadioSwitch>
 
-							<NcCheckboxRadioSwitch
-								:checked="agentItem.enableRag"
-								type="switch"
-								@update:checked="agentItem.enableRag = $event">
-								Enable RAG
-							</NcCheckboxRadioSwitch>
+						<div v-if="agentItem.enableRag" class="rag-config">
+							<NcSelect
+								v-model="selectedRagSearchMode"
+								:disabled="loading"
+								:options="ragSearchModes"
+								input-label="Search Mode"
+								label="label"
+								track-by="value"
+								placeholder="Select search mode"
+								@input="updateRagSearchMode">
+								<template #option="{ label, description }">
+									<div class="option-content">
+										<span class="option-title">{{ label }}</span>
+										<span v-if="description" class="option-description">{{ description }}</span>
+									</div>
+								</template>
+							</NcSelect>
 
-							<div v-if="agentItem.enableRag" class="rag-config">
+							<NcTextField
+								:disabled="loading"
+								label="Number of Sources"
+								type="number"
+								min="1"
+								max="20"
+								:value.sync="agentItem.ragNumSources"
+								placeholder="5" />
+
+							<div class="views-select-container">
 								<NcSelect
-									v-model="selectedRagSearchMode"
-									:disabled="loading"
-									:options="ragSearchModes"
-									input-label="Search Mode"
-									label="label"
-									track-by="value"
-									placeholder="Select search mode"
-									@input="updateRagSearchMode">
-									<template #option="{ label, description }">
-										<div class="option-content">
-											<span class="option-title">{{ label }}</span>
-											<span v-if="description" class="option-description">{{ description }}</span>
+									v-model="selectedViews"
+									:disabled="loading || loadingViews"
+									:options="availableViews"
+									input-label="Data Views"
+									label="name"
+									track-by="id"
+									:multiple="true"
+									placeholder="Select views to filter data (optional)"
+									@input="updateViews">
+									<template #option="{ name, description }">
+										<div class="view-option">
+											<span class="view-name">{{ name }}</span>
+											<span v-if="description" class="view-description">{{ description }}</span>
 										</div>
 									</template>
 								</NcSelect>
-
-								<NcTextField
-									:disabled="loading"
-									label="Number of Sources"
-									type="number"
-									min="1"
-									max="20"
-									:value.sync="agentItem.ragNumSources"
-									placeholder="5" />
-
-								<NcCheckboxRadioSwitch
-									:checked="agentItem.searchFiles"
-									type="switch"
-									@update:checked="agentItem.searchFiles = $event">
-									Search in Files
-								</NcCheckboxRadioSwitch>
-
-								<NcCheckboxRadioSwitch
-									:checked="agentItem.searchObjects"
-									type="switch"
-									@update:checked="agentItem.searchObjects = $event">
-									Search in Database Objects
-								</NcCheckboxRadioSwitch>
+								<p class="field-hint">
+									Select views to limit which data the agent can access
+								</p>
 							</div>
+
+							<NcCheckboxRadioSwitch
+								:checked="agentItem.searchFiles"
+								type="switch"
+								@update:checked="agentItem.searchFiles = $event">
+								Search in Files
+							</NcCheckboxRadioSwitch>
+
+							<NcCheckboxRadioSwitch
+								:checked="agentItem.searchObjects"
+								type="switch"
+								@update:checked="agentItem.searchObjects = $event">
+								Search in Database Objects
+							</NcCheckboxRadioSwitch>
 						</div>
-					</BTab>
+					</div>
+				</BTab>
 
 					<BTab title="Resource Quotas">
 						<div class="form-editor">
@@ -172,49 +190,69 @@ import { agentStore, organisationStore, navigationStore } from '../../store/stor
 						</div>
 					</BTab>
 
-					<BTab title="Security">
-						<div class="security-section">
-							<NcNoteCard type="info">
-								<p><strong>Group Access Control</strong></p>
-								<p>Select which Nextcloud groups have access to this agent.</p>
-							</NcNoteCard>
+				<BTab title="Security">
+					<div class="security-section">
+						<NcCheckboxRadioSwitch
+							:checked="agentItem.isPrivate"
+							type="switch"
+							@update:checked="agentItem.isPrivate = $event">
+							Private Agent
+						</NcCheckboxRadioSwitch>
+						<p class="field-hint">
+							Private agents are only accessible to invited users. Public agents can be accessed by all users in selected groups (or all users if no groups selected).
+						</p>
 
-							<div class="groups-select-container">
-								<NcSelect
-									v-model="selectedGroups"
-									:disabled="loading || loadingGroups"
-									:options="availableGroups"
-									input-label="Select groups with access to this agent"
-									label="name"
-									track-by="id"
-									:multiple="true"
-									placeholder="Select groups (optional)"
-									@input="updateGroups">
-									<template #option="{ name }">
-										<div class="group-option">
-											<span class="group-name">{{ name }}</span>
-										</div>
-									</template>
-								</NcSelect>
-								<p class="field-hint">
-									Leave empty to allow all users access
-								</p>
-							</div>
+						<div v-if="!agentItem.isPrivate" class="groups-select-container">
+							<NcSelect
+								v-model="selectedGroups"
+								:disabled="loading || loadingGroups"
+								:options="availableGroups"
+								input-label="Select groups with access to this agent"
+								label="name"
+								track-by="id"
+								:multiple="true"
+								placeholder="Select groups (optional)"
+								@input="updateGroups">
+								<template #option="{ name }">
+									<div class="group-option">
+										<span class="group-name">{{ name }}</span>
+									</div>
+								</template>
+							</NcSelect>
+							<p class="field-hint">
+								Leave empty to allow all users access
+							</p>
+						</div>
 
-							<div v-if="loadingGroups" class="loading-groups">
-								<NcLoadingIcon :size="20" />
-								<span>Loading user groups...</span>
-							</div>
+						<div v-if="agentItem.isPrivate" class="invited-users-container">
+							<NcTextField
+								:value.sync="newUserInput"
+								:disabled="loading"
+								label="Invite Users"
+								placeholder="Enter username and press Enter"
+								@keyup.enter="addInvitedUser">
+								<template #trailing-button-icon>
+									<NcButton
+										type="tertiary"
+										:disabled="!newUserInput || loading"
+										@click="addInvitedUser">
+										Add
+									</NcButton>
+								</template>
+							</NcTextField>
+							<p class="field-hint">
+								Enter Nextcloud usernames to grant access to this private agent
+							</p>
 
-							<div v-else-if="selectedGroups.length > 0" class="groups-list">
-								<h3>Selected Groups</h3>
-								<div class="group-items">
-									<div v-for="group in selectedGroups" :key="group.id" class="group-item">
-										<span class="group-badge">{{ group.name }}</span>
+							<div v-if="selectedInvitedUsers.length > 0" class="invited-users-list">
+								<h3>Invited Users</h3>
+								<div class="user-items">
+									<div v-for="user in selectedInvitedUsers" :key="user" class="user-item">
+										<span class="user-badge">{{ user }}</span>
 										<NcButton
 											type="tertiary"
 											:disabled="loading"
-											@click="removeGroup(group)">
+											@click="removeInvitedUser(user)">
 											<template #icon>
 												<Close :size="16" />
 											</template>
@@ -222,12 +260,14 @@ import { agentStore, organisationStore, navigationStore } from '../../store/stor
 									</div>
 								</div>
 							</div>
-
-							<div v-else class="no-groups">
-								<p>No groups selected. All users will have access to this agent.</p>
-							</div>
 						</div>
-					</BTab>
+
+						<div v-if="loadingGroups" class="loading-indicator">
+							<NcLoadingIcon :size="20" />
+							<span>Loading groups...</span>
+						</div>
+					</div>
+				</BTab>
 				</BTabs>
 			</div>
 		</div>
@@ -315,8 +355,11 @@ export default {
 			selectedGroups: [],
 			selectedViews: [],
 			selectedInvitedUsers: [],
+			newUserInput: '',
 			loadingGroups: false,
 			availableGroups: [],
+			loadingViews: false,
+			availableViews: [],
 			agentTypes: [
 				{ value: 'chat', label: 'Chat', description: 'Conversational AI assistant' },
 				{ value: 'automation', label: 'Automation', description: 'Automated task execution' },
@@ -345,6 +388,7 @@ export default {
 	mounted() {
 		this.initializeAgent()
 		this.fetchGroups()
+		this.fetchViews()
 	},
 	methods: {
 		initializeAgent() {
@@ -354,6 +398,12 @@ export default {
 				this.selectedRagSearchMode = this.ragSearchModes.find(m => m.value === this.agentItem.ragSearchMode)
 				if (this.agentItem.groups && Array.isArray(this.agentItem.groups)) {
 					this.selectedGroups = this.availableGroups.filter(g => this.agentItem.groups.includes(g.id))
+				}
+				if (this.agentItem.views && Array.isArray(this.agentItem.views)) {
+					this.selectedViews = this.availableViews.filter(v => this.agentItem.views.includes(v.id))
+				}
+				if (this.agentItem.invitedUsers && Array.isArray(this.agentItem.invitedUsers)) {
+					this.selectedInvitedUsers = [...this.agentItem.invitedUsers]
 				}
 			} else {
 				this.agentItem = {
@@ -379,7 +429,10 @@ export default {
 				this.selectedType = this.agentTypes[0]
 				this.selectedRagSearchMode = this.ragSearchModes[0]
 				this.selectedGroups = []
+				this.selectedViews = []
+				this.selectedInvitedUsers = []
 			}
+			this.newUserInput = ''
 			this.success = false
 			this.error = null
 		},
@@ -395,6 +448,24 @@ export default {
 		removeGroup(group) {
 			this.selectedGroups = this.selectedGroups.filter(g => g.id !== group.id)
 			this.agentItem.groups = this.selectedGroups.map(g => g.id)
+		},
+		updateViews(views) {
+			this.agentItem.views = views ? views.map(v => v.id) : []
+		},
+		addInvitedUser() {
+			if (!this.newUserInput || !this.newUserInput.trim()) {
+				return
+			}
+			const username = this.newUserInput.trim()
+			if (!this.selectedInvitedUsers.includes(username)) {
+				this.selectedInvitedUsers.push(username)
+				this.agentItem.invitedUsers = [...this.selectedInvitedUsers]
+			}
+			this.newUserInput = ''
+		},
+		removeInvitedUser(username) {
+			this.selectedInvitedUsers = this.selectedInvitedUsers.filter(u => u !== username)
+			this.agentItem.invitedUsers = [...this.selectedInvitedUsers]
 		},
 		async fetchGroups() {
 			this.loadingGroups = true
@@ -416,6 +487,32 @@ export default {
 				console.error('Error fetching groups:', error)
 			} finally {
 				this.loadingGroups = false
+			}
+		},
+		async fetchViews() {
+			this.loadingViews = true
+			try {
+				const response = await fetch('/index.php/apps/openregister/api/views', {
+					method: 'GET',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				})
+				
+				if (!response.ok) {
+					throw new Error(`HTTP error! status: ${response.status}`)
+				}
+				
+				const data = await response.json()
+				this.availableViews = (data.results || []).map(view => ({
+					id: view.id,
+					name: view.name || 'Unnamed View',
+					description: view.description || '',
+				}))
+			} catch (error) {
+				console.error('Error fetching views:', error)
+			} finally {
+				this.loadingViews = false
 			}
 		},
 		async saveAgent() {
@@ -522,6 +619,68 @@ export default {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 8px;
+}
+
+.views-select-container {
+	margin: 16px 0;
+}
+
+.view-option {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.view-name {
+	font-weight: 500;
+}
+
+.view-description {
+	font-size: 0.875rem;
+	color: var(--color-text-maxcontrast);
+}
+
+.invited-users-container {
+	margin: 16px 0;
+}
+
+.invited-users-list {
+	margin-top: 16px;
+}
+
+.invited-users-list h3 {
+	font-size: 1rem;
+	font-weight: 600;
+	margin-bottom: 12px;
+}
+
+.user-items {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.user-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 12px;
+	background-color: var(--color-primary-element-light);
+	border-radius: var(--border-radius-large);
+}
+
+.user-badge {
+	font-weight: 600;
+	font-size: 0.875rem;
+	color: var(--color-primary-element);
+}
+
+.loading-indicator {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 16px;
+	color: var(--color-text-maxcontrast);
 }
 
 .group-item {

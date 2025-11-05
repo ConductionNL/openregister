@@ -34,6 +34,66 @@ use Symfony\Component\Uid\Uuid;
  * Agents can perform automated tasks, chat interactions, and intelligent data processing
  * using Large Language Models (LLMs).
  *
+ * Uses Nextcloud's Entity magic getters/setters for all simple properties.
+ * Only methods with custom logic are explicitly defined.
+ *
+ * @method string|null getUuid()
+ * @method void setUuid(?string $uuid)
+ * @method string|null getName()
+ * @method void setName(?string $name)
+ * @method string|null getDescription()
+ * @method void setDescription(?string $description)
+ * @method string|null getType()
+ * @method void setType(?string $type)
+ * @method string|null getProvider()
+ * @method void setProvider(?string $provider)
+ * @method string|null getModel()
+ * @method void setModel(?string $model)
+ * @method string|null getPrompt()
+ * @method void setPrompt(?string $prompt)
+ * @method float|null getTemperature()
+ * @method void setTemperature(?float $temperature)
+ * @method int|null getMaxTokens()
+ * @method void setMaxTokens(?int $maxTokens)
+ * @method array|null getConfiguration()
+ * @method void setConfiguration(?array $configuration)
+ * @method string|null getOrganisation()
+ * @method void setOrganisation(?string $organisation)
+ * @method string|null getOwner()
+ * @method void setOwner(?string $owner)
+ * @method bool getActive()
+ * @method void setActive(bool $active)
+ * @method bool getEnableRag()
+ * @method void setEnableRag(bool $enableRag)
+ * @method string|null getRagSearchMode()
+ * @method void setRagSearchMode(?string $ragSearchMode)
+ * @method int|null getRagNumSources()
+ * @method void setRagNumSources(?int $ragNumSources)
+ * @method bool getRagIncludeFiles()
+ * @method void setRagIncludeFiles(bool $ragIncludeFiles)
+ * @method bool getRagIncludeObjects()
+ * @method void setRagIncludeObjects(bool $ragIncludeObjects)
+ * @method int|null getRequestQuota()
+ * @method void setRequestQuota(?int $requestQuota)
+ * @method int|null getTokenQuota()
+ * @method void setTokenQuota(?int $tokenQuota)
+ * @method array|null getViews()
+ * @method void setViews(?array $views)
+ * @method bool|null getSearchFiles()
+ * @method void setSearchFiles(?bool $searchFiles)
+ * @method bool|null getSearchObjects()
+ * @method void setSearchObjects(?bool $searchObjects)
+ * @method bool|null getIsPrivate()
+ * @method void setIsPrivate(?bool $isPrivate)
+ * @method array|null getInvitedUsers()
+ * @method void setInvitedUsers(?array $invitedUsers)
+ * @method array|null getGroups()
+ * @method void setGroups(?array $groups)
+ * @method DateTime|null getCreated()
+ * @method void setCreated(?DateTime $created)
+ * @method DateTime|null getUpdated()
+ * @method void setUpdated(?DateTime $updated)
+ *
  * @package OCA\OpenRegister\Db
  */
 class Agent extends Entity implements JsonSerializable
@@ -117,6 +177,13 @@ class Agent extends Entity implements JsonSerializable
     protected ?string $organisation = null;
 
     /**
+     * Configuration that manages this agent (transient, not stored in DB)
+     *
+     * @var Configuration|null
+     */
+    private ?Configuration $managedByConfiguration = null;
+
+    /**
      * Owner user ID
      *
      * @var string|null User ID of the owner
@@ -168,35 +235,33 @@ class Agent extends Entity implements JsonSerializable
     /**
      * API request quota per day (0 = unlimited)
      *
-     * @var int|null Daily request limit
+     * @var int|null Maximum requests per day
      */
     protected ?int $requestQuota = null;
 
     /**
-     * Token quota per request (0 = unlimited)
+     * Token quota per day (0 = unlimited)
      *
-     * @var int|null Maximum tokens per request
+     * @var int|null Maximum tokens per day
      */
     protected ?int $tokenQuota = null;
 
     /**
-     * Array of view UUIDs for data scope filtering
+     * Array of view UUIDs that filter which data the agent can access
      *
-     * When set, the agent will only query data within these views.
-     *
-     * @var array|null Array of view UUIDs
+     * @var array|null View UUIDs for filtering
      */
     protected ?array $views = null;
 
     /**
-     * Whether agent searches in files
+     * Whether to search in files (Nextcloud files)
      *
      * @var bool|null Search in files flag
      */
     protected ?bool $searchFiles = null;
 
     /**
-     * Whether agent searches in objects
+     * Whether to search in objects (OpenRegister objects)
      *
      * @var bool|null Search in objects flag
      */
@@ -299,660 +364,6 @@ class Agent extends Entity implements JsonSerializable
 
 
     /**
-     * Get the UUID of the agent
-     *
-     * @return string|null The agent UUID
-     */
-    public function getUuid(): ?string
-    {
-        return $this->uuid;
-
-    }//end getUuid()
-
-
-    /**
-     * Set the UUID of the agent
-     *
-     * @param string|null $uuid The agent UUID
-     *
-     * @return void
-     */
-    public function setUuid(?string $uuid): void
-    {
-        // Never allow setting UUID to null or empty - skip if invalid
-        if ($uuid !== null && $uuid !== '' && trim($uuid) !== '') {
-            $this->uuid = $uuid;
-        }
-
-    }//end setUuid()
-
-
-    /**
-     * Get the name of the agent
-     *
-     * @return string|null The agent name
-     */
-    public function getName(): ?string
-    {
-        return $this->name;
-
-    }//end getName()
-
-
-    /**
-     * Set the name of the agent
-     *
-     * @param string|null $name The agent name
-     *
-     * @return void
-     */
-    public function setName(?string $name): void
-    {
-        $this->name = $name;
-
-    }//end setName()
-
-
-    /**
-     * Get the description of the agent
-     *
-     * @return string|null The agent description
-     */
-    public function getDescription(): ?string
-    {
-        return $this->description;
-
-    }//end getDescription()
-
-
-    /**
-     * Set the description of the agent
-     *
-     * @param string|null $description The agent description
-     *
-     * @return void
-     */
-    public function setDescription(?string $description): void
-    {
-        $this->description = $description;
-
-    }//end setDescription()
-
-
-    /**
-     * Get the type of the agent
-     *
-     * @return string|null The agent type
-     */
-    public function getType(): ?string
-    {
-        return $this->type;
-
-    }//end getType()
-
-
-    /**
-     * Set the type of the agent
-     *
-     * @param string|null $type The agent type
-     *
-     * @return void
-     */
-    public function setType(?string $type): void
-    {
-        $this->type = $type;
-
-    }//end setType()
-
-
-    /**
-     * Get the provider of the agent
-     *
-     * @return string|null The provider name
-     */
-    public function getProvider(): ?string
-    {
-        return $this->provider;
-
-    }//end getProvider()
-
-
-    /**
-     * Set the provider of the agent
-     *
-     * @param string|null $provider The provider name
-     *
-     * @return void
-     */
-    public function setProvider(?string $provider): void
-    {
-        $this->provider = $provider;
-
-    }//end setProvider()
-
-
-    /**
-     * Get the model of the agent
-     *
-     * @return string|null The model name
-     */
-    public function getModel(): ?string
-    {
-        return $this->model;
-
-    }//end getModel()
-
-
-    /**
-     * Set the model of the agent
-     *
-     * @param string|null $model The model name
-     *
-     * @return void
-     */
-    public function setModel(?string $model): void
-    {
-        $this->model = $model;
-
-    }//end setModel()
-
-
-    /**
-     * Get the prompt of the agent
-     *
-     * @return string|null The system prompt
-     */
-    public function getPrompt(): ?string
-    {
-        return $this->prompt;
-
-    }//end getPrompt()
-
-
-    /**
-     * Set the prompt of the agent
-     *
-     * @param string|null $prompt The system prompt
-     *
-     * @return void
-     */
-    public function setPrompt(?string $prompt): void
-    {
-        $this->prompt = $prompt;
-
-    }//end setPrompt()
-
-
-    /**
-     * Get the temperature setting
-     *
-     * @return float|null The temperature
-     */
-    public function getTemperature(): ?float
-    {
-        return $this->temperature;
-
-    }//end getTemperature()
-
-
-    /**
-     * Set the temperature setting
-     *
-     * @param float|null $temperature The temperature
-     *
-     * @return void
-     */
-    public function setTemperature(?float $temperature): void
-    {
-        $this->temperature = $temperature;
-
-    }//end setTemperature()
-
-
-    /**
-     * Get the max tokens setting
-     *
-     * @return int|null The max tokens
-     */
-    public function getMaxTokens(): ?int
-    {
-        return $this->maxTokens;
-
-    }//end getMaxTokens()
-
-
-    /**
-     * Set the max tokens setting
-     *
-     * @param int|null $maxTokens The max tokens
-     *
-     * @return void
-     */
-    public function setMaxTokens(?int $maxTokens): void
-    {
-        $this->maxTokens = $maxTokens;
-
-    }//end setMaxTokens()
-
-
-    /**
-     * Get the configuration
-     *
-     * @return array|null The configuration
-     */
-    public function getConfiguration(): ?array
-    {
-        return $this->configuration;
-
-    }//end getConfiguration()
-
-
-    /**
-     * Set the configuration
-     *
-     * @param array|null $configuration The configuration
-     *
-     * @return void
-     */
-    public function setConfiguration(?array $configuration): void
-    {
-        $this->configuration = $configuration;
-
-    }//end setConfiguration()
-
-
-    /**
-     * Get the organisation UUID
-     *
-     * @return string|null The organisation UUID
-     */
-    public function getOrganisation(): ?string
-    {
-        return $this->organisation;
-
-    }//end getOrganisation()
-
-
-    /**
-     * Set the organisation UUID
-     *
-     * @param string|null $organisation The organisation UUID
-     *
-     * @return void
-     */
-    public function setOrganisation(?string $organisation): void
-    {
-        $this->organisation = $organisation;
-        $this->markFieldUpdated('organisation');
-
-    }//end setOrganisation()
-
-
-    /**
-     * Get the owner user ID
-     *
-     * @return string|null The owner user ID
-     */
-    public function getOwner(): ?string
-    {
-        return $this->owner;
-
-    }//end getOwner()
-
-
-    /**
-     * Set the owner user ID
-     *
-     * @param string|null $owner The owner user ID
-     *
-     * @return void
-     */
-    public function setOwner(?string $owner): void
-    {
-        $this->owner = $owner;
-
-    }//end setOwner()
-
-
-    /**
-     * Get the active status
-     *
-     * @return bool The active status
-     */
-    public function getActive(): bool
-    {
-        return $this->active;
-
-    }//end getActive()
-
-
-    /**
-     * Set the active status
-     *
-     * @param bool $active The active status
-     *
-     * @return void
-     */
-    public function setActive(bool $active): void
-    {
-        $this->active = $active;
-
-    }//end setActive()
-
-
-    /**
-     * Get the enable RAG setting
-     *
-     * @return bool The enable RAG setting
-     */
-    public function getEnableRag(): bool
-    {
-        return $this->enableRag;
-
-    }//end getEnableRag()
-
-
-    /**
-     * Set the enable RAG setting
-     *
-     * @param bool $enableRag The enable RAG setting
-     *
-     * @return void
-     */
-    public function setEnableRag(bool $enableRag): void
-    {
-        $this->enableRag = $enableRag;
-
-    }//end setEnableRag()
-
-
-    /**
-     * Get the RAG search mode
-     *
-     * @return string|null The RAG search mode
-     */
-    public function getRagSearchMode(): ?string
-    {
-        return $this->ragSearchMode;
-
-    }//end getRagSearchMode()
-
-
-    /**
-     * Set the RAG search mode
-     *
-     * @param string|null $ragSearchMode The RAG search mode
-     *
-     * @return void
-     */
-    public function setRagSearchMode(?string $ragSearchMode): void
-    {
-        $this->ragSearchMode = $ragSearchMode;
-
-    }//end setRagSearchMode()
-
-
-    /**
-     * Get the RAG number of sources
-     *
-     * @return int|null The number of sources
-     */
-    public function getRagNumSources(): ?int
-    {
-        return $this->ragNumSources;
-
-    }//end getRagNumSources()
-
-
-    /**
-     * Set the RAG number of sources
-     *
-     * @param int|null $ragNumSources The number of sources
-     *
-     * @return void
-     */
-    public function setRagNumSources(?int $ragNumSources): void
-    {
-        $this->ragNumSources = $ragNumSources;
-
-    }//end setRagNumSources()
-
-
-    /**
-     * Get the RAG include files setting
-     *
-     * @return bool The include files setting
-     */
-    public function getRagIncludeFiles(): bool
-    {
-        return $this->ragIncludeFiles;
-
-    }//end getRagIncludeFiles()
-
-
-    /**
-     * Set the RAG include files setting
-     *
-     * @param bool $ragIncludeFiles The include files setting
-     *
-     * @return void
-     */
-    public function setRagIncludeFiles(bool $ragIncludeFiles): void
-    {
-        $this->ragIncludeFiles = $ragIncludeFiles;
-
-    }//end setRagIncludeFiles()
-
-
-    /**
-     * Get the RAG include objects setting
-     *
-     * @return bool The include objects setting
-     */
-    public function getRagIncludeObjects(): bool
-    {
-        return $this->ragIncludeObjects;
-
-    }//end getRagIncludeObjects()
-
-
-    /**
-     * Set the RAG include objects setting
-     *
-     * @param bool $ragIncludeObjects The include objects setting
-     *
-     * @return void
-     */
-    public function setRagIncludeObjects(bool $ragIncludeObjects): void
-    {
-        $this->ragIncludeObjects = $ragIncludeObjects;
-
-    }//end setRagIncludeObjects()
-
-
-    /**
-     * Get the request quota
-     *
-     * @return int|null The request quota
-     */
-    public function getRequestQuota(): ?int
-    {
-        return $this->requestQuota;
-
-    }//end getRequestQuota()
-
-
-    /**
-     * Set the request quota
-     *
-     * @param int|null $requestQuota The request quota
-     *
-     * @return void
-     */
-    public function setRequestQuota(?int $requestQuota): void
-    {
-        $this->requestQuota = $requestQuota;
-
-    }//end setRequestQuota()
-
-
-    /**
-     * Get the token quota
-     *
-     * @return int|null The token quota
-     */
-    public function getTokenQuota(): ?int
-    {
-        return $this->tokenQuota;
-
-    }//end getTokenQuota()
-
-
-    /**
-     * Set the token quota
-     *
-     * @param int|null $tokenQuota The token quota
-     *
-     * @return void
-     */
-    public function setTokenQuota(?int $tokenQuota): void
-    {
-        $this->tokenQuota = $tokenQuota;
-
-    }//end setTokenQuota()
-
-
-    /**
-     * Get the views array
-     *
-     * @return array|null The views array
-     */
-    public function getViews(): ?array
-    {
-        return $this->views;
-
-    }//end getViews()
-
-
-    /**
-     * Set the views array
-     *
-     * @param array|null $views The views array
-     *
-     * @return void
-     */
-    public function setViews(?array $views): void
-    {
-        $this->views = $views;
-
-    }//end setViews()
-
-
-    /**
-     * Get the search files setting
-     *
-     * @return bool|null The search files setting
-     */
-    public function getSearchFiles(): ?bool
-    {
-        return $this->searchFiles;
-
-    }//end getSearchFiles()
-
-
-    /**
-     * Set the search files setting
-     *
-     * @param bool|null $searchFiles The search files setting
-     *
-     * @return void
-     */
-    public function setSearchFiles(?bool $searchFiles): void
-    {
-        $this->searchFiles = $searchFiles;
-
-    }//end setSearchFiles()
-
-
-    /**
-     * Get the search objects setting
-     *
-     * @return bool|null The search objects setting
-     */
-    public function getSearchObjects(): ?bool
-    {
-        return $this->searchObjects;
-
-    }//end getSearchObjects()
-
-
-    /**
-     * Set the search objects setting
-     *
-     * @param bool|null $searchObjects The search objects setting
-     *
-     * @return void
-     */
-    public function setSearchObjects(?bool $searchObjects): void
-    {
-        $this->searchObjects = $searchObjects;
-
-    }//end setSearchObjects()
-
-
-    /**
-     * Get the is private setting
-     *
-     * @return bool|null The is private setting
-     */
-    public function getIsPrivate(): ?bool
-    {
-        return $this->isPrivate;
-
-    }//end getIsPrivate()
-
-
-    /**
-     * Set the is private setting
-     *
-     * @param bool|null $isPrivate The is private setting
-     *
-     * @return void
-     */
-    public function setIsPrivate(?bool $isPrivate): void
-    {
-        $this->isPrivate = $isPrivate;
-
-    }//end setIsPrivate()
-
-
-    /**
-     * Get the invited users array
-     *
-     * @return array|null The invited users array
-     */
-    public function getInvitedUsers(): ?array
-    {
-        return $this->invitedUsers;
-
-    }//end getInvitedUsers()
-
-
-    /**
-     * Set the invited users array
-     *
-     * @param array|null $invitedUsers The invited users array
-     *
-     * @return void
-     */
-    public function setInvitedUsers(?array $invitedUsers): void
-    {
-        $this->invitedUsers = $invitedUsers;
-
-    }//end setInvitedUsers()
-
-
-    /**
      * Check if a user is invited to access this private agent
      *
      * @param string $userId The user ID to check
@@ -985,6 +396,7 @@ class Agent extends Entity implements JsonSerializable
         
         if (!in_array($userId, $this->invitedUsers, true)) {
             $this->invitedUsers[] = $userId;
+            $this->markFieldUpdated('invitedUsers');
         }
 
     }//end addInvitedUser()
@@ -1003,106 +415,31 @@ class Agent extends Entity implements JsonSerializable
             return;
         }
         
-        $this->invitedUsers = array_values(
-            array_filter(
-                $this->invitedUsers,
-                fn($id) => $id !== $userId
-            )
-        );
+        $key = array_search($userId, $this->invitedUsers, true);
+        if ($key !== false) {
+            unset($this->invitedUsers[$key]);
+            $this->invitedUsers = array_values($this->invitedUsers);
+            $this->markFieldUpdated('invitedUsers');
+        }
 
     }//end removeInvitedUser()
 
 
     /**
-     * Get the groups
-     *
-     * @return array|null The groups
-     */
-    public function getGroups(): ?array
-    {
-        return $this->groups;
-
-    }//end getGroups()
-
-
-    /**
-     * Set the groups
-     *
-     * @param array|null $groups The groups
-     *
-     * @return void
-     */
-    public function setGroups(?array $groups): void
-    {
-        $this->groups = $groups;
-
-    }//end setGroups()
-
-
-    /**
-     * Get the creation date
-     *
-     * @return DateTime|null The creation date
-     */
-    public function getCreated(): ?DateTime
-    {
-        return $this->created;
-
-    }//end getCreated()
-
-
-    /**
-     * Set the creation date
-     *
-     * @param DateTime|null $created The creation date
-     *
-     * @return void
-     */
-    public function setCreated(?DateTime $created): void
-    {
-        $this->created = $created;
-
-    }//end setCreated()
-
-
-    /**
-     * Get the last update date
-     *
-     * @return DateTime|null The last update date
-     */
-    public function getUpdated(): ?DateTime
-    {
-        return $this->updated;
-
-    }//end getUpdated()
-
-
-    /**
-     * Set the last update date
-     *
-     * @param DateTime|null $updated The last update date
-     *
-     * @return void
-     */
-    public function setUpdated(?DateTime $updated): void
-    {
-        $this->updated = $updated;
-
-    }//end setUpdated()
-
-
-    /**
      * Hydrate the entity from an array
      *
-     * @param array $object The data array
+     * @param array<string, mixed> $object The data to hydrate from
      *
-     * @return $this The hydrated entity
+     * @return self The hydrated entity
      */
     public function hydrate(array $object): self
     {
-        // Only set UUID if it's provided and not empty
+        // Set UUID - generate if not provided
         if (isset($object['uuid']) && !empty($object['uuid'])) {
             $this->setUuid($object['uuid']);
+        } else {
+            // Generate new UUID if not provided
+            $this->setUuid(Uuid::v4()->toRfc4122());
         }
         $this->setName($object['name'] ?? null);
         $this->setDescription($object['description'] ?? null);
@@ -1138,11 +475,11 @@ class Agent extends Entity implements JsonSerializable
     /**
      * Serialize the entity to JSON
      *
-     * @return array The JSON-serializable array
+     * @return array<string, mixed> The serialized data
      */
     public function jsonSerialize(): array
     {
-        $array = [
+        return [
             'id'                 => $this->id,
             'uuid'               => $this->uuid,
             'name'               => $this->name,
@@ -1170,17 +507,103 @@ class Agent extends Entity implements JsonSerializable
             'isPrivate'          => $this->isPrivate,
             'invitedUsers'       => $this->invitedUsers,
             'groups'             => $this->groups,
-            'created'            => isset($this->created) === true ? $this->created->format('c') : null,
-            'updated'            => isset($this->updated) === true ? $this->updated->format('c') : null,
+            'created'            => $this->created?->format('Y-m-d\TH:i:s\Z'),
+            'updated'            => $this->updated?->format('Y-m-d\TH:i:s\Z'),
+            'managedByConfiguration' => $this->managedByConfiguration !== null ? [
+                'id' => $this->managedByConfiguration->getId(),
+                'uuid' => $this->managedByConfiguration->getUuid(),
+                'title' => $this->managedByConfiguration->getTitle(),
+            ] : null,
         ];
-
-        return array_filter($array, function ($value) {
-            return $value !== null;
-        });
 
     }//end jsonSerialize()
 
 
+    /**
+     * Get the configuration that manages this agent (transient property)
+     *
+     * @return Configuration|null The managing configuration or null
+     */
+    public function getManagedByConfigurationEntity(): ?Configuration
+    {
+        return $this->managedByConfiguration;
+
+    }//end getManagedByConfigurationEntity()
+
+
+    /**
+     * Set the configuration that manages this agent (transient property)
+     *
+     * @param Configuration|null $configuration The managing configuration
+     *
+     * @return void
+     */
+    public function setManagedByConfigurationEntity(?Configuration $configuration): void
+    {
+        $this->managedByConfiguration = $configuration;
+
+    }//end setManagedByConfigurationEntity()
+
+
+    /**
+     * Check if this agent is managed by a configuration
+     *
+     * Returns true if this agent's ID appears in any of the provided configurations' agents arrays.
+     *
+     * @param array<Configuration> $configurations Array of Configuration entities to check against
+     *
+     * @return bool True if managed by a configuration, false otherwise
+     *
+     * @phpstan-param array<Configuration> $configurations
+     * @psalm-param   array<Configuration> $configurations
+     */
+    public function isManagedByConfiguration(array $configurations): bool
+    {
+        if (empty($configurations) === true || $this->id === null) {
+            return false;
+        }
+
+        foreach ($configurations as $configuration) {
+            $agents = $configuration->getAgents();
+            if (in_array($this->id, $agents, true) === true) {
+                return true;
+            }
+        }
+
+        return false;
+
+    }//end isManagedByConfiguration()
+
+
+    /**
+     * Get the configuration that manages this agent
+     *
+     * Returns the first configuration that has this agent's ID in its agents array.
+     * Returns null if the agent is not managed by any configuration.
+     *
+     * @param array<Configuration> $configurations Array of Configuration entities to check against
+     *
+     * @return Configuration|null The configuration managing this agent, or null
+     *
+     * @phpstan-param array<Configuration> $configurations
+     * @psalm-param   array<Configuration> $configurations
+     */
+    public function getManagedByConfiguration(array $configurations): ?Configuration
+    {
+        if (empty($configurations) === true || $this->id === null) {
+            return null;
+        }
+
+        foreach ($configurations as $configuration) {
+            $agents = $configuration->getAgents();
+            if (in_array($this->id, $agents, true) === true) {
+                return $configuration;
+            }
+        }
+
+        return null;
+
+    }//end getManagedByConfiguration()
+
+
 }//end class
-
-

@@ -537,6 +537,9 @@ class Application extends App implements IBootstrap
                 function ($container) {
                     return new ChatService(
                     $container->get('OCP\IDBConnection'),
+                    $container->get(\OCA\OpenRegister\Db\ConversationMapper::class),
+                    $container->get(\OCA\OpenRegister\Db\MessageMapper::class),
+                    $container->get(\OCA\OpenRegister\Db\AgentMapper::class),
                     $container->get(VectorEmbeddingService::class),
                     $container->get(GuzzleSolrService::class),
                     $container->get(SettingsService::class),

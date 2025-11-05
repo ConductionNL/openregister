@@ -141,6 +141,7 @@ async function forceLoadSchemas() {
 
 /**
  * Load organisations if not already loaded.
+ * Also fetches the active organisation from the user session.
  * 
  * @returns {Promise<void>}
  */
@@ -152,10 +153,20 @@ async function loadOrganisations() {
 	} else {
 		console.log(`[AppInit] ↷ Organisations already loaded (${organisationStore.organisationList.length})`)
 	}
+	
+	// Always fetch the active organisation from session
+	if (!organisationStore.activeOrganisation) {
+		console.log('[AppInit] Fetching active organisation from session...')
+		await organisationStore.getActiveOrganisation()
+		console.log(`[AppInit] ✓ Active organisation: ${organisationStore.activeOrganisation?.name || 'none'}`)
+	} else {
+		console.log(`[AppInit] ↷ Active organisation already set: ${organisationStore.activeOrganisation.name}`)
+	}
 }
 
 /**
  * Force load organisations (always refreshes).
+ * Also refetches the active organisation from the user session.
  * 
  * @returns {Promise<void>}
  */
@@ -163,6 +174,11 @@ async function forceLoadOrganisations() {
 	console.log('[AppInit] Reloading organisations...')
 	await organisationStore.refreshOrganisationList()
 	console.log(`[AppInit] ✓ Reloaded ${organisationStore.organisationList?.length || 0} organisations`)
+	
+	// Always refetch the active organisation from session
+	console.log('[AppInit] Refetching active organisation from session...')
+	await organisationStore.getActiveOrganisation()
+	console.log(`[AppInit] ✓ Active organisation: ${organisationStore.activeOrganisation?.name || 'none'}`)
 }
 
 /**

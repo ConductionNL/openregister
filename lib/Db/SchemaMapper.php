@@ -519,7 +519,12 @@ class SchemaMapper extends QBMapper
         // Verify user has access to this organisation
         $this->verifyOrganisationAccess($entity);
 
-        $oldSchema = $this->find($entity->getId());
+        // Fetch old entity directly without organisation filter for event comparison
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from('openregister_schemas')
+            ->where($qb->expr()->eq('id', $qb->createNamedParameter($entity->getId(), IQueryBuilder::PARAM_INT)));
+        $oldSchema = $this->findEntity(query: $qb);
 
         // Clean the schema object to ensure UUID, slug, and version are set.
         $this->cleanObject($entity);

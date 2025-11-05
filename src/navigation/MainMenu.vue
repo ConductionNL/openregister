@@ -1,11 +1,14 @@
 <template>
 	<NcAppNavigation>
-		<NcAppNavigationList>
-		<NcAppNavigationItem :active="$route.path === '/'" :name="t('openregister', 'Dashboard')" @click="handleNavigate('/')">
+		<NcAppNavigationNew 
+			:text="activeOrganisationName"
+			@click="handleNavigate('/')">
 			<template #icon>
 				<Finance :size="20" />
 			</template>
-		</NcAppNavigationItem>
+		</NcAppNavigationNew>
+		
+		<NcAppNavigationList>
 		<NcAppNavigationItem :active="$route.path.startsWith('/chat')" :name="t('openregister', 'AI Chat')" @click="handleNavigate('/chat')">
 			<template #icon>
 				<MessageTextOutline :size="20" />
@@ -90,6 +93,7 @@ import {
 	NcAppNavigationList,
 	NcAppNavigationSettings,
 	NcAppNavigationItem,
+	NcAppNavigationNew,
 } from '@nextcloud/vue'
 
 // Icons
@@ -108,6 +112,9 @@ import DeleteRestore from 'vue-material-design-icons/DeleteRestore.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import MagnifyPlus from 'vue-material-design-icons/MagnifyPlus.vue'
 
+// Store
+import { organisationStore } from '../store/store.js'
+
 export default {
 	name: 'MainMenu',
 	components: {
@@ -116,6 +123,7 @@ export default {
 		NcAppNavigationList,
 		NcAppNavigationItem,
 		NcAppNavigationSettings,
+		NcAppNavigationNew,
 		// icons
 		Finance,
 		DatabaseOutline,
@@ -132,6 +140,22 @@ export default {
 		TextBoxOutline,
 		MagnifyPlus,
 	},
+	computed: {
+		/**
+		 * Get the active organisation name to display in navigation.
+		 * Shows the current organisational context for the user.
+		 *
+		 * @return {string} The active organisation name or a fallback
+		 */
+		activeOrganisationName() {
+			const activeOrg = organisationStore.activeOrganisation
+			if (activeOrg && activeOrg.name) {
+				return activeOrg.name
+			}
+			// Fallback if no organisation is active
+			return t('openregister', 'No Organisation')
+		},
+	},
 	methods: {
 		t,
 		handleNavigate(path) {
@@ -143,3 +167,4 @@ export default {
 	},
 }
 </script>
+

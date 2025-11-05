@@ -13,7 +13,7 @@ declare(strict_types=1);
  * - openregister_configurations: organisation int → string UUID
  * - openregister_agents: organisation int → string UUID
  * - openregister_applications: organisation int → string UUID
- * - openregister_views: ADD organisation string UUID column
+ * - openregister_view: ADD organisation string UUID column
  * - openregister_sources: ADD organisation string UUID column
  * - openregister_registers: ADD organisation string UUID column
  * - openregister_schemas: organisation already string UUID (verify only)
@@ -143,13 +143,13 @@ class Version1Date20251106120000 extends SimpleMigrationStep
         }
 
         // ============================================================
-        // Add openregister_views.organisation column
+        // Add openregister_view.organisation column (table name is singular)
         // ============================================================
-        if ($schema->hasTable('openregister_views')) {
-            $table = $schema->getTable('openregister_views');
+        if ($schema->hasTable('openregister_view')) {
+            $table = $schema->getTable('openregister_view');
             
             if (!$table->hasColumn('organisation')) {
-                $output->info('  📝 Adding views.organisation column');
+                $output->info('  📝 Adding view.organisation column');
                 
                 $table->addColumn('organisation', Types::STRING, [
                     'notnull' => false,
@@ -159,9 +159,9 @@ class Version1Date20251106120000 extends SimpleMigrationStep
                 ]);
                 
                 // Add index for faster filtering
-                $table->addIndex(['organisation'], 'views_organisation_idx');
+                $table->addIndex(['organisation'], 'view_organisation_idx');
                 
-                $output->info('    ✅ views.organisation added');
+                $output->info('    ✅ view.organisation added');
                 $updated = true;
             }
         }
@@ -247,7 +247,7 @@ class Version1Date20251106120000 extends SimpleMigrationStep
             $output->info('   • Configurations: organisation updated to string UUID');
             $output->info('   • Agents: organisation updated to string UUID');
             $output->info('   • Applications: organisation updated to string UUID');
-            $output->info('   • Views: organisation column added (string UUID)');
+            $output->info('   • View: organisation column added (string UUID)');
             $output->info('   • Sources: organisation column added (string UUID)');
             $output->info('   • Registers: organisation column added (string UUID)');
             $output->info('   • Schemas: organisation verified as string UUID');

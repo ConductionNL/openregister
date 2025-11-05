@@ -1,22 +1,7 @@
 <template>
 	<NcAppContent>
-		<div class="chat-layout">
-			<!-- Conversation Sidebar -->
-			<ConversationSidebar
-				:collapsed="sidebarCollapsed"
-				:conversations="showArchive ? archivedConversations : conversationList"
-				:active-conversation="activeConversation"
-				:show-archive="showArchive"
-				:loading="conversationLoading"
-				@toggle-sidebar="toggleSidebar"
-				@new-conversation="showAgentSelector"
-				@select-conversation="selectConversation"
-				@delete-conversation="deleteConversation"
-				@restore-conversation="restoreConversation"
-				@toggle-archive="toggleArchive" />
-
-			<!-- Main Chat Area -->
-			<div class="chat-container">
+		<!-- Main Chat Area -->
+		<div class="chat-container">
 				<!-- Chat Header -->
 				<div class="chat-header">
 					<div class="header-content">
@@ -191,7 +176,17 @@
 					</div>
 				</div>
 			</div>
-		</div>
+
+		<!-- Chat Sidebar -->
+		<ChatSideBar
+			:conversations="conversationList"
+			:archived-conversations="archivedConversations"
+			:active-conversation="activeConversation"
+			:loading="conversationLoading"
+			@new-conversation="showAgentSelector"
+			@select-conversation="selectConversation"
+			@delete-conversation="deleteConversation"
+			@restore-conversation="restoreConversation" />
 
 		<!-- Agent Selector Dialog -->
 		<NcDialog
@@ -238,7 +233,7 @@
 
 <script>
 import { NcAppContent, NcButton, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
-import ConversationSidebar from '../components/ConversationSidebar.vue'
+import ChatSideBar from '../sidebars/chat/ChatSideBar.vue'
 import AgentSelector from '../components/AgentSelector.vue'
 import Robot from 'vue-material-design-icons/Robot.vue'
 import MessageText from 'vue-material-design-icons/MessageText.vue'
@@ -265,7 +260,7 @@ export default {
 		NcButton,
 		NcDialog,
 		NcLoadingIcon,
-		ConversationSidebar,
+		ChatSideBar,
 		AgentSelector,
 		Robot,
 		MessageText,
@@ -330,14 +325,6 @@ export default {
 		conversationLoading() {
 			return this.conversationStore?.loading || false
 		},
-
-		sidebarCollapsed() {
-			return this.conversationStore?.sidebarCollapsed || false
-		},
-
-		showArchive() {
-			return this.conversationStore?.showArchive || false
-		},
 	},
 
 	async mounted() {
@@ -369,22 +356,6 @@ export default {
 				console.error('Failed to check LLM configuration:', error)
 				this.llmConfigured = false
 				this.checkingConfig = false
-			}
-		},
-
-		toggleSidebar() {
-			if (this.$store?.conversation) {
-				this.$store.conversation.toggleSidebar()
-			}
-		},
-
-		toggleArchive(show) {
-			if (this.$store?.conversation) {
-				if (show && !this.showArchive) {
-					this.$store.conversation.toggleArchive()
-				} else if (!show && this.showArchive) {
-					this.$store.conversation.toggleArchive()
-				}
 			}
 		},
 
@@ -590,12 +561,6 @@ export default {
 </script>
 
 <style scoped lang="scss">
-.chat-layout {
-	display: flex;
-	height: 100%;
-	background: var(--color-main-background);
-}
-
 .chat-container {
 	flex: 1;
 	display: flex;

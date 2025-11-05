@@ -73,6 +73,13 @@ class Application extends Entity implements JsonSerializable
     protected ?string $organisation = null;
 
     /**
+     * Configuration that manages this application (transient, not stored in DB)
+     *
+     * @var Configuration|null
+     */
+    private ?Configuration $managedByConfiguration = null;
+
+    /**
      * Array of configuration IDs associated with this application
      *
      * @var array|null Array of configuration IDs
@@ -527,6 +534,11 @@ class Application extends Entity implements JsonSerializable
             'authorization'  => $this->authorization ?? $this->getDefaultAuthorization(),
             'created'        => $this->created ? $this->created->format('c') : null,
             'updated'        => $this->updated ? $this->updated->format('c') : null,
+            'managedByConfiguration' => $this->managedByConfiguration !== null ? [
+                'id' => $this->managedByConfiguration->getId(),
+                'uuid' => $this->managedByConfiguration->getUuid(),
+                'title' => $this->managedByConfiguration->getTitle(),
+            ] : null,
         ];
 
     }//end jsonSerialize()
@@ -550,6 +562,93 @@ class Application extends Entity implements JsonSerializable
         return $this->uuid;
 
     }//end __toString()
+
+
+    /**
+     * Get the configuration that manages this application (transient property)
+     *
+     * @return Configuration|null The managing configuration or null
+     */
+    public function getManagedByConfigurationEntity(): ?Configuration
+    {
+        return $this->managedByConfiguration;
+
+    }//end getManagedByConfigurationEntity()
+
+
+    /**
+     * Set the configuration that manages this application (transient property)
+     *
+     * @param Configuration|null $configuration The managing configuration
+     *
+     * @return void
+     */
+    public function setManagedByConfigurationEntity(?Configuration $configuration): void
+    {
+        $this->managedByConfiguration = $configuration;
+
+    }//end setManagedByConfigurationEntity()
+
+
+    /**
+     * Check if this application is managed by a configuration
+     *
+     * Returns true if this application's ID appears in any of the provided configurations' applications arrays.
+     *
+     * @param array<Configuration> $configurations Array of Configuration entities to check against
+     *
+     * @return bool True if managed by a configuration, false otherwise
+     *
+     * @phpstan-param array<Configuration> $configurations
+     * @psalm-param   array<Configuration> $configurations
+     */
+    public function isManagedByConfiguration(array $configurations): bool
+    {
+        if (empty($configurations) === true || $this->id === null) {
+            return false;
+        }
+
+        foreach ($configurations as $configuration) {
+            $applications = $configuration->getApplications();
+            if (in_array($this->id, $applications, true) === true) {
+                return true;
+            }
+        }
+
+        return false;
+
+    }//end isManagedByConfiguration()
+
+
+    /**
+     * Get the configuration that manages this application
+     *
+     * Returns the first configuration that has this application's ID in its applications array.
+     * Returns null if the application is not managed by any configuration.
+     *
+     * @param array<Configuration> $configurations Array of Configuration entities to check against
+     *
+     * @return Configuration|null The configuration managing this application, or null
+     *
+     * @phpstan-param array<Configuration> $configurations
+     * @psalm-param   array<Configuration> $configurations
+     */
+    public function getManagedByConfiguration(array $configurations): ?Configuration
+    {
+        if (empty($configurations) === true || $this->id === null) {
+            return null;
+        }
+
+        foreach ($configurations as $configuration) {
+            $applications = $configuration->getApplications();
+            if (in_array($this->id, $applications, true) === true) {
+                return $configuration;
+            }
+        }
+
+        return null;
+
+    }//end getManagedByConfiguration()
 
 
 }//end class

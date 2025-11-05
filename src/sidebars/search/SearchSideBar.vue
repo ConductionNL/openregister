@@ -1818,6 +1818,7 @@ export default {
 	flex-direction: column;
 	gap: 16px;
 	padding: 16px;
+	min-height: calc(100vh - 200px); // Ensure section fills available height
 
 	h3 {
 		margin: 0 0 8px 0;
@@ -2298,6 +2299,7 @@ export default {
 /* Columns Tab */
 .columnsSection {
 	padding: 16px;
+	min-height: calc(100vh - 200px); // Ensure section fills available height
 }
 
 .columnsSection h3 {
