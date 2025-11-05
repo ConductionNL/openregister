@@ -63,10 +63,21 @@ export const useApplicationStore = defineStore('application', {
 			this.filters = { ...this.filters, ...filters }
 			console.info('Query filters set to', this.filters)
 		},
+		/**
+		 * Refresh the application list from the API
+		 *
+		 * @param {string|null} search - Optional search term
+		 * @param {boolean} soft - If true, don't show loading state (default: false)
+		 * @returns {Promise} Promise with response and data
+		 */
 		/* istanbul ignore next */
-		async refreshApplicationList(search = null) {
-			console.log('ApplicationStore: Starting refreshApplicationList')
-			this.loading = true
+		async refreshApplicationList(search = null, soft = false) {
+			console.log('ApplicationStore: Starting refreshApplicationList (soft=' + soft + ')')
+			
+			// Only set loading state for hard reloads
+			if (!soft) {
+				this.loading = true
+			}
 			this.error = null
 
 			try {
@@ -94,7 +105,9 @@ export const useApplicationStore = defineStore('application', {
 				this.error = error.message
 				throw error
 			} finally {
-				this.loading = false
+				if (!soft) {
+					this.loading = false
+				}
 			}
 		},
 		async getApplication(id) {

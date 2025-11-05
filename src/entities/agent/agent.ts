@@ -37,6 +37,11 @@ export class Agent implements TAgent {
 	public requestQuota?: number
 	public tokenQuota?: number
 	public groups?: string[]
+	public views?: string[]
+	public searchFiles?: boolean
+	public searchObjects?: boolean
+	public isPrivate?: boolean
+	public invitedUsers?: string[]
 	public created?: string
 	public updated?: string
 
@@ -63,6 +68,11 @@ export class Agent implements TAgent {
 		this.requestQuota = agent.requestQuota || 0
 		this.tokenQuota = agent.tokenQuota || 0
 		this.groups = agent.groups || []
+		this.views = agent.views || []
+		this.searchFiles = agent.searchFiles !== false
+		this.searchObjects = agent.searchObjects !== false
+		this.isPrivate = agent.isPrivate || false
+		this.invitedUsers = agent.invitedUsers || []
 		this.created = agent.created || ''
 		this.updated = agent.updated || ''
 	}
@@ -91,6 +101,11 @@ export class Agent implements TAgent {
 			requestQuota: z.number().nonnegative().optional(),
 			tokenQuota: z.number().nonnegative().optional(),
 			groups: z.array(z.string()).optional(),
+			views: z.array(z.string()).optional(),
+			searchFiles: z.boolean().optional(),
+			searchObjects: z.boolean().optional(),
+			isPrivate: z.boolean().optional(),
+			invitedUsers: z.array(z.string()).optional(),
 			created: z.string().optional(),
 			updated: z.string().optional(),
 		})

@@ -168,9 +168,9 @@ class Schema extends Entity implements JsonSerializable
     protected ?string $application = null;
 
     /**
-     * The organisation name
+     * Organisation UUID this schema belongs to (for multi-tenancy)
      *
-     * @var string|null The organisation name
+     * @var string|null Organisation UUID this schema belongs to
      */
     protected ?string $organisation = null;
 

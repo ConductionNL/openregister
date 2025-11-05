@@ -1,8 +1,26 @@
 <?php
+/**
+ * OpenRegister Chat Controller
+ *
+ * Controller for handling AI chat API endpoints.
+ *
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.nl
+ */
 
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\ChatService;
+use OCA\OpenRegister\Db\ConversationMapper;
+use OCA\OpenRegister\Db\MessageMapper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -12,260 +30,344 @@ use Psr\Log\LoggerInterface;
 /**
  * ChatController
  *
- * Controller for handling AI chat API endpoints
+ * Controller for handling AI chat API endpoints.
+ * Works with conversation-based chat system.
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
- * @author   Conduction <info@conduction.nl>
- * @license  EUPL-1.2 https://opensource.org/licenses/EUPL-1.2
- * @link     https://www.conduction.nl
  */
 class ChatController extends Controller
 {
-	/**
-	 * @var ChatService Chat service
-	 */
-	private ChatService $chatService;
-
-	/**
-	 * @var LoggerInterface Logger
-	 */
-	private LoggerInterface $logger;
-
-	/**
-	 * @var string User ID
-	 */
-	private string $userId;
-
-	/**
-	 * Constructor
-	 *
-	 * @param string          $appName     Application name
-	 * @param IRequest        $request     Request object
-	 * @param ChatService     $chatService Chat service
-	 * @param LoggerInterface $logger      Logger
-	 * @param string          $userId      User ID
-	 */
-	public function __construct(
-		string $appName,
-		IRequest $request,
-		ChatService $chatService,
-		LoggerInterface $logger,
-		string $userId
-	) {
-		parent::__construct($appName, $request);
-		$this->chatService = $chatService;
-		$this->logger = $logger;
-		$this->userId = $userId;
-	}
+    /**
+     * Chat service
+     *
+     * @var ChatService
+     */
+    private ChatService $chatService;
 
     /**
-	 * This returns the template of the main app's page
-	 * It adds some data to the template (app version)
-	 *
-	 * @NoAdminRequired
-	 * @NoCSRFRequired
-	 *
-	 * @return TemplateResponse
-	 */
-	public function page(): TemplateResponse
-	{
+     * Conversation mapper
+     *
+     * @var ConversationMapper
+     */
+    private ConversationMapper $conversationMapper;
+
+    /**
+     * Message mapper
+     *
+     * @var MessageMapper
+     */
+    private MessageMapper $messageMapper;
+
+    /**
+     * Logger
+     *
+     * @var LoggerInterface
+     */
+    private LoggerInterface $logger;
+
+    /**
+     * User ID
+     *
+     * @var string
+     */
+    private string $userId;
+
+    /**
+     * Constructor
+     *
+     * @param string             $appName             Application name
+     * @param IRequest           $request             Request object
+     * @param ChatService        $chatService         Chat service
+     * @param ConversationMapper $conversationMapper  Conversation mapper
+     * @param MessageMapper      $messageMapper       Message mapper
+     * @param LoggerInterface    $logger              Logger
+     * @param string             $userId              User ID
+     */
+    public function __construct(
+        string $appName,
+        IRequest $request,
+        ChatService $chatService,
+        ConversationMapper $conversationMapper,
+        MessageMapper $messageMapper,
+        LoggerInterface $logger,
+        string $userId
+    ) {
+        parent::__construct($appName, $request);
+        $this->chatService = $chatService;
+        $this->conversationMapper = $conversationMapper;
+        $this->messageMapper = $messageMapper;
+        $this->logger = $logger;
+        $this->userId = $userId;
+
+    }//end __construct()
+
+
+    /**
+     * This returns the template of the main app's page
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return TemplateResponse
+     */
+    public function page(): TemplateResponse
+    {
         return new TemplateResponse(
-            //Application::APP_ID,
             'openregister',
             'index',
             []
         );
-	}
 
-	/**
-	 * Send a chat message and get AI response
-	 *
-	 * @NoAdminRequired
-	 * @NoCSRFRequired
-	 *
-	 * @return JSONResponse
-	 */
-	public function sendMessage(): JSONResponse {
-		try {
-			// Get request data
-			$data = $this->request->getParams();
-			$message = $data['message'] ?? '';
-			$searchMode = $data['searchMode'] ?? 'hybrid';
-			$numSources = (int)($data['numSources'] ?? 5);
-			$includeFiles = (bool)($data['includeFiles'] ?? true);
-			$includeObjects = (bool)($data['includeObjects'] ?? true);
+    }//end page()
 
-			// Validate message
-			if (empty($message)) {
-				return new JSONResponse(
-					['error' => 'Message is required'],
-					400
-				);
-			}
 
-			// Validate search mode
-			if (!in_array($searchMode, ['hybrid', 'semantic', 'keyword'])) {
-				return new JSONResponse(
-					['error' => 'Invalid search mode. Must be one of: hybrid, semantic, keyword'],
-					400
-				);
-			}
+    /**
+     * Send a chat message in a conversation and get AI response
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Response with message and sources
+     */
+    public function sendMessage(): JSONResponse
+    {
+        try {
+            // Get request parameters
+            $conversationId = (int) $this->request->getParam('conversationId');
+            $message = (string) $this->request->getParam('message');
 
-			// Validate num sources
-			if ($numSources < 1 || $numSources > 10) {
-				return new JSONResponse(
-					['error' => 'Number of sources must be between 1 and 10'],
-					400
-				);
-			}
+            if (empty($conversationId)) {
+                return new JSONResponse([
+                    'error' => 'Missing conversationId',
+                    'message' => 'conversationId is required',
+                ], 400);
+            }
 
-			$this->logger->info('[ChatController] Sending message', [
-				'userId' => $this->userId,
-				'searchMode' => $searchMode,
-				'numSources' => $numSources,
-			]);
+            if (empty($message)) {
+                return new JSONResponse([
+                    'error' => 'Missing message',
+                    'message' => 'message content is required',
+                ], 400);
+            }
 
-			// Process message
-			$result = $this->chatService->processMessage(
-				$this->userId,
-				$message,
-				$searchMode,
-				$numSources,
-				$includeFiles,
-				$includeObjects
-			);
+            // Process message through ChatService
+            $result = $this->chatService->processMessage(
+                $conversationId,
+                $this->userId,
+                $message
+            );
 
-			return new JSONResponse($result, 200);
-		} catch (\Exception $e) {
-			$this->logger->error('[ChatController] Failed to send message', [
-				'error' => $e->getMessage(),
-				'trace' => $e->getTraceAsString(),
-			]);
+            return new JSONResponse($result, 200);
 
-			return new JSONResponse(
-				['error' => $e->getMessage()],
-				500
-			);
-		}
-	}
+        } catch (\Exception $e) {
+            $this->logger->error('[ChatController] Failed to send message', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
 
-	/**
-	 * Get conversation history
-	 *
-	 * @NoAdminRequired
-	 * @NoCSRFRequired
-	 *
-	 * @return JSONResponse
-	 */
-	public function getHistory(): JSONResponse {
-		try {
-			$limit = (int)($this->request->getParam('limit', 50));
-			$offset = (int)($this->request->getParam('offset', 0));
+            return new JSONResponse([
+                'error' => 'Failed to process message',
+                'message' => $e->getMessage(),
+            ], 500);
+        }//end try
 
-			$this->logger->info('[ChatController] Getting history', [
-				'userId' => $this->userId,
-				'limit' => $limit,
-				'offset' => $offset,
-			]);
+    }//end sendMessage()
 
-			$messages = $this->chatService->getConversationHistory(
-				$this->userId,
-				$limit,
-				$offset
-			);
 
-			return new JSONResponse([
-				'messages' => $messages,
-				'count' => count($messages),
-			], 200);
-		} catch (\Exception $e) {
-			$this->logger->error('[ChatController] Failed to get history', [
-				'error' => $e->getMessage(),
-			]);
+    /**
+     * Get conversation history (messages)
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Message history
+     */
+    public function getHistory(): JSONResponse
+    {
+        try {
+            // Get conversation ID from request
+            $conversationId = (int) $this->request->getParam('conversationId');
 
-			return new JSONResponse(
-				['error' => $e->getMessage()],
-				500
-			);
-		}
-	}
+            if (empty($conversationId)) {
+                return new JSONResponse([
+                    'error' => 'Missing conversationId',
+                    'message' => 'conversationId is required',
+                ], 400);
+            }
 
-	/**
-	 * Clear conversation history
-	 *
-	 * @NoAdminRequired
-	 * @NoCSRFRequired
-	 *
-	 * @return JSONResponse
-	 */
-	public function clearHistory(): JSONResponse {
-		try {
-			$this->logger->info('[ChatController] Clearing history', [
-				'userId' => $this->userId,
-			]);
+            // Get conversation
+            $conversation = $this->conversationMapper->find($conversationId);
 
-			$count = $this->chatService->clearConversationHistory($this->userId);
+            // Verify ownership
+            if ($conversation->getUserId() !== $this->userId) {
+                return new JSONResponse([
+                    'error' => 'Access denied',
+                    'message' => 'You do not have access to this conversation',
+                ], 403);
+            }
 
-			return new JSONResponse([
-				'success' => true,
-				'deleted' => $count,
-			], 200);
-		} catch (\Exception $e) {
-			$this->logger->error('[ChatController] Failed to clear history', [
-				'error' => $e->getMessage(),
-			]);
+            // Get messages
+            $limit = (int) ($this->request->getParam('limit') ?? 100);
+            $offset = (int) ($this->request->getParam('offset') ?? 0);
 
-			return new JSONResponse(
-				['error' => $e->getMessage()],
-				500
-			);
-		}
-	}
+            $messages = $this->messageMapper->findByConversation(
+                $conversationId,
+                $limit,
+                $offset
+            );
 
-	/**
-	 * Store feedback for a message
-	 *
-	 * @NoAdminRequired
-	 * @NoCSRFRequired
-	 *
-	 * @return JSONResponse
-	 */
-	public function sendFeedback(): JSONResponse {
-		try {
-			$data = $this->request->getParams();
-			$messageId = (int)($data['messageId'] ?? 0);
-			$feedback = $data['feedback'] ?? '';
+            return new JSONResponse([
+                'messages' => array_map(fn($msg) => $msg->jsonSerialize(), $messages),
+                'total' => $this->messageMapper->countByConversation($conversationId),
+                'conversationId' => $conversationId,
+            ], 200);
 
-			// Validate feedback
-			if (!in_array($feedback, ['positive', 'negative', null], true)) {
-				return new JSONResponse(
-					['error' => 'Invalid feedback. Must be one of: positive, negative, null'],
-					400
-				);
-			}
+        } catch (\Exception $e) {
+            $this->logger->error('[ChatController] Failed to get history', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
 
-			$this->logger->info('[ChatController] Storing feedback', [
-				'userId' => $this->userId,
-				'messageId' => $messageId,
-				'feedback' => $feedback,
-			]);
+            return new JSONResponse([
+                'error' => 'Failed to fetch conversation history',
+                'message' => $e->getMessage(),
+            ], 500);
+        }//end try
 
-			$this->chatService->storeFeedback($this->userId, $messageId, $feedback);
+    }//end getHistory()
 
-			return new JSONResponse([
-				'success' => true,
-			], 200);
-		} catch (\Exception $e) {
-			$this->logger->error('[ChatController] Failed to store feedback', [
-				'error' => $e->getMessage(),
-			]);
 
-			return new JSONResponse(
-				['error' => $e->getMessage()],
-				500
-			);
-		}
-	}
-}
+    /**
+     * Clear conversation history (soft delete)
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Success message
+     */
+    public function clearHistory(): JSONResponse
+    {
+        try {
+            // Get conversation ID from request
+            $conversationId = (int) $this->request->getParam('conversationId');
+
+            if (empty($conversationId)) {
+                return new JSONResponse([
+                    'error' => 'Missing conversationId',
+                    'message' => 'conversationId is required',
+                ], 400);
+            }
+
+            // Get conversation
+            $conversation = $this->conversationMapper->find($conversationId);
+
+            // Verify ownership
+            if ($conversation->getUserId() !== $this->userId) {
+                return new JSONResponse([
+                    'error' => 'Access denied',
+                    'message' => 'You do not have access to this conversation',
+                ], 403);
+            }
+
+            // Soft delete conversation
+            $this->conversationMapper->softDelete($conversationId);
+
+            $this->logger->info('[ChatController] Conversation cleared (soft deleted)', [
+                'conversationId' => $conversationId,
+                'userId' => $this->userId,
+            ]);
+
+            return new JSONResponse([
+                'message' => 'Conversation cleared successfully',
+                'conversationId' => $conversationId,
+            ], 200);
+
+        } catch (\Exception $e) {
+            $this->logger->error('[ChatController] Failed to clear history', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return new JSONResponse([
+                'error' => 'Failed to clear conversation',
+                'message' => $e->getMessage(),
+            ], 500);
+        }//end try
+
+    }//end clearHistory()
+
+
+    /**
+     * Send feedback for a message
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Success message
+     */
+    public function sendFeedback(): JSONResponse
+    {
+        try {
+            // Get request parameters
+            $messageId = (int) $this->request->getParam('messageId');
+            $feedback = (string) $this->request->getParam('feedback');
+
+            if (empty($messageId)) {
+                return new JSONResponse([
+                    'error' => 'Missing messageId',
+                    'message' => 'messageId is required',
+                ], 400);
+            }
+
+            if (!in_array($feedback, ['positive', 'negative'], true)) {
+                return new JSONResponse([
+                    'error' => 'Invalid feedback',
+                    'message' => 'feedback must be "positive" or "negative"',
+                ], 400);
+            }
+
+            // Get message
+            $message = $this->messageMapper->find($messageId);
+
+            // Get conversation to verify ownership
+            $conversation = $this->conversationMapper->find($message->getConversationId());
+
+            if ($conversation->getUserId() !== $this->userId) {
+                return new JSONResponse([
+                    'error' => 'Access denied',
+                    'message' => 'You do not have access to this message',
+                ], 403);
+            }
+
+            // TODO: Store feedback in a separate feedback table
+            // For now, we'll just log it
+            $this->logger->info('[ChatController] Message feedback received', [
+                'messageId' => $messageId,
+                'feedback' => $feedback,
+                'userId' => $this->userId,
+            ]);
+
+            return new JSONResponse([
+                'message' => 'Feedback recorded successfully',
+                'messageId' => $messageId,
+                'feedback' => $feedback,
+            ], 200);
+
+        } catch (\Exception $e) {
+            $this->logger->error('[ChatController] Failed to send feedback', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return new JSONResponse([
+                'error' => 'Failed to record feedback',
+                'message' => $e->getMessage(),
+            ], 500);
+        }//end try
+
+    }//end sendFeedback()
+
+
+}//end class
 

@@ -33,6 +33,12 @@ export type TAgent = {
 	requestQuota?: number
 	tokenQuota?: number
 	groups?: string[]
+	// New properties for fine-grained control
+	views?: string[]
+	searchFiles?: boolean
+	searchObjects?: boolean
+	isPrivate?: boolean
+	invitedUsers?: string[]
 	created?: string
 	updated?: string
 }

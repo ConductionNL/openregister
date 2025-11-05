@@ -388,7 +388,8 @@ export default {
 		},
 	},
 	mounted() {
-		configurationStore.refreshConfigurationList()
+		// Use soft reload (no loading spinner) since data is hot-loaded at app startup
+		configurationStore.refreshConfigurationList(null, true)
 	},
 	methods: {
 		toggleSelectAll(checked) {

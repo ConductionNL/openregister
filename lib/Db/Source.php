@@ -74,6 +74,13 @@ class Source extends Entity implements JsonSerializable
     protected ?string $type = null;
 
     /**
+     * Organisation UUID this source belongs to
+     *
+     * @var string|null Organisation UUID
+     */
+    protected ?string $organisation = null;
+
+    /**
      * Last update timestamp
      *
      * @var DateTime|null Last update timestamp
@@ -101,6 +108,7 @@ class Source extends Entity implements JsonSerializable
         $this->addType(fieldName: 'description', type: 'string');
         $this->addType(fieldName: 'databaseUrl', type: 'string');
         $this->addType(fieldName: 'type', type: 'string');
+        $this->addType(fieldName: 'organisation', type: 'string');
         $this->addType(fieldName: 'updated', type: 'datetime');
         $this->addType(fieldName: 'created', type: 'datetime');
 
@@ -165,6 +173,33 @@ class Source extends Entity implements JsonSerializable
 
 
     /**
+     * Get the organisation UUID
+     *
+     * @return string|null The organisation UUID
+     */
+    public function getOrganisation(): ?string
+    {
+        return $this->organisation;
+
+    }//end getOrganisation()
+
+
+    /**
+     * Set the organisation UUID
+     *
+     * @param string|null $organisation The organisation UUID
+     *
+     * @return void
+     */
+    public function setOrganisation(?string $organisation): void
+    {
+        $this->organisation = $organisation;
+        $this->markFieldUpdated('organisation');
+
+    }//end setOrganisation()
+
+
+    /**
      * Convert entity to JSON serializable array
      *
      * Prepares the entity data for JSON serialization
@@ -184,15 +219,16 @@ class Source extends Entity implements JsonSerializable
         }
 
         return [
-            'id'          => $this->id,
-            'uuid'        => $this->uuid,
-            'title'       => $this->title,
-            'version'     => $this->version,
-            'description' => $this->description,
-            'databaseUrl' => $this->databaseUrl,
-            'type'        => $this->type,
-            'updated'     => $updated,
-            'created'     => $created,
+            'id'           => $this->id,
+            'uuid'         => $this->uuid,
+            'title'        => $this->title,
+            'version'      => $this->version,
+            'description'  => $this->description,
+            'databaseUrl'  => $this->databaseUrl,
+            'type'         => $this->type,
+            'organisation' => $this->organisation,
+            'updated'      => $updated,
+            'created'      => $created,
         ];
 
     }//end jsonSerialize()

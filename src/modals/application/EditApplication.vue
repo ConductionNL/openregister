@@ -38,22 +38,7 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 								placeholder="Enter application description (optional)"
 								:rows="4" />
 
-							<NcSelect
-								v-model="selectedOrganisation"
-								:disabled="loading"
-								:options="organisationOptions"
-								input-label="Organisation"
-								label="name"
-								track-by="id"
-								placeholder="Select organisation (optional)"
-								@input="updateOrganisation">
-								<template #option="{ name, description }">
-									<div class="option-content">
-										<span class="option-title">{{ name }}</span>
-										<span v-if="description" class="option-description">{{ description }}</span>
-									</div>
-								</template>
-							</NcSelect>
+						<!-- Organisation is automatically set to active organisation by backend -->
 
 							<div class="groups-select-container">
 								<label class="groups-label">Nextcloud Groups</label>
@@ -232,7 +217,7 @@ export default {
 			applicationItem: {
 				name: '',
 				description: '',
-				organisation: null,
+				// Organisation will be set automatically by backend based on active organisation
 				quota: {
 					storage: 0,
 					bandwidth: 0,
@@ -248,7 +233,6 @@ export default {
 					delete: [],
 				},
 			},
-			selectedOrganisation: null,
 			selectedGroups: [],
 			availableGroups: [],
 			loadingGroups: false,
@@ -260,13 +244,6 @@ export default {
 		}
 	},
 	computed: {
-		organisationOptions() {
-			return organisationStore.organisationList.map(org => ({
-				id: org.id,
-				name: org.name,
-				description: org.description || '',
-			}))
-		},
 		storageQuotaMB() {
 			if (!this.applicationItem.quota?.storage) return 0
 			return Math.round(this.applicationItem.quota.storage / (1024 * 1024))
@@ -400,19 +377,9 @@ export default {
 					...applicationStore.applicationItem,
 				}
 
-				// Load existing organisation selection
-				if (this.applicationItem.organisation) {
-					const org = organisationStore.organisationList.find(o => o.id === this.applicationItem.organisation)
-					if (org) {
-						this.selectedOrganisation = {
-							id: org.id,
-							name: org.name,
-							description: org.description || '',
-						}
-					}
-				}
+			// Organisation is automatically set by backend based on active organisation
 
-				// Load existing groups selection
+			// Load existing groups selection
 				// Groups are stored as an array of IDs, we need to map them to objects for the select component
 				if (Array.isArray(this.applicationItem.groups) && this.applicationItem.groups.length > 0) {
 					this.selectedGroups = this.applicationItem.groups
@@ -433,16 +400,6 @@ export default {
 						.filter(g => g !== null)
 				}
 			}
-		},
-
-		/**
-		 * Update organisation selection
-		 *
-		 * @param {object} value - Selected organisation
-		 * @return {void}
-		 */
-		updateOrganisation(value) {
-			this.applicationItem.organisation = value?.id || null
 		},
 
 		/**
@@ -590,7 +547,6 @@ export default {
 		closeModal() {
 			this.success = false
 			this.error = null
-			this.selectedOrganisation = null
 			this.selectedGroups = []
 			this.activeTab = 0
 			navigationStore.setModal(false)

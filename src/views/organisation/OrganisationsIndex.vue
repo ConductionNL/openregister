@@ -134,6 +134,14 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 										</template>
 										Bekijken
 									</NcActionButton>
+									<NcActionButton v-if="!isActiveOrganisation(organisation)"
+										close-after-click
+										@click="setActiveOrganisation(organisation.uuid)">
+										<template #icon>
+											<Check :size="20" />
+										</template>
+										Instellen als Actief
+									</NcActionButton>
 									<NcActionButton v-if="canEditOrganisation(organisation)"
 										close-after-click
 										@click="editOrganisation(organisation)">
@@ -256,6 +264,14 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 												</template>
 												Bekijken
 											</NcActionButton>
+											<NcActionButton v-if="!isActiveOrganisation(organisation)"
+												close-after-click
+												@click="setActiveOrganisation(organisation.uuid)">
+												<template #icon>
+													<Check :size="20" />
+												</template>
+												Instellen als Actief
+											</NcActionButton>
 											<NcActionButton v-if="canEditOrganisation(organisation)"
 												close-after-click
 												@click="editOrganisation(organisation)">
@@ -351,6 +367,8 @@ import Eye from 'vue-material-design-icons/Eye.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import { reloadAppData } from '../../services/AppInitializationService.js'
+import Check from 'vue-material-design-icons/Check.vue'
 
 export default {
 	name: 'OrganisationsIndex',
@@ -373,6 +391,7 @@ export default {
 		Plus,
 		Eye,
 		OpenInNew,
+		Check,
 		PaginationComponent,
 	},
 	data() {
@@ -434,6 +453,10 @@ export default {
 			try {
 				await organisationStore.setActiveOrganisationById(uuid)
 				this.showSuccessMessage('Active organisation changed successfully')
+				
+				// Reload all hot-loaded data for the new organisation context
+				console.log('[OrganisationsIndex] Reloading application data after organisation switch...')
+				await reloadAppData()
 			} catch (error) {
 				this.showErrorMessage('Failed to change active organisation: ' + error.message)
 			}

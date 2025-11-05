@@ -20,7 +20,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\Agent;
 use OCA\OpenRegister\Db\AgentMapper;
+use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -47,30 +49,50 @@ class AgentsController extends Controller
     private AgentMapper $agentMapper;
 
     /**
+     * Organisation service
+     *
+     * @var OrganisationService
+     */
+    private OrganisationService $organisationService;
+
+    /**
      * Logger for debugging and error tracking
      *
      * @var LoggerInterface
      */
     private LoggerInterface $logger;
 
+    /**
+     * User ID
+     *
+     * @var string|null
+     */
+    private ?string $userId;
+
 
     /**
      * AgentsController constructor
      *
-     * @param string          $appName     Application name
-     * @param IRequest        $request     HTTP request
-     * @param AgentMapper     $agentMapper Agent mapper
-     * @param LoggerInterface $logger      Logger service
+     * @param string              $appName             Application name
+     * @param IRequest            $request             HTTP request
+     * @param AgentMapper         $agentMapper         Agent mapper
+     * @param OrganisationService $organisationService Organisation service
+     * @param LoggerInterface     $logger              Logger service
+     * @param string|null         $userId              User ID
      */
     public function __construct(
         string $appName,
         IRequest $request,
         AgentMapper $agentMapper,
-        LoggerInterface $logger
+        OrganisationService $organisationService,
+        LoggerInterface $logger,
+        ?string $userId
     ) {
         parent::__construct($appName, $request);
         $this->agentMapper = $agentMapper;
+        $this->organisationService = $organisationService;
         $this->logger = $logger;
+        $this->userId = $userId;
 
     }//end __construct()
 
@@ -95,7 +117,9 @@ class AgentsController extends Controller
 
 
     /**
-     * Get all agents
+     * Get all agents accessible by current user
+     *
+     * RBAC filtering is handled in the mapper layer.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
@@ -105,28 +129,26 @@ class AgentsController extends Controller
     public function index(): JSONResponse
     {
         try {
+            // Get active organisation
+            $organisation = $this->organisationService->getActiveOrganisation();
+            $organisationUuid = $organisation?->getUuid();
+
             $params = $this->request->getParams();
             
-            // Extract pagination and search parameters
-            $limit  = isset($params['_limit']) ? (int) $params['_limit'] : null;
-            $offset = isset($params['_offset']) ? (int) $params['_offset'] : null;
+            // Extract pagination parameters
+            $limit  = isset($params['_limit']) ? (int) $params['_limit'] : 50;
+            $offset = isset($params['_offset']) ? (int) $params['_offset'] : 0;
             $page   = isset($params['_page']) ? (int) $params['_page'] : null;
-            $search = $params['_search'] ?? '';
             
             // Convert page to offset if provided
-            if ($page !== null && $limit !== null) {
+            if ($page !== null) {
                 $offset = ($page - 1) * $limit;
             }
-            
-            // Remove special query params from filters
-            $filters = $params;
-            unset($filters['_limit'], $filters['_offset'], $filters['_page'], $filters['_search'], $filters['_route']);
 
-            $agents = $this->agentMapper->findAll(
-                $limit,
-                $offset,
-                $filters
-            );
+            // Get agents with RBAC filtering (handled in mapper)
+            $agents = $organisationUuid !== null
+                ? $this->agentMapper->findByOrganisation($organisationUuid, $this->userId, $limit, $offset)
+                : $this->agentMapper->findAll($limit, $offset);
 
             return new JSONResponse(['results' => $agents], Http::STATUS_OK);
         } catch (Exception $e) {
@@ -150,6 +172,8 @@ class AgentsController extends Controller
     /**
      * Get a single agent
      *
+     * RBAC check is handled in the mapper layer.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
@@ -161,6 +185,14 @@ class AgentsController extends Controller
     {
         try {
             $agent = $this->agentMapper->find($id);
+
+            // Check access rights using mapper method
+            if (!$this->agentMapper->canUserAccessAgent($agent, $this->userId)) {
+                return new JSONResponse(
+                    ['error' => 'Access denied to this agent'],
+                    Http::STATUS_FORBIDDEN
+                );
+            }
 
             return new JSONResponse($agent, Http::STATUS_OK);
         } catch (Exception $e) {
@@ -195,9 +227,33 @@ class AgentsController extends Controller
             $data = $this->request->getParams();
             unset($data['_route']);
 
+            // Set active organisation UUID (users cannot manually set organization)
+            $organisation = $this->organisationService->getActiveOrganisation();
+            $data['organisation'] = $organisation?->getUuid();
+
+            // Set owner
+            $data['owner'] = $this->userId;
+
+            // Set default values for new properties if not provided
+            if (!isset($data['isPrivate']) && !isset($data['is_private'])) {
+                $data['isPrivate'] = true; // Private by default
+            }
+
+            if (!isset($data['searchFiles']) && !isset($data['search_files'])) {
+                $data['searchFiles'] = true; // Search files by default
+            }
+
+            if (!isset($data['searchObjects']) && !isset($data['search_objects'])) {
+                $data['searchObjects'] = true; // Search objects by default
+            }
+
             $agent = $this->agentMapper->createFromArray($data);
 
-            $this->logger->info('Agent created successfully', ['id' => $agent->getId()]);
+            $this->logger->info('Agent created successfully', [
+                'id' => $agent->getId(),
+                'organisation' => $agent->getOrganisation(),
+                'isPrivate' => $agent->getIsPrivate(),
+            ]);
 
             return new JSONResponse($agent, Http::STATUS_CREATED);
         } catch (Exception $e) {
@@ -232,9 +288,21 @@ class AgentsController extends Controller
     {
         try {
             $agent = $this->agentMapper->find($id);
+
+            // Check if user can modify this agent using mapper method
+            if (!$this->agentMapper->canUserModifyAgent($agent, $this->userId)) {
+                return new JSONResponse(
+                    ['error' => 'You do not have permission to modify this agent'],
+                    Http::STATUS_FORBIDDEN
+                );
+            }
             
             $data = $this->request->getParams();
             unset($data['_route']);
+
+            // Prevent changing organisation and owner
+            unset($data['organisation']);
+            unset($data['owner']);
 
             // Update agent properties
             $agent->hydrate($data);
@@ -281,6 +349,8 @@ class AgentsController extends Controller
     /**
      * Delete an agent
      *
+     * RBAC check is handled in the mapper layer.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
@@ -292,6 +362,15 @@ class AgentsController extends Controller
     {
         try {
             $agent = $this->agentMapper->find($id);
+
+            // Check if user can modify (delete) this agent using mapper method
+            if (!$this->agentMapper->canUserModifyAgent($agent, $this->userId)) {
+                return new JSONResponse(
+                    ['error' => 'You do not have permission to delete this agent'],
+                    Http::STATUS_FORBIDDEN
+                );
+            }
+
             $this->agentMapper->delete($agent);
 
             $this->logger->info('Agent deleted successfully', ['id' => $id]);

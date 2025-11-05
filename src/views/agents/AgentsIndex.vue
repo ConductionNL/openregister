@@ -8,9 +8,9 @@ import { agentStore, navigationStore } from '../../store/store.js'
 			<!-- Header -->
 			<div class="viewHeader">
 				<h1 class="viewHeaderTitleIndented">
-					{{ t('openregister', 'AI Agents') }}
+					{{ t('openregister', 'Agents') }}
 				</h1>
-				<p>{{ t('openregister', 'Manage and configure AI agents for automated tasks') }}</p>
+				<p>{{ t('openregister', 'Manage and configure agents for automated tasks') }}</p>
 			</div>
 
 			<!-- Actions Bar -->
@@ -315,7 +315,8 @@ export default {
 		},
 	},
 	mounted() {
-		agentStore.refreshAgentList()
+		// Use soft reload (no loading spinner) since data is hot-loaded at app startup
+		agentStore.refreshAgentList(null, true)
 	},
 	methods: {
 		toggleSelectAll(checked) {
