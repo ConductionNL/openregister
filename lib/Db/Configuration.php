@@ -27,6 +27,61 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * Configuration entity class
+ *
+ * @method string|null getUuid()
+ * @method void setUuid(?string $uuid)
+ * @method string|null getTitle()
+ * @method void setTitle(?string $title)
+ * @method string|null getDescription()
+ * @method void setDescription(?string $description)
+ * @method string|null getType()
+ * @method void setType(?string $type)
+ * @method string|null getApp()
+ * @method void setApp(?string $app)
+ * @method string|null getVersion()
+ * @method void setVersion(?string $version)
+ * @method string|null getSourceType()
+ * @method void setSourceType(?string $sourceType)
+ * @method string|null getSourceUrl()
+ * @method void setSourceUrl(?string $sourceUrl)
+ * @method string|null getLocalVersion()
+ * @method void setLocalVersion(?string $localVersion)
+ * @method string|null getRemoteVersion()
+ * @method void setRemoteVersion(?string $remoteVersion)
+ * @method DateTime|null getLastChecked()
+ * @method void setLastChecked(?DateTime $lastChecked)
+ * @method bool getAutoUpdate()
+ * @method void setAutoUpdate(bool $autoUpdate)
+ * @method array|null getNotificationGroups()
+ * @method void setNotificationGroups(?array $notificationGroups)
+ * @method string|null getGithubRepo()
+ * @method void setGithubRepo(?string $githubRepo)
+ * @method string|null getGithubBranch()
+ * @method void setGithubBranch(?string $githubBranch)
+ * @method string|null getGithubPath()
+ * @method void setGithubPath(?string $githubPath)
+ * @method array|null getRegisters()
+ * @method void setRegisters(?array $registers)
+ * @method array|null getSchemas()
+ * @method void setSchemas(?array $schemas)
+ * @method array|null getObjects()
+ * @method void setObjects(?array $objects)
+ * @method array|null getViews()
+ * @method void setViews(?array $views)
+ * @method array|null getAgents()
+ * @method void setAgents(?array $agents)
+ * @method array|null getSources()
+ * @method void setSources(?array $sources)
+ * @method array|null getApplications()
+ * @method void setApplications(?array $applications)
+ * @method string|null getOrganisation()
+ * @method void setOrganisation(?string $organisation)
+ * @method string|null getOwner()
+ * @method void setOwner(?string $owner)
+ * @method DateTime|null getCreated()
+ * @method void setCreated(?DateTime $created)
+ * @method DateTime|null getUpdated()
+ * @method void setUpdated(?DateTime $updated)
  */
 class Configuration extends Entity implements JsonSerializable
 {
@@ -165,6 +220,34 @@ class Configuration extends Entity implements JsonSerializable
     protected ?array $objects = [];
 
     /**
+     * Array of view IDs managed by this configuration
+     *
+     * @var array|null
+     */
+    protected ?array $views = [];
+
+    /**
+     * Array of agent IDs managed by this configuration
+     *
+     * @var array|null
+     */
+    protected ?array $agents = [];
+
+    /**
+     * Array of source IDs managed by this configuration
+     *
+     * @var array|null
+     */
+    protected ?array $sources = [];
+
+    /**
+     * Array of application IDs managed by this configuration
+     *
+     * @var array|null
+     */
+    protected ?array $applications = [];
+
+    /**
      * Organisation UUID associated with this configuration
      *
      * @var string|null
@@ -218,6 +301,10 @@ class Configuration extends Entity implements JsonSerializable
         $this->addType('registers', 'json');
         $this->addType('schemas', 'json');
         $this->addType('objects', 'json');
+        $this->addType('views', 'json');
+        $this->addType('agents', 'json');
+        $this->addType('sources', 'json');
+        $this->addType('applications', 'json');
         $this->addType('organisation', 'string');
         $this->addType('owner', 'string');
         $this->addType('created', 'datetime');
@@ -243,137 +330,6 @@ class Configuration extends Entity implements JsonSerializable
         }
 
     }//end isValidUuid()
-
-
-    /**
-     * Get the organisation UUID
-     *
-     * @return string|null The organisation UUID
-     */
-    public function getOrganisation(): ?string
-    {
-        return $this->organisation;
-
-    }//end getOrganisation()
-
-
-    /**
-     * Set the organisation UUID
-     *
-     * @param string|null $organisation The organisation UUID
-     *
-     * @return void
-     */
-    public function setOrganisation(?string $organisation): void
-    {
-        $this->organisation = $organisation;
-        $this->markFieldUpdated('organisation');
-
-    }//end setOrganisation()
-
-
-    /**
-     * Get the registers of the configuration
-     *
-     * @return array<int> Array of register IDs
-     */
-    public function getRegisters(): array
-    {
-        return ($this->registers ?? []);
-
-    }//end getRegisters()
-
-
-    /**
-     * Set the registers of the configuration
-     *
-     * @param array<int>|null $registers Array of register IDs or null
-     *
-     * @return void
-     */
-    public function setRegisters(?array $registers): void
-    {
-        $this->registers = $registers ?? [];
-
-    }//end setRegisters()
-
-
-    /**
-     * Get the schemas of the configuration
-     *
-     * @return array<int> Array of schema IDs
-     */
-    public function getSchemas(): array
-    {
-        return ($this->schemas ?? []);
-
-    }//end getSchemas()
-
-
-    /**
-     * Set the schemas of the configuration
-     *
-     * @param array<int>|null $schemas Array of schema IDs or null
-     *
-     * @return void
-     */
-    public function setSchemas(?array $schemas): void
-    {
-        $this->schemas = $schemas ?? [];
-
-    }//end setSchemas()
-
-
-    /**
-     * Get the objects of the configuration
-     *
-     * @return array<int> Array of object IDs
-     */
-    public function getObjects(): array
-    {
-        return ($this->objects ?? []);
-
-    }//end getObjects()
-
-
-    /**
-     * Set the objects of the configuration
-     *
-     * @param array<int>|null $objects Array of object IDs or null
-     *
-     * @return void
-     */
-    public function setObjects(?array $objects): void
-    {
-        $this->objects = $objects ?? [];
-
-    }//end setObjects()
-
-
-    /**
-     * Get the owner of the configuration (backwards compatibility - maps to app field)
-     *
-     * @return string|null Owner/App identifier
-     */
-    public function getOwner(): ?string
-    {
-        return $this->app;
-
-    }//end getOwner()
-
-
-    /**
-     * Set the owner of the configuration (backwards compatibility - maps to app field)
-     *
-     * @param string|null $owner Owner/App identifier
-     *
-     * @return void
-     */
-    public function setOwner(?string $owner): void
-    {
-        $this->app = $owner;
-
-    }//end setOwner()
 
 
     /**
@@ -470,6 +426,10 @@ class Configuration extends Entity implements JsonSerializable
             'registers'          => $this->registers,
             'schemas'            => $this->schemas,
             'objects'            => $this->objects,
+            'views'              => $this->views,
+            'agents'             => $this->agents,
+            'sources'            => $this->sources,
+            'applications'       => $this->applications,
             'created'            => ($this->created !== null) ? $this->created->format('c') : null,
             'updated'            => ($this->updated !== null) ? $this->updated->format('c') : null,
         ];

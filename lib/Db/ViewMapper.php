@@ -19,6 +19,7 @@
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Service\ConfigurationCacheService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
@@ -61,12 +62,20 @@ class ViewMapper extends QBMapper
     private IGroupManager $groupManager;
 
     /**
+     * Configuration cache service
+     *
+     * @var ConfigurationCacheService
+     */
+    private ConfigurationCacheService $configurationCacheService;
+
+    /**
      * Constructor for ViewMapper
      *
-     * @param IDBConnection       $db                  The database connection
-     * @param OrganisationService $organisationService Organisation service for multi-tenancy
-     * @param IUserSession        $userSession         User session
-     * @param IGroupManager       $groupManager        Group manager for RBAC
+     * @param IDBConnection                $db                           The database connection
+     * @param OrganisationService          $organisationService          Organisation service for multi-tenancy
+     * @param IUserSession                 $userSession                  User session
+     * @param IGroupManager                $groupManager                 Group manager for RBAC
+     * @param ConfigurationCacheService    $configurationCacheService    Configuration cache service
      *
      * @return void
      */
@@ -74,12 +83,14 @@ class ViewMapper extends QBMapper
         IDBConnection $db,
         OrganisationService $organisationService,
         IUserSession $userSession,
-        IGroupManager $groupManager
+        IGroupManager $groupManager,
+        ConfigurationCacheService $configurationCacheService
     ) {
         parent::__construct($db, 'openregister_view');
-        $this->organisationService = $organisationService;
-        $this->userSession         = $userSession;
-        $this->groupManager        = $groupManager;
+        $this->organisationService          = $organisationService;
+        $this->userSession                  = $userSession;
+        $this->groupManager                 = $groupManager;
+        $this->configurationCacheService    = $configurationCacheService;
     }//end __construct()
 
 
@@ -112,7 +123,12 @@ class ViewMapper extends QBMapper
         // Apply organisation filter (all users including admins must have active org)
         $this->applyOrganisationFilter($qb);
 
-        return $this->findEntity(query: $qb);
+        $entity = $this->findEntity(query: $qb);
+
+        // Enrich with configuration management info
+        $this->enrichWithConfigurationInfo($entity);
+
+        return $entity;
     }//end find()
 
 
@@ -148,7 +164,14 @@ class ViewMapper extends QBMapper
         // Apply organisation filter (all users including admins must have active org)
         $this->applyOrganisationFilter($qb);
 
-        return $this->findEntities(query: $qb);
+        $entities = $this->findEntities(query: $qb);
+
+        // Enrich all entities with configuration management info
+        foreach ($entities as $entity) {
+            $this->enrichWithConfigurationInfo($entity);
+        }
+
+        return $entities;
     }//end findAll()
 
 
@@ -239,6 +262,31 @@ class ViewMapper extends QBMapper
         $entity = $this->find($id);
         $this->delete($entity);
     }//end deleteById()
+
+
+    /**
+     * Enrich a view entity with configuration management information
+     *
+     * This method fetches configurations for the active organisation and checks
+     * if this view is managed by any configuration. If so, it sets the managedByConfiguration
+     * property on the entity.
+     *
+     * @param View $view The view entity to enrich
+     *
+     * @return void
+     */
+    private function enrichWithConfigurationInfo(View $view): void
+    {
+        // Get configurations from cache for the active organisation
+        $configurations = $this->configurationCacheService->getConfigurationsForActiveOrganisation();
+
+        // Check if this view is managed by any configuration
+        $managedBy = $view->getManagedByConfiguration($configurations);
+        if ($managedBy !== null) {
+            $view->setManagedByConfigurationEntity($managedBy);
+        }
+
+    }//end enrichWithConfigurationInfo()
 
 
 }//end class

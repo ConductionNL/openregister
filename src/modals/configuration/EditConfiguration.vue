@@ -37,7 +37,7 @@ import { configurationStore, navigationStore, registerStore, schemaStore, organi
 						@update:value="updateDescription" />
 
 					<div class="selectField">
-						<label for="application-select">Application</label>
+						<label for="application-select">Owner Application</label>
 						<NcSelect
 							id="application-select"
 							v-model="selectedApplication"
@@ -45,7 +45,7 @@ import { configurationStore, navigationStore, registerStore, schemaStore, organi
 							label="name"
 							track-by="id"
 							:label-outside="true"
-							placeholder="Select application (optional)..."
+							placeholder="Select owner application (optional)..."
 							@input="updateApplication">
 							<template #option="{ name, description }">
 								<div class="option-content">
@@ -55,7 +55,10 @@ import { configurationStore, navigationStore, registerStore, schemaStore, organi
 							</template>
 						</NcSelect>
 						<p v-if="selectedApplication" class="field-hint">
-							Application: {{ selectedApplication.name }}
+							Owner: {{ selectedApplication.name }}
+						</p>
+						<p v-else class="field-hint">
+							The application that owns this configuration (optional)
 						</p>
 					</div>
 
@@ -178,7 +181,7 @@ import { configurationStore, navigationStore, registerStore, schemaStore, organi
 							:options="sourceOptions"
 							:loading="loadingSources"
 							:multiple="true"
-							label="name"
+							label="title"
 							track-by="id"
 							:label-outside="true"
 							:filterable="false"
@@ -186,9 +189,9 @@ import { configurationStore, navigationStore, registerStore, schemaStore, organi
 							:close-on-select="false"
 							@search-change="searchSources"
 							@input="updateSources">
-							<template #option="{ name, description }">
+							<template #option="{ title, description }">
 								<div class="option-content">
-									<span class="option-title">{{ name }}</span>
+									<span class="option-title">{{ title }}</span>
 									<span v-if="description" class="option-description">{{ description }}</span>
 								</div>
 							</template>
@@ -263,6 +266,38 @@ import { configurationStore, navigationStore, registerStore, schemaStore, organi
 						</NcSelect>
 						<p class="field-hint">
 							{{ selectedViews.length }} view(s) selected
+						</p>
+					</div>
+
+					<div class="selectField">
+						<label for="managed-applications-select">Applications</label>
+						<NcSelect
+							id="managed-applications-select"
+							v-model="selectedManagedApplications"
+							:options="applicationOptions"
+							:loading="loadingApplications"
+							:multiple="true"
+							label="name"
+							track-by="id"
+							:label-outside="true"
+							:filterable="false"
+							placeholder="Search applications..."
+							:close-on-select="false"
+							@search-change="searchApplications"
+							@input="updateManagedApplications">
+							<template #option="{ name, description }">
+								<div class="option-content">
+									<span class="option-title">{{ name }}</span>
+									<span v-if="description" class="option-description">{{ description }}</span>
+								</div>
+							</template>
+							<template #no-options>
+								<span v-if="loadingApplications">Searching...</span>
+								<span v-else>No applications found</span>
+							</template>
+						</NcSelect>
+						<p class="field-hint">
+							{{ selectedManagedApplications.length }} application(s) selected
 						</p>
 					</div>
 					</div>
@@ -474,6 +509,7 @@ export default {
 			selectedSources: [],
 		selectedAgents: [],
 		selectedViews: [],
+		selectedManagedApplications: [],
 		selectedApplication: null,
 			// Management tab selections
 			selectedSourceType: null,
@@ -485,6 +521,7 @@ export default {
 			loadingSources: false,
 			loadingAgents: false,
 			loadingViews: false,
+			loadingApplications: false,
 			// Search results
 			registerOptions: [],
 			schemaOptions: [],
@@ -492,6 +529,7 @@ export default {
 			sourceOptions: [],
 			agentOptions: [],
 			viewOptions: [],
+			applicationOptions: [],
 			// Debounce timers
 			registerSearchDebounce: null,
 			schemaSearchDebounce: null,
@@ -499,6 +537,7 @@ export default {
 			sourceSearchDebounce: null,
 			agentSearchDebounce: null,
 			viewSearchDebounce: null,
+			applicationSearchDebounce: null,
 		}
 	},
 	computed: {
@@ -542,6 +581,7 @@ export default {
 		this.searchSources('')
 		this.searchAgents('')
 		this.searchViews('')
+		this.searchApplications('')
 
 		// Initialize configurationItem if it doesn't exist
 		if (!configurationStore.configurationItem) {
@@ -651,6 +691,14 @@ export default {
 			// Extract IDs from selected view objects
 			configurationStore.configurationItem.views = value.map(v => parseInt(v.id))
 			this.selectedViews = value
+		},
+		updateManagedApplications(value) {
+			if (!configurationStore.configurationItem) {
+				configurationStore.configurationItem = {}
+			}
+			// Extract IDs from selected application objects
+			configurationStore.configurationItem.applications = value.map(a => parseInt(a.id))
+			this.selectedManagedApplications = value
 		},
 		// Management tab update methods
 		updateSourceType(value) {
@@ -795,6 +843,18 @@ export default {
 						this.selectedViews = await Promise.all(promises)
 					} catch (error) {
 						console.error('Error loading selected views:', error)
+					}
+				}
+				
+				// Load selected managed applications by fetching them individually
+				if (item.applications && Array.isArray(item.applications) && item.applications.length > 0) {
+					try {
+						const promises = item.applications.map(id => 
+							fetch(`/index.php/apps/openregister/api/applications/${id}`).then(r => r.json())
+						)
+						this.selectedManagedApplications = await Promise.all(promises)
+					} catch (error) {
+						console.error('Error loading selected applications:', error)
 					}
 				}
 			}
@@ -954,6 +1014,29 @@ export default {
 					this.viewOptions = []
 				} finally {
 					this.loadingViews = false
+				}
+			}, 300)
+		},
+		searchApplications(query) {
+			clearTimeout(this.applicationSearchDebounce)
+			this.applicationSearchDebounce = setTimeout(async () => {
+				this.loadingApplications = true
+				try {
+					const response = await fetch(`/index.php/apps/openregister/api/applications?_search=${encodeURIComponent(query)}&_limit=10`)
+					const data = await response.json()
+					this.applicationOptions = data.results || data || []
+					// Include already selected items
+					const selectedIds = this.selectedManagedApplications.map(a => a.id)
+					this.selectedManagedApplications.forEach(selected => {
+						if (!this.applicationOptions.find(a => a.id === selected.id)) {
+							this.applicationOptions.unshift(selected)
+						}
+					})
+				} catch (error) {
+					console.error('Error searching applications:', error)
+					this.applicationOptions = []
+				} finally {
+					this.loadingApplications = false
 				}
 			}, 300)
 		},

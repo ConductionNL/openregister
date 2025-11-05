@@ -19,6 +19,7 @@
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Service\ConfigurationCacheService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
@@ -28,6 +29,7 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserSession;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * Class AgentMapper
@@ -404,15 +406,11 @@ class AgentMapper extends QBMapper
         $this->verifyRbacPermission('create', 'agent');
 
         if ($entity instanceof Agent) {
-            // CRITICAL: Always ensure UUID is set before insert
-            $currentUuid = $entity->getUuid();
-            if ($currentUuid === null || $currentUuid === '' || trim($currentUuid ?? '') === '') {
+            // Ensure UUID is set
+            $uuid = $entity->getUuid();
+            if (!$uuid || trim($uuid) === '') {
                 $newUuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
-                // Force set the UUID directly on the property to bypass any setter logic
-                $reflection = new \ReflectionClass($entity);
-                $property = $reflection->getProperty('uuid');
-                $property->setAccessible(true);
-                $property->setValue($entity, $newUuid);
+                $entity->setUuid($newUuid);
             }
             
             // Set timestamps if not already set
@@ -487,11 +485,6 @@ class AgentMapper extends QBMapper
      */
     public function createFromArray(array $data): Agent
     {
-        // ALWAYS generate UUID first before creating entity
-        if (!isset($data['uuid']) || $data['uuid'] === null || $data['uuid'] === '' || trim($data['uuid'] ?? '') === '') {
-            $data['uuid'] = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
-        }
-        
         $agent = new Agent();
         $agent->hydrate($data);
 

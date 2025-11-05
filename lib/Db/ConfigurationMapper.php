@@ -27,6 +27,7 @@ use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
+use OCP\ISession;
 use OCP\IUserSession;
 
 /**
@@ -66,23 +67,40 @@ class ConfigurationMapper extends QBMapper
     private IGroupManager $groupManager;
 
     /**
+     * Session for caching configurations
+     *
+     * @var ISession
+     */
+    private ISession $session;
+
+    /**
+     * Session key prefix for storing configurations
+     *
+     * @var string
+     */
+    private const SESSION_KEY_PREFIX = 'openregister_configurations_';
+
+    /**
      * ConfigurationMapper constructor.
      *
      * @param IDBConnection       $db                  Database connection instance
      * @param OrganisationService $organisationService Organisation service for multi-tenancy
      * @param IUserSession        $userSession         User session
      * @param IGroupManager       $groupManager        Group manager for RBAC
+     * @param ISession            $session             Session for caching
      */
     public function __construct(
         IDBConnection $db,
         OrganisationService $organisationService,
         IUserSession $userSession,
-        IGroupManager $groupManager
+        IGroupManager $groupManager,
+        ISession $session
     ) {
         parent::__construct($db, 'openregister_configurations', Configuration::class);
         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
+        $this->session             = $session;
 
     }//end __construct()
 
@@ -204,6 +222,14 @@ class ConfigurationMapper extends QBMapper
             if (empty($entity->getType())) {
                 $entity->setType('default');
             }
+
+            // Auto-set owner to current user if not already set
+            if (empty($entity->getOwner())) {
+                $currentUserId = $this->getCurrentUserId();
+                if ($currentUserId !== null) {
+                    $entity->setOwner($currentUserId);
+                }
+            }
             
             $entity->setCreated(new DateTime());
             $entity->setUpdated(new DateTime());
@@ -212,7 +238,12 @@ class ConfigurationMapper extends QBMapper
         // Auto-set organisation from active session
         $this->setOrganisationOnCreate($entity);
 
-        return parent::insert($entity);
+        $result = parent::insert($entity);
+
+        // Invalidate configuration cache
+        $this->invalidateConfigurationCache();
+
+        return $result;
 
     }//end insert()
 
@@ -237,7 +268,12 @@ class ConfigurationMapper extends QBMapper
             $entity->setUpdated(new DateTime());
         }
 
-        return parent::update($entity);
+        $result = parent::update($entity);
+
+        // Invalidate configuration cache
+        $this->invalidateConfigurationCache();
+
+        return $result;
 
     }//end update()
 
@@ -258,7 +294,12 @@ class ConfigurationMapper extends QBMapper
         // Verify user has access to this organisation
         $this->verifyOrganisationAccess($entity);
 
-        return parent::delete($entity);
+        $result = parent::delete($entity);
+
+        // Invalidate configuration cache
+        $this->invalidateConfigurationCache();
+
+        return $result;
 
     }//end delete()
 
@@ -414,6 +455,30 @@ class ConfigurationMapper extends QBMapper
         return $this->findEntities($qb);
 
     }//end findAll()
+
+
+    /**
+     * Invalidate the configuration cache for the active organisation
+     *
+     * This method removes cached configurations from the session
+     * to ensure fresh data is loaded on the next request.
+     *
+     * @return void
+     */
+    private function invalidateConfigurationCache(): void
+    {
+        $activeOrg = $this->organisationService->getActiveOrganisation();
+        if ($activeOrg === null) {
+            return;
+        }
+
+        $orgUuid = $activeOrg->getUuid();
+        $sessionKey = self::SESSION_KEY_PREFIX.$orgUuid;
+
+        // Remove from session
+        $this->session->remove($sessionKey);
+
+    }//end invalidateConfigurationCache()
 
 
 }//end class

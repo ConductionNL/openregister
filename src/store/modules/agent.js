@@ -225,20 +225,28 @@ export const useAgentStore = defineStore('agent', {
 			const method = isNewAgent ? 'POST' : 'PUT'
 
 			try {
-				const response = await fetch(
-					endpoint,
-					{
-						method,
-						headers: {
-							'Content-Type': 'application/json',
-						},
-						body: JSON.stringify(agentItem),
+			const response = await fetch(
+				endpoint,
+				{
+					method,
+					headers: {
+						'Content-Type': 'application/json',
 					},
-				)
+					body: JSON.stringify(agentItem),
+				},
+			)
 
-				if (!response.ok) {
+			if (!response.ok) {
+				// Try to parse error message from response
+				try {
+					const errorData = await response.json()
+					const errorMessage = errorData.message || errorData.error || `HTTP error! status: ${response.status}`
+					throw new Error(errorMessage)
+				} catch (jsonError) {
+					// If JSON parsing fails, use status code
 					throw new Error(`HTTP error! status: ${response.status}`)
 				}
+			}
 
 				const responseData = await response.json()
 				const data = new Agent(responseData)
