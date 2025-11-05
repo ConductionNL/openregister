@@ -1,26 +1,138 @@
+---
+sidebar_position: 12
+title: CLI Commands
+description: Command-line interface reference for OpenRegister administration
+---
+
 # CLI Commands Reference
 
-OpenRegister provides several CLI commands for administration, debugging, and maintenance tasks. All commands are executed using Nextcloud's `occ` command-line tool.
+OpenRegister provides several CLI commands for administration, debugging, and maintenance tasks. All commands are executed using Nextcloud's 'occ' command-line tool.
+
+## Quick Reference
+
+| Command | Purpose | Use Case |
+|---------|---------|----------|
+| 'openregister:solr:manage' | Production SOLR management | Setup, optimize, maintain SOLR |
+| 'openregister:solr:debug' | SOLR debugging | Troubleshoot SOLR issues |
+| Standard Nextcloud OCC | App & system management | Enable/disable, maintenance |
 
 ## Command Execution
 
 ### Basic Syntax
+
 ```bash
-# From host machine (recommended)
+# From host machine (recommended for WSL/Docker)
 docker exec -u 33 <nextcloud-container> php /var/www/html/occ <command>
 
 # From within container
 php /var/www/html/occ <command>
+
+# With increased memory limit (for large operations)
+docker exec -u 33 <nextcloud-container> php -d memory_limit=4G /var/www/html/occ <command>
 ```
 
 ### Common Container Names
-- **Development**: `master-nextcloud-1`
-- **Production**: Usually `nextcloud` or similar
 
-## SOLR Commands
+- **Development**: 'master-nextcloud-1'
+- **Production**: Usually 'nextcloud' or your custom container name
+- **Find your container**: 'docker ps | grep nextcloud'
 
-### SOLR Debug Command
-Comprehensive SOLR debugging and testing tool.
+## OpenRegister Commands
+
+### 1. SOLR Management Command ('openregister:solr:manage')
+
+**Purpose**: Production-ready SOLR management for setup, optimization, and maintenance.
+
+**Available Actions**:
+
+#### Setup
+Initialize complete SOLR infrastructure including configSets, collections, and schema.
+
+```bash
+docker exec -u 33 master-nextcloud-1 php /var/www/html/occ openregister:solr:manage setup
+```
+
+**What it does**:
+- Creates SOLR configSet
+- Creates base collection
+- Deploys schema with ObjectEntity fields
+- Creates tenant-specific collection
+- Validates setup
+
+#### Optimize
+Optimize SOLR index for better query performance.
+
+```bash
+# Optimize index
+docker exec -u 33 master-nextcloud-1 php /var/www/html/occ openregister:solr:manage optimize
+
+# Optimize and commit immediately
+docker exec -u 33 master-nextcloud-1 php /var/www/html/occ openregister:solr:manage optimize --commit
+```
+
+**When to use**: After large bulk imports, during maintenance windows, before high-traffic periods.
+
+#### Warm
+Pre-load SOLR caches for better performance.
+
+```bash
+docker exec -u 33 master-nextcloud-1 php /var/www/html/occ openregister:solr:manage warm
+```
+
+**When to use**: After server restarts, deployments, or SOLR restarts.
+
+#### Health
+Comprehensive health check of SOLR infrastructure.
+
+```bash
+docker exec -u 33 master-nextcloud-1 php /var/www/html/occ openregister:solr:manage health
+```
+
+**Checks**:
+- Connection status and response time
+- Tenant collection accessibility
+- Search functionality
+- Document counts
+- Service statistics
+
+#### Schema Check
+Validate SOLR schema compatibility with ObjectEntity fields.
+
+```bash
+docker exec -u 33 master-nextcloud-1 php /var/www/html/occ openregister:solr:manage schema-check
+```
+
+**Validates**: All required ObjectEntity fields are present in SOLR schema.
+
+#### Clear
+Clear tenant-specific SOLR index (destructive operation).
+
+```bash
+# Requires --force flag for safety
+docker exec -u 33 master-nextcloud-1 php /var/www/html/occ openregister:solr:manage clear --force
+```
+
+**⚠️ Warning**: This deletes ALL indexed documents for the current tenant!
+
+#### Stats
+Display detailed SOLR statistics and performance metrics.
+
+```bash
+docker exec -u 33 master-nextcloud-1 php /var/www/html/occ openregister:solr:manage stats
+```
+
+**Shows**:
+- Collection information
+- Document counts
+- Shard information
+- Performance metrics
+- Search/index timing statistics
+
+### 2. SOLR Debug Command ('openregister:solr:debug')
+
+**Purpose**: Debugging and troubleshooting SOLR configuration issues.
+
+**Available Options**:
 
 ```bash
 # Run all debug tests
@@ -39,7 +151,8 @@ docker exec -u 33 master-nextcloud-1 php /var/www/html/occ openregister:solr:deb
 docker exec -u 33 master-nextcloud-1 php /var/www/html/occ openregister:solr:debug --check-cores
 ```
 
-**Output Examples:**
+**Example Output**:
+
 ```
 🔍 SOLR Debug Tool - OpenRegister Multi-Tenant
 ================================================
@@ -59,6 +172,18 @@ docker exec -u 33 master-nextcloud-1 php /var/www/html/occ openregister:solr:deb
     Scheme: http
 ✅ SOLR setup completed successfully
 ```
+
+### Command Comparison
+
+| Feature | 'openregister:solr:manage' | 'openregister:solr:debug' |
+|---------|------------------------|----------------------|
+| **Purpose** | Production operations | Development/troubleshooting |
+| **Setup** | Full production setup | Test setup process |
+| **Connection Test** | Health check (comprehensive) | Basic connection test |
+| **Optimization** | ✅ Yes | ❌ No |
+| **Cache Warming** | ✅ Yes | ❌ No |
+| **Statistics** | ✅ Detailed metrics | ❌ Basic info only |
+| **Use Case** | Production deployments | Debugging issues |
 
 ## Database Commands
 
@@ -338,9 +463,150 @@ docker exec master-nextcloud-1 bash -c 'while true; do free -h; sleep 5; done' &
 # Monitor system resources during bulk operations
 ```
 
-## References
+## Workflow Examples
 
-- [Nextcloud OCC Commands](https://docs.nextcloud.com/server/latest/admin_manual/occ_command.html)
-- [OpenRegister API Documentation](./api-endpoints.md)
-- [SOLR Search Engine](./solr-search-engine.md)
-- [Development Setup](./development-setup.md)
+### Initial Setup Workflow
+
+Complete workflow for setting up OpenRegister with SOLR:
+
+```bash
+#!/bin/bash
+# Initial OpenRegister setup
+
+# 1. Enable the app
+docker exec -u 33 master-nextcloud-1 php /var/www/html/occ app:enable openregister
+
+# 2. Check app status
+docker exec -u 33 master-nextcloud-1 php /var/www/html/occ app:info openregister
+
+# 3. Setup SOLR infrastructure
+docker exec -u 33 master-nextcloud-1 php /var/www/html/occ openregister:solr:manage setup
+
+# 4. Verify SOLR health
+docker exec -u 33 master-nextcloud-1 php /var/www/html/occ openregister:solr:manage health
+
+# 5. Warm up caches
+docker exec -u 33 master-nextcloud-1 php /var/www/html/occ openregister:solr:manage warm
+
+echo "OpenRegister is ready for use!"
+```
+
+### Maintenance Workflow
+
+Regular maintenance tasks:
+
+```bash
+#!/bin/bash
+# Weekly maintenance
+
+# 1. Check SOLR health
+docker exec -u 33 master-nextcloud-1 php /var/www/html/occ openregister:solr:manage health
+
+# 2. Optimize index (run during low-traffic hours)
+docker exec -u 33 master-nextcloud-1 php /var/www/html/occ openregister:solr:manage optimize --commit
+
+# 3. Display statistics
+docker exec -u 33 master-nextcloud-1 php /var/www/html/occ openregister:solr:manage stats
+
+# 4. Check system status
+docker exec -u 33 master-nextcloud-1 php /var/www/html/occ status
+
+echo "Maintenance complete!"
+```
+
+### Debugging Workflow
+
+Troubleshooting when SOLR issues occur:
+
+```bash
+#!/bin/bash
+# Debug SOLR issues
+
+# 1. Run all debug tests
+docker exec -u 33 master-nextcloud-1 php /var/www/html/occ openregister:solr:debug --all
+
+# 2. Check tenant information
+docker exec -u 33 master-nextcloud-1 php /var/www/html/occ openregister:solr:debug --tenant-info
+
+# 3. Test connection specifically
+docker exec -u 33 master-nextcloud-1 php /var/www/html/occ openregister:solr:debug --test-connection
+
+# 4. Check cores/collections
+docker exec -u 33 master-nextcloud-1 php /var/www/html/occ openregister:solr:debug --check-cores
+
+# 5. Check logs
+docker logs master-nextcloud-1 --since 10m | grep -i solr
+
+echo "Debug information collected!"
+```
+
+## Best Practices
+
+### Production Recommendations
+
+1. **Initial Setup**
+   - Run 'openregister:solr:manage setup' once during deployment
+   - Verify with 'openregister:solr:manage health'
+   - Warm caches with 'openregister:solr:manage warm'
+
+2. **Regular Maintenance**
+   - Run 'optimize' weekly or after large imports
+   - Check 'health' daily via monitoring
+   - Review 'stats' for performance insights
+
+3. **Troubleshooting**
+   - Use 'openregister:solr:debug' for initial diagnostics
+   - Check tenant information to verify multi-tenancy setup
+   - Test connection when experiencing search issues
+
+### Performance Optimization
+
+1. **Memory Management**
+   - Use '-d memory_limit=4G' for bulk operations
+   - Monitor memory usage during imports
+   - Optimize index after large data changes
+
+2. **Cache Warming**
+   - Warm caches after cold starts
+   - Run after major deployments
+   - Schedule before high-traffic periods
+
+3. **Index Optimization**
+   - Run during maintenance windows
+   - Use '--commit' flag for immediate effect
+   - Monitor execution time for large indexes
+
+### Security Considerations
+
+1. **Container Access**
+   - Always use '-u 33' (www-data user) for OCC commands
+   - Never expose admin credentials in scripts
+   - Use root access only when necessary
+
+2. **Data Safety**
+   - Always use '--force' flag for destructive operations
+   - Test commands in development first
+   - Back up before running 'clear' operations
+
+3. **Production vs Development**
+   - Use 'openregister:solr:manage' for production
+   - Use 'openregister:solr:debug' for development only
+   - Never run debug commands in production load
+
+## Related Documentation
+
+- **Nextcloud OCC**: [Nextcloud OCC Commands](https://docs.nextcloud.com/server/latest/admin_manual/occ_command.html)
+- **OpenRegister Features**: [SOLR Search](/docs/Features/search)
+- **Development**: [Getting Started](/docs/developers/aan-de-slag-met-development)
+- **Testing**: [Testing Guide](/docs/developers/testing)
+- **RBAC**: [RBAC Implementation](/docs/developers/rbac)
+- **Frontend**: [Frontend Architecture](/docs/developers/frontend)
+
+## Changelog
+
+### Version 0.2.8
+- ✅ Added 'openregister:solr:manage' for production operations
+- ✅ Added 'openregister:solr:debug' for troubleshooting
+- ✅ Comprehensive command documentation
+- ✅ Workflow examples and best practices
+- ✅ Performance optimization guidelines

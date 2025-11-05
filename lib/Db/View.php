@@ -62,6 +62,13 @@ class View extends Entity implements JsonSerializable
     protected ?string $owner = null;
 
     /**
+     * Organisation UUID this view belongs to
+     *
+     * @var string|null Organisation UUID
+     */
+    protected ?string $organisation = null;
+
+    /**
      * Whether the view is public
      *
      * @var bool Whether the view is public
@@ -112,6 +119,7 @@ class View extends Entity implements JsonSerializable
     public function __construct()
     {
         // Add types for automatic JSON (de)serialization
+        $this->addType('organisation', 'string');
         $this->addType('isPublic', 'boolean');
         $this->addType('isDefault', 'boolean');
         $this->addType('query', 'json');
@@ -147,6 +155,33 @@ class View extends Entity implements JsonSerializable
 
 
     /**
+     * Get the organisation UUID
+     *
+     * @return string|null The organisation UUID
+     */
+    public function getOrganisation(): ?string
+    {
+        return $this->organisation;
+
+    }//end getOrganisation()
+
+
+    /**
+     * Set the organisation UUID
+     *
+     * @param string|null $organisation The organisation UUID
+     *
+     * @return void
+     */
+    public function setOrganisation(?string $organisation): void
+    {
+        $this->organisation = $organisation;
+        $this->markFieldUpdated('organisation');
+
+    }//end setOrganisation()
+
+
+    /**
      * Get the array version of this entity
      *
      * Converts the entity to an array representation
@@ -158,12 +193,13 @@ class View extends Entity implements JsonSerializable
         $favoredBy = $this->favoredBy ?? [];
 
         return [
-            'id'          => $this->id,
-            'uuid'        => $this->uuid,
-            'name'        => $this->name,
-            'description' => $this->description,
-            'owner'       => $this->owner,
-            'isPublic'    => $this->isPublic,
+            'id'           => $this->id,
+            'uuid'         => $this->uuid,
+            'name'         => $this->name,
+            'description'  => $this->description,
+            'owner'        => $this->owner,
+            'organisation' => $this->organisation,
+            'isPublic'     => $this->isPublic,
             'isDefault'   => $this->isDefault,
             'query'       => $this->query,
             'favoredBy'   => $favoredBy,

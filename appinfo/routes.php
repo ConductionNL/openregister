@@ -283,6 +283,16 @@ return [
 		['name' => 'chat#clearHistory', 'url' => '/api/chat/history', 'verb' => 'DELETE'],
 		['name' => 'chat#sendFeedback', 'url' => '/api/chat/feedback', 'verb' => 'POST'],
 		
+		// Conversations - AI Conversation management
+		['name' => 'conversation#index', 'url' => '/api/conversations', 'verb' => 'GET'],
+		['name' => 'conversation#show', 'url' => '/api/conversations/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'conversation#create', 'url' => '/api/conversations', 'verb' => 'POST'],
+		['name' => 'conversation#update', 'url' => '/api/conversations/{uuid}', 'verb' => 'PATCH', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'conversation#destroy', 'url' => '/api/conversations/{uuid}', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'conversation#restore', 'url' => '/api/conversations/{uuid}/restore', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'conversation#destroyPermanent', 'url' => '/api/conversations/{uuid}/permanent', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'conversation#archive', 'url' => '/api/conversations/archive', 'verb' => 'GET'],
+		
 		// File Text Management - Extract and manage text from files
 		['name' => 'fileText#getFileText', 'url' => '/api/files/{fileId}/text', 'verb' => 'GET', 'requirements' => ['fileId' => '\\d+']],
 		['name' => 'fileText#extractFileText', 'url' => '/api/files/{fileId}/extract', 'verb' => 'POST', 'requirements' => ['fileId' => '\\d+']],

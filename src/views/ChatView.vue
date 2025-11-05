@@ -1,242 +1,235 @@
 <template>
 	<NcAppContent>
-		<div class="chat-container">
-			<!-- Chat Header -->
-			<div class="chat-header">
-				<div class="header-content">
-					<h1>
-						<Robot :size="32" />
-						{{ t('openregister', 'AI Assistant') }}
-					</h1>
-					<p class="subtitle">
-						{{ t('openregister', 'Ask questions about your data using natural language') }}
+		<div class="chat-layout">
+			<!-- Conversation Sidebar -->
+			<ConversationSidebar
+				:collapsed="sidebarCollapsed"
+				:conversations="showArchive ? archivedConversations : conversationList"
+				:active-conversation="activeConversation"
+				:show-archive="showArchive"
+				:loading="conversationLoading"
+				@toggle-sidebar="toggleSidebar"
+				@new-conversation="showAgentSelector"
+				@select-conversation="selectConversation"
+				@delete-conversation="deleteConversation"
+				@restore-conversation="restoreConversation"
+				@toggle-archive="toggleArchive" />
+
+			<!-- Main Chat Area -->
+			<div class="chat-container">
+				<!-- Chat Header -->
+				<div class="chat-header">
+					<div class="header-content">
+						<h1>
+							<Robot :size="32" />
+							{{ activeConversation?.title || t('openregister', 'AI Assistant') }}
+						</h1>
+						<p v-if="currentAgent" class="subtitle">
+							{{ t('openregister', 'Agent:') }} <strong>{{ currentAgent.name }}</strong>
+							<span v-if="currentAgent.model"> • {{ currentAgent.model }}</span>
+						</p>
+						<p v-else class="subtitle">
+							{{ t('openregister', 'Ask questions about your data using natural language') }}
+						</p>
+					</div>
+					<div class="header-actions">
+						<NcButton
+							v-if="activeConversation"
+							type="secondary"
+							@click="renameConversation">
+							<template #icon>
+								<Pencil :size="20" />
+							</template>
+							{{ t('openregister', 'Rename') }}
+						</NcButton>
+					</div>
+				</div>
+
+				<!-- Configuration Required Message -->
+				<div v-if="checkingConfig" class="empty-state">
+					<div class="empty-icon">
+						<NcLoadingIcon :size="64" />
+					</div>
+					<h2>{{ t('openregister', 'Checking configuration...') }}</h2>
+				</div>
+
+				<div v-else-if="!llmConfigured" class="empty-state config-required">
+					<div class="empty-icon">
+						<InformationOutline :size="64" />
+					</div>
+					<h2>{{ t('openregister', 'Chat Provider Not Configured') }}</h2>
+					<p>{{ t('openregister', 'To chat with your data and documents, a Large Language Model (LLM) provider must be configured.') }}</p>
+					<p class="contact-admin">
+						{{ t('openregister', 'Please contact your administrator to configure a chat provider in the LLM Configuration settings.') }}
 					</p>
-				</div>
-				<div class="header-actions">
-					<NcButton
-						type="secondary"
-						@click="showChatSettings = true">
-						<template #icon>
-							<Cog :size="20" />
-						</template>
-						{{ t('openregister', 'Settings') }}
-					</NcButton>
-					<NcButton
-						v-if="messages.length > 0"
-						type="secondary"
-						@click="clearConversation">
-						<template #icon>
-							<Delete :size="20" />
-						</template>
-						{{ t('openregister', 'Clear Chat') }}
-					</NcButton>
-				</div>
-			</div>
 
-			<!-- Configuration Required Message -->
-			<div v-if="checkingConfig" class="empty-state">
-				<div class="empty-icon">
-					<NcLoadingIcon :size="64" />
-				</div>
-				<h2>{{ t('openregister', 'Checking configuration...') }}</h2>
-			</div>
-
-			<div v-else-if="!llmConfigured" class="empty-state config-required">
-				<div class="empty-icon">
-					<InformationOutline :size="64" />
-				</div>
-				<h2>{{ t('openregister', 'Chat Provider Not Configured') }}</h2>
-				<p>{{ t('openregister', 'To chat with your data and documents, a Large Language Model (LLM) provider must be configured.') }}</p>
-				<p class="contact-admin">
-					{{ t('openregister', 'Please contact your administrator to configure a chat provider in the LLM Configuration settings.') }}
-				</p>
-
-				<div class="config-hint">
-					<p><strong>{{ t('openregister', 'Administrators:') }}</strong></p>
-					<ol>
-						<li>{{ t('openregister', 'Go to Settings → OpenRegister → SOLR Configuration') }}</li>
-						<li>{{ t('openregister', 'Click "Actions" → "LLM Configuration"') }}</li>
-						<li>{{ t('openregister', 'Configure a Chat Provider (OpenAI, Ollama, etc.)') }}</li>
-					</ol>
-				</div>
-			</div>
-
-			<!-- Empty State -->
-			<div v-else-if="messages.length === 0" class="empty-state">
-				<div class="empty-icon">
-					<MessageText :size="64" />
-				</div>
-				<h2>{{ t('openregister', 'Start a conversation') }}</h2>
-				<p>{{ t('openregister', 'Ask questions about your objects, files, and data. The AI assistant uses semantic search to find relevant information.') }}</p>
-
-				<div class="suggested-prompts">
-					<h3>{{ t('openregister', 'Try asking:') }}</h3>
-					<div class="prompt-grid">
-						<button
-							v-for="(prompt, index) in suggestedPrompts"
-							:key="index"
-							class="prompt-card"
-							@click="sendMessage(prompt.text)">
-							<div class="prompt-icon">
-								{{ prompt.icon }}
-							</div>
-							<div class="prompt-text">
-								{{ prompt.text }}
-							</div>
-						</button>
+					<div class="config-hint">
+						<p><strong>{{ t('openregister', 'Administrators:') }}</strong></p>
+						<ol>
+							<li>{{ t('openregister', 'Go to Settings → OpenRegister → SOLR Configuration') }}</li>
+							<li>{{ t('openregister', 'Click "Actions" → "LLM Configuration"') }}</li>
+							<li>{{ t('openregister', 'Configure a Chat Provider (OpenAI, Ollama, etc.)') }}</li>
+						</ol>
 					</div>
 				</div>
-			</div>
 
-			<!-- Chat Messages -->
-			<div v-else ref="messagesContainer" class="chat-messages">
-				<div
-					v-for="(message, index) in messages"
-					:key="index"
-					:class="['message', message.role]">
-					<div class="message-avatar">
-						<AccountCircle v-if="message.role === 'user'" :size="32" />
-						<Robot v-else :size="32" />
+				<!-- Empty State - No Conversation Selected -->
+				<div v-else-if="!activeConversation" class="empty-state">
+					<div class="empty-icon">
+						<MessageText :size="64" />
 					</div>
-					<div class="message-content">
-						<div class="message-header">
-							<span class="message-sender">{{ message.role === 'user' ? t('openregister', 'You') : t('openregister', 'AI Assistant') }}</span>
-							<span class="message-time">{{ formatTime(message.timestamp) }}</span>
+					<h2>{{ t('openregister', 'Start a conversation') }}</h2>
+					<p>{{ t('openregister', 'Select a conversation from the sidebar or create a new one to get started.') }}</p>
+					<NcButton
+						type="primary"
+						@click="showAgentSelector">
+						<template #icon>
+							<Plus :size="20" />
+						</template>
+						{{ t('openregister', 'New Conversation') }}
+					</NcButton>
+				</div>
+
+				<!-- Chat Messages -->
+				<div v-else ref="messagesContainer" class="chat-messages">
+					<div
+						v-for="(message, index) in activeMessages"
+						:key="index"
+						:class="['message', message.role]">
+						<div class="message-avatar">
+							<AccountCircle v-if="message.role === 'user'" :size="32" />
+							<Robot v-else :size="32" />
 						</div>
-						<div class="message-text" v-html="formatMessage(message.content)" />
-
-						<!-- Sources (for AI messages) -->
-						<div v-if="message.sources && message.sources.length > 0" class="message-sources">
-							<div class="sources-header">
-								<FileDocumentOutline :size="16" />
-								<span>{{ t('openregister', 'Sources:') }}</span>
+						<div class="message-content">
+							<div class="message-header">
+								<span class="message-sender">{{ message.role === 'user' ? t('openregister', 'You') : t('openregister', 'AI Assistant') }}</span>
+								<span class="message-time">{{ formatTime(message.created) }}</span>
 							</div>
-							<div class="sources-list">
-								<div
-									v-for="(source, sIndex) in message.sources"
-									:key="sIndex"
-									class="source-item"
-									@click="viewSource(source)">
-									<div class="source-icon">
-										<FileDocument v-if="source.type === 'file'" :size="16" />
-										<CubeOutline v-else :size="16" />
-									</div>
-									<div class="source-info">
-										<span class="source-name">{{ source.name }}</span>
-										<span class="source-similarity">{{ Math.round(source.similarity * 100) }}% match</span>
+							<div class="message-text" v-html="formatMessage(message.content)" />
+
+							<!-- Sources (for AI messages) -->
+							<div v-if="message.sources && message.sources.length > 0" class="message-sources">
+								<div class="sources-header">
+									<FileDocumentOutline :size="16" />
+									<span>{{ t('openregister', 'Sources:') }}</span>
+								</div>
+								<div class="sources-list">
+									<div
+										v-for="(source, sIndex) in message.sources"
+										:key="sIndex"
+										class="source-item"
+										@click="viewSource(source)">
+										<div class="source-icon">
+											<FileDocument v-if="source.type === 'file'" :size="16" />
+											<CubeOutline v-else :size="16" />
+										</div>
+										<div class="source-info">
+											<span class="source-name">{{ source.name }}</span>
+											<span v-if="source.relevance" class="source-similarity">{{ Math.round(source.relevance * 100) }}% match</span>
+										</div>
 									</div>
 								</div>
 							</div>
-						</div>
 
-						<!-- Feedback -->
-						<div v-if="message.role === 'assistant'" class="message-feedback">
-							<button
-								:class="['feedback-btn', { active: message.feedback === 'positive' }]"
-								:title="t('openregister', 'Helpful')"
-								@click="sendFeedback(index, 'positive')">
-								<ThumbUp :size="16" />
-							</button>
-							<button
-								:class="['feedback-btn', { active: message.feedback === 'negative' }]"
-								:title="t('openregister', 'Not helpful')"
-								@click="sendFeedback(index, 'negative')">
-								<ThumbDown :size="16" />
-							</button>
+							<!-- Feedback -->
+							<div v-if="message.role === 'assistant'" class="message-feedback">
+								<button
+									:class="['feedback-btn', { active: message.feedback === 'positive' }]"
+									:title="t('openregister', 'Helpful')"
+									@click="sendFeedback(message, 'positive')">
+									<ThumbUp :size="16" />
+								</button>
+								<button
+									:class="['feedback-btn', { active: message.feedback === 'negative' }]"
+									:title="t('openregister', 'Not helpful')"
+									@click="sendFeedback(message, 'negative')">
+									<ThumbDown :size="16" />
+								</button>
+							</div>
+						</div>
+					</div>
+
+					<!-- Loading indicator -->
+					<div v-if="loading" class="message assistant loading">
+						<div class="message-avatar">
+							<Robot :size="32" />
+						</div>
+						<div class="message-content">
+							<div class="typing-indicator">
+								<span />
+								<span />
+								<span />
+							</div>
 						</div>
 					</div>
 				</div>
 
-				<!-- Loading indicator -->
-				<div v-if="loading" class="message assistant loading">
-					<div class="message-avatar">
-						<Robot :size="32" />
+				<!-- Chat Input (only show if configured and conversation selected) -->
+				<div v-if="llmConfigured && !checkingConfig && activeConversation" class="chat-input-container">
+					<div class="chat-input-wrapper">
+						<textarea
+							ref="messageInput"
+							v-model="currentMessage"
+							:placeholder="t('openregister', 'Ask a question...')"
+							:disabled="loading"
+							class="chat-input"
+							rows="1"
+							@keydown.enter.exact.prevent="handleSendMessage"
+							@input="autoResize" />
+						<NcButton
+							type="primary"
+							:disabled="!currentMessage.trim() || loading"
+							@click="handleSendMessage">
+							<template #icon>
+								<Send :size="20" />
+							</template>
+						</NcButton>
 					</div>
-					<div class="message-content">
-						<div class="typing-indicator">
-							<span />
-							<span />
-							<span />
-						</div>
+					<div class="input-hint">
+						<InformationOutline :size="14" />
+						<span>{{ t('openregister', 'Press Enter to send, Shift+Enter for new line') }}</span>
 					</div>
-				</div>
-			</div>
-
-			<!-- Chat Input (only show if configured) -->
-			<div v-if="llmConfigured && !checkingConfig" class="chat-input-container">
-				<div class="chat-input-wrapper">
-					<textarea
-						ref="messageInput"
-						v-model="currentMessage"
-						:placeholder="t('openregister', 'Ask a question...')"
-						:disabled="loading"
-						class="chat-input"
-						rows="1"
-						@keydown.enter.exact.prevent="handleSendMessage"
-						@input="autoResize" />
-					<NcButton
-						type="primary"
-						:disabled="!currentMessage.trim() || loading"
-						@click="handleSendMessage">
-						<template #icon>
-							<Send :size="20" />
-						</template>
-					</NcButton>
-				</div>
-				<div class="input-hint">
-					<InformationOutline :size="14" />
-					<span>{{ t('openregister', 'Press Enter to send, Shift+Enter for new line') }}</span>
 				</div>
 			</div>
 		</div>
 
-		<!-- Chat Settings Dialog -->
+		<!-- Agent Selector Dialog -->
 		<NcDialog
-			v-if="showChatSettings"
-			:name="t('openregister', 'Chat Settings')"
-			@closing="showChatSettings = false">
-			<div class="chat-settings">
-				<div class="setting-group">
-					<label>{{ t('openregister', 'Search Mode') }}</label>
-					<NcSelect
-						v-model="settings.searchMode"
-						:options="searchModeOptions"
-						label="name"
-						:placeholder="t('openregister', 'Select search mode')" />
-					<small>{{ t('openregister', 'How the AI should search for relevant information') }}</small>
-				</div>
+			v-if="showAgentSelectorDialog"
+			:name="t('openregister', 'Select AI Agent')"
+			@closing="showAgentSelectorDialog = false">
+			<AgentSelector
+				:agents="availableAgents"
+				:selected-agent="selectedAgent"
+				:loading="agentsLoading"
+				:error="agentsError"
+				@select-agent="selectAgent"
+				@confirm="startConversationWithAgent"
+				@cancel="showAgentSelectorDialog = false"
+				@retry="loadAgents" />
+		</NcDialog>
 
-				<div class="setting-group">
-					<label>{{ t('openregister', 'Number of Sources') }}</label>
-					<input
-						v-model.number="settings.numSources"
-						type="number"
-						min="1"
-						max="10"
-						class="input-field">
-					<small>{{ t('openregister', 'How many sources to retrieve for context (1-10)') }}</small>
-				</div>
-
-				<div class="setting-group">
-					<NcCheckboxRadioSwitch
-						v-model="settings.includeFiles"
-						type="switch">
-						{{ t('openregister', 'Search in files') }}
-					</NcCheckboxRadioSwitch>
-				</div>
-
-				<div class="setting-group">
-					<NcCheckboxRadioSwitch
-						v-model="settings.includeObjects"
-						type="switch">
-						{{ t('openregister', 'Search in objects') }}
-					</NcCheckboxRadioSwitch>
-				</div>
+		<!-- Rename Conversation Dialog -->
+		<NcDialog
+			v-if="showRenameDialog"
+			:name="t('openregister', 'Rename Conversation')"
+			@closing="showRenameDialog = false">
+			<div class="rename-dialog">
+				<input
+					v-model="newConversationTitle"
+					type="text"
+					:placeholder="t('openregister', 'Conversation title')"
+					class="rename-input">
 			</div>
-
 			<template #actions>
-				<NcButton @click="showChatSettings = false">
-					{{ t('openregister', 'Close') }}
+				<NcButton @click="showRenameDialog = false">
+					{{ t('openregister', 'Cancel') }}
+				</NcButton>
+				<NcButton
+					type="primary"
+					:disabled="!newConversationTitle.trim()"
+					@click="saveConversationTitle">
+					{{ t('openregister', 'Save') }}
 				</NcButton>
 			</template>
 		</NcDialog>
@@ -244,12 +237,14 @@
 </template>
 
 <script>
-import { NcAppContent, NcButton, NcDialog, NcSelect, NcCheckboxRadioSwitch, NcLoadingIcon } from '@nextcloud/vue'
+import { NcAppContent, NcButton, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
+import ConversationSidebar from '../components/ConversationSidebar.vue'
+import AgentSelector from '../components/AgentSelector.vue'
 import Robot from 'vue-material-design-icons/Robot.vue'
 import MessageText from 'vue-material-design-icons/MessageText.vue'
 import Send from 'vue-material-design-icons/Send.vue'
-import Cog from 'vue-material-design-icons/Cog.vue'
-import Delete from 'vue-material-design-icons/Delete.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
 import AccountCircle from 'vue-material-design-icons/AccountCircle.vue'
 import FileDocument from 'vue-material-design-icons/FileDocument.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
@@ -269,14 +264,14 @@ export default {
 		NcAppContent,
 		NcButton,
 		NcDialog,
-		NcSelect,
-		NcCheckboxRadioSwitch,
 		NcLoadingIcon,
+		ConversationSidebar,
+		AgentSelector,
 		Robot,
 		MessageText,
 		Send,
-		Cog,
-		Delete,
+		Pencil,
+		Plus,
 		AccountCircle,
 		FileDocument,
 		FileDocumentOutline,
@@ -288,53 +283,80 @@ export default {
 
 	data() {
 		return {
-			messages: [],
+			// Message state
 			currentMessage: '',
 			loading: false,
-			showChatSettings: false,
+
+			// LLM configuration
 			llmConfigured: false,
 			checkingConfig: true,
 
-			settings: {
-				searchMode: { id: 'hybrid', name: 'Hybrid (Recommended)' },
-				numSources: 5,
-				includeFiles: true,
-				includeObjects: true,
-			},
+			// Agent selection
+			showAgentSelectorDialog: false,
+			selectedAgent: null,
+			availableAgents: [],
+			agentsLoading: false,
+			agentsError: null,
+			currentAgent: null,
 
-			searchModeOptions: [
-				{ id: 'hybrid', name: 'Hybrid (Keyword + Semantic)' },
-				{ id: 'semantic', name: 'Semantic Only' },
-				{ id: 'keyword', name: 'Keyword Only' },
-			],
-
-			suggestedPrompts: [
-				{
-					icon: '🔍',
-					text: 'What information do you have about projects?',
-				},
-				{
-					icon: '📊',
-					text: 'Show me a summary of the data',
-				},
-				{
-					icon: '📄',
-					text: 'What files contain information about budgets?',
-				},
-				{
-					icon: '💡',
-					text: 'Help me find records related to Amsterdam',
-				},
-			],
+			// Rename dialog
+			showRenameDialog: false,
+			newConversationTitle: '',
 		}
 	},
 
-	mounted() {
-		this.checkLLMConfiguration()
-		this.loadConversationHistory()
+	computed: {
+		// Conversation store state
+		conversationStore() {
+			return this.$store ? this.$store.conversation : null
+		},
+
+		conversationList() {
+			return this.conversationStore?.conversationList || []
+		},
+
+		archivedConversations() {
+			return this.conversationStore?.archivedConversations || []
+		},
+
+		activeConversation() {
+			return this.conversationStore?.activeConversation || null
+		},
+
+		activeMessages() {
+			return this.conversationStore?.activeConversationMessages || []
+		},
+
+		conversationLoading() {
+			return this.conversationStore?.loading || false
+		},
+
+		sidebarCollapsed() {
+			return this.conversationStore?.sidebarCollapsed || false
+		},
+
+		showArchive() {
+			return this.conversationStore?.showArchive || false
+		},
+	},
+
+	async mounted() {
+		await this.checkLLMConfiguration()
+		if (this.llmConfigured) {
+			await this.initializeStore()
+		}
 	},
 
 	methods: {
+		async initializeStore() {
+			// Initialize conversation store if using Pinia
+			if (this.$pinia) {
+				const { useConversationStore } = await import('../store/modules/conversation')
+				this.$store = { conversation: useConversationStore() }
+				await this.$store.conversation.refreshConversationList()
+			}
+		},
+
 		async checkLLMConfiguration() {
 			try {
 				const response = await axios.get(generateUrl('/apps/openregister/api/settings'))
@@ -350,99 +372,160 @@ export default {
 			}
 		},
 
-		async loadConversationHistory() {
-			// Only load history if LLM is configured
-			if (!this.llmConfigured) {
+		toggleSidebar() {
+			if (this.$store?.conversation) {
+				this.$store.conversation.toggleSidebar()
+			}
+		},
+
+		toggleArchive(show) {
+			if (this.$store?.conversation) {
+				if (show && !this.showArchive) {
+					this.$store.conversation.toggleArchive()
+				} else if (!show && this.showArchive) {
+					this.$store.conversation.toggleArchive()
+				}
+			}
+		},
+
+		async showAgentSelector() {
+			this.showAgentSelectorDialog = true
+			this.selectedAgent = null
+			await this.loadAgents()
+		},
+
+		async loadAgents() {
+			this.agentsLoading = true
+			this.agentsError = null
+			try {
+				const response = await axios.get(generateUrl('/apps/openregister/api/agents'))
+				this.availableAgents = response.data.results || []
+			} catch (error) {
+				console.error('Failed to load agents:', error)
+				this.agentsError = this.t('openregister', 'Failed to load agents')
+			} finally {
+				this.agentsLoading = false
+			}
+		},
+
+		selectAgent(agent) {
+			this.selectedAgent = agent
+		},
+
+		async startConversationWithAgent() {
+			if (!this.selectedAgent) {
 				return
 			}
 
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/chat/history'))
-				this.messages = response.data.messages || []
+				this.showAgentSelectorDialog = false
+				const conversation = await this.$store.conversation.createConversation(this.selectedAgent.uuid)
+				this.currentAgent = this.selectedAgent
+				this.selectedAgent = null
 			} catch (error) {
-				console.error('Failed to load chat history:', error)
+				showError(this.t('openregister', 'Failed to create conversation'))
+			}
+		},
+
+		async selectConversation(conversation) {
+			try {
+				await this.$store.conversation.loadConversation(conversation.uuid)
+				
+				// Load agent details
+				if (conversation.agentId) {
+					const response = await axios.get(generateUrl(`/apps/openregister/api/agents/${conversation.agentId}`))
+					this.currentAgent = response.data
+				}
+				
+				this.scrollToBottom()
+			} catch (error) {
+				showError(this.t('openregister', 'Failed to load conversation'))
+			}
+		},
+
+		async deleteConversation(conversation) {
+			const message = this.showArchive
+				? this.t('openregister', 'Permanently delete this conversation?')
+				: this.t('openregister', 'Delete this conversation?')
+
+			if (!confirm(message)) {
+				return
+			}
+
+			try {
+				if (this.showArchive) {
+					await this.$store.conversation.deleteConversationPermanent(conversation.uuid)
+				} else {
+					await this.$store.conversation.deleteConversation(conversation.uuid)
+				}
+				showSuccess(this.t('openregister', 'Conversation deleted'))
+			} catch (error) {
+				showError(this.t('openregister', 'Failed to delete conversation'))
+			}
+		},
+
+		async restoreConversation(conversation) {
+			try {
+				await this.$store.conversation.restoreConversation(conversation.uuid)
+				showSuccess(this.t('openregister', 'Conversation restored'))
+			} catch (error) {
+				showError(this.t('openregister', 'Failed to restore conversation'))
+			}
+		},
+
+		renameConversation() {
+			this.newConversationTitle = this.activeConversation.title || ''
+			this.showRenameDialog = true
+		},
+
+		async saveConversationTitle() {
+			if (!this.newConversationTitle.trim()) {
+				return
+			}
+
+			try {
+				await this.$store.conversation.updateConversation(this.activeConversation.uuid, {
+					title: this.newConversationTitle.trim(),
+				})
+				this.showRenameDialog = false
+				showSuccess(this.t('openregister', 'Conversation renamed'))
+			} catch (error) {
+				showError(this.t('openregister', 'Failed to rename conversation'))
 			}
 		},
 
 		async handleSendMessage() {
-			if (!this.currentMessage.trim() || this.loading) {
+			if (!this.currentMessage.trim() || this.loading || !this.activeConversation) {
 				return
 			}
 
 			const userMessage = this.currentMessage.trim()
 			this.currentMessage = ''
 
-			// Add user message
-			this.messages.push({
-				role: 'user',
-				content: userMessage,
-				timestamp: new Date(),
-			})
-
 			this.scrollToBottom()
 			this.loading = true
 
 			try {
-				// Call chat API
-				const response = await axios.post(generateUrl('/apps/openregister/api/chat/send'), {
-					message: userMessage,
-					searchMode: this.settings.searchMode.id,
-					numSources: this.settings.numSources,
-					includeFiles: this.settings.includeFiles,
-					includeObjects: this.settings.includeObjects,
-				})
-
-				// Add AI response
-				this.messages.push({
-					role: 'assistant',
-					content: response.data.response,
-					sources: response.data.sources || [],
-					timestamp: new Date(),
-					feedback: null,
-				})
+				await this.$store.conversation.sendMessage(
+					userMessage,
+					this.activeConversation.uuid,
+					this.currentAgent?.uuid
+				)
 
 				this.scrollToBottom()
 			} catch (error) {
 				showError(this.t('openregister', 'Failed to get response: {error}', { error: error.response?.data?.error || error.message }))
-
-				// Add error message
-				this.messages.push({
-					role: 'assistant',
-					content: this.t('openregister', 'Sorry, I encountered an error. Please try again or check your LLM configuration in settings.'),
-					timestamp: new Date(),
-					isError: true,
-				})
 			} finally {
 				this.loading = false
 			}
 		},
 
-		sendMessage(text) {
-			this.currentMessage = text
-			this.handleSendMessage()
-		},
-
-		async clearConversation() {
-			if (!confirm(this.t('openregister', 'Clear all chat history?'))) {
-				return
-			}
-
-			try {
-				await axios.delete(generateUrl('/apps/openregister/api/chat/history'))
-				this.messages = []
-				showSuccess(this.t('openregister', 'Chat history cleared'))
-			} catch (error) {
-				showError(this.t('openregister', 'Failed to clear chat history'))
-			}
-		},
-
-		async sendFeedback(messageIndex, feedback) {
-			const message = this.messages[messageIndex]
+		async sendFeedback(message, feedback) {
 			message.feedback = message.feedback === feedback ? null : feedback
 
 			try {
 				await axios.post(generateUrl('/apps/openregister/api/chat/feedback'), {
-					messageId: messageIndex,
+					messageId: message.id,
 					feedback: message.feedback,
 				})
 			} catch (error) {
@@ -457,10 +540,12 @@ export default {
 
 		formatMessage(content) {
 			// Convert markdown to HTML using marked library
-			return marked.parse(content)
+			return marked.parse(content || '')
 		},
 
 		formatTime(timestamp) {
+			if (!timestamp) return ''
+			
 			const date = new Date(timestamp)
 			const now = new Date()
 			const diff = now - date
@@ -478,8 +563,10 @@ export default {
 
 		autoResize() {
 			const textarea = this.$refs.messageInput
-			textarea.style.height = 'auto'
-			textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px'
+			if (textarea) {
+				textarea.style.height = 'auto'
+				textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px'
+			}
 		},
 
 		scrollToBottom() {
@@ -499,12 +586,22 @@ export default {
 }
 </script>
 
+<script setup>
+</script>
+
 <style scoped lang="scss">
+.chat-layout {
+	display: flex;
+	height: 100%;
+	background: var(--color-main-background);
+}
+
 .chat-container {
+	flex: 1;
 	display: flex;
 	flex-direction: column;
 	height: 100%;
-	background: var(--color-main-background);
+	overflow: hidden;
 }
 
 .chat-header {
@@ -526,6 +623,11 @@ export default {
 			margin: 0;
 			color: var(--color-text-maxcontrast);
 			font-size: 14px;
+
+			strong {
+				color: var(--color-main-text);
+				font-weight: 600;
+			}
 		}
 	}
 
@@ -558,53 +660,32 @@ export default {
 
 	p {
 		max-width: 600px;
-		margin: 0 0 48px 0;
+		margin: 0 0 24px 0;
 		color: var(--color-text-maxcontrast);
 		font-size: 16px;
 	}
 
-	.suggested-prompts {
-		width: 100%;
-		max-width: 800px;
-
-		h3 {
-			margin: 0 0 20px 0;
-			font-size: 16px;
-			font-weight: 600;
-		}
-
-		.prompt-grid {
-			display: grid;
-			grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-			gap: 12px;
-		}
-
-		.prompt-card {
-			display: flex;
-			align-items: center;
-			gap: 12px;
-			padding: 16px;
+	&.config-required {
+		.config-hint {
+			max-width: 600px;
+			padding: 20px;
 			background: var(--color-background-hover);
-			border: 1px solid var(--color-border);
 			border-radius: 8px;
-			cursor: pointer;
-			transition: all 0.2s ease;
 			text-align: left;
 
-			&:hover {
-				background: var(--color-background-dark);
-				border-color: var(--color-primary-element);
+			ol {
+				margin: 8px 0 0 20px;
+				padding: 0;
 			}
 
-			.prompt-icon {
-				font-size: 24px;
+			li {
+				margin-bottom: 4px;
 			}
+		}
 
-			.prompt-text {
-				flex: 1;
-				font-size: 14px;
-				color: var(--color-main-text);
-			}
+		.contact-admin {
+			margin-bottom: 24px;
+			color: var(--color-warning);
 		}
 	}
 }
@@ -850,38 +931,21 @@ export default {
 	}
 }
 
-.chat-settings {
+.rename-dialog {
 	padding: 20px;
 
-	.setting-group {
-		margin-bottom: 24px;
+	.rename-input {
+		width: 100%;
+		padding: 10px 12px;
+		border: 1px solid var(--color-border);
+		border-radius: 6px;
+		font-size: 14px;
+		background: var(--color-main-background);
+		color: var(--color-main-text);
 
-		label {
-			display: block;
-			margin-bottom: 8px;
-			font-weight: 500;
-		}
-
-		.input-field {
-			width: 100%;
-			padding: 10px 12px;
-			border: 1px solid var(--color-border);
-			border-radius: 6px;
-			font-size: 14px;
-			background: var(--color-main-background);
-			color: var(--color-main-text);
-
-			&:focus {
-				outline: none;
-				border-color: var(--color-primary-element);
-			}
-		}
-
-		small {
-			display: block;
-			margin-top: 6px;
-			color: var(--color-text-maxcontrast);
-			font-size: 12px;
+		&:focus {
+			outline: none;
+			border-color: var(--color-primary-element);
 		}
 	}
 }

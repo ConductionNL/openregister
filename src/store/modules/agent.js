@@ -95,12 +95,17 @@ export const useAgentStore = defineStore('agent', {
 		 * Refresh the agent list from the API
 		 *
 		 * @param {string|null} search - Optional search term
+		 * @param {boolean} soft - If true, don't show loading state (default: false)
 		 * @returns {Promise} Promise with response and data
 		 */
 		/* istanbul ignore next */
-		async refreshAgentList(search = null) {
-			console.log('AgentStore: Starting refreshAgentList')
-			this.loading = true
+		async refreshAgentList(search = null, soft = false) {
+			console.log('AgentStore: Starting refreshAgentList (soft=' + soft + ')')
+			
+			// Only set loading state for hard reloads
+			if (!soft) {
+				this.loading = true
+			}
 			this.error = null
 			
 			try {
@@ -128,7 +133,9 @@ export const useAgentStore = defineStore('agent', {
 				this.error = error.message
 				throw error
 			} finally {
-				this.loading = false
+				if (!soft) {
+					this.loading = false
+				}
 			}
 		},
 		/**

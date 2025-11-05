@@ -19,28 +19,65 @@
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Service\OrganisationService;
+use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
+use OCP\IGroupManager;
+use OCP\IUserSession;
 use Symfony\Component\Uid\Uuid;
 
 /**
  * The SourceMapper class
  *
+ * Mapper for Source entities with multi-tenancy and RBAC support.
+ *
  * @package OCA\OpenRegister\Db
  */
 class SourceMapper extends QBMapper
 {
+    use MultiTenancyTrait;
 
+    /**
+     * Organisation service for multi-tenancy
+     *
+     * @var OrganisationService
+     */
+    private OrganisationService $organisationService;
+
+    /**
+     * User session for current user
+     *
+     * @var IUserSession
+     */
+    private IUserSession $userSession;
+
+    /**
+     * Group manager for RBAC
+     *
+     * @var IGroupManager
+     */
+    private IGroupManager $groupManager;
 
     /**
      * Constructor for the SourceMapper
      *
-     * @param IDBConnection $db The database connection
+     * @param IDBConnection       $db                  The database connection
+     * @param OrganisationService $organisationService Organisation service for multi-tenancy
+     * @param IUserSession        $userSession         User session
+     * @param IGroupManager       $groupManager        Group manager for RBAC
      */
-    public function __construct(IDBConnection $db)
-    {
+    public function __construct(
+        IDBConnection $db,
+        OrganisationService $organisationService,
+        IUserSession $userSession,
+        IGroupManager $groupManager
+    ) {
         parent::__construct($db, 'openregister_sources');
+        $this->organisationService = $organisationService;
+        $this->userSession         = $userSession;
+        $this->groupManager        = $groupManager;
 
     }//end __construct()
 
@@ -51,9 +88,13 @@ class SourceMapper extends QBMapper
      * @param int $id The id of the source
      *
      * @return Source The source
+     * @throws \Exception If user doesn't have read permission
      */
     public function find(int $id): Source
     {
+        // Verify RBAC permission to read
+        $this->verifyRbacPermission('read', 'source');
+
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
@@ -61,6 +102,9 @@ class SourceMapper extends QBMapper
             ->where(
                 $qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
             );
+
+        // Apply organisation filter (admins see all, others see only their org)
+        $this->applyOrganisationFilter($qb);
 
         return $this->findEntity(query: $qb);
 
@@ -77,6 +121,7 @@ class SourceMapper extends QBMapper
      * @param array|null $searchParams     The search parameters to apply
      *
      * @return array The sources
+     * @throws \Exception If user doesn't have read permission
      */
     public function findAll(
         ?int $limit=null,
@@ -85,6 +130,9 @@ class SourceMapper extends QBMapper
         ?array $searchConditions=[],
         ?array $searchParams=[]
     ): array {
+        // Verify RBAC permission to read
+        $this->verifyRbacPermission('read', 'source');
+
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
@@ -109,9 +157,89 @@ class SourceMapper extends QBMapper
             }
         }
 
+        // Apply organisation filter (admins see all, others see only their org)
+        $this->applyOrganisationFilter($qb);
+
         return $this->findEntities(query: $qb);
 
     }//end findAll()
+
+
+    /**
+     * Insert a new source
+     *
+     * @param Entity $entity Source entity to insert
+     *
+     * @return Entity The inserted source
+     * @throws \Exception If user doesn't have create permission
+     */
+    public function insert(Entity $entity): Entity
+    {
+        // Verify RBAC permission to create
+        $this->verifyRbacPermission('create', 'source');
+
+        if ($entity instanceof Source) {
+            // Generate UUID if not set
+            if (empty($entity->getUuid())) {
+                $entity->setUuid(Uuid::v4());
+            }
+            
+            $entity->setCreated(new \DateTime());
+            $entity->setUpdated(new \DateTime());
+        }
+
+        // Auto-set organisation from active session
+        $this->setOrganisationOnCreate($entity);
+
+        return parent::insert($entity);
+
+    }//end insert()
+
+
+    /**
+     * Update an existing source
+     *
+     * @param Entity $entity Source entity to update
+     *
+     * @return Entity The updated source
+     * @throws \Exception If user doesn't have update permission or access to this organisation
+     */
+    public function update(Entity $entity): Entity
+    {
+        // Verify RBAC permission to update
+        $this->verifyRbacPermission('update', 'source');
+
+        // Verify user has access to this organisation
+        $this->verifyOrganisationAccess($entity);
+
+        if ($entity instanceof Source) {
+            $entity->setUpdated(new \DateTime());
+        }
+
+        return parent::update($entity);
+
+    }//end update()
+
+
+    /**
+     * Delete a source
+     *
+     * @param Entity $entity Source entity to delete
+     *
+     * @return Entity The deleted source
+     * @throws \Exception If user doesn't have delete permission or access to this organisation
+     */
+    public function delete(Entity $entity): Entity
+    {
+        // Verify RBAC permission to delete
+        $this->verifyRbacPermission('delete', 'source');
+
+        // Verify user has access to this organisation
+        $this->verifyOrganisationAccess($entity);
+
+        return parent::delete($entity);
+
+    }//end delete()
 
 
     /**

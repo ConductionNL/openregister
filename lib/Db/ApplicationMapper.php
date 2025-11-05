@@ -19,15 +19,20 @@
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
+use OCP\IGroupManager;
+use OCP\IUserSession;
 
 /**
  * Class ApplicationMapper
+ *
+ * Mapper for Application entities with multi-tenancy and RBAC support.
  *
  * @package OCA\OpenRegister\Db
  *
@@ -37,15 +42,47 @@ use OCP\IDBConnection;
  */
 class ApplicationMapper extends QBMapper
 {
+    use MultiTenancyTrait;
+
+    /**
+     * Organisation service for multi-tenancy
+     *
+     * @var OrganisationService
+     */
+    private OrganisationService $organisationService;
+
+    /**
+     * User session for current user
+     *
+     * @var IUserSession
+     */
+    private IUserSession $userSession;
+
+    /**
+     * Group manager for RBAC
+     *
+     * @var IGroupManager
+     */
+    private IGroupManager $groupManager;
 
     /**
      * ApplicationMapper constructor.
      *
-     * @param IDBConnection $db Database connection instance
+     * @param IDBConnection       $db                  Database connection instance
+     * @param OrganisationService $organisationService Organisation service for multi-tenancy
+     * @param IUserSession        $userSession         User session
+     * @param IGroupManager       $groupManager        Group manager for RBAC
      */
-    public function __construct(IDBConnection $db)
-    {
+    public function __construct(
+        IDBConnection $db,
+        OrganisationService $organisationService,
+        IUserSession $userSession,
+        IGroupManager $groupManager
+    ) {
         parent::__construct($db, 'openregister_applications', Application::class);
+        $this->organisationService = $organisationService;
+        $this->userSession         = $userSession;
+        $this->groupManager        = $groupManager;
 
     }//end __construct()
 
@@ -59,14 +96,21 @@ class ApplicationMapper extends QBMapper
      *
      * @throws DoesNotExistException
      * @throws MultipleObjectsReturnedException
+     * @throws \Exception If user doesn't have read permission
      */
     public function find(int $id): Application
     {
+        // Verify RBAC permission to read
+        $this->verifyRbacPermission('read', 'application');
+
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
             ->from($this->tableName)
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
+
+        // Apply organisation filter (admins see all, others see only their org)
+        $this->applyOrganisationFilter($qb);
 
         return $this->findEntity($qb);
 
@@ -82,14 +126,21 @@ class ApplicationMapper extends QBMapper
      *
      * @throws DoesNotExistException
      * @throws MultipleObjectsReturnedException
+     * @throws \Exception If user doesn't have read permission
      */
     public function findByUuid(string $uuid): Application
     {
+        // Verify RBAC permission to read
+        $this->verifyRbacPermission('read', 'application');
+
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
             ->from($this->tableName)
             ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid, IQueryBuilder::PARAM_STR)));
+
+        // Apply organisation filter
+        $this->applyOrganisationFilter($qb);
 
         return $this->findEntity($qb);
 
@@ -99,19 +150,23 @@ class ApplicationMapper extends QBMapper
     /**
      * Find applications by organisation
      *
-     * @param int $organisationId Organisation ID
-     * @param int $limit          Maximum number of results
-     * @param int $offset         Offset for pagination
+     * @param string $organisationUuid Organisation UUID
+     * @param int    $limit            Maximum number of results
+     * @param int    $offset           Offset for pagination
      *
      * @return Application[] Array of application entities
+     * @throws \Exception If user doesn't have read permission
      */
-    public function findByOrganisation(int $organisationId, int $limit=50, int $offset=0): array
+    public function findByOrganisation(string $organisationUuid, int $limit=50, int $offset=0): array
     {
+        // Verify RBAC permission to read
+        $this->verifyRbacPermission('read', 'application');
+
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
             ->from($this->tableName)
-            ->where($qb->expr()->eq('organisation', $qb->createNamedParameter($organisationId, IQueryBuilder::PARAM_INT)))
+            ->where($qb->expr()->eq('organisation', $qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR)))
             ->setMaxResults($limit)
             ->setFirstResult($offset)
             ->orderBy('created', 'DESC');
@@ -131,9 +186,13 @@ class ApplicationMapper extends QBMapper
      * @param array       $searchParams      Parameters for search conditions
      *
      * @return Application[] Array of application entities
+     * @throws \Exception If user doesn't have read permission
      */
     public function findAll(?int $limit=null, ?int $offset=null, array $filters=[], array $searchConditions=[], array $searchParams=[]): array
     {
+        // Verify RBAC permission to read
+        $this->verifyRbacPermission('read', 'application');
+
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
@@ -155,6 +214,9 @@ class ApplicationMapper extends QBMapper
             }
         }
 
+        // Apply organisation filter (admins see all, others see only their org)
+        $this->applyOrganisationFilter($qb);
+
         return $this->findEntities($qb);
 
     }//end findAll()
@@ -166,9 +228,13 @@ class ApplicationMapper extends QBMapper
      * @param Application $entity Application entity to insert
      *
      * @return Application The inserted application with updated ID
+     * @throws \Exception If user doesn't have create permission
      */
     public function insert(Entity $entity): Entity
     {
+        // Verify RBAC permission to create
+        $this->verifyRbacPermission('create', 'application');
+
         if ($entity instanceof Application) {
             // Generate UUID if not set
             if (empty($entity->getUuid())) {
@@ -182,6 +248,9 @@ class ApplicationMapper extends QBMapper
             $entity->setUpdated(new DateTime());
         }
 
+        // Auto-set organisation from active session
+        $this->setOrganisationOnCreate($entity);
+
         return parent::insert($entity);
 
     }//end insert()
@@ -193,9 +262,16 @@ class ApplicationMapper extends QBMapper
      * @param Application $entity Application entity to update
      *
      * @return Application The updated application
+     * @throws \Exception If user doesn't have update permission or access to this organisation
      */
     public function update(Entity $entity): Entity
     {
+        // Verify RBAC permission to update
+        $this->verifyRbacPermission('update', 'application');
+
+        // Verify user has access to this organisation
+        $this->verifyOrganisationAccess($entity);
+
         if ($entity instanceof Application) {
             $entity->setUpdated(new DateTime());
         }
@@ -211,9 +287,16 @@ class ApplicationMapper extends QBMapper
      * @param Application $entity Application entity to delete
      *
      * @return Application The deleted application
+     * @throws \Exception If user doesn't have delete permission or access to this organisation
      */
     public function delete(Entity $entity): Entity
     {
+        // Verify RBAC permission to delete
+        $this->verifyRbacPermission('delete', 'application');
+
+        // Verify user has access to this organisation
+        $this->verifyOrganisationAccess($entity);
+
         return parent::delete($entity);
 
     }//end delete()
@@ -258,17 +341,21 @@ class ApplicationMapper extends QBMapper
     /**
      * Count applications by organisation
      *
-     * @param int $organisationId Organisation ID
+     * @param string $organisationUuid Organisation UUID
      *
      * @return int Number of applications
+     * @throws \Exception If user doesn't have read permission
      */
-    public function countByOrganisation(int $organisationId): int
+    public function countByOrganisation(string $organisationUuid): int
     {
+        // Verify RBAC permission to read
+        $this->verifyRbacPermission('read', 'application');
+
         $qb = $this->db->getQueryBuilder();
 
         $qb->select($qb->createFunction('COUNT(*)'))
             ->from($this->tableName)
-            ->where($qb->expr()->eq('organisation', $qb->createNamedParameter($organisationId, IQueryBuilder::PARAM_INT)));
+            ->where($qb->expr()->eq('organisation', $qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR)));
 
         $result = $qb->executeQuery();
         $count  = $result->fetchOne();
@@ -283,13 +370,20 @@ class ApplicationMapper extends QBMapper
      * Count total applications
      *
      * @return int Total number of applications
+     * @throws \Exception If user doesn't have read permission
      */
     public function countAll(): int
     {
+        // Verify RBAC permission to read
+        $this->verifyRbacPermission('read', 'application');
+
         $qb = $this->db->getQueryBuilder();
 
         $qb->select($qb->createFunction('COUNT(*)'))
             ->from($this->tableName);
+
+        // Apply organisation filter (admins see all, others see only their org)
+        $this->applyOrganisationFilter($qb);
 
         $result = $qb->executeQuery();
         $count  = $result->fetchOne();

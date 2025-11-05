@@ -59,28 +59,7 @@ import { configurationStore, navigationStore, registerStore, schemaStore, organi
 						</p>
 					</div>
 
-					<div class="selectField">
-						<label for="organisation-select">Organisation</label>
-						<NcSelect
-							id="organisation-select"
-							v-model="selectedOrganisation"
-							:options="organisationOptions"
-							label="name"
-							track-by="id"
-							:label-outside="true"
-							placeholder="Select organisation (optional)..."
-							@input="updateOrganisation">
-							<template #option="{ name, description }">
-								<div class="option-content">
-									<span class="option-title">{{ name }}</span>
-									<span v-if="description" class="option-description">{{ description }}</span>
-								</div>
-							</template>
-						</NcSelect>
-						<p v-if="selectedOrganisation" class="field-hint">
-							Organisation: {{ selectedOrganisation.name }}
-						</p>
-					</div>
+				<!-- Organisation is automatically set to active organisation by backend -->
 					</div>
 				</BTab>
 
@@ -493,10 +472,9 @@ export default {
 			selectedSchemas: [],
 			selectedObjects: [],
 			selectedSources: [],
-			selectedAgents: [],
-			selectedViews: [],
-			selectedOrganisation: null,
-			selectedApplication: null,
+		selectedAgents: [],
+		selectedViews: [],
+		selectedApplication: null,
 			// Management tab selections
 			selectedSourceType: null,
 			selectedNotificationGroups: [],
@@ -524,14 +502,11 @@ export default {
 		}
 	},
 	computed: {
-		isValid() {
-			const item = configurationStore.configurationItem
-			return Boolean(item?.title?.trim())
-		},
-		organisationOptions() {
-			return organisationStore.organisationList || []
-		},
-		applicationOptions() {
+	isValid() {
+		const item = configurationStore.configurationItem
+		return Boolean(item?.title?.trim())
+	},
+	applicationOptions() {
 			return applicationStore.applicationList || []
 		},
 		sourceTypeOptions() {
@@ -552,11 +527,14 @@ export default {
 		},
 	},
 	async created() {
-		// Load organisations and applications for Settings tab
-		await Promise.all([
-			organisationStore.refreshOrganisationList(),
-			applicationStore.refreshApplicationList(),
-		])
+		// Organisations and applications are now hot-loaded at app startup
+		// Only refresh if somehow they're empty (shouldn't happen in normal flow)
+		if (!organisationStore.organisationList || organisationStore.organisationList.length === 0) {
+			organisationStore.refreshOrganisationList()
+		}
+		if (!applicationStore.applicationList || applicationStore.applicationList.length === 0) {
+			applicationStore.refreshApplicationList()
+		}
 		
 		// Perform initial searches for Configuration tab entities (load top 10)
 		this.searchRegisters('')
@@ -593,12 +571,11 @@ export default {
 			this.selectedRegisters = []
 			this.selectedSchemas = []
 			this.selectedObjects = []
-			this.selectedSources = []
-			this.selectedAgents = []
-			this.selectedViews = []
-			this.selectedOrganisation = null
-			this.selectedApplication = null
-			// Management tab defaults
+		this.selectedSources = []
+		this.selectedAgents = []
+		this.selectedViews = []
+		this.selectedApplication = null
+		// Management tab defaults
 			this.selectedSourceType = this.sourceTypeOptions[0] // 'local'
 			this.selectedNotificationGroups = []
 		} else {
@@ -623,18 +600,10 @@ export default {
 			if (!configurationStore.configurationItem) {
 				configurationStore.configurationItem = {}
 			}
-			// Store the application UUID
-			configurationStore.configurationItem.application = value ? value.uuid : ''
-			this.selectedApplication = value
-		},
-		updateOrganisation(value) {
-			if (!configurationStore.configurationItem) {
-				configurationStore.configurationItem = {}
-			}
-			// Store the organisation ID
-			configurationStore.configurationItem.organisation = value ? parseInt(value.id) : null
-			this.selectedOrganisation = value
-		},
+		// Store the application UUID
+		configurationStore.configurationItem.application = value ? value.uuid : ''
+		this.selectedApplication = value
+	},
 		updateRegisters(value) {
 			if (!configurationStore.configurationItem) {
 				configurationStore.configurationItem = {}
@@ -743,12 +712,7 @@ export default {
 						a => a.uuid === item.application,
 					) || null
 				}
-				// Load selected organisation (from already loaded list)
-				if (item.organisation) {
-					this.selectedOrganisation = organisationStore.organisationList.find(
-						o => parseInt(o.id) === parseInt(item.organisation),
-					) || null
-				}
+			// Organisation is automatically set by backend based on active organisation
 				
 				// Load Management tab selections
 				if (item.sourceType) {
@@ -1003,12 +967,11 @@ export default {
 			this.selectedRegisters = []
 			this.selectedSchemas = []
 			this.selectedObjects = []
-			this.selectedSources = []
-			this.selectedAgents = []
-			this.selectedViews = []
-			this.selectedOrganisation = null
-			this.selectedApplication = null
-		},
+		this.selectedSources = []
+		this.selectedAgents = []
+		this.selectedViews = []
+		this.selectedApplication = null
+	},
 		async saveConfiguration() {
 			this.loading = true
 			this.error = null

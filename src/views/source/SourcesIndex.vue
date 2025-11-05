@@ -305,7 +305,8 @@ export default {
 		},
 	},
 	mounted() {
-		sourceStore.refreshSourceList()
+		// Use soft reload (no loading spinner) since data is hot-loaded at app startup
+		sourceStore.refreshSourceList(null, true)
 	},
 	methods: {
 		toggleSelectAll(checked) {

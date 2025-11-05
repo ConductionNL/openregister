@@ -66,11 +66,11 @@ class Application extends Entity implements JsonSerializable
     protected ?string $version = null;
 
     /**
-     * Organisation ID that owns this application
+     * Organisation UUID that owns this application
      *
-     * @var int|null Foreign key to organisation
+     * @var string|null Organisation UUID
      */
-    protected ?int $organisation = null;
+    protected ?string $organisation = null;
 
     /**
      * Array of configuration IDs associated with this application
@@ -180,7 +180,7 @@ class Application extends Entity implements JsonSerializable
         $this->addType('name', 'string');
         $this->addType('description', 'string');
         $this->addType('version', 'string');
-        $this->addType('organisation', 'integer');
+        $this->addType('organisation', 'string');
         $this->addType('configurations', 'json');
         $this->addType('registers', 'json');
         $this->addType('schemas', 'json');
@@ -214,6 +214,33 @@ class Application extends Entity implements JsonSerializable
         }
 
     }//end isValidUuid()
+
+
+    /**
+     * Get the organisation UUID
+     *
+     * @return string|null The organisation UUID
+     */
+    public function getOrganisation(): ?string
+    {
+        return $this->organisation;
+
+    }//end getOrganisation()
+
+
+    /**
+     * Set the organisation UUID
+     *
+     * @param string|null $organisation The organisation UUID
+     *
+     * @return void
+     */
+    public function setOrganisation(?string $organisation): void
+    {
+        $this->organisation = $organisation;
+        $this->markFieldUpdated('organisation');
+
+    }//end setOrganisation()
 
 
     /**

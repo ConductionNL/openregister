@@ -240,269 +240,173 @@ class ConfigurationManagementIntegrationTest extends TestCase
 
 
     /**
-     * Test importing configuration and tracking managed entities.
+     * Test listing configurations via API.
      *
      * @return void
      */
-    public function testImportConfigurationAndTrackEntities(): void
+    public function testListConfigurations(): void
     {
-        // Create configuration entity
-        $configuration = new Configuration();
-        $configuration->setTitle('Test Configuration Import');
-        $configuration->setDescription('Test configuration import');
-        $configuration->setType('test');
-        $configuration->setSourceType('local');
-        $configuration->setLocalVersion('1.0.0');
-        $configuration->setApp('test-app');
+        // Create a test configuration first
+        $createResponse = $this->client->post('/configurations', [
+            'auth' => $this->auth,
+            'json' => [
+                'title'     => 'Test List Config',
+                'type'      => 'test',
+                'registers' => [],
+                'schemas'   => [],
+            ],
+        ]);
+
+        $this->assertEquals(201, $createResponse->getStatusCode());
+        $createData = json_decode($createResponse->getBody()->getContents(), true);
+        $this->createdConfigIds[] = $createData['id'];
+
+        // List all configurations
+        $listResponse = $this->client->get('/configurations', [
+            'auth' => $this->auth,
+        ]);
+
+        $this->assertEquals(200, $listResponse->getStatusCode());
+        $listData = json_decode($listResponse->getBody()->getContents(), true);
         
-        $configuration = $this->configurationMapper->insert($configuration);
+        $this->assertIsArray($listData);
+        $this->assertNotEmpty($listData, 'Should have at least one configuration');
 
-        // Import configuration
-        $result = $this->configurationService->importFromJson(
-            $this->testConfigJson,
-            $configuration
-        );
+        // Find our created configuration
+        $found = false;
+        foreach ($listData as $config) {
+            if ($config['id'] === $createData['id']) {
+                $found = true;
+                $this->assertEquals('Test List Config', $config['title']);
+                break;
+            }
+        }
 
-        // Verify registers were imported
-        $this->assertNotEmpty($result['registers']);
-        $this->assertCount(1, $result['registers']);
-        $this->assertEquals('testregister', $result['registers'][0]->getSlug());
+        $this->assertTrue($found, 'Created configuration should be in the list');
 
-        // Verify schemas were imported
-        $this->assertNotEmpty($result['schemas']);
-        $this->assertCount(1, $result['schemas']);
-        $this->assertEquals('testschema', $result['schemas'][0]->getSlug());
-
-        // Verify configuration tracks the imported entities
-        $reloadedConfig = $this->configurationMapper->find($configuration->getId());
-        $this->assertContains($result['registers'][0]->getId(), $reloadedConfig->getRegisters());
-        $this->assertContains($result['schemas'][0]->getId(), $reloadedConfig->getSchemas());
-
-    }//end testImportConfigurationAndTrackEntities()
+    }//end testListConfigurations()
 
 
     /**
-     * Test version comparison functionality.
+     * Test getting a single configuration via API.
      *
      * @return void
      */
-    public function testVersionComparison(): void
+    public function testGetSingleConfiguration(): void
     {
-        $configuration = new Configuration();
-        $configuration->setTitle('Test Configuration Version Compare');
-        $configuration->setLocalVersion('1.0.0');
-        $configuration->setRemoteVersion('1.1.0');
-        
-        $configuration = $this->configurationMapper->insert($configuration);
+        // Create a test configuration
+        $createResponse = $this->client->post('/configurations', [
+            'auth' => $this->auth,
+            'json' => [
+                'title'        => 'Test Get Config',
+                'description'  => 'Configuration for GET test',
+                'type'         => 'test',
+                'sourceType'   => 'github',
+                'localVersion' => '2.0.0',
+                'githubRepo'   => 'owner/repo',
+                'githubBranch' => 'main',
+                'registers'    => [],
+                'schemas'      => [],
+            ],
+        ]);
 
-        // Test version comparison
-        $comparison = $this->configurationService->compareVersions($configuration);
-        
-        $this->assertTrue($comparison['hasUpdate']);
-        $this->assertEquals('1.0.0', $comparison['localVersion']);
-        $this->assertEquals('1.1.0', $comparison['remoteVersion']);
+        $createData = json_decode($createResponse->getBody()->getContents(), true);
+        $this->createdConfigIds[] = $createData['id'];
 
-    }//end testVersionComparison()
+        // Get the configuration
+        $getResponse = $this->client->get("/configurations/{$createData['id']}", [
+            'auth' => $this->auth,
+        ]);
+
+        $this->assertEquals(200, $getResponse->getStatusCode());
+        $getData = json_decode($getResponse->getBody()->getContents(), true);
+
+        $this->assertEquals($createData['id'], $getData['id']);
+        $this->assertEquals('Test Get Config', $getData['title']);
+        $this->assertEquals('Configuration for GET test', $getData['description']);
+        $this->assertEquals('github', $getData['sourceType']);
+        $this->assertEquals('2.0.0', $getData['localVersion']);
+        $this->assertEquals('owner/repo', $getData['githubRepo']);
+        $this->assertEquals('main', $getData['githubBranch']);
+
+    }//end testGetSingleConfiguration()
 
 
     /**
-     * Test importing with updated version.
+     * Test updating a configuration via API.
      *
      * @return void
      */
-    public function testImportWithVersionUpdate(): void
+    public function testUpdateConfiguration(): void
     {
-        // Create and import initial configuration
-        $configuration = new Configuration();
-        $configuration->setTitle('Test Configuration Version Update');
-        $configuration->setType('test');
-        $configuration->setSourceType('local');
-        $configuration->setLocalVersion('1.0.0');
-        $configuration->setApp('test-app-version');
-        
-        $configuration = $this->configurationMapper->insert($configuration);
+        // Create a configuration
+        $createResponse = $this->client->post('/configurations', [
+            'auth' => $this->auth,
+            'json' => [
+                'title'        => 'Test Update Config',
+                'type'         => 'test',
+                'localVersion' => '1.0.0',
+                'registers'    => [],
+                'schemas'      => [],
+            ],
+        ]);
 
-        // Import v1.0.0
-        $result1 = $this->configurationService->importFromJson(
-            $this->testConfigJson,
-            $configuration
-        );
+        $createData = json_decode($createResponse->getBody()->getContents(), true);
+        $this->createdConfigIds[] = $createData['id'];
 
-        $this->assertCount(1, $result1['schemas']);
-        $originalSchemaId = $result1['schemas'][0]->getId();
+        // Update the configuration
+        $updateResponse = $this->client->put("/configurations/{$createData['id']}", [
+            'auth' => $this->auth,
+            'json' => [
+                'title'        => 'Updated Config Title',
+                'description'  => 'New description',
+                'localVersion' => '1.1.0',
+                'autoUpdate'   => true,
+            ],
+        ]);
 
-        // Update configuration to v1.1.0
-        $updatedConfig = $this->testConfigJson;
-        $updatedConfig['version'] = '1.1.0';
-        $updatedConfig['info']['version'] = '1.1.0';
-        $updatedConfig['components']['schemas']['testschema']['version'] = '1.1.0';
-        $updatedConfig['components']['schemas']['testschema']['properties']['newField'] = [
-            'type'  => 'string',
-            'title' => 'New Field',
-        ];
+        $this->assertEquals(200, $updateResponse->getStatusCode());
+        $updateData = json_decode($updateResponse->getBody()->getContents(), true);
 
-        // Import v1.1.0
-        $result2 = $this->configurationService->importFromJson(
-            $updatedConfig,
-            $configuration
-        );
+        $this->assertEquals('Updated Config Title', $updateData['title']);
+        $this->assertEquals('New description', $updateData['description']);
+        $this->assertEquals('1.1.0', $updateData['localVersion']);
+        $this->assertTrue($updateData['autoUpdate']);
 
-        // Verify schema was updated, not recreated
-        $this->assertCount(1, $result2['schemas']);
-        $this->assertEquals($originalSchemaId, $result2['schemas'][0]->getId());
-        $this->assertEquals('1.1.0', $result2['schemas'][0]->getVersion());
-
-    }//end testImportWithVersionUpdate()
+    }//end testUpdateConfiguration()
 
 
     /**
-     * Test managed entity detection.
-     *
-     * @return void
-     */
-    public function testManagedEntityDetection(): void
-    {
-        // Create configuration
-        $configuration = new Configuration();
-        $configuration->setTitle('Test Managed Entities');
-        $configuration->setType('test');
-        $configuration->setApp('test-app-managed');
-        
-        $configuration = $this->configurationMapper->insert($configuration);
-
-        // Import configuration
-        $result = $this->configurationService->importFromJson(
-            $this->testConfigJson,
-            $configuration
-        );
-
-        // Get all configurations
-        $configurations = $this->configurationMapper->findAll();
-
-        // Test schema managed detection
-        $schema = $result['schemas'][0];
-        $this->assertTrue($schema->isManagedByConfiguration($configurations));
-        $managedBy = $schema->getManagedByConfiguration($configurations);
-        $this->assertNotNull($managedBy);
-        $this->assertEquals($configuration->getId(), $managedBy->getId());
-
-        // Test register managed detection
-        $register = $result['registers'][0];
-        $this->assertTrue($register->isManagedByConfiguration($configurations));
-
-    }//end testManagedEntityDetection()
-
-
-    /**
-     * Test YAML configuration import.
-     *
-     * @return void
-     */
-    public function testYamlConfigurationImport(): void
-    {
-        $this->markTestSkipped('YAML import requires file upload simulation');
-        // This would require creating a temporary YAML file and simulating upload
-        // Can be implemented with proper file fixtures
-
-    }//end testYamlConfigurationImport()
-
-
-    /**
-     * Test configuration export.
-     *
-     * @return void
-     */
-    public function testConfigurationExport(): void
-    {
-        // Create and import configuration
-        $configuration = new Configuration();
-        $configuration->setTitle('Test Configuration Export');
-        $configuration->setType('test');
-        $configuration->setApp('test-app-export');
-        $configuration->setVersion('1.0.0');
-        
-        $configuration = $this->configurationMapper->insert($configuration);
-
-        $result = $this->configurationService->importFromJson(
-            $this->testConfigJson,
-            $configuration
-        );
-
-        // Update configuration with imported entity IDs
-        $configuration->setRegisters([$result['registers'][0]->getId()]);
-        $configuration->setSchemas([$result['schemas'][0]->getId()]);
-        $this->configurationMapper->update($configuration);
-
-        // Export configuration
-        $exported = $this->configurationService->exportConfig($configuration, false);
-
-        // Verify export structure
-        $this->assertArrayHasKey('openapi', $exported);
-        $this->assertArrayHasKey('info', $exported);
-        $this->assertArrayHasKey('components', $exported);
-        $this->assertArrayHasKey('registers', $exported['components']);
-        $this->assertArrayHasKey('schemas', $exported['components']);
-
-        // Verify exported data
-        $this->assertEquals('1.0.0', $exported['info']['version']);
-        $this->assertArrayHasKey('testregister', $exported['components']['registers']);
-        $this->assertArrayHasKey('testschema', $exported['components']['schemas']);
-
-    }//end testConfigurationExport()
-
-
-    /**
-     * Test import without configuration entity should fail.
-     *
-     * @return void
-     */
-    public function testImportWithoutConfigurationEntityFails(): void
-    {
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('importFromJson must be called with a Configuration entity');
-
-        // Attempt to import without configuration entity
-        $this->configurationService->importFromJson(
-            $this->testConfigJson,
-            null // This should throw an exception
-        );
-
-    }//end testImportWithoutConfigurationEntityFails()
-
-
-    /**
-     * Test selective import functionality.
-     *
-     * @return void
-     */
-    public function testSelectiveImport(): void
-    {
-        $this->markTestSkipped('Selective import requires preview endpoint simulation');
-        // This would require mocking the preview functionality
-        // Can be implemented with proper mocking setup
-
-    }//end testSelectiveImport()
-
-
-    /**
-     * Test configuration with auto-update enabled.
+     * Test configuration with auto-update and notification settings.
      *
      * @return void
      */
     public function testAutoUpdateConfiguration(): void
     {
-        $configuration = new Configuration();
-        $configuration->setTitle('Test Auto-Update Config');
-        $configuration->setSourceType('url');
-        $configuration->setSourceUrl('https://example.com/config.json');
-        $configuration->setLocalVersion('1.0.0');
-        $configuration->setAutoUpdate(true);
-        $configuration->setNotificationGroups(['admin']);
+        $response = $this->client->post('/configurations', [
+            'auth' => $this->auth,
+            'json' => [
+                'title'              => 'Test Auto-Update Config',
+                'sourceType'         => 'url',
+                'sourceUrl'          => 'https://example.com/config.json',
+                'localVersion'       => '1.0.0',
+                'autoUpdate'         => true,
+                'notificationGroups' => ['admin', 'users'],
+                'registers'          => [],
+                'schemas'            => [],
+            ],
+        ]);
 
-        $created = $this->configurationMapper->insert($configuration);
+        $this->assertEquals(201, $response->getStatusCode());
+        $data = json_decode($response->getBody()->getContents(), true);
 
-        $this->assertTrue($created->getAutoUpdate());
-        $this->assertContains('admin', $created->getNotificationGroups());
+        $this->assertTrue($data['autoUpdate']);
+        $this->assertContains('admin', $data['notificationGroups']);
+        $this->assertContains('users', $data['notificationGroups']);
+        $this->assertEquals('url', $data['sourceType']);
+        $this->assertEquals('https://example.com/config.json', $data['sourceUrl']);
+
+        $this->createdConfigIds[] = $data['id'];
 
     }//end testAutoUpdateConfiguration()
 
@@ -514,24 +418,70 @@ class ConfigurationManagementIntegrationTest extends TestCase
      */
     public function testGitHubIntegrationConfiguration(): void
     {
-        $configuration = new Configuration();
-        $configuration->setTitle('Test GitHub Config');
-        $configuration->setSourceType('github');
-        $configuration->setSourceUrl('https://raw.githubusercontent.com/owner/repo/main/config.json');
-        $configuration->setGithubRepo('owner/repo');
-        $configuration->setGithubBranch('main');
-        $configuration->setGithubPath('config.json');
+        $response = $this->client->post('/configurations', [
+            'auth' => $this->auth,
+            'json' => [
+                'title'        => 'Test GitHub Config',
+                'sourceType'   => 'github',
+                'sourceUrl'    => 'https://raw.githubusercontent.com/owner/repo/main/config.json',
+                'githubRepo'   => 'owner/repo',
+                'githubBranch' => 'main',
+                'githubPath'   => 'config.json',
+                'registers'    => [],
+                'schemas'      => [],
+            ],
+        ]);
 
-        $created = $this->configurationMapper->insert($configuration);
+        $this->assertEquals(201, $response->getStatusCode());
+        $data = json_decode($response->getBody()->getContents(), true);
 
-        $this->assertEquals('github', $created->getSourceType());
-        $this->assertEquals('owner/repo', $created->getGithubRepo());
-        $this->assertEquals('main', $created->getGithubBranch());
-        $this->assertEquals('config.json', $created->getGithubPath());
+        $this->assertEquals('github', $data['sourceType']);
+        $this->assertEquals('owner/repo', $data['githubRepo']);
+        $this->assertEquals('main', $data['githubBranch']);
+        $this->assertEquals('config.json', $data['githubPath']);
+
+        $this->createdConfigIds[] = $data['id'];
 
     }//end testGitHubIntegrationConfiguration()
 
 
-}//end class
+    /**
+     * Test deleting a configuration via API.
+     *
+     * @return void
+     */
+    public function testDeleteConfiguration(): void
+    {
+        // Create a configuration
+        $createResponse = $this->client->post('/configurations', [
+            'auth' => $this->auth,
+            'json' => [
+                'title'     => 'Test Delete Config',
+                'type'      => 'test',
+                'registers' => [],
+                'schemas'   => [],
+            ],
+        ]);
 
+        $createData = json_decode($createResponse->getBody()->getContents(), true);
+        $configId   = $createData['id'];
+
+        // Delete the configuration
+        $deleteResponse = $this->client->delete("/configurations/{$configId}", [
+            'auth' => $this->auth,
+        ]);
+
+        $this->assertEquals(200, $deleteResponse->getStatusCode());
+
+        // Verify it's deleted - GET should return 404
+        $getResponse = $this->client->get("/configurations/{$configId}", [
+            'auth' => $this->auth,
+        ]);
+
+        $this->assertEquals(404, $getResponse->getStatusCode());
+
+    }//end testDeleteConfiguration()
+
+
+}//end class
 

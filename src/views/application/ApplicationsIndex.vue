@@ -306,8 +306,8 @@ export default {
 	async mounted() {
 		// Load Nextcloud groups into store first (needed for edit modal)
 		await applicationStore.loadNextcloudGroups()
-		// Then load applications
-		applicationStore.refreshApplicationList()
+		// Use soft reload (no loading spinner) since data is hot-loaded at app startup
+		applicationStore.refreshApplicationList(null, true)
 	},
 	methods: {
 		toggleSelectAll(checked) {

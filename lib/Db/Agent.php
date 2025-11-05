@@ -110,11 +110,11 @@ class Agent extends Entity implements JsonSerializable
     protected ?array $configuration = null;
 
     /**
-     * Organisation ID that owns this agent
+     * Organisation UUID that owns this agent
      *
-     * @var int|null Foreign key to organisation
+     * @var string|null Organisation UUID
      */
-    protected ?int $organisation = null;
+    protected ?string $organisation = null;
 
     /**
      * Owner user ID
@@ -180,6 +180,45 @@ class Agent extends Entity implements JsonSerializable
     protected ?int $tokenQuota = null;
 
     /**
+     * Array of view UUIDs for data scope filtering
+     *
+     * When set, the agent will only query data within these views.
+     *
+     * @var array|null Array of view UUIDs
+     */
+    protected ?array $views = null;
+
+    /**
+     * Whether agent searches in files
+     *
+     * @var bool|null Search in files flag
+     */
+    protected ?bool $searchFiles = null;
+
+    /**
+     * Whether agent searches in objects
+     *
+     * @var bool|null Search in objects flag
+     */
+    protected ?bool $searchObjects = null;
+
+    /**
+     * Whether agent is private (not shared with organization)
+     *
+     * @var bool|null Private flag
+     */
+    protected ?bool $isPrivate = null;
+
+    /**
+     * Array of user IDs with access to private agent
+     *
+     * Only relevant when isPrivate is true.
+     *
+     * @var array|null Array of user IDs
+     */
+    protected ?array $invitedUsers = null;
+
+    /**
      * Array of Nextcloud group IDs with access to this agent
      *
      * @var array|null Group IDs
@@ -218,7 +257,7 @@ class Agent extends Entity implements JsonSerializable
         $this->addType('temperature', 'float');
         $this->addType('maxTokens', 'integer');
         $this->addType('configuration', 'json');
-        $this->addType('organisation', 'integer');
+        $this->addType('organisation', 'string');
         $this->addType('owner', 'string');
         $this->addType('active', 'boolean');
         $this->addType('enableRag', 'boolean');
@@ -228,6 +267,11 @@ class Agent extends Entity implements JsonSerializable
         $this->addType('ragIncludeObjects', 'boolean');
         $this->addType('requestQuota', 'integer');
         $this->addType('tokenQuota', 'integer');
+        $this->addType('views', 'json');
+        $this->addType('searchFiles', 'boolean');
+        $this->addType('searchObjects', 'boolean');
+        $this->addType('isPrivate', 'boolean');
+        $this->addType('invitedUsers', 'json');
         $this->addType('groups', 'json');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
@@ -515,11 +559,11 @@ class Agent extends Entity implements JsonSerializable
 
 
     /**
-     * Get the organisation ID
+     * Get the organisation UUID
      *
-     * @return int|null The organisation ID
+     * @return string|null The organisation UUID
      */
-    public function getOrganisation(): ?int
+    public function getOrganisation(): ?string
     {
         return $this->organisation;
 
@@ -527,15 +571,16 @@ class Agent extends Entity implements JsonSerializable
 
 
     /**
-     * Set the organisation ID
+     * Set the organisation UUID
      *
-     * @param int|null $organisation The organisation ID
+     * @param string|null $organisation The organisation UUID
      *
      * @return void
      */
-    public function setOrganisation(?int $organisation): void
+    public function setOrganisation(?string $organisation): void
     {
         $this->organisation = $organisation;
+        $this->markFieldUpdated('organisation');
 
     }//end setOrganisation()
 
@@ -775,6 +820,197 @@ class Agent extends Entity implements JsonSerializable
 
 
     /**
+     * Get the views array
+     *
+     * @return array|null The views array
+     */
+    public function getViews(): ?array
+    {
+        return $this->views;
+
+    }//end getViews()
+
+
+    /**
+     * Set the views array
+     *
+     * @param array|null $views The views array
+     *
+     * @return void
+     */
+    public function setViews(?array $views): void
+    {
+        $this->views = $views;
+
+    }//end setViews()
+
+
+    /**
+     * Get the search files setting
+     *
+     * @return bool|null The search files setting
+     */
+    public function getSearchFiles(): ?bool
+    {
+        return $this->searchFiles;
+
+    }//end getSearchFiles()
+
+
+    /**
+     * Set the search files setting
+     *
+     * @param bool|null $searchFiles The search files setting
+     *
+     * @return void
+     */
+    public function setSearchFiles(?bool $searchFiles): void
+    {
+        $this->searchFiles = $searchFiles;
+
+    }//end setSearchFiles()
+
+
+    /**
+     * Get the search objects setting
+     *
+     * @return bool|null The search objects setting
+     */
+    public function getSearchObjects(): ?bool
+    {
+        return $this->searchObjects;
+
+    }//end getSearchObjects()
+
+
+    /**
+     * Set the search objects setting
+     *
+     * @param bool|null $searchObjects The search objects setting
+     *
+     * @return void
+     */
+    public function setSearchObjects(?bool $searchObjects): void
+    {
+        $this->searchObjects = $searchObjects;
+
+    }//end setSearchObjects()
+
+
+    /**
+     * Get the is private setting
+     *
+     * @return bool|null The is private setting
+     */
+    public function getIsPrivate(): ?bool
+    {
+        return $this->isPrivate;
+
+    }//end getIsPrivate()
+
+
+    /**
+     * Set the is private setting
+     *
+     * @param bool|null $isPrivate The is private setting
+     *
+     * @return void
+     */
+    public function setIsPrivate(?bool $isPrivate): void
+    {
+        $this->isPrivate = $isPrivate;
+
+    }//end setIsPrivate()
+
+
+    /**
+     * Get the invited users array
+     *
+     * @return array|null The invited users array
+     */
+    public function getInvitedUsers(): ?array
+    {
+        return $this->invitedUsers;
+
+    }//end getInvitedUsers()
+
+
+    /**
+     * Set the invited users array
+     *
+     * @param array|null $invitedUsers The invited users array
+     *
+     * @return void
+     */
+    public function setInvitedUsers(?array $invitedUsers): void
+    {
+        $this->invitedUsers = $invitedUsers;
+
+    }//end setInvitedUsers()
+
+
+    /**
+     * Check if a user is invited to access this private agent
+     *
+     * @param string $userId The user ID to check
+     *
+     * @return bool True if user is invited
+     */
+    public function hasInvitedUser(string $userId): bool
+    {
+        if ($this->invitedUsers === null) {
+            return false;
+        }
+        
+        return in_array($userId, $this->invitedUsers, true);
+
+    }//end hasInvitedUser()
+
+
+    /**
+     * Add a user to the invited users list
+     *
+     * @param string $userId The user ID to add
+     *
+     * @return void
+     */
+    public function addInvitedUser(string $userId): void
+    {
+        if ($this->invitedUsers === null) {
+            $this->invitedUsers = [];
+        }
+        
+        if (!in_array($userId, $this->invitedUsers, true)) {
+            $this->invitedUsers[] = $userId;
+        }
+
+    }//end addInvitedUser()
+
+
+    /**
+     * Remove a user from the invited users list
+     *
+     * @param string $userId The user ID to remove
+     *
+     * @return void
+     */
+    public function removeInvitedUser(string $userId): void
+    {
+        if ($this->invitedUsers === null) {
+            return;
+        }
+        
+        $this->invitedUsers = array_values(
+            array_filter(
+                $this->invitedUsers,
+                fn($id) => $id !== $userId
+            )
+        );
+
+    }//end removeInvitedUser()
+
+
+    /**
      * Get the groups
      *
      * @return array|null The groups
@@ -881,6 +1117,11 @@ class Agent extends Entity implements JsonSerializable
         $this->setRagIncludeObjects($object['ragIncludeObjects'] ?? $object['rag_include_objects'] ?? false);
         $this->setRequestQuota($object['requestQuota'] ?? $object['request_quota'] ?? null);
         $this->setTokenQuota($object['tokenQuota'] ?? $object['token_quota'] ?? null);
+        $this->setViews($object['views'] ?? null);
+        $this->setSearchFiles($object['searchFiles'] ?? $object['search_files'] ?? true);
+        $this->setSearchObjects($object['searchObjects'] ?? $object['search_objects'] ?? true);
+        $this->setIsPrivate($object['isPrivate'] ?? $object['is_private'] ?? true);
+        $this->setInvitedUsers($object['invitedUsers'] ?? $object['invited_users'] ?? null);
         $this->setGroups($object['groups'] ?? null);
 
         return $this;
@@ -917,6 +1158,11 @@ class Agent extends Entity implements JsonSerializable
             'ragIncludeObjects'  => $this->ragIncludeObjects,
             'requestQuota'       => $this->requestQuota,
             'tokenQuota'         => $this->tokenQuota,
+            'views'              => $this->views,
+            'searchFiles'        => $this->searchFiles,
+            'searchObjects'      => $this->searchObjects,
+            'isPrivate'          => $this->isPrivate,
+            'invitedUsers'       => $this->invitedUsers,
             'groups'             => $this->groups,
             'created'            => isset($this->created) === true ? $this->created->format('c') : null,
             'updated'            => isset($this->updated) === true ? $this->updated->format('c') : null,

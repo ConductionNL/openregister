@@ -165,9 +165,9 @@ class Configuration extends Entity implements JsonSerializable
     protected ?array $objects = [];
 
     /**
-     * Organisation ID associated with this configuration
+     * Organisation UUID associated with this configuration
      *
-     * @var int|null
+     * @var string|null
      */
     protected $organisation = null;
 
@@ -218,7 +218,7 @@ class Configuration extends Entity implements JsonSerializable
         $this->addType('registers', 'json');
         $this->addType('schemas', 'json');
         $this->addType('objects', 'json');
-        $this->addType('organisation', 'integer');
+        $this->addType('organisation', 'string');
         $this->addType('owner', 'string');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
@@ -243,6 +243,33 @@ class Configuration extends Entity implements JsonSerializable
         }
 
     }//end isValidUuid()
+
+
+    /**
+     * Get the organisation UUID
+     *
+     * @return string|null The organisation UUID
+     */
+    public function getOrganisation(): ?string
+    {
+        return $this->organisation;
+
+    }//end getOrganisation()
+
+
+    /**
+     * Set the organisation UUID
+     *
+     * @param string|null $organisation The organisation UUID
+     *
+     * @return void
+     */
+    public function setOrganisation(?string $organisation): void
+    {
+        $this->organisation = $organisation;
+        $this->markFieldUpdated('organisation');
+
+    }//end setOrganisation()
 
 
     /**

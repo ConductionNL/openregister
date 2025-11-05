@@ -22,11 +22,14 @@ namespace OCA\OpenRegister\Db;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
+use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
+use OCP\IGroupManager;
+use OCP\IUserSession;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Service\SchemaPropertyValidatorService;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
@@ -34,10 +37,13 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
 /**
  * The SchemaMapper class
  *
+ * Mapper for Schema entities with multi-tenancy and RBAC support.
+ *
  * @package OCA\OpenRegister\Db
  */
 class SchemaMapper extends QBMapper
 {
+    use MultiTenancyTrait;
 
     /**
      * The event dispatcher instance
@@ -54,20 +60,50 @@ class SchemaMapper extends QBMapper
     private $validator;
 
     /**
+     * Organisation service for multi-tenancy
+     *
+     * @var OrganisationService
+     */
+    private OrganisationService $organisationService;
+
+    /**
+     * User session for current user
+     *
+     * @var IUserSession
+     */
+    private IUserSession $userSession;
+
+    /**
+     * Group manager for RBAC
+     *
+     * @var IGroupManager
+     */
+    private IGroupManager $groupManager;
+
+    /**
      * Constructor for the SchemaMapper
      *
-     * @param IDBConnection                  $db              The database connection
-     * @param IEventDispatcher               $eventDispatcher The event dispatcher
-     * @param SchemaPropertyValidatorService $validator       The schema property validator
+     * @param IDBConnection                  $db                  The database connection
+     * @param IEventDispatcher               $eventDispatcher     The event dispatcher
+     * @param SchemaPropertyValidatorService $validator           The schema property validator
+     * @param OrganisationService            $organisationService Organisation service for multi-tenancy
+     * @param IUserSession                   $userSession         User session
+     * @param IGroupManager                  $groupManager        Group manager for RBAC
      */
     public function __construct(
         IDBConnection $db,
         IEventDispatcher $eventDispatcher,
-        SchemaPropertyValidatorService $validator
+        SchemaPropertyValidatorService $validator,
+        OrganisationService $organisationService,
+        IUserSession $userSession,
+        IGroupManager $groupManager
     ) {
         parent::__construct($db, 'openregister_schemas');
         $this->eventDispatcher = $eventDispatcher;
         $this->validator       = $validator;
+        $this->organisationService = $organisationService;
+        $this->userSession         = $userSession;
+        $this->groupManager        = $groupManager;
 
     }//end __construct()
 
@@ -83,9 +119,13 @@ class SchemaMapper extends QBMapper
      * @param array      $extend Optional array of extensions (e.g., ['@self.stats'])
      *
      * @return Schema The schema, possibly with stats and resolved extensions
+     * @throws \Exception If user doesn't have read permission
      */
     public function find(string | int $id, ?array $extend=[]): Schema
     {
+        // Verify RBAC permission to read
+        $this->verifyRbacPermission('read', 'schema');
+
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from('openregister_schemas')
@@ -96,6 +136,10 @@ class SchemaMapper extends QBMapper
                     $qb->expr()->eq('slug', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR))
                 )
             );
+
+        // Apply organisation filter (admins see all, others see only their org)
+        $this->applyOrganisationFilter($qb);
+
         // Get the schema entity
         $schema = $this->findEntity(query: $qb);
         
@@ -183,6 +227,7 @@ class SchemaMapper extends QBMapper
      * @param array      $extend           Optional array of extensions (e.g., ['@self.stats'])
      *
      * @return array The schemas, possibly with stats
+     * @throws \Exception If user doesn't have read permission
      */
     public function findAll(
         ?int $limit=null,
@@ -192,6 +237,9 @@ class SchemaMapper extends QBMapper
         ?array $searchParams=[],
         ?array $extend=[]
     ): array {
+        // Verify RBAC permission to read
+        $this->verifyRbacPermission('read', 'schema');
+
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
@@ -216,6 +264,9 @@ class SchemaMapper extends QBMapper
             }
         }
 
+        // Apply organisation filter (admins see all, others see only their org)
+        $this->applyOrganisationFilter($qb);
+
         // Just return the entities; do not attach stats here
         return $this->findEntities(query: $qb);
 
@@ -228,11 +279,18 @@ class SchemaMapper extends QBMapper
      * @param Entity $entity The entity to insert
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     * @throws \Exception If user doesn't have create permission
      *
      * @return Entity The inserted entity
      */
     public function insert(Entity $entity): Entity
     {
+        // Verify RBAC permission to create
+        $this->verifyRbacPermission('create', 'schema');
+
+        // Auto-set organisation from active session
+        $this->setOrganisationOnCreate($entity);
+
         $entity = parent::insert($entity);
 
         // Dispatch creation event.
@@ -449,11 +507,18 @@ class SchemaMapper extends QBMapper
      * @throws \OCP\DB\Exception If a database error occurs
      * @throws \OCP\AppFramework\Db\DoesNotExistException If the entity does not exist
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple entities are found
+     * @throws \Exception If user doesn't have update permission or access to this organisation
      *
      * @return Entity The updated entity
      */
     public function update(Entity $entity): Entity
     {
+        // Verify RBAC permission to update
+        $this->verifyRbacPermission('update', 'schema');
+
+        // Verify user has access to this organisation
+        $this->verifyOrganisationAccess($entity);
+
         $oldSchema = $this->find($entity->getId());
 
         // Clean the schema object to ensure UUID, slug, and version are set.
@@ -517,11 +582,18 @@ class SchemaMapper extends QBMapper
      * @param Entity $schema The schema to delete
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     * @throws \Exception If user doesn't have delete permission or access to this organisation
      *
      * @return Schema The deleted schema
      */
     public function delete(Entity $schema): Schema
     {
+        // Verify RBAC permission to delete
+        $this->verifyRbacPermission('delete', 'schema');
+
+        // Verify user has access to this organisation
+        $this->verifyOrganisationAccess($schema);
+
         // Check for attached objects before deleting (using direct database query to avoid circular dependency)
         $schemaId = method_exists($schema, 'getId') ? $schema->getId() : $schema->id;
         

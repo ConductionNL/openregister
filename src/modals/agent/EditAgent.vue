@@ -48,32 +48,9 @@ import { agentStore, organisationStore, navigationStore } from '../../store/stor
 										<span v-if="description" class="option-description">{{ description }}</span>
 									</div>
 								</template>
-							</NcSelect>
+						</NcSelect>
 
-							<NcSelect
-								v-model="selectedProvider"
-								:disabled="loading"
-								:options="llmProviders"
-								input-label="LLM Provider"
-								label="label"
-								track-by="value"
-								placeholder="Select LLM provider"
-								@input="updateProvider">
-								<template #option="{ label, description }">
-									<div class="option-content">
-										<span class="option-title">{{ label }}</span>
-										<span v-if="description" class="option-description">{{ description }}</span>
-									</div>
-								</template>
-							</NcSelect>
-
-							<NcTextField
-								:disabled="loading"
-								label="Model"
-								:value.sync="agentItem.model"
-								placeholder="e.g., gpt-4o-mini, llama3, etc." />
-
-							<NcTextArea
+						<NcTextArea
 								:disabled="loading"
 								label="System Prompt"
 								:value.sync="agentItem.prompt"
@@ -104,23 +81,6 @@ import { agentStore, organisationStore, navigationStore } from '../../store/stor
 									<p class="field-hint">Maximum tokens to generate</p>
 								</div>
 							</div>
-
-							<NcSelect
-								v-model="selectedOrganisation"
-								:disabled="loading"
-								:options="organisationOptions"
-								input-label="Organisation"
-								label="name"
-								track-by="id"
-								placeholder="Select organisation (optional)"
-								@input="updateOrganisation">
-								<template #option="{ name, description }">
-									<div class="option-content">
-										<span class="option-title">{{ name }}</span>
-										<span v-if="description" class="option-description">{{ description }}</span>
-									</div>
-								</template>
-							</NcSelect>
 
 							<NcCheckboxRadioSwitch
 								:checked="agentItem.active"
@@ -173,17 +133,17 @@ import { agentStore, organisationStore, navigationStore } from '../../store/stor
 									placeholder="5" />
 
 								<NcCheckboxRadioSwitch
-									:checked="agentItem.ragIncludeFiles"
+									:checked="agentItem.searchFiles"
 									type="switch"
-									@update:checked="agentItem.ragIncludeFiles = $event">
-									Include Files in Search
+									@update:checked="agentItem.searchFiles = $event">
+									Search in Files
 								</NcCheckboxRadioSwitch>
 
 								<NcCheckboxRadioSwitch
-									:checked="agentItem.ragIncludeObjects"
+									:checked="agentItem.searchObjects"
 									type="switch"
-									@update:checked="agentItem.ragIncludeObjects = $event">
-									Include Objects in Search
+									@update:checked="agentItem.searchObjects = $event">
+									Search in Database Objects
 								</NcCheckboxRadioSwitch>
 							</div>
 						</div>
@@ -332,12 +292,9 @@ export default {
 				name: '',
 				description: '',
 				type: 'chat',
-				provider: '',
-				model: '',
 				prompt: '',
 				temperature: 0.7,
 				maxTokens: 1000,
-				organisation: null,
 				active: true,
 				enableRag: false,
 				ragSearchMode: 'hybrid',
@@ -347,12 +304,17 @@ export default {
 				requestQuota: 0,
 				tokenQuota: 0,
 				groups: [],
+				views: [],
+				searchFiles: true,
+				searchObjects: true,
+				isPrivate: false,
+				invitedUsers: [],
 			},
 			selectedType: null,
-			selectedProvider: null,
 			selectedRagSearchMode: null,
-			selectedOrganisation: null,
 			selectedGroups: [],
+			selectedViews: [],
+			selectedInvitedUsers: [],
 			loadingGroups: false,
 			availableGroups: [],
 			agentTypes: [
@@ -360,12 +322,6 @@ export default {
 				{ value: 'automation', label: 'Automation', description: 'Automated task execution' },
 				{ value: 'analysis', label: 'Analysis', description: 'Data analysis and insights' },
 				{ value: 'assistant', label: 'Assistant', description: 'General purpose assistant' },
-			],
-			llmProviders: [
-				{ value: 'openai', label: 'OpenAI', description: 'GPT-4, GPT-3.5 Turbo' },
-				{ value: 'ollama', label: 'Ollama', description: 'Local LLM execution' },
-				{ value: 'fireworks', label: 'Fireworks AI', description: 'Fast, optimized inference' },
-				{ value: 'azure', label: 'Azure OpenAI', description: 'Enterprise-grade AI' },
 			],
 			ragSearchModes: [
 				{ value: 'hybrid', label: 'Hybrid', description: 'Combined keyword + semantic search' },
@@ -378,9 +334,6 @@ export default {
 		isValid() {
 			return this.agentItem.name && this.agentItem.name.trim().length > 0
 		},
-		organisationOptions() {
-			return organisationStore.organisationList || []
-		},
 	},
 	watch: {
 		'navigationStore.modal'(newValue) {
@@ -392,20 +345,13 @@ export default {
 	mounted() {
 		this.initializeAgent()
 		this.fetchGroups()
-		if (!organisationStore.organisationList || organisationStore.organisationList.length === 0) {
-			organisationStore.refreshOrganisationList()
-		}
 	},
 	methods: {
 		initializeAgent() {
 			if (agentStore.agentItem) {
 				this.agentItem = { ...agentStore.agentItem }
 				this.selectedType = this.agentTypes.find(t => t.value === this.agentItem.type)
-				this.selectedProvider = this.llmProviders.find(p => p.value === this.agentItem.provider)
 				this.selectedRagSearchMode = this.ragSearchModes.find(m => m.value === this.agentItem.ragSearchMode)
-				if (this.agentItem.organisation) {
-					this.selectedOrganisation = this.organisationOptions.find(o => o.id === this.agentItem.organisation)
-				}
 				if (this.agentItem.groups && Array.isArray(this.agentItem.groups)) {
 					this.selectedGroups = this.availableGroups.filter(g => this.agentItem.groups.includes(g.id))
 				}
@@ -414,26 +360,24 @@ export default {
 					name: '',
 					description: '',
 					type: 'chat',
-					provider: '',
-					model: '',
 					prompt: '',
 					temperature: 0.7,
 					maxTokens: 1000,
-					organisation: null,
 					active: true,
 					enableRag: false,
 					ragSearchMode: 'hybrid',
 					ragNumSources: 5,
-					ragIncludeFiles: false,
-					ragIncludeObjects: false,
+					searchFiles: true,
+					searchObjects: true,
 					requestQuota: 0,
 					tokenQuota: 0,
 					groups: [],
+					views: [],
+					isPrivate: false,
+					invitedUsers: [],
 				}
 				this.selectedType = this.agentTypes[0]
-				this.selectedProvider = null
 				this.selectedRagSearchMode = this.ragSearchModes[0]
-				this.selectedOrganisation = null
 				this.selectedGroups = []
 			}
 			this.success = false
@@ -442,14 +386,8 @@ export default {
 		updateType(type) {
 			this.agentItem.type = type ? type.value : 'chat'
 		},
-		updateProvider(provider) {
-			this.agentItem.provider = provider ? provider.value : ''
-		},
 		updateRagSearchMode(mode) {
 			this.agentItem.ragSearchMode = mode ? mode.value : 'hybrid'
-		},
-		updateOrganisation(org) {
-			this.agentItem.organisation = org ? org.id : null
 		},
 		updateGroups(groups) {
 			this.agentItem.groups = groups ? groups.map(g => g.id) : []

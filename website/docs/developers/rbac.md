@@ -1,0 +1,431 @@
+---
+sidebar_position: 10
+title: RBAC and Multi-Tenancy
+description: Implementing Role-Based Access Control and Multi-Tenancy in Mappers
+---
+
+# RBAC and Multi-Tenancy Implementation
+
+This guide explains how to implement multi-tenancy and Role-Based Access Control (RBAC) in OpenRegister mappers using the 'MultiTenancyTrait'.
+
+## Overview
+
+OpenRegister uses a trait-based approach to provide consistent multi-tenancy and RBAC functionality across all mappers. This ensures that:
+- Users only see data from their active organisation
+- Permissions are checked before CRUD operations
+- Code duplication is minimized
+- Security is enforced at the database layer
+
+## Architecture
+
+### Components
+
+1. **MultiTenancyTrait** ('lib/Db/MultiTenancyTrait.php'): Reusable trait providing:
+   - Organisation filtering on reads
+   - Auto-set organisation on creates
+   - Organisation verification on updates/deletes
+   - RBAC permission checking
+
+2. **OrganisationService** ('lib/Service/OrganisationService.php'): Manages:
+   - Active organisation in user session
+   - Organisation membership
+   - Default organisation
+
+3. **Organisation Entity** ('lib/Db/Organisation.php'): Contains:
+   - RBAC roles configuration
+   - User membership
+   - Permission definitions
+
+## Implementation Steps
+
+### Step 1: Add Organisation Property to Entity
+
+Each entity must have an 'organisation' property storing the organisation UUID:
+
+```php
+<?php
+namespace OCA\OpenRegister\Db;
+
+use OCP\AppFramework\Db\Entity;
+
+/**
+ * @method string|null getOrganisation()
+ * @method void setOrganisation(?string $organisation)
+ */
+class YourEntity extends Entity
+{
+    /**
+     * Organisation UUID this entity belongs to
+     *
+     * @var string|null
+     */
+    protected ?string $organisation = null;
+    
+    public function __construct() {
+        $this->addType('organisation', 'string');
+    }
+}
+```
+
+### Step 2: Add Database Column
+
+Create a migration to add the 'organisation' column:
+
+```php
+<?php
+namespace OCA\OpenRegister\Migration;
+
+use OCP\DB\ISchemaWrapper;
+use OCP\Migration\SimpleMigrationStep;
+use OCP\Migration\IOutput;
+
+class VersionXDateYYYYMMDDHHIISS extends SimpleMigrationStep
+{
+    public function changeSchema(IOutput $output, \Closure $schemaClosure, array $options): ?ISchemaWrapper
+    {
+        /** @var ISchemaWrapper $schema */
+        $schema = $schemaClosure();
+        
+        if ($schema->hasTable('openregister_your_table')) {
+            $table = $schema->getTable('openregister_your_table');
+            
+            if (!$table->hasColumn('organisation')) {
+                $table->addColumn('organisation', 'string', [
+                    'notnull' => false,
+                    'length'  => 255,
+                    'default' => null,
+                ]);
+                
+                // Add index for faster filtering
+                $table->addIndex(['organisation'], 'your_table_organisation_idx');
+            }
+        }
+        
+        return $schema;
+    }
+}
+```
+
+### Step 3: Update Mapper to Use Trait
+
+```php
+<?php
+namespace OCA\OpenRegister\Db;
+
+use OCP\AppFramework\Db\QBMapper;
+use OCP\IDBConnection;
+use OCP\IUserSession;
+use OCP\IGroupManager;
+use OCA\OpenRegister\Service\OrganisationService;
+
+class YourMapper extends QBMapper
+{
+    use MultiTenancyTrait;
+    
+    private OrganisationService $organisationService;
+    private IUserSession $userSession;
+    private IGroupManager $groupManager;
+    
+    public function __construct(
+        IDBConnection $db,
+        OrganisationService $organisationService,
+        IUserSession $userSession,
+        IGroupManager $groupManager
+    ) {
+        parent::__construct($db, 'openregister_your_table', YourEntity::class);
+        $this->organisationService = $organisationService;
+        $this->userSession         = $userSession;
+        $this->groupManager        = $groupManager;
+    }
+    
+    public function insert(Entity $entity): Entity
+    {
+        // Verify RBAC permission to create
+        $this->verifyRbacPermission('create', 'your_entity_type');
+        
+        // Auto-set organisation from active session
+        $this->setOrganisationOnCreate($entity);
+        
+        return parent::insert($entity);
+    }
+    
+    public function update(Entity $entity): Entity
+    {
+        // Verify RBAC permission to update
+        $this->verifyRbacPermission('update', 'your_entity_type');
+        
+        // Verify user has access to this organisation
+        $this->verifyOrganisationAccess($entity);
+        
+        return parent::update($entity);
+    }
+    
+    public function delete(Entity $entity): Entity
+    {
+        // Verify RBAC permission to delete
+        $this->verifyRbacPermission('delete', 'your_entity_type');
+        
+        // Verify user has access to this organisation
+        $this->verifyOrganisationAccess($entity);
+        
+        return parent::delete($entity);
+    }
+    
+    public function find(int $id): YourEntity
+    {
+        // Verify RBAC permission to read
+        $this->verifyRbacPermission('read', 'your_entity_type');
+        
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->tableName)
+            ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
+        
+        // Apply organisation filter (admins see all, others see only their org)
+        $this->applyOrganisationFilter($qb);
+        
+        return $this->findEntity($qb);
+    }
+    
+    public function findAll(int $limit = 50, int $offset = 0): array
+    {
+        // Verify RBAC permission to read
+        $this->verifyRbacPermission('read', 'your_entity_type');
+        
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->tableName)
+            ->setMaxResults($limit)
+            ->setFirstResult($offset)
+            ->orderBy('created', 'DESC');
+        
+        // Apply organisation filter
+        $this->applyOrganisationFilter($qb);
+        
+        return $this->findEntities($qb);
+    }
+}
+```
+
+## RBAC Configuration
+
+### Organisation Roles Structure
+
+Organisations store RBAC configuration in their 'roles' JSON field:
+
+```json
+{
+  "admin": {
+    "name": "Administrator",
+    "permissions": {
+      "*": ["*"]
+    }
+  },
+  "editor": {
+    "name": "Editor",
+    "permissions": {
+      "schema": ["create", "read", "update"],
+      "register": ["create", "read", "update"],
+      "configuration": ["read"]
+    }
+  },
+  "viewer": {
+    "name": "Viewer",
+    "permissions": {
+      "schema": ["read"],
+      "register": ["read"],
+      "configuration": ["read"]
+    }
+  }
+}
+```
+
+### Entity Types
+
+Supported entity types for RBAC:
+- 'schema'
+- 'register'
+- 'configuration'
+- 'application'
+- 'agent'
+- 'view'
+- 'source'
+- 'organisation'
+
+### Actions
+
+Supported CRUD actions:
+- 'create'
+- 'read'
+- 'update'
+- 'delete'
+
+Wildcard '*' grants all permissions.
+
+## Trait Methods Reference
+
+### getActiveOrganisationUuid()
+
+Gets the active organisation UUID from the session.
+
+**Returns:** 'string|null'
+
+### getCurrentUserId()
+
+Gets the current logged-in user ID.
+
+**Returns:** 'string|null'
+
+### isCurrentUserAdmin()
+
+Checks if the current user is in the admin group.
+
+**Returns:** 'bool'
+
+### applyOrganisationFilter()
+
+Applies organisation filtering to a query builder.
+
+**Parameters:**
+- '$qb': The query builder to modify
+- '$columnName': The column name for organisation (default: 'organisation')
+- '$allowNullOrg': Whether to include entities with null organisation
+
+**Behavior:**
+- Admins: See all entities regardless of organisation
+- Non-admins: See only entities from their active organisation
+
+### setOrganisationOnCreate()
+
+Auto-sets the organisation UUID on entity creation.
+
+**Usage:** Call in 'insert()' method before 'parent::insert()'
+
+### verifyOrganisationAccess()
+
+Verifies that the entity belongs to the active organisation.
+
+**Throws:** '\Exception' if organisation doesn't match (HTTP 403)
+
+**Usage:** Call in 'update()' and 'delete()' methods
+
+### hasRbacPermission()
+
+Checks if the current user has RBAC permission.
+
+**Returns:** 'bool'
+
+### verifyRbacPermission()
+
+Verifies RBAC permission and throws exception if denied.
+
+**Throws:** '\Exception' if permission denied (HTTP 403)
+
+**Usage:** Call at the start of CRUD methods
+
+## Best Practices
+
+### 1. Always Inject Dependencies
+
+Ensure your mapper constructor injects:
+- 'OrganisationService'
+- 'IUserSession'
+- 'IGroupManager'
+
+### 2. Apply Organisation Filter on All Reads
+
+Apply 'applyOrganisationFilter()' to all query builders that fetch data.
+
+### 3. Verify Permissions on All Operations
+
+Call 'verifyRbacPermission()' at the start of:
+- 'insert()' → 'create'
+- 'find()'/'findAll()' → 'read'
+- 'update()' → 'update'
+- 'delete()' → 'delete'
+
+### 4. Verify Organisation on Modifications
+
+Call 'verifyOrganisationAccess()' in:
+- 'update()'
+- 'delete()'
+
+### 5. Auto-Set Organisation on Create
+
+Call 'setOrganisationOnCreate()' in 'insert()' before 'parent::insert()'.
+
+### 6. Handle Exceptions in Controllers
+
+Wrap mapper calls in try-catch blocks:
+
+```php
+try {
+    $entity = $this->mapper->update($entity);
+    return new JSONResponse($entity, Response::HTTP_OK);
+} catch (\Exception $e) {
+    if ($e->getCode() === Response::HTTP_FORBIDDEN) {
+        return new JSONResponse(['error' => $e->getMessage()], Response::HTTP_FORBIDDEN);
+    }
+    return new JSONResponse(['error' => 'Internal error'], Response::HTTP_INTERNAL_SERVER_ERROR);
+}
+```
+
+### 7. Admin Bypass
+
+Admins (users in the 'admin' group) automatically bypass:
+- Organisation filtering (see all organisations)
+- RBAC checks (have all permissions)
+
+### 8. Default Organisation
+
+Users without organisations are automatically added to the default organisation on first access.
+
+## Testing
+
+### Test Cases to Cover
+
+1. **Create**: Entity gets organisation UUID set automatically
+2. **Read (Admin)**: Admin sees all organisations
+3. **Read (User)**: User sees only their organisation
+4. **Update (Same Org)**: Succeeds
+5. **Update (Different Org)**: Fails with 403
+6. **Delete (Same Org)**: Succeeds
+7. **Delete (Different Org)**: Fails with 403
+8. **RBAC Create**: Only users with 'create' permission can create
+9. **RBAC Read**: Only users with 'read' permission can read
+10. **RBAC Update**: Only users with 'update' permission can update
+11. **RBAC Delete**: Only users with 'delete' permission can delete
+
+## Troubleshooting
+
+### Issue: Organisation filter not applied
+
+**Cause:** Missing 'applyOrganisationFilter()' call in query builder
+
+**Solution:** Add '$this->applyOrganisationFilter($qb)' to all find methods
+
+### Issue: Users can't see their own entities
+
+**Cause:** Organisation UUID not set on entity creation
+
+**Solution:** Ensure 'setOrganisationOnCreate()' is called in 'insert()'
+
+### Issue: Admin can't access entities
+
+**Cause:** Organisation filter applied to admins
+
+**Solution:** 'isCurrentUserAdmin()' check should skip filtering - verify trait is properly injected
+
+### Issue: RBAC always denies access
+
+**Cause:** Roles not configured in organisation or incorrect structure
+
+**Solution:** Check organisation's 'roles' field has proper structure
+
+## Related Documentation
+
+- [Multi-Tenancy Feature](/docs/Features/multi-tenancy)
+- [Organisations Feature](/docs/Features/organisations)
+- [Access Control](/docs/Features/access-control)
+- [Testing](/docs/developers/testing)
+
