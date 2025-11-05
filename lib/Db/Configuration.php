@@ -74,6 +74,76 @@ class Configuration extends Entity implements JsonSerializable
     protected $version = null;
 
     /**
+     * Source type of the configuration (local, github, gitlab, url, manual)
+     *
+     * @var string|null
+     */
+    protected $sourceType = null;
+
+    /**
+     * Source URL where the configuration file is located
+     *
+     * @var string|null
+     */
+    protected $sourceUrl = null;
+
+    /**
+     * Currently loaded/local version of the configuration
+     *
+     * @var string|null
+     */
+    protected $localVersion = null;
+
+    /**
+     * Latest available remote version of the configuration
+     *
+     * @var string|null
+     */
+    protected $remoteVersion = null;
+
+    /**
+     * Last time the remote version was checked
+     *
+     * @var DateTime|null
+     */
+    protected $lastChecked = null;
+
+    /**
+     * Whether to automatically update when new version is available
+     *
+     * @var bool
+     */
+    protected $autoUpdate = false;
+
+    /**
+     * Array of group IDs that should receive update notifications
+     *
+     * @var array|null
+     */
+    protected ?array $notificationGroups = [];
+
+    /**
+     * GitHub repository name (optional, for GitHub operations)
+     *
+     * @var string|null
+     */
+    protected $githubRepo = null;
+
+    /**
+     * GitHub branch to push to (optional, default: main)
+     *
+     * @var string|null
+     */
+    protected $githubBranch = null;
+
+    /**
+     * GitHub folder path in repository (optional)
+     *
+     * @var string|null
+     */
+    protected $githubPath = null;
+
+    /**
      * Array of register IDs managed by this configuration
      *
      * @var array|null
@@ -135,6 +205,16 @@ class Configuration extends Entity implements JsonSerializable
         $this->addType('type', 'string');
         $this->addType('app', 'string');
         $this->addType('version', 'string');
+        $this->addType('sourceType', 'string');
+        $this->addType('sourceUrl', 'string');
+        $this->addType('localVersion', 'string');
+        $this->addType('remoteVersion', 'string');
+        $this->addType('lastChecked', 'datetime');
+        $this->addType('autoUpdate', 'boolean');
+        $this->addType('notificationGroups', 'json');
+        $this->addType('githubRepo', 'string');
+        $this->addType('githubBranch', 'string');
+        $this->addType('githubPath', 'string');
         $this->addType('registers', 'json');
         $this->addType('schemas', 'json');
         $this->addType('objects', 'json');
@@ -340,24 +420,88 @@ class Configuration extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         return [
-            'id'           => $this->id,
-            'uuid'         => $this->uuid,
-            'title'        => $this->title,
-            'description'  => $this->description,
-            'type'         => $this->type,
-            'app'          => $this->app,
-            'application'  => $this->app, // Alias for frontend compatibility
-            'version'      => $this->version,
-            'organisation' => $this->organisation,
-            'owner'        => $this->owner,
-            'registers'    => $this->registers,
-            'schemas'      => $this->schemas,
-            'objects'      => $this->objects,
-            'created'      => ($this->created !== null) ? $this->created->format('c') : null,
-            'updated'      => ($this->updated !== null) ? $this->updated->format('c') : null,
+            'id'                 => $this->id,
+            'uuid'               => $this->uuid,
+            'title'              => $this->title,
+            'description'        => $this->description,
+            'type'               => $this->type,
+            'app'                => $this->app,
+            'application'        => $this->app, // Alias for frontend compatibility
+            'version'            => $this->version,
+            'sourceType'         => $this->sourceType,
+            'sourceUrl'          => $this->sourceUrl,
+            'localVersion'       => $this->localVersion,
+            'remoteVersion'      => $this->remoteVersion,
+            'lastChecked'        => ($this->lastChecked !== null) ? $this->lastChecked->format('c') : null,
+            'autoUpdate'         => $this->autoUpdate,
+            'notificationGroups' => $this->notificationGroups,
+            'githubRepo'         => $this->githubRepo,
+            'githubBranch'       => $this->githubBranch,
+            'githubPath'         => $this->githubPath,
+            'organisation'       => $this->organisation,
+            'owner'              => $this->owner,
+            'registers'          => $this->registers,
+            'schemas'            => $this->schemas,
+            'objects'            => $this->objects,
+            'created'            => ($this->created !== null) ? $this->created->format('c') : null,
+            'updated'            => ($this->updated !== null) ? $this->updated->format('c') : null,
         ];
 
     }//end jsonSerialize()
+
+
+    /**
+     * Check if a remote update is available
+     *
+     * Compares the remoteVersion with localVersion to determine if an update is available.
+     *
+     * @return bool True if remote version is newer than local version
+     */
+    public function hasUpdateAvailable(): bool
+    {
+        if ($this->remoteVersion === null || $this->localVersion === null) {
+            return false;
+        }
+
+        return version_compare($this->remoteVersion, $this->localVersion, '>');
+
+    }//end hasUpdateAvailable()
+
+
+    /**
+     * Check if this configuration is from a remote source
+     *
+     * @return bool True if source type is github, gitlab, or url
+     */
+    public function isRemoteSource(): bool
+    {
+        return in_array($this->sourceType, ['github', 'gitlab', 'url']);
+
+    }//end isRemoteSource()
+
+
+    /**
+     * Check if this configuration is local
+     *
+     * @return bool True if source type is local
+     */
+    public function isLocalSource(): bool
+    {
+        return $this->sourceType === 'local';
+
+    }//end isLocalSource()
+
+
+    /**
+     * Check if this configuration is manually created
+     *
+     * @return bool True if source type is manual
+     */
+    public function isManualSource(): bool
+    {
+        return $this->sourceType === 'manual';
+
+    }//end isManualSource()
 
 
     /**

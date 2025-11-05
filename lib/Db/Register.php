@@ -394,4 +394,66 @@ class Register extends Entity implements JsonSerializable
     }//end __toString()
 
 
+    /**
+     * Check if this register is managed by any configuration
+     *
+     * This method checks if the register's ID is present in the registers array
+     * of any provided configuration entities.
+     *
+     * @param array<Configuration> $configurations Array of Configuration entities to check against
+     *
+     * @return bool True if this register is managed by at least one configuration
+     *
+     * @phpstan-param array<Configuration> $configurations
+     * @psalm-param   array<Configuration> $configurations
+     */
+    public function isManagedByConfiguration(array $configurations): bool
+    {
+        if (empty($configurations) === true || $this->id === null) {
+            return false;
+        }
+
+        foreach ($configurations as $configuration) {
+            $registers = $configuration->getRegisters();
+            if (in_array($this->id, $registers, true) === true) {
+                return true;
+            }
+        }
+
+        return false;
+
+    }//end isManagedByConfiguration()
+
+
+    /**
+     * Get the configuration that manages this register
+     *
+     * Returns the first configuration that has this register's ID in its registers array.
+     * Returns null if the register is not managed by any configuration.
+     *
+     * @param array<Configuration> $configurations Array of Configuration entities to check against
+     *
+     * @return Configuration|null The configuration managing this register, or null
+     *
+     * @phpstan-param array<Configuration> $configurations
+     * @psalm-param   array<Configuration> $configurations
+     */
+    public function getManagedByConfiguration(array $configurations): ?Configuration
+    {
+        if (empty($configurations) === true || $this->id === null) {
+            return null;
+        }
+
+        foreach ($configurations as $configuration) {
+            $registers = $configuration->getRegisters();
+            if (in_array($this->id, $registers, true) === true) {
+                return $configuration;
+            }
+        }
+
+        return null;
+
+    }//end getManagedByConfiguration()
+
+
 }//end class
