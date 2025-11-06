@@ -118,14 +118,18 @@ export const useAgentStore = defineStore('agent', {
 					method: 'GET',
 				})
 
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`)
+			}
 
-				const data = (await response.json()).results
+			const responseData = await response.json()
+			console.log('AgentStore: API response type:', Array.isArray(responseData) ? 'array' : 'object', responseData)
+			
+			// API returns array directly, not wrapped in 'results'
+			const data = Array.isArray(responseData) ? responseData : (responseData.results || [])
 
-				this.setAgentList(data)
-				console.log('AgentStore: refreshAgentList completed, got', data.length, 'agents')
+			this.setAgentList(data)
+			console.log('AgentStore: refreshAgentList completed, got', data.length, 'agents', 'agentList now has', this.agentList.length, 'items')
 
 				return { response, data }
 			} catch (error) {

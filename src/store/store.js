@@ -16,6 +16,7 @@ import { useOrganisationStore } from './modules/organisation.js'
 import { useApplicationStore } from './modules/application.js'
 import { useViewsStore } from './modules/views.js'
 import { useAgentStore } from './modules/agent.js'
+import { useConversationStore } from './modules/conversation.ts'
 
 const navigationStore = useNavigationStore(pinia)
 const searchStore = useSearchStore(pinia)
@@ -32,6 +33,7 @@ const organisationStore = useOrganisationStore(pinia)
 const applicationStore = useApplicationStore(pinia)
 const viewsStore = useViewsStore(pinia)
 const agentStore = useAgentStore(pinia)
+const conversationStore = useConversationStore(pinia)
 
 export {
 	// generic
@@ -50,4 +52,5 @@ export {
 	applicationStore,
 	viewsStore,
 	agentStore,
+	conversationStore,
 }

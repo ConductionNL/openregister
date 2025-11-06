@@ -57,30 +57,32 @@ import { agentStore, organisationStore, navigationStore } from '../../store/stor
 								placeholder="Enter system prompt for the agent"
 								:rows="6" />
 
-							<div class="form-row">
-								<div class="form-field">
-									<NcTextField
-										:disabled="loading"
-										label="Temperature"
-										type="number"
-										step="0.1"
-										min="0"
-										max="2"
-										:value.sync="agentItem.temperature"
-										placeholder="0.7" />
-									<p class="field-hint">Controls randomness (0.0 - 2.0)</p>
-								</div>
+						<div class="form-field">
+							<label for="temperature" class="slider-label">
+								{{ t('openregister', 'Temperature') }}: {{ agentItem.temperature }}
+							</label>
+							<input
+								id="temperature"
+								v-model.number="agentItem.temperature"
+								:disabled="loading"
+								type="range"
+								min="0"
+								max="2"
+								step="0.1"
+								class="temperature-slider">
+							<p class="field-hint">{{ t('openregister', 'Controls randomness (0 = deterministic, 2 = very creative)') }}</p>
+						</div>
 
-								<div class="form-field">
-									<NcTextField
-										:disabled="loading"
-										label="Max Tokens"
-										type="number"
-										:value.sync="agentItem.maxTokens"
-										placeholder="1000" />
-									<p class="field-hint">Maximum tokens to generate</p>
-								</div>
-							</div>
+						<NcTextField
+							:disabled="loading"
+							label="Max Tokens"
+							type="number"
+							:value.sync="agentItem.maxTokens"
+							placeholder="1000">
+							<template #helper-text-message>
+								{{ t('openregister', 'Maximum tokens to generate') }}
+							</template>
+						</NcTextField>
 
 							<NcCheckboxRadioSwitch
 								:checked="agentItem.active"
@@ -571,6 +573,69 @@ export default {
 	font-size: 0.875rem;
 	color: var(--color-text-maxcontrast);
 	margin: 4px 0 0 0;
+}
+
+.slider-label {
+	display: block;
+	font-size: 0.9375rem;
+	font-weight: 600;
+	margin-bottom: 8px;
+	color: var(--color-main-text);
+}
+
+.temperature-slider {
+	width: 100%;
+	height: 6px;
+	border-radius: 3px;
+	background: var(--color-background-dark);
+	outline: none;
+	-webkit-appearance: none;
+	appearance: none;
+	margin: 8px 0;
+}
+
+.temperature-slider::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 20px;
+	height: 20px;
+	border-radius: 50%;
+	background: var(--color-primary-element);
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.temperature-slider::-webkit-slider-thumb:hover {
+	background: var(--color-primary-element-hover);
+	transform: scale(1.2);
+}
+
+.temperature-slider::-moz-range-thumb {
+	width: 20px;
+	height: 20px;
+	border-radius: 50%;
+	background: var(--color-primary-element);
+	cursor: pointer;
+	border: none;
+	transition: all 0.2s ease;
+}
+
+.temperature-slider::-moz-range-thumb:hover {
+	background: var(--color-primary-element-hover);
+	transform: scale(1.2);
+}
+
+.temperature-slider:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.temperature-slider:disabled::-webkit-slider-thumb {
+	cursor: not-allowed;
+}
+
+.temperature-slider:disabled::-moz-range-thumb {
+	cursor: not-allowed;
 }
 
 .option-content {

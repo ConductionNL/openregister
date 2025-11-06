@@ -33,6 +33,28 @@ use Symfony\Component\Uid\Uuid;
  * Conversations belong to a user and organisation, use a specific agent,
  * and contain messages.
  *
+ * Uses Nextcloud's Entity magic getters/setters for all simple properties.
+ * Only methods with custom logic are explicitly defined.
+ *
+ * @method string|null getUuid()
+ * @method void setUuid(?string $uuid)
+ * @method string|null getTitle()
+ * @method void setTitle(?string $title)
+ * @method string|null getUserId()
+ * @method void setUserId(?string $userId)
+ * @method string|null getOrganisation()
+ * @method void setOrganisation(?string $organisation)
+ * @method int|null getAgentId()
+ * @method void setAgentId(?int $agentId)
+ * @method array|null getMetadata()
+ * @method void setMetadata(?array $metadata)
+ * @method DateTime|null getDeletedAt()
+ * @method void setDeletedAt(?DateTime $deletedAt)
+ * @method DateTime|null getCreated()
+ * @method void setCreated(?DateTime $created)
+ * @method DateTime|null getUpdated()
+ * @method void setUpdated(?DateTime $updated)
+ *
  * @package OCA\OpenRegister\Db
  */
 class Conversation extends Entity implements JsonSerializable
@@ -148,177 +170,18 @@ class Conversation extends Entity implements JsonSerializable
 
 
     /**
-     * Get the UUID of the conversation
-     *
-     * @return string|null The conversation UUID
-     */
-    public function getUuid(): ?string
-    {
-        return $this->uuid;
-
-    }//end getUuid()
-
-
-    /**
-     * Set the UUID of the conversation
-     *
-     * @param string $uuid The UUID
-     *
-     * @return self
-     */
-    public function setUuid(string $uuid): self
-    {
-        $this->uuid = $uuid;
-        return $this;
-
-    }//end setUuid()
-
-
-    /**
-     * Get the title of the conversation
-     *
-     * @return string|null The conversation title
-     */
-    public function getTitle(): ?string
-    {
-        return $this->title;
-
-    }//end getTitle()
-
-
-    /**
-     * Set the title of the conversation
-     *
-     * @param string|null $title The title
-     *
-     * @return self
-     */
-    public function setTitle(?string $title): self
-    {
-        $this->title = $title;
-        return $this;
-
-    }//end setTitle()
-
-
-    /**
-     * Get the user ID
-     *
-     * @return string|null The user ID
-     */
-    public function getUserId(): ?string
-    {
-        return $this->userId;
-
-    }//end getUserId()
-
-
-    /**
-     * Set the user ID
-     *
-     * @param string $userId The user ID
-     *
-     * @return self
-     */
-    public function setUserId(string $userId): self
-    {
-        $this->userId = $userId;
-        return $this;
-
-    }//end setUserId()
-
-
-    /**
-     * Get the organisation ID
-     *
-     * @return int|null The organisation ID
-     */
-    public function getOrganisation(): ?string
-    {
-        return $this->organisation;
-
-    }//end getOrganisation()
-
-
-    /**
-     * Set the organisation UUID
-     *
-     * @param string|null $organisation The organisation UUID
-     *
-     * @return self
-     */
-    public function setOrganisation(?string $organisation): self
-    {
-        $this->organisation = $organisation;
-        return $this;
-
-    }//end setOrganisation()
-
-
-    /**
-     * Get the agent ID
-     *
-     * @return int|null The agent ID
-     */
-    public function getAgentId(): ?int
-    {
-        return $this->agentId;
-
-    }//end getAgentId()
-
-
-    /**
-     * Set the agent ID
-     *
-     * @param int|null $agentId The agent ID
-     *
-     * @return self
-     */
-    public function setAgentId(?int $agentId): self
-    {
-        $this->agentId = $agentId;
-        return $this;
-
-    }//end setAgentId()
-
-
-    /**
-     * Get the metadata
-     *
-     * @return array|null The metadata array
-     */
-    public function getMetadata(): ?array
-    {
-        return $this->metadata;
-
-    }//end getMetadata()
-
-
-    /**
-     * Set the metadata
-     *
-     * @param array|null $metadata The metadata array
-     *
-     * @return self
-     */
-    public function setMetadata(?array $metadata): self
-    {
-        $this->metadata = $metadata;
-        return $this;
-
-    }//end setMetadata()
-
-
-    /**
      * Get a specific metadata value
      *
-     * @param string $key     The metadata key
+     * @param string $key The metadata key
      * @param mixed  $default Default value if key doesn't exist
      *
      * @return mixed The metadata value
      */
     public function getMetadataValue(string $key, mixed $default = null): mixed
     {
+        if ($this->metadata === null) {
+            return $default;
+        }
         return $this->metadata[$key] ?? $default;
 
     }//end getMetadataValue()
@@ -327,8 +190,8 @@ class Conversation extends Entity implements JsonSerializable
     /**
      * Set a specific metadata value
      *
-     * @param string $key   The metadata key
-     * @param mixed  $value The metadata value
+     * @param string $key The metadata key
+     * @param mixed  $value The value to set
      *
      * @return self
      */
@@ -341,33 +204,6 @@ class Conversation extends Entity implements JsonSerializable
         return $this;
 
     }//end setMetadataValue()
-
-
-    /**
-     * Get the deleted at timestamp
-     *
-     * @return DateTime|null The deleted at timestamp
-     */
-    public function getDeletedAt(): ?DateTime
-    {
-        return $this->deletedAt;
-
-    }//end getDeletedAt()
-
-
-    /**
-     * Set the deleted at timestamp
-     *
-     * @param DateTime|null $deletedAt The deleted at timestamp
-     *
-     * @return self
-     */
-    public function setDeletedAt(?DateTime $deletedAt): self
-    {
-        $this->deletedAt = $deletedAt;
-        return $this;
-
-    }//end setDeletedAt()
 
 
     /**
@@ -406,60 +242,6 @@ class Conversation extends Entity implements JsonSerializable
         return $this;
 
     }//end restore()
-
-
-    /**
-     * Get the creation timestamp
-     *
-     * @return DateTime|null The creation timestamp
-     */
-    public function getCreated(): ?DateTime
-    {
-        return $this->created;
-
-    }//end getCreated()
-
-
-    /**
-     * Set the creation timestamp
-     *
-     * @param DateTime $created The creation timestamp
-     *
-     * @return self
-     */
-    public function setCreated(DateTime $created): self
-    {
-        $this->created = $created;
-        return $this;
-
-    }//end setCreated()
-
-
-    /**
-     * Get the last update timestamp
-     *
-     * @return DateTime|null The last update timestamp
-     */
-    public function getUpdated(): ?DateTime
-    {
-        return $this->updated;
-
-    }//end getUpdated()
-
-
-    /**
-     * Set the last update timestamp
-     *
-     * @param DateTime $updated The last update timestamp
-     *
-     * @return self
-     */
-    public function setUpdated(DateTime $updated): self
-    {
-        $this->updated = $updated;
-        return $this;
-
-    }//end setUpdated()
 
 
     /**

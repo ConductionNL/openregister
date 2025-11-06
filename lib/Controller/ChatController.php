@@ -19,8 +19,11 @@
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\ChatService;
+use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Db\ConversationMapper;
 use OCA\OpenRegister\Db\MessageMapper;
+use OCA\OpenRegister\Db\AgentMapper;
+use OCA\OpenRegister\Db\Conversation;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -60,6 +63,20 @@ class ChatController extends Controller
     private MessageMapper $messageMapper;
 
     /**
+     * Agent mapper
+     *
+     * @var AgentMapper
+     */
+    private AgentMapper $agentMapper;
+
+    /**
+     * Organisation service
+     *
+     * @var OrganisationService
+     */
+    private OrganisationService $organisationService;
+
+    /**
      * Logger
      *
      * @var LoggerInterface
@@ -76,13 +93,15 @@ class ChatController extends Controller
     /**
      * Constructor
      *
-     * @param string             $appName             Application name
-     * @param IRequest           $request             Request object
-     * @param ChatService        $chatService         Chat service
-     * @param ConversationMapper $conversationMapper  Conversation mapper
-     * @param MessageMapper      $messageMapper       Message mapper
-     * @param LoggerInterface    $logger              Logger
-     * @param string             $userId              User ID
+     * @param string                $appName              Application name
+     * @param IRequest              $request              Request object
+     * @param ChatService           $chatService          Chat service
+     * @param ConversationMapper    $conversationMapper   Conversation mapper
+     * @param MessageMapper         $messageMapper        Message mapper
+     * @param AgentMapper           $agentMapper          Agent mapper
+     * @param OrganisationService   $organisationService  Organisation service
+     * @param LoggerInterface       $logger               Logger
+     * @param string                $userId               User ID
      */
     public function __construct(
         string $appName,
@@ -90,6 +109,8 @@ class ChatController extends Controller
         ChatService $chatService,
         ConversationMapper $conversationMapper,
         MessageMapper $messageMapper,
+        AgentMapper $agentMapper,
+        OrganisationService $organisationService,
         LoggerInterface $logger,
         string $userId
     ) {
@@ -97,6 +118,8 @@ class ChatController extends Controller
         $this->chatService = $chatService;
         $this->conversationMapper = $conversationMapper;
         $this->messageMapper = $messageMapper;
+        $this->agentMapper = $agentMapper;
+        $this->organisationService = $organisationService;
         $this->logger = $logger;
         $this->userId = $userId;
 
@@ -134,15 +157,9 @@ class ChatController extends Controller
     {
         try {
             // Get request parameters
-            $conversationId = (int) $this->request->getParam('conversationId');
+            $conversationUuid = (string) $this->request->getParam('conversation');
+            $agentUuid = (string) $this->request->getParam('agentUuid');
             $message = (string) $this->request->getParam('message');
-
-            if (empty($conversationId)) {
-                return new JSONResponse([
-                    'error' => 'Missing conversationId',
-                    'message' => 'conversationId is required',
-                ], 400);
-            }
 
             if (empty($message)) {
                 return new JSONResponse([
@@ -151,12 +168,68 @@ class ChatController extends Controller
                 ], 400);
             }
 
+            // Load or create conversation
+            $conversation = null;
+            
+            if (!empty($conversationUuid)) {
+                // Load existing conversation by UUID
+                try {
+                    $conversation = $this->conversationMapper->findByUuid($conversationUuid);
+                } catch (\Exception $e) {
+                    return new JSONResponse([
+                        'error' => 'Conversation not found',
+                        'message' => 'The conversation with UUID ' . $conversationUuid . ' does not exist',
+                    ], 404);
+                }
+            } elseif (!empty($agentUuid)) {
+                // Create new conversation with specified agent
+                $organisation = $this->organisationService->getActiveOrganisation();
+                
+                // Look up agent by UUID
+                try {
+                    $agent = $this->agentMapper->findByUuid($agentUuid);
+                } catch (\Exception $e) {
+                    return new JSONResponse([
+                        'error' => 'Agent not found',
+                        'message' => 'The agent with UUID ' . $agentUuid . ' does not exist',
+                    ], 404);
+                }
+                
+                $conversation = new Conversation();
+                $conversation->setUserId($this->userId);
+                $conversation->setOrganisation($organisation?->getUuid());
+                $conversation->setAgentId($agent->getId());
+                $conversation = $this->conversationMapper->insert($conversation);
+
+                $this->logger->info('[ChatController] New conversation created', [
+                    'uuid' => $conversation->getUuid(),
+                    'userId' => $this->userId,
+                    'agentId' => $agent->getId(),
+                ]);
+            } else {
+                return new JSONResponse([
+                    'error' => 'Missing conversation or agentUuid',
+                    'message' => 'Either conversation or agentUuid is required',
+                ], 400);
+            }
+            
+            // Verify user has access
+            if ($conversation->getUserId() !== $this->userId) {
+                return new JSONResponse([
+                    'error' => 'Access denied',
+                    'message' => 'You do not have access to this conversation',
+                ], 403);
+            }
+
             // Process message through ChatService
             $result = $this->chatService->processMessage(
-                $conversationId,
+                $conversation->getId(),
                 $this->userId,
                 $message
             );
+
+            // Add conversation UUID to result for frontend
+            $result['conversation'] = $conversation->getUuid();
 
             return new JSONResponse($result, 200);
 

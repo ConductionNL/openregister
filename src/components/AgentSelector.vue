@@ -23,8 +23,17 @@
 		<!-- Empty State -->
 		<div v-else-if="agents.length === 0" class="empty-state">
 			<RobotOff :size="48" />
-			<p>{{ t('openregister', 'No agents available') }}</p>
-			<small>{{ t('openregister', 'Create an agent first to start chatting') }}</small>
+			<h3>{{ t('openregister', 'No agents available') }}</h3>
+			<p>{{ t('openregister', 'You need an AI agent to start a conversation.') }}</p>
+			<div class="empty-state-help">
+				<p>
+					{{ t('openregister', 'Please create an agent in the') }} 
+					<router-link to="/agents" class="agents-link">
+						{{ t('openregister', 'Agents') }}
+					</router-link>
+					{{ t('openregister', 'menu or contact someone with permission to create agents.') }}
+				</p>
+			</div>
 		</div>
 
 		<!-- Agent List -->
@@ -176,8 +185,14 @@ export default {
 		text-align: center;
 		opacity: 0.7;
 
+		h3 {
+			margin: 16px 0 8px;
+			font-size: 1.2em;
+			color: var(--color-main-text);
+		}
+
 		p {
-			margin-top: 16px;
+			margin: 8px 0;
 			font-size: 14px;
 			color: var(--color-text-maxcontrast);
 		}
@@ -194,6 +209,36 @@ export default {
 
 		p {
 			color: var(--color-error);
+		}
+	}
+
+	.empty-state {
+		h3 {
+			color: var(--color-text-maxcontrast);
+		}
+
+		.empty-state-help {
+			margin-top: 16px;
+			padding: 16px;
+			background: var(--color-background-hover);
+			border-radius: var(--border-radius);
+			border-left: 3px solid var(--color-primary-element);
+			max-width: 400px;
+
+			p {
+				margin: 0;
+				font-size: 0.9em;
+			}
+
+			.agents-link {
+				color: var(--color-primary-element);
+				font-weight: 600;
+				text-decoration: none;
+
+				&:hover {
+					text-decoration: underline;
+				}
+			}
 		}
 	}
 

@@ -40,15 +40,14 @@
 				
 				<!-- Inline Agent Selector -->
 				<div class="agent-selector-container">
-					<AgentSelector
-						:agents="availableAgents"
-						:selected-agent="selectedAgent"
-						:loading="agentsLoading"
-						:error="agentsError"
-						:inline="true"
-						@select-agent="selectAgent"
-						@confirm="startConversationWithAgent"
-						@retry="loadAgents" />
+				<AgentSelector
+					:agents="availableAgents"
+					:selected-agent="selectedAgent"
+					:loading="false"
+					:error="availableAgents.length === 0 ? t('openregister', 'No agents available') : null"
+					:inline="true"
+					@select-agent="selectAgent"
+					@confirm="startConversationWithAgent" />
 				</div>
 			</div>
 
@@ -162,12 +161,11 @@
 			<AgentSelector
 				:agents="availableAgents"
 				:selected-agent="selectedAgent"
-				:loading="agentsLoading"
-				:error="agentsError"
+				:loading="false"
+				:error="availableAgents.length === 0 ? t('openregister', 'No agents available') : null"
 				@select-agent="selectAgent"
 				@confirm="startConversationWithAgent"
-				@cancel="showAgentSelectorDialog = false"
-				@retry="loadAgents" />
+				@cancel="showAgentSelectorDialog = false" />
 		</NcDialog>
 
 		<!-- Rename Conversation Dialog -->
@@ -216,6 +214,7 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess, showError } from '@nextcloud/dialogs'
 import { marked } from 'marked'
+import { agentStore } from '../../store/store.js'
 
 export default {
 	name: 'ChatIndex',
@@ -249,9 +248,7 @@ export default {
 			// Agent selection
 			showAgentSelectorDialog: false,
 			selectedAgent: null,
-			availableAgents: [],
-			agentsLoading: false,
-			agentsError: null,
+			availableAgents: [], // Loaded from agentStore during app warmup
 			currentAgent: null,
 
 			// Rename dialog
@@ -261,72 +258,78 @@ export default {
 	},
 
 	computed: {
-		// Conversation store state
-		conversationStore() {
-			return this.$store ? this.$store.conversation : null
-		},
-
 		conversationList() {
-			return this.conversationStore?.conversationList || []
+			return conversationStore.conversationList || []
 		},
 
 		archivedConversations() {
-			return this.conversationStore?.archivedConversations || []
+			return conversationStore.archivedConversations || []
 		},
 
 		activeConversation() {
-			return this.conversationStore?.activeConversation || null
+			return conversationStore.activeConversation || null
 		},
 
 		activeMessages() {
-			return this.conversationStore?.activeConversationMessages || []
+			return conversationStore.activeConversationMessages || []
 		},
 
 		conversationLoading() {
-			return this.conversationStore?.loading || false
+			return conversationStore.loading || false
 		},
 	},
 
-	async mounted() {
-		await this.initializeStore()
-		// Load agents immediately for the empty state
-		await this.loadAgents()
+	mounted() {
+		// Conversations are already loaded during app warmup
+		// Agents are already loaded during app warmup
+		this.loadAgentsFromStore()
+		
+		// Just ensure we have the latest conversation list (should already be loaded)
+		if (!conversationStore.conversationList || conversationStore.conversationList.length === 0) {
+			console.log('Conversations not preloaded, loading now...')
+			conversationStore.refreshConversationList()
+		}
 	},
 
 	methods: {
-		async initializeStore() {
-			// Initialize conversation store if using Pinia
-			if (this.$pinia) {
-				const { useConversationStore } = await import('../../store/modules/conversation')
-				this.$store = { conversation: useConversationStore() }
-				await this.$store.conversation.refreshConversationList()
-			}
-		},
 
 		async showAgentSelector() {
 			this.showAgentSelectorDialog = true
 			this.selectedAgent = null
-			// Only reload if not already loaded
-			if (this.availableAgents.length === 0) {
-				await this.loadAgents()
-			}
+			// Agents should already be loaded from warmup
+			this.loadAgentsFromStore()
 		},
 
-		async loadAgents() {
-			this.agentsLoading = true
-			this.agentsError = null
-			try {
-				// Use the agent store to load agents (same as agents page)
-				const { useAgentStore } = await import('../../store/modules/agent')
-				const agentStore = useAgentStore()
-				await agentStore.refreshAgentList()
-				this.availableAgents = agentStore.agentList || []
-				console.log('Loaded agents:', this.availableAgents)
-			} catch (error) {
-				console.error('Failed to load agents:', error)
-				this.agentsError = this.t('openregister', 'Failed to load agents')
-			} finally {
-				this.agentsLoading = false
+		/**
+		 * Load agents from the already-initialized agent store
+		 * Agents are preloaded during app warmup, so we just use them from the store
+		 * 
+		 * @return {void}
+		 */
+		loadAgentsFromStore() {
+			// Agents are already loaded during app warmup (AppInitializationService)
+			// Just use them from the store
+			console.log('[ChatIndex] loadAgentsFromStore called')
+			console.log('[ChatIndex] agentStore:', agentStore)
+			console.log('[ChatIndex] agentStore.agentList:', agentStore.agentList)
+			
+			this.availableAgents = agentStore.agentList || []
+			
+			console.log('[ChatIndex] availableAgents set to:', this.availableAgents)
+			
+			if (this.availableAgents.length === 0) {
+				console.warn('[ChatIndex] ⚠ No agents available in store')
+				console.warn('[ChatIndex] Trying to refresh agent list...')
+				// If no agents, try to refresh the list
+				agentStore.refreshAgentList().then(() => {
+					console.log('[ChatIndex] After refresh, agentList:', agentStore.agentList)
+					this.availableAgents = agentStore.agentList || []
+					console.log('[ChatIndex] availableAgents now:', this.availableAgents)
+				}).catch(err => {
+					console.error('[ChatIndex] Failed to refresh agents:', err)
+				})
+			} else {
+				console.log('[ChatIndex] ✓ Using preloaded agents from store:', this.availableAgents.length)
 			}
 		},
 
@@ -342,7 +345,7 @@ export default {
 
 			try {
 				this.showAgentSelectorDialog = false
-				const conversation = await this.$store.conversation.createConversation(this.selectedAgent.uuid)
+				const conversation = await conversationStore.createConversation(this.selectedAgent.uuid)
 				this.currentAgent = this.selectedAgent
 				// Keep selected agent for next time, but clear for UX
 				const agentCopy = this.selectedAgent
@@ -360,7 +363,7 @@ export default {
 
 		async selectConversation(conversation) {
 			try {
-				await this.$store.conversation.loadConversation(conversation.uuid)
+				await conversationStore.loadConversation(conversation.uuid)
 				
 				// Load agent details
 				if (conversation.agentId) {
@@ -385,9 +388,9 @@ export default {
 
 			try {
 				if (this.showArchive) {
-					await this.$store.conversation.deleteConversationPermanent(conversation.uuid)
+					await conversationStore.deleteConversationPermanent(conversation.uuid)
 				} else {
-					await this.$store.conversation.deleteConversation(conversation.uuid)
+					await conversationStore.deleteConversation(conversation.uuid)
 				}
 				showSuccess(this.t('openregister', 'Conversation deleted'))
 			} catch (error) {
@@ -397,7 +400,7 @@ export default {
 
 		async restoreConversation(conversation) {
 			try {
-				await this.$store.conversation.restoreConversation(conversation.uuid)
+				await conversationStore.restoreConversation(conversation.uuid)
 				showSuccess(this.t('openregister', 'Conversation restored'))
 			} catch (error) {
 				showError(this.t('openregister', 'Failed to restore conversation'))
@@ -415,7 +418,7 @@ export default {
 			}
 
 			try {
-				await this.$store.conversation.updateConversation(this.activeConversation.uuid, {
+				await conversationStore.updateConversation(this.activeConversation.uuid, {
 					title: this.newConversationTitle.trim(),
 				})
 				this.showRenameDialog = false
@@ -437,7 +440,7 @@ export default {
 			this.loading = true
 
 			try {
-				await this.$store.conversation.sendMessage(
+				await conversationStore.sendMessage(
 					userMessage,
 					this.activeConversation.uuid,
 					this.currentAgent?.uuid
@@ -518,6 +521,7 @@ export default {
 </script>
 
 <script setup>
+import { conversationStore } from '../../store/store.js'
 </script>
 
 <style scoped lang="scss">

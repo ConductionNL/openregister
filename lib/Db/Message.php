@@ -32,6 +32,22 @@ use Symfony\Component\Uid\Uuid;
  * Represents a chat message within a conversation.
  * Messages have a role (user or assistant), content, and optional sources (for RAG).
  *
+ * Uses Nextcloud's Entity magic getters/setters for all simple properties.
+ * Only methods with custom logic are explicitly defined.
+ *
+ * @method string|null getUuid()
+ * @method void setUuid(?string $uuid)
+ * @method int|null getConversationId()
+ * @method void setConversationId(?int $conversationId)
+ * @method string|null getRole()
+ * @method void setRole(?string $role)
+ * @method string|null getContent()
+ * @method void setContent(?string $content)
+ * @method array|null getSources()
+ * @method void setSources(?array $sources)
+ * @method DateTime|null getCreated()
+ * @method void setCreated(?DateTime $created)
+ *
  * @package OCA\OpenRegister\Db
  */
 class Message extends Entity implements JsonSerializable
@@ -138,87 +154,6 @@ class Message extends Entity implements JsonSerializable
 
 
     /**
-     * Get the UUID of the message
-     *
-     * @return string|null The message UUID
-     */
-    public function getUuid(): ?string
-    {
-        return $this->uuid;
-
-    }//end getUuid()
-
-
-    /**
-     * Set the UUID of the message
-     *
-     * @param string $uuid The UUID
-     *
-     * @return self
-     */
-    public function setUuid(string $uuid): self
-    {
-        $this->uuid = $uuid;
-        return $this;
-
-    }//end setUuid()
-
-
-    /**
-     * Get the conversation ID
-     *
-     * @return int|null The conversation ID
-     */
-    public function getConversationId(): ?int
-    {
-        return $this->conversationId;
-
-    }//end getConversationId()
-
-
-    /**
-     * Set the conversation ID
-     *
-     * @param int $conversationId The conversation ID
-     *
-     * @return self
-     */
-    public function setConversationId(int $conversationId): self
-    {
-        $this->conversationId = $conversationId;
-        return $this;
-
-    }//end setConversationId()
-
-
-    /**
-     * Get the message role
-     *
-     * @return string|null The message role
-     */
-    public function getRole(): ?string
-    {
-        return $this->role;
-
-    }//end getRole()
-
-
-    /**
-     * Set the message role
-     *
-     * @param string $role The message role (user or assistant)
-     *
-     * @return self
-     */
-    public function setRole(string $role): self
-    {
-        $this->role = $role;
-        return $this;
-
-    }//end setRole()
-
-
-    /**
      * Check if message is from user
      *
      * @return bool True if user message
@@ -243,96 +178,15 @@ class Message extends Entity implements JsonSerializable
 
 
     /**
-     * Get the message content
+     * Check if message has RAG sources
      *
-     * @return string|null The message content
-     */
-    public function getContent(): ?string
-    {
-        return $this->content;
-
-    }//end getContent()
-
-
-    /**
-     * Set the message content
-     *
-     * @param string $content The message content
-     *
-     * @return self
-     */
-    public function setContent(string $content): self
-    {
-        $this->content = $content;
-        return $this;
-
-    }//end setContent()
-
-
-    /**
-     * Get the RAG sources
-     *
-     * @return array|null The sources array
-     */
-    public function getSources(): ?array
-    {
-        return $this->sources;
-
-    }//end getSources()
-
-
-    /**
-     * Set the RAG sources
-     *
-     * @param array|null $sources The sources array
-     *
-     * @return self
-     */
-    public function setSources(?array $sources): self
-    {
-        $this->sources = $sources;
-        return $this;
-
-    }//end setSources()
-
-
-    /**
-     * Check if message has sources
-     *
-     * @return bool True if sources are present
+     * @return bool True if sources exist
      */
     public function hasSources(): bool
     {
         return !empty($this->sources);
 
     }//end hasSources()
-
-
-    /**
-     * Get the creation timestamp
-     *
-     * @return DateTime|null The creation timestamp
-     */
-    public function getCreated(): ?DateTime
-    {
-        return $this->created;
-
-    }//end getCreated()
-
-
-    /**
-     * Set the creation timestamp
-     *
-     * @param DateTime $created The creation timestamp
-     *
-     * @return self
-     */
-    public function setCreated(DateTime $created): self
-    {
-        $this->created = $created;
-        return $this;
-
-    }//end setCreated()
 
 
     /**
