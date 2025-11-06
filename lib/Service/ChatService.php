@@ -33,15 +33,56 @@ use Psr\Log\LoggerInterface;
 use LLPhant\Chat\OpenAIChat;
 use LLPhant\Chat\Message as LLPhantMessage;
 use LLPhant\OpenAIConfig;
+use OpenAI\Exceptions\ErrorException as OpenAIErrorException;
 use DateTime;
 use Symfony\Component\Uid\Uuid;
 
 /**
  * ChatService
  *
- * Service for managing AI chat conversations with RAG capabilities.
- * Handles conversation creation, message processing, context retrieval,
- * automatic title generation, and conversation summarization.
+ * Service for managing AI chat conversations with RAG (Retrieval Augmented Generation).
+ * This service handles ALL LLM chat operations and business logic.
+ *
+ * RESPONSIBILITIES:
+ * - Process chat messages with RAG context retrieval
+ * - Generate AI responses using configured LLM providers
+ * - Manage conversation history and summarization
+ * - Generate conversation titles automatically
+ * - Test LLM chat configurations without saving settings
+ * - Handle agent-based context retrieval and filtering
+ *
+ * PROVIDER SUPPORT:
+ * - OpenAI: GPT-4, GPT-4o-mini, and other chat models
+ * - Fireworks AI: Llama, Mistral, and other open models
+ * - Ollama: Local LLM deployments
+ *
+ * ARCHITECTURE:
+ * - Uses LLPhant library for LLM interactions
+ * - Integrates with VectorEmbeddingService for semantic search
+ * - Can use GuzzleSolrService for keyword search (optional)
+ * - Independent chat logic, not tied to SOLR infrastructure
+ *
+ * RAG CAPABILITIES:
+ * - Semantic search using VectorEmbeddingService
+ * - Keyword search using GuzzleSolrService (optional)
+ * - Hybrid search combining both approaches
+ * - Agent-based filtering and context retrieval
+ * - View-based filtering for multi-tenancy
+ *
+ * CONVERSATION MANAGEMENT:
+ * - Automatic title generation from first message
+ * - Conversation summarization when token limit reached
+ * - Message history management with context windows
+ * - Source tracking for RAG responses
+ *
+ * INTEGRATION POINTS:
+ * - VectorEmbeddingService: For semantic search in RAG
+ * - GuzzleSolrService: For keyword search (optional)
+ * - SettingsService: For reading LLM configuration
+ * - SettingsController: Delegates testing to this service
+ *
+ * NOTE: This service handles all LLM chat business logic. Controllers should
+ * delegate to this service rather than implementing chat logic themselves.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service
@@ -297,8 +338,26 @@ class ChatService
                 $results = $this->searchKeywordOnly($query, $numSources * 2);
             }
 
+            // Ensure results is an array
+            if (!is_array($results)) {
+                $this->logger->warning('[ChatService] Search returned non-array result', [
+                    'searchMode' => $searchMode,
+                    'resultType' => gettype($results),
+                    'resultValue' => $results,
+                ]);
+                $results = [];
+            }
+
             // Filter and build context
             foreach ($results as $result) {
+                // Skip if result is not an array
+                if (!is_array($result)) {
+                    $this->logger->warning('[ChatService] Skipping non-array result', [
+                        'resultType' => gettype($result),
+                        'resultValue' => $result,
+                    ]);
+                    continue;
+                }
                 $isFile = ($result['entity_type'] ?? '') === 'file';
                 $isObject = ($result['entity_type'] ?? '') === 'object';
 
@@ -626,7 +685,7 @@ class ChatService
      *
      * @return string Unique title with number suffix if needed
      */
-    private function ensureUniqueTitle(string $baseTitle, string $userId, int $agentId): string
+    public function ensureUniqueTitle(string $baseTitle, string $userId, int $agentId): string
     {
         $this->logger->info('[ChatService] Ensuring unique title', [
             'baseTitle' => $baseTitle,
@@ -675,6 +734,238 @@ class ChatService
         return $uniqueTitle;
 
     }//end ensureUniqueTitle()
+
+
+    /**
+     * Test chat functionality with custom configuration
+     * 
+     * Tests if the provided chat configuration works correctly by sending
+     * a test message and receiving a response. Does not save any configuration
+     * or create a conversation.
+     * 
+     * @param string $provider    Provider name ('openai', 'fireworks', 'ollama')
+     * @param array  $config      Provider-specific configuration
+     * @param string $testMessage Optional test message to send
+     * 
+     * @return array Test results with success status and chat response
+     */
+    public function testChat(string $provider, array $config, string $testMessage = 'Hello! Please respond with a brief greeting.'): array
+    {
+        $this->logger->info('[ChatService] Testing chat functionality', [
+            'provider' => $provider,
+            'model' => $config['chatModel'] ?? $config['model'] ?? 'unknown',
+            'testMessageLength' => strlen($testMessage),
+        ]);
+
+        try {
+            // Validate provider
+            if (!in_array($provider, ['openai', 'fireworks', 'ollama'])) {
+                throw new \Exception("Unsupported provider: {$provider}");
+            }
+
+            // Configure LLM client based on provider
+            $llphantConfig = new OpenAIConfig();
+            
+            if ($provider === 'openai') {
+                if (empty($config['apiKey'])) {
+                    throw new \Exception('OpenAI API key is required');
+                }
+                $llphantConfig->apiKey = $config['apiKey'];
+                $llphantConfig->model = $config['chatModel'] ?? $config['model'] ?? 'gpt-4o-mini';
+                
+                if (!empty($config['organizationId'])) {
+                    $llphantConfig->organizationId = $config['organizationId'];
+                }
+            } elseif ($provider === 'fireworks') {
+                if (empty($config['apiKey'])) {
+                    throw new \Exception('Fireworks AI API key is required');
+                }
+                $llphantConfig->apiKey = $config['apiKey'];
+                $llphantConfig->model = $config['chatModel'] ?? $config['model'] ?? 'accounts/fireworks/models/llama-v3p1-8b-instruct';
+                
+                // Fireworks AI uses OpenAI-compatible API but needs specific URL format
+                $baseUrl = rtrim($config['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
+                // Ensure the URL ends with /v1 for compatibility
+                if (!str_ends_with($baseUrl, '/v1')) {
+                    $baseUrl .= '/v1';
+                }
+                $llphantConfig->url = $baseUrl;
+            } elseif ($provider === 'ollama') {
+                if (empty($config['url'])) {
+                    throw new \Exception('Ollama URL is required');
+                }
+                $llphantConfig->url = rtrim($config['url'], '/');
+                $llphantConfig->model = $config['chatModel'] ?? $config['model'] ?? 'llama2';
+            }
+
+            // Set temperature if provided
+            if (isset($config['temperature'])) {
+                $llphantConfig->temperature = (float) $config['temperature'];
+            }
+
+            // For Fireworks, use direct HTTP to avoid OpenAI library error handling bugs
+            if ($provider === 'fireworks') {
+                $response = $this->callFireworksChatAPI(
+                    $llphantConfig->apiKey,
+                    $llphantConfig->model,
+                    $llphantConfig->url,
+                    $testMessage
+                );
+            } else {
+                // Use OpenAI client for OpenAI and Ollama
+                $chat = new OpenAIChat($llphantConfig);
+
+                // Generate response
+                $this->logger->debug('[ChatService] Sending test message to LLM', [
+                    'provider' => $provider,
+                    'model' => $llphantConfig->model,
+                    'url' => $llphantConfig->url ?? 'default',
+                ]);
+                
+                $response = $chat->generateText($testMessage);
+            }
+
+            $this->logger->info('[ChatService] Chat test successful', [
+                'provider' => $provider,
+                'model' => $llphantConfig->model,
+                'responseLength' => strlen($response),
+            ]);
+
+            return [
+                'success' => true,
+                'message' => 'Chat test successful',
+                'data' => [
+                    'provider' => $provider,
+                    'model' => $llphantConfig->model,
+                    'testMessage' => $testMessage,
+                    'response' => $response,
+                    'responseLength' => strlen($response),
+                ],
+            ];
+        } catch (OpenAIErrorException $e) {
+            // Handle OpenAI client library errors (including Fireworks AI errors)
+            $errorMessage = $e->getMessage();
+            
+            // Try to extract more meaningful error from the exception
+            if (str_contains($errorMessage, 'unauthorized')) {
+                $errorMessage = 'Authentication failed. Please check your API key.';
+            } elseif (str_contains($errorMessage, 'invalid_api_key')) {
+                $errorMessage = 'Invalid API key provided.';
+            } elseif (str_contains($errorMessage, 'model_not_found')) {
+                $errorMessage = 'Model not found. Please check the model name.';
+            } elseif (str_contains($errorMessage, 'rate_limit')) {
+                $errorMessage = 'Rate limit exceeded. Please try again later.';
+            }
+            
+            $this->logger->error('[ChatService] Chat test failed (OpenAI client error)', [
+                'provider' => $provider,
+                'error' => $e->getMessage(),
+                'parsed_error' => $errorMessage,
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $errorMessage,
+                'message' => 'Failed to test chat: ' . $errorMessage,
+                'details' => [
+                    'provider' => $provider,
+                    'model' => $llphantConfig->model ?? 'unknown',
+                    'raw_error' => $e->getMessage(),
+                ],
+            ];
+        } catch (\Exception $e) {
+            $this->logger->error('[ChatService] Chat test failed', [
+                'provider' => $provider,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'message' => 'Failed to test chat: ' . $e->getMessage(),
+            ];
+        }
+    }//end testChat()
+
+
+    /**
+     * Call Fireworks AI chat API directly to avoid OpenAI library error handling bugs
+     * 
+     * The OpenAI PHP client has issues parsing Fireworks error responses, so we
+     * make direct HTTP calls for better error handling.
+     * 
+     * @param string $apiKey    Fireworks API key
+     * @param string $model     Model name
+     * @param string $baseUrl   Base API URL
+     * @param string $message   Message to send
+     * 
+     * @return string Generated response text
+     * 
+     * @throws \Exception If API call fails
+     */
+    private function callFireworksChatAPI(string $apiKey, string $model, string $baseUrl, string $message): string
+    {
+        $url = rtrim($baseUrl, '/') . '/chat/completions';
+        
+        $this->logger->debug('[ChatService] Calling Fireworks chat API directly', [
+            'url' => $url,
+            'model' => $model,
+        ]);
+
+        $payload = [
+            'model' => $model,
+            'messages' => [
+                [
+                    'role' => 'user',
+                    'content' => $message,
+                ],
+            ],
+        ];
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Authorization: Bearer ' . $apiKey,
+            'Content-Type: application/json',
+        ]);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        if ($curlError) {
+            throw new \Exception("Fireworks API request failed: {$curlError}");
+        }
+
+        if ($httpCode !== 200) {
+            // Parse error response
+            $errorData = json_decode($response, true);
+            $errorMessage = $errorData['error']['message'] ?? $errorData['error'] ?? $response;
+            
+            // Make error messages user-friendly
+            if ($httpCode === 401 || $httpCode === 403) {
+                throw new \Exception('Authentication failed. Please check your Fireworks API key.');
+            } elseif ($httpCode === 404) {
+                throw new \Exception("Model not found: {$model}. Please check the model name.");
+            } elseif ($httpCode === 429) {
+                throw new \Exception('Rate limit exceeded. Please try again later.');
+            } else {
+                throw new \Exception("Fireworks API error (HTTP {$httpCode}): {$errorMessage}");
+            }
+        }
+
+        $data = json_decode($response, true);
+        if (!isset($data['choices'][0]['message']['content'])) {
+            throw new \Exception("Unexpected Fireworks API response format: {$response}");
+        }
+
+        return $data['choices'][0]['message']['content'];
+    }//end callFireworksChatAPI()
 
 
     /**

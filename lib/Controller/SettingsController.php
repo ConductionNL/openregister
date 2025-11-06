@@ -32,6 +32,86 @@ use OCA\OpenRegister\Service\VectorEmbeddingService;
 
 /**
  * Controller for handling settings-related operations in the OpenRegister.
+ *
+ * This controller serves as a THIN LAYER that validates HTTP requests and delegates
+ * to the appropriate service for business logic execution. It does NOT contain
+ * business logic itself.
+ *
+ * RESPONSIBILITIES:
+ * - Validate HTTP request parameters
+ * - Delegate settings CRUD operations to SettingsService
+ * - Delegate LLM testing to VectorEmbeddingService and ChatService
+ * - Delegate SOLR testing to GuzzleSolrService
+ * - Return appropriate JSONResponse with correct HTTP status codes
+ * - Handle HTTP-level concerns (authentication, CSRF, etc.)
+ *
+ * ARCHITECTURE PATTERN:
+ * - Thin controller: minimal logic, delegates to services
+ * - Services handle business logic and return structured arrays
+ * - Controller converts service responses to JSONResponse
+ * - Service errors are caught and converted to appropriate HTTP responses
+ *
+ * ENDPOINTS ORGANIZED BY CATEGORY:
+ *
+ * GENERAL SETTINGS:
+ * - GET  /api/settings              - Get all settings
+ * - POST /api/settings              - Update all settings
+ * - GET  /api/settings/stats        - Get statistics
+ * - POST /api/settings/rebase       - Rebase objects and logs
+ *
+ * RBAC SETTINGS:
+ * - GET  /api/settings/rbac         - Get RBAC settings
+ * - PUT  /api/settings/rbac         - Update RBAC settings
+ * - PATCH /api/settings/rbac        - Patch RBAC settings
+ *
+ * MULTITENANCY SETTINGS:
+ * - GET  /api/settings/multitenancy - Get multitenancy settings
+ * - PUT  /api/settings/multitenancy - Update multitenancy settings
+ * - PATCH /api/settings/multitenancy - Patch multitenancy settings
+ *
+ * RETENTION SETTINGS:
+ * - GET  /api/settings/retention    - Get retention settings
+ * - PUT  /api/settings/retention    - Update retention settings
+ * - PATCH /api/settings/retention   - Patch retention settings
+ *
+ * SOLR SETTINGS:
+ * - GET  /api/settings/solr         - Get SOLR settings
+ * - PUT  /api/settings/solr         - Update SOLR settings
+ * - PATCH /api/settings/solr        - Patch SOLR settings
+ * - POST /api/settings/solr/test    - Test SOLR connection (delegates to GuzzleSolrService)
+ * - POST /api/settings/solr/warmup  - Warmup SOLR index
+ *
+ * LLM SETTINGS:
+ * - GET  /api/settings/llm          - Get LLM settings
+ * - PUT  /api/settings/llm          - Update LLM settings
+ * - PATCH /api/settings/llm         - Patch LLM settings
+ * - POST /api/vectors/test-embedding - Test embedding generation (delegates to VectorEmbeddingService)
+ * - POST /api/llm/test-chat         - Test chat functionality (delegates to ChatService)
+ *
+ * FILE SETTINGS:
+ * - GET  /api/settings/files        - Get file settings
+ * - PUT  /api/settings/files        - Update file settings
+ * - PATCH /api/settings/files       - Patch file settings
+ *
+ * OBJECT SETTINGS:
+ * - GET  /api/settings/objects      - Get object settings
+ * - PUT  /api/settings/objects      - Update object settings
+ * - PATCH /api/settings/objects     - Patch object settings
+ *
+ * CACHE MANAGEMENT:
+ * - GET  /api/settings/cache/stats  - Get cache statistics
+ * - POST /api/settings/cache/clear  - Clear cache
+ * - POST /api/settings/cache/warmup - Warmup cache
+ *
+ * DELEGATION PATTERN:
+ * - Settings storage/retrieval → SettingsService
+ * - LLM embedding testing → VectorEmbeddingService
+ * - LLM chat testing → ChatService
+ * - SOLR testing → GuzzleSolrService
+ * - Cache operations → Cache services
+ *
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
  */
 class SettingsController extends Controller
 {
@@ -2726,7 +2806,141 @@ class SettingsController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
-    }
+    }//end updateLLMSettings()
+
+
+    /**
+     * Patch LLM settings (partial update)
+     *
+     * This is an alias for updateLLMSettings but specifically for PATCH requests.
+     * It provides the same functionality but is registered under a different route name
+     * to ensure PATCH verb is properly registered in Nextcloud routing.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Updated LLM settings
+     */
+    public function patchLLMSettings(): JSONResponse
+    {
+        return $this->updateLLMSettings();
+
+    }//end patchLLMSettings()
+
+
+    /**
+     * Test LLM embedding functionality
+     *
+     * Tests if the configured embedding provider works correctly
+     * by generating a test embedding vector.
+     * Accepts provider and config from the request to allow testing
+     * before saving the configuration.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Test result with embedding info
+     */
+    public function testEmbedding(): JSONResponse
+    {
+        try {
+            // Get parameters from request
+            $provider = (string) $this->request->getParam('provider');
+            $config = $this->request->getParam('config', []);
+            $testText = (string) $this->request->getParam('testText', 'This is a test embedding to verify the LLM configuration.');
+            
+            // Validate input
+            if (empty($provider) === true) {
+                return new JSONResponse([
+                    'success' => false,
+                    'error' => 'Missing provider',
+                    'message' => 'Provider is required for testing',
+                ], 400);
+            }
+            
+            if (empty($config) === true || is_array($config) === false) {
+                return new JSONResponse([
+                    'success' => false,
+                    'error' => 'Invalid config',
+                    'message' => 'Config must be provided as an object',
+                ], 400);
+            }
+            
+            // Delegate to VectorEmbeddingService for testing
+            $vectorService = $this->container->get('OCA\OpenRegister\Service\VectorEmbeddingService');
+            $result = $vectorService->testEmbedding($provider, $config, $testText);
+            
+            // Return appropriate status code
+            $statusCode = $result['success'] ? 200 : 400;
+            return new JSONResponse($result, $statusCode);
+
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'message' => 'Failed to generate embedding: ' . $e->getMessage(),
+            ], 400);
+        }//end try
+
+    }//end testEmbedding()
+
+
+    /**
+     * Test LLM chat functionality
+     *
+     * Tests if the configured chat provider works correctly
+     * by sending a simple test message and receiving a response.
+     * Accepts provider and config from the request to allow testing
+     * before saving the configuration.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Test result with chat response
+     */
+    public function testChat(): JSONResponse
+    {
+        try {
+            // Get parameters from request
+            $provider = (string) $this->request->getParam('provider');
+            $config = $this->request->getParam('config', []);
+            $testMessage = (string) $this->request->getParam('testMessage', 'Hello! Please respond with a brief greeting.');
+            
+            // Validate input
+            if (empty($provider) === true) {
+                return new JSONResponse([
+                    'success' => false,
+                    'error' => 'Missing provider',
+                    'message' => 'Provider is required for testing',
+                ], 400);
+            }
+            
+            if (empty($config) === true || is_array($config) === false) {
+                return new JSONResponse([
+                    'success' => false,
+                    'error' => 'Invalid config',
+                    'message' => 'Config must be provided as an object',
+                ], 400);
+            }
+            
+            // Delegate to ChatService for testing
+            $chatService = $this->container->get('OCA\OpenRegister\Service\ChatService');
+            $result = $chatService->testChat($provider, $config, $testMessage);
+            
+            // Return appropriate status code
+            $statusCode = $result['success'] ? 200 : 400;
+            return new JSONResponse($result, $statusCode);
+
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'message' => 'Failed to test chat: ' . $e->getMessage(),
+            ], 400);
+        }//end try
+
+    }//end testChat()
+
 
     /**
      * Get File Management settings
@@ -2744,7 +2958,8 @@ class SettingsController extends Controller
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }
-    }
+
+    }//end getFileSettings()
 
     /**
      * Test Dolphin API connection

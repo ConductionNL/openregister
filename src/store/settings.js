@@ -684,12 +684,13 @@ export const useSettingsStore = defineStore('settings', {
 		},
 
 		/**
-		 * Save LLM settings
+		 * Save LLM settings (full update - use patchLlmSettings for partial updates)
 		 * @param {object} llmData - The LLM settings to save
 		 */
 		async saveLlmSettings(llmData) {
 			try {
-				const response = await axios.put(
+				// Use PATCH instead of PUT for better partial update support
+				const response = await axios.patch(
 					generateUrl('/apps/openregister/api/settings/llm'),
 					llmData,
 				)
@@ -703,6 +704,34 @@ export const useSettingsStore = defineStore('settings', {
 			} catch (error) {
 				console.error('Failed to save LLM settings:', error)
 				showError('Failed to save LLM settings: ' + error.message)
+				throw error
+			}
+		},
+
+		/**
+		 * Patch LLM settings (partial update)
+		 * @param {object} partialData - Partial LLM data to update
+		 */
+		async patchLlmSettings(partialData) {
+			try {
+				const response = await axios.patch(
+					generateUrl('/apps/openregister/api/settings/llm'),
+					partialData,
+				)
+
+				if (response.data && response.data.data) {
+					this.llmOptions = { ...this.llmOptions, ...response.data.data }
+				}
+
+				// Show success message only if not just toggling enabled
+				if (Object.keys(partialData).length > 1 || !partialData.hasOwnProperty('enabled')) {
+					showSuccess('LLM settings updated successfully')
+				}
+
+				return response.data
+			} catch (error) {
+				console.error('Failed to update LLM settings:', error)
+				showError('Failed to update LLM settings: ' + error.message)
 				throw error
 			}
 		},
@@ -914,6 +943,25 @@ export const useSettingsStore = defineStore('settings', {
 				showError('Failed to load cache statistics: ' + error.message)
 			} finally {
 				this.loadingCacheStats = false
+			}
+		},
+
+		/**
+		 * Get chat and agent statistics
+		 * @returns {Promise<object>} Chat statistics including agents, conversations, and messages
+		 */
+		async getChatStats() {
+			try {
+				const response = await axios.get(generateUrl('/apps/openregister/api/chat/stats'))
+				return response.data
+			} catch (error) {
+				console.error('Failed to load chat statistics:', error)
+				// Return empty stats if API not available yet
+				return {
+					total_agents: 0,
+					total_conversations: 0,
+					total_messages: 0,
+				}
 			}
 		},
 

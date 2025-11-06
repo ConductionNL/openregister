@@ -195,16 +195,25 @@ class ChatController extends Controller
                     ], 404);
                 }
                 
+                // Generate unique default title
+                $defaultTitle = $this->chatService->ensureUniqueTitle(
+                    'New Conversation',
+                    $this->userId,
+                    $agent->getId()
+                );
+                
                 $conversation = new Conversation();
                 $conversation->setUserId($this->userId);
                 $conversation->setOrganisation($organisation?->getUuid());
                 $conversation->setAgentId($agent->getId());
+                $conversation->setTitle($defaultTitle);
                 $conversation = $this->conversationMapper->insert($conversation);
 
                 $this->logger->info('[ChatController] New conversation created', [
                     'uuid' => $conversation->getUuid(),
                     'userId' => $this->userId,
                     'agentId' => $agent->getId(),
+                    'title' => $defaultTitle,
                 ]);
             } else {
                 return new JSONResponse([

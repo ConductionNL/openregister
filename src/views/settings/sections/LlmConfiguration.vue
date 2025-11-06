@@ -77,7 +77,76 @@
 			</p>
 		</div>
 
-		<!-- LLM Dashboard -->
+		<!-- Provider Configuration Info -->
+		<details class="collapsible-section">
+			<summary>
+				<span class="icon">🤖</span>
+				<strong>Provider Configuration</strong>
+			</summary>
+			<div class="section-content">
+				<div class="provider-info-grid">
+					<div class="provider-info-card">
+						<h5>Embedding Provider</h5>
+						<p v-if="providerConfig.embeddingProvider" class="provider-name">
+							{{ getProviderDisplayName(providerConfig.embeddingProvider) }}
+						</p>
+						<p v-else class="not-configured">Not configured</p>
+						<p v-if="providerConfig.embeddingModel" class="model-info">
+							{{ providerConfig.embeddingModel }}
+						</p>
+					</div>
+
+					<div class="provider-info-card">
+						<h5>Chat Provider (RAG)</h5>
+						<p v-if="providerConfig.chatProvider" class="provider-name">
+							{{ getProviderDisplayName(providerConfig.chatProvider) }}
+						</p>
+						<p v-else class="not-configured">Not configured</p>
+						<p v-if="providerConfig.chatModel" class="model-info">
+							{{ providerConfig.chatModel }}
+						</p>
+					</div>
+				</div>
+			</div>
+		</details>
+
+		<!-- Chat Statistics -->
+		<details class="collapsible-section">
+			<summary>
+				<span class="icon">💬</span>
+				<strong>Chat & Agent Statistics</strong>
+			</summary>
+			<div class="section-content">
+				<div class="stats-grid">
+					<div class="stat-tile">
+						<div class="stat-value">{{ formatNumber(chatStats.totalAgents) }}</div>
+						<div class="stat-label">Agents</div>
+					</div>
+					<div class="stat-tile">
+						<div class="stat-value">{{ formatNumber(chatStats.totalConversations) }}</div>
+						<div class="stat-label">Conversations</div>
+					</div>
+					<div class="stat-tile">
+						<div class="stat-value">{{ formatNumber(chatStats.totalMessages) }}</div>
+						<div class="stat-label">Messages</div>
+					</div>
+					<div class="stat-tile">
+						<div class="stat-value">{{ formatNumber(vectorStats.totalVectors) }}</div>
+						<div class="stat-label">Total Vectors</div>
+					</div>
+					<div class="stat-tile">
+						<div class="stat-value">{{ formatNumber(vectorStats.objectVectors) }}</div>
+						<div class="stat-label">Object Embeddings</div>
+					</div>
+					<div class="stat-tile">
+						<div class="stat-value">{{ formatNumber(vectorStats.fileVectors) }}</div>
+						<div class="stat-label">File Embeddings</div>
+					</div>
+				</div>
+			</div>
+		</details>
+
+		<!-- LLM Dashboard (when enabled) -->
 		<div v-if="llmSettings.enabled" class="llm-management-section">
 			<!-- Loading State -->
 			<div v-if="loadingStats" class="loading-section">
@@ -90,7 +159,7 @@
 				<p class="error-message">
 					❌ {{ llmErrorMessage }}
 				</p>
-				<NcButton type="primary" @click="loadVectorStats">
+				<NcButton type="primary" @click="retryConnection">
 					<template #icon>
 						<Refresh :size="20" />
 					</template>
@@ -98,41 +167,17 @@
 				</NcButton>
 			</div>
 
-			<!-- Stats Display -->
+			<!-- Connection Success -->
 			<div v-else class="dashboard-section">
-				<!-- Main LLM Statistics Grid -->
-				<div class="dashboard-stats-grid">
-					<div class="stat-card">
-						<h5>Connection Status</h5>
-						<p :class="connectionStatusClass">
-							{{ llmConnectionStatus }}
-						</p>
-					</div>
-
-					<div class="stat-card">
-						<h5>Total Objects</h5>
-						<p>{{ formatNumber(objectStats.totalObjects) }}</p>
-					</div>
-
-					<div class="stat-card">
-						<h5>Object Embeddings</h5>
-						<p>{{ formatNumber(vectorStats.objectVectors) }}</p>
-					</div>
-
-					<div class="stat-card">
-						<h5>Total Files</h5>
-						<p>{{ formatNumber(fileStats.totalFiles) }}</p>
-					</div>
-
-					<div class="stat-card">
-						<h5>File Embeddings</h5>
-						<p>{{ formatNumber(vectorStats.fileVectors) }}</p>
-					</div>
-
-					<div class="stat-card">
-						<h5>Total Chunks</h5>
-						<p>{{ formatNumber(fileStats.totalChunks) }}</p>
-					</div>
+				<div class="connection-success">
+					<span class="success-icon">✅</span>
+					<span>{{ llmConnectionStatus }}</span>
+					<NcButton type="secondary" @click="retryConnection">
+						<template #icon>
+							<Refresh :size="16" />
+						</template>
+						Test Connection
+					</NcButton>
 				</div>
 			</div>
 		</div>
@@ -220,6 +265,17 @@ export default {
 			showLLMConfigDialog: false,
 			showFileManagementDialog: false,
 			showObjectManagementDialog: false,
+			providerConfig: {
+				embeddingProvider: null,
+				embeddingModel: null,
+				chatProvider: null,
+				chatModel: null,
+			},
+			chatStats: {
+				totalAgents: 0,
+				totalConversations: 0,
+				totalMessages: 0,
+			},
 			vectorStats: {
 				totalVectors: 0,
 				objectVectors: 0,
@@ -261,8 +317,8 @@ export default {
 
 	async mounted() {
 		await this.loadSettings()
-		await this.loadVectorStats()
-	},
+		await this.loadAllStats()
+},
 
 	methods: {
 		/**
@@ -273,9 +329,91 @@ export default {
 				const settings = await this.settingsStore.getLlmSettings()
 				if (settings) {
 					this.llmSettings = { ...this.llmSettings, ...settings }
+					
+					// Extract provider configuration
+					this.providerConfig.embeddingProvider = settings.embeddingProvider || null
+					this.providerConfig.chatProvider = settings.chatProvider || null
+					
+					// Extract model names based on provider
+					if (settings.embeddingProvider === 'openai') {
+						this.providerConfig.embeddingModel = settings.openaiConfig?.model || null
+					} else if (settings.embeddingProvider === 'fireworks') {
+						this.providerConfig.embeddingModel = settings.fireworksConfig?.embeddingModel || null
+					} else if (settings.embeddingProvider === 'ollama') {
+						this.providerConfig.embeddingModel = settings.ollamaConfig?.model || null
+					}
+					
+					if (settings.chatProvider === 'openai') {
+						this.providerConfig.chatModel = settings.openaiConfig?.chatModel || null
+					} else if (settings.chatProvider === 'fireworks') {
+						this.providerConfig.chatModel = settings.fireworksConfig?.chatModel || null
+					} else if (settings.chatProvider === 'ollama') {
+						this.providerConfig.chatModel = settings.ollamaConfig?.chatModel || null
+					}
 				}
 			} catch (error) {
 				console.error('Failed to load LLM settings:', error)
+			}
+		},
+		
+		/**
+		 * Get display name for provider
+		 */
+		getProviderDisplayName(providerId) {
+			const providerNames = {
+				openai: 'OpenAI',
+				fireworks: 'Fireworks AI',
+				ollama: 'Ollama',
+			}
+			return providerNames[providerId] || providerId
+		},
+		
+		/**
+		 * Load all statistics (chat, vector, etc.)
+		 */
+		async loadAllStats() {
+			await Promise.all([
+				this.loadChatStats(),
+				this.loadVectorStats(),
+			])
+		},
+		
+		/**
+		 * Load chat and agent statistics
+		 */
+		async loadChatStats() {
+			try {
+				// TODO: Implement API endpoint to get chat stats
+				// For now, use placeholder or existing API
+				const response = await this.settingsStore.getChatStats()
+				if (response) {
+					this.chatStats.totalAgents = response.total_agents || 0
+					this.chatStats.totalConversations = response.total_conversations || 0
+					this.chatStats.totalMessages = response.total_messages || 0
+				}
+			} catch (error) {
+				console.error('Failed to load chat stats:', error)
+				// Don't throw error, just use zeros
+			}
+		},
+		
+		/**
+		 * Retry connection - tests LLM connectivity
+		 */
+		async retryConnection() {
+			this.loadingStats = true
+			this.llmError = false
+			
+			try {
+				// Reload all statistics and test connection
+				await this.loadAllStats()
+				this.llmConnectionStatus = 'Connected ✓'
+			} catch (error) {
+				this.llmError = true
+				this.llmErrorMessage = error.message || 'Failed to connect to LLM service'
+				this.llmConnectionStatus = 'Disconnected ✗'
+			} finally {
+				this.loadingStats = false
 			}
 		},
 
@@ -297,7 +435,8 @@ export default {
 		 * Handle LLM enabled toggle change
 		 */
 		async onLlmEnabledChange() {
-			await this.saveSettings()
+			// Only send the enabled field via PATCH
+			await this.settingsStore.patchLlmSettings({ enabled: this.llmSettings.enabled })
 			if (this.llmSettings.enabled) {
 				await this.loadVectorStats()
 			}
@@ -534,6 +673,138 @@ export default {
 	margin: 0;
 }
 
+/* Collapsible Sections (matching File Configuration) */
+.collapsible-section {
+	margin-bottom: 16px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius-large);
+	background: var(--color-main-background);
+}
+
+.collapsible-section summary {
+	cursor: pointer;
+	padding: 16px;
+	font-size: 14px;
+	font-weight: 600;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	user-select: none;
+	transition: background-color 0.2s ease;
+}
+
+.collapsible-section summary:hover {
+	background: var(--color-background-hover);
+}
+
+.collapsible-section summary .icon {
+	font-size: 18px;
+}
+
+.collapsible-section[open] summary {
+	border-bottom: 1px solid var(--color-border);
+}
+
+.section-content {
+	padding: 20px;
+}
+
+/* Provider Info Cards */
+.provider-info-grid {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 16px;
+}
+
+.provider-info-card {
+	background: var(--color-background-hover);
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	padding: 16px;
+}
+
+.provider-info-card h5 {
+	margin: 0 0 8px 0;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--color-text-maxcontrast);
+	text-transform: uppercase;
+}
+
+.provider-info-card .provider-name {
+	margin: 0;
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--color-main-text);
+}
+
+.provider-info-card .not-configured {
+	margin: 0;
+	font-size: 14px;
+	color: var(--color-text-maxcontrast);
+	font-style: italic;
+}
+
+.provider-info-card .model-info {
+	margin: 8px 0 0 0;
+	font-size: 12px;
+	color: var(--color-text-lighter);
+	font-family: monospace;
+}
+
+/* Statistics Grid (matching File Configuration tiles) */
+.stats-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+	gap: 16px;
+}
+
+.stat-tile {
+	background: var(--color-background-hover);
+	border: 2px solid var(--color-border);
+	border-radius: var(--border-radius-large);
+	padding: 20px;
+	text-align: center;
+	transition: all 0.2s ease;
+}
+
+.stat-tile:hover {
+	border-color: var(--color-primary-element);
+	transform: translateY(-2px);
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stat-value {
+	font-size: 32px;
+	font-weight: 700;
+	color: var(--color-primary-element);
+	line-height: 1;
+	margin-bottom: 8px;
+}
+
+.stat-label {
+	font-size: 13px;
+	color: var(--color-text-maxcontrast);
+	font-weight: 500;
+}
+
+/* Connection Success */
+.connection-success {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 16px;
+	background: var(--color-success-background, #d4edda);
+	border: 1px solid var(--color-success, #28a745);
+	border-radius: var(--border-radius-large);
+	color: var(--color-success-text, #155724);
+	font-weight: 500;
+}
+
+.success-icon {
+	font-size: 20px;
+}
+
 @media (max-width: 768px) {
 	.section-header-inline {
 		position: static;
@@ -547,6 +818,14 @@ export default {
 	}
 
 	.dashboard-stats-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+
+	.provider-info-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.stats-grid {
 		grid-template-columns: repeat(2, 1fr);
 	}
 }

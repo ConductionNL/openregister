@@ -43,8 +43,59 @@ use OCP\ICacheFactory;
 /**
  * Service for handling settings-related operations.
  *
- * Provides functionality for retrieving, saving, and loading settings,
- * as well as managing configuration for different object types.
+ * This service is responsible ONLY for storing and retrieving application settings.
+ * It does NOT contain business logic for testing or using the configured services.
+ *
+ * RESPONSIBILITIES:
+ * - Store and retrieve settings from Nextcloud's IAppConfig
+ * - Provide default values for unconfigured settings
+ * - Manage settings for: RBAC, Multitenancy, Retention, SOLR, LLM, Files, Objects
+ * - Get available options (groups, users, tenants) for settings UI
+ * - Rebase operations (apply default owners/tenants to existing objects)
+ * - Cache management statistics and operations
+ *
+ * WHAT THIS SERVICE DOES NOT DO:
+ * - Test LLM connections (use VectorEmbeddingService or ChatService)
+ * - Test SOLR connections (use GuzzleSolrService)
+ * - Generate embeddings (use VectorEmbeddingService)
+ * - Execute chat operations (use ChatService)
+ * - Perform searches (use appropriate search services)
+ *
+ * SETTINGS CATEGORIES:
+ * - Version: Application name and version information
+ * - RBAC: Role-based access control configuration
+ * - Multitenancy: Tenant isolation and default tenant settings
+ * - Retention: Data retention policies for objects, logs, and trails
+ * - SOLR: Search engine configuration and connection details
+ * - LLM: Language model provider configuration (OpenAI, Fireworks, Ollama)
+ * - Files: File processing and vectorization settings
+ * - Objects: Object vectorization and metadata settings
+ * - Organisation: Default organisation and auto-creation settings
+ *
+ * ARCHITECTURE PATTERN:
+ * - Controllers validate input and delegate to this service for storage
+ * - Business logic services (ChatService, VectorEmbeddingService) read from this service
+ * - Testing logic is delegated to the appropriate business logic service
+ * - This service only handles persistence, not business logic
+ *
+ * INTEGRATION POINTS:
+ * - IAppConfig: Nextcloud's app configuration storage
+ * - IConfig: Nextcloud's system configuration
+ * - ChatService: Reads LLM settings for chat operations
+ * - VectorEmbeddingService: Reads LLM settings for embeddings
+ * - GuzzleSolrService: Reads SOLR settings for search operations
+ * - Controllers: Delegate settings CRUD operations to this service
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.nl
  */
 class SettingsService
 {
@@ -2766,6 +2817,7 @@ class SettingsService
             if (empty($llmConfig) === true) {
                 // Return default configuration
                 return [
+                    'enabled' => false,
                     'embeddingProvider' => null,
                     'chatProvider' => null,
                     'openaiConfig' => [
@@ -2788,7 +2840,14 @@ class SettingsService
                 ];
             }
             
-            return json_decode($llmConfig, true);
+            $decoded = json_decode($llmConfig, true);
+            
+            // Ensure enabled field exists (for backward compatibility)
+            if (isset($decoded['enabled']) === false) {
+                $decoded['enabled'] = false;
+            }
+            
+            return $decoded;
         } catch (Exception $e) {
             throw new \RuntimeException('Failed to retrieve LLM settings: '.$e->getMessage());
         }
@@ -2804,25 +2863,30 @@ class SettingsService
     public function updateLLMSettingsOnly(array $llmData): array
     {
         try {
+            // Get existing config for PATCH support
+            $existingConfig = $this->getLLMSettingsOnly();
+            
+            // Merge with existing config (PATCH behavior)
             $llmConfig = [
-                'embeddingProvider' => $llmData['embeddingProvider'] ?? null,
-                'chatProvider' => $llmData['chatProvider'] ?? null,
+                'enabled' => $llmData['enabled'] ?? $existingConfig['enabled'] ?? false,
+                'embeddingProvider' => $llmData['embeddingProvider'] ?? $existingConfig['embeddingProvider'] ?? null,
+                'chatProvider' => $llmData['chatProvider'] ?? $existingConfig['chatProvider'] ?? null,
                 'openaiConfig' => [
-                    'apiKey' => $llmData['openaiConfig']['apiKey'] ?? '',
-                    'model' => $llmData['openaiConfig']['model'] ?? null,
-                    'chatModel' => $llmData['openaiConfig']['chatModel'] ?? null,
-                    'organizationId' => $llmData['openaiConfig']['organizationId'] ?? '',
+                    'apiKey' => $llmData['openaiConfig']['apiKey'] ?? $existingConfig['openaiConfig']['apiKey'] ?? '',
+                    'model' => $llmData['openaiConfig']['model'] ?? $existingConfig['openaiConfig']['model'] ?? null,
+                    'chatModel' => $llmData['openaiConfig']['chatModel'] ?? $existingConfig['openaiConfig']['chatModel'] ?? null,
+                    'organizationId' => $llmData['openaiConfig']['organizationId'] ?? $existingConfig['openaiConfig']['organizationId'] ?? '',
                 ],
                 'ollamaConfig' => [
-                    'url' => $llmData['ollamaConfig']['url'] ?? 'http://localhost:11434',
-                    'model' => $llmData['ollamaConfig']['model'] ?? null,
-                    'chatModel' => $llmData['ollamaConfig']['chatModel'] ?? null,
+                    'url' => $llmData['ollamaConfig']['url'] ?? $existingConfig['ollamaConfig']['url'] ?? 'http://localhost:11434',
+                    'model' => $llmData['ollamaConfig']['model'] ?? $existingConfig['ollamaConfig']['model'] ?? null,
+                    'chatModel' => $llmData['ollamaConfig']['chatModel'] ?? $existingConfig['ollamaConfig']['chatModel'] ?? null,
                 ],
                 'fireworksConfig' => [
-                    'apiKey' => $llmData['fireworksConfig']['apiKey'] ?? '',
-                    'embeddingModel' => $llmData['fireworksConfig']['embeddingModel'] ?? null,
-                    'chatModel' => $llmData['fireworksConfig']['chatModel'] ?? null,
-                    'baseUrl' => $llmData['fireworksConfig']['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1',
+                    'apiKey' => $llmData['fireworksConfig']['apiKey'] ?? $existingConfig['fireworksConfig']['apiKey'] ?? '',
+                    'embeddingModel' => $llmData['fireworksConfig']['embeddingModel'] ?? $existingConfig['fireworksConfig']['embeddingModel'] ?? null,
+                    'chatModel' => $llmData['fireworksConfig']['chatModel'] ?? $existingConfig['fireworksConfig']['chatModel'] ?? null,
+                    'baseUrl' => $llmData['fireworksConfig']['baseUrl'] ?? $existingConfig['fireworksConfig']['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1',
                 ],
             ];
             
