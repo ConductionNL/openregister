@@ -138,7 +138,7 @@ class ConversationController extends Controller
             // Get total count
             $total = $this->conversationMapper->countByUser(
                 $this->userId,
-                $organisationId,
+                $organisationUuid,
                 $includeDeleted
             );
 

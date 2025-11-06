@@ -27,6 +27,7 @@ return [
         
         // Settings - Focused endpoints for better performance
         ['name' => 'settings#getSolrSettings', 'url' => '/api/settings/solr', 'verb' => 'GET'],
+        ['name' => 'settings#updateSolrSettings', 'url' => '/api/settings/solr', 'verb' => 'PATCH'],
         ['name' => 'settings#updateSolrSettings', 'url' => '/api/settings/solr', 'verb' => 'PUT'],
         ['name' => 'settings#testSolrConnection', 'url' => '/api/settings/solr/test', 'verb' => 'POST'],
         ['name' => 'settings#warmupSolrIndex', 'url' => '/api/settings/solr/warmup', 'verb' => 'POST'],
@@ -81,18 +82,25 @@ return [
         ['name' => 'solr#getVectorizationStats', 'url' => '/api/objects/vectorize/stats', 'verb' => 'GET'],
         
         ['name' => 'settings#getRbacSettings', 'url' => '/api/settings/rbac', 'verb' => 'GET'],
+        ['name' => 'settings#updateRbacSettings', 'url' => '/api/settings/rbac', 'verb' => 'PATCH'],
         ['name' => 'settings#updateRbacSettings', 'url' => '/api/settings/rbac', 'verb' => 'PUT'],
         
         ['name' => 'settings#getMultitenancySettings', 'url' => '/api/settings/multitenancy', 'verb' => 'GET'],
+        ['name' => 'settings#updateMultitenancySettings', 'url' => '/api/settings/multitenancy', 'verb' => 'PATCH'],
         ['name' => 'settings#updateMultitenancySettings', 'url' => '/api/settings/multitenancy', 'verb' => 'PUT'],
         
         ['name' => 'settings#getLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'GET'],
         ['name' => 'settings#updateLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'POST'],
+        ['name' => 'settings#updateLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'PATCH'],
+        ['name' => 'settings#updateLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'PUT'],
         ['name' => 'settings#getFileSettings', 'url' => '/api/settings/files', 'verb' => 'GET'],
+        ['name' => 'settings#updateFileSettings', 'url' => '/api/settings/files', 'verb' => 'PATCH'],
         ['name' => 'settings#updateFileSettings', 'url' => '/api/settings/files', 'verb' => 'PUT'],
         ['name' => 'settings#getFileExtractionStats', 'url' => '/api/settings/files/stats', 'verb' => 'GET'],
         ['name' => 'settings#testDolphinConnection', 'url' => '/api/settings/files/test-dolphin', 'verb' => 'POST'],
         ['name' => 'settings#updateObjectSettings', 'url' => '/api/settings/objects', 'verb' => 'POST'],
+        ['name' => 'settings#updateObjectSettings', 'url' => '/api/settings/objects', 'verb' => 'PATCH'],
+        ['name' => 'settings#updateObjectSettings', 'url' => '/api/settings/objects', 'verb' => 'PUT'],
         
         // Core file extraction endpoints (use fileExtraction controller to avoid conflict with files controller)
         ['name' => 'fileExtraction#index', 'url' => '/api/files', 'verb' => 'GET'],
@@ -107,6 +115,7 @@ return [
         
         // Debug endpoints for type filtering issue
         ['name' => 'settings#debugTypeFiltering', 'url' => '/api/debug/type-filtering', 'verb' => 'GET'],
+        ['name' => 'settings#updateRetentionSettings', 'url' => '/api/settings/retention', 'verb' => 'PATCH'],
         ['name' => 'settings#updateRetentionSettings', 'url' => '/api/settings/retention', 'verb' => 'PUT'],
         
         ['name' => 'settings#getVersionInfo', 'url' => '/api/settings/version', 'verb' => 'GET'],

@@ -286,36 +286,6 @@
 				</div>
 			</div>
 
-			<!-- Model Configuration -->
-			<div v-if="selectedChatProvider && selectedChatProvider.id !== 'none'" class="config-section">
-				<h3>{{ t('openregister', '⚙️ Model Configuration') }}</h3>
-
-				<div class="form-group">
-					<label for="temperature">{{ t('openregister', 'Temperature') }}: {{ temperature }}</label>
-					<input
-						id="temperature"
-						v-model.number="temperature"
-						type="range"
-						min="0"
-						max="2"
-						step="0.1"
-						class="slider">
-					<small>{{ t('openregister', 'Controls randomness (0 = deterministic, 2 = very creative)') }}</small>
-				</div>
-
-				<div class="form-group">
-					<label for="max-tokens">{{ t('openregister', 'Max Tokens') }}</label>
-					<input
-						id="max-tokens"
-						v-model.number="maxTokens"
-						type="number"
-						min="100"
-						max="32000"
-						step="100"
-						class="input-field">
-					<small>{{ t('openregister', 'Maximum length of generated responses') }}</small>
-				</div>
-			</div>
 
 			<!-- AI Features -->
 			<div class="config-section">
@@ -429,9 +399,6 @@ export default {
 			testingChat: false,
 			embeddingTestResult: null,
 			chatTestResult: null,
-
-			temperature: 0.7,
-			maxTokens: 2000,
 
 			selectedEmbeddingProvider: null,
 			selectedChatProvider: null,
@@ -668,8 +635,6 @@ export default {
 				await axios.post(generateUrl('/apps/openregister/api/settings/llm'), {
 					embeddingProvider: this.selectedEmbeddingProvider?.id,
 					chatProvider: this.selectedChatProvider?.id,
-					temperature: this.temperature,
-					maxTokens: this.maxTokens,
 					openaiConfig: this.openaiConfig,
 					ollamaConfig: this.ollamaConfig,
 					fireworksConfig: this.fireworksConfig,

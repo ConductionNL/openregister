@@ -901,46 +901,55 @@ export default {
 			}
 
 			try {
-				const { response } = await organisationStore.saveOrganisation({
+				const { response, data } = await organisationStore.saveOrganisation({
 					...this.organisationItem,
 				})
 
-				if (this.createAnother) {
-					// Clear the form after successful creation
-					setTimeout(() => {
-						this.organisationItem = {
-							name: '',
-							slug: '',
-							description: '',
-							active: true,
-							quota: {
-								storage: null,
-								bandwidth: null,
-								requests: null,
-							},
-							groups: [],
-						}
-						this.selectedGroups = []
-						this.activeTab = 0
-					}, 500)
+				if (response.ok) {
+					// Explicitly refresh the organisation list to ensure UI is updated
+					await organisationStore.refreshOrganisationList()
+					
+					// Also refresh active organisation in case it was just created
+					if (!this.organisationItem.uuid) {
+						await organisationStore.getActiveOrganisation()
+					}
 
-					this.success = response.ok
-					this.error = false
+					if (this.createAnother) {
+						// Clear the form after successful creation
+						setTimeout(() => {
+							this.organisationItem = {
+								name: '',
+								slug: '',
+								description: '',
+								active: true,
+								quota: {
+									storage: null,
+									bandwidth: null,
+									requests: null,
+								},
+								groups: [],
+							}
+							this.selectedGroups = []
+							this.activeTab = 0
+						}, 500)
 
-					// Clear success message after 2s
-					setTimeout(() => {
-						this.success = null
-					}, 2000)
-				} else {
-					this.success = response.ok
-					this.error = false
+						this.success = true
+						this.error = false
 
-					if (response.ok) {
+						// Clear success message after 2s
+						setTimeout(() => {
+							this.success = null
+						}, 2000)
+					} else {
+						this.success = true
+						this.error = false
+
 						this.closeModalTimeout = setTimeout(this.closeModal, 2000)
 					}
 				}
 
 			} catch (error) {
+				console.error('Error saving organisation:', error)
 				this.success = false
 				this.error = error.message || 'An error occurred while saving the organisation'
 			} finally {

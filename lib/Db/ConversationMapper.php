@@ -51,6 +51,60 @@ class ConversationMapper extends QBMapper
 
 
     /**
+     * Insert a new conversation entity
+     *
+     * Ensures UUID and timestamps are set before insertion.
+     *
+     * @param Entity $entity The conversation entity to insert
+     *
+     * @return Entity The inserted conversation entity
+     */
+    public function insert(Entity $entity): Entity
+    {
+        if ($entity instanceof Conversation) {
+            // Ensure UUID is set
+            $uuid = $entity->getUuid();
+            if (!$uuid || trim($uuid) === '') {
+                $newUuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
+                $entity->setUuid($newUuid);
+            }
+            
+            // Set timestamps if not already set
+            if ($entity->getCreated() === null) {
+                $entity->setCreated(new \DateTime());
+            }
+            if ($entity->getUpdated() === null) {
+                $entity->setUpdated(new \DateTime());
+            }
+        }
+
+        return parent::insert($entity);
+
+    }//end insert()
+
+
+    /**
+     * Update a conversation entity
+     *
+     * Ensures the updated timestamp is set before update.
+     *
+     * @param Entity $entity The conversation entity to update
+     *
+     * @return Entity The updated conversation entity
+     */
+    public function update(Entity $entity): Entity
+    {
+        if ($entity instanceof Conversation) {
+            // Always update the updated timestamp
+            $entity->setUpdated(new \DateTime());
+        }
+
+        return parent::update($entity);
+
+    }//end update()
+
+
+    /**
      * Find a conversation by its ID
      *
      * @param int $id Conversation ID
@@ -99,17 +153,17 @@ class ConversationMapper extends QBMapper
     /**
      * Find all conversations for a user
      *
-     * @param string   $userId         User ID
-     * @param int|null $organisation   Optional organisation filter
-     * @param bool     $includeDeleted Whether to include soft-deleted conversations
-     * @param int      $limit          Maximum number of results
-     * @param int      $offset         Offset for pagination
+     * @param string      $userId         User ID
+     * @param string|null $organisation   Optional organisation UUID filter
+     * @param bool        $includeDeleted Whether to include soft-deleted conversations
+     * @param int         $limit          Maximum number of results
+     * @param int         $offset         Offset for pagination
      *
      * @return array Array of Conversation entities
      */
     public function findByUser(
         string $userId,
-        ?int $organisation = null,
+        ?string $organisation = null,
         bool $includeDeleted = false,
         int $limit = 50,
         int $offset = 0
@@ -122,7 +176,7 @@ class ConversationMapper extends QBMapper
 
         // Filter by organisation if provided
         if ($organisation !== null) {
-            $qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation, IQueryBuilder::PARAM_INT)));
+            $qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation, IQueryBuilder::PARAM_STR)));
         }
 
         // Exclude soft-deleted conversations unless requested
@@ -151,7 +205,7 @@ class ConversationMapper extends QBMapper
      */
     public function findDeletedByUser(
         string $userId,
-        ?int $organisation = null,
+        ?string $organisation = null,
         int $limit = 50,
         int $offset = 0
     ): array {
@@ -164,7 +218,7 @@ class ConversationMapper extends QBMapper
 
         // Filter by organisation if provided
         if ($organisation !== null) {
-            $qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation, IQueryBuilder::PARAM_INT)));
+            $qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation, IQueryBuilder::PARAM_STR)));
         }
 
         $qb->orderBy('deleted_at', 'DESC')
@@ -213,6 +267,47 @@ class ConversationMapper extends QBMapper
 
 
     /**
+     * Find conversations by user and agent with matching title pattern
+     *
+     * Used to check for duplicate conversation names and generate unique titles.
+     *
+     * @param string $userId User ID
+     * @param int    $agentId Agent ID
+     * @param string $titlePattern Title pattern to match (e.g., "New Conversation%")
+     *
+     * @return array Array of matching conversation titles
+     */
+    public function findTitlesByUserAgent(
+        string $userId,
+        int $agentId,
+        string $titlePattern
+    ): array {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('title')
+            ->from($this->tableName)
+            ->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId, IQueryBuilder::PARAM_STR)))
+            ->andWhere($qb->expr()->eq('agent_id', $qb->createNamedParameter($agentId, IQueryBuilder::PARAM_INT)))
+            ->andWhere($qb->expr()->like('title', $qb->createNamedParameter($titlePattern, IQueryBuilder::PARAM_STR)))
+            ->andWhere($qb->expr()->isNull('deleted_at')); // Only active conversations
+
+        $result = $qb->executeQuery();
+        $titles = [];
+        
+        while ($row = $result->fetch()) {
+            if ($row['title'] !== null) {
+                $titles[] = $row['title'];
+            }
+        }
+        
+        $result->closeCursor();
+
+        return $titles;
+
+    }//end findTitlesByUserAgent()
+
+
+    /**
      * Find conversations by organisation
      *
      * @param int  $organisation   Organisation ID
@@ -251,15 +346,15 @@ class ConversationMapper extends QBMapper
     /**
      * Count conversations for a user
      *
-     * @param string   $userId         User ID
-     * @param int|null $organisation   Optional organisation filter
-     * @param bool     $includeDeleted Whether to include soft-deleted conversations
+     * @param string      $userId         User ID
+     * @param string|null $organisation   Optional organisation UUID filter
+     * @param bool        $includeDeleted Whether to include soft-deleted conversations
      *
      * @return int Total count
      */
     public function countByUser(
         string $userId,
-        ?int $organisation = null,
+        ?string $organisation = null,
         bool $includeDeleted = false
     ): int {
         $qb = $this->db->getQueryBuilder();
@@ -270,7 +365,7 @@ class ConversationMapper extends QBMapper
 
         // Filter by organisation if provided
         if ($organisation !== null) {
-            $qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation, IQueryBuilder::PARAM_INT)));
+            $qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation, IQueryBuilder::PARAM_STR)));
         }
 
         // Exclude soft-deleted conversations unless requested
@@ -366,13 +461,13 @@ class ConversationMapper extends QBMapper
      * - User must be the owner of the conversation
      * - Conversation must belong to the user's current organisation (if provided)
      *
-     * @param Conversation $conversation    Conversation entity
-     * @param string       $userId          User ID
-     * @param int|null     $organisationId  Current organisation ID (optional)
+     * @param Conversation $conversation       Conversation entity
+     * @param string       $userId             User ID
+     * @param string|null  $organisationUuid   Current organisation UUID (optional)
      *
      * @return bool True if user can access
      */
-    public function canUserAccessConversation(Conversation $conversation, string $userId, ?int $organisationId = null): bool
+    public function canUserAccessConversation(Conversation $conversation, string $userId, ?string $organisationUuid = null): bool
     {
         // User must be the owner
         if ($conversation->getUserId() !== $userId) {

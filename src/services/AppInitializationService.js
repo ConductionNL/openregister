@@ -14,6 +14,7 @@ import {
 	viewsStore,
 	agentStore,
 	sourceStore,
+	conversationStore,
 } from '../store/store.js'
 
 /**
@@ -44,6 +45,7 @@ export async function initializeAppData() {
 			loadViews(),
 			loadAgents(),
 			loadSources(),
+			loadConversations(),
 		])
 		
 		const endTime = performance.now()
@@ -77,6 +79,7 @@ export async function reloadAppData() {
 			forceLoadViews(),
 			forceLoadAgents(),
 			forceLoadSources(),
+			forceLoadConversations(),
 		])
 		
 		const endTime = performance.now()
@@ -288,6 +291,32 @@ async function forceLoadSources() {
 	console.log('[AppInit] Reloading sources...')
 	await sourceStore.refreshSourceList()
 	console.log(`[AppInit] ✓ Reloaded ${sourceStore.sourceList?.length || 0} sources`)
+}
+
+/**
+ * Load conversations if not already loaded.
+ * 
+ * @returns {Promise<void>}
+ */
+async function loadConversations() {
+	if (!conversationStore.conversationList || conversationStore.conversationList.length === 0) {
+		console.log('[AppInit] Loading conversations...')
+		await conversationStore.refreshConversationList()
+		console.log(`[AppInit] ✓ Loaded ${conversationStore.conversationList?.length || 0} conversations`)
+	} else {
+		console.log(`[AppInit] ↷ Conversations already loaded (${conversationStore.conversationList.length})`)
+	}
+}
+
+/**
+ * Force load conversations (always refreshes).
+ * 
+ * @returns {Promise<void>}
+ */
+async function forceLoadConversations() {
+	console.log('[AppInit] Reloading conversations...')
+	await conversationStore.refreshConversationList()
+	console.log(`[AppInit] ✓ Reloaded ${conversationStore.conversationList?.length || 0} conversations`)
 }
 
 /**

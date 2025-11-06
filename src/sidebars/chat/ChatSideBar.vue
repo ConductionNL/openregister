@@ -1,5 +1,5 @@
 <script setup>
-import { navigationStore } from '../../store/store.js'
+import { navigationStore, conversationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -27,7 +27,7 @@ import { navigationStore } from '../../store/store.js'
 						<NcButton
 							type="primary"
 							wide
-							@click="$emit('new-conversation')">
+							@click="handleNewConversation">
 							<template #icon>
 								<Plus :size="20" />
 							</template>
@@ -36,13 +36,13 @@ import { navigationStore } from '../../store/store.js'
 					</div>
 
 					<!-- Loading State -->
-					<div v-if="loading" class="conversationsLoading">
+					<div v-if="conversationStore.loading" class="conversationsLoading">
 						<NcLoadingIcon :size="32" />
 						<p>{{ t('openregister', 'Loading conversations...') }}</p>
 					</div>
 
 					<!-- Empty State -->
-					<div v-else-if="conversations.length === 0" class="noConversations">
+					<div v-else-if="!conversationStore.conversationList || conversationStore.conversationList.length === 0" class="noConversations">
 						<NcNoteCard type="info">
 							{{ t('openregister', 'No conversations yet. Create a new one to get started!') }}
 						</NcNoteCard>
@@ -51,11 +51,11 @@ import { navigationStore } from '../../store/store.js'
 					<!-- Conversation List -->
 					<div v-else class="conversationsTable">
 						<div
-							v-for="conversation in conversations"
+							v-for="conversation in conversationStore.conversationList"
 							:key="conversation.uuid"
 							class="conversationRow"
 							:class="{ 'conversationRow--active': isActive(conversation) }">
-							<div class="conversationRowHeader" @click="$emit('select-conversation', conversation)">
+							<div class="conversationRowHeader" @click="handleSelectConversation(conversation)">
 								<div class="conversationRowTitle">
 									<strong>{{ conversation.title || t('openregister', 'New Conversation') }}</strong>
 									<span v-if="conversation.messageCount" class="conversationBadge">
@@ -66,16 +66,16 @@ import { navigationStore } from '../../store/store.js'
 									<span class="conversationDate">{{ formatDate(conversation.updated) }}</span>
 								</div>
 							</div>
-							<div class="conversationRowActions">
-								<NcButton
-									type="tertiary"
-									:aria-label="t('openregister', 'Delete conversation')"
-									@click.stop="$emit('delete-conversation', conversation)">
-									<template #icon>
-										<Delete :size="20" />
-									</template>
-								</NcButton>
-							</div>
+						<div class="conversationRowActions">
+							<NcButton
+								type="tertiary"
+								:aria-label="t('openregister', 'Archive conversation')"
+								@click.stop="handleArchiveConversation(conversation)">
+								<template #icon>
+									<Archive :size="20" />
+								</template>
+							</NcButton>
+						</div>
 						</div>
 					</div>
 				</div>
@@ -96,13 +96,13 @@ import { navigationStore } from '../../store/store.js'
 					</p>
 
 					<!-- Loading State -->
-					<div v-if="loading" class="conversationsLoading">
+					<div v-if="conversationStore.loading" class="conversationsLoading">
 						<NcLoadingIcon :size="32" />
 						<p>{{ t('openregister', 'Loading archived conversations...') }}</p>
 					</div>
 
 					<!-- Empty State -->
-					<div v-else-if="archivedConversations.length === 0" class="noConversations">
+					<div v-else-if="!conversationStore.archivedConversations || conversationStore.archivedConversations.length === 0" class="noConversations">
 						<NcNoteCard type="info">
 							{{ t('openregister', 'No archived conversations') }}
 						</NcNoteCard>
@@ -111,10 +111,10 @@ import { navigationStore } from '../../store/store.js'
 					<!-- Archived Conversation List -->
 					<div v-else class="conversationsTable">
 						<div
-							v-for="conversation in archivedConversations"
+							v-for="conversation in conversationStore.archivedConversations"
 							:key="conversation.uuid"
 							class="conversationRow">
-							<div class="conversationRowHeader" @click="$emit('select-conversation', conversation)">
+							<div class="conversationRowHeader" @click="handleSelectConversation(conversation)">
 								<div class="conversationRowTitle">
 									<strong>{{ conversation.title || t('openregister', 'New Conversation') }}</strong>
 									<span v-if="conversation.messageCount" class="conversationBadge">
@@ -130,7 +130,7 @@ import { navigationStore } from '../../store/store.js'
 								<NcButton
 									type="secondary"
 									:aria-label="t('openregister', 'Restore conversation')"
-									@click.stop="$emit('restore-conversation', conversation)">
+									@click.stop="handleRestoreConversation(conversation)">
 									<template #icon>
 										<Restore :size="20" />
 									</template>
@@ -139,7 +139,7 @@ import { navigationStore } from '../../store/store.js'
 								<NcButton
 									type="error"
 									:aria-label="t('openregister', 'Delete permanently')"
-									@click.stop="$emit('delete-conversation', conversation)">
+									@click.stop="handleDeleteConversation(conversation)">
 									<template #icon>
 										<Delete :size="20" />
 									</template>
@@ -161,6 +161,7 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import Restore from 'vue-material-design-icons/Restore.vue'
 import { translate as t } from '@nextcloud/l10n'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 
 export default {
 	name: 'ChatSideBar',
@@ -176,25 +177,6 @@ export default {
 		Delete,
 		Restore,
 	},
-	props: {
-		conversations: {
-			type: Array,
-			default: () => [],
-		},
-		archivedConversations: {
-			type: Array,
-			default: () => [],
-		},
-		activeConversation: {
-			type: Object,
-			default: null,
-		},
-		loading: {
-			type: Boolean,
-			default: false,
-		},
-	},
-	emits: ['new-conversation', 'select-conversation', 'delete-conversation', 'restore-conversation'],
 	data() {
 		return {
 			activeTab: 'conversations-tab',
@@ -203,7 +185,7 @@ export default {
 	methods: {
 		t,
 		isActive(conversation) {
-			return this.activeConversation?.uuid === conversation.uuid
+			return conversationStore.activeConversation?.uuid === conversation.uuid
 		},
 		formatDate(dateString) {
 			if (!dateString) return ''
@@ -218,6 +200,46 @@ export default {
 				return date.toLocaleDateString([], { weekday: 'short' })
 			} else {
 				return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
+			}
+		},
+		handleNewConversation() {
+			// Clear active conversation to show the agent selector
+			conversationStore.setActiveConversation(null)
+			conversationStore.setActiveMessages([])
+		},
+		async handleSelectConversation(conversation) {
+			try {
+				await conversationStore.loadConversation(conversation.uuid)
+			} catch (error) {
+				console.error('Failed to load conversation:', error)
+				showError(this.t('openregister', 'Failed to load conversation'))
+			}
+		},
+		async handleArchiveConversation(conversation) {
+			try {
+				await conversationStore.archiveConversation(conversation.uuid)
+				showSuccess(this.t('openregister', 'Conversation archived'))
+			} catch (error) {
+				console.error('Failed to archive conversation:', error)
+				showError(this.t('openregister', 'Failed to archive conversation'))
+			}
+		},
+		async handleDeleteConversation(conversation) {
+			try {
+				await conversationStore.deleteConversation(conversation.uuid)
+				showSuccess(this.t('openregister', 'Conversation deleted'))
+			} catch (error) {
+				console.error('Failed to delete conversation:', error)
+				showError(this.t('openregister', 'Failed to delete conversation'))
+			}
+		},
+		async handleRestoreConversation(conversation) {
+			try {
+				await conversationStore.restoreConversation(conversation.uuid)
+				showSuccess(this.t('openregister', 'Conversation restored'))
+			} catch (error) {
+				console.error('Failed to restore conversation:', error)
+				showError(this.t('openregister', 'Failed to restore conversation'))
 			}
 		},
 	},

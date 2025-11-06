@@ -334,13 +334,13 @@ export const useConversationStore = defineStore('conversation', {
 		},
 		
 		/**
-		 * Delete a conversation (soft delete)
+		 * Archive a conversation (soft delete)
 		 *
 		 * @param {string} uuid - Conversation UUID
 		 * @returns {Promise} Promise with response
 		 */
-		async deleteConversation(uuid: string) {
-			console.log('ConversationStore: Deleting conversation', uuid)
+		async archiveConversation(uuid: string) {
+			console.log('ConversationStore: Archiving conversation', uuid)
 			
 			this.loading = true
 			this.error = null
@@ -356,7 +356,7 @@ export const useConversationStore = defineStore('conversation', {
 					throw new Error(`HTTP error! status: ${response.status}`)
 				}
 				
-				// Clear active conversation if it's the one being deleted
+				// Clear active conversation if it's the one being archived
 				if (this.activeConversation?.uuid === uuid) {
 					this.setActiveConversation(null)
 					this.setActiveMessages([])
@@ -364,16 +364,26 @@ export const useConversationStore = defineStore('conversation', {
 				
 				await this.refreshConversationList(true)
 				
-				console.log('ConversationStore: Conversation deleted successfully')
+				console.log('ConversationStore: Conversation archived successfully')
 				
 				return response
 			} catch (error: any) {
-				console.error('Error deleting conversation:', error)
+				console.error('Error archiving conversation:', error)
 				this.error = error.message
 				throw error
 			} finally {
 				this.loading = false
 			}
+		},
+		
+		/**
+		 * Delete a conversation (soft delete) - alias for archiveConversation
+		 *
+		 * @param {string} uuid - Conversation UUID
+		 * @returns {Promise} Promise with response
+		 */
+		async deleteConversation(uuid: string) {
+			return this.archiveConversation(uuid)
 		},
 		
 		/**
@@ -470,16 +480,24 @@ export const useConversationStore = defineStore('conversation', {
 			try {
 				const endpoint = '/index.php/apps/openregister/api/chat/send'
 				
+				const payload: any = {
+					message: content,
+				}
+				
+				// If we have a conversation, just send that (it already has the agent attached)
+				if (conversationUuid) {
+					payload.conversation = conversationUuid
+				} else if (agentUuid) {
+					// Only send agentUuid if we don't have a conversation yet
+					payload.agentUuid = agentUuid
+				}
+				
 				const response = await fetch(endpoint, {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
 					},
-					body: JSON.stringify({
-						message: content,
-						conversationUuid,
-						agentUuid,
-					}),
+					body: JSON.stringify(payload),
 				})
 				
 				if (!response.ok) {
@@ -489,8 +507,8 @@ export const useConversationStore = defineStore('conversation', {
 				const data = await response.json()
 				
 				// Update active conversation with new conversation UUID if it was created
-				if (data.conversationUuid && !this.activeConversation) {
-					await this.loadConversation(data.conversationUuid)
+				if (data.conversation && !this.activeConversation) {
+					await this.loadConversation(data.conversation)
 				} else {
 					// Add messages to active conversation
 					if (data.userMessage) {

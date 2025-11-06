@@ -218,7 +218,8 @@ class ChatService
             $messageCount = $this->messageMapper->countByConversation($conversationId);
             if ($messageCount <= 2 && $conversation->getTitle() === null) {
                 $title = $this->generateConversationTitle($userMessage);
-                $conversation->setTitle($title);
+                $uniqueTitle = $this->ensureUniqueTitle($title, $conversation->getUserId(), $conversation->getAgentId());
+                $conversation->setTitle($uniqueTitle);
                 $conversation->setUpdated(new DateTime());
                 $this->conversationMapper->update($conversation);
             }
@@ -288,7 +289,8 @@ class ChatService
             } elseif ($searchMode === 'hybrid') {
                 $results = $this->vectorService->hybridSearch(
                     $query,
-                    $numSources * 2
+                    [], // Empty array for solr filters
+                    $numSources * 2 // Limit parameter
                 );
             } else {
                 // Keyword search
@@ -610,6 +612,69 @@ class ChatService
         return $title;
 
     }//end generateFallbackTitle()
+
+
+    /**
+     * Ensure conversation title is unique for user-agent combination
+     *
+     * If a conversation with the same title already exists for this user and agent,
+     * appends a number (e.g., "Title (2)", "Title (3)") to make it unique.
+     *
+     * @param string $baseTitle Base title to check
+     * @param string $userId    User ID
+     * @param int    $agentId   Agent ID
+     *
+     * @return string Unique title with number suffix if needed
+     */
+    private function ensureUniqueTitle(string $baseTitle, string $userId, int $agentId): string
+    {
+        $this->logger->info('[ChatService] Ensuring unique title', [
+            'baseTitle' => $baseTitle,
+            'userId' => $userId,
+            'agentId' => $agentId,
+        ]);
+
+        // Find all existing titles that match this pattern
+        // Using LIKE with % to catch both exact matches and numbered variants
+        $pattern = $baseTitle . '%';
+        $existingTitles = $this->conversationMapper->findTitlesByUserAgent($userId, $agentId, $pattern);
+
+        // If no matches, the base title is unique
+        if (empty($existingTitles)) {
+            return $baseTitle;
+        }
+
+        // Check if base title exists
+        if (!in_array($baseTitle, $existingTitles)) {
+            return $baseTitle;
+        }
+
+        // Find the highest number suffix
+        $maxNumber = 1;
+        $baseTitleEscaped = preg_quote($baseTitle, '/');
+        
+        foreach ($existingTitles as $title) {
+            // Match "Title (N)" pattern
+            if (preg_match('/^' . $baseTitleEscaped . ' \((\d+)\)$/', $title, $matches)) {
+                $number = (int) $matches[1];
+                if ($number > $maxNumber) {
+                    $maxNumber = $number;
+                }
+            }
+        }
+
+        // Generate new title with next number
+        $uniqueTitle = $baseTitle . ' (' . ($maxNumber + 1) . ')';
+
+        $this->logger->info('[ChatService] Generated unique title', [
+            'baseTitle' => $baseTitle,
+            'uniqueTitle' => $uniqueTitle,
+            'foundTitles' => count($existingTitles),
+        ]);
+
+        return $uniqueTitle;
+
+    }//end ensureUniqueTitle()
 
 
     /**
