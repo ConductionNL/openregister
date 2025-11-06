@@ -554,7 +554,29 @@ class TextExtractionService
      */
     public function getStats(): array
     {
-        return $this->fileTextMapper->getStats();
+        $stats = $this->fileTextMapper->getStats();
+        $untrackedCount = $this->fileMapper->countUntrackedFiles();
+        
+        // Calculate total files (tracked + untracked)
+        $totalFiles = $stats['total'] + $untrackedCount;
+        
+        return [
+            'totalFiles' => $totalFiles,
+            'untrackedFiles' => $untrackedCount,
+            'pendingFiles' => $stats['pending'],
+            'processedFiles' => $stats['completed'],
+            'failedFiles' => $stats['failed'],
+            'totalChunks' => $stats['totalChunks'],
+            // Keep original field names for backward compatibility
+            'total' => $stats['total'],
+            'pending' => $stats['pending'],
+            'processing' => $stats['processing'],
+            'completed' => $stats['completed'],
+            'failed' => $stats['failed'],
+            'indexed' => $stats['indexed'],
+            'vectorized' => $stats['vectorized'],
+            'total_text_size' => $stats['total_text_size'],
+        ];
     }
 
     /**
