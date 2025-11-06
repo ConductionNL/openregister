@@ -27,12 +27,18 @@ export const useConversationStore = defineStore('conversation', {
 		
 		// UI state
 		loading: false,
+		messagesLoading: false,
 		error: null as string | null,
 		sidebarCollapsed: false,
 		showArchive: false,
 		
 		// Pagination
 		pagination: {
+			page: 1,
+			limit: 50,
+			total: 0,
+		},
+		messagePagination: {
 			page: 1,
 			limit: 50,
 			total: 0,
@@ -169,7 +175,10 @@ export const useConversationStore = defineStore('conversation', {
 			this.error = null
 			
 			try {
-				const endpoint = '/index.php/apps/openregister/api/conversations/archive'
+				const { page, limit } = this.pagination
+				const offset = (page - 1) * limit
+				// Use _deleted=true query parameter to get archived conversations
+				const endpoint = `/index.php/apps/openregister/api/conversations?_deleted=true&limit=${limit}&offset=${offset}`
 				
 				const response = await fetch(endpoint, {
 					method: 'GET',
@@ -221,9 +230,13 @@ export const useConversationStore = defineStore('conversation', {
 				const data = await response.json()
 				
 				this.setActiveConversation(data)
-				this.setActiveMessages(data.messages || [])
+				// Messages are now loaded separately
+				this.setActiveMessages([])
 				
 				console.log('ConversationStore: Conversation loaded successfully')
+				
+				// Load messages separately
+				await this.loadMessages(uuid)
 				
 				return data
 			} catch (error: any) {
@@ -232,6 +245,60 @@ export const useConversationStore = defineStore('conversation', {
 				throw error
 			} finally {
 				this.loading = false
+			}
+		},
+
+		/**
+		 * Load messages for the active conversation
+		 *
+		 * @param {string} uuid - Conversation UUID
+		 * @param {number} limit - Number of messages to load (default: 50)
+		 * @param {number} offset - Offset for pagination (default: 0)
+		 * @returns {Promise} Promise with messages data
+		 */
+		async loadMessages(uuid: string, limit = 50, offset = 0) {
+			console.log('ConversationStore: Loading messages', { uuid, limit, offset })
+			
+			this.messagesLoading = true
+			this.error = null
+			
+			try {
+				const endpoint = `/index.php/apps/openregister/api/conversations/${uuid}/messages?limit=${limit}&offset=${offset}`
+				
+				const response = await fetch(endpoint, {
+					method: 'GET',
+				})
+				
+				if (!response.ok) {
+					throw new Error(`HTTP error! status: ${response.status}`)
+				}
+				
+				const data = await response.json()
+				
+				// If offset is 0, replace messages; otherwise prepend (for loading older messages)
+				if (offset === 0) {
+					this.setActiveMessages(data.results || [])
+				} else {
+					// Prepend older messages
+					this.activeConversationMessages = [
+						...(data.results || []).map((msg: TMessage) => new Message(msg)),
+						...this.activeConversationMessages,
+					]
+				}
+				
+				// Update pagination
+				this.messagePagination.total = data.total || 0
+				this.messagePagination.limit = data.limit || 50
+				
+				console.log('ConversationStore: Messages loaded successfully', data.results?.length || 0, 'messages')
+				
+				return data
+			} catch (error: any) {
+				console.error('Error loading messages:', error)
+				this.error = error.message
+				throw error
+			} finally {
+				this.messagesLoading = false
 			}
 		},
 		
@@ -356,17 +423,19 @@ export const useConversationStore = defineStore('conversation', {
 					throw new Error(`HTTP error! status: ${response.status}`)
 				}
 				
-				// Clear active conversation if it's the one being archived
-				if (this.activeConversation?.uuid === uuid) {
-					this.setActiveConversation(null)
-					this.setActiveMessages([])
-				}
-				
-				await this.refreshConversationList(true)
-				
-				console.log('ConversationStore: Conversation archived successfully')
-				
-				return response
+			// Clear active conversation if it's the one being archived
+			if (this.activeConversation?.uuid === uuid) {
+				this.setActiveConversation(null)
+				this.setActiveMessages([])
+			}
+			
+			// Refresh both active and archived lists
+			await this.refreshConversationList(true)
+			await this.refreshArchivedConversations()
+			
+			console.log('ConversationStore: Conversation archived successfully')
+			
+			return response
 			} catch (error: any) {
 				console.error('Error archiving conversation:', error)
 				this.error = error.message
