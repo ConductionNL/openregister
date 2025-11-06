@@ -239,7 +239,13 @@ class ApplicationsController extends Controller
     {
         try {
             $data = $this->request->getParams();
+            
+            // Remove internal parameters and immutable fields
             unset($data['_route']);
+            unset($data['id']);
+            unset($data['organisation']);
+            unset($data['owner']);
+            unset($data['created']);
 
             $application = $this->applicationService->update($id, $data);
 

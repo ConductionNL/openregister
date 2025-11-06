@@ -167,7 +167,10 @@ export const useViewsStore = defineStore('views', {
 					throw new Error(`HTTP error! status: ${response.status}`)
 				}
 
-				const view = await response.json()
+				const data = await response.json()
+				
+				// API returns { view: {...} }, so unwrap it
+				const view = data.view || data
 
 				console.info('View fetched successfully:', view)
 				return view
@@ -202,7 +205,10 @@ export const useViewsStore = defineStore('views', {
 					throw new Error(`HTTP error! status: ${response.status}`)
 				}
 
-				const newView = await response.json()
+				const data = await response.json()
+				
+				// API returns { view: {...} }, so unwrap it
+				const newView = data.view || data
 
 				// Add to views list
 				this.viewsList.push(newView)
@@ -244,7 +250,10 @@ export const useViewsStore = defineStore('views', {
 					throw new Error(`HTTP error! status: ${response.status}`)
 				}
 
-				const updatedView = await response.json()
+				const data = await response.json()
+				
+				// API returns { view: {...} }, so unwrap it
+				const updatedView = data.view || data
 
 				// Update in views list
 				const index = this.viewsList.findIndex(v => v.id === id || v.uuid === id)

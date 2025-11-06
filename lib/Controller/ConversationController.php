@@ -460,7 +460,9 @@ class ConversationController extends Controller
             // Get request data
             $data = $this->request->getParams();
 
-            // Update allowed fields
+            // SECURITY: Only update allowed fields to prevent tampering with immutable fields
+            // Immutable fields (organisation, owner, userId, agentId, created) are NOT updated
+            
             if (isset($data['title'])) {
                 $conversation->setTitle($data['title']);
             }

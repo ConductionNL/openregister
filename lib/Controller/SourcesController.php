@@ -183,10 +183,11 @@ class SourcesController extends Controller
             }
         }
 
-        // Remove ID if present to prevent conflicts.
-        if (isset($data['id']) === true) {
-            unset($data['id']);
-        }
+        // Remove immutable fields to prevent tampering
+        unset($data['id']);
+        unset($data['organisation']);
+        unset($data['owner']);
+        unset($data['created']);
 
         // Update the source with the provided data.
         return new JSONResponse($this->sourceMapper->updateFromArray(id: (int) $id, object: $data));

@@ -3061,6 +3061,30 @@ class SettingsController extends Controller
     }
 
     /**
+     * Get Object settings only
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Object configuration
+     */
+    public function getObjectSettings(): JSONResponse
+    {
+        try {
+            $settings = $this->settingsService->getObjectSettingsOnly();
+            return new JSONResponse([
+                'success' => true,
+                'data' => $settings
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Update Object Management settings
      *
      * @NoAdminRequired
@@ -3090,6 +3114,19 @@ class SettingsController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * PATCH Object settings (delegates to updateObjectSettings)
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Updated settings
+     */
+    public function patchObjectSettings(): JSONResponse
+    {
+        return $this->updateObjectSettings();
     }
 
     /**

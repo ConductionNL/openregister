@@ -373,24 +373,19 @@ import { navigationStore, objectStore, registerStore, schemaStore, viewsStore } 
 				{{ t('openregister', 'Manage your saved search configurations') }}
 			</p>
 
-			<!-- Search Views -->
-			<div class="viewsSearchContainer">
-				<NcTextField
-					v-model="viewSearchQuery"
-					:placeholder="t('openregister', 'Search views...')"
-					:label="t('openregister', 'Search Views')">
-					<template #icon>
-						<Magnify :size="20" />
-					</template>
-				</NcTextField>
-			</div>
+		<!-- Search Views -->
+		<div class="viewsSearchContainer">
+			<NcTextField
+				v-model="viewSearchQuery"
+				:placeholder="t('openregister', 'Search views...')"
+				:label="t('openregister', 'Search Views')">
+				<template #icon>
+					<Magnify :size="20" />
+				</template>
+			</NcTextField>
+		</div>
 
-			<!-- Active View Badge -->
-			<div v-if="viewsStore.activeView" class="activeViewBadge">
-				<strong>{{ t('openregister', 'Active:') }}</strong> {{ viewsStore.activeView.name }}
-			</div>
-
-			<!-- Views Table -->
+		<!-- Views Table -->
 			<div v-if="viewsStore.isLoading" class="viewsLoading">
 				<NcLoadingIcon :size="32" />
 				<p>{{ t('openregister', 'Loading views...') }}</p>
@@ -430,15 +425,15 @@ import { navigationStore, objectStore, registerStore, schemaStore, viewsStore } 
 								</template>
 							</NcButton>
 							
-							<!-- Load View (Magnify) -->
-							<NcButton
-								type="secondary"
-								:aria-label="t('openregister', 'Load view')"
-								@click="loadView(view)">
-								<template #icon>
-									<Magnify :size="20" />
-								</template>
-							</NcButton>
+						<!-- Load View (Magnify) -->
+						<NcButton
+							:type="isActiveView(view) ? 'primary' : 'secondary'"
+							:aria-label="t('openregister', 'Load view')"
+							@click="loadView(view)">
+							<template #icon>
+								<Magnify :size="20" />
+							</template>
+						</NcButton>
 							
 							<!-- Edit View (Pencil) -->
 							<NcButton
@@ -1495,7 +1490,7 @@ export default {
 				await viewsStore.fetchViews()
 
 				// Set the newly created view as active
-				viewsStore.activeView = newView.view || newView
+				viewsStore.activeView = newView
 				this.activeViewName = viewsStore.activeView.name
 
 				// Clear form data and hide form
@@ -1549,7 +1544,7 @@ export default {
 				await viewsStore.fetchViews()
 				
 				// Update the active view with the latest data
-				viewsStore.activeView = updatedView.view || updatedView
+				viewsStore.activeView = updatedView
 				this.activeViewName = viewsStore.activeView.name
 
 				OC.Notification.showTemporary(this.t('openregister', 'View updated successfully!'))
@@ -1837,15 +1832,6 @@ export default {
 	margin-top: 8px;
 }
 
-.activeViewBadge {
-	background: var(--color-primary-element-light);
-	color: var(--color-primary-element-text);
-	padding: 8px 12px;
-	border-radius: var(--border-radius);
-	font-size: 0.9em;
-	text-align: center;
-}
-
 .viewsLoading {
 	display: flex;
 	flex-direction: column;
@@ -1885,8 +1871,8 @@ export default {
 	}
 
 	&--active {
-		border-color: var(--color-primary-element);
-		background-color: var(--color-primary-element-light);
+		border: 2px solid var(--color-success) !important;
+		background-color: var(--color-success-light);
 	}
 }
 

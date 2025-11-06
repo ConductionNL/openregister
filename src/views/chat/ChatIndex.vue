@@ -141,17 +141,6 @@
 						</div>
 					</div>
 				</div>
-
-				<!-- Loading indicator -->
-				<div v-if="loading" class="message assistant loading">
-					<div class="message-content">
-						<div class="typing-indicator">
-							<span />
-							<span />
-							<span />
-						</div>
-					</div>
-				</div>
 			</div>
 
 			<!-- Chat Input (only show if conversation selected) -->
@@ -171,7 +160,8 @@
 						:disabled="!currentMessage.trim() || loading"
 						@click="handleSendMessage">
 						<template #icon>
-							<Send :size="20" />
+							<NcLoadingIcon v-if="loading" :size="20" />
+							<Send v-else :size="20" />
 						</template>
 					</NcButton>
 				</div>

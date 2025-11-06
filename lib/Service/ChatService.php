@@ -620,7 +620,9 @@ class ChatService
                     throw new \Exception('OpenAI API key is not configured');
                 }
                 $config->apiKey = $openaiConfig['apiKey'];
-                $config->model = $agent?->getModel() ?? $openaiConfig['chatModel'] ?? 'gpt-4o-mini';
+                // Use agent model if set and not empty, otherwise fallback to global config
+                $agentModel = $agent?->getModel();
+                $config->model = (!empty($agentModel)) ? $agentModel : ($openaiConfig['chatModel'] ?? 'gpt-4o-mini');
                 
                 if (!empty($openaiConfig['organizationId'])) {
                     $config->organizationId = $openaiConfig['organizationId'];
@@ -631,7 +633,9 @@ class ChatService
                     throw new \Exception('Fireworks AI API key is not configured');
                 }
                 $config->apiKey = $fireworksConfig['apiKey'];
-                $config->model = $agent?->getModel() ?? $fireworksConfig['chatModel'] ?? 'accounts/fireworks/models/llama-v3p1-8b-instruct';
+                // Use agent model if set and not empty, otherwise fallback to global config
+                $agentModel = $agent?->getModel();
+                $config->model = (!empty($agentModel)) ? $agentModel : ($fireworksConfig['chatModel'] ?? 'accounts/fireworks/models/llama-v3p1-8b-instruct');
                 
                 // Fireworks AI uses OpenAI-compatible API
                 $baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
@@ -645,7 +649,9 @@ class ChatService
                     throw new \Exception('Ollama URL is not configured');
                 }
                 $config->url = rtrim($ollamaConfig['url'], '/');
-                $config->model = $agent?->getModel() ?? $ollamaConfig['chatModel'] ?? 'llama2';
+                // Use agent model if set and not empty, otherwise fallback to global config
+                $agentModel = $agent?->getModel();
+                $config->model = (!empty($agentModel)) ? $agentModel : ($ollamaConfig['chatModel'] ?? 'llama2');
             } else {
                 throw new \Exception("Unsupported chat provider: {$chatProvider}");
             }

@@ -179,6 +179,12 @@ class ConfigurationsController extends Controller
             }
         }
 
+        // Remove immutable fields to prevent tampering
+        unset($data['id']);
+        unset($data['organisation']);
+        unset($data['owner']);
+        unset($data['created']);
+
         try {
             return new JSONResponse(
                 $this->configurationMapper->updateFromArray($id, $data)

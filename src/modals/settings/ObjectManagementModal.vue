@@ -206,51 +206,28 @@
 
 		<!-- Dialog Actions -->
 		<template #actions>
-			<div class="actions-left">
-				<NcButton
-					v-if="config.vectorizationEnabled"
-					type="secondary"
-					:disabled="vectorizing"
-					@click="startBulkVectorization">
-					<template #icon>
-						<NcLoadingIcon v-if="vectorizing" :size="20" />
-						<PlayCircle v-else :size="20" />
-					</template>
-					{{ vectorizing ? t('openregister', 'Vectorizing...') : t('openregister', 'Vectorize All Objects Now') }}
-				</NcButton>
-
-				<!-- Progress indicator -->
-				<div v-if="vectorizationProgress" class="progress-indicator">
-					<span class="progress-text">{{ vectorizationProgress.processed }} / {{ vectorizationProgress.total }}</span>
-					<NcProgressBar :value="vectorizationProgress.percentage" :max="100" />
-				</div>
-			</div>
-
-			<div class="actions-right">
-				<NcButton @click="$emit('closing')">
-					{{ t('openregister', 'Cancel') }}
-				</NcButton>
-				<NcButton
-					type="primary"
-					:disabled="saving"
-					@click="saveConfiguration">
-					<template #icon>
-						<NcLoadingIcon v-if="saving" :size="20" />
-						<ContentSave v-else :size="20" />
-					</template>
-					{{ saving ? t('openregister', 'Saving...') : t('openregister', 'Save Configuration') }}
-				</NcButton>
-			</div>
+			<NcButton @click="$emit('closing')">
+				{{ t('openregister', 'Cancel') }}
+			</NcButton>
+			<NcButton
+				type="primary"
+				:disabled="saving"
+				@click="saveConfiguration">
+				<template #icon>
+					<NcLoadingIcon v-if="saving" :size="20" />
+					<ContentSave v-else :size="20" />
+				</template>
+				{{ saving ? t('openregister', 'Saving...') : t('openregister', 'Save Configuration') }}
+			</NcButton>
 		</template>
 	</NcDialog>
 </template>
 
 <script>
-import { NcDialog, NcButton, NcLoadingIcon, NcCheckboxRadioSwitch, NcProgressBar } from '@nextcloud/vue'
+import { NcDialog, NcButton, NcLoadingIcon, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
-import PlayCircle from 'vue-material-design-icons/PlayCircle.vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess, showError } from '@nextcloud/dialogs'
@@ -263,11 +240,9 @@ export default {
 		NcButton,
 		NcLoadingIcon,
 		NcCheckboxRadioSwitch,
-		NcProgressBar,
 		InformationOutline,
 		AlertCircle,
 		ContentSave,
-		PlayCircle,
 	},
 
 	props: {
@@ -281,8 +256,6 @@ export default {
 		return {
 			loading: true,
 			saving: false,
-			vectorizing: false,
-			vectorizationProgress: null,
 
 			config: {
 				vectorizationEnabled: true,
@@ -351,57 +324,19 @@ export default {
 			}
 		},
 
-		async startBulkVectorization() {
-			const message = this.config.vectorizeAllSchemas
-				? this.t('openregister', 'This will vectorize all objects from all schemas. This may take a long time and incur API costs. Continue?')
-				: this.t('openregister', 'This will vectorize objects from {count} selected schema(s). This may take a long time. Continue?', { count: this.selectedSchemasCount })
+	async saveConfiguration() {
+		this.saving = true
 
-			if (!confirm(message)) {
-				return
-			}
-
-			this.vectorizing = true
-
-			try {
-				// Get total count first
-				const countResponse = await axios.get(generateUrl('/apps/openregister/api/objects/count'), {
-					params: {
-						schemas: this.config.vectorizeAllSchemas ? null : this.config.enabledSchemas.join(','),
-					},
-				})
-
-				const totalObjects = countResponse.data.count || 0
-				this.vectorizationProgress = { processed: 0, total: totalObjects, percentage: 0 }
-
-				// Start background job
-				await axios.post(generateUrl('/apps/openregister/api/objects/vectorize/batch'), {
-					schemas: this.config.vectorizeAllSchemas ? null : this.config.enabledSchemas,
-					batchSize: this.config.batchSize,
-				})
-
-				showSuccess(this.t('openregister', 'Object vectorization started. Check the LLM Configuration section for progress.'))
-				this.$emit('closing')
-			} catch (error) {
-				showError(this.t('openregister', 'Failed to start vectorization: {error}', { error: error.response?.data?.error || error.message }))
-			} finally {
-				this.vectorizing = false
-				this.vectorizationProgress = null
-			}
-		},
-
-		async saveConfiguration() {
-			this.saving = true
-
-			try {
-				await axios.post(generateUrl('/apps/openregister/api/settings/object-vectorization'), this.config)
-				showSuccess(this.t('openregister', 'Object vectorization configuration saved successfully'))
-				this.$emit('closing')
-			} catch (error) {
-				showError(this.t('openregister', 'Failed to save configuration: {error}', { error: error.response?.data?.error || error.message }))
-			} finally {
-				this.saving = false
-			}
-		},
+		try {
+			await axios.patch(generateUrl('/apps/openregister/api/settings/objects/vectorize'), this.config)
+			showSuccess(this.t('openregister', 'Object vectorization configuration saved successfully'))
+			this.$emit('closing')
+		} catch (error) {
+			showError(this.t('openregister', 'Failed to save configuration: {error}', { error: error.response?.data?.error || error.message }))
+		} finally {
+			this.saving = false
+		}
+	},
 	},
 }
 </script>

@@ -198,10 +198,11 @@ import { agentStore, organisationStore, navigationStore } from '../../store/stor
 							:checked="agentItem.isPrivate"
 							type="switch"
 							@update:checked="agentItem.isPrivate = $event">
-							Private Agent
+							Private Agent (Default)
 						</NcCheckboxRadioSwitch>
 						<p class="field-hint">
-							Private agents are only accessible to invited users. Public agents can be accessed by all users in selected groups (or all users if no groups selected).
+							<strong>Private agents</strong> are only accessible to invited users. 
+							Disable this to make the agent <strong>public</strong> and accessible to all users in selected groups (or all users if no groups selected).
 						</p>
 
 						<div v-if="!agentItem.isPrivate" class="groups-select-container">
@@ -349,7 +350,7 @@ export default {
 				views: [],
 				searchFiles: true,
 				searchObjects: true,
-				isPrivate: false,
+				isPrivate: true,
 				invitedUsers: [],
 			},
 			selectedType: null,
@@ -425,7 +426,7 @@ export default {
 					tokenQuota: 0,
 					groups: [],
 					views: [],
-					isPrivate: false,
+					isPrivate: true,
 					invitedUsers: [],
 				}
 				this.selectedType = this.agentTypes[0]

@@ -1724,4 +1724,70 @@ class ObjectsController extends Controller
     }//end downloadFiles()
 
 
+    /**
+     * Start batch vectorization of objects
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Batch vectorization status
+     */
+    public function vectorizeBatch(): JSONResponse
+    {
+        try {
+            $data = $this->request->getParams();
+            $schemas = $data['schemas'] ?? null;
+            $batchSize = (int) ($data['batchSize'] ?? 25);
+
+            // Get ObjectVectorizationService from container
+            $vectorizationService = $this->container->get(\OCA\OpenRegister\Service\ObjectVectorizationService::class);
+
+            $result = $vectorizationService->startBatchVectorization($schemas, $batchSize);
+
+            return new JSONResponse([
+                'success' => true,
+                'data' => $result,
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }//end vectorizeBatch()
+
+
+    /**
+     * Get count of objects for vectorization
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Object count
+     */
+    public function getObjectVectorizationCount(): JSONResponse
+    {
+        try {
+            $schemas = $this->request->getParam('schemas');
+            if (is_string($schemas)) {
+                $schemas = explode(',', $schemas);
+            }
+
+            // TODO: Implement proper counting logic
+            // For now, return a placeholder
+            $count = 0;
+
+            return new JSONResponse([
+                'success' => true,
+                'count' => $count,
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }//end getObjectVectorizationCount()
+
+
 }//end class
