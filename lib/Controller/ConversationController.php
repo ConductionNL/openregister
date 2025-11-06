@@ -187,6 +187,61 @@ class ConversationController extends Controller
 
 
     /**
+     * List archived (soft-deleted) conversations for the current user
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse List of archived conversations
+     */
+    public function archive(): JSONResponse
+    {
+        try {
+            // Get active organisation
+            $organisation = $this->organisationService->getActiveOrganisation();
+            $organisationUuid = $organisation?->getUuid();
+
+            // Get query parameters
+            $limit = (int) ($this->request->getParam('limit') ?? 50);
+            $offset = (int) ($this->request->getParam('offset') ?? 0);
+
+            // Fetch only soft-deleted conversations
+            $conversations = $this->conversationMapper->findDeletedByUser(
+                $this->userId,
+                $organisationUuid,
+                $limit,
+                $offset
+            );
+
+            // Count total archived conversations
+            $total = $this->conversationMapper->countDeletedByUser(
+                $this->userId,
+                $organisationUuid
+            );
+
+            return new JSONResponse([
+                'results' => array_map(fn($conv) => $conv->jsonSerialize(), $conversations),
+                'total' => $total,
+                'limit' => $limit,
+                'offset' => $offset,
+            ], 200);
+
+        } catch (\Exception $e) {
+            $this->logger->error('[ConversationController] Failed to list archived conversations', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return new JSONResponse([
+                'error' => 'Failed to fetch archived conversations',
+                'message' => $e->getMessage(),
+            ], 500);
+        }//end try
+
+    }//end archive()
+
+
+    /**
      * Get a single conversation with its messages
      *
      * RBAC check is handled in the mapper layer.
