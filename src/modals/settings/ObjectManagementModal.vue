@@ -60,56 +60,56 @@
 				</div>
 			</div>
 
-			<!-- Schema-Specific Settings (Cost Optimization) -->
+			<!-- View-Specific Settings (Cost Optimization) -->
 			<div v-if="config.vectorizationEnabled" class="config-section">
-				<h3>{{ t('openregister', '💰 Schema Selection (Cost Optimization)') }}</h3>
+				<h3>{{ t('openregister', '💰 View Selection (Cost Optimization)') }}</h3>
 				<p class="section-description">
-					{{ t('openregister', 'Control which object schemas should be vectorized to reduce API costs. Only vectorize schemas that benefit from semantic search.') }}
+					{{ t('openregister', 'Control which object views should be vectorized to reduce API costs. Only vectorize views that benefit from semantic search.') }}
 				</p>
 
 				<div class="form-group">
 					<NcCheckboxRadioSwitch
-						v-model="config.vectorizeAllSchemas"
+						v-model="config.vectorizeAllViews"
 						type="switch">
-						{{ t('openregister', 'Vectorize all schemas') }}
+						{{ t('openregister', 'Vectorize all views') }}
 					</NcCheckboxRadioSwitch>
-					<small>{{ t('openregister', 'Enable vectorization for all existing and future schemas (may increase costs)') }}</small>
+					<small>{{ t('openregister', 'Enable vectorization for all existing and future views (may increase costs)') }}</small>
 				</div>
 
-				<div v-if="!config.vectorizeAllSchemas" class="schema-selection">
+				<div v-if="!config.vectorizeAllViews" class="view-selection">
 					<div class="selection-header">
-						<label>{{ t('openregister', 'Select schemas to vectorize:') }}</label>
+						<label>{{ t('openregister', 'Select views to vectorize:') }}</label>
 						<div class="selection-stats">
-							<span class="stat-badge">{{ selectedSchemasCount }} / {{ schemas.length }} {{ t('openregister', 'schemas selected') }}</span>
+							<span class="stat-badge">{{ selectedViewsCount }} / {{ views.length }} {{ t('openregister', 'views selected') }}</span>
 							<NcButton
-								v-if="config.enabledSchemas.length > 0"
+								v-if="config.enabledViews.length > 0"
 								type="tertiary"
-								@click="config.enabledSchemas = []">
+								@click="config.enabledViews = []">
 								{{ t('openregister', 'Clear all') }}
 							</NcButton>
 						</div>
 					</div>
 
-					<div v-if="schemas.length > 0" class="schema-list">
-						<div v-for="schema in schemas" :key="schema.id" class="schema-item">
+					<div v-if="views.length > 0" class="view-list">
+						<div v-for="view in views" :key="view.id" class="view-item">
 							<NcCheckboxRadioSwitch
-								v-model="config.enabledSchemas"
-								:value="schema.id"
+								v-model="config.enabledViews"
+								:value="view.id"
 								type="checkbox">
-								<span class="schema-name">{{ schema.title || schema.name }}</span>
+								<span class="view-name">{{ view.name }}</span>
 							</NcCheckboxRadioSwitch>
-							<span v-if="schema.description" class="schema-description">{{ schema.description }}</span>
+							<span v-if="view.description" class="view-description">{{ view.description }}</span>
 						</div>
 					</div>
 
-					<div v-else class="no-schemas">
+					<div v-else class="no-views">
 						<AlertCircle :size="24" />
-						<p>{{ t('openregister', 'No schemas found. Create schemas first before configuring vectorization.') }}</p>
+						<p>{{ t('openregister', 'No views found. Create views first before configuring vectorization.') }}</p>
 					</div>
 
 					<div class="cost-note">
 						<InformationOutline :size="16" />
-						<small>{{ t('openregister', 'Tip: Only enable schemas that need semantic search to minimize embedding costs. Simple lookup tables rarely need vectorization.') }}</small>
+						<small>{{ t('openregister', 'Tip: Only enable views that need semantic search to minimize embedding costs. Simple lookup tables rarely need vectorization.') }}</small>
 					</div>
 				</div>
 			</div>
@@ -261,8 +261,8 @@ export default {
 				vectorizationEnabled: true,
 				vectorizeOnCreate: true,
 				vectorizeOnUpdate: false,
-				vectorizeAllSchemas: true,
-				enabledSchemas: [],
+				vectorizeAllViews: true,
+				enabledViews: [],
 				includeMetadata: true,
 				includeRelations: true,
 				maxNestingDepth: 10,
@@ -270,7 +270,7 @@ export default {
 				autoRetry: true,
 			},
 
-			schemas: [],
+			views: [],
 			embeddingProviderName: 'Not configured',
 			embeddingModelName: 'Not configured',
 			vectorDimensions: 'N/A',
@@ -278,21 +278,27 @@ export default {
 	},
 
 	computed: {
-		selectedSchemasCount() {
-			return this.config.enabledSchemas.length
+		selectedViewsCount() {
+			return this.config.enabledViews.length
 		},
 	},
 
 	mounted() {
 		this.loadConfiguration()
-		this.loadSchemas()
+		this.loadViews()
 		this.loadEmbeddingProviderInfo()
 	},
 
 	methods: {
 		async loadConfiguration() {
 			try {
-				// TODO: Load object vectorization config from backend
+				const response = await axios.get(generateUrl('/apps/openregister/api/settings/objects/vectorize'))
+				if (response.data.success) {
+					this.config = {
+						...this.config,
+						...response.data.data,
+					}
+				}
 				this.loading = false
 			} catch (error) {
 				console.error('Failed to load configuration:', error)
@@ -300,13 +306,13 @@ export default {
 			}
 		},
 
-		async loadSchemas() {
+		async loadViews() {
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/schemas'))
-				this.schemas = response.data.results || []
+				const response = await axios.get(generateUrl('/apps/openregister/api/views'))
+				this.views = response.data.results || []
 			} catch (error) {
-				console.error('Failed to load schemas:', error)
-				this.schemas = []
+				console.error('Failed to load views:', error)
+				this.views = []
 			}
 		},
 
@@ -447,7 +453,7 @@ export default {
 	}
 }
 
-.schema-selection {
+.view-selection {
 	margin-top: 20px;
 
 	.selection-header {
@@ -477,7 +483,7 @@ export default {
 		}
 	}
 
-	.schema-list {
+	.view-list {
 		max-height: 300px;
 		overflow-y: auto;
 		border: 1px solid var(--color-border);
@@ -486,7 +492,7 @@ export default {
 		background: var(--color-background-dark);
 	}
 
-	.schema-item {
+	.view-item {
 		margin-bottom: 12px;
 		padding: 8px;
 		border-radius: 6px;
@@ -496,11 +502,11 @@ export default {
 			margin-bottom: 0;
 		}
 
-		.schema-name {
+		.view-name {
 			font-weight: 500;
 		}
 
-		.schema-description {
+		.view-description {
 			display: block;
 			margin-top: 4px;
 			margin-left: 32px;

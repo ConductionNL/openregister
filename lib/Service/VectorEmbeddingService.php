@@ -954,20 +954,35 @@ class VectorEmbeddingService
      */
     private function getEmbeddingConfig(?string $provider = null): array
     {
-        // Load from settings service
-        $settings = $this->settingsService->getSettings();
-        $vectorSettings = $settings['vector_embeddings'] ?? [];
+        // Load from LLM settings
+        $llmSettings = $this->settingsService->getLLMSettingsOnly();
         
-        // Determine provider and model
-        $configuredProvider = $provider ?? ($vectorSettings['provider'] ?? 'openai');
-        $configuredModel = $vectorSettings['model'] ?? 'text-embedding-ada-002';
-        $apiKey = $vectorSettings['api_key'] ?? null;
-        $baseUrl = $vectorSettings['base_url'] ?? null;
+        // Determine provider: use provided, or fall back to configured embedding provider
+        $configuredProvider = $provider ?? ($llmSettings['embeddingProvider'] ?? 'openai');
+        
+        // Get provider-specific configuration
+        $providerConfig = match ($configuredProvider) {
+            'fireworks' => $llmSettings['fireworksConfig'] ?? [],
+            'ollama' => $llmSettings['ollamaConfig'] ?? [],
+            'openai' => $llmSettings['openaiConfig'] ?? [],
+            default => []
+        };
+        
+        // Extract model and credentials based on provider
+        $model = match ($configuredProvider) {
+            'fireworks' => $providerConfig['embeddingModel'] ?? 'thenlper/gte-base',
+            'ollama' => $providerConfig['model'] ?? 'nomic-embed-text',
+            'openai' => $providerConfig['model'] ?? 'text-embedding-ada-002',
+            default => 'text-embedding-ada-002'
+        };
+        
+        $apiKey = $providerConfig['apiKey'] ?? null;
+        $baseUrl = $providerConfig['baseUrl'] ?? $providerConfig['url'] ?? null;
 
         return [
             'provider' => $configuredProvider,
-            'model' => $configuredModel,
-            'dimensions' => self::EMBEDDING_DIMENSIONS[$configuredModel] ?? 1536,
+            'model' => $model,
+            'dimensions' => self::EMBEDDING_DIMENSIONS[$model] ?? 1536,
             'api_key' => $apiKey,
             'base_url' => $baseUrl
         ];

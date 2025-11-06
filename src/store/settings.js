@@ -737,6 +737,27 @@ export const useSettingsStore = defineStore('settings', {
 		},
 
 		/**
+		 * Get vector statistics
+		 * @returns {Promise<object>} Vector statistics including counts by type
+		 */
+		async getVectorStats() {
+			try {
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/vectors/stats'),
+				)
+				return response.data
+			} catch (error) {
+				console.error('Failed to load vector statistics:', error)
+				// Return empty stats instead of throwing to prevent UI breakage
+				return {
+					total_vectors: 0,
+					by_type: { object: 0, file: 0 },
+					connection_status: 'Error',
+				}
+			}
+		},
+
+		/**
 		 * Test LLM connection
 		 * @param {object} connectionData - The connection data to test
 		 */

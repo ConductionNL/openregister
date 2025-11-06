@@ -766,9 +766,8 @@ class SolrController extends Controller
             // Get vector stats
             $vectorStats = $vectorService->getVectorStats();
             
-            // Get total object count
-            // Note: Adjust based on actual ObjectEntityMapper methods
-            $totalObjects = count($objectMapper->findAll());
+            // Get total object count efficiently (don't load all objects into memory!)
+            $totalObjects = $objectMapper->countAll();
             
             // Calculate progress
             $vectorizedObjects = $vectorStats['object_vectors'] ?? 0;
@@ -787,7 +786,8 @@ class SolrController extends Controller
             ]);
         } catch (\Exception $e) {
             $this->logger->error('Failed to get vectorization stats', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
 
             return new JSONResponse([

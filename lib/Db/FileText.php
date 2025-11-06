@@ -56,6 +56,8 @@ use Symfony\Component\Uid\Uuid;
  * @method void setIndexedInSolr(bool $indexedInSolr)
  * @method bool getVectorized()
  * @method void setVectorized(bool $vectorized)
+ * @method string|null getChunksJson()
+ * @method void setChunksJson(?string $chunksJson)
  * @method DateTime getCreatedAt()
  * @method void setCreatedAt(DateTime $createdAt)
  * @method DateTime getUpdatedAt()
@@ -79,6 +81,7 @@ class FileText extends Entity implements JsonSerializable
     protected ?string $extractionError = null;
     protected bool $chunked = false;
     protected int $chunkCount = 0;
+    protected ?string $chunksJson = null;
     protected bool $indexedInSolr = false;
     protected bool $vectorized = false;
     protected ?DateTime $createdAt = null;
@@ -101,6 +104,7 @@ class FileText extends Entity implements JsonSerializable
         $this->addType('extractionError', 'string');
         $this->addType('chunked', 'boolean');
         $this->addType('chunkCount', 'integer');
+        $this->addType('chunksJson', 'string');
         $this->addType('indexedInSolr', 'boolean');
         $this->addType('vectorized', 'boolean');
         $this->addType('createdAt', 'datetime');

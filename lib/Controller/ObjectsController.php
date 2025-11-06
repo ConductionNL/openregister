@@ -1736,13 +1736,13 @@ class ObjectsController extends Controller
     {
         try {
             $data = $this->request->getParams();
-            $schemas = $data['schemas'] ?? null;
+            $views = $data['views'] ?? null;
             $batchSize = (int) ($data['batchSize'] ?? 25);
 
             // Get ObjectVectorizationService from container
             $vectorizationService = $this->container->get(\OCA\OpenRegister\Service\ObjectVectorizationService::class);
 
-            $result = $vectorizationService->startBatchVectorization($schemas, $batchSize);
+            $result = $vectorizationService->startBatchVectorization($views, $batchSize);
 
             return new JSONResponse([
                 'success' => true,
@@ -1755,6 +1755,53 @@ class ObjectsController extends Controller
             ], 500);
         }
     }//end vectorizeBatch()
+
+
+    /**
+     * Get object vectorization statistics
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Vectorization statistics
+     */
+    public function getObjectVectorizationStats(): JSONResponse
+    {
+        try {
+            // Get views parameter if provided
+            $views = $this->request->getParam('views');
+            if (is_string($views)) {
+                $views = json_decode($views, true);
+            }
+
+            // Get ObjectService from container for view-aware counting
+            $objectService = $this->container->get(\OCA\OpenRegister\Service\ObjectService::class);
+            
+            // Count objects with view filter support
+            $totalObjects = $objectService->searchObjects(
+                query: [
+                    '_count' => true,
+                    '_source' => 'database',
+                ],
+                rbac: false,
+                multi: false,
+                ids: null,
+                uses: null,
+                views: $views
+            );
+
+            return new JSONResponse([
+                'success' => true,
+                'total_objects' => $totalObjects,
+                'views' => $views,
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }//end getObjectVectorizationStats()
 
 
     /**

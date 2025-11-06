@@ -101,73 +101,57 @@
 		</div>
 
 		<!-- Provider Configuration Info -->
-		<details class="collapsible-section">
-			<summary>
-				<span class="icon">🤖</span>
-				<strong>Provider Configuration</strong>
-			</summary>
-			<div class="section-content">
-				<div class="provider-info-grid">
-					<div class="provider-info-card">
-						<h5>Embedding Provider</h5>
-						<p v-if="providerConfig.embeddingProvider" class="provider-name">
-							{{ getProviderDisplayName(providerConfig.embeddingProvider) }}
-						</p>
-						<p v-else class="not-configured">Not configured</p>
-						<p v-if="providerConfig.embeddingModel" class="model-info">
-							{{ providerConfig.embeddingModel }}
-						</p>
-					</div>
-
-					<div class="provider-info-card">
-						<h5>Chat Provider (RAG)</h5>
-						<p v-if="providerConfig.chatProvider" class="provider-name">
-							{{ getProviderDisplayName(providerConfig.chatProvider) }}
-						</p>
-						<p v-else class="not-configured">Not configured</p>
-						<p v-if="providerConfig.chatModel" class="model-info">
-							{{ providerConfig.chatModel }}
-						</p>
-					</div>
-				</div>
+		<div class="provider-info-grid">
+			<div class="provider-info-card">
+				<h5>Embedding Provider</h5>
+				<p v-if="providerConfig.embeddingProvider" class="provider-name">
+					{{ getProviderDisplayName(providerConfig.embeddingProvider) }}
+				</p>
+				<p v-else class="not-configured">Not configured</p>
+				<p v-if="providerConfig.embeddingModel" class="model-info">
+					{{ providerConfig.embeddingModel }}
+				</p>
 			</div>
-		</details>
+
+			<div class="provider-info-card">
+				<h5>Chat Provider (RAG)</h5>
+				<p v-if="providerConfig.chatProvider" class="provider-name">
+					{{ getProviderDisplayName(providerConfig.chatProvider) }}
+				</p>
+				<p v-else class="not-configured">Not configured</p>
+				<p v-if="providerConfig.chatModel" class="model-info">
+					{{ providerConfig.chatModel }}
+				</p>
+			</div>
+		</div>
 
 		<!-- Chat Statistics -->
-		<details class="collapsible-section">
-			<summary>
-				<span class="icon">💬</span>
-				<strong>Chat & Agent Statistics</strong>
-			</summary>
-			<div class="section-content">
-				<div class="stats-grid">
-					<div class="stat-tile">
-						<div class="stat-value">{{ formatNumber(chatStats.totalAgents) }}</div>
-						<div class="stat-label">Agents</div>
-					</div>
-					<div class="stat-tile">
-						<div class="stat-value">{{ formatNumber(chatStats.totalConversations) }}</div>
-						<div class="stat-label">Conversations</div>
-					</div>
-					<div class="stat-tile">
-						<div class="stat-value">{{ formatNumber(chatStats.totalMessages) }}</div>
-						<div class="stat-label">Messages</div>
-					</div>
-					<div class="stat-tile">
-						<div class="stat-value">{{ formatNumber(vectorStats.totalVectors) }}</div>
-						<div class="stat-label">Total Vectors</div>
-					</div>
-					<div class="stat-tile">
-						<div class="stat-value">{{ formatNumber(vectorStats.objectVectors) }}</div>
-						<div class="stat-label">Object Embeddings</div>
-					</div>
-					<div class="stat-tile">
-						<div class="stat-value">{{ formatNumber(vectorStats.fileVectors) }}</div>
-						<div class="stat-label">File Embeddings</div>
-					</div>
-				</div>
+		<div class="stats-grid">
+			<div class="stat-tile">
+				<div class="stat-value">{{ formatNumber(chatStats.totalAgents) }}</div>
+				<div class="stat-label">Agents</div>
 			</div>
-		</details>
+			<div class="stat-tile">
+				<div class="stat-value">{{ formatNumber(chatStats.totalConversations) }}</div>
+				<div class="stat-label">Conversations</div>
+			</div>
+			<div class="stat-tile">
+				<div class="stat-value">{{ formatNumber(chatStats.totalMessages) }}</div>
+				<div class="stat-label">Messages</div>
+			</div>
+			<div class="stat-tile">
+				<div class="stat-value">{{ formatNumber(vectorStats.totalVectors) }}</div>
+				<div class="stat-label">Total Vectors</div>
+			</div>
+			<div class="stat-tile">
+				<div class="stat-value">{{ formatNumber(vectorStats.objectVectors) }}</div>
+				<div class="stat-label">Object Embeddings</div>
+			</div>
+			<div class="stat-tile">
+				<div class="stat-value">{{ formatNumber(vectorStats.fileVectors) }}</div>
+				<div class="stat-label">File Embeddings</div>
+			</div>
+		</div>
 
 		<!-- LLM Dashboard (when enabled) -->
 		<div v-if="llmSettings.enabled" class="llm-management-section">
@@ -219,6 +203,12 @@
 		<ObjectManagementModal
 			:show="showObjectManagementDialog"
 			@closing="showObjectManagementDialog = false" />
+
+		<!-- Object Vectorization Modal -->
+		<ObjectVectorizationModal
+			:show="showObjectVectorizationModal"
+			@closing="showObjectVectorizationModal = false"
+			@completed="loadAllStats" />
 	</SettingsSection>
 </template>
 
@@ -251,6 +241,7 @@ import FileVectorOutline from 'vue-material-design-icons/FileDocumentCheckOutlin
 import LLMConfigModal from '../../../modals/settings/LLMConfigModal.vue'
 import FileManagementModal from '../../../modals/settings/FileManagementModal.vue'
 import ObjectManagementModal from '../../../modals/settings/ObjectManagementModal.vue'
+import ObjectVectorizationModal from '../../../modals/settings/ObjectVectorizationModal.vue'
 
 /**
  * LLM configuration settings component for managing AI/LLM integration.
@@ -277,6 +268,7 @@ export default {
 		LLMConfigModal,
 		FileManagementModal,
 		ObjectManagementModal,
+		ObjectVectorizationModal,
 	},
 
 	data() {
@@ -299,6 +291,7 @@ export default {
 			showLLMConfigDialog: false,
 			showFileManagementDialog: false,
 			showObjectManagementDialog: false,
+			showObjectVectorizationModal: false,
 			providerConfig: {
 				embeddingProvider: null,
 				embeddingModel: null,
@@ -489,14 +482,17 @@ export default {
 			try {
 				const response = await this.settingsStore.getVectorStats()
 				if (response) {
+					// Extract stats from response (data is in 'stats' object)
+					const stats = response.stats || response
+					
 					// Update connection status
-					this.llmConnectionStatus = response.connection_status || 'Connected'
+					this.llmConnectionStatus = response.success ? 'Connected' : 'Disconnected'
 
 					// Update vector stats
-					this.vectorStats.totalVectors = response.total_vectors || 0
-					this.vectorStats.objectVectors = response.by_type?.object || 0
-					this.vectorStats.fileVectors = response.by_type?.file || 0
-					this.vectorStats.storageMB = response.storage?.total_mb?.toFixed(1) || '0.0'
+					this.vectorStats.totalVectors = stats.total_vectors || 0
+					this.vectorStats.objectVectors = stats.by_type?.object || stats.object_vectors || 0
+					this.vectorStats.fileVectors = stats.by_type?.file || stats.file_vectors || 0
+					this.vectorStats.storageMB = stats.storage?.total_mb?.toFixed(1) || '0.0'
 
 					// Update file stats
 					if (response.files) {
@@ -534,19 +530,10 @@ export default {
 		},
 
 		/**
-		 * Show dialog to vectorize all objects
+		 * Show object vectorization modal
 		 */
 		showVectorizeObjectsDialog() {
-			OC.dialogs.confirm(
-				this.t('openregister', 'This will vectorize all objects from all schemas. This may take a long time and incur API costs. Continue?'),
-				this.t('openregister', 'Vectorize All Objects'),
-				(confirmed) => {
-					if (confirmed) {
-						this.vectorizeAllObjects()
-					}
-				},
-				true
-			)
+			this.showObjectVectorizationModal = true
 		},
 
 		/**
@@ -563,35 +550,6 @@ export default {
 				},
 				true
 			)
-		},
-
-		/**
-		 * Vectorize all objects
-		 */
-		async vectorizeAllObjects() {
-			this.vectorizing = true
-
-			try {
-				// Get object vectorization config
-				const configResponse = await axios.get(generateUrl('/apps/openregister/api/settings/objects/vectorize'))
-				const config = configResponse.data?.data || {}
-
-				// Start background job
-				await axios.post(generateUrl('/apps/openregister/api/objects/vectorize/batch'), {
-					schemas: config.vectorizeAllSchemas ? null : config.enabledSchemas,
-					batchSize: config.batchSize || 25,
-				})
-
-				showSuccess(this.t('openregister', 'Object vectorization started. Check the statistics section for progress.'))
-				await this.loadAllStats()
-			} catch (error) {
-				console.error('Failed to start object vectorization:', error)
-				showError(this.t('openregister', 'Failed to start vectorization: {error}', {
-					error: error.response?.data?.error || error.message,
-				}))
-			} finally {
-				this.vectorizing = false
-			}
 		},
 
 		/**
@@ -833,6 +791,7 @@ export default {
 	display: grid;
 	grid-template-columns: repeat(2, 1fr);
 	gap: 16px;
+	margin-bottom: 24px;
 }
 
 .provider-info-card {
@@ -876,6 +835,7 @@ export default {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
 	gap: 16px;
+	margin-bottom: 24px;
 }
 
 .stat-tile {

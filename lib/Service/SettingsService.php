@@ -2994,7 +2994,6 @@ class SettingsService
             if (empty($objectConfig)) {
                 return [
                     'vectorizationEnabled' => false,
-                    'provider' => null,
                     'vectorizeOnCreate' => true,
                     'vectorizeOnUpdate' => false,
                     'vectorizeAllViews' => true,
@@ -3010,7 +3009,6 @@ class SettingsService
             $objectData = json_decode($objectConfig, true);
             return [
                 'vectorizationEnabled' => $objectData['vectorizationEnabled'] ?? false,
-                'provider' => $objectData['provider'] ?? null,
                 'vectorizeOnCreate' => $objectData['vectorizeOnCreate'] ?? true,
                 'vectorizeOnUpdate' => $objectData['vectorizeOnUpdate'] ?? false,
                 'vectorizeAllViews' => $objectData['vectorizeAllViews'] ?? ($objectData['vectorizeAllSchemas'] ?? true),
@@ -3031,7 +3029,6 @@ class SettingsService
         try {
             $objectConfig = [
                 'vectorizationEnabled' => $objectData['vectorizationEnabled'] ?? false,
-                'provider' => $objectData['provider'] ?? null,
                 'vectorizeOnCreate' => $objectData['vectorizeOnCreate'] ?? true,
                 'vectorizeOnUpdate' => $objectData['vectorizeOnUpdate'] ?? false,
                 'vectorizeAllViews' => $objectData['vectorizeAllViews'] ?? true,

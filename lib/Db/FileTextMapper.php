@@ -381,5 +381,102 @@ class FileTextMapper extends QBMapper
 
         $qb->execute();
     }
+
+    /**
+     * Clean up invalid file_texts entries
+     *
+     * Removes entries for:
+     * - Files that no longer exist in filecache
+     * - Directories (httpd/unix-directory mimetype)
+     * - System files (appdata, trash, versions, etc.)
+     * - Files from non-user storages
+     *
+     * @return array{deleted: int, reasons: array<string, int>} Statistics about deleted entries
+     */
+    public function cleanupInvalidEntries(): array
+    {
+        $deleted = 0;
+        $reasons = [
+            'file_not_found' => 0,
+            'is_directory' => 0,
+            'system_file' => 0,
+            'non_user_storage' => 0,
+        ];
+
+        // Find entries where file doesn't exist in filecache
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('ft.id', 'ft.file_id')
+            ->from($this->getTableName(), 'ft')
+            ->leftJoin('ft', 'filecache', 'fc', $qb->expr()->eq('ft.file_id', 'fc.fileid'))
+            ->where($qb->expr()->isNull('fc.fileid'));
+
+        $result = $qb->executeQuery();
+        $idsToDelete = [];
+        while ($row = $result->fetch()) {
+            $idsToDelete[] = $row['id'];
+            $reasons['file_not_found']++;
+        }
+        $result->closeCursor();
+
+        // Find entries that are directories
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('ft.id')
+            ->from($this->getTableName(), 'ft')
+            ->leftJoin('ft', 'filecache', 'fc', $qb->expr()->eq('ft.file_id', 'fc.fileid'))
+            ->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
+            ->where($qb->expr()->eq('mt.mimetype', $qb->createNamedParameter('httpd/unix-directory', IQueryBuilder::PARAM_STR)));
+
+        $result = $qb->executeQuery();
+        while ($row = $result->fetch()) {
+            if (!in_array($row['id'], $idsToDelete)) {
+                $idsToDelete[] = $row['id'];
+                $reasons['is_directory']++;
+            }
+        }
+        $result->closeCursor();
+
+        // Find entries from non-user storages or system paths
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('ft.id')
+            ->from($this->getTableName(), 'ft')
+            ->leftJoin('ft', 'filecache', 'fc', $qb->expr()->eq('ft.file_id', 'fc.fileid'))
+            ->leftJoin('fc', 'storages', 'st', $qb->expr()->eq('fc.storage', 'st.numeric_id'))
+            ->where(
+                $qb->expr()->orX(
+                    $qb->expr()->notLike('st.id', $qb->createNamedParameter('home::%', IQueryBuilder::PARAM_STR)),
+                    $qb->expr()->like('fc.path', $qb->createNamedParameter('%files_trashbin%', IQueryBuilder::PARAM_STR)),
+                    $qb->expr()->like('fc.path', $qb->createNamedParameter('appdata_%', IQueryBuilder::PARAM_STR)),
+                    $qb->expr()->like('fc.path', $qb->createNamedParameter('%files_versions%', IQueryBuilder::PARAM_STR)),
+                    $qb->expr()->like('fc.path', $qb->createNamedParameter('%cache%', IQueryBuilder::PARAM_STR)),
+                    $qb->expr()->like('fc.path', $qb->createNamedParameter('%thumbnails%', IQueryBuilder::PARAM_STR))
+                )
+            );
+
+        $result = $qb->executeQuery();
+        while ($row = $result->fetch()) {
+            if (!in_array($row['id'], $idsToDelete)) {
+                $idsToDelete[] = $row['id'];
+                $reasons['system_file']++;
+            }
+        }
+        $result->closeCursor();
+
+        // Delete all collected IDs
+        if (!empty($idsToDelete)) {
+            // Delete in batches of 1000 to avoid query size limits
+            $chunks = array_chunk($idsToDelete, 1000);
+            foreach ($chunks as $chunk) {
+                $qb = $this->db->getQueryBuilder();
+                $qb->delete($this->getTableName())
+                    ->where($qb->expr()->in('id', $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_INT_ARRAY)));
+                $deleted += $qb->executeStatement();
+            }
+        }
+
+        return [
+            'deleted' => $deleted,
+            'reasons' => $reasons,
+        ];
+    }
 }
 
