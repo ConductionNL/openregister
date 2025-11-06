@@ -9,35 +9,63 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
+use OCP\Files\NotFoundException;
 use OCP\IRequest;
 
 /**
  * FilesController
  *
- * Handles the Files page frontend route.
+ * Handles file operations for objects in registers
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  * @author   Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version  GIT: <git-id>
+ * @link     https://OpenRegister.app
  */
 class FilesController extends Controller
 {
     /**
+     * File service for handling file operations
+     *
+     * @var FileService
+     */
+    private readonly FileService $fileService;
+
+    /**
+     * Object service for handling object operations
+     *
+     * @var ObjectService
+     */
+    private readonly ObjectService $objectService;
+
+    /**
      * Constructor
      *
-     * @param string   $appName Application name
-     * @param IRequest $request HTTP request
+     * @param string        $appName       Application name
+     * @param IRequest      $request       HTTP request
+     * @param FileService   $fileService   File service
+     * @param ObjectService $objectService Object service
+     *
+     * @return void
      */
     public function __construct(
         string $appName,
-        IRequest $request
+        IRequest $request,
+        FileService $fileService,
+        ObjectService $objectService
     ) {
         parent::__construct($appName, $request);
-    }
+        $this->fileService   = $fileService;
+        $this->objectService = $objectService;
 
     }//end __construct()
 
@@ -578,7 +606,69 @@ class FilesController extends Controller
     }//end getUploadErrorMessage()
 
 
-}//end class
+    /**
+     * Parse a value to boolean
+     *
+     * Handles various input types (string, int, bool) and converts them
+     * to boolean values. Supports common string representations like
+     * 'true', 'false', '1', '0', 'yes', 'no'.
+     *
+     * @param mixed $value The value to parse
+     *
+     * @return bool The parsed boolean value
+     */
+    private function parseBool(mixed $value): bool
+    {
+        // If already boolean, return as-is
+        if (is_bool($value) === true) {
+            return $value;
+        }
+
+        // Handle string values
+        if (is_string($value) === true) {
+            $value = strtolower(trim($value));
+            return in_array($value, ['true', '1', 'on', 'yes'], true);
+        }
+
+        // Handle numeric values
+        if (is_numeric($value) === true) {
+            return (bool) $value;
+        }
+
+        // Fallback to false for other types
+        return false;
+
+    }//end parseBool()
+
+
+    /**
+     * Normalize tags input to an array
+     *
+     * Handles both string (comma-separated) and array inputs for tags.
+     * Trims whitespace from each tag.
+     *
+     * @param mixed $tags The tags input (string or array)
+     *
+     * @return array The normalized tags array
+     */
+    private function normalizeTags(mixed $tags): array
+    {
+        // If already an array, just trim values
+        if (is_array($tags) === true) {
+            return array_map('trim', $tags);
+        }
+
+        // If string, split by comma and trim
+        if (is_string($tags) === true) {
+            $tags = explode(',', $tags);
+            return array_map('trim', $tags);
+        }
+
+        // Default to empty array
+        return [];
+
+    }//end normalizeTags()
+
 
     /**
      * Render the Files page
@@ -595,5 +685,8 @@ class FilesController extends Controller
             'index',
             []
         );
-    }
-}
+
+    }//end page()
+
+
+}//end class
