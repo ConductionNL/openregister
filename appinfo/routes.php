@@ -130,7 +130,6 @@ return [
         ['name' => 'names#create', 'url' => '/api/names', 'verb' => 'POST'],
         ['name' => 'names#show', 'url' => '/api/names/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         // Dashbaord
-        ['name' => 'dashboard#page', 'url' => '/', 'verb' => 'GET'],
         ['name' => 'dashboard#index', 'url' => '/api/dashboard', 'verb' => 'GET'],
         ['name' => 'dashboard#calculate', 'url' => '/api/dashboard/calculate/{registerId}', 'verb' => 'POST', 'requirements' => ['registerId' => '\d+']],
         // Dashboard Charts
@@ -317,20 +316,20 @@ return [
 		['name' => 'fileSearch#hybridSearch', 'url' => '/api/search/files/hybrid', 'verb' => 'POST'],
 
 		// Page routes
-		['name' => 'dashboard#page', 'url' => '/', 'verb' => 'GET'],
-		['name' => 'registers#page', 'url' => '/registers', 'verb' => 'GET'],
-		['name' => 'registersDetails#page', 'url' => '/registers/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'schemas#page', 'url' => '/schemas', 'verb' => 'GET'],
-		['name' => 'schemasDetails#page', 'url' => '/schemas/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'sources#page', 'url' => '/sources', 'verb' => 'GET'],
-		['name' => 'organisation#page', 'url' => '/organisation', 'verb' => 'GET'],
-	['name' => 'objects#page', 'url' => '/objects', 'verb' => 'GET'],
-	['name' => 'tables#page', 'url' => '/tables', 'verb' => 'GET'],
-	['name' => 'chat#page', 'url' => '/chat', 'verb' => 'GET'],
+		['name' => 'dashboard#page', 'url' => '/', 'verb' => 'GET'], // you cannot remove `dashboard#page` as the dashboard expects this.
+		['name' => 'ui#registers', 'url' => '/registers', 'verb' => 'GET'],
+		['name' => 'ui#registersDetails', 'url' => '/registers/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'ui#schemas', 'url' => '/schemas', 'verb' => 'GET'],
+		['name' => 'ui#schemasDetails', 'url' => '/schemas/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'ui#sources', 'url' => '/sources', 'verb' => 'GET'],
+		['name' => 'ui#organisation', 'url' => '/organisation', 'verb' => 'GET'],
+		['name' => 'ui#objects', 'url' => '/objects', 'verb' => 'GET'],
+		['name' => 'ui#tables', 'url' => '/tables', 'verb' => 'GET'],
+		['name' => 'ui#chat', 'url' => '/chat', 'verb' => 'GET'],
+		['name' => 'ui#configurations', 'url' => '/configurations', 'verb' => 'GET'],
+		['name' => 'ui#deleted', 'url' => '/deleted', 'verb' => 'GET'],
+		['name' => 'ui#auditTrail', 'url' => '/audit-trails', 'verb' => 'GET'],
+		['name' => 'ui#searchTrail', 'url' => '/search-trails', 'verb' => 'GET'],
 	['name' => 'files#page', 'url' => '/files', 'verb' => 'GET'],
-	['name' => 'configurations#page', 'url' => '/configurations', 'verb' => 'GET'],
-		['name' => 'deleted#page', 'url' => '/deleted', 'verb' => 'GET'],
-		['name' => 'auditTrail#page', 'url' => '/audit-trails', 'verb' => 'GET'],
-		['name' => 'searchTrail#page', 'url' => '/search-trails', 'verb' => 'GET'],
     ],
 ];
