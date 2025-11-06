@@ -36,6 +36,29 @@
 					</template>
 					{{ t('openregister', 'Object Management') }}
 				</NcActionButton>
+
+				<!-- Separator -->
+				<NcActionSeparator />
+
+				<!-- Vectorize All Objects -->
+				<NcActionButton
+					:disabled="!llmSettings.enabled || vectorizing"
+					@click="showVectorizeObjectsDialog">
+					<template #icon>
+						<VectorSquare :size="20" />
+					</template>
+					{{ t('openregister', 'Vectorize All Objects') }}
+				</NcActionButton>
+
+				<!-- Vectorize All Files -->
+				<NcActionButton
+					:disabled="!llmSettings.enabled || vectorizing"
+					@click="showVectorizeFilesDialog">
+					<template #icon>
+						<FileVectorOutline :size="20" />
+					</template>
+					{{ t('openregister', 'Vectorize All Files') }}
+				</NcActionButton>
 			</NcActions>
 		</template>
 
@@ -209,14 +232,21 @@ import {
 	NcCheckboxRadioSwitch,
 	NcActions,
 	NcActionButton,
+	NcActionSeparator,
 	NcButton,
 } from '@nextcloud/vue'
+
+import { showSuccess, showError } from '@nextcloud/dialogs'
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 
 import DotsVertical from 'vue-material-design-icons/DotsVertical.vue'
 import Robot from 'vue-material-design-icons/Robot.vue'
 import FileDocument from 'vue-material-design-icons/FileDocument.vue'
 import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
+import VectorSquare from 'vue-material-design-icons/VectorSquare.vue'
+import FileVectorOutline from 'vue-material-design-icons/FileDocumentCheckOutline.vue'
 
 import LLMConfigModal from '../../../modals/settings/LLMConfigModal.vue'
 import FileManagementModal from '../../../modals/settings/FileManagementModal.vue'
@@ -235,12 +265,15 @@ export default {
 		NcCheckboxRadioSwitch,
 		NcActions,
 		NcActionButton,
+		NcActionSeparator,
 		NcButton,
 		DotsVertical,
 		Robot,
 		FileDocument,
 		CubeOutline,
 		Refresh,
+		VectorSquare,
+		FileVectorOutline,
 		LLMConfigModal,
 		FileManagementModal,
 		ObjectManagementModal,
@@ -259,6 +292,7 @@ export default {
 			},
 			saving: false,
 			loadingStats: false,
+			vectorizing: false,
 			llmError: false,
 			llmErrorMessage: '',
 			llmConnectionStatus: 'Unknown',
@@ -497,6 +531,91 @@ export default {
 		 */
 		formatNumber(num) {
 			return new Intl.NumberFormat().format(num)
+		},
+
+		/**
+		 * Show dialog to vectorize all objects
+		 */
+		showVectorizeObjectsDialog() {
+			OC.dialogs.confirm(
+				this.t('openregister', 'This will vectorize all objects from all schemas. This may take a long time and incur API costs. Continue?'),
+				this.t('openregister', 'Vectorize All Objects'),
+				(confirmed) => {
+					if (confirmed) {
+						this.vectorizeAllObjects()
+					}
+				},
+				true
+			)
+		},
+
+		/**
+		 * Show dialog to vectorize all files
+		 */
+		showVectorizeFilesDialog() {
+			OC.dialogs.confirm(
+				this.t('openregister', 'This will vectorize all extracted file chunks. This may take a long time and incur API costs. Continue?'),
+				this.t('openregister', 'Vectorize All Files'),
+				(confirmed) => {
+					if (confirmed) {
+						this.vectorizeAllFiles()
+					}
+				},
+				true
+			)
+		},
+
+		/**
+		 * Vectorize all objects
+		 */
+		async vectorizeAllObjects() {
+			this.vectorizing = true
+
+			try {
+				// Get object vectorization config
+				const configResponse = await axios.get(generateUrl('/apps/openregister/api/settings/objects/vectorize'))
+				const config = configResponse.data?.data || {}
+
+				// Start background job
+				await axios.post(generateUrl('/apps/openregister/api/objects/vectorize/batch'), {
+					schemas: config.vectorizeAllSchemas ? null : config.enabledSchemas,
+					batchSize: config.batchSize || 25,
+				})
+
+				showSuccess(this.t('openregister', 'Object vectorization started. Check the statistics section for progress.'))
+				await this.loadAllStats()
+			} catch (error) {
+				console.error('Failed to start object vectorization:', error)
+				showError(this.t('openregister', 'Failed to start vectorization: {error}', {
+					error: error.response?.data?.error || error.message,
+				}))
+			} finally {
+				this.vectorizing = false
+			}
+		},
+
+		/**
+		 * Vectorize all files
+		 */
+		async vectorizeAllFiles() {
+			this.vectorizing = true
+
+			try {
+				// Start background job
+				await axios.post(generateUrl('/apps/openregister/api/files/vectorize/batch'), {
+					batchSize: 25,
+				})
+
+				showSuccess(this.t('openregister', 'File vectorization started. Check the statistics section for progress.'))
+				await this.loadAllStats()
+			} catch (error) {
+				console.error('Failed to start file vectorization:', error)
+				showError(this.t('openregister', 'Failed to start vectorization: {error}', {
+					error: error.response?.data?.error || error.message,
+				}))
+			} finally {
+				this.vectorizing = false
+			}
 		},
 	},
 }

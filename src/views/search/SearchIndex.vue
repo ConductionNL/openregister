@@ -543,15 +543,48 @@ export default {
 			navigationStore.setModal('migrationObject')
 		},
 		addObject() {
-			// Clear any existing object and open the add object modal
+			// Clear any existing object
 			objectStore.setObjectItem(null)
-			// Ensure register and schema are set for new object creation
-			if (registerStore.registerItem) {
-				registerStore.setRegisterItem(registerStore.registerItem)
+			
+			// Check if registers and schemas are selected
+			if (this.selectedRegisterIds.length === 0 || this.selectedSchemaIds.length === 0) {
+				showError(this.t('openregister', 'Please select at least one register and schema first'))
+				return
 			}
-			if (schemaStore.schemaItem) {
-				schemaStore.setSchemaItem(schemaStore.schemaItem)
+			
+			// Get the selected registers and schemas
+			const selectedRegisters = this.selectedRegisterIds
+				.map(id => registerStore.registerList.find(r => r.id === id))
+				.filter(Boolean)
+			
+			const selectedSchemas = this.selectedSchemaIds
+				.map(id => schemaStore.schemaList.find(s => s.id === id))
+				.filter(Boolean)
+			
+			// If only one register and one schema, use them directly
+			if (selectedRegisters.length === 1 && selectedSchemas.length === 1) {
+				registerStore.setRegisterItem(selectedRegisters[0])
+				schemaStore.setSchemaItem(selectedSchemas[0])
+				
+				console.log('Opening add object modal with single register/schema:', {
+					register: selectedRegisters[0]?.title,
+					schema: selectedSchemas[0]?.title,
+					schemaProperties: selectedSchemas[0]?.properties,
+				})
+				
+				navigationStore.setModal('viewObject')
+				return
 			}
+			
+			// If multiple registers or schemas, store them for selection in the modal
+			objectStore.availableRegistersForNewObject = selectedRegisters
+			objectStore.availableSchemasForNewObject = selectedSchemas
+			
+			console.log('Opening add object modal with multiple options:', {
+				registers: selectedRegisters.map(r => r.title),
+				schemas: selectedSchemas.map(s => s.title),
+			})
+			
 			navigationStore.setModal('viewObject')
 		},
 		refreshObjects() {

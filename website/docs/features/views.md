@@ -90,6 +90,18 @@ Views are displayed with:
 - **Star icon** for favorites (at the top of the list)
 - **Action icons** for load, edit, and delete
 
+### Visual Feedback for Active Views
+
+When a view is active (currently loaded), you will see clear visual indicators:
+- **Green border**: The view card gets a 2px green border, similar to how active organizations are displayed
+- **Primary magnify button**: The magnify icon button becomes highlighted in blue to indicate the view is currently loaded
+- **Light green background**: The entire view card has a subtle green tint
+
+Additionally, when a view is favorited:
+- **Primary star button**: The star button becomes highlighted in blue and shows a filled star icon
+
+These visual cues make it easy to see at a glance which view is currently active and which views are favorited.
+
 ## Favoriting Views
 
 Mark frequently-used views as favorites for quick access:

@@ -605,12 +605,19 @@ export const useConversationStore = defineStore('conversation', {
 				
 				// Update conversation title if it was generated
 				if (data.title && this.activeConversation) {
-					this.activeConversation.title = data.title
+					// Use Object.assign to ensure reactivity
+					Object.assign(this.activeConversation, { title: data.title })
 					console.log('ConversationStore: Updated conversation title', data.title)
+					
+					// Also update in the conversation list
+					const conversationInList = this.conversationList.find(c => c.uuid === this.activeConversation.uuid)
+					if (conversationInList) {
+						conversationInList.title = data.title
+					}
 				}
 			}
 			
-			// Soft refresh the conversation list to update metadata
+			// Soft refresh the conversation list to update metadata (but keep title changes)
 			await this.refreshConversationList(true)
 				
 				console.log('ConversationStore: Message sent successfully')

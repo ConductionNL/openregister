@@ -305,10 +305,11 @@ class SchemasController extends Controller
             }
         }
 
-        // Remove ID if present to prevent conflicts.
-        if (isset($data['id']) === true) {
-            unset($data['id']);
-        }
+        // Remove immutable fields to prevent tampering
+        unset($data['id']);
+        unset($data['organisation']);
+        unset($data['owner']);
+        unset($data['created']);
 
         try {
             // Update the schema with the provided data.

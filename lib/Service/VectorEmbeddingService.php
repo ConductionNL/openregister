@@ -847,6 +847,46 @@ class VectorEmbeddingService
     }
 
     /**
+     * Get vector count for specific entity type(s)
+     * 
+     * @param string|null $entityType Filter by entity type ('object', 'file', or null for all)
+     * @param array       $filters    Additional filters (e.g., entity_id, model)
+     * 
+     * @return int Total count
+     */
+    public function getVectorCount(?string $entityType = null, array $filters = []): int
+    {
+        try {
+            $qb = $this->db->getQueryBuilder();
+            $qb->select($qb->func()->count('*', 'total'))
+                ->from('openregister_vectors');
+
+            // Filter by entity type
+            if ($entityType !== null) {
+                $qb->andWhere($qb->expr()->eq('entity_type', $qb->createNamedParameter($entityType)));
+            }
+
+            // Apply additional filters
+            foreach ($filters as $field => $value) {
+                $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value)));
+            }
+
+            $result = $qb->executeQuery();
+            $count = (int) $result->fetchOne();
+            $result->closeCursor();
+
+            return $count;
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get vector count', [
+                'entity_type' => $entityType,
+                'error' => $e->getMessage()
+            ]);
+            return 0;
+        }
+    }
+
+    /**
      * Get vector statistics
      * 
      * @return array Statistics about stored vectors

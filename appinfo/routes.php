@@ -100,9 +100,14 @@ return [
         ['name' => 'settings#updateFileSettings', 'url' => '/api/settings/files', 'verb' => 'PUT'],
         ['name' => 'settings#getFileExtractionStats', 'url' => '/api/settings/files/stats', 'verb' => 'GET'],
         ['name' => 'settings#testDolphinConnection', 'url' => '/api/settings/files/test-dolphin', 'verb' => 'POST'],
-        ['name' => 'settings#updateObjectSettings', 'url' => '/api/settings/objects', 'verb' => 'POST'],
-        ['name' => 'settings#updateObjectSettings', 'url' => '/api/settings/objects', 'verb' => 'PATCH'],
-        ['name' => 'settings#updateObjectSettings', 'url' => '/api/settings/objects', 'verb' => 'PUT'],
+        ['name' => 'settings#getObjectSettings', 'url' => '/api/settings/objects/vectorize', 'verb' => 'GET'],
+        ['name' => 'settings#updateObjectSettings', 'url' => '/api/settings/objects/vectorize', 'verb' => 'POST'],
+        ['name' => 'settings#patchObjectSettings', 'url' => '/api/settings/objects/vectorize', 'verb' => 'PATCH'],
+        ['name' => 'settings#updateObjectSettings', 'url' => '/api/settings/objects/vectorize', 'verb' => 'PUT'],
+        
+        // Object vectorization endpoints
+        ['name' => 'objects#vectorizeBatch', 'url' => '/api/objects/vectorize/batch', 'verb' => 'POST'],
+        ['name' => 'objects#getObjectVectorizationCount', 'url' => '/api/objects/vectorize/count', 'verb' => 'GET'],
         
         // Core file extraction endpoints (use fileExtraction controller to avoid conflict with files controller)
         ['name' => 'fileExtraction#index', 'url' => '/api/files', 'verb' => 'GET'],
@@ -291,6 +296,7 @@ return [
 		['name' => 'chat#sendMessage', 'url' => '/api/chat/send', 'verb' => 'POST'],
 		['name' => 'chat#getHistory', 'url' => '/api/chat/history', 'verb' => 'GET'],
 		['name' => 'chat#clearHistory', 'url' => '/api/chat/history', 'verb' => 'DELETE'],
+		['name' => 'chat#getChatStats', 'url' => '/api/chat/stats', 'verb' => 'GET'],
 		['name' => 'chat#sendFeedback', 'url' => '/api/conversations/{conversationUuid}/messages/{messageId}/feedback', 'verb' => 'POST', 'requirements' => ['conversationUuid' => '[^/]+', 'messageId' => '\\d+']],
 		
 		// Conversations - AI Conversation management

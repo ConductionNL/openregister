@@ -298,14 +298,26 @@ class AgentsController extends Controller
             }
             
             $data = $this->request->getParams();
+            
+            // Remove internal parameters and immutable fields to prevent tampering
             unset($data['_route']);
+            unset($data['id']);
+            unset($data['created']);
 
-            // Prevent changing organisation and owner
+            // Preserve current organisation and owner (security: prevent privilege escalation)
+            $currentOrganisation = $agent->getOrganisation();
+            $currentOwner = $agent->getOwner();
+            
             unset($data['organisation']);
             unset($data['owner']);
 
-            // Update agent properties
+            // Update agent properties via hydration
             $agent->hydrate($data);
+            
+            // Restore preserved immutable values
+            $agent->setOrganisation($currentOrganisation);
+            $agent->setOwner($currentOwner);
+            
             $updatedAgent = $this->agentMapper->update($agent);
 
             $this->logger->info('Agent updated successfully', ['id' => $id]);

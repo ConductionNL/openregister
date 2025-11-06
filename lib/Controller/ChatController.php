@@ -22,6 +22,7 @@ use OCA\OpenRegister\Service\ChatService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Db\ConversationMapper;
 use OCA\OpenRegister\Db\MessageMapper;
+use OCP\IDBConnection;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Db\Conversation;
 use OCA\OpenRegister\Db\Feedback;
@@ -79,6 +80,13 @@ class ChatController extends Controller
     private AgentMapper $agentMapper;
 
     /**
+     * Database connection
+     *
+     * @var IDBConnection
+     */
+    private IDBConnection $db;
+
+    /**
      * Organisation service
      *
      * @var OrganisationService
@@ -121,6 +129,7 @@ class ChatController extends Controller
         FeedbackMapper $feedbackMapper,
         AgentMapper $agentMapper,
         OrganisationService $organisationService,
+        IDBConnection $db,
         LoggerInterface $logger,
         string $userId
     ) {
@@ -131,6 +140,7 @@ class ChatController extends Controller
         $this->feedbackMapper = $feedbackMapper;
         $this->agentMapper = $agentMapper;
         $this->organisationService = $organisationService;
+        $this->db = $db;
         $this->logger = $logger;
         $this->userId = $userId;
 
@@ -498,6 +508,54 @@ class ChatController extends Controller
         }//end try
 
     }//end sendFeedback()
+
+
+    /**
+     * Get chat statistics
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Chat statistics
+     */
+    public function getChatStats(): JSONResponse
+    {
+        try {
+            // Get agent count
+            $qb = $this->db->getQueryBuilder();
+            $qb->select($qb->func()->count('id', 'total'))
+                ->from('openregister_agents');
+            $totalAgents = (int) $qb->executeQuery()->fetchOne();
+
+            // Get conversation count
+            $qb = $this->db->getQueryBuilder();
+            $qb->select($qb->func()->count('id', 'total'))
+                ->from('openregister_conversations');
+            $totalConversations = (int) $qb->executeQuery()->fetchOne();
+
+            // Get message count
+            $qb = $this->db->getQueryBuilder();
+            $qb->select($qb->func()->count('id', 'total'))
+                ->from('openregister_messages');
+            $totalMessages = (int) $qb->executeQuery()->fetchOne();
+
+            return new JSONResponse([
+                'total_agents' => $totalAgents,
+                'total_conversations' => $totalConversations,
+                'total_messages' => $totalMessages,
+            ], 200);
+
+        } catch (\Exception $e) {
+            $this->logger->error('[ChatController] Failed to get chat stats', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return new JSONResponse([
+                'error' => 'Failed to get chat statistics',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }//end getChatStats()
 
 
 }//end class

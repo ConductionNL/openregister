@@ -2980,6 +2980,52 @@ class SettingsService
      * @return array Updated object management configuration
      * @throws \RuntimeException
      */
+    /**
+     * Get focused Object settings only (vectorization config)
+     *
+     * @return array Object vectorization configuration
+     * @throws \RuntimeException If Object settings retrieval fails
+     */
+    public function getObjectSettingsOnly(): array
+    {
+        try {
+            $objectConfig = $this->config->getValueString($this->appName, 'objectManagement', '');
+            
+            if (empty($objectConfig)) {
+                return [
+                    'vectorizationEnabled' => false,
+                    'provider' => null,
+                    'vectorizeOnCreate' => true,
+                    'vectorizeOnUpdate' => false,
+                    'vectorizeAllViews' => true,
+                    'enabledViews' => [],
+                    'includeMetadata' => true,
+                    'includeRelations' => true,
+                    'maxNestingDepth' => 10,
+                    'batchSize' => 25,
+                    'autoRetry' => true,
+                ];
+            }
+
+            $objectData = json_decode($objectConfig, true);
+            return [
+                'vectorizationEnabled' => $objectData['vectorizationEnabled'] ?? false,
+                'provider' => $objectData['provider'] ?? null,
+                'vectorizeOnCreate' => $objectData['vectorizeOnCreate'] ?? true,
+                'vectorizeOnUpdate' => $objectData['vectorizeOnUpdate'] ?? false,
+                'vectorizeAllViews' => $objectData['vectorizeAllViews'] ?? ($objectData['vectorizeAllSchemas'] ?? true),
+                'enabledViews' => $objectData['enabledViews'] ?? ($objectData['enabledSchemas'] ?? []),
+                'includeMetadata' => $objectData['includeMetadata'] ?? true,
+                'includeRelations' => $objectData['includeRelations'] ?? true,
+                'maxNestingDepth' => $objectData['maxNestingDepth'] ?? 10,
+                'batchSize' => $objectData['batchSize'] ?? 25,
+                'autoRetry' => $objectData['autoRetry'] ?? true,
+            ];
+        } catch (Exception $e) {
+            throw new \RuntimeException('Failed to get Object Management settings: '.$e->getMessage());
+        }
+    }
+
     public function updateObjectSettingsOnly(array $objectData): array
     {
         try {
@@ -2988,10 +3034,13 @@ class SettingsService
                 'provider' => $objectData['provider'] ?? null,
                 'vectorizeOnCreate' => $objectData['vectorizeOnCreate'] ?? true,
                 'vectorizeOnUpdate' => $objectData['vectorizeOnUpdate'] ?? false,
-                'vectorizeAllSchemas' => $objectData['vectorizeAllSchemas'] ?? true,
-                'enabledSchemas' => $objectData['enabledSchemas'] ?? [],
+                'vectorizeAllViews' => $objectData['vectorizeAllViews'] ?? true,
+                'enabledViews' => $objectData['enabledViews'] ?? [],
                 'includeMetadata' => $objectData['includeMetadata'] ?? true,
+                'includeRelations' => $objectData['includeRelations'] ?? true,
                 'maxNestingDepth' => $objectData['maxNestingDepth'] ?? 10,
+                'batchSize' => $objectData['batchSize'] ?? 25,
+                'autoRetry' => $objectData['autoRetry'] ?? true,
             ];
             
             $this->config->setValueString($this->appName, 'objectManagement', json_encode($objectConfig));
