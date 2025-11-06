@@ -79,7 +79,7 @@ return [
         // Object Vectorization endpoints - SolrController
         ['name' => 'solr#vectorizeObject', 'url' => '/api/objects/{objectId}/vectorize', 'verb' => 'POST'],
         ['name' => 'solr#bulkVectorizeObjects', 'url' => '/api/objects/vectorize/bulk', 'verb' => 'POST'],
-        ['name' => 'solr#getVectorizationStats', 'url' => '/api/objects/vectorize/stats', 'verb' => 'GET'],
+        ['name' => 'solr#getVectorizationStats', 'url' => '/api/solr/vectorize/stats', 'verb' => 'GET'],
         
         ['name' => 'settings#getRbacSettings', 'url' => '/api/settings/rbac', 'verb' => 'GET'],
         ['name' => 'settings#updateRbacSettings', 'url' => '/api/settings/rbac', 'verb' => 'PATCH'],
@@ -88,6 +88,10 @@ return [
         ['name' => 'settings#getMultitenancySettings', 'url' => '/api/settings/multitenancy', 'verb' => 'GET'],
         ['name' => 'settings#updateMultitenancySettings', 'url' => '/api/settings/multitenancy', 'verb' => 'PATCH'],
         ['name' => 'settings#updateMultitenancySettings', 'url' => '/api/settings/multitenancy', 'verb' => 'PUT'],
+        
+        ['name' => 'settings#getOrganisationSettings', 'url' => '/api/settings/organisation', 'verb' => 'GET'],
+        ['name' => 'settings#updateOrganisationSettings', 'url' => '/api/settings/organisation', 'verb' => 'PATCH'],
+        ['name' => 'settings#updateOrganisationSettings', 'url' => '/api/settings/organisation', 'verb' => 'PUT'],
         
         ['name' => 'settings#getLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'GET'],
         ['name' => 'settings#updateLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'POST'],
@@ -108,6 +112,7 @@ return [
         // Object vectorization endpoints
         ['name' => 'objects#vectorizeBatch', 'url' => '/api/objects/vectorize/batch', 'verb' => 'POST'],
         ['name' => 'objects#getObjectVectorizationCount', 'url' => '/api/objects/vectorize/count', 'verb' => 'GET'],
+        ['name' => 'objects#getObjectVectorizationStats', 'url' => '/api/objects/vectorize/stats', 'verb' => 'GET'],
         
         // Core file extraction endpoints (use fileExtraction controller to avoid conflict with files controller)
         ['name' => 'fileExtraction#index', 'url' => '/api/files', 'verb' => 'GET'],
@@ -117,6 +122,7 @@ return [
         ['name' => 'fileExtraction#extractAll', 'url' => '/api/files/extract', 'verb' => 'POST'],
         ['name' => 'fileExtraction#retryFailed', 'url' => '/api/files/retry-failed', 'verb' => 'POST'],
         ['name' => 'fileExtraction#stats', 'url' => '/api/files/stats', 'verb' => 'GET'],
+        ['name' => 'fileExtraction#cleanup', 'url' => '/api/files/cleanup', 'verb' => 'POST'],
         
         ['name' => 'settings#getRetentionSettings', 'url' => '/api/settings/retention', 'verb' => 'GET'],
         
@@ -273,6 +279,7 @@ return [
         ['name' => 'organisation#create', 'url' => '/api/organisations', 'verb' => 'POST'],
         ['name' => 'organisation#search', 'url' => '/api/organisations/search', 'verb' => 'GET'],
         ['name' => 'organisation#stats', 'url' => '/api/organisations/stats', 'verb' => 'GET'],
+        ['name' => 'organisation#stats', 'url' => '/api/organisations/statistics', 'verb' => 'GET'],
         ['name' => 'organisation#clearCache', 'url' => '/api/organisations/clear-cache', 'verb' => 'POST'],
         ['name' => 'organisation#getActive', 'url' => '/api/organisations/active', 'verb' => 'GET'],
         ['name' => 'organisation#show', 'url' => '/api/organisations/{uuid}', 'verb' => 'GET'],

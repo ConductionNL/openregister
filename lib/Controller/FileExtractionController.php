@@ -291,4 +291,34 @@ class FileExtractionController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Clean up invalid file_texts entries
+     *
+     * Removes entries for files that no longer exist, directories, and system files.
+     * This helps maintain database integrity and remove orphaned records.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Cleanup statistics
+     */
+    public function cleanup(): JSONResponse
+    {
+        try {
+            $result = $this->fileTextMapper->cleanupInvalidEntries();
+
+            return new JSONResponse([
+                'success' => true,
+                'message' => 'Cleanup completed',
+                'data' => $result
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => 'Cleanup failed',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

@@ -13,38 +13,44 @@
 					<DotsVertical :size="20" />
 				</template>
 
-				<!-- Discover Files -->
-				<NcActionButton
-					:disabled="isProcessing"
-					@click="discoverFiles">
-					<template #icon>
+			<!-- Discover Files -->
+			<NcActionButton
+				:disabled="isProcessing"
+				@click="discoverFiles">
+				<template #icon>
+					<span class="action-icon-wrapper">
 						<NcLoadingIcon v-if="discoveringFiles" :size="20" />
 						<MagnifyIcon v-else :size="20" />
-					</template>
-					{{ t('openregister', 'Discover Files') }}
-				</NcActionButton>
+					</span>
+				</template>
+				{{ t('openregister', 'Discover Files') }}
+			</NcActionButton>
 
-				<!-- Extract Pending Files -->
-				<NcActionButton
-					:disabled="isProcessing"
-					@click="extractAllPendingFiles">
-					<template #icon>
+			<!-- Extract Pending Files -->
+			<NcActionButton
+				:disabled="isProcessing"
+				@click="extractAllPendingFiles">
+				<template #icon>
+					<span class="action-icon-wrapper">
 						<NcLoadingIcon v-if="extractingFiles" :size="20" />
 						<FileDocumentIcon v-else :size="20" />
-					</template>
-					{{ t('openregister', 'Extract Pending Files') }}
-				</NcActionButton>
+					</span>
+				</template>
+				{{ t('openregister', 'Extract Pending Files') }}
+			</NcActionButton>
 
-				<!-- Retry Failed Extractions -->
-				<NcActionButton
-					:disabled="isProcessing"
-					@click="reprocessFailedFiles">
-					<template #icon>
+			<!-- Retry Failed Extractions -->
+			<NcActionButton
+				:disabled="isProcessing"
+				@click="reprocessFailedFiles">
+				<template #icon>
+					<span class="action-icon-wrapper">
 						<NcLoadingIcon v-if="retryingFiles" :size="20" />
 						<RefreshIcon v-else :size="20" />
-					</template>
-					{{ t('openregister', 'Retry Failed Extractions') }}
-				</NcActionButton>
+					</span>
+				</template>
+				{{ t('openregister', 'Retry Failed Extractions') }}
+			</NcActionButton>
 			</NcActions>
 		</template>
 
@@ -286,19 +292,14 @@
 			<div v-if="fileSettings.textExtractor.id === 'llphant'" class="compatibility-note info-note">
 				<InformationIcon :size="20" />
 				<div>
-					<strong>LLPhant compatibility:</strong>
-					<ul>
-						<li>✓ Native: TXT, MD, HTML, JSON, XML, CSV</li>
-						<li>○ Library: PDF, DOCX, DOC, XLSX, XLS (requires PhpOffice, PdfParser)</li>
-						<li>⚠️ Limited: PPTX, ODT, RTF (consider using Dolphin)</li>
-						<li>✗ No support: Image files (JPG, PNG, GIF, WebP) - Use Dolphin for OCR</li>
-					</ul>
+					<strong>LLPhant Extraction:</strong> Supports most document formats including PDF, DOCX, XLSX, TXT, MD, HTML, JSON, XML, and CSV.
+					<br><strong>Note:</strong> Image files (JPG, PNG, GIF, WebP) require Dolphin AI for OCR text extraction.
 				</div>
 			</div>
 			<div v-else-if="fileSettings.textExtractor.id === 'dolphin'" class="compatibility-note success-note">
 				<CheckIcon :size="20" />
 				<div>
-					<strong>Dolphin AI:</strong> All file types fully supported with advanced parsing for tables, formulas, and complex layouts.
+					<strong>Dolphin AI:</strong> Supports all file types with advanced parsing for tables, formulas, and complex layouts.
 					<strong>Includes OCR for scanned documents and images</strong> (JPG, PNG, GIF, WebP).
 				</div>
 			</div>
@@ -313,24 +314,14 @@
 						<span class="file-type-label">
 							{{ fileType.icon }} {{ fileType.label }}
 							<span class="file-type-extension">(.{{ fileType.extension }})</span>
-							<span v-if="fileType.llphantSupport === 'none' && fileSettings.textExtractor.id === 'llphant'"
-								class="support-indicator error"
-								title="No LLPhant support - requires Dolphin with OCR">
-								✗ Dolphin only
-							</span>
-							<span v-else-if="fileType.llphantSupport === 'limited' && fileSettings.textExtractor.id === 'llphant'"
-								class="support-indicator warning"
-								title="Limited support with LLPhant - consider using Dolphin">
-								⚠️
-							</span>
-							<span v-else-if="fileType.llphantSupport === 'native' && fileSettings.textExtractor.id === 'llphant'"
-								class="support-indicator success"
-								title="Native PHP support - works great!">
-								✓
+							<span v-if="fileType.llphantSupport === 'none'"
+								class="support-indicator dolphin-required"
+								title="Requires Dolphin AI for OCR text extraction">
+								(Dolphin required)
 							</span>
 							<span v-else-if="fileType.dolphinOcr && fileSettings.textExtractor.id === 'dolphin'"
 								class="support-indicator ocr"
-								title="Dolphin OCR enabled for scanned documents">
+								title="Dolphin OCR enabled">
 								📷 OCR
 							</span>
 						</span>
@@ -470,32 +461,32 @@ export default {
 				dolphinApiKey: '',
 			},
 			fileTypes: [
-				// Native PHP support (LLPhant friendly)
-				{ extension: 'txt', label: 'Text Files', icon: '📝', enabled: true, llphantSupport: 'native', dolphinOcr: false },
-				{ extension: 'md', label: 'Markdown', icon: '📋', enabled: true, llphantSupport: 'native', dolphinOcr: false },
-				{ extension: 'html', label: 'HTML Files', icon: '🌐', enabled: true, llphantSupport: 'native', dolphinOcr: false },
-				{ extension: 'json', label: 'JSON Files', icon: '📦', enabled: true, llphantSupport: 'native', dolphinOcr: false },
-				{ extension: 'xml', label: 'XML Files', icon: '📰', enabled: true, llphantSupport: 'native', dolphinOcr: false },
-				{ extension: 'csv', label: 'CSV Files', icon: '📊', enabled: true, llphantSupport: 'native', dolphinOcr: false },
+				// Text formats (LLPhant supported)
+				{ extension: 'txt', label: 'Text Files', icon: '📝', enabled: true, llphantSupport: 'yes', dolphinOcr: false },
+				{ extension: 'md', label: 'Markdown', icon: '📋', enabled: true, llphantSupport: 'yes', dolphinOcr: false },
+				{ extension: 'html', label: 'HTML Files', icon: '🌐', enabled: true, llphantSupport: 'yes', dolphinOcr: false },
+				{ extension: 'json', label: 'JSON Files', icon: '📦', enabled: true, llphantSupport: 'yes', dolphinOcr: false },
+				{ extension: 'xml', label: 'XML Files', icon: '📰', enabled: true, llphantSupport: 'yes', dolphinOcr: false },
+				{ extension: 'csv', label: 'CSV Files', icon: '📊', enabled: true, llphantSupport: 'yes', dolphinOcr: false },
 
-				// Requires PHP libraries (LLPhant with dependencies)
-				{ extension: 'pdf', label: 'PDF Documents', icon: '📄', enabled: true, llphantSupport: 'library', dolphinOcr: true },
-				{ extension: 'docx', label: 'Word Documents', icon: '📘', enabled: true, llphantSupport: 'library', dolphinOcr: false },
-				{ extension: 'doc', label: 'Word (Legacy)', icon: '📘', enabled: true, llphantSupport: 'library', dolphinOcr: false },
-				{ extension: 'xlsx', label: 'Excel Spreadsheets', icon: '📊', enabled: true, llphantSupport: 'library', dolphinOcr: false },
-				{ extension: 'xls', label: 'Excel (Legacy)', icon: '📊', enabled: true, llphantSupport: 'library', dolphinOcr: false },
+				// Document formats (LLPhant supported)
+				{ extension: 'pdf', label: 'PDF Documents', icon: '📄', enabled: true, llphantSupport: 'yes', dolphinOcr: true },
+				{ extension: 'docx', label: 'Word Documents', icon: '📘', enabled: true, llphantSupport: 'yes', dolphinOcr: false },
+				{ extension: 'doc', label: 'Word (Legacy)', icon: '📘', enabled: true, llphantSupport: 'yes', dolphinOcr: false },
+				{ extension: 'xlsx', label: 'Excel Spreadsheets', icon: '📊', enabled: true, llphantSupport: 'yes', dolphinOcr: false },
+				{ extension: 'xls', label: 'Excel (Legacy)', icon: '📊', enabled: true, llphantSupport: 'yes', dolphinOcr: false },
+				{ extension: 'pptx', label: 'PowerPoint', icon: '📽️', enabled: false, llphantSupport: 'yes', dolphinOcr: false },
 
-				// Image formats (Dolphin OCR)
+				// Image formats (Dolphin required for OCR)
 				{ extension: 'jpg', label: 'JPEG Images', icon: '🖼️', enabled: false, llphantSupport: 'none', dolphinOcr: true },
 				{ extension: 'jpeg', label: 'JPEG Images', icon: '🖼️', enabled: false, llphantSupport: 'none', dolphinOcr: true },
 				{ extension: 'png', label: 'PNG Images', icon: '🖼️', enabled: false, llphantSupport: 'none', dolphinOcr: true },
 				{ extension: 'gif', label: 'GIF Images', icon: '🖼️', enabled: false, llphantSupport: 'none', dolphinOcr: true },
 				{ extension: 'webp', label: 'WebP Images', icon: '🖼️', enabled: false, llphantSupport: 'none', dolphinOcr: true },
 
-				// Limited support (better with Dolphin)
-				{ extension: 'pptx', label: 'PowerPoint', icon: '📽️', enabled: false, llphantSupport: 'limited', dolphinOcr: false },
-				{ extension: 'odt', label: 'OpenDocument Text', icon: '📄', enabled: false, llphantSupport: 'limited', dolphinOcr: false },
-				{ extension: 'rtf', label: 'Rich Text Format', icon: '📝', enabled: false, llphantSupport: 'limited', dolphinOcr: false },
+				// Other formats
+				{ extension: 'odt', label: 'OpenDocument Text', icon: '📄', enabled: false, llphantSupport: 'yes', dolphinOcr: false },
+				{ extension: 'rtf', label: 'Rich Text Format', icon: '📝', enabled: false, llphantSupport: 'yes', dolphinOcr: false },
 			],
 			textExtractors: [
 				{
@@ -833,6 +824,15 @@ export default {
 <style scoped>
 /* SettingsSection handles all action button positioning and spacing */
 
+/* Fix for action menu icon wrapper to prevent layout shifts when showing loading icons */
+.action-icon-wrapper {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 20px;
+	height: 20px;
+}
+
 .section-description-full {
 	background: var(--color-background-hover);
 	border: 1px solid var(--color-border);
@@ -958,27 +958,17 @@ export default {
 
 .support-indicator {
 	margin-left: 8px;
-	font-size: 14px;
+	font-size: 11px;
 	cursor: help;
 }
 
-.support-indicator.success {
-	color: var(--color-success);
-}
-
-.support-indicator.warning {
-	color: var(--color-warning);
-}
-
-.support-indicator.error {
-	color: var(--color-error);
-	font-size: 11px;
-	font-weight: 600;
+.support-indicator.dolphin-required {
+	color: var(--color-text-maxcontrast);
+	font-style: italic;
 }
 
 .support-indicator.ocr {
 	color: var(--color-primary);
-	font-size: 11px;
 	font-weight: 600;
 	background: var(--color-primary-element-light);
 	padding: 2px 6px;

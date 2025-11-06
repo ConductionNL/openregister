@@ -213,8 +213,11 @@ Text extraction uses Nextcloud's background job system for reliable, async proce
 2. **Job Queuing** - 'FileChangeListener' automatically queues 'FileTextExtractionJob'
 3. **Job Execution** - Background job system processes the file when resources are available
 4. **Text Extraction** - Selected extractor (LLPhant or Dolphin) processes the file
-5. **Storage** - Extracted text stored in 'FileText' entity for searching
-6. **Completion** - Status updated to 'completed' or 'failed'
+5. **Chunking** - Text is automatically split into chunks with overlap (1000 chars per chunk, 200 char overlap)
+6. **Storage** - Extracted text and chunks stored in 'FileText' entity for reuse
+7. **Completion** - Status updated to 'completed' or 'failed'
+
+**Note**: Text extraction is now **fully independent of SOLR**. Chunks are generated during extraction and stored in the database, making them reusable for SOLR indexing, vector embeddings, AI processing, or any other service that needs chunked text.
 
 **File Type Compatibility Matrix**:
 
@@ -367,11 +370,15 @@ Extracted text and metadata are stored in 'oc_openregister_file_texts' with:
 - 'file_id' - Links to Nextcloud's 'oc_filecache' table
 - 'extraction_status' - pending, processing, completed, failed
 - 'extractedAt' - Timestamp of last extraction
-- 'text_content' - Extracted text
+- 'text_content' - Full extracted text
 - 'text_length' - Character count
+- 'chunked' - Whether text has been chunked
 - 'chunk_count' - Number of chunks created
+- 'chunks_json' - JSON array of text chunks with offsets (new in v0.2.7)
 - 'extraction_method' - LLPhant or Dolphin
 - Plus SOLR indexing and vectorization tracking
+
+**Chunking Details**: Each chunk in 'chunks_json' contains the chunk text, start offset, and end offset. This allows for precise text retrieval and consistent chunking across all services.
 
 ## Working with Files
 
@@ -920,10 +927,12 @@ sequenceDiagram
         Dolphin-->>Service: Extracted text + metadata
     end
     
-    Service->>DB: Store FileText entity
     Service->>Service: Chunk document
-    Service->>Solr: Index chunks
-    Solr-->>Service: Indexed
+    Service->>DB: Store FileText entity with chunks
+    DB-->>Service: Stored
+    
+    Note over Service: Chunks stored in DB for reuse
+    Note over Service: SOLR indexing is separate
     
     Service->>DB: Update status=completed
     DB-->>Service: Success
@@ -1037,42 +1046,54 @@ graph LR
 
 ### File Chunking for Solr
 
+**Note**: As of v0.2.7, chunking happens during text extraction, not during SOLR indexing. Chunks are stored in the database and reused.
+
 ```mermaid
 graph TD
-    A[Extracted Text] --> B[Chunk Document]
+    A[Text Extraction] --> B[Chunk Document]
     B --> C{Chunking Strategy}
     
-    C -->|Fixed Size| D[1000 chars per chunk]
-    C -->|Overlap| E[100 char overlap]
+    C -->|Recursive Character| D[Smart splitting by paragraphs/sentences]
+    C -->|Fixed Size| E[1000 chars per chunk + 200 overlap]
     
     D --> F[Create Chunks]
     E --> F
     
-    F --> G[Chunk 1: 0-1000]
-    F --> H[Chunk 2: 900-1900]
-    F --> I[Chunk 3: 1800-2800]
-    F --> J[...]
+    F --> G[Store in Database]
+    G --> H[chunks_json column]
     
-    G --> K[Solr Document]
-    H --> K
-    I --> K
-    J --> K
+    H --> I[Chunk 1: 0-1000]
+    H --> J[Chunk 2: 900-1900]
+    H --> K[Chunk 3: 1800-2800]
+    H --> L[...]
     
-    K --> L[Index Fields]
-    L --> M[file_id]
-    L --> N[chunk_index]
-    L --> O[chunk_text]
-    L --> P[chunk_start_offset]
-    L --> Q[chunk_end_offset]
+    subgraph SOLR_Indexing[SOLR Indexing - Reads Pre-Chunked Data]
+        M[Read chunks_json from DB]
+        M --> N[Parse JSON chunks]
+        N --> O[Solr Documents]
+    end
     
-    M --> R[(Solr Index)]
-    N --> R
-    O --> R
-    P --> R
-    Q --> R
+    I --> M
+    J --> M
+    K --> M
+    L --> M
     
-    style F fill:#e1f5ff
-    style R fill:#e1ffe1
+    O --> P[Index Fields]
+    P --> Q[file_id]
+    P --> R[chunk_index]
+    P --> S[chunk_text]
+    P --> T[chunk_start_offset]
+    P --> U[chunk_end_offset]
+    
+    Q --> V[(Solr Index)]
+    R --> V
+    S --> V
+    T --> V
+    U --> V
+    
+    style G fill:#e1f5ff
+    style H fill:#ffe1e1
+    style V fill:#e1ffe1
 ```
 
 ### Performance Characteristics
@@ -1102,10 +1123,12 @@ Dolphin AI:
 
 **Chunking and Indexing:**
 ```
-Text chunking:     <100ms  for 100KB text
-Solr indexing:     ~50-200ms per document (10 chunks)
-Batch indexing:    ~500ms for 100 chunks
+Text chunking:     <100ms  for 100KB text (now part of extraction)
+Solr indexing:     ~50-200ms per document (reads pre-chunked data)
+Batch indexing:    ~500ms for 100 chunks (faster with pre-chunked data)
 ```
+
+**Note**: Since v0.2.7, chunking is performed once during text extraction and stored in the database. This makes SOLR indexing faster and allows chunks to be reused for vector embeddings, AI processing, or any other service that needs chunked text.
 
 ### Code Examples
 

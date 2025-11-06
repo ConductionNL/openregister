@@ -40,57 +40,17 @@
 				</div>
 			</div>
 
-			<!-- Chunk to Vector Configuration -->
-			<div v-if="config.vectorizationEnabled" class="config-section">
-				<h3>{{ t('openregister', '📄 Chunk Processing') }}</h3>
-				<p class="section-description">
-					{{ t('openregister', 'Configure how text chunks are processed before converting them into vector embeddings. These settings affect the granularity and context preservation of your semantic search.') }}
-				</p>
-
-				<div class="form-group">
-					<label>{{ t('openregister', 'Chunking Strategy') }}</label>
-					<NcSelect
-						v-model="config.chunkingStrategy"
-						:options="chunkingStrategyOptions"
-						label="name"
-						:placeholder="t('openregister', 'Select strategy')"
-						:label-outside="true">
-						<template #option="{ name, description }">
-							<div class="option-with-desc">
-								<strong>{{ name }}</strong>
-								<small>{{ description }}</small>
-							</div>
-						</template>
-					</NcSelect>
-					<small>{{ t('openregister', 'How to split extracted text into smaller portions for vectorization') }}</small>
-				</div>
-
-				<div class="form-group">
-					<label for="chunk-size">{{ t('openregister', 'Chunk Size (characters)') }}</label>
-					<input
-						id="chunk-size"
-						v-model.number="config.chunkSize"
-						type="number"
-						min="100"
-						max="4000"
-						step="100"
-						class="input-field">
-					<small>{{ t('openregister', 'Number of characters per chunk. Smaller chunks = more precise but more vectors. Recommended: 1000-2000 characters.') }}</small>
-				</div>
-
-				<div class="form-group">
-					<label for="chunk-overlap">{{ t('openregister', 'Chunk Overlap (characters)') }}</label>
-					<input
-						id="chunk-overlap"
-						v-model.number="config.chunkOverlap"
-						type="number"
-						min="0"
-						:max="Math.floor(config.chunkSize / 2)"
-						step="10"
-						class="input-field">
-					<small>{{ t('openregister', 'Overlap between consecutive chunks to preserve context across boundaries. Recommended: 10-20% of chunk size (current max: {max})', { max: Math.floor(config.chunkSize / 2) }) }}</small>
+		<!-- Important Note -->
+		<div v-if="config.vectorizationEnabled" class="config-section">
+			<div class="info-box">
+				<InformationOutline :size="20" />
+				<div>
+					<h4>{{ t('openregister', 'Using Pre-Generated Chunks') }}</h4>
+					<p>{{ t('openregister', 'Text chunks are generated during file extraction and stored in the database. Vectorization reads these pre-chunked files and converts them to embeddings.') }}</p>
+					<p><strong>{{ t('openregister', 'To adjust chunk size or strategy, go to File Configuration → Processing Limits.') }}</strong></p>
 				</div>
 			</div>
+		</div>
 
 			<!-- Batch Processing -->
 			<div v-if="config.vectorizationEnabled" class="config-section">
@@ -119,45 +79,49 @@
 				</div>
 			</div>
 
-			<!-- Vectorization Statistics -->
-			<div class="config-section">
-				<h3>{{ t('openregister', '📊 Vectorization Statistics') }}</h3>
+		<!-- Vectorization Statistics -->
+		<div class="config-section">
+			<h3>{{ t('openregister', '📊 Vectorization Statistics') }}</h3>
 
-				<div class="stats-grid">
-					<div class="stat-card">
-						<div class="stat-value">
-							{{ stats.totalChunks }}
-						</div>
-						<div class="stat-label">
-							{{ t('openregister', 'Total Chunks') }}
-						</div>
+			<div class="stats-grid">
+				<div class="stat-card">
+					<div class="stat-value">
+						{{ stats.extractedFiles }}
 					</div>
-					<div class="stat-card highlight">
-						<div class="stat-value">
-							{{ vectorStats.fileVectors }}
-						</div>
-						<div class="stat-label">
-							{{ t('openregister', 'Vectorized Chunks') }}
-						</div>
+					<div class="stat-label">
+						{{ t('openregister', 'Extracted Files') }}
 					</div>
-					<div class="stat-card">
-						<div class="stat-value">
-							{{ stats.pendingFiles }}
-						</div>
-						<div class="stat-label">
-							{{ t('openregister', 'Pending Files') }}
-						</div>
+					<small class="stat-note">Files with text extracted and chunked</small>
+				</div>
+				<div class="stat-card">
+					<div class="stat-value">
+						{{ stats.totalChunks }}
 					</div>
-					<div class="stat-card">
-						<div class="stat-value">
-							{{ vectorStats.storageMB }}
-						</div>
-						<div class="stat-label">
-							{{ t('openregister', 'Storage (MB)') }}
-						</div>
+					<div class="stat-label">
+						{{ t('openregister', 'Total Chunks Available') }}
 					</div>
+					<small class="stat-note">Pre-generated from extraction</small>
+				</div>
+				<div class="stat-card highlight">
+					<div class="stat-value">
+						{{ vectorStats.fileVectors }}
+					</div>
+					<div class="stat-label">
+						{{ t('openregister', 'Vectorized Chunks') }}
+					</div>
+					<small class="stat-note">Chunks converted to embeddings</small>
+				</div>
+				<div class="stat-card">
+					<div class="stat-value">
+						{{ vectorStats.storageMB }}
+					</div>
+					<div class="stat-label">
+						{{ t('openregister', 'Storage (MB)') }}
+					</div>
+					<small class="stat-note">Vector database size</small>
 				</div>
 			</div>
+		</div>
 
 			<!-- Embedding Provider Info -->
 			<div class="config-section">
@@ -268,51 +232,31 @@ export default {
 			saving: false,
 			processing: false,
 
-			config: {
-				vectorizationEnabled: true,
-				chunkingStrategy: { id: 'RECURSIVE_CHARACTER', name: 'Recursive Character' },
-				chunkSize: 1000,
-				chunkOverlap: 200,
-				batchSize: 25,
-				autoRetry: true,
-			},
+		config: {
+			vectorizationEnabled: true,
+			batchSize: 25,
+			autoRetry: true,
+		},
 
-			stats: {
-				totalFiles: 0,
-				vectorizedFiles: 0,
-				pendingFiles: 0,
-				totalChunks: 0,
-			},
+		stats: {
+			totalFiles: 0,
+			vectorizedFiles: 0,
+			pendingFiles: 0,
+			totalChunks: 0,
+			extractedFiles: 0,
+		},
 
-			vectorStats: {
-				totalVectors: 0,
-				objectVectors: 0,
-				fileVectors: 0,
-				storageMB: '0.0',
-				byModel: {},
-			},
+		vectorStats: {
+			totalVectors: 0,
+			objectVectors: 0,
+			fileVectors: 0,
+			storageMB: '0.0',
+			byModel: {},
+		},
 
-			embeddingProviderName: 'Not configured',
-			embeddingModelName: 'Not configured',
-			vectorDimensions: 'N/A',
-
-			chunkingStrategyOptions: [
-				{
-					id: 'FIXED_SIZE',
-					name: 'Fixed Size',
-					description: 'Simple character-based splitting (faster, less context-aware)',
-				},
-				{
-					id: 'RECURSIVE_CHARACTER',
-					name: 'Recursive Character',
-					description: 'Smart splitting that preserves paragraphs and sentences (recommended)',
-				},
-				{
-					id: 'SEMANTIC',
-					name: 'Semantic',
-					description: 'AI-powered splitting based on meaning (slower, best quality)',
-				},
-			],
+		embeddingProviderName: 'Not configured',
+		embeddingModelName: 'Not configured',
+		vectorDimensions: 'N/A',
 		}
 	},
 
@@ -333,29 +277,32 @@ export default {
 			}
 		},
 
-		async loadStats() {
-			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/objects/vectorize/stats'))
-				const data = response.data
+	async loadStats() {
+		try {
+			// Load vectorization stats
+			const vectorResponse = await axios.get(generateUrl('/apps/openregister/api/objects/vectorize/stats'))
+			const vectorData = vectorResponse.data
 
-				// Update file stats
-				if (data.files) {
-					this.stats.totalFiles = data.files.total_files || 0
-					this.stats.vectorizedFiles = data.files.vectorized_files || 0
-					this.stats.pendingFiles = data.files.pending_files || 0
-					this.stats.totalChunks = data.files.total_chunks || 0
-				}
+			// Load extraction stats (chunks from extraction)
+			const extractionResponse = await axios.get(generateUrl('/apps/openregister/api/files/stats'))
+			const extractionData = extractionResponse.data
 
-				// Update vector stats
-				this.vectorStats.totalVectors = data.total_vectors || 0
-				this.vectorStats.objectVectors = data.by_type?.object || 0
-				this.vectorStats.fileVectors = data.by_type?.file || 0
-				this.vectorStats.storageMB = data.storage?.total_mb?.toFixed(1) || '0.0'
-				this.vectorStats.byModel = data.by_model || {}
-			} catch (error) {
-				console.error('Failed to load stats:', error)
-			}
-		},
+			// Update file stats from extraction
+			this.stats.totalFiles = extractionData.totalFiles || 0
+			this.stats.extractedFiles = extractionData.completed || 0
+			this.stats.pendingFiles = extractionData.pending || 0
+			this.stats.totalChunks = extractionData.totalChunks || 0
+
+			// Update vector stats
+			this.vectorStats.totalVectors = vectorData.total_vectors || 0
+			this.vectorStats.objectVectors = vectorData.by_type?.object || 0
+			this.vectorStats.fileVectors = vectorData.by_type?.file_chunk || vectorData.by_type?.file || 0
+			this.vectorStats.storageMB = vectorData.storage?.total_mb?.toFixed(1) || '0.0'
+			this.vectorStats.byModel = vectorData.by_model || {}
+		} catch (error) {
+			console.error('Failed to load stats:', error)
+		}
+	},
 
 		async loadEmbeddingProviderInfo() {
 			try {
@@ -578,6 +525,15 @@ export default {
 	.stat-label {
 		font-size: 13px;
 		color: var(--color-text-maxcontrast);
+		margin-bottom: 4px;
+	}
+
+	.stat-note {
+		display: block;
+		font-size: 11px;
+		color: var(--color-text-lighter);
+		font-style: italic;
+		margin-top: 4px;
 	}
 
 	&.highlight {

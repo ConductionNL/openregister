@@ -21,8 +21,8 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Service\VectorEmbeddingService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
-use OCA\OpenRegister\Db\ViewMapper;
 use OCP\BackgroundJob\IJobList;
 use Psr\Log\LoggerInterface;
 
@@ -73,18 +73,18 @@ class ObjectVectorizationService
     private SettingsService $settingsService;
 
     /**
-     * Object entity mapper
+     * Object service for searching objects with view support
+     *
+     * @var ObjectService
+     */
+    private ObjectService $objectService;
+
+    /**
+     * Object entity mapper for single object operations
      *
      * @var ObjectEntityMapper
      */
     private ObjectEntityMapper $objectMapper;
-
-    /**
-     * View mapper
-     *
-     * @var ViewMapper
-     */
-    private ViewMapper $viewMapper;
 
     /**
      * Background job list
@@ -105,23 +105,23 @@ class ObjectVectorizationService
      *
      * @param VectorEmbeddingService $vectorService    Vector embedding service
      * @param SettingsService        $settingsService  Settings service
-     * @param ObjectEntityMapper     $objectMapper     Object entity mapper
-     * @param ViewMapper             $viewMapper       View mapper
+     * @param ObjectService          $objectService    Object service with view support
+     * @param ObjectEntityMapper     $objectMapper     Object entity mapper for single object ops
      * @param IJobList               $jobList          Background job list
      * @param LoggerInterface        $logger           Logger
      */
     public function __construct(
         VectorEmbeddingService $vectorService,
         SettingsService $settingsService,
+        ObjectService $objectService,
         ObjectEntityMapper $objectMapper,
-        ViewMapper $viewMapper,
         IJobList $jobList,
         LoggerInterface $logger
     ) {
         $this->vectorService = $vectorService;
         $this->settingsService = $settingsService;
+        $this->objectService = $objectService;
         $this->objectMapper = $objectMapper;
-        $this->viewMapper = $viewMapper;
         $this->jobList = $jobList;
         $this->logger = $logger;
     }//end __construct()
@@ -137,10 +137,10 @@ class ObjectVectorizationService
      *
      * @throws \Exception If vectorization cannot be started
      */
-    public function startBatchVectorization(?array $schemas = null, int $batchSize = 25): array
+    public function startBatchVectorization(?array $views = null, int $batchSize = 25): array
     {
         $this->logger->info('[ObjectVectorizationService] Starting batch vectorization', [
-            'schemas' => $schemas,
+            'views' => $views,
             'batchSize' => $batchSize,
         ]);
 
@@ -153,12 +153,11 @@ class ObjectVectorizationService
                 throw new \Exception('Object vectorization is not enabled. Please enable it in settings first.');
             }
 
-            // Determine which schemas to vectorize from views
-            $targetViews = $schemas ?? ($config['vectorizeAllViews'] ? null : $config['enabledViews'] ?? []);
-            $targetSchemas = $this->resolveViewsToSchemas($targetViews);
+            // Determine which views to vectorize (from parameter or config)
+            $targetViews = $views ?? ($config['vectorizeAllViews'] ? null : $config['enabledViews'] ?? []);
 
             // Get count of objects to vectorize
-            $totalObjects = $this->getObjectCount($targetSchemas);
+            $totalObjects = $this->getObjectCount($targetViews);
 
             if ($totalObjects === 0) {
                 return [
@@ -172,12 +171,12 @@ class ObjectVectorizationService
             }
 
             // Fetch objects to vectorize
-            $objects = $this->fetchObjectsToVectorize($targetSchemas, $batchSize);
+            $objects = $this->fetchObjectsToVectorize($targetViews, $batchSize);
 
             $this->logger->info('[ObjectVectorizationService] Starting synchronous batch vectorization', [
                 'totalObjects' => $totalObjects,
                 'batchSize' => count($objects),
-                'schemas' => $targetSchemas,
+                'views' => $targetViews,
             ]);
 
             // Vectorize objects synchronously
@@ -223,7 +222,7 @@ class ObjectVectorizationService
                 'vectorized' => $vectorized,
                 'failed' => $failed,
                 'batch_size' => $batchSize,
-                'schemas' => $targetSchemas,
+                'views' => $targetViews,
                 'errors' => $errors,
                 'started' => true,
             ];
@@ -239,75 +238,47 @@ class ObjectVectorizationService
 
 
     /**
-     * Fetch objects to vectorize
+     * Fetch objects to vectorize using ObjectService with native view support
      *
-     * @param array|null $schemas Schema IDs to fetch, null for all
-     * @param int        $limit   Maximum number of objects to fetch
+     * Uses ObjectService->searchObjects() which handles view-to-query conversion internally.
+     * Views are applied as filters, making this consistent with all other object operations.
+     *
+     * @param array|null $views View IDs to fetch, null for all
+     * @param int        $limit Maximum number of objects to fetch
      *
      * @return array Array of ObjectEntity instances
      */
-    private function fetchObjectsToVectorize(?array $schemas, int $limit): array
+    private function fetchObjectsToVectorize(?array $views, int $limit): array
     {
         try {
             $this->logger->debug('[ObjectVectorizationService] Fetching objects to vectorize', [
-                'schemas' => $schemas,
+                'views' => $views,
                 'limit' => $limit,
             ]);
 
-            // Fetch all objects if no schema filter
-            if ($schemas === null || empty($schemas)) {
-                $objects = $this->objectMapper->findAll(
-                    limit: $limit,
-                    filters: [],
-                    includeDeleted: false
-                );
-                
-                $this->logger->info('[ObjectVectorizationService] Fetched all objects', [
-                    'count' => count($objects),
-                ]);
-                
-                return $objects;
-            }
+            // Build query with limit
+            $query = [
+                '_limit' => $limit,
+                '_source' => 'database',  // Always use database for vectorization
+            ];
 
-            // Fetch objects for specific schemas
-            $allObjects = [];
-            $remainingLimit = $limit;
-            
-            foreach ($schemas as $schemaId) {
-                if ($remainingLimit <= 0) {
-                    break;
-                }
-                
-                try {
-                    // Fetch objects for this schema using filters
-                    // Note: filters expect simple values (int, string), not entities
-                    $objects = $this->objectMapper->findAll(
-                        limit: $remainingLimit,
-                        filters: ['schema' => $schemaId],
-                        includeDeleted: false
-                    );
-                    
-                    $allObjects = array_merge($allObjects, $objects);
-                    $remainingLimit -= count($objects);
-                    
-                    $this->logger->debug('[ObjectVectorizationService] Fetched objects for schema', [
-                        'schema_id' => $schemaId,
-                        'count' => count($objects),
-                    ]);
-                } catch (\Exception $e) {
-                    $this->logger->warning('[ObjectVectorizationService] Failed to fetch objects for schema', [
-                        'schema_id' => $schemaId,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-            }
+            // Use ObjectService with native view support
+            // This applies view filters automatically via applyViewsToQuery()
+            $objects = $this->objectService->searchObjects(
+                query: $query,
+                rbac: false,    // No RBAC for background vectorization
+                multi: false,   // No multi-tenancy filtering
+                ids: null,
+                uses: null,
+                views: $views   // ✅ Views applied as filters!
+            );
 
-            $this->logger->info('[ObjectVectorizationService] Fetched objects', [
-                'count' => count($allObjects),
-                'schemas' => $schemas,
+            $this->logger->info('[ObjectVectorizationService] Fetched objects using ObjectService', [
+                'count' => count($objects),
+                'views' => $views,
             ]);
 
-            return $allObjects;
+            return $objects;
 
         } catch (\Exception $e) {
             $this->logger->error('[ObjectVectorizationService] Failed to fetch objects', [
@@ -321,58 +292,41 @@ class ObjectVectorizationService
 
 
     /**
-     * Get count of objects for vectorization
+     * Get count of objects for vectorization using ObjectService with native view support
      *
-     * @param array|null $schemas Schema IDs to count, null for all
+     * @param array|null $views View IDs to count, null for all
      *
      * @return int Object count
      */
-    private function getObjectCount(?array $schemas): int
+    private function getObjectCount(?array $views): int
     {
         try {
             $this->logger->debug('[ObjectVectorizationService] Counting objects', [
-                'schemas' => $schemas,
+                'views' => $views,
             ]);
 
-            // Count all objects if no schema filter
-            if ($schemas === null || empty($schemas)) {
-                $count = $this->objectMapper->countAll();
-                $this->logger->info('[ObjectVectorizationService] Counted all objects', [
-                    'count' => $count,
-                ]);
-                return $count;
-            }
+            // Build query for count
+            $query = [
+                '_count' => true,  // Request count instead of results
+                '_source' => 'database',
+            ];
 
-            // Count objects for specific schemas
-            $totalCount = 0;
-            foreach ($schemas as $schemaId) {
-                try {
-                    // Count objects for this schema using filters
-                    // Note: filters expect simple values (int, string), not entities
-                    $count = $this->objectMapper->countAll(
-                        filters: ['schema' => $schemaId]
-                    );
-                    
-                    $totalCount += $count;
-                    
-                    $this->logger->debug('[ObjectVectorizationService] Counted objects for schema', [
-                        'schema_id' => $schemaId,
-                        'count' => $count,
-                    ]);
-                } catch (\Exception $e) {
-                    $this->logger->warning('[ObjectVectorizationService] Failed to count objects for schema', [
-                        'schema_id' => $schemaId,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-            }
+            // Use ObjectService with native view support
+            $count = $this->objectService->searchObjects(
+                query: $query,
+                rbac: false,
+                multi: false,
+                ids: null,
+                uses: null,
+                views: $views  // ✅ Views applied as filters!
+            );
 
-            $this->logger->info('[ObjectVectorizationService] Object count retrieved', [
-                'count' => $totalCount,
-                'schemas' => $schemas,
+            $this->logger->info('[ObjectVectorizationService] Object count retrieved using ObjectService', [
+                'count' => $count,
+                'views' => $views,
             ]);
 
-            return $totalCount;
+            return $count;
 
         } catch (\Exception $e) {
             $this->logger->error('[ObjectVectorizationService] Failed to count objects', [
@@ -383,83 +337,6 @@ class ObjectVectorizationService
         }//end try
 
     }//end getObjectCount()
-
-
-    /**
-     * Resolve view IDs to schema IDs
-     *
-     * Extracts schema IDs from view configurations. Views can contain
-     * multiple schemas in their query configuration.
-     *
-     * @param array|null $viewIds Array of view IDs, or null for all
-     *
-     * @return array|null Array of schema IDs, or null for all schemas
-     */
-    private function resolveViewsToSchemas(?array $viewIds): ?array
-    {
-        try {
-            // If null, vectorize all objects (no view filter)
-            if ($viewIds === null) {
-                $this->logger->info('[ObjectVectorizationService] Vectorizing all views (no filter)');
-                return null;
-            }
-
-            if (empty($viewIds)) {
-                $this->logger->info('[ObjectVectorizationService] No views enabled for vectorization');
-                return [];
-            }
-
-            $this->logger->debug('[ObjectVectorizationService] Resolving views to schemas', [
-                'views' => $viewIds,
-            ]);
-
-            $allSchemas = [];
-            
-            foreach ($viewIds as $viewId) {
-                try {
-                    // Get View entity
-                    $view = $this->viewMapper->find($viewId);
-                    
-                    // Extract schemas from view query
-                    $query = $view->getQuery() ?? [];
-                    $schemas = $query['schemas'] ?? [];
-                    
-                    if (!empty($schemas)) {
-                        $allSchemas = array_merge($allSchemas, $schemas);
-                        
-                        $this->logger->debug('[ObjectVectorizationService] Extracted schemas from view', [
-                            'view_id' => $viewId,
-                            'view_name' => $view->getName(),
-                            'schemas' => $schemas,
-                        ]);
-                    }
-                } catch (\Exception $e) {
-                    $this->logger->warning('[ObjectVectorizationService] Failed to resolve view', [
-                        'view_id' => $viewId,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-            }
-
-            // Return unique schema IDs
-            $uniqueSchemas = array_values(array_unique($allSchemas));
-            
-            $this->logger->info('[ObjectVectorizationService] Resolved views to schemas', [
-                'views' => $viewIds,
-                'schemas' => $uniqueSchemas,
-            ]);
-
-            return $uniqueSchemas;
-
-        } catch (\Exception $e) {
-            $this->logger->error('[ObjectVectorizationService] Failed to resolve views', [
-                'error' => $e->getMessage(),
-            ]);
-            
-            return [];
-        }//end try
-
-    }//end resolveViewsToSchemas()
 
 
     /**
@@ -499,8 +376,21 @@ class ObjectVectorizationService
             // Serialize object for vectorization
             $text = $this->serializeObject($objectData, $config);
 
+            // Always use LLM embedding provider (configured in LLM settings)
+            // Object vectorization doesn't have its own provider - it uses the global LLM config
+            $llmSettings = $this->settingsService->getLLMSettingsOnly();
+            $provider = $llmSettings['embeddingProvider'] ?? null;
+            
+            if ($provider === null) {
+                throw new \Exception('No embedding provider configured. Please configure LLM settings first.');
+            }
+            
+            $this->logger->debug('[ObjectVectorizationService] Using LLM embedding provider', [
+                'provider' => $provider,
+            ]);
+
             // Generate embedding (returns array with 'embedding', 'model', 'dimensions')
-            $embeddingResult = $this->vectorService->generateEmbedding($text, $config['provider'] ?? null);
+            $embeddingResult = $this->vectorService->generateEmbedding($text, $provider);
 
             // Store vector in database
             $vectorId = $this->vectorService->storeVector(

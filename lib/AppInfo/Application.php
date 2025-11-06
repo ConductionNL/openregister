@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\AppInfo;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\FileTextMapper;
@@ -360,6 +361,7 @@ class Application extends App implements IBootstrap
                     $container->get(DepublishObject::class),
                     $container->get(RegisterMapper::class),
                     $container->get(SchemaMapper::class),
+                    $container->get(ViewMapper::class),
                     $container->get(ObjectEntityMapper::class),
                     $container->get(FileService::class),
                     $container->get('OCP\IUserSession'),

@@ -25,15 +25,20 @@ use Exception;
 use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\FileText;
 use OCA\OpenRegister\Db\FileTextMapper;
-use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
 use Psr\Log\LoggerInterface;
+
+// Document parsing libraries
+use Smalot\PdfParser\Parser as PdfParser;
+use PhpOffice\PhpWord\IOFactory as WordIOFactory;
+use PhpOffice\PhpSpreadsheet\IOFactory as SpreadsheetIOFactory;
 
 /**
  * TextExtractionService
  *
  * Handles text extraction from files with intelligent re-extraction detection.
+ * Includes chunking logic for better document processing.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service
@@ -43,6 +48,24 @@ use Psr\Log\LoggerInterface;
  */
 class TextExtractionService
 {
+    /** @var int Default chunk size in characters */
+    private const DEFAULT_CHUNK_SIZE = 1000;
+    
+    /** @var int Default overlap size in characters */
+    private const DEFAULT_CHUNK_OVERLAP = 200;
+    
+    /** @var int Maximum chunks per file (safety limit) */
+    private const MAX_CHUNKS_PER_FILE = 1000;
+    
+    /** @var int Minimum chunk size in characters */
+    private const MIN_CHUNK_SIZE = 100;
+    
+    /** @var string Recursive character splitting strategy */
+    private const RECURSIVE_CHARACTER = 'RECURSIVE_CHARACTER';
+    
+    /** @var string Fixed size splitting strategy */
+    private const FIXED_SIZE = 'FIXED_SIZE';
+
     /**
      * Constructor
      *
@@ -50,14 +73,12 @@ class TextExtractionService
      * @param FileTextMapper     $fileTextMapper   Mapper for extracted text records
      * @param IRootFolder        $rootFolder       Nextcloud root folder
      * @param LoggerInterface    $logger           Logger
-     * @param GuzzleSolrService  $solrService      SOLR service for indexing
      */
     public function __construct(
         private readonly FileMapper $fileMapper,
         private readonly FileTextMapper $fileTextMapper,
         private readonly IRootFolder $rootFolder,
-        private readonly LoggerInterface $logger,
-        private readonly GuzzleSolrService $solrService
+        private readonly LoggerInterface $logger
     ) {
     }
 
@@ -128,42 +149,36 @@ class TextExtractionService
             $extractedText = $this->performTextExtraction($fileId, $ncFile);
             
             if ($extractedText !== null) {
-                // Successfully extracted text
-                $fileText->setTextContent($extractedText);
-                $fileText->setTextLength(strlen($extractedText));
+                // Clean and sanitize extracted text
+                $cleanedText = $this->sanitizeText($extractedText);
+                
+                // Chunk the text for better processing and search
+                $chunks = $this->chunkDocument($cleanedText, [
+                    'chunk_size' => self::DEFAULT_CHUNK_SIZE,
+                    'chunk_overlap' => self::DEFAULT_CHUNK_OVERLAP,
+                    'strategy' => self::RECURSIVE_CHARACTER
+                ]);
+                
+                // Store chunks as JSON for later use (SOLR indexing, embeddings, etc.)
+                $chunksJson = json_encode($chunks);
+                
+                // Successfully extracted and chunked text
+                $fileText->setTextContent($cleanedText);
+                $fileText->setTextLength(strlen($cleanedText));
                 $fileText->setExtractionStatus('completed');
                 $fileText->setExtractedAt(new DateTime());
                 $fileText->setExtractionError(null);
-                $fileText->setExtractionMethod('simple'); // Will be updated when using LLPhant/Dolphin
+                $fileText->setExtractionMethod('llphant'); // Using document parsing libraries
+                $fileText->setChunked(true);
+                $fileText->setChunkCount(count($chunks));
+                $fileText->setChunksJson($chunksJson); // Store chunks for later use
                 $fileText = $this->fileTextMapper->update($fileText);
                 
-                $this->logger->info('[TextExtractionService] Text extraction completed', [
+                $this->logger->info('[TextExtractionService] Text extraction and chunking completed', [
                     'fileId' => $fileId,
-                    'textLength' => strlen($extractedText)
+                    'textLength' => strlen($cleanedText),
+                    'chunkCount' => count($chunks)
                 ]);
-                
-                // Automatically index in SOLR to create chunks
-                try {
-                    $indexResult = $this->solrService->indexFiles([$fileId]);
-                    
-                    if ($indexResult['indexed'] > 0) {
-                        $this->logger->info('[TextExtractionService] File indexed in SOLR', [
-                            'fileId' => $fileId,
-                            'indexed' => $indexResult['indexed']
-                        ]);
-                    } else {
-                        $this->logger->warning('[TextExtractionService] Failed to index file in SOLR', [
-                            'fileId' => $fileId,
-                            'errors' => $indexResult['errors'] ?? []
-                        ]);
-                    }
-                } catch (Exception $indexError) {
-                    // Log but don't fail the extraction if SOLR indexing fails
-                    $this->logger->error('[TextExtractionService] SOLR indexing error', [
-                        'fileId' => $fileId,
-                        'error' => $indexError->getMessage()
-                    ]);
-                }
             } else {
                 // Extraction returned null (unsupported file type or empty)
                 $fileText->setExtractionStatus('failed');
@@ -259,9 +274,17 @@ class TextExtractionService
                     'fileId' => $fileId,
                     'length' => strlen($extractedText)
                 ]);
+            } elseif ($mimeType === 'application/pdf') {
+                // Extract text from PDF using Smalot PdfParser
+                $extractedText = $this->extractPdf($file);
+            } elseif (in_array($mimeType, ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword'])) {
+                // Extract text from DOCX/DOC using PhpWord
+                $extractedText = $this->extractWord($file);
+            } elseif (in_array($mimeType, ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'])) {
+                // Extract text from XLSX/XLS using PhpSpreadsheet
+                $extractedText = $this->extractSpreadsheet($file);
             } else {
-                // Unsupported file type for now
-                // TODO: Implement PDF, DOCX, etc. extraction via LLPhant/Dolphin
+                // Unsupported file type
                 $this->logger->info('[TextExtractionService] Unsupported file type', [
                     'fileId' => $fileId,
                     'mimeType' => $mimeType
@@ -532,6 +555,562 @@ class TextExtractionService
     public function getStats(): array
     {
         return $this->fileTextMapper->getStats();
+    }
+
+    /**
+     * Sanitize extracted text for safe database storage
+     *
+     * Removes or replaces problematic characters that can cause database issues:
+     * - NULL bytes
+     * - Invalid UTF-8 sequences
+     * - Control characters
+     * - Non-printable characters
+     *
+     * @param string $text Raw extracted text
+     *
+     * @return string Cleaned text safe for database storage
+     */
+    private function sanitizeText(string $text): string
+    {
+        // Remove NULL bytes
+        $text = str_replace("\0", '', $text);
+        
+        // Convert to UTF-8 if it isn't already
+        if (!mb_check_encoding($text, 'UTF-8')) {
+            $text = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
+        }
+        
+        // Remove invalid UTF-8 sequences
+        $text = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
+        
+        // Replace problematic characters that MySQL/MariaDB can't handle
+        // These include characters outside the Basic Multilingual Plane (BMP)
+        $text = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $text);
+        
+        // Replace 4-byte UTF-8 characters (emoji, etc.) with a space if using utf8mb3
+        // This prevents "Incorrect string value" errors
+        $text = preg_replace('/[\x{10000}-\x{10FFFF}]/u', ' ', $text);
+        
+        // Normalize whitespace
+        $text = preg_replace('/\s+/u', ' ', $text);
+        
+        // Trim
+        return trim($text);
+    }
+
+    /**
+     * Extract text from PDF file using Smalot PdfParser
+     *
+     * @param \OCP\Files\File $file Nextcloud file object
+     *
+     * @return string|null Extracted text content
+     *
+     * @throws Exception If PDF parsing fails
+     */
+    private function extractPdf(\OCP\Files\File $file): ?string
+    {
+        // Check if PdfParser library is available
+        if (!class_exists('Smalot\PdfParser\Parser')) {
+            $this->logger->warning('[TextExtractionService] PDF parser library not available', [
+                'fileId' => $file->getId()
+            ]);
+            throw new Exception("PDF parser library (smalot/pdfparser) is not installed. Run: composer require smalot/pdfparser");
+        }
+        
+        try {
+            $this->logger->debug('[TextExtractionService] Extracting PDF', [
+                'fileId' => $file->getId(),
+                'name' => $file->getName()
+            ]);
+
+            // Get file content
+            $content = $file->getContent();
+            
+            // Create temporary file for PdfParser (it requires a file path)
+            $tempFile = tmpfile();
+            $tempPath = stream_get_meta_data($tempFile)['uri'];
+            fwrite($tempFile, $content);
+            
+            // Parse PDF
+            $parser = new PdfParser();
+            $pdf = $parser->parseFile($tempPath);
+            
+            // Extract text
+            $text = $pdf->getText();
+            
+            // Clean up
+            fclose($tempFile);
+            
+            if (empty($text)) {
+                $this->logger->warning('[TextExtractionService] PDF extraction returned empty text', [
+                    'fileId' => $file->getId()
+                ]);
+                return null;
+            }
+            
+            $this->logger->debug('[TextExtractionService] PDF extracted successfully', [
+                'fileId' => $file->getId(),
+                'length' => strlen($text)
+            ]);
+            
+            return $text;
+            
+        } catch (Exception $e) {
+            $this->logger->error('[TextExtractionService] PDF extraction failed', [
+                'fileId' => $file->getId(),
+                'error' => $e->getMessage()
+            ]);
+            throw new Exception("PDF extraction failed: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Extract text from Word document (DOCX/DOC) using PhpWord
+     *
+     * @param \OCP\Files\File $file Nextcloud file object
+     *
+     * @return string|null Extracted text content
+     *
+     * @throws Exception If Word parsing fails
+     */
+    private function extractWord(\OCP\Files\File $file): ?string
+    {
+        // Check if PhpWord library is available
+        if (!class_exists('PhpOffice\PhpWord\IOFactory')) {
+            $this->logger->warning('[TextExtractionService] PhpWord library not available', [
+                'fileId' => $file->getId()
+            ]);
+            throw new Exception("PhpWord library (phpoffice/phpword) is not installed. Run: composer require phpoffice/phpword");
+        }
+        
+        try {
+            $this->logger->debug('[TextExtractionService] Extracting Word document', [
+                'fileId' => $file->getId(),
+                'name' => $file->getName()
+            ]);
+
+            // Get file content
+            $content = $file->getContent();
+            
+            // Create temporary file for PhpWord
+            $tempFile = tmpfile();
+            $tempPath = stream_get_meta_data($tempFile)['uri'];
+            fwrite($tempFile, $content);
+            
+            // Load Word document
+            $phpWord = WordIOFactory::load($tempPath);
+            
+            // Extract text from all sections
+            $text = '';
+            foreach ($phpWord->getSections() as $section) {
+                foreach ($section->getElements() as $element) {
+                    if (method_exists($element, 'getText')) {
+                        $text .= $element->getText() . "\n";
+                    } elseif (method_exists($element, 'getElements')) {
+                        // Handle nested elements (tables, etc.)
+                        foreach ($element->getElements() as $childElement) {
+                            if (method_exists($childElement, 'getText')) {
+                                $text .= $childElement->getText() . " ";
+                            }
+                        }
+                        $text .= "\n";
+                    }
+                }
+            }
+            
+            // Clean up
+            fclose($tempFile);
+            
+            if (empty(trim($text))) {
+                $this->logger->warning('[TextExtractionService] Word extraction returned empty text', [
+                    'fileId' => $file->getId()
+                ]);
+                return null;
+            }
+            
+            $this->logger->debug('[TextExtractionService] Word document extracted successfully', [
+                'fileId' => $file->getId(),
+                'length' => strlen($text)
+            ]);
+            
+            return $text;
+            
+        } catch (Exception $e) {
+            $this->logger->error('[TextExtractionService] Word extraction failed', [
+                'fileId' => $file->getId(),
+                'error' => $e->getMessage()
+            ]);
+            throw new Exception("Word extraction failed: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Extract text from spreadsheet (XLSX/XLS) using PhpSpreadsheet
+     *
+     * @param \OCP\Files\File $file Nextcloud file object
+     *
+     * @return string|null Extracted text content
+     *
+     * @throws Exception If spreadsheet parsing fails
+     */
+    private function extractSpreadsheet(\OCP\Files\File $file): ?string
+    {
+        // PhpSpreadsheet should already be installed (in composer.json)
+        if (!class_exists('PhpOffice\PhpSpreadsheet\IOFactory')) {
+            $this->logger->warning('[TextExtractionService] PhpSpreadsheet library not available', [
+                'fileId' => $file->getId()
+            ]);
+            throw new Exception("PhpSpreadsheet library (phpoffice/phpspreadsheet) is not installed. Run: composer require phpoffice/phpspreadsheet");
+        }
+        
+        try {
+            $this->logger->debug('[TextExtractionService] Extracting spreadsheet', [
+                'fileId' => $file->getId(),
+                'name' => $file->getName()
+            ]);
+
+            // Get file content
+            $content = $file->getContent();
+            
+            // Create temporary file for PhpSpreadsheet
+            $tempFile = tmpfile();
+            $tempPath = stream_get_meta_data($tempFile)['uri'];
+            fwrite($tempFile, $content);
+            
+            // Load spreadsheet
+            $spreadsheet = SpreadsheetIOFactory::load($tempPath);
+            
+            // Extract text from all sheets
+            $text = '';
+            foreach ($spreadsheet->getAllSheets() as $sheet) {
+                $text .= "Sheet: " . $sheet->getTitle() . "\n";
+                
+                $highestRow = $sheet->getHighestRow();
+                $highestColumn = $sheet->getHighestColumn();
+                
+                // Iterate through rows and columns
+                for ($row = 1; $row <= $highestRow; $row++) {
+                    $rowData = [];
+                    for ($col = 'A'; $col !== $highestColumn; $col++) {
+                        $value = $sheet->getCell($col . $row)->getValue();
+                        if ($value !== null && $value !== '') {
+                            $rowData[] = $value;
+                        }
+                    }
+                    // Add last column
+                    $value = $sheet->getCell($highestColumn . $row)->getValue();
+                    if ($value !== null && $value !== '') {
+                        $rowData[] = $value;
+                    }
+                    
+                    if (!empty($rowData)) {
+                        $text .= implode("\t", $rowData) . "\n";
+                    }
+                }
+                
+                $text .= "\n";
+            }
+            
+            // Clean up
+            fclose($tempFile);
+            
+            if (empty(trim($text))) {
+                $this->logger->warning('[TextExtractionService] Spreadsheet extraction returned empty text', [
+                    'fileId' => $file->getId()
+                ]);
+                return null;
+            }
+            
+            $this->logger->debug('[TextExtractionService] Spreadsheet extracted successfully', [
+                'fileId' => $file->getId(),
+                'length' => strlen($text)
+            ]);
+            
+            return $text;
+            
+        } catch (Exception $e) {
+            $this->logger->error('[TextExtractionService] Spreadsheet extraction failed', [
+                'fileId' => $file->getId(),
+                'error' => $e->getMessage()
+            ]);
+            throw new Exception("Spreadsheet extraction failed: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Chunk a document into smaller pieces for processing
+     *
+     * This method splits text into manageable chunks with optional overlap.
+     * Supports multiple chunking strategies.
+     *
+     * @param string $text    The text to chunk
+     * @param array  $options Chunking options (chunk_size, chunk_overlap, strategy)
+     *
+     * @return array Array of text chunks
+     */
+    public function chunkDocument(string $text, array $options = []): array
+    {
+        $chunkSize = $options['chunk_size'] ?? self::DEFAULT_CHUNK_SIZE;
+        $chunkOverlap = $options['chunk_overlap'] ?? self::DEFAULT_CHUNK_OVERLAP;
+        $strategy = $options['strategy'] ?? self::RECURSIVE_CHARACTER;
+
+        $this->logger->debug('[TextExtractionService] Chunking document', [
+            'text_length' => strlen($text),
+            'chunk_size' => $chunkSize,
+            'chunk_overlap' => $chunkOverlap,
+            'strategy' => $strategy
+        ]);
+
+        $startTime = microtime(true);
+
+        // Clean the text first
+        $text = $this->cleanText($text);
+
+        // Choose chunking strategy
+        $chunks = match ($strategy) {
+            self::FIXED_SIZE => $this->chunkFixedSize($text, $chunkSize, $chunkOverlap),
+            self::RECURSIVE_CHARACTER => $this->chunkRecursive($text, $chunkSize, $chunkOverlap),
+            default => $this->chunkRecursive($text, $chunkSize, $chunkOverlap)
+        };
+
+        // Respect max chunks limit
+        if (count($chunks) > self::MAX_CHUNKS_PER_FILE) {
+            $this->logger->warning('[TextExtractionService] File exceeds max chunks, truncating', [
+                'chunks' => count($chunks),
+                'max' => self::MAX_CHUNKS_PER_FILE
+            ]);
+            $chunks = array_slice($chunks, 0, self::MAX_CHUNKS_PER_FILE);
+        }
+
+        $chunkingTime = round((microtime(true) - $startTime) * 1000, 2);
+
+        $this->logger->info('[TextExtractionService] Document chunked successfully', [
+            'chunk_count' => count($chunks),
+            'chunking_time_ms' => $chunkingTime,
+            'avg_chunk_size' => count($chunks) > 0 ? round(array_sum(array_map('strlen', array_column($chunks, 'text'))) / count($chunks)) : 0
+        ]);
+
+        return $chunks;
+    }
+
+    /**
+     * Clean text by removing excessive whitespace and normalizing
+     *
+     * @param string $text Text to clean
+     *
+     * @return string Cleaned text
+     */
+    private function cleanText(string $text): string
+    {
+        // Remove null bytes
+        $text = str_replace("\0", '', $text);
+        
+        // Normalize line endings
+        $text = str_replace(["\r\n", "\r"], "\n", $text);
+        
+        // Remove excessive whitespace but preserve paragraph breaks
+        $text = preg_replace('/[ \t]+/', ' ', $text);
+        $text = preg_replace('/\n{3,}/', "\n\n", $text);
+        
+        return trim($text);
+    }
+
+    /**
+     * Chunk text using fixed size with overlap
+     *
+     * @param string $text         Text to chunk
+     * @param int    $chunkSize    Target chunk size
+     * @param int    $chunkOverlap Overlap size
+     *
+     * @return array Array of chunk objects with text, start_offset, end_offset
+     */
+    private function chunkFixedSize(string $text, int $chunkSize, int $chunkOverlap): array
+    {
+        if (strlen($text) <= $chunkSize) {
+            return [[
+                'text' => $text,
+                'start_offset' => 0,
+                'end_offset' => strlen($text)
+            ]];
+        }
+
+        $chunks = [];
+        $offset = 0;
+
+        while ($offset < strlen($text)) {
+            // Extract chunk
+            $chunk = substr($text, $offset, $chunkSize);
+            
+            // Try to break at word boundary if not at end
+            if ($offset + $chunkSize < strlen($text)) {
+                $lastSpace = strrpos($chunk, ' ');
+                if ($lastSpace !== false && $lastSpace > $chunkSize * 0.8) {
+                    $chunk = substr($chunk, 0, $lastSpace);
+                }
+            }
+            
+            $chunkLength = strlen($chunk);
+            
+            if (strlen(trim($chunk)) >= self::MIN_CHUNK_SIZE) {
+                $chunks[] = [
+                    'text' => trim($chunk),
+                    'start_offset' => $offset,
+                    'end_offset' => $offset + $chunkLength
+                ];
+            }
+            
+            $offset += $chunkLength - $chunkOverlap;
+            
+            // Prevent infinite loop
+            if ($offset <= 0) {
+                $offset = $chunkLength;
+            }
+        }
+
+        return array_filter($chunks, fn($c) => !empty(trim($c['text'])));
+    }
+
+    /**
+     * Chunk text recursively by trying different separators
+     *
+     * This method tries to split by:
+     * 1. Double newlines (paragraphs)
+     * 2. Single newlines (lines)
+     * 3. Sentence endings (. ! ?)
+     * 4. Clauses (; ,)
+     * 5. Words (spaces)
+     *
+     * @param string $text         Text to chunk
+     * @param int    $chunkSize    Target chunk size
+     * @param int    $chunkOverlap Overlap size
+     *
+     * @return array Array of chunk objects with text, start_offset, end_offset
+     */
+    private function chunkRecursive(string $text, int $chunkSize, int $chunkOverlap): array
+    {
+        // If text is already small enough, return it
+        if (strlen($text) <= $chunkSize) {
+            return [[
+                'text' => $text,
+                'start_offset' => 0,
+                'end_offset' => strlen($text)
+            ]];
+        }
+
+        // Define separators in order of preference
+        $separators = [
+            "\n\n",  // Paragraphs
+            "\n",    // Lines
+            ". ",    // Sentences
+            "! ",
+            "? ",
+            "; ",
+            ", ",    // Clauses
+            " ",     // Words
+        ];
+
+        return $this->recursiveSplit($text, $separators, $chunkSize, $chunkOverlap);
+    }
+
+    /**
+     * Recursively split text using different separators
+     *
+     * @param string $text         Text to split
+     * @param array  $separators   Array of separators to try
+     * @param int    $chunkSize    Target chunk size
+     * @param int    $chunkOverlap Overlap size
+     *
+     * @return array Array of chunk objects with text, start_offset, end_offset
+     */
+    private function recursiveSplit(string $text, array $separators, int $chunkSize, int $chunkOverlap): array
+    {
+        // If text is small enough, return it
+        if (strlen($text) <= $chunkSize) {
+            return [[
+                'text' => $text,
+                'start_offset' => 0,
+                'end_offset' => strlen($text)
+            ]];
+        }
+
+        // If no separators left, use fixed size chunking
+        if (empty($separators)) {
+            return $this->chunkFixedSize($text, $chunkSize, $chunkOverlap);
+        }
+
+        // Try splitting with current separator
+        $separator = array_shift($separators);
+        $splits = explode($separator, $text);
+
+        // Rebuild chunks
+        $chunks = [];
+        $currentChunk = '';
+        $currentOffset = 0;
+
+        foreach ($splits as $split) {
+            $testChunk = $currentChunk === '' 
+                ? $split 
+                : $currentChunk . $separator . $split;
+
+            if (strlen($testChunk) <= $chunkSize) {
+                // Can add to current chunk
+                $currentChunk = $testChunk;
+            } else {
+                // Current chunk is full
+                if ($currentChunk !== '') {
+                    $chunkLength = strlen($currentChunk);
+                    
+                    if (strlen(trim($currentChunk)) >= self::MIN_CHUNK_SIZE) {
+                        $chunks[] = [
+                            'text' => trim($currentChunk),
+                            'start_offset' => $currentOffset,
+                            'end_offset' => $currentOffset + $chunkLength
+                        ];
+                    }
+                    
+                    $currentOffset += $chunkLength;
+                    
+                    // Add overlap from end of previous chunk
+                    if ($chunkOverlap > 0 && strlen($currentChunk) > $chunkOverlap) {
+                        $overlapText = substr($currentChunk, -$chunkOverlap);
+                        $currentChunk = $overlapText . $separator . $split;
+                        $currentOffset -= $chunkOverlap;
+                    } else {
+                        $currentChunk = $split;
+                    }
+                } else {
+                    // Single split is too large, need to split it further
+                    if (strlen($split) > $chunkSize) {
+                        $subChunks = $this->recursiveSplit($split, $separators, $chunkSize, $chunkOverlap);
+                        
+                        // Adjust offsets
+                        foreach ($subChunks as $subChunk) {
+                            $chunks[] = [
+                                'text' => $subChunk['text'],
+                                'start_offset' => $currentOffset + $subChunk['start_offset'],
+                                'end_offset' => $currentOffset + $subChunk['end_offset']
+                            ];
+                        }
+                        
+                        $currentOffset += strlen($split);
+                        $currentChunk = '';
+                    } else {
+                        $currentChunk = $split;
+                    }
+                }
+            }
+        }
+
+        // Don't forget the last chunk
+        if ($currentChunk !== '' && strlen(trim($currentChunk)) >= self::MIN_CHUNK_SIZE) {
+            $chunks[] = [
+                'text' => trim($currentChunk),
+                'start_offset' => $currentOffset,
+                'end_offset' => $currentOffset + strlen($currentChunk)
+            ];
+        }
+
+        return array_filter($chunks, fn($c) => !empty(trim($c['text'])));
     }
 }
 

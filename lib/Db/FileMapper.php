@@ -652,6 +652,12 @@ class FileMapper extends QBMapper
      * in oc_openregister_file_texts. These are "untracked" files that need to be
      * added to the extraction system.
      *
+     * Only includes user files from home:: storages, excluding:
+     * - Directories
+     * - System files (appdata, previews, etc)
+     * - Trashed files
+     * - External/temporary storages
+     *
      * @param int $limit Maximum number of untracked files to return
      *
      * @return array List of untracked files with basic metadata
@@ -675,9 +681,18 @@ class FileMapper extends QBMapper
             )
             ->from('filecache', 'fc')
             ->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
+            ->leftJoin('fc', 'storages', 'st', $qb->expr()->eq('fc.storage', 'st.numeric_id'))
             ->leftJoin('fc', 'openregister_file_texts', 'ft', $qb->expr()->eq('fc.fileid', 'ft.file_id'))
             ->where($qb->expr()->isNull('ft.id'))  // No corresponding record in file_texts
             ->andWhere($qb->expr()->neq('mt.mimetype', $qb->createNamedParameter('httpd/unix-directory', IQueryBuilder::PARAM_STR))) // Exclude directories
+            ->andWhere($qb->expr()->like('st.id', $qb->createNamedParameter('home::%', IQueryBuilder::PARAM_STR))) // Only user home storages
+            ->andWhere($qb->expr()->notLike('fc.path', $qb->createNamedParameter('%files_trashbin%', IQueryBuilder::PARAM_STR))) // Exclude trash
+            ->andWhere($qb->expr()->notLike('fc.path', $qb->createNamedParameter('appdata_%', IQueryBuilder::PARAM_STR))) // Exclude system appdata
+            ->andWhere($qb->expr()->notLike('fc.path', $qb->createNamedParameter('%files_versions%', IQueryBuilder::PARAM_STR))) // Exclude file versions
+            ->andWhere($qb->expr()->notLike('fc.path', $qb->createNamedParameter('%cache%', IQueryBuilder::PARAM_STR))) // Exclude cache
+            ->andWhere($qb->expr()->notLike('fc.path', $qb->createNamedParameter('%thumbnails%', IQueryBuilder::PARAM_STR))) // Exclude thumbnails
+            ->andWhere($qb->expr()->like('fc.path', $qb->createNamedParameter('files/%', IQueryBuilder::PARAM_STR))) // Only files in 'files/' directory
+            ->andWhere($qb->expr()->gt('fc.size', $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT))) // Exclude empty files
             ->setMaxResults($limit)
             ->orderBy('fc.fileid', 'ASC');
 
