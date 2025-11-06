@@ -331,9 +331,8 @@
 		</SettingsCard>
 
 		<!-- File Processing Statistics -->
-		<SettingsCard
-			title="File Processing Statistics"
-			icon="📊">
+		<div class="stats-section">
+			<h3 class="stats-title">📊 File Processing Statistics</h3>
 			<div class="stats-grid stats-grid-6">
 				<div class="stat-card">
 					<div class="stat-value">
@@ -384,7 +383,7 @@
 					</div>
 				</div>
 			</div>
-		</SettingsCard>
+		</div>
 
 		<!-- Save Status -->
 		<div v-if="saveMessage" class="save-message" :class="saveMessageType">
@@ -704,7 +703,7 @@ export default {
 						untrackedFiles: stats.untrackedFiles || 0,
 						pendingFiles: stats.pendingFiles || 0,
 						processedFiles: stats.processedFiles || 0,
-						failedFiles: stats.failed || 0,
+						failedFiles: stats.failedFiles || 0,
 						totalChunks: stats.totalChunks || 0,
 					}
 				}
@@ -1094,12 +1093,23 @@ export default {
 	}
 }
 
+/* Statistics Section */
+.stats-section {
+	margin-bottom: 20px;
+}
+
+.stats-title {
+	margin: 0 0 16px 0;
+	color: var(--color-main-text);
+	font-size: 16px;
+	font-weight: 600;
+}
+
 /* Vectorization Statistics */
 .stats-grid {
 	display: grid;
 	grid-template-columns: repeat(4, 1fr);
 	gap: 16px;
-	margin-top: 16px;
 }
 
 .stats-grid-5 {

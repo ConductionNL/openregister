@@ -303,7 +303,28 @@ class FileTextMapper extends QBMapper
             'indexed' => $this->countIndexed(),
             'vectorized' => $this->countVectorized(),
             'total_text_size' => $this->getTotalTextSize(),
+            'totalChunks' => $this->getTotalChunks(),
         ];
+    }
+
+    /**
+     * Get total number of chunks across all files
+     *
+     * @return int Total chunk count
+     */
+    private function getTotalChunks(): int
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select($qb->createFunction('SUM(chunk_count) as total_chunks'))
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('extraction_status', $qb->createNamedParameter('completed', IQueryBuilder::PARAM_STR)));
+
+        $result = $qb->execute();
+        $count = (int) $result->fetchOne();
+        $result->closeCursor();
+
+        return $count;
     }
 
     /**

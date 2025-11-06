@@ -68,9 +68,6 @@
 							<th class="column-filename">
 								{{ t('openregister', 'File Name') }}
 							</th>
-							<th class="column-path">
-								{{ t('openregister', 'Path') }}
-							</th>
 							<th class="column-mimetype">
 								{{ t('openregister', 'Type') }}
 							</th>
@@ -92,15 +89,12 @@
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="file in filesList" :key="file.id">
+						<tr v-for="file in filesList" :key="file.id">						
 							<td class="column-filename">
 								<div class="file-name-cell">
 									<FileDocumentOutline :size="20" class="file-icon" />
 									<span class="file-name">{{ file.fileName }}</span>
 								</div>
-							</td>
-							<td class="column-path">
-								<span class="file-path" :title="file.filePath">{{ file.filePath }}</span>
 							</td>
 							<td class="column-mimetype">
 								<span class="badge badge-mimetype">{{ formatMimeType(file.mimeType) }}</span>
@@ -554,16 +548,6 @@ export default {
 	white-space: nowrap;
 }
 
-.file-path {
-	color: var(--color-text-maxcontrast);
-	font-size: 12px;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-	display: block;
-	max-width: 300px;
-}
-
 .badge {
 	display: inline-block;
 	padding: 4px 8px;
@@ -600,10 +584,6 @@ export default {
 
 .column-filename {
 	min-width: 200px;
-}
-
-.column-path {
-	min-width: 250px;
 }
 
 .column-mimetype {

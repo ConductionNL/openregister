@@ -27,6 +27,10 @@ export const useSettingsStore = defineStore('settings', {
 		loadingCacheStats: false,
 		loadingVersionInfo: false,
 
+		// Stats data (cached)
+		extractionStats: null,
+		vectorStats: null,
+
 		// SOLR states
 		testingConnection: false,
 		warmingUpSolr: false,
@@ -745,15 +749,19 @@ export const useSettingsStore = defineStore('settings', {
 				const response = await axios.get(
 					generateUrl('/apps/openregister/api/vectors/stats'),
 				)
-				return response.data
+				const stats = response.data
+				this.vectorStats = stats // Cache in state
+				return stats
 			} catch (error) {
 				console.error('Failed to load vector statistics:', error)
 				// Return empty stats instead of throwing to prevent UI breakage
-				return {
+				const emptyStats = {
 					total_vectors: 0,
 					by_type: { object: 0, file: 0 },
 					connection_status: 'Error',
 				}
+				this.vectorStats = emptyStats
+				return emptyStats
 			}
 		},
 
@@ -833,15 +841,17 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Get file extraction statistics
 		 */
-		async getExtractionStats() {
-			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/settings/files/stats'))
-				return response.data
-			} catch (error) {
-				console.error('Failed to load extraction stats:', error)
-				return null
-			}
-		},
+	async getExtractionStats() {
+		try {
+			const response = await axios.get(generateUrl('/apps/openregister/api/files/stats'))
+			const stats = response.data.data || response.data
+			this.extractionStats = stats // Cache in state
+			return stats
+		} catch (error) {
+			console.error('Failed to load extraction stats:', error)
+			return null
+		}
+	},
 
 		/**
 		 * Discover files in Nextcloud that aren't tracked yet

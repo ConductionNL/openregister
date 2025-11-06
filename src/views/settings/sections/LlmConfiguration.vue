@@ -195,21 +195,29 @@
 			@closing="showLLMConfigDialog = false" />
 
 		<!-- File Management Modal -->
-		<FileManagementModal
-			:show="showFileManagementDialog"
-			@closing="showFileManagementDialog = false" />
+	<FileManagementModal
+		:show="showFileManagementDialog"
+		@closing="showFileManagementDialog = false" />
 
-		<!-- Object Management Modal -->
-		<ObjectManagementModal
-			:show="showObjectManagementDialog"
-			@closing="showObjectManagementDialog = false" />
+	<!-- Object Management Modal -->
+	<ObjectManagementModal
+		:show="showObjectManagementDialog"
+		@closing="showObjectManagementDialog = false" />
 
-		<!-- Object Vectorization Modal -->
-		<ObjectVectorizationModal
-			:show="showObjectVectorizationModal"
-			@closing="showObjectVectorizationModal = false"
-			@completed="loadAllStats" />
-	</SettingsSection>
+	<!-- Object Vectorization Modal -->
+	<ObjectVectorizationModal
+		:show="showObjectVectorizationModal"
+		@closing="showObjectVectorizationModal = false"
+		@completed="loadAllStats" />
+
+	<!-- File Vectorization Modal -->
+	<FileVectorizationModal
+		:show="showFileVectorizationModal"
+		:extraction-stats="settingsStore.extractionStats"
+		:vector-stats="settingsStore.vectorStats"
+		@closing="showFileVectorizationModal = false"
+		@completed="loadAllStats" />
+</SettingsSection>
 </template>
 
 <script>
@@ -242,6 +250,7 @@ import LLMConfigModal from '../../../modals/settings/LLMConfigModal.vue'
 import FileManagementModal from '../../../modals/settings/FileManagementModal.vue'
 import ObjectManagementModal from '../../../modals/settings/ObjectManagementModal.vue'
 import ObjectVectorizationModal from '../../../modals/settings/ObjectVectorizationModal.vue'
+import FileVectorizationModal from '../../../modals/settings/FileVectorizationModal.vue'
 
 /**
  * LLM configuration settings component for managing AI/LLM integration.
@@ -266,10 +275,11 @@ export default {
 		VectorSquare,
 		FileVectorOutline,
 		LLMConfigModal,
-		FileManagementModal,
-		ObjectManagementModal,
-		ObjectVectorizationModal,
-	},
+	FileManagementModal,
+	ObjectManagementModal,
+	ObjectVectorizationModal,
+	FileVectorizationModal,
+},
 
 	data() {
 		return {
@@ -288,11 +298,12 @@ export default {
 			llmError: false,
 			llmErrorMessage: '',
 			llmConnectionStatus: 'Unknown',
-			showLLMConfigDialog: false,
-			showFileManagementDialog: false,
-			showObjectManagementDialog: false,
-			showObjectVectorizationModal: false,
-			providerConfig: {
+		showLLMConfigDialog: false,
+		showFileManagementDialog: false,
+		showObjectManagementDialog: false,
+		showObjectVectorizationModal: false,
+		showFileVectorizationModal: false,
+		providerConfig: {
 				embeddingProvider: null,
 				embeddingModel: null,
 				chatProvider: null,
@@ -402,6 +413,7 @@ export default {
 			await Promise.all([
 				this.loadChatStats(),
 				this.loadVectorStats(),
+				this.settingsStore.getExtractionStats(),
 			])
 		},
 		
@@ -536,21 +548,12 @@ export default {
 			this.showObjectVectorizationModal = true
 		},
 
-		/**
-		 * Show dialog to vectorize all files
-		 */
-		showVectorizeFilesDialog() {
-			OC.dialogs.confirm(
-				this.t('openregister', 'This will vectorize all extracted file chunks. This may take a long time and incur API costs. Continue?'),
-				this.t('openregister', 'Vectorize All Files'),
-				(confirmed) => {
-					if (confirmed) {
-						this.vectorizeAllFiles()
-					}
-				},
-				true
-			)
-		},
+	/**
+	 * Show dialog to vectorize all files
+	 */
+	showVectorizeFilesDialog() {
+		this.showFileVectorizationModal = true
+	},
 
 		/**
 		 * Vectorize all files
