@@ -74,11 +74,15 @@
 		<div v-if="agents.length > 0" class="selector-actions">
 			<NcButton
 				type="primary"
-				:disabled="!selectedAgent"
+				:disabled="!selectedAgent || starting"
 				@click="$emit('confirm')">
-				{{ t('openregister', 'Start Conversation') }}
+				<template #icon>
+					<NcLoadingIcon v-if="starting" :size="20" />
+					<MessagePlus v-else :size="20" />
+				</template>
+				{{ starting ? t('openregister', 'Starting conversation...') : t('openregister', 'Start Conversation') }}
 			</NcButton>
-			<NcButton v-if="!inline" @click="$emit('cancel')">
+			<NcButton v-if="!inline" :disabled="starting" @click="$emit('cancel')">
 				{{ t('openregister', 'Cancel') }}
 			</NcButton>
 		</div>
@@ -93,6 +97,7 @@ import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import Check from 'vue-material-design-icons/Check.vue'
 import Chip from 'vue-material-design-icons/Chip.vue'
 import Lock from 'vue-material-design-icons/Lock.vue'
+import MessagePlus from 'vue-material-design-icons/MessagePlus.vue'
 
 export default {
 	name: 'AgentSelector',
@@ -106,6 +111,7 @@ export default {
 		Check,
 		Chip,
 		Lock,
+		MessagePlus,
 	},
 
 	props: {
@@ -126,6 +132,10 @@ export default {
 			default: null,
 		},
 		inline: {
+			type: Boolean,
+			default: false,
+		},
+		starting: {
 			type: Boolean,
 			default: false,
 		},

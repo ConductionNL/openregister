@@ -5,10 +5,21 @@
 			<!-- Chat Header -->
 			<div class="chat-header">
 				<div class="header-content">
-					<h1>
-						<Robot :size="32" />
-						{{ activeConversation?.title || t('openregister', 'AI Assistant') }}
-					</h1>
+					<div class="header-title-row">
+						<h1>
+							<Robot :size="32" />
+							{{ activeConversation?.title || t('openregister', 'AI Assistant') }}
+						</h1>
+						<NcButton
+							v-if="activeConversation"
+							type="tertiary"
+							:aria-label="t('openregister', 'Rename conversation')"
+							@click="renameConversation">
+							<template #icon>
+								<Pencil :size="20" />
+							</template>
+						</NcButton>
+					</div>
 					<p v-if="currentAgent" class="subtitle">
 						{{ t('openregister', 'Agent:') }} <strong>{{ currentAgent.name }}</strong>
 						<span v-if="currentAgent.model"> • {{ currentAgent.model }}</span>
@@ -16,17 +27,6 @@
 					<p v-else class="subtitle">
 						{{ t('openregister', 'Ask questions about your data using natural language') }}
 					</p>
-				</div>
-				<div class="header-actions">
-					<NcButton
-						v-if="activeConversation"
-						type="secondary"
-						@click="renameConversation">
-						<template #icon>
-							<Pencil :size="20" />
-						</template>
-						{{ t('openregister', 'Rename') }}
-					</NcButton>
 				</div>
 			</div>
 
@@ -46,6 +46,7 @@
 					:loading="false"
 					:error="availableAgents.length === 0 ? t('openregister', 'No agents available') : null"
 					:inline="true"
+					:starting="startingConversation"
 					@select-agent="selectAgent"
 					@confirm="startConversationWithAgent" />
 				</div>
@@ -163,6 +164,7 @@
 				:selected-agent="selectedAgent"
 				:loading="false"
 				:error="availableAgents.length === 0 ? t('openregister', 'No agents available') : null"
+				:starting="startingConversation"
 				@select-agent="selectAgent"
 				@confirm="startConversationWithAgent"
 				@cancel="showAgentSelectorDialog = false" />
@@ -250,6 +252,7 @@ export default {
 			selectedAgent: null,
 			availableAgents: [], // Loaded from agentStore during app warmup
 			currentAgent: null,
+			startingConversation: false,
 
 			// Rename dialog
 			showRenameDialog: false,
@@ -343,13 +346,17 @@ export default {
 				return
 			}
 
+			this.startingConversation = true
+
 			try {
-				this.showAgentSelectorDialog = false
 				const conversation = await conversationStore.createConversation(this.selectedAgent.uuid)
 				this.currentAgent = this.selectedAgent
 				// Keep selected agent for next time, but clear for UX
 				const agentCopy = this.selectedAgent
 				this.selectedAgent = null
+				
+				// Close dialog after successful creation
+				this.showAgentSelectorDialog = false
 				
 				// If we just created a conversation, show success
 				if (conversation) {
@@ -358,6 +365,8 @@ export default {
 			} catch (error) {
 				console.error('Failed to create conversation:', error)
 				showError(this.t('openregister', 'Failed to create conversation'))
+			} finally {
+				this.startingConversation = false
 			}
 		},
 
@@ -539,11 +548,18 @@ import { conversationStore } from '../../store/store.js'
 	background: var(--color-background-hover);
 
 	.header-content {
+		.header-title-row {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			margin-bottom: 8px;
+		}
+
 		h1 {
 			display: flex;
 			align-items: center;
 			gap: 12px;
-			margin: 0 0 8px 0;
+			margin: 0;
 			font-size: 24px;
 			font-weight: 600;
 		}
@@ -558,12 +574,6 @@ import { conversationStore } from '../../store/store.js'
 				font-weight: 600;
 			}
 		}
-	}
-
-	.header-actions {
-		display: flex;
-		gap: 8px;
-		margin-top: 16px;
 	}
 }
 

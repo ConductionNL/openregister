@@ -21,7 +21,9 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Db\Conversation;
 use OCA\OpenRegister\Db\ConversationMapper;
 use OCA\OpenRegister\Db\MessageMapper;
+use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\ChatService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -57,11 +59,25 @@ class ConversationController extends Controller
     private MessageMapper $messageMapper;
 
     /**
+     * Agent mapper
+     *
+     * @var AgentMapper
+     */
+    private AgentMapper $agentMapper;
+
+    /**
      * Organisation service
      *
      * @var OrganisationService
      */
     private OrganisationService $organisationService;
+
+    /**
+     * Chat service
+     *
+     * @var ChatService
+     */
+    private ChatService $chatService;
 
     /**
      * Logger
@@ -84,7 +100,9 @@ class ConversationController extends Controller
      * @param IRequest             $request              Request object
      * @param ConversationMapper   $conversationMapper   Conversation mapper
      * @param MessageMapper        $messageMapper        Message mapper
+     * @param AgentMapper          $agentMapper          Agent mapper
      * @param OrganisationService  $organisationService  Organisation service
+     * @param ChatService          $chatService          Chat service
      * @param LoggerInterface      $logger               Logger
      * @param string               $userId               User ID
      */
@@ -93,14 +111,18 @@ class ConversationController extends Controller
         IRequest $request,
         ConversationMapper $conversationMapper,
         MessageMapper $messageMapper,
+        AgentMapper $agentMapper,
         OrganisationService $organisationService,
+        ChatService $chatService,
         LoggerInterface $logger,
         string $userId
     ) {
         parent::__construct($appName, $request);
         $this->conversationMapper = $conversationMapper;
         $this->messageMapper = $messageMapper;
+        $this->agentMapper = $agentMapper;
         $this->organisationService = $organisationService;
+        $this->chatService = $chatService;
         $this->logger = $logger;
         $this->userId = $userId;
     }//end __construct()
@@ -242,13 +264,40 @@ class ConversationController extends Controller
             // Get active organisation
             $organisation = $this->organisationService->getActiveOrganisation();
 
+            // Get agent ID (handle both agentId and agentUuid)
+            $agentId = null;
+            if (isset($data['agentId'])) {
+                $agentId = $data['agentId'];
+            } elseif (isset($data['agentUuid'])) {
+                // Look up agent by UUID to get ID
+                try {
+                    $agent = $this->agentMapper->findByUuid($data['agentUuid']);
+                    $agentId = $agent->getId();
+                } catch (\Exception $e) {
+                    // If agent not found, log and continue with null agentId
+                    $this->logger->warning('[ConversationController] Agent UUID not found', [
+                        'agentUuid' => $data['agentUuid'],
+                    ]);
+                }
+            }
+            
+            // Generate unique title if not provided
+            $title = $data['title'] ?? null;
+            if ($title === null && $agentId !== null) {
+                $title = $this->chatService->ensureUniqueTitle(
+                    'New Conversation',
+                    $this->userId,
+                    $agentId
+                );
+            }
+            
             // Create new conversation
             $conversation = new Conversation();
             $conversation->setUuid(Uuid::v4()->toRfc4122());
             $conversation->setUserId($this->userId);
             $conversation->setOrganisation($organisation?->getUuid());
-            $conversation->setAgentId($data['agentId'] ?? null);
-            $conversation->setTitle($data['title'] ?? null);
+            $conversation->setAgentId($agentId);
+            $conversation->setTitle($title);
             $conversation->setMetadata($data['metadata'] ?? []);
             $conversation->setCreated(new DateTime());
             $conversation->setUpdated(new DateTime());

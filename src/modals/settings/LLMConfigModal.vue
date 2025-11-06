@@ -632,16 +632,34 @@ export default {
 			this.saving = true
 
 			try {
-				await axios.post(generateUrl('/apps/openregister/api/settings/llm'), {
+				// Extract model IDs from objects (models are selected as objects but backend expects string IDs)
+				const payload = {
 					embeddingProvider: this.selectedEmbeddingProvider?.id,
 					chatProvider: this.selectedChatProvider?.id,
-					openaiConfig: this.openaiConfig,
-					ollamaConfig: this.ollamaConfig,
-					fireworksConfig: this.fireworksConfig,
+					openaiConfig: {
+						apiKey: this.openaiConfig.apiKey,
+						model: this.openaiConfig.model?.id || this.openaiConfig.model,
+						chatModel: this.openaiConfig.chatModel?.id || this.openaiConfig.chatModel,
+						organizationId: this.openaiConfig.organizationId,
+					},
+					ollamaConfig: {
+						url: this.ollamaConfig.url,
+						model: this.ollamaConfig.model?.id || this.ollamaConfig.model,
+						chatModel: this.ollamaConfig.chatModel?.id || this.ollamaConfig.chatModel,
+					},
+					fireworksConfig: {
+						apiKey: this.fireworksConfig.apiKey,
+						embeddingModel: this.fireworksConfig.embeddingModel?.id || this.fireworksConfig.embeddingModel,
+						chatModel: this.fireworksConfig.chatModel?.id || this.fireworksConfig.chatModel,
+						baseUrl: this.fireworksConfig.baseUrl,
+					},
 					enabledFeatures: this.aiFeatures
 						.filter(f => f.enabled)
 						.map(f => f.id),
-				})
+				}
+
+				// Use PATCH for partial updates
+				await axios.patch(generateUrl('/apps/openregister/api/settings/llm'), payload)
 
 				showSuccess(this.t('openregister', 'LLM configuration saved successfully'))
 				this.$emit('closing')

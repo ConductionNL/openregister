@@ -91,8 +91,10 @@ return [
         
         ['name' => 'settings#getLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'GET'],
         ['name' => 'settings#updateLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'POST'],
-        ['name' => 'settings#updateLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'PATCH'],
+        ['name' => 'settings#patchLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'PATCH'],
         ['name' => 'settings#updateLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'PUT'],
+        ['name' => 'settings#testEmbedding', 'url' => '/api/vectors/test-embedding', 'verb' => 'POST'],
+        ['name' => 'settings#testChat', 'url' => '/api/llm/test-chat', 'verb' => 'POST'],
         ['name' => 'settings#getFileSettings', 'url' => '/api/settings/files', 'verb' => 'GET'],
         ['name' => 'settings#updateFileSettings', 'url' => '/api/settings/files', 'verb' => 'PATCH'],
         ['name' => 'settings#updateFileSettings', 'url' => '/api/settings/files', 'verb' => 'PUT'],

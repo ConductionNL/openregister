@@ -22,13 +22,33 @@ use LLPhant\Embeddings\EmbeddingGenerator\EmbeddingGeneratorInterface;
  * Vector Embedding Service
  * 
  * Handles vector embeddings generation, storage, and semantic search using LLPhant.
- * Supports multiple embedding providers (OpenAI, Ollama, local models) and provides
- * similarity search capabilities for both objects and file chunks.
+ * This service is INDEPENDENT of SOLR and handles all LLM embedding operations.
  * 
- * This service works in conjunction with:
- * - SolrObjectService: For object indexing and keyword search
- * - SolrFileService: For file processing and keyword search
- * - Hybrid search: Combining keyword (SOLR) and semantic (vectors) results
+ * RESPONSIBILITIES:
+ * - Generate embeddings for text using multiple LLM providers (OpenAI, Fireworks, Ollama)
+ * - Store embeddings in the database (oc_openregister_vectors table)
+ * - Perform semantic similarity searches using cosine similarity
+ * - Test embedding configurations without saving settings
+ * - Manage embedding generators for different providers and models
+ * 
+ * PROVIDER SUPPORT:
+ * - OpenAI: text-embedding-ada-002, text-embedding-3-small, text-embedding-3-large
+ * - Fireworks AI: Custom OpenAI-compatible API with various models
+ * - Ollama: Local models with custom configurations
+ * 
+ * ARCHITECTURE:
+ * - Uses LLPhant library for embedding generation
+ * - Stores embeddings in database for semantic search
+ * - Independent of SOLR/keyword search infrastructure
+ * - Can be used standalone for vector operations
+ * 
+ * INTEGRATION POINTS:
+ * - ChatService: Uses embeddings for RAG (Retrieval Augmented Generation)
+ * - SolrObjectService/SolrFileService: Can work together for hybrid search
+ * - SettingsController: Delegates testing to this service
+ * 
+ * NOTE: This service does NOT depend on SOLR. For hybrid search that combines
+ * keyword and semantic results, use ChatService or implement in calling code.
  * 
  * @category Service
  * @package  OCA\OpenRegister\Service
@@ -191,6 +211,66 @@ class VectorEmbeddingService
                 'text_length' => strlen($text)
             ]);
             throw new \Exception('Embedding generation failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Test embedding generation with custom configuration
+     * 
+     * Tests if the provided embedding configuration works correctly by generating
+     * a test embedding. Does not save any configuration or store the embedding.
+     * 
+     * @param string $provider Provider name ('openai', 'fireworks', 'ollama')
+     * @param array  $config   Provider-specific configuration
+     * @param string $testText Optional test text to embed
+     * 
+     * @return array Test results with success status and embedding info
+     */
+    public function testEmbedding(string $provider, array $config, string $testText = 'This is a test embedding to verify the LLM configuration.'): array
+    {
+        $this->logger->info('[VectorEmbeddingService] Testing embedding generation', [
+            'provider' => $provider,
+            'model' => $config['model'] ?? 'unknown',
+            'testTextLength' => strlen($testText),
+        ]);
+
+        try {
+            // Generate embedding using custom config
+            $embedding = $this->generateEmbeddingWithCustomConfig($testText, [
+                'provider' => $provider,
+                'model' => $config['model'] ?? null,
+                'apiKey' => $config['apiKey'] ?? null,
+                'baseUrl' => $config['baseUrl'] ?? $config['url'] ?? null,
+            ]);
+
+            $this->logger->info('[VectorEmbeddingService] Embedding test successful', [
+                'provider' => $provider,
+                'model' => $config['model'] ?? 'unknown',
+                'dimensions' => count($embedding),
+            ]);
+
+            return [
+                'success' => true,
+                'message' => 'Embedding test successful',
+                'data' => [
+                    'provider' => $provider,
+                    'model' => $config['model'] ?? 'unknown',
+                    'vectorLength' => count($embedding),
+                    'sampleValues' => array_slice($embedding, 0, 5),
+                    'testText' => $testText,
+                ],
+            ];
+        } catch (\Exception $e) {
+            $this->logger->error('[VectorEmbeddingService] Embedding test failed', [
+                'provider' => $provider,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'message' => 'Failed to generate embedding: ' . $e->getMessage(),
+            ];
         }
     }
 
