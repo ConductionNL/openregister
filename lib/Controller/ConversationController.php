@@ -630,55 +630,6 @@ class ConversationController extends Controller
     }//end destroyPermanent()
 
 
-    /**
-     * List archived (soft-deleted) conversations
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse List of archived conversations
-     */
-    public function archive(): JSONResponse
-    {
-        try {
-            // Get active organisation
-            $organisation = $this->organisationService->getActiveOrganisation();
-            $organisationUuid = $organisation?->getUuid();
-
-            // Get query parameters
-            $limit = (int) ($this->request->getParam('limit') ?? 50);
-            $offset = (int) ($this->request->getParam('offset') ?? 0);
-
-            // Fetch archived conversations
-            $conversations = $this->conversationMapper->findDeletedByUser(
-                $this->userId,
-                $organisationUuid,
-                $limit,
-                $offset
-            );
-
-            return new JSONResponse([
-                'results' => array_map(fn($conv) => $conv->jsonSerialize(), $conversations),
-                'total' => count($conversations),
-                'limit' => $limit,
-                'offset' => $offset,
-            ], 200);
-
-        } catch (\Exception $e) {
-            $this->logger->error('[ConversationController] Failed to list archived conversations', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return new JSONResponse([
-                'error' => 'Failed to fetch archived conversations',
-                'message' => $e->getMessage(),
-            ], 500);
-        }//end try
-
-    }//end archive()
-
-
 }//end class
 
 
