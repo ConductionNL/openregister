@@ -264,7 +264,7 @@ class ChatService
             // - Title is null OR starts with "New Conversation"
             $shouldGenerateTitle = $messageCount <= 2 && (
                 $currentTitle === null || 
-                str_starts_with($currentTitle, 'New Conversation')
+                strpos($currentTitle, 'New Conversation') === 0
             );
             
             if ($shouldGenerateTitle) {
@@ -275,7 +275,16 @@ class ChatService
                 ]);
                 
                 $title = $this->generateConversationTitle($userMessage);
-                $uniqueTitle = $this->ensureUniqueTitle($title, $conversation->getUserId(), $conversation->getAgentId());
+                
+                // Only make title unique if we have an agentId to filter by
+                $agentId = $conversation->getAgentId();
+                if ($agentId !== null) {
+                    $uniqueTitle = $this->ensureUniqueTitle($title, $conversation->getUserId(), $agentId);
+                } else {
+                    // Without agent, just use the generated title
+                    $uniqueTitle = $title;
+                }
+                
                 $conversation->setTitle($uniqueTitle);
                 $conversation->setUpdated(new DateTime());
                 $this->conversationMapper->update($conversation);
@@ -626,7 +635,7 @@ class ChatService
                 
                 // Fireworks AI uses OpenAI-compatible API
                 $baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
-                if (!str_ends_with($baseUrl, '/v1')) {
+                if (substr($baseUrl, -3) !== '/v1') {
                     $baseUrl .= '/v1';
                 }
                 $config->url = $baseUrl;
@@ -735,7 +744,7 @@ class ChatService
                 $config->apiKey = $fireworksConfig['apiKey'];
                 $config->model = 'accounts/fireworks/models/llama-v3p1-8b-instruct';
                 $baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
-                if (!str_ends_with($baseUrl, '/v1')) {
+                if (substr($baseUrl, -3) !== '/v1') {
                     $baseUrl .= '/v1';
                 }
                 $config->url = $baseUrl;
@@ -929,7 +938,7 @@ class ChatService
                 // Fireworks AI uses OpenAI-compatible API but needs specific URL format
                 $baseUrl = rtrim($config['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
                 // Ensure the URL ends with /v1 for compatibility
-                if (!str_ends_with($baseUrl, '/v1')) {
+                if (substr($baseUrl, -3) !== '/v1') {
                     $baseUrl .= '/v1';
                 }
                 $llphantConfig->url = $baseUrl;
@@ -1318,7 +1327,7 @@ class ChatService
             $config->apiKey = $fireworksConfig['apiKey'];
             $config->model = 'accounts/fireworks/models/llama-v3p1-8b-instruct';
             $baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
-            if (!str_ends_with($baseUrl, '/v1')) {
+            if (substr($baseUrl, -3) !== '/v1') {
                 $baseUrl .= '/v1';
             }
             $config->url = $baseUrl;
