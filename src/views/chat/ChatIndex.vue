@@ -54,6 +54,16 @@
 
 			<!-- Chat Messages -->
 			<div v-else ref="messagesContainer" class="chat-messages">
+				<!-- Messages loading indicator -->
+				<div v-if="messagesLoading && activeMessages.length === 0" class="messages-loading">
+					<div class="typing-indicator">
+						<span />
+						<span />
+						<span />
+					</div>
+					<p>{{ t('openregister', 'Loading conversation...') }}</p>
+				</div>
+
 				<div
 					v-for="(message, index) in activeMessages"
 					:key="index"
@@ -95,27 +105,45 @@
 
 						<!-- Feedback -->
 						<div v-if="message.role === 'assistant'" class="message-feedback">
-							<button
-								:class="['feedback-btn', { active: message.feedback === 'positive' }]"
-								:title="t('openregister', 'Helpful')"
-								@click="sendFeedback(message, 'positive')">
-								<ThumbUp :size="16" />
-							</button>
-							<button
-								:class="['feedback-btn', { active: message.feedback === 'negative' }]"
-								:title="t('openregister', 'Not helpful')"
-								@click="sendFeedback(message, 'negative')">
-								<ThumbDown :size="16" />
-							</button>
+							<div class="feedback-buttons">
+								<button
+									:class="['feedback-btn', 'feedback-positive', { active: message.feedback === 'positive' }]"
+									:title="t('openregister', 'Helpful')"
+									@click="sendFeedback(message, 'positive')">
+									<ThumbUp :size="16" />
+								</button>
+								<button
+									:class="['feedback-btn', 'feedback-negative', { active: message.feedback === 'negative' }]"
+									:title="t('openregister', 'Not helpful')"
+									@click="sendFeedback(message, 'negative')">
+									<ThumbDown :size="16" />
+								</button>
+							</div>
+							
+							<!-- Feedback comment input -->
+							<div v-if="message.feedback && message.showFeedbackInput" class="feedback-comment">
+								<textarea
+									v-model="message.feedbackComment"
+									:placeholder="t('openregister', 'Your feedback has been recorded. Optionally, you can provide additional details here...')"
+									class="feedback-input"
+									rows="3"
+									@keydown.enter.ctrl="saveFeedbackComment(message)" />
+								<NcButton
+									type="primary"
+									:disabled="!message.feedbackComment || message.feedbackComment.trim() === ''"
+									@click="saveFeedbackComment(message)">
+									<template #icon>
+										<Send :size="20" />
+									</template>
+									{{ t('openregister', 'Send additional feedback') }}
+								</NcButton>
+							</div>
 						</div>
 					</div>
 				</div>
 
 				<!-- Loading indicator -->
 				<div v-if="loading" class="message assistant loading">
-					<div class="message-avatar">
-						<Robot :size="32" />
-					</div>
 					<div class="message-content">
 						<div class="typing-indicator">
 							<span />
@@ -198,7 +226,7 @@
 </template>
 
 <script>
-import { NcAppContent, NcButton, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
+import { NcAppContent, NcButton, NcDialog } from '@nextcloud/vue'
 import AgentSelector from '../../components/AgentSelector.vue'
 import Robot from 'vue-material-design-icons/Robot.vue'
 import MessageText from 'vue-material-design-icons/MessageText.vue'
@@ -225,7 +253,6 @@ export default {
 		NcAppContent,
 		NcButton,
 		NcDialog,
-		NcLoadingIcon,
 		AgentSelector,
 		Robot,
 		MessageText,
@@ -279,6 +306,10 @@ export default {
 
 		conversationLoading() {
 			return conversationStore.loading || false
+		},
+
+		messagesLoading() {
+			return conversationStore.messagesLoading || false
 		},
 	},
 
@@ -464,15 +495,60 @@ export default {
 		},
 
 		async sendFeedback(message, feedback) {
-			message.feedback = message.feedback === feedback ? null : feedback
+			const isSameFeedback = message.feedback === feedback
+			message.feedback = isSameFeedback ? null : feedback
+			
+			// Show input field for elaboration when feedback is given
+			if (message.feedback) {
+				this.$set(message, 'showFeedbackInput', true)
+				this.$set(message, 'feedbackComment', message.feedbackComment || '')
+			} else {
+				this.$set(message, 'showFeedbackInput', false)
+			}
+
+			// If feedback is removed (null), just update UI without API call
+			if (message.feedback === null) {
+				return
+			}
 
 			try {
-				await axios.post(generateUrl('/apps/openregister/api/chat/feedback'), {
-					messageId: message.id,
-					feedback: message.feedback,
+				const endpoint = generateUrl(`/apps/openregister/api/conversations/${this.activeConversation.uuid}/messages/${message.id}/feedback`)
+				const response = await axios.post(endpoint, {
+					type: message.feedback,
 				})
+				
+				// Show brief success notification
+				showSuccess(this.t('openregister', 'Feedback recorded'))
+				
+				// Store the feedback ID for future updates
+				this.$set(message, 'feedbackId', response.data.id)
 			} catch (error) {
 				console.error('Failed to send feedback:', error)
+				showError(this.t('openregister', 'Failed to send feedback'))
+				// Revert the feedback state on error
+				message.feedback = null
+				this.$set(message, 'showFeedbackInput', false)
+			}
+		},
+
+		async saveFeedbackComment(message) {
+			if (!message.feedbackComment || !message.feedbackComment.trim()) {
+				return
+			}
+
+			try {
+				const endpoint = generateUrl(`/apps/openregister/api/conversations/${this.activeConversation.uuid}/messages/${message.id}/feedback`)
+				await axios.post(endpoint, {
+					type: message.feedback,
+					comment: message.feedbackComment.trim(),
+				})
+				
+				// Hide input after saving
+				this.$set(message, 'showFeedbackInput', false)
+				showSuccess(this.t('openregister', 'Additional feedback saved. Thank you!'))
+			} catch (error) {
+				console.error('Failed to save feedback comment:', error)
+				showError(this.t('openregister', 'Failed to save additional feedback'))
 			}
 		},
 
@@ -619,6 +695,43 @@ import { conversationStore } from '../../store/store.js'
 	flex-direction: column;
 	gap: 24px;
 
+	.messages-loading {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 48px 24px;
+		text-align: center;
+		color: var(--color-text-maxcontrast);
+
+		.typing-indicator {
+			display: flex;
+			gap: 4px;
+			margin-bottom: 12px;
+
+			span {
+				width: 8px;
+				height: 8px;
+				background: var(--color-text-maxcontrast);
+				border-radius: 50%;
+				animation: bounce 1.4s infinite ease-in-out both;
+
+				&:nth-child(1) {
+					animation-delay: -0.32s;
+				}
+
+				&:nth-child(2) {
+					animation-delay: -0.16s;
+				}
+			}
+		}
+
+		p {
+			margin: 0;
+			font-size: 14px;
+		}
+	}
+
 	.message {
 		display: flex;
 		gap: 12px;
@@ -754,9 +867,12 @@ import { conversationStore } from '../../store/store.js'
 			}
 
 			.message-feedback {
-				display: flex;
-				gap: 8px;
 				margin-top: 8px;
+
+				.feedback-buttons {
+					display: flex;
+					gap: 8px;
+				}
 
 				.feedback-btn {
 					padding: 6px;
@@ -774,8 +890,51 @@ import { conversationStore } from '../../store/store.js'
 					}
 
 					&.active {
-						background: var(--color-primary-element-light);
-						border-color: var(--color-primary-element);
+						&.feedback-positive {
+							background: var(--color-success);
+							border-color: var(--color-success);
+							color: white;
+						}
+
+						&.feedback-negative {
+							background: var(--color-error);
+							border-color: var(--color-error);
+							color: white;
+						}
+					}
+				}
+
+				.feedback-comment {
+					margin-top: 12px;
+					display: flex;
+					flex-direction: column;
+					gap: 8px;
+					padding: 12px;
+					background: var(--color-background-hover);
+					border-radius: 6px;
+
+					.feedback-input {
+						width: 100%;
+						padding: 10px 12px;
+						border: 1px solid var(--color-border);
+						border-radius: 6px;
+						font-family: inherit;
+						font-size: 14px;
+						line-height: 1.5;
+						resize: vertical;
+						min-height: 80px;
+						background: var(--color-main-background);
+
+						&:focus {
+							outline: none;
+							border-color: var(--color-primary-element);
+							box-shadow: 0 0 0 2px var(--color-primary-element-light);
+						}
+
+						&::placeholder {
+							color: var(--color-text-maxcontrast);
+							font-size: 13px;
+						}
 					}
 				}
 			}

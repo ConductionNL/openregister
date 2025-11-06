@@ -225,7 +225,7 @@ class Conversation extends Entity implements JsonSerializable
      */
     public function softDelete(): self
     {
-        $this->deletedAt = new DateTime();
+        $this->setter('deletedAt', [new DateTime()]);
         return $this;
 
     }//end softDelete()
@@ -238,7 +238,7 @@ class Conversation extends Entity implements JsonSerializable
      */
     public function restore(): self
     {
-        $this->deletedAt = null;
+        $this->setter('deletedAt', [null]);
         return $this;
 
     }//end restore()

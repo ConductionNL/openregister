@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Db\Conversation;
 use OCA\OpenRegister\Db\ConversationMapper;
 use OCA\OpenRegister\Db\MessageMapper;
+use OCA\OpenRegister\Db\FeedbackMapper;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\ChatService;
@@ -57,6 +58,13 @@ class ConversationController extends Controller
      * @var MessageMapper
      */
     private MessageMapper $messageMapper;
+
+    /**
+     * Feedback mapper
+     *
+     * @var FeedbackMapper
+     */
+    private FeedbackMapper $feedbackMapper;
 
     /**
      * Agent mapper
@@ -111,6 +119,7 @@ class ConversationController extends Controller
         IRequest $request,
         ConversationMapper $conversationMapper,
         MessageMapper $messageMapper,
+        FeedbackMapper $feedbackMapper,
         AgentMapper $agentMapper,
         OrganisationService $organisationService,
         ChatService $chatService,
@@ -120,6 +129,7 @@ class ConversationController extends Controller
         parent::__construct($appName, $request);
         $this->conversationMapper = $conversationMapper;
         $this->messageMapper = $messageMapper;
+        $this->feedbackMapper = $feedbackMapper;
         $this->agentMapper = $agentMapper;
         $this->organisationService = $organisationService;
         $this->chatService = $chatService;
@@ -130,6 +140,11 @@ class ConversationController extends Controller
 
     /**
      * List conversations for the current user
+     *
+     * Supports filtering with query parameters:
+     * - _deleted: boolean (true = archived/deleted conversations, false/default = active conversations)
+     * - limit: int (default: 50)
+     * - offset: int (default: 0)
      *
      * @NoAdminRequired
      * @NoCSRFRequired
@@ -144,25 +159,43 @@ class ConversationController extends Controller
             $organisationUuid = $organisation?->getUuid();
 
             // Get query parameters
-            $limit = (int) ($this->request->getParam('limit') ?? 50);
-            $offset = (int) ($this->request->getParam('offset') ?? 0);
-            $includeDeleted = (bool) ($this->request->getParam('includeDeleted') ?? false);
+            $params = $this->request->getParams();
+            $limit = (int) ($params['limit'] ?? $params['_limit'] ?? 50);
+            $offset = (int) ($params['offset'] ?? $params['_offset'] ?? 0);
+            $showDeleted = filter_var($params['_deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
-            // Fetch conversations
-            $conversations = $this->conversationMapper->findByUser(
-                $this->userId,
-                $organisationUuid,
-                $includeDeleted,
-                $limit,
-                $offset
-            );
-
-            // Get total count
-            $total = $this->conversationMapper->countByUser(
-                $this->userId,
-                $organisationUuid,
-                $includeDeleted
-            );
+            // Fetch conversations based on deleted filter
+            if ($showDeleted) {
+                // Fetch only deleted/archived conversations
+                $conversations = $this->conversationMapper->findDeletedByUser(
+                    $this->userId,
+                    $organisationUuid,
+                    $limit,
+                    $offset
+                );
+                
+                // Count total archived conversations
+                $total = $this->conversationMapper->countDeletedByUser(
+                    $this->userId,
+                    $organisationUuid
+                );
+            } else {
+                // Fetch only active (non-deleted) conversations
+                $conversations = $this->conversationMapper->findByUser(
+                    $this->userId,
+                    $organisationUuid,
+                    false, // includeDeleted = false
+                    $limit,
+                    $offset
+                );
+                
+                // Count total active conversations
+                $total = $this->conversationMapper->countByUser(
+                    $this->userId,
+                    $organisationUuid,
+                    false // includeDeleted = false
+                );
+            }
 
             return new JSONResponse([
                 'results' => array_map(fn($conv) => $conv->jsonSerialize(), $conversations),
@@ -187,62 +220,7 @@ class ConversationController extends Controller
 
 
     /**
-     * List archived (soft-deleted) conversations for the current user
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse List of archived conversations
-     */
-    public function archive(): JSONResponse
-    {
-        try {
-            // Get active organisation
-            $organisation = $this->organisationService->getActiveOrganisation();
-            $organisationUuid = $organisation?->getUuid();
-
-            // Get query parameters
-            $limit = (int) ($this->request->getParam('limit') ?? 50);
-            $offset = (int) ($this->request->getParam('offset') ?? 0);
-
-            // Fetch only soft-deleted conversations
-            $conversations = $this->conversationMapper->findDeletedByUser(
-                $this->userId,
-                $organisationUuid,
-                $limit,
-                $offset
-            );
-
-            // Count total archived conversations
-            $total = $this->conversationMapper->countDeletedByUser(
-                $this->userId,
-                $organisationUuid
-            );
-
-            return new JSONResponse([
-                'results' => array_map(fn($conv) => $conv->jsonSerialize(), $conversations),
-                'total' => $total,
-                'limit' => $limit,
-                'offset' => $offset,
-            ], 200);
-
-        } catch (\Exception $e) {
-            $this->logger->error('[ConversationController] Failed to list archived conversations', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return new JSONResponse([
-                'error' => 'Failed to fetch archived conversations',
-                'message' => $e->getMessage(),
-            ], 500);
-        }//end try
-
-    }//end archive()
-
-
-    /**
-     * Get a single conversation with its messages
+     * Get a single conversation (without messages)
      *
      * RBAC check is handled in the mapper layer.
      *
@@ -251,7 +229,7 @@ class ConversationController extends Controller
      *
      * @param string $uuid Conversation UUID
      *
-     * @return JSONResponse Conversation with messages
+     * @return JSONResponse Conversation data
      */
     public function show(string $uuid): JSONResponse
     {
@@ -271,13 +249,10 @@ class ConversationController extends Controller
                 ], 403);
             }
 
-            // Get messages
-            $messages = $this->messageMapper->findByConversation($conversation->getId());
-
-            // Build response
+            // Build response without messages
             $response = $conversation->jsonSerialize();
-            $response['messages'] = array_map(fn($msg) => $msg->jsonSerialize(), $messages);
-            $response['messageCount'] = count($messages);
+            // Get message count separately for efficiency
+            $response['messageCount'] = $this->messageMapper->countByConversation($conversation->getId());
 
             return new JSONResponse($response, 200);
 
@@ -300,6 +275,79 @@ class ConversationController extends Controller
         }//end try
 
     }//end show()
+
+
+    /**
+     * Get messages for a conversation
+     *
+     * RBAC check is handled in the mapper layer.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $uuid Conversation UUID
+     *
+     * @return JSONResponse Messages list
+     */
+    public function messages(string $uuid): JSONResponse
+    {
+        try {
+            // Find conversation
+            $conversation = $this->conversationMapper->findByUuid($uuid);
+
+            // Get active organisation
+            $organisation = $this->organisationService->getActiveOrganisation();
+            $organisationUuid = $organisation?->getUuid();
+
+            // Check access rights using mapper method
+            if (!$this->conversationMapper->canUserAccessConversation($conversation, $this->userId, $organisationUuid)) {
+                return new JSONResponse([
+                    'error' => 'Access denied',
+                    'message' => 'You do not have access to this conversation',
+                ], 403);
+            }
+
+            // Get query parameters for pagination
+            $params = $this->request->getParams();
+            $limit = (int) ($params['limit'] ?? $params['_limit'] ?? 50);
+            $offset = (int) ($params['offset'] ?? $params['_offset'] ?? 0);
+
+            // Get messages with pagination
+            $messages = $this->messageMapper->findByConversation(
+                $conversation->getId(),
+                $limit,
+                $offset
+            );
+
+            // Get total count
+            $total = $this->messageMapper->countByConversation($conversation->getId());
+
+            return new JSONResponse([
+                'results' => array_map(fn($msg) => $msg->jsonSerialize(), $messages),
+                'total' => $total,
+                'limit' => $limit,
+                'offset' => $offset,
+            ], 200);
+
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse([
+                'error' => 'Conversation not found',
+                'message' => 'The requested conversation does not exist',
+            ], 404);
+        } catch (\Exception $e) {
+            $this->logger->error('[ConversationController] Failed to get messages', [
+                'uuid' => $uuid,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return new JSONResponse([
+                'error' => 'Failed to fetch messages',
+                'message' => $e->getMessage(),
+            ], 500);
+        }//end try
+
+    }//end messages()
 
 
     /**
@@ -479,17 +527,44 @@ class ConversationController extends Controller
                 ], 403);
             }
 
-            // Soft delete
-            $conversation = $this->conversationMapper->softDelete($conversation->getId());
+            // Check if already soft-deleted (archived)
+            if ($conversation->getDeletedAt() !== null) {
+                // Already archived - perform permanent delete
+                $this->logger->info('[ConversationController] Permanently deleting archived conversation', [
+                    'uuid' => $uuid,
+                ]);
 
-            $this->logger->info('[ConversationController] Conversation soft deleted', [
-                'uuid' => $uuid,
-            ]);
+                // Delete feedback first
+                $this->feedbackMapper->deleteByConversation($conversation->getId());
 
-            return new JSONResponse([
-                'message' => 'Conversation deleted successfully',
-                'uuid' => $uuid,
-            ], 200);
+                // Delete messages
+                $this->messageMapper->deleteByConversation($conversation->getId());
+
+                // Delete conversation
+                $this->conversationMapper->delete($conversation);
+
+                $this->logger->info('[ConversationController] Conversation permanently deleted', [
+                    'uuid' => $uuid,
+                ]);
+
+                return new JSONResponse([
+                    'message' => 'Conversation permanently deleted',
+                    'uuid' => $uuid,
+                ], 200);
+            } else {
+                // First delete - perform soft delete (archive)
+                $conversation = $this->conversationMapper->softDelete($conversation->getId());
+
+                $this->logger->info('[ConversationController] Conversation archived (soft deleted)', [
+                    'uuid' => $uuid,
+                ]);
+
+                return new JSONResponse([
+                    'message' => 'Conversation archived successfully',
+                    'uuid' => $uuid,
+                    'archived' => true,
+                ], 200);
+            }
 
         } catch (DoesNotExistException $e) {
             return new JSONResponse([

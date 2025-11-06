@@ -24,6 +24,8 @@ use OCA\OpenRegister\Db\ConversationMapper;
 use OCA\OpenRegister\Db\MessageMapper;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Db\Conversation;
+use OCA\OpenRegister\Db\Feedback;
+use OCA\OpenRegister\Db\FeedbackMapper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -61,6 +63,13 @@ class ChatController extends Controller
      * @var MessageMapper
      */
     private MessageMapper $messageMapper;
+
+    /**
+     * Feedback mapper
+     *
+     * @var FeedbackMapper
+     */
+    private FeedbackMapper $feedbackMapper;
 
     /**
      * Agent mapper
@@ -109,6 +118,7 @@ class ChatController extends Controller
         ChatService $chatService,
         ConversationMapper $conversationMapper,
         MessageMapper $messageMapper,
+        FeedbackMapper $feedbackMapper,
         AgentMapper $agentMapper,
         OrganisationService $organisationService,
         LoggerInterface $logger,
@@ -118,6 +128,7 @@ class ChatController extends Controller
         $this->chatService = $chatService;
         $this->conversationMapper = $conversationMapper;
         $this->messageMapper = $messageMapper;
+        $this->feedbackMapper = $feedbackMapper;
         $this->agentMapper = $agentMapper;
         $this->organisationService = $organisationService;
         $this->logger = $logger;
@@ -381,69 +392,107 @@ class ChatController extends Controller
 
 
     /**
-     * Send feedback for a message
+     * Submit or update feedback on a message
+     *
+     * Endpoint: POST /api/conversations/{conversationUuid}/messages/{messageId}/feedback
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @return JSONResponse Success message
+     * @param string $conversationUuid Conversation UUID
+     * @param int    $messageId        Message ID
+     *
+     * @return JSONResponse Feedback data
      */
-    public function sendFeedback(): JSONResponse
+    public function sendFeedback(string $conversationUuid, int $messageId): JSONResponse
     {
         try {
             // Get request parameters
-            $messageId = (int) $this->request->getParam('messageId');
-            $feedback = (string) $this->request->getParam('feedback');
+            $type = (string) $this->request->getParam('type');
+            $comment = (string) $this->request->getParam('comment', '');
 
-            if (empty($messageId)) {
+            // Validate feedback type
+            if (!in_array($type, ['positive', 'negative'], true)) {
                 return new JSONResponse([
-                    'error' => 'Missing messageId',
-                    'message' => 'messageId is required',
+                    'error' => 'Invalid feedback type',
+                    'message' => 'type must be "positive" or "negative"',
                 ], 400);
             }
 
-            if (!in_array($feedback, ['positive', 'negative'], true)) {
-                return new JSONResponse([
-                    'error' => 'Invalid feedback',
-                    'message' => 'feedback must be "positive" or "negative"',
-                ], 400);
-            }
+            // Get conversation by UUID
+            $conversation = $this->conversationMapper->findByUuid($conversationUuid);
 
-            // Get message
-            $message = $this->messageMapper->find($messageId);
-
-            // Get conversation to verify ownership
-            $conversation = $this->conversationMapper->find($message->getConversationId());
-
+            // Verify user has access to this conversation
             if ($conversation->getUserId() !== $this->userId) {
                 return new JSONResponse([
                     'error' => 'Access denied',
-                    'message' => 'You do not have access to this message',
+                    'message' => 'You do not have access to this conversation',
                 ], 403);
             }
 
-            // TODO: Store feedback in a separate feedback table
-            // For now, we'll just log it
-            $this->logger->info('[ChatController] Message feedback received', [
-                'messageId' => $messageId,
-                'feedback' => $feedback,
-                'userId' => $this->userId,
-            ]);
+            // Get message and verify it belongs to this conversation
+            $message = $this->messageMapper->find($messageId);
+            
+            if ($message->getConversationId() !== $conversation->getId()) {
+                return new JSONResponse([
+                    'error' => 'Message not found',
+                    'message' => 'Message does not belong to this conversation',
+                ], 404);
+            }
 
-            return new JSONResponse([
-                'message' => 'Feedback recorded successfully',
-                'messageId' => $messageId,
-                'feedback' => $feedback,
-            ], 200);
+            // Get active organisation
+            $organisation = $this->organisationService->getActiveOrganisation();
+            $organisationUuid = $organisation?->getUuid();
+
+            // Check if feedback already exists for this message
+            $existingFeedback = $this->feedbackMapper->findByMessage($messageId, $this->userId);
+
+            if ($existingFeedback !== null) {
+                // Update existing feedback
+                $existingFeedback->setType($type);
+                $existingFeedback->setComment($comment);
+                
+                $feedback = $this->feedbackMapper->update($existingFeedback);
+                
+                $this->logger->info('[ChatController] Message feedback updated', [
+                    'feedbackId' => $feedback->getId(),
+                    'messageId' => $messageId,
+                    'type' => $type,
+                    'hasComment' => !empty($comment),
+                ]);
+            } else {
+                // Create new feedback
+                $feedback = new Feedback();
+                $feedback->setMessageId($messageId);
+                $feedback->setConversationId($conversation->getId());
+                $feedback->setAgentId($conversation->getAgentId());
+                $feedback->setUserId($this->userId);
+                $feedback->setOrganisation($organisationUuid);
+                $feedback->setType($type);
+                $feedback->setComment($comment);
+                
+                $feedback = $this->feedbackMapper->insert($feedback);
+                
+                $this->logger->info('[ChatController] Message feedback created', [
+                    'feedbackId' => $feedback->getId(),
+                    'messageId' => $messageId,
+                    'type' => $type,
+                    'hasComment' => !empty($comment),
+                ]);
+            }
+
+            return new JSONResponse($feedback->jsonSerialize(), 200);
 
         } catch (\Exception $e) {
-            $this->logger->error('[ChatController] Failed to send feedback', [
+            $this->logger->error('[ChatController] Failed to save feedback', [
+                'conversationUuid' => $conversationUuid ?? null,
+                'messageId' => $messageId ?? null,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
 
             return new JSONResponse([
-                'error' => 'Failed to record feedback',
+                'error' => 'Failed to save feedback',
                 'message' => $e->getMessage(),
             ], 500);
         }//end try
