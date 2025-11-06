@@ -13,7 +13,7 @@ import ApplicationsIndex from '../views/application/ApplicationsIndex.vue'
 import ApplicationDetails from '../views/application/ApplicationDetails.vue'
 import ObjectsIndex from '../views/object/ObjectsIndex.vue'
 import SearchIndex from '../views/search/SearchIndex.vue'
-import ChatView from '../views/ChatView.vue'
+import ChatIndex from '../views/chat/ChatIndex.vue'
 import FilesIndex from '../views/files/FilesIndex.vue'
 import AgentsIndex from '../views/agents/AgentsIndex.vue'
 import ConfigurationsIndex from '../views/configuration/ConfigurationsIndex.vue'
@@ -57,7 +57,7 @@ const router = new Router({
 		{ path: '/applications/:id', name: 'applicationDetails', component: ApplicationDetails },
 		{ path: '/objects', component: ObjectsIndex },
 		{ path: '/tables', component: SearchIndex },
-		{ path: '/chat', component: ChatView },
+		{ path: '/chat', component: ChatIndex },
 		{ path: '/files', component: FilesIndex },
 		{ path: '/agents', component: AgentsIndex },
 		{ path: '/configurations', component: ConfigurationsIndex },

@@ -1,6 +1,6 @@
 <template>
-	<div class="agent-selector">
-		<div class="selector-header">
+	<div class="agent-selector" :class="{ 'inline-mode': inline }">
+		<div v-if="!inline" class="selector-header">
 			<Robot :size="24" />
 			<span>{{ t('openregister', 'Select an AI Agent') }}</span>
 		</div>
@@ -69,7 +69,7 @@
 				@click="$emit('confirm')">
 				{{ t('openregister', 'Start Conversation') }}
 			</NcButton>
-			<NcButton @click="$emit('cancel')">
+			<NcButton v-if="!inline" @click="$emit('cancel')">
 				{{ t('openregister', 'Cancel') }}
 			</NcButton>
 		</div>
@@ -116,6 +116,10 @@ export default {
 			type: String,
 			default: null,
 		},
+		inline: {
+			type: Boolean,
+			default: false,
+		},
 	},
 
 	emits: ['select-agent', 'confirm', 'cancel', 'retry'],
@@ -138,6 +142,17 @@ export default {
 	flex-direction: column;
 	max-width: 600px;
 	min-height: 400px;
+
+	&.inline-mode {
+		background: var(--color-background-hover);
+		border-radius: 12px;
+		border: 1px solid var(--color-border);
+		min-height: 300px;
+
+		.selector-actions {
+			justify-content: center;
+		}
+	}
 
 	.selector-header {
 		display: flex;
