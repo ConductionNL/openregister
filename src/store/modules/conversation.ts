@@ -477,6 +477,21 @@ export const useConversationStore = defineStore('conversation', {
 			this.loading = true
 			this.error = null
 			
+			// Optimistically add user message to UI
+			if (conversationUuid || this.activeConversation) {
+				const userMessage: TMessage = {
+					id: Date.now(), // Temporary ID
+					uuid: 'temp-' + Date.now(),
+					conversationId: this.activeConversation?.id || 0,
+					role: 'user',
+					content: content,
+					sources: null,
+					created: new Date().toISOString(),
+				}
+				this.addMessage(userMessage)
+				console.log('ConversationStore: Added user message optimistically')
+			}
+			
 			try {
 				const endpoint = '/index.php/apps/openregister/api/chat/send'
 				
@@ -504,23 +519,30 @@ export const useConversationStore = defineStore('conversation', {
 					throw new Error(`HTTP error! status: ${response.status}`)
 				}
 				
-				const data = await response.json()
-				
-				// Update active conversation with new conversation UUID if it was created
-				if (data.conversation && !this.activeConversation) {
-					await this.loadConversation(data.conversation)
-				} else {
-					// Add messages to active conversation
-					if (data.userMessage) {
-						this.addMessage(data.userMessage)
-					}
-					if (data.assistantMessage) {
-						this.addMessage(data.assistantMessage)
-					}
+			const data = await response.json()
+			
+			console.log('ConversationStore: Received response', data)
+			
+			// Update active conversation with new conversation UUID if it was created
+			if (data.conversation && !this.activeConversation) {
+				await this.loadConversation(data.conversation)
+			} else {
+				// The API returns only the assistant message
+				// Add the assistant message to active conversation
+				if (data.message) {
+					this.addMessage(data.message)
+					console.log('ConversationStore: Added assistant message to conversation')
 				}
 				
-				// Soft refresh the conversation list to update metadata
-				await this.refreshConversationList(true)
+				// Update conversation title if it was generated
+				if (data.title && this.activeConversation) {
+					this.activeConversation.title = data.title
+					console.log('ConversationStore: Updated conversation title', data.title)
+				}
+			}
+			
+			// Soft refresh the conversation list to update metadata
+			await this.refreshConversationList(true)
 				
 				console.log('ConversationStore: Message sent successfully')
 				

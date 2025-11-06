@@ -255,14 +255,35 @@ class ChatService
                 $context['sources']
             );
 
-            // Generate title if this is the first user message
+            // Generate title if this is the first user message and title is still default
             $messageCount = $this->messageMapper->countByConversation($conversationId);
-            if ($messageCount <= 2 && $conversation->getTitle() === null) {
+            $currentTitle = $conversation->getTitle();
+            
+            // Check if we should generate a new title:
+            // - Message count is 2 or less (first exchange)
+            // - Title is null OR starts with "New Conversation"
+            $shouldGenerateTitle = $messageCount <= 2 && (
+                $currentTitle === null || 
+                str_starts_with($currentTitle, 'New Conversation')
+            );
+            
+            if ($shouldGenerateTitle) {
+                $this->logger->info('[ChatService] Generating title for conversation', [
+                    'conversationId' => $conversationId,
+                    'currentTitle' => $currentTitle,
+                    'messageCount' => $messageCount,
+                ]);
+                
                 $title = $this->generateConversationTitle($userMessage);
                 $uniqueTitle = $this->ensureUniqueTitle($title, $conversation->getUserId(), $conversation->getAgentId());
                 $conversation->setTitle($uniqueTitle);
                 $conversation->setUpdated(new DateTime());
                 $this->conversationMapper->update($conversation);
+                
+                $this->logger->info('[ChatService] Title generated', [
+                    'conversationId' => $conversationId,
+                    'newTitle' => $uniqueTitle,
+                ]);
             }
 
             // Update conversation timestamp
@@ -493,13 +514,48 @@ class ChatService
             self::RECENT_MESSAGES_COUNT
         );
 
+        $this->logger->debug('[ChatService] Building message history', [
+            'conversationId' => $conversationId,
+            'messageCount' => count($messages),
+        ]);
+
         $history = [];
         foreach ($messages as $message) {
-            $history[] = new LLPhantMessage(
-                $message->getContent(),
-                $message->getRole()
-            );
+            $content = $message->getContent();
+            $role = $message->getRole();
+            
+            $this->logger->debug('[ChatService] Adding message to history', [
+                'role' => $role,
+                'contentLength' => strlen($content ?? ''),
+                'hasContent' => !empty($content),
+                'hasRole' => !empty($role),
+            ]);
+            
+            // Only add messages that have both role and content
+            if (!empty($role) && !empty($content)) {
+                // Use static factory methods based on role
+                if ($role === 'user') {
+                    $history[] = LLPhantMessage::user($content);
+                } elseif ($role === 'assistant') {
+                    $history[] = LLPhantMessage::assistant($content);
+                } elseif ($role === 'system') {
+                    $history[] = LLPhantMessage::system($content);
+                } else {
+                    $this->logger->warning('[ChatService] Unknown message role', [
+                        'role' => $role,
+                    ]);
+                }
+            } else {
+                $this->logger->warning('[ChatService] Skipping message with missing role or content', [
+                    'hasRole' => !empty($role),
+                    'hasContent' => !empty($content),
+                ]);
+            }
         }
+        
+        $this->logger->info('[ChatService] Message history built', [
+            'historyCount' => count($history),
+        ]);
 
         return $history;
 
@@ -531,30 +587,64 @@ class ChatService
         ]);
 
         // Get LLM configuration
-        $settings = $this->settingsService->getSettings();
-        $llmConfig = $settings['llm'] ?? [];
+        $llmConfig = $this->settingsService->getLLMSettingsOnly();
 
-        // Check configuration
-        if (empty($llmConfig['chat_provider']) || $llmConfig['chat_provider'] !== 'openai') {
-            throw new \Exception('OpenAI chat provider is not configured');
+        // Get chat provider
+        $chatProvider = $llmConfig['chatProvider'] ?? null;
+        
+        if (empty($chatProvider)) {
+            throw new \Exception('Chat provider is not configured. Please configure OpenAI, Fireworks AI, or Ollama in settings.');
         }
 
-        if (empty($llmConfig['openai_api_key'])) {
-            throw new \Exception('OpenAI API key is not configured');
-        }
+        $this->logger->info('[ChatService] Using chat provider', [
+            'provider' => $chatProvider,
+            'llmConfig' => $llmConfig,
+        ]);
 
         try {
-            // Configure OpenAI
+            // Configure LLM client based on provider
             $config = new OpenAIConfig();
-            $config->apiKey = $llmConfig['openai_api_key'];
-            $config->model = $agent?->getModel() ?? $llmConfig['chat_model'] ?? 'gpt-4o-mini';
+            
+            if ($chatProvider === 'openai') {
+                $openaiConfig = $llmConfig['openaiConfig'] ?? [];
+                if (empty($openaiConfig['apiKey'])) {
+                    throw new \Exception('OpenAI API key is not configured');
+                }
+                $config->apiKey = $openaiConfig['apiKey'];
+                $config->model = $agent?->getModel() ?? $openaiConfig['chatModel'] ?? 'gpt-4o-mini';
+                
+                if (!empty($openaiConfig['organizationId'])) {
+                    $config->organizationId = $openaiConfig['organizationId'];
+                }
+            } elseif ($chatProvider === 'fireworks') {
+                $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
+                if (empty($fireworksConfig['apiKey'])) {
+                    throw new \Exception('Fireworks AI API key is not configured');
+                }
+                $config->apiKey = $fireworksConfig['apiKey'];
+                $config->model = $agent?->getModel() ?? $fireworksConfig['chatModel'] ?? 'accounts/fireworks/models/llama-v3p1-8b-instruct';
+                
+                // Fireworks AI uses OpenAI-compatible API
+                $baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
+                if (!str_ends_with($baseUrl, '/v1')) {
+                    $baseUrl .= '/v1';
+                }
+                $config->url = $baseUrl;
+            } elseif ($chatProvider === 'ollama') {
+                $ollamaConfig = $llmConfig['ollamaConfig'] ?? [];
+                if (empty($ollamaConfig['url'])) {
+                    throw new \Exception('Ollama URL is not configured');
+                }
+                $config->url = rtrim($ollamaConfig['url'], '/');
+                $config->model = $agent?->getModel() ?? $ollamaConfig['chatModel'] ?? 'llama2';
+            } else {
+                throw new \Exception("Unsupported chat provider: {$chatProvider}");
+            }
 
+            // Set temperature from agent or default
             if ($agent?->getTemperature() !== null) {
                 $config->temperature = $agent->getTemperature();
             }
-
-            // Create chat instance
-            $chat = new OpenAIChat($config);
 
             // Build system prompt
             $systemPrompt = $agent?->getPrompt() ?? 
@@ -568,15 +658,28 @@ class ChatService
             }
 
             // Add system message to history
-            array_unshift($messageHistory, new LLPhantMessage($systemPrompt, 'system'));
+            array_unshift($messageHistory, LLPhantMessage::system($systemPrompt));
 
             // Add current user message
-            $messageHistory[] = new LLPhantMessage($userMessage, 'user');
+            $messageHistory[] = LLPhantMessage::user($userMessage);
 
-            // Generate response
-            $response = $chat->generateText($messageHistory);
+            // For Fireworks, use direct HTTP to avoid OpenAI library error handling bugs
+            if ($chatProvider === 'fireworks') {
+                $response = $this->callFireworksChatAPIWithHistory(
+                    $config->apiKey,
+                    $config->model,
+                    $config->url,
+                    $messageHistory
+                );
+            } else {
+                // Create chat instance and generate response
+                $chat = new OpenAIChat($config);
+                $response = $chat->generateText($messageHistory);
+            }
 
             $this->logger->info('[ChatService] Response generated', [
+                'provider' => $chatProvider,
+                'model' => $config->model,
                 'responseLength' => strlen($response),
             ]);
 
@@ -584,6 +687,7 @@ class ChatService
 
         } catch (\Exception $e) {
             $this->logger->error('[ChatService] Failed to generate response', [
+                'provider' => $chatProvider ?? 'unknown',
                 'error' => $e->getMessage(),
             ]);
             throw new \Exception('Failed to generate response: ' . $e->getMessage());
@@ -605,28 +709,67 @@ class ChatService
 
         try {
             // Get LLM configuration
-            $settings = $this->settingsService->getSettings();
-            $llmConfig = $settings['llm'] ?? [];
+            $llmConfig = $this->settingsService->getLLMSettingsOnly();
+            $chatProvider = $llmConfig['chatProvider'] ?? null;
 
-            if (empty($llmConfig['openai_api_key'])) {
-                // Fallback: use first words of message
+            // Try to use configured LLM, fallback if not available
+            if (empty($chatProvider)) {
                 return $this->generateFallbackTitle($firstMessage);
             }
 
-            // Configure OpenAI
+            // Configure LLM based on provider
             $config = new OpenAIConfig();
-            $config->apiKey = $llmConfig['openai_api_key'];
-            $config->model = 'gpt-4o-mini'; // Use fast model for titles
+            
+            if ($chatProvider === 'openai') {
+                $openaiConfig = $llmConfig['openaiConfig'] ?? [];
+                if (empty($openaiConfig['apiKey'])) {
+                    return $this->generateFallbackTitle($firstMessage);
+                }
+                $config->apiKey = $openaiConfig['apiKey'];
+                $config->model = 'gpt-4o-mini'; // Use fast model for titles
+            } elseif ($chatProvider === 'fireworks') {
+                $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
+                if (empty($fireworksConfig['apiKey'])) {
+                    return $this->generateFallbackTitle($firstMessage);
+                }
+                $config->apiKey = $fireworksConfig['apiKey'];
+                $config->model = 'accounts/fireworks/models/llama-v3p1-8b-instruct';
+                $baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
+                if (!str_ends_with($baseUrl, '/v1')) {
+                    $baseUrl .= '/v1';
+                }
+                $config->url = $baseUrl;
+            } elseif ($chatProvider === 'ollama') {
+                $ollamaConfig = $llmConfig['ollamaConfig'] ?? [];
+                if (empty($ollamaConfig['url'])) {
+                    return $this->generateFallbackTitle($firstMessage);
+                }
+                $config->url = rtrim($ollamaConfig['url'], '/');
+                $config->model = $ollamaConfig['chatModel'] ?? 'llama2';
+            } else {
+                return $this->generateFallbackTitle($firstMessage);
+            }
+            
             $config->temperature = 0.7;
-
-            $chat = new OpenAIChat($config);
 
             // Generate title
             $prompt = "Generate a short, descriptive title (max 60 characters) for a conversation that starts with this message:\n\n";
             $prompt .= "\"{$firstMessage}\"\n\n";
             $prompt .= "Title:";
 
-            $title = $chat->generateText($prompt);
+            // Use direct HTTP for Fireworks to avoid OpenAI library issues
+            if ($chatProvider === 'fireworks') {
+                $title = $this->callFireworksChatAPI(
+                    $config->apiKey,
+                    $config->model,
+                    $config->url,
+                    $prompt
+                );
+            } else {
+                $chat = new OpenAIChat($config);
+                $title = $chat->generateText($prompt);
+            }
+            
             $title = trim($title, '"\'');
             
             // Ensure title isn't too long
@@ -969,6 +1112,99 @@ class ChatService
 
 
     /**
+     * Call Fireworks AI chat API with full message history
+     * 
+     * Similar to callFireworksChatAPI but supports message history for conversations.
+     * 
+     * @param string $apiKey         Fireworks API key
+     * @param string $model          Model name
+     * @param string $baseUrl        Base API URL
+     * @param array  $messageHistory Array of LLPhantMessage objects
+     * 
+     * @return string Generated response text
+     * 
+     * @throws \Exception If API call fails
+     */
+    private function callFireworksChatAPIWithHistory(string $apiKey, string $model, string $baseUrl, array $messageHistory): string
+    {
+        $url = rtrim($baseUrl, '/') . '/chat/completions';
+        
+        $this->logger->debug('[ChatService] Calling Fireworks chat API with history', [
+            'url' => $url,
+            'model' => $model,
+            'historyCount' => count($messageHistory),
+        ]);
+
+        // Convert LLPhant messages to API format
+        // LLPhant Message properties are public, so we can access them directly
+        $messages = [];
+        foreach ($messageHistory as $msg) {
+            // Convert ChatRole enum to string value
+            $roleString = $msg->role->value;
+            $content = $msg->content;
+            
+            $messages[] = [
+                'role' => $roleString,
+                'content' => $content,
+            ];
+        }
+        
+        // Log final message count
+        $this->logger->debug('[ChatService] Prepared messages for API', [
+            'messageCount' => count($messages),
+        ]);
+
+        $payload = [
+            'model' => $model,
+            'messages' => $messages,
+        ];
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Authorization: Bearer ' . $apiKey,
+            'Content-Type: application/json',
+        ]);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        curl_setopt($ch, CURLOPT_TIMEOUT, 60); // Longer timeout for conversations
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        if ($curlError) {
+            throw new \Exception("Fireworks API request failed: {$curlError}");
+        }
+
+        if ($httpCode !== 200) {
+            // Parse error response
+            $errorData = json_decode($response, true);
+            $errorMessage = $errorData['error']['message'] ?? $errorData['error'] ?? $response;
+            
+            // Make error messages user-friendly
+            if ($httpCode === 401 || $httpCode === 403) {
+                throw new \Exception('Authentication failed. Please check your Fireworks API key.');
+            } elseif ($httpCode === 404) {
+                throw new \Exception("Model not found: {$model}. Please check the model name.");
+            } elseif ($httpCode === 429) {
+                throw new \Exception('Rate limit exceeded. Please try again later.');
+            } else {
+                throw new \Exception("Fireworks API error (HTTP {$httpCode}): {$errorMessage}");
+            }
+        }
+
+        $data = json_decode($response, true);
+        if (!isset($data['choices'][0]['message']['content'])) {
+            throw new \Exception("Unexpected Fireworks API response format: {$response}");
+        }
+
+        return $data['choices'][0]['message']['content'];
+    }//end callFireworksChatAPIWithHistory()
+
+
+    /**
      * Check if conversation needs summarization and create summary
      *
      * @param Conversation $conversation Conversation entity
@@ -1050,11 +1286,11 @@ class ChatService
     private function generateSummary(array $messages): string
     {
         // Get LLM configuration
-        $settings = $this->settingsService->getSettings();
-        $llmConfig = $settings['llm'] ?? [];
+        $llmConfig = $this->settingsService->getLLMSettingsOnly();
+        $chatProvider = $llmConfig['chatProvider'] ?? null;
 
-        if (empty($llmConfig['openai_api_key'])) {
-            throw new \Exception('OpenAI API key not configured');
+        if (empty($chatProvider)) {
+            throw new \Exception('Chat provider not configured');
         }
 
         // Build conversation text
@@ -1064,19 +1300,54 @@ class ChatService
             $conversationText .= "{$role}: {$message->getContent()}\n\n";
         }
 
-        // Configure OpenAI
+        // Configure LLM based on provider
         $config = new OpenAIConfig();
-        $config->apiKey = $llmConfig['openai_api_key'];
-        $config->model = 'gpt-4o-mini';
-
-        $chat = new OpenAIChat($config);
+        
+        if ($chatProvider === 'openai') {
+            $openaiConfig = $llmConfig['openaiConfig'] ?? [];
+            if (empty($openaiConfig['apiKey'])) {
+                throw new \Exception('OpenAI API key not configured');
+            }
+            $config->apiKey = $openaiConfig['apiKey'];
+            $config->model = 'gpt-4o-mini';
+        } elseif ($chatProvider === 'fireworks') {
+            $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
+            if (empty($fireworksConfig['apiKey'])) {
+                throw new \Exception('Fireworks AI API key not configured');
+            }
+            $config->apiKey = $fireworksConfig['apiKey'];
+            $config->model = 'accounts/fireworks/models/llama-v3p1-8b-instruct';
+            $baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
+            if (!str_ends_with($baseUrl, '/v1')) {
+                $baseUrl .= '/v1';
+            }
+            $config->url = $baseUrl;
+        } elseif ($chatProvider === 'ollama') {
+            $ollamaConfig = $llmConfig['ollamaConfig'] ?? [];
+            if (empty($ollamaConfig['url'])) {
+                throw new \Exception('Ollama URL not configured');
+            }
+            $config->url = rtrim($ollamaConfig['url'], '/');
+            $config->model = $ollamaConfig['chatModel'] ?? 'llama2';
+        }
 
         // Generate summary
         $prompt = "Summarize the following conversation concisely. Focus on key topics, decisions, and information discussed:\n\n";
         $prompt .= $conversationText;
         $prompt .= "\n\nSummary:";
 
-        return $chat->generateText($prompt);
+        // Use direct HTTP for Fireworks to avoid OpenAI library issues
+        if ($chatProvider === 'fireworks') {
+            return $this->callFireworksChatAPI(
+                $config->apiKey,
+                $config->model,
+                $config->url,
+                $prompt
+            );
+        } else {
+            $chat = new OpenAIChat($config);
+            return $chat->generateText($prompt);
+        }
 
     }//end generateSummary()
 

@@ -383,6 +383,39 @@ class ConversationMapper extends QBMapper
 
 
     /**
+     * Count soft-deleted conversations for a user (archived)
+     *
+     * @param string      $userId       User ID
+     * @param string|null $organisation Optional organisation filter
+     *
+     * @return int Count of archived conversations
+     */
+    public function countDeletedByUser(
+        string $userId,
+        ?string $organisation = null
+    ): int {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select($qb->func()->count('*', 'count'))
+            ->from($this->tableName)
+            ->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId, IQueryBuilder::PARAM_STR)))
+            ->andWhere($qb->expr()->isNotNull('deleted_at'));
+
+        // Filter by organisation if provided
+        if ($organisation !== null) {
+            $qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation, IQueryBuilder::PARAM_STR)));
+        }
+
+        $result = $qb->execute();
+        $count = (int) $result->fetchOne();
+        $result->closeCursor();
+
+        return $count;
+
+    }//end countDeletedByUser()
+
+
+    /**
      * Soft delete a conversation
      *
      * @param int $id Conversation ID
