@@ -8,6 +8,9 @@ declare(strict_types=1);
  * This migration adds support for LLphant function tools that agents can use
  * to interact with OpenRegister data (registers, schemas, objects).
  * Also adds a user column for cron/background job scenarios.
+ * Also removes the is_default column from organisations table as it's no longer
+ * used in the Organisation entity. The default organisation is now managed via
+ * configuration instead of a database column.
  *
  * @category Migration
  * @package  OCA\OpenRegister\Migration
@@ -30,11 +33,14 @@ use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
- * Add tools and user columns to agents table
+ * Add tools and user columns to agents table and remove is_default from organisations
  *
  * Columns added:
  * - tools: JSON array of enabled tool names (e.g., ['register', 'schema', 'objects'])
  * - user: User ID for cron/background scenarios when no session exists
+ *
+ * Columns removed:
+ * - is_default: Removed from organisations table (now managed via configuration)
  *
  * @category Migration
  * @package  OCA\OpenRegister\Migration
@@ -89,6 +95,21 @@ class Version1Date20251107180000 extends SimpleMigrationStep
             $output->warning('⚠️  openregister_agents table does not exist');
         }
 
+        // Remove is_default column from organisations table if it exists
+        if ($schema->hasTable('openregister_organisations')) {
+            $table = $schema->getTable('openregister_organisations');
+            
+            if ($table->hasColumn('is_default')) {
+                $table->dropColumn('is_default');
+                $output->info('✅ Removed is_default column from organisations table');
+                $updated = true;
+            } else {
+                $output->info('ℹ️  is_default column does not exist in organisations table');
+            }
+        } else {
+            $output->warning('⚠️  openregister_organisations table does not exist');
+        }
+
         return $updated ? $schema : null;
     }
 
@@ -106,6 +127,8 @@ class Version1Date20251107180000 extends SimpleMigrationStep
         $output->info('✅ Migration complete - Agents can now use LLphant function tools');
         $output->info('   Available tools: RegisterTool, SchemaTool, ObjectsTool');
         $output->info('   Tools can be enabled per agent via the Edit Agent modal');
+        $output->info('✅ Removed is_default column from organisations table');
+        $output->info('   Default organisation is now managed via configuration');
     }
 }
 
