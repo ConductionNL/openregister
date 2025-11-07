@@ -1,9 +1,9 @@
 <?php
 /**
- * OpenRegister Organisation Roles Migration
+ * OpenRegister Organisation Groups Migration
  *
- * This migration adds the roles field to the Organisation table to support
- * organisation-specific roles and groups for role-based access control.
+ * This migration adds the groups field to the Organisation table to support
+ * organisation-specific Nextcloud groups for role-based access control.
  *
  * @category Migration
  * @package  OCA\OpenRegister\Migration
@@ -29,7 +29,7 @@ use OCP\Migration\SimpleMigrationStep;
 use OCP\IDBConnection;
 
 /**
- * Migration to add roles field to organisations
+ * Migration to add groups field to organisations
  *
  * @category Migration
  * @package  OCA\OpenRegister\Migration
@@ -112,17 +112,17 @@ class Version1Date20250102000000 extends SimpleMigrationStep
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        // Initialize roles to empty array for existing organisations
+        // Initialize groups to empty array for existing organisations
         $qb = $this->connection->getQueryBuilder();
         
         $qb->update('openregister_organisations')
-            ->set('roles', $qb->createNamedParameter('[]'))
-            ->where($qb->expr()->isNull('roles'));
+            ->set('groups', $qb->createNamedParameter('[]'))
+            ->where($qb->expr()->isNull('groups'));
         
         $affected = $qb->executeStatement();
         
         if ($affected > 0) {
-            $output->info("Initialized roles field for {$affected} existing organisations");
+            $output->info("Initialized groups field for {$affected} existing organisations");
         }
 
     }//end postSchemaChange()
