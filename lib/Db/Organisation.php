@@ -109,13 +109,6 @@ class Organisation extends Entity implements JsonSerializable
     protected ?bool $active = true;
 
     /**
-     * Whether this is the default organisation
-     *
-     * @var boolean|null Whether this is the default organisation
-     */
-    protected ?bool $isDefault = false;
-
-    /**
      * Storage quota allocated to this organisation in bytes
      * NULL = unlimited storage
      *
@@ -179,7 +172,6 @@ class Organisation extends Entity implements JsonSerializable
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
         $this->addType('active', 'boolean');
-        $this->addType('is_default', 'boolean');
         $this->addType('storage_quota', 'integer');
         $this->addType('bandwidth_quota', 'integer');
         $this->addType('request_quota', 'integer');
@@ -575,7 +567,6 @@ class Organisation extends Entity implements JsonSerializable
             'groups'        => $groups,
             'owner'         => $this->owner,
             'active'        => $this->getActive(),
-            'isDefault'     => $this->isDefault ?? false,
             'quota'         => [
                 'storage'   => $this->storageQuota,
                 'bandwidth' => $this->bandwidthQuota,
