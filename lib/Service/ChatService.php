@@ -346,7 +346,7 @@ class ChatService
 
             return [
                 'message' => $aiMsgEntity->jsonSerialize(),
-                'sources' => $context['sources'],
+                // Note: sources are already included in message->sources
                 'title' => $conversation->getTitle(),
             ];
 
@@ -420,11 +420,13 @@ class ChatService
                     $vectorFilters  // Pass filters array instead of 0.7
                 );
             } elseif ($searchMode === 'hybrid') {
-                $results = $this->vectorService->hybridSearch(
+                $hybridResponse = $this->vectorService->hybridSearch(
                     $query,
                     ['vector_filters' => $vectorFilters], // Pass filters in SOLR filters array
                     $numSources * 2 // Limit parameter
                 );
+                // Extract results array from hybrid search response
+                $results = $hybridResponse['results'] ?? [];
             } else {
                 // Keyword search
                 $results = $this->searchKeywordOnly($query, $numSources * 2);
