@@ -21,8 +21,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tool;
 
-use LLPhant\Chat\FunctionInfo\FunctionInfo;
-use LLPhant\Chat\FunctionInfo\Parameter;
 use OCA\OpenRegister\Db\Agent;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -86,115 +84,112 @@ class AgentTool extends AbstractTool implements ToolInterface
     /**
      * Get function definitions for LLM function calling
      *
-     * @return FunctionInfo[] Array of function definitions
+     * Returns function definitions in OpenAI function calling format.
+     * These are used by LLMs to understand what capabilities this tool provides.
+     *
+     * @return array[] Array of function definitions
      */
     public function getFunctions(): array
     {
         return [
-            // List agents
-            new FunctionInfo(
-                name: 'list_agents',
-                description: 'List all agents accessible to the current user in their organisation. Returns basic information about each agent including name, type, and status. Respects privacy settings.',
-                parameters: [
-                    Parameter::int(
-                        name: 'limit',
-                        description: 'Maximum number of results to return (default: 50)',
-                        required: false
-                    ),
-                    Parameter::int(
-                        name: 'offset',
-                        description: 'Number of results to skip for pagination (default: 0)',
-                        required: false
-                    ),
+            [
+                'name' => 'list_agents',
+                'description' => 'List all agents accessible to the current user in their organisation. Returns basic information about each agent including name, type, and status. Respects privacy settings.',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'limit' => [
+                            'type' => 'integer',
+                            'description' => 'Maximum number of results to return (default: 50)',
+                        ],
+                        'offset' => [
+                            'type' => 'integer',
+                            'description' => 'Number of results to skip for pagination (default: 0)',
+                        ],
+                    ],
+                    'required' => [],
                 ],
-                fn: [$this, 'listAgents']
-            ),
-
-            // Get agent details
-            new FunctionInfo(
-                name: 'get_agent',
-                description: 'Get detailed information about a specific agent by its UUID. Returns full agent configuration including system prompt, model settings, and enabled tools.',
-                parameters: [
-                    Parameter::string(
-                        name: 'uuid',
-                        description: 'UUID of the agent to retrieve',
-                        required: true
-                    ),
+            ],
+            [
+                'name' => 'get_agent',
+                'description' => 'Get detailed information about a specific agent by its UUID. Returns full agent configuration including system prompt, model settings, and enabled tools.',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'uuid' => [
+                            'type' => 'string',
+                            'description' => 'UUID of the agent to retrieve',
+                        ],
+                    ],
+                    'required' => ['uuid'],
                 ],
-                fn: [$this, 'getAgent']
-            ),
-
-            // Create agent
-            new FunctionInfo(
-                name: 'create_agent',
-                description: 'Create a new AI agent in the current organisation. Requires a name and system prompt. Can configure model, temperature, tools, and privacy settings.',
-                parameters: [
-                    Parameter::string(
-                        name: 'name',
-                        description: 'Name of the agent (required)',
-                        required: true
-                    ),
-                    Parameter::string(
-                        name: 'description',
-                        description: 'Description of what the agent does',
-                        required: false
-                    ),
-                    Parameter::string(
-                        name: 'type',
-                        description: 'Type of agent (e.g., "assistant", "support", "analyzer")',
-                        required: false
-                    ),
-                    Parameter::string(
-                        name: 'systemPrompt',
-                        description: 'System prompt that defines the agent\'s behavior and personality',
-                        required: false
-                    ),
+            ],
+            [
+                'name' => 'create_agent',
+                'description' => 'Create a new AI agent in the current organisation. Requires a name and system prompt. Can configure model, temperature, tools, and privacy settings.',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'name' => [
+                            'type' => 'string',
+                            'description' => 'Name of the agent (required)',
+                        ],
+                        'description' => [
+                            'type' => 'string',
+                            'description' => 'Description of what the agent does',
+                        ],
+                        'type' => [
+                            'type' => 'string',
+                            'description' => 'Type of agent (e.g., "assistant", "support", "analyzer")',
+                        ],
+                        'systemPrompt' => [
+                            'type' => 'string',
+                            'description' => 'System prompt that defines the agent\'s behavior and personality',
+                        ],
+                    ],
+                    'required' => ['name'],
                 ],
-                fn: [$this, 'createAgent']
-            ),
-
-            // Update agent
-            new FunctionInfo(
-                name: 'update_agent',
-                description: 'Update an existing agent. Only the owner can modify agents. Provide the UUID and fields to update.',
-                parameters: [
-                    Parameter::string(
-                        name: 'uuid',
-                        description: 'UUID of the agent to update',
-                        required: true
-                    ),
-                    Parameter::string(
-                        name: 'name',
-                        description: 'New name for the agent',
-                        required: false
-                    ),
-                    Parameter::string(
-                        name: 'description',
-                        description: 'New description',
-                        required: false
-                    ),
-                    Parameter::string(
-                        name: 'systemPrompt',
-                        description: 'New system prompt',
-                        required: false
-                    ),
+            ],
+            [
+                'name' => 'update_agent',
+                'description' => 'Update an existing agent. Only the owner can modify agents. Provide the UUID and fields to update.',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'uuid' => [
+                            'type' => 'string',
+                            'description' => 'UUID of the agent to update',
+                        ],
+                        'name' => [
+                            'type' => 'string',
+                            'description' => 'New name for the agent',
+                        ],
+                        'description' => [
+                            'type' => 'string',
+                            'description' => 'New description',
+                        ],
+                        'systemPrompt' => [
+                            'type' => 'string',
+                            'description' => 'New system prompt',
+                        ],
+                    ],
+                    'required' => ['uuid'],
                 ],
-                fn: [$this, 'updateAgent']
-            ),
-
-            // Delete agent
-            new FunctionInfo(
-                name: 'delete_agent',
-                description: 'Delete an agent permanently. Only the owner can delete agents. This will also delete all conversations associated with the agent. This action cannot be undone.',
-                parameters: [
-                    Parameter::string(
-                        name: 'uuid',
-                        description: 'UUID of the agent to delete',
-                        required: true
-                    ),
+            ],
+            [
+                'name' => 'delete_agent',
+                'description' => 'Delete an agent permanently. Only the owner can delete agents. This will also delete all conversations associated with the agent. This action cannot be undone.',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'uuid' => [
+                            'type' => 'string',
+                            'description' => 'UUID of the agent to delete',
+                        ],
+                    ],
+                    'required' => ['uuid'],
                 ],
-                fn: [$this, 'deleteAgent']
-            ),
+            ],
         ];
     }
 

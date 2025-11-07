@@ -21,8 +21,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tool;
 
-use LLPhant\Chat\FunctionInfo\FunctionInfo;
-use LLPhant\Chat\FunctionInfo\Parameter;
 use OCA\OpenRegister\Db\Agent;
 use OCA\OpenRegister\Db\Application;
 use OCA\OpenRegister\Db\ApplicationMapper;
@@ -86,110 +84,108 @@ class ApplicationTool extends AbstractTool implements ToolInterface
     /**
      * Get function definitions for LLM function calling
      *
-     * @return FunctionInfo[] Array of function definitions
+     * Returns function definitions in OpenAI function calling format.
+     * These are used by LLMs to understand what capabilities this tool provides.
+     *
+     * @return array[] Array of function definitions
      */
     public function getFunctions(): array
     {
         return [
-            // List applications
-            new FunctionInfo(
-                name: 'list_applications',
-                description: 'List all applications accessible to the current user in their organisation. Returns basic information about each application. Use filters to narrow results.',
-                parameters: [
-                    Parameter::int(
-                        name: 'limit',
-                        description: 'Maximum number of results to return (default: 50)',
-                        required: false
-                    ),
-                    Parameter::int(
-                        name: 'offset',
-                        description: 'Number of results to skip for pagination (default: 0)',
-                        required: false
-                    ),
+            [
+                'name' => 'list_applications',
+                'description' => 'List all applications accessible to the current user in their organisation. Returns basic information about each application. Use filters to narrow results.',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'limit' => [
+                            'type' => 'integer',
+                            'description' => 'Maximum number of results to return (default: 50)',
+                        ],
+                        'offset' => [
+                            'type' => 'integer',
+                            'description' => 'Number of results to skip for pagination (default: 0)',
+                        ],
+                    ],
+                    'required' => [],
                 ],
-                fn: [$this, 'listApplications']
-            ),
-
-            // Get application details
-            new FunctionInfo(
-                name: 'get_application',
-                description: 'Get detailed information about a specific application by its UUID. Returns full application data including name, description, metadata, and configuration.',
-                parameters: [
-                    Parameter::string(
-                        name: 'uuid',
-                        description: 'UUID of the application to retrieve',
-                        required: true
-                    ),
+            ],
+            [
+                'name' => 'get_application',
+                'description' => 'Get detailed information about a specific application by its UUID. Returns full application data including name, description, metadata, and configuration.',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'uuid' => [
+                            'type' => 'string',
+                            'description' => 'UUID of the application to retrieve',
+                        ],
+                    ],
+                    'required' => ['uuid'],
                 ],
-                fn: [$this, 'getApplication']
-            ),
-
-            // Create application
-            new FunctionInfo(
-                name: 'create_application',
-                description: 'Create a new application in the current organisation. Requires a unique name and can include description, metadata, and configuration.',
-                parameters: [
-                    Parameter::string(
-                        name: 'name',
-                        description: 'Name of the application (required)',
-                        required: true
-                    ),
-                    Parameter::string(
-                        name: 'description',
-                        description: 'Description of what the application does',
-                        required: false
-                    ),
-                    Parameter::string(
-                        name: 'domain',
-                        description: 'Domain or URL where the application is hosted',
-                        required: false
-                    ),
+            ],
+            [
+                'name' => 'create_application',
+                'description' => 'Create a new application in the current organisation. Requires a unique name and can include description, metadata, and configuration.',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'name' => [
+                            'type' => 'string',
+                            'description' => 'Name of the application (required)',
+                        ],
+                        'description' => [
+                            'type' => 'string',
+                            'description' => 'Description of what the application does',
+                        ],
+                        'domain' => [
+                            'type' => 'string',
+                            'description' => 'Domain or URL where the application is hosted',
+                        ],
+                    ],
+                    'required' => ['name'],
                 ],
-                fn: [$this, 'createApplication']
-            ),
-
-            // Update application
-            new FunctionInfo(
-                name: 'update_application',
-                description: 'Update an existing application. Only the owner or users with update permission can modify applications. Provide the UUID and fields to update.',
-                parameters: [
-                    Parameter::string(
-                        name: 'uuid',
-                        description: 'UUID of the application to update',
-                        required: true
-                    ),
-                    Parameter::string(
-                        name: 'name',
-                        description: 'New name for the application',
-                        required: false
-                    ),
-                    Parameter::string(
-                        name: 'description',
-                        description: 'New description',
-                        required: false
-                    ),
-                    Parameter::string(
-                        name: 'domain',
-                        description: 'New domain or URL',
-                        required: false
-                    ),
+            ],
+            [
+                'name' => 'update_application',
+                'description' => 'Update an existing application. Only the owner or users with update permission can modify applications. Provide the UUID and fields to update.',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'uuid' => [
+                            'type' => 'string',
+                            'description' => 'UUID of the application to update',
+                        ],
+                        'name' => [
+                            'type' => 'string',
+                            'description' => 'New name for the application',
+                        ],
+                        'description' => [
+                            'type' => 'string',
+                            'description' => 'New description',
+                        ],
+                        'domain' => [
+                            'type' => 'string',
+                            'description' => 'New domain or URL',
+                        ],
+                    ],
+                    'required' => ['uuid'],
                 ],
-                fn: [$this, 'updateApplication']
-            ),
-
-            // Delete application
-            new FunctionInfo(
-                name: 'delete_application',
-                description: 'Delete an application permanently. Only the owner or users with delete permission can remove applications. This action cannot be undone.',
-                parameters: [
-                    Parameter::string(
-                        name: 'uuid',
-                        description: 'UUID of the application to delete',
-                        required: true
-                    ),
+            ],
+            [
+                'name' => 'delete_application',
+                'description' => 'Delete an application permanently. Only the owner or users with delete permission can remove applications. This action cannot be undone.',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'uuid' => [
+                            'type' => 'string',
+                            'description' => 'UUID of the application to delete',
+                        ],
+                    ],
+                    'required' => ['uuid'],
                 ],
-                fn: [$this, 'deleteApplication']
-            ),
+            ],
         ];
     }
 
