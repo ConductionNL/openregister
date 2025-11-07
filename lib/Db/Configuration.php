@@ -23,12 +23,75 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * Configuration entity class
+ *
+ * @method string|null getUuid()
+ * @method void setUuid(?string $uuid)
+ * @method string|null getTitle()
+ * @method void setTitle(?string $title)
+ * @method string|null getDescription()
+ * @method void setDescription(?string $description)
+ * @method string|null getType()
+ * @method void setType(?string $type)
+ * @method string|null getApp()
+ * @method void setApp(?string $app)
+ * @method string|null getVersion()
+ * @method void setVersion(?string $version)
+ * @method string|null getSourceType()
+ * @method void setSourceType(?string $sourceType)
+ * @method string|null getSourceUrl()
+ * @method void setSourceUrl(?string $sourceUrl)
+ * @method string|null getLocalVersion()
+ * @method void setLocalVersion(?string $localVersion)
+ * @method string|null getRemoteVersion()
+ * @method void setRemoteVersion(?string $remoteVersion)
+ * @method DateTime|null getLastChecked()
+ * @method void setLastChecked(?DateTime $lastChecked)
+ * @method bool getAutoUpdate()
+ * @method void setAutoUpdate(bool $autoUpdate)
+ * @method array|null getNotificationGroups()
+ * @method void setNotificationGroups(?array $notificationGroups)
+ * @method string|null getGithubRepo()
+ * @method void setGithubRepo(?string $githubRepo)
+ * @method string|null getGithubBranch()
+ * @method void setGithubBranch(?string $githubBranch)
+ * @method string|null getGithubPath()
+ * @method void setGithubPath(?string $githubPath)
+ * @method array|null getRegisters()
+ * @method void setRegisters(?array $registers)
+ * @method array|null getSchemas()
+ * @method void setSchemas(?array $schemas)
+ * @method array|null getObjects()
+ * @method void setObjects(?array $objects)
+ * @method array|null getViews()
+ * @method void setViews(?array $views)
+ * @method array|null getAgents()
+ * @method void setAgents(?array $agents)
+ * @method array|null getSources()
+ * @method void setSources(?array $sources)
+ * @method array|null getApplications()
+ * @method void setApplications(?array $applications)
+ * @method string|null getOrganisation()
+ * @method void setOrganisation(?string $organisation)
+ * @method string|null getOwner()
+ * @method void setOwner(?string $owner)
+ * @method DateTime|null getCreated()
+ * @method void setCreated(?DateTime $created)
+ * @method DateTime|null getUpdated()
+ * @method void setUpdated(?DateTime $updated)
  */
 class Configuration extends Entity implements JsonSerializable
 {
+
+    /**
+     * Unique identifier for the configuration
+     *
+     * @var string|null UUID of the configuration
+     */
+    protected ?string $uuid = null;
 
     /**
      * Title of the configuration
@@ -66,6 +129,76 @@ class Configuration extends Entity implements JsonSerializable
     protected $version = null;
 
     /**
+     * Source type of the configuration (local, github, gitlab, url, manual)
+     *
+     * @var string|null
+     */
+    protected $sourceType = null;
+
+    /**
+     * Source URL where the configuration file is located
+     *
+     * @var string|null
+     */
+    protected $sourceUrl = null;
+
+    /**
+     * Currently loaded/local version of the configuration
+     *
+     * @var string|null
+     */
+    protected $localVersion = null;
+
+    /**
+     * Latest available remote version of the configuration
+     *
+     * @var string|null
+     */
+    protected $remoteVersion = null;
+
+    /**
+     * Last time the remote version was checked
+     *
+     * @var DateTime|null
+     */
+    protected $lastChecked = null;
+
+    /**
+     * Whether to automatically update when new version is available
+     *
+     * @var bool
+     */
+    protected $autoUpdate = false;
+
+    /**
+     * Array of group IDs that should receive update notifications
+     *
+     * @var array|null
+     */
+    protected ?array $notificationGroups = [];
+
+    /**
+     * GitHub repository name (optional, for GitHub operations)
+     *
+     * @var string|null
+     */
+    protected $githubRepo = null;
+
+    /**
+     * GitHub branch to push to (optional, default: main)
+     *
+     * @var string|null
+     */
+    protected $githubBranch = null;
+
+    /**
+     * GitHub folder path in repository (optional)
+     *
+     * @var string|null
+     */
+    protected $githubPath = null;
+
+    /**
      * Array of register IDs managed by this configuration
      *
      * @var array|null
@@ -85,6 +218,41 @@ class Configuration extends Entity implements JsonSerializable
      * @var array|null
      */
     protected ?array $objects = [];
+
+    /**
+     * Array of view IDs managed by this configuration
+     *
+     * @var array|null
+     */
+    protected ?array $views = [];
+
+    /**
+     * Array of agent IDs managed by this configuration
+     *
+     * @var array|null
+     */
+    protected ?array $agents = [];
+
+    /**
+     * Array of source IDs managed by this configuration
+     *
+     * @var array|null
+     */
+    protected ?array $sources = [];
+
+    /**
+     * Array of application IDs managed by this configuration
+     *
+     * @var array|null
+     */
+    protected ?array $applications = [];
+
+    /**
+     * Organisation UUID associated with this configuration
+     *
+     * @var string|null
+     */
+    protected $organisation = null;
 
     /**
      * Owner of the configuration (user ID)
@@ -114,14 +282,30 @@ class Configuration extends Entity implements JsonSerializable
     public function __construct()
     {
         $this->addType('id', 'integer');
+        $this->addType('uuid', 'string');
         $this->addType('title', 'string');
         $this->addType('description', 'string');
         $this->addType('type', 'string');
         $this->addType('app', 'string');
         $this->addType('version', 'string');
+        $this->addType('sourceType', 'string');
+        $this->addType('sourceUrl', 'string');
+        $this->addType('localVersion', 'string');
+        $this->addType('remoteVersion', 'string');
+        $this->addType('lastChecked', 'datetime');
+        $this->addType('autoUpdate', 'boolean');
+        $this->addType('notificationGroups', 'json');
+        $this->addType('githubRepo', 'string');
+        $this->addType('githubBranch', 'string');
+        $this->addType('githubPath', 'string');
         $this->addType('registers', 'json');
         $this->addType('schemas', 'json');
         $this->addType('objects', 'json');
+        $this->addType('views', 'json');
+        $this->addType('agents', 'json');
+        $this->addType('sources', 'json');
+        $this->addType('applications', 'json');
+        $this->addType('organisation', 'string');
         $this->addType('owner', 'string');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
@@ -130,107 +314,22 @@ class Configuration extends Entity implements JsonSerializable
 
 
     /**
-     * Get the registers of the configuration
+     * Validate UUID format
      *
-     * @return array<int> Array of register IDs
+     * @param string $uuid The UUID to validate
+     *
+     * @return bool True if UUID format is valid
      */
-    public function getRegisters(): array
+    public static function isValidUuid(string $uuid): bool
     {
-        return ($this->registers ?? []);
+        try {
+            Uuid::fromString($uuid);
+            return true;
+        } catch (\InvalidArgumentException $e) {
+            return false;
+        }
 
-    }//end getRegisters()
-
-
-    /**
-     * Set the registers of the configuration
-     *
-     * @param array<int>|null $registers Array of register IDs or null
-     *
-     * @return void
-     */
-    public function setRegisters(?array $registers): void
-    {
-        $this->registers = $registers ?? [];
-
-    }//end setRegisters()
-
-
-    /**
-     * Get the schemas of the configuration
-     *
-     * @return array<int> Array of schema IDs
-     */
-    public function getSchemas(): array
-    {
-        return ($this->schemas ?? []);
-
-    }//end getSchemas()
-
-
-    /**
-     * Set the schemas of the configuration
-     *
-     * @param array<int>|null $schemas Array of schema IDs or null
-     *
-     * @return void
-     */
-    public function setSchemas(?array $schemas): void
-    {
-        $this->schemas = $schemas ?? [];
-
-    }//end setSchemas()
-
-
-    /**
-     * Get the objects of the configuration
-     *
-     * @return array<int> Array of object IDs
-     */
-    public function getObjects(): array
-    {
-        return ($this->objects ?? []);
-
-    }//end getObjects()
-
-
-    /**
-     * Set the objects of the configuration
-     *
-     * @param array<int>|null $objects Array of object IDs or null
-     *
-     * @return void
-     */
-    public function setObjects(?array $objects): void
-    {
-        $this->objects = $objects ?? [];
-
-    }//end setObjects()
-
-
-    /**
-     * Get the owner of the configuration (backwards compatibility - maps to app field)
-     *
-     * @return string|null Owner/App identifier
-     */
-    public function getOwner(): ?string
-    {
-        return $this->app;
-
-    }//end getOwner()
-
-
-    /**
-     * Set the owner of the configuration (backwards compatibility - maps to app field)
-     *
-     * @param string|null $owner Owner/App identifier
-     *
-     * @return void
-     */
-    public function setOwner(?string $owner): void
-    {
-        $this->app = $owner;
-
-    }//end setOwner()
+    }//end isValidUuid()
 
 
     /**
@@ -267,9 +366,19 @@ class Configuration extends Entity implements JsonSerializable
     {
         $jsonFields = $this->getJsonFields();
 
+        // Map 'application' to 'app' for frontend compatibility
+        if (isset($object['application']) && !isset($object['app'])) {
+            $object['app'] = $object['application'];
+        }
+
         foreach ($object as $key => $value) {
             if (in_array($key, $jsonFields) === true && $value === []) {
                 $value = null;
+            }
+
+            // Skip 'application' as it's already mapped to 'app'
+            if ($key === 'application') {
+                continue;
             }
 
             $method = 'set'.ucfirst($key);
@@ -294,21 +403,92 @@ class Configuration extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         return [
-            'id'          => $this->id,
-            'title'       => $this->title,
-            'description' => $this->description,
-            'type'        => $this->type,
-            'app'         => $this->app,
-            'version'     => $this->version,
-            'owner'       => $this->owner,
-            'registers'   => $this->registers,
-            'schemas'     => $this->schemas,
-            'objects'     => $this->objects,
-            'created'     => ($this->created !== null) ? $this->created->format('c') : null,
-            'updated'     => ($this->updated !== null) ? $this->updated->format('c') : null,
+            'id'                 => $this->id,
+            'uuid'               => $this->uuid,
+            'title'              => $this->title,
+            'description'        => $this->description,
+            'type'               => $this->type,
+            'app'                => $this->app,
+            'application'        => $this->app, // Alias for frontend compatibility
+            'version'            => $this->version,
+            'sourceType'         => $this->sourceType,
+            'sourceUrl'          => $this->sourceUrl,
+            'localVersion'       => $this->localVersion,
+            'remoteVersion'      => $this->remoteVersion,
+            'lastChecked'        => ($this->lastChecked !== null) ? $this->lastChecked->format('c') : null,
+            'autoUpdate'         => $this->autoUpdate,
+            'notificationGroups' => $this->notificationGroups,
+            'githubRepo'         => $this->githubRepo,
+            'githubBranch'       => $this->githubBranch,
+            'githubPath'         => $this->githubPath,
+            'organisation'       => $this->organisation,
+            'owner'              => $this->owner,
+            'registers'          => $this->registers,
+            'schemas'            => $this->schemas,
+            'objects'            => $this->objects,
+            'views'              => $this->views,
+            'agents'             => $this->agents,
+            'sources'            => $this->sources,
+            'applications'       => $this->applications,
+            'created'            => ($this->created !== null) ? $this->created->format('c') : null,
+            'updated'            => ($this->updated !== null) ? $this->updated->format('c') : null,
         ];
 
     }//end jsonSerialize()
+
+
+    /**
+     * Check if a remote update is available
+     *
+     * Compares the remoteVersion with localVersion to determine if an update is available.
+     *
+     * @return bool True if remote version is newer than local version
+     */
+    public function hasUpdateAvailable(): bool
+    {
+        if ($this->remoteVersion === null || $this->localVersion === null) {
+            return false;
+        }
+
+        return version_compare($this->remoteVersion, $this->localVersion, '>');
+
+    }//end hasUpdateAvailable()
+
+
+    /**
+     * Check if this configuration is from a remote source
+     *
+     * @return bool True if source type is github, gitlab, or url
+     */
+    public function isRemoteSource(): bool
+    {
+        return in_array($this->sourceType, ['github', 'gitlab', 'url']);
+
+    }//end isRemoteSource()
+
+
+    /**
+     * Check if this configuration is local
+     *
+     * @return bool True if source type is local
+     */
+    public function isLocalSource(): bool
+    {
+        return $this->sourceType === 'local';
+
+    }//end isLocalSource()
+
+
+    /**
+     * Check if this configuration is manually created
+     *
+     * @return bool True if source type is manual
+     */
+    public function isManualSource(): bool
+    {
+        return $this->sourceType === 'manual';
+
+    }//end isManualSource()
 
 
     /**

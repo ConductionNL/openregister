@@ -12,6 +12,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * FileText Entity
@@ -23,6 +24,8 @@ use OCP\AppFramework\Db\Entity;
  * @author   OpenRegister Team
  * @license  AGPL-3.0-or-later
  * 
+ * @method string|null getUuid()
+ * @method void setUuid(?string $uuid)
  * @method int getFileId()
  * @method void setFileId(int $fileId)
  * @method string getFilePath()
@@ -53,6 +56,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setIndexedInSolr(bool $indexedInSolr)
  * @method bool getVectorized()
  * @method void setVectorized(bool $vectorized)
+ * @method string|null getChunksJson()
+ * @method void setChunksJson(?string $chunksJson)
  * @method DateTime getCreatedAt()
  * @method void setCreatedAt(DateTime $createdAt)
  * @method DateTime getUpdatedAt()
@@ -62,6 +67,7 @@ use OCP\AppFramework\Db\Entity;
  */
 class FileText extends Entity implements JsonSerializable
 {
+    protected ?string $uuid = null;
     protected ?int $fileId = null;
     protected ?string $filePath = null;
     protected ?string $fileName = null;
@@ -75,6 +81,7 @@ class FileText extends Entity implements JsonSerializable
     protected ?string $extractionError = null;
     protected bool $chunked = false;
     protected int $chunkCount = 0;
+    protected ?string $chunksJson = null;
     protected bool $indexedInSolr = false;
     protected bool $vectorized = false;
     protected ?DateTime $createdAt = null;
@@ -83,6 +90,7 @@ class FileText extends Entity implements JsonSerializable
 
     public function __construct()
     {
+        $this->addType('uuid', 'string');
         $this->addType('fileId', 'integer');
         $this->addType('filePath', 'string');
         $this->addType('fileName', 'string');
@@ -96,6 +104,7 @@ class FileText extends Entity implements JsonSerializable
         $this->addType('extractionError', 'string');
         $this->addType('chunked', 'boolean');
         $this->addType('chunkCount', 'integer');
+        $this->addType('chunksJson', 'string');
         $this->addType('indexedInSolr', 'boolean');
         $this->addType('vectorized', 'boolean');
         $this->addType('createdAt', 'datetime');
@@ -103,10 +112,28 @@ class FileText extends Entity implements JsonSerializable
         $this->addType('extractedAt', 'datetime');
     }
 
+    /**
+     * Validate UUID format
+     *
+     * @param string $uuid The UUID to validate
+     *
+     * @return bool True if UUID format is valid
+     */
+    public static function isValidUuid(string $uuid): bool
+    {
+        try {
+            Uuid::fromString($uuid);
+            return true;
+        } catch (\InvalidArgumentException $e) {
+            return false;
+        }
+    }
+
     public function jsonSerialize(): array
     {
         return [
             'id' => $this->id,
+            'uuid' => $this->uuid,
             'fileId' => $this->fileId,
             'filePath' => $this->filePath,
             'fileName' => $this->fileName,

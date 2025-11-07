@@ -179,6 +179,12 @@ class ConfigurationsController extends Controller
             }
         }
 
+        // Remove immutable fields to prevent tampering
+        unset($data['id']);
+        unset($data['organisation']);
+        unset($data['owner']);
+        unset($data['created']);
+
         try {
             return new JSONResponse(
                 $this->configurationMapper->updateFromArray($id, $data)
@@ -191,6 +197,23 @@ class ConfigurationsController extends Controller
         }
 
     }//end update()
+
+
+    /**
+     * Patch (partially update) a configuration
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param int $id The ID of the configuration to patch
+     *
+     * @return JSONResponse The updated configuration data
+     */
+    public function patch(int $id): JSONResponse
+    {
+        return $this->update($id);
+
+    }//end patch()
 
 
     /**

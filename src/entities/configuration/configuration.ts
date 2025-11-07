@@ -10,7 +10,11 @@ export class ConfigurationEntity implements TConfiguration {
 	title: string
 	description: string | null
 	type: string
+	application: string
 	owner: string
+	organisation: number | null
+	registers?: number[]
+	schemas?: number[]
 	created: string
 	updated: string
 
@@ -19,7 +23,11 @@ export class ConfigurationEntity implements TConfiguration {
 		this.title = configuration.title || ''
 		this.description = configuration.description || null
 		this.type = configuration.type || ''
+		this.application = configuration.application || ''
 		this.owner = configuration.owner || ''
+		this.organisation = configuration.organisation || null
+		this.registers = configuration.registers || []
+		this.schemas = configuration.schemas || []
 		this.created = configuration.created || ''
 		this.updated = configuration.updated || ''
 	}
@@ -32,10 +40,14 @@ export class ConfigurationEntity implements TConfiguration {
 			id: z.string().min(1),
 			title: z.string().min(1),
 			description: z.string().nullable(),
-			type: z.string().min(1),
-			owner: z.string().min(1),
-			created: z.string().min(1),
-			updated: z.string().min(1),
+			type: z.string(),
+			application: z.string(),
+			owner: z.string(),
+			organisation: z.number().nullable(),
+			registers: z.array(z.number()).optional(),
+			schemas: z.array(z.number()).optional(),
+			created: z.string(),
+			updated: z.string(),
 		})
 
 		return schema.safeParse(this)

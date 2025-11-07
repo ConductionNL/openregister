@@ -1,470 +1,1622 @@
 <?php
+/**
+ * OpenRegister Chat Service
+ *
+ * Service for managing AI chat conversations with RAG (Retrieval Augmented Generation).
+ * Supports conversation management, agent-based context retrieval, and automatic features.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.nl
+ */
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Db\Conversation;
+use OCA\OpenRegister\Db\ConversationMapper;
+use OCA\OpenRegister\Db\Message;
+use OCA\OpenRegister\Db\MessageMapper;
+use OCA\OpenRegister\Db\Agent;
+use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Service\VectorEmbeddingService;
 use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\ToolRegistry;
+use OCA\OpenRegister\Tool\ToolInterface;
+use OCA\OpenRegister\Tool\RegisterTool;
+use OCA\OpenRegister\Tool\SchemaTool;
+use OCA\OpenRegister\Tool\ObjectsTool;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use LLPhant\Chat\OpenAIChat;
+use LLPhant\Chat\Message as LLPhantMessage;
 use LLPhant\OpenAIConfig;
+use OpenAI\Exceptions\ErrorException as OpenAIErrorException;
+use DateTime;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * ChatService
  *
- * Service for managing AI chat conversations with RAG (Retrieval Augmented Generation)
+ * Service for managing AI chat conversations with RAG (Retrieval Augmented Generation).
+ * This service handles ALL LLM chat operations and business logic.
+ *
+ * RESPONSIBILITIES:
+ * - Process chat messages with RAG context retrieval
+ * - Generate AI responses using configured LLM providers
+ * - Manage conversation history and summarization
+ * - Generate conversation titles automatically
+ * - Test LLM chat configurations without saving settings
+ * - Handle agent-based context retrieval and filtering
+ *
+ * PROVIDER SUPPORT:
+ * - OpenAI: GPT-4, GPT-4o-mini, and other chat models
+ * - Fireworks AI: Llama, Mistral, and other open models
+ * - Ollama: Local LLM deployments
+ *
+ * ARCHITECTURE:
+ * - Uses LLPhant library for LLM interactions
+ * - Integrates with VectorEmbeddingService for semantic search
+ * - Can use GuzzleSolrService for keyword search (optional)
+ * - Independent chat logic, not tied to SOLR infrastructure
+ *
+ * RAG CAPABILITIES:
+ * - Semantic search using VectorEmbeddingService
+ * - Keyword search using GuzzleSolrService (optional)
+ * - Hybrid search combining both approaches
+ * - Agent-based filtering and context retrieval
+ * - View-based filtering for multi-tenancy
+ *
+ * CONVERSATION MANAGEMENT:
+ * - Automatic title generation from first message
+ * - Conversation summarization when token limit reached
+ * - Message history management with context windows
+ * - Source tracking for RAG responses
+ *
+ * INTEGRATION POINTS:
+ * - VectorEmbeddingService: For semantic search in RAG
+ * - GuzzleSolrService: For keyword search (optional)
+ * - SettingsService: For reading LLM configuration
+ * - SettingsController: Delegates testing to this service
+ *
+ * NOTE: This service handles all LLM chat business logic. Controllers should
+ * delegate to this service rather than implementing chat logic themselves.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service
- * @author   Conduction <info@conduction.nl>
- * @license  EUPL-1.2 https://opensource.org/licenses/EUPL-1.2
- * @link     https://www.conduction.nl
  */
 class ChatService
 {
-	/**
-	 * @var IDBConnection Database connection
-	 */
-	private IDBConnection $db;
+    /**
+     * Maximum tokens before triggering summarization
+     */
+    private const MAX_TOKENS_BEFORE_SUMMARY = 3000;
 
-	/**
-	 * @var VectorEmbeddingService Vector embedding service
-	 */
-	private VectorEmbeddingService $vectorService;
+    /**
+     * Number of recent messages to keep in full context
+     */
+    private const RECENT_MESSAGES_COUNT = 10;
 
-	/**
-	 * @var GuzzleSolrService SOLR service
-	 */
-	private GuzzleSolrService $solrService;
+    /**
+     * Database connection
+     *
+     * @var IDBConnection
+     */
+    private IDBConnection $db;
 
-	/**
-	 * @var SettingsService Settings service
-	 */
-	private SettingsService $settingsService;
+    /**
+     * Conversation mapper
+     *
+     * @var ConversationMapper
+     */
+    private ConversationMapper $conversationMapper;
 
-	/**
-	 * @var LoggerInterface Logger
-	 */
-	private LoggerInterface $logger;
+    /**
+     * Message mapper
+     *
+     * @var MessageMapper
+     */
+    private MessageMapper $messageMapper;
 
-	/**
-	 * Constructor
-	 *
-	 * @param IDBConnection          $db              Database connection
-	 * @param VectorEmbeddingService $vectorService   Vector embedding service
-	 * @param GuzzleSolrService      $solrService     SOLR service
-	 * @param SettingsService        $settingsService Settings service
-	 * @param LoggerInterface        $logger          Logger
-	 */
-	public function __construct(
-		IDBConnection $db,
-		VectorEmbeddingService $vectorService,
-		GuzzleSolrService $solrService,
-		SettingsService $settingsService,
-		LoggerInterface $logger
-	) {
-		$this->db = $db;
-		$this->vectorService = $vectorService;
-		$this->solrService = $solrService;
-		$this->settingsService = $settingsService;
-		$this->logger = $logger;
-	}
+    /**
+     * Agent mapper
+     *
+     * @var AgentMapper
+     */
+    private AgentMapper $agentMapper;
 
-	/**
-	 * Process a chat message and generate a response using RAG
-	 *
-	 * @param string $userId         User ID
-	 * @param string $message        User message
-	 * @param string $searchMode     Search mode: 'hybrid', 'semantic', or 'keyword'
-	 * @param int    $numSources     Number of sources to retrieve for context
-	 * @param bool   $includeFiles   Whether to search in files
-	 * @param bool   $includeObjects Whether to search in objects
-	 *
-	 * @return array Response data with 'response', 'sources', 'conversationId'
-	 * @throws \Exception If chat processing fails
-	 */
-	public function processMessage(
-		string $userId,
-		string $message,
-		string $searchMode = 'hybrid',
-		int $numSources = 5,
-		bool $includeFiles = true,
-		bool $includeObjects = true
-	): array {
-		$this->logger->info('[ChatService] Processing message', [
-			'userId' => $userId,
-			'message' => substr($message, 0, 100),
-			'searchMode' => $searchMode,
-		]);
+    /**
+     * Vector embedding service
+     *
+     * @var VectorEmbeddingService
+     */
+    private VectorEmbeddingService $vectorService;
 
-		try {
-			// Step 1: Retrieve relevant context using RAG
-			$context = $this->retrieveContext(
-				$message,
-				$searchMode,
-				$numSources,
-				$includeFiles,
-				$includeObjects
-			);
+    /**
+     * SOLR service
+     *
+     * @var GuzzleSolrService
+     */
+    private GuzzleSolrService $solrService;
 
-			// Step 2: Generate response using LLM with context
-			$response = $this->generateResponse($message, $context);
+    /**
+     * Settings service
+     *
+     * @var SettingsService
+     */
+    private SettingsService $settingsService;
 
-			// Step 3: Store conversation history
-			$conversationId = $this->storeMessage($userId, $message, $response, $context);
+    /**
+     * Logger
+     *
+     * @var LoggerInterface
+     */
+    private LoggerInterface $logger;
 
-			return [
-				'response' => $response,
-				'sources' => $context['sources'],
-				'conversationId' => $conversationId,
-				'searchMode' => $searchMode,
-			];
-		} catch (\Exception $e) {
-			$this->logger->error('[ChatService] Failed to process message', [
-				'error' => $e->getMessage(),
-				'trace' => $e->getTraceAsString(),
-			]);
-			throw $e;
-		}
-	}
+    /**
+     * Register tool
+     *
+     * @var RegisterTool
+     */
+    private RegisterTool $registerTool;
 
-	/**
-	 * Retrieve relevant context for a user query using RAG
-	 *
-	 * @param string $query          User query
-	 * @param string $searchMode     Search mode: 'hybrid', 'semantic', or 'keyword'
-	 * @param int    $numSources     Number of sources to retrieve
-	 * @param bool   $includeFiles   Whether to search in files
-	 * @param bool   $includeObjects Whether to search in objects
-	 *
-	 * @return array Context data with 'text', 'sources'
-	 */
-	private function retrieveContext(
-		string $query,
-		string $searchMode,
-		int $numSources,
-		bool $includeFiles,
-		bool $includeObjects
-	): array {
-		$this->logger->info('[ChatService] Retrieving context', [
-			'query' => substr($query, 0, 100),
-			'searchMode' => $searchMode,
-			'numSources' => $numSources,
-		]);
+    /**
+     * Schema tool
+     *
+     * @var SchemaTool
+     */
+    private SchemaTool $schemaTool;
 
-		$sources = [];
-		$contextText = '';
+    /**
+     * Objects tool
+     *
+     * @var ObjectsTool
+     */
+    private ObjectsTool $objectsTool;
 
-		try {
-			// Determine which search method to use
-			if ($searchMode === 'semantic') {
-				// Use semantic search only
-				$results = $this->vectorService->semanticSearch(
-					$query,
-					$numSources * 2, // Get more results to filter by type
-					0.7 // Similarity threshold
-				);
-			} elseif ($searchMode === 'hybrid') {
-				// Use hybrid search (combines keyword and semantic)
-				$results = $this->vectorService->hybridSearch(
-					$query,
-					$numSources * 2
-				);
-			} else {
-				// Use keyword search only (SOLR)
-				$results = $this->searchKeywordOnly($query, $numSources * 2);
-			}
+    /**
+     * Tool registry
+     *
+     * @var ToolRegistry
+     */
+    private ToolRegistry $toolRegistry;
 
-			// Filter results by type (file vs object) and build context
-			foreach ($results as $result) {
-				// Check if we should include this result type
-				$isFile = ($result['entity_type'] ?? '') === 'file';
-				$isObject = ($result['entity_type'] ?? '') === 'object';
+    /**
+     * Constructor
+     *
+     * @param IDBConnection          $db                  Database connection
+     * @param ConversationMapper     $conversationMapper  Conversation mapper
+     * @param MessageMapper          $messageMapper       Message mapper
+     * @param AgentMapper            $agentMapper         Agent mapper
+     * @param VectorEmbeddingService $vectorService       Vector embedding service
+     * @param GuzzleSolrService      $solrService         SOLR service
+     * @param SettingsService        $settingsService     Settings service
+     * @param LoggerInterface        $logger              Logger
+     * @param RegisterTool           $registerTool        Register tool for function calling (legacy)
+     * @param SchemaTool             $schemaTool          Schema tool for function calling (legacy)
+     * @param ObjectsTool            $objectsTool         Objects tool for function calling (legacy)
+     * @param ToolRegistry           $toolRegistry        Tool registry for dynamic tool loading
+     */
+    public function __construct(
+        IDBConnection $db,
+        ConversationMapper $conversationMapper,
+        MessageMapper $messageMapper,
+        AgentMapper $agentMapper,
+        VectorEmbeddingService $vectorService,
+        GuzzleSolrService $solrService,
+        SettingsService $settingsService,
+        LoggerInterface $logger,
+        RegisterTool $registerTool,
+        SchemaTool $schemaTool,
+        ObjectsTool $objectsTool,
+        ToolRegistry $toolRegistry
+    ) {
+        $this->db = $db;
+        $this->conversationMapper = $conversationMapper;
+        $this->messageMapper = $messageMapper;
+        $this->agentMapper = $agentMapper;
+        $this->vectorService = $vectorService;
+        $this->solrService = $solrService;
+        $this->settingsService = $settingsService;
+        $this->logger = $logger;
+        $this->registerTool = $registerTool;
+        $this->schemaTool = $schemaTool;
+        $this->objectsTool = $objectsTool;
+        $this->toolRegistry = $toolRegistry;
 
-				if (($isFile && !$includeFiles) || ($isObject && !$includeObjects)) {
-					continue;
-				}
+    }//end __construct()
 
-				// Stop if we have enough sources
-				if (count($sources) >= $numSources) {
-					break;
-				}
 
-				// Extract relevant information
-				$source = [
-					'id' => $result['entity_id'] ?? null,
-					'type' => $result['entity_type'] ?? 'unknown',
-					'name' => $this->extractSourceName($result),
-					'similarity' => $result['similarity'] ?? $result['score'] ?? 1.0,
-					'text' => $result['chunk_text'] ?? $result['text'] ?? '',
-				];
+    /**
+     * Process a chat message within a conversation
+     *
+     * @param int    $conversationId Conversation ID
+     * @param string $userId         User ID
+     * @param string $userMessage    User message
+     *
+     * @return array Response data with 'message', 'sources', 'title'
+     *
+     * @throws \Exception If processing fails
+     */
+    public function processMessage(int $conversationId, string $userId, string $userMessage): array
+    {
+        $this->logger->info('[ChatService] Processing message', [
+            'conversationId' => $conversationId,
+            'userId' => $userId,
+            'messageLength' => strlen($userMessage),
+        ]);
 
-				$sources[] = $source;
+        try {
+            // Get conversation
+            $conversation = $this->conversationMapper->find($conversationId);
 
-				// Add to context text
-				$contextText .= "Source: {$source['name']}\n";
-				$contextText .= "{$source['text']}\n\n";
-			}
+            // Verify ownership
+            if ($conversation->getUserId() !== $userId) {
+                throw new \Exception('Access denied to conversation');
+            }
 
-			$this->logger->info('[ChatService] Context retrieved', [
-				'numSources' => count($sources),
-				'contextLength' => strlen($contextText),
-			]);
+            // Get agent if configured
+            $agent = null;
+            if ($conversation->getAgentId() !== null) {
+                $agent = $this->agentMapper->find($conversation->getAgentId());
+            }
 
-			return [
-				'text' => $contextText,
-				'sources' => $sources,
-			];
-		} catch (\Exception $e) {
-			$this->logger->error('[ChatService] Failed to retrieve context', [
-				'error' => $e->getMessage(),
-			]);
-			// Return empty context on error
-			return [
-				'text' => '',
-				'sources' => [],
-			];
-		}
-	}
+            // Store user message
+            $userMsgEntity = $this->storeMessage(
+                $conversationId,
+                Message::ROLE_USER,
+                $userMessage
+            );
 
-	/**
-	 * Search using keyword only (SOLR)
-	 *
-	 * @param string $query User query
-	 * @param int    $limit Number of results
-	 *
-	 * @return array Search results
-	 */
-	private function searchKeywordOnly(string $query, int $limit): array {
-		// Use SOLR search for keyword-based retrieval
-		$results = $this->solrService->searchObjectsPaginated(
-			$query,
-			0, // offset
-			$limit,
-			[], // filters
-			'score desc', // sort
-			null, // fields
-			null, // facets
-			true, // published only
-			false // include deleted
-		);
+            // Check if we need to summarize (token limit reached)
+            $this->checkAndSummarize($conversation);
 
-		// Transform SOLR results to match expected format
-		$transformed = [];
-		foreach ($results['results'] ?? [] as $result) {
-			$transformed[] = [
-				'entity_id' => $result['id'] ?? null,
-				'entity_type' => 'object',
-				'text' => $result['_source']['data'] ?? json_encode($result),
-				'score' => $result['_score'] ?? 1.0,
-			];
-		}
+            // Retrieve context using agent settings
+            $context = $this->retrieveContext($userMessage, $agent);
 
-		return $transformed;
-	}
+            // Get recent conversation history for context
+            $messageHistory = $this->buildMessageHistory($conversationId);
 
-	/**
-	 * Extract a human-readable name from a search result
-	 *
-	 * @param array $result Search result
-	 *
-	 * @return string Source name
-	 */
-	private function extractSourceName(array $result): string {
-		// Try various fields to get a meaningful name
-		if (!empty($result['title'])) {
-			return $result['title'];
-		}
-		if (!empty($result['name'])) {
-			return $result['name'];
-		}
-		if (!empty($result['filename'])) {
-			return $result['filename'];
-		}
-		if (!empty($result['entity_id'])) {
-			return ($result['entity_type'] ?? 'Item') . ' #' . $result['entity_id'];
-		}
-		return 'Unknown Source';
-	}
+            // Generate response using LLM
+            $aiResponse = $this->generateResponse(
+                $userMessage,
+                $context,
+                $messageHistory,
+                $agent
+            );
 
-	/**
-	 * Generate a response using LLM with provided context
-	 *
-	 * @param string $userMessage User message
-	 * @param array  $context     Context data with 'text' and 'sources'
-	 *
-	 * @return string Generated response
-	 * @throws \Exception If LLM configuration is missing or generation fails
-	 */
-	private function generateResponse(string $userMessage, array $context): string {
-		$this->logger->info('[ChatService] Generating response', [
-			'messageLength' => strlen($userMessage),
-			'contextLength' => strlen($context['text']),
-			'numSources' => count($context['sources']),
-		]);
+            // Store AI response
+            $aiMsgEntity = $this->storeMessage(
+                $conversationId,
+                Message::ROLE_ASSISTANT,
+                $aiResponse,
+                $context['sources']
+            );
 
-		// Get LLM configuration
-		$settings = $this->settingsService->getSettings();
-		$llmConfig = $settings['llm'] ?? [];
+            // Generate title if this is the first user message and title is still default
+            $messageCount = $this->messageMapper->countByConversation($conversationId);
+            $currentTitle = $conversation->getTitle();
+            
+            // Check if we should generate a new title:
+            // - Message count is 2 or less (first exchange)
+            // - Title is null OR starts with "New Conversation"
+            $shouldGenerateTitle = $messageCount <= 2 && (
+                $currentTitle === null || 
+                strpos($currentTitle, 'New Conversation') === 0
+            );
+            
+            if ($shouldGenerateTitle) {
+                $this->logger->info('[ChatService] Generating title for conversation', [
+                    'conversationId' => $conversationId,
+                    'currentTitle' => $currentTitle,
+                    'messageCount' => $messageCount,
+                ]);
+                
+                $title = $this->generateConversationTitle($userMessage);
+                
+                // Only make title unique if we have an agentId to filter by
+                $agentId = $conversation->getAgentId();
+                if ($agentId !== null) {
+                    $uniqueTitle = $this->ensureUniqueTitle($title, $conversation->getUserId(), $agentId);
+                } else {
+                    // Without agent, just use the generated title
+                    $uniqueTitle = $title;
+                }
+                
+                $conversation->setTitle($uniqueTitle);
+                $conversation->setUpdated(new DateTime());
+                $this->conversationMapper->update($conversation);
+                
+                $this->logger->info('[ChatService] Title generated', [
+                    'conversationId' => $conversationId,
+                    'newTitle' => $uniqueTitle,
+                ]);
+            }
 
-		// Check if OpenAI is configured
-		if (empty($llmConfig['chat_provider']) || $llmConfig['chat_provider'] !== 'openai') {
-			throw new \Exception('OpenAI chat provider is not configured. Please configure it in Settings > AI Configuration.');
-		}
+            // Update conversation timestamp
+            $conversation->setUpdated(new DateTime());
+            $this->conversationMapper->update($conversation);
 
-		if (empty($llmConfig['openai_api_key'])) {
-			throw new \Exception('OpenAI API key is not configured. Please add it in Settings > AI Configuration.');
-		}
+            return [
+                'message' => $aiMsgEntity->jsonSerialize(),
+                'sources' => $context['sources'],
+                'title' => $conversation->getTitle(),
+            ];
 
-		try {
-			// Configure OpenAI
-			$config = new OpenAIConfig();
-			$config->apiKey = $llmConfig['openai_api_key'];
-			$config->model = $llmConfig['chat_model'] ?? 'gpt-4o-mini';
+        } catch (\Exception $e) {
+            $this->logger->error('[ChatService] Failed to process message', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            throw $e;
+        }//end try
 
-			// Create chat instance
-			$chat = new OpenAIChat($config);
+    }//end processMessage()
 
-			// Build system prompt with context
-			$systemPrompt = "You are a helpful AI assistant that helps users find and understand information in their data. ";
-			$systemPrompt .= "Use the following context to answer the user's question accurately and concisely.\n\n";
 
-			if (!empty($context['text'])) {
-				$systemPrompt .= "CONTEXT:\n" . $context['text'] . "\n\n";
-				$systemPrompt .= "If the context doesn't contain relevant information to answer the question, say so honestly. ";
-				$systemPrompt .= "Always cite which sources you used when answering.";
-			} else {
-				$systemPrompt .= "No specific context was found for this query. Provide a helpful general response.";
-			}
+    /**
+     * Retrieve relevant context for a query using agent settings
+     *
+     * @param string     $query User query
+     * @param Agent|null $agent Optional agent with search configuration
+     *
+     * @return array Context data with 'text' and 'sources'
+     */
+    private function retrieveContext(string $query, ?Agent $agent): array
+    {
+        $this->logger->info('[ChatService] Retrieving context', [
+            'query' => substr($query, 0, 100),
+            'hasAgent' => $agent !== null,
+        ]);
 
-			// Generate response
-			$response = $chat->generateText($systemPrompt . "\n\nUser: " . $userMessage);
+        // Get search settings from agent or use defaults
+        $searchMode = $agent?->getRagSearchMode() ?? 'hybrid';
+        $numSources = $agent?->getRagNumSources() ?? 5;
+        $includeFiles = $agent?->getSearchFiles() ?? true;
+        $includeObjects = $agent?->getSearchObjects() ?? true;
 
-			$this->logger->info('[ChatService] Response generated', [
-				'responseLength' => strlen($response),
-			]);
+        // Get view filters if agent has views configured
+        $viewFilters = [];
+        if ($agent !== null && $agent->getViews() !== null && !empty($agent->getViews())) {
+            $viewFilters = $agent->getViews();
+            $this->logger->info('[ChatService] Using view-based filtering', [
+                'views' => $viewFilters,
+            ]);
+        }
 
-			return $response;
-		} catch (\Exception $e) {
-			$this->logger->error('[ChatService] Failed to generate response', [
-				'error' => $e->getMessage(),
-			]);
-			throw new \Exception('Failed to generate response: ' . $e->getMessage());
-		}
-	}
+        $sources = [];
+        $contextText = '';
 
-	/**
-	 * Store a message and response in conversation history
-	 *
-	 * @param string $userId   User ID
-	 * @param string $message  User message
-	 * @param string $response AI response
-	 * @param array  $context  Context data used for response
-	 *
-	 * @return int Conversation ID
-	 */
-	private function storeMessage(string $userId, string $message, string $response, array $context): int {
-		$qb = $this->db->getQueryBuilder();
+        try {
+            // Build filters for vector search
+            $vectorFilters = [];
+            
+            // Filter by entity types based on agent settings
+            $entityTypes = [];
+            if ($includeObjects) {
+                $entityTypes[] = 'object';
+            }
+            if ($includeFiles) {
+                $entityTypes[] = 'file';
+            }
+            
+            // Only add entity_type filter if we're filtering
+            if (!empty($entityTypes) && count($entityTypes) < 2) {
+                $vectorFilters['entity_type'] = $entityTypes;
+            }
+            
+            // Determine search method
+            if ($searchMode === 'semantic') {
+                $results = $this->vectorService->semanticSearch(
+                    $query,
+                    $numSources * 2,
+                    $vectorFilters  // Pass filters array instead of 0.7
+                );
+            } elseif ($searchMode === 'hybrid') {
+                $results = $this->vectorService->hybridSearch(
+                    $query,
+                    ['vector_filters' => $vectorFilters], // Pass filters in SOLR filters array
+                    $numSources * 2 // Limit parameter
+                );
+            } else {
+                // Keyword search
+                $results = $this->searchKeywordOnly($query, $numSources * 2);
+            }
 
-		$qb->insert('openregister_chat_history')
-			->values([
-				'user_id' => $qb->createNamedParameter($userId),
-				'user_message' => $qb->createNamedParameter($message),
-				'ai_response' => $qb->createNamedParameter($response),
-				'context_sources' => $qb->createNamedParameter(json_encode($context['sources'])),
-				'created_at' => $qb->createNamedParameter(time()),
-			]);
+            // Ensure results is an array
+            if (!is_array($results)) {
+                $this->logger->warning('[ChatService] Search returned non-array result', [
+                    'searchMode' => $searchMode,
+                    'resultType' => gettype($results),
+                    'resultValue' => $results,
+                ]);
+                $results = [];
+            }
 
-		$qb->execute();
+            // Filter and build context
+            foreach ($results as $result) {
+                // Skip if result is not an array
+                if (!is_array($result)) {
+                    $this->logger->warning('[ChatService] Skipping non-array result', [
+                        'resultType' => gettype($result),
+                        'resultValue' => $result,
+                    ]);
+                    continue;
+                }
+                $isFile = ($result['entity_type'] ?? '') === 'file';
+                $isObject = ($result['entity_type'] ?? '') === 'object';
 
-		return (int)$qb->getLastInsertId();
-	}
+                // Check type filters
+                if (($isFile && !$includeFiles) || ($isObject && !$includeObjects)) {
+                    continue;
+                }
 
-	/**
-	 * Get conversation history for a user
-	 *
-	 * @param string $userId User ID
-	 * @param int    $limit  Maximum number of messages to retrieve
-	 * @param int    $offset Offset for pagination
-	 *
-	 * @return array Array of conversation messages
-	 */
-	public function getConversationHistory(string $userId, int $limit = 50, int $offset = 0): array {
-		$qb = $this->db->getQueryBuilder();
+                // TODO: Apply view filters here when view filtering is implemented
+                // For now, we'll skip view filtering and implement it later
 
-		$qb->select('*')
-			->from('openregister_chat_history')
-			->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)))
-			->orderBy('created_at', 'DESC')
-			->setMaxResults($limit)
-			->setFirstResult($offset);
+                // Stop if we have enough sources
+                if (count($sources) >= $numSources) {
+                    break;
+                }
 
-		$result = $qb->execute();
-		$rows = $result->fetchAll();
-		$result->closeCursor();
+                // Extract source information
+                $source = [
+                    'id' => $result['entity_id'] ?? null,
+                    'type' => $result['entity_type'] ?? 'unknown',
+                    'name' => $this->extractSourceName($result),
+                    'similarity' => $result['similarity'] ?? $result['score'] ?? 1.0,
+                    'text' => $result['chunk_text'] ?? $result['text'] ?? '',
+                ];
 
-		// Transform to chat format
-		$messages = [];
-		foreach (array_reverse($rows) as $row) {
-			// Add user message
-			$messages[] = [
-				'role' => 'user',
-				'content' => $row['user_message'],
-				'timestamp' => date('c', $row['created_at']),
-			];
+                $sources[] = $source;
 
-			// Add AI response
-			$messages[] = [
-				'role' => 'assistant',
-				'content' => $row['ai_response'],
-				'sources' => json_decode($row['context_sources'], true) ?? [],
-				'timestamp' => date('c', $row['created_at']),
-			];
-		}
+                // Add to context text
+                $contextText .= "Source: {$source['name']}\n";
+                $contextText .= "{$source['text']}\n\n";
+            }
 
-		return $messages;
-	}
+            $this->logger->info('[ChatService] Context retrieved', [
+                'numSources' => count($sources),
+                'contextLength' => strlen($contextText),
+                'searchMode' => $searchMode,
+                'includeObjects' => $includeObjects,
+                'includeFiles' => $includeFiles,
+                'rawResultsCount' => is_array($results) ? count($results) : gettype($results),
+            ]);
+            
+            // DEBUG: Log first source
+            if (!empty($sources)) {
+                $this->logger->info('[ChatService] First source details', [
+                    'source' => $sources[0],
+                ]);
+            }
 
-	/**
-	 * Clear conversation history for a user
-	 *
-	 * @param string $userId User ID
-	 *
-	 * @return int Number of messages deleted
-	 */
-	public function clearConversationHistory(string $userId): int {
-		$qb = $this->db->getQueryBuilder();
+            return [
+                'text' => $contextText,
+                'sources' => $sources,
+            ];
 
-		$qb->delete('openregister_chat_history')
-			->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)));
+        } catch (\Exception $e) {
+            $this->logger->error('[ChatService] Failed to retrieve context', [
+                'error' => $e->getMessage(),
+            ]);
+            
+            return [
+                'text' => '',
+                'sources' => [],
+            ];
+        }//end try
 
-		return $qb->execute();
-	}
+    }//end retrieveContext()
 
-	/**
-	 * Store feedback for a message
-	 *
-	 * @param string $userId    User ID
-	 * @param int    $messageId Message ID
-	 * @param string $feedback  Feedback type: 'positive' or 'negative'
-	 *
-	 * @return void
-	 */
-	public function storeFeedback(string $userId, int $messageId, string $feedback): void {
-		$qb = $this->db->getQueryBuilder();
 
-		$qb->update('openregister_chat_history')
-			->set('feedback', $qb->createNamedParameter($feedback))
-			->where($qb->expr()->eq('id', $qb->createNamedParameter($messageId)))
-			->andWhere($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)));
+    /**
+     * Search using keyword only (SOLR)
+     *
+     * @param string $query Query text
+     * @param int    $limit Result limit
+     *
+     * @return array Search results
+     */
+    private function searchKeywordOnly(string $query, int $limit): array
+    {
+        $results = $this->solrService->searchObjectsPaginated(
+            $query,
+            0,
+            $limit,
+            [],
+            'score desc',
+            null,
+            null,
+            true,
+            false
+        );
 
-		$qb->execute();
+        $transformed = [];
+        foreach ($results['results'] ?? [] as $result) {
+            $transformed[] = [
+                'entity_id' => $result['id'] ?? null,
+                'entity_type' => 'object',
+                'text' => $result['_source']['data'] ?? json_encode($result),
+                'score' => $result['_score'] ?? 1.0,
+            ];
+        }
 
-		$this->logger->info('[ChatService] Feedback stored', [
-			'messageId' => $messageId,
-			'feedback' => $feedback,
-		]);
-	}
-}
+        return $transformed;
+
+    }//end searchKeywordOnly()
+
+
+    /**
+     * Extract a human-readable name from search result
+     *
+     * @param array $result Search result
+     *
+     * @return string Source name
+     */
+    private function extractSourceName(array $result): string
+    {
+        // First check top-level fields
+        if (!empty($result['title'])) {
+            return $result['title'];
+        }
+        if (!empty($result['name'])) {
+            return $result['name'];
+        }
+        if (!empty($result['filename'])) {
+            return $result['filename'];
+        }
+        
+        // Check metadata for object_title, file_name, etc.
+        if (!empty($result['metadata'])) {
+            $metadata = is_array($result['metadata']) ? $result['metadata'] : json_decode($result['metadata'], true);
+            
+            if (!empty($metadata['object_title'])) {
+                return $metadata['object_title'];
+            }
+            if (!empty($metadata['file_name'])) {
+                return $metadata['file_name'];
+            }
+            if (!empty($metadata['name'])) {
+                return $metadata['name'];
+            }
+            if (!empty($metadata['title'])) {
+                return $metadata['title'];
+            }
+        }
+        
+        // Fallback to entity ID
+        if (!empty($result['entity_id'])) {
+            $type = $result['entity_type'] ?? 'Item';
+            // Capitalize first letter for display
+            $type = ucfirst($type);
+            return $type . ' #' . substr($result['entity_id'], 0, 8);
+        }
+        
+        return 'Unknown Source';
+
+    }//end extractSourceName()
+
+
+    /**
+     * Build message history for conversation context
+     *
+     * @param int $conversationId Conversation ID
+     *
+     * @return array Array of LLPhant Message objects
+     */
+    private function buildMessageHistory(int $conversationId): array
+    {
+        // Get recent messages
+        $messages = $this->messageMapper->findRecentByConversation(
+            $conversationId,
+            self::RECENT_MESSAGES_COUNT
+        );
+
+        $this->logger->debug('[ChatService] Building message history', [
+            'conversationId' => $conversationId,
+            'messageCount' => count($messages),
+        ]);
+
+        $history = [];
+        foreach ($messages as $message) {
+            $content = $message->getContent();
+            $role = $message->getRole();
+            
+            $this->logger->debug('[ChatService] Adding message to history', [
+                'role' => $role,
+                'contentLength' => strlen($content ?? ''),
+                'hasContent' => !empty($content),
+                'hasRole' => !empty($role),
+            ]);
+            
+            // Only add messages that have both role and content
+            if (!empty($role) && !empty($content)) {
+                // Use static factory methods based on role
+                if ($role === 'user') {
+                    $history[] = LLPhantMessage::user($content);
+                } elseif ($role === 'assistant') {
+                    $history[] = LLPhantMessage::assistant($content);
+                } elseif ($role === 'system') {
+                    $history[] = LLPhantMessage::system($content);
+                } else {
+                    $this->logger->warning('[ChatService] Unknown message role', [
+                        'role' => $role,
+                    ]);
+                }
+            } else {
+                $this->logger->warning('[ChatService] Skipping message with missing role or content', [
+                    'hasRole' => !empty($role),
+                    'hasContent' => !empty($content),
+                ]);
+            }
+        }
+        
+        $this->logger->info('[ChatService] Message history built', [
+            'historyCount' => count($history),
+        ]);
+
+        return $history;
+
+    }//end buildMessageHistory()
+
+
+    /**
+     * Generate AI response using LLM
+     *
+     * @param string     $userMessage    User message
+     * @param array      $context        Context data
+     * @param array      $messageHistory Message history
+     * @param Agent|null $agent          Optional agent
+     *
+     * @return string Generated response
+     *
+     * @throws \Exception If generation fails
+     */
+    private function generateResponse(
+        string $userMessage,
+        array $context,
+        array $messageHistory,
+        ?Agent $agent
+    ): string {
+        $this->logger->info('[ChatService] Generating response', [
+            'messageLength' => strlen($userMessage),
+            'contextLength' => strlen($context['text']),
+            'historyCount' => count($messageHistory),
+        ]);
+
+        // Get enabled tools for agent
+        $tools = $this->getAgentTools($agent);
+        if (!empty($tools)) {
+            $this->logger->info('[ChatService] Agent has tools enabled', [
+                'toolCount' => count($tools),
+                'tools' => array_map(fn($tool) => $tool->getName(), $tools),
+            ]);
+        }
+
+        // Get LLM configuration
+        $llmConfig = $this->settingsService->getLLMSettingsOnly();
+
+        // Get chat provider
+        $chatProvider = $llmConfig['chatProvider'] ?? null;
+        
+        if (empty($chatProvider)) {
+            throw new \Exception('Chat provider is not configured. Please configure OpenAI, Fireworks AI, or Ollama in settings.');
+        }
+
+        $this->logger->info('[ChatService] Using chat provider', [
+            'provider' => $chatProvider,
+            'llmConfig' => $llmConfig,
+            'hasTools' => !empty($tools),
+        ]);
+
+        try {
+            // Configure LLM client based on provider
+            $config = new OpenAIConfig();
+            
+            if ($chatProvider === 'openai') {
+                $openaiConfig = $llmConfig['openaiConfig'] ?? [];
+                if (empty($openaiConfig['apiKey'])) {
+                    throw new \Exception('OpenAI API key is not configured');
+                }
+                $config->apiKey = $openaiConfig['apiKey'];
+                // Use agent model if set and not empty, otherwise fallback to global config
+                $agentModel = $agent?->getModel();
+                $config->model = (!empty($agentModel)) ? $agentModel : ($openaiConfig['chatModel'] ?? 'gpt-4o-mini');
+                
+                if (!empty($openaiConfig['organizationId'])) {
+                    $config->organizationId = $openaiConfig['organizationId'];
+                }
+            } elseif ($chatProvider === 'fireworks') {
+                $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
+                if (empty($fireworksConfig['apiKey'])) {
+                    throw new \Exception('Fireworks AI API key is not configured');
+                }
+                $config->apiKey = $fireworksConfig['apiKey'];
+                // Use agent model if set and not empty, otherwise fallback to global config
+                $agentModel = $agent?->getModel();
+                $config->model = (!empty($agentModel)) ? $agentModel : ($fireworksConfig['chatModel'] ?? 'accounts/fireworks/models/llama-v3p1-8b-instruct');
+                
+                // Fireworks AI uses OpenAI-compatible API
+                $baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
+                if (!str_ends_with($baseUrl, '/v1')) {
+                    $baseUrl .= '/v1';
+                }
+                $config->url = $baseUrl;
+            } elseif ($chatProvider === 'ollama') {
+                $ollamaConfig = $llmConfig['ollamaConfig'] ?? [];
+                if (empty($ollamaConfig['url'])) {
+                    throw new \Exception('Ollama URL is not configured');
+                }
+                $config->url = rtrim($ollamaConfig['url'], '/');
+                // Use agent model if set and not empty, otherwise fallback to global config
+                $agentModel = $agent?->getModel();
+                $config->model = (!empty($agentModel)) ? $agentModel : ($ollamaConfig['chatModel'] ?? 'llama2');
+            } else {
+                throw new \Exception("Unsupported chat provider: {$chatProvider}");
+            }
+
+            // Set temperature from agent or default
+            if ($agent?->getTemperature() !== null) {
+                $config->temperature = $agent->getTemperature();
+            }
+
+            // Build system prompt
+            $systemPrompt = $agent?->getPrompt() ?? 
+                "You are a helpful AI assistant that helps users find and understand information in their data.";
+
+            if (!empty($context['text'])) {
+                $systemPrompt .= "\n\nUse the following context to answer the user's question:\n\n";
+                $systemPrompt .= "CONTEXT:\n" . $context['text'] . "\n\n";
+                $systemPrompt .= "If the context doesn't contain relevant information, say so honestly. ";
+                $systemPrompt .= "Always cite which sources you used when answering.";
+            }
+
+            // Add system message to history
+            array_unshift($messageHistory, LLPhantMessage::system($systemPrompt));
+
+            // Add current user message
+            $messageHistory[] = LLPhantMessage::user($userMessage);
+
+            // For Fireworks, use direct HTTP to avoid OpenAI library error handling bugs
+            if ($chatProvider === 'fireworks') {
+                $response = $this->callFireworksChatAPIWithHistory(
+                    $config->apiKey,
+                    $config->model,
+                    $config->url,
+                    $messageHistory
+                );
+            } else {
+                // Create chat instance and generate response
+                $chat = new OpenAIChat($config);
+                $response = $chat->generateText($messageHistory);
+            }
+
+            $this->logger->info('[ChatService] Response generated', [
+                'provider' => $chatProvider,
+                'model' => $config->model,
+                'responseLength' => strlen($response),
+            ]);
+
+            return $response;
+
+        } catch (\Exception $e) {
+            $this->logger->error('[ChatService] Failed to generate response', [
+                'provider' => $chatProvider ?? 'unknown',
+                'error' => $e->getMessage(),
+            ]);
+            throw new \Exception('Failed to generate response: ' . $e->getMessage());
+        }//end try
+
+    }//end generateResponse()
+
+
+    /**
+     * Generate a conversation title from the first user message
+     *
+     * @param string $firstMessage First user message
+     *
+     * @return string Generated title
+     */
+    public function generateConversationTitle(string $firstMessage): string
+    {
+        $this->logger->info('[ChatService] Generating conversation title');
+
+        try {
+            // Get LLM configuration
+            $llmConfig = $this->settingsService->getLLMSettingsOnly();
+            $chatProvider = $llmConfig['chatProvider'] ?? null;
+
+            // Try to use configured LLM, fallback if not available
+            if (empty($chatProvider)) {
+                return $this->generateFallbackTitle($firstMessage);
+            }
+
+            // Configure LLM based on provider
+            $config = new OpenAIConfig();
+            
+            if ($chatProvider === 'openai') {
+                $openaiConfig = $llmConfig['openaiConfig'] ?? [];
+                if (empty($openaiConfig['apiKey'])) {
+                    return $this->generateFallbackTitle($firstMessage);
+                }
+                $config->apiKey = $openaiConfig['apiKey'];
+                $config->model = 'gpt-4o-mini'; // Use fast model for titles
+            } elseif ($chatProvider === 'fireworks') {
+                $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
+                if (empty($fireworksConfig['apiKey'])) {
+                    return $this->generateFallbackTitle($firstMessage);
+                }
+                $config->apiKey = $fireworksConfig['apiKey'];
+                $config->model = 'accounts/fireworks/models/llama-v3p1-8b-instruct';
+                $baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
+                if (!str_ends_with($baseUrl, '/v1')) {
+                    $baseUrl .= '/v1';
+                }
+                $config->url = $baseUrl;
+            } elseif ($chatProvider === 'ollama') {
+                $ollamaConfig = $llmConfig['ollamaConfig'] ?? [];
+                if (empty($ollamaConfig['url'])) {
+                    return $this->generateFallbackTitle($firstMessage);
+                }
+                $config->url = rtrim($ollamaConfig['url'], '/');
+                $config->model = $ollamaConfig['chatModel'] ?? 'llama2';
+            } else {
+                return $this->generateFallbackTitle($firstMessage);
+            }
+            
+            $config->temperature = 0.7;
+
+            // Generate title
+            $prompt = "Generate a short, descriptive title (max 60 characters) for a conversation that starts with this message:\n\n";
+            $prompt .= "\"{$firstMessage}\"\n\n";
+            $prompt .= "Title:";
+
+            // Use direct HTTP for Fireworks to avoid OpenAI library issues
+            if ($chatProvider === 'fireworks') {
+                $title = $this->callFireworksChatAPI(
+                    $config->apiKey,
+                    $config->model,
+                    $config->url,
+                    $prompt
+                );
+            } else {
+                $chat = new OpenAIChat($config);
+                $title = $chat->generateText($prompt);
+            }
+            
+            $title = trim($title, '"\'');
+            
+            // Ensure title isn't too long
+            if (strlen($title) > 60) {
+                $title = substr($title, 0, 57) . '...';
+            }
+
+            return $title;
+
+        } catch (\Exception $e) {
+            $this->logger->warning('[ChatService] Failed to generate title, using fallback', [
+                'error' => $e->getMessage(),
+            ]);
+            
+            return $this->generateFallbackTitle($firstMessage);
+        }//end try
+
+    }//end generateConversationTitle()
+
+
+    /**
+     * Generate fallback title from message
+     *
+     * @param string $message Message text
+     *
+     * @return string Fallback title
+     */
+    private function generateFallbackTitle(string $message): string
+    {
+        // Take first 60 characters
+        $title = substr($message, 0, 60);
+        
+        // If we cut off mid-word, go back to last space
+        if (strlen($message) > 60) {
+            $lastSpace = strrpos($title, ' ');
+            if ($lastSpace !== false && $lastSpace > 30) {
+                $title = substr($title, 0, $lastSpace);
+            }
+            $title .= '...';
+        }
+
+        return $title;
+
+    }//end generateFallbackTitle()
+
+
+    /**
+     * Ensure conversation title is unique for user-agent combination
+     *
+     * If a conversation with the same title already exists for this user and agent,
+     * appends a number (e.g., "Title (2)", "Title (3)") to make it unique.
+     *
+     * @param string $baseTitle Base title to check
+     * @param string $userId    User ID
+     * @param int    $agentId   Agent ID
+     *
+     * @return string Unique title with number suffix if needed
+     */
+    public function ensureUniqueTitle(string $baseTitle, string $userId, int $agentId): string
+    {
+        $this->logger->info('[ChatService] Ensuring unique title', [
+            'baseTitle' => $baseTitle,
+            'userId' => $userId,
+            'agentId' => $agentId,
+        ]);
+
+        // Find all existing titles that match this pattern
+        // Using LIKE with % to catch both exact matches and numbered variants
+        $pattern = $baseTitle . '%';
+        $existingTitles = $this->conversationMapper->findTitlesByUserAgent($userId, $agentId, $pattern);
+
+        // If no matches, the base title is unique
+        if (empty($existingTitles)) {
+            return $baseTitle;
+        }
+
+        // Check if base title exists
+        if (!in_array($baseTitle, $existingTitles)) {
+            return $baseTitle;
+        }
+
+        // Find the highest number suffix
+        $maxNumber = 1;
+        $baseTitleEscaped = preg_quote($baseTitle, '/');
+        
+        foreach ($existingTitles as $title) {
+            // Match "Title (N)" pattern
+            if (preg_match('/^' . $baseTitleEscaped . ' \((\d+)\)$/', $title, $matches)) {
+                $number = (int) $matches[1];
+                if ($number > $maxNumber) {
+                    $maxNumber = $number;
+                }
+            }
+        }
+
+        // Generate new title with next number
+        $uniqueTitle = $baseTitle . ' (' . ($maxNumber + 1) . ')';
+
+        $this->logger->info('[ChatService] Generated unique title', [
+            'baseTitle' => $baseTitle,
+            'uniqueTitle' => $uniqueTitle,
+            'foundTitles' => count($existingTitles),
+        ]);
+
+        return $uniqueTitle;
+
+    }//end ensureUniqueTitle()
+
+
+    /**
+     * Test chat functionality with custom configuration
+     * 
+     * Tests if the provided chat configuration works correctly by sending
+     * a test message and receiving a response. Does not save any configuration
+     * or create a conversation.
+     * 
+     * @param string $provider    Provider name ('openai', 'fireworks', 'ollama')
+     * @param array  $config      Provider-specific configuration
+     * @param string $testMessage Optional test message to send
+     * 
+     * @return array Test results with success status and chat response
+     */
+    public function testChat(string $provider, array $config, string $testMessage = 'Hello! Please respond with a brief greeting.'): array
+    {
+        $this->logger->info('[ChatService] Testing chat functionality', [
+            'provider' => $provider,
+            'model' => $config['chatModel'] ?? $config['model'] ?? 'unknown',
+            'testMessageLength' => strlen($testMessage),
+        ]);
+
+        try {
+            // Validate provider
+            if (!in_array($provider, ['openai', 'fireworks', 'ollama'])) {
+                throw new \Exception("Unsupported provider: {$provider}");
+            }
+
+            // Configure LLM client based on provider
+            $llphantConfig = new OpenAIConfig();
+            
+            if ($provider === 'openai') {
+                if (empty($config['apiKey'])) {
+                    throw new \Exception('OpenAI API key is required');
+                }
+                $llphantConfig->apiKey = $config['apiKey'];
+                $llphantConfig->model = $config['chatModel'] ?? $config['model'] ?? 'gpt-4o-mini';
+                
+                if (!empty($config['organizationId'])) {
+                    $llphantConfig->organizationId = $config['organizationId'];
+                }
+            } elseif ($provider === 'fireworks') {
+                if (empty($config['apiKey'])) {
+                    throw new \Exception('Fireworks AI API key is required');
+                }
+                $llphantConfig->apiKey = $config['apiKey'];
+                $llphantConfig->model = $config['chatModel'] ?? $config['model'] ?? 'accounts/fireworks/models/llama-v3p1-8b-instruct';
+                
+                // Fireworks AI uses OpenAI-compatible API but needs specific URL format
+                $baseUrl = rtrim($config['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
+                // Ensure the URL ends with /v1 for compatibility
+                if (!str_ends_with($baseUrl, '/v1')) {
+                    $baseUrl .= '/v1';
+                }
+                $llphantConfig->url = $baseUrl;
+            } elseif ($provider === 'ollama') {
+                if (empty($config['url'])) {
+                    throw new \Exception('Ollama URL is required');
+                }
+                $llphantConfig->url = rtrim($config['url'], '/');
+                $llphantConfig->model = $config['chatModel'] ?? $config['model'] ?? 'llama2';
+            }
+
+            // Set temperature if provided
+            if (isset($config['temperature'])) {
+                $llphantConfig->temperature = (float) $config['temperature'];
+            }
+
+            // For Fireworks, use direct HTTP to avoid OpenAI library error handling bugs
+            if ($provider === 'fireworks') {
+                $response = $this->callFireworksChatAPI(
+                    $llphantConfig->apiKey,
+                    $llphantConfig->model,
+                    $llphantConfig->url,
+                    $testMessage
+                );
+            } else {
+                // Use OpenAI client for OpenAI and Ollama
+                $chat = new OpenAIChat($llphantConfig);
+
+                // Generate response
+                $this->logger->debug('[ChatService] Sending test message to LLM', [
+                    'provider' => $provider,
+                    'model' => $llphantConfig->model,
+                    'url' => $llphantConfig->url ?? 'default',
+                ]);
+                
+                $response = $chat->generateText($testMessage);
+            }
+
+            $this->logger->info('[ChatService] Chat test successful', [
+                'provider' => $provider,
+                'model' => $llphantConfig->model,
+                'responseLength' => strlen($response),
+            ]);
+
+            return [
+                'success' => true,
+                'message' => 'Chat test successful',
+                'data' => [
+                    'provider' => $provider,
+                    'model' => $llphantConfig->model,
+                    'testMessage' => $testMessage,
+                    'response' => $response,
+                    'responseLength' => strlen($response),
+                ],
+            ];
+        } catch (OpenAIErrorException $e) {
+            // Handle OpenAI client library errors (including Fireworks AI errors)
+            $errorMessage = $e->getMessage();
+            
+            // Try to extract more meaningful error from the exception
+            if (str_contains($errorMessage, 'unauthorized')) {
+                $errorMessage = 'Authentication failed. Please check your API key.';
+            } elseif (str_contains($errorMessage, 'invalid_api_key')) {
+                $errorMessage = 'Invalid API key provided.';
+            } elseif (str_contains($errorMessage, 'model_not_found')) {
+                $errorMessage = 'Model not found. Please check the model name.';
+            } elseif (str_contains($errorMessage, 'rate_limit')) {
+                $errorMessage = 'Rate limit exceeded. Please try again later.';
+            }
+            
+            $this->logger->error('[ChatService] Chat test failed (OpenAI client error)', [
+                'provider' => $provider,
+                'error' => $e->getMessage(),
+                'parsed_error' => $errorMessage,
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $errorMessage,
+                'message' => 'Failed to test chat: ' . $errorMessage,
+                'details' => [
+                    'provider' => $provider,
+                    'model' => $llphantConfig->model ?? 'unknown',
+                    'raw_error' => $e->getMessage(),
+                ],
+            ];
+        } catch (\Exception $e) {
+            $this->logger->error('[ChatService] Chat test failed', [
+                'provider' => $provider,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'message' => 'Failed to test chat: ' . $e->getMessage(),
+            ];
+        }
+    }//end testChat()
+
+
+    /**
+     * Call Fireworks AI chat API directly to avoid OpenAI library error handling bugs
+     * 
+     * The OpenAI PHP client has issues parsing Fireworks error responses, so we
+     * make direct HTTP calls for better error handling.
+     * 
+     * @param string $apiKey    Fireworks API key
+     * @param string $model     Model name
+     * @param string $baseUrl   Base API URL
+     * @param string $message   Message to send
+     * 
+     * @return string Generated response text
+     * 
+     * @throws \Exception If API call fails
+     */
+    private function callFireworksChatAPI(string $apiKey, string $model, string $baseUrl, string $message): string
+    {
+        $url = rtrim($baseUrl, '/') . '/chat/completions';
+        
+        $this->logger->debug('[ChatService] Calling Fireworks chat API directly', [
+            'url' => $url,
+            'model' => $model,
+        ]);
+
+        $payload = [
+            'model' => $model,
+            'messages' => [
+                [
+                    'role' => 'user',
+                    'content' => $message,
+                ],
+            ],
+        ];
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Authorization: Bearer ' . $apiKey,
+            'Content-Type: application/json',
+        ]);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        if ($curlError) {
+            throw new \Exception("Fireworks API request failed: {$curlError}");
+        }
+
+        if ($httpCode !== 200) {
+            // Parse error response
+            $errorData = json_decode($response, true);
+            $errorMessage = $errorData['error']['message'] ?? $errorData['error'] ?? $response;
+            
+            // Make error messages user-friendly
+            if ($httpCode === 401 || $httpCode === 403) {
+                throw new \Exception('Authentication failed. Please check your Fireworks API key.');
+            } elseif ($httpCode === 404) {
+                throw new \Exception("Model not found: {$model}. Please check the model name.");
+            } elseif ($httpCode === 429) {
+                throw new \Exception('Rate limit exceeded. Please try again later.');
+            } else {
+                throw new \Exception("Fireworks API error (HTTP {$httpCode}): {$errorMessage}");
+            }
+        }
+
+        $data = json_decode($response, true);
+        if (!isset($data['choices'][0]['message']['content'])) {
+            throw new \Exception("Unexpected Fireworks API response format: {$response}");
+        }
+
+        return $data['choices'][0]['message']['content'];
+    }//end callFireworksChatAPI()
+
+
+    /**
+     * Call Fireworks AI chat API with full message history
+     * 
+     * Similar to callFireworksChatAPI but supports message history for conversations.
+     * 
+     * @param string $apiKey         Fireworks API key
+     * @param string $model          Model name
+     * @param string $baseUrl        Base API URL
+     * @param array  $messageHistory Array of LLPhantMessage objects
+     * 
+     * @return string Generated response text
+     * 
+     * @throws \Exception If API call fails
+     */
+    private function callFireworksChatAPIWithHistory(string $apiKey, string $model, string $baseUrl, array $messageHistory): string
+    {
+        $url = rtrim($baseUrl, '/') . '/chat/completions';
+        
+        $this->logger->debug('[ChatService] Calling Fireworks chat API with history', [
+            'url' => $url,
+            'model' => $model,
+            'historyCount' => count($messageHistory),
+        ]);
+
+        // Convert LLPhant messages to API format
+        // LLPhant Message properties are public, so we can access them directly
+        $messages = [];
+        foreach ($messageHistory as $msg) {
+            // Convert ChatRole enum to string value
+            $roleString = $msg->role->value;
+            $content = $msg->content;
+            
+            $messages[] = [
+                'role' => $roleString,
+                'content' => $content,
+            ];
+        }
+        
+        // Log final message count
+        $this->logger->debug('[ChatService] Prepared messages for API', [
+            'messageCount' => count($messages),
+        ]);
+
+        $payload = [
+            'model' => $model,
+            'messages' => $messages,
+        ];
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Authorization: Bearer ' . $apiKey,
+            'Content-Type: application/json',
+        ]);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        curl_setopt($ch, CURLOPT_TIMEOUT, 60); // Longer timeout for conversations
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        if ($curlError) {
+            throw new \Exception("Fireworks API request failed: {$curlError}");
+        }
+
+        if ($httpCode !== 200) {
+            // Parse error response
+            $errorData = json_decode($response, true);
+            $errorMessage = $errorData['error']['message'] ?? $errorData['error'] ?? $response;
+            
+            // Make error messages user-friendly
+            if ($httpCode === 401 || $httpCode === 403) {
+                throw new \Exception('Authentication failed. Please check your Fireworks API key.');
+            } elseif ($httpCode === 404) {
+                throw new \Exception("Model not found: {$model}. Please check the model name.");
+            } elseif ($httpCode === 429) {
+                throw new \Exception('Rate limit exceeded. Please try again later.');
+            } else {
+                throw new \Exception("Fireworks API error (HTTP {$httpCode}): {$errorMessage}");
+            }
+        }
+
+        $data = json_decode($response, true);
+        if (!isset($data['choices'][0]['message']['content'])) {
+            throw new \Exception("Unexpected Fireworks API response format: {$response}");
+        }
+
+        return $data['choices'][0]['message']['content'];
+    }//end callFireworksChatAPIWithHistory()
+
+
+    /**
+     * Check if conversation needs summarization and create summary
+     *
+     * @param Conversation $conversation Conversation entity
+     *
+     * @return void
+     */
+    private function checkAndSummarize(Conversation $conversation): void
+    {
+        // Get metadata
+        $metadata = $conversation->getMetadata() ?? [];
+        $tokenCount = $metadata['token_count'] ?? 0;
+
+        // Check if we need to summarize
+        if ($tokenCount < self::MAX_TOKENS_BEFORE_SUMMARY) {
+            return;
+        }
+
+        // Check if we recently summarized
+        $lastSummary = $metadata['last_summary_at'] ?? null;
+        if ($lastSummary !== null) {
+            $lastSummaryTime = new DateTime($lastSummary);
+            $hoursSinceLastSummary = (time() - $lastSummaryTime->getTimestamp()) / 3600;
+            
+            // Don't summarize more than once per hour
+            if ($hoursSinceLastSummary < 1) {
+                return;
+            }
+        }
+
+        $this->logger->info('[ChatService] Triggering conversation summarization', [
+            'conversationId' => $conversation->getId(),
+            'tokenCount' => $tokenCount,
+        ]);
+
+        try {
+            // Get all messages except recent ones
+            $allMessages = $this->messageMapper->findByConversation($conversation->getId());
+            $messagesToSummarize = array_slice($allMessages, 0, -self::RECENT_MESSAGES_COUNT);
+
+            if (empty($messagesToSummarize)) {
+                return;
+            }
+
+            // Generate summary
+            $summary = $this->generateSummary($messagesToSummarize);
+
+            // Update metadata
+            $metadata['summary'] = $summary;
+            $metadata['last_summary_at'] = (new DateTime())->format('c');
+            $metadata['summarized_messages'] = count($messagesToSummarize);
+            
+            $conversation->setMetadata($metadata);
+            $conversation->setUpdated(new DateTime());
+            $this->conversationMapper->update($conversation);
+
+            $this->logger->info('[ChatService] Conversation summarized', [
+                'conversationId' => $conversation->getId(),
+                'summaryLength' => strlen($summary),
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logger->error('[ChatService] Failed to summarize conversation', [
+                'error' => $e->getMessage(),
+            ]);
+        }//end try
+
+    }//end checkAndSummarize()
+
+
+    /**
+     * Generate summary of messages
+     *
+     * @param array $messages Array of Message entities
+     *
+     * @return string Summary text
+     *
+     * @throws \Exception If summary generation fails
+     */
+    private function generateSummary(array $messages): string
+    {
+        // Get LLM configuration
+        $llmConfig = $this->settingsService->getLLMSettingsOnly();
+        $chatProvider = $llmConfig['chatProvider'] ?? null;
+
+        if (empty($chatProvider)) {
+            throw new \Exception('Chat provider not configured');
+        }
+
+        // Build conversation text
+        $conversationText = '';
+        foreach ($messages as $message) {
+            $role = $message->getRole() === Message::ROLE_USER ? 'User' : 'Assistant';
+            $conversationText .= "{$role}: {$message->getContent()}\n\n";
+        }
+
+        // Configure LLM based on provider
+        $config = new OpenAIConfig();
+        
+        if ($chatProvider === 'openai') {
+            $openaiConfig = $llmConfig['openaiConfig'] ?? [];
+            if (empty($openaiConfig['apiKey'])) {
+                throw new \Exception('OpenAI API key not configured');
+            }
+            $config->apiKey = $openaiConfig['apiKey'];
+            $config->model = 'gpt-4o-mini';
+        } elseif ($chatProvider === 'fireworks') {
+            $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
+            if (empty($fireworksConfig['apiKey'])) {
+                throw new \Exception('Fireworks AI API key not configured');
+            }
+            $config->apiKey = $fireworksConfig['apiKey'];
+            $config->model = 'accounts/fireworks/models/llama-v3p1-8b-instruct';
+            $baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
+            if (!str_ends_with($baseUrl, '/v1')) {
+                $baseUrl .= '/v1';
+            }
+            $config->url = $baseUrl;
+        } elseif ($chatProvider === 'ollama') {
+            $ollamaConfig = $llmConfig['ollamaConfig'] ?? [];
+            if (empty($ollamaConfig['url'])) {
+                throw new \Exception('Ollama URL not configured');
+            }
+            $config->url = rtrim($ollamaConfig['url'], '/');
+            $config->model = $ollamaConfig['chatModel'] ?? 'llama2';
+        }
+
+        // Generate summary
+        $prompt = "Summarize the following conversation concisely. Focus on key topics, decisions, and information discussed:\n\n";
+        $prompt .= $conversationText;
+        $prompt .= "\n\nSummary:";
+
+        // Use direct HTTP for Fireworks to avoid OpenAI library issues
+        if ($chatProvider === 'fireworks') {
+            return $this->callFireworksChatAPI(
+                $config->apiKey,
+                $config->model,
+                $config->url,
+                $prompt
+            );
+        } else {
+            $chat = new OpenAIChat($config);
+            return $chat->generateText($prompt);
+        }
+
+    }//end generateSummary()
+
+
+    /**
+     * Store a message in the database
+     *
+     * @param int         $conversationId Conversation ID
+     * @param string      $role           Message role (user or assistant)
+     * @param string      $content        Message content
+     * @param array|null  $sources        Optional RAG sources
+     *
+     * @return Message Stored message entity
+     */
+    private function storeMessage(
+        int $conversationId,
+        string $role,
+        string $content,
+        ?array $sources = null
+    ): Message {
+        $message = new Message();
+        $message->setUuid(Uuid::v4()->toRfc4122());
+        $message->setConversationId($conversationId);
+        $message->setRole($role);
+        $message->setContent($content);
+        $message->setSources($sources);
+        $message->setCreated(new DateTime());
+
+        return $this->messageMapper->insert($message);
+
+    }//end storeMessage()
+
+
+    /**
+     * Get available tools for an agent
+     *
+     * Returns an array of tool instances that are enabled for the given agent.
+     * Uses ToolRegistry to support tools from other apps.
+     *
+     * @param Agent|null $agent The agent to get tools for
+     *
+     * @return array Array of ToolInterface instances
+     */
+    private function getAgentTools(?Agent $agent): array
+    {
+        if ($agent === null) {
+            return [];
+        }
+
+        $enabledToolIds = $agent->getTools();
+        if ($enabledToolIds === null || empty($enabledToolIds)) {
+            return [];
+        }
+
+        $tools = [];
+
+        foreach ($enabledToolIds as $toolId) {
+            // Support both old format (register, schema, objects) and new format (app.tool)
+            $fullToolId = strpos($toolId, '.') !== false 
+                ? $toolId 
+                : 'openregister.' . $toolId;
+
+            $tool = $this->toolRegistry->getTool($fullToolId);
+            if ($tool !== null) {
+                $tool->setAgent($agent);
+                $tools[] = $tool;
+                $this->logger->debug('[ChatService] Loaded tool', ['id' => $fullToolId]);
+            } else {
+                $this->logger->warning('[ChatService] Tool not found', ['id' => $fullToolId]);
+            }
+        }
+
+        return $tools;
+    }//end getAgentTools()
+
+
+    /**
+     * Convert tools to OpenAI function format
+     *
+     * Converts our tool definitions to the format expected by OpenAI's function calling API.
+     *
+     * @param array $tools Array of ToolInterface instances
+     *
+     * @return array Array of function definitions for OpenAI
+     */
+    private function convertToolsToFunctions(array $tools): array
+    {
+        $functions = [];
+
+        foreach ($tools as $tool) {
+            $toolFunctions = $tool->getFunctions();
+            foreach ($toolFunctions as $function) {
+                $functions[] = $function;
+            }
+        }
+
+        return $functions;
+    }//end convertToolsToFunctions()
+
+
+    /**
+     * Handle function call from LLM
+     *
+     * Executes a function call requested by the LLM and returns the result.
+     *
+     * @param string $functionName Function name requested by LLM
+     * @param array  $parameters   Function parameters from LLM
+     * @param array  $tools        Available tools
+     * @param string|null $userId  User ID for context
+     *
+     * @return string JSON-encoded function result
+     */
+    private function handleFunctionCall(string $functionName, array $parameters, array $tools, ?string $userId = null): string
+    {
+        $this->logger->info('[ChatService] Handling function call', [
+            'function' => $functionName,
+            'parameters' => $parameters,
+        ]);
+
+        // Find the tool that has this function
+        foreach ($tools as $tool) {
+            $toolFunctions = $tool->getFunctions();
+            foreach ($toolFunctions as $funcDef) {
+                if ($funcDef['name'] === $functionName) {
+                    try {
+                        $result = $tool->executeFunction($functionName, $parameters, $userId);
+                        return json_encode($result);
+                    } catch (\Exception $e) {
+                        $this->logger->error('[ChatService] Function execution failed', [
+                            'function' => $functionName,
+                            'error' => $e->getMessage(),
+                        ]);
+                        return json_encode([
+                            'success' => false,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
+            }
+        }
+
+        return json_encode([
+            'success' => false,
+            'error' => "Unknown function: {$functionName}",
+        ]);
+    }//end handleFunctionCall()
+
+
+}//end class
 

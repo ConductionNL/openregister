@@ -1,5 +1,5 @@
 <script setup>
-import { schemaStore, navigationStore } from '@/store/store.js'
+import { schemaStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -85,11 +85,26 @@ import { schemaStore, navigationStore } from '@/store/store.js'
 			<div v-else>
 				<template v-if="schemaStore.viewMode === 'cards'">
 					<div class="cardGrid">
-						<div v-for="schema in paginatedSchemas" :key="schema.id" class="card">
+						<div v-for="schema in paginatedSchemas"
+							:key="schema.id"
+							class="card"
+							:class="{
+								'card--in-use': hasObjects(schema),
+								'card--configuration': isInConfiguration(schema)
+							}">
 							<div class="cardHeader">
 								<h2>
 									<FileTreeOutline :size="20" />
 									{{ schema.title }}
+									<span v-if="schema.extend" class="statusPill statusPill--alert">
+										{{ t('openregister', 'Extended') }}
+									</span>
+									<span v-if="hasObjects(schema)" class="statusPill statusPill--success">
+										{{ t('openregister', 'In use') }}
+									</span>
+									<span v-if="isInConfiguration(schema)" class="statusPill statusPill--danger">
+										{{ t('openregister', 'Configuration') }}
+									</span>
 								</h2>
 								<NcActions :primary="true" menu-name="Actions">
 									<template #icon>
@@ -106,6 +121,12 @@ import { schemaStore, navigationStore } from '@/store/store.js'
 											<Plus :size="20" />
 										</template>
 										Add Property
+									</NcActionButton>
+									<NcActionButton close-after-click @click="createExtendedSchema(schema)">
+										<template #icon>
+											<CallSplit :size="20" />
+										</template>
+										Extend Schema
 									</NcActionButton>
 									<NcActionButton close-after-click @click="schemaStore.downloadSchema(schema)">
 										<template #icon>
@@ -228,7 +249,11 @@ import { schemaStore, navigationStore } from '@/store/store.js'
 								<tr v-for="schema in paginatedSchemas"
 									:key="schema.id"
 									class="viewTableRow"
-									:class="{ viewTableRowSelected: selectedSchemas.includes(schema.id) }">
+									:class="{
+										viewTableRowSelected: selectedSchemas.includes(schema.id),
+										'viewTableRow--in-use': hasObjects(schema),
+										'viewTableRow--configuration': isInConfiguration(schema)
+									}">
 									<td class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
 											:checked="selectedSchemas.includes(schema.id)"
@@ -236,7 +261,18 @@ import { schemaStore, navigationStore } from '@/store/store.js'
 									</td>
 									<td class="tableColumnTitle">
 										<div class="titleContent">
-											<strong>{{ schema.title }}</strong>
+											<div class="titleWithBadges">
+												<strong>{{ schema.title }}</strong>
+												<span v-if="schema.extend" class="statusPill statusPill--alert">
+													{{ t('openregister', 'Extended') }}
+												</span>
+												<span v-if="hasObjects(schema)" class="statusPill statusPill--success">
+													{{ t('openregister', 'In use') }}
+												</span>
+												<span v-if="isInConfiguration(schema)" class="statusPill statusPill--danger">
+													{{ t('openregister', 'Configuration') }}
+												</span>
+											</div>
 											<span v-if="schema.description" class="textDescription textEllipsis">{{ schema.description }}</span>
 										</div>
 									</td>
@@ -259,6 +295,12 @@ import { schemaStore, navigationStore } from '@/store/store.js'
 													<Plus :size="20" />
 												</template>
 												Add Property
+											</NcActionButton>
+											<NcActionButton close-after-click @click="createExtendedSchema(schema)">
+												<template #icon>
+													<CallSplit :size="20" />
+												</template>
+												Extend Schema
 											</NcActionButton>
 											<NcActionButton close-after-click @click="schemaStore.downloadSchema(schema)">
 												<template #icon>
@@ -337,6 +379,7 @@ import InformationOutline from 'vue-material-design-icons/InformationOutline.vue
 import DatabaseSearch from 'vue-material-design-icons/DatabaseSearch.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import DeleteSweep from 'vue-material-design-icons/DeleteSweep.vue'
+import CallSplit from 'vue-material-design-icons/CallSplit.vue'
 
 import Plus from 'vue-material-design-icons/Plus.vue'
 
@@ -360,6 +403,7 @@ export default {
 		DatabaseSearch,
 		CheckCircle,
 		DeleteSweep,
+		CallSplit,
 
 		Plus,
 		PaginationComponent,
@@ -408,6 +452,39 @@ export default {
 		isPropertyRequired(schema, key) {
 			return schema.required && schema.required.includes(key)
 		},
+		/**
+		 * Check if schema has objects
+		 *
+		 * @param {object} schema - Schema object
+		 * @return {boolean} True if schema has objects
+		 */
+		hasObjects(schema) {
+			return schema.stats?.objects?.total > 0
+		},
+		/**
+		 * Check if schema is part of a configuration
+		 *
+		 * @param {object} schema - Schema object
+		 * @return {boolean} True if schema is part of configuration
+		 */
+		isInConfiguration(schema) {
+			// Check if schema has configuration references
+			// You can customize this logic based on your data structure
+			return schema.configurations && schema.configurations.length > 0
+		},
+		createExtendedSchema(parentSchema) {
+			// Create a new schema that extends the parent schema
+			const newSchema = {
+				title: `Extended ${parentSchema.title}`,
+				description: `Schema extending ${parentSchema.title}`,
+				extend: parentSchema.id, // Set the parent schema ID
+				properties: {}, // Start with empty properties (will inherit from parent)
+				required: [],
+			}
+			// Set the new schema and open the edit modal
+			schemaStore.setSchemaItem(newSchema)
+			navigationStore.setModal('editSchema')
+		},
 		toggleSelectAll(checked) {
 			if (checked) {
 				this.selectedSchemas = schemaStore.schemaList.map(schema => schema.id)
@@ -438,5 +515,68 @@ export default {
 	font-size: 0.8em;
 	margin-left: 4px;
 }
+
+/* Status Pills */
+.statusPill {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 12px;
+	font-size: 0.75em;
+	font-weight: 600;
+	text-transform: uppercase;
+	margin-left: 8px;
+	white-space: nowrap;
+}
+
+.statusPill--alert {
+	background-color: var(--color-warning);
+	color: var(--color-main-background);
+}
+
+.statusPill--success {
+	background-color: var(--color-success);
+	color: white;
+}
+
+.statusPill--danger {
+	background-color: var(--color-error);
+	color: white;
+}
+
+/* Title with badges layout */
+.titleWithBadges {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+	margin-bottom: 4px;
+}
+
+/* Card borders based on status */
+.card--in-use {
+	border: 2px solid var(--color-success);
+}
+
+.card--configuration {
+	border: 2px solid var(--color-error);
+}
+
+/* Table row borders based on status */
+.viewTableRow--in-use {
+	border-left: 4px solid var(--color-success);
+}
+
+.viewTableRow--configuration {
+	border-left: 4px solid var(--color-error);
+}
+
+/* Adjust card header to accommodate pills */
+.cardHeader h2 {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
 /* No component-specific table styles needed - all styles are now generic in main.css */
 </style>

@@ -1763,6 +1763,426 @@ The behavior toggle appears when a default value is set and shows helpful hints 
 **Fix**: Modified cascade logic to skip properties with `writeBack` enabled.
 **Impact**: Ensures write-back operations receive the correct data for processing.
 
+## Schema Extension (Inheritance)
+
+Schema Extension allows one schema to inherit from another schema, enabling schema reusability and maintaining DRY (Don't Repeat Yourself) principles. When a schema extends another, it inherits all properties from the parent and can override or add new properties.
+
+### Core Concept
+
+Schema extension implements an inheritance pattern where:
+
+1. **Parent Schema**: The base schema that defines shared properties
+2. **Child Schema**: The schema that extends the parent, adding or overriding properties
+3. **Delta Storage**: Only differences (delta) from the parent are stored in the child schema
+4. **Resolution**: When retrieving a child schema, properties from the parent are automatically merged
+
+### How It Works
+
+#### Storage (Delta Approach)
+
+When you save a schema that extends another:
+
+1. The system compares the child schema properties with the parent schema
+2. Only the differences (new properties or property overrides) are stored in the database
+3. The 'extend' property stores the reference to the parent schema (ID, UUID, or slug)
+
+**Example:**
+
+```json
+// Parent Schema (id: 42, slug: 'person')
+{
+  'title': 'Person',
+  'properties': {
+    'firstName': { 'type': 'string', 'minLength': 2 },
+    'lastName': { 'type': 'string', 'minLength': 2 },
+    'email': { 'type': 'string', 'format': 'email' }
+  },
+  'required': ['firstName', 'lastName']
+}
+
+// Child Schema (stored in database)
+{
+  'title': 'Employee',
+  'extend': '42',  // References parent schema
+  'properties': {
+    'employeeId': { 'type': 'string' },  // New property
+    'email': { 'type': 'string', 'format': 'email', 'required': true }  // Override
+  },
+  'required': ['employeeId']  // Additional required field
+}
+```
+
+#### Retrieval (Automatic Resolution)
+
+When you retrieve a schema that extends another:
+
+1. The system automatically detects the 'extend' property
+2. The parent schema is loaded and resolved (supporting multi-level inheritance)
+3. Parent properties are merged with child properties (child overrides parent)
+4. Required fields are merged (union of both)
+5. The fully resolved schema is returned
+
+**Resolved Child Schema (returned by API):**
+
+```json
+{
+  'title': 'Employee',
+  'extend': '42',
+  'properties': {
+    'firstName': { 'type': 'string', 'minLength': 2 },  // From parent
+    'lastName': { 'type': 'string', 'minLength': 2 },   // From parent
+    'email': { 'type': 'string', 'format': 'email', 'required': true },  // Overridden
+    'employeeId': { 'type': 'string' }  // New property
+  },
+  'required': ['firstName', 'lastName', 'employeeId']  // Merged
+}
+```
+
+### Property Merging Rules
+
+When merging parent and child properties:
+
+1. **New Properties**: Properties only in child are included
+2. **Inherited Properties**: Properties only in parent are included
+3. **Overridden Properties**: Properties in both - child values override parent values
+4. **Deep Merge**: For nested objects, properties are recursively merged
+5. **Array Replacement**: Arrays (like enum values) are replaced, not merged
+
+**Example: Deep Property Merge**
+
+```json
+// Parent property
+'address': {
+  'type': 'object',
+  'properties': {
+    'street': { 'type': 'string' },
+    'city': { 'type': 'string' }
+  }
+}
+
+// Child property (adds postal code, overrides city)
+'address': {
+  'properties': {
+    'city': { 'type': 'string', 'minLength': 2 },
+    'postalCode': { 'type': 'string' }
+  }
+}
+
+// Merged result
+'address': {
+  'type': 'object',
+  'properties': {
+    'street': { 'type': 'string' },  // From parent
+    'city': { 'type': 'string', 'minLength': 2 },  // Overridden
+    'postalCode': { 'type': 'string' }  // New
+  }
+}
+```
+
+### Multi-Level Inheritance
+
+OpenRegister supports multi-level schema inheritance where schemas can form inheritance chains:
+
+```
+BaseSchema (person)
+    ↓ extends
+ContactSchema (adds email, phone)
+    ↓ extends
+EmployeeSchema (adds employeeId, department)
+```
+
+The system automatically resolves the entire chain:
+
+1. Loads BaseSchema
+2. Applies ContactSchema delta
+3. Applies EmployeeSchema delta
+4. Returns fully resolved EmployeeSchema with all properties
+
+### Using Schema Extension
+
+#### Creating an Extended Schema
+
+**Via API:**
+
+```json
+POST /api/schemas
+{
+  'title': 'Employee',
+  'extend': '42',  // ID of parent schema
+  'properties': {
+    'employeeId': { 'type': 'string' },
+    'department': { 'type': 'string' }
+  },
+  'required': ['employeeId']
+}
+```
+
+**Via Frontend:**
+
+1. Navigate to Schemas → Add Schema
+2. Go to Configuration tab
+3. Select parent schema from 'Extends Schema' dropdown
+4. Add or override properties as needed
+5. Save the schema
+
+#### Updating an Extended Schema
+
+When updating a schema that extends another:
+
+1. Edit the schema normally
+2. Changes are automatically compared with the parent
+3. Only the delta is saved
+4. Full schema is returned after save
+
+### Preventing Circular References
+
+OpenRegister includes protection against circular schema references:
+
+- **Self-Reference**: A schema cannot extend itself
+- **Circular Chains**: Schema A → Schema B → Schema C → Schema A is detected and prevented
+- **Error Messages**: Clear error messages when circular references are detected
+
+### Performance Considerations
+
+Schema extension is designed for performance:
+
+1. **Read Optimization**: Schemas are resolved at retrieval time, ensuring fresh data
+2. **Write Optimization**: Delta extraction happens at save time once
+3. **Caching**: Resolved schemas can be cached by ID to avoid repeated resolution
+4. **Database Efficiency**: Storing only deltas reduces database size
+
+### Use Cases
+
+#### 1. Entity Hierarchies
+
+Create base entities and specialized versions:
+
+```
+Person (base)
+  → Customer (adds customerNumber, preferences)
+  → Supplier (adds supplierCode, paymentTerms)
+  → Employee (adds employeeId, department)
+```
+
+#### 2. Versioned Schemas
+
+Extend schemas to create new versions:
+
+```
+ProductV1
+  → ProductV2 (adds new fields, maintains backward compatibility)
+    → ProductV3 (further enhancements)
+```
+
+#### 3. Domain-Specific Extensions
+
+Create general schemas and domain-specific variants:
+
+```
+Document (base: title, content, created)
+  → LegalDocument (adds caseNumber, court, ruling)
+  → TechnicalDocument (adds version, author, reviewers)
+  → FinancialDocument (adds amount, currency, fiscalYear)
+```
+
+#### 4. Multi-Tenant Customization
+
+Base schema for all tenants, customizations per tenant:
+
+```
+OrganisationBase
+  → OrganisationTenantA (custom fields for Tenant A)
+  → OrganisationTenantB (custom fields for Tenant B)
+```
+
+### Best Practices
+
+#### 1. Design Clear Hierarchies
+
+- Start with a well-designed base schema
+- Add properties that are truly common to all children
+- Avoid overly deep inheritance chains (3-4 levels maximum)
+
+#### 2. Document Extension Purpose
+
+- Use schema 'description' to explain why extension is used
+- Document which properties are overridden and why
+- Maintain clear naming conventions
+
+#### 3. Consider Maintenance
+
+- Changes to parent schemas affect all children
+- Test child schemas when updating parents
+- Use versioning for breaking changes
+
+#### 4. Property Override Strategy
+
+- Only override when necessary
+- Document overridden properties clearly
+- Prefer adding new properties over overriding
+
+#### 5. Required Fields
+
+- Be careful with required fields in parents
+- Consider impact on all children
+- Child schemas can make additional fields required
+
+### Limitations
+
+1. **Single Parent**: A schema can only extend one parent schema (no multiple inheritance)
+2. **Property Removal**: Child schemas cannot remove parent properties, only override them
+3. **Type Changes**: Changing property types in overrides should be done carefully
+4. **Performance**: Very deep inheritance chains may impact performance
+
+### Troubleshooting
+
+#### Schema Not Found
+
+**Error**: 'Parent schema [id] not found'
+
+**Solution**: Verify the parent schema exists and the extend property contains a valid ID, UUID, or slug
+
+#### Circular Reference
+
+**Error**: 'Circular schema extension detected'
+
+**Solution**: Check the inheritance chain for circular references (A → B → A)
+
+#### Property Conflicts
+
+**Issue**: Unexpected property values after extension
+
+**Solution**: Review property override rules and check parent schema properties
+
+#### Resolution Issues
+
+**Issue**: Schema properties not merging correctly
+
+**Solution**: Ensure both parent and child properties are valid JSON Schema format
+
+### API Examples
+
+#### Get Extended Schema (Resolved)
+
+```bash
+GET /api/schemas/employee-schema
+
+# Returns fully resolved schema with parent properties merged
+```
+
+#### Get Raw Schema (Delta Only)
+
+```bash
+# Not directly available - schemas are always resolved on retrieval
+# To see raw delta, query the database directly (for debugging only)
+```
+
+#### Update Extended Schema
+
+```bash
+PUT /api/schemas/employee-schema
+{
+  'properties': {
+    'salary': { 'type': 'number' }
+  }
+}
+
+# System automatically extracts delta before saving
+```
+
+#### Check Which Schemas Extend This Schema
+
+All schema endpoints automatically include an '@self.extendedBy' property that lists the UUIDs of schemas that extend the current schema:
+
+```bash
+GET /api/schemas/person-schema
+
+# Returns:
+{
+  'id': 42,
+  'uuid': 'abc-123',
+  'title': 'Person',
+  '@self': {
+    'extendedBy': [
+      'employee-uuid-456',
+      'customer-uuid-789'
+    ]
+  },
+  'properties': { ... }
+}
+```
+
+This is useful for:
+- **Understanding Schema Usage**: See which schemas depend on this one
+- **Impact Analysis**: Identify which child schemas will be affected by changes
+- **Schema Management**: Track schema relationships and dependencies
+- **Refactoring**: Plan schema restructuring with full visibility of dependencies
+
+The 'extendedBy' property is automatically populated for:
+- Individual schema endpoint: 'GET /api/schemas/{id}'
+- Collection endpoint: 'GET /api/schemas'
+
+**Example Response for Collection:**
+
+```json
+{
+  'results': [
+    {
+      'id': 42,
+      'title': 'Person',
+      '@self': {
+        'extendedBy': ['employee-uuid', 'customer-uuid']
+      },
+      'properties': { ... }
+    },
+    {
+      'id': 43,
+      'title': 'Employee',
+      'extend': '42',
+      '@self': {
+        'extendedBy': []  // No schemas extend Employee
+      },
+      'properties': { ... }
+    }
+  ]
+}
+```
+
+### Advanced Topics
+
+#### Custom Merge Logic
+
+The default merge logic can handle most cases. For special requirements, the SchemaMapper class provides protected methods that can be extended:
+
+- 'mergeSchemaProperties()' - Controls property merging
+- 'deepMergeProperty()' - Controls deep property merging
+- 'extractPropertyDelta()' - Controls delta extraction
+
+#### Migration Strategies
+
+When refactoring schemas to use extension:
+
+1. Create base schema with common properties
+2. Create extended schemas with specific properties
+3. Migrate objects to use new schema structure
+4. Remove duplicate properties from old schemas
+
+#### Testing Extended Schemas
+
+Test schemas with extension:
+
+```bash
+# Create test object with extended schema
+POST /api/objects/{register}/{extended-schema}
+{
+  'firstName': 'John',  # From parent
+  'employeeId': 'EMP123'  # From child
+}
+
+# Verify object validates against resolved schema
+# Verify all properties (parent + child) are available
+```
+
 ## Schema Exploration & Analysis
 
 The Schema Exploration feature provides powerful automated analysis of object data to help optimize your schema definitions. It identifies both **new properties** not yet defined in schemas and **improvement opportunities** for existing properties.
@@ -1880,3 +2300,721 @@ Schema Exploration seamlessly integrates with OpenRegister's schema management:
 - **Cache Management**: Schema cache automatically cleared after updates
 
 This feature helps maintain high-quality, well-defined schemas that accurately reflect your actual data patterns and usage.
+
+## Technical Implementation
+
+### Architecture Overview
+
+The Schema feature is built on a multi-layered architecture that provides robust validation, exploration, and integration with the object system.
+
+```mermaid
+graph TB
+    subgraph "Schema Layer"
+        Schema[Schema Entity<br/>JSON Schema Definition]
+        SchemaMapper[Schema Mapper<br/>Database Operations]
+        SchemaService[Schema Service<br/>Exploration & Analysis]
+        SchemaValidator[Schema Property Validator<br/>JSON Schema Validation]
+    end
+    
+    subgraph "Object Layer"
+        ObjectEntity[Object Entity<br/>Data Storage]
+        ObjectService[Object Service<br/>Business Logic]
+    end
+    
+    subgraph "Search Layer"
+        SolrService[Solr Service<br/>Schema-Aware Indexing]
+        FacetService[Facet Service<br/>Pre-computed Facets]
+    end
+    
+    subgraph "Storage"
+        DB[(MySQL Database<br/>oc_openregister_schemas)]
+        Solr[(Apache Solr<br/>Search Index)]
+    end
+    
+    Schema -->|defines structure| ObjectEntity
+    SchemaValidator -->|validates| Schema
+    SchemaService -->|analyzes| ObjectEntity
+    SchemaService -->|updates| Schema
+    SchemaMapper -->|persists| DB
+    ObjectService -->|validates against| Schema
+    SolrService -->|uses properties| Schema
+    Schema -->|generates| FacetService
+    SolrService -->|indexes| Solr
+    
+    style Schema fill:#e1f5ff
+    style SchemaService fill:#fff4e1
+    style SchemaValidator fill:#ffe1f5
+    style SolrService fill:#e1ffe1
+```
+
+### Schema Definition Flow
+
+When a schema is created or updated, it goes through a comprehensive validation and processing pipeline:
+
+```mermaid
+sequenceDiagram
+    participant API as API Endpoint
+    participant Controller as Schema Controller
+    participant SchemaValidator as Schema Property<br/>Validator
+    participant Schema as Schema Entity
+    participant Mapper as Schema Mapper
+    participant DB as Database
+    
+    API->>Controller: POST/PUT /api/schemas
+    Controller->>Schema: hydrate(schemaData)
+    
+    Schema->>Schema: normalizeInversedByProperties()
+    Note over Schema: Convert inversedBy objects<br/>to strings
+    
+    Schema->>SchemaValidator: validateProperties(properties)
+    SchemaValidator->>SchemaValidator: validateProperty(each property)
+    
+    alt Validation Passes
+        SchemaValidator->>Schema: ✓ Valid
+        Schema->>Schema: regenerateFacetsFromProperties()
+        Note over Schema: Pre-compute facetable<br/>field configuration
+        
+        Schema->>Mapper: insert/update(schema)
+        Mapper->>DB: Save schema
+        DB-->>Mapper: Schema saved
+        Mapper-->>Controller: Schema entity
+        Controller-->>API: 200 OK + Schema JSON
+    else Validation Fails
+        SchemaValidator-->>Schema: ✗ Exception
+        Schema-->>Controller: ValidationException
+        Controller-->>API: 400 Bad Request + Errors
+    end
+```
+
+### Property Validation System
+
+The validation system ensures schemas comply with JSON Schema specifications and OpenRegister extensions:
+
+```mermaid
+graph TD
+    Start[Validate Properties] --> CheckType{Has 'type'<br/>field?}
+    CheckType -->|No| ErrorNoType[❌ Error: Type required]
+    CheckType -->|Yes| ValidType{Valid type?}
+    
+    ValidType -->|No| ErrorInvalidType[❌ Error: Invalid type]
+    ValidType -->|Yes| TypeSwitch{Type?}
+    
+    TypeSwitch -->|string| ValidateString[Validate String Property]
+    TypeSwitch -->|number/integer| ValidateNumber[Validate Numeric Property]
+    TypeSwitch -->|array| ValidateArray[Validate Array Property]
+    TypeSwitch -->|object| ValidateObject[Validate Object Property]
+    TypeSwitch -->|file| ValidateFile[Validate File Property]
+    TypeSwitch -->|boolean| ValidateBool[Validate Boolean]
+    
+    ValidateString --> CheckFormat{Has format?}
+    CheckFormat -->|Yes| ValidFormat{Valid format?}
+    ValidFormat -->|No| ErrorFormat[❌ Error: Invalid format]
+    ValidFormat -->|Yes| StringOK[✓ String Valid]
+    CheckFormat -->|No| StringOK
+    
+    ValidateNumber --> CheckRange{Has min/max?}
+    CheckRange -->|Yes| ValidRange{Min ≤ Max?}
+    ValidRange -->|No| ErrorRange[❌ Error: Invalid range]
+    ValidRange -->|Yes| NumberOK[✓ Number Valid]
+    CheckRange -->|No| NumberOK
+    
+    ValidateArray --> CheckItems{Has items?}
+    CheckItems -->|Yes| ValidateItems[Validate Items Schema]
+    ValidateItems --> ArrayOK[✓ Array Valid]
+    CheckItems -->|No| ArrayOK
+    
+    ValidateObject --> CheckProps{Has properties?}
+    CheckProps -->|Yes| ValidateNestedProps[Validate Nested Properties<br/>Recursively]
+    ValidateNestedProps --> ObjectOK[✓ Object Valid]
+    CheckProps -->|No| ObjectOK
+    
+    ValidateFile --> CheckFileConfig{Validate file<br/>config}
+    CheckFileConfig --> CheckMimeTypes{Valid MIME<br/>types?}
+    CheckMimeTypes -->|No| ErrorMime[❌ Error: Invalid MIME]
+    CheckMimeTypes -->|Yes| CheckSize{Valid maxSize?}
+    CheckSize -->|No| ErrorSize[❌ Error: Invalid size]
+    CheckSize -->|Yes| CheckTags{Valid tags?}
+    CheckTags -->|No| ErrorTags[❌ Error: Invalid tags]
+    CheckTags -->|Yes| FileOK[✓ File Valid]
+    
+    StringOK --> Success[✓ Validation Successful]
+    NumberOK --> Success
+    ArrayOK --> Success
+    ObjectOK --> Success
+    FileOK --> Success
+    ValidateBool --> Success
+    
+    style Success fill:#90EE90
+    style ErrorNoType fill:#FFB6C1
+    style ErrorInvalidType fill:#FFB6C1
+    style ErrorFormat fill:#FFB6C1
+    style ErrorRange fill:#FFB6C1
+    style ErrorMime fill:#FFB6C1
+    style ErrorSize fill:#FFB6C1
+    style ErrorTags fill:#FFB6C1
+```
+
+### Schema Exploration Process
+
+Schema exploration analyzes existing objects to discover properties and suggest improvements:
+
+```mermaid
+sequenceDiagram
+    participant User as User
+    participant API as API
+    participant SchemaService as Schema Service
+    participant ObjectMapper as Object Mapper
+    participant Analyzer as Property Analyzer
+    participant Schema as Schema
+    
+    User->>API: GET /api/schemas/{id}/explore
+    API->>SchemaService: exploreSchemaProperties(schemaId)
+    
+    SchemaService->>Schema: Load schema
+    Schema-->>SchemaService: Schema entity
+    
+    SchemaService->>ObjectMapper: findBySchema(schemaId)
+    ObjectMapper-->>SchemaService: Object[] (all objects)
+    
+    Note over SchemaService: Analysis Phase
+    
+    loop For each object
+        SchemaService->>Analyzer: analyzePropertyValue(value)
+        Analyzer->>Analyzer: detectType()<br/>detectFormat()<br/>analyzePattern()
+        Analyzer-->>SchemaService: Property analysis
+    end
+    
+    SchemaService->>SchemaService: calculateUsageStats()
+    SchemaService->>SchemaService: generateSuggestions()<br/>(new properties)
+    SchemaService->>SchemaService: analyzeExistingProperties()<br/>(improvements)
+    
+    SchemaService-->>API: Exploration results:<br/>- Discovered properties<br/>- Improvement suggestions<br/>- Usage statistics
+    
+    API-->>User: 200 OK + Analysis JSON
+    
+    Note over User: User reviews and selects<br/>properties to apply
+    
+    User->>API: POST /api/schemas/{id}/update-from-exploration
+    API->>SchemaService: updateSchemaFromExploration(id, properties)
+    
+    SchemaService->>Schema: setProperties(merged properties)
+    SchemaService->>Schema: regenerateFacetsFromProperties()
+    SchemaService->>Schema: Save updated schema
+    
+    Schema-->>SchemaService: Updated schema
+    SchemaService-->>API: Updated schema
+    API-->>User: 200 OK + Updated schema
+```
+
+### Property Analysis Flow
+
+The property analysis system discovers types, formats, patterns, and constraints from actual data:
+
+```mermaid
+graph TD
+    Start[Analyze Property Value] --> GetType{Determine<br/>Type}
+    
+    GetType -->|string| AnalyzeString[String Analysis]
+    GetType -->|integer| AnalyzeInteger[Integer Analysis]
+    GetType -->|double| AnalyzeDouble[Double Analysis]
+    GetType -->|array| AnalyzeArray[Array Analysis]
+    GetType -->|object| AnalyzeObject[Object Analysis]
+    GetType -->|boolean| AnalyzeBoolean[Boolean Analysis]
+    
+    AnalyzeString --> DetectFormat[Format Detection]
+    DetectFormat --> CheckDate{Date?}
+    CheckDate -->|Yes| FormatDate[Format: date/date-time]
+    CheckDate -->|No| CheckEmail{Email?}
+    CheckEmail -->|Yes| FormatEmail[Format: email]
+    CheckEmail -->|No| CheckUUID{UUID?}
+    CheckUUID -->|Yes| FormatUUID[Format: uuid]
+    CheckUUID -->|No| CheckURL{URL?}
+    CheckURL -->|Yes| FormatURL[Format: url]
+    CheckURL -->|No| CheckIP{IP Address?}
+    CheckIP -->|Yes| FormatIP[Format: ipv4/ipv6]
+    CheckIP -->|No| NoFormat[No specific format]
+    
+    AnalyzeString --> DetectPattern[Pattern Detection]
+    DetectPattern --> PatternTypes[camelCase<br/>PascalCase<br/>snake_case<br/>SCREAMING_SNAKE_CASE<br/>numeric_string<br/>boolean_string]
+    
+    AnalyzeString --> MeasureLength[Length Analysis]
+    MeasureLength --> LengthStats[Min/Max Length]
+    
+    AnalyzeInteger --> NumericRange1[Numeric Range]
+    NumericRange1 --> IntegerStats[Min/Max<br/>Type: integer]
+    
+    AnalyzeDouble --> NumericRange2[Numeric Range]
+    NumericRange2 --> DoubleStats[Min/Max<br/>Type: number]
+    
+    AnalyzeArray --> ArrayStructure[Array Structure]
+    ArrayStructure --> ArrayType{List or<br/>Associative?}
+    ArrayType -->|List| ListAnalysis[Analyze Item Types]
+    ArrayType -->|Associative| AssocAnalysis[Analyze Keys]
+    
+    AnalyzeObject --> ObjectStructure[Object Structure]
+    ObjectStructure --> ExtractKeys[Extract Keys]
+    ExtractKeys --> KeyCount[Key Count]
+    
+    AnalyzeBoolean --> BooleanResult[Boolean Type]
+    
+    FormatDate --> MergeAnalysis[Merge Analysis]
+    FormatEmail --> MergeAnalysis
+    FormatUUID --> MergeAnalysis
+    FormatURL --> MergeAnalysis
+    FormatIP --> MergeAnalysis
+    NoFormat --> MergeAnalysis
+    PatternTypes --> MergeAnalysis
+    LengthStats --> MergeAnalysis
+    IntegerStats --> MergeAnalysis
+    DoubleStats --> MergeAnalysis
+    ListAnalysis --> MergeAnalysis
+    AssocAnalysis --> MergeAnalysis
+    KeyCount --> MergeAnalysis
+    BooleanResult --> MergeAnalysis
+    
+    MergeAnalysis --> CalculateConfidence[Calculate Confidence]
+    CalculateConfidence --> CheckUsage{Usage %?}
+    CheckUsage -->|≥80%| HighConfidence[High Confidence]
+    CheckUsage -->|50-79%| MediumConfidence[Medium Confidence]
+    CheckUsage -->|<50%| LowConfidence[Low Confidence]
+    
+    HighConfidence --> GenerateSuggestion[Generate Schema Suggestion]
+    MediumConfidence --> GenerateSuggestion
+    LowConfidence --> GenerateSuggestion
+    
+    GenerateSuggestion --> ReturnAnalysis[Return Property Analysis]
+    
+    style HighConfidence fill:#90EE90
+    style MediumConfidence fill:#FFD700
+    style LowConfidence fill:#FFB6C1
+```
+
+### Facet Pre-computation
+
+Schemas can pre-compute facet configurations to optimize search performance:
+
+```mermaid
+sequenceDiagram
+    participant Schema as Schema
+    participant Analysis as Facet Analysis
+    participant Property as Property Config
+    participant Storage as Facets Field
+    
+    Note over Schema: regenerateFacetsFromProperties()
+    
+    Schema->>Schema: getProperties()
+    
+    loop For each property
+        Schema->>Property: Check if facetable=true
+        
+        alt Property is facetable
+            Property-->>Analysis: Property config
+            Analysis->>Analysis: determineFacetType(property)
+            
+            alt Date/DateTime
+                Analysis->>Analysis: Type: date_histogram
+                Analysis->>Analysis: Add interval options
+            else Numeric
+                Analysis->>Analysis: Type: range
+                Analysis->>Analysis: Add range support
+            else String/Boolean/Array
+                Analysis->>Analysis: Type: terms
+                alt Has enum
+                    Analysis->>Analysis: Add predefined values
+                end
+            end
+            
+            Analysis-->>Schema: Facet configuration
+        else Not facetable
+            Note over Property: Skip property
+        end
+    end
+    
+    Schema->>Storage: setFacets(facetConfig)
+    Storage->>Storage: Store as JSON in database
+    
+    Note over Storage: Pre-computed facets available<br/>for fast search queries
+```
+
+### Schema-Aware Solr Indexing
+
+Objects are indexed to Solr using schema property definitions:
+
+```mermaid
+graph TB
+    Start[Index Object to Solr] --> GetSchema[Load Schema]
+    GetSchema --> CheckSearchable{Schema<br/>searchable?}
+    
+    CheckSearchable -->|No| SkipIndexing[Skip Indexing<br/>Return]
+    CheckSearchable -->|Yes| CreateDoc[Create Solr Document]
+    
+    CreateDoc --> AddMetadata[Add Metadata Fields<br/>self_id, self_uuid<br/>self_schema, self_register<br/>self_created, self_updated]
+    
+    AddMetadata --> IterateProps[Iterate Schema Properties]
+    
+    IterateProps --> CheckProp{For each<br/>property}
+    
+    CheckProp --> GetValue[Get value from object data]
+    GetValue --> CheckExists{Value<br/>exists?}
+    
+    CheckExists -->|No| NextProp[Next property]
+    CheckExists -->|Yes| DetermineType{Property<br/>type?}
+    
+    DetermineType -->|string| HandleString[Map to Solr string fields<br/>propertyName: value<br/>propertyName_s: value<br/>propertyName_t: value]
+    DetermineType -->|number/integer| HandleNumber[Map to Solr numeric fields<br/>propertyName: value<br/>propertyName_i: int value<br/>propertyName_f: float value]
+    DetermineType -->|boolean| HandleBoolean[Map to Solr boolean field<br/>propertyName: value<br/>propertyName_b: value]
+    DetermineType -->|array| HandleArray[Map array to multi-valued<br/>propertyName: array values]
+    DetermineType -->|object| HandleObject[Flatten nested object<br/>propertyName.field: value]
+    DetermineType -->|file| HandleFile[Skip file properties<br/>Files handled separately]
+    
+    HandleString --> ValidateField[Validate Field for Solr]
+    HandleNumber --> ValidateField
+    HandleBoolean --> ValidateField
+    HandleArray --> ValidateField
+    HandleObject --> ValidateField
+    HandleFile --> NextProp
+    
+    ValidateField --> CheckCompatible{Compatible with<br/>Solr type?}
+    
+    CheckCompatible -->|Yes| AddToDoc[Add to Solr document]
+    CheckCompatible -->|No| LogWarning[Log type mismatch<br/>Skip field]
+    
+    AddToDoc --> NextProp
+    LogWarning --> NextProp
+    
+    NextProp --> MoreProps{More<br/>properties?}
+    MoreProps -->|Yes| CheckProp
+    MoreProps -->|No| AddFullObject[Add complete object<br/>self_object: JSON]
+    
+    AddFullObject --> IndexToSolr[Index document to Solr]
+    IndexToSolr --> Success[✓ Indexed Successfully]
+    
+    style SkipIndexing fill:#FFE4B5
+    style Success fill:#90EE90
+    style LogWarning fill:#FFB6C1
+```
+
+### Authorization System
+
+Schemas support group-based CRUD permissions:
+
+```mermaid
+graph TD
+    Start[Check Permission] --> CheckAdmin{User in<br/>'admin' group?}
+    CheckAdmin -->|Yes| GrantAccess[✓ Grant Access]
+    CheckAdmin -->|No| CheckOwner{Is object<br/>owner?}
+    
+    CheckOwner -->|Yes| GrantAccess
+    CheckOwner -->|No| CheckAuth{Schema has<br/>authorization?}
+    
+    CheckAuth -->|No| GrantAccess
+    CheckAuth -->|Yes| CheckAction{Action defined<br/>in authorization?}
+    
+    CheckAction -->|No| GrantAccess
+    CheckAction -->|Yes| CheckGroup{User's group<br/>in allowed list?}
+    
+    CheckGroup -->|Yes| GrantAccess
+    CheckGroup -->|No| DenyAccess[✗ Deny Access]
+    
+    style GrantAccess fill:#90EE90
+    style DenyAccess fill:#FFB6C1
+```
+
+### Configuration System
+
+Schemas can configure object name, description, and file handling:
+
+```json
+{
+  "configuration": {
+    "objectNameField": "person.firstName",
+    "objectDescriptionField": "case.summary",
+    "objectSummaryField": "article.abstract",
+    "objectImageField": "profile.avatar",
+    "allowFiles": true,
+    "allowedTags": ["document", "image", "public"],
+    "autoPublish": false,
+    "unique": ["email", "username"]
+  }
+}
+```
+
+**Configuration Options:**
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `objectNameField` | string | Dot-notation path to field for object name |
+| `objectDescriptionField` | string | Dot-notation path to field for description |
+| `objectSummaryField` | string | Dot-notation path to field for summary |
+| `objectImageField` | string | Dot-notation path to field for image data |
+| `allowFiles` | boolean | Whether schema allows file attachments |
+| `allowedTags` | array | File tags allowed for this schema |
+| `autoPublish` | boolean | Whether objects auto-publish on creation |
+| `unique` | array | Properties that must have unique values |
+
+### Database Schema
+
+Schemas are stored in the `oc_openregister_schemas` table:
+
+```sql
+CREATE TABLE oc_openregister_schemas (
+    id INTEGER PRIMARY KEY AUTO_INCREMENT,
+    uuid VARCHAR(255) UNIQUE NOT NULL,
+    uri VARCHAR(255),
+    slug VARCHAR(255) NOT NULL,
+    title VARCHAR(255),
+    description TEXT,
+    version VARCHAR(50),
+    summary TEXT,
+    required JSON,
+    properties JSON,
+    archive JSON,
+    facets JSON,
+    source VARCHAR(255),
+    hard_validation BOOLEAN DEFAULT FALSE,
+    immutable BOOLEAN DEFAULT FALSE,
+    searchable BOOLEAN DEFAULT TRUE,
+    updated DATETIME,
+    created DATETIME,
+    max_depth INTEGER DEFAULT 0,
+    owner VARCHAR(255),
+    application VARCHAR(255),
+    organisation VARCHAR(255),
+    authorization JSON,
+    deleted DATETIME,
+    configuration JSON,
+    icon VARCHAR(255),
+    groups JSON,
+    INDEX idx_slug (slug),
+    INDEX idx_uuid (uuid),
+    INDEX idx_searchable (searchable)
+);
+```
+
+### Performance Optimizations
+
+**1. Facet Pre-computation**
+- Facets generated at schema save time
+- Eliminates runtime analysis during searches
+- Stored in `facets` JSON field
+
+**2. Schema Caching**
+- Schemas cached in memory during request
+- Reduces database queries for validation
+
+**3. Lazy Loading**
+- Schema properties loaded only when needed
+- JSON fields decoded on demand
+
+**4. Batch Exploration**
+- Objects analyzed in batches
+- Memory-efficient processing
+
+**5. Indexed Fields**
+- Database indexes on `slug`, `uuid`, `searchable`
+- Fast schema lookups
+
+### Code Examples
+
+**Creating a Schema:**
+
+```php
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
+
+$schema = new Schema();
+$schema->hydrate([
+    'title' => 'Person',
+    'slug' => 'person',
+    'version' => '1.0.0',
+    'required' => ['firstName', 'lastName', 'email'],
+    'properties' => [
+        'firstName' => [
+            'type' => 'string',
+            'title' => 'First Name',
+            'minLength' => 2,
+            'maxLength' => 50
+        ],
+        'lastName' => [
+            'type' => 'string',
+            'title' => 'Last Name',
+            'minLength' => 2,
+            'maxLength' => 50
+        ],
+        'email' => [
+            'type' => 'string',
+            'format' => 'email',
+            'title' => 'Email Address'
+        ],
+        'age' => [
+            'type' => 'integer',
+            'minimum' => 0,
+            'maximum' => 150
+        ]
+    ],
+    'configuration' => [
+        'objectNameField' => 'firstName',
+        'objectDescriptionField' => 'email'
+    ]
+], $validator);
+
+$schemaMapper->insert($schema);
+```
+
+**Validating Properties:**
+
+```php
+use OCA\OpenRegister\Service\SchemaPropertyValidatorService;
+
+$validator = new SchemaPropertyValidatorService($logger);
+
+try {
+    $validator->validateProperties($properties);
+    // Properties are valid
+} catch (\Exception $e) {
+    // Validation failed: $e->getMessage()
+}
+```
+
+**Exploring Schema:**
+
+```php
+use OCA\OpenRegister\Service\SchemaService;
+
+$analysis = $schemaService->exploreSchemaProperties($schemaId);
+
+foreach ($analysis['suggestions'] as $suggestion) {
+    if ($suggestion['confidence'] === 'high') {
+        echo "Property: {$suggestion['property_name']}\n";
+        echo "Type: {$suggestion['recommended_type']}\n";
+        echo "Usage: {$suggestion['usage_percentage']}%\n";
+        echo "Examples: " . implode(', ', $suggestion['examples']) . "\n";
+    }
+}
+```
+
+**Checking Permissions:**
+
+```php
+$schema = $schemaMapper->find($schemaId);
+
+if ($schema->hasPermission($userGroupId, 'create', $userId)) {
+    // User has create permission
+    $objectService->createObject($data);
+} else {
+    throw new UnauthorizedException('No permission to create objects');
+}
+```
+
+### Testing
+
+**Unit Tests:**
+
+```php
+use PHPUnit\Framework\TestCase;
+
+class SchemaValidationTest extends TestCase
+{
+    public function testValidateStringProperty()
+    {
+        $validator = new SchemaPropertyValidatorService($this->logger);
+        
+        $property = [
+            'type' => 'string',
+            'format' => 'email',
+            'minLength' => 5,
+            'maxLength' => 100
+        ];
+        
+        $this->assertTrue($validator->validateProperty($property, '/email'));
+    }
+    
+    public function testInvalidPropertyType()
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Invalid type');
+        
+        $validator->validateProperty(['type' => 'invalid'], '/field');
+    }
+}
+```
+
+**Integration Tests:**
+
+```bash
+# Test schema creation
+vendor/bin/phpunit tests/Integration/SchemaIntegrationTest.php
+
+# Test schema exploration
+vendor/bin/phpunit tests/Integration/SchemaExplorationTest.php --filter testExploreProperties
+
+# Test facet generation
+vendor/bin/phpunit tests/Integration/SchemaFacetGenerationTest.php
+```
+
+### Best Practices
+
+**1. Schema Design**
+- Use descriptive property names
+- Set appropriate constraints (min/max, patterns)
+- Mark fields as required only when necessary
+- Use enums for predefined values
+- Document properties with titles and descriptions
+
+**2. Validation Configuration**
+- Enable `hardValidation` for critical schemas
+- Use `immutable` for schemas that shouldn't change
+- Set `searchable: false` for internal schemas
+
+**3. Performance**
+- Mark frequently filtered fields as `facetable`
+- Use appropriate data types (integer vs string)
+- Avoid deeply nested objects (maxDepth > 5)
+- Limit array sizes where possible
+
+**4. Security**
+- Configure authorization for sensitive schemas
+- Use group-based permissions
+- Validate file properties thoroughly
+- Restrict file types with `allowedTypes`
+
+**5. Maintenance**
+- Run schema exploration periodically
+- Update schemas based on high-confidence suggestions
+- Version schemas when making breaking changes
+- Archive old versions in the `archive` property
+
+### Monitoring and Debugging
+
+**Schema Validation Errors:**
+
+```bash
+# Check Nextcloud logs
+docker logs nextcloud-container | grep 'Schema.*validation'
+
+# Check database for invalid schemas
+SELECT id, title, hard_validation FROM oc_openregister_schemas WHERE properties IS NULL;
+```
+
+**Exploration Performance:**
+
+```bash
+# Monitor exploration execution time
+docker logs nextcloud-container | grep 'Schema exploration'
+
+# Check object counts per schema
+SELECT schema, COUNT(*) as object_count 
+FROM oc_openregister_objects 
+GROUP BY schema 
+ORDER BY object_count DESC;
+```
+
+**Solr Indexing Issues:**
+
+```bash
+# Check schema-aware indexing
+docker logs nextcloud-container | grep 'schema-aware mapping'
+
+# Verify searchable schemas
+SELECT id, title, searchable FROM oc_openregister_schemas;
+```

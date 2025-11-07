@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Service\FacetService;
 use OCA\OpenRegister\Service\ObjectCacheService;
 use OCA\OpenRegister\Service\SchemaCacheService;
@@ -185,6 +186,7 @@ class ObjectService
         private readonly DepublishObject $depublishHandler,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
+        private readonly ViewMapper $viewMapper,
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly FileService $fileService,
         private readonly IUserSession $userSession,
@@ -1750,7 +1752,7 @@ class ObjectService
      * @psalm-param    array<string, mixed> $requestParams
      * @psalm-return   array<string, mixed>
      */
-    public function buildSearchQuery(array $requestParams, int | string | null $register=null, int | string | null $schema=null, ?array $ids=null): array
+    public function buildSearchQuery(array $requestParams, int | string | array | null $register=null, int | string | array | null $schema=null, ?array $ids=null): array
     {
         // STEP 1: Fix PHP's dot-to-underscore mangling in query parameter names
         // PHP converts dots to underscores in parameter names, e.g.:
@@ -1803,13 +1805,24 @@ class ObjectService
         $metadataFields = ['register', 'schema', 'uuid', 'organisation', 'owner', 'application', 'created', 'updated', 'published', 'depublished', 'deleted'];
         $query['@self'] = [];
 
-        // Add register and schema to @self if provided (ensure they are integers)
+        // Add register and schema to @self if provided
+        // Support both single values and arrays for multi-register/schema filtering
         if ($register !== null) {
-            $query['@self']['register'] = (int) $register;
+            if (is_array($register)) {
+                // Convert array values to integers
+                $query['@self']['register'] = array_map('intval', $register);
+            } else {
+                $query['@self']['register'] = (int) $register;
+            }
         }
 
         if ($schema !== null) {
-            $query['@self']['schema'] = (int) $schema;
+            if (is_array($schema)) {
+                // Convert array values to integers
+                $query['@self']['schema'] = array_map('intval', $schema);
+            } else {
+                $query['@self']['schema'] = (int) $schema;
+            }
         }
 
         // Query structure built successfully
@@ -1854,8 +1867,124 @@ class ObjectService
     }//end buildSearchQuery()
 
 
-    public function searchObjects(array $query=[], bool $rbac=true, bool $multi=true, ?array $ids=null, ?string $uses=null): array|int
+    /**
+     * Apply view filters to a query
+     *
+     * Converts view definitions into query parameters by merging view->query into the base query.
+     * Supports multiple views - their filters are combined (OR logic for same field, AND for different fields).
+     *
+     * @param array $query Base query parameters
+     * @param array $viewIds View IDs to apply
+     *
+     * @return array Query with view filters applied
+     */
+    private function applyViewsToQuery(array $query, array $viewIds): array
     {
+        if (empty($viewIds)) {
+            return $query;
+        }
+
+        $this->logger->debug('[ObjectService] Applying views to query', [
+            'viewIds' => $viewIds,
+            'originalQuery' => array_keys($query),
+        ]);
+
+        foreach ($viewIds as $viewId) {
+            try {
+                $view = $this->viewMapper->find($viewId);
+                $viewQuery = $view->getQuery();
+
+                // Apply registers filter using @self metadata (format ObjectEntityMapper understands)
+                if (!empty($viewQuery['registers'])) {
+                    if (!isset($query['@self'])) {
+                        $query['@self'] = [];
+                    }
+                    $query['@self']['register'] = array_unique(array_merge(
+                        is_array($query['@self']['register'] ?? null) ? $query['@self']['register'] : ($query['@self']['register'] ?? false ? [$query['@self']['register']] : []),
+                        $viewQuery['registers']
+                    ));
+                }
+
+                // Apply schemas filter using @self metadata (format ObjectEntityMapper understands)
+                if (!empty($viewQuery['schemas'])) {
+                    if (!isset($query['@self'])) {
+                        $query['@self'] = [];
+                    }
+                    $query['@self']['schema'] = array_unique(array_merge(
+                        is_array($query['@self']['schema'] ?? null) ? $query['@self']['schema'] : ($query['@self']['schema'] ?? false ? [$query['@self']['schema']] : []),
+                        $viewQuery['schemas']
+                    ));
+                }
+
+                // Apply search terms
+                if (!empty($viewQuery['searchTerms'])) {
+                    $searchTerms = is_array($viewQuery['searchTerms']) 
+                        ? implode(' ', $viewQuery['searchTerms']) 
+                        : $viewQuery['searchTerms'];
+                    
+                    $existingSearch = $query['_search'] ?? '';
+                    $query['_search'] = trim($existingSearch . ' ' . $searchTerms);
+                }
+
+                // Apply facet filters (merge with existing filters)
+                if (!empty($viewQuery['facetFilters'])) {
+                    foreach ($viewQuery['facetFilters'] as $facet => $values) {
+                        if (!isset($query[$facet])) {
+                            $query[$facet] = $values;
+                        } else {
+                            // Merge values for the same facet (OR logic)
+                            $query[$facet] = array_unique(array_merge(
+                                is_array($query[$facet]) ? $query[$facet] : [$query[$facet]],
+                                is_array($values) ? $values : [$values]
+                            ));
+                        }
+                    }
+                }
+
+                // Preserve source preference from view
+                if (!empty($viewQuery['source']) && !isset($query['_source'])) {
+                    $query['_source'] = $viewQuery['source'];
+                }
+
+                $this->logger->debug('[ObjectService] Applied view to query', [
+                    'viewId' => $viewId,
+                    'viewName' => $view->getName(),
+                    'addedFilters' => [
+                        'registers' => $viewQuery['registers'] ?? [],
+                        'schemas' => $viewQuery['schemas'] ?? [],
+                        'facets' => array_keys($viewQuery['facetFilters'] ?? []),
+                    ],
+                ]);
+
+            } catch (\Exception $e) {
+                $this->logger->warning('[ObjectService] Failed to apply view', [
+                    'viewId' => $viewId,
+                    'error' => $e->getMessage(),
+                ]);
+                // Continue with other views
+            }
+        }
+
+        $this->logger->info('[ObjectService] Views applied to query', [
+            'viewIds' => $viewIds,
+            'resultingFilters' => [
+                'registers' => $query['@self']['register'] ?? null,
+                'schemas' => $query['@self']['schema'] ?? null,
+                'search' => $query['_search'] ?? null,
+            ],
+        ]);
+
+        return $query;
+
+    }//end applyViewsToQuery()
+
+
+    public function searchObjects(array $query=[], bool $rbac=true, bool $multi=true, ?array $ids=null, ?string $uses=null, ?array $views=null): array|int
+    {
+        // Apply view filters if provided
+        if ($views !== null && !empty($views)) {
+            $query = $this->applyViewsToQuery($query, $views);
+        }
 
         // **CRITICAL PERFORMANCE OPTIMIZATION**: Detect simple vs complex rendering needs
         $hasExtend = !empty($query['_extend'] ?? []);
@@ -2488,8 +2617,13 @@ class ObjectService
      *                              - next: URL for next page (if available)
      *                              - prev: URL for previous page (if available)
      */
-    public function searchObjectsPaginated(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false, ?array $ids=null, ?string $uses=null): array
+    public function searchObjectsPaginated(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false, ?array $ids=null, ?string $uses=null, ?array $views=null): array
     {
+        // Apply view filters if provided
+        if ($views !== null && !empty($views)) {
+            $query = $this->applyViewsToQuery($query, $views);
+        }
+
         // ids and uses are passed as proper parameters, not added to query
 
         $requestedSource = $query['_source'] ?? null;

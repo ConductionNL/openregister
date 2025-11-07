@@ -91,34 +91,51 @@ class SchemasController extends Controller
      *
      * This method returns a JSON response containing an array of all schemas in the system.
      *
-     * @param ObjectService $objectService The object service
-     *
      * @return JSONResponse A JSON response containing the list of schemas
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      */
-    public function index(
-        ObjectService $objectService
-    ): JSONResponse {
+    public function index(): JSONResponse {
         // Get request parameters for filtering and searching.
-        $filters = $this->request->getParam(key: 'filters', default: []);
-        $search  = $this->request->getParam(key: '_search', default: '');
-        $extend  = $this->request->getParam(key: '_extend', default: []);
+        $params = $this->request->getParams();
+        
+        // Extract pagination and search parameters
+        $limit  = isset($params['_limit']) ? (int) $params['_limit'] : null;
+        $offset = isset($params['_offset']) ? (int) $params['_offset'] : null;
+        $page   = isset($params['_page']) ? (int) $params['_page'] : null;
+        $search = $params['_search'] ?? '';
+        $extend = $params['_extend'] ?? [];
         if (is_string($extend)) {
             $extend = [$extend];
         }
+        
+        // Convert page to offset if provided
+        if ($page !== null && $limit !== null) {
+            $offset = ($page - 1) * $limit;
+        }
+        
+        // Extract filters
+        $filters = $params['filters'] ?? [];
 
         $schemas    = $this->schemaMapper->findAll(
-            limit: null,
-            offset: null,
+            limit: $limit,
+            offset: $offset,
             filters: $filters,
             searchConditions: [],
             searchParams: [],
             extend: []
         );
         $schemasArr = array_map(fn($schema) => $schema->jsonSerialize(), $schemas);
+        
+        // Add extendedBy property to each schema showing UUIDs of schemas that extend it
+        foreach ($schemasArr as &$schema) {
+            $schema['@self'] = $schema['@self'] ?? [];
+            $schema['@self']['extendedBy'] = $this->schemaMapper->findExtendedBy($schema['id']);
+        }
+        unset($schema); // Break the reference
+        
         // If '@self.stats' is requested, attach statistics to each schema
         if (in_array('@self.stats', $extend, true)) {
             // Get register counts for all schemas in one call
@@ -158,6 +175,11 @@ class SchemasController extends Controller
 
         $schema    = $this->schemaMapper->find($id, []);
         $schemaArr = $schema->jsonSerialize();
+        
+        // Add extendedBy property showing UUIDs of schemas that extend this schema
+        $schemaArr['@self'] = $schemaArr['@self'] ?? [];
+        $schemaArr['@self']['extendedBy'] = $this->schemaMapper->findExtendedBy($id);
+        
         // If '@self.stats' is requested, attach statistics to the schema
         if (in_array('@self.stats', $extend, true)) {
             // Get register counts for all schemas in one call
@@ -283,10 +305,11 @@ class SchemasController extends Controller
             }
         }
 
-        // Remove ID if present to prevent conflicts.
-        if (isset($data['id']) === true) {
-            unset($data['id']);
-        }
+        // Remove immutable fields to prevent tampering
+        unset($data['id']);
+        unset($data['organisation']);
+        unset($data['owner']);
+        unset($data['created']);
 
         try {
             // Update the schema with the provided data.
@@ -338,6 +361,23 @@ class SchemasController extends Controller
         }//end try
 
     }//end update()
+
+
+    /**
+     * Patch (partially update) a schema
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param int $id The ID of the schema to patch
+     *
+     * @return JSONResponse The updated schema data
+     */
+    public function patch(int $id): JSONResponse
+    {
+        return $this->update($id);
+
+    }//end patch()
 
 
     /**

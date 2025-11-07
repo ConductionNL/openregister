@@ -30,6 +30,7 @@ The search system enables:
 - Metadata search
 - File content search
 - Advanced query options
+- **[Saved Views](./views.md)** - Save and reuse complex search configurations
 
 ## Key Benefits
 
@@ -568,6 +569,106 @@ GET /api/objects/5/24?@self[description][~]=very_specific_text
 GET /api/objects/5/24?@self[created][gte]=2025-01-01&_limit=50&_offset=0
 ```
 
+## Search Engine Implementation
+
+### Solr Integration
+
+OpenRegister uses Apache Solr as its search engine, providing powerful full-text search and faceting capabilities.
+
+#### Case-Insensitive Search
+
+All text searches are case-insensitive by default. The search implementation uses 'mb_strtolower()' to normalize search terms before querying Solr:
+
+```php
+// Search terms are normalized to lowercase
+$cleanTerm = mb_strtolower($cleanTerm);
+```
+
+This ensures that searches work consistently regardless of input case:
+- 'software' = 'SOFTWARE' = 'SoFtWaRe' (all return the same results)
+- Handles international characters correctly (é, ñ, ü, etc.)
+- Works with UTF-8 encoded strings
+
+The normalization happens before the query is sent to Solr, ensuring reliable search behavior across different Solr configurations.
+
+#### Ordering and Sorting
+
+Objects can be ordered by metadata fields using the '_order' parameter:
+
+**Sortable Fields:**
+- '@self.name' - Alphabetical by object name (uses 'self_name_s' Solr field)
+- '@self.published' - Chronological by published date
+- '@self.created' - Chronological by creation date
+- '@self.updated' - Chronological by update date
+
+**Sorting Directions:**
+- 'asc' - Ascending order (A→Z, oldest→newest)
+- 'desc' - Descending order (Z→A, newest→oldest)
+
+**Examples:**
+```
+# Alphabetical order (A→Z)
+GET /api/objects?_source=index&_order[@self.name]=asc
+
+# Reverse alphabetical (Z→A)
+GET /api/objects?_source=index&_order[@self.name]=desc
+
+# Newest first
+GET /api/objects?_source=index&_order[@self.published]=desc
+
+# Oldest first
+GET /api/objects?_source=index&_order[@self.created]=asc
+```
+
+**Technical Implementation:**
+- Text fields use sortable string variants (with '_s' suffix)
+- Solr schema includes sortable copies of searchable fields
+- Date fields use native Solr date sorting
+- Field mapping handled by 'translateSortableField()' method
+
+#### Search Performance
+
+**Weighted Field Search:**
+The search engine uses weighted field boosting to prioritize matches in certain fields:
+
+```php
+// Example weights
+'self_name^10'        // Name field has highest priority
+'self_title^8'        // Title field is second priority
+'self_description^5'  // Description has medium priority
+'self_summary^3'      // Summary has lower priority
+```
+
+This ensures that matches in object names are ranked higher than matches in descriptions.
+
+**Field Types in Solr:**
+- 'text_general' - Analyzed text fields (tokenized, lowercased, stemmed)
+- 'string' - Exact value fields (not tokenized, for sorting/faceting)
+- 'date' - ISO 8601 date fields (for range queries and sorting)
+- UUID fields - String fields for identifiers
+
+#### Testing Search
+
+The search implementation includes comprehensive integration tests:
+
+**Test Coverage:**
+- Case-insensitive search (lowercase, uppercase, mixed case)
+- Ordering by name (ascending, descending)
+- Ordering by dates (chronological, reverse chronological)
+- Combined filters with search
+- Pagination with ordering
+
+**Running Tests:**
+```bash
+# Run all search tests
+vendor/bin/phpunit tests/Integration/CoreIntegrationTest.php --filter "testCaseInsensitive|testOrdering"
+
+# Run specific test
+vendor/bin/phpunit tests/Integration/CoreIntegrationTest.php --filter testCaseInsensitiveSearchLowercase
+```
+
+See 'SOLR_TESTING_GUIDE.md' in the repository for detailed testing procedures.
+
 ## Error Handling
 
 ### Invalid Field Names
@@ -593,3 +694,411 @@ GET /api/objects/5/24?@self[created][gte]=2025-01-01&_limit=50&_offset=0
   "code": 400
 }
 ```
+
+---
+
+## Technical Implementation
+
+This section provides detailed technical information about how search is implemented in OpenRegister.
+
+### Architecture Overview
+
+OpenRegister uses Apache Solr as its search engine, providing powerful full-text search, faceting, and filtering capabilities:
+
+```mermaid
+graph TB
+    A[API Request] --> B[ObjectService]
+    B --> C{Check _source param}
+    C -->|database| D[ObjectEntityMapper]
+    C -->|index| E[GuzzleSolrService]
+    
+    D --> F[(MySQL Database)]
+    F --> G[SQL Query]
+    G --> H[ResultSet]
+    
+    E --> I{SOLR Available?}
+    I -->|No| J[Return Empty Results]
+    I -->|Yes| K[Build SOLR Query]
+    K --> L[Apply Filters]
+    L --> M[Add Facets]
+    M --> N[Execute Search]
+    N --> O[(Apache Solr)]
+    O --> P[Process Results]
+    P --> Q[Reconstruct Objects]
+    
+    H --> R[ObjectEntity Array]
+    Q --> R
+    R --> S[Apply Extensions]
+    S --> T[Return Results]
+    
+    style E fill:#e1f5ff
+    style O fill:#e1ffe1
+    style F fill:#fff4e1
+```
+
+**Key Components:**
+- **ObjectService**: High-level orchestration, determines search mode
+- **GuzzleSolrService**: Main service for Solr integration
+- **ObjectEntityMapper**: Database access for non-Solr searches
+- **Query Builder**: Translates OpenRegister queries to Solr queries
+- **Filter Processor**: Handles metadata and property filters
+- **Facet Engine**: Generates facet aggregations
+
+### Search Request Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API
+    participant ObjectService
+    participant SolrService
+    participant Solr
+    
+    Client->>API: GET /api/objects?_source=index&_search=budget
+    API->>ObjectService: findObjects(_search=budget)
+    
+    Note over ObjectService: Check _source parameter
+    ObjectService->>ObjectService: _source=index? Use Solr
+    
+    ObjectService->>SolrService: searchObjects(query)
+    
+    Note over SolrService: 1. Validate SOLR available
+    SolrService->>SolrService: isAvailable()
+    SolrService->>SolrService: getActiveCollectionName()
+    
+    Note over SolrService: 2. Build SOLR query
+    SolrService->>SolrService: buildSolrQuery(searchParams)
+    SolrService->>SolrService: buildWeightedSearchQuery('budget')
+    SolrService->>SolrService: applyFilters()
+    SolrService->>SolrService: applyFacets()
+    
+    Note over SolrService: 3. Execute search
+    SolrService->>Solr: GET /collection/select?q=...
+    Solr-->>SolrService: SOLR Response
+    
+    Note over SolrService: 4. Process results
+    SolrService->>SolrService: processSearchResults()
+    SolrService->>SolrService: reconstructObjects()
+    
+    SolrService-->>ObjectService: Results array
+    ObjectService-->>API: JSON response
+    API-->>Client: Search results
+```
+
+**Search Flow Steps:**
+
+1. **Request Validation**: Check for '_source=index' parameter to enable Solr search
+2. **SOLR Availability**: Verify Solr service is available and collection exists
+3. **Query Building**: Convert OpenRegister query to Solr query syntax
+4. **Filter Application**: Apply metadata filters, RBAC, multi-tenancy
+5. **Facet Generation**: Add facet aggregations if requested
+6. **Search Execution**: Send query to Solr and retrieve results
+7. **Result Processing**: Convert Solr documents to OpenRegister format
+8. **Object Reconstruction**: Hydrate full object data from 'self_object' field
+
+### Query Building Process
+
+```mermaid
+graph TD
+    A[OpenRegister Query] --> B[buildSolrQuery]
+    B --> C[Parse _search parameter]
+    C --> D[buildWeightedSearchQuery]
+    D --> E[Add field boosting]
+    
+    B --> F[Parse filters]
+    F --> G[@self metadata filters]
+    F --> H[Property filters]
+    G --> I[buildFilterQuery]
+    H --> I
+    I --> J[Apply operators]
+    
+    B --> K[Parse sorting]
+    K --> L[translateSortField]
+    L --> M[Map to Solr fields]
+    
+    B --> N[Parse pagination]
+    N --> O[Calculate start/rows]
+    
+    B --> P[Parse facets]
+    P --> Q[Get facetable fields]
+    Q --> R[Add facet.field params]
+    
+    E --> S[Complete SOLR Query]
+    J --> S
+    M --> S
+    O --> S
+    R --> S
+    
+    style B fill:#e1f5ff
+    style S fill:#e1ffe1
+```
+
+**Query Translation Example:**
+
+```php
+// OpenRegister Query
+{
+  "_search": "annual report",
+  "_limit": 20,
+  "_page": 1,
+  "_order": {"@self.created": "desc"},
+  "@self": {
+    "register": "5",
+    "created": {"gte": "2025-01-01T00:00:00"}
+  },
+  "status": "published",
+  "_facetable": true
+}
+
+// Translated SOLR Query
+{
+  "q": "(self_name:(annual report)^10 OR self_summary:(annual report)^5 OR self_description:(annual report)^2)",
+  "fq": [
+    "self_register:5",
+    "self_created:[2025-01-01T00:00:00Z TO *]",
+    "status_s:published"
+  ],
+  "start": 0,
+  "rows": 20,
+  "sort": "self_created desc",
+  "facet": "true",
+  "facet.field": ["status_s", "self_register_i", "category_s"]
+}
+```
+
+### Weighted Search Implementation
+
+OpenRegister implements intelligent field weighting to improve search relevance:
+
+```php
+private function buildWeightedSearchQuery(string $searchTerm): string
+{
+    $cleanTerm = $this->escapeSolrValue($searchTerm);
+    
+    // Wildcard support for partial matching
+    $wildcardTerm = '*' . $cleanTerm . '*';
+    
+    // Build query with field-specific boosting
+    $queryParts = [
+        "self_name:($wildcardTerm)^10",      // Highest priority
+        "self_summary:($wildcardTerm)^5",    // Medium-high priority
+        "self_description:($wildcardTerm)^2" // Medium priority
+    ];
+    
+    return '(' . implode(' OR ', $queryParts) . ')';
+}
+```
+
+**Field Weight Rationale:**
+- **Name (10x)**: Most important identifier, should rank highest
+- **Summary (5x)**: Key information, deserves strong ranking
+- **Description (2x)**: Detailed content, moderate ranking boost
+- **Other fields (1x)**: Standard relevance scoring
+
+### Filter Operators
+
+OpenRegister supports comprehensive filter operators that are translated to Solr query syntax:
+
+| OpenRegister | Solr Syntax | Example |
+|--------------|-------------|---------|
+| '=' (equals) | ':value' | 'status_s:active' |
+| 'ne' (not equals) | '-field:value' | '-status_s:inactive' |
+| 'gt' (greater than) | ':{value TO *}' | 'age_i:{30 TO *}' |
+| 'gte' (greater or equal) | ':[value TO *]' | 'age_i:[30 TO *]' |
+| 'lt' (less than) | ':{* TO value}' | 'age_i:{* TO 30}' |
+| 'lte' (less or equal) | ':[* TO value]' | 'age_i:[* TO 30]' |
+| '~' (contains) | ':*value*' | 'name_s:*john*' |
+| '^' (starts with) | ':value*' | 'name_s:annual*' |
+| '$' (ends with) | ':*value' | 'name_s:*2025' |
+| 'exists' | 'field:[* TO *]' | 'published:[* TO *]' |
+| 'null' | '-field:[* TO *]' | '-published:[* TO *]' |
+
+### Performance Optimizations
+
+#### 1. Schema Analysis Caching
+
+```php
+// Pre-compute facet configuration when schema is saved
+$schema->setFacets($this->analyzeFacetableFields($schema));
+```
+
+**Benefits:**
+- Eliminates runtime schema analysis
+- Reduces search request latency
+- Improves scalability
+
+#### 2. Query Result Caching
+
+Search results are cached to improve performance for repeated queries:
+
+**Configuration:**
+- TTL: 300 seconds (5 minutes)
+- Storage: PSR-6 compliant cache
+- Invalidation: On object updates
+
+#### 3. Bulk Indexing
+
+```php
+// Index multiple objects in single request
+$this->bulkIndex($documents, $commit = false);
+```
+
+**Optimization:**
+- Batch size: 1000 documents
+- Deferred commits
+- Optimized for bulk imports
+
+#### 4. Selective Field Loading
+
+```php
+// Load only required fields from SOLR
+$solrQuery['fl'] = 'id,self_uuid,self_name,self_created';
+```
+
+**Benefits:**
+- Reduced network transfer
+- Faster deserialization
+- Lower memory usage
+
+### Monitoring and Debugging
+
+#### Query Logging
+
+```php
+$this->logger->debug('Executing SOLR search', [
+    'original_query' => $query,
+    'solr_query' => $solrQuery,
+    'collection' => $collectionName,
+    'execution_time_ms' => $executionTime
+]);
+```
+
+#### Performance Metrics
+
+```php
+$metrics = [
+    'searches' => $this->stats['searches'],
+    'indexes' => $this->stats['indexes'],
+    'search_time' => $this->stats['search_time'],
+    'index_time' => $this->stats['index_time'],
+    'errors' => $this->stats['errors']
+];
+```
+
+#### Health Checks
+
+```bash
+# Check SOLR availability
+GET /api/solr/health
+
+# Response
+{
+  "available": true,
+  "collection": "openregister_nextcloud_core",
+  "document_count": 1234,
+  "index_size_mb": 45.6
+}
+```
+
+### Error Handling Flow
+
+```mermaid
+graph TD
+    A[Search Request] --> B{SOLR Available?}
+    B -->|No| C[Return Empty Results]
+    B -->|Yes| D{Collection Exists?}
+    D -->|No| E[Create Collection]
+    D -->|Yes| F[Execute Query]
+    E --> F
+    F --> G{Query Success?}
+    G -->|No| H[Log Error]
+    G -->|Yes| I[Process Results]
+    H --> C
+    I --> J[Return Results]
+    
+    style C fill:#ffe1e1
+    style J fill:#e1ffe1
+```
+
+**Error Scenarios:**
+
+1. **SOLR Unavailable**: Return empty results with warning
+2. **Collection Missing**: Auto-create collection, retry query
+3. **Query Syntax Error**: Log error, return validation message
+4. **Timeout**: Reduce query complexity, retry with simplified query
+5. **Result Too Large**: Apply pagination, warn about result size
+
+### Code Examples
+
+#### Building a Search Query
+
+```php
+use OCA\OpenRegister\Service\GuzzleSolrService;
+
+// Execute search with filters
+$results = $solrService->searchObjects([
+    '_search' => 'annual report',
+    '_limit' => 20,
+    '_page' => 1,
+    '_order' => ['@self.created' => 'desc'],
+    '@self' => [
+        'register' => '5',
+        'created' => ['gte' => '2025-01-01T00:00:00']
+    ],
+    'status' => 'published',
+    '_facetable' => true
+]);
+
+// Access results
+$objects = $results['data'];
+$total = $results['total'];
+$facets = $results['facets'];
+```
+
+#### Custom Filter Processing
+
+```php
+// Build custom filter query
+$filters = [];
+
+// Add metadata filters
+if (isset($query['@self'])) {
+    foreach ($query['@self'] as $field => $value) {
+        $filters[] = $this->buildMetadataFilter($field, $value);
+    }
+}
+
+// Add property filters
+foreach ($query as $key => $value) {
+    if ($key[0] !== '_' && $key !== '@self') {
+        $filters[] = $this->buildPropertyFilter($key, $value);
+    }
+}
+
+$solrQuery['fq'] = $filters;
+```
+
+### Testing
+
+```bash
+# Run all search tests
+vendor/bin/phpunit tests/Service/GuzzleSolrServiceTest.php
+
+# Test specific scenarios
+vendor/bin/phpunit --filter testWeightedSearch
+vendor/bin/phpunit --filter testFacetedSearch
+vendor/bin/phpunit --filter testFilterOperators
+
+# Integration tests
+vendor/bin/phpunit tests/Integration/SearchIntegrationTest.php
+```
+
+**Test Coverage:**
+- Query building and translation
+- Filter operator processing
+- Facet generation
+- Result processing
+- Error handling
+- Performance benchmarks
+- Case-insensitive search
+- Ordering and sorting

@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\AppInfo;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\FileTextMapper;
@@ -51,6 +52,9 @@ use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCA\OpenRegister\Service\SolrObjectService;
 use OCA\OpenRegister\Service\SolrFileService;
 use OCA\OpenRegister\Service\VectorEmbeddingService;
+use OCA\OpenRegister\Service\VectorizationService;
+use OCA\OpenRegister\Service\Vectorization\FileVectorizationStrategy;
+use OCA\OpenRegister\Service\Vectorization\ObjectVectorizationStrategy;
 use OCA\OpenRegister\Service\ChatService;
 use OCA\OpenRegister\Service\FileTextService;
 use OCA\OpenRegister\Service\SettingsService;
@@ -71,6 +75,7 @@ use OCP\EventDispatcher\IEventDispatcher;
 
 use OCA\OpenRegister\EventListener\SolrEventListener;
 use OCA\OpenRegister\Listener\FileChangeListener;
+use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCP\Files\Events\Node\NodeCreatedEvent;
 use OCP\Files\Events\Node\NodeWrittenEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
@@ -86,6 +91,7 @@ use OCA\OpenRegister\Event\RegisterUpdatedEvent;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
+use OCA\OpenRegister\Event\ToolRegistrationEvent;
 
 /**
  * Class Application
@@ -322,6 +328,7 @@ class Application extends App implements IBootstrap
                     $container->get('OCP\ISession'),
                     $container->get('OCP\IConfig'),
                     $container->get('OCP\IGroupManager'),
+                    $container->get('OCP\IUserManager'),
                     $container->get('Psr\Log\LoggerInterface')
                     );
                 }
@@ -359,6 +366,7 @@ class Application extends App implements IBootstrap
                     $container->get(DepublishObject::class),
                     $container->get(RegisterMapper::class),
                     $container->get(SchemaMapper::class),
+                    $container->get(ViewMapper::class),
                     $container->get(ObjectEntityMapper::class),
                     $container->get(FileService::class),
                     $container->get('OCP\IUserSession'),
@@ -530,16 +538,62 @@ class Application extends App implements IBootstrap
                 }
                 );
 
+        // Register Vectorization Strategies
+        $context->registerService(
+                FileVectorizationStrategy::class,
+                function ($container) {
+                    return new FileVectorizationStrategy(
+                    $container->get(FileTextMapper::class),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        $context->registerService(
+                ObjectVectorizationStrategy::class,
+                function ($container) {
+                    return new ObjectVectorizationStrategy(
+                    $container->get(ObjectService::class),
+                    $container->get(SettingsService::class),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register unified VectorizationService with strategies
+        $context->registerService(
+                VectorizationService::class,
+                function ($container) {
+                    $service = new VectorizationService(
+                    $container->get(VectorEmbeddingService::class),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+
+                    // Register strategies
+                    $service->registerStrategy('file', $container->get(FileVectorizationStrategy::class));
+                    $service->registerStrategy('object', $container->get(ObjectVectorizationStrategy::class));
+
+                    return $service;
+                }
+                );
+
         // Register ChatService for AI chat conversations with RAG
         $context->registerService(
                 ChatService::class,
                 function ($container) {
                     return new ChatService(
                     $container->get('OCP\IDBConnection'),
+                    $container->get(\OCA\OpenRegister\Db\ConversationMapper::class),
+                    $container->get(\OCA\OpenRegister\Db\MessageMapper::class),
+                    $container->get(\OCA\OpenRegister\Db\AgentMapper::class),
                     $container->get(VectorEmbeddingService::class),
                     $container->get(GuzzleSolrService::class),
                     $container->get(SettingsService::class),
-                    $container->get('Psr\Log\LoggerInterface')
+                    $container->get('Psr\Log\LoggerInterface'),
+                    $container->get(\OCA\OpenRegister\Tool\RegisterTool::class),
+                    $container->get(\OCA\OpenRegister\Tool\SchemaTool::class),
+                    $container->get(\OCA\OpenRegister\Tool\ObjectsTool::class),
+                    $container->get(\OCA\OpenRegister\Service\ToolRegistry::class)
                     );
                 }
                 );
@@ -598,6 +652,17 @@ class Application extends App implements IBootstrap
                 }
                 );
 
+        // Register ToolRegistry for agent function tools
+        $context->registerService(
+                \OCA\OpenRegister\Service\ToolRegistry::class,
+                function ($container) {
+                    return new \OCA\OpenRegister\Service\ToolRegistry(
+                    $container->get('OCP\EventDispatcher\IEventDispatcher'),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
         // Register Solr event listeners for automatic indexing
         $context->registerEventListener(ObjectCreatedEvent::class, SolrEventListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, SolrEventListener::class);
@@ -611,6 +676,9 @@ class Application extends App implements IBootstrap
         // Register FileChangeListener for automatic file text extraction
         $context->registerEventListener(NodeCreatedEvent::class, FileChangeListener::class);
         $context->registerEventListener(NodeWrittenEvent::class, FileChangeListener::class);
+
+        // Register ToolRegistrationListener for agent function tools
+        $context->registerEventListener(ToolRegistrationEvent::class, ToolRegistrationListener::class);
 
     }//end register()
 

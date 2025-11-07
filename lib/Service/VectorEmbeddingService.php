@@ -22,13 +22,33 @@ use LLPhant\Embeddings\EmbeddingGenerator\EmbeddingGeneratorInterface;
  * Vector Embedding Service
  * 
  * Handles vector embeddings generation, storage, and semantic search using LLPhant.
- * Supports multiple embedding providers (OpenAI, Ollama, local models) and provides
- * similarity search capabilities for both objects and file chunks.
+ * This service is INDEPENDENT of SOLR and handles all LLM embedding operations.
  * 
- * This service works in conjunction with:
- * - SolrObjectService: For object indexing and keyword search
- * - SolrFileService: For file processing and keyword search
- * - Hybrid search: Combining keyword (SOLR) and semantic (vectors) results
+ * RESPONSIBILITIES:
+ * - Generate embeddings for text using multiple LLM providers (OpenAI, Fireworks, Ollama)
+ * - Store embeddings in the database (oc_openregister_vectors table)
+ * - Perform semantic similarity searches using cosine similarity
+ * - Test embedding configurations without saving settings
+ * - Manage embedding generators for different providers and models
+ * 
+ * PROVIDER SUPPORT:
+ * - OpenAI: text-embedding-ada-002, text-embedding-3-small, text-embedding-3-large
+ * - Fireworks AI: Custom OpenAI-compatible API with various models
+ * - Ollama: Local models with custom configurations
+ * 
+ * ARCHITECTURE:
+ * - Uses LLPhant library for embedding generation
+ * - Stores embeddings in database for semantic search
+ * - Independent of SOLR/keyword search infrastructure
+ * - Can be used standalone for vector operations
+ * 
+ * INTEGRATION POINTS:
+ * - ChatService: Uses embeddings for RAG (Retrieval Augmented Generation)
+ * - SolrObjectService/SolrFileService: Can work together for hybrid search
+ * - SettingsController: Delegates testing to this service
+ * 
+ * NOTE: This service does NOT depend on SOLR. For hybrid search that combines
+ * keyword and semantic results, use ChatService or implement in calling code.
  * 
  * @category Service
  * @package  OCA\OpenRegister\Service
@@ -195,6 +215,66 @@ class VectorEmbeddingService
     }
 
     /**
+     * Test embedding generation with custom configuration
+     * 
+     * Tests if the provided embedding configuration works correctly by generating
+     * a test embedding. Does not save any configuration or store the embedding.
+     * 
+     * @param string $provider Provider name ('openai', 'fireworks', 'ollama')
+     * @param array  $config   Provider-specific configuration
+     * @param string $testText Optional test text to embed
+     * 
+     * @return array Test results with success status and embedding info
+     */
+    public function testEmbedding(string $provider, array $config, string $testText = 'This is a test embedding to verify the LLM configuration.'): array
+    {
+        $this->logger->info('[VectorEmbeddingService] Testing embedding generation', [
+            'provider' => $provider,
+            'model' => $config['model'] ?? 'unknown',
+            'testTextLength' => strlen($testText),
+        ]);
+
+        try {
+            // Generate embedding using custom config
+            $embedding = $this->generateEmbeddingWithCustomConfig($testText, [
+                'provider' => $provider,
+                'model' => $config['model'] ?? null,
+                'apiKey' => $config['apiKey'] ?? null,
+                'baseUrl' => $config['baseUrl'] ?? $config['url'] ?? null,
+            ]);
+
+            $this->logger->info('[VectorEmbeddingService] Embedding test successful', [
+                'provider' => $provider,
+                'model' => $config['model'] ?? 'unknown',
+                'dimensions' => count($embedding),
+            ]);
+
+            return [
+                'success' => true,
+                'message' => 'Embedding test successful',
+                'data' => [
+                    'provider' => $provider,
+                    'model' => $config['model'] ?? 'unknown',
+                    'vectorLength' => count($embedding),
+                    'sampleValues' => array_slice($embedding, 0, 5),
+                    'testText' => $testText,
+                ],
+            ];
+        } catch (\Exception $e) {
+            $this->logger->error('[VectorEmbeddingService] Embedding test failed', [
+                'provider' => $provider,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'message' => 'Failed to generate embedding: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
      * Generate embeddings for multiple texts in batch
      * 
      * More efficient than calling generateEmbedding() multiple times.
@@ -306,6 +386,10 @@ class VectorEmbeddingService
             // Serialize metadata to JSON
             $metadataJson = !empty($metadata) ? json_encode($metadata) : null;
 
+            // Sanitize chunk_text to prevent encoding errors
+            // Remove invalid UTF-8 sequences and control characters
+            $sanitizedChunkText = $chunkText !== null ? $this->sanitizeText($chunkText) : null;
+
             $qb = $this->db->getQueryBuilder();
             $qb->insert('openregister_vectors')
                 ->values([
@@ -313,7 +397,7 @@ class VectorEmbeddingService
                     'entity_id' => $qb->createNamedParameter($entityId),
                     'chunk_index' => $qb->createNamedParameter($chunkIndex, \PDO::PARAM_INT),
                     'total_chunks' => $qb->createNamedParameter($totalChunks, \PDO::PARAM_INT),
-                    'chunk_text' => $qb->createNamedParameter($chunkText),
+                    'chunk_text' => $qb->createNamedParameter($sanitizedChunkText),
                     'embedding' => $qb->createNamedParameter($embeddingBlob, \PDO::PARAM_LOB),
                     'embedding_model' => $qb->createNamedParameter($model),
                     'embedding_dimensions' => $qb->createNamedParameter($dimensions, \PDO::PARAM_INT),
@@ -472,11 +556,21 @@ class VectorEmbeddingService
 
             // Apply filters
             if (isset($filters['entity_type'])) {
-                $qb->andWhere($qb->expr()->eq('entity_type', $qb->createNamedParameter($filters['entity_type'])));
+                // Support both string and array for entity_type
+                if (is_array($filters['entity_type'])) {
+                    $qb->andWhere($qb->expr()->in('entity_type', $qb->createNamedParameter($filters['entity_type'], \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_STR_ARRAY)));
+                } else {
+                    $qb->andWhere($qb->expr()->eq('entity_type', $qb->createNamedParameter($filters['entity_type'])));
+                }
             }
 
             if (isset($filters['entity_id'])) {
-                $qb->andWhere($qb->expr()->eq('entity_id', $qb->createNamedParameter($filters['entity_id'])));
+                // Support both string and array for entity_id
+                if (is_array($filters['entity_id'])) {
+                    $qb->andWhere($qb->expr()->in('entity_id', $qb->createNamedParameter($filters['entity_id'], \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_STR_ARRAY)));
+                } else {
+                    $qb->andWhere($qb->expr()->eq('entity_id', $qb->createNamedParameter($filters['entity_id'])));
+                }
             }
 
             if (isset($filters['embedding_model'])) {
@@ -767,6 +861,46 @@ class VectorEmbeddingService
     }
 
     /**
+     * Get vector count for specific entity type(s)
+     * 
+     * @param string|null $entityType Filter by entity type ('object', 'file', or null for all)
+     * @param array       $filters    Additional filters (e.g., entity_id, model)
+     * 
+     * @return int Total count
+     */
+    public function getVectorCount(?string $entityType = null, array $filters = []): int
+    {
+        try {
+            $qb = $this->db->getQueryBuilder();
+            $qb->select($qb->func()->count('*', 'total'))
+                ->from('openregister_vectors');
+
+            // Filter by entity type
+            if ($entityType !== null) {
+                $qb->andWhere($qb->expr()->eq('entity_type', $qb->createNamedParameter($entityType)));
+            }
+
+            // Apply additional filters
+            foreach ($filters as $field => $value) {
+                $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value)));
+            }
+
+            $result = $qb->executeQuery();
+            $count = (int) $result->fetchOne();
+            $result->closeCursor();
+
+            return $count;
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get vector count', [
+                'entity_type' => $entityType,
+                'error' => $e->getMessage()
+            ]);
+            return 0;
+        }
+    }
+
+    /**
      * Get vector statistics
      * 
      * @return array Statistics about stored vectors
@@ -834,20 +968,35 @@ class VectorEmbeddingService
      */
     private function getEmbeddingConfig(?string $provider = null): array
     {
-        // Load from settings service
-        $settings = $this->settingsService->getSettings();
-        $vectorSettings = $settings['vector_embeddings'] ?? [];
+        // Load from LLM settings
+        $llmSettings = $this->settingsService->getLLMSettingsOnly();
         
-        // Determine provider and model
-        $configuredProvider = $provider ?? ($vectorSettings['provider'] ?? 'openai');
-        $configuredModel = $vectorSettings['model'] ?? 'text-embedding-ada-002';
-        $apiKey = $vectorSettings['api_key'] ?? null;
-        $baseUrl = $vectorSettings['base_url'] ?? null;
+        // Determine provider: use provided, or fall back to configured embedding provider
+        $configuredProvider = $provider ?? ($llmSettings['embeddingProvider'] ?? 'openai');
+        
+        // Get provider-specific configuration
+        $providerConfig = match ($configuredProvider) {
+            'fireworks' => $llmSettings['fireworksConfig'] ?? [],
+            'ollama' => $llmSettings['ollamaConfig'] ?? [],
+            'openai' => $llmSettings['openaiConfig'] ?? [],
+            default => []
+        };
+        
+        // Extract model and credentials based on provider
+        $model = match ($configuredProvider) {
+            'fireworks' => $providerConfig['embeddingModel'] ?? 'thenlper/gte-base',
+            'ollama' => $providerConfig['model'] ?? 'nomic-embed-text',
+            'openai' => $providerConfig['model'] ?? 'text-embedding-ada-002',
+            default => 'text-embedding-ada-002'
+        };
+        
+        $apiKey = $providerConfig['apiKey'] ?? null;
+        $baseUrl = $providerConfig['baseUrl'] ?? $providerConfig['url'] ?? null;
 
         return [
             'provider' => $configuredProvider,
-            'model' => $configuredModel,
-            'dimensions' => self::EMBEDDING_DIMENSIONS[$configuredModel] ?? 1536,
+            'model' => $model,
+            'dimensions' => self::EMBEDDING_DIMENSIONS[$model] ?? 1536,
             'api_key' => $apiKey,
             'base_url' => $baseUrl
         ];
@@ -1230,6 +1379,35 @@ class VectorEmbeddingService
             'unique_files' => $uniqueFiles,
             'average_dimensions' => $avgDimensions
         ];
+    }
+
+    /**
+     * Sanitize text to prevent UTF-8 encoding errors
+     * 
+     * Removes invalid UTF-8 sequences and problematic control characters
+     * that can cause database storage issues.
+     * 
+     * @param string $text Text to sanitize
+     * 
+     * @return string Sanitized text safe for UTF-8 storage
+     */
+    private function sanitizeText(string $text): string
+    {
+        // Step 1: Remove invalid UTF-8 sequences
+        // This handles cases like \xC2 that aren't valid UTF-8
+        $text = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
+        
+        // Step 2: Remove NULL bytes and other problematic control characters
+        // but keep newlines, tabs, and carriage returns
+        $text = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $text);
+        
+        // Step 3: Replace any remaining invalid UTF-8 with replacement character
+        $text = iconv('UTF-8', 'UTF-8//IGNORE', $text);
+        
+        // Step 4: Normalize whitespace (optional but helpful)
+        $text = preg_replace('/\s+/u', ' ', $text);
+        
+        return trim($text);
     }
 }
 

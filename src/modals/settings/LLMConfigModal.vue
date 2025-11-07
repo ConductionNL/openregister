@@ -12,32 +12,55 @@
 				</p>
 			</div>
 
-			<!-- Embedding Provider Selection -->
-			<div class="config-section">
-				<h3>{{ t('openregister', 'Embedding Provider') }}</h3>
-				<p class="section-description">
-					{{ t('openregister', 'Select which provider to use for generating vector embeddings.') }}
-				</p>
+			<!-- Provider Selection (Two Columns) -->
+			<div class="providers-grid">
+				<!-- Embedding Provider -->
+				<div class="provider-column">
+					<h3>{{ t('openregister', 'Embedding Provider') }}</h3>
+					<p class="section-description">
+						{{ t('openregister', 'For vector embeddings and semantic search') }}
+					</p>
 
-				<NcSelect
-					v-model="selectedEmbeddingProvider"
-					:options="embeddingProviderOptions"
-					label="name"
-					:placeholder="t('openregister', 'Select embedding provider')"
-					:input-label="t('openregister', 'Embedding Provider')"
-					@input="handleEmbeddingProviderChange">
-					<template #option="{ name, description }">
-						<div class="provider-option">
-							<strong>{{ name }}</strong>
-							<small>{{ description }}</small>
-						</div>
-					</template>
-				</NcSelect>
+					<NcSelect
+						v-model="selectedEmbeddingProvider"
+						:options="embeddingProviderOptions"
+						label="name"
+						:placeholder="t('openregister', 'Select provider')"
+						@input="handleEmbeddingProviderChange">
+						<template #option="{ name, description }">
+							<div class="provider-option">
+								<strong>{{ name }}</strong>
+								<small>{{ description }}</small>
+							</div>
+						</template>
+					</NcSelect>
+				</div>
+
+				<!-- Chat Provider -->
+				<div class="provider-column">
+					<h3>{{ t('openregister', 'Chat Provider (RAG)') }}</h3>
+					<p class="section-description">
+						{{ t('openregister', 'For chat and retrieval-augmented generation') }}
+					</p>
+
+					<NcSelect
+						v-model="selectedChatProvider"
+						:options="chatProviderOptions"
+						label="name"
+						:placeholder="t('openregister', 'Select provider')">
+						<template #option="{ name, description }">
+							<div class="provider-option">
+								<strong>{{ name }}</strong>
+								<small>{{ description }}</small>
+							</div>
+						</template>
+					</NcSelect>
+				</div>
 			</div>
 
-			<!-- OpenAI Configuration -->
+			<!-- Embedding Provider Configuration -->
 			<div v-if="selectedEmbeddingProvider && selectedEmbeddingProvider.id === 'openai'" class="config-section">
-				<h3>{{ t('openregister', 'OpenAI Configuration') }}</h3>
+				<h3>{{ t('openregister', 'OpenAI Embedding Configuration') }}</h3>
 
 				<div class="form-group">
 					<label for="openai-api-key">{{ t('openregister', 'API Key') }}</label>
@@ -78,9 +101,9 @@
 				</div>
 			</div>
 
-			<!-- Ollama Configuration -->
+			<!-- Ollama Embedding Configuration -->
 			<div v-if="selectedEmbeddingProvider && selectedEmbeddingProvider.id === 'ollama'" class="config-section">
-				<h3>{{ t('openregister', 'Ollama Configuration') }}</h3>
+				<h3>{{ t('openregister', 'Ollama Embedding Configuration') }}</h3>
 
 				<div class="form-group">
 					<label for="ollama-url">{{ t('openregister', 'Ollama URL') }}</label>
@@ -115,9 +138,9 @@
 				</div>
 			</div>
 
-			<!-- Fireworks Configuration (Embedding) -->
+			<!-- Fireworks Embedding Configuration -->
 			<div v-if="selectedEmbeddingProvider && selectedEmbeddingProvider.id === 'fireworks'" class="config-section">
-				<h3>{{ t('openregister', 'Fireworks AI Configuration') }}</h3>
+				<h3>{{ t('openregister', 'Fireworks AI Embedding Configuration') }}</h3>
 
 				<div class="form-group">
 					<label for="fireworks-api-key">{{ t('openregister', 'API Key') }}</label>
@@ -159,28 +182,7 @@
 				</div>
 			</div>
 
-			<!-- Chat Provider Selection -->
-			<div class="config-section">
-				<h3>{{ t('openregister', 'Chat Provider (RAG)') }}</h3>
-				<p class="section-description">
-					{{ t('openregister', 'Select which provider to use for chat and retrieval-augmented generation.') }}
-				</p>
-
-				<NcSelect
-					v-model="selectedChatProvider"
-					:options="chatProviderOptions"
-					label="name"
-					:placeholder="t('openregister', 'Select chat provider')"
-					:input-label="t('openregister', 'Chat Provider')">
-					<template #option="{ name, description }">
-						<div class="provider-option">
-							<strong>{{ name }}</strong>
-							<small>{{ description }}</small>
-						</div>
-					</template>
-				</NcSelect>
-			</div>
-
+			<!-- Chat Provider Configuration -->
 			<!-- OpenAI Chat Configuration -->
 			<div v-if="selectedChatProvider && selectedChatProvider.id === 'openai'" class="config-section">
 				<h3>{{ t('openregister', 'OpenAI Chat Settings') }}</h3>
@@ -284,48 +286,83 @@
 				</div>
 			</div>
 
-			<!-- Test Connection -->
-			<div class="config-section">
-				<h3>{{ t('openregister', 'Test Configuration') }}</h3>
-				<NcButton
-					type="primary"
-					:disabled="testing"
-					@click="testConnection">
-					<template #icon>
-						<NcLoadingIcon v-if="testing" :size="20" />
-						<TestTube v-else :size="20" />
-					</template>
-					{{ testing ? t('openregister', 'Testing...') : t('openregister', 'Test Connection') }}
-				</NcButton>
 
-				<div v-if="testResult" class="test-result" :class="testResult.success ? 'success' : 'error'">
-					<p><strong>{{ testResult.success ? '✅' : '❌' }} {{ testResult.message }}</strong></p>
-					<pre v-if="testResult.details">{{ JSON.stringify(testResult.details, null, 2) }}</pre>
+			<!-- AI Features -->
+			<div class="config-section">
+				<h3>{{ t('openregister', '✨ AI Features') }}</h3>
+				<div class="features-grid">
+					<NcCheckboxRadioSwitch
+						v-for="feature in aiFeatures"
+						:key="feature.id"
+						v-model="feature.enabled"
+						type="checkbox">
+						<span class="feature-label">
+							{{ feature.icon }} {{ feature.label }}
+						</span>
+					</NcCheckboxRadioSwitch>
 				</div>
 			</div>
 		</div>
 
 		<!-- Dialog Actions -->
 		<template #actions>
-			<NcButton @click="$emit('closing')">
-				{{ t('openregister', 'Cancel') }}
-			</NcButton>
-			<NcButton
-				type="primary"
-				:disabled="saving"
-				@click="saveConfiguration">
-				<template #icon>
-					<NcLoadingIcon v-if="saving" :size="20" />
-					<ContentSave v-else :size="20" />
-				</template>
-				{{ saving ? t('openregister', 'Saving...') : t('openregister', 'Save Configuration') }}
-			</NcButton>
+			<div class="actions-left">
+				<!-- Test Embedding Provider -->
+				<NcButton
+					v-if="selectedEmbeddingProvider && selectedEmbeddingProvider.id !== 'none'"
+					type="secondary"
+					:disabled="testingEmbedding || !canTestEmbedding"
+					@click="testEmbeddingConnection">
+					<template #icon>
+						<NcLoadingIcon v-if="testingEmbedding" :size="20" />
+						<TestTube v-else :size="20" />
+					</template>
+					{{ testingEmbedding ? t('openregister', 'Testing...') : t('openregister', 'Test Embedding') }}
+				</NcButton>
+
+				<!-- Test Chat Provider -->
+				<NcButton
+					v-if="selectedChatProvider && selectedChatProvider.id !== 'none'"
+					type="secondary"
+					:disabled="testingChat || !canTestChat"
+					@click="testChatConnection">
+					<template #icon>
+						<NcLoadingIcon v-if="testingChat" :size="20" />
+						<TestTube v-else :size="20" />
+					</template>
+					{{ testingChat ? t('openregister', 'Testing...') : t('openregister', 'Test Chat') }}
+				</NcButton>
+
+				<!-- Test Results -->
+				<div v-if="embeddingTestResult" class="test-result-inline" :class="embeddingTestResult.success ? 'success' : 'error'">
+					{{ embeddingTestResult.success ? '✅' : '❌' }} Embedding: {{ embeddingTestResult.message }}
+				</div>
+				<div v-if="chatTestResult" class="test-result-inline" :class="chatTestResult.success ? 'success' : 'error'">
+					{{ chatTestResult.success ? '✅' : '❌' }} Chat: {{ chatTestResult.message }}
+				</div>
+			</div>
+
+			<div class="actions-right">
+				<NcButton @click="$emit('closing')">
+					{{ t('openregister', 'Cancel') }}
+				</NcButton>
+				<NcButton
+					type="primary"
+					:disabled="saving"
+					@click="saveConfiguration">
+					<template #icon>
+						<NcLoadingIcon v-if="saving" :size="20" />
+						<ContentSave v-else :size="20" />
+					</template>
+					{{ saving ? t('openregister', 'Saving...') : t('openregister', 'Save Configuration') }}
+				</NcButton>
+			</div>
 		</template>
 	</NcDialog>
 </template>
 
 <script>
-import { NcDialog, NcButton, NcLoadingIcon, NcSelect } from '@nextcloud/vue'
+import { NcDialog, NcButton, NcLoadingIcon, NcSelect, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import TestTube from 'vue-material-design-icons/TestTube.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
@@ -341,6 +378,7 @@ export default {
 		NcButton,
 		NcLoadingIcon,
 		NcSelect,
+		NcCheckboxRadioSwitch,
 		InformationOutline,
 		TestTube,
 		ContentSave,
@@ -357,8 +395,10 @@ export default {
 		return {
 			loading: true,
 			saving: false,
-			testing: false,
-			testResult: null,
+			testingEmbedding: false,
+			testingChat: false,
+			embeddingTestResult: null,
+			chatTestResult: null,
 
 			selectedEmbeddingProvider: null,
 			selectedChatProvider: null,
@@ -436,7 +476,46 @@ export default {
 				{ id: 'accounts/fireworks/models/deepseek-r1', name: 'DeepSeek R1', contextWindow: '163K', cost: '$3/1M' },
 				{ id: 'accounts/fireworks/models/mixtral-8x22b-instruct', name: 'Mixtral 8x22B', contextWindow: '64K', cost: '$1.2/1M' },
 			],
+
+			aiFeatures: [
+				{ id: 'text_generation', label: 'Text Generation', icon: '✍️', enabled: true },
+				{ id: 'summarization', label: 'Document Summarization', icon: '📋', enabled: true },
+				{ id: 'semantic_search', label: 'Semantic Search', icon: '🔍', enabled: true },
+				{ id: 'embedding', label: 'Text Embeddings', icon: '🧮', enabled: true },
+				{ id: 'translation', label: 'Translation', icon: '🌍', enabled: false },
+				{ id: 'classification', label: 'Content Classification', icon: '🏷️', enabled: false },
+			],
 		}
+	},
+
+	computed: {
+		canTestEmbedding() {
+			const provider = this.selectedEmbeddingProvider?.id
+			if (!provider) return false
+
+			if (provider === 'openai') {
+				return !!this.openaiConfig.apiKey && !!this.openaiConfig.model
+			} else if (provider === 'fireworks') {
+				return !!this.fireworksConfig.apiKey && !!this.fireworksConfig.embeddingModel
+			} else if (provider === 'ollama') {
+				return !!this.ollamaConfig.url && !!this.ollamaConfig.model
+			}
+			return false
+		},
+
+		canTestChat() {
+			const provider = this.selectedChatProvider?.id
+			if (!provider) return false
+
+			if (provider === 'openai') {
+				return !!this.openaiConfig.apiKey && !!this.openaiConfig.chatModel
+			} else if (provider === 'fireworks') {
+				return !!this.fireworksConfig.apiKey && !!this.fireworksConfig.chatModel
+			} else if (provider === 'ollama') {
+				return !!this.ollamaConfig.url && !!this.ollamaConfig.chatModel
+			}
+			return false
+		},
 	},
 
 	mounted() {
@@ -444,28 +523,109 @@ export default {
 	},
 
 	methods: {
-		async loadConfiguration() {
-			// TODO: Load saved configuration from backend
+	async loadConfiguration() {
+		this.loading = true
+		
+		try {
+			const response = await axios.get(generateUrl('/apps/openregister/api/settings/llm'))
+			const llmSettings = response.data
+			
+		// Set enabled state
+		this.llmEnabled = llmSettings.enabled || false
+		
+		// Set embedding provider
+		if (llmSettings.embeddingProvider) {
+			this.selectedEmbeddingProvider = this.embeddingProviderOptions.find(
+				p => p.id === llmSettings.embeddingProvider,
+			)
+		}
+		
+		// Set chat provider
+		if (llmSettings.chatProvider) {
+			this.selectedChatProvider = this.chatProviderOptions.find(
+				p => p.id === llmSettings.chatProvider,
+			)
+		}
+			
+		// Load OpenAI config
+		if (llmSettings.openaiConfig) {
+			this.openaiConfig = {
+				apiKey: llmSettings.openaiConfig.apiKey || '',
+				model: llmSettings.openaiConfig.model || null,
+				chatModel: llmSettings.openaiConfig.chatModel || null,
+				organizationId: llmSettings.openaiConfig.organizationId || '',
+			}
+		}
+		
+		// Load Ollama config
+		if (llmSettings.ollamaConfig) {
+			this.ollamaConfig = {
+				url: llmSettings.ollamaConfig.url || 'http://localhost:11434',
+				model: llmSettings.ollamaConfig.model || null,
+				chatModel: llmSettings.ollamaConfig.chatModel || null,
+			}
+		}
+		
+		// Load Fireworks config
+		if (llmSettings.fireworksConfig) {
+			this.fireworksConfig = {
+				apiKey: llmSettings.fireworksConfig.apiKey || '',
+				embeddingModel: llmSettings.fireworksConfig.embeddingModel || null,
+				chatModel: llmSettings.fireworksConfig.chatModel || null,
+				baseUrl: llmSettings.fireworksConfig.baseUrl || 'https://api.fireworks.ai/inference/v1',
+			}
+			
+			// Map model strings to model objects from the dropdown options
+			if (llmSettings.fireworksConfig.embeddingModel) {
+				const modelObj = this.fireworksEmbeddingModelOptions.find(
+					m => m.id === llmSettings.fireworksConfig.embeddingModel,
+				)
+				if (modelObj) {
+					this.fireworksConfig.embeddingModel = modelObj
+				}
+			}
+			if (llmSettings.fireworksConfig.chatModel) {
+				const modelObj = this.fireworksChatModelOptions.find(
+					m => m.id === llmSettings.fireworksConfig.chatModel,
+				)
+				if (modelObj) {
+					this.fireworksConfig.chatModel = modelObj
+				}
+			}
+		}
+			
+			// Load enabled features (if available)
+			if (llmSettings.enabledFeatures && Array.isArray(llmSettings.enabledFeatures)) {
+				this.aiFeatures.forEach(feature => {
+					feature.enabled = llmSettings.enabledFeatures.includes(feature.id)
+				})
+			}
+			
+			console.log('LLM configuration loaded', llmSettings)
+		} catch (error) {
+			console.error('Failed to load LLM configuration:', error)
+			showError(this.t('openregister', 'Failed to load LLM configuration'))
+		} finally {
 			this.loading = false
-		},
+		}
+	},
 
 		handleEmbeddingProviderChange() {
-			this.testResult = null
+			this.embeddingTestResult = null
 		},
 
-		async testConnection() {
-			this.testing = true
-			this.testResult = null
+		async testEmbeddingConnection() {
+			this.testingEmbedding = true
+			this.embeddingTestResult = null
 
 			try {
-				// Build config based on selected embedding provider
 				let config = {}
 				const provider = this.selectedEmbeddingProvider?.id
 
 				if (provider === 'openai') {
 					config = {
 						apiKey: this.openaiConfig.apiKey,
-						model: this.openaiConfig.embeddingModel?.id || this.openaiConfig.embeddingModel,
+						model: this.openaiConfig.model?.id || this.openaiConfig.model,
 					}
 				} else if (provider === 'fireworks') {
 					config = {
@@ -480,26 +640,73 @@ export default {
 					}
 				}
 
-				// Test embedding generation
-				const response = await axios.post(generateUrl('/apps/openregister/api/vectors/test'), {
+				await axios.post(generateUrl('/apps/openregister/api/vectors/test-embedding'), {
 					provider,
 					config,
 					testText: 'This is a test embedding generation.',
 				})
 
-				this.testResult = {
+				this.embeddingTestResult = {
 					success: true,
-					message: 'Connection successful!',
-					details: response.data,
+					message: 'Connected',
 				}
+				showSuccess(this.t('openregister', 'Embedding provider connection successful!'))
 			} catch (error) {
-				this.testResult = {
+				this.embeddingTestResult = {
 					success: false,
-					message: error.response?.data?.error || error.message,
-					details: error.response?.data,
+					message: 'Failed',
 				}
+				showError(this.t('openregister', 'Embedding test failed: {error}', { error: error.response?.data?.error || error.message }))
 			} finally {
-				this.testing = false
+				this.testingEmbedding = false
+			}
+		},
+
+		async testChatConnection() {
+			this.testingChat = true
+			this.chatTestResult = null
+
+			try {
+				let config = {}
+				const provider = this.selectedChatProvider?.id
+
+				if (provider === 'openai') {
+					config = {
+						apiKey: this.openaiConfig.apiKey,
+						model: this.openaiConfig.chatModel?.id || this.openaiConfig.chatModel,
+					}
+				} else if (provider === 'fireworks') {
+					config = {
+						apiKey: this.fireworksConfig.apiKey,
+						model: this.fireworksConfig.chatModel?.id || this.fireworksConfig.chatModel,
+						baseUrl: this.fireworksConfig.baseUrl,
+					}
+				} else if (provider === 'ollama') {
+					config = {
+						url: this.ollamaConfig.url,
+						model: this.ollamaConfig.chatModel?.id || this.ollamaConfig.chatModel,
+					}
+				}
+
+				await axios.post(generateUrl('/apps/openregister/api/llm/test-chat'), {
+					provider,
+					config,
+					testMessage: 'Hello! Please respond with a brief greeting.',
+				})
+
+				this.chatTestResult = {
+					success: true,
+					message: 'Connected',
+				}
+				showSuccess(this.t('openregister', 'Chat provider connection successful!'))
+			} catch (error) {
+				this.chatTestResult = {
+					success: false,
+					message: 'Failed',
+				}
+				showError(this.t('openregister', 'Chat test failed: {error}', { error: error.response?.data?.error || error.message }))
+			} finally {
+				this.testingChat = false
 			}
 		},
 
@@ -507,13 +714,34 @@ export default {
 			this.saving = true
 
 			try {
-				await axios.post(generateUrl('/apps/openregister/api/settings/llm'), {
+				// Extract model IDs from objects (models are selected as objects but backend expects string IDs)
+				const payload = {
 					embeddingProvider: this.selectedEmbeddingProvider?.id,
 					chatProvider: this.selectedChatProvider?.id,
-					openaiConfig: this.openaiConfig,
-					ollamaConfig: this.ollamaConfig,
-					fireworksConfig: this.fireworksConfig,
-				})
+					openaiConfig: {
+						apiKey: this.openaiConfig.apiKey,
+						model: this.openaiConfig.model?.id || this.openaiConfig.model,
+						chatModel: this.openaiConfig.chatModel?.id || this.openaiConfig.chatModel,
+						organizationId: this.openaiConfig.organizationId,
+					},
+					ollamaConfig: {
+						url: this.ollamaConfig.url,
+						model: this.ollamaConfig.model?.id || this.ollamaConfig.model,
+						chatModel: this.ollamaConfig.chatModel?.id || this.ollamaConfig.chatModel,
+					},
+					fireworksConfig: {
+						apiKey: this.fireworksConfig.apiKey,
+						embeddingModel: this.fireworksConfig.embeddingModel?.id || this.fireworksConfig.embeddingModel,
+						chatModel: this.fireworksConfig.chatModel?.id || this.fireworksConfig.chatModel,
+						baseUrl: this.fireworksConfig.baseUrl,
+					},
+					enabledFeatures: this.aiFeatures
+						.filter(f => f.enabled)
+						.map(f => f.id),
+				}
+
+				// Use PATCH for partial updates
+				await axios.patch(generateUrl('/apps/openregister/api/settings/llm'), payload)
 
 				showSuccess(this.t('openregister', 'LLM configuration saved successfully'))
 				this.$emit('closing')
@@ -546,6 +774,27 @@ export default {
 	p {
 		margin: 0;
 		color: var(--color-text-maxcontrast);
+	}
+}
+
+.providers-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 24px;
+	margin-bottom: 32px;
+}
+
+.provider-column {
+	h3 {
+		margin: 0 0 8px 0;
+		font-size: 16px;
+		font-weight: 600;
+	}
+
+	.section-description {
+		margin: 0 0 16px 0;
+		color: var(--color-text-maxcontrast);
+		font-size: 13px;
 	}
 }
 
@@ -648,6 +897,79 @@ export default {
 		border-radius: 4px;
 		font-size: 12px;
 		overflow-x: auto;
+	}
+}
+
+.features-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+	gap: 12px;
+}
+
+.feature-label {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.slider {
+	width: 100%;
+	max-width: 400px;
+}
+
+/* Actions layout */
+:deep(.dialog__actions) {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 16px;
+	flex-wrap: wrap;
+}
+
+.actions-left {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	flex-wrap: wrap;
+}
+
+.actions-right {
+	display: flex;
+	gap: 8px;
+	margin-left: auto;
+}
+
+.test-result-inline {
+	padding: 8px 12px;
+	border-radius: 6px;
+	font-size: 13px;
+	font-weight: 500;
+
+	&.success {
+		background: var(--color-success);
+		color: white;
+	}
+
+	&.error {
+		background: var(--color-error);
+		color: white;
+	}
+}
+
+@media (max-width: 768px) {
+	.providers-grid {
+		grid-template-columns: 1fr;
+	}
+
+	:deep(.dialog__actions) {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.actions-left,
+	.actions-right {
+		width: 100%;
+		justify-content: center;
 	}
 }
 </style>

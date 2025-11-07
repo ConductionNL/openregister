@@ -328,6 +328,8 @@ class Register extends Entity implements JsonSerializable
                 }
                 );
 
+        $groups = $this->groups ?? [];
+
         return [
             'id'            => $this->id,
             'uuid'          => $this->uuid,
@@ -345,7 +347,21 @@ class Register extends Entity implements JsonSerializable
             'application'   => $this->application,
             'organisation'  => $this->organisation,
             'authorization' => $this->authorization,
-            'groups'        => $this->groups,
+            'groups'        => $groups,
+            'quota'         => [
+                'storage'   => null, // To be set via admin configuration
+                'bandwidth' => null, // To be set via admin configuration
+                'requests'  => null, // To be set via admin configuration
+                'users'     => null, // To be set via admin configuration
+                'groups'    => null, // To be set via admin configuration
+            ],
+            'usage'         => [
+                'storage'   => 0, // To be calculated from actual usage
+                'bandwidth' => 0, // To be calculated from actual usage
+                'requests'  => 0, // To be calculated from actual usage
+                'users'     => 0, // Registers don't have direct users
+                'groups'    => count($groups),
+            ],
             'deleted'       => $deleted,
         ];
 
@@ -376,6 +392,68 @@ class Register extends Entity implements JsonSerializable
         return 'Register #'.($this->id ?? 'unknown');
 
     }//end __toString()
+
+
+    /**
+     * Check if this register is managed by any configuration
+     *
+     * This method checks if the register's ID is present in the registers array
+     * of any provided configuration entities.
+     *
+     * @param array<Configuration> $configurations Array of Configuration entities to check against
+     *
+     * @return bool True if this register is managed by at least one configuration
+     *
+     * @phpstan-param array<Configuration> $configurations
+     * @psalm-param   array<Configuration> $configurations
+     */
+    public function isManagedByConfiguration(array $configurations): bool
+    {
+        if (empty($configurations) === true || $this->id === null) {
+            return false;
+        }
+
+        foreach ($configurations as $configuration) {
+            $registers = $configuration->getRegisters();
+            if (in_array($this->id, $registers, true) === true) {
+                return true;
+            }
+        }
+
+        return false;
+
+    }//end isManagedByConfiguration()
+
+
+    /**
+     * Get the configuration that manages this register
+     *
+     * Returns the first configuration that has this register's ID in its registers array.
+     * Returns null if the register is not managed by any configuration.
+     *
+     * @param array<Configuration> $configurations Array of Configuration entities to check against
+     *
+     * @return Configuration|null The configuration managing this register, or null
+     *
+     * @phpstan-param array<Configuration> $configurations
+     * @psalm-param   array<Configuration> $configurations
+     */
+    public function getManagedByConfiguration(array $configurations): ?Configuration
+    {
+        if (empty($configurations) === true || $this->id === null) {
+            return null;
+        }
+
+        foreach ($configurations as $configuration) {
+            $registers = $configuration->getRegisters();
+            if (in_array($this->id, $registers, true) === true) {
+                return $configuration;
+            }
+        }
+
+        return null;
+
+    }//end getManagedByConfiguration()
 
 
 }//end class

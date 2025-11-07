@@ -17,6 +17,7 @@ Multi-tenancy enables organizations to:
 ### Organisation Management
 - **Organisation Creation**: Create and manage organisations with names, descriptions, and settings
 - **User Membership**: Manage which users belong to which organisations
+- **User Selection for Joining**: Optionally specify which user to add when joining an organisation (defaults to current user)
 - **Default Organisation**: Automatic fallback organisation for users without specific memberships
 - **Organisation Statistics**: Track usage, user counts, and system metrics
 
@@ -70,7 +71,7 @@ graph LR
 - `POST /api/organisations/{uuid}/set-active` - Set active organisation
 
 ### User-Organisation Relationships
-- `POST /api/organisations/{uuid}/join` - Join organisation
+- `POST /api/organisations/{uuid}/join` - Join organisation (with optional user selection)
 - `POST /api/organisations/{uuid}/leave` - Leave organisation
 
 ### System Management
@@ -204,6 +205,255 @@ Planned enhancements for the multi-tenancy system include:
 - **Usage Analytics**: Detailed organisation usage metrics and reporting
 
 ---
+
+## Technical Implementation
+
+### Architecture Overview
+
+Multi-tenancy in OpenRegister uses a combination of organisation-based filtering and Solr tenant collections:
+
+```mermaid
+graph TB
+    subgraph "User Layer"
+        User[User Session]
+        ActiveOrg[Active Organisation]
+    end
+    
+    subgraph "Application Layer"
+        OrgService[Organisation Service]
+        ObjectMapper[Object Mapper]
+        SchemaMapper[Schema Mapper]
+        RegisterMapper[Register Mapper]
+    end
+    
+    subgraph "Data Layer"
+        DB[(MySQL Database<br/>Organisation Field)]
+        SolrBase[Solr Base Collection]
+        SolrTenant1[Solr Tenant Collection<br/>org-uuid-1]
+        SolrTenant2[Solr Tenant Collection<br/>org-uuid-2]
+    end
+    
+    User -->|has| ActiveOrg
+    ActiveOrg -->|managed by| OrgService
+    
+    ObjectMapper -->|filters by organisation| DB
+    SchemaMapper -->|filters by organisation| DB
+    RegisterMapper -->|filters by organisation| DB
+    
+    ObjectMapper -->|indexes to| SolrTenant1
+    ObjectMapper -->|indexes to| SolrTenant2
+    
+    SolrBase -.->|creates| SolrTenant1
+    SolrBase -.->|creates| SolrTenant2
+    
+    style ActiveOrg fill:#e1f5ff
+    style OrgService fill:#fff4e1
+```
+
+### Tenant Isolation Strategy
+
+OpenRegister implements multi-tenancy at two levels:
+
+**1. Database-Level Filtering**
+- All entities have `organisation` field
+- Queries automatically filtered by active organisation
+- Prevents cross-organisation data access
+
+**2. Solr Collection Isolation**
+- Each tenant gets separate Solr collection
+- Collection naming: `{base-collection}-{org-uuid}`
+- Complete search index isolation
+
+### Organisation Context Flow
+
+```mermaid
+sequenceDiagram
+    participant User as User
+    participant Session as Session
+    participant OrgService as Organisation Service
+    participant Mapper as Entity Mapper
+    participant DB as Database
+    participant Solr as Solr (Tenant Collection)
+    
+    User->>OrgService: setActiveOrganisation(orgUuid)
+    OrgService->>Session: Store active org in session
+    Session-->>User: Context switched
+    
+    Note over User: Create Object
+    
+    User->>Mapper: createObject(data)
+    Mapper->>OrgService: getActiveOrganisation()
+    OrgService->>Session: Retrieve active org
+    Session-->>OrgService: orgUuid
+    OrgService-->>Mapper: organisationUuid
+    
+    Mapper->>Mapper: Set object.organisation = orgUuid
+    Mapper->>DB: INSERT with organisation field
+    DB-->>Mapper: Object saved
+    
+    Mapper->>Solr: Index to tenant collection
+    Note over Solr: Collection: base-{orgUuid}
+    Solr-->>Mapper: Indexed
+    
+    Mapper-->>User: Object created
+```
+
+### Tenant Collection Management
+
+```mermaid
+graph TD
+    Start[User Request] --> CheckCollection{Tenant collection<br/>exists?}
+    
+    CheckCollection -->|Yes| UseCollection[Use Tenant Collection<br/>{base}-{org-uuid}]
+    CheckCollection -->|No| CreateCollection[Create Tenant Collection]
+    
+    CreateCollection --> ConfigSet[Apply ConfigSet<br/>openregister]
+    ConfigSet --> SetupShards[Configure Shards<br/>& Replicas]
+    SetupShards --> CollectionReady[Collection Ready]
+    CollectionReady --> UseCollection
+    
+    UseCollection --> IndexData[Index/Search Data]
+    IndexData --> Success[✓ Operation Complete]
+    
+    style Success fill:#90EE90
+```
+
+### Database Schema
+
+Organisation field added to all tenant-aware tables:
+
+```sql
+-- Objects table
+ALTER TABLE oc_openregister_objects 
+ADD COLUMN organisation VARCHAR(255),
+ADD INDEX idx_organisation (organisation);
+
+-- Schemas table
+ALTER TABLE oc_openregister_schemas
+ADD COLUMN organisation VARCHAR(255),
+ADD INDEX idx_organisation (organisation);
+
+-- Registers table
+ALTER TABLE oc_openregister_registers
+ADD COLUMN organisation VARCHAR(255),
+ADD INDEX idx_organisation (organisation);
+
+-- Organisations table
+CREATE TABLE oc_openregister_organisations (
+    id INTEGER PRIMARY KEY AUTO_INCREMENT,
+    uuid VARCHAR(255) UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    settings JSON,
+    created DATETIME,
+    updated DATETIME,
+    INDEX idx_uuid (uuid),
+    INDEX idx_name (name)
+);
+
+-- User-Organisation mapping
+CREATE TABLE oc_openregister_user_organisations (
+    id INTEGER PRIMARY KEY AUTO_INCREMENT,
+    user_id VARCHAR(255) NOT NULL,
+    organisation_uuid VARCHAR(255) NOT NULL,
+    role VARCHAR(50) DEFAULT 'member',
+    created DATETIME,
+    UNIQUE KEY unique_user_org (user_id, organisation_uuid),
+    INDEX idx_user (user_id),
+    INDEX idx_org (organisation_uuid)
+);
+```
+
+### Performance Optimizations
+
+**1. Session Caching**
+- Active organisation cached in user session
+- Reduces database queries
+
+**2. Database Indexes**
+- Indexed `organisation` field on all tables
+- Fast filtering queries
+
+**3. Lazy Collection Creation**
+- Tenant collections created on-demand
+- Reduces initial overhead
+
+**4. Query Optimization**
+- Automatic `WHERE organisation = ?` in all queries
+- Prevents full table scans
+
+### Code Examples
+
+**Setting Active Organisation:**
+
+```php
+use OCA\OpenRegister\Service\OrganisationService;
+
+$organisationService->setActiveOrganisation($organisationUuid);
+
+// All subsequent operations use this organisation context
+$object = $objectService->create($data);
+// object.organisation automatically set to $organisationUuid
+```
+
+**Querying with Organisation Filter:**
+
+```php
+// Automatic organisation filtering
+$objects = $objectMapper->findAll();
+// SELECT * FROM objects WHERE organisation = '{active-org-uuid}'
+
+// Explicit organisation override (admin only)
+$objects = $objectMapper->findByOrganisation($specificOrgUuid);
+```
+
+**Tenant Collection Operations:**
+
+```php
+use OCA\OpenRegister\Service\GuzzleSolrService;
+
+// Ensure tenant collection exists
+$solrService->ensureTenantCollection();
+
+// Get active collection name
+$collectionName = $solrService->getActiveCollectionName();
+// Returns: "openregister-{org-uuid}"
+
+// Index to tenant collection
+$solrService->indexObject($object);
+// Automatically uses tenant collection
+```
+
+### Best Practices
+
+**✓ DO:**
+- Always check active organisation before operations
+- Use session-based context switching
+- Validate user membership before switching
+- Monitor tenant collection sizes
+- Implement organisation-scoped audit logs
+
+**✗ DON'T:**
+- Don't bypass organisation filtering
+- Don't share collections between tenants
+- Don't hard-code organisation UUIDs
+- Don't skip permission checks
+- Don't forget to clear caches on context switch
+
+### Monitoring
+
+```bash
+# Check organisation isolation
+SELECT organisation, COUNT(*) as count
+FROM oc_openregister_objects
+GROUP BY organisation;
+
+# List tenant collections
+curl "http://solr:8983/solr/admin/collections?action=LIST"
+
+# Monitor collection sizes
+curl "http://solr:8983/solr/admin/collections?action=CLUSTERSTATUS"
+```
 
 *For detailed implementation information, see [Multi-Tenancy Technical Documentation](../multi-tenancy.md)*
 *For testing information, see [Multi-Tenancy Testing Framework](../multi-tenancy-testing.md)* 
