@@ -151,6 +151,15 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
     {
         $objectData = is_array($entity) ? $entity : $entity->jsonSerialize();
         $objectId = $objectData['id'] ?? 'unknown';
+        
+        // DEBUG: Log what we're receiving
+        $this->logger->debug('[ObjectVectorizationStrategy] Preparing metadata', [
+            'object_id' => $objectId,
+            'has_@self' => isset($objectData['@self']),
+            '@self_keys' => isset($objectData['@self']) ? array_keys($objectData['@self']) : [],
+            'register_direct' => $objectData['_register'] ?? $objectData['register'] ?? 'none',
+            'register_@self' => $objectData['@self']['register'] ?? 'none',
+        ]);
 
         // Extract title/name - check multiple possible fields
         $title = $objectData['title'] 
@@ -181,12 +190,31 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
                 'title' => $title,                 // ADDED for backward compatibility
                 'name' => $title,                  // ADDED for alternative lookup
                 'description' => $description,      // ADDED for context
-                'register' => $objectData['_register'] ?? null,
-                'register_id' => $objectData['_register'] ?? null,
-                'schema' => $objectData['_schema'] ?? null,
-                'schema_id' => $objectData['_schema'] ?? null,
-                'uuid' => $objectData['uuid'] ?? $objectData['_uuid'] ?? null,
-                'uri' => $objectData['uri'] ?? $objectData['_uri'] ?? null,
+                // Check both direct fields and @self metadata
+                'register' => $objectData['_register'] 
+                    ?? $objectData['register'] 
+                    ?? $objectData['@self']['register'] 
+                    ?? null,
+                'register_id' => $objectData['_register'] 
+                    ?? $objectData['register'] 
+                    ?? $objectData['@self']['register'] 
+                    ?? null,
+                'schema' => $objectData['_schema'] 
+                    ?? $objectData['schema'] 
+                    ?? $objectData['@self']['schema'] 
+                    ?? null,
+                'schema_id' => $objectData['_schema'] 
+                    ?? $objectData['schema'] 
+                    ?? $objectData['@self']['schema'] 
+                    ?? null,
+                'uuid' => $objectData['uuid'] 
+                    ?? $objectData['_uuid'] 
+                    ?? $objectData['@self']['id']  // Fallback to @self.id
+                    ?? null,
+                'uri' => $objectData['uri'] 
+                    ?? $objectData['_uri'] 
+                    ?? $objectData['@self']['uri'] 
+                    ?? null,
             ],
         ];
     }

@@ -476,6 +476,27 @@ class ChatService
                     'similarity' => $result['similarity'] ?? $result['score'] ?? 1.0,
                     'text' => $result['chunk_text'] ?? $result['text'] ?? '',
                 ];
+                
+                // Add type-specific metadata
+                $metadata = $result['metadata'] ?? [];
+                if (is_string($metadata)) {
+                    $metadata = json_decode($metadata, true) ?? [];
+                }
+                
+                // For objects: add UUID, register, schema
+                if ($source['type'] === 'object') {
+                    $source['uuid'] = $metadata['uuid'] ?? null;
+                    $source['register'] = $metadata['register_id'] ?? $metadata['register'] ?? null;
+                    $source['schema'] = $metadata['schema_id'] ?? $metadata['schema'] ?? null;
+                    $source['uri'] = $metadata['uri'] ?? null;
+                }
+                
+                // For files: add file_id, path
+                if ($source['type'] === 'file') {
+                    $source['file_id'] = $metadata['file_id'] ?? $source['id'];
+                    $source['file_path'] = $metadata['file_path'] ?? null;
+                    $source['mime_type'] = $metadata['mime_type'] ?? null;
+                }
 
                 $sources[] = $source;
 
@@ -787,17 +808,34 @@ class ChatService
             // Add current user message
             $messageHistory[] = LLPhantMessage::user($userMessage);
 
+            // Convert tools to functions if agent has tools enabled
+            $functions = [];
+            if (!empty($tools)) {
+                $functions = $this->convertToolsToFunctions($tools);
+                $this->logger->info('[ChatService] Prepared functions for LLM', [
+                    'functionCount' => count($functions),
+                    'functionNames' => array_map(fn($f) => $f->name, $functions),
+                ]);
+            }
+
             // For Fireworks, use direct HTTP to avoid OpenAI library error handling bugs
             if ($chatProvider === 'fireworks') {
                 $response = $this->callFireworksChatAPIWithHistory(
                     $config->apiKey,
                     $config->model,
                     $config->url,
-                    $messageHistory
+                    $messageHistory,
+                    $functions  // Pass functions
                 );
             } else {
-                // Create chat instance and generate response
+                // Create chat instance
                 $chat = new OpenAIChat($config);
+                
+                // Add functions if available
+                if (!empty($functions)) {
+                    $chat->setTools($functions);
+                }
+                
                 $response = $chat->generateText($messageHistory);
             }
 
@@ -1249,9 +1287,17 @@ class ChatService
      * 
      * @throws \Exception If API call fails
      */
-    private function callFireworksChatAPIWithHistory(string $apiKey, string $model, string $baseUrl, array $messageHistory): string
+    private function callFireworksChatAPIWithHistory(string $apiKey, string $model, string $baseUrl, array $messageHistory, array $functions = []): string
     {
         $url = rtrim($baseUrl, '/') . '/chat/completions';
+        
+        // Note: Function calling with Fireworks AI is not yet implemented
+        // Functions will be ignored for Fireworks provider
+        if (!empty($functions)) {
+            $this->logger->warning('[ChatService] Function calling not yet supported for Fireworks AI. Tools will be ignored.', [
+                'functionCount' => count($functions),
+            ]);
+        }
         
         $this->logger->debug('[ChatService] Calling Fireworks chat API with history', [
             'url' => $url,
