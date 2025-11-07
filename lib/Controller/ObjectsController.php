@@ -1739,10 +1739,15 @@ class ObjectsController extends Controller
             $views = $data['views'] ?? null;
             $batchSize = (int) ($data['batchSize'] ?? 25);
 
-            // Get ObjectVectorizationService from container
-            $vectorizationService = $this->container->get(\OCA\OpenRegister\Service\ObjectVectorizationService::class);
+            // Get unified VectorizationService from container
+            $vectorizationService = $this->container->get(\OCA\OpenRegister\Service\VectorizationService::class);
 
-            $result = $vectorizationService->startBatchVectorization($views, $batchSize);
+            // Use unified vectorization service with 'object' entity type
+            $result = $vectorizationService->vectorizeBatch('object', [
+                'views' => $views,
+                'batch_size' => $batchSize,
+                'mode' => 'serial', // Objects use serial mode by default
+            ]);
 
             return new JSONResponse([
                 'success' => true,

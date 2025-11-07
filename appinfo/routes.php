@@ -118,6 +118,8 @@ return [
         // NOTE: Specific routes MUST come before parameterized routes like {id}
         ['name' => 'fileExtraction#index', 'url' => '/api/files', 'verb' => 'GET'],
         ['name' => 'fileExtraction#stats', 'url' => '/api/files/stats', 'verb' => 'GET'],
+        ['name' => 'fileExtraction#fileTypes', 'url' => '/api/files/types', 'verb' => 'GET'],
+        ['name' => 'fileExtraction#vectorizeBatch', 'url' => '/api/files/vectorize/batch', 'verb' => 'POST'],
         ['name' => 'fileExtraction#discover', 'url' => '/api/files/discover', 'verb' => 'POST'],
         ['name' => 'fileExtraction#extractAll', 'url' => '/api/files/extract', 'verb' => 'POST'],
         ['name' => 'fileExtraction#retryFailed', 'url' => '/api/files/retry-failed', 'verb' => 'POST'],
@@ -273,6 +275,7 @@ return [
         // Agents
         ['name' => 'agents#page', 'url' => '/agents', 'verb' => 'GET'],
         ['name' => 'agents#stats', 'url' => '/api/agents/stats', 'verb' => 'GET'],
+        ['name' => 'agents#tools', 'url' => '/api/agents/tools', 'verb' => 'GET'],
         // Search
         ['name' => 'search#search', 'url' => '/api/search', 'verb' => 'GET'],
         // Organisations - Multi-tenancy management

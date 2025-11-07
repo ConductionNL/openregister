@@ -90,6 +90,21 @@ import { agentStore, organisationStore, navigationStore } from '../../store/stor
 								@update:checked="agentItem.active = $event">
 								Active
 							</NcCheckboxRadioSwitch>
+
+							<NcSelect
+								v-model="selectedUser"
+								:disabled="loading || loadingUsers"
+								:loading="loadingUsers"
+								:options="availableUsers"
+								input-label="Default User (for cron/background jobs)"
+								label="displayName"
+								track-by="id"
+								placeholder="Select a user"
+								@input="updateUser">
+								<template #helper-text-message>
+									When agent runs without a user session (e.g., scheduled tasks), this user's context will be used
+								</template>
+							</NcSelect>
 						</div>
 					</BTab>
 
@@ -271,6 +286,59 @@ import { agentStore, organisationStore, navigationStore } from '../../store/stor
 						</div>
 					</div>
 				</BTab>
+
+				<BTab title="Tools">
+					<div class="form-editor">
+						<NcNoteCard type="info">
+							<p><strong>Function Tools</strong></p>
+							<p>Enable tools that allow the agent to interact with data through function calling.</p>
+							<p>Tools respect the agent's views, permissions, and organization boundaries.</p>
+						</NcNoteCard>
+
+						<div v-if="loadingTools" class="loading-indicator">
+							<NcLoadingIcon :size="20" />
+							<span>Loading available tools...</span>
+						</div>
+
+						<div v-else-if="availableTools.length > 0" class="tools-selection">
+							<div v-for="tool in availableTools" 
+								:key="tool.id" 
+								class="tool-item"
+								@click="handleCardClick(tool.id, $event)">
+								<div class="tool-row">
+									<div class="tool-icon-wrapper">
+										<span v-if="tool.icon" :class="tool.icon" class="tool-icon" />
+										<span v-else class="tool-icon icon-category-office" />
+									</div>
+									<div class="tool-content">
+										<div class="tool-header">
+											<div class="tool-title">
+												<strong>{{ tool.name }}</strong>
+												<span v-if="tool.app" class="tool-app-badge">{{ tool.app }}</span>
+											</div>
+											<div class="tool-toggle" @click.stop>
+												<NcCheckboxRadioSwitch
+													:key="`toggle-${tool.id}-${isToolChecked(tool.id)}`"
+													:checked="isToolChecked(tool.id)"
+													type="switch"
+													@update:checked="handleToggleChange(tool.id, $event)" />
+											</div>
+										</div>
+										<p class="tool-description">{{ tool.description }}</p>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<NcNoteCard v-else type="warning">
+							<p>No tools available. Tools can be registered by installed apps.</p>
+						</NcNoteCard>
+
+						<NcNoteCard v-if="agentItem.tools && agentItem.tools.length > 0" type="warning">
+							<p><strong>Note:</strong> Tools execute with the agent's default user permissions when no user session is active (e.g., cron jobs). Configure the default user in the Settings tab.</p>
+						</NcNoteCard>
+					</div>
+				</BTab>
 				</BTabs>
 			</div>
 		</div>
@@ -352,6 +420,8 @@ export default {
 				searchObjects: true,
 				isPrivate: true,
 				invitedUsers: [],
+				tools: [],
+				user: '',
 			},
 			selectedType: null,
 			selectedRagSearchMode: null,
@@ -363,6 +433,11 @@ export default {
 			availableGroups: [],
 			loadingViews: false,
 			availableViews: [],
+			loadingTools: false,
+			availableTools: [],
+			loadingUsers: false,
+			availableUsers: [],
+			selectedUser: null,
 			agentTypes: [
 				{ value: 'chat', label: 'Chat', description: 'Conversational AI assistant' },
 				{ value: 'automation', label: 'Automation', description: 'Automated task execution' },
@@ -392,6 +467,8 @@ export default {
 		this.initializeAgent()
 		this.fetchGroups()
 		this.fetchViews()
+		this.fetchTools()
+		this.fetchUsers()
 	},
 	methods: {
 		initializeAgent() {
@@ -407,6 +484,10 @@ export default {
 				}
 				if (this.agentItem.invitedUsers && Array.isArray(this.agentItem.invitedUsers)) {
 					this.selectedInvitedUsers = [...this.agentItem.invitedUsers]
+				}
+				if (this.agentItem.user) {
+					// Will be populated after fetchUsers completes
+					this.selectedUser = this.availableUsers.find(u => u.id === this.agentItem.user) || null
 				}
 			} else {
 				this.agentItem = {
@@ -428,6 +509,8 @@ export default {
 					views: [],
 					isPrivate: true,
 					invitedUsers: [],
+					tools: [],
+					user: '',
 				}
 				this.selectedType = this.agentTypes[0]
 				this.selectedRagSearchMode = this.ragSearchModes[0]
@@ -470,6 +553,137 @@ export default {
 			this.selectedInvitedUsers = this.selectedInvitedUsers.filter(u => u !== username)
 			this.agentItem.invitedUsers = [...this.selectedInvitedUsers]
 		},
+		async fetchTools() {
+			this.loadingTools = true
+			try {
+				const response = await fetch('/index.php/apps/openregister/api/agents/tools', {
+					method: 'GET',
+					headers: {
+						'Content-Type': 'application/json',
+						requesttoken: OC.requestToken,
+					},
+				})
+				const data = await response.json()
+				if (data && data.results) {
+					// Convert from object with IDs as keys to array with IDs
+					this.availableTools = Object.entries(data.results).map(([id, metadata]) => ({
+						id,
+						...metadata,
+					}))
+				}
+			} catch (error) {
+				console.error('Failed to fetch tools:', error)
+			} finally {
+				this.loadingTools = false
+			}
+		},
+		async fetchUsers() {
+			this.loadingUsers = true
+			try {
+				// Get current organisation
+				const orgResponse = await fetch('/index.php/apps/openregister/api/organisations/active', {
+					method: 'GET',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				})
+				const orgData = await orgResponse.json()
+				
+				if (!orgData || !orgData.users || !Array.isArray(orgData.users)) {
+					// Fallback: get all users if organisation doesn't have specific users
+					const usersResponse = await fetch('/ocs/v2.php/cloud/users', {
+						headers: {
+							'OCS-APIRequest': 'true',
+							Accept: 'application/json',
+						},
+					})
+					const usersData = await usersResponse.json()
+					
+					if (usersData.ocs && usersData.ocs.data && usersData.ocs.data.users) {
+						// Fetch details for each user
+						const userDetails = await Promise.all(
+							usersData.ocs.data.users.map(async (userId) => {
+								try {
+									const detailResponse = await fetch(`/ocs/v2.php/cloud/users/${userId}`, {
+										headers: {
+											'OCS-APIRequest': 'true',
+											Accept: 'application/json',
+										},
+									})
+									const detailData = await detailResponse.json()
+									return {
+										id: userId,
+										displayName: detailData.ocs?.data?.displayname || userId,
+										email: detailData.ocs?.data?.email || '',
+									}
+								} catch (err) {
+									return { id: userId, displayName: userId, email: '' }
+								}
+							})
+						)
+						this.availableUsers = userDetails
+					}
+				} else {
+					// Use organisation users
+					this.availableUsers = orgData.users.map(userId => ({
+						id: userId,
+						displayName: userId, // Could be enhanced with full user details
+						email: '',
+					}))
+				}
+				
+				// Update selectedUser if agentItem.user is set
+				if (this.agentItem.user) {
+					this.selectedUser = this.availableUsers.find(u => u.id === this.agentItem.user) || null
+				}
+			} catch (error) {
+				console.error('Error fetching users:', error)
+			} finally {
+				this.loadingUsers = false
+			}
+		},
+		updateUser(selectedUser) {
+			this.agentItem.user = selectedUser ? selectedUser.id : ''
+		},
+		handleCardClick(toolId, event) {
+			// Card click handler - toggle the tool
+			const currentState = this.isToolChecked(toolId)
+			this.toggleTool(toolId, !currentState)
+		},
+		handleToggleChange(toolId, newValue) {
+			// Toggle change handler - called when toggle is clicked directly
+			this.toggleTool(toolId, newValue)
+		},
+		toggleTool(toolId, enabled) {
+			if (!this.agentItem.tools) {
+				this.agentItem.tools = []
+			}
+			// Support both old format (e.g., 'register') and new format (e.g., 'openregister.register')
+			// Normalize to new format
+			const normalizedId = toolId.includes('.') ? toolId : `openregister.${toolId}`
+			
+			if (enabled) {
+				// Check if not already present
+				if (!this.agentItem.tools.includes(normalizedId) && !this.agentItem.tools.includes(toolId)) {
+					// Create new array to trigger Vue reactivity
+					this.agentItem.tools = [...this.agentItem.tools, normalizedId]
+				}
+			} else {
+				// Create new array to trigger Vue reactivity
+				this.agentItem.tools = this.agentItem.tools.filter(t => t !== normalizedId && t !== toolId)
+			}
+			
+			// Force Vue to detect the change by updating the reference
+			this.$set(this.agentItem, 'tools', [...this.agentItem.tools])
+		},
+		isToolChecked(toolId) {
+			if (!this.agentItem.tools) {
+				return false
+			}
+			// Support both formats for backward compatibility
+			const legacyId = toolId.split('.').pop() // Extract 'register' from 'openregister.register'
+			return this.agentItem.tools.includes(toolId) || this.agentItem.tools.includes(legacyId)
+		},
 		async fetchGroups() {
 			this.loadingGroups = true
 			try {
@@ -485,6 +699,11 @@ export default {
 						id: groupId,
 						name: groupId,
 					}))
+					
+					// Synchronize selectedGroups after availableGroups is loaded
+					if (this.agentItem.groups && Array.isArray(this.agentItem.groups)) {
+						this.selectedGroups = this.availableGroups.filter(g => this.agentItem.groups.includes(g.id))
+					}
 				}
 			} catch (error) {
 				console.error('Error fetching groups:', error)
@@ -512,6 +731,11 @@ export default {
 					name: view.name || 'Unnamed View',
 					description: view.description || '',
 				}))
+				
+				// Synchronize selectedViews after availableViews is loaded
+				if (this.agentItem.views && Array.isArray(this.agentItem.views)) {
+					this.selectedViews = this.availableViews.filter(v => this.agentItem.views.includes(v.id))
+				}
 			} catch (error) {
 				console.error('Error fetching views:', error)
 			} finally {
@@ -773,6 +997,104 @@ export default {
 .no-groups {
 	padding: 16px;
 	color: var(--color-text-maxcontrast);
+}
+
+.tools-selection {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.tool-item {
+	padding: 16px;
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+	transition: all 0.2s ease;
+	cursor: pointer;
+}
+
+.tool-item:hover {
+	background-color: var(--color-background-hover);
+	border-color: var(--color-primary-element);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tool-row {
+	display: flex;
+	gap: 20px;
+	align-items: center;
+}
+
+.tool-icon-wrapper {
+	width: 64px;
+	height: 64px;
+	min-width: 64px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--color-primary-element-light);
+	border-radius: 12px;
+	padding: 4px;
+}
+
+.tool-icon {
+	font-size: 56px;
+	line-height: 1;
+	color: var(--color-primary-element);
+	display: block;
+}
+
+.tool-content {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.tool-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+}
+
+.tool-title {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex: 1;
+	min-width: 0;
+}
+
+.tool-title strong {
+	font-size: 1.1rem;
+	color: var(--color-main-text);
+}
+
+.tool-toggle {
+	display: flex;
+	align-items: center;
+	cursor: pointer;
+}
+
+.tool-app-badge {
+	background: var(--color-primary-element-light);
+	color: var(--color-primary-element-text);
+	padding: 4px 12px;
+	border-radius: 12px;
+	font-size: 0.75rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.tool-description {
+	font-size: 0.9rem;
+	color: var(--color-text-maxcontrast);
+	margin: 0;
+	line-height: 1.5;
+	padding-left: 0;
 }
 </style>
 

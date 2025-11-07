@@ -111,8 +111,8 @@ class AgentMapper extends QBMapper
             ->from($this->tableName)
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
-        // Apply organisation filter (all users including admins must have active org)
-        $this->applyOrganisationFilter($qb);
+        // Apply organisation filter, allowing NULL organisation for legacy/global agents
+        $this->applyOrganisationFilter($qb, 'organisation', true);
 
         return $this->findEntity($qb);
 
@@ -141,8 +141,8 @@ class AgentMapper extends QBMapper
             ->from($this->tableName)
             ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid, IQueryBuilder::PARAM_STR)));
 
-        // Apply organisation filter
-        $this->applyOrganisationFilter($qb);
+        // Apply organisation filter, allowing NULL organisation for legacy/global agents
+        $this->applyOrganisationFilter($qb, 'organisation', true);
 
         return $this->findEntity($qb);
 
@@ -323,8 +323,8 @@ class AgentMapper extends QBMapper
             ->setFirstResult($offset)
             ->orderBy('created', 'DESC');
 
-        // Apply organisation filter
-        $this->applyOrganisationFilter($qb);
+        // Apply organisation filter, allowing NULL organisation for legacy/global agents
+        $this->applyOrganisationFilter($qb, 'organisation', true);
 
         return $this->findEntities($qb);
 
@@ -384,8 +384,8 @@ class AgentMapper extends QBMapper
             $qb->setFirstResult($offset);
         }
 
-        // Apply organisation filter (all users including admins must have active org)
-        $this->applyOrganisationFilter($qb);
+        // Apply organisation filter, allowing NULL organisation for legacy/global agents
+        $this->applyOrganisationFilter($qb, 'organisation', true);
 
         return $this->findEntities($qb);
 

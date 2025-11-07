@@ -386,6 +386,10 @@ class VectorEmbeddingService
             // Serialize metadata to JSON
             $metadataJson = !empty($metadata) ? json_encode($metadata) : null;
 
+            // Sanitize chunk_text to prevent encoding errors
+            // Remove invalid UTF-8 sequences and control characters
+            $sanitizedChunkText = $chunkText !== null ? $this->sanitizeText($chunkText) : null;
+
             $qb = $this->db->getQueryBuilder();
             $qb->insert('openregister_vectors')
                 ->values([
@@ -393,7 +397,7 @@ class VectorEmbeddingService
                     'entity_id' => $qb->createNamedParameter($entityId),
                     'chunk_index' => $qb->createNamedParameter($chunkIndex, \PDO::PARAM_INT),
                     'total_chunks' => $qb->createNamedParameter($totalChunks, \PDO::PARAM_INT),
-                    'chunk_text' => $qb->createNamedParameter($chunkText),
+                    'chunk_text' => $qb->createNamedParameter($sanitizedChunkText),
                     'embedding' => $qb->createNamedParameter($embeddingBlob, \PDO::PARAM_LOB),
                     'embedding_model' => $qb->createNamedParameter($model),
                     'embedding_dimensions' => $qb->createNamedParameter($dimensions, \PDO::PARAM_INT),
@@ -552,11 +556,21 @@ class VectorEmbeddingService
 
             // Apply filters
             if (isset($filters['entity_type'])) {
-                $qb->andWhere($qb->expr()->eq('entity_type', $qb->createNamedParameter($filters['entity_type'])));
+                // Support both string and array for entity_type
+                if (is_array($filters['entity_type'])) {
+                    $qb->andWhere($qb->expr()->in('entity_type', $qb->createNamedParameter($filters['entity_type'], \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_STR_ARRAY)));
+                } else {
+                    $qb->andWhere($qb->expr()->eq('entity_type', $qb->createNamedParameter($filters['entity_type'])));
+                }
             }
 
             if (isset($filters['entity_id'])) {
-                $qb->andWhere($qb->expr()->eq('entity_id', $qb->createNamedParameter($filters['entity_id'])));
+                // Support both string and array for entity_id
+                if (is_array($filters['entity_id'])) {
+                    $qb->andWhere($qb->expr()->in('entity_id', $qb->createNamedParameter($filters['entity_id'], \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_STR_ARRAY)));
+                } else {
+                    $qb->andWhere($qb->expr()->eq('entity_id', $qb->createNamedParameter($filters['entity_id'])));
+                }
             }
 
             if (isset($filters['embedding_model'])) {
@@ -1365,6 +1379,35 @@ class VectorEmbeddingService
             'unique_files' => $uniqueFiles,
             'average_dimensions' => $avgDimensions
         ];
+    }
+
+    /**
+     * Sanitize text to prevent UTF-8 encoding errors
+     * 
+     * Removes invalid UTF-8 sequences and problematic control characters
+     * that can cause database storage issues.
+     * 
+     * @param string $text Text to sanitize
+     * 
+     * @return string Sanitized text safe for UTF-8 storage
+     */
+    private function sanitizeText(string $text): string
+    {
+        // Step 1: Remove invalid UTF-8 sequences
+        // This handles cases like \xC2 that aren't valid UTF-8
+        $text = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
+        
+        // Step 2: Remove NULL bytes and other problematic control characters
+        // but keep newlines, tabs, and carriage returns
+        $text = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $text);
+        
+        // Step 3: Replace any remaining invalid UTF-8 with replacement character
+        $text = iconv('UTF-8', 'UTF-8//IGNORE', $text);
+        
+        // Step 4: Normalize whitespace (optional but helpful)
+        $text = preg_replace('/\s+/u', ' ', $text);
+        
+        return trim($text);
     }
 }
 
