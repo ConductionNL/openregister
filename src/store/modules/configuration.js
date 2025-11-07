@@ -40,8 +40,18 @@ export const useConfigurationStore = defineStore('configuration', {
 			this.filters = { ...this.filters, ...filters }
 			console.info('Query filters set to', this.filters)
 		},
+		/**
+		 * Refresh the configuration list from the API
+		 *
+		 * @param {string|null} search - Optional search term
+		 * @param {boolean} soft - If true, don't show loading state (default: false)
+		 * @returns {Promise} Promise with response and data
+		 */
 		/* istanbul ignore next */ // ignore this for Jest until moved into a service
-		async refreshConfigurationList(search = null) {
+		async refreshConfigurationList(search = null, soft = false) {
+			console.log('ConfigurationStore: Starting refreshConfigurationList (soft=' + soft + ')')
+			// Note: ConfigurationStore doesn't have a loading state, but we log for consistency
+			
 			let endpoint = '/index.php/apps/openregister/api/configurations'
 			if (search !== null && search !== '') {
 				endpoint = endpoint + '?_search=' + search
@@ -116,8 +126,8 @@ export const useConfigurationStore = defineStore('configuration', {
 				: `/index.php/apps/openregister/api/configurations/${configurationItem.id}`
 			const method = isNewConfiguration ? 'POST' : 'PUT'
 
-			// change updated to current date as a singular iso date string
-			configurationItem.updated = new Date().toISOString()
+			// Clean the data before sending - remove read-only fields
+			const cleanedData = this.cleanConfigurationForSave(configurationItem)
 
 			try {
 				const response = await fetch(
@@ -127,7 +137,7 @@ export const useConfigurationStore = defineStore('configuration', {
 						headers: {
 							'Content-Type': 'application/json',
 						},
-						body: JSON.stringify(configurationItem),
+						body: JSON.stringify(cleanedData),
 					},
 				)
 
@@ -151,6 +161,18 @@ export const useConfigurationStore = defineStore('configuration', {
 				console.error('Error saving configuration:', error)
 				throw new Error(`Failed to save configuration: ${error.message}`)
 			}
+		},
+		// Clean configuration data for saving - remove read-only fields
+		cleanConfigurationForSave(configurationItem) {
+			const cleaned = { ...configurationItem }
+
+			// Remove read-only/calculated fields that should not be sent to the server
+			delete cleaned.id
+			delete cleaned.uuid
+			delete cleaned.created
+			delete cleaned.updated
+
+			return cleaned
 		},
 		async uploadConfiguration(configuration) {
 			if (!configuration) {

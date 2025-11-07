@@ -9917,15 +9917,22 @@ class GuzzleSolrService
                     continue;
                 }
 
-                // Get text content
-                $textContent = $fileText->getTextContent();
+                // Check if file has been chunked during extraction
+                if (!$fileText->getChunked() || !$fileText->getChunksJson()) {
+                    $errors[] = "File $fileId: Text not chunked. Re-extract the file to generate chunks.";
+                    $failed++;
+                    continue;
+                }
+
+                // Get pre-chunked data from extraction
+                $chunksJson = $fileText->getChunksJson();
+                $chunks = json_decode($chunksJson, true);
                 
-                // Chunk the text
-                $solrFileService = \OC::$server->get(\OCA\OpenRegister\Service\SolrFileService::class);
-                $chunks = $solrFileService->chunkDocument($textContent, [
-                    'chunk_size' => 1000,
-                    'chunk_overlap' => 100
-                ]);
+                if (!is_array($chunks) || empty($chunks)) {
+                    $errors[] = "File $fileId: Invalid or empty chunks data";
+                    $failed++;
+                    continue;
+                }
 
                 // Prepare metadata
                 $metadata = [
@@ -9935,18 +9942,16 @@ class GuzzleSolrService
                     'file_size' => $fileText->getFileSize()
                 ];
 
-                // Index chunks
+                // Index chunks (chunks are already prepared by TextExtractionService)
                 if ($this->indexFileChunks($fileId, $chunks, $metadata)) {
                     $indexed++;
                     
                     // Update file text record
                     $fileText->setIndexedInSolr(true);
-                    $fileText->setChunked(true);
-                    $fileText->setChunkCount(count($chunks));
                     $fileText->setUpdatedAt(new \DateTime());
                     $fileTextMapper->update($fileText);
                 } else {
-                    $errors[] = "File $fileId: Failed to index chunks";
+                    $errors[] = "File $fileId: Failed to index chunks in SOLR";
                     $failed++;
                 }
 

@@ -168,9 +168,9 @@ class Schema extends Entity implements JsonSerializable
     protected ?string $application = null;
 
     /**
-     * The organisation name
+     * Organisation UUID this schema belongs to (for multi-tenancy)
      *
-     * @var string|null The organisation name
+     * @var string|null Organisation UUID this schema belongs to
      */
     protected ?string $organisation = null;
 
@@ -247,6 +247,16 @@ class Schema extends Entity implements JsonSerializable
      */
     protected ?array $groups = [];
 
+    /**
+     * The ID or UUID of the parent schema that this schema extends.
+     * When set, this schema inherits all properties from the parent schema
+     * and can override or add new properties. Only the differences (delta)
+     * are stored in this schema's properties field.
+     *
+     * @var string|null The ID, UUID, or slug of the parent schema
+     */
+    protected ?string $extend = null;
+
 
     /**
      * Constructor for the Schema class
@@ -281,6 +291,7 @@ class Schema extends Entity implements JsonSerializable
         $this->addType(fieldName: 'deleted', type: 'datetime');
         $this->addType(fieldName: 'configuration', type: 'json');
         $this->addType(fieldName: 'groups', type: 'json');
+        $this->addType(fieldName: 'extend', type: 'string');
 
     }//end __construct()
 
@@ -671,6 +682,7 @@ class Schema extends Entity implements JsonSerializable
             'authorization'  => $this->authorization,
             'deleted'        => $deleted,
             'configuration'  => $this->configuration,
+            'extend'         => $this->extend,
         ];
 
     }//end jsonSerialize()
@@ -1260,6 +1272,102 @@ class Schema extends Entity implements JsonSerializable
         return 'terms';
         
     }//end determineFacetTypeFromPropertyType()
+
+
+    /**
+     * Get the ID or UUID of the parent schema that this schema extends
+     *
+     * Returns null if this schema does not extend another schema.
+     * When set, this schema inherits properties from the parent schema.
+     *
+     * @return string|null The ID, UUID, or slug of the parent schema
+     */
+    public function getExtend(): ?string
+    {
+        return $this->extend;
+
+    }//end getExtend()
+
+
+    /**
+     * Set the ID or UUID of the parent schema that this schema extends
+     *
+     * When set, this schema will inherit all properties from the parent schema
+     * and can override or add new properties. Only the differences (delta) will
+     * be stored in this schema's properties field.
+     *
+     * @param string|null $extend The ID, UUID, or slug of the parent schema
+     *
+     * @return void
+     */
+    public function setExtend(?string $extend): void
+    {
+        $this->extend = $extend;
+        $this->markFieldUpdated('extend');
+
+    }//end setExtend()
+
+
+    /**
+     * Check if this schema is managed by any configuration
+     *
+     * This method checks if the schema's ID is present in the schemas array
+     * of any provided configuration entities.
+     *
+     * @param array<Configuration> $configurations Array of Configuration entities to check against
+     *
+     * @return bool True if this schema is managed by at least one configuration
+     *
+     * @phpstan-param array<Configuration> $configurations
+     * @psalm-param   array<Configuration> $configurations
+     */
+    public function isManagedByConfiguration(array $configurations): bool
+    {
+        if (empty($configurations) === true || $this->id === null) {
+            return false;
+        }
+
+        foreach ($configurations as $configuration) {
+            $schemas = $configuration->getSchemas();
+            if (in_array($this->id, $schemas, true) === true) {
+                return true;
+            }
+        }
+
+        return false;
+
+    }//end isManagedByConfiguration()
+
+
+    /**
+     * Get the configuration that manages this schema
+     *
+     * Returns the first configuration that has this schema's ID in its schemas array.
+     * Returns null if the schema is not managed by any configuration.
+     *
+     * @param array<Configuration> $configurations Array of Configuration entities to check against
+     *
+     * @return Configuration|null The configuration managing this schema, or null
+     *
+     * @phpstan-param array<Configuration> $configurations
+     * @psalm-param   array<Configuration> $configurations
+     */
+    public function getManagedByConfiguration(array $configurations): ?Configuration
+    {
+        if (empty($configurations) === true || $this->id === null) {
+            return null;
+        }
+
+        foreach ($configurations as $configuration) {
+            $schemas = $configuration->getSchemas();
+            if (in_array($this->id, $schemas, true) === true) {
+                return $configuration;
+            }
+        }
+
+        return null;
+
+    }//end getManagedByConfiguration()
 
 
 }//end class

@@ -282,7 +282,12 @@ class OrganisationController extends Controller
     public function join(string $uuid): JSONResponse
     {
         try {
-            $success = $this->organisationService->joinOrganisation($uuid);
+            // Get optional userId from request body
+            $requestData = $this->request->getParams();
+            $userId = $requestData['userId'] ?? null;
+
+            // Join organisation with optional userId parameter
+            $success = $this->organisationService->joinOrganisation($uuid, $userId);
 
             if ($success) {
                 return new JSONResponse(
@@ -304,6 +309,7 @@ class OrganisationController extends Controller
                     'Failed to join organisation',
                     [
                         'uuid'  => $uuid,
+                        'userId' => $requestData['userId'] ?? 'current_user',
                         'error' => $e->getMessage(),
                     ]
                     );
@@ -320,7 +326,7 @@ class OrganisationController extends Controller
 
 
     /**
-     * Leave an organisation by UUID
+     * Leave an organisation by UUID (or remove specified user from organisation)
      *
      * @NoAdminRequired
      * @NoCSRFRequired
@@ -332,12 +338,19 @@ class OrganisationController extends Controller
     public function leave(string $uuid): JSONResponse
     {
         try {
-            $success = $this->organisationService->leaveOrganisation($uuid);
+            // Check if a specific userId is provided in the request body
+            $data = $this->request->getParams();
+            $userId = $data['userId'] ?? null;
+            
+            $success = $this->organisationService->leaveOrganisation($uuid, $userId);
 
             if ($success) {
+                $message = $userId 
+                    ? "Successfully removed user from organisation" 
+                    : "Successfully left organisation";
                 return new JSONResponse(
                         [
-                            'message' => 'Successfully left organisation',
+                            'message' => $message,
                         ],
                         Http::STATUS_OK
                         );
@@ -354,6 +367,7 @@ class OrganisationController extends Controller
                     'Failed to leave organisation',
                     [
                         'uuid'  => $uuid,
+                        'userId' => $userId ?? 'current-user',
                         'error' => $e->getMessage(),
                     ]
                     );
@@ -426,13 +440,11 @@ class OrganisationController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param string $uuid        Organisation UUID
-     * @param string $name        New organisation name (optional)
-     * @param string $description New organisation description (optional)
+     * @param string $uuid Organisation UUID
      *
      * @return JSONResponse Updated organisation data
      */
-    public function update(string $uuid, string $name='', string $description=''): JSONResponse
+    public function update(string $uuid): JSONResponse
     {
         try {
             // Check if user has access to this organisation
@@ -446,40 +458,74 @@ class OrganisationController extends Controller
             }
 
             $organisation = $this->organisationMapper->findByUuid($uuid);
+            
+            // Get all parameters from request body
+            $data = $this->request->getParams();
+            unset($data['_route']);
 
             // Update fields if provided
-            if (!empty(trim($name))) {
-                $organisation->setName(trim($name));
+            if (isset($data['name']) && !empty(trim($data['name']))) {
+                $organisation->setName(trim($data['name']));
+                
+                // Auto-generate slug from name if slug is not provided or is empty
+                if (!isset($data['slug']) || empty(trim($data['slug']))) {
+                    $slug = $this->generateSlug(trim($data['name']));
+                    $organisation->setSlug($slug);
+                }
             }
 
-            if (!empty(trim($description))) {
-                $organisation->setDescription(trim($description));
-            } else if ($description === '') {
-                // Allow clearing description
-                $organisation->setDescription('');
+            if (isset($data['description'])) {
+                $organisation->setDescription(trim($data['description']));
             }
+            
+            // Only set slug if it's provided and not empty
+            // Empty strings should not override existing slug
+            if (isset($data['slug']) && trim($data['slug']) !== '') {
+                $organisation->setSlug(trim($data['slug']));
+            }
+            
+            if (isset($data['active'])) {
+                // Handle empty string as false
+                $active = $data['active'] === '' ? false : (bool)$data['active'];
+                $organisation->setActive($active);
+            }
+            
+            if (isset($data['storageQuota'])) {
+                $organisation->setStorageQuota($data['storageQuota']);
+            }
+            
+            if (isset($data['bandwidthQuota'])) {
+                $organisation->setBandwidthQuota($data['bandwidthQuota']);
+            }
+            
+            if (isset($data['requestQuota'])) {
+                $organisation->setRequestQuota($data['requestQuota']);
+            }
+            
+        if (isset($data['groups']) && is_array($data['groups'])) {
+            $organisation->setGroups($data['groups']);
+        }
+        
+        if (isset($data['authorization']) && is_array($data['authorization'])) {
+            $organisation->setAuthorization($data['authorization']);
+        }
 
-            $updated = $this->organisationMapper->save($organisation);
+        $updated = $this->organisationMapper->save($organisation);
 
-            return new JSONResponse(
-                    [
-                        'message'      => 'Organisation updated successfully',
-                        'organisation' => $updated->jsonSerialize(),
-                    ],
-                    Http::STATUS_OK
-                    );
+            return new JSONResponse($updated->jsonSerialize(), Http::STATUS_OK);
         } catch (Exception $e) {
             $this->logger->error(
                     'Failed to update organisation',
                     [
                         'uuid'  => $uuid,
                         'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
                     ]
                     );
 
             return new JSONResponse(
                     [
-                        'error' => 'Failed to update organisation',
+                        'error' => 'Failed to update organisation: ' . $e->getMessage(),
                     ],
                     Http::STATUS_BAD_REQUEST
                     );
@@ -489,28 +535,50 @@ class OrganisationController extends Controller
 
 
     /**
-     * Search organisations by name (for joining)
+     * Patch organisation details (alias for update)
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $uuid Organisation UUID
+     *
+     * @return JSONResponse Updated organisation data
+     */
+    public function patch(string $uuid): JSONResponse
+    {
+        return $this->update($uuid);
+
+    }//end patch()
+
+
+    /**
+     * Search organisations by name with pagination (for joining)
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
      * @param string $query Search query
      *
-     * @return JSONResponse List of matching organisations
+     * @return JSONResponse List of matching organisations with pagination info
      */
     public function search(string $query=''): JSONResponse
     {
         try {
-            if (empty(trim($query))) {
-                return new JSONResponse(
-                        [
-                            'organisations' => [],
-                        ],
-                        Http::STATUS_OK
-                        );
-            }
+            // Get pagination parameters from request
+            $limit  = (int) $this->request->getParam('_limit', 50);
+            $offset = (int) $this->request->getParam('_offset', 0);
 
-            $organisations = $this->organisationMapper->findByName(trim($query));
+            // Validate pagination parameters
+            $limit  = max(1, min($limit, 100)); // Between 1 and 100
+            $offset = max(0, $offset);
+
+            // If query is empty, return all organisations
+            // Otherwise search by name
+            if (empty(trim($query))) {
+                $organisations = $this->organisationMapper->findAll($limit, $offset);
+            } else {
+                $organisations = $this->organisationMapper->findByName(trim($query), $limit, $offset);
+            }
 
             // Remove user information for privacy
             $publicData = array_map(
@@ -528,6 +596,9 @@ class OrganisationController extends Controller
             return new JSONResponse(
                     [
                         'organisations' => $publicData,
+                        'limit'         => $limit,
+                        'offset'        => $offset,
+                        'count'         => count($publicData),
                     ],
                     Http::STATUS_OK
                     );
@@ -625,6 +696,32 @@ class OrganisationController extends Controller
         }//end try
 
     }//end stats()
+
+
+    /**
+     * Generate a URL-friendly slug from a name
+     *
+     * @param string $name The name to slugify
+     *
+     * @return string The generated slug
+     */
+    private function generateSlug(string $name): string
+    {
+        // Convert to lowercase
+        $slug = strtolower($name);
+        
+        // Replace spaces and special characters with hyphens
+        $slug = preg_replace('/[^a-z0-9]+/', '-', $slug);
+        
+        // Remove leading/trailing hyphens
+        $slug = trim($slug, '-');
+        
+        // Limit length to 100 characters
+        $slug = substr($slug, 0, 100);
+        
+        return $slug;
+
+    }//end generateSlug()
 
 
 }//end class

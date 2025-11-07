@@ -1,23 +1,22 @@
 <template>
-	<NcSettingsSection name="System Statistics"
-		description="Overview of your Open Register data and potential issues">
-		<div v-if="!loadingStats" class="stats-section">
-			<!-- Save and Rebase Buttons -->
-			<div class="section-header-inline">
-				<span />
-				<div class="button-group">
-					<NcButton
-						type="secondary"
-						:disabled="loading || saving || rebasing || loadingStats"
-						@click="loadStats">
-						<template #icon>
-							<NcLoadingIcon v-if="loadingStats" :size="20" />
-							<Refresh v-else :size="20" />
-						</template>
-						Refresh
-					</NcButton>
-				</div>
-			</div>
+	<div>
+		<SettingsSection
+			name="System Statistics"
+			description="Overview of your Open Register data and potential issues"
+			:loading="loadingStats"
+			loading-message="Loading statistics...">
+			<template #actions>
+				<NcButton
+					type="secondary"
+					:disabled="loading || saving || rebasing || loadingStats"
+					@click="loadStats">
+					<template #icon>
+						<NcLoadingIcon v-if="loadingStats" :size="20" />
+						<Refresh v-else :size="20" />
+					</template>
+					Refresh
+				</NcButton>
+			</template>
 
 			<div class="stats-content">
 				<div class="stats-grid">
@@ -316,13 +315,7 @@
 					</div>
 				</div>
 			</div>
-		</div>
-
-		<!-- Loading State -->
-		<NcLoadingIcon v-else
-			class="loading-icon"
-			:size="64"
-			appearance="dark" />
+		</SettingsSection>
 
 		<!-- Rebase Confirmation Dialog -->
 		<NcDialog v-if="showRebaseConfirmation"
@@ -430,23 +423,24 @@
 				</div>
 			</div>
 		</NcDialog>
-	</NcSettingsSection>
+	</div>
 </template>
 
 <script>
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../../store/settings.js'
-import { NcSettingsSection, NcButton, NcLoadingIcon, NcDialog } from '@nextcloud/vue'
+import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import { NcButton, NcLoadingIcon, NcDialog } from '@nextcloud/vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
-import { MassValidateModal } from '../../../modals/settings'
+import MassValidateModal from '../../../modals/settings/MassValidateModal.vue'
 
 export default {
 	name: 'StatisticsOverview',
 
 	components: {
-		NcSettingsSection,
+		SettingsSection,
 		NcButton,
 		NcLoadingIcon,
 		NcDialog,
@@ -454,6 +448,31 @@ export default {
 		CheckCircle,
 		Delete,
 		MassValidateModal,
+	},
+
+	data() {
+		return {
+			showMassValidateModal: false,
+			massValidateCompleted: false,
+			objectStats: {
+				loading: false,
+				totalObjects: 0,
+			},
+			massValidateConfig: {
+				mode: 'serial',
+				maxObjects: 0,
+				batchSize: 1000,
+				collectErrors: false,
+			},
+			memoryPrediction: {
+				prediction_safe: true,
+				formatted: {
+					total_predicted: 'Unknown',
+					available: 'Unknown',
+				},
+			},
+			memoryPredictionLoading: false,
+		}
 	},
 
 	computed: {
@@ -519,31 +538,6 @@ export default {
 		hasWarnings() {
 			return this.settingsStore.hasWarnings
 		},
-	},
-
-	data() {
-		return {
-			showMassValidateModal: false,
-			massValidateCompleted: false,
-			objectStats: {
-				loading: false,
-				totalObjects: 0,
-			},
-			massValidateConfig: {
-				mode: 'serial',
-				maxObjects: 0,
-				batchSize: 1000,
-				collectErrors: false,
-			},
-			memoryPrediction: {
-				prediction_safe: true,
-				formatted: {
-					total_predicted: 'Unknown',
-					available: 'Unknown',
-				},
-			},
-			memoryPredictionLoading: false,
-		}
 	},
 
 	methods: {
@@ -662,22 +656,7 @@ export default {
 </script>
 
 <style scoped>
-.stats-section {
-	margin-top: 20px;
-}
-
-.section-header-inline {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 24px;
-}
-
-.button-group {
-	display: flex;
-	gap: 8px;
-	flex-wrap: wrap;
-}
+/* SettingsSection handles all action button positioning and spacing */
 
 .stats-content {
 	display: flex;
@@ -822,8 +801,9 @@ export default {
 	}
 
 	.section-header-inline {
+		position: static;
+		margin-bottom: 1rem;
 		flex-direction: column;
-		gap: 12px;
 		align-items: stretch;
 	}
 

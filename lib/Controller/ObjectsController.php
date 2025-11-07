@@ -1724,4 +1724,122 @@ class ObjectsController extends Controller
     }//end downloadFiles()
 
 
+    /**
+     * Start batch vectorization of objects
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Batch vectorization status
+     */
+    public function vectorizeBatch(): JSONResponse
+    {
+        try {
+            $data = $this->request->getParams();
+            $views = $data['views'] ?? null;
+            $batchSize = (int) ($data['batchSize'] ?? 25);
+
+            // Get unified VectorizationService from container
+            $vectorizationService = $this->container->get(\OCA\OpenRegister\Service\VectorizationService::class);
+
+            // Use unified vectorization service with 'object' entity type
+            $result = $vectorizationService->vectorizeBatch('object', [
+                'views' => $views,
+                'batch_size' => $batchSize,
+                'mode' => 'serial', // Objects use serial mode by default
+            ]);
+
+            return new JSONResponse([
+                'success' => true,
+                'data' => $result,
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }//end vectorizeBatch()
+
+
+    /**
+     * Get object vectorization statistics
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Vectorization statistics
+     */
+    public function getObjectVectorizationStats(): JSONResponse
+    {
+        try {
+            // Get views parameter if provided
+            $views = $this->request->getParam('views');
+            if (is_string($views)) {
+                $views = json_decode($views, true);
+            }
+
+            // Get ObjectService from container for view-aware counting
+            $objectService = $this->container->get(\OCA\OpenRegister\Service\ObjectService::class);
+            
+            // Count objects with view filter support
+            $totalObjects = $objectService->searchObjects(
+                query: [
+                    '_count' => true,
+                    '_source' => 'database',
+                ],
+                rbac: false,
+                multi: false,
+                ids: null,
+                uses: null,
+                views: $views
+            );
+
+            return new JSONResponse([
+                'success' => true,
+                'total_objects' => $totalObjects,
+                'views' => $views,
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }//end getObjectVectorizationStats()
+
+
+    /**
+     * Get count of objects for vectorization
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Object count
+     */
+    public function getObjectVectorizationCount(): JSONResponse
+    {
+        try {
+            $schemas = $this->request->getParam('schemas');
+            if (is_string($schemas)) {
+                $schemas = explode(',', $schemas);
+            }
+
+            // TODO: Implement proper counting logic
+            // For now, return a placeholder
+            $count = 0;
+
+            return new JSONResponse([
+                'success' => true,
+                'count' => $count,
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }//end getObjectVectorizationCount()
+
+
 }//end class
