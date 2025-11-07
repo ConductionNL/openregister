@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\FileTextMapper;
 use OCA\OpenRegister\Service\TextExtractionService;
+use OCA\OpenRegister\Service\VectorizationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\Files\NotFoundException;
@@ -43,16 +44,18 @@ class FileExtractionController extends Controller
     /**
      * Constructor
      *
-     * @param string                  $appName              Application name
-     * @param IRequest                $request              HTTP request
-     * @param TextExtractionService   $extractionService    Text extraction service
-     * @param FileTextMapper          $fileTextMapper       File text mapper
+     * @param string                      $appName                Application name
+     * @param IRequest                    $request                HTTP request
+     * @param TextExtractionService       $extractionService      Text extraction service
+     * @param FileTextMapper              $fileTextMapper         File text mapper
+     * @param VectorizationService        $vectorizationService   Unified vectorization service
      */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly TextExtractionService $extractionService,
-        private readonly FileTextMapper $fileTextMapper
+        private readonly FileTextMapper $fileTextMapper,
+        private readonly VectorizationService $vectorizationService
     ) {
         parent::__construct($appName, $request);
     }
@@ -317,6 +320,76 @@ class FileExtractionController extends Controller
             return new JSONResponse([
                 'success' => false,
                 'error' => 'Cleanup failed',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get file types with their file and chunk counts
+     *
+     * Returns only file types that have completed extractions with chunks.
+     * Useful for showing which file types are available for vectorization.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse File types with counts
+     */
+    public function fileTypes(): JSONResponse
+    {
+        try {
+            $types = $this->fileTextMapper->getFileTypeStats();
+
+            return new JSONResponse([
+                'success' => true,
+                'data' => $types
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => 'Failed to retrieve file types',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Vectorize file chunks in batch
+     *
+     * Processes extracted file chunks and generates vector embeddings.
+     * Supports serial and parallel processing modes.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Vectorization results
+     */
+    public function vectorizeBatch(): JSONResponse
+    {
+        try {
+            $data = $this->request->getParams();
+            $mode = $data['mode'] ?? 'serial';
+            $maxFiles = (int) ($data['max_files'] ?? 0);
+            $batchSize = (int) ($data['batch_size'] ?? 50);
+            $fileTypes = $data['file_types'] ?? [];
+
+            // Use unified vectorization service with 'file' entity type
+            $result = $this->vectorizationService->vectorizeBatch('file', [
+                'mode' => $mode,
+                'max_files' => $maxFiles,
+                'batch_size' => $batchSize,
+                'file_types' => $fileTypes,
+            ]);
+            
+            return new JSONResponse([
+                'success' => true,
+                'data' => $result
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => 'Vectorization failed',
                 'message' => $e->getMessage()
             ], 500);
         }

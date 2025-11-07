@@ -113,7 +113,7 @@
 						v-model="selectedTypes"
 						:value="type.mime"
 						type="checkbox">
-						{{ type.name }} ({{ type.count }} {{ t('openregister', 'files') }})
+						{{ type.name }} ({{ type.fileCount }} {{ type.fileCount === 1 ? t('openregister', 'file') : t('openregister', 'files') }}, {{ type.chunkCount }} {{ type.chunkCount === 1 ? t('openregister', 'chunk') : t('openregister', 'chunks') }})
 					</NcCheckboxRadioSwitch>
 				</div>
 			</div>
@@ -262,20 +262,31 @@ export default {
 		},
 	},
 
+	watch: {
+		show(newValue) {
+			if (newValue) {
+				// Reload file types when modal is opened
+				this.loadFileTypes()
+			}
+		},
+	},
+
+	mounted() {
+		if (this.show) {
+			this.loadFileTypes()
+		}
+	},
+
 	methods: {
 		async loadFileTypes() {
 			try {
-				// Load file types with counts
-				// This would need a backend endpoint to provide this data
-				this.fileTypes = [
-					{ mime: 'application/pdf', name: 'PDF', count: 0 },
-					{ mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', name: 'DOCX', count: 0 },
-					{ mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', name: 'XLSX', count: 0 },
-					{ mime: 'text/plain', name: 'Text', count: 0 },
-					{ mime: 'text/markdown', name: 'Markdown', count: 0 },
-				]
+				const response = await axios.get(generateUrl('/apps/openregister/api/files/types'))
+				if (response.data.success) {
+					this.fileTypes = response.data.data
+					console.log('[FileVectorizationModal] Loaded file types:', this.fileTypes)
+				}
 			} catch (error) {
-				console.error('Failed to load file types:', error)
+				console.error('[FileVectorizationModal] Failed to load file types:', error)
 			}
 		},
 
@@ -304,25 +315,37 @@ export default {
 				)
 
 				if (response.data.success) {
-					this.vectorized = response.data.vectorized || 0
-					this.failed = response.data.failed || 0
+					const result = response.data.data
+					this.vectorized = result.vectorized || 0
+					this.failed = result.failed || 0
 					this.processed = this.vectorized + this.failed
 
-					showSuccess(this.t('openregister', 'File vectorization completed. {vectorized} chunks vectorized, {failed} failed.', {
+					showSuccess(this.t('openregister', 'File vectorization completed! {vectorized} chunks vectorized from {files} files. {failed} failed.', {
 						vectorized: this.vectorized,
+						files: result.total_files || 0,
 						failed: this.failed,
 					}))
 
-					// Reload stats
-					await this.loadStats()
+					// Emit completion event to reload stats in parent
+					this.$emit('completed')
+					
+					// Close modal
+					this.$emit('closing')
 				} else {
 					throw new Error(response.data.error || 'Unknown error')
 				}
 			} catch (error) {
 				console.error('Vectorization failed:', error)
-				showError(this.t('openregister', 'Failed to vectorize files: {error}', {
-					error: error.response?.data?.error || error.message,
-				}))
+				const errorData = error.response?.data
+				
+				// Check if it's a "not implemented" response
+				if (error.response?.status === 501 || errorData?.error === 'File vectorization not yet implemented') {
+					showError(this.t('openregister', 'File chunk vectorization is not yet implemented. The chunks are ready and stored, but the vectorization service is under development.'))
+				} else {
+					showError(this.t('openregister', 'Failed to vectorize files: {error}', {
+						error: errorData?.error || errorData?.message || error.message,
+					}))
+				}
 			} finally {
 				this.processing = false
 			}

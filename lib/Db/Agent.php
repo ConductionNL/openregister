@@ -89,6 +89,10 @@ use Symfony\Component\Uid\Uuid;
  * @method void setInvitedUsers(?array $invitedUsers)
  * @method array|null getGroups()
  * @method void setGroups(?array $groups)
+ * @method array|null getTools()
+ * @method void setTools(?array $tools)
+ * @method string|null getUser()
+ * @method void setUser(?string $user)
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
  * @method DateTime|null getUpdated()
@@ -291,6 +295,26 @@ class Agent extends Entity implements JsonSerializable
     protected ?array $groups = null;
 
     /**
+     * Array of enabled tool names for function calling
+     *
+     * Available tools: 'register', 'schema', 'objects'
+     * Example: ['register', 'objects']
+     *
+     * @var array|null Tool names
+     */
+    protected ?array $tools = null;
+
+    /**
+     * User ID for running agent in cron/background scenarios
+     *
+     * When no session exists (e.g., cron jobs), this user's context
+     * will be used for permissions and organization filtering.
+     *
+     * @var string|null User ID
+     */
+    protected ?string $user = null;
+
+    /**
      * Date when the agent was created
      *
      * @var DateTime|null Creation timestamp
@@ -338,6 +362,8 @@ class Agent extends Entity implements JsonSerializable
         $this->addType('isPrivate', 'boolean');
         $this->addType('invitedUsers', 'json');
         $this->addType('groups', 'json');
+        $this->addType('tools', 'json');
+        $this->addType('user', 'string');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
 
@@ -466,6 +492,8 @@ class Agent extends Entity implements JsonSerializable
         $this->setIsPrivate($object['isPrivate'] ?? $object['is_private'] ?? true);
         $this->setInvitedUsers($object['invitedUsers'] ?? $object['invited_users'] ?? null);
         $this->setGroups($object['groups'] ?? null);
+        $this->setTools($object['tools'] ?? null);
+        $this->setUser($object['user'] ?? null);
 
         return $this;
 
@@ -507,6 +535,8 @@ class Agent extends Entity implements JsonSerializable
             'isPrivate'          => $this->isPrivate,
             'invitedUsers'       => $this->invitedUsers,
             'groups'             => $this->groups,
+            'tools'              => $this->tools,
+            'user'               => $this->user,
             'created'            => $this->created?->format('Y-m-d\TH:i:s\Z'),
             'updated'            => $this->updated?->format('Y-m-d\TH:i:s\Z'),
             'managedByConfiguration' => $this->managedByConfiguration !== null ? [

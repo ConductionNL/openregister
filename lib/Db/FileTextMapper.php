@@ -328,6 +328,69 @@ class FileTextMapper extends QBMapper
     }
 
     /**
+     * Get file types with their file and chunk counts
+     * 
+     * Only returns file types that have completed extractions with chunks
+     *
+     * @return array Array of file types with counts
+     */
+    public function getFileTypeStats(): array
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('mime_type')
+            ->selectAlias($qb->createFunction('COUNT(*)'), 'file_count')
+            ->selectAlias($qb->createFunction('SUM(chunk_count)'), 'chunk_count')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('extraction_status', $qb->createNamedParameter('completed', IQueryBuilder::PARAM_STR)))
+            ->andWhere($qb->expr()->gt('chunk_count', $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT)))
+            ->groupBy('mime_type')
+            ->orderBy('file_count', 'DESC');
+
+        $result = $qb->executeQuery();
+        $types = [];
+
+        while ($row = $result->fetch()) {
+            $types[] = [
+                'mime' => $row['mime_type'],
+                'name' => $this->formatMimeType($row['mime_type']),
+                'fileCount' => (int) $row['file_count'],
+                'chunkCount' => (int) $row['chunk_count'],
+            ];
+        }
+
+        $result->closeCursor();
+
+        return $types;
+    }
+
+    /**
+     * Format MIME type for display
+     *
+     * @param string $mimeType MIME type
+     * @return string Formatted name
+     */
+    private function formatMimeType(string $mimeType): string
+    {
+        $mimeTypeMap = [
+            'application/pdf' => 'PDF',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'DOCX',
+            'application/msword' => 'DOC',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'XLSX',
+            'application/vnd.ms-excel' => 'XLS',
+            'text/plain' => 'Text',
+            'text/markdown' => 'Markdown',
+            'text/html' => 'HTML',
+            'application/json' => 'JSON',
+            'text/xml' => 'XML',
+            'application/xml' => 'XML',
+            'text/csv' => 'CSV',
+        ];
+
+        return $mimeTypeMap[$mimeType] ?? strtoupper(explode('/', $mimeType)[1] ?? 'Unknown');
+    }
+
+    /**
      * Count indexed files
      *
      * @return int Count of indexed files

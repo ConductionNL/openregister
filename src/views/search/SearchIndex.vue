@@ -392,10 +392,18 @@ export default {
 		},
 
 		showNoRegisterWarning() {
-			return !this.hasSelectedRegisters
+			// Don't show warning if objects are already loaded (register/schema set in store)
+			const hasObjectsLoaded = objectStore.objectList?.results?.length > 0
+			const hasRegisterInStore = registerStore.registerItem !== null
+			
+			return !this.hasSelectedRegisters && !hasObjectsLoaded && !hasRegisterInStore
 		},
 		showNoSchemaWarning() {
-			return this.hasSelectedRegisters && !this.hasSelectedSchemas
+			// Don't show warning if objects are already loaded (register/schema set in store)
+			const hasObjectsLoaded = objectStore.objectList?.results?.length > 0
+			const hasSchemaInStore = schemaStore.schemaItem !== null
+			
+			return this.hasSelectedRegisters && !this.hasSelectedSchemas && !hasObjectsLoaded && !hasSchemaInStore
 		},
 		showNoObjectsMessage() {
 			return this.hasSelectedRegisters
@@ -440,6 +448,97 @@ export default {
 		},
 	},
 	watch: {
+		// Watch for URL changes and update stores accordingly
+		selectedRegisterIds: {
+			async handler(newIds, oldIds) {
+				console.log('SearchIndex: selectedRegisterIds changed', { newIds, oldIds })
+				
+				// If we have exactly one register selected, set it in the store
+				if (newIds.length === 1) {
+					const registerId = newIds[0]
+					const register = registerStore.registerList.find(r => r.id === registerId)
+					
+					if (register) {
+						console.log('SearchIndex: Setting registerItem to', register)
+						registerStore.setRegisterItem(register)
+					} else {
+						// Register not in list yet, fetch it
+						console.log('SearchIndex: Fetching register', registerId)
+						try {
+							const fetchedRegister = await registerStore.getRegister(registerId)
+							if (fetchedRegister) {
+								registerStore.setRegisterItem(fetchedRegister)
+							}
+						} catch (error) {
+							console.error('Failed to fetch register:', error)
+						}
+					}
+				} else if (newIds.length > 1) {
+					// Multiple registers selected - set the first one as active for now
+					// TODO: Implement proper multi-register object loading
+					console.log('SearchIndex: Multiple registers selected, setting first register as active')
+					const firstRegisterId = newIds[0]
+					const register = registerStore.registerList.find(r => r.id === firstRegisterId)
+					if (register) {
+						registerStore.setRegisterItem(register)
+					}
+				} else {
+					// No registers selected
+					console.log('SearchIndex: No registers selected, clearing registerItem')
+					registerStore.setRegisterItem(null)
+				}
+			},
+			immediate: true,
+		},
+		
+		selectedSchemaIds: {
+			async handler(newIds, oldIds) {
+				console.log('SearchIndex: selectedSchemaIds changed', { newIds, oldIds })
+				
+				// If we have exactly one schema selected, set it in the store
+				if (newIds.length === 1) {
+					const schemaId = newIds[0]
+					const schema = schemaStore.schemaList.find(s => s.id === schemaId)
+					
+					if (schema) {
+						console.log('SearchIndex: Setting schemaItem to', schema)
+						schemaStore.setSchemaItem(schema)
+						
+						// Refresh objects when both register and schema are set
+						if (registerStore.registerItem) {
+							console.log('SearchIndex: Both register and schema set, refreshing objects')
+							await objectStore.refreshObjectList()
+						}
+					} else {
+						// Schema not in list yet, fetch it
+						console.log('SearchIndex: Fetching schema', schemaId)
+						try {
+							const fetchedSchema = await schemaStore.getSchema(schemaId)
+							if (fetchedSchema) {
+								schemaStore.setSchemaItem(fetchedSchema)
+								
+								// Refresh objects when both register and schema are set
+								if (registerStore.registerItem) {
+									console.log('SearchIndex: Both register and schema set, refreshing objects')
+									await objectStore.refreshObjectList()
+								}
+							}
+						} catch (error) {
+							console.error('Failed to fetch schema:', error)
+						}
+					}
+				} else if (newIds.length > 1) {
+					// Multiple schemas selected - don't set a single item
+					console.log('SearchIndex: Multiple schemas selected, not setting schemaItem')
+					schemaStore.setSchemaItem(null)
+				} else {
+					// No schemas selected
+					console.log('SearchIndex: No schemas selected, clearing schemaItem')
+					schemaStore.setSchemaItem(null)
+				}
+			},
+			immediate: true,
+		},
 		loading: {
 			handler(newVal) {
 				newVal === false && objectStore.setSelectAllObjects()

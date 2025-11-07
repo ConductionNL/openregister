@@ -15,6 +15,10 @@ graph TB
     Agent -->|filters data via| View[Data Views]
     Agent -->|searches in| Files[Files]
     Agent -->|searches in| Objects[Objects]
+    Agent -->|uses| Tools[Function Tools]
+    Tools -->|RegisterTool| Registers[Registers]
+    Tools -->|SchemaTool| Schemas[Schemas]
+    Tools -->|ObjectsTool| Objects
     Agent -->|belongs to| Organisation[Organisation]
     Agent -->|accessible by| Groups[Groups]
     Agent -->|can invite| InvitedUsers[Invited Users]
@@ -27,6 +31,7 @@ graph TB
     style Conversation fill:#fff4e1
     style Message fill:#f0e1ff
     style Organisation fill:#e1ffe1
+    style Tools fill:#ffe1ff
 ```
 
 ## Creating an Agent
@@ -147,6 +152,124 @@ Only the agent owner can:
 - Manage invited users
 - Delete the agent
 
+## Function Tools
+
+### Overview
+
+Function tools allow agents to perform actions beyond just providing information. Through function calling (powered by LLM function calling), agents can interact directly with your OpenRegister data and even functionality from other installed Nextcloud apps. This enables agents to:
+
+- **Execute CRUD operations** on registers, schemas, and objects
+- **Integrate with other apps** (e.g., OpenCatalogi's CMS tool for managing pages and menus)
+- **Automate workflows** by combining multiple tool calls
+- **Maintain security** with automatic RBAC and permission checks
+
+:::info For Developers
+Want to create custom tools for your app? See the comprehensive developer guides:
+- **[Tool Registration Guide](../development/tool-registration.md)** - Step-by-step guide to creating and registering tools
+- **[Tool Metadata Architecture](../development/tool-metadata-architecture.md)** - Understanding how tool metadata works
+- **[Tool Registration Testing](../development/tool-registration-testing.md)** - Testing your tools
+:::
+
+### Built-in Tools (OpenRegister)
+
+**RegisterTool** (`openregister.register`)
+- List all accessible registers
+- Get details about a specific register
+- Create new registers
+- Update register properties
+- Delete registers
+
+**SchemaTool** (`openregister.schema`)
+- List all accessible schemas
+- Get schema details including properties
+- Create new schemas with JSON Schema definitions
+- Update existing schemas
+- Delete schemas
+
+**ObjectsTool** (`openregister.objects`)
+- Search for objects with filters
+- Get object details
+- Create new objects conforming to schemas
+- Update existing objects
+- Delete objects
+
+### Tools from Other Apps
+
+Tools are automatically discovered from installed apps. For example:
+
+**CMSTool** (`opencatalogi.cms`) - _When OpenCatalogi is installed_
+- Create and manage pages
+- Create and manage menus
+- Add menu items linking to pages or URLs
+
+Other apps can register their own tools to extend agent capabilities!
+
+### Enabling Tools
+
+To enable tools for an agent:
+
+1. Open the Edit Agent modal
+2. Navigate to the **Tools** tab
+3. Check the tools you want to enable
+4. Optionally set a **Default User** for cron/background scenarios
+5. Save the agent
+
+### Security & Permissions
+
+**Tool execution follows these rules:**
+
+- Tools run with the current user's session permissions (automatic RBAC)
+- If no session exists (cron jobs), tools use the agent's configured user
+- Tools respect the agent's configured views for data filtering
+- All operations are subject to organization boundaries
+- Tool usage counts against the agent's request quota
+
+**Example:**
+If a user asks an agent to 'create a new person schema', the agent will:
+1. Check if SchemaTool is enabled
+2. Parse the request parameters
+3. Call the tool's `create_schema` function
+4. Execute with the user's permissions
+5. Return the result in natural language
+
+### Use Cases
+
+**Data Management Assistant**
+Enable all three tools to create an agent that can help users manage their data through natural language:
+- 'Create a new register called Customers'
+- 'Show me all schemas in the Products register'
+- 'Find all objects with status=active'
+
+**Schema Designer**
+Enable SchemaTool to help users design and modify schemas:
+- 'Create a Person schema with name, email, and phone properties'
+- 'Add an address property to the Person schema'
+
+**Read-Only Query Agent**
+Enable only the list/get functions for a safe, read-only assistant:
+- Disable creation, update, and deletion
+- Agent can only retrieve and display information
+
+### Configuration Example
+
+```json
+{
+  'name': 'Data Management Assistant',
+  'tools': ['register', 'schema', 'objects'],
+  'user': 'admin',
+  'views': ['view-uuid-1', 'view-uuid-2'],
+  'isPrivate': false
+}
+```
+
+### Best Practices
+
+1. **Least Privilege**: Only enable tools the agent actually needs
+2. **Set Default User**: Always configure a default user for background scenarios
+3. **Use Views**: Restrict data access using views when possible
+4. **Monitor Usage**: Track tool usage through request quotas
+5. **Test Thoroughly**: Test agents in a development environment first
+
 ## Using Agents in Conversations
 
 ### Starting a Conversation
@@ -209,6 +332,8 @@ Content-Type: application/json
   "searchFiles": true,
   "searchObjects": true,
   "views": ["uuid-of-view-1", "uuid-of-view-2"],
+  "tools": ["objects", "schema"],
+  "user": "admin",
   "isPrivate": false,
   "invitedUsers": []
 }

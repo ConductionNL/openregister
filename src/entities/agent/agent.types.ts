@@ -39,6 +39,9 @@ export type TAgent = {
 	searchObjects?: boolean
 	isPrivate?: boolean
 	invitedUsers?: string[]
+	// Tool support
+	tools?: string[]		// Array of enabled tool names: 'register', 'schema', 'objects'
+	user?: string			// User ID for cron/background scenarios
 	created?: string
 	updated?: string
 }

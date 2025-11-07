@@ -28,6 +28,11 @@ use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Service\VectorEmbeddingService;
 use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\ToolRegistry;
+use OCA\OpenRegister\Tool\ToolInterface;
+use OCA\OpenRegister\Tool\RegisterTool;
+use OCA\OpenRegister\Tool\SchemaTool;
+use OCA\OpenRegister\Tool\ObjectsTool;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use LLPhant\Chat\OpenAIChat;
@@ -156,6 +161,34 @@ class ChatService
     private LoggerInterface $logger;
 
     /**
+     * Register tool
+     *
+     * @var RegisterTool
+     */
+    private RegisterTool $registerTool;
+
+    /**
+     * Schema tool
+     *
+     * @var SchemaTool
+     */
+    private SchemaTool $schemaTool;
+
+    /**
+     * Objects tool
+     *
+     * @var ObjectsTool
+     */
+    private ObjectsTool $objectsTool;
+
+    /**
+     * Tool registry
+     *
+     * @var ToolRegistry
+     */
+    private ToolRegistry $toolRegistry;
+
+    /**
      * Constructor
      *
      * @param IDBConnection          $db                  Database connection
@@ -166,6 +199,10 @@ class ChatService
      * @param GuzzleSolrService      $solrService         SOLR service
      * @param SettingsService        $settingsService     Settings service
      * @param LoggerInterface        $logger              Logger
+     * @param RegisterTool           $registerTool        Register tool for function calling (legacy)
+     * @param SchemaTool             $schemaTool          Schema tool for function calling (legacy)
+     * @param ObjectsTool            $objectsTool         Objects tool for function calling (legacy)
+     * @param ToolRegistry           $toolRegistry        Tool registry for dynamic tool loading
      */
     public function __construct(
         IDBConnection $db,
@@ -175,7 +212,11 @@ class ChatService
         VectorEmbeddingService $vectorService,
         GuzzleSolrService $solrService,
         SettingsService $settingsService,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        RegisterTool $registerTool,
+        SchemaTool $schemaTool,
+        ObjectsTool $objectsTool,
+        ToolRegistry $toolRegistry
     ) {
         $this->db = $db;
         $this->conversationMapper = $conversationMapper;
@@ -185,6 +226,10 @@ class ChatService
         $this->solrService = $solrService;
         $this->settingsService = $settingsService;
         $this->logger = $logger;
+        $this->registerTool = $registerTool;
+        $this->schemaTool = $schemaTool;
+        $this->objectsTool = $objectsTool;
+        $this->toolRegistry = $toolRegistry;
 
     }//end __construct()
 
@@ -350,17 +395,34 @@ class ChatService
         $contextText = '';
 
         try {
+            // Build filters for vector search
+            $vectorFilters = [];
+            
+            // Filter by entity types based on agent settings
+            $entityTypes = [];
+            if ($includeObjects) {
+                $entityTypes[] = 'object';
+            }
+            if ($includeFiles) {
+                $entityTypes[] = 'file';
+            }
+            
+            // Only add entity_type filter if we're filtering
+            if (!empty($entityTypes) && count($entityTypes) < 2) {
+                $vectorFilters['entity_type'] = $entityTypes;
+            }
+            
             // Determine search method
             if ($searchMode === 'semantic') {
                 $results = $this->vectorService->semanticSearch(
                     $query,
                     $numSources * 2,
-                    0.7
+                    $vectorFilters  // Pass filters array instead of 0.7
                 );
             } elseif ($searchMode === 'hybrid') {
                 $results = $this->vectorService->hybridSearch(
                     $query,
-                    [], // Empty array for solr filters
+                    ['vector_filters' => $vectorFilters], // Pass filters in SOLR filters array
                     $numSources * 2 // Limit parameter
                 );
             } else {
@@ -423,7 +485,18 @@ class ChatService
             $this->logger->info('[ChatService] Context retrieved', [
                 'numSources' => count($sources),
                 'contextLength' => strlen($contextText),
+                'searchMode' => $searchMode,
+                'includeObjects' => $includeObjects,
+                'includeFiles' => $includeFiles,
+                'rawResultsCount' => is_array($results) ? count($results) : gettype($results),
             ]);
+            
+            // DEBUG: Log first source
+            if (!empty($sources)) {
+                $this->logger->info('[ChatService] First source details', [
+                    'source' => $sources[0],
+                ]);
+            }
 
             return [
                 'text' => $contextText,
@@ -490,6 +563,7 @@ class ChatService
      */
     private function extractSourceName(array $result): string
     {
+        // First check top-level fields
         if (!empty($result['title'])) {
             return $result['title'];
         }
@@ -499,8 +573,31 @@ class ChatService
         if (!empty($result['filename'])) {
             return $result['filename'];
         }
+        
+        // Check metadata for object_title, file_name, etc.
+        if (!empty($result['metadata'])) {
+            $metadata = is_array($result['metadata']) ? $result['metadata'] : json_decode($result['metadata'], true);
+            
+            if (!empty($metadata['object_title'])) {
+                return $metadata['object_title'];
+            }
+            if (!empty($metadata['file_name'])) {
+                return $metadata['file_name'];
+            }
+            if (!empty($metadata['name'])) {
+                return $metadata['name'];
+            }
+            if (!empty($metadata['title'])) {
+                return $metadata['title'];
+            }
+        }
+        
+        // Fallback to entity ID
         if (!empty($result['entity_id'])) {
-            return ($result['entity_type'] ?? 'Item') . ' #' . $result['entity_id'];
+            $type = $result['entity_type'] ?? 'Item';
+            // Capitalize first letter for display
+            $type = ucfirst($type);
+            return $type . ' #' . substr($result['entity_id'], 0, 8);
         }
         
         return 'Unknown Source';
@@ -595,6 +692,15 @@ class ChatService
             'historyCount' => count($messageHistory),
         ]);
 
+        // Get enabled tools for agent
+        $tools = $this->getAgentTools($agent);
+        if (!empty($tools)) {
+            $this->logger->info('[ChatService] Agent has tools enabled', [
+                'toolCount' => count($tools),
+                'tools' => array_map(fn($tool) => $tool->getName(), $tools),
+            ]);
+        }
+
         // Get LLM configuration
         $llmConfig = $this->settingsService->getLLMSettingsOnly();
 
@@ -608,6 +714,7 @@ class ChatService
         $this->logger->info('[ChatService] Using chat provider', [
             'provider' => $chatProvider,
             'llmConfig' => $llmConfig,
+            'hasTools' => !empty($tools),
         ]);
 
         try {
@@ -1394,6 +1501,121 @@ class ChatService
         return $this->messageMapper->insert($message);
 
     }//end storeMessage()
+
+
+    /**
+     * Get available tools for an agent
+     *
+     * Returns an array of tool instances that are enabled for the given agent.
+     * Uses ToolRegistry to support tools from other apps.
+     *
+     * @param Agent|null $agent The agent to get tools for
+     *
+     * @return array Array of ToolInterface instances
+     */
+    private function getAgentTools(?Agent $agent): array
+    {
+        if ($agent === null) {
+            return [];
+        }
+
+        $enabledToolIds = $agent->getTools();
+        if ($enabledToolIds === null || empty($enabledToolIds)) {
+            return [];
+        }
+
+        $tools = [];
+
+        foreach ($enabledToolIds as $toolId) {
+            // Support both old format (register, schema, objects) and new format (app.tool)
+            $fullToolId = strpos($toolId, '.') !== false 
+                ? $toolId 
+                : 'openregister.' . $toolId;
+
+            $tool = $this->toolRegistry->getTool($fullToolId);
+            if ($tool !== null) {
+                $tool->setAgent($agent);
+                $tools[] = $tool;
+                $this->logger->debug('[ChatService] Loaded tool', ['id' => $fullToolId]);
+            } else {
+                $this->logger->warning('[ChatService] Tool not found', ['id' => $fullToolId]);
+            }
+        }
+
+        return $tools;
+    }//end getAgentTools()
+
+
+    /**
+     * Convert tools to OpenAI function format
+     *
+     * Converts our tool definitions to the format expected by OpenAI's function calling API.
+     *
+     * @param array $tools Array of ToolInterface instances
+     *
+     * @return array Array of function definitions for OpenAI
+     */
+    private function convertToolsToFunctions(array $tools): array
+    {
+        $functions = [];
+
+        foreach ($tools as $tool) {
+            $toolFunctions = $tool->getFunctions();
+            foreach ($toolFunctions as $function) {
+                $functions[] = $function;
+            }
+        }
+
+        return $functions;
+    }//end convertToolsToFunctions()
+
+
+    /**
+     * Handle function call from LLM
+     *
+     * Executes a function call requested by the LLM and returns the result.
+     *
+     * @param string $functionName Function name requested by LLM
+     * @param array  $parameters   Function parameters from LLM
+     * @param array  $tools        Available tools
+     * @param string|null $userId  User ID for context
+     *
+     * @return string JSON-encoded function result
+     */
+    private function handleFunctionCall(string $functionName, array $parameters, array $tools, ?string $userId = null): string
+    {
+        $this->logger->info('[ChatService] Handling function call', [
+            'function' => $functionName,
+            'parameters' => $parameters,
+        ]);
+
+        // Find the tool that has this function
+        foreach ($tools as $tool) {
+            $toolFunctions = $tool->getFunctions();
+            foreach ($toolFunctions as $funcDef) {
+                if ($funcDef['name'] === $functionName) {
+                    try {
+                        $result = $tool->executeFunction($functionName, $parameters, $userId);
+                        return json_encode($result);
+                    } catch (\Exception $e) {
+                        $this->logger->error('[ChatService] Function execution failed', [
+                            'function' => $functionName,
+                            'error' => $e->getMessage(),
+                        ]);
+                        return json_encode([
+                            'success' => false,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
+            }
+        }
+
+        return json_encode([
+            'success' => false,
+            'error' => "Unknown function: {$functionName}",
+        ]);
+    }//end handleFunctionCall()
 
 
 }//end class

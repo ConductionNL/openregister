@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Db\Agent;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\ToolRegistry;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -56,6 +57,13 @@ class AgentsController extends Controller
     private OrganisationService $organisationService;
 
     /**
+     * Tool registry
+     *
+     * @var ToolRegistry
+     */
+    private ToolRegistry $toolRegistry;
+
+    /**
      * Logger for debugging and error tracking
      *
      * @var LoggerInterface
@@ -77,6 +85,7 @@ class AgentsController extends Controller
      * @param IRequest            $request             HTTP request
      * @param AgentMapper         $agentMapper         Agent mapper
      * @param OrganisationService $organisationService Organisation service
+     * @param ToolRegistry        $toolRegistry        Tool registry
      * @param LoggerInterface     $logger              Logger service
      * @param string|null         $userId              User ID
      */
@@ -85,12 +94,14 @@ class AgentsController extends Controller
         IRequest $request,
         AgentMapper $agentMapper,
         OrganisationService $organisationService,
+        ToolRegistry $toolRegistry,
         LoggerInterface $logger,
         ?string $userId
     ) {
         parent::__construct($appName, $request);
         $this->agentMapper = $agentMapper;
         $this->organisationService = $organisationService;
+        $this->toolRegistry = $toolRegistry;
         $this->logger = $logger;
         $this->userId = $userId;
 
@@ -443,6 +454,45 @@ class AgentsController extends Controller
         }
 
     }//end stats()
+
+
+    /**
+     * Get all available tools
+     *
+     * Returns metadata for all registered tools from all apps.
+     * This is used by the frontend agent editor to display available tools.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse List of available tools with metadata
+     */
+    public function tools(): JSONResponse
+    {
+        try {
+            $tools = $this->toolRegistry->getAllTools();
+
+            $this->logger->debug('[AgentsController] Returning available tools', [
+                'count' => count($tools),
+            ]);
+
+            return new JSONResponse(['results' => $tools], Http::STATUS_OK);
+        } catch (Exception $e) {
+            $this->logger->error(
+                'Failed to get available tools',
+                [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]
+            );
+
+            return new JSONResponse(
+                ['error' => 'Failed to retrieve tools'],
+                Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }
+
+    }//end tools()
 
 
 }//end class
