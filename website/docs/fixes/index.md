@@ -90,6 +90,6 @@ Use the following structure for new fix documentation:
 
 ## Related Documentation
 
-- [Development Guide](../development/)
-- [API Documentation](../api/)
-- [Technical Documentation](../technical/) 
+- [Development Guide](../developers/testing.md)
+- [API Documentation](../api/objects.md)
+- [Technical Documentation](../technical/unified-faceting-system.md) 

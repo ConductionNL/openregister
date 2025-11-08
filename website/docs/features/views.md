@@ -358,8 +358,9 @@ Only the owner can delete a view.
 
 ## Related Documentation
 
-- [Search Guide](../user-guide/searching.md)
+- [Search Guide](../Features/search.md)
 - [Objects API](../api/objects.md)
-- [Registers and Schemas](../concepts/registers-schemas.md)
-- [Faceted Search](./faceted-search.md)
+- [Registers](../Features/registers.md)
+- [Schemas](../Features/schemas.md)
+- [Faceted Search](../Features/faceting.md)
 

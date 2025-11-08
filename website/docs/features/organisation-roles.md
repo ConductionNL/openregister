@@ -365,7 +365,7 @@ Potential improvements for future versions:
 
 ## Related Documentation
 
-- [Organisation Management](/docs/features/organisations)
-- [User Management](/docs/features/users)
+- [Organisation Management](../Features/organisations.md)
+- [RBAC (Role-Based Access Control)](../developers/rbac.md)
 - [Nextcloud Groups Documentation](https://docs.nextcloud.com/server/latest/admin_manual/configuration_user/user_configuration.html)
 

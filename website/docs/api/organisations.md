@@ -553,5 +553,5 @@ X-RateLimit-Reset: 1642781234
 
 ---
 
-*For comprehensive implementation details, see [Multi-Tenancy Technical Documentation](../multi-tenancy.md)*
-*For testing information, see [Multi-Tenancy Testing Framework](../multi-tenancy-testing.md)* 
+*For comprehensive implementation details, see [Multi-Tenancy Technical Documentation](../Features/multi-tenancy.md)*
+*For testing information, see [Multi-Tenancy Testing Framework](../technical/multi-tenancy-testing.md)* 

@@ -502,9 +502,9 @@ await fetch(`/index.php/apps/openregister/api/conversations/${uuid}/permanent`, 
 
 ## Related APIs
 
-- [Chat API](/api/chat) - Send messages within conversations
-- [Agents API](/api/agents) - Manage AI agents
-- [Messages API](/api/messages) - Direct message management
+- [Chat & RAG Deep Dive](../features/chat-rag-deepdive.md) - How chat and RAG work
+- [AI Agents](../features/agents.md) - Manage and configure AI agents
+- [AI Configuration](../features/ai.md) - LLM setup and configuration
 
 ## Database Schema
 
