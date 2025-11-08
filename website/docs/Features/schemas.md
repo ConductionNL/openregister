@@ -267,9 +267,9 @@ File properties allow you to attach files directly to specific object properties
 
 File properties support three types of input:
 
-1. **Base64 Data URIs**: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAAA...'
-2. **URLs**: 'https://example.com/image.jpg' (system fetches the file)
-3. **File Objects**: '{id: '12345', title: 'image.jpg', downloadUrl: '...'}'
+1. **Base64 Data URIs**: `data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAAA...`
+2. **URLs**: `https://example.com/image.jpg` (system fetches the file)
+3. **File Objects**: `{id: '12345', title: 'image.jpg', downloadUrl: '...'}`
 
 #### File Property Processing
 
