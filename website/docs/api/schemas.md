@@ -68,19 +68,18 @@ The 'stats' object for a schema now includes the following fields:
 
 Example:
 
-'
+```json
 {
-  'id': 123,
-  'title': 'My Schema',
-  ...
-  'stats': {
-    'objects': { 'total': 10, ... },
-    'logs': { 'total': 5, ... },
-    'files': { 'total': 0, 'size': 0 },
-    'registers': 2
+  "id": 123,
+  "title": "My Schema",
+  "stats": {
+    "objects": { "total": 10 },
+    "logs": { "total": 5 },
+    "files": { "total": 0, "size": 0 },
+    "registers": 2
   }
 }
-'
+```
 
 ## Schema Exploration Endpoints
 
