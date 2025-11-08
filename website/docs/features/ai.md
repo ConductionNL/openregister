@@ -180,7 +180,7 @@ First, enable AI functionality:
 - Toggle **LLM Enabled** to ON
 - This activates all AI features in OpenRegister
 
-![img.png](img.png)
+![LLM Configuration Modal](img.png)
 
 ##### 2. Select Embedding Provider
 
@@ -209,7 +209,7 @@ Choose the provider for converting data to vectors:
    - `all-minilm` - Lightweight option
 4. Make sure Ollama is running and the model is downloaded (`ollama pull nomic-embed-text`)
 
-![img_1.png](img_1.png)
+![Embedding Provider Configuration](img_1.png)
 
 ##### 3. Select Chat Provider
 
@@ -265,7 +265,7 @@ Select which AI features should be active:
 
 **💡 Tip:** Keep all features enabled unless you have specific reasons to disable them.
 
-![img_2.png](img_2.png)
+![AI Features Configuration](img_2.png)
 
 ##### 5. Test Your Configuration
 
