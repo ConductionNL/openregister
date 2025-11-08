@@ -127,9 +127,9 @@ $results = $objectService->searchObjectsPaginated($query);
 
 | **Scenario** | **Cache Hit Rate** | **Response Time** | **Improvement** |
 |-------------|-------------------|------------------|----------------|
-| App with `setExternalAppContext()` | ~95% | <500ms | **🚀 10x faster** |
-| Auto-detected external app | ~80% | <750ms | **🚀 4x faster** |
-| Query fingerprint isolation | ~60% | <1s | **🚀 3x faster** |
+| App with `setExternalAppContext()` | ~95% | &lt;500ms | **🚀 10x faster** |
+| Auto-detected external app | ~80% | &lt;750ms | **🚀 4x faster** |
+| Query fingerprint isolation | ~60% | &lt;1s | **🚀 3x faster** |
 
 ## Cache Key Structure
 

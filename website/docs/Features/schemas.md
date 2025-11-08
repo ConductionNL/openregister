@@ -359,34 +359,36 @@ Auto tags support placeholder replacement:
 }
 ```
 
-// Rendered object with file objects
+**Rendered object with file objects:**
+
+```json
 {
-  'name': 'John Doe',
-  'avatar': {
-    'id': '12345',
-    'title': 'avatar_1640995200.jpg',
-    'type': 'image/jpeg',
-    'size': 15420,
-    'accessUrl': 'https://example.com/s/AbCdEfGh',
-    'downloadUrl': 'https://example.com/s/AbCdEfGh/download',
-    'labels': ['profile-image', 'auto-uploaded']
+  "name": "John Doe",
+  "avatar": {
+    "id": "12345",
+    "title": "avatar_1640995200.jpg",
+    "type": "image/jpeg",
+    "size": 15420,
+    "accessUrl": "https://example.com/s/AbCdEfGh",
+    "downloadUrl": "https://example.com/s/AbCdEfGh/download",
+    "labels": ["profile-image", "auto-uploaded"]
   },
-  'documents': [
+  "documents": [
     {
-      'id': '12346',
-      'title': 'documents_0_1640995200.pdf',
-      'type': 'application/pdf',
-      'size': 245760,
-      'accessUrl': 'https://example.com/s/XyZwVuTs',
-      'labels': ['auto-uploaded', 'property-documents']
+      "id": "12346",
+      "title": "documents_0_1640995200.pdf",
+      "type": "application/pdf",
+      "size": 245760,
+      "accessUrl": "https://example.com/s/XyZwVuTs",
+      "labels": ["auto-uploaded", "property-documents"]
     },
     {
-      'id': '12347',
-      'title': 'documents_1_1640995200.png',
-      'type': 'image/png',
-      'size': 89123,
-      'accessUrl': 'https://example.com/s/MnOpQrSt',
-      'labels': ['auto-uploaded', 'property-documents']
+      "id": "12347",
+      "title": "documents_1_1640995200.png",
+      "type": "image/png",
+      "size": 89123,
+      "accessUrl": "https://example.com/s/MnOpQrSt",
+      "labels": ["auto-uploaded", "property-documents"]
     }
   ]
 }
