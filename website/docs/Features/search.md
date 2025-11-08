@@ -903,11 +903,11 @@ OpenRegister supports comprehensive filter operators that are translated to Solr
 |--------------|-------------|---------|
 | '=' (equals) | ':value' | 'status_s:active' |
 | 'ne' (not equals) | '-field:value' | '-status_s:inactive' |
-| 'gt' (greater than) | ':{value TO *}' | 'age_i:{30 TO *}' |
-| 'gte' (greater or equal) | ':[value TO *]' | 'age_i:[30 TO *]' |
-| 'lt' (less than) | ':{* TO value}' | 'age_i:{* TO 30}' |
-| 'lte' (less or equal) | ':[* TO value]' | 'age_i:[* TO 30]' |
-| '~' (contains) | ':*value*' | 'name_s:*john*' |
+| 'gt' (greater than) | ':\{value TO \*\}' | 'age_i:\{30 TO \*\}' |
+| 'gte' (greater or equal) | ':[value TO \*]' | 'age_i:[30 TO \*]' |
+| 'lt' (less than) | ':\{\* TO value\}' | 'age_i:\{\* TO 30\}' |
+| 'lte' (less or equal) | ':[\* TO value]' | 'age_i:[\* TO 30]' |
+| '~' (contains) | ':\*value\*' | 'name_s:\*john\*' |
 | '^' (starts with) | ':value*' | 'name_s:annual*' |
 | '$' (ends with) | ':*value' | 'name_s:*2025' |
 | 'exists' | 'field:[* TO *]' | 'published:[* TO *]' |
