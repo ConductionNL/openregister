@@ -308,7 +308,7 @@ If you encounter issues:
 
 ## See Also
 
-- [AI Agents](/features/agents) - Learn about creating and configuring agents
+- [AI Agents](../features/agents.md) - Learn about creating and configuring agents
 - [Semantic Search](../user-guide/semantic-search.md) - Understand how the AI finds information
-- [Conversations API](/api/conversations) - For developers integrating with the API
+- [Conversations API](../api/conversations.md) - For developers integrating with the API
 

@@ -345,4 +345,4 @@ $results = $objectService->searchObjectsPaginated($query); // App-specific cachi
 **Related Documentation**:
 - [Cache Invalidation System](../technical/cache-invalidation-system.md)
 - [Object Handlers](./object-handlers.md)
-- [Performance Best Practices](../technical/performance-optimization.md)
+- [API Caching](../technical/api-caching.md)
