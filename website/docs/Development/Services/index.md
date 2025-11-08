@@ -92,4 +92,4 @@ OpenRegister is built on several key services that handle different aspects of t
 - **FileService**: File attachment management
 - **DownloadService**: File download and streaming
 
-For detailed technical documentation on these services, see the [Technical Documentation](../../technical/) section.
+For detailed technical documentation on these services, see the [Cache Invalidation System](../../technical/cache-invalidation-system.md) and [Unified Faceting System](../../technical/unified-faceting-system.md).
