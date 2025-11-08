@@ -599,7 +599,7 @@ Planned additional test groups:
 
 ## See Also
 
-- [Search Documentation](./Features/search.md) - Array filtering details
-- [File Attachments](./file-attachments.md) - File upload specifications
-- [API Documentation](./api/) - API endpoint reference
+- [Search Documentation](../Features/search.md) - Array filtering details
+- [File Management](../Features/files.md) - File upload specifications
+- [API Documentation](../api/objects.md) - API endpoint reference
 
