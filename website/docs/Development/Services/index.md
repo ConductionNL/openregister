@@ -71,7 +71,7 @@ OpenRegister is built on several key services that handle different aspects of t
 - **ValidationService**: General validation utilities
 
 ### Search & Faceting
-- **[FacetService](../../technical/faceting-system.md)**: Hyper-performant faceting system with intelligent caching
+- **[FacetService](../../technical/unified-faceting-system.md)**: Hyper-performant faceting system with intelligent caching
 - **SearchService**: Full-text search capabilities
 - **SearchTrailService**: Search analytics and trail logging
 

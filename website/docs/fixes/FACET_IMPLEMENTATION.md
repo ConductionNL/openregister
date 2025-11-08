@@ -418,14 +418,14 @@ If you're upgrading from the previous object-based faceting system:
 
 ## Related Documentation
 
-- [Automatic Facets Documentation](website/docs/automatic-facets.md)
-- [Advanced Search Guide](website/docs/advanced-search.md)
-- [API Reference](website/docs/api-reference.md)
-- [Schema Definition Guide](website/docs/schema-guide.md)
+- [Faceting Features](../Features/faceting.md)
+- [Unified Faceting System](../technical/unified-faceting-system.md)
+- [Schema-Based Facets](../technical/schema-based-facets.md)
+- [Search Documentation](../Features/search.md)
 
 ## Support
 
 For issues or questions about the faceting system:
 1. Check the troubleshooting section above
 2. Review the test examples in `src/tests/facet-integration-test.js`
-3. Consult the comprehensive documentation in `website/docs/automatic-facets.md` 
+3. Consult the [Unified Faceting System documentation](../technical/unified-faceting-system.md) 
