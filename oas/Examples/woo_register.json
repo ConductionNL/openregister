@@ -21,7 +21,10 @@
           "klachtoordelen",
           "wetten_en_algemeen_verbindende_voorschriften",
           "woo_verzoeken_en_besluiten",
-          "vergaderstukken_staten_generaal"
+          "vergaderstukken_staten_generaal",
+          "convenanten",
+          "agendas_en_besluitenlijsten_bestuurscolleges",
+          "adviezen"
         ]
       }
     },
@@ -553,6 +556,7 @@
         },
         "$id": "https://openwoo.app/schemas/wetten_en_algemeen_verbindende_voorschriften.schema.json"
       },
+      
       "woo_verzoeken_en_besluiten": {
         "slug": "woo_verzoeken_en_besluiten",
         "title": "Metadata TOOI Woo-verzoeken en -besluiten",
@@ -632,6 +636,167 @@
           "datumOntvangst"
         ]
       },
+      "convenanten": {
+  "slug": "convenanten",
+  "title": "Metadata TOOI convenanten",
+  "$id": "https://openwoo.app/schemas/convenanten.schema.json",
+  "$schema": "https://docs.commongateway.nl/schemas/Entity.schema.json",
+  "version": "0.0.1",
+  "type": "object",
+  "description": "Convenanten en samenwerkingsafspraken tussen bestuursorganen en andere partijen.",
+  "properties": {
+    "tooiCategorieNaam": {
+      "type": "string",
+      "const": "convenanten",
+      "description": "De naam van de TOOI categorie"
+    },
+    "tooiCategorieId": {
+      "type": "string",
+      "const": "c_19c350b4",
+      "description": "De tooiCategorieId van de TOOI categorie"
+    },
+    "tooiCategorieUri": {
+      "type": "string",
+      "const": "https://identifier.overheid.nl/tooi/def/thes/kern/c_19c350b4",
+      "description": "De URI van de categorie"
+    },
+    "tooiThemaNaam": {
+      "type": "string",
+      "description": "De naam van het TOOI-thema conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+    },
+    "tooiThemaId": {
+      "type": "string",
+      "description": "De id van het TOOI-thema conform diwoo metadata"
+    },
+    "tooiThemaUri": {
+      "type": "string",
+      "description": "De URI van het TOOI-thema voorafgegaan door `https://identifier.overheid.nl/tooi/def/thes/kern/[tooiThemaId]`"
+    },
+    "values": {
+      "type": "array",
+      "description": "Key-value metadataparen",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": { "type": "string" },
+          "value": { "type": "string" }
+        },
+        "required": ["key", "value"]
+      }
+    }
+  },
+  "required": ["tooiCategorieNaam"]
+},
+"agendas_en_besluitenlijsten_bestuurscolleges": {
+  "slug": "agendas_en_besluitenlijsten_bestuurscolleges",
+  "title": "Metadata TOOI agenda's en besluitenlijsten bestuurscolleges",
+  "$id": "https://openwoo.app/schemas/agendas_en_besluitenlijsten_bestuurscolleges.schema.json",
+  "$schema": "https://docs.commongateway.nl/schemas/Entity.schema.json",
+  "version": "0.0.1",
+  "type": "object",
+  "description": "Agenda's en besluitenlijsten van vergaderingen van bestuurscolleges.",
+  "properties": {
+    "tooiCategorieNaam": {
+      "type": "string",
+      "const": "agenda's en besluitenlijsten bestuurscolleges",
+      "description": "De naam van de TOOI categorie"
+    },
+    "tooiCategorieId": {
+      "type": "string",
+      "const": "c_6b4a2446",
+      "description": "De tooiCategorieId van de TOOI categorie"
+    },
+    "tooiCategorieUri": {
+      "type": "string",
+      "const": "https://identifier.overheid.nl/tooi/def/thes/kern/c_6b4a2446",
+      "description": "De URI van de categorie"
+    },
+    "tooiThemaNaam": {
+      "type": "string",
+      "description": "De naam van het TOOI-thema conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+    },
+    "tooiThemaId": {
+      "type": "string",
+      "description": "De id van het TOOI-thema conform diwoo metadata"
+    },
+    "tooiThemaUri": {
+      "type": "string",
+      "description": "De URI van het TOOI-thema voorafgegaan door `https://identifier.overheid.nl/tooi/def/thes/kern/[tooiThemaId]`"
+    },
+    "values": {
+      "type": "array",
+      "description": "Key-value metadataparen",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": { "type": "string" },
+          "value": { "type": "string" }
+        },
+        "required": ["key", "value"]
+      }
+    }
+  },
+  "required": ["tooiCategorieNaam"]
+},
+"adviezen": {
+  "slug": "adviezen",
+  "title": "Metadata TOOI adviezen",
+  "$id": "https://openwoo.app/schemas/adviezen.schema.json",
+  "$schema": "https://docs.commongateway.nl/schemas/Entity.schema.json",
+  "version": "0.0.1",
+  "type": "object",
+  "description": "Adviezen gegeven aan bestuursorganen, met vermelding van opdrachtgever en taakonderdeel.",
+  "properties": {
+    "tooiCategorieNaam": {
+      "type": "string",
+      "const": "adviezen",
+      "description": "De naam van de TOOI categorie"
+    },
+    "tooiCategorieId": {
+      "type": "string",
+      "const": "c_f6e58dbb",
+      "description": "De tooiCategorieId van de TOOI categorie"
+    },
+    "tooiCategorieUri": {
+      "type": "string",
+      "const": "https://identifier.overheid.nl/tooi/def/thes/kern/c_f6e58dbb",
+      "description": "De URI van de categorie"
+    },
+    "tooiThemaNaam": {
+      "type": "string",
+      "description": "De naam van het TOOI-thema conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+    },
+    "tooiThemaId": {
+      "type": "string",
+      "description": "De id van het TOOI-thema conform diwoo metadata"
+    },
+    "tooiThemaUri": {
+      "type": "string",
+      "description": "De URI van het TOOI-thema voorafgegaan door `https://identifier.overheid.nl/tooi/def/thes/kern/[tooiThemaId]`"
+    },
+    "woo_opdrachtgever": {
+      "type": "string",
+      "description": "Naam of type van de opdrachtgever van het advies"
+    },
+    "woo_onderdeel_taak": {
+      "type": "string",
+      "description": "Het taakonderdeel waarop het advies betrekking heeft"
+    },
+    "values": {
+      "type": "array",
+      "description": "Key-value metadataparen",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": { "type": "string" },
+          "value": { "type": "string" }
+        },
+        "required": ["key", "value"]
+      }
+    }
+  },
+  "required": ["tooiCategorieNaam", "woo_opdrachtgever", "woo_onderdeel_taak"]
+},
       "vergaderstukken_staten_generaal": {
         "slug": "vergaderstukken_staten_generaal",
         "title": "Metadata TOOI vergaderstukken Staten-Generaal",

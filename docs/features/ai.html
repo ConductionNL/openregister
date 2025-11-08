@@ -1,0 +1,767 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-features/ai" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.7.0">
+<title data-rh="true">AI Features &amp; Setup Guide | Open Register</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://openregisters.app/docs/features/ai"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="AI Features &amp; Setup Guide | Open Register"><meta data-rh="true" name="description" content="🎯 What is AI in OpenRegister?"><meta data-rh="true" property="og:description" content="🎯 What is AI in OpenRegister?"><link data-rh="true" rel="canonical" href="https://openregisters.app/docs/features/ai"><link data-rh="true" rel="alternate" href="https://openregisters.app/docs/features/ai" hreflang="en"><link data-rh="true" rel="alternate" href="https://openregisters.app/docs/features/ai" hreflang="x-default"><link rel="stylesheet" href="/assets/css/styles.3a202f4d.css">
+<script src="/assets/js/runtime~main.079b0751.js" defer="defer"></script>
+<script src="/assets/js/main.6aa8ac6b.js" defer="defer"></script>
+</head>
+<body class="navigation-with-keyboard">
+<script>!function(){function t(t){document.documentElement.setAttribute("data-theme",t)}var e=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();t(null!==e?e:"light")}(),function(){try{const n=new URLSearchParams(window.location.search).entries();for(var[t,e]of n)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="navbar navbar--fixed-top"><div class="navbar__inner"><div class="navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/"><div class="navbar__logo"><img src="/img/logo.svg" alt="Open Register Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/img/logo.svg" alt="Open Register Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">Open Register</b></a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs/Development/Services">Documentation</a></div><div class="navbar__items navbar__items--right"><a class="navbar__item navbar__link" href="/api">API Documentation</a><a href="https://github.com/conductionnl/openregister" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_nPIU"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="Switch between dark and light mode (currently light mode)" aria-label="Switch between dark and light mode (currently light mode)" aria-live="polite" aria-pressed="false"><svg viewBox="0 0 24 24" width="24" height="24" class="lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" class="darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class="sidebarViewport_aRkj"><div class="sidebar_njMd"><nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/Development/Services">Development</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist" href="/docs/Features">Core Features</a><button aria-label="Expand sidebar category &#x27;Core Features&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/Technical/vectorization-architecture">Technical</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/UseCases/clientRegisters">UseCases</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/api/bulk-operations">api</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/developers/external-app-optimization">developers</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/development/tool-registration">development</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret menu__link--active" role="button" aria-expanded="true" href="/docs/features/organisation-roles">features</a></div><ul style="display:block;overflow:visible;height:auto" class="menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/features/organisation-roles">Organisation Roles (RBAC)</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/features/organisation-default-configuration">Default Organisation Configuration</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/features/agents">Agents</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" tabindex="0" href="/docs/features/ai">AI Features &amp; Setup Guide</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/features/chat-rag-deepdive">Chat RAG (Retrieval Augmented Generation) - Deep Dive</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/features/function-calling">Function Calling (Tools)</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/features/rag-implementation">RAG (Retrieval Augmented Generation) Implementation</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/features/views">Views: Reusable Query Filters</a></li></ul></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist" href="/docs/fixes">Fixes Documentation</a><button aria-label="Expand sidebar category &#x27;Fixes Documentation&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs">Introduction</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs/intro">Introduction</a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/technical/MultiTenancyImplementationStatus">technical</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/user/ai-conversations">user</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/user-guide/importing-data">user-guide</a></div></li></ul></nav></div></div></aside><main class="docMainContainer_TBSr"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label="Breadcrumbs"><ul class="breadcrumbs" itemscope="" itemtype="https://schema.org/BreadcrumbList"><li class="breadcrumbs__item"><a aria-label="Home page" class="breadcrumbs__link" href="/"><svg viewBox="0 0 24 24" class="breadcrumbHomeIcon_YNFT"><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill="currentColor"></path></svg></a></li><li class="breadcrumbs__item"><span class="breadcrumbs__link">features</span><meta itemprop="position" content="1"></li><li itemscope="" itemprop="itemListElement" itemtype="https://schema.org/ListItem" class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link" itemprop="name">AI Features &amp; Setup Guide</span><meta itemprop="position" content="2"></li></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>AI Features &amp; Setup Guide</h1></header>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="-what-is-ai-in-openregister">🎯 What is AI in OpenRegister?<a href="#-what-is-ai-in-openregister" class="hash-link" aria-label="Direct link to 🎯 What is AI in OpenRegister?" title="Direct link to 🎯 What is AI in OpenRegister?">​</a></h2>
+<p>OpenRegister brings <strong>Artificial Intelligence</strong> to your data in a <strong>secure and sovereign way</strong>. This means:</p>
+<ul>
+<li>✅ <strong>Your data stays on YOUR servers</strong> - nothing is shared with external companies</li>
+<li>✅ <strong>Secure &amp; Private</strong> - only you have access to your information</li>
+<li>✅ <strong>RBAC Compliant</strong> - users only see data they have permission to access</li>
+<li>✅ <strong>Personalized Results</strong> - different users get different answers based on their access level</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="the-power-of-combining-ai-with-your-data">The Power of Combining AI with Your Data<a href="#the-power-of-combining-ai-with-your-data" class="hash-link" aria-label="Direct link to The Power of Combining AI with Your Data" title="Direct link to The Power of Combining AI with Your Data">​</a></h3>
+<p>Traditional AI assistants (like ChatGPT) only know information they were trained on - they don&#x27;t know <strong>your specific data</strong>. OpenRegister changes this by:</p>
+<ol>
+<li><strong>Connecting your documents and objects</strong> to the AI</li>
+<li><strong>Allowing natural language questions</strong> about your data</li>
+<li><strong>Providing cited, accurate answers</strong> from your own information</li>
+<li><strong>Respecting access controls</strong> so secure data stays secure</li>
+</ol>
+<p><strong>Example:</strong> Instead of manually searching through 100 documents to find &quot;What is our return policy?&quot;, you simply ask the AI agent, and it finds the answer instantly - citing the exact document where it found the information.</p>
+<hr>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="-security--privacy-how-it-works">🔐 Security &amp; Privacy: How It Works<a href="#-security--privacy-how-it-works" class="hash-link" aria-label="Direct link to 🔐 Security &amp; Privacy: How It Works" title="Direct link to 🔐 Security &amp; Privacy: How It Works">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="sovereign-ai">Sovereign AI<a href="#sovereign-ai" class="hash-link" aria-label="Direct link to Sovereign AI" title="Direct link to Sovereign AI">​</a></h3>
+<p><strong>Sovereign AI</strong> means you are in complete control:</p>
+<ul>
+<li>AI models run on YOUR infrastructure (or your chosen provider)</li>
+<li>Your documents and data NEVER leave your servers</li>
+<li>No external company has access to your information</li>
+<li>You decide who can use the AI and what data they can access</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="rbac-role-based-access-control">RBAC (Role-Based Access Control)<a href="#rbac-role-based-access-control" class="hash-link" aria-label="Direct link to RBAC (Role-Based Access Control)" title="Direct link to RBAC (Role-Based Access Control)">​</a></h3>
+<p>OpenRegister ensures that AI agents <strong>respect your existing permissions</strong>:</p>
+<ul>
+<li>If a user can&#x27;t access a document manually, the AI won&#x27;t show it to them either</li>
+<li>Different users asking the same question may get different answers based on their access level</li>
+<li>Group memberships and permissions are enforced at all times</li>
+</ul>
+<p><strong>Example:</strong></p>
+<ul>
+<li><strong>HR Manager</strong> asks &quot;What is John&#x27;s salary?&quot; → Gets the answer from HR records</li>
+<li><strong>Regular User</strong> asks &quot;What is John&#x27;s salary?&quot; → Gets &quot;No information found&quot; (no access to HR data)</li>
+</ul>
+<hr>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="-how-ai-finds-information-rag-explained">🧠 How AI Finds Information: RAG Explained<a href="#-how-ai-finds-information-rag-explained" class="hash-link" aria-label="Direct link to 🧠 How AI Finds Information: RAG Explained" title="Direct link to 🧠 How AI Finds Information: RAG Explained">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="what-is-rag">What is RAG?<a href="#what-is-rag" class="hash-link" aria-label="Direct link to What is RAG?" title="Direct link to What is RAG?">​</a></h3>
+<p><strong>RAG</strong> stands for <strong>Retrieval Augmented Generation</strong>. This is how AI can answer questions about YOUR data:</p>
+<ol>
+<li><strong>Retrieval</strong> - The AI searches your documents and objects to find relevant information</li>
+<li><strong>Augmentation</strong> - The AI reads the retrieved information</li>
+<li><strong>Generation</strong> - The AI generates a natural language answer based on what it found</li>
+</ol>
+<p><strong>Think of it like this:</strong></p>
+<ul>
+<li>Traditional AI = A smart person who only knows what they learned in school</li>
+<li>RAG-powered AI = A smart person who can also search your entire company library before answering</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="how-rag-works-step-by-step">How RAG Works (Step-by-Step)<a href="#how-rag-works-step-by-step" class="hash-link" aria-label="Direct link to How RAG Works (Step-by-Step)" title="Direct link to How RAG Works (Step-by-Step)">​</a></h3>
+<div class="language-mermaid codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-mermaid codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">graph LR</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    A[User asks question] --&gt; B[AI searches documents]</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    B --&gt; C[Finds relevant content]</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    C --&gt; D[AI reads content]</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    D --&gt; E[AI generates answer]</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    E --&gt; F[Shows answer + sources]</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<ol>
+<li><strong>You ask:</strong> &quot;What is the return policy?&quot;</li>
+<li><strong>AI searches:</strong> Looks through all your documents for information about returns</li>
+<li><strong>AI finds:</strong> &quot;Returns Policy v2.pdf, page 3&quot;</li>
+<li><strong>AI reads:</strong> &quot;Items can be returned within 30 days...&quot;</li>
+<li><strong>AI answers:</strong> &quot;According to Returns Policy v2.pdf, items can be returned within 30 days if unused and in original packaging.&quot;</li>
+</ol>
+<p><strong>The key:</strong> AI doesn&#x27;t make up answers - it finds them in YOUR documents and cites its sources!</p>
+<p><strong>📚 Deep Dive:</strong> For technical details on how RAG is implemented, see <a href="/docs/features/rag-implementation">RAG Implementation</a>.</p>
+<hr>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="-configuration-guide">📋 Configuration Guide<a href="#-configuration-guide" class="hash-link" aria-label="Direct link to 📋 Configuration Guide" title="Direct link to 📋 Configuration Guide">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="overview-configuration-steps">Overview: Configuration Steps<a href="#overview-configuration-steps" class="hash-link" aria-label="Direct link to Overview: Configuration Steps" title="Direct link to Overview: Configuration Steps">​</a></h3>
+<p>Setting up AI in OpenRegister involves these steps:</p>
+<ol>
+<li><strong>Configure LLM Provider</strong> - Set up the AI engine (OpenAI, Ollama, or Fireworks)</li>
+<li><strong>Prepare Your Data</strong> - Vectorize objects and files</li>
+<li><strong>Create Views</strong> - Define what data AI can access</li>
+<li><strong>Create Agents</strong> - Set up AI assistants</li>
+<li><strong>Configure Tools</strong> - Enable actions (optional)</li>
+<li><strong>Assign Access</strong> - Control who can use which agents</li>
+</ol>
+<p>Let&#x27;s go through each step in detail.</p>
+<hr>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="step-1-configure-your-llm-provider">Step 1: Configure Your LLM Provider<a href="#step-1-configure-your-llm-provider" class="hash-link" aria-label="Direct link to Step 1: Configure Your LLM Provider" title="Direct link to Step 1: Configure Your LLM Provider">​</a></h3>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="what-is-an-llm">What is an LLM?<a href="#what-is-an-llm" class="hash-link" aria-label="Direct link to What is an LLM?" title="Direct link to What is an LLM?">​</a></h4>
+<p><strong>LLM</strong> stands for <strong>Large Language Model</strong> - this is the AI &quot;brain&quot; that:</p>
+<ul>
+<li>Understands your questions</li>
+<li>Searches through your data</li>
+<li>Generates natural language answers</li>
+</ul>
+<p>Think of it like choosing which engine powers your car. The engine (LLM) is what makes everything work.</p>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="understanding-providers--models">Understanding Providers &amp; Models<a href="#understanding-providers--models" class="hash-link" aria-label="Direct link to Understanding Providers &amp; Models" title="Direct link to Understanding Providers &amp; Models">​</a></h4>
+<p><strong>Provider</strong> = The company or service that runs the AI models
+<strong>Model</strong> = The specific AI &quot;brain&quot; you want to use</p>
+<p>You need to configure TWO types of models:</p>
+<ol>
+<li>
+<p><strong>Embedding Model</strong> (for searching)</p>
+<ul>
+<li>Converts your data into vectors</li>
+<li>Understands the meaning of text</li>
+<li>Used when vectorizing data and when searching</li>
+<li>Example: <code>text-embedding-3-small</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Chat Model</strong> (for answering)</p>
+<ul>
+<li>Generates human-like responses</li>
+<li>Reads the search results and formulates answers</li>
+<li>Used during conversations</li>
+<li>Example: <code>gpt-4o-mini</code></li>
+</ul>
+</li>
+</ol>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="supported-ai-providers">Supported AI Providers<a href="#supported-ai-providers" class="hash-link" aria-label="Direct link to Supported AI Providers" title="Direct link to Supported AI Providers">​</a></h4>
+<p>OpenRegister supports multiple AI providers:</p>
+<table><thead><tr><th>Provider</th><th>Best For</th><th>Requires</th><th>Cost</th><th>Function Calling</th></tr></thead><tbody><tr><td><strong>OpenAI</strong></td><td>Production, best results</td><td>API key</td><td>Pay per use</td><td>✅ Supported</td></tr><tr><td><strong>Ollama</strong></td><td>Privacy, sovereignty, local or server deployment</td><td>Local/server installation</td><td>Free (uses your hardware)</td><td>✅ Supported</td></tr><tr><td><strong>Fireworks AI</strong></td><td>Fast responses</td><td>API key</td><td>Pay per use</td><td>❌ Not yet supported</td></tr></tbody></table>
+<p><strong>Why Choose Ollama?</strong></p>
+<p>Ollama is a powerful option that gives you complete control and access to a wide range of open-source models:</p>
+<p><strong>Model Options:</strong></p>
+<ul>
+<li>🦙 <strong>Meta Llama</strong> - High-performance commercial open-source models (Llama 3.1, Llama 3.2)</li>
+<li>🌊 <strong>Mistral</strong> - Ethically-focused European models with transparency and responsible AI practices</li>
+<li>🔥 <strong>Phi</strong> - Microsoft&#x27;s efficient small models</li>
+<li>💎 <strong>Gemma</strong> - Google&#x27;s lightweight models</li>
+<li>🎯 <strong>Qwen</strong> - Alibaba&#x27;s multilingual models</li>
+<li>And many more from the open-source community!</li>
+</ul>
+<p><strong>Deployment Flexibility:</strong></p>
+<ul>
+<li><strong>Local Installation:</strong> Run on your own laptop/desktop for personal use</li>
+<li><strong>Server Deployment:</strong> Install on your organization&#x27;s server for team access</li>
+<li><strong>Full Privacy:</strong> All processing happens on YOUR infrastructure</li>
+<li><strong>No External Dependencies:</strong> Works completely offline once models are downloaded</li>
+</ul>
+<p><strong>Ethical &amp; Sovereignty Benefits:</strong></p>
+<ul>
+<li>✅ <strong>Data Sovereignty:</strong> Your data never leaves your control</li>
+<li>✅ <strong>No Vendor Lock-in:</strong> Switch models freely without API changes</li>
+<li>✅ <strong>Transparent Models:</strong> Many models have open weights and documentation</li>
+<li>✅ <strong>European Options:</strong> Choose models like Mistral that align with European AI values</li>
+<li>✅ <strong>Cost Control:</strong> No per-request charges, only infrastructure costs</li>
+</ul>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="how-to-configure-llm-settings">How to Configure LLM Settings<a href="#how-to-configure-llm-settings" class="hash-link" aria-label="Direct link to How to Configure LLM Settings" title="Direct link to How to Configure LLM Settings">​</a></h4>
+<p>Navigate to the LLM Settings section to configure your AI provider:</p>
+<p><strong>Location:</strong> <strong>Settings → AI → LLM Configuration</strong></p>
+<p>You&#x27;ll see the <strong>LLM Configuration Modal</strong> with several sections:</p>
+<h5 class="anchor anchorWithStickyNavbar_LWe7" id="1-enable-ai-features">1. Enable AI Features<a href="#1-enable-ai-features" class="hash-link" aria-label="Direct link to 1. Enable AI Features" title="Direct link to 1. Enable AI Features">​</a></h5>
+<p>First, enable AI functionality:</p>
+<ul>
+<li>Toggle <strong>LLM Enabled</strong> to ON</li>
+<li>This activates all AI features in OpenRegister</li>
+</ul>
+<p><img decoding="async" loading="lazy" alt="LLM Configuration Modal" src="/assets/images/img-55e5b3bb8ea0b0d4ef78fefd7102b010.png" width="1114" height="675" class="img_ev3q"></p>
+<h5 class="anchor anchorWithStickyNavbar_LWe7" id="2-select-embedding-provider">2. Select Embedding Provider<a href="#2-select-embedding-provider" class="hash-link" aria-label="Direct link to 2. Select Embedding Provider" title="Direct link to 2. Select Embedding Provider">​</a></h5>
+<p>Choose the provider for converting data to vectors:</p>
+<p><strong>For OpenAI:</strong></p>
+<ol>
+<li>Select <strong>OpenAI</strong> as Embedding Provider</li>
+<li>Enter your <strong>OpenAI API Key</strong></li>
+<li>(Optional) Enter <strong>Organization ID</strong> if you have one</li>
+<li>Select an <strong>Embedding Model</strong> (recommended: <code>text-embedding-3-small</code>)</li>
+</ol>
+<p><strong>For Fireworks AI:</strong></p>
+<ol>
+<li>Select <strong>Fireworks</strong> as Embedding Provider</li>
+<li>Enter your <strong>Fireworks API Key</strong></li>
+<li>Select an <strong>Embedding Model</strong> (recommended: <code>nomic-ai/nomic-embed-text-v1.5</code>)</li>
+<li>(Optional) Configure <strong>Base URL</strong> if different from default</li>
+</ol>
+<p><strong>For Ollama (Local or Server):</strong></p>
+<ol>
+<li>Select <strong>Ollama</strong> as Embedding Provider</li>
+<li>Enter <strong>Ollama URL</strong>:<!-- -->
+<ul>
+<li><strong>Local:</strong> <code>http://localhost:11434</code></li>
+<li><strong>Server:</strong> <code>http://your-server-ip:11434</code> or <code>http://ollama.yourdomain.com:11434</code></li>
+</ul>
+</li>
+<li>Select an <strong>Embedding Model</strong>:<!-- -->
+<ul>
+<li><code>nomic-embed-text</code> - Fast and efficient (recommended)</li>
+<li><code>mxbai-embed-large</code> - Higher quality embeddings</li>
+<li><code>all-minilm</code> - Lightweight option</li>
+</ul>
+</li>
+<li>Make sure Ollama is running and the model is downloaded (<code>ollama pull nomic-embed-text</code>)</li>
+</ol>
+<p><img decoding="async" loading="lazy" alt="Embedding Provider Configuration" src="/assets/images/img_1-0a28bb705334cc795079609f92c8fec2.png" width="1395" height="1182" class="img_ev3q"></p>
+<h5 class="anchor anchorWithStickyNavbar_LWe7" id="3-select-chat-provider">3. Select Chat Provider<a href="#3-select-chat-provider" class="hash-link" aria-label="Direct link to 3. Select Chat Provider" title="Direct link to 3. Select Chat Provider">​</a></h5>
+<p>Choose the provider for generating responses:</p>
+<p><strong>For OpenAI:</strong></p>
+<ol>
+<li>Select <strong>OpenAI</strong> as Chat Provider</li>
+<li>Use the same API key as embedding (already filled)</li>
+<li>Select a <strong>Chat Model</strong> (recommended: <code>gpt-4o-mini</code> for cost-effective, <code>gpt-4o</code> for best quality)</li>
+</ol>
+<p><strong>For Fireworks AI:</strong></p>
+<ol>
+<li>Select <strong>Fireworks</strong> as Chat Provider</li>
+<li>Use the same API key as embedding (already filled)</li>
+<li>Select a <strong>Chat Model</strong> (recommended: <code>accounts/fireworks/models/llama-v3p1-8b-instruct</code>)</li>
+<li>⚠️ <strong>Note:</strong> Function calling (tools) NOT supported with Fireworks</li>
+</ol>
+<p><strong>For Ollama (Local or Server):</strong></p>
+<ol>
+<li>
+<p>Select <strong>Ollama</strong> as Chat Provider</p>
+</li>
+<li>
+<p>Use the same URL as embedding (already filled)</p>
+</li>
+<li>
+<p>Select a <strong>Chat Model</strong> based on your needs:</p>
+<p><strong>Commercial Open Source:</strong></p>
+<ul>
+<li><code>llama3.1</code> - Meta&#x27;s flagship model, excellent quality, function calling ✅</li>
+<li><code>llama3.2</code> - Latest version with improved capabilities</li>
+<li><code>llama3.1:70b</code> - Larger variant for highest quality (requires more resources)</li>
+</ul>
+<p><strong>Ethically-Focused (European):</strong></p>
+<ul>
+<li><code>mistral</code> - Fast and efficient, European AI values</li>
+<li><code>mistral-nemo</code> - Balanced performance</li>
+<li><code>mixtral</code> - Mixture of experts, very capable</li>
+</ul>
+<p><strong>Efficient/Small:</strong></p>
+<ul>
+<li><code>phi3</code> - Microsoft&#x27;s small but powerful model</li>
+<li><code>gemma2</code> - Google&#x27;s lightweight model</li>
+<li><code>qwen2.5</code> - Multilingual support</li>
+</ul>
+</li>
+<li>
+<p>Make sure Ollama is running and the model is downloaded (<code>ollama pull llama3.1</code>)</p>
+</li>
+</ol>
+<p><strong>💡 Choosing a Model:</strong></p>
+<ul>
+<li><strong>Start with:</strong> <code>llama3.1</code> or <code>mistral</code> for good balance</li>
+<li><strong>Need function calling?</strong> Use <code>llama3.1</code> (required for tools)</li>
+<li><strong>Limited resources?</strong> Use <code>phi3</code> or <code>gemma2</code></li>
+<li><strong>European/Ethical focus?</strong> Use <code>mistral</code> or <code>mixtral</code></li>
+<li><strong>Best quality?</strong> Use <code>llama3.1:70b</code> (requires powerful hardware)</li>
+</ul>
+<h5 class="anchor anchorWithStickyNavbar_LWe7" id="4-configure-enabled-features">4. Configure Enabled Features<a href="#4-configure-enabled-features" class="hash-link" aria-label="Direct link to 4. Configure Enabled Features" title="Direct link to 4. Configure Enabled Features">​</a></h5>
+<p>Select which AI features should be active:</p>
+<ul>
+<li>✅ <strong>Text Generation</strong> - Basic chat responses</li>
+<li>✅ <strong>Summarization</strong> - Summarize documents and conversations</li>
+<li>✅ <strong>Semantic Search</strong> - Meaning-based search in your data</li>
+<li>✅ <strong>Embedding</strong> - Create vectors from your data</li>
+</ul>
+<p><strong>💡 Tip:</strong> Keep all features enabled unless you have specific reasons to disable them.</p>
+<p><img decoding="async" loading="lazy" alt="AI Features Configuration" src="/assets/images/img_2-622378c002c6ca2253dfe0edb889357d.png" width="1390" height="1176" class="img_ev3q"></p>
+<h5 class="anchor anchorWithStickyNavbar_LWe7" id="5-test-your-configuration">5. Test Your Configuration<a href="#5-test-your-configuration" class="hash-link" aria-label="Direct link to 5. Test Your Configuration" title="Direct link to 5. Test Your Configuration">​</a></h5>
+<p>Before saving, verify everything works:</p>
+<ol>
+<li>Click <strong>Test Embedding</strong> to verify the embedding model works</li>
+<li>Click <strong>Test Chat</strong> to verify the chat model works</li>
+<li>Both tests should show ✅ success messages</li>
+</ol>
+<p><img decoding="async" loading="lazy" alt="img_3.png" src="data:image/png;base64,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" width="429" height="88" class="img_ev3q"></p>
+<h5 class="anchor anchorWithStickyNavbar_LWe7" id="6-save-configuration">6. Save Configuration<a href="#6-save-configuration" class="hash-link" aria-label="Direct link to 6. Save Configuration" title="Direct link to 6. Save Configuration">​</a></h5>
+<p>Click <strong>Save</strong> to apply your settings.</p>
+<p><strong>What happens next:</strong></p>
+<ul>
+<li>Your AI provider is now configured</li>
+<li>You can start vectorizing data</li>
+<li>Agents will use these models for conversations</li>
+</ul>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="quick-start-recommendations">Quick Start Recommendations<a href="#quick-start-recommendations" class="hash-link" aria-label="Direct link to Quick Start Recommendations" title="Direct link to Quick Start Recommendations">​</a></h4>
+<p><strong>🏢 Best for Production (Paid but Reliable):</strong></p>
+<ul>
+<li>Embedding: OpenAI with <code>text-embedding-3-small</code></li>
+<li>Chat: OpenAI with <code>gpt-4o-mini</code></li>
+<li>Cost: ~$0.02 per 1000 requests</li>
+<li>✅ Function calling supported</li>
+<li>✅ Highly reliable</li>
+<li>⚠️ Data sent to OpenAI</li>
+</ul>
+<p><strong>🛡️ Best for Privacy &amp; Sovereignty (Free):</strong></p>
+<ul>
+<li>Embedding: Ollama with <code>nomic-embed-text</code></li>
+<li>Chat: Ollama with <code>llama3.1</code> or <code>mistral</code></li>
+<li>Cost: Free (uses your hardware)</li>
+<li>✅ Complete data control</li>
+<li>✅ Works offline</li>
+<li>✅ Function calling (llama3.1)</li>
+<li>✅ European AI values (mistral)</li>
+<li><strong>Recommended for:</strong> Government, healthcare, finance, sensitive data</li>
+</ul>
+<p><strong>⚡ Best for Speed (Paid):</strong></p>
+<ul>
+<li>Embedding: Fireworks with <code>nomic-ai/nomic-embed-text-v1.5</code></li>
+<li>Chat: Fireworks with <code>llama-v3p1-8b-instruct</code></li>
+<li>Cost: ~$0.10 per 1M tokens</li>
+<li>⚠️ No function calling support yet</li>
+</ul>
+<p><strong>🌍 Best for Ethical AI (Free):</strong></p>
+<ul>
+<li>Embedding: Ollama with <code>nomic-embed-text</code></li>
+<li>Chat: Ollama with <code>mistral</code> or <code>mixtral</code></li>
+<li>Cost: Free (uses your hardware)</li>
+<li>✅ European AI standards</li>
+<li>✅ Transparent model development</li>
+<li>✅ Responsible AI practices</li>
+<li><strong>Recommended for:</strong> European organizations, ethical focus</li>
+</ul>
+<p><strong>💻 Best for Limited Resources (Free):</strong></p>
+<ul>
+<li>Embedding: Ollama with <code>all-minilm</code></li>
+<li>Chat: Ollama with <code>phi3</code> or <code>gemma2</code></li>
+<li>Cost: Free (uses your hardware)</li>
+<li>✅ Runs on modest hardware</li>
+<li>✅ Fast responses</li>
+<li>⚠️ Slightly lower quality</li>
+<li><strong>Recommended for:</strong> Small organizations, testing</li>
+</ul>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="getting-api-keys">Getting API Keys<a href="#getting-api-keys" class="hash-link" aria-label="Direct link to Getting API Keys" title="Direct link to Getting API Keys">​</a></h4>
+<p><strong>OpenAI:</strong></p>
+<ol>
+<li>Go to <a href="https://platform.openai.com" target="_blank" rel="noopener noreferrer">platform.openai.com</a></li>
+<li>Sign up or log in</li>
+<li>Navigate to API Keys</li>
+<li>Create new secret key</li>
+<li>Copy and paste into OpenRegister</li>
+</ol>
+<p><strong>Fireworks AI:</strong></p>
+<ol>
+<li>Go to <a href="https://fireworks.ai" target="_blank" rel="noopener noreferrer">fireworks.ai</a></li>
+<li>Sign up or log in</li>
+<li>Navigate to API Keys section</li>
+<li>Create new API key</li>
+<li>Copy and paste into OpenRegister</li>
+</ol>
+<p><strong>Ollama (Local or Server):</strong></p>
+<p><strong>Installation Options:</strong></p>
+<p><em>Local Installation (Your Computer):</em></p>
+<ol>
+<li>Download from <a href="https://ollama.com" target="_blank" rel="noopener noreferrer">ollama.com</a></li>
+<li>Install for your OS (Windows, Mac, Linux)</li>
+<li>Ollama starts automatically as a service</li>
+</ol>
+<p><em>Server Installation (Your Organization):</em></p>
+<ol>
+<li>Install on Linux server: <code>curl -fsSL https://ollama.com/install.sh | sh</code></li>
+<li>Configure network access (default: localhost only)</li>
+<li>Set environment variables if needed (e.g., <code>OLLAMA_HOST=0.0.0.0</code>)</li>
+<li>Ensure port 11434 is accessible</li>
+</ol>
+<p><strong>Download Models:</strong></p>
+<p><em>For Embedding:</em></p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">ollama pull nomic-embed-text</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<p><em>For Chat (choose based on your needs):</em></p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># Recommended: Meta Llama (function calling support)</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">ollama pull llama3.1</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Ethical: Mistral (European AI)</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">ollama pull mistral</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Small/Efficient: Phi-3</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">ollama pull phi3</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># High Quality (requires powerful hardware)</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">ollama pull llama3.1:70b</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<p><strong>Configuration in OpenRegister:</strong></p>
+<ul>
+<li><strong>Local:</strong> Use <code>http://localhost:11434</code></li>
+<li><strong>Server:</strong> Use <code>http://your-server:11434</code> or <code>http://ollama.yourdomain.com:11434</code></li>
+</ul>
+<p><strong>💡 Server Setup Tips:</strong></p>
+<ul>
+<li>Use Docker for easier deployment</li>
+<li>Configure reverse proxy (nginx) for HTTPS</li>
+<li>Set up monitoring for model performance</li>
+<li>Consider GPU acceleration for faster responses</li>
+</ul>
+<hr>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="step-2-prepare-your-data-vectorization">Step 2: Prepare Your Data (Vectorization)<a href="#step-2-prepare-your-data-vectorization" class="hash-link" aria-label="Direct link to Step 2: Prepare Your Data (Vectorization)" title="Direct link to Step 2: Prepare Your Data (Vectorization)">​</a></h3>
+<p>Before AI can search your data, it needs to be prepared. This process is called <strong>vectorization</strong> or creating <strong>embeddings</strong>.</p>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="what-are-embeddings">What are Embeddings?<a href="#what-are-embeddings" class="hash-link" aria-label="Direct link to What are Embeddings?" title="Direct link to What are Embeddings?">​</a></h4>
+<p><strong>Embeddings</strong> are a way for computers to understand the <em>meaning</em> of text:</p>
+<ul>
+<li>Traditional search looks for <strong>exact words</strong>: &quot;return policy&quot; only finds documents with those exact words</li>
+<li>AI embeddings understand <strong>meaning</strong>: &quot;return policy&quot;, &quot;refund rules&quot;, &quot;sending items back&quot; all mean similar things</li>
+</ul>
+<p><strong>How it works:</strong></p>
+<ul>
+<li>Text is converted into a <strong>vector</strong> (a list of numbers)</li>
+<li>Similar meanings = similar numbers</li>
+<li>AI can find documents based on meaning, not just keywords</li>
+</ul>
+<p><strong>Example:</strong></p>
+<div class="codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">Text: &quot;The cat sat on the mat&quot;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">Vector: [0.2, -0.5, 0.8, 0.1, ...] (1536 numbers)</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">Text: &quot;A feline rested on the rug&quot;  </span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">Vector: [0.21, -0.48, 0.79, 0.12, ...] (very similar numbers!)</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<p>Even though the words are different, the vectors are similar because the <strong>meanings</strong> are similar!</p>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="vectorizing-objects">Vectorizing Objects<a href="#vectorizing-objects" class="hash-link" aria-label="Direct link to Vectorizing Objects" title="Direct link to Vectorizing Objects">​</a></h4>
+<p><strong>Objects</strong> are structured data in OpenRegister (like customers, orders, products).</p>
+<ol>
+<li>Navigate to <strong>Settings → AI → LLM Configuration</strong></li>
+<li>Scroll to <strong>Object Vectorization</strong> section</li>
+<li>Select which <strong>Views</strong> should be available to AI</li>
+<li>Click <strong>Vectorize All Objects</strong></li>
+<li>Wait for processing to complete</li>
+<li>Check statistics to verify completion</li>
+</ol>
+<p><strong>💡 Tip:</strong> Objects are vectorized as complete records. A customer record becomes one vector containing all fields.</p>
+<p><img decoding="async" loading="lazy" alt="img_6.png" src="/assets/images/img_6-316d76fcb375c588ab97c5f9f168f9e4.png" width="1387" height="1179" class="img_ev3q"></p>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="vectorizing-files">Vectorizing Files<a href="#vectorizing-files" class="hash-link" aria-label="Direct link to Vectorizing Files" title="Direct link to Vectorizing Files">​</a></h4>
+<p><strong>Files</strong> are documents like PDFs, Word documents, or text files.</p>
+<p>Because files can be very large, they are split into <strong>chunks</strong> before vectorization.</p>
+<p><strong>What are Chunks?</strong></p>
+<ul>
+<li>A <strong>chunk</strong> is a small piece of a document (usually a paragraph or section)</li>
+<li>Large files are split into many chunks</li>
+<li>Each chunk is vectorized separately</li>
+<li>This allows AI to find the exact paragraph that answers your question</li>
+</ul>
+<p><strong>Example:</strong></p>
+<div class="codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">100-page PDF → Split into 200 chunks → 200 vectors created</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<p>When you ask &quot;What is the return policy?&quot;, AI finds the specific chunk (paragraph) that contains the answer, not the entire 100-page document!</p>
+<p><strong>How to vectorize files:</strong></p>
+<ol>
+<li>Navigate to <strong>Settings → AI → LLM Configuration</strong></li>
+<li>Scroll to <strong>File Vectorization</strong> section</li>
+<li>Configure file types to process (PDF, DOCX, TXT, etc.)</li>
+<li>Set maximum file size</li>
+<li>Click <strong>Vectorize All Files</strong></li>
+<li>Monitor extraction progress</li>
+</ol>
+<p><strong>📚 Learn more:</strong> See your system&#x27;s file extraction documentation for details on how chunks are created from different file types.</p>
+<p><img decoding="async" loading="lazy" alt="img_5.png" src="/assets/images/img_5-e27e35f3aa13808402959be1fb2ebda9.png" width="1402" height="1107" class="img_ev3q"></p>
+<hr>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="step-3-create-views-what-data-should-ai-access">Step 3: Create Views (What Data Should AI Access?)<a href="#step-3-create-views-what-data-should-ai-access" class="hash-link" aria-label="Direct link to Step 3: Create Views (What Data Should AI Access?)" title="Direct link to Step 3: Create Views (What Data Should AI Access?)">​</a></h3>
+<p><strong>Views</strong> are filters that determine which data AI can access.</p>
+<p>Think of views like <strong>search filters</strong>:</p>
+<ul>
+<li>&quot;Show me only customer records from 2024&quot;</li>
+<li>&quot;Show me only public documents&quot;</li>
+<li>&quot;Show me only invoices for project X&quot;</li>
+</ul>
+<p><strong>Why use views?</strong></p>
+<ul>
+<li><strong>Security:</strong> Restrict AI to specific data subsets</li>
+<li><strong>Relevance:</strong> Focus AI on relevant information only</li>
+<li><strong>Performance:</strong> Smaller data sets = faster searches</li>
+</ul>
+<p><strong>How to create views:</strong></p>
+<ol>
+<li>Navigate to <strong>Data → Views</strong></li>
+<li>Click <strong>Create New View</strong></li>
+<li>Configure filters:<!-- -->
+<ul>
+<li>Select registers (data collections)</li>
+<li>Select schemas (object types)</li>
+<li>Add search terms or field filters</li>
+<li>Set permissions</li>
+</ul>
+</li>
+<li>Save the view</li>
+</ol>
+<p><strong>Example views:</strong></p>
+<ul>
+<li>&quot;Public Documentation&quot; - only public help articles</li>
+<li>&quot;Sales Team Data&quot; - only customer and order data</li>
+<li>&quot;HR Records&quot; - only employee information (restricted access)</li>
+</ul>
+<p><strong>📚 Learn more:</strong> See <a href="/docs/features/views">Views Documentation</a> for complete view configuration details.</p>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="img_7png-img_8png"><img decoding="async" loading="lazy" alt="img_7.png" src="/assets/images/img_7-d1d6f3954358f7d635d63f6ba1bb451d.png" width="469" height="1195" class="img_ev3q"> <img decoding="async" loading="lazy" alt="img_8.png" src="/assets/images/img_8-9d2237fe5241f4139466a09e6328b0a0.png" width="469" height="1282" class="img_ev3q"><a href="#img_7png-img_8png" class="hash-link" aria-label="Direct link to img_7png-img_8png" title="Direct link to img_7png-img_8png">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="step-4-create-ai-agents">Step 4: Create AI Agents<a href="#step-4-create-ai-agents" class="hash-link" aria-label="Direct link to Step 4: Create AI Agents" title="Direct link to Step 4: Create AI Agents">​</a></h3>
+<p><strong>Agents</strong> are AI assistants configured for specific purposes.</p>
+<p>Think of agents as <strong>specialized employees</strong>:</p>
+<ul>
+<li><strong>Customer Support Agent</strong> - knows about products, policies, and FAQs</li>
+<li><strong>HR Assistant</strong> - knows about employee policies and procedures</li>
+<li><strong>Sales Analyst</strong> - knows about sales data and customer information</li>
+</ul>
+<p><strong>How agents differ from each other:</strong></p>
+<ul>
+<li><strong>Different data access</strong> - each agent can access different views</li>
+<li><strong>Different personality</strong> - custom instructions shape behavior</li>
+<li><strong>Different tools</strong> - some agents can perform actions, others only answer questions</li>
+</ul>
+<p><strong>How to create an agent:</strong></p>
+<ol>
+<li>Navigate to <strong>Settings → AI → Agents</strong></li>
+<li>Click <strong>Create New Agent</strong></li>
+<li>Configure the agent:<!-- -->
+<ul>
+<li><strong>Name:</strong> Give it a descriptive name (e.g., &quot;Customer Support Bot&quot;)</li>
+<li><strong>Description:</strong> Explain what this agent does</li>
+<li><strong>System Prompt:</strong> Instructions that shape the agent&#x27;s behavior and personality</li>
+<li><strong>Views:</strong> Select which data views this agent can search</li>
+<li><strong>Include Objects:</strong> ✅ Enable if agent should search structured data</li>
+<li><strong>Include Files:</strong> ✅ Enable if agent should search documents</li>
+<li><strong>Search Mode:</strong> Choose Hybrid (recommended), Semantic, or Keyword</li>
+<li><strong>Tools:</strong> Select which actions the agent can perform (optional)</li>
+</ul>
+</li>
+<li>Save the agent</li>
+</ol>
+<p><strong>Example System Prompt:</strong></p>
+<div class="codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">You are a helpful customer support agent for Acme Corp. </span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">Your role is to answer customer questions about our products, policies, and services.</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">Always be polite and professional.</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">If you don&#x27;t know the answer, direct the customer to contact support@acme.com.</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">Always cite the document where you found the information.</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<p><strong>📚 Learn more:</strong> See <a href="/docs/features/agents">Agents Documentation</a> for advanced agent configuration.</p>
+<p><img decoding="async" loading="lazy" alt="img_9.png" src="/assets/images/img_9-5976f1e5c713960ef50603e63af6668a.png" width="1402" height="1231" class="img_ev3q"></p>
+<hr>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="step-5-configure-tools-optional">Step 5: Configure Tools (Optional)<a href="#step-5-configure-tools-optional" class="hash-link" aria-label="Direct link to Step 5: Configure Tools (Optional)" title="Direct link to Step 5: Configure Tools (Optional)">​</a></h3>
+<p><strong>Tools</strong> allow agents to <strong>perform actions</strong>, not just answer questions.</p>
+<p><strong>What can tools do?</strong></p>
+<ul>
+<li>Create, read, update, or delete data</li>
+<li>Search for specific information</li>
+<li>Generate reports</li>
+<li>Execute workflows</li>
+</ul>
+<p><strong>Available tools:</strong></p>
+<ul>
+<li><strong>Register Tool:</strong> Manage registers (data collections)</li>
+<li><strong>Schema Tool:</strong> Manage schemas (data structures)</li>
+<li><strong>Objects Tool:</strong> Manage objects (data records)</li>
+<li><strong>Application Tool:</strong> Manage applications</li>
+<li><strong>Agent Tool:</strong> Manage other agents</li>
+<li><strong>CMS Tool:</strong> Manage website content (pages, menus)</li>
+</ul>
+<p><strong>Example use cases:</strong></p>
+<ul>
+<li>&quot;Create a new customer record for John Doe&quot;</li>
+<li>&quot;Update the status of order #12345 to shipped&quot;</li>
+<li>&quot;List all invoices from last month&quot;</li>
+<li>&quot;Create a new page about our new product&quot;</li>
+</ul>
+<p><strong>How to enable tools:</strong></p>
+<ol>
+<li>Edit your agent (Settings → AI → Agents)</li>
+<li>Scroll to <strong>Tools</strong> section</li>
+<li>Select the tools this agent should have access to</li>
+<li>Save the agent</li>
+</ol>
+<p><strong>⚠️ Security Note:</strong> Only give tools to agents used by trusted users! Tools can modify data.</p>
+<p><strong>⚠️ Provider Note:</strong> Tools currently only work with <strong>OpenAI</strong> and <strong>Ollama</strong>, not Fireworks AI.</p>
+<p><strong>📚 Learn more:</strong> See <a href="/docs/features/function-calling">Function Calling Documentation</a> for complete tool configuration.</p>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="img_10png"><img decoding="async" loading="lazy" alt="img_10.png" src="/assets/images/img_10-3f4098b1b562edf5e269750d59bba838.png" width="1399" height="1233" class="img_ev3q"><a href="#img_10png" class="hash-link" aria-label="Direct link to img_10png" title="Direct link to img_10png">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="step-6-assign-access-who-can-use-which-agent">Step 6: Assign Access (Who Can Use Which Agent?)<a href="#step-6-assign-access-who-can-use-which-agent" class="hash-link" aria-label="Direct link to Step 6: Assign Access (Who Can Use Which Agent?)" title="Direct link to Step 6: Assign Access (Who Can Use Which Agent?)">​</a></h3>
+<p><strong>Access control</strong> determines who can chat with each agent.</p>
+<p><strong>Two access levels:</strong></p>
+<ol>
+<li><strong>Public:</strong> Everyone can use this agent</li>
+<li><strong>Groups:</strong> Only specific Nextcloud groups can use this agent</li>
+</ol>
+<p><strong>How to configure access:</strong></p>
+<ol>
+<li>Edit your agent (Settings → AI → Agents)</li>
+<li>Scroll to <strong>Access Control</strong> section</li>
+<li>Choose:<!-- -->
+<ul>
+<li><strong>Public:</strong> Leave groups empty</li>
+<li><strong>Restricted:</strong> Select specific groups</li>
+</ul>
+</li>
+<li>Save the agent</li>
+</ol>
+<p><strong>Example configuration:</strong></p>
+<ul>
+<li><strong>Public FAQ Bot</strong> - No groups selected = everyone can use it</li>
+<li><strong>HR Assistant</strong> - Only &quot;HR Department&quot; group = only HR staff can use it</li>
+<li><strong>Sales Agent</strong> - &quot;Sales Team&quot; and &quot;Management&quot; groups = only these groups can use it</li>
+</ul>
+<p><strong>💡 Tip:</strong> Even if an agent is public, RBAC still applies! Users only see data they have permission to access.</p>
+<p><img decoding="async" loading="lazy" alt="img_11.png" src="/assets/images/img_11-ebb532929acd76bed1ef3578818d8de3.png" width="1398" height="609" class="img_ev3q"></p>
+<hr>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="-using-ai-the-chat-interface">🚀 Using AI: The Chat Interface<a href="#-using-ai-the-chat-interface" class="hash-link" aria-label="Direct link to 🚀 Using AI: The Chat Interface" title="Direct link to 🚀 Using AI: The Chat Interface">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="starting-a-conversation">Starting a Conversation<a href="#starting-a-conversation" class="hash-link" aria-label="Direct link to Starting a Conversation" title="Direct link to Starting a Conversation">​</a></h3>
+<ol>
+<li>Navigate to <strong>AI → Chat</strong></li>
+<li>Select an agent from the dropdown</li>
+<li>Type your question in natural language</li>
+<li>Press Enter or click Send</li>
+</ol>
+<p><strong>Example questions:</strong></p>
+<ul>
+<li>&quot;What is our return policy?&quot;</li>
+<li>&quot;Find all customers from Amsterdam&quot;</li>
+<li>&quot;Summarize the Q4 2024 sales report&quot;</li>
+<li>&quot;How do I reset my password?&quot;</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="understanding-ai-responses">Understanding AI Responses<a href="#understanding-ai-responses" class="hash-link" aria-label="Direct link to Understanding AI Responses" title="Direct link to Understanding AI Responses">​</a></h3>
+<p>AI responses include:</p>
+<ol>
+<li><strong>Answer:</strong> Natural language response to your question</li>
+<li><strong>Sources:</strong> Documents/objects where the information was found</li>
+<li><strong>Citations:</strong> Click sources to view the original content</li>
+</ol>
+<p><strong>Example response:</strong></p>
+<div class="codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">Answer: &quot;According to our policy, items can be returned within </span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">30 days if they are unused and in original packaging. </span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">A full refund will be issued within 5-7 business days.&quot;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">Sources:</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">📄 Returns_Policy_v2.pdf (Page 3)</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">📄 Customer_FAQ.docx (Section 5)</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="when-ai-cant-answer">When AI Can&#x27;t Answer<a href="#when-ai-cant-answer" class="hash-link" aria-label="Direct link to When AI Can&#x27;t Answer" title="Direct link to When AI Can&#x27;t Answer">​</a></h3>
+<p>If AI doesn&#x27;t find relevant information, it will tell you:</p>
+<ul>
+<li>&quot;I couldn&#x27;t find any information about that topic in the available documents.&quot;</li>
+<li>&quot;Based on the documents I have access to, I don&#x27;t have enough information to answer that question.&quot;</li>
+</ul>
+<p><strong>This is GOOD!</strong> It means the AI is honest and not making things up.</p>
+<p><strong>What to do:</strong></p>
+<ol>
+<li>Check if the relevant documents are vectorized</li>
+<li>Check if the agent has access to the right views</li>
+<li>Try rephrasing your question</li>
+<li>Check if you have permission to access the data</li>
+<li></li>
+</ol>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="img_12png"><img decoding="async" loading="lazy" alt="img_12.png" src="/assets/images/img_12-2a25b0bbe2dfc1ca86c117e53f4a5375.png" width="1665" height="1333" class="img_ev3q"><a href="#img_12png" class="hash-link" aria-label="Direct link to img_12png" title="Direct link to img_12png">​</a></h2>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="-best-practices">🎓 Best Practices<a href="#-best-practices" class="hash-link" aria-label="Direct link to 🎓 Best Practices" title="Direct link to 🎓 Best Practices">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="for-administrators">For Administrators<a href="#for-administrators" class="hash-link" aria-label="Direct link to For Administrators" title="Direct link to For Administrators">​</a></h3>
+<ol>
+<li><strong>Start Small:</strong> Vectorize a small set of documents first to test</li>
+<li><strong>Use Views:</strong> Don&#x27;t give agents access to everything - use targeted views</li>
+<li><strong>Monitor Usage:</strong> Check which agents are being used and how often</li>
+<li><strong>Update Regularly:</strong> Re-vectorize data when documents change</li>
+<li><strong>Test Permissions:</strong> Verify that RBAC is working as expected</li>
+<li><strong>Use Descriptive Names:</strong> Give agents and views clear, understandable names</li>
+</ol>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="for-users">For Users<a href="#for-users" class="hash-link" aria-label="Direct link to For Users" title="Direct link to For Users">​</a></h3>
+<ol>
+<li><strong>Be Specific:</strong> Ask clear, specific questions</li>
+<li><strong>Check Sources:</strong> Always verify the sources cited by AI</li>
+<li><strong>Rephrase if Needed:</strong> If you don&#x27;t get a good answer, try asking differently</li>
+<li><strong>Report Issues:</strong> If AI gives incorrect information, report it to your admin</li>
+<li><strong>Respect Privacy:</strong> Don&#x27;t share sensitive AI conversations with unauthorized people</li>
+</ol>
+<hr>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="-monitoring--maintenance">📊 Monitoring &amp; Maintenance<a href="#-monitoring--maintenance" class="hash-link" aria-label="Direct link to 📊 Monitoring &amp; Maintenance" title="Direct link to 📊 Monitoring &amp; Maintenance">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="statistics-dashboard">Statistics Dashboard<a href="#statistics-dashboard" class="hash-link" aria-label="Direct link to Statistics Dashboard" title="Direct link to Statistics Dashboard">​</a></h3>
+<p>Monitor your AI setup in <strong>Settings → AI → LLM Configuration</strong>:</p>
+<ul>
+<li>
+<p><strong>Chat Statistics:</strong></p>
+<ul>
+<li>Total agents configured</li>
+<li>Total conversations</li>
+<li>Total messages exchanged</li>
+</ul>
+</li>
+<li>
+<p><strong>Vector Statistics:</strong></p>
+<ul>
+<li>Total objects vectorized</li>
+<li>Total files vectorized</li>
+<li>Storage used by vectors</li>
+</ul>
+</li>
+<li>
+<p><strong>Provider Status:</strong></p>
+<ul>
+<li>Connection status</li>
+<li>Current models in use</li>
+<li>Configuration health</li>
+</ul>
+</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="regular-maintenance">Regular Maintenance<a href="#regular-maintenance" class="hash-link" aria-label="Direct link to Regular Maintenance" title="Direct link to Regular Maintenance">​</a></h3>
+<p><strong>Weekly:</strong></p>
+<ul>
+<li>Check that new documents are being vectorized</li>
+<li>Monitor conversation quality</li>
+<li>Review usage statistics</li>
+</ul>
+<p><strong>Monthly:</strong></p>
+<ul>
+<li>Re-vectorize all data to capture updates</li>
+<li>Review and update agent prompts</li>
+<li>Audit access controls</li>
+<li>Check provider costs (if using paid services)</li>
+</ul>
+<p><strong>Quarterly:</strong></p>
+<ul>
+<li>Evaluate which agents are most used</li>
+<li>Consider adding new tools or capabilities</li>
+<li>Review and update views</li>
+<li>Train users on new features</li>
+</ul>
+<hr>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="-troubleshooting">❓ Troubleshooting<a href="#-troubleshooting" class="hash-link" aria-label="Direct link to ❓ Troubleshooting" title="Direct link to ❓ Troubleshooting">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="common-issues">Common Issues<a href="#common-issues" class="hash-link" aria-label="Direct link to Common Issues" title="Direct link to Common Issues">​</a></h3>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="ai-doesnt-find-my-documents">&quot;AI doesn&#x27;t find my documents&quot;<a href="#ai-doesnt-find-my-documents" class="hash-link" aria-label="Direct link to &quot;AI doesn&#x27;t find my documents&quot;" title="Direct link to &quot;AI doesn&#x27;t find my documents&quot;">​</a></h4>
+<p><strong>Solutions:</strong></p>
+<ol>
+<li>Check if documents are vectorized (see statistics)</li>
+<li>Verify agent has access to correct views</li>
+<li>Ensure you have permission to access the documents</li>
+<li>Try re-vectorizing the data</li>
+</ol>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="ai-gives-wrong-answers">&quot;AI gives wrong answers&quot;<a href="#ai-gives-wrong-answers" class="hash-link" aria-label="Direct link to &quot;AI gives wrong answers&quot;" title="Direct link to &quot;AI gives wrong answers&quot;">​</a></h4>
+<p><strong>Solutions:</strong></p>
+<ol>
+<li>Check the cited sources - is the source information correct?</li>
+<li>Improve system prompt to guide AI better</li>
+<li>Ensure data is up-to-date</li>
+<li>Report issue to admin for review</li>
+</ol>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="tools-dont-work">&quot;Tools don&#x27;t work&quot;<a href="#tools-dont-work" class="hash-link" aria-label="Direct link to &quot;Tools don&#x27;t work&quot;" title="Direct link to &quot;Tools don&#x27;t work&quot;">​</a></h4>
+<p><strong>Solutions:</strong></p>
+<ol>
+<li>Verify you&#x27;re using OpenAI or Ollama (not Fireworks AI)</li>
+<li>Check if agent has tools enabled</li>
+<li>Verify you have permissions to perform the action</li>
+<li>Check logs for error messages</li>
+</ol>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="different-users-see-different-answers">&quot;Different users see different answers&quot;<a href="#different-users-see-different-answers" class="hash-link" aria-label="Direct link to &quot;Different users see different answers&quot;" title="Direct link to &quot;Different users see different answers&quot;">​</a></h4>
+<p><strong>This is normal!</strong> RBAC is working as designed. Different users have different access to data, so they get different answers. This is a security feature, not a bug.</p>
+<hr>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="-advanced-topics">🔍 Advanced Topics<a href="#-advanced-topics" class="hash-link" aria-label="Direct link to 🔍 Advanced Topics" title="Direct link to 🔍 Advanced Topics">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="choosing-search-modes">Choosing Search Modes<a href="#choosing-search-modes" class="hash-link" aria-label="Direct link to Choosing Search Modes" title="Direct link to Choosing Search Modes">​</a></h3>
+<p><strong>Semantic Search:</strong></p>
+<ul>
+<li>Searches by meaning, not keywords</li>
+<li>Best for conceptual questions</li>
+<li>Example: &quot;refund policy&quot; finds &quot;return procedures&quot;</li>
+</ul>
+<p><strong>Keyword Search:</strong></p>
+<ul>
+<li>Traditional text search</li>
+<li>Best for exact terms</li>
+<li>Example: &quot;invoice #12345&quot; finds that specific invoice</li>
+</ul>
+<p><strong>Hybrid Search (Recommended):</strong></p>
+<ul>
+<li>Combines both methods</li>
+<li>Best overall accuracy</li>
+<li>Uses both keyword matching AND semantic understanding</li>
+</ul>
+<p><strong>When to use which:</strong></p>
+<ul>
+<li><strong>General questions</strong> → Hybrid</li>
+<li><strong>Specific IDs or terms</strong> → Keyword</li>
+<li><strong>Conceptual queries</strong> → Semantic</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="model-selection">Model Selection<a href="#model-selection" class="hash-link" aria-label="Direct link to Model Selection" title="Direct link to Model Selection">​</a></h3>
+<p><strong>Embedding Models:</strong></p>
+<ul>
+<li>Convert text to vectors</li>
+<li>Smaller = faster, larger = more accurate</li>
+<li>Recommendation: <code>text-embedding-3-small</code> (OpenAI) for good balance</li>
+</ul>
+<p><strong>Chat Models:</strong></p>
+<ul>
+<li>Generate responses</li>
+<li>Smaller = faster/cheaper, larger = smarter/more expensive</li>
+<li>Recommendation: <code>gpt-4o-mini</code> (OpenAI) for good balance</li>
+</ul>
+<hr>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="-related-documentation">📚 Related Documentation<a href="#-related-documentation" class="hash-link" aria-label="Direct link to 📚 Related Documentation" title="Direct link to 📚 Related Documentation">​</a></h2>
+<ul>
+<li><strong><a href="/docs/features/views">Views</a></strong> - Configure data filters for agents</li>
+<li><strong><a href="/docs/features/agents">Agents</a></strong> - Advanced agent configuration and management</li>
+<li><strong><a href="/docs/features/function-calling">Function Calling</a></strong> - Enable agents to perform actions with tools</li>
+<li><strong><a href="/docs/features/rag-implementation">RAG Implementation</a></strong> - Technical deep dive into how RAG works</li>
+<li><strong><a href="/docs/features/chat-rag-deepdive">Chat &amp; RAG Deep Dive</a></strong> - Detailed explanation of chat functionality</li>
+</ul>
+<hr>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="-need-help">💬 Need Help?<a href="#-need-help" class="hash-link" aria-label="Direct link to 💬 Need Help?" title="Direct link to 💬 Need Help?">​</a></h2>
+<ul>
+<li><strong>User Questions:</strong> Contact your system administrator</li>
+<li><strong>Admin Questions:</strong> Check technical documentation or contact support</li>
+<li><strong>Bug Reports:</strong> File an issue in the repository</li>
+<li><strong>Feature Requests:</strong> Discuss with your development team</li>
+</ul>
+<hr>
+<p><strong>Congratulations!</strong> You now understand how to configure and use AI in OpenRegister. Start with small experiments and gradually expand as you become more comfortable with the system. 🎉</p></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col"><a href="https://github.com/conductionnl/openregister/tree/main/website/docs/features/ai.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="pagination-nav docusaurus-mt-lg" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--prev" href="/docs/features/agents"><div class="pagination-nav__sublabel">Previous</div><div class="pagination-nav__label">Agents</div></a><a class="pagination-nav__link pagination-nav__link--next" href="/docs/features/chat-rag-deepdive"><div class="pagination-nav__sublabel">Next</div><div class="pagination-nav__label">Chat RAG (Retrieval Augmented Generation) - Deep Dive</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#-what-is-ai-in-openregister" class="table-of-contents__link toc-highlight">🎯 What is AI in OpenRegister?</a><ul><li><a href="#the-power-of-combining-ai-with-your-data" class="table-of-contents__link toc-highlight">The Power of Combining AI with Your Data</a></li></ul></li><li><a href="#-security--privacy-how-it-works" class="table-of-contents__link toc-highlight">🔐 Security &amp; Privacy: How It Works</a><ul><li><a href="#sovereign-ai" class="table-of-contents__link toc-highlight">Sovereign AI</a></li><li><a href="#rbac-role-based-access-control" class="table-of-contents__link toc-highlight">RBAC (Role-Based Access Control)</a></li></ul></li><li><a href="#-how-ai-finds-information-rag-explained" class="table-of-contents__link toc-highlight">🧠 How AI Finds Information: RAG Explained</a><ul><li><a href="#what-is-rag" class="table-of-contents__link toc-highlight">What is RAG?</a></li><li><a href="#how-rag-works-step-by-step" class="table-of-contents__link toc-highlight">How RAG Works (Step-by-Step)</a></li></ul></li><li><a href="#-configuration-guide" class="table-of-contents__link toc-highlight">📋 Configuration Guide</a><ul><li><a href="#overview-configuration-steps" class="table-of-contents__link toc-highlight">Overview: Configuration Steps</a></li><li><a href="#step-1-configure-your-llm-provider" class="table-of-contents__link toc-highlight">Step 1: Configure Your LLM Provider</a></li><li><a href="#step-2-prepare-your-data-vectorization" class="table-of-contents__link toc-highlight">Step 2: Prepare Your Data (Vectorization)</a></li><li><a href="#step-3-create-views-what-data-should-ai-access" class="table-of-contents__link toc-highlight">Step 3: Create Views (What Data Should AI Access?)</a></li></ul></li><li><a href="#img_7png-img_8png" class="table-of-contents__link toc-highlight">img_7.png img_8.png</a><ul><li><a href="#step-4-create-ai-agents" class="table-of-contents__link toc-highlight">Step 4: Create AI Agents</a></li><li><a href="#step-5-configure-tools-optional" class="table-of-contents__link toc-highlight">Step 5: Configure Tools (Optional)</a></li></ul></li><li><a href="#img_10png" class="table-of-contents__link toc-highlight">img_10.png</a><ul><li><a href="#step-6-assign-access-who-can-use-which-agent" class="table-of-contents__link toc-highlight">Step 6: Assign Access (Who Can Use Which Agent?)</a></li></ul></li><li><a href="#-using-ai-the-chat-interface" class="table-of-contents__link toc-highlight">🚀 Using AI: The Chat Interface</a><ul><li><a href="#starting-a-conversation" class="table-of-contents__link toc-highlight">Starting a Conversation</a></li><li><a href="#understanding-ai-responses" class="table-of-contents__link toc-highlight">Understanding AI Responses</a></li><li><a href="#when-ai-cant-answer" class="table-of-contents__link toc-highlight">When AI Can&#39;t Answer</a></li></ul></li><li><a href="#img_12png" class="table-of-contents__link toc-highlight">img_12.png</a></li><li><a href="#-best-practices" class="table-of-contents__link toc-highlight">🎓 Best Practices</a><ul><li><a href="#for-administrators" class="table-of-contents__link toc-highlight">For Administrators</a></li><li><a href="#for-users" class="table-of-contents__link toc-highlight">For Users</a></li></ul></li><li><a href="#-monitoring--maintenance" class="table-of-contents__link toc-highlight">📊 Monitoring &amp; Maintenance</a><ul><li><a href="#statistics-dashboard" class="table-of-contents__link toc-highlight">Statistics Dashboard</a></li><li><a href="#regular-maintenance" class="table-of-contents__link toc-highlight">Regular Maintenance</a></li></ul></li><li><a href="#-troubleshooting" class="table-of-contents__link toc-highlight">❓ Troubleshooting</a><ul><li><a href="#common-issues" class="table-of-contents__link toc-highlight">Common Issues</a></li></ul></li><li><a href="#-advanced-topics" class="table-of-contents__link toc-highlight">🔍 Advanced Topics</a><ul><li><a href="#choosing-search-modes" class="table-of-contents__link toc-highlight">Choosing Search Modes</a></li><li><a href="#model-selection" class="table-of-contents__link toc-highlight">Model Selection</a></li></ul></li><li><a href="#-related-documentation" class="table-of-contents__link toc-highlight">📚 Related Documentation</a></li><li><a href="#-need-help" class="table-of-contents__link toc-highlight">💬 Need Help?</a></li></ul></div></div></div></div></main></div></div></div><footer class="footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="col footer__col"><div class="footer__title">Docs</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/docs/intro">Documentation</a></li></ul></div><div class="col footer__col"><div class="footer__title">Community</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://github.com/conductionnl/openregister" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub<svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_nPIU"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2025 for <a href="https://openwebconcept.nl">Open Webconcept</a> by <a href="https://conduction.nl">Conduction B.V.</a></div></div></div></footer></div>
+</body>
+</html>

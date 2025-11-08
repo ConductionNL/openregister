@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-user-guide/semantic-search" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.7.0">
+<title data-rh="true">Semantic Search User Guide | Open Register</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://openregisters.app/docs/user-guide/semantic-search"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Semantic Search User Guide | Open Register"><meta data-rh="true" name="description" content="Overview"><meta data-rh="true" property="og:description" content="Overview"><link data-rh="true" rel="canonical" href="https://openregisters.app/docs/user-guide/semantic-search"><link data-rh="true" rel="alternate" href="https://openregisters.app/docs/user-guide/semantic-search" hreflang="en"><link data-rh="true" rel="alternate" href="https://openregisters.app/docs/user-guide/semantic-search" hreflang="x-default"><link rel="stylesheet" href="/assets/css/styles.3a202f4d.css">
+<script src="/assets/js/runtime~main.079b0751.js" defer="defer"></script>
+<script src="/assets/js/main.6aa8ac6b.js" defer="defer"></script>
+</head>
+<body class="navigation-with-keyboard">
+<script>!function(){function t(t){document.documentElement.setAttribute("data-theme",t)}var e=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();t(null!==e?e:"light")}(),function(){try{const n=new URLSearchParams(window.location.search).entries();for(var[t,e]of n)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="navbar navbar--fixed-top"><div class="navbar__inner"><div class="navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/"><div class="navbar__logo"><img src="/img/logo.svg" alt="Open Register Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/img/logo.svg" alt="Open Register Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">Open Register</b></a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs/Development/Services">Documentation</a></div><div class="navbar__items navbar__items--right"><a class="navbar__item navbar__link" href="/api">API Documentation</a><a href="https://github.com/conductionnl/openregister" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_nPIU"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="Switch between dark and light mode (currently light mode)" aria-label="Switch between dark and light mode (currently light mode)" aria-live="polite" aria-pressed="false"><svg viewBox="0 0 24 24" width="24" height="24" class="lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" class="darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class="sidebarViewport_aRkj"><div class="sidebar_njMd"><nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/Development/Services">Development</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist" href="/docs/Features">Core Features</a><button aria-label="Expand sidebar category &#x27;Core Features&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/Technical/vectorization-architecture">Technical</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/UseCases/clientRegisters">UseCases</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/api/bulk-operations">api</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/developers/external-app-optimization">developers</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/development/tool-registration">development</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/features/organisation-roles">features</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist" href="/docs/fixes">Fixes Documentation</a><button aria-label="Expand sidebar category &#x27;Fixes Documentation&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs">Introduction</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs/intro">Introduction</a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/technical/MultiTenancyImplementationStatus">technical</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/user/ai-conversations">user</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret menu__link--active" role="button" aria-expanded="true" href="/docs/user-guide/importing-data">user-guide</a></div><ul style="display:block;overflow:visible;height:auto" class="menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/user-guide/importing-data">Importing Data</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" tabindex="0" href="/docs/user-guide/semantic-search">Semantic Search User Guide</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/user-guide/solr-dashboard-user-guide">SOLR Dashboard User Guide</a></li></ul></li></ul></nav></div></div></aside><main class="docMainContainer_TBSr"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label="Breadcrumbs"><ul class="breadcrumbs" itemscope="" itemtype="https://schema.org/BreadcrumbList"><li class="breadcrumbs__item"><a aria-label="Home page" class="breadcrumbs__link" href="/"><svg viewBox="0 0 24 24" class="breadcrumbHomeIcon_YNFT"><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill="currentColor"></path></svg></a></li><li class="breadcrumbs__item"><span class="breadcrumbs__link">user-guide</span><meta itemprop="position" content="1"></li><li itemscope="" itemprop="itemListElement" itemtype="https://schema.org/ListItem" class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link" itemprop="name">Semantic Search User Guide</span><meta itemprop="position" content="2"></li></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>Semantic Search User Guide</h1></header>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="overview">Overview<a href="#overview" class="hash-link" aria-label="Direct link to Overview" title="Direct link to Overview">​</a></h2>
+<p>Semantic search allows you to find information by meaning, not just by matching keywords. Instead of searching for exact words, you can search for concepts, and the system will find related content even if it uses different terminology.</p>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="what-is-semantic-search">What is Semantic Search?<a href="#what-is-semantic-search" class="hash-link" aria-label="Direct link to What is Semantic Search?" title="Direct link to What is Semantic Search?">​</a></h2>
+<p>Traditional search (keyword search) looks for exact word matches:</p>
+<ul>
+<li>Search for &quot;car&quot; → Only finds documents containing &quot;car&quot;</li>
+<li>Misses documents about &quot;automobile&quot;, &quot;vehicle&quot;, &quot;transportation&quot;</li>
+</ul>
+<p>Semantic search understands meaning:</p>
+<ul>
+<li>Search for &quot;car&quot; → Finds &quot;car&quot;, &quot;automobile&quot;, &quot;vehicle&quot;, &quot;transportation&quot;</li>
+<li>Understands that &quot;Amsterdam&quot; relates to &quot;Netherlands&quot; and &quot;Dutch&quot;</li>
+<li>Recognizes that &quot;budget&quot; is related to &quot;financial planning&quot; and &quot;costs&quot;</li>
+</ul>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="how-it-works">How It Works<a href="#how-it-works" class="hash-link" aria-label="Direct link to How It Works" title="Direct link to How It Works">​</a></h2>
+<ol>
+<li><strong>Vectorization</strong>: Your files and objects are converted into mathematical representations (vectors) that capture their meaning</li>
+<li><strong>Query Understanding</strong>: When you search, your query is also converted to a vector</li>
+<li><strong>Similarity Matching</strong>: The system finds content with vectors similar to your query vector</li>
+<li><strong>Ranking</strong>: Results are ranked by how closely they match your query&#x27;s meaning</li>
+</ol>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="search-modes">Search Modes<a href="#search-modes" class="hash-link" aria-label="Direct link to Search Modes" title="Direct link to Search Modes">​</a></h2>
+<p>OpenRegister offers three search modes:</p>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="hybrid-search-recommended">Hybrid Search (Recommended)<a href="#hybrid-search-recommended" class="hash-link" aria-label="Direct link to Hybrid Search (Recommended)" title="Direct link to Hybrid Search (Recommended)">​</a></h3>
+<p>Combines keyword and semantic search for the best results.</p>
+<p><strong>Use when</strong>: You want the most accurate results (default mode)</p>
+<p><strong>Example</strong>:</p>
+<ul>
+<li>Query: &quot;project management tools&quot;</li>
+<li>Finds: Documents with exact phrase + documents about &quot;planning software&quot;, &quot;task coordination&quot;, &quot;workflow systems&quot;</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="semantic-search">Semantic Search<a href="#semantic-search" class="hash-link" aria-label="Direct link to Semantic Search" title="Direct link to Semantic Search">​</a></h3>
+<p>Pure meaning-based search using vector similarity.</p>
+<p><strong>Use when</strong>: You want to find conceptually similar content, even with different wording</p>
+<p><strong>Example</strong>:</p>
+<ul>
+<li>Query: &quot;reducing costs&quot;</li>
+<li>Finds: Documents about &quot;budget optimization&quot;, &quot;financial efficiency&quot;, &quot;expense management&quot;</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="keyword-search">Keyword Search<a href="#keyword-search" class="hash-link" aria-label="Direct link to Keyword Search" title="Direct link to Keyword Search">​</a></h3>
+<p>Traditional full-text search using SOLR.</p>
+<p><strong>Use when</strong>: You need exact phrase matching or very fast results</p>
+<p><strong>Example</strong>:</p>
+<ul>
+<li>Query: &quot;invoice #12345&quot;</li>
+<li>Finds: Only documents containing that exact invoice number</li>
+</ul>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="using-search">Using Search<a href="#using-search" class="hash-link" aria-label="Direct link to Using Search" title="Direct link to Using Search">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="from-the-chat-interface">From the Chat Interface<a href="#from-the-chat-interface" class="hash-link" aria-label="Direct link to From the Chat Interface" title="Direct link to From the Chat Interface">​</a></h3>
+<p>The easiest way to use semantic search is through the AI Chat:</p>
+<ol>
+<li>Navigate to <strong>AI Chat</strong> from the main menu</li>
+<li>Type your question in natural language</li>
+<li>The system automatically:<!-- -->
+<ul>
+<li>Uses hybrid search to find relevant context</li>
+<li>Generates an answer based on your data</li>
+<li>Cites sources with similarity scores</li>
+</ul>
+</li>
+</ol>
+<p><strong>Example questions</strong>:</p>
+<ul>
+<li>&quot;What projects are related to Amsterdam?&quot;</li>
+<li>&quot;Show me files that mention budgets over 1 million&quot;</li>
+<li>&quot;Find information about customer complaints&quot;</li>
+<li>&quot;What do we have about sustainability initiatives?&quot;</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="from-the-search-api">From the Search API<a href="#from-the-search-api" class="hash-link" aria-label="Direct link to From the Search API" title="Direct link to From the Search API">​</a></h3>
+<p>For programmatic access, use the API endpoints:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># Semantic search</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">GET /apps/openregister/api/solr/search/semantic?query=your+query&amp;limit=10</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Hybrid search</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">GET /apps/openregister/api/solr/search/hybrid?query=your+query&amp;limit=10</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="understanding-results">Understanding Results<a href="#understanding-results" class="hash-link" aria-label="Direct link to Understanding Results" title="Direct link to Understanding Results">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="similarity-scores">Similarity Scores<a href="#similarity-scores" class="hash-link" aria-label="Direct link to Similarity Scores" title="Direct link to Similarity Scores">​</a></h3>
+<p>Results include a similarity score from 0.0 to 1.0:</p>
+<ul>
+<li><strong>0.9-1.0</strong>: Extremely similar (almost identical meaning)</li>
+<li><strong>0.8-0.9</strong>: Very similar (closely related concepts)</li>
+<li><strong>0.7-0.8</strong>: Similar (related but distinct concepts)</li>
+<li><strong>0.6-0.7</strong>: Somewhat similar (loosely related)</li>
+<li><strong>Below 0.6</strong>: May not be relevant</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="source-citations">Source Citations<a href="#source-citations" class="hash-link" aria-label="Direct link to Source Citations" title="Direct link to Source Citations">​</a></h3>
+<p>When using the chat interface, each answer includes:</p>
+<ul>
+<li><strong>Source name</strong>: File name or object title</li>
+<li><strong>Source type</strong>: File or Object</li>
+<li><strong>Similarity score</strong>: How closely it matches your query</li>
+<li><strong>Text excerpt</strong>: Relevant content from the source</li>
+</ul>
+<p>Click on a source to view the full document or object.</p>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="best-practices">Best Practices<a href="#best-practices" class="hash-link" aria-label="Direct link to Best Practices" title="Direct link to Best Practices">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="writing-effective-queries">Writing Effective Queries<a href="#writing-effective-queries" class="hash-link" aria-label="Direct link to Writing Effective Queries" title="Direct link to Writing Effective Queries">​</a></h3>
+<p>✅ <strong>Do</strong>:</p>
+<ul>
+<li>Use natural language: &quot;What are our sustainability goals?&quot;</li>
+<li>Be specific about what you&#x27;re looking for</li>
+<li>Include key concepts: &quot;budget planning 2025&quot;</li>
+<li>Ask questions: &quot;How do we handle customer refunds?&quot;</li>
+</ul>
+<p>❌ <strong>Don&#x27;t</strong>:</p>
+<ul>
+<li>Use single words without context: &quot;budget&quot;</li>
+<li>Overload with technical operators: &quot;budget AND (2024 OR 2025) NOT draft&quot;</li>
+<li>Expect exact phrase matching in semantic mode</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="improving-results">Improving Results<a href="#improving-results" class="hash-link" aria-label="Direct link to Improving Results" title="Direct link to Improving Results">​</a></h3>
+<p>If you&#x27;re not getting good results:</p>
+<ol>
+<li>
+<p><strong>Try Different Phrasing</strong>:</p>
+<ul>
+<li>Instead of &quot;cars&quot;, try &quot;vehicles&quot; or &quot;transportation&quot;</li>
+<li>Rephrase your query to emphasize different aspects</li>
+</ul>
+</li>
+<li>
+<p><strong>Use Hybrid Mode</strong>:</p>
+<ul>
+<li>Combines benefits of both keyword and semantic search</li>
+<li>Usually gives the most accurate results</li>
+</ul>
+</li>
+<li>
+<p><strong>Provide Feedback</strong>:</p>
+<ul>
+<li>Use thumbs up/down in chat to help improve results</li>
+<li>The system learns from your feedback</li>
+</ul>
+</li>
+<li>
+<p><strong>Check Vectorization</strong>:</p>
+<ul>
+<li>Go to Settings → Object Management / File Management</li>
+<li>Ensure relevant content has been vectorized</li>
+<li>Check stats to see vectorization progress</li>
+</ul>
+</li>
+</ol>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="configuration">Configuration<a href="#configuration" class="hash-link" aria-label="Direct link to Configuration" title="Direct link to Configuration">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="for-users">For Users<a href="#for-users" class="hash-link" aria-label="Direct link to For Users" title="Direct link to For Users">​</a></h3>
+<p><strong>Adjust Search Preferences</strong>:</p>
+<ol>
+<li>Open AI Chat</li>
+<li>Click <strong>Settings</strong> button</li>
+<li>Configure:<!-- -->
+<ul>
+<li><strong>Search Mode</strong>: Hybrid / Semantic / Keyword</li>
+<li><strong>Number of Sources</strong>: How many documents to retrieve (1-10)</li>
+<li><strong>Search in files</strong>: Include/exclude file content</li>
+<li><strong>Search in objects</strong>: Include/exclude structured data</li>
+</ul>
+</li>
+</ol>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="for-administrators">For Administrators<a href="#for-administrators" class="hash-link" aria-label="Direct link to For Administrators" title="Direct link to For Administrators">​</a></h3>
+<p><strong>Enable Semantic Search</strong>:</p>
+<ol>
+<li>
+<p>Go to <strong>Settings → Administration → OpenRegister</strong></p>
+</li>
+<li>
+<p>Configure <strong>LLM Settings</strong>:</p>
+<ul>
+<li>Choose embedding provider (OpenAI or Ollama)</li>
+<li>Enter API key (if using OpenAI)</li>
+<li>Select embedding model</li>
+</ul>
+</li>
+<li>
+<p><strong>Vectorize Content</strong>:</p>
+<ul>
+<li>Go to <strong>Object Management</strong>:<!-- -->
+<ul>
+<li>Enable vectorization</li>
+<li>Select schemas to vectorize</li>
+<li>Click &quot;Start Bulk Vectorization&quot;</li>
+</ul>
+</li>
+<li>Go to <strong>File Management</strong>:<!-- -->
+<ul>
+<li>Enable vectorization</li>
+<li>Configure chunking strategy</li>
+<li>Enable file types to process</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>Monitor Progress</strong>:</p>
+<ul>
+<li>Check stats in Object/File Management dialogs</li>
+<li>View vectorization progress</li>
+<li>Monitor vector database size</li>
+</ul>
+</li>
+</ol>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="common-use-cases">Common Use Cases<a href="#common-use-cases" class="hash-link" aria-label="Direct link to Common Use Cases" title="Direct link to Common Use Cases">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="1-finding-related-projects">1. Finding Related Projects<a href="#1-finding-related-projects" class="hash-link" aria-label="Direct link to 1. Finding Related Projects" title="Direct link to 1. Finding Related Projects">​</a></h3>
+<p><strong>Query</strong>: &quot;Show me projects related to renewable energy&quot;</p>
+<p><strong>Results</strong>: Projects mentioning:</p>
+<ul>
+<li>Solar power, wind energy, clean energy</li>
+<li>Sustainability initiatives</li>
+<li>Carbon reduction programs</li>
+<li>Green infrastructure</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="2-budget-analysis">2. Budget Analysis<a href="#2-budget-analysis" class="hash-link" aria-label="Direct link to 2. Budget Analysis" title="Direct link to 2. Budget Analysis">​</a></h3>
+<p><strong>Query</strong>: &quot;What files discuss budget increases?&quot;</p>
+<p><strong>Results</strong>: Files containing:</p>
+<ul>
+<li>Financial growth, increased funding</li>
+<li>Cost escalation, expanded budget</li>
+<li>Resource allocation changes</li>
+<li>Funding enhancements</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="3-customer-feedback">3. Customer Feedback<a href="#3-customer-feedback" class="hash-link" aria-label="Direct link to 3. Customer Feedback" title="Direct link to 3. Customer Feedback">​</a></h3>
+<p><strong>Query</strong>: &quot;Find complaints about delivery times&quot;</p>
+<p><strong>Results</strong>: Documents about:</p>
+<ul>
+<li>Shipping delays, late arrivals</li>
+<li>Delivery issues, transport problems</li>
+<li>Customer dissatisfaction with speed</li>
+<li>Logistics challenges</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="4-policy-research">4. Policy Research<a href="#4-policy-research" class="hash-link" aria-label="Direct link to 4. Policy Research" title="Direct link to 4. Policy Research">​</a></h3>
+<p><strong>Query</strong>: &quot;What are our data privacy policies?&quot;</p>
+<p><strong>Results</strong>: Documents covering:</p>
+<ul>
+<li>GDPR compliance, data protection</li>
+<li>Privacy guidelines, security measures</li>
+<li>Information handling procedures</li>
+<li>Confidentiality agreements</li>
+</ul>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="troubleshooting">Troubleshooting<a href="#troubleshooting" class="hash-link" aria-label="Direct link to Troubleshooting" title="Direct link to Troubleshooting">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="no-results-found">&quot;No results found&quot;<a href="#no-results-found" class="hash-link" aria-label="Direct link to &quot;No results found&quot;" title="Direct link to &quot;No results found&quot;">​</a></h3>
+<p><strong>Possible causes</strong>:</p>
+<ul>
+<li>Content hasn&#x27;t been vectorized yet</li>
+<li>Query is too specific or uses uncommon terminology</li>
+<li>File types aren&#x27;t enabled for processing</li>
+</ul>
+<p><strong>Solutions</strong>:</p>
+<ul>
+<li>Check vectorization status in Object/File Management</li>
+<li>Try rephrasing your query</li>
+<li>Use hybrid mode for broader coverage</li>
+<li>Ensure relevant file types are enabled</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="results-seem-irrelevant">&quot;Results seem irrelevant&quot;<a href="#results-seem-irrelevant" class="hash-link" aria-label="Direct link to &quot;Results seem irrelevant&quot;" title="Direct link to &quot;Results seem irrelevant&quot;">​</a></h3>
+<p><strong>Possible causes</strong>:</p>
+<ul>
+<li>Insufficient vectorized content</li>
+<li>Query is too broad or ambiguous</li>
+<li>Similarity threshold may be too low</li>
+</ul>
+<p><strong>Solutions</strong>:</p>
+<ul>
+<li>Vectorize more content</li>
+<li>Make your query more specific</li>
+<li>Use keyword search for exact matches</li>
+<li>Provide feedback (thumbs down) to help improve</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="search-is-slow">&quot;Search is slow&quot;<a href="#search-is-slow" class="hash-link" aria-label="Direct link to &quot;Search is slow&quot;" title="Direct link to &quot;Search is slow&quot;">​</a></h3>
+<p><strong>Possible causes</strong>:</p>
+<ul>
+<li>Large vector database</li>
+<li>High number of sources requested</li>
+<li>OpenAI API latency</li>
+</ul>
+<p><strong>Solutions</strong>:</p>
+<ul>
+<li>Reduce number of sources in settings</li>
+<li>Use keyword mode for faster results</li>
+<li>Consider using local Ollama for embeddings</li>
+<li>Contact administrator about database optimization</li>
+</ul>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="privacy--security">Privacy &amp; Security<a href="#privacy--security" class="hash-link" aria-label="Direct link to Privacy &amp; Security" title="Direct link to Privacy &amp; Security">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="your-data">Your Data<a href="#your-data" class="hash-link" aria-label="Direct link to Your Data" title="Direct link to Your Data">​</a></h3>
+<ul>
+<li>All vectorization happens on your server</li>
+<li>Vectors are stored in your database</li>
+<li>File content never leaves your infrastructure (except for embeddings)</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="api-keys">API Keys<a href="#api-keys" class="hash-link" aria-label="Direct link to API Keys" title="Direct link to API Keys">​</a></h3>
+<ul>
+<li>OpenAI API keys are stored in configuration</li>
+<li>Only used for generating embeddings and chat responses</li>
+<li>Administrator can switch to local Ollama for complete privacy</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="search-privacy">Search Privacy<a href="#search-privacy" class="hash-link" aria-label="Direct link to Search Privacy" title="Direct link to Search Privacy">​</a></h3>
+<ul>
+<li>Search queries are processed locally</li>
+<li>Chat history is stored per-user</li>
+<li>Conversation history is private to each user</li>
+<li>Admins cannot see your chat conversations</li>
+</ul>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="tips-for-power-users">Tips for Power Users<a href="#tips-for-power-users" class="hash-link" aria-label="Direct link to Tips for Power Users" title="Direct link to Tips for Power Users">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="combining-search-techniques">Combining Search Techniques<a href="#combining-search-techniques" class="hash-link" aria-label="Direct link to Combining Search Techniques" title="Direct link to Combining Search Techniques">​</a></h3>
+<p>Use hybrid search with specific terms:</p>
+<ul>
+<li>&quot;sustainable development Amsterdam&quot; finds both exact mentions of Amsterdam AND conceptually related sustainability content</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="understanding-vector-dimensions">Understanding Vector Dimensions<a href="#understanding-vector-dimensions" class="hash-link" aria-label="Direct link to Understanding Vector Dimensions" title="Direct link to Understanding Vector Dimensions">​</a></h3>
+<ul>
+<li>Larger models (e.g., text-embedding-3-large, 3072 dimensions) → More nuanced understanding</li>
+<li>Smaller models (e.g., text-embedding-3-small, 1536 dimensions) → Faster, less storage</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="optimizing-for-your-domain">Optimizing for Your Domain<a href="#optimizing-for-your-domain" class="hash-link" aria-label="Direct link to Optimizing for Your Domain" title="Direct link to Optimizing for Your Domain">​</a></h3>
+<ul>
+<li>Vectorize domain-specific documents first</li>
+<li>Use consistent terminology in your organization</li>
+<li>Provide feedback to improve relevance</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="monitoring-costs">Monitoring Costs<a href="#monitoring-costs" class="hash-link" aria-label="Direct link to Monitoring Costs" title="Direct link to Monitoring Costs">​</a></h3>
+<ul>
+<li>Each OpenAI embedding API call has a small cost</li>
+<li>Bulk vectorization is more cost-effective than individual</li>
+<li>Consider Ollama for free, local embeddings (slower but private)</li>
+</ul>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="faqs">FAQs<a href="#faqs" class="hash-link" aria-label="Direct link to FAQs" title="Direct link to FAQs">​</a></h2>
+<p><strong>Q: How is semantic search different from regular search?</strong><br>
+<!-- -->A: Regular search matches words. Semantic search understands meaning and finds conceptually similar content.</p>
+<p><strong>Q: Do I need to change how I search?</strong><br>
+<!-- -->A: No! Just use natural language. The system handles the complexity.</p>
+<p><strong>Q: Can I still use exact phrase matching?</strong><br>
+<!-- -->A: Yes! Use keyword mode or hybrid mode (which includes exact matching).</p>
+<p><strong>Q: How long does vectorization take?</strong><br>
+<!-- -->A: Depends on content volume. Typically 100-500 items per minute.</p>
+<p><strong>Q: Does this work with all file types?</strong><br>
+<!-- -->A: We support 15+ formats including PDF, Word, Excel, images (with OCR), and more.</p>
+<p><strong>Q: Is my data secure?</strong><br>
+<!-- -->A: Yes! Only embeddings (mathematical representations) are sent to OpenAI, not full content. Use Ollama for complete on-premises processing.</p>
+<p><strong>Q: Can I search across different languages?</strong><br>
+<!-- -->A: Yes! Multilingual embedding models understand multiple languages.</p>
+<p><strong>Q: How do I know if results are accurate?</strong><br>
+<!-- -->A: Check similarity scores and source citations. Use feedback buttons to improve results.</p>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="getting-help">Getting Help<a href="#getting-help" class="hash-link" aria-label="Direct link to Getting Help" title="Direct link to Getting Help">​</a></h2>
+<ul>
+<li><strong>Documentation</strong>: See <code>/docs/</code> for technical details</li>
+<li><strong>Administrator</strong>: Contact your OpenRegister administrator</li>
+<li><strong>Feedback</strong>: Use thumbs up/down in chat to report issues</li>
+<li><strong>Support</strong>: Visit <a href="https://www.conduction.nl" target="_blank" rel="noopener noreferrer">Conduction</a> for enterprise support</li>
+</ul>
+<hr>
+<p><em>Last updated: October 13, 2025</em></p></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col"><a href="https://github.com/conductionnl/openregister/tree/main/website/docs/user-guide/semantic-search.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="pagination-nav docusaurus-mt-lg" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--prev" href="/docs/user-guide/importing-data"><div class="pagination-nav__sublabel">Previous</div><div class="pagination-nav__label">Importing Data</div></a><a class="pagination-nav__link pagination-nav__link--next" href="/docs/user-guide/solr-dashboard-user-guide"><div class="pagination-nav__sublabel">Next</div><div class="pagination-nav__label">SOLR Dashboard User Guide</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#overview" class="table-of-contents__link toc-highlight">Overview</a></li><li><a href="#what-is-semantic-search" class="table-of-contents__link toc-highlight">What is Semantic Search?</a></li><li><a href="#how-it-works" class="table-of-contents__link toc-highlight">How It Works</a></li><li><a href="#search-modes" class="table-of-contents__link toc-highlight">Search Modes</a><ul><li><a href="#hybrid-search-recommended" class="table-of-contents__link toc-highlight">Hybrid Search (Recommended)</a></li><li><a href="#semantic-search" class="table-of-contents__link toc-highlight">Semantic Search</a></li><li><a href="#keyword-search" class="table-of-contents__link toc-highlight">Keyword Search</a></li></ul></li><li><a href="#using-search" class="table-of-contents__link toc-highlight">Using Search</a><ul><li><a href="#from-the-chat-interface" class="table-of-contents__link toc-highlight">From the Chat Interface</a></li><li><a href="#from-the-search-api" class="table-of-contents__link toc-highlight">From the Search API</a></li></ul></li><li><a href="#understanding-results" class="table-of-contents__link toc-highlight">Understanding Results</a><ul><li><a href="#similarity-scores" class="table-of-contents__link toc-highlight">Similarity Scores</a></li><li><a href="#source-citations" class="table-of-contents__link toc-highlight">Source Citations</a></li></ul></li><li><a href="#best-practices" class="table-of-contents__link toc-highlight">Best Practices</a><ul><li><a href="#writing-effective-queries" class="table-of-contents__link toc-highlight">Writing Effective Queries</a></li><li><a href="#improving-results" class="table-of-contents__link toc-highlight">Improving Results</a></li></ul></li><li><a href="#configuration" class="table-of-contents__link toc-highlight">Configuration</a><ul><li><a href="#for-users" class="table-of-contents__link toc-highlight">For Users</a></li><li><a href="#for-administrators" class="table-of-contents__link toc-highlight">For Administrators</a></li></ul></li><li><a href="#common-use-cases" class="table-of-contents__link toc-highlight">Common Use Cases</a><ul><li><a href="#1-finding-related-projects" class="table-of-contents__link toc-highlight">1. Finding Related Projects</a></li><li><a href="#2-budget-analysis" class="table-of-contents__link toc-highlight">2. Budget Analysis</a></li><li><a href="#3-customer-feedback" class="table-of-contents__link toc-highlight">3. Customer Feedback</a></li><li><a href="#4-policy-research" class="table-of-contents__link toc-highlight">4. Policy Research</a></li></ul></li><li><a href="#troubleshooting" class="table-of-contents__link toc-highlight">Troubleshooting</a><ul><li><a href="#no-results-found" class="table-of-contents__link toc-highlight">&quot;No results found&quot;</a></li><li><a href="#results-seem-irrelevant" class="table-of-contents__link toc-highlight">&quot;Results seem irrelevant&quot;</a></li><li><a href="#search-is-slow" class="table-of-contents__link toc-highlight">&quot;Search is slow&quot;</a></li></ul></li><li><a href="#privacy--security" class="table-of-contents__link toc-highlight">Privacy &amp; Security</a><ul><li><a href="#your-data" class="table-of-contents__link toc-highlight">Your Data</a></li><li><a href="#api-keys" class="table-of-contents__link toc-highlight">API Keys</a></li><li><a href="#search-privacy" class="table-of-contents__link toc-highlight">Search Privacy</a></li></ul></li><li><a href="#tips-for-power-users" class="table-of-contents__link toc-highlight">Tips for Power Users</a><ul><li><a href="#combining-search-techniques" class="table-of-contents__link toc-highlight">Combining Search Techniques</a></li><li><a href="#understanding-vector-dimensions" class="table-of-contents__link toc-highlight">Understanding Vector Dimensions</a></li><li><a href="#optimizing-for-your-domain" class="table-of-contents__link toc-highlight">Optimizing for Your Domain</a></li><li><a href="#monitoring-costs" class="table-of-contents__link toc-highlight">Monitoring Costs</a></li></ul></li><li><a href="#faqs" class="table-of-contents__link toc-highlight">FAQs</a></li><li><a href="#getting-help" class="table-of-contents__link toc-highlight">Getting Help</a></li></ul></div></div></div></div></main></div></div></div><footer class="footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="col footer__col"><div class="footer__title">Docs</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/docs/intro">Documentation</a></li></ul></div><div class="col footer__col"><div class="footer__title">Community</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://github.com/conductionnl/openregister" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub<svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_nPIU"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2025 for <a href="https://openwebconcept.nl">Open Webconcept</a> by <a href="https://conduction.nl">Conduction B.V.</a></div></div></div></footer></div>
+</body>
+</html>

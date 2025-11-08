@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-user-guide/solr-dashboard-user-guide" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.7.0">
+<title data-rh="true">SOLR Dashboard User Guide | Open Register</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://openregisters.app/docs/user-guide/solr-dashboard-user-guide"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="SOLR Dashboard User Guide | Open Register"><meta data-rh="true" name="description" content="Overview"><meta data-rh="true" property="og:description" content="Overview"><link data-rh="true" rel="canonical" href="https://openregisters.app/docs/user-guide/solr-dashboard-user-guide"><link data-rh="true" rel="alternate" href="https://openregisters.app/docs/user-guide/solr-dashboard-user-guide" hreflang="en"><link data-rh="true" rel="alternate" href="https://openregisters.app/docs/user-guide/solr-dashboard-user-guide" hreflang="x-default"><link rel="stylesheet" href="/assets/css/styles.3a202f4d.css">
+<script src="/assets/js/runtime~main.079b0751.js" defer="defer"></script>
+<script src="/assets/js/main.6aa8ac6b.js" defer="defer"></script>
+</head>
+<body class="navigation-with-keyboard">
+<script>!function(){function t(t){document.documentElement.setAttribute("data-theme",t)}var e=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();t(null!==e?e:"light")}(),function(){try{const n=new URLSearchParams(window.location.search).entries();for(var[t,e]of n)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="navbar navbar--fixed-top"><div class="navbar__inner"><div class="navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/"><div class="navbar__logo"><img src="/img/logo.svg" alt="Open Register Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/img/logo.svg" alt="Open Register Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">Open Register</b></a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs/Development/Services">Documentation</a></div><div class="navbar__items navbar__items--right"><a class="navbar__item navbar__link" href="/api">API Documentation</a><a href="https://github.com/conductionnl/openregister" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_nPIU"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="Switch between dark and light mode (currently light mode)" aria-label="Switch between dark and light mode (currently light mode)" aria-live="polite" aria-pressed="false"><svg viewBox="0 0 24 24" width="24" height="24" class="lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" class="darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class="sidebarViewport_aRkj"><div class="sidebar_njMd"><nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/Development/Services">Development</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist" href="/docs/Features">Core Features</a><button aria-label="Expand sidebar category &#x27;Core Features&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/Technical/vectorization-architecture">Technical</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/UseCases/clientRegisters">UseCases</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/api/bulk-operations">api</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/developers/external-app-optimization">developers</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/development/tool-registration">development</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/features/organisation-roles">features</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist" href="/docs/fixes">Fixes Documentation</a><button aria-label="Expand sidebar category &#x27;Fixes Documentation&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs">Introduction</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs/intro">Introduction</a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/technical/MultiTenancyImplementationStatus">technical</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/user/ai-conversations">user</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret menu__link--active" role="button" aria-expanded="true" href="/docs/user-guide/importing-data">user-guide</a></div><ul style="display:block;overflow:visible;height:auto" class="menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/user-guide/importing-data">Importing Data</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/user-guide/semantic-search">Semantic Search User Guide</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" tabindex="0" href="/docs/user-guide/solr-dashboard-user-guide">SOLR Dashboard User Guide</a></li></ul></li></ul></nav></div></div></aside><main class="docMainContainer_TBSr"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label="Breadcrumbs"><ul class="breadcrumbs" itemscope="" itemtype="https://schema.org/BreadcrumbList"><li class="breadcrumbs__item"><a aria-label="Home page" class="breadcrumbs__link" href="/"><svg viewBox="0 0 24 24" class="breadcrumbHomeIcon_YNFT"><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill="currentColor"></path></svg></a></li><li class="breadcrumbs__item"><span class="breadcrumbs__link">user-guide</span><meta itemprop="position" content="1"></li><li itemscope="" itemprop="itemListElement" itemtype="https://schema.org/ListItem" class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link" itemprop="name">SOLR Dashboard User Guide</span><meta itemprop="position" content="2"></li></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>SOLR Dashboard User Guide</h1></header>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="overview">Overview<a href="#overview" class="hash-link" aria-label="Direct link to Overview" title="Direct link to Overview">​</a></h2>
+<p>The SOLR Search Management Dashboard provides an intuitive interface for monitoring and managing your Apache SOLR search infrastructure. This guide will help you understand and effectively use all dashboard features.</p>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="accessing-the-dashboard">Accessing the Dashboard<a href="#accessing-the-dashboard" class="hash-link" aria-label="Direct link to Accessing the Dashboard" title="Direct link to Accessing the Dashboard">​</a></h2>
+<ol>
+<li><strong>Login</strong> to your Nextcloud instance as an administrator</li>
+<li>Navigate to <strong>Settings</strong> → <strong>Administration</strong> → <strong>OpenRegister</strong></li>
+<li>Scroll down to the <strong>SOLR Search Management</strong> section</li>
+<li>The dashboard will automatically load with current statistics</li>
+</ol>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="dashboard-overview">Dashboard Overview<a href="#dashboard-overview" class="hash-link" aria-label="Direct link to Dashboard Overview" title="Direct link to Dashboard Overview">​</a></h2>
+<p>The dashboard is organized into several key sections, each providing specific insights into your SOLR search performance:</p>
+<div class="language-mermaid codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-mermaid codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">graph TB</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    A[SOLR Dashboard] --&gt; B[📊 Overview Cards]</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    A --&gt; C[🏗️ Core Information]</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    A --&gt; D[📈 Performance Metrics]</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    A --&gt; E[🏥 Health &amp; Resources]</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    A --&gt; F[🔄 Recent Operations]</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    A --&gt; G[⚡ Management Actions]</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    </span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    style A fill:#e3f2fd</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    style B fill:#f3e5f5</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    style C fill:#e8f5e8</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    style D fill:#fff3e0</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    style E fill:#fce4ec</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    style F fill:#e1f5fe</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    style G fill:#f1f8e9</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="understanding-the-dashboard-sections">Understanding the Dashboard Sections<a href="#understanding-the-dashboard-sections" class="hash-link" aria-label="Direct link to Understanding the Dashboard Sections" title="Direct link to Understanding the Dashboard Sections">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="-overview-cards">📊 Overview Cards<a href="#-overview-cards" class="hash-link" aria-label="Direct link to 📊 Overview Cards" title="Direct link to 📊 Overview Cards">​</a></h3>
+<p>The top section provides four key metrics at a glance:</p>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="-connection-status">🔗 Connection Status<a href="#-connection-status" class="hash-link" aria-label="Direct link to 🔗 Connection Status" title="Direct link to 🔗 Connection Status">​</a></h4>
+<ul>
+<li><strong>Healthy (Green)</strong>: SOLR is responding normally</li>
+<li><strong>Warning (Yellow)</strong>: Minor issues detected</li>
+<li><strong>Critical (Red)</strong>: SOLR is unavailable</li>
+<li><strong>Response Time</strong>: How quickly SOLR responds to requests</li>
+</ul>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="-documents">📊 Documents<a href="#-documents" class="hash-link" aria-label="Direct link to 📊 Documents" title="Direct link to 📊 Documents">​</a></h4>
+<ul>
+<li><strong>Total Count</strong>: Number of documents currently indexed</li>
+<li><strong>Growth Tracking</strong>: Monitor how your index grows over time</li>
+</ul>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="-index-size">💾 Index Size<a href="#-index-size" class="hash-link" aria-label="Direct link to 💾 Index Size" title="Direct link to 💾 Index Size">​</a></h4>
+<ul>
+<li><strong>Storage Usage</strong>: Current space used by the search index</li>
+<li><strong>Monitoring</strong>: Track storage growth for capacity planning</li>
+</ul>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="-performance">⚡ Performance<a href="#-performance" class="hash-link" aria-label="Direct link to ⚡ Performance" title="Direct link to ⚡ Performance">​</a></h4>
+<ul>
+<li><strong>Operations/Second</strong>: Current system throughput</li>
+<li><strong>Performance Indicator</strong>: Color-coded performance rating</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="️-core-information">🏗️ Core Information<a href="#️-core-information" class="hash-link" aria-label="Direct link to 🏗️ Core Information" title="Direct link to 🏗️ Core Information">​</a></h3>
+<p>This section shows technical details about your SOLR setup:</p>
+<ul>
+<li><strong>Core Name</strong>: The SOLR core being used (<code>openregister</code>)</li>
+<li><strong>Status</strong>: Whether the core is active and operational</li>
+<li><strong>Tenant ID</strong>: Your unique identifier for data isolation</li>
+<li><strong>Endpoint URL</strong>: The internal SOLR connection address</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="-performance-metrics">📈 Performance Metrics<a href="#-performance-metrics" class="hash-link" aria-label="Direct link to 📈 Performance Metrics" title="Direct link to 📈 Performance Metrics">​</a></h3>
+<p>Monitor your search performance with detailed statistics:</p>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="search-operations">Search Operations<a href="#search-operations" class="hash-link" aria-label="Direct link to Search Operations" title="Direct link to Search Operations">​</a></h4>
+<ul>
+<li><strong>Total Searches</strong>: Cumulative search queries processed</li>
+<li><strong>Average Time</strong>: How long searches take to complete</li>
+</ul>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="index-operations">Index Operations<a href="#index-operations" class="hash-link" aria-label="Direct link to Index Operations" title="Direct link to Index Operations">​</a></h4>
+<ul>
+<li><strong>Total Indexes</strong>: Documents added to the search index</li>
+<li><strong>Average Time</strong>: How long indexing operations take</li>
+</ul>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="error-monitoring">Error Monitoring<a href="#error-monitoring" class="hash-link" aria-label="Direct link to Error Monitoring" title="Direct link to Error Monitoring">​</a></h4>
+<ul>
+<li><strong>Error Rate</strong>: Percentage of failed operations<!-- -->
+<ul>
+<li><strong>Green (0-5%)</strong>: Excellent performance</li>
+<li><strong>Yellow (5-10%)</strong>: Monitor closely</li>
+<li><strong>Red (&gt;10%)</strong>: Requires attention</li>
+</ul>
+</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="-health--resources">🏥 Health &amp; Resources<a href="#-health--resources" class="hash-link" aria-label="Direct link to 🏥 Health &amp; Resources" title="Direct link to 🏥 Health &amp; Resources">​</a></h3>
+<p>Monitor system health and resource usage:</p>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="overall-status">Overall Status<a href="#overall-status" class="hash-link" aria-label="Direct link to Overall Status" title="Direct link to Overall Status">​</a></h4>
+<ul>
+<li><strong>Status Indicator</strong>: Visual health indicator with color coding</li>
+<li><strong>Uptime</strong>: How long SOLR has been running</li>
+<li><strong>Last Optimization</strong>: When the index was last optimized</li>
+</ul>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="memory-usage">Memory Usage<a href="#memory-usage" class="hash-link" aria-label="Direct link to Memory Usage" title="Direct link to Memory Usage">​</a></h4>
+<ul>
+<li><strong>Current Usage</strong>: RAM currently used by SOLR</li>
+<li><strong>Memory Limit</strong>: Maximum available memory</li>
+<li><strong>Usage Percentage</strong>: Visual progress bar</li>
+</ul>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="disk-usage">Disk Usage<a href="#disk-usage" class="hash-link" aria-label="Direct link to Disk Usage" title="Direct link to Disk Usage">​</a></h4>
+<ul>
+<li><strong>Storage Used</strong>: Disk space consumed</li>
+<li><strong>Available Space</strong>: Remaining storage capacity</li>
+<li><strong>Usage Percentage</strong>: Visual progress bar</li>
+</ul>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="health-warnings">Health Warnings<a href="#health-warnings" class="hash-link" aria-label="Direct link to Health Warnings" title="Direct link to Health Warnings">​</a></h4>
+<ul>
+<li><strong>Proactive Alerts</strong>: Issues that need attention</li>
+<li><strong>Recommendations</strong>: Suggested actions to improve performance</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="-recent-operations">🔄 Recent Operations<a href="#-recent-operations" class="hash-link" aria-label="Direct link to 🔄 Recent Operations" title="Direct link to 🔄 Recent Operations">​</a></h3>
+<p>Track recent SOLR activity and system status:</p>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="recent-activity">Recent Activity<a href="#recent-activity" class="hash-link" aria-label="Direct link to Recent Activity" title="Direct link to Recent Activity">​</a></h4>
+<ul>
+<li><strong>Operation Types</strong>: Index, search, and delete operations</li>
+<li><strong>Operation Counts</strong>: Number of each operation type</li>
+<li><strong>Timestamps</strong>: When operations occurred</li>
+<li><strong>Status</strong>: Success/failure indicators</li>
+</ul>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="queue-status">Queue Status<a href="#queue-status" class="hash-link" aria-label="Direct link to Queue Status" title="Direct link to Queue Status">​</a></h4>
+<ul>
+<li><strong>Pending Operations</strong>: Operations waiting to be processed</li>
+<li><strong>Processing Status</strong>: Whether operations are currently running</li>
+<li><strong>Last Processed</strong>: When the last operation completed</li>
+</ul>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="commit-settings">Commit Settings<a href="#commit-settings" class="hash-link" aria-label="Direct link to Commit Settings" title="Direct link to Commit Settings">​</a></h4>
+<ul>
+<li><strong>Auto Commit</strong>: Whether automatic commits are enabled</li>
+<li><strong>Commit Interval</strong>: How often changes are committed</li>
+<li><strong>Last Commit</strong>: When the index was last committed</li>
+</ul>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="management-operations">Management Operations<a href="#management-operations" class="hash-link" aria-label="Direct link to Management Operations" title="Direct link to Management Operations">​</a></h2>
+<p>The dashboard provides several management tools to maintain optimal SOLR performance:</p>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="-warmup-index">🔥 Warmup Index<a href="#-warmup-index" class="hash-link" aria-label="Direct link to 🔥 Warmup Index" title="Direct link to 🔥 Warmup Index">​</a></h3>
+<p><strong>Purpose</strong>: Preloads SOLR caches for optimal performance</p>
+<p><strong>When to Use</strong>:</p>
+<ul>
+<li>After SOLR restart</li>
+<li>Before high-traffic periods</li>
+<li>When performance seems slower than usual</li>
+</ul>
+<p><strong>What it Does</strong>:</p>
+<ul>
+<li>Tests SOLR connectivity</li>
+<li>Executes sample search queries</li>
+<li>Preloads frequently used data into memory</li>
+<li>Commits any pending changes</li>
+</ul>
+<p><strong>Steps</strong>:</p>
+<ol>
+<li>Click the <strong>Warmup Index</strong> button</li>
+<li>Wait for the operation to complete (usually 1-3 seconds)</li>
+<li>Check the success notification</li>
+</ol>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="-commit-index">✅ Commit Index<a href="#-commit-index" class="hash-link" aria-label="Direct link to ✅ Commit Index" title="Direct link to ✅ Commit Index">​</a></h3>
+<p><strong>Purpose</strong>: Forces SOLR to save all pending changes to disk</p>
+<p><strong>When to Use</strong>:</p>
+<ul>
+<li>After bulk data imports</li>
+<li>Before taking backups</li>
+<li>When data consistency is critical</li>
+</ul>
+<p><strong>What it Does</strong>:</p>
+<ul>
+<li>Saves all uncommitted changes permanently</li>
+<li>Makes recent changes searchable</li>
+<li>Ensures data durability</li>
+</ul>
+<p><strong>Steps</strong>:</p>
+<ol>
+<li>Click the <strong>Commit</strong> button</li>
+<li>Operation typically completes in under 1 second</li>
+<li>Verify success in the notification</li>
+</ol>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="-optimize-index">🔧 Optimize Index<a href="#-optimize-index" class="hash-link" aria-label="Direct link to 🔧 Optimize Index" title="Direct link to 🔧 Optimize Index">​</a></h3>
+<p><strong>Purpose</strong>: Improves search performance by reorganizing the index structure</p>
+<p><strong>When to Use</strong>:</p>
+<ul>
+<li>Weekly maintenance (for active systems)</li>
+<li>After large data imports or deletions</li>
+<li>When the dashboard shows &quot;Optimization Recommended&quot;</li>
+<li>If search performance has degraded</li>
+</ul>
+<p><strong>What it Does</strong>:</p>
+<ul>
+<li>Merges index segments for better performance</li>
+<li>Removes deleted documents from the index</li>
+<li>Improves query response times</li>
+<li>Reduces storage usage</li>
+</ul>
+<p><strong>Steps</strong>:</p>
+<ol>
+<li>Click the <strong>Optimize</strong> button</li>
+<li>Wait for completion (can take several minutes for large indexes)</li>
+<li>Monitor the progress and success notification</li>
+</ol>
+<p><strong>⚠️ Note</strong>: Optimization can take time and uses significant resources. Schedule during low-traffic periods.</p>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="️-clear-index">🗑️ Clear Index<a href="#️-clear-index" class="hash-link" aria-label="Direct link to 🗑️ Clear Index" title="Direct link to 🗑️ Clear Index">​</a></h3>
+<p><strong>Purpose</strong>: Completely removes all data from the search index</p>
+<p><strong>⚠️ DANGER</strong>: This operation is <strong>IRREVERSIBLE</strong> and will delete all search data</p>
+<p><strong>When to Use</strong>:</p>
+<ul>
+<li>During development/testing only</li>
+<li>When performing full data reindex</li>
+<li>To resolve corrupted index issues</li>
+<li><strong>NEVER</strong> in production without backup</li>
+</ul>
+<p><strong>What it Does</strong>:</p>
+<ul>
+<li>Removes all documents from the search index</li>
+<li>Resets all statistics and counters</li>
+<li>Makes the search index empty (fallback to database search)</li>
+</ul>
+<p><strong>Steps</strong>:</p>
+<ol>
+<li>Click the <strong>Clear Index</strong> button</li>
+<li><strong>READ THE WARNING</strong> carefully</li>
+<li>Type confirmation if required</li>
+<li>Confirm you understand data will be lost</li>
+<li>Click <strong>Clear Index</strong> in the confirmation dialog</li>
+<li>Wait for completion notification</li>
+</ol>
+<p><strong>Recovery</strong>: After clearing, you&#x27;ll need to reindex all your data through the appropriate data import/sync processes.</p>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="interpreting-dashboard-information">Interpreting Dashboard Information<a href="#interpreting-dashboard-information" class="hash-link" aria-label="Direct link to Interpreting Dashboard Information" title="Direct link to Interpreting Dashboard Information">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="performance-indicators">Performance Indicators<a href="#performance-indicators" class="hash-link" aria-label="Direct link to Performance Indicators" title="Direct link to Performance Indicators">​</a></h3>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="connection-status-colors">Connection Status Colors<a href="#connection-status-colors" class="hash-link" aria-label="Direct link to Connection Status Colors" title="Direct link to Connection Status Colors">​</a></h4>
+<ul>
+<li><strong>🟢 Green</strong>: Excellent performance, no issues</li>
+<li><strong>🟡 Yellow</strong>: Acceptable performance, monitor trends</li>
+<li><strong>🔴 Red</strong>: Performance issues, immediate attention needed</li>
+<li><strong>⚪ Gray</strong>: Status unknown, check SOLR availability</li>
+</ul>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="resource-usage-guidelines">Resource Usage Guidelines<a href="#resource-usage-guidelines" class="hash-link" aria-label="Direct link to Resource Usage Guidelines" title="Direct link to Resource Usage Guidelines">​</a></h4>
+<ul>
+<li>
+<p><strong>Memory Usage</strong>:</p>
+<ul>
+<li><strong>0-70%</strong>: Normal operation</li>
+<li><strong>70-90%</strong>: Monitor closely, consider increasing memory</li>
+<li><strong>90-100%</strong>: Critical, performance degradation likely</li>
+</ul>
+</li>
+<li>
+<p><strong>Disk Usage</strong>:</p>
+<ul>
+<li><strong>0-80%</strong>: Normal operation</li>
+<li><strong>80-95%</strong>: Plan for storage expansion</li>
+<li><strong>95-100%</strong>: Critical, cleanup or expansion needed</li>
+</ul>
+</li>
+</ul>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="error-rate-interpretation">Error Rate Interpretation<a href="#error-rate-interpretation" class="hash-link" aria-label="Direct link to Error Rate Interpretation" title="Direct link to Error Rate Interpretation">​</a></h4>
+<ul>
+<li><strong>0-1%</strong>: Excellent system health</li>
+<li><strong>1-5%</strong>: Good performance, occasional expected errors</li>
+<li><strong>5-10%</strong>: Elevated error rate, investigate causes</li>
+<li><strong>&gt;10%</strong>: High error rate, requires immediate attention</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="optimization-recommendations">Optimization Recommendations<a href="#optimization-recommendations" class="hash-link" aria-label="Direct link to Optimization Recommendations" title="Direct link to Optimization Recommendations">​</a></h3>
+<p>The dashboard provides intelligent recommendations:</p>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="optimization-recommended-notice">&quot;Optimization Recommended&quot; Notice<a href="#optimization-recommended-notice" class="hash-link" aria-label="Direct link to &quot;Optimization Recommended&quot; Notice" title="Direct link to &quot;Optimization Recommended&quot; Notice">​</a></h4>
+<p>Appears when:</p>
+<ul>
+<li>Index has grown significantly since last optimization</li>
+<li>Many documents have been deleted</li>
+<li>Search performance has degraded</li>
+<li>Fragmentation is detected</li>
+</ul>
+<p><strong>Action</strong>: Run optimization during low-traffic periods</p>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="high-error-rate-warnings">High Error Rate Warnings<a href="#high-error-rate-warnings" class="hash-link" aria-label="Direct link to High Error Rate Warnings" title="Direct link to High Error Rate Warnings">​</a></h4>
+<p>Appears when:</p>
+<ul>
+<li>Error rate exceeds 5%</li>
+<li>Connection issues detected</li>
+<li>Resource constraints identified</li>
+</ul>
+<p><strong>Actions</strong>:</p>
+<ol>
+<li>Check SOLR service status</li>
+<li>Review system resources</li>
+<li>Check error logs</li>
+<li>Consider restarting SOLR service</li>
+</ol>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="resource-warnings">Resource Warnings<a href="#resource-warnings" class="hash-link" aria-label="Direct link to Resource Warnings" title="Direct link to Resource Warnings">​</a></h4>
+<p>Appears when:</p>
+<ul>
+<li>Memory usage exceeds 85%</li>
+<li>Disk usage exceeds 90%</li>
+<li>Performance degradation detected</li>
+</ul>
+<p><strong>Actions</strong>:</p>
+<ol>
+<li>Review resource allocation</li>
+<li>Consider scaling up resources</li>
+<li>Optimize query patterns</li>
+<li>Clean up old data</li>
+</ol>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="troubleshooting-common-issues">Troubleshooting Common Issues<a href="#troubleshooting-common-issues" class="hash-link" aria-label="Direct link to Troubleshooting Common Issues" title="Direct link to Troubleshooting Common Issues">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="dashboard-shows-solr-unavailable">Dashboard Shows &quot;SOLR Unavailable&quot;<a href="#dashboard-shows-solr-unavailable" class="hash-link" aria-label="Direct link to Dashboard Shows &quot;SOLR Unavailable&quot;" title="Direct link to Dashboard Shows &quot;SOLR Unavailable&quot;">​</a></h3>
+<p><strong>Symptoms</strong>:</p>
+<ul>
+<li>Connection status shows &quot;unavailable&quot; or &quot;critical&quot;</li>
+<li>Dashboard displays error messages</li>
+<li>Search functionality falls back to database</li>
+</ul>
+<p><strong>Solutions</strong>:</p>
+<ol>
+<li>
+<p><strong>Check SOLR Service</strong>:</p>
+<ul>
+<li>Verify SOLR container is running</li>
+<li>Check Docker logs for SOLR errors</li>
+<li>Restart SOLR service if needed</li>
+</ul>
+</li>
+<li>
+<p><strong>Verify Configuration</strong>:</p>
+<ul>
+<li>Check SOLR host/port settings</li>
+<li>Verify network connectivity</li>
+<li>Test SOLR admin interface access</li>
+</ul>
+</li>
+<li>
+<p><strong>Test Connection</strong>:</p>
+<ul>
+<li>Use the dashboard&#x27;s connection test feature</li>
+<li>Check response times and error messages</li>
+</ul>
+</li>
+</ol>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="poor-search-performance">Poor Search Performance<a href="#poor-search-performance" class="hash-link" aria-label="Direct link to Poor Search Performance" title="Direct link to Poor Search Performance">​</a></h3>
+<p><strong>Symptoms</strong>:</p>
+<ul>
+<li>High average search times (&gt;100ms)</li>
+<li>Low operations per second</li>
+<li>User complaints about slow search</li>
+</ul>
+<p><strong>Solutions</strong>:</p>
+<ol>
+<li>
+<p><strong>Run Optimization</strong>:</p>
+<ul>
+<li>Use the dashboard&#x27;s optimize function</li>
+<li>Schedule regular optimization</li>
+</ul>
+</li>
+<li>
+<p><strong>Check Resources</strong>:</p>
+<ul>
+<li>Monitor memory usage</li>
+<li>Ensure adequate RAM allocation</li>
+<li>Check disk I/O performance</li>
+</ul>
+</li>
+<li>
+<p><strong>Review Query Patterns</strong>:</p>
+<ul>
+<li>Analyze search queries for complexity</li>
+<li>Consider query optimization</li>
+<li>Review indexing strategy</li>
+</ul>
+</li>
+</ol>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="high-memory-usage">High Memory Usage<a href="#high-memory-usage" class="hash-link" aria-label="Direct link to High Memory Usage" title="Direct link to High Memory Usage">​</a></h3>
+<p><strong>Symptoms</strong>:</p>
+<ul>
+<li>Memory usage consistently &gt;85%</li>
+<li>Slow response times</li>
+<li>Occasional out-of-memory errors</li>
+</ul>
+<p><strong>Solutions</strong>:</p>
+<ol>
+<li>
+<p><strong>Increase SOLR Memory</strong>:</p>
+<div class="language-yaml codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-yaml codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token comment" style="color:#999988;font-style:italic"># In docker-compose.yml</span><span class="token plain"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"></span><span class="token key atrule" style="color:#00a4db">environment</span><span class="token punctuation" style="color:#393A34">:</span><span class="token plain"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token punctuation" style="color:#393A34">-</span><span class="token plain"> SOLR_HEAP=1024m  </span><span class="token comment" style="color:#999988;font-style:italic"># Increase from 512m</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+</li>
+<li>
+<p><strong>Optimize Queries</strong>:</p>
+<ul>
+<li>Review complex search patterns</li>
+<li>Limit result set sizes</li>
+<li>Use appropriate filters</li>
+</ul>
+</li>
+<li>
+<p><strong>Index Maintenance</strong>:</p>
+<ul>
+<li>Run regular optimizations</li>
+<li>Clean up old/unused data</li>
+<li>Monitor index growth</li>
+</ul>
+</li>
+</ol>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="index-size-growing-too-fast">Index Size Growing Too Fast<a href="#index-size-growing-too-fast" class="hash-link" aria-label="Direct link to Index Size Growing Too Fast" title="Direct link to Index Size Growing Too Fast">​</a></h3>
+<p><strong>Symptoms</strong>:</p>
+<ul>
+<li>Disk usage increasing rapidly</li>
+<li>Index size much larger than source data</li>
+<li>Storage warnings</li>
+</ul>
+<p><strong>Solutions</strong>:</p>
+<ol>
+<li>
+<p><strong>Run Optimization</strong>:</p>
+<ul>
+<li>Remove deleted documents</li>
+<li>Compact index segments</li>
+<li>Reclaim disk space</li>
+</ul>
+</li>
+<li>
+<p><strong>Review Data</strong>:</p>
+<ul>
+<li>Check for duplicate indexing</li>
+<li>Review retention policies</li>
+<li>Clean up test/temporary data</li>
+</ul>
+</li>
+<li>
+<p><strong>Monitor Growth</strong>:</p>
+<ul>
+<li>Track index size trends</li>
+<li>Set up disk usage alerts</li>
+<li>Plan storage capacity</li>
+</ul>
+</li>
+</ol>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="best-practices">Best Practices<a href="#best-practices" class="hash-link" aria-label="Direct link to Best Practices" title="Direct link to Best Practices">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="regular-maintenance">Regular Maintenance<a href="#regular-maintenance" class="hash-link" aria-label="Direct link to Regular Maintenance" title="Direct link to Regular Maintenance">​</a></h3>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="daily-tasks">Daily Tasks<a href="#daily-tasks" class="hash-link" aria-label="Direct link to Daily Tasks" title="Direct link to Daily Tasks">​</a></h4>
+<ul>
+<li>Check dashboard health status</li>
+<li>Monitor error rates</li>
+<li>Review performance trends</li>
+</ul>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="weekly-tasks">Weekly Tasks<a href="#weekly-tasks" class="hash-link" aria-label="Direct link to Weekly Tasks" title="Direct link to Weekly Tasks">​</a></h4>
+<ul>
+<li>Run index optimization</li>
+<li>Review resource usage trends</li>
+<li>Check for system warnings</li>
+</ul>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="monthly-tasks">Monthly Tasks<a href="#monthly-tasks" class="hash-link" aria-label="Direct link to Monthly Tasks" title="Direct link to Monthly Tasks">​</a></h4>
+<ul>
+<li>Analyze performance reports</li>
+<li>Review and clean old data</li>
+<li>Update capacity planning</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="performance-optimization">Performance Optimization<a href="#performance-optimization" class="hash-link" aria-label="Direct link to Performance Optimization" title="Direct link to Performance Optimization">​</a></h3>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="search-optimization">Search Optimization<a href="#search-optimization" class="hash-link" aria-label="Direct link to Search Optimization" title="Direct link to Search Optimization">​</a></h4>
+<ul>
+<li>Use specific field searches when possible</li>
+<li>Implement proper result pagination</li>
+<li>Cache frequently used queries</li>
+<li>Monitor slow query patterns</li>
+</ul>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="index-optimization">Index Optimization<a href="#index-optimization" class="hash-link" aria-label="Direct link to Index Optimization" title="Direct link to Index Optimization">​</a></h4>
+<ul>
+<li>Schedule optimization during low-traffic periods</li>
+<li>Run optimization after bulk data operations</li>
+<li>Monitor index fragmentation</li>
+<li>Balance optimization frequency vs. performance impact</li>
+</ul>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="resource-management">Resource Management<a href="#resource-management" class="hash-link" aria-label="Direct link to Resource Management" title="Direct link to Resource Management">​</a></h4>
+<ul>
+<li>Monitor resource trends over time</li>
+<li>Plan capacity increases proactively</li>
+<li>Set up alerting for resource thresholds</li>
+<li>Document resource requirements for different workloads</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="security-considerations">Security Considerations<a href="#security-considerations" class="hash-link" aria-label="Direct link to Security Considerations" title="Direct link to Security Considerations">​</a></h3>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="access-control">Access Control<a href="#access-control" class="hash-link" aria-label="Direct link to Access Control" title="Direct link to Access Control">​</a></h4>
+<ul>
+<li>Limit dashboard access to administrators</li>
+<li>Use secure connection methods</li>
+<li>Regularly review access logs</li>
+<li>Implement proper authentication</li>
+</ul>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="data-protection">Data Protection<a href="#data-protection" class="hash-link" aria-label="Direct link to Data Protection" title="Direct link to Data Protection">​</a></h4>
+<ul>
+<li>Never run &quot;Clear Index&quot; in production without backup</li>
+<li>Test all operations in development first</li>
+<li>Document all management procedures</li>
+<li>Maintain regular backup schedules</li>
+</ul>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="getting-help">Getting Help<a href="#getting-help" class="hash-link" aria-label="Direct link to Getting Help" title="Direct link to Getting Help">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="information-gathering">Information Gathering<a href="#information-gathering" class="hash-link" aria-label="Direct link to Information Gathering" title="Direct link to Information Gathering">​</a></h3>
+<p>When reporting issues, include:</p>
+<ul>
+<li>Dashboard screenshots showing the problem</li>
+<li>Error messages from notifications</li>
+<li>Performance metrics from the dashboard</li>
+<li>Recent operations and their status</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="support-resources">Support Resources<a href="#support-resources" class="hash-link" aria-label="Direct link to Support Resources" title="Direct link to Support Resources">​</a></h3>
+<ul>
+<li><strong>Technical Documentation</strong>: Detailed implementation guides</li>
+<li><strong>API Documentation</strong>: For custom integrations</li>
+<li><strong>Community Forums</strong>: User discussions and solutions</li>
+<li><strong>Issue Tracker</strong>: Bug reports and feature requests</li>
+</ul>
+<p>The SOLR Dashboard provides powerful tools for managing your search infrastructure. Regular monitoring and proactive maintenance will ensure optimal performance and user satisfaction.</p></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col"><a href="https://github.com/conductionnl/openregister/tree/main/website/docs/user-guide/solr-dashboard-user-guide.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="pagination-nav docusaurus-mt-lg" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--prev" href="/docs/user-guide/semantic-search"><div class="pagination-nav__sublabel">Previous</div><div class="pagination-nav__label">Semantic Search User Guide</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#overview" class="table-of-contents__link toc-highlight">Overview</a></li><li><a href="#accessing-the-dashboard" class="table-of-contents__link toc-highlight">Accessing the Dashboard</a></li><li><a href="#dashboard-overview" class="table-of-contents__link toc-highlight">Dashboard Overview</a></li><li><a href="#understanding-the-dashboard-sections" class="table-of-contents__link toc-highlight">Understanding the Dashboard Sections</a><ul><li><a href="#-overview-cards" class="table-of-contents__link toc-highlight">📊 Overview Cards</a></li><li><a href="#️-core-information" class="table-of-contents__link toc-highlight">🏗️ Core Information</a></li><li><a href="#-performance-metrics" class="table-of-contents__link toc-highlight">📈 Performance Metrics</a></li><li><a href="#-health--resources" class="table-of-contents__link toc-highlight">🏥 Health &amp; Resources</a></li><li><a href="#-recent-operations" class="table-of-contents__link toc-highlight">🔄 Recent Operations</a></li></ul></li><li><a href="#management-operations" class="table-of-contents__link toc-highlight">Management Operations</a><ul><li><a href="#-warmup-index" class="table-of-contents__link toc-highlight">🔥 Warmup Index</a></li><li><a href="#-commit-index" class="table-of-contents__link toc-highlight">✅ Commit Index</a></li><li><a href="#-optimize-index" class="table-of-contents__link toc-highlight">🔧 Optimize Index</a></li><li><a href="#️-clear-index" class="table-of-contents__link toc-highlight">🗑️ Clear Index</a></li></ul></li><li><a href="#interpreting-dashboard-information" class="table-of-contents__link toc-highlight">Interpreting Dashboard Information</a><ul><li><a href="#performance-indicators" class="table-of-contents__link toc-highlight">Performance Indicators</a></li><li><a href="#optimization-recommendations" class="table-of-contents__link toc-highlight">Optimization Recommendations</a></li></ul></li><li><a href="#troubleshooting-common-issues" class="table-of-contents__link toc-highlight">Troubleshooting Common Issues</a><ul><li><a href="#dashboard-shows-solr-unavailable" class="table-of-contents__link toc-highlight">Dashboard Shows &quot;SOLR Unavailable&quot;</a></li><li><a href="#poor-search-performance" class="table-of-contents__link toc-highlight">Poor Search Performance</a></li><li><a href="#high-memory-usage" class="table-of-contents__link toc-highlight">High Memory Usage</a></li><li><a href="#index-size-growing-too-fast" class="table-of-contents__link toc-highlight">Index Size Growing Too Fast</a></li></ul></li><li><a href="#best-practices" class="table-of-contents__link toc-highlight">Best Practices</a><ul><li><a href="#regular-maintenance" class="table-of-contents__link toc-highlight">Regular Maintenance</a></li><li><a href="#performance-optimization" class="table-of-contents__link toc-highlight">Performance Optimization</a></li><li><a href="#security-considerations" class="table-of-contents__link toc-highlight">Security Considerations</a></li></ul></li><li><a href="#getting-help" class="table-of-contents__link toc-highlight">Getting Help</a><ul><li><a href="#information-gathering" class="table-of-contents__link toc-highlight">Information Gathering</a></li><li><a href="#support-resources" class="table-of-contents__link toc-highlight">Support Resources</a></li></ul></li></ul></div></div></div></div></main></div></div></div><footer class="footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="col footer__col"><div class="footer__title">Docs</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/docs/intro">Documentation</a></li></ul></div><div class="col footer__col"><div class="footer__title">Community</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://github.com/conductionnl/openregister" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub<svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_nPIU"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2025 for <a href="https://openwebconcept.nl">Open Webconcept</a> by <a href="https://conduction.nl">Conduction B.V.</a></div></div></div></footer></div>
+</body>
+</html>
