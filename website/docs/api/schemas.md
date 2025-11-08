@@ -12,11 +12,11 @@ If you request a schema or register by slug or ID that does not exist, the API w
 
 or
 
-'
+```json
 {
-  'message': 'Register not found: voorzieningen'
+  "message": "Register not found: voorzieningen"
 }
-'
+```
 
 **Note:**
 - The error message will specify whether the missing resource is a register or a schema.
