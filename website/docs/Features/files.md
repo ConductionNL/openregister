@@ -605,8 +605,8 @@ Files that are not publicly shared still have 'accessUrl' and 'downloadUrl' prop
 #### Authenticated URLs
 
 Non-shared files return URLs with the following format:
-- **Access URL**: '/index.php/core/preview?fileId={fileId}&x=1920&y=1080&a=1'
-- **Download URL**: '/index.php/apps/openregister/api/files/{fileId}/download'
+- **Access URL**: `/index.php/core/preview?fileId={fileId}&x=1920&y=1080&a=1`
+- **Download URL**: `/index.php/apps/openregister/api/files/{fileId}/download`
 
 These URLs require the user to be authenticated to Nextcloud.
 
