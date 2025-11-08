@@ -455,5 +455,5 @@ curl "http://solr:8983/solr/admin/collections?action=LIST"
 curl "http://solr:8983/solr/admin/collections?action=CLUSTERSTATUS"
 ```
 
-*For detailed implementation information, see [Multi-Tenancy Technical Documentation](../multi-tenancy.md)*
-*For testing information, see [Multi-Tenancy Testing Framework](../multi-tenancy-testing.md)* 
+*For testing information, see [Multi-Tenancy Testing Framework](../technical/multi-tenancy-testing.md)*
+*For API details, see [Organisations API](../api/organisations.md)* 
