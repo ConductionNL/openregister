@@ -36,18 +36,17 @@ This provides a full bidirectional view of schema relationships.
 
 ### Example Response
 
-'
+```json
 {
-  'incoming': [
-    { 'id': 2, 'title': 'Referrer Schema', ... },
-    ...
+  "incoming": [
+    { "id": 2, "title": "Referrer Schema" }
   ],
-  'outgoing': [
-    { 'id': 3, 'title': 'Referenced Schema', ... },
-    ...
+  "outgoing": [
+    { "id": 3, "title": "Referenced Schema" }
   ],
-  'total': 2
+  "total": 2
 }
+```
 '
 
 - 'incoming' contains schemas that reference the given schema.
