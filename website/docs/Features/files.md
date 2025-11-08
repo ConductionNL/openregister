@@ -349,12 +349,12 @@ Navigate to **Files** in the main menu to view all files with their extraction s
 
 OpenRegister provides dedicated API endpoints for file text extraction (moved from settings to core functionality):
 
-- 'GET /api/files' - List all tracked files with extraction status
-- 'GET /api/files/{id}' - Get single file extraction information
-- 'POST /api/files/{id}/extract' - Extract text from specific file
-- 'POST /api/files/extract' - Extract all pending files (batch processing)
-- 'POST /api/files/retry-failed' - Retry all failed extractions
-- 'GET /api/files/stats' - Get extraction statistics
+- `GET /api/files` - List all tracked files with extraction status
+- `GET /api/files/{id}` - Get single file extraction information
+- `POST /api/files/{id}/extract` - Extract text from specific file
+- `POST /api/files/extract` - Extract all pending files (batch processing)
+- `POST /api/files/retry-failed` - Retry all failed extractions
+- `GET /api/files/stats` - Get extraction statistics
 
 **Smart Re-Extraction**:
 

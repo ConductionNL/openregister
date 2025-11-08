@@ -261,7 +261,7 @@ File properties allow you to attach files directly to specific object properties
 | 'allowedTypes' | array | Array of allowed MIME types | '['image/jpeg', 'image/png']' |
 | 'maxSize' | integer | Maximum file size in bytes | '5242880' (5MB) |
 | 'allowedTags' | array | Tags that are allowed on files | '['document', 'public']' |
-| 'autoTags' | array | Tags automatically applied to uploaded files | '['auto-uploaded', 'property-{propertyName}']' |
+| 'autoTags' | array | Tags automatically applied to uploaded files | `['auto-uploaded', 'property-{propertyName}']` |
 
 #### File Input Types
 
@@ -297,8 +297,8 @@ Auto tags support placeholder replacement:
 
 | Placeholder | Replacement | Example |
 |-------------|-------------|---------|
-| '{property}' or '{propertyName}' | Property name | 'property-avatar' |
-| '{index}' | Array index (for array properties) | 'file-0', 'file-1' |
+| `'{property}'` or `'{propertyName}'` | Property name | 'property-avatar' |
+| `'{index}'` | Array index (for array properties) | 'file-0', 'file-1' |
 
 #### File Upload Examples
 
