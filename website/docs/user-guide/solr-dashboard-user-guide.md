@@ -11,8 +11,6 @@ The SOLR Search Management Dashboard provides an intuitive interface for monitor
 3. Scroll down to the **SOLR Search Management** section
 4. The dashboard will automatically load with current statistics
 
-![SOLR Dashboard Location](../images/solr-dashboard-location.png)
-
 ## Dashboard Overview
 
 The dashboard is organized into several key sections, each providing specific insights into your SOLR search performance:
