@@ -118,7 +118,7 @@ When SOLR is enabled, OpenRegister uses a hybrid caching approach:
 - **Object loading** uses traditional cache layers
 - **Automatic fallback** to database when SOLR unavailable
 
-See [SOLR Search Engine](./solr-search-engine.md) for detailed information.
+See [SOLR Setup & Configuration](./solr-setup-configuration.md) for detailed information.
 
 ## Best Practices
 

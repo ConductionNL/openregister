@@ -613,6 +613,6 @@ For best results, configure in this order:
 
 For more detailed information:
 - Search Configuration: See [SOLR Setup Guide](../technical/solr-setup-configuration.md)
-- File Processing: See [File Attachments Guide](../file-attachments.md)
-- LLM Features: See [Semantic Search Guide](semantic-search.md)
+- File Processing: See [File Management Guide](../Features/files.md)
+- LLM Features: See [Semantic Search Guide](../user-guide/semantic-search.md)
 

@@ -309,6 +309,6 @@ If you encounter issues:
 ## See Also
 
 - [AI Agents](/features/agents) - Learn about creating and configuring agents
-- [Semantic Search](/user/semantic-search) - Understand how the AI finds information
+- [Semantic Search](../user-guide/semantic-search.md) - Understand how the AI finds information
 - [Conversations API](/api/conversations) - For developers integrating with the API
 
