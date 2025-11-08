@@ -41,9 +41,9 @@ Before processing any file, the system validates:
 
 #### Error Messages
 If an error occurs during upload, you'll receive a detailed error message:
-- 'File upload error for {filename}: The uploaded file exceeds the upload_max_filesize directive in php.ini'
-- 'Temporary file not found or not readable for: {filename}'
-- 'Failed to read uploaded file content for: {filename}'
+- `File upload error for {filename}: The uploaded file exceeds the upload_max_filesize directive in php.ini`
+- `Temporary file not found or not readable for: {filename}`
+- `Failed to read uploaded file content for: {filename}`
 
 These validations prevent issues such as:
 - Database constraint violations in the versioning system
