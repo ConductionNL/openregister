@@ -65,8 +65,8 @@ After UUID resolution:
 
 **Performance Characteristics:**
 - **Batch queries**: All UUIDs resolved in one DB query (no N+1 problem)
-- **Cached**: <10ms for cached names
-- **Uncached**: <100ms for 100 UUIDs (batch DB query)
+- **Cached**: &lt;10ms for cached names
+- **Uncached**: &lt;100ms for 100 UUIDs (batch DB query)
 - **Lazy loading**: Service only loaded when facets contain UUIDs
 
 **Service Integration:**
