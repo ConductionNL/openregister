@@ -2123,7 +2123,7 @@ This is useful for:
 - **Refactoring**: Plan schema restructuring with full visibility of dependencies
 
 The 'extendedBy' property is automatically populated for:
-- Individual schema endpoint: 'GET /api/schemas/{id}'
+- Individual schema endpoint: `GET /api/schemas/{id}`
 - Collection endpoint: 'GET /api/schemas'
 
 **Example Response for Collection:**
