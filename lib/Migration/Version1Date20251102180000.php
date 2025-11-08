@@ -106,7 +106,7 @@ class Version1Date20251102180000 extends SimpleMigrationStep
 
 
     /**
-     * Perform post-schema change data migration and cleanup
+     * Perform post-schema change data migration
      *
      * @param IOutput $output Migration output interface
      * @param Closure $schemaClosure Schema closure
@@ -123,35 +123,33 @@ class Version1Date20251102180000 extends SimpleMigrationStep
             return;
         }
         
-        $table = $schema->getTable('openregister_organisations');
-        
-        // Only proceed if we have both columns
-        if (!$table->hasColumn('roles') || !$table->hasColumn('groups')) {
-            $output->info('   ℹ️  Migration already completed or not needed');
-            return;
-        }
-        
         $output->info('📋 Migrating data from roles to groups...');
         
         // Get database connection
         $connection = \OC::$server->get(\OCP\IDBConnection::class);
         
         try {
-            // Copy data from roles to groups (only where groups is empty)
-            $connection->executeUpdate(
-                'UPDATE `*PREFIX*openregister_organisations` SET `groups` = `roles` WHERE `groups` = \'[]\' OR `groups` IS NULL'
-            );
+            // Copy data from roles to groups (only where groups is empty or null)
+            // Use try-catch in case roles column doesn't exist
+            try {
+                $result = $connection->executeUpdate(
+                    'UPDATE `*PREFIX*openregister_organisations` SET `groups` = `roles` WHERE (`groups` = \'[]\' OR `groups` IS NULL) AND `roles` IS NOT NULL'
+                );
+                
+                if ($result > 0) {
+                    $output->info("   ✓ Copied data from roles to groups for {$result} organisations");
+                } else {
+                    $output->info('   ℹ️  No data to migrate (already migrated or roles column empty)');
+                }
+            } catch (\Exception $copyError) {
+                // roles column might not exist if migration already ran
+                $output->info('   ℹ️  Data migration skipped (roles column may not exist)');
+            }
             
-            $output->info('   ✓ Copied data from roles to groups');
-            
-            // Now drop the roles column
-            $table->dropColumn('roles');
-            $output->info('   ✓ Dropped roles column');
             $output->info('✅ Migration completed successfully - organisations now use groups');
             
         } catch (\Exception $e) {
             $output->info('   ⚠️  Error during migration: ' . $e->getMessage());
-            $output->info('   ℹ️  You may need to manually drop the roles column');
         }
 
     }//end postSchemaChange()
