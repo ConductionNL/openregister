@@ -32,7 +32,7 @@ This provides a full bidirectional view of schema relationships.
 
 ### Example Request
 
-'GET /api/schemas/{id}/related'
+`GET /api/schemas/{id}/related`
 
 ### Example Response
 

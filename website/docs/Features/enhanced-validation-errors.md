@@ -16,7 +16,7 @@ Open Register has been enhanced with improved validation error messages that pro
 ## Problem
 
 Previously, when validation failed, users would receive generic error messages like:
-- 'The required properties ({missing}) are missing'
+- `The required properties ({missing}) are missing`
 - 'Invalid object'
 - Generic type mismatch errors
 
