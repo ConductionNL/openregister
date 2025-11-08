@@ -214,8 +214,8 @@ The discovery system automatically filters out:
 - System fields (starting with @ or _)
 - Nested objects and arrays of objects
 - High cardinality string fields (>50 unique values)
-- Fields appearing in <10% of objects
-- Fields with inconsistent types (<70% type consistency)
+- Fields appearing in &lt;10% of objects
+- Fields with inconsistent types (&lt;70% type consistency)
 
 ### API Integration
 
