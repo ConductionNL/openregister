@@ -29,8 +29,6 @@ The default organisation is the organisation that new users are automatically ad
 3. Optionally enable/disable auto-creation of default organisation
 4. Click **Save Settings**
 
-![Organisation Configuration Settings](../assets/organisation-configuration.png)
-
 ### Via API
 
 #### Get Current Default Organisation Setting
