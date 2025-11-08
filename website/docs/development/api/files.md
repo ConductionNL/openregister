@@ -6,7 +6,7 @@ The frontend now uses the '/filesMultipart' endpoint for uploading files to obje
 
 ### Endpoint
 
-- POST '/index.php/apps/openregister/api/objects/{register}/{schema}/{objectId}/filesMultipart'
+- POST `/index.php/apps/openregister/api/objects/{register}/{schema}/{objectId}/filesMultipart`
 
 ### Required Parameters
 - 'register': Register ID (string or number)
