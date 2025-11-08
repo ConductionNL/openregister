@@ -413,4 +413,4 @@ While facet types are automatically determined, you can influence them through p
 }
 ```
 
-For more advanced faceting features and configuration options, see the [Advanced Faceting Guide](advanced-faceting.md). 
+For more advanced faceting features and configuration options, see the [Unified Faceting System](unified-faceting-system.md) and [Array Faceting](array-faceting.md) guides. 
