@@ -35,7 +35,7 @@ graph TD
 **Issue**: All external apps without user sessions share the same `'anonymous'` cache namespace, causing:
 - **Cache invalidation conflicts** between different apps
 - **Poor cache hit rates** due to mixed usage patterns
-- **Slow responses** (2+ seconds instead of <500ms)
+- **Slow responses** (2+ seconds instead of &lt;500ms)
 - **Resource waste** from repeated identical queries
 
 ## The Solution

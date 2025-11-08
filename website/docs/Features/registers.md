@@ -507,7 +507,7 @@ $results = $solrService->searchObjects([
 
 **2. Schema Selection**
 - Only include schemas that belong together
-- Keep schema lists manageable (<20 schemas)
+- Keep schema lists manageable (&lt;20 schemas)
 - Document why schemas are grouped
 
 **3. Folder Structure**

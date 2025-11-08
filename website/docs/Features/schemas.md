@@ -350,12 +350,14 @@ Auto tags support placeholder replacement:
 
 **All Input Types - Final Storage:**
 
+```json
 // Stored object with file IDs
 {
-  'name': 'John Doe',
-  'avatar': 12345,
-  'documents': [12346, 12347]
+  "name": "John Doe",
+  "avatar": 12345,
+  "documents": [12346, 12347]
 }
+```
 
 // Rendered object with file objects
 {
