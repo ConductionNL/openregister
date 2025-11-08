@@ -306,9 +306,9 @@ $results = $objectService->searchObjectsPaginated($query); // App-specific cachi
 
 | **App Usage Pattern** | **Before** | **After** | **Improvement** |
 |---------------------|-----------|----------|----------------|
-| High-frequency identical queries | 2-3s | <100ms | **🚀 20-30x faster** |
-| Similar query patterns | 1-2s | <300ms | **🚀 5-7x faster** |
-| Mixed query patterns | 2-5s | <500ms | **🚀 4-10x faster** |
+| High-frequency identical queries | 2-3s | &lt;100ms | **🚀 20-30x faster** |
+| Similar query patterns | 1-2s | &lt;300ms | **🚀 5-7x faster** |
+| Mixed query patterns | 2-5s | &lt;500ms | **🚀 4-10x faster** |
 
 ## Troubleshooting
 
