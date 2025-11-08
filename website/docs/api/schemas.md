@@ -4,11 +4,11 @@ If you request a schema or register by slug or ID that does not exist, the API w
 
 ### Example Error Response
 
-'
+```json
 {
-  'message': 'Schema not found: voorzieningen'
+  "message": "Schema not found: voorzieningen"
 }
-'
+```
 
 or
 
