@@ -168,9 +168,12 @@ Ollama is a powerful option that gives you complete control and access to a wide
 
 #### How to Configure LLM Settings
 
-Navigate to the LLM Settings section to configure your AI provider:
+Navigate to the Open Register LLM Settings section to configure your AI provider:
 
-**Location:** **Settings → AI → LLM Configuration**
+**Location:** **Settings → Open Register → LLM Configuration**
+
+![img_13.png](img_13.png)
+![img_14.png](img_14.png)
 
 You'll see the **LLM Configuration Modal** with several sections:
 
