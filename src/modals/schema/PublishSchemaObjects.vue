@@ -111,7 +111,6 @@ import { t } from '@nextcloud/l10n'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
-import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 
 import { navigationStore, schemaStore, registerStore } from '../../store/store.js'
 import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
@@ -126,7 +125,6 @@ export default {
 		Cancel,
 		CheckCircle,
 		AlertCircle,
-		InformationOutline,
 		SchemaStatsBlock,
 	},
 	data() {
@@ -146,7 +144,7 @@ export default {
 		// Watch for changes in schemaItem and reload count if needed
 		'schemaStore.schemaItem': {
 			handler(newSchemaItem) {
-				console.log('Schema item changed in PublishSchemaObjects:', newSchemaItem)
+				console.info('Schema item changed in PublishSchemaObjects:', newSchemaItem)
 				if (newSchemaItem?.id && this.objectCount === 0) {
 					this.loadObjectCount()
 				}
@@ -156,9 +154,9 @@ export default {
 		// Watch for dialog state changes to load count when modal becomes visible
 		'navigationStore.modal': {
 			handler(newModal) {
-				console.log('Modal changed to:', newModal)
+				console.info('Modal changed to:', newModal)
 				if (newModal === 'publishSchemaObjects' && schemaStore.schemaItem?.id) {
-					console.log('PublishSchemaObjects modal opened, loading object count')
+					console.info('PublishSchemaObjects modal opened, loading object count')
 					this.loadObjectCount()
 				}
 			},
@@ -166,24 +164,24 @@ export default {
 		},
 	},
 	async mounted() {
-		console.log('PublishSchemaObjects modal mounted, schemaItem:', schemaStore.schemaItem)
+		console.info('PublishSchemaObjects modal mounted, schemaItem:', schemaStore.schemaItem)
 		await this.loadObjectCount()
 	},
 	methods: {
 		t,
 		async loadObjectCount() {
-			console.log('PublishSchemaObjects loadObjectCount called, schemaItem:', schemaStore.schemaItem)
+			console.info('PublishSchemaObjects loadObjectCount called, schemaItem:', schemaStore.schemaItem)
 			try {
 				if (schemaStore.schemaItem?.id) {
-					console.log('Calling getSchemaStats for schema ID:', schemaStore.schemaItem.id)
+					console.info('Calling getSchemaStats for schema ID:', schemaStore.schemaItem.id)
 					// Use the upgraded stats endpoint to get detailed object counts
 					const stats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
-					console.log('PublishSchemaObjects received stats:', stats)
+					console.info('PublishSchemaObjects received stats:', stats)
 					this.objectStats = stats.objects
 					this.objectCount = stats.objects?.total || 0
-					console.log('PublishSchemaObjects set objectCount to:', this.objectCount)
+					console.info('PublishSchemaObjects set objectCount to:', this.objectCount)
 				} else {
-					console.log('PublishSchemaObjects: No schema item ID available')
+					console.info('PublishSchemaObjects: No schema item ID available')
 				}
 			} catch (err) {
 				console.error('PublishSchemaObjects error in loadObjectCount:', err)
@@ -227,7 +225,7 @@ export default {
 				}
 
 				const data = await response.json()
-				console.log('Publishing response:', data)
+				console.info('Publishing response:', data)
 
 				this.publishResult = data
 				this.success = true

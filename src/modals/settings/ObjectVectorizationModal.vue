@@ -208,7 +208,7 @@ export default {
 
 			// Estimate ~2 seconds per object for embedding generation
 			const totalSeconds = this.stats.objectsToProcess * 2
-			
+
 			if (totalSeconds < 60) return `~${totalSeconds} seconds`
 			if (totalSeconds < 3600) return `~${Math.ceil(totalSeconds / 60)} minutes`
 			return `~${Math.ceil(totalSeconds / 3600)} hours`
@@ -251,7 +251,7 @@ export default {
 			try {
 				const response = await axios.get(generateUrl('/apps/openregister/api/settings/objects/vectorize'))
 				const config = response.data?.data || {}
-				
+
 				this.vectorizeAllViews = config.vectorizeAllViews ?? true
 				this.selectedViews = config.enabledViews || []
 				this.batchSize = config.batchSize || 25
@@ -282,9 +282,9 @@ export default {
 
 				const response = await axios.get(
 					generateUrl('/apps/openregister/api/objects/vectorize/stats'),
-					{ params }
+					{ params },
 				)
-				
+
 				this.stats = {
 					totalObjects: response.data.total_objects || 0,
 					objectsToProcess: response.data.total_objects || 0,
@@ -307,18 +307,18 @@ export default {
 			try {
 				const viewsToProcess = this.vectorizeAllViews ? null : this.selectedViews
 				const objectCount = this.maxObjects > 0 ? this.maxObjects : this.stats.objectsToProcess
-				
+
 				// Process in batches until complete
 				let remaining = objectCount
 				while (remaining > 0 && this.processing) {
 					const currentBatchSize = Math.min(this.batchSize, remaining)
-					
+
 					const response = await axios.post(
 						generateUrl('/apps/openregister/api/objects/vectorize/batch'),
 						{
 							views: viewsToProcess,
 							batchSize: currentBatchSize,
-						}
+						},
 					)
 
 					const result = response.data?.data || {}
@@ -512,4 +512,3 @@ export default {
 	}
 }
 </style>
-
