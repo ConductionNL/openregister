@@ -37,18 +37,18 @@
 				</div>
 				<h2>{{ t('openregister', 'Start a conversation') }}</h2>
 				<p>{{ t('openregister', 'Select an AI agent to begin chatting with your data.') }}</p>
-				
+
 				<!-- Inline Agent Selector -->
 				<div class="agent-selector-container">
-				<AgentSelector
-					:agents="availableAgents"
-					:selected-agent="selectedAgent"
-					:loading="false"
-					:error="availableAgents.length === 0 ? t('openregister', 'No agents available') : null"
-					:inline="true"
-					:starting="startingConversation"
-					@select-agent="selectAgent"
-					@confirm="startConversationWithAgent" />
+					<AgentSelector
+						:agents="availableAgents"
+						:selected-agent="selectedAgent"
+						:loading="false"
+						:error="availableAgents.length === 0 ? t('openregister', 'No agents available') : null"
+						:inline="true"
+						:starting="startingConversation"
+						@select-agent="selectAgent"
+						@confirm="startConversationWithAgent" />
 				</div>
 			</div>
 
@@ -77,6 +77,8 @@
 							<span class="message-sender">{{ message.role === 'user' ? t('openregister', 'You') : t('openregister', 'AI Assistant') }}</span>
 							<span class="message-time">{{ formatTime(message.created) }}</span>
 						</div>
+						<!-- TODO: Fix this eslint rule -->
+						<!-- eslint-disable-next-line vue/no-v-html -->
 						<div class="message-text" v-html="formatMessage(message.content)" />
 
 						<!-- Sources (for AI messages) -->
@@ -119,7 +121,7 @@
 									<ThumbDown :size="16" />
 								</button>
 							</div>
-							
+
 							<!-- Feedback comment input -->
 							<div v-if="message.feedback && message.showFeedbackInput" class="feedback-comment">
 								<textarea
@@ -222,7 +224,6 @@ import Robot from 'vue-material-design-icons/Robot.vue'
 import MessageText from 'vue-material-design-icons/MessageText.vue'
 import Send from 'vue-material-design-icons/Send.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
 import AccountCircle from 'vue-material-design-icons/AccountCircle.vue'
 import FileDocument from 'vue-material-design-icons/FileDocument.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
@@ -234,7 +235,7 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess, showError } from '@nextcloud/dialogs'
 import { marked } from 'marked'
-import { agentStore } from '../../store/store.js'
+import { agentStore, conversationStore } from '../../store/store.js'
 
 export default {
 	name: 'ChatIndex',
@@ -248,7 +249,6 @@ export default {
 		MessageText,
 		Send,
 		Pencil,
-		Plus,
 		AccountCircle,
 		FileDocument,
 		FileDocumentOutline,
@@ -258,7 +258,7 @@ export default {
 		InformationOutline,
 	},
 
-		data() {
+	data() {
 		return {
 			// Message state
 			currentMessage: '',
@@ -307,10 +307,10 @@ export default {
 		// Conversations are already loaded during app warmup
 		// Agents are already loaded during app warmup
 		this.loadAgentsFromStore()
-		
+
 		// Just ensure we have the latest conversation list (should already be loaded)
 		if (!conversationStore.conversationList || conversationStore.conversationList.length === 0) {
-			console.log('Conversations not preloaded, loading now...')
+			console.info('Conversations not preloaded, loading now...')
 			conversationStore.refreshConversationList()
 		}
 	},
@@ -327,33 +327,33 @@ export default {
 		/**
 		 * Load agents from the already-initialized agent store
 		 * Agents are preloaded during app warmup, so we just use them from the store
-		 * 
+		 *
 		 * @return {void}
 		 */
 		loadAgentsFromStore() {
 			// Agents are already loaded during app warmup (AppInitializationService)
 			// Just use them from the store
-			console.log('[ChatIndex] loadAgentsFromStore called')
-			console.log('[ChatIndex] agentStore:', agentStore)
-			console.log('[ChatIndex] agentStore.agentList:', agentStore.agentList)
-			
+			console.info('[ChatIndex] loadAgentsFromStore called')
+			console.info('[ChatIndex] agentStore:', agentStore)
+			console.info('[ChatIndex] agentStore.agentList:', agentStore.agentList)
+
 			this.availableAgents = agentStore.agentList || []
-			
-			console.log('[ChatIndex] availableAgents set to:', this.availableAgents)
-			
+
+			console.info('[ChatIndex] availableAgents set to:', this.availableAgents)
+
 			if (this.availableAgents.length === 0) {
 				console.warn('[ChatIndex] ⚠ No agents available in store')
 				console.warn('[ChatIndex] Trying to refresh agent list...')
 				// If no agents, try to refresh the list
 				agentStore.refreshAgentList().then(() => {
-					console.log('[ChatIndex] After refresh, agentList:', agentStore.agentList)
+					console.info('[ChatIndex] After refresh, agentList:', agentStore.agentList)
 					this.availableAgents = agentStore.agentList || []
-					console.log('[ChatIndex] availableAgents now:', this.availableAgents)
+					console.info('[ChatIndex] availableAgents now:', this.availableAgents)
 				}).catch(err => {
 					console.error('[ChatIndex] Failed to refresh agents:', err)
 				})
 			} else {
-				console.log('[ChatIndex] ✓ Using preloaded agents from store:', this.availableAgents.length)
+				console.info('[ChatIndex] ✓ Using preloaded agents from store:', this.availableAgents.length)
 			}
 		},
 
@@ -375,10 +375,10 @@ export default {
 				// Keep selected agent for next time, but clear for UX
 				const agentCopy = this.selectedAgent
 				this.selectedAgent = null
-				
+
 				// Close dialog after successful creation
 				this.showAgentSelectorDialog = false
-				
+
 				// If we just created a conversation, show success
 				if (conversation) {
 					showSuccess(this.t('openregister', 'Conversation started with {agent}', { agent: agentCopy.name }))
@@ -394,13 +394,13 @@ export default {
 		async selectConversation(conversation) {
 			try {
 				await conversationStore.loadConversation(conversation.uuid)
-				
+
 				// Load agent details
 				if (conversation.agentId) {
 					const response = await axios.get(generateUrl(`/apps/openregister/api/agents/${conversation.agentId}`))
 					this.currentAgent = response.data
 				}
-				
+
 				this.scrollToBottom()
 			} catch (error) {
 				showError(this.t('openregister', 'Failed to load conversation'))
@@ -473,7 +473,7 @@ export default {
 				await conversationStore.sendMessage(
 					userMessage,
 					this.activeConversation.uuid,
-					this.currentAgent?.uuid
+					this.currentAgent?.uuid,
 				)
 
 				this.scrollToBottom()
@@ -487,7 +487,7 @@ export default {
 		async sendFeedback(message, feedback) {
 			const isSameFeedback = message.feedback === feedback
 			message.feedback = isSameFeedback ? null : feedback
-			
+
 			// Show input field for elaboration when feedback is given
 			if (message.feedback) {
 				this.$set(message, 'showFeedbackInput', true)
@@ -506,10 +506,10 @@ export default {
 				const response = await axios.post(endpoint, {
 					type: message.feedback,
 				})
-				
+
 				// Show brief success notification
 				showSuccess(this.t('openregister', 'Feedback recorded'))
-				
+
 				// Store the feedback ID for future updates
 				this.$set(message, 'feedbackId', response.data.id)
 			} catch (error) {
@@ -532,7 +532,7 @@ export default {
 					type: message.feedback,
 					comment: message.feedbackComment.trim(),
 				})
-				
+
 				// Hide input after saving
 				this.$set(message, 'showFeedbackInput', false)
 				showSuccess(this.t('openregister', 'Additional feedback saved. Thank you!'))
@@ -544,7 +544,7 @@ export default {
 
 		viewSource(source) {
 			// TODO: Navigate to source object/file
-			console.log('View source:', source)
+			console.info('View source:', source)
 		},
 
 		formatMessage(content) {
@@ -554,7 +554,7 @@ export default {
 
 		formatTime(timestamp) {
 			if (!timestamp) return ''
-			
+
 			const date = new Date(timestamp)
 			const now = new Date()
 			const diff = now - date
@@ -593,10 +593,6 @@ export default {
 		},
 	},
 }
-</script>
-
-<script setup>
-import { conversationStore } from '../../store/store.js'
 </script>
 
 <style scoped lang="scss">
@@ -1040,4 +1036,3 @@ import { conversationStore } from '../../store/store.js'
 	}
 }
 </style>
-

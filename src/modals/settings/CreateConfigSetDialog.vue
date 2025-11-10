@@ -68,16 +68,16 @@ export default {
 	watch: {
 		'navigationStore.dialog': {
 			handler(newValue) {
-				console.log('👁️ CreateConfigSetDialog - navigationStore.dialog changed to:', newValue)
-				console.log('👁️ Should show?', newValue === 'createConfigSet')
+				console.info('👁️ CreateConfigSetDialog - navigationStore.dialog changed to:', newValue)
+				console.info('👁️ Should show?', newValue === 'createConfigSet')
 			},
 			immediate: true,
 		},
 	},
 
 	mounted() {
-		console.log('✅ CreateConfigSetDialog mounted')
-		console.log('✅ navigationStore.dialog:', navigationStore.dialog)
+		console.info('✅ CreateConfigSetDialog mounted')
+		console.info('✅ navigationStore.dialog:', navigationStore.dialog)
 	},
 
 	methods: {

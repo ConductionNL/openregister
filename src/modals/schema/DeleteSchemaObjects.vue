@@ -156,7 +156,7 @@ export default {
 		// Watch for changes in schemaItem and reload count if needed
 		'schemaStore.schemaItem': {
 			handler(newSchemaItem) {
-				console.log('Schema item changed in DeleteSchemaObjects:', newSchemaItem)
+				console.info('Schema item changed in DeleteSchemaObjects:', newSchemaItem)
 				if (newSchemaItem?.id && this.objectCount === 0) {
 					this.loadObjectCount()
 				}
@@ -166,9 +166,9 @@ export default {
 		// Watch for dialog state changes to load count when modal becomes visible
 		'navigationStore.modal': {
 			handler(newModal) {
-				console.log('Modal changed to:', newModal)
+				console.info('Modal changed to:', newModal)
 				if (newModal === 'deleteSchemaObjects' && schemaStore.schemaItem?.id) {
-					console.log('DeleteSchemaObjects modal opened, loading object count')
+					console.info('DeleteSchemaObjects modal opened, loading object count')
 					this.loadObjectCount()
 				}
 			},
@@ -176,23 +176,23 @@ export default {
 		},
 	},
 	async mounted() {
-		console.log('DeleteSchemaObjects modal mounted, schemaItem:', schemaStore.schemaItem)
+		console.info('DeleteSchemaObjects modal mounted, schemaItem:', schemaStore.schemaItem)
 		await this.loadObjectCount()
 	},
 	methods: {
 		async loadObjectCount() {
-			console.log('DeleteSchemaObjects loadObjectCount called, schemaItem:', schemaStore.schemaItem)
+			console.info('DeleteSchemaObjects loadObjectCount called, schemaItem:', schemaStore.schemaItem)
 			try {
 				if (schemaStore.schemaItem?.id) {
-					console.log('Calling getSchemaStats for schema ID:', schemaStore.schemaItem.id)
+					console.info('Calling getSchemaStats for schema ID:', schemaStore.schemaItem.id)
 					// Use the upgraded stats endpoint to get detailed object counts
 					const stats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
-					console.log('DeleteSchemaObjects received stats:', stats)
+					console.info('DeleteSchemaObjects received stats:', stats)
 					this.objectStats = stats.objects
 					this.objectCount = stats.objects?.total || 0
-					console.log('DeleteSchemaObjects set objectCount to:', this.objectCount)
+					console.info('DeleteSchemaObjects set objectCount to:', this.objectCount)
 				} else {
-					console.log('DeleteSchemaObjects: No schema item ID available')
+					console.info('DeleteSchemaObjects: No schema item ID available')
 				}
 			} catch (err) {
 				console.error('DeleteSchemaObjects error in loadObjectCount:', err)

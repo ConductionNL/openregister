@@ -384,8 +384,8 @@ export default {
 		},
 
 		/**
-		 * Toggle document expansion
-		 * @param index
+		 * Toggle document expansion.
+		 * @param {number} index - The index of the document to toggle.
 		 */
 		toggleDocument(index) {
 			const docIndex = this.expandedDocs.indexOf(index)
@@ -398,7 +398,7 @@ export default {
 
 		/**
 		 * Truncate long values for preview
-		 * @param value
+		 * @param {string} value - The value to truncate.
 		 */
 		truncateValue(value) {
 			if (typeof value !== 'string') {
@@ -409,7 +409,7 @@ export default {
 
 		/**
 		 * Get field type for display
-		 * @param value
+		 * @param {any} value - The value to get the field type for
 		 */
 		getFieldType(value) {
 			if (Array.isArray(value)) return 'array'
@@ -427,7 +427,7 @@ export default {
 
 		/**
 		 * Check if value is complex (object/array)
-		 * @param value
+		 * @param {any} value - The value to check if it is complex
 		 */
 		isComplexValue(value) {
 			return typeof value === 'object' && value !== null
@@ -435,7 +435,7 @@ export default {
 
 		/**
 		 * Get CSS class for field based on name and type
-		 * @param fieldName
+		 * @param {string} fieldName - The name of the field to get the CSS class for
 		 */
 		getFieldClass(fieldName) {
 			if (fieldName === 'id' || fieldName.endsWith('_id')) return 'field-id'

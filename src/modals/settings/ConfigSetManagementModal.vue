@@ -206,16 +206,16 @@ export default {
 		},
 
 		openCreateDialog() {
-			console.log('🔵 Opening create dialog, setting navigationStore.dialog to "createConfigSet"')
+			console.info('🔵 Opening create dialog, setting navigationStore.dialog to "createConfigSet"')
 			navigationStore.setDialog('createConfigSet')
-			console.log('🔵 navigationStore.dialog is now:', navigationStore.dialog)
+			console.info('🔵 navigationStore.dialog is now:', navigationStore.dialog)
 		},
 
 		openDeleteDialog(configSet) {
-			console.log('🔴 Opening delete dialog for configSet:', configSet)
+			console.info('🔴 Opening delete dialog for configSet:', configSet)
 			navigationStore.setTransferData(configSet)
 			navigationStore.setDialog('deleteConfigSet')
-			console.log('🔴 navigationStore.dialog is now:', navigationStore.dialog)
+			console.info('🔴 navigationStore.dialog is now:', navigationStore.dialog)
 		},
 	},
 }

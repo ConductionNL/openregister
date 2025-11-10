@@ -45,13 +45,13 @@ export const useConfigurationStore = defineStore('configuration', {
 		 *
 		 * @param {string|null} search - Optional search term
 		 * @param {boolean} soft - If true, don't show loading state (default: false)
-		 * @returns {Promise} Promise with response and data
+		 * @return {Promise} Promise with response and data
 		 */
 		/* istanbul ignore next */ // ignore this for Jest until moved into a service
 		async refreshConfigurationList(search = null, soft = false) {
 			console.log('ConfigurationStore: Starting refreshConfigurationList (soft=' + soft + ')')
 			// Note: ConfigurationStore doesn't have a loading state, but we log for consistency
-			
+
 			let endpoint = '/index.php/apps/openregister/api/configurations'
 			if (search !== null && search !== '') {
 				endpoint = endpoint + '?_search=' + search
