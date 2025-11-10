@@ -330,19 +330,19 @@ export default {
 			}
 		},
 
-	async saveConfiguration() {
-		this.saving = true
+		async saveConfiguration() {
+			this.saving = true
 
-		try {
-			await axios.patch(generateUrl('/apps/openregister/api/settings/objects/vectorize'), this.config)
-			showSuccess(this.t('openregister', 'Object vectorization configuration saved successfully'))
-			this.$emit('closing')
-		} catch (error) {
-			showError(this.t('openregister', 'Failed to save configuration: {error}', { error: error.response?.data?.error || error.message }))
-		} finally {
-			this.saving = false
-		}
-	},
+			try {
+				await axios.patch(generateUrl('/apps/openregister/api/settings/objects/vectorize'), this.config)
+				showSuccess(this.t('openregister', 'Object vectorization configuration saved successfully'))
+				this.$emit('closing')
+			} catch (error) {
+				showError(this.t('openregister', 'Failed to save configuration: {error}', { error: error.response?.data?.error || error.message }))
+			} finally {
+				this.saving = false
+			}
+		},
 	},
 }
 </script>

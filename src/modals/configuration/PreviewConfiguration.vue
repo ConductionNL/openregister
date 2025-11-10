@@ -52,7 +52,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 					<div v-for="(change, index) in preview.registers"
 						:key="'register-' + index"
 						class="changeItem"
-						:class="{ changeItem-selected: isRegisterSelected(change.slug) }">
+						:class="{ 'changeItem-selected': isRegisterSelected(change.slug) }">
 						<div class="changeHeader">
 							<NcCheckboxRadioSwitch
 								:checked="isRegisterSelected(change.slug)"
@@ -75,7 +75,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 								<strong>Changes ({{ change.changes.length }}):</strong>
 								<ul>
 									<li v-for="(diff, i) in change.changes.slice(0, 5)" :key="i">
-										<code>{{ diff.field }}</code>: 
+										<code>{{ diff.field }}</code>:
 										<span class="diffOld">{{ formatValue(diff.current) }}</span>
 										→
 										<span class="diffNew">{{ formatValue(diff.proposed) }}</span>
@@ -103,7 +103,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 					<div v-for="(change, index) in preview.schemas"
 						:key="'schema-' + index"
 						class="changeItem"
-						:class="{ changeItem-selected: isSchemaSelected(change.slug) }">
+						:class="{ 'changeItem-selected': isSchemaSelected(change.slug) }">
 						<div class="changeHeader">
 							<NcCheckboxRadioSwitch
 								:checked="isSchemaSelected(change.slug)"
@@ -126,7 +126,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 								<strong>Changes ({{ change.changes.length }}):</strong>
 								<ul>
 									<li v-for="(diff, i) in change.changes.slice(0, 5)" :key="i">
-										<code>{{ diff.field }}</code>: 
+										<code>{{ diff.field }}</code>:
 										<span class="diffOld">{{ formatValue(diff.current) }}</span>
 										→
 										<span class="diffNew">{{ formatValue(diff.proposed) }}</span>
@@ -154,7 +154,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 					<div v-for="(change, index) in preview.objects"
 						:key="'object-' + index"
 						class="changeItem"
-						:class="{ changeItem-selected: isObjectSelected(change) }">
+						:class="{ 'changeItem-selected': isObjectSelected(change) }">
 						<div class="changeHeader">
 							<NcCheckboxRadioSwitch
 								:checked="isObjectSelected(change)"
@@ -180,7 +180,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 								<strong>Changes ({{ change.changes.length }}):</strong>
 								<ul>
 									<li v-for="(diff, i) in change.changes.slice(0, 3)" :key="i">
-										<code>{{ diff.field }}</code>: 
+										<code>{{ diff.field }}</code>:
 										<span class="diffOld">{{ formatValue(diff.current) }}</span>
 										→
 										<span class="diffNew">{{ formatValue(diff.proposed) }}</span>
@@ -283,14 +283,14 @@ export default {
 	},
 	computed: {
 		hasSelection() {
-			return this.selectedRegisters.length > 0 || 
-				   this.selectedSchemas.length > 0 || 
-				   this.selectedObjects.length > 0
+			return this.selectedRegisters.length > 0
+				   || this.selectedSchemas.length > 0
+				   || this.selectedObjects.length > 0
 		},
 		selectionCount() {
-			return this.selectedRegisters.length + 
-				   this.selectedSchemas.length + 
-				   this.selectedObjects.length
+			return this.selectedRegisters.length
+				   + this.selectedSchemas.length
+				   + this.selectedObjects.length
 		},
 	},
 	async mounted() {
@@ -309,11 +309,11 @@ export default {
 
 			try {
 				const response = await axios.get(
-					generateUrl(`/apps/openregister/api/configurations/${configuration.id}/preview`)
+					generateUrl(`/apps/openregister/api/configurations/${configuration.id}/preview`),
 				)
-				
+
 				this.preview = response.data
-				
+
 				// Auto-select all changes by default
 				this.selectAll()
 			} catch (error) {
@@ -414,18 +414,18 @@ export default {
 							registers: this.selectedRegisters,
 							schemas: this.selectedSchemas,
 							objects: this.selectedObjects,
-						}
-					}
+						},
+					},
 				)
-				
+
 				showSuccess(
-					`Successfully imported: ${response.data.registersCount} registers, ` +
-					`${response.data.schemasCount} schemas, ${response.data.objectsCount} objects`
+					`Successfully imported: ${response.data.registersCount} registers, `
+					+ `${response.data.schemasCount} schemas, ${response.data.objectsCount} objects`,
 				)
-				
+
 				// Refresh the configuration list
 				await configurationStore.refreshConfigurationList()
-				
+
 				this.closeModal()
 			} catch (error) {
 				console.error('Failed to import configuration:', error)
@@ -594,5 +594,3 @@ export default {
 	font-style: italic;
 }
 </style>
-
-

@@ -241,7 +241,7 @@ export default {
 			// Estimate ~100-200ms per chunk for embedding generation
 			const avgTimePerChunk = 0.15 // seconds
 			const totalSeconds = this.stats.chunksToProcess * avgTimePerChunk
-			
+
 			if (totalSeconds < 60) {
 				return `~${Math.ceil(totalSeconds)} seconds`
 			} else if (totalSeconds < 3600) {
@@ -257,7 +257,7 @@ export default {
 			const tokensPerChunk = 750
 			const totalTokens = this.stats.chunksToProcess * tokensPerChunk
 			const cost = (totalTokens / 1000) * 0.0001
-			
+
 			return `$${cost.toFixed(4)}`
 		},
 	},
@@ -283,7 +283,7 @@ export default {
 				const response = await axios.get(generateUrl('/apps/openregister/api/files/types'))
 				if (response.data.success) {
 					this.fileTypes = response.data.data
-					console.log('[FileVectorizationModal] Loaded file types:', this.fileTypes)
+					console.info('[FileVectorizationModal] Loaded file types:', this.fileTypes)
 				}
 			} catch (error) {
 				console.error('[FileVectorizationModal] Failed to load file types:', error)
@@ -311,7 +311,7 @@ export default {
 
 				const response = await axios.post(
 					generateUrl('/apps/openregister/api/files/vectorize/batch'),
-					params
+					params,
 				)
 
 				if (response.data.success) {
@@ -328,7 +328,7 @@ export default {
 
 					// Emit completion event to reload stats in parent
 					this.$emit('completed')
-					
+
 					// Close modal
 					this.$emit('closing')
 				} else {
@@ -337,7 +337,7 @@ export default {
 			} catch (error) {
 				console.error('Vectorization failed:', error)
 				const errorData = error.response?.data
-				
+
 				// Check if it's a "not implemented" response
 				if (error.response?.status === 501 || errorData?.error === 'File vectorization not yet implemented') {
 					showError(this.t('openregister', 'File chunk vectorization is not yet implemented. The chunks are ready and stored, but the vectorization service is under development.'))
@@ -443,7 +443,7 @@ h3 {
 
 		&.highlight.primary {
 			background: var(--color-primary-element);
-			
+
 			.label {
 				color: var(--color-primary-element-text);
 			}
@@ -545,4 +545,3 @@ h3 {
 	}
 }
 </style>
-

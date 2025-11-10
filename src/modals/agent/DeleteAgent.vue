@@ -9,7 +9,9 @@ import { agentStore, navigationStore } from '../../store/store.js'
 		@update:open="closeDialog">
 		<div class="dialog-content">
 			<p>Are you sure you want to delete the agent <strong>{{ agentStore.agentItem?.name }}</strong>?</p>
-			<p class="warning-text">This action cannot be undone.</p>
+			<p class="warning-text">
+				This action cannot be undone.
+			</p>
 		</div>
 
 		<template #actions>
@@ -83,7 +85,3 @@ export default {
 	margin-top: 12px;
 }
 </style>
-
-
-
-

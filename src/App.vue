@@ -33,7 +33,7 @@ export default {
 		// Initialize hot-loading of essential application data
 		// This loads registers, schemas, organisations, applications, views, agents, sources, and conversations
 		initializeAppData()
-		
+
 		// Set up dashboard store watchers to keep dashboard data in sync, after stores are reactive
 		setupDashboardStoreWatchers()
 	},

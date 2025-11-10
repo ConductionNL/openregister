@@ -270,7 +270,6 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 									</div>
 									<div class="suggestion-change">
 										<span class="current">{{ suggestion_item.current }}</span> → <span class="recommended">{{ suggestion_item.recommended }}</span>
-										</<｜Assistant｜>
 									</div>
 									<div class="suggestion-desc">
 										{{ suggestion_item.description }}
@@ -703,7 +702,7 @@ export default {
 					const stats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
 					this.objectStats = stats.objects
 					this.objectCount = stats.objects?.total || 0
-					console.log('Loaded detailed schema stats for exploration:', stats)
+					console.('Loaded detailed schema stats for exploration:', stats)
 				}
 			} catch (error) {
 				console.warn('Could not fetch object count:', error)

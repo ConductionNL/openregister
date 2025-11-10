@@ -1,13 +1,11 @@
 /**
  * Message entity mock data
  *
- * @category Entities
- * @package  openregister
+ * @package
  * @author   Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license  EUPL-1.2
  * @version  1.0.0
- * @link     https://www.openregister.nl
  */
 
 import { Message } from './message'
@@ -66,4 +64,3 @@ export const mockMessageData = (): TMessage[] => [
 ]
 
 export const mockMessage = (data: TMessage[] = mockMessageData()): Message[] => data.map((item) => new Message(item))
-
