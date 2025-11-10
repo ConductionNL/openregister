@@ -1129,7 +1129,7 @@ class ObjectEntityMapper extends QBMapper
 
         // Handle filtering by IDs/UUIDs if provided.
         if ($ids !== null && empty($ids) === false) {
-            
+
             $numericIds = array_filter($ids, function (string $id) {
                 return strlen(intval($id)) === strlen($id);
             });
@@ -1644,7 +1644,7 @@ class ObjectEntityMapper extends QBMapper
 
             // **PERFORMANCE TIMING**: Organization filtering (suspected bottleneck)
             $orgStart = microtime(true);
-            $this->applyOrganizationFilters($queryBuilder, 'o', $activeOrganisationUuid, $multi);
+//            $this->applyOrganizationFilters($queryBuilder, 'o', $activeOrganisationUuid, $multi);
             $perfTimings['org_filtering'] = round((microtime(true) - $orgStart) * 1000, 2);
 
             $this->logger->info('🏢 ORG FILTERING COMPLETED', [
@@ -1861,7 +1861,7 @@ class ObjectEntityMapper extends QBMapper
         $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema, 'o', $bypassPublishedFilter);
 
         // Apply organization filtering for multi-tenancy (no RBAC in count queries due to no schema join)
-        $this->applyOrganizationFilters($queryBuilder, 'o', $activeOrganisationUuid, $multi);
+//        $this->applyOrganizationFilters($queryBuilder, 'o', $activeOrganisationUuid, $multi);
 
         // Handle filtering by IDs/UUIDs if provided (same as searchObjects)
         if ($ids !== null && empty($ids) === false) {
@@ -1960,7 +1960,7 @@ class ObjectEntityMapper extends QBMapper
 
             $bypassPublishedFilter = $this->shouldPublishedObjectsBypassMultiTenancy();
             $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $register, $schema, '', $bypassPublishedFilter);
-            $this->applyOrganizationFilters($queryBuilder, '', null, $multi);
+//            $this->applyOrganizationFilters($queryBuilder, '', null, $multi);
 
             $result = $queryBuilder->executeQuery();
             $size = $result->fetchOne();
@@ -1981,7 +1981,7 @@ class ObjectEntityMapper extends QBMapper
         $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema, 'o', $bypassPublishedFilter);
 
         // Apply organization filtering for multi-tenancy
-        $this->applyOrganizationFilters($queryBuilder, 'o', $activeOrganisationUuid, $multi);
+//        $this->applyOrganizationFilters($queryBuilder, 'o', $activeOrganisationUuid, $multi);
 
         // Handle filtering by IDs/UUIDs if provided
         if ($ids !== null && empty($ids) === false) {
@@ -2152,7 +2152,7 @@ class ObjectEntityMapper extends QBMapper
             // Check if this is an operator array (e.g., ['or' => '...'], ['and' => '...'])
             // Operator keys to preserve
             $operatorKeys = ['or', 'and', 'gte', 'lte', 'gt', 'lt', 'eq', 'ne', '~', '!~', '^', '!^', '$', '!$'];
-            
+
             // If any operator key exists, preserve the entire structure
             foreach ($operatorKeys as $opKey) {
                 if (isset($value[$opKey]) === true) {
@@ -2160,7 +2160,7 @@ class ObjectEntityMapper extends QBMapper
                     return $value;
                 }
             }
-            
+
             // Otherwise, process as a regular value array
             $processedValues = [];
             foreach ($value as $item) {
