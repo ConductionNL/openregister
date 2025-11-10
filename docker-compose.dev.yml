@@ -58,7 +58,7 @@ services:
 
   nextcloud:
     user: root
-    container_name: nextcloud
+    container_name: nextcloud-dev
     image: nextcloud
     restart: always
     ports:
@@ -69,7 +69,9 @@ services:
       - ollama
     volumes:
       - nextcloud:/var/www/html:rw
-      - ./docker/entrypoint-openregister.sh:/entrypoint-openregister.sh:ro
+      - ./custom_apps:/var/www/html/custom_apps
+      - .:/var/www/html/custom_apps/openregister
+      - ./docker/entrypoint-openregister-dev.sh:/entrypoint-openregister.sh:ro
     environment:
       - MYSQL_PASSWORD='!ChangeMe!'
       - MYSQL_DATABASE=nextcloud
@@ -94,3 +96,4 @@ services:
       - db
       - solr
       - ollama
+

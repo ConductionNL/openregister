@@ -352,6 +352,15 @@ Click **Save** to apply your settings.
 
 **Installation Options:**
 
+*Docker Compose (Development - Recommended for Testing):*
+
+If you're using the OpenRegister docker-compose setup, Ollama is already included and pre-configured!
+
+1. Ollama container is automatically started with docker-compose
+2. Pre-configured URL: `http://ollama:11434` (for container communication)
+3. Skip to [Download Models](#download-models) section below
+4. See [Docker Development Setup Guide](../../Development/docker-setup.md) for full details
+
 *Local Installation (Your Computer):*
 1. Download from [ollama.com](https://ollama.com)
 2. Install for your OS (Windows, Mac, Linux)
@@ -365,13 +374,33 @@ Click **Save** to apply your settings.
 
 **Download Models:**
 
-*For Embedding:*
+*For Docker Compose Setup:*
 ```bash
-ollama pull nomic-embed-text
+# For Embedding
+docker exec openregister-ollama ollama pull nomic-embed-text
+
+# For Chat (choose based on your needs)
+
+# Recommended: Meta Llama (function calling support)
+docker exec openregister-ollama ollama pull llama3.1
+
+# Ethical: Mistral (European AI)
+docker exec openregister-ollama ollama pull mistral
+
+# Small/Efficient: Phi-3
+docker exec openregister-ollama ollama pull phi3
+
+# High Quality (requires powerful hardware)
+docker exec openregister-ollama ollama pull llama3.1:70b
 ```
 
-*For Chat (choose based on your needs):*
+*For Local or Server Installation:*
 ```bash
+# For Embedding
+ollama pull nomic-embed-text
+
+# For Chat (choose based on your needs)
+
 # Recommended: Meta Llama (function calling support)
 ollama pull llama3.1
 
@@ -386,6 +415,7 @@ ollama pull llama3.1:70b
 ```
 
 **Configuration in OpenRegister:**
+- **Docker Compose:** Use `http://ollama:11434` (container-to-container communication)
 - **Local:** Use `http://localhost:11434`
 - **Server:** Use `http://your-server:11434` or `http://ollama.yourdomain.com:11434`
 
