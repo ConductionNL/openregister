@@ -13,6 +13,8 @@ export class Organisation implements TOrganisation {
 	public isDefault?: boolean
 	public active?: boolean
 	public owner?: string
+	public parent?: string | null
+	public children?: string[]
 	public quota?: {
 		storage?: number | null
 		bandwidth?: number | null
@@ -44,6 +46,8 @@ export class Organisation implements TOrganisation {
 		this.isDefault = organisation.isDefault || false
 		this.active = organisation.active !== false
 		this.owner = organisation.owner || ''
+		this.parent = organisation.parent || null
+		this.children = organisation.children || []
 		this.quota = organisation.quota || {
 			storage: null,
 			bandwidth: null,

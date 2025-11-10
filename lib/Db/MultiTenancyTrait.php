@@ -60,6 +60,26 @@ trait MultiTenancyTrait
 
 
     /**
+     * Get active organisation UUIDs (active + all parents)
+     * 
+     * Returns array of organisation UUIDs that the current user can access.
+     * Includes the active organisation and all parent organisations in the hierarchy.
+     * Used for filtering queries to allow access to parent resources.
+     * 
+     * @return array Array of organisation UUIDs
+     */
+    protected function getActiveOrganisationUuids(): array
+    {
+        if (!isset($this->organisationService)) {
+            return [];
+        }
+        
+        return $this->organisationService->getUserActiveOrganisations();
+
+    }//end getActiveOrganisationUuids()
+
+
+    /**
      * Get the current user ID.
      *
      * @return string|null The current user ID or null if no user is logged in
@@ -100,9 +120,16 @@ trait MultiTenancyTrait
     /**
      * Apply organisation filter to a query builder.
      *
-     * Filters results to only show entities from the active organisation.
-     * This applies to ALL users including admins - admins must set an active
-     * organisation to work within that organisational context.
+     * Filters results to show entities from the active organisation AND all parent organisations.
+     * This enables hierarchical organisation support where children can view parent resources.
+     * This applies to ALL users including admins - admins must set an active organisation.
+     *
+     * Example:
+     * - Organisation A (root)
+     * - Organisation B (parent: A)
+     * - Organisation C (parent: B)
+     * 
+     * When C is active, entities from A, B, and C are visible.
      *
      * @param IQueryBuilder $qb              The query builder
      * @param string        $columnName      The column name for organisation (default: 'organisation')
@@ -112,8 +139,10 @@ trait MultiTenancyTrait
      */
     protected function applyOrganisationFilter(IQueryBuilder $qb, string $columnName='organisation', bool $allowNullOrg=false): void
     {
-        $activeOrgUuid = $this->getActiveOrganisationUuid();
-        if ($activeOrgUuid === null) {
+        // Get active organisation + all parents
+        $orgUuids = $this->getActiveOrganisationUuids();
+        
+        if (empty($orgUuids)) {
             // No active organisation, return empty results
             // Admins must also have an active organisation set
             $qb->andWhere($qb->expr()->eq('1', $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT)));
@@ -121,17 +150,17 @@ trait MultiTenancyTrait
         }
 
         if ($allowNullOrg) {
-            // Allow entities with matching organisation OR null organisation
+            // Allow entities with matching organisations OR null organisation
             $qb->andWhere(
                 $qb->expr()->orX(
-                    $qb->expr()->eq($columnName, $qb->createNamedParameter($activeOrgUuid, IQueryBuilder::PARAM_STR)),
+                    $qb->expr()->in($columnName, $qb->createNamedParameter($orgUuids, IQueryBuilder::PARAM_STR_ARRAY)),
                     $qb->expr()->isNull($columnName)
                 )
             );
         } else {
-            // Only allow entities with matching organisation
+            // Only allow entities with matching organisations (active + parents)
             $qb->andWhere(
-                $qb->expr()->eq($columnName, $qb->createNamedParameter($activeOrgUuid, IQueryBuilder::PARAM_STR))
+                $qb->expr()->in($columnName, $qb->createNamedParameter($orgUuids, IQueryBuilder::PARAM_STR_ARRAY))
             );
         }
 

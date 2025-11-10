@@ -1147,4 +1147,56 @@ class OrganisationService
     }//end getDefaultOrganisation()
 
 
+    /**
+     * Get UUIDs of active organisation and all its parent organisations
+     * 
+     * This method returns an array of organisation UUIDs that the current user
+     * can access based on their active organisation and the parent hierarchy.
+     * Children can view resources from their parents, recursively up the hierarchy.
+     *
+     * Example hierarchy:
+     * - VNG (root)
+     * - Amsterdam (parent: VNG)
+     * - Noord (parent: Amsterdam)
+     * 
+     * When Noord is active, returns: [Noord-UUID, Amsterdam-UUID, VNG-UUID]
+     *
+     * This is used by MultiTenancyTrait for filtering queries to include parent resources.
+     *
+     * @return array Array of organisation UUIDs (active org + all parents)
+     */
+    public function getUserActiveOrganisations(): array
+    {
+        $activeOrg = $this->getActiveOrganisation();
+        
+        if ($activeOrg === null) {
+            $this->logger->debug('No active organisation found for user');
+            return [];
+        }
+        
+        // Start with the active organisation UUID
+        $orgUuids = [$activeOrg->getUuid()];
+        
+        // Get all parent organisations recursively
+        $parents = $this->organisationMapper->findParentChain($activeOrg->getUuid());
+        
+        // Merge active UUID with parent UUIDs
+        $orgUuids = array_merge($orgUuids, $parents);
+        
+        $this->logger->debug(
+            'Retrieved active organisations (including parents)',
+            [
+                'activeOrg' => $activeOrg->getUuid(),
+                'activeOrgName' => $activeOrg->getName(),
+                'parents' => $parents,
+                'totalOrganisations' => count($orgUuids),
+                'allUuids' => $orgUuids,
+            ]
+        );
+        
+        return $orgUuids;
+
+    }//end getUserActiveOrganisations()
+
+
 }//end class
