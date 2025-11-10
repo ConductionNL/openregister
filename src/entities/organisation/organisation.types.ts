@@ -9,6 +9,8 @@ export type TOrganisation = {
     isDefault?: boolean
     active?: boolean
     owner?: string
+    parent?: string | null
+    children?: string[]
     quota?: {
         storage?: number | null
         bandwidth?: number | null

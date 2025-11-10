@@ -154,6 +154,28 @@ class Organisation extends Entity implements JsonSerializable
      */
     protected ?array $authorization = null;
 
+    /**
+     * UUID of parent organisation for hierarchical organisation structures
+     * 
+     * Enables parent-child relationships where children inherit access
+     * to parent resources (schemas, registers, configurations, etc.).
+     * NULL indicates this is a root-level organisation with no parent.
+     *
+     * @var string|null Parent organisation UUID
+     */
+    protected ?string $parent = null;
+
+    /**
+     * Array of child organisation UUIDs (computed, not stored in database)
+     * 
+     * This property is populated on-demand via OrganisationMapper::findChildrenChain()
+     * and is used primarily for UI display and administrative purposes.
+     * Children can view parent resources but parents cannot view child resources.
+     *
+     * @var array|null Array of child organisation UUIDs
+     */
+    protected ?array $children = null;
+
 
     /**
      * Organisation constructor
@@ -176,6 +198,7 @@ class Organisation extends Entity implements JsonSerializable
         $this->addType('bandwidth_quota', 'integer');
         $this->addType('request_quota', 'integer');
         $this->addType('authorization', 'json');
+        $this->addType('parent', 'string');
 
     }//end __construct()
 
@@ -548,6 +571,91 @@ class Organisation extends Entity implements JsonSerializable
 
 
     /**
+     * Get parent organisation UUID
+     *
+     * @return string|null The parent organisation UUID or null if no parent
+     */
+    public function getParent(): ?string
+    {
+        return $this->parent;
+
+    }//end getParent()
+
+
+    /**
+     * Set parent organisation UUID
+     *
+     * @param string|null $parent The parent organisation UUID
+     *
+     * @return self Returns this organisation for method chaining
+     */
+    public function setParent(?string $parent): self
+    {
+        $this->parent = $parent;
+        $this->markFieldUpdated('parent');
+        return $this;
+
+    }//end setParent()
+
+
+    /**
+     * Check if this organisation has a parent
+     *
+     * @return bool True if organisation has a parent, false otherwise
+     */
+    public function hasParent(): bool
+    {
+        return $this->parent !== null && $this->parent !== '';
+
+    }//end hasParent()
+
+
+    /**
+     * Get child organisation UUIDs
+     *
+     * This property is computed and populated via OrganisationMapper::findChildrenChain().
+     * It is not stored in the database.
+     *
+     * @return array Array of child organisation UUIDs
+     */
+    public function getChildren(): array
+    {
+        return $this->children ?? [];
+
+    }//end getChildren()
+
+
+    /**
+     * Set child organisation UUIDs
+     *
+     * This is used to populate the computed children property for API responses.
+     * Children are not stored in the database, only loaded on demand.
+     *
+     * @param array|null $children Array of child organisation UUIDs
+     *
+     * @return self Returns this organisation for method chaining
+     */
+    public function setChildren(?array $children): self
+    {
+        $this->children = $children;
+        return $this;
+
+    }//end setChildren()
+
+
+    /**
+     * Check if this organisation has children
+     *
+     * @return bool True if organisation has children, false otherwise
+     */
+    public function hasChildren(): bool
+    {
+        return !empty($this->children);
+
+    }//end hasChildren()
+
+
+    /**
      * JSON serialization for API responses
      *
      * @return array Serialized organisation data
@@ -567,6 +675,8 @@ class Organisation extends Entity implements JsonSerializable
             'groups'        => $groups,
             'owner'         => $this->owner,
             'active'        => $this->getActive(),
+            'parent'        => $this->parent,
+            'children'      => $this->children ?? [],
             'quota'         => [
                 'storage'   => $this->storageQuota,
                 'bandwidth' => $this->bandwidthQuota,
