@@ -110,7 +110,7 @@ class ApplicationMapper extends QBMapper
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
         // Apply organisation filter (all users including admins must have active org)
-        $this->applyOrganisationFilter($qb);
+        //$this->applyOrganisationFilter($qb);
 
         return $this->findEntity($qb);
 
@@ -140,7 +140,7 @@ class ApplicationMapper extends QBMapper
             ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid, IQueryBuilder::PARAM_STR)));
 
         // Apply organisation filter
-        $this->applyOrganisationFilter($qb);
+        //$this->applyOrganisationFilter($qb);
 
         return $this->findEntity($qb);
 
@@ -215,7 +215,7 @@ class ApplicationMapper extends QBMapper
         }
 
         // Apply organisation filter (all users including admins must have active org)
-        $this->applyOrganisationFilter($qb);
+        //$this->applyOrganisationFilter($qb);
 
         return $this->findEntities($qb);
 
@@ -380,7 +380,7 @@ class ApplicationMapper extends QBMapper
             ->from($this->tableName);
 
         // Apply organisation filter (all users including admins must have active org)
-        $this->applyOrganisationFilter($qb);
+        //$this->applyOrganisationFilter($qb);
 
         $result = $qb->executeQuery();
         $count  = $result->fetchOne();
