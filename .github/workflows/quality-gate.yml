@@ -1,0 +1,427 @@
+name: Quality Gate
+
+on:
+  pull_request:
+    branches: [ main, development ]
+  push:
+    branches: [ main, development ]
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    name: Code Quality Gate
+    
+    steps:
+      - name: Checkout current branch
+        uses: actions/checkout@v4
+        with:
+          path: current
+          fetch-depth: 0
+
+      - name: Checkout base branch for comparison
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}
+          path: base
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, intl, mysql, zip, gd, curl, xml, json
+          tools: composer:v2
+
+      - name: Install PHPMD globally
+        run: |
+          wget https://phpmd.org/static/latest/phpmd.phar
+          chmod +x phpmd.phar
+          sudo mv phpmd.phar /usr/local/bin/phpmd
+
+      - name: Install Psalm globally
+        run: |
+          composer global require vimeo/psalm
+          echo "$HOME/.composer/vendor/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies for current branch
+        run: |
+          cd current
+          composer install --no-progress --prefer-dist --optimize-autoloader
+
+      - name: Run quality checks on current branch
+        id: current_quality
+        run: |
+          cd current
+          mkdir -p quality-reports
+          
+          echo "=== Running quality checks on current branch ==="
+          
+          # 1. PHP CodeSniffer
+          echo "Running PHPCS..."
+          ./vendor/bin/phpcs --standard=phpcs.xml --report=json --report-file=quality-reports/phpcs.json lib/ || true
+          ./vendor/bin/phpcs --standard=phpcs.xml --report=summary lib/ > quality-reports/phpcs-summary.txt || true
+          
+          # Extract PHPCS metrics
+          PHPCS_ERRORS=$(php -r "
+            \$json = json_decode(file_get_contents('quality-reports/phpcs.json'), true);
+            echo \$json['totals']['errors'] ?? 0;
+          ")
+          PHPCS_WARNINGS=$(php -r "
+            \$json = json_decode(file_get_contents('quality-reports/phpcs.json'), true);
+            echo \$json['totals']['warnings'] ?? 0;
+          ")
+          PHPCS_SCORE=$((1000 - PHPCS_ERRORS - (PHPCS_WARNINGS / 2)))
+          
+          echo "phpcs_errors=$PHPCS_ERRORS" >> $GITHUB_OUTPUT
+          echo "phpcs_warnings=$PHPCS_WARNINGS" >> $GITHUB_OUTPUT
+          echo "phpcs_score=$PHPCS_SCORE" >> $GITHUB_OUTPUT
+          
+          # 2. PHPMD
+          echo "Running PHPMD..."
+          phpmd lib/ json phpmd.xml --reportfile quality-reports/phpmd.json || true
+          
+          # Extract PHPMD metrics
+          PHPMD_VIOLATIONS=$(php -r "
+            if (file_exists('quality-reports/phpmd.json')) {
+              \$json = json_decode(file_get_contents('quality-reports/phpmd.json'), true);
+              echo count(\$json['files'] ?? []);
+            } else {
+              echo 0;
+            }
+          ")
+          PHPMD_SCORE=$((1000 - PHPMD_VIOLATIONS * 10))
+          
+          echo "phpmd_violations=$PHPMD_VIOLATIONS" >> $GITHUB_OUTPUT
+          echo "phpmd_score=$PHPMD_SCORE" >> $GITHUB_OUTPUT
+          
+          # 3. Psalm
+          echo "Running Psalm..."
+          if [ -f "psalm.xml" ]; then
+            psalm --output-format=json --report=quality-reports/psalm.json --no-cache || true
+            
+            # Extract Psalm metrics
+            PSALM_ERRORS=$(php -r "
+              if (file_exists('quality-reports/psalm.json')) {
+                \$json = json_decode(file_get_contents('quality-reports/psalm.json'), true);
+                echo count(\$json ?? []);
+              } else {
+                echo 0;
+              }
+            ")
+            PSALM_SCORE=$((1000 - PSALM_ERRORS * 5))
+            
+            echo "psalm_errors=$PSALM_ERRORS" >> $GITHUB_OUTPUT
+            echo "psalm_score=$PSALM_SCORE" >> $GITHUB_OUTPUT
+          else
+            echo "psalm_errors=0" >> $GITHUB_OUTPUT
+            echo "psalm_score=1000" >> $GITHUB_OUTPUT
+          fi
+          
+          # Calculate overall quality score
+          TOTAL_SCORE=$(((PHPCS_SCORE + PHPMD_SCORE + PSALM_SCORE) / 3))
+          echo "total_score=$TOTAL_SCORE" >> $GITHUB_OUTPUT
+          
+          echo "Current Quality Scores:"
+          echo "- PHPCS: $PHPCS_SCORE (Errors: $PHPCS_ERRORS, Warnings: $PHPCS_WARNINGS)"
+          echo "- PHPMD: $PHPMD_SCORE (Violations: $PHPMD_VIOLATIONS)"
+          echo "- Psalm: $PSALM_SCORE (Errors: $PSALM_ERRORS)"
+          echo "- Total: $TOTAL_SCORE"
+
+      - name: Run quality checks on base branch
+        id: base_quality
+        if: github.event_name == 'pull_request'
+        run: |
+          cd base
+          composer install --no-progress --prefer-dist --optimize-autoloader || true
+          mkdir -p quality-reports
+          
+          echo "=== Running quality checks on base branch ==="
+          
+          # 1. PHP CodeSniffer
+          echo "Running PHPCS on base..."
+          ./vendor/bin/phpcs --standard=phpcs.xml --report=json --report-file=quality-reports/phpcs.json lib/ || true
+          
+          BASE_PHPCS_ERRORS=$(php -r "
+            \$json = json_decode(file_get_contents('quality-reports/phpcs.json'), true);
+            echo \$json['totals']['errors'] ?? 0;
+          ")
+          BASE_PHPCS_WARNINGS=$(php -r "
+            \$json = json_decode(file_get_contents('quality-reports/phpcs.json'), true);
+            echo \$json['totals']['warnings'] ?? 0;
+          ")
+          BASE_PHPCS_SCORE=$((1000 - BASE_PHPCS_ERRORS - (BASE_PHPCS_WARNINGS / 2)))
+          
+          echo "phpcs_errors=$BASE_PHPCS_ERRORS" >> $GITHUB_OUTPUT
+          echo "phpcs_warnings=$BASE_PHPCS_WARNINGS" >> $GITHUB_OUTPUT
+          echo "phpcs_score=$BASE_PHPCS_SCORE" >> $GITHUB_OUTPUT
+          
+          # 2. PHPMD
+          echo "Running PHPMD on base..."
+          phpmd lib/ json phpmd.xml --reportfile quality-reports/phpmd.json || true
+          
+          BASE_PHPMD_VIOLATIONS=$(php -r "
+            if (file_exists('quality-reports/phpmd.json')) {
+              \$json = json_decode(file_get_contents('quality-reports/phpmd.json'), true);
+              echo count(\$json['files'] ?? []);
+            } else {
+              echo 0;
+            }
+          ")
+          BASE_PHPMD_SCORE=$((1000 - BASE_PHPMD_VIOLATIONS * 10))
+          
+          echo "phpmd_violations=$BASE_PHPMD_VIOLATIONS" >> $GITHUB_OUTPUT
+          echo "phpmd_score=$BASE_PHPMD_SCORE" >> $GITHUB_OUTPUT
+          
+          # 3. Psalm
+          echo "Running Psalm on base..."
+          if [ -f "psalm.xml" ]; then
+            psalm --output-format=json --report=quality-reports/psalm.json --no-cache || true
+            
+            BASE_PSALM_ERRORS=$(php -r "
+              if (file_exists('quality-reports/psalm.json')) {
+                \$json = json_decode(file_get_contents('quality-reports/psalm.json'), true);
+                echo count(\$json ?? []);
+              } else {
+                echo 0;
+              }
+            ")
+            BASE_PSALM_SCORE=$((1000 - BASE_PSALM_ERRORS * 5))
+            
+            echo "psalm_errors=$BASE_PSALM_ERRORS" >> $GITHUB_OUTPUT
+            echo "psalm_score=$BASE_PSALM_SCORE" >> $GITHUB_OUTPUT
+          else
+            echo "psalm_errors=0" >> $GITHUB_OUTPUT
+            echo "psalm_score=1000" >> $GITHUB_OUTPUT
+          fi
+          
+          # Calculate overall quality score
+          BASE_TOTAL_SCORE=$(((BASE_PHPCS_SCORE + BASE_PHPMD_SCORE + BASE_PSALM_SCORE) / 3))
+          echo "total_score=$BASE_TOTAL_SCORE" >> $GITHUB_OUTPUT
+          
+          echo "Base Quality Scores:"
+          echo "- PHPCS: $BASE_PHPCS_SCORE (Errors: $BASE_PHPCS_ERRORS, Warnings: $BASE_PHPCS_WARNINGS)"
+          echo "- PHPMD: $BASE_PHPMD_SCORE (Violations: $BASE_PHPMD_VIOLATIONS)"
+          echo "- Psalm: $BASE_PSALM_SCORE (Errors: $BASE_PSALM_ERRORS)"
+          echo "- Total: $BASE_TOTAL_SCORE"
+
+      - name: Quality Gate Check
+        run: |
+          # Current scores
+          CURRENT_PHPCS="${{ steps.current_quality.outputs.phpcs_score }}"
+          CURRENT_PHPMD="${{ steps.current_quality.outputs.phpmd_score }}"
+          CURRENT_PSALM="${{ steps.current_quality.outputs.psalm_score }}"
+          CURRENT_TOTAL="${{ steps.current_quality.outputs.total_score }}"
+          
+          # Base scores (for PR comparison)
+          BASE_PHPCS="${{ steps.base_quality.outputs.phpcs_score }}"
+          BASE_PHPMD="${{ steps.base_quality.outputs.phpmd_score }}"
+          BASE_PSALM="${{ steps.base_quality.outputs.psalm_score }}"
+          BASE_TOTAL="${{ steps.base_quality.outputs.total_score }}"
+          
+          # Minimum thresholds
+          MIN_PHPCS_SCORE=800    # Allow some style issues
+          MIN_PHPMD_SCORE=900    # Stricter on mess detection
+          MIN_PSALM_SCORE=950    # Very strict on type safety
+          MIN_TOTAL_SCORE=880    # Overall minimum
+          
+          echo "=== Quality Gate Results ==="
+          echo "Current Scores:"
+          echo "- PHPCS: $CURRENT_PHPCS"
+          echo "- PHPMD: $CURRENT_PHPMD"
+          echo "- Psalm: $CURRENT_PSALM"
+          echo "- Total: $CURRENT_TOTAL"
+          
+          GATE_FAILED=false
+          FAILURE_REASONS=""
+          
+          # Check minimum thresholds
+          if [ "$CURRENT_PHPCS" -lt "$MIN_PHPCS_SCORE" ]; then
+            echo "❌ PHPCS score $CURRENT_PHPCS is below minimum $MIN_PHPCS_SCORE"
+            GATE_FAILED=true
+            FAILURE_REASONS="$FAILURE_REASONS\n- PHPCS score too low: $CURRENT_PHPCS < $MIN_PHPCS_SCORE"
+          fi
+          
+          if [ "$CURRENT_PHPMD" -lt "$MIN_PHPMD_SCORE" ]; then
+            echo "❌ PHPMD score $CURRENT_PHPMD is below minimum $MIN_PHPMD_SCORE"
+            GATE_FAILED=true
+            FAILURE_REASONS="$FAILURE_REASONS\n- PHPMD score too low: $CURRENT_PHPMD < $MIN_PHPMD_SCORE"
+          fi
+          
+          if [ "$CURRENT_PSALM" -lt "$MIN_PSALM_SCORE" ]; then
+            echo "❌ Psalm score $CURRENT_PSALM is below minimum $MIN_PSALM_SCORE"
+            GATE_FAILED=true
+            FAILURE_REASONS="$FAILURE_REASONS\n- Psalm score too low: $CURRENT_PSALM < $MIN_PSALM_SCORE"
+          fi
+          
+          if [ "$CURRENT_TOTAL" -lt "$MIN_TOTAL_SCORE" ]; then
+            echo "❌ Total score $CURRENT_TOTAL is below minimum $MIN_TOTAL_SCORE"
+            GATE_FAILED=true
+            FAILURE_REASONS="$FAILURE_REASONS\n- Total score too low: $CURRENT_TOTAL < $MIN_TOTAL_SCORE"
+          fi
+          
+          # For pull requests, check if scores decreased
+          if [ "${{ github.event_name }}" = "pull_request" ] && [ -n "$BASE_TOTAL" ]; then
+            echo ""
+            echo "Base Scores:"
+            echo "- PHPCS: $BASE_PHPCS"
+            echo "- PHPMD: $BASE_PHPMD"
+            echo "- Psalm: $BASE_PSALM"
+            echo "- Total: $BASE_TOTAL"
+            echo ""
+            
+            # Check for score decreases (allow small fluctuations)
+            ALLOWED_DECREASE=10
+            
+            if [ "$((CURRENT_PHPCS + ALLOWED_DECREASE))" -lt "$BASE_PHPCS" ]; then
+              echo "❌ PHPCS score decreased significantly: $BASE_PHPCS → $CURRENT_PHPCS"
+              GATE_FAILED=true
+              FAILURE_REASONS="$FAILURE_REASONS\n- PHPCS score decreased: $BASE_PHPCS → $CURRENT_PHPCS"
+            fi
+            
+            if [ "$((CURRENT_PHPMD + ALLOWED_DECREASE))" -lt "$BASE_PHPMD" ]; then
+              echo "❌ PHPMD score decreased significantly: $BASE_PHPMD → $CURRENT_PHPMD"
+              GATE_FAILED=true
+              FAILURE_REASONS="$FAILURE_REASONS\n- PHPMD score decreased: $BASE_PHPMD → $CURRENT_PHPMD"
+            fi
+            
+            if [ "$((CURRENT_PSALM + ALLOWED_DECREASE))" -lt "$BASE_PSALM" ]; then
+              echo "❌ Psalm score decreased significantly: $BASE_PSALM → $CURRENT_PSALM"
+              GATE_FAILED=true
+              FAILURE_REASONS="$FAILURE_REASONS\n- Psalm score decreased: $BASE_PSALM → $CURRENT_PSALM"
+            fi
+            
+            if [ "$((CURRENT_TOTAL + ALLOWED_DECREASE))" -lt "$BASE_TOTAL" ]; then
+              echo "❌ Total score decreased significantly: $BASE_TOTAL → $CURRENT_TOTAL"
+              GATE_FAILED=true
+              FAILURE_REASONS="$FAILURE_REASONS\n- Total score decreased: $BASE_TOTAL → $CURRENT_TOTAL"
+            fi
+            
+            # Set status for PR comment
+            if [ "$GATE_FAILED" = "true" ]; then
+              echo "QUALITY_STATUS=failed" >> $GITHUB_ENV
+            elif [ "$CURRENT_TOTAL" -gt "$BASE_TOTAL" ]; then
+              echo "QUALITY_STATUS=improved" >> $GITHUB_ENV
+            else
+              echo "QUALITY_STATUS=maintained" >> $GITHUB_ENV
+            fi
+          else
+            if [ "$GATE_FAILED" = "true" ]; then
+              echo "QUALITY_STATUS=failed" >> $GITHUB_ENV
+            else
+              echo "QUALITY_STATUS=passed" >> $GITHUB_ENV
+            fi
+          fi
+          
+          # Save failure reasons for PR comment
+          echo "FAILURE_REASONS<<EOF" >> $GITHUB_ENV
+          echo -e "$FAILURE_REASONS" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          
+          # Exit with failure if gate failed
+          if [ "$GATE_FAILED" = "true" ]; then
+            echo ""
+            echo "❌ Quality Gate FAILED"
+            echo -e "Reasons:$FAILURE_REASONS"
+            exit 1
+          else
+            echo ""
+            echo "✅ Quality Gate PASSED"
+          fi
+
+      - name: Upload quality reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-reports
+          path: current/quality-reports/
+          retention-days: 30
+
+      - name: Comment PR with quality results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const status = process.env.QUALITY_STATUS;
+            const failureReasons = process.env.FAILURE_REASONS;
+            
+            // Current scores
+            const currentPhpcs = '${{ steps.current_quality.outputs.phpcs_score }}';
+            const currentPhpmd = '${{ steps.current_quality.outputs.phpmd_score }}';
+            const currentPsalm = '${{ steps.current_quality.outputs.psalm_score }}';
+            const currentTotal = '${{ steps.current_quality.outputs.total_score }}';
+            
+            // Base scores
+            const basePhpcs = '${{ steps.base_quality.outputs.phpcs_score }}';
+            const basePhpmd = '${{ steps.base_quality.outputs.phpmd_score }}';
+            const basePsalm = '${{ steps.base_quality.outputs.psalm_score }}';
+            const baseTotal = '${{ steps.base_quality.outputs.total_score }}';
+            
+            let message = '## 🎯 Code Quality Gate Report\n\n';
+            
+            // Status header
+            if (status === 'failed') {
+              message += '❌ **Quality Gate FAILED** - PR will be blocked\n\n';
+              message += '### ⚠️ Issues found:\n';
+              message += failureReasons + '\n\n';
+            } else if (status === 'improved') {
+              message += '✅ **Quality Gate PASSED** - Quality improved!\n\n';
+            } else if (status === 'maintained') {
+              message += '✅ **Quality Gate PASSED** - Quality maintained\n\n';
+            } else {
+              message += '✅ **Quality Gate PASSED**\n\n';
+            }
+            
+            // Score comparison table
+            message += '### 📊 Quality Scores\n\n';
+            message += '| Tool | Current | Base | Change | Status |\n';
+            message += '|------|---------|------|--------|---------|\n';
+            
+            const phpcsChange = basePhpcs ? (currentPhpcs - basePhpcs) : 0;
+            const phpmdChange = basePhpmd ? (currentPhpmd - basePhpmd) : 0;
+            const psalmChange = basePsalm ? (currentPsalm - basePsalm) : 0;
+            const totalChange = baseTotal ? (currentTotal - baseTotal) : 0;
+            
+            const getStatusIcon = (current, base, change) => {
+              if (!base) return '🆕';
+              if (change > 5) return '⬆️';
+              if (change < -5) return '⬇️';
+              return '➡️';
+            };
+            
+            message += `| **PHPCS** | ${currentPhpcs} | ${basePhpcs || 'N/A'} | ${phpcsChange > 0 ? '+' : ''}${phpcsChange} | ${getStatusIcon(currentPhpcs, basePhpcs, phpcsChange)} |\n`;
+            message += `| **PHPMD** | ${currentPhpmd} | ${basePhpmd || 'N/A'} | ${phpmdChange > 0 ? '+' : ''}${phpmdChange} | ${getStatusIcon(currentPhpmd, basePhpmd, phpmdChange)} |\n`;
+            message += `| **Psalm** | ${currentPsalm} | ${basePsalm || 'N/A'} | ${psalmChange > 0 ? '+' : ''}${psalmChange} | ${getStatusIcon(currentPsalm, basePsalm, psalmChange)} |\n`;
+            message += `| **Total** | **${currentTotal}** | **${baseTotal || 'N/A'}** | **${totalChange > 0 ? '+' : ''}${totalChange}** | ${getStatusIcon(currentTotal, baseTotal, totalChange)} |\n\n`;
+            
+            // Thresholds
+            message += '### 🎯 Quality Thresholds\n';
+            message += '- **PHPCS**: ≥ 800 (Code Style)\n';
+            message += '- **PHPMD**: ≥ 900 (Mess Detection)\n';
+            message += '- **Psalm**: ≥ 950 (Type Safety)\n';
+            message += '- **Total**: ≥ 880 (Overall)\n\n';
+            
+            // Issue details
+            if (status === 'failed') {
+              message += '### 🔧 How to fix:\n';
+              message += '```bash\n';
+              message += '# Fix code style issues\n';
+              message += 'composer cs:fix\n\n';
+              message += '# Check remaining issues\n';
+              message += 'composer phpcs\n';
+              message += 'composer phpmd\n';
+              message += 'composer psalm\n\n';
+              message += '# Run all quality checks\n';
+              message += 'composer check:strict\n';
+              message += '```\n\n';
+            }
+            
+            message += '### 📈 [View detailed reports in artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message
+            });
+
+

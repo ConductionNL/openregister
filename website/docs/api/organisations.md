@@ -284,31 +284,31 @@ curl -u 'admin:admin' \
 
 **POST** `/api/organisations/{uuid}/join`
 
-Adds the authenticated user to the specified organisation.
+Adds a user to the specified organisation. By default, adds the authenticated user, but can optionally add a different user by providing a userId in the request body.
 
 **Path Parameters:**
 - `uuid` (string): The UUID of the organisation to join
 
-**Response Format:**
+**Request Body (Optional):**
 ```json
 {
-  'message': 'Successfully joined organisation',
-  'organisation': {
-    'id': 5,
-    'uuid': '55ebf05fce0a58e42ab0fc989c09c9e7',
-    'name': 'Organization Name',
-    'description': 'Organization description',
-    'users': ['admin', 'newuser'],
-    'userCount': 2,
-    'isDefault': false,
-    'owner': 'admin',
-    'created': '2025-07-21T21:30:03+00:00',
-    'updated': '2025-07-21T21:30:26+00:00'
-  }
+  'userId': 'username'
 }
 ```
 
-**Usage Example:**
+**Optional Fields:**
+- `userId` (string, optional): The user ID to add to the organisation. If not provided, the authenticated user is added.
+
+**Response Format:**
+```json
+{
+  'message': 'Successfully joined organisation'
+}
+```
+
+**Usage Examples:**
+
+Join organisation as current user:
 ```bash
 curl -u 'newuser:password' \
      -H 'OCS-APIREQUEST: true' \
@@ -316,9 +316,20 @@ curl -u 'newuser:password' \
      'http://localhost/index.php/apps/openregister/api/organisations/55ebf05fce0a58e42ab0fc989c09c9e7/join'
 ```
 
+Join organisation on behalf of another user:
+```bash
+curl -u 'admin:password' \
+     -H 'OCS-APIREQUEST: true' \
+     -H 'Content-Type: application/json' \
+     -X POST \
+     -d '{'userId': 'specificuser'}' \
+     'http://localhost/index.php/apps/openregister/api/organisations/55ebf05fce0a58e42ab0fc989c09c9e7/join'
+```
+
 **Error Responses:**
 - **404 Not Found**: `{'error': 'Organisation not found'}` when organisation doesn't exist
 - **400 Bad Request**: `{'error': 'User already belongs to this organisation'}` when user is already a member
+- **404 Not Found**: `{'error': 'Target user not found'}` when specified userId does not exist
 
 ---
 
@@ -370,10 +381,10 @@ curl -u 'someuser:password' \
 
 **GET** `/api/organisations/search`
 
-Searches organisations by name. Only returns organisations the user belongs to.
+Searches organisations by name. Returns all organisations when query is empty, or filtered organisations matching the search term.
 
 **Query Parameters:**
-- `query` (string, optional): Search term to filter organisations by name
+- `query` (string, optional): Search term to filter organisations by name. If empty, returns all organisations.
 
 **Response Format:**
 ```json
@@ -393,11 +404,20 @@ Searches organisations by name. Only returns organisations the user belongs to.
 }
 ```
 
-**Usage Example:**
+**Usage Examples:**
+
+Search for specific organisations:
 ```bash
 curl -u 'admin:admin' \
      -H 'OCS-APIREQUEST: true' \
      'http://localhost/index.php/apps/openregister/api/organisations/search?query=ACME'
+```
+
+Get all organisations:
+```bash
+curl -u 'admin:admin' \
+     -H 'OCS-APIREQUEST: true' \
+     'http://localhost/index.php/apps/openregister/api/organisations/search'
 ```
 
 ---
@@ -533,5 +553,5 @@ X-RateLimit-Reset: 1642781234
 
 ---
 
-*For comprehensive implementation details, see [Multi-Tenancy Technical Documentation](../multi-tenancy.md)*
-*For testing information, see [Multi-Tenancy Testing Framework](../multi-tenancy-testing.md)* 
+*For comprehensive implementation details, see [Multi-Tenancy Technical Documentation](../Features/multi-tenancy.md)*
+*For testing information, see [Multi-Tenancy Testing Framework](../technical/multi-tenancy-testing.md)* 

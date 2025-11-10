@@ -1,0 +1,291 @@
+name: Coverage Gate
+
+on:
+  pull_request:
+    branches: [ main, development ]
+  push:
+    branches: [ main, development ]
+
+jobs:
+  coverage-check:
+    runs-on: ubuntu-latest
+    name: Code Coverage Gate
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: nextcloud
+          MYSQL_DATABASE: nextcloud
+          MYSQL_USER: nextcloud
+          MYSQL_PASSWORD: nextcloud
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+      - name: Checkout current branch
+        uses: actions/checkout@v4
+        with:
+          path: apps/openregister
+
+      - name: Checkout base branch for comparison
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}
+          path: apps/openregister-base
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, intl, mysql, zip, gd, curl, xml, json
+          coverage: xdebug
+          tools: composer:v2
+
+      - name: Setup Nextcloud for current branch
+        run: |
+          # Download and extract Nextcloud
+          wget https://download.nextcloud.com/server/releases/nextcloud-30.0.0.tar.bz2
+          tar -xjf nextcloud-30.0.0.tar.bz2
+          
+          # Move our app to the apps directory
+          mv apps/openregister nextcloud/apps/
+          cd nextcloud
+          
+          # Install Nextcloud
+          php occ maintenance:install \
+            --database mysql \
+            --database-host 127.0.0.1 \
+            --database-port 3306 \
+            --database-name nextcloud \
+            --database-user nextcloud \
+            --database-pass nextcloud \
+            --admin-user admin \
+            --admin-pass admin
+          
+          # Enable our app
+          php occ app:enable openregister
+
+      - name: Install dependencies and run tests
+        run: |
+          cd nextcloud/apps/openregister
+          composer install --no-progress --prefer-dist --optimize-autoloader
+          
+          # Create coverage directory
+          mkdir -p coverage
+          
+          # Run tests with coverage
+          ./vendor/bin/phpunit --coverage-clover=coverage/clover.xml --coverage-html=coverage/html
+
+      - name: Extract current coverage percentage
+        id: current_coverage
+        run: |
+          cd nextcloud/apps/openregister
+          if [ -f "coverage/clover.xml" ]; then
+            # Extract coverage percentage from clover.xml
+            COVERAGE=$(php -r "
+              \$xml = simplexml_load_file('coverage/clover.xml');
+              \$metrics = \$xml->project->metrics;
+              \$statements = (int)\$metrics['statements'];
+              \$coveredstatements = (int)\$metrics['coveredstatements'];
+              if (\$statements > 0) {
+                echo round((\$coveredstatements / \$statements) * 100, 2);
+              } else {
+                echo '0';
+              }
+            ")
+            echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
+            echo "Current coverage: $COVERAGE%"
+          else
+            echo "coverage=0" >> $GITHUB_OUTPUT
+            echo "No coverage data found"
+          fi
+
+      - name: Get base branch coverage (for PR)
+        id: base_coverage
+        if: github.event_name == 'pull_request'
+        run: |
+          # Setup base branch
+          if [ -d "apps/openregister-base" ]; then
+            # Download fresh Nextcloud for base
+            wget https://download.nextcloud.com/server/releases/nextcloud-30.0.0.tar.bz2 -O nextcloud-base.tar.bz2
+            tar -xjf nextcloud-base.tar.bz2
+            mv nextcloud nextcloud-base
+            mv apps/openregister-base nextcloud-base/apps/openregister
+            
+            cd nextcloud-base
+            # Install Nextcloud
+            php occ maintenance:install \
+              --database mysql \
+              --database-host 127.0.0.1 \
+              --database-port 3306 \
+              --database-name nextcloud_base \
+              --database-user nextcloud \
+              --database-pass nextcloud \
+              --admin-user admin \
+              --admin-pass admin
+            
+            # Enable app and run tests
+            php occ app:enable openregister || true
+            cd apps/openregister
+            composer install --no-progress --prefer-dist --optimize-autoloader || true
+            mkdir -p coverage
+            ./vendor/bin/phpunit --coverage-clover=coverage/clover.xml || true
+            
+            # Extract base coverage
+            if [ -f "coverage/clover.xml" ]; then
+              BASE_COVERAGE=$(php -r "
+                \$xml = simplexml_load_file('coverage/clover.xml');
+                \$metrics = \$xml->project->metrics;
+                \$statements = (int)\$metrics['statements'];
+                \$coveredstatements = (int)\$metrics['coveredstatements'];
+                if (\$statements > 0) {
+                  echo round((\$coveredstatements / \$statements) * 100, 2);
+                } else {
+                  echo '0';
+                }
+              ")
+              echo "coverage=$BASE_COVERAGE" >> $GITHUB_OUTPUT
+              echo "Base coverage: $BASE_COVERAGE%"
+            else
+              echo "coverage=0" >> $GITHUB_OUTPUT
+              echo "No base coverage data found"
+            fi
+          else
+            echo "coverage=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Coverage Gate Check
+        run: |
+          CURRENT_COVERAGE="${{ steps.current_coverage.outputs.coverage }}"
+          BASE_COVERAGE="${{ steps.base_coverage.outputs.coverage }}"
+          MIN_COVERAGE=75  # Minimum required coverage percentage
+          
+          echo "=== Coverage Gate Results ==="
+          echo "Current Coverage: $CURRENT_COVERAGE%"
+          
+          # Check minimum coverage requirement
+          if (( $(echo "$CURRENT_COVERAGE < $MIN_COVERAGE" | bc -l) )); then
+            echo "❌ FAILED: Coverage $CURRENT_COVERAGE% is below minimum required $MIN_COVERAGE%"
+            echo "COVERAGE_STATUS=failed_minimum" >> $GITHUB_ENV
+            exit 1
+          fi
+          
+          # For pull requests, check if coverage decreased
+          if [ "${{ github.event_name }}" = "pull_request" ] && [ -n "$BASE_COVERAGE" ] && [ "$BASE_COVERAGE" != "0" ]; then
+            echo "Base Coverage: $BASE_COVERAGE%"
+            
+            # Allow small decrease (0.5%) for rounding errors, but fail on significant drops
+            ALLOWED_DECREASE=0.5
+            COVERAGE_DIFF=$(echo "$CURRENT_COVERAGE - $BASE_COVERAGE" | bc -l)
+            
+            if (( $(echo "$COVERAGE_DIFF < -$ALLOWED_DECREASE" | bc -l) )); then
+              echo "❌ FAILED: Coverage decreased by $(echo "$COVERAGE_DIFF * -1" | bc -l)% (from $BASE_COVERAGE% to $CURRENT_COVERAGE%)"
+              echo "COVERAGE_STATUS=decreased" >> $GITHUB_ENV
+              exit 1
+            elif (( $(echo "$COVERAGE_DIFF > 0" | bc -l) )); then
+              echo "✅ PASSED: Coverage increased by $COVERAGE_DIFF% (from $BASE_COVERAGE% to $CURRENT_COVERAGE%)"
+              echo "COVERAGE_STATUS=increased" >> $GITHUB_ENV
+            else
+              echo "✅ PASSED: Coverage maintained at $CURRENT_COVERAGE%"
+              echo "COVERAGE_STATUS=maintained" >> $GITHUB_ENV
+            fi
+          else
+            echo "✅ PASSED: Coverage $CURRENT_COVERAGE% meets minimum requirement"
+            echo "COVERAGE_STATUS=passed" >> $GITHUB_ENV
+          fi
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        with:
+          file: nextcloud/apps/openregister/coverage/clover.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: nextcloud/apps/openregister/coverage/
+          retention-days: 30
+
+      - name: Comment PR with coverage results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const currentCoverage = '${{ steps.current_coverage.outputs.coverage }}';
+            const baseCoverage = '${{ steps.base_coverage.outputs.coverage }}';
+            const status = process.env.COVERAGE_STATUS;
+            
+            let message = '## 📊 Code Coverage Report\n\n';
+            
+            // Coverage status
+            if (status === 'increased') {
+              message += `✅ **Coverage increased!** ${baseCoverage}% → ${currentCoverage}% (+${(currentCoverage - baseCoverage).toFixed(2)}%)\n\n`;
+            } else if (status === 'maintained') {
+              message += `✅ **Coverage maintained** at ${currentCoverage}%\n\n`;
+            } else if (status === 'decreased') {
+              message += `❌ **Coverage decreased!** ${baseCoverage}% → ${currentCoverage}% (${(currentCoverage - baseCoverage).toFixed(2)}%)\n\n`;
+              message += '⚠️ **This PR will be blocked until coverage is restored.**\n\n';
+            } else if (status === 'failed_minimum') {
+              message += `❌ **Coverage below minimum!** Current: ${currentCoverage}%, Required: 75%\n\n`;
+              message += '⚠️ **This PR will be blocked until minimum coverage is met.**\n\n';
+            } else {
+              message += `✅ **Coverage check passed** at ${currentCoverage}%\n\n`;
+            }
+            
+            message += '### Coverage Details\n';
+            message += `- **Current Coverage**: ${currentCoverage}%\n`;
+            if (baseCoverage && baseCoverage !== '0') {
+              message += `- **Base Coverage**: ${baseCoverage}%\n`;
+              message += `- **Change**: ${(currentCoverage - baseCoverage).toFixed(2)}%\n`;
+            }
+            message += '- **Minimum Required**: 75%\n\n';
+            
+            message += '### 📈 [View detailed coverage report](https://codecov.io/gh/${{ github.repository }})\n\n';
+            
+            message += '### How to improve coverage:\n';
+            message += '```bash\n';
+            message += '# Run tests with coverage locally\n';
+            message += 'composer test:all\n';
+            message += './vendor/bin/phpunit --coverage-html=coverage/html\n';
+            message += '# Open coverage/html/index.html in browser\n';
+            message += '```\n';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message
+            });
+
+  # Separate job to set status check
+  coverage-status:
+    runs-on: ubuntu-latest
+    needs: coverage-check
+    if: always()
+    steps:
+      - name: Set status check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const conclusion = '${{ needs.coverage-check.result }}';
+            const context = 'coverage-gate';
+            const description = conclusion === 'success' 
+              ? 'Code coverage requirements met' 
+              : 'Code coverage requirements not met';
+            
+            github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: conclusion === 'success' ? 'success' : 'failure',
+              context: context,
+              description: description
+            });
+
+

@@ -33,18 +33,21 @@ use OCP\Migration\SimpleMigrationStep;
 class Version1Date20250830130000 extends SimpleMigrationStep
 {
 
+
     /**
      * Change the database schema
      *
-     * @param IOutput        $output        Output for the migration process
-     * @param Closure        $schemaClosure The schema closure
-     * @param array<string>  $options       Migration options
+     * @param IOutput       $output        Output for the migration process
+     * @param Closure       $schemaClosure The schema closure
+     * @param array<string> $options       Migration options
      *
      * @return ISchemaWrapper|null The modified schema
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        /*
+         * @var ISchemaWrapper $schema
+         */
         $schema = $schemaClosure();
 
         // Check if the objects table exists
@@ -53,12 +56,16 @@ class Version1Date20250830130000 extends SimpleMigrationStep
 
             // Add schemaVersion column if it doesn't exist
             if ($table->hasColumn('schemaVersion') === false) {
-                $table->addColumn('schemaVersion', Types::STRING, [
-                    'notnull' => false,
-                    'length' => 255,
-                    'default' => null,
-                    'comment' => 'Version of the schema used for this object',
-                ]);
+                $table->addColumn(
+                        'schemaVersion',
+                        Types::STRING,
+                        [
+                            'notnull' => false,
+                            'length'  => 255,
+                            'default' => null,
+                            'comment' => 'Version of the schema used for this object',
+                        ]
+                        );
                 $output->info('Added schemaVersion column to openregister_objects table');
             }
         }

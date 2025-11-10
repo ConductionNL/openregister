@@ -37,8 +37,10 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\ObjectCacheService;
 use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -79,18 +81,30 @@ class RenderObject
      */
     private array $objectsCache = [];
 
+    /**
+     * Ultra-aggressive preload cache for sub-second performance
+     * 
+     * Contains ALL relationship objects preloaded in a single query
+     * for instant access during rendering without any additional database calls.
+     *
+     * @var array<string, ObjectEntity>
+     */
+    private array $ultraPreloadCache = [];
+
 
     /**
      * Constructor for RenderObject handler.
      *
-     * @param IURLGenerator           $urlGenerator         URL generator service.
-     * @param FileMapper              $fileMapper           File mapper for database operations.
-     * @param FileService             $fileService          File service for managing files.
-     * @param ObjectEntityMapper      $objectEntityMapper   Object entity mapper for database operations.
-     * @param RegisterMapper          $registerMapper       Register mapper for database operations.
-     * @param SchemaMapper            $schemaMapper         Schema mapper for database operations.
-     * @param ISystemTagManager       $systemTagManager     System tag manager for file tags.
-     * @param ISystemTagObjectMapper  $systemTagMapper      System tag object mapper for file tags.
+     * @param IURLGenerator          $urlGenerator       URL generator service.
+     * @param FileMapper             $fileMapper         File mapper for database operations.
+     * @param FileService            $fileService        File service for managing files.
+     * @param ObjectEntityMapper     $objectEntityMapper Object entity mapper for database operations.
+     * @param RegisterMapper         $registerMapper     Register mapper for database operations.
+     * @param SchemaMapper           $schemaMapper       Schema mapper for database operations.
+     * @param ISystemTagManager      $systemTagManager   System tag manager for file tags.
+     * @param ISystemTagObjectMapper $systemTagMapper    System tag object mapper for file tags.
+     * @param ObjectCacheService     $objectCacheService Cache service for performance optimization.
+     * @param LoggerInterface        $logger             Logger for performance monitoring.
      */
     public function __construct(
         private readonly IURLGenerator $urlGenerator,
@@ -100,10 +114,150 @@ class RenderObject
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly ISystemTagManager $systemTagManager,
-        private readonly ISystemTagObjectMapper $systemTagMapper
+        private readonly ISystemTagObjectMapper $systemTagMapper,
+        private readonly ObjectCacheService $objectCacheService,
+        private readonly LoggerInterface $logger
     ) {
 
     }//end __construct()
+
+
+    /**
+     * Preload all related objects for bulk operations to prevent N+1 queries
+     *
+     * This method analyzes all objects and their extend requirements, collects
+     * all related object IDs, and loads them in bulk to eliminate N+1 query problems.
+     *
+     * @param array $objects Array of ObjectEntity objects to analyze
+     * @param array $extend  Array of properties to extend
+     *
+     * @return array Array of preloaded objects indexed by ID/UUID
+     * 
+     * @phpstan-param array<ObjectEntity> $objects
+     * @phpstan-param array<string> $extend
+     * @phpstan-return array<string, ObjectEntity>
+     * @psalm-param array<ObjectEntity> $objects  
+     * @psalm-param array<string> $extend
+     * @psalm-return array<string, ObjectEntity>
+     */
+    public function preloadRelatedObjects(array $objects, array $extend): array
+    {
+        if (empty($objects) || empty($extend)) {
+            return [];
+        }
+
+        $allRelatedIds = [];
+
+        // Step 1: Collect all relationship IDs from all objects
+        foreach ($objects as $object) {
+            if (!$object instanceof ObjectEntity) {
+                continue;
+            }
+
+            $objectData = $object->getObject();
+            
+            foreach ($extend as $extendField) {
+                // Skip special fields
+                if (str_starts_with($extendField, '@')) {
+                    continue;
+                }
+
+                $value = $objectData[$extendField] ?? null;
+                
+                if (is_array($value)) {
+                    // Multiple relationships
+                    foreach ($value as $relatedId) {
+                        if (is_string($relatedId) || is_int($relatedId)) {
+                            $allRelatedIds[] = (string) $relatedId;
+                        }
+                    }
+                } elseif (is_string($value) || is_int($value)) {
+                    // Single relationship
+                    $allRelatedIds[] = (string) $value;
+                }
+            }
+        }
+
+        // Step 2: Remove duplicates and empty values
+        $uniqueIds = array_filter(array_unique($allRelatedIds), fn($id) => !empty($id));
+        
+        if (empty($uniqueIds)) {
+            return [];
+        }
+
+        // Step 3: Use ObjectCacheService for optimized bulk loading
+        try {
+            $preloadStart = microtime(true);
+            $relatedObjects = $this->objectCacheService->preloadObjects($uniqueIds);
+            $preloadTime = round((microtime(true) - $preloadStart) * 1000, 2);
+            
+            $this->logger->debug('ObjectCache preload completed', [
+                'preloadTime' => $preloadTime . 'ms',
+                'requestedIds' => count($uniqueIds),
+                'foundObjects' => count($relatedObjects)
+            ]);
+            
+            // Step 4: Index by both ID and UUID for quick lookup
+            $indexedObjects = [];
+            foreach ($relatedObjects as $relatedObject) {
+                if ($relatedObject instanceof ObjectEntity) {
+                    $indexedObjects[$relatedObject->getId()] = $relatedObject;
+                    if ($relatedObject->getUuid()) {
+                        $indexedObjects[$relatedObject->getUuid()] = $relatedObject;
+                    }
+                }
+            }
+            
+            // Step 5: Add to local cache for backward compatibility
+            $this->objectsCache = array_merge($this->objectsCache, $indexedObjects);
+            
+            return $indexedObjects;
+            
+        } catch (\Exception $e) {
+            // Log error but don't break the process
+            $this->logger->error('Bulk preloading failed', [
+                'exception' => $e->getMessage(),
+                'uniqueIds' => count($uniqueIds),
+                'objects' => count($objects)
+            ]);
+            return [];
+        }
+
+    }//end preloadRelatedObjects()
+
+
+    /**
+     * Set the ultra-aggressive preload cache for maximum performance
+     *
+     * This method receives ALL relationship objects loaded in a single query
+     * and stores them for instant access during rendering, eliminating all
+     * individual database queries for extended properties.
+     *
+     * @param array $ultraPreloadCache Array of preloaded objects indexed by ID/UUID
+     *
+     * @phpstan-param array<string, ObjectEntity> $ultraPreloadCache
+     * @psalm-param array<string, ObjectEntity> $ultraPreloadCache
+     */
+    public function setUltraPreloadCache(array $ultraPreloadCache): void
+    {
+        $this->ultraPreloadCache = $ultraPreloadCache;
+        $this->logger->debug('Ultra preload cache set', [
+            'cachedObjectCount' => count($ultraPreloadCache)
+        ]);
+        
+    }//end setUltraPreloadCache()
+
+
+    /**
+     * Get the size of the ultra preload cache for monitoring
+     *
+     * @return int Number of objects in the ultra preload cache
+     */
+    public function getUltraCacheSize(): int
+    {
+        return count($this->ultraPreloadCache);
+        
+    }//end getUltraCacheSize()
 
 
     /**
@@ -167,20 +321,29 @@ class RenderObject
      */
     private function getObject(int | string $id): ?ObjectEntity
     {
-        // Return from cache if available.
+        // **ULTRA PERFORMANCE**: Check ultra preload cache first (fastest possible)
+        if (isset($this->ultraPreloadCache[(string)$id])) {
+            return $this->ultraPreloadCache[(string)$id];
+        }
+
+        // **PERFORMANCE OPTIMIZATION**: Use ObjectCacheService for optimized caching
+        // First check local cache for backward compatibility
         if (isset($this->objectsCache[$id]) === true) {
             return $this->objectsCache[$id];
         }
 
-        try {
-            $object = $this->objectEntityMapper->find($id);
-            // Cache the result.
+        // Use cache service for optimized loading (only if not in ultra cache)
+        $object = $this->objectCacheService->getObject($id);
+        
+        // Update local cache for backward compatibility
+        if ($object !== null) {
             $this->objectsCache[$id] = $object;
-            $this->objectsCache[$object->getUuid()] = $object;
-            return $object;
-        } catch (\Exception $e) {
-            return null;
+            if ($object->getUuid()) {
+                $this->objectsCache[$object->getUuid()] = $object;
+            }
         }
+        
+        return $object;
 
     }//end getObject()
 
@@ -274,110 +437,115 @@ class RenderObject
     }//end clearCache()
 
 
-	/**
-	 * Add formatted files to the files array in the entity using FileMapper.
-	 *
-	 * This method retrieves files for an object using the FileMapper's getFilesForObject method,
-	 * which handles both folder property lookup and UUID-based fallback search.
-	 * The retrieved files are then formatted to match the FileService->formatFile() structure.
-	 * Share information is now included directly from the FileMapper database query.
-	 *
-	 * @param ObjectEntity $object The entity to add the files to
-	 *
-	 * @return ObjectEntity The updated object with files information
-	 *
-	 * @throws \RuntimeException If multiple nodes are found for the object's uuid
-	 */
-	private function renderFiles(ObjectEntity $object): ObjectEntity
-	{
-		// Use FileMapper to get files for the object (handles folder property and UUID fallback)
-		$fileRecords = $this->fileMapper->getFilesForObject($object);
+    /**
+     * Add formatted files to the files array in the entity using FileMapper.
+     *
+     * This method retrieves files for an object using the FileMapper's getFilesForObject method,
+     * which handles both folder property lookup and UUID-based fallback search.
+     * The retrieved files are then formatted to match the FileService->formatFile() structure.
+     * Share information is now included directly from the FileMapper database query.
+     *
+     * @param ObjectEntity $object The entity to add the files to
+     *
+     * @return ObjectEntity The updated object with files information
+     *
+     * @throws \RuntimeException If multiple nodes are found for the object's uuid
+     */
+    private function renderFiles(ObjectEntity $object): ObjectEntity
+    {
+        // Use FileMapper to get files for the object (handles folder property and UUID fallback)
+        $fileRecords = $this->fileMapper->getFilesForObject($object);
 
-		// If no files found, set empty array and return
-		if (empty($fileRecords)) {
-			$object->setFiles([]);
-			return $object;
-		}
+        // If no files found, set empty array and return
+        if (empty($fileRecords)) {
+            $object->setFiles([]);
+            return $object;
+        }
 
-		// Format the files to match FileService->formatFile() structure
-		$formattedFiles = [];
-		foreach ($fileRecords as $fileRecord) {
-			// Get file tags using our local getFileTags method
-			$labels = $this->getFileTags((string) $fileRecord['fileid']);
+        // Format the files to match FileService->formatFile() structure
+        $formattedFiles = [];
+        foreach ($fileRecords as $fileRecord) {
+            // Get file tags using our local getFileTags method
+            $labels = $this->getFileTags((string) $fileRecord['fileid']);
 
-			// Create formatted file metadata matching FileService->formatFile() structure
-			// Share information is now included directly from FileMapper
-			$formattedFile = [
-				'id'          => (string) $fileRecord['fileid'],
-				'path'        => $fileRecord['path'],
-				'title'       => $fileRecord['name'],
-				'accessUrl'   => $fileRecord['accessUrl'] ?? null,
-				'downloadUrl' => $fileRecord['downloadUrl'] ?? null,
-				'type'        => $fileRecord['mimetype'] ?? 'application/octet-stream',
-				'extension'   => pathinfo($fileRecord['name'], PATHINFO_EXTENSION),
-				'size'        => (int) $fileRecord['size'],
-				'hash'        => $fileRecord['etag'] ?? '',
-				'published'   => $fileRecord['published'] ?? null,
-				'modified'    => isset($fileRecord['mtime']) ? 
-					(new \DateTime())->setTimestamp($fileRecord['mtime'])->format('c') : null,
-				'labels'      => $labels,
-			];
+            // Create formatted file metadata matching FileService->formatFile() structure
+            // Share information is now included directly from FileMapper
+            $formattedFile = [
+                'id'          => (string) $fileRecord['fileid'],
+                'path'        => $fileRecord['path'],
+                'title'       => $fileRecord['name'],
+                'accessUrl'   => $fileRecord['accessUrl'] ?? null,
+                'downloadUrl' => $fileRecord['downloadUrl'] ?? null,
+                'type'        => $fileRecord['mimetype'] ?? 'application/octet-stream',
+                'extension'   => pathinfo($fileRecord['name'], PATHINFO_EXTENSION),
+                'size'        => (int) $fileRecord['size'],
+                'hash'        => $fileRecord['etag'] ?? '',
+                'published'   => $fileRecord['published'] ?? null,
+                'modified'    => isset($fileRecord['mtime']) ? (new \DateTime())->setTimestamp($fileRecord['mtime'])->format('c') : null,
+                'labels'      => $labels,
+            ];
 
-			$formattedFiles[] = $formattedFile;
-		}
+            $formattedFiles[] = $formattedFile;
+        }//end foreach
 
-		// Set the formatted files on the object
-		$object->setFiles($formattedFiles);
+        // Set the formatted files on the object
+        $object->setFiles($formattedFiles);
 
-		return $object;
-	}
+        return $object;
 
-	/**
-	 * Get the tags associated with a file.
-	 *
-	 * This method implements the same logic as FileService->getFileTags() to retrieve
-	 * tags associated with a file by its ID. It filters out internal 'object:' tags.
-	 *
-	 * @param string $fileId The ID of the file
-	 *
-	 * @return array<int, string> The list of tags associated with the file (excluding object: tags)
-	 *
-	 * @phpstan-return array<int, string>
-	 * @psalm-return array<int, string>
-	 */
-	private function getFileTags(string $fileId): array
-	{
-		// File tag type constant (same as in FileService)
-		$fileTagType = 'files';
+    }//end renderFiles()
 
-		// Get tag IDs for the file
-		$tagIds = $this->systemTagMapper->getTagIdsForObjects(
-			objIds: [$fileId],
-			objectType: $fileTagType
-		);
 
-		// Check if file has any tags
-		if (isset($tagIds[$fileId]) === false || empty($tagIds[$fileId]) === true) {
-			return [];
-		}
+    /**
+     * Get the tags associated with a file.
+     *
+     * This method implements the same logic as FileService->getFileTags() to retrieve
+     * tags associated with a file by its ID. It filters out internal 'object:' tags.
+     *
+     * @param string $fileId The ID of the file
+     *
+     * @return array<int, string> The list of tags associated with the file (excluding object: tags)
+     *
+     * @phpstan-return array<int, string>
+     * @psalm-return   array<int, string>
+     */
+    private function getFileTags(string $fileId): array
+    {
+        // File tag type constant (same as in FileService)
+        $fileTagType = 'files';
 
-		// Get the actual tag objects by their IDs
-		$tags = $this->systemTagManager->getTagsByIds(tagIds: $tagIds[$fileId]);
+        // Get tag IDs for the file
+        $tagIds = $this->systemTagMapper->getTagIdsForObjects(
+            objIds: [$fileId],
+            objectType: $fileTagType
+        );
 
-		// Extract tag names from tag objects and filter out 'object:' tags
-		$tagNames = array_filter(
-			array_map(static function ($tag) {
-				return $tag->getName();
-			}, $tags),
-			static function ($tagName) {
-				// Filter out internal object tags
-				return !str_starts_with($tagName, 'object:');
-			}
-		);
+        // Check if file has any tags
+        if (isset($tagIds[$fileId]) === false || empty($tagIds[$fileId]) === true) {
+            return [];
+        }
 
-		// Return array of filtered tag names
-		return array_values($tagNames);
-	}
+        // Get the actual tag objects by their IDs
+        $tags = $this->systemTagManager->getTagsByIds(tagIds: $tagIds[$fileId]);
+
+        // Extract tag names from tag objects and filter out 'object:' tags
+        $tagNames = array_filter(
+            array_map(
+           static function ($tag) {
+                return $tag->getName();
+           },
+            $tags
+           ),
+            static function ($tagName) {
+                // Filter out internal object tags
+                return !str_starts_with($tagName, 'object:');
+            }
+        );
+
+        // Return array of filtered tag names
+        return array_values($tagNames);
+
+    }//end getFileTags()
 
 
     /**
@@ -393,9 +561,9 @@ class RenderObject
      *
      * @throws Exception If schema or file operations fail.
      *
-     * @psalm-param ObjectEntity $entity
-     * @phpstan-param ObjectEntity $entity
-     * @psalm-return ObjectEntity
+     * @psalm-param    ObjectEntity $entity
+     * @phpstan-param  ObjectEntity $entity
+     * @psalm-return   ObjectEntity
      * @phpstan-return ObjectEntity
      */
     private function renderFileProperties(ObjectEntity $entity): ObjectEntity
@@ -409,7 +577,20 @@ class RenderObject
             }
 
             $schemaProperties = $schema->getProperties() ?? [];
-            $objectData = $entity->getObject();
+            $objectData       = $entity->getObject();
+
+            // First, ensure all file array properties exist in objectData (even if empty)
+            // This is important for properties that have been set to empty arrays
+            foreach ($schemaProperties as $propertyName => $propertyConfig) {
+                if ($this->isFilePropertyConfig($propertyConfig)) {
+                    $isArrayProperty = ($propertyConfig['type'] ?? '') === 'array';
+                    
+                    // If it's an array property and not set, initialize it as empty array
+                    if ($isArrayProperty && !isset($objectData[$propertyName])) {
+                        $objectData[$propertyName] = [];
+                    }
+                }
+            }
 
             // Process each property in the object data
             foreach ($objectData as $propertyName => $propertyValue) {
@@ -428,20 +609,18 @@ class RenderObject
                 // Check if this is a file property (direct or array[file])
                 if ($this->isFilePropertyConfig($propertyConfig)) {
                     $objectData[$propertyName] = $this->hydrateFileProperty(
-                        propertyValue: $propertyValue,
-                        propertyConfig: $propertyConfig,
-                        propertyName: $propertyName
+                     propertyValue: $propertyValue,
+                     propertyConfig: $propertyConfig,
+                     propertyName: $propertyName
                     );
                 }
-            }
+            }//end foreach
 
             // Update the entity with hydrated data
             $entity->setObject($objectData);
-
         } catch (Exception $e) {
             // Log error but don't break rendering - just return original entity
-
-        }
+        }//end try
 
         return $entity;
 
@@ -455,9 +634,9 @@ class RenderObject
      *
      * @return bool True if this is a file property configuration.
      *
-     * @psalm-param array<string, mixed> $propertyConfig
-     * @phpstan-param array<string, mixed> $propertyConfig
-     * @psalm-return bool
+     * @psalm-param    array<string, mixed> $propertyConfig
+     * @phpstan-param  array<string, mixed> $propertyConfig
+     * @psalm-return   bool
      * @phpstan-return bool
      */
     private function isFilePropertyConfig(array $propertyConfig): bool
@@ -468,9 +647,10 @@ class RenderObject
         }
 
         // Array of files
-        if (($propertyConfig['type'] ?? '') === 'array' &&
-            isset($propertyConfig['items']) &&
-            ($propertyConfig['items']['type'] ?? '') === 'file') {
+        if (($propertyConfig['type'] ?? '') === 'array'
+            && isset($propertyConfig['items'])
+            && ($propertyConfig['items']['type'] ?? '') === 'file'
+        ) {
             return true;
         }
 
@@ -488,13 +668,13 @@ class RenderObject
      *
      * @return mixed The hydrated property value (file object or array of file objects).
      *
-     * @psalm-param mixed $propertyValue
-     * @phpstan-param mixed $propertyValue
-     * @psalm-param array<string, mixed> $propertyConfig
-     * @phpstan-param array<string, mixed> $propertyConfig
-     * @psalm-param string $propertyName
-     * @phpstan-param string $propertyName
-     * @psalm-return mixed
+     * @psalm-param    mixed $propertyValue
+     * @phpstan-param  mixed $propertyValue
+     * @psalm-param    array<string, mixed> $propertyConfig
+     * @phpstan-param  array<string, mixed> $propertyConfig
+     * @psalm-param    string $propertyName
+     * @phpstan-param  string $propertyName
+     * @psalm-return   mixed
      * @phpstan-return mixed
      */
     private function hydrateFileProperty($propertyValue, array $propertyConfig, string $propertyName)
@@ -504,7 +684,8 @@ class RenderObject
         if ($isArrayProperty) {
             // Handle array of files
             if (!is_array($propertyValue)) {
-                return $propertyValue; // Return unchanged if not an array
+                return $propertyValue;
+                // Return unchanged if not an array
             }
 
             $hydratedFiles = [];
@@ -516,17 +697,90 @@ class RenderObject
             }
 
             return $hydratedFiles;
-
         } else {
             // Handle single file
             if (is_numeric($propertyValue) || (is_string($propertyValue) && ctype_digit($propertyValue))) {
                 return $this->getFileObject($propertyValue);
             }
 
-            return $propertyValue; // Return unchanged if not a file ID
-        }
+            return $propertyValue;
+            // Return unchanged if not a file ID
+        }//end if
 
     }//end hydrateFileProperty()
+
+
+    /**
+     * Hydrates metadata (@self) from file properties after they've been converted to file objects.
+     * 
+     * This method extracts metadata like image URLs from file properties that have been
+     * hydrated with accessUrl, downloadUrl, etc.
+     *
+     * @param ObjectEntity $entity The entity to hydrate metadata for.
+     *
+     * @return ObjectEntity The entity with hydrated metadata.
+     */
+    private function hydrateMetadataFromFileProperties(ObjectEntity $entity): ObjectEntity
+    {
+        try {
+            // Get the schema for this object to understand property configurations
+            $schema = $this->getSchema($entity->getSchema());
+            if ($schema === null) {
+                return $entity;
+            }
+
+            $config = $schema->getConfiguration();
+            $objectData = $entity->getObject();
+
+            // Check if objectImageField is configured
+            if (!empty($config['objectImageField'])) {
+                $imageField = $config['objectImageField'];
+                
+                // Get the value from the configured field
+                $value = $this->getValueFromPath($objectData, $imageField);
+                
+                // Check if the value is a file object (has downloadUrl or accessUrl)
+                if (is_array($value) && (isset($value['downloadUrl']) || isset($value['accessUrl']))) {
+                    // Set the image URL on the entity itself (not in object data)
+                    // This will be serialized to @self.image in jsonSerialize()
+                    // Prefer downloadUrl, fallback to accessUrl
+                    $entity->setImage($value['downloadUrl'] ?? $value['accessUrl']);
+                } else {
+                    // If the file property is null/empty, set image to null
+                    $entity->setImage(null);
+                }
+            }
+        } catch (\Exception $e) {
+            // Log error but don't break rendering - just return original entity
+        }
+
+        return $entity;
+    }//end hydrateMetadataFromFileProperties()
+
+
+    /**
+     * Helper method to get a value from a nested path in an array.
+     *
+     * @param array  $data The data array.
+     * @param string $path The path (e.g., 'logo' or 'nested.field').
+     *
+     * @return mixed|null The value at the path or null if not found.
+     */
+    private function getValueFromPath(array $data, string $path)
+    {
+        $keys = explode('.', $path);
+        $value = $data;
+
+        foreach ($keys as $key) {
+            if (is_array($value) && isset($value[$key])) {
+                $value = $value[$key];
+            } else {
+                return null;
+            }
+        }
+
+        return $value;
+    }//end getValueFromPath()
 
 
     /**
@@ -536,9 +790,9 @@ class RenderObject
      *
      * @return array|null The formatted file object or null if not found.
      *
-     * @psalm-param mixed $fileId
-     * @phpstan-param mixed $fileId
-     * @psalm-return array<string, mixed>|null
+     * @psalm-param    mixed $fileId
+     * @phpstan-param  mixed $fileId
+     * @psalm-return   array<string, mixed>|null
      * @phpstan-return array<string, mixed>|null
      */
     private function getFileObject($fileId): ?array
@@ -573,18 +827,14 @@ class RenderObject
                 'size'        => (int) $fileRecord['size'],
                 'hash'        => $fileRecord['etag'] ?? '',
                 'published'   => $fileRecord['published'] ?? null,
-                'modified'    => isset($fileRecord['mtime']) ? 
-                    (new \DateTime())->setTimestamp($fileRecord['mtime'])->format('c') : null,
+                'modified'    => isset($fileRecord['mtime']) ? (new \DateTime())->setTimestamp($fileRecord['mtime'])->format('c') : null,
                 'labels'      => $labels,
             ];
-
         } catch (Exception $e) {
-
             return null;
-        }
+        }//end try
 
     }//end getFileObject()
-
 
 
     /**
@@ -600,6 +850,7 @@ class RenderObject
      * @param int               $depth      The depth level for nested rendering
      * @param array|null        $filter     Filters to apply to the rendered entity
      * @param array|null        $fields     Specific fields to include in the output
+     * @param array|null        $unset      Properties to remove from the rendered entity
      * @param array|null        $registers  Preloaded registers to use
      * @param array|null        $schemas    Preloaded schemas to use
      * @param array|null        $objects    Preloaded objects to use
@@ -615,6 +866,7 @@ class RenderObject
         int $depth=0,
         ?array $filter=[],
         ?array $fields=[],
+        ?array $unset=[],
         ?array $registers=[],
         ?array $schemas=[],
         ?array $objects=[],
@@ -651,20 +903,21 @@ class RenderObject
             }
         }
 
-		$entity = $this->renderFiles($entity);
+        $entity = $this->renderFiles($entity);
 
         // Hydrate file properties (replace file IDs with file objects)
         $entity = $this->renderFileProperties($entity);
 
+        // Hydrate metadata from file properties (e.g., extract accessUrl for image metadata)
+        $entity = $this->hydrateMetadataFromFileProperties($entity);
+
         // Get the object data as an array for manipulation.
         $objectData = $entity->getObject();
-
 
         // Apply field filtering if specified.
         if (empty($fields) === false) {
             $fields[] = '@self';
             $fields[] = 'id';
-
 
             $filteredData = [];
             foreach ($fields as $field) {
@@ -687,6 +940,16 @@ class RenderObject
             }
         }
 
+        // Apply unset - remove specified properties from the response.
+        if (empty($unset) === false) {
+            foreach ($unset as $property) {
+                if (isset($objectData[$property]) === true) {
+                    unset($objectData[$property]);
+                }
+            }
+            $entity->setObject($objectData);
+        }
+
         // Handle inversed properties if depth limit not reached.
         if ($depth < 10) {
             $objectData = $this->handleInversedProperties(
@@ -695,6 +958,7 @@ class RenderObject
                 $depth,
                 $filter,
                 $fields,
+                $unset,
                 $registers,
                 $schemas,
                 $objects
@@ -703,7 +967,7 @@ class RenderObject
 
         // Convert extend to an array if it's a string.
         if (is_array($extend) === true && in_array('all', $extend, true)) {
-            $id = $objectData['id'] ?? null;
+            $id       = $objectData['id'] ?? null;
             $originId = $objectData['originId'] ?? null;
 
             foreach ($objectData as $key => $value) {
@@ -715,18 +979,18 @@ class RenderObject
                     $extend[] = $key;
                 }
             }
-        } elseif (is_string($extend) === true) {
+        } else if (is_string($extend) === true) {
             $extend = explode(',', $extend);
         }
 
         // Handle extensions if depth limit not reached.
         if (empty($extend) === false && $depth < 10) {
-            $objectData = $this->extendObject($entity, $extend, $objectData, $depth, $filter, $fields, $visitedIds);
+            $objectData = $this->extendObject($entity, $extend, $objectData, $depth, $filter, $fields, $unset, $visitedIds);
         }
 
-		$entity->setObject($objectData);
+        $entity->setObject($objectData);
 
-		return $entity;
+        return $entity;
 
     }//end renderEntity()
 
@@ -791,17 +1055,17 @@ class RenderObject
     /**
      * Handle extends on a dot array
      *
-     * @param array $data   The data to extend.
-     * @param array $extend The fields to extend.
-     * @param int   $depth  The current depth.
-     * @param bool|null  $allFlag If we extend all or not.
-     * @param array|null  $visitedIds All ids we already handled.
+     * @param array      $data       The data to extend.
+     * @param array      $extend     The fields to extend.
+     * @param int        $depth      The current depth.
+     * @param bool|null  $allFlag    If we extend all or not.
+     * @param array|null $visitedIds All ids we already handled.
      *
      * @return array
      *
      * @throws \OCP\DB\Exception
      */
-    private function handleExtendDot(array $data, array &$extend, int $depth, bool $allFlag = false, array $visitedIds = []): array
+    private function handleExtendDot(array $data, array &$extend, int $depth, bool $allFlag=false, array $visitedIds=[]): array
     {
         $data = $this->handleWildcardExtends(objectData: $data, extend: $extend, depth: $depth + 1);
 
@@ -823,7 +1087,7 @@ class RenderObject
                 fn(string $extendedKey) => substr(string: $extendedKey, offset: strlen($key) + 1),
                 array_filter(
                     $extend,
-                    fn(string $singleKey) => str_starts_with(haystack: $singleKey, needle: $key . '.')
+                    fn(string $singleKey) => str_starts_with(haystack: $singleKey, needle: $key.'.')
                 )
             );
 
@@ -842,34 +1106,37 @@ class RenderObject
             // Extend the subobject(s).
             if (is_array($value) === true) {
                 // Filter out null values and values starting with '@' before mapping
-                $value = array_filter(
+                $value         = array_filter(
                     $value,
                     fn($v) => $v !== null && (is_string($v) === false || str_starts_with(haystack: $v, needle: '@') === false)
                 );
-                $renderedValue = array_map(function ($identifier) use ($depth, $keyExtends, $allFlag, $visitedIds) {
-                    if (is_array($identifier)) {
-                        return null;
-                    }
+                $renderedValue = array_map(
+                        function ($identifier) use ($depth, $keyExtends, $allFlag, $visitedIds) {
+                            if (is_array($identifier)) {
+                                return null;
+                            }
 
-                    $object = $this->getObject(id: $identifier);
-                    if ($object === null) {
-                        $multiObject = $this->objectEntityMapper->findAll(filters: ['identifier' => $identifier]);
+                            // **PERFORMANCE OPTIMIZATION**: Use preloaded cache instead of individual queries
+                            $object = $this->getObject(id: $identifier);
+                            if ($object === null) {
+                                // If not in cache, this object wasn't preloaded - skip it to prevent N+1
+                                $this->logger->debug('Object not found in preloaded cache - skipping to prevent N+1 query', [
+                                    'identifier' => $identifier,
+                                    'context' => 'extend_array_processing'
+                                ]);
+                                return null;
+                            }
 
-                        if (count($multiObject) === 1) {
-                            $object = array_shift($multiObject);
-                        } else {
-                            return null;
-                        }
-                    }
+                            if (in_array($object->getUuid(), $visitedIds, true)) {
+                                return ['@circular' => true, 'id' => $object->getUuid()];
+                            }
 
-                    if (in_array($object->getUuid(), $visitedIds, true)) {
-                        return ['@circular' => true, 'id' => $object->getUuid()];
-                    }
+                            $subExtend = $allFlag ? array_merge(['all'], $keyExtends) : $keyExtends;
 
-                    $subExtend = $allFlag ? array_merge(['all'], $keyExtends) : $keyExtends;
-
-                    return $this->renderEntity(entity: $object, extend: $subExtend, depth: $depth + 1, visitedIds: $visitedIds)->jsonSerialize();
-                }, $value);
+                            return $this->renderEntity(entity: $object, extend: $subExtend, depth: $depth + 1, filter: $filter ?? [], fields: $fields ?? [], unset: $unset ?? [], visitedIds: $visitedIds)->jsonSerialize();
+                        },
+                        $value
+                        );
 
                 // Filter out any null values that might have been returned from the mapping
                 $renderedValue = array_filter($renderedValue, fn($v) => $v !== null);
@@ -888,21 +1155,21 @@ class RenderObject
                 }
 
                 if (filter_var($value, FILTER_VALIDATE_URL) !== false) {
-                    $path = parse_url($value, PHP_URL_PATH);
+                    $path         = parse_url($value, PHP_URL_PATH);
                     $pathExploded = explode('/', $path);
-                    $value = end($pathExploded);
+                    $value        = end($pathExploded);
                 }
 
+                // **PERFORMANCE OPTIMIZATION**: Use preloaded cache instead of individual queries
                 $object = $this->getObject(id: $value);
 
                 if ($object === null) {
-                    $multiObject = $this->objectEntityMapper->findAll(filters: ['identifier' => $value]);
-
-                    if (count($multiObject) === 1) {
-                        $object = array_shift($multiObject);
-                    } else {
-                        continue;
-                    }
+                    // If not in cache, this object wasn't preloaded - skip it to prevent N+1
+                    $this->logger->debug('Single object not found in preloaded cache - skipping to prevent N+1 query', [
+                        'identifier' => $value,
+                        'context' => 'extend_single_processing'
+                    ]);
+                    continue;
                 }
 
                 $subExtend = $allFlag ? array_merge(['all'], $keyExtends) : $keyExtends;
@@ -914,18 +1181,19 @@ class RenderObject
                         entity: $object,
                         extend: $subExtend,
                         depth: $depth + 1,
+                        filter: $filter ?? [],
+                        fields: $fields ?? [],
+                        unset: $unset ?? [],
                         visitedIds: $visitedIds
                     )->jsonSerialize();
                 }
-                
+
                 if (is_numeric($override) === true) {
                     $dataDot->set(keys: $key, value: $rendered);
                 } else {
                     $dataDot->set(keys: $override, value: $rendered);
                 }
-
             }//end if
-
         }//end foreach
 
         return $dataDot->jsonSerialize();
@@ -942,6 +1210,7 @@ class RenderObject
      * @param int          $depth      Current depth level
      * @param array|null   $filter     Filters to apply
      * @param array|null   $fields     Fields to include
+     * @param array|null   $unset      Properties to remove from the rendered entity
      * @param array|null   $visitedIds ids of objects already handled
      *
      * @return array The extended object data
@@ -953,7 +1222,8 @@ class RenderObject
         int $depth,
         ?array $filter=[],
         ?array $fields=[],
-        ?array $visitedIds = []
+        ?array $unset=[],
+        ?array $visitedIds=[]
     ): array {
         // Add register and schema context to @self if requested.
         if (in_array('@self.register', $extend) === true || in_array('@self.schema', $extend) === true) {
@@ -1019,6 +1289,7 @@ class RenderObject
      * @param int          $depth      Current depth level
      * @param array|null   $filter     Filters to apply
      * @param array|null   $fields     Fields to include
+     * @param array|null   $unset      Properties to remove from the rendered entity
      * @param array|null   $registers  Preloaded registers
      * @param array|null   $schemas    Preloaded schemas
      * @param array|null   $objects    Preloaded objects
@@ -1031,6 +1302,7 @@ class RenderObject
         int $depth,
         ?array $filter=[],
         ?array $fields=[],
+        ?array $unset=[],
         ?array $registers=[],
         ?array $schemas=[],
         ?array $objects=[]
@@ -1051,14 +1323,14 @@ class RenderObject
         $referencingObjects = $this->objectEntityMapper->findByRelation($entity->getUuid());
 
         // Set all found objects to the objectsCache.
-        $ids            = array_map(
+        $ids = array_map(
                 function (ObjectEntity $object) {
                     return $object->getUuid();
                 },
                 $referencingObjects
                 );
 
-        $objectsToCache = array_combine(keys: $ids, values: $referencingObjects);
+        $objectsToCache     = array_combine(keys: $ids, values: $referencingObjects);
         $this->objectsCache = array_merge($objectsToCache, $this->objectsCache);
 
         // Process each inversed property.
@@ -1067,25 +1339,25 @@ class RenderObject
 
             // Extract inversedBy configuration based on property structure
             $inversedByProperty = null;
-            $targetSchema = null;
-            $isArray = false;
+            $targetSchema       = null;
+            $isArray            = false;
 
             // Check if this is an array property with inversedBy in items
             if (isset($propertyConfig['type']) && $propertyConfig['type'] === 'array' && isset($propertyConfig['items']['inversedBy'])) {
                 $inversedByProperty = $propertyConfig['items']['inversedBy'];
-                $targetSchema = $propertyConfig['items']['$ref'] ?? null;
-                $isArray = true;
+                $targetSchema       = $propertyConfig['items']['$ref'] ?? null;
+                $isArray            = true;
             }
             // Check if this is a direct object property with inversedBy
-            elseif (isset($propertyConfig['inversedBy'])) {
+            else if (isset($propertyConfig['inversedBy'])) {
                 $inversedByProperty = $propertyConfig['inversedBy'];
-                $targetSchema = $propertyConfig['$ref'] ?? null;
-                $isArray = false;
+                $targetSchema       = $propertyConfig['$ref'] ?? null;
+                $isArray            = false;
 
-				// Fallback for misconfigured arrays
-				if($propertyConfig['type'] === 'array') {
-					$isArray = true;
-            }
+                // Fallback for misconfigured arrays
+                if ($propertyConfig['type'] === 'array') {
+                    $isArray = true;
+                }
             }
             // Skip if no inversedBy configuration found
             else {
@@ -1096,21 +1368,23 @@ class RenderObject
             if ($targetSchema !== null) {
                 $schemaId = $this->resolveSchemaReference($targetSchema);
             } else {
-                $schemaId = $entity->getSchema(); // Use current schema if no target specified
+                $schemaId = $entity->getSchema();
+                // Use current schema if no target specified
             }
 
-            $inversedObjects = array_values(array_filter(
+            $inversedObjects = array_values(
+                    array_filter(
                     $referencingObjects,
                     function (ObjectEntity $object) use ($inversedByProperty, $schemaId, $entity) {
                         $data = $object->getObject();
-                        
+
                         // Check if the referencing object has the inversedBy property
                         if (!isset($data[$inversedByProperty])) {
                             return false;
                         }
 
                         $referenceValue = $data[$inversedByProperty];
-                        
+
                         // Handle both array and single value references
                         if (is_array($referenceValue)) {
                             // Check if the current entity's UUID is in the array
@@ -1120,7 +1394,8 @@ class RenderObject
                             return str_ends_with(haystack: $referenceValue, needle: $entity->getUuid()) && $object->getSchema() === $schemaId;
                         }
                     }
-                    ));
+                    )
+                    );
 
             $inversedUuids = array_map(
                     function (ObjectEntity $object) {
@@ -1135,7 +1410,6 @@ class RenderObject
             } else {
                 $objectData[$propertyName] = !empty($inversedUuids) ? end($inversedUuids) : null;
             }
-
         }//end foreach
 
         return $objectData;
@@ -1152,15 +1426,18 @@ class RenderObject
      */
     private function resolveSchemaReference(string $schemaRef): string
     {
+        // Remove query parameters if present (e.g., "schema?key=value" -> "schema")
+        $cleanSchemaRef = $this->removeQueryParameters($schemaRef);
+
         // If it's already a numeric ID, return it
-        if (is_numeric($schemaRef)) {
-            return $schemaRef;
+        if (is_numeric($cleanSchemaRef)) {
+            return $cleanSchemaRef;
         }
 
         // If it's a UUID, try to find the schema by UUID
-        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $schemaRef)) {
+        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $cleanSchemaRef)) {
             try {
-                $schema = $this->schemaMapper->find($schemaRef);
+                $schema = $this->schemaMapper->find($cleanSchemaRef);
                 return (string) $schema->getId();
             } catch (\Exception $e) {
                 // If not found by UUID, continue with other methods
@@ -1168,12 +1445,12 @@ class RenderObject
         }
 
         // Handle JSON Schema path references (e.g., "#/components/schemas/organisatie")
-        if (str_contains($schemaRef, '/')) {
-            $lastSegment = basename($schemaRef);
+        if (str_contains($cleanSchemaRef, '/')) {
+            $lastSegment = basename($cleanSchemaRef);
             // Remove any file extension or fragment
             $lastSegment = preg_replace('/\.[^.]*$/', '', $lastSegment);
             $lastSegment = preg_replace('/#.*$/', '', $lastSegment);
-            
+
             // Try to find schema by slug (case-insensitive)
             try {
                 $schemas = $this->schemaMapper->findAll();
@@ -1187,17 +1464,36 @@ class RenderObject
             }
         }
 
-		// If it's a slug, try to find the schema by slug
-		$schemas = $this->schemaMapper->findAll(filters: ['slug' => $schemaRef]);
+        // If it's a slug, try to find the schema by slug
+        $schemas = $this->schemaMapper->findAll(filters: ['slug' => $cleanSchemaRef]);
 
-		if(count($schemas) === 1) {
-			return (string) array_shift($schemas)->getId();
-		}
+        if (count($schemas) === 1) {
+            return (string) array_shift($schemas)->getId();
+        }
 
         // If all else fails, try to use the reference as-is
-        return $schemaRef;
+        return $cleanSchemaRef;
 
     }//end resolveSchemaReference()
+
+
+    /**
+     * Removes query parameters from a reference string.
+     *
+     * @param string $reference The reference string that may contain query parameters
+     *
+     * @return string The reference string without query parameters
+     */
+    private function removeQueryParameters(string $reference): string
+    {
+        // Remove query parameters if present (e.g., "schema?key=value" -> "schema")
+        if (str_contains($reference, '?')) {
+            return substr($reference, 0, strpos($reference, '?'));
+        }
+
+        return $reference;
+
+    }//end removeQueryParameters()
 
 
     /**

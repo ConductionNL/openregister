@@ -3,7 +3,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.dialog === 'deleteOrganisation'"
+	<NcDialog
 		name="Delete Organisation"
 		size="normal"
 		:can-close="false">
@@ -98,13 +98,13 @@ export default {
 			const currentUser = this.getCurrentUser()
 			return organisationStore.organisationItem?.owner === currentUser
 		},
-		hasMembers() {
-			// Check if organisation has members (excluding the owner)
-			return (organisationStore.organisationItem?.userCount || 0) > 1
-		},
-		memberCount() {
-			return organisationStore.organisationItem?.userCount || 0
-		},
+	hasMembers() {
+		// Check if organisation has members (excluding the owner)
+		return (organisationStore.organisationItem?.users?.length || 0) > 1
+	},
+	memberCount() {
+		return organisationStore.organisationItem?.users?.length || 0
+	},
 		isActiveOrganisation() {
 			// Check if this is the currently active organisation
 			return organisationStore.userStats.active
@@ -128,7 +128,7 @@ export default {
 			return 'current-user' // Placeholder
 		},
 		closeDialog() {
-			navigationStore.setDialog(false)
+			navigationStore.setModal(false)
 			clearTimeout(this.closeModalTimeout)
 			this.success = false
 			this.loading = false
@@ -147,7 +147,7 @@ export default {
 
 				if (response.ok) {
 					// Navigate back to organisations list
-					navigationStore.setSelected('organisationsIndex')
+					this.$router.push('/organisation')
 					this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
 				}
 

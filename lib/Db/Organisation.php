@@ -30,11 +30,13 @@ use Symfony\Component\Uid\Uuid;
  *
  * Manages organisational data and user relationships for multi-tenancy.
  * Each organisation can have multiple users, and users can belong to multiple organisations.
+ * Organisations can define custom roles/groups for role-based access control (RBAC).
  *
  * @package OCA\OpenRegister\Db
  */
 class Organisation extends Entity implements JsonSerializable
 {
+
     /**
      * Unique identifier for the organisation
      *
@@ -71,6 +73,14 @@ class Organisation extends Entity implements JsonSerializable
     protected ?array $users = [];
 
     /**
+     * Array of Nextcloud group IDs assigned to this organisation
+     * Stored as simple array of group ID strings for efficiency
+     *
+     * @var array|null Array of group IDs (strings)
+     */
+    protected ?array $groups = [];
+
+    /**
      * Owner of the organisation (user ID)
      *
      * @var string|null The user ID who owns this organisation
@@ -92,18 +102,58 @@ class Organisation extends Entity implements JsonSerializable
     protected ?DateTime $updated = null;
 
     /**
-     * Whether this organisation is the default organisation
-     *
-     * @var bool|null Whether this is the default organisation
-     */
-    protected ?bool $isDefault = false;
-
-    /**
      * Whether this organisation is active
      *
-     * @var bool|null Whether this organisation is active
+     * @var boolean|null Whether this organisation is active
      */
     protected ?bool $active = true;
+
+    /**
+     * Storage quota allocated to this organisation in bytes
+     * NULL = unlimited storage
+     *
+     * @var int|null Storage quota in bytes
+     */
+    protected ?int $storageQuota = null;
+
+    /**
+     * Bandwidth/traffic quota allocated to this organisation in bytes per month
+     * NULL = unlimited bandwidth
+     *
+     * @var int|null Bandwidth quota in bytes per month
+     */
+    protected ?int $bandwidthQuota = null;
+
+    /**
+     * API request quota allocated to this organisation per day
+     * NULL = unlimited API requests
+     *
+     * @var int|null API request quota per day
+     */
+    protected ?int $requestQuota = null;
+
+    /**
+     * Authorization rules for this organisation
+     * 
+     * Hierarchical structure defining CRUD permissions per entity type
+     * and special rights. Uses singular entity names for easier authorization checks.
+     * Structure:
+     * {
+     *   "register": {"create": [], "read": [], "update": [], "delete": []},
+     *   "schema": {"create": [], "read": [], "update": [], "delete": []},
+     *   "object": {"create": [], "read": [], "update": [], "delete": []},
+     *   "view": {"create": [], "read": [], "update": [], "delete": []},
+     *   "agent": {"create": [], "read": [], "update": [], "delete": []},
+     *   "object_publish": [],
+     *   "agent_use": [],
+     *   "dashboard_view": [],
+     *   "llm_use": []
+     * }
+     *
+     * @var array|null Authorization rules as JSON structure
+     */
+    protected ?array $authorization = null;
+
 
     /**
      * Organisation constructor
@@ -117,13 +167,17 @@ class Organisation extends Entity implements JsonSerializable
         $this->addType('name', 'string');
         $this->addType('description', 'string');
         $this->addType('users', 'json');
+        $this->addType('groups', 'json');
         $this->addType('owner', 'string');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
-        $this->addType('is_default', 'boolean');
         $this->addType('active', 'boolean');
-    }
+        $this->addType('storage_quota', 'integer');
+        $this->addType('bandwidth_quota', 'integer');
+        $this->addType('request_quota', 'integer');
+        $this->addType('authorization', 'json');
 
+    }//end __construct()
 
 
     /**
@@ -141,7 +195,9 @@ class Organisation extends Entity implements JsonSerializable
         } catch (\InvalidArgumentException $e) {
             return false;
         }
-    }
+
+    }//end isValidUuid()
+
 
     /**
      * Add a user to this organisation
@@ -158,10 +214,13 @@ class Organisation extends Entity implements JsonSerializable
 
         if (!in_array($userId, $this->users)) {
             $this->users[] = $userId;
+            $this->markFieldUpdated('users');
         }
 
         return $this;
-    }
+
+    }//end addUser()
+
 
     /**
      * Remove a user from this organisation
@@ -176,12 +235,25 @@ class Organisation extends Entity implements JsonSerializable
             return $this;
         }
 
-        $this->users = array_values(array_filter($this->users, function($id) use ($userId) {
-            return $id !== $userId;
-        }));
+        $originalCount = count($this->users);
+        $this->users = array_values(
+                array_filter(
+                $this->users,
+                function ($id) use ($userId) {
+                    return $id !== $userId;
+                }
+                )
+                );
+
+        // Only mark as updated if a user was actually removed
+        if (count($this->users) !== $originalCount) {
+            $this->markFieldUpdated('users');
+        }
 
         return $this;
-    }
+
+    }//end removeUser()
+
 
     /**
      * Check if a user belongs to this organisation
@@ -193,7 +265,9 @@ class Organisation extends Entity implements JsonSerializable
     public function hasUser(string $userId): bool
     {
         return $this->users !== null && in_array($userId, $this->users);
-    }
+
+    }//end hasUser()
+
 
     /**
      * Get all users in this organisation
@@ -203,30 +277,152 @@ class Organisation extends Entity implements JsonSerializable
     public function getUserIds(): array
     {
         return $this->users ?? [];
-    }
+
+    }//end getUserIds()
+
 
     /**
-     * Get whether this organisation is the default
+     * Add a role to this organisation
      *
-     * @return bool Whether this is the default organisation
-     */
-    public function getIsDefault(): bool
-    {
-        return $this->isDefault ?? false;
-    }
-
-    /**
-     * Set whether this organisation is the default
-     *
-     * @param bool|null $isDefault Whether this should be the default organisation
+     * @param array $role The role definition to add (e.g., ['id' => 'admin', 'name' => 'Administrator', 'permissions' => [...]])
      *
      * @return self Returns this organisation for method chaining
      */
-    public function setIsDefault(?bool $isDefault): self
+    public function addRole(array $role): self
     {
-        $this->isDefault = $isDefault ?? false;
+        if ($this->roles === null) {
+            $this->roles = [];
+        }
+
+        // Check if role with same ID already exists
+        $roleId = $role['id'] ?? $role['name'] ?? null;
+        if ($roleId !== null) {
+            $exists = false;
+            foreach ($this->roles as $existingRole) {
+                $existingId = $existingRole['id'] ?? $existingRole['name'] ?? null;
+                if ($existingId === $roleId) {
+                    $exists = true;
+                    break;
+                }
+            }
+            
+            if (!$exists) {
+                $this->roles[] = $role;
+            }
+        }
+
         return $this;
-    }
+
+    }//end addRole()
+
+
+    /**
+     * Remove a role from this organisation
+     *
+     * @param string $roleId The role ID or name to remove
+     *
+     * @return self Returns this organisation for method chaining
+     */
+    public function removeRole(string $roleId): self
+    {
+        if ($this->roles === null) {
+            return $this;
+        }
+
+        $this->roles = array_values(
+                array_filter(
+                $this->roles,
+                function ($role) use ($roleId) {
+                    $currentId = $role['id'] ?? $role['name'] ?? null;
+                    return $currentId !== $roleId;
+                }
+                )
+                );
+
+        return $this;
+
+    }//end removeRole()
+
+
+    /**
+     * Check if a role exists in this organisation
+     *
+     * @param string $roleId The role ID or name to check
+     *
+     * @return bool True if role exists in this organisation
+     */
+    public function hasRole(string $roleId): bool
+    {
+        if ($this->roles === null) {
+            return false;
+        }
+
+        foreach ($this->roles as $role) {
+            $currentId = $role['id'] ?? $role['name'] ?? null;
+            if ($currentId === $roleId) {
+                return true;
+            }
+        }
+
+        return false;
+
+    }//end hasRole()
+
+
+    /**
+     * Get a specific role by ID or name
+     *
+     * @param string $roleId The role ID or name to retrieve
+     *
+     * @return array|null The role definition or null if not found
+     */
+    public function getRole(string $roleId): ?array
+    {
+        if ($this->roles === null) {
+            return null;
+        }
+
+        foreach ($this->roles as $role) {
+            $currentId = $role['id'] ?? $role['name'] ?? null;
+            if ($currentId === $roleId) {
+                return $role;
+            }
+        }
+
+        return null;
+
+    }//end getRole()
+
+
+    /**
+     * Get all groups in this organisation
+     *
+     * @return array Array of Nextcloud group IDs
+     */
+    public function getGroups(): array
+    {
+        return $this->groups ?? [];
+
+    }//end getGroups()
+
+
+    /**
+     * Set all groups for this organisation
+     *
+     * @param array|null $groups Array of Nextcloud group IDs
+     *
+     * @return self Returns this organisation for method chaining
+     */
+    public function setGroups(?array $groups): self
+    {
+        $this->groups = $groups ?? [];
+        $this->markFieldUpdated('groups');
+        return $this;
+
+    }//end setGroups()
+
+
+
 
     /**
      * Get whether this organisation is active
@@ -236,20 +432,120 @@ class Organisation extends Entity implements JsonSerializable
     public function getActive(): bool
     {
         return $this->active ?? true;
-    }
+
+    }//end getActive()
+
 
     /**
      * Set whether this organisation is active
      *
-     * @param bool|null $active Whether this should be the active organisation
+     * @param bool|null|string $active Whether this should be the active organisation
      *
      * @return self Returns this organisation for method chaining
      */
-    public function setActive(?bool $active): self
+    public function setActive(mixed $active): self
     {
-        parent::setActive($active ?? true);
+        // Handle various input types defensively (including empty strings from API)
+        if ($active === '' || $active === null) {
+            parent::setActive(true); // Default to true for organisations
+        } else {
+            parent::setActive((bool)$active);
+        }
+        $this->markFieldUpdated('active');
         return $this;
-    }
+
+    }//end setActive()
+
+
+    /**
+     * Get default authorization structure for organisations
+     *
+     * Provides sensible defaults with empty arrays for all permissions
+     * Uses singular entity names for easier authorization checks based on entity type
+     *
+     * @return array Default authorization structure
+     */
+    private function getDefaultAuthorization(): array
+    {
+        return [
+            'register'       => [
+                'create' => [],
+                'read'   => [],
+                'update' => [],
+                'delete' => [],
+            ],
+            'schema'         => [
+                'create' => [],
+                'read'   => [],
+                'update' => [],
+                'delete' => [],
+            ],
+            'object'         => [
+                'create' => [],
+                'read'   => [],
+                'update' => [],
+                'delete' => [],
+            ],
+            'view'           => [
+                'create' => [],
+                'read'   => [],
+                'update' => [],
+                'delete' => [],
+            ],
+            'agent'          => [
+                'create' => [],
+                'read'   => [],
+                'update' => [],
+                'delete' => [],
+            ],
+            'configuration'  => [
+                'create' => [],
+                'read'   => [],
+                'update' => [],
+                'delete' => [],
+            ],
+            'application'    => [
+                'create' => [],
+                'read'   => [],
+                'update' => [],
+                'delete' => [],
+            ],
+            'object_publish' => [],
+            'agent_use'      => [],
+            'dashboard_view' => [],
+            'llm_use'        => [],
+        ];
+
+    }//end getDefaultAuthorization()
+
+
+    /**
+     * Get authorization rules for this organisation
+     *
+     * @return array Authorization rules structure
+     */
+    public function getAuthorization(): array
+    {
+        return $this->authorization ?? $this->getDefaultAuthorization();
+
+    }//end getAuthorization()
+
+
+    /**
+     * Set authorization rules for this organisation
+     *
+     * @param array|null $authorization Authorization rules structure
+     *
+     * @return self Returns this organisation for method chaining
+     */
+    public function setAuthorization(?array $authorization): self
+    {
+        $this->authorization = $authorization ?? $this->getDefaultAuthorization();
+        $this->markFieldUpdated('authorization');
+        return $this;
+
+    }//end setAuthorization()
+
 
     /**
      * JSON serialization for API responses
@@ -258,21 +554,40 @@ class Organisation extends Entity implements JsonSerializable
      */
     public function jsonSerialize(): array
     {
+        $users = $this->getUserIds();
+        $groups = $this->getGroups();
+
         return [
-            'id' => $this->id,
-            'uuid' => $this->uuid,
-            'slug' => $this->slug,
-            'name' => $this->name,
-            'description' => $this->description,
-            'users' => $this->getUserIds(),
-            'userCount' => count($this->getUserIds()),
-            'owner' => $this->owner,
-            'isDefault' => $this->getIsDefault(),
-            'active' => $this->getActive(),
-            'created' => $this->created ? $this->created->format('c') : null,
-            'updated' => $this->updated ? $this->updated->format('c') : null,
+            'id'            => $this->id,
+            'uuid'          => $this->uuid,
+            'slug'          => $this->slug,
+            'name'          => $this->name,
+            'description'   => $this->description,
+            'users'         => $users,
+            'groups'        => $groups,
+            'owner'         => $this->owner,
+            'active'        => $this->getActive(),
+            'quota'         => [
+                'storage'   => $this->storageQuota,
+                'bandwidth' => $this->bandwidthQuota,
+                'requests'  => $this->requestQuota,
+                'users'     => null, // To be set via admin configuration
+                'groups'    => null, // To be set via admin configuration
+            ],
+            'usage'         => [
+                'storage'   => 0, // To be calculated from actual usage
+                'bandwidth' => 0, // To be calculated from actual usage
+                'requests'  => 0, // To be calculated from actual usage
+                'users'     => count($users),
+                'groups'    => count($groups),
+            ],
+            'authorization' => $this->authorization ?? $this->getDefaultAuthorization(),
+            'created'       => $this->created ? $this->created->format('c') : null,
+            'updated'       => $this->updated ? $this->updated->format('c') : null,
         ];
-    }
+
+    }//end jsonSerialize()
+
 
     /**
      * String representation of the organisation
@@ -291,5 +606,8 @@ class Organisation extends Entity implements JsonSerializable
         }
 
         return $this->uuid;
-    }
-}
+
+    }//end __toString()
+
+
+}//end class

@@ -1,0 +1,2 @@
+# Protected words that should not be stemmed
+# One word per line

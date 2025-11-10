@@ -52,9 +52,9 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 						:input-label="t('openregister', 'Success Status')"
 						:clearable="true"
 						@input="applyFilters">
-						<template #option="{ option }">
-							<div class="statusOption" :class="option.value">
-								{{ option.label }}
+						<template #option="{ label, value }">
+							<div class="statusOption" :class="value">
+								{{ label }}
 							</div>
 						</template>
 					</NcSelect>
@@ -70,8 +70,8 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 						:multiple="true"
 						:clearable="true"
 						@input="applyFilters">
-						<template #option="{ option }">
-							{{ option.label }}
+						<template #option="{ label }">
+							{{ label }}
 						</template>
 					</NcSelect>
 				</div>
@@ -328,8 +328,8 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 						:options="activityPeriodOptions"
 						:placeholder="t('openregister', 'Select period')"
 						@input="loadActivityData">
-						<template #option="{ option }">
-							{{ option.label }}
+						<template #option="{ label }">
+							{{ label }}
 						</template>
 					</NcSelect>
 				</div>
@@ -417,6 +417,35 @@ export default {
 	},
 	data() {
 		return {
+			successOptions: [
+				{
+					label: t('openregister', 'Successful'),
+					value: 'true',
+				},
+				{
+					label: t('openregister', 'Failed'),
+					value: 'false',
+				},
+			],
+			activityPeriodOptions: [
+				{
+					label: t('openregister', 'Hourly'),
+					value: 'hourly',
+				},
+				{
+					label: t('openregister', 'Daily'),
+					value: 'daily',
+				},
+				{
+					label: t('openregister', 'Weekly'),
+					value: 'weekly',
+				},
+				{
+					label: t('openregister', 'Monthly'),
+					value: 'monthly',
+				},
+			],
+
 			activeTab: 'filters-tab',
 			selectedSuccessStatus: null,
 			selectedUsers: [],
@@ -455,38 +484,6 @@ export default {
 		}
 	},
 	computed: {
-		successOptions() {
-			return [
-				{
-					label: this.t('openregister', 'Successful'),
-					value: 'true',
-				},
-				{
-					label: this.t('openregister', 'Failed'),
-					value: 'false',
-				},
-			]
-		},
-		activityPeriodOptions() {
-			return [
-				{
-					label: this.t('openregister', 'Hourly'),
-					value: 'hourly',
-				},
-				{
-					label: this.t('openregister', 'Daily'),
-					value: 'daily',
-				},
-				{
-					label: this.t('openregister', 'Weekly'),
-					value: 'weekly',
-				},
-				{
-					label: this.t('openregister', 'Monthly'),
-					value: 'monthly',
-				},
-			]
-		},
 		registerOptions() {
 			return {
 				options: registerStore.registerList.map(register => ({
@@ -554,6 +551,14 @@ export default {
 		},
 	},
 	watch: {
+		// Keep component/store in sync with URL query params (single source of truth)
+		'$route.query': {
+			handler() {
+				if (this.$route.path !== '/search-trails') return
+				this.applyQueryParamsFromRoute()
+			},
+			deep: true,
+		},
 		'searchTrailStore.searchTrailList'() {
 			this.updateFilteredCount()
 		},
@@ -590,6 +595,9 @@ export default {
 
 		// Watch store changes and update count
 		this.updateFilteredCount()
+
+		// Initialize from current URL query params
+		this.applyQueryParamsFromRoute()
 	},
 	beforeDestroy() {
 		this.$root.$off('search-trail-filtered-count')
@@ -632,6 +640,9 @@ export default {
 
 			// Refresh without applying filters
 			searchTrailStore.refreshSearchTrailList()
+
+			// Reflect cleared filters in URL
+			this.updateRouteQueryFromState()
 		},
 		/**
 		 * Clear filters (alias for clearAllFilters for template compatibility)
@@ -728,6 +739,9 @@ export default {
 
 			// Also emit for legacy compatibility
 			this.$root.$emit('search-trail-filters-changed', filters)
+
+			// Reflect filters in URL
+			this.updateRouteQueryFromState()
 		},
 		/**
 		 * Debounced version of applyFilters for text input
@@ -832,6 +846,8 @@ export default {
 				console.error('Error loading activity data:', error)
 				this.currentActivityData = []
 			}
+			// Reflect activity period in URL
+			this.updateRouteQueryFromState()
 		},
 		/**
 		 * Get complexity percentage for progress bar
@@ -910,6 +926,95 @@ export default {
 				return version ? `${browser} ${version}` : browser
 			}
 			return agent.user_agent || 'Unknown Browser'
+		},
+		// Build URL query from current component/store state
+		buildQueryFromState() {
+			const query = {}
+			// Filters
+			if (registerStore.registerItem) query.register = String(registerStore.registerItem.id)
+			if (schemaStore.schemaItem) query.schema = String(schemaStore.schemaItem.id)
+			if (this.selectedSuccessStatus && this.selectedSuccessStatus.value) query.success = String(this.selectedSuccessStatus.value)
+			if (Array.isArray(this.selectedUsers) && this.selectedUsers.length > 0) query.user = this.selectedUsers.map(u => u.value || u).join(',')
+			// JS dates are awful, so we first check if its a valid date and then get the ISO string.
+			if (this.dateFrom) query.dateFrom = new Date(this.dateFrom).getDate() ? new Date(this.dateFrom).toISOString() : null
+			if (this.dateTo) query.dateTo = new Date(this.dateTo).getDate() ? new Date(this.dateTo).toISOString() : null
+			if (this.searchTermFilter) query.searchTerm = this.searchTermFilter
+			if (this.executionTimeFrom) query.executionTimeFrom = String(this.executionTimeFrom)
+			if (this.executionTimeTo) query.executionTimeTo = String(this.executionTimeTo)
+			if (this.resultCountFrom) query.resultCountFrom = String(this.resultCountFrom)
+			if (this.resultCountTo) query.resultCountTo = String(this.resultCountTo)
+			return query
+		},
+		// Shallow compare queries
+		queriesEqual(a, b) {
+			const ka = Object.keys(a).sort()
+			const kb = Object.keys(b || {}).sort()
+			if (ka.length !== kb.length) return false
+			for (let i = 0; i < ka.length; i++) {
+				const k = ka[i]
+				if (k !== kb[i]) return false
+				if (String(a[k]) !== String(b[k])) return false
+			}
+			return true
+		},
+		// Write current state into URL
+		updateRouteQueryFromState() {
+			if (this.$route.path !== '/search-trails') return
+			const nextQuery = this.buildQueryFromState()
+			if (this.queriesEqual(nextQuery, this.$route.query)) return
+			this.$router.replace({ path: this.$route.path, query: nextQuery })
+		},
+		// Read URL query and apply to component/store
+		applyQueryParamsFromRoute() {
+			if (this.$route.path !== '/search-trails') return
+			const q = this.$route.query || {}
+			// Success status
+			if (typeof q.success !== 'undefined') {
+				const val = String(q.success)
+				const opt = this.successOptions.find(o => String(o.value) === val)
+				this.selectedSuccessStatus = opt || null
+			}
+			// Users
+			if (typeof q.user === 'string') {
+				const users = q.user.split(',').map(s => s.trim()).filter(Boolean)
+				this.selectedUsers = users.map(u => ({ label: u, value: u }))
+			}
+			// Dates and fields
+			// JS dates are awful, so we first check if its a valid date and then create the date. (q.dateFrom is a ISO string)
+			this.dateFrom = q.dateFrom && new Date(q.dateFrom).getDate() ? new Date(q.dateFrom) : null
+			this.dateTo = q.dateTo && new Date(q.dateTo).getDate() ? new Date(q.dateTo) : null
+			this.searchTermFilter = q.searchTerm || ''
+			this.executionTimeFrom = q.executionTimeFrom || ''
+			this.executionTimeTo = q.executionTimeTo || ''
+			this.resultCountFrom = q.resultCountFrom || ''
+			this.resultCountTo = q.resultCountTo || ''
+			// Registers & schemas depend on lists
+			const applyRegister = () => {
+				if (!q.register) return true
+				if (!registerStore.registerList.length) return false
+				const reg = registerStore.registerList.find(r => String(r.id) === String(q.register))
+				if (reg) registerStore.setRegisterItem(reg)
+				return true
+			}
+			const applySchema = () => {
+				if (!q.schema) return true
+				if (!schemaStore.schemaList.length) return false
+				const sch = schemaStore.schemaList.find(s => String(s.id) === String(q.schema))
+				if (sch) schemaStore.setSchemaItem(sch)
+				return true
+			}
+			const tryApply = (attempt = 0) => {
+				const rOk = applyRegister()
+				const sOk = applySchema()
+				// Apply store filters once selection ready
+				if (rOk && sOk) {
+					this.applyFilters()
+					this.loadActivityData()
+					return
+				}
+				if (attempt < 10) setTimeout(() => tryApply(attempt + 1), 200)
+			}
+			tryApply()
 		},
 	},
 }

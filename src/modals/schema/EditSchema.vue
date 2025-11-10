@@ -30,10 +30,13 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 					<span class="detail-value">{{ schemaItem.id }}</span>
 					<span v-if="schemaItem.uuid && schemaItem.uuid !== schemaItem.id" class="detail-value uuid-value">{{ schemaItem.uuid }}</span>
 				</div>
-				<div class="detail-item">
+				<div class="detail-item title-with-badge">
 					<NcTextField :disabled="loading"
 						label="Title *"
 						:value.sync="schemaItem.title" />
+					<span v-if="schemaItem.extend" class="statusPill statusPill--alert">
+						{{ t('openregister', 'Extended') }}
+					</span>
 				</div>
 				<div v-if="schemaItem.created" class="detail-item">
 					<span class="detail-label">Created:</span>
@@ -76,364 +79,310 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 									</tr>
 								</thead>
 								<tbody>
-									<template v-for="(property, key) in sortedProperties(schemaItem)">
-										<tr :key="`property-${getStablePropertyId(key)}`"
-											:class="{ 'selected-row': selectedProperty === key, 'modified-row': isPropertyModified(key) }"
-											@click="handleRowClick(key, $event)">
-											<td>
-												<div v-if="selectedProperty === key" class="name-input-container" @click.stop>
-													<AlertOutline v-if="isPropertyModified(key)"
-														:size="16"
-														class="warning-icon"
-														:title="'Property has been modified. Changes will only take effect after the schema is saved.'" />
-													<NcTextField
-														ref="propertyNameInput"
-														:value="key"
-														label="(technical) Property Name"
-														@update:value="updatePropertyKey(key, $event)"
-														@click.stop />
-												</div>
-												<div v-else class="name-display-container">
-													<AlertOutline v-if="isPropertyModified(key)"
-														:size="16"
-														class="warning-icon"
-														:title="'Property has been modified. Changes will only take effect after the schema is saved.'" />
-													<div class="name-with-chips">
-														<span class="property-name">{{ key }}</span>
-														<div class="inline-chips">
-															<span v-if="isPropertyRequired(schemaItem, key)"
-																class="property-chip chip-primary">Required</span>
-															<span v-if="property.immutable"
-																class="property-chip chip-secondary">Immutable</span>
-															<span v-if="property.deprecated"
-																class="property-chip chip-warning">Deprecated</span>
-															<span v-if="property.visible === false"
-																class="property-chip chip-secondary">Hidden in view</span>
-															<span v-if="property.hideOnCollection"
-																class="property-chip chip-secondary">Hidden in Collection</span>
-															<span v-if="property.const !== undefined"
-																class="property-chip chip-success">Constant</span>
-															<span v-if="property.enum && property.enum.length > 0"
-																class="property-chip chip-success">Enumeration ({{ property.enum.length }})</span>
-															<span v-if="property.facetable === true"
-																class="property-chip chip-info">Facetable</span>
-															<span v-if="hasCustomTableSettings(key)"
-																class="property-chip chip-table">Table</span>
-														</div>
+									<tr v-for="(property, key) in sortedProperties(schemaItem)"
+										:key="`property-${getStablePropertyId(key)}`"
+										:class="{ 'selected-row': selectedProperty === key, 'modified-row': isPropertyModified(key) }"
+										@click="handleRowClick(key, $event)">
+										<td>
+											<div v-if="selectedProperty === key" class="name-input-container" @click.stop>
+												<AlertOutline v-if="isPropertyModified(key)"
+													:size="16"
+													class="warning-icon"
+													:title="'Property has been modified. Changes will only take effect after the schema is saved.'" />
+												<NcTextField
+													ref="propertyNameInput"
+													:value="key"
+													label="(technical) Property Name"
+													@update:value="updatePropertyKey(key, $event)"
+													@click.stop />
+											</div>
+											<div v-else class="name-display-container">
+												<AlertOutline v-if="isPropertyModified(key)"
+													:size="16"
+													class="warning-icon"
+													:title="'Property has been modified. Changes will only take effect after the schema is saved.'" />
+												<div class="name-with-chips">
+													<span class="property-name">{{ key }}</span>
+													<div class="inline-chips">
+														<span v-if="isPropertyRequired(schemaItem, key)"
+															class="property-chip chip-primary">Required</span>
+														<span v-if="property.immutable"
+															class="property-chip chip-secondary">Immutable</span>
+														<span v-if="property.deprecated"
+															class="property-chip chip-warning">Deprecated</span>
+														<span v-if="property.visible === false"
+															class="property-chip chip-secondary">Hidden in view</span>
+														<span v-if="property.hideOnCollection"
+															class="property-chip chip-secondary">Hidden in Collection</span>
+														<span v-if="property.hideOnForm"
+															class="property-chip chip-secondary">Hidden in Form</span>
+														<span v-if="property.const !== undefined"
+															class="property-chip chip-success">Constant</span>
+														<span v-if="property.enum && property.enum.length > 0"
+															class="property-chip chip-success">Enumeration ({{ property.enum.length }})</span>
+														<span v-if="property.facetable === true"
+															class="property-chip chip-info">Facetable</span>
+														<span v-if="hasCustomTableSettings(key)"
+															class="property-chip chip-table">Table</span>
 													</div>
 												</div>
-											</td>
-											<td>
-												<NcSelect
-													v-if="selectedProperty === key"
-													v-model="schemaItem.properties[key].type"
-													:options="typeOptionsForSelect"
-													input-label="Property Type"
-													@click.stop />
-												<span v-else>{{ property.type }}</span>
-											</td>
-											<td class="tableColumnActions">
-												<NcActions>
-													<NcActionCaption name="Actions" />
-													<NcActionButton :aria-label="'Copy ' + key" @click="copyProperty(key)">
-														<template #icon>
-															<ContentCopy :size="16" />
-														</template>
-														Copy Property
-													</NcActionButton>
-													<NcActionButton :aria-label="'Delete ' + key" @click="deleteProperty(key)">
-														<template #icon>
-															<TrashCanOutline :size="16" />
-														</template>
-														Delete Property
-													</NcActionButton>
+											</div>
+										</td>
+										<td>
+											<NcSelect
+												v-if="selectedProperty === key"
+												v-model="schemaItem.properties[key].type"
+												:options="typeOptionsForSelect"
+												input-label="Property Type"
+												@click.stop />
+											<span v-else>{{ property.type }}</span>
+										</td>
+										<td class="tableColumnActions">
+											<NcActions>
+												<NcActionCaption name="Actions" />
+												<NcActionButton :aria-label="'Copy ' + key" @click="copyProperty(key)">
+													<template #icon>
+														<ContentCopy :size="16" />
+													</template>
+													Copy Property
+												</NcActionButton>
+												<NcActionButton :aria-label="'Delete ' + key" @click="deleteProperty(key)">
+													<template #icon>
+														<TrashCanOutline :size="16" />
+													</template>
+													Delete Property
+												</NcActionButton>
 
-													<NcActionSeparator />
-													<NcActionCaption name="General" />
-													<NcActionCheckbox
-														:checked="isPropertyRequired(schemaItem, key)"
-														@update:checked="updatePropertyRequired(key, $event)">
-														Required
-													</NcActionCheckbox>
-													<NcActionCheckbox
-														:checked="property.immutable || false"
-														@update:checked="updatePropertySetting(key, 'immutable', $event)">
-														Immutable
-													</NcActionCheckbox>
-													<NcActionCheckbox
-														:checked="property.deprecated || false"
-														@update:checked="updatePropertySetting(key, 'deprecated', $event)">
-														Deprecated
-													</NcActionCheckbox>
-													<NcActionCheckbox
-														:checked="property.visible !== false"
-														@update:checked="updatePropertySetting(key, 'visible', $event)">
-														Visible to end users
-													</NcActionCheckbox>
-													<NcActionCheckbox
-														:checked="property.hideOnCollection || false"
-														@update:checked="updatePropertySetting(key, 'hideOnCollection', $event)">
-														Hide in collection view
-													</NcActionCheckbox>
-													<NcActionCheckbox
-														:checked="property.facetable === true"
-														@update:checked="updatePropertySetting(key, 'facetable', $event)">
-														Facetable
-													</NcActionCheckbox>
+												<NcActionSeparator />
+												<NcActionCaption name="General" />
+												<NcActionCheckbox
+													:checked="isPropertyRequired(schemaItem, key)"
+													@update:checked="updatePropertyRequired(key, $event)">
+													Required
+												</NcActionCheckbox>
+												<NcActionCheckbox
+													:checked="property.immutable || false"
+													@update:checked="updatePropertySetting(key, 'immutable', $event)">
+													Immutable
+												</NcActionCheckbox>
+												<NcActionCheckbox
+													:checked="property.deprecated || false"
+													@update:checked="updatePropertySetting(key, 'deprecated', $event)">
+													Deprecated
+												</NcActionCheckbox>
+												<NcActionCheckbox
+													:checked="property.visible !== false"
+													@update:checked="updatePropertySetting(key, 'visible', $event)">
+													Visible to end users
+												</NcActionCheckbox>
+												<NcActionCheckbox
+													:checked="property.hideOnCollection || false"
+													@update:checked="updatePropertySetting(key, 'hideOnCollection', $event)">
+													Hide in collection view
+												</NcActionCheckbox>
+												<NcActionCheckbox
+													:checked="property.hideOnForm || false"
+													@update:checked="updatePropertySetting(key, 'hideOnForm', $event)">
+													Hide in form view
+												</NcActionCheckbox>
+												<NcActionCheckbox
+													:checked="property.facetable === true"
+													@update:checked="updatePropertySetting(key, 'facetable', $event)">
+													Facetable
+												</NcActionCheckbox>
 
-													<NcActionSeparator />
-													<NcActionCaption name="Properties" />
+												<NcActionSeparator />
+												<NcActionCaption name="Properties" />
+												<NcActionInput
+													:value="property.title || ''"
+													label="Title"
+													@update:value="updatePropertySetting(key, 'title', $event)" />
+												<NcActionInput
+													v-if="getFormatOptionsForType(property.type).length > 0"
+													v-model="schemaItem.properties[key].format"
+													type="multiselect"
+													:options="getFormatOptionsForType(property.type)"
+													input-label="Format"
+													label="Format" />
+												<NcActionInput
+													:value="property.description || ''"
+													label="Description"
+													@update:value="updatePropertySetting(key, 'description', $event)" />
+												<NcActionInput
+													:value="property.example || ''"
+													label="Example"
+													@update:value="updatePropertySetting(key, 'example', $event)" />
+												<NcActionInput
+													:value="property.order || 0"
+													type="number"
+													label="Order"
+													@update:value="updatePropertySetting(key, 'order', Number($event))" />
+
+												<!-- Const and Enum Configuration -->
+												<NcActionSeparator />
+												<NcActionCaption name="Value Constraints" />
+												<NcActionInput
+													:value="property.const || ''"
+													label="Constant"
+													@update:value="updatePropertySetting(key, 'const', $event === '' ? undefined : $event)" />
+												<template v-if="property.enum && property.enum.length > 0">
+													<NcActionCaption :name="'Current Enum Values (' + property.enum.length + ')'" />
+													<NcActionButton
+														v-for="(enumValue, index) in property.enum"
+														:key="`enum-chip-${index}-${enumValue}`"
+														:aria-label="'Remove ' + enumValue"
+														class="enum-action-chip"
+														@click="removeEnumValue(key, index)">
+														<template #icon>
+															<Close :size="16" />
+														</template>
+														{{ String(enumValue) }}
+													</NcActionButton>
+												</template>
+												<NcActionInput
+													:value="enumInputValue"
+													label="Add Enum Value"
+													placeholder="Type value and press Enter"
+													@update:value="enumInputValue = $event"
+													@keydown.enter.prevent="addEnumValueAndClear(key)" />
+
+												<!-- Default Value Configuration -->
+												<NcActionSeparator />
+												<NcActionCaption name="Default Value Configuration" />
+												<template v-if="property.type === 'string'">
 													<NcActionInput
-														:value="property.title || ''"
-														label="Title"
-														@update:value="updatePropertySetting(key, 'title', $event)" />
+														:value="property.default || ''"
+														label="Default Value"
+														@update:value="updatePropertySetting(key, 'default', $event === '' ? undefined : $event)" />
+												</template>
+												<template v-else-if="property.type === 'number' || property.type === 'integer'">
 													<NcActionInput
-														v-if="getFormatOptionsForType(property.type).length > 0"
-														v-model="schemaItem.properties[key].format"
-														type="multiselect"
-														:options="getFormatOptionsForType(property.type)"
-														input-label="Format"
-														label="Format" />
-													<NcActionInput
-														:value="property.description || ''"
-														label="Description"
-														@update:value="updatePropertySetting(key, 'description', $event)" />
-													<NcActionInput
-														:value="property.example || ''"
-														label="Example"
-														@update:value="updatePropertySetting(key, 'example', $event)" />
-													<NcActionInput
-														:value="property.order || 0"
+														:value="property.default || 0"
 														type="number"
-														label="Order"
-														@update:value="updatePropertySetting(key, 'order', Number($event))" />
-
-													<!-- Const and Enum Configuration -->
-													<NcActionSeparator />
-													<NcActionCaption name="Value Constraints" />
+														label="Default Value"
+														@update:value="updatePropertySetting(key, 'default', Number($event))" />
+												</template>
+												<template v-else-if="property.type === 'boolean'">
+													<NcActionCheckbox
+														:checked="property.default === true"
+														@update:checked="updatePropertySetting(key, 'default', $event)">
+														Default Value
+													</NcActionCheckbox>
+												</template>
+												<template v-else-if="property.type === 'array' && property.items && property.items.type === 'string'">
 													<NcActionInput
-														:value="property.const || ''"
-														label="Constant"
-														@update:value="updatePropertySetting(key, 'const', $event === '' ? undefined : $event)" />
-													<template v-if="property.enum && property.enum.length > 0">
-														<NcActionCaption :name="'Current Enum Values (' + property.enum.length + ')'" />
-														<NcActionButton
-															v-for="(enumValue, index) in property.enum"
-															:key="`enum-chip-${index}-${enumValue}`"
-															:aria-label="'Remove ' + enumValue"
-															class="enum-action-chip"
-															@click="removeEnumValue(key, index)">
-															<template #icon>
-																<Close :size="16" />
-															</template>
-															{{ String(enumValue) }}
-														</NcActionButton>
-													</template>
+														:value="getArrayDefaultAsString(property.default)"
+														label="Default Values (comma separated)"
+														placeholder="value1, value2, value3"
+														@update:value="updateArrayDefault(key, $event)" />
+												</template>
+												<template v-else-if="property.type === 'object'">
 													<NcActionInput
-														:value="enumInputValue"
-														label="Add Enum Value"
-														placeholder="Type value and press Enter"
-														@update:value="enumInputValue = $event"
-														@keydown.enter.prevent="addEnumValueAndClear(key)" />
+														:value="typeof property.default === 'object' ? JSON.stringify(property.default, null, 2) : (property.default || '{}')"
+														label="Default Value (JSON)"
+														@update:value="updateObjectDefault(key, $event)" />
+												</template>
 
-													<!-- Default Value Configuration -->
+												<!-- Default Behavior Toggle -->
+												<template v-if="property.default !== undefined && property.default !== null && property.default !== ''">
+													<NcActionCheckbox
+														:checked="property.defaultBehavior === 'falsy'"
+														@update:checked="updatePropertySetting(key, 'defaultBehavior', $event ? 'falsy' : 'false')">
+														Apply default for empty values
+													</NcActionCheckbox>
+													<NcActionCaption
+														v-if="property.defaultBehavior === 'falsy'"
+														name="ℹ️ Default will be applied when value is missing, null, or empty string"
+														style="color: var(--color-text-lighter); font-size: 11px;" />
+													<NcActionCaption
+														v-else
+														name="ℹ️ Default will only be applied when value is missing or null"
+														style="color: var(--color-text-lighter); font-size: 11px;" />
+												</template>
+
+												<!-- Type-specific configurations -->
+												<template v-if="property.type === 'string'">
 													<NcActionSeparator />
-													<NcActionCaption name="Default Value Configuration" />
-													<template v-if="property.type === 'string'">
-														<NcActionInput
-															:value="property.default || ''"
-															label="Default Value"
-															@update:value="updatePropertySetting(key, 'default', $event === '' ? undefined : $event)" />
-													</template>
-													<template v-else-if="property.type === 'number' || property.type === 'integer'">
-														<NcActionInput
-															:value="property.default || 0"
-															type="number"
-															label="Default Value"
-															@update:value="updatePropertySetting(key, 'default', Number($event))" />
-													</template>
-													<template v-else-if="property.type === 'boolean'">
-														<NcActionCheckbox
-															:checked="property.default === true"
-															@update:checked="updatePropertySetting(key, 'default', $event)">
-															Default Value
-														</NcActionCheckbox>
-													</template>
-													<template v-else-if="property.type === 'array' && property.items && property.items.type === 'string'">
-														<NcActionInput
-															:value="getArrayDefaultAsString(property.default)"
-															label="Default Values (comma separated)"
-															placeholder="value1, value2, value3"
-															@update:value="updateArrayDefault(key, $event)" />
-													</template>
-													<template v-else-if="property.type === 'object'">
-														<NcActionInput
-															:value="typeof property.default === 'object' ? JSON.stringify(property.default, null, 2) : (property.default || '{}')"
-															label="Default Value (JSON)"
-															@update:value="updateObjectDefault(key, $event)" />
-													</template>
+													<NcActionCaption name="String Configuration" />
+													<NcActionInput
+														:value="property.minLength || 0"
+														type="number"
+														label="Minimum Length"
+														@update:value="updatePropertySetting(key, 'minLength', Number($event))" />
+													<NcActionInput
+														:value="property.maxLength || 0"
+														type="number"
+														label="Maximum Length"
+														@update:value="updatePropertySetting(key, 'maxLength', Number($event))" />
+													<NcActionInput
+														:value="property.pattern || ''"
+														label="Pattern (regex)"
+														@update:value="updatePropertySetting(key, 'pattern', $event)" />
+												</template>
 
-													<!-- Default Behavior Toggle -->
-													<template v-if="property.default !== undefined && property.default !== null && property.default !== ''">
-														<NcActionCheckbox
-															:checked="property.defaultBehavior === 'falsy'"
-															@update:checked="updatePropertySetting(key, 'defaultBehavior', $event ? 'falsy' : 'false')">
-															Apply default for empty values
-														</NcActionCheckbox>
-														<NcActionCaption
-															v-if="property.defaultBehavior === 'falsy'"
-															name="ℹ️ Default will be applied when value is missing, null, or empty string"
-															style="color: var(--color-text-lighter); font-size: 11px;" />
-														<NcActionCaption
-															v-else
-															name="ℹ️ Default will only be applied when value is missing or null"
-															style="color: var(--color-text-lighter); font-size: 11px;" />
-													</template>
+												<template v-if="property.type === 'number' || property.type === 'integer'">
+													<NcActionSeparator />
+													<NcActionCaption name="Number Configuration" />
+													<NcActionInput
+														:value="property.minimum || 0"
+														type="number"
+														label="Minimum Value"
+														@update:value="updatePropertySetting(key, 'minimum', Number($event))" />
+													<NcActionInput
+														:value="property.maximum || 0"
+														type="number"
+														label="Maximum Value"
+														@update:value="updatePropertySetting(key, 'maximum', Number($event))" />
+													<NcActionInput
+														:value="property.multipleOf || 0"
+														type="number"
+														label="Multiple Of"
+														@update:value="updatePropertySetting(key, 'multipleOf', Number($event))" />
+													<NcActionCheckbox
+														:checked="property.exclusiveMin || false"
+														@update:checked="updatePropertySetting(key, 'exclusiveMin', $event)">
+														Exclusive Minimum
+													</NcActionCheckbox>
+													<NcActionCheckbox
+														:checked="property.exclusiveMax || false"
+														@update:checked="updatePropertySetting(key, 'exclusiveMax', $event)">
+														Exclusive Maximum
+													</NcActionCheckbox>
+												</template>
 
-													<!-- Type-specific configurations -->
-													<template v-if="property.type === 'string'">
+												<template v-if="property.type === 'array'">
+													<NcActionSeparator />
+													<NcActionCaption name="Array Configuration" />
+													<NcActionInput
+														v-model="schemaItem.properties[key].items.type"
+														type="multiselect"
+														:options="[
+															{ id: 'string', label: 'String' },
+															{ id: 'number', label: 'Number' },
+															{ id: 'integer', label: 'Integer' },
+															{ id: 'object', label: 'Object' },
+															{ id: 'boolean', label: 'Boolean' },
+															{ id: 'file', label: 'File' }
+														]"
+														input-label="Array Item Type"
+														label="Array Item Type" />
+													<NcActionInput
+														:value="property.minItems || 0"
+														type="number"
+														label="Minimum Items"
+														@update:value="updatePropertySetting(key, 'minItems', Number($event))" />
+													<NcActionInput
+														:value="property.maxItems || 0"
+														type="number"
+														label="Maximum Items"
+														@update:value="updatePropertySetting(key, 'maxItems', Number($event))" />
+
+													<!-- Show object configuration for array items when item type is object -->
+													<template v-if="property.items && property.items.type === 'object'">
 														<NcActionSeparator />
-														<NcActionCaption name="String Configuration" />
+														<NcActionCaption name="Array Item Object Configuration" />
 														<NcActionInput
-															:value="property.minLength || 0"
-															type="number"
-															label="Minimum Length"
-															@update:value="updatePropertySetting(key, 'minLength', Number($event))" />
-														<NcActionInput
-															:value="property.maxLength || 0"
-															type="number"
-															label="Maximum Length"
-															@update:value="updatePropertySetting(key, 'maxLength', Number($event))" />
-														<NcActionInput
-															:value="property.pattern || ''"
-															label="Pattern (regex)"
-															@update:value="updatePropertySetting(key, 'pattern', $event)" />
-													</template>
-
-													<template v-if="property.type === 'number' || property.type === 'integer'">
-														<NcActionSeparator />
-														<NcActionCaption name="Number Configuration" />
-														<NcActionInput
-															:value="property.minimum || 0"
-															type="number"
-															label="Minimum Value"
-															@update:value="updatePropertySetting(key, 'minimum', Number($event))" />
-														<NcActionInput
-															:value="property.maximum || 0"
-															type="number"
-															label="Maximum Value"
-															@update:value="updatePropertySetting(key, 'maximum', Number($event))" />
-														<NcActionInput
-															:value="property.multipleOf || 0"
-															type="number"
-															label="Multiple Of"
-															@update:value="updatePropertySetting(key, 'multipleOf', Number($event))" />
-														<NcActionCheckbox
-															:checked="property.exclusiveMin || false"
-															@update:checked="updatePropertySetting(key, 'exclusiveMin', $event)">
-															Exclusive Minimum
-														</NcActionCheckbox>
-														<NcActionCheckbox
-															:checked="property.exclusiveMax || false"
-															@update:checked="updatePropertySetting(key, 'exclusiveMax', $event)">
-															Exclusive Maximum
-														</NcActionCheckbox>
-													</template>
-
-													<template v-if="property.type === 'array'">
-														<NcActionSeparator />
-														<NcActionCaption name="Array Configuration" />
-														<NcActionInput
-															v-model="schemaItem.properties[key].items.type"
-															type="multiselect"
-															:options="[
-																{ id: 'string', label: 'String' },
-																{ id: 'number', label: 'Number' },
-																{ id: 'integer', label: 'Integer' },
-																{ id: 'object', label: 'Object' },
-																{ id: 'boolean', label: 'Boolean' },
-																{ id: 'file', label: 'File' }
-															]"
-															input-label="Array Item Type"
-															label="Array Item Type" />
-														<NcActionInput
-															:value="property.minItems || 0"
-															type="number"
-															label="Minimum Items"
-															@update:value="updatePropertySetting(key, 'minItems', Number($event))" />
-														<NcActionInput
-															:value="property.maxItems || 0"
-															type="number"
-															label="Maximum Items"
-															@update:value="updatePropertySetting(key, 'maxItems', Number($event))" />
-
-														<!-- Show object configuration for array items when item type is object -->
-														<template v-if="property.items && property.items.type === 'object'">
-															<NcActionSeparator />
-															<NcActionCaption name="Array Item Object Configuration" />
-															<NcActionInput
-																v-model="schemaItem.properties[key].items.objectConfiguration.handling"
-																type="multiselect"
-																:options="[
-																	{ id: 'nested-object', label: 'Nested Object' },
-																	{ id: 'related-object', label: 'Related Object' },
-																	{ id: 'nested-schema', label: 'Nested Schema' },
-																	{ id: 'related-schema', label: 'Related Schema' },
-																	{ id: 'uri', label: 'URI' }
-																]"
-																input-label="Object Handling"
-																label="Object Handling" />
-															<NcActionInput
-																:value="schemaItem.properties[key].items.$ref"
-																type="multiselect"
-																:options="availableSchemas"
-																input-label="Schema Reference"
-																label="Schema Reference"
-																@update:value="updateArrayItemSchemaReference(key, $event)" />
-															<NcActionCaption
-																v-if="isArrayItemRefInvalid(key)"
-																:name="`⚠️ Invalid Schema Reference: Expected string, got number (${schemaItem.properties[key].items.$ref}). This will be sent to backend as-is.`"
-																style="color: var(--color-error); font-weight: bold;" />
-															<NcActionInput
-																:value="getArrayItemRegisterValue(key)"
-																type="multiselect"
-																:options="availableRegisters"
-																input-label="Register"
-																label="Register (Required when schema is selected)"
-																:required="!!schemaItem.properties[key].items.$ref"
-																:disabled="!schemaItem.properties[key].items.$ref"
-																@update:value="updateArrayItemRegisterReference(key, $event)" />
-															<NcActionInput
-																v-model="schemaItem.properties[key].items.inversedBy"
-																type="multiselect"
-																:options="getInversedByOptionsForArrayItems(key)"
-																input-label="Inversed By Property"
-																label="Inversed By"
-																:disabled="!schemaItem.properties[key].items.$ref"
-																@update:value="updateInversedByForArrayItems(key, $event)" />
-															<NcActionCheckbox
-																:checked="property.items.writeBack || false"
-																@update:checked="updateArrayItemObjectConfigurationSetting(key, 'writeBack', $event)">
-																Write Back
-															</NcActionCheckbox>
-															<NcActionCheckbox
-																:checked="property.items.removeAfterWriteBack || false"
-																@update:checked="updateArrayItemObjectConfigurationSetting(key, 'removeAfterWriteBack', $event)">
-																Remove After Write Back
-															</NcActionCheckbox>
-															<NcActionCheckbox
-																:checked="property.items.cascadeDelete || false"
-																@update:checked="updateArrayItemObjectConfigurationSetting(key, 'cascadeDelete', $event)">
-																Cascade Delete
-															</NcActionCheckbox>
-														</template>
-													</template>
-
-													<template v-if="property.type === 'object'">
-														<NcActionSeparator />
-														<NcActionCaption name="Object Configuration" />
-														<NcActionInput
-															v-model="schemaItem.properties[key].objectConfiguration.handling"
+															v-model="schemaItem.properties[key].items.objectConfiguration.handling"
 															type="multiselect"
 															:options="[
 																{ id: 'nested-object', label: 'Nested Object' },
@@ -445,173 +394,251 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 															input-label="Object Handling"
 															label="Object Handling" />
 														<NcActionInput
-															:value="schemaItem.properties[key].$ref"
+															:value="schemaItem.properties[key].items.$ref"
 															type="multiselect"
 															:options="availableSchemas"
 															input-label="Schema Reference"
 															label="Schema Reference"
-															@update:value="updateSchemaReference(key, $event)" />
+															@update:value="updateArrayItemSchemaReference(key, $event)" />
 														<NcActionCaption
-															v-if="isRefInvalid(key)"
-															:name="`⚠️ Invalid Schema Reference: Expected string, got number (${schemaItem.properties[key].$ref}). This will be sent to backend as-is.`"
+															v-if="isArrayItemRefInvalid(key)"
+															:name="`⚠️ Invalid Schema Reference: Expected string, got number (${schemaItem.properties[key].items.$ref}). This will be sent to backend as-is.`"
 															style="color: var(--color-error); font-weight: bold;" />
 														<NcActionInput
-															:value="getRegisterValue(key)"
+															:value="getArrayItemRegisterValue(key)"
 															type="multiselect"
 															:options="availableRegisters"
 															input-label="Register"
 															label="Register (Required when schema is selected)"
-															:required="!!schemaItem.properties[key].$ref"
-															:disabled="!schemaItem.properties[key].$ref"
-															@update:value="updateRegisterReference(key, $event)" />
+															:required="!!schemaItem.properties[key].items.$ref"
+															:disabled="!schemaItem.properties[key].items.$ref"
+															@update:value="updateArrayItemRegisterReference(key, $event)" />
 														<NcActionInput
-															v-model="schemaItem.properties[key].inversedBy"
+															v-model="schemaItem.properties[key].items.inversedBy"
 															type="multiselect"
-															:options="getInversedByOptions(key)"
+															:options="getInversedByOptionsForArrayItems(key)"
 															input-label="Inversed By Property"
 															label="Inversed By"
-															:disabled="!schemaItem.properties[key].$ref"
-															@update:value="updateInversedBy(key, $event)" />
+															:disabled="!schemaItem.properties[key].items.$ref"
+															@update:value="updateInversedByForArrayItems(key, $event)" />
+														<NcActionInput
+															:value="getArrayItemQueryParams(key)"
+															label="Query Parameters"
+															placeholder="e.g. gemmaType=referentiecomponent&_extend=aanbevolenStandaarden"
+															@update:value="updateArrayItemQueryParams(key, $event)" />
 														<NcActionCheckbox
-															:checked="property.writeBack || false"
-															@update:checked="updatePropertySetting(key, 'writeBack', $event)">
+															:checked="property.items.writeBack || false"
+															@update:checked="updateArrayItemObjectConfigurationSetting(key, 'writeBack', $event)">
 															Write Back
 														</NcActionCheckbox>
 														<NcActionCheckbox
-															:checked="property.removeAfterWriteBack || false"
-															@update:checked="updatePropertySetting(key, 'removeAfterWriteBack', $event)">
+															:checked="property.items.removeAfterWriteBack || false"
+															@update:checked="updateArrayItemObjectConfigurationSetting(key, 'removeAfterWriteBack', $event)">
 															Remove After Write Back
 														</NcActionCheckbox>
 														<NcActionCheckbox
-															:checked="property.cascadeDelete || false"
-															@update:checked="updatePropertySetting(key, 'cascadeDelete', $event)">
+															:checked="property.items.cascadeDelete || false"
+															@update:checked="updateArrayItemObjectConfigurationSetting(key, 'cascadeDelete', $event)">
 															Cascade Delete
 														</NcActionCheckbox>
 													</template>
+												</template>
 
-													<!-- File Configuration -->
-													<template v-if="property.type === 'file' || (property.type === 'array' && property.items && property.items.type === 'file')">
-														<NcActionSeparator />
-														<NcActionCaption name="File Configuration" />
-														<NcActionInput
-															:value="(property.allowedTypes || []).join(', ')"
-															label="Allowed MIME Types (comma separated)"
-															placeholder="image/png, image/jpeg, application/pdf"
-															@update:value="updateFileProperty(key, 'allowedTypes', $event)" />
-														<NcActionInput
-															:value="property.maxSize || ''"
-															type="number"
-															label="Maximum File Size (bytes)"
-															placeholder="5242880"
-															@update:value="updateFileProperty(key, 'maxSize', $event)" />
-														<NcActionInput
-															:value="getFilePropertyTags(key, 'allowedTags')"
-															type="multiselect"
-															:options="availableTagsOptions"
-															input-label="Allowed Tags"
-															label="Allowed Tags (select from available tags)"
-															multiple
-															@update:value="updateFilePropertyTags(key, 'allowedTags', $event)" />
-														<NcActionInput
-															:value="getFilePropertyTags(key, 'autoTags')"
-															type="multiselect"
-															:options="availableTagsOptions"
-															input-label="Auto Tags"
-															label="Auto Tags (automatically applied to uploaded files)"
-															multiple
-															@update:value="updateFilePropertyTags(key, 'autoTags', $event)" />
-													</template>
-
-													<!-- Property-level Table Configuration -->
+												<template v-if="property.type === 'object'">
 													<NcActionSeparator />
-													<NcActionCaption name="Table" />
+													<NcActionCaption name="Object Configuration" />
+													<NcActionInput
+														v-model="schemaItem.properties[key].objectConfiguration.handling"
+														type="multiselect"
+														:options="[
+															{ id: 'nested-object', label: 'Nested Object' },
+															{ id: 'related-object', label: 'Related Object' },
+															{ id: 'nested-schema', label: 'Nested Schema' },
+															{ id: 'related-schema', label: 'Related Schema' },
+															{ id: 'uri', label: 'URI' }
+														]"
+														input-label="Object Handling"
+														label="Object Handling" />
+													<NcActionInput
+														:value="schemaItem.properties[key].$ref"
+														type="multiselect"
+														:options="availableSchemas"
+														input-label="Schema Reference"
+														label="Schema Reference"
+														@update:value="updateSchemaReference(key, $event)" />
+													<NcActionCaption
+														v-if="isRefInvalid(key)"
+														:name="`⚠️ Invalid Schema Reference: Expected string, got number (${schemaItem.properties[key].$ref}). This will be sent to backend as-is.`"
+														style="color: var(--color-error); font-weight: bold;" />
+													<NcActionInput
+														:value="getRegisterValue(key)"
+														type="multiselect"
+														:options="availableRegisters"
+														input-label="Register"
+														label="Register (Required when schema is selected)"
+														:required="!!schemaItem.properties[key].$ref"
+														:disabled="!schemaItem.properties[key].$ref"
+														@update:value="updateRegisterReference(key, $event)" />
+													<NcActionInput
+														v-model="schemaItem.properties[key].inversedBy"
+														type="multiselect"
+														:options="getInversedByOptions(key)"
+														input-label="Inversed By Property"
+														label="Inversed By"
+														:disabled="!schemaItem.properties[key].$ref"
+														@update:value="updateInversedBy(key, $event)" />
+													<NcActionInput
+														:value="getObjectQueryParams(key)"
+														label="Query Parameters"
+														placeholder="e.g. gemmaType=referentiecomponent&_extend=aanbevolenStandaarden"
+														@update:value="updateObjectQueryParams(key, $event)" />
 													<NcActionCheckbox
-														:checked="getPropertyTableSetting(key, 'default')"
-														@update:checked="updatePropertyTableSetting(key, 'default', $event)">
-														Default
+														:checked="property.writeBack || false"
+														@update:checked="updatePropertySetting(key, 'writeBack', $event)">
+														Write Back
 													</NcActionCheckbox>
+													<NcActionCheckbox
+														:checked="property.removeAfterWriteBack || false"
+														@update:checked="updatePropertySetting(key, 'removeAfterWriteBack', $event)">
+														Remove After Write Back
+													</NcActionCheckbox>
+													<NcActionCheckbox
+														:checked="property.cascadeDelete || false"
+														@update:checked="updatePropertySetting(key, 'cascadeDelete', $event)">
+														Cascade Delete
+													</NcActionCheckbox>
+												</template>
 
-													<!-- Property-level Security Configuration -->
+												<!-- File Configuration -->
+												<template v-if="property.type === 'file' || (property.type === 'array' && property.items && property.items.type === 'file')">
 													<NcActionSeparator />
-													<NcActionCaption name="Property Security" />
+													<NcActionCaption name="File Configuration" />
+													<NcActionCheckbox
+														:checked="getFilePropertySetting(key, 'autoPublish')"
+														@update:checked="updateFilePropertySetting(key, 'autoPublish', $event)">
+														Auto-Publish Files
+													</NcActionCheckbox>
+													<NcActionCaption
+														v-if="getFilePropertySetting(key, 'autoPublish')"
+														name="ℹ️ Files uploaded to this property will be automatically publicly shared"
+														style="color: var(--color-text-lighter); font-size: 11px;" />
+													<NcActionInput
+														:value="(property.allowedTypes || []).join(', ')"
+														label="Allowed MIME Types (comma separated)"
+														placeholder="image/png, image/jpeg, application/pdf"
+														@update:value="updateFileProperty(key, 'allowedTypes', $event)" />
+													<NcActionInput
+														:value="property.maxSize || ''"
+														type="number"
+														label="Maximum File Size (bytes)"
+														placeholder="5242880"
+														@update:value="updateFileProperty(key, 'maxSize', $event)" />
+													<NcActionInput
+														:value="getFilePropertyTags(key, 'allowedTags')"
+														type="multiselect"
+														:options="availableTagsOptions"
+														input-label="Allowed Tags"
+														label="Allowed Tags (select from available tags)"
+														multiple
+														@update:value="updateFilePropertyTags(key, 'allowedTags', $event)" />
+													<NcActionInput
+														:value="getFilePropertyTags(key, 'autoTags')"
+														type="multiselect"
+														:options="availableTagsOptions"
+														input-label="Auto Tags"
+														label="Auto Tags (automatically applied to uploaded files)"
+														multiple
+														@update:value="updateFilePropertyTags(key, 'autoTags', $event)" />
+												</template>
 
-													<template v-if="!loadingGroups">
-														<!-- Current Property Permissions List -->
-														<template v-for="permission in getPropertyPermissionsList(key)">
-															<NcActionText
-																:key="`${key}-perm-text-${permission.group}`"
-																class="property-permission-text">
-																{{ permission.group }} ({{ permission.rights }})
-															</NcActionText>
-															<NcActionButton
-																v-if="permission.groupId !== 'admin'"
-																:key="`${key}-perm-remove-${permission.group}`"
-																:aria-label="`Remove ${permission.group} permissions`"
-																class="property-permission-remove-btn"
-																@click="removePropertyGroupPermissions(key, permission.group)">
-																<template #icon>
-																	<Close :size="16" />
-																</template>
-																Remove {{ permission.group }}
-															</NcActionButton>
-														</template>
+												<!-- Property-level Table Configuration -->
+												<NcActionSeparator />
+												<NcActionCaption name="Table" />
+												<NcActionCheckbox
+													:checked="getPropertyTableSetting(key, 'default')"
+													@update:checked="updatePropertyTableSetting(key, 'default', $event)">
+													Default
+												</NcActionCheckbox>
 
-														<!-- Show inheritance status if no specific permissions -->
-														<NcActionCaption
-															v-if="!hasPropertyAnyPermissions(key)"
-															name="📄 Inherits schema permissions"
-															style="color: var(--color-success); font-size: 11px;" />
+												<!-- Property-level Security Configuration -->
+												<NcActionSeparator />
+												<NcActionCaption name="Property Security" />
 
-														<!-- Add Permission Interface -->
-														<NcActionSeparator />
-														<NcActionInput
-															v-model="propertyNewPermissionGroup"
-															type="multiselect"
-															:options="getAvailableGroupsForProperty()"
-															input-label="Group"
-															label="Add Group Permission"
-															placeholder="Select group..." />
+												<template v-if="!loadingGroups">
+													<!-- Current Property Permissions List -->
+													<div v-for="permission in getPropertyPermissionsList(key)" :key="`${key}-perm-text-${permission.group}`">
+														<NcActionText
+															class="property-permission-text">
+															{{ permission.group }} ({{ permission.rights }})
+														</NcActionText>
+														<NcActionButton
+															v-if="permission.groupId !== 'admin'"
+															:key="`${key}-perm-remove-${permission.group}`"
+															:aria-label="`Remove ${permission.group} permissions`"
+															class="property-permission-remove-btn"
+															@click="removePropertyGroupPermissions(key, permission.group)">
+															<template #icon>
+																<Close :size="16" />
+															</template>
+															Remove {{ permission.group }}
+														</NcActionButton>
+													</div>
 
-														<template v-if="propertyNewPermissionGroup">
-															<NcActionCaption name="Select Permissions:" />
-															<NcActionCheckbox
-																:checked="propertyNewPermissionCreate"
-																@update:checked="propertyNewPermissionCreate = $event">
-																Create (C)
-															</NcActionCheckbox>
-															<NcActionCheckbox
-																:checked="propertyNewPermissionRead"
-																@update:checked="propertyNewPermissionRead = $event">
-																Read (R)
-															</NcActionCheckbox>
-															<NcActionCheckbox
-																:checked="propertyNewPermissionUpdate"
-																@update:checked="propertyNewPermissionUpdate = $event">
-																Update (U)
-															</NcActionCheckbox>
-															<NcActionCheckbox
-																:checked="propertyNewPermissionDelete"
-																@update:checked="propertyNewPermissionDelete = $event">
-																Delete (D)
-															</NcActionCheckbox>
+													<!-- Show inheritance status if no specific permissions -->
+													<NcActionCaption
+														v-if="!hasPropertyAnyPermissions(key)"
+														name="📄 Inherits schema permissions"
+														style="color: var(--color-success); font-size: 11px;" />
 
-															<NcActionButton
-																v-if="hasAnyPropertyNewPermissionSelected()"
-																@click="addPropertyGroupPermissions(key)">
-																<template #icon>
-																	<Plus :size="16" />
-																</template>
-																Add Permission
-															</NcActionButton>
-														</template>
+													<!-- Add Permission Interface -->
+													<NcActionSeparator />
+													<NcActionInput
+														v-model="propertyNewPermissionGroup"
+														type="multiselect"
+														:options="getAvailableGroupsForProperty()"
+														input-label="Group"
+														label="Add Group Permission"
+														placeholder="Select group..." />
+
+													<template v-if="propertyNewPermissionGroup">
+														<NcActionCaption name="Select Permissions:" />
+														<NcActionCheckbox
+															:checked="propertyNewPermissionCreate"
+															@update:checked="propertyNewPermissionCreate = $event">
+															Create (C)
+														</NcActionCheckbox>
+														<NcActionCheckbox
+															:checked="propertyNewPermissionRead"
+															@update:checked="propertyNewPermissionRead = $event">
+															Read (R)
+														</NcActionCheckbox>
+														<NcActionCheckbox
+															:checked="propertyNewPermissionUpdate"
+															@update:checked="propertyNewPermissionUpdate = $event">
+															Update (U)
+														</NcActionCheckbox>
+														<NcActionCheckbox
+															:checked="propertyNewPermissionDelete"
+															@update:checked="propertyNewPermissionDelete = $event">
+															Delete (D)
+														</NcActionCheckbox>
+
+														<NcActionButton
+															v-if="hasAnyPropertyNewPermissionSelected()"
+															@click="addPropertyGroupPermissions(key)">
+															<template #icon>
+																<Plus :size="16" />
+															</template>
+															Add Permission
+														</NcActionButton>
 													</template>
-													<template v-else>
-														<NcActionCaption name="Loading groups..." />
-													</template>
-												</NcActions>
-											</td>
-										</tr>
-									</template>
+												</template>
+												<template v-else>
+													<NcActionCaption name="Loading groups..." />
+												</template>
+											</NcActions>
+										</td>
+									</tr>
 									<tr v-if="!Object.keys(schemaItem.properties || {}).length">
 										<td colspan="3">
 											No properties found. Click "Add property" to create one.
@@ -636,6 +663,34 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 								label="Slug"
 								:value.sync="schemaItem.slug" />
 							<NcSelect
+								v-model="schemaItem.extend"
+								:disabled="loading"
+								:options="availableSchemas"
+								:clearable="true"
+								label="title"
+								track-by="id"
+								input-label="Extends Schema"
+								placeholder="Select a schema to extend (optional)">
+								<template #option="{ title, description }">
+									<div class="schema-option">
+										<span class="schema-title">{{ title }}</span>
+										<span v-if="description" class="schema-description">{{ description }}</span>
+									</div>
+								</template>
+							</NcSelect>
+							<NcNoteCard v-if="schemaItem.extend" type="info" class="extend-info">
+								<p><strong>{{ t('openregister', 'Schema Extension') }}</strong></p>
+								<p v-if="parentSchemaName">
+									{{ t('openregister', 'This schema extends "{parent}" and inherits its properties. Only the differences (delta) are stored. When retrieved, properties from the parent schema will be merged with this schema\'s properties.', { parent: parentSchemaName }) }}
+								</p>
+								<p v-else>
+									{{ t('openregister', 'This schema extends another schema and inherits its properties. Only the differences (delta) are stored. When retrieved, properties from the parent schema will be merged with this schema\'s properties.') }}
+								</p>
+								<div v-if="parentSchemaName" class="parent-schema-link">
+									<strong>{{ t('openregister', 'Parent Schema:') }}</strong> {{ parentSchemaName }}
+								</div>
+							</NcNoteCard>
+							<NcSelect
 								v-model="schemaItem.configuration.objectNameField"
 								:disabled="loading"
 								:options="propertyOptions"
@@ -653,10 +708,21 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 								:options="propertyOptions"
 								input-label="Object Image Field"
 								placeholder="Select a property to use as object image representing the object. e.g. logo (should contain base64 encoded image)" />
+							<NcSelect
+								v-model="schemaItem.configuration.objectSummaryField"
+								:disabled="loading"
+								:options="propertyOptions"
+								input-label="Object Summary Field"
+								placeholder="Select a property to use as object summary. e.g. summary, abstract, or excerpt" />
 							<NcCheckboxRadioSwitch
 								:disabled="loading"
 								:checked.sync="schemaItem.configuration.allowFiles">
 								Allow Files
+							</NcCheckboxRadioSwitch>
+							<NcCheckboxRadioSwitch
+								:disabled="loading"
+								:checked.sync="schemaItem.configuration.autoPublish">
+								Auto-Publish Objects
 							</NcCheckboxRadioSwitch>
 							<NcTextField
 								v-model="allowedTagsInput"
@@ -677,6 +743,11 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 								:disabled="loading"
 								:checked.sync="schemaItem.immutable">
 								Immutable
+							</NcCheckboxRadioSwitch>
+							<NcCheckboxRadioSwitch
+								:disabled="loading"
+								:checked.sync="schemaItem.searchable">
+								Searchable in SOLR
 							</NcCheckboxRadioSwitch>
 						</div>
 					</BTab>
@@ -957,12 +1028,15 @@ export default {
 					objectNameField: '',
 					objectDescriptionField: '',
 					objectImageField: '',
+					objectSummaryField: '',
 					allowFiles: false,
 					allowedTags: [],
+					autoPublish: false,
 				},
 				authorization: {},
 				hardValidation: false,
 				immutable: false,
+				searchable: true,
 				maxDepth: 0,
 			},
 			createAnother: false,
@@ -1057,10 +1131,28 @@ export default {
 		availableSchemas() {
 			// Return all schemas regardless of register selection
 			// The register selection is optional and used for explicit register specification
-			return schemaStore.schemaList.map(schema => ({
-				id: `#/components/schemas/${schema.slug || schema.title || schema.id}`,
-				label: schema.title || schema.name || schema.id,
-			}))
+			// Exclude the current schema to prevent self-extension
+			return schemaStore.schemaList
+				.filter(schema => {
+					// Exclude current schema by checking id, uuid, and slug
+					const currentId = this.schemaItem.id
+					const currentUuid = this.schemaItem.uuid
+					const currentSlug = this.schemaItem.slug
+
+					return schema.id !== currentId
+						&& schema.uuid !== currentUuid
+						&& schema.slug !== currentSlug
+				})
+				.map(schema => ({
+					// Use schema ID as the value (what gets stored in extend property)
+					id: schema.id || schema.uuid || schema.slug,
+					// Display title for user-friendly selection
+					title: schema.title || schema.name || `Schema ${schema.id}`,
+					// Add description for additional context
+					description: schema.description || schema.summary || '',
+					// Keep reference format for other uses (like property references)
+					reference: `#/components/schemas/${schema.slug || schema.title || schema.id}`,
+				}))
 		},
 		availableTagsOptions() {
 			// Return available tags for multiselect
@@ -1068,6 +1160,25 @@ export default {
 				id: tag,
 				label: tag,
 			}))
+		},
+		/**
+		 * Get the parent schema name if this schema extends another
+		 *
+		 * @return {string|null} Parent schema title or null
+		 */
+		parentSchemaName() {
+			if (!this.schemaItem.extend) {
+				return null
+			}
+
+			// Find the parent schema by ID, UUID, or slug
+			const parentSchema = schemaStore.schemaList.find(schema =>
+				schema.id === this.schemaItem.extend
+				|| schema.uuid === this.schemaItem.extend
+				|| schema.slug === this.schemaItem.extend
+			)
+
+			return parentSchema ? (parentSchema.title || parentSchema.name || `Schema ${parentSchema.id}`) : null
 		},
 	},
 	watch: {
@@ -1214,6 +1325,7 @@ export default {
 						objectNameField: '',
 						objectDescriptionField: '',
 						objectImageField: '',
+						objectSummaryField: '',
 						allowFiles: false,
 						allowedTags: [],
 					}
@@ -1228,11 +1340,17 @@ export default {
 					if (!this.schemaItem.configuration.objectImageField) {
 						this.schemaItem.configuration.objectImageField = ''
 					}
+					if (!this.schemaItem.configuration.objectSummaryField) {
+						this.schemaItem.configuration.objectSummaryField = ''
+					}
 					if (this.schemaItem.configuration.allowFiles === undefined) {
 						this.schemaItem.configuration.allowFiles = false
 					}
 					if (!this.schemaItem.configuration.allowedTags) {
 						this.schemaItem.configuration.allowedTags = []
+					}
+					if (this.schemaItem.configuration.autoPublish === undefined) {
+						this.schemaItem.configuration.autoPublish = false
 					}
 				}
 
@@ -1277,8 +1395,10 @@ export default {
 					objectNameField: '',
 					objectDescriptionField: '',
 					objectImageField: '',
+					objectSummaryField: '',
 					allowFiles: false,
 					allowedTags: [],
+					autoPublish: false,
 				}
 				this.allowedTagsInput = ''
 				this.originalProperties = {}
@@ -1496,11 +1616,14 @@ export default {
 								objectNameField: '',
 								objectDescriptionField: '',
 								objectImageField: '',
+								objectSummaryField: '',
 								allowFiles: false,
 								allowedTags: [],
+								autoPublish: false,
 							},
 							hardValidation: false,
 							immutable: false,
+							searchable: true,
 							maxDepth: 0,
 						}
 						this.allowedTagsInput = ''
@@ -1544,24 +1667,24 @@ export default {
 					{ id: 'text', label: 'Text' },
 					{ id: 'markdown', label: 'Markdown' },
 					{ id: 'html', label: 'HTML' },
+					{ id: 'date-time', label: 'Date Time' },
 					{ id: 'date', label: 'Date' },
 					{ id: 'time', label: 'Time' },
 					{ id: 'duration', label: 'Duration' },
-					{ id: 'date-time', label: 'Date Time' },
-					{ id: 'url', label: 'URL' },
-					{ id: 'uri', label: 'URI' },
-					{ id: 'uuid', label: 'UUID' },
 					{ id: 'email', label: 'Email' },
 					{ id: 'idn-email', label: 'IDN Email' },
 					{ id: 'hostname', label: 'Hostname' },
 					{ id: 'idn-hostname', label: 'IDN Hostname' },
 					{ id: 'ipv4', label: 'IPv4' },
 					{ id: 'ipv6', label: 'IPv6' },
+					{ id: 'uri', label: 'URI' },
 					{ id: 'uri-reference', label: 'URI Reference' },
 					{ id: 'iri', label: 'IRI' },
 					{ id: 'iri-reference', label: 'IRI Reference' },
+					{ id: 'uuid', label: 'UUID' },
 					{ id: 'uri-template', label: 'URI Template' },
 					{ id: 'json-pointer', label: 'JSON Pointer' },
+					{ id: 'relative-json-pointer', label: 'Relative JSON Pointer' },
 					{ id: 'regex', label: 'Regex' },
 					{ id: 'binary', label: 'Binary' },
 					{ id: 'byte', label: 'Byte' },
@@ -1576,6 +1699,15 @@ export default {
 					{ id: 'downloadUrl', label: 'Download URL' },
 					{ id: 'extension', label: 'Extension' },
 					{ id: 'filename', label: 'Filename' },
+					{ id: 'semver', label: 'Semantic Version' },
+					{ id: 'url', label: 'URL' },
+					{ id: 'color', label: 'Color' },
+					{ id: 'color-hex', label: 'Color Hex' },
+					{ id: 'color-hex-alpha', label: 'Color Hex Alpha' },
+					{ id: 'color-rgb', label: 'Color RGB' },
+					{ id: 'color-rgba', label: 'Color RGBA' },
+					{ id: 'color-hsl', label: 'Color HSL' },
+					{ id: 'color-hsla', label: 'Color HSLA' },
 				],
 				number: [],
 				integer: [],
@@ -1620,6 +1752,34 @@ export default {
 						}
 						this.$set(this.schemaItem.properties[key].items, setting, numValue)
 					}
+				}
+				this.checkPropertiesModified()
+			}
+		},
+		getFilePropertySetting(key, setting) {
+			// Get boolean/value settings for file properties
+			const property = this.schemaItem.properties[key]
+			if (!property) return false
+
+			if (property.type === 'file') {
+				return property[setting] || false
+			} else if (property.type === 'array' && property.items) {
+				return property.items[setting] || false
+			}
+
+			return false
+		},
+		updateFilePropertySetting(key, setting, value) {
+			// Handle boolean settings like autoPublish
+			if (this.schemaItem.properties[key]) {
+				// Apply to both direct file properties and array[file] properties
+				if (this.schemaItem.properties[key].type === 'file') {
+					this.$set(this.schemaItem.properties[key], setting, value)
+				} else if (this.schemaItem.properties[key].type === 'array' && this.schemaItem.properties[key].items) {
+					if (!this.schemaItem.properties[key].items) {
+						this.$set(this.schemaItem.properties[key], 'items', {})
+					}
+					this.$set(this.schemaItem.properties[key].items, setting, value)
 				}
 				this.checkPropertiesModified()
 			}
@@ -2713,10 +2873,7 @@ export default {
 		 * @return {boolean|any} Setting value
 		 */
 		getOriginalPropertyTableSetting(key, setting) {
-			if (!this.originalProperties || !this.originalProperties[key] || !this.originalProperties[key].table) {
-				return undefined
-			}
-			return this.originalProperties[key].table[setting]
+			return this.originalProperties?.[key]?.table[setting]
 		},
 
 		/**
@@ -2777,6 +2934,84 @@ export default {
 		 */
 		hasCustomTableSettings(key) {
 			return !this.isTableConfigDefault(key)
+		},
+
+		/**
+		 * Get query parameters for object property
+		 *
+		 * @param {string} key Property key
+		 * @return {string} Query parameters string
+		 */
+		getObjectQueryParams(key) {
+			if (!this.schemaItem.properties[key] || !this.schemaItem.properties[key].objectConfiguration) {
+				return ''
+			}
+			return this.schemaItem.properties[key].objectConfiguration.queryParams || ''
+		},
+
+		/**
+		 * Update query parameters for object property
+		 *
+		 * @param {string} key Property key
+		 * @param {string} value Query parameters string
+		 */
+		updateObjectQueryParams(key, value) {
+			if (!this.schemaItem.properties[key]) {
+				return
+			}
+
+			// Ensure objectConfiguration exists
+			if (!this.schemaItem.properties[key].objectConfiguration) {
+				this.$set(this.schemaItem.properties[key], 'objectConfiguration', { handling: 'related-object' })
+			}
+
+			// Update query parameters (remove if empty)
+			if (value && value.trim()) {
+				this.$set(this.schemaItem.properties[key].objectConfiguration, 'queryParams', value.trim())
+			} else {
+				this.$delete(this.schemaItem.properties[key].objectConfiguration, 'queryParams')
+			}
+
+			this.checkPropertiesModified()
+		},
+
+		/**
+		 * Get query parameters for array item objects
+		 *
+		 * @param {string} key Property key
+		 * @return {string} Query parameters string
+		 */
+		getArrayItemQueryParams(key) {
+			if (!this.schemaItem.properties[key] || !this.schemaItem.properties[key].items || !this.schemaItem.properties[key].items.objectConfiguration) {
+				return ''
+			}
+			return this.schemaItem.properties[key].items.objectConfiguration.queryParams || ''
+		},
+
+		/**
+		 * Update query parameters for array item objects
+		 *
+		 * @param {string} key Property key
+		 * @param {string} value Query parameters string
+		 */
+		updateArrayItemQueryParams(key, value) {
+			if (!this.schemaItem.properties[key] || !this.schemaItem.properties[key].items) {
+				return
+			}
+
+			// Ensure objectConfiguration exists
+			if (!this.schemaItem.properties[key].items.objectConfiguration) {
+				this.$set(this.schemaItem.properties[key].items, 'objectConfiguration', { handling: 'related-object' })
+			}
+
+			// Update query parameters (remove if empty)
+			if (value && value.trim()) {
+				this.$set(this.schemaItem.properties[key].items.objectConfiguration, 'queryParams', value.trim())
+			} else {
+				this.$delete(this.schemaItem.properties[key].items.objectConfiguration, 'queryParams')
+			}
+
+			this.checkPropertiesModified()
 		},
 	},
 }
@@ -2986,5 +3221,67 @@ export default {
 .property-permission-remove-btn {
 	font-size: 11px;
 	color: var(--color-error);
+}
+
+/* Schema Extension Status Pill */
+.statusPill {
+	display: inline-block;
+	padding: 4px 12px;
+	border-radius: 12px;
+	font-size: 0.75em;
+	font-weight: 600;
+	text-transform: uppercase;
+	margin-left: 8px;
+	white-space: nowrap;
+	vertical-align: middle;
+}
+
+.statusPill--alert {
+	background-color: var(--color-warning);
+	color: var(--color-main-background);
+}
+
+/* Title with badge layout */
+.title-with-badge {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+.title-with-badge > :first-child {
+	flex: 1;
+	min-width: 0;
+}
+
+/* Parent schema link styling */
+.parent-schema-link {
+	margin-top: 12px;
+	padding: 8px 12px;
+	background-color: var(--color-background-dark);
+	border-radius: var(--border-radius);
+	font-size: 0.9em;
+}
+
+.parent-schema-link strong {
+	color: var(--color-text-dark);
+}
+
+/* Extend info card styling */
+.extend-info {
+	margin-top: 12px;
+	margin-bottom: 12px;
+}
+
+.extend-info p {
+	margin: 8px 0;
+}
+
+.extend-info p:first-of-type {
+	margin-top: 0;
+}
+
+.extend-info p:last-of-type {
+	margin-bottom: 0;
 }
 </style>

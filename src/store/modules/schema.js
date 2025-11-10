@@ -87,15 +87,19 @@ export const useSchemaStore = defineStore('schema', {
 		},
 		// New function to get schema statistics
 		async getSchemaStats(id) {
+			console.log('getSchemaStats called with ID:', id)
 			const endpoint = `/index.php/apps/openregister/api/schemas/${id}/stats`
+			console.log('Making request to:', endpoint)
 			try {
 				const response = await fetch(endpoint, {
 					method: 'GET',
 				})
+				console.log('Response status:', response.status)
 				const data = await response.json()
+				console.log('Response data:', data)
 				return data
 			} catch (err) {
-				console.error(err)
+				console.error('Error in getSchemaStats:', err)
 				throw err
 			}
 		},
@@ -311,6 +315,141 @@ export const useSchemaStore = defineStore('schema', {
 
 			return { response }
 		},
+
+		// Schema exploration methods
+		/**
+		 * Explore schema properties to discover new properties in objects
+		 *
+		 * @param {number} schemaId The schema ID to explore
+		 * @return {Promise<object>} Exploration results
+		 */
+		async exploreSchemaProperties(schemaId) {
+			console.log('Exploring schema properties for schema ID:', schemaId)
+
+			const endpoint = `/index.php/apps/openregister/api/schemas/${schemaId}/explore`
+
+			const response = await fetch(endpoint, {
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			})
+
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`)
+			}
+
+			const data = await response.json()
+
+			if (data.error) {
+				throw new Error(data.error)
+			}
+
+			console.log('Schema exploration completed:', data)
+			return data
+		},
+
+		/**
+		 * Update schema properties based on exploration results
+		 *
+		 * @param {number} schemaId The schema ID to update
+		 * @param {object} propertyUpdates Object containing properties to add/update
+		 * @return {Promise<object>} Update results
+		 */
+		async updateSchemaFromExploration(schemaId, propertyUpdates) {
+			console.log('Updating schema from exploration for schema ID:', schemaId)
+
+			const endpoint = `/index.php/apps/openregister/api/schemas/${schemaId}/update-from-exploration`
+
+			const response = await fetch(endpoint, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					properties: propertyUpdates,
+				}),
+			})
+
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`)
+			}
+
+			const data = await response.json()
+
+			if (data.error) {
+				throw new Error(data.error)
+			}
+
+			console.log('Schema updated from exploration:', data)
+
+			// Refresh schema store data
+			await this.refreshSchemaList()
+
+			return data
+		},
+
+		/**
+		 * Get object count for a schema
+		 * @param {number} schemaId The schema ID to get object count for
+		 * @return {Promise<number>} The number of objects in the schema
+		 */
+		async getObjectCount(schemaId) {
+			try {
+				// Convert schemaId to string for comparison
+				const schemaIdStr = String(schemaId)
+
+				// First check if we already have stats for this schema
+				const existingSchema = this.schemas.find(s => String(s.id) === schemaIdStr)
+				if (existingSchema?.stats?.objects?.total !== undefined) {
+					console.log('Using cached stats for schema:', schemaId, existingSchema.stats.objects.total)
+					return existingSchema.stats.objects.total
+				}
+
+				console.log('Fetching object count for schema:', schemaId)
+
+				// Try using the objects API to count objects for this schema
+				try {
+					const countResponse = await fetch(`/index.php/apps/openregister/api/objects/count?schema=${schemaId}`)
+					if (countResponse.ok) {
+						const countData = await countResponse.json()
+						console.log('Count response data:', countData)
+						const count = countData.count || countData.total || 0
+						console.log('Extracted object count from objects API:', count)
+						return count
+					}
+				} catch (countError) {
+					console.warn('Objects count API failed, falling back to stats:', countError)
+				}
+
+				// Fallback to stats endpoint
+				const statsResponse = await fetch(`/index.php/apps/openregister/api/schemas/${schemaId}/stats`)
+				console.log('Stats response status:', statsResponse.status)
+
+				if (statsResponse.ok) {
+					const stats = await statsResponse.json()
+					console.log('Stats response data:', stats)
+					// The stats endpoint returns objectCount and objects_count
+					const count = stats.objectCount || stats.objects_count || 0
+					console.log('Extracted object count:', count)
+					return count
+				} else {
+					console.warn('Stats API returned error:', statsResponse.status, statsResponse.statusText)
+					// Try to get response text for debugging
+					try {
+						const errorText = await statsResponse.text()
+						console.warn('Error response body:', errorText)
+					} catch (e) {
+						// Ignore error reading response
+					}
+					return 0
+				}
+			} catch (error) {
+				console.warn('Could not fetch object count:', error)
+				return 0
+			}
+		},
+
 		// schema properties
 		setSchemaPropertyKey(schemaPropertyKey) {
 			this.schemaPropertyKey = schemaPropertyKey

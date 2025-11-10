@@ -90,20 +90,40 @@ export default {
 				return
 			}
 
-			for (const reg of registerStore.registerList) {
-				if (!reg.schemas.includes(schemaStore.schemaItem.id)) {
-					continue
+			// Use the upgraded stats endpoint to get object count efficiently
+			try {
+				const stats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
+				const totalObjects = stats.objects?.total || 0
+
+				if (totalObjects > 0) {
+					// Find the first register that contains this schema for display purposes
+					const register = registerStore.registerList.find(reg =>
+						reg.schemas.includes(schemaStore.schemaItem.id),
+					)
+					if (register) {
+						this.registerName = register.title
+						// Create a mock object array for display purposes
+						this.objects = Array(totalObjects).fill({ id: '...', name: 'Object' })
+					}
 				}
+			} catch (err) {
+				console.warn('Could not load schema stats, falling back to individual register checks:', err)
+				// Fallback to the original method if stats endpoint fails
+				for (const reg of registerStore.registerList) {
+					if (!reg.schemas.includes(schemaStore.schemaItem.id)) {
+						continue
+					}
 
-				await objectStore.refreshObjectList({
-					register: reg.id,
-					schema: schemaStore.schemaItem.id,
-					search: '',
-				})
+					await objectStore.refreshObjectList({
+						register: reg.id,
+						schema: schemaStore.schemaItem.id,
+						search: '',
+					})
 
-				if (objectStore.objectList?.results?.length) {
-					this.objects.push(...objectStore.objectList.results)
-					this.registerName = reg.title
+					if (objectStore.objectList?.results?.length) {
+						this.objects.push(...objectStore.objectList.results)
+						this.registerName = reg.title
+					}
 				}
 			}
 		},

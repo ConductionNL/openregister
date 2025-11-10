@@ -3,92 +3,87 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'joinOrganisation'"
-		name="Join Organisation"
+	<NcDialog
+		name="Add User to Organisation"
 		size="normal"
 		:can-close="true"
 		@update:open="handleDialogClose">
 		<NcNoteCard v-if="success" type="success">
-			<p>Successfully joined organisation: {{ joinedOrganisationName }}</p>
+			<p>Successfully added user to organisation: {{ joinedOrganisationName }}</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
 		</NcNoteCard>
 
 		<div v-if="!success">
-			<div class="search-section">
-				<NcTextField
-					:disabled="loading"
-					label="Search Organisations"
-					:value.sync="searchQuery"
-					placeholder="Enter organisation name to search"
-					@update:value="handleSearchInput" />
+			<div class="selection-section">
+				<!-- Organisation Selection -->
+				<div class="field-group">
+					<label for="organisation-select">Organisation</label>
+					<NcSelect
+						v-model="selectedOrganisation"
+						input-id="organisation-select"
+						input-label="Organisation"
+						:disabled="loading"
+						:loading="searchLoading"
+						:options="organisationOptions"
+						:filterable="true"
+						:filter-by="filterOrganisation"
+						placeholder="Type to search for organisations"
+						label-outside
+						@search="handleOrganisationSearch">
+					<template #option="{ name, description, users, isDefault }">
+						<div class="organisation-option">
+							<div class="organisation-header">
+								<span class="organisation-name">{{ name }}</span>
+								<span v-if="isDefault" class="badge badge-default">Default</span>
+							</div>
+							<p v-if="description" class="organisation-description">
+								{{ description }}
+							</p>
+							<span class="organisation-meta">{{ (users?.length || 0) }} members</span>
+						</div>
+					</template>
+						<template #selected-option="{ name }">
+							<span>{{ name }}</span>
+						</template>
+					</NcSelect>
+				</div>
 
-				<div class="search-help">
+				<!-- User Selection -->
+				<div class="field-group">
+					<label for="user-select">User</label>
+					<NcSelect
+						v-model="selectedUser"
+						input-id="user-select"
+						input-label="User"
+						:disabled="loading"
+						:loading="loadingUsers"
+						:options="userOptions"
+						:filterable="true"
+						placeholder="Type to search for users"
+						label-outside
+						@search="handleUserSearch">
+						<template #option="{ id, displayName }">
+							<div class="user-option">
+								<span class="user-name">{{ displayName }}</span>
+								<span class="user-id">{{ id }}</span>
+							</div>
+						</template>
+						<template #selected-option="{ displayName }">
+							<span>{{ displayName }}</span>
+						</template>
+					</NcSelect>
+					<p class="helper-text">
+						Defaults to current user. Select a different user if needed.
+					</p>
+				</div>
+
+				<div class="info-help">
 					<NcNoteCard type="info">
-						<p>Search for organisations by name to join them. Contact the organisation owner if you need an invitation.</p>
+						<p>Select an organisation and user to add them as a member. Search for organisations by name.</p>
 					</NcNoteCard>
 				</div>
-			</div>
-
-			<!-- Search Results -->
-			<div v-if="searchResults.length > 0" class="search-results">
-				<h3>{{ t('openregister', 'Available Organisations') }}</h3>
-				<div class="organisation-list">
-					<div v-for="organisation in searchResults"
-						:key="organisation.uuid"
-						class="organisation-item"
-						:class="{ 'already-member': isAlreadyMember(organisation) }">
-						<div class="organisation-info">
-							<div class="organisation-header">
-								<h4>{{ organisation.name }}</h4>
-								<span v-if="organisation.isDefault" class="defaultBadge">Default</span>
-							</div>
-							<p v-if="organisation.description" class="organisation-description">
-								{{ organisation.description }}
-							</p>
-							<div class="organisation-meta">
-								<span class="member-count">{{ organisation.userCount || 0 }} members</span>
-								<span v-if="organisation.created" class="created-date">
-									Created {{ formatDate(organisation.created) }}
-								</span>
-							</div>
-						</div>
-						<div class="organisation-actions">
-							<NcButton v-if="isAlreadyMember(organisation)"
-								type="secondary"
-								disabled>
-								Already Member
-							</NcButton>
-							<NcButton v-else
-								:disabled="joiningUuid === organisation.uuid"
-								type="primary"
-								@click="joinOrganisation(organisation)">
-								<template #icon>
-									<NcLoadingIcon v-if="joiningUuid === organisation.uuid" :size="20" />
-									<AccountPlus v-else :size="20" />
-								</template>
-								Join
-							</NcButton>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<!-- No Results -->
-			<div v-else-if="searchQuery.trim() && !searchLoading && hasSearched" class="no-results">
-				<NcEmptyContent name="No organisations found"
-					:description="`No organisations found matching '${searchQuery}'`">
-					<template #icon>
-						<Magnify :size="64" />
-					</template>
-				</NcEmptyContent>
-			</div>
-
-			<!-- Search Loading -->
-			<div v-if="searchLoading" class="search-loading">
-				<NcLoadingIcon :size="32" />
-				<span>Searching organisations...</span>
 			</div>
 		</div>
 
@@ -99,6 +94,17 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 				</template>
 				{{ success ? 'Close' : 'Cancel' }}
 			</NcButton>
+			<NcButton
+				v-if="!success"
+				type="primary"
+				:disabled="!selectedOrganisation || joining"
+				@click="joinSelectedOrganisation">
+				<template #icon>
+					<NcLoadingIcon v-if="joining" :size="20" />
+					<AccountPlus v-else :size="20" />
+				</template>
+				Add User
+			</NcButton>
 		</template>
 	</NcDialog>
 </template>
@@ -107,131 +113,395 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 import {
 	NcButton,
 	NcDialog,
-	NcTextField,
+	NcSelect,
 	NcLoadingIcon,
 	NcNoteCard,
-	NcEmptyContent,
 } from '@nextcloud/vue'
 
 import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Magnify from 'vue-material-design-icons/Magnify.vue'
 
 export default {
 	name: 'JoinOrganisation',
 	components: {
 		NcDialog,
-		NcTextField,
+		NcSelect,
 		NcButton,
 		NcLoadingIcon,
 		NcNoteCard,
-		NcEmptyContent,
 		// Icons
 		AccountPlus,
 		Cancel,
-		Magnify,
 	},
 	data() {
 		return {
-			searchQuery: '',
-			searchResults: [],
+			selectedOrganisation: null,
+			selectedUser: null,
+			organisationOptions: [],
+			userOptions: [],
 			searchLoading: false,
-			hasSearched: false,
+			loadingUsers: false,
 			success: false,
 			loading: false,
+			joining: false,
 			error: false,
-			joiningUuid: null, // Track which organisation is being joined
 			joinedOrganisationName: '',
 			searchTimeout: null,
+			userSearchTimeout: null,
 			closeModalTimeout: null,
 		}
 	},
-	methods: {
-		handleSearchInput(value) {
-			this.searchQuery = value
+	async mounted() {
+		// Set default user to current user
+		this.setDefaultUser()
 
+		// Load initial organisations list
+		await this.loadInitialOrganisations()
+
+		// Load initial users list
+		await this.loadInitialUsers()
+
+		// If organisation is pre-selected (passed via transferData), set it
+		const transferData = navigationStore.getTransferData()
+		if (transferData?.organisationUuid) {
+			this.loadPreselectedOrganisation(transferData.organisationUuid)
+			// Clear transfer data after using it
+			navigationStore.clearTransferData()
+		}
+	},
+	methods: {
+		/**
+		 * Get the current user information from Nextcloud
+		 *
+		 * @return {object|null} Current user object
+		 */
+		getCurrentUser() {
+			if (window.OC && window.OC.getCurrentUser) {
+				const user = window.OC.getCurrentUser()
+				return {
+					id: user.uid,
+					displayName: user.displayName || user.uid,
+				}
+			}
+			return null
+		},
+		/**
+		 * Set default user to current user
+		 */
+		setDefaultUser() {
+			const currentUser = this.getCurrentUser()
+			if (currentUser) {
+				// Add label property for vue-select
+				const userOption = {
+					...currentUser,
+					label: currentUser.displayName,
+				}
+				this.selectedUser = userOption
+				this.userOptions = [userOption]
+			}
+		},
+		/**
+		 * Load initial list of organisations (first 20)
+		 */
+		async loadInitialOrganisations() {
+			try {
+				this.searchLoading = true
+				// Load first 20 organisations (empty query returns all, paginated)
+				const results = await organisationStore.searchOrganisations('', 20, 0)
+
+				// Transform results to NcSelect format with all necessary fields
+				this.organisationOptions = results.map(org => ({
+					id: org.uuid || org.id,
+					uuid: org.uuid || org.id,
+					name: org.name,
+					label: org.name,
+					description: org.description,
+					users: org.users || [],
+					isDefault: org.isDefault,
+				}))
+			} catch (error) {
+				console.error('Error loading initial organisations:', error)
+				this.organisationOptions = []
+			} finally {
+				this.searchLoading = false
+			}
+		},
+		/**
+		 * Load a preselected organisation
+		 * @param {string} uuid - The UUID of the organisation to load
+		 */
+		async loadPreselectedOrganisation(uuid) {
+			try {
+				// Find the organisation in already loaded options
+				let orgOption = this.organisationOptions.find(org => org.uuid === uuid || org.id === uuid)
+
+				// If not found in options, fetch it
+				if (!orgOption) {
+					const organisation = await organisationStore.getOrganisation(uuid)
+
+					if (organisation) {
+						orgOption = {
+							id: organisation.uuid,
+							uuid: organisation.uuid,
+							name: organisation.name,
+							label: organisation.name,
+							description: organisation.description,
+							users: organisation.users || [],
+							isDefault: organisation.isDefault,
+						}
+						// Add to options if not already there
+						if (!this.organisationOptions.some(o => o.uuid === orgOption.uuid)) {
+							this.organisationOptions.unshift(orgOption)
+						}
+					}
+				}
+
+				// Select the organisation
+				if (orgOption) {
+					this.selectedOrganisation = orgOption
+				}
+			} catch (error) {
+				console.error('Error loading preselected organisation:', error)
+			}
+		},
+		/**
+		 * Handle organisation search with pagination
+		 * @param {string} query - The query to search for
+		 */
+		async handleOrganisationSearch(query) {
 			// Clear previous timeout
 			if (this.searchTimeout) {
 				clearTimeout(this.searchTimeout)
 			}
 
-			// Debounce search
-			this.searchTimeout = setTimeout(() => {
-				if (value.trim().length >= 2) {
-					this.searchOrganisations()
-				} else {
-					this.searchResults = []
-					this.hasSearched = false
-				}
-			}, 500)
-		},
-		async searchOrganisations() {
-			if (!this.searchQuery.trim()) {
+			// If empty query, reload initial list
+			if (!query || query.trim().length === 0) {
+				await this.loadInitialOrganisations()
 				return
 			}
 
-			this.searchLoading = true
-			this.error = null
+			// Debounce search
+			this.searchTimeout = setTimeout(async () => {
+				if (query.trim().length < 2) {
+					return
+				}
 
-			try {
-				const results = await organisationStore.searchOrganisations(this.searchQuery)
-				this.searchResults = results
-				this.hasSearched = true
+				this.searchLoading = true
+				this.error = null
+
+				try {
+					// Search with limit of 20 results
+					const results = await organisationStore.searchOrganisations(query.trim(), 20, 0)
+
+				// Transform results to NcSelect format with all necessary fields
+				this.organisationOptions = results.map(org => ({
+					id: org.uuid || org.id,
+					uuid: org.uuid || org.id,
+					name: org.name,
+					label: org.name,
+					description: org.description,
+					users: org.users || [],
+					isDefault: org.isDefault,
+				}))
 			} catch (error) {
 				console.error('Error searching organisations:', error)
 				this.error = 'Failed to search organisations: ' + error.message
-				this.searchResults = []
+				this.organisationOptions = []
 			} finally {
 				this.searchLoading = false
 			}
+		}, 500)
 		},
-		isAlreadyMember(organisation) {
-			// Check if user is already a member of this organisation
-			return organisationStore.userStats.list.some(userOrg =>
-				userOrg.uuid === organisation.uuid,
+		/**
+		 * Load initial list of users (first 20)
+		 */
+		async loadInitialUsers() {
+			this.loadingUsers = true
+
+			try {
+				// Get list of users from Nextcloud API with pagination
+				// Limit to first 20 users for performance
+				const response = await fetch(
+					'/ocs/v2.php/cloud/users?limit=20&offset=0',
+					{
+						headers: {
+							'OCS-APIRequest': 'true',
+							Accept: 'application/json',
+						},
+					},
+				)
+
+				if (!response.ok) {
+					throw new Error('Failed to load users')
+				}
+
+				const data = await response.json()
+				const users = data?.ocs?.data?.users || []
+
+				// Transform to NcSelect format with label property
+				this.userOptions = users.map(userId => ({
+					id: userId,
+					displayName: userId,
+					label: userId, // Required by vue-select
+				}))
+
+				// Ensure current user is in the list and selected
+				const currentUser = this.getCurrentUser()
+				if (currentUser) {
+					const currentUserOption = {
+						...currentUser,
+						label: currentUser.displayName,
+					}
+
+					if (!this.userOptions.some(u => u.id === currentUser.id)) {
+						this.userOptions.unshift(currentUserOption)
+					}
+
+					// Keep current user as selected
+					this.selectedUser = currentUserOption
+				}
+			} catch (error) {
+				console.error('Error loading initial users:', error)
+				this.setDefaultUser() // Fallback to current user only
+			} finally {
+				this.loadingUsers = false
+			}
+		},
+		/**
+		 * Handle user search with pagination
+		 * @param {string} query - The query to search for
+		 */
+		async handleUserSearch(query) {
+			// Clear previous timeout
+			if (this.userSearchTimeout) {
+				clearTimeout(this.userSearchTimeout)
+			}
+
+			// If query is empty, reload initial users
+			if (!query || query.trim().length === 0) {
+				await this.loadInitialUsers()
+				return
+			}
+
+			// Debounce search
+			this.userSearchTimeout = setTimeout(async () => {
+				if (query.trim().length < 2) {
+					return
+				}
+
+				this.loadingUsers = true
+
+				try {
+					// Search for users via Nextcloud API with limit
+					const response = await fetch(
+						`/ocs/v2.php/cloud/users?search=${encodeURIComponent(query.trim())}&limit=20`,
+						{
+							headers: {
+								'OCS-APIRequest': 'true',
+								Accept: 'application/json',
+							},
+						},
+					)
+
+					if (!response.ok) {
+						throw new Error('Failed to search users')
+					}
+
+					const data = await response.json()
+					const users = data?.ocs?.data?.users || []
+
+					// Transform to NcSelect format with label property
+					this.userOptions = users.map(userId => ({
+						id: userId,
+						displayName: userId,
+						label: userId, // Required by vue-select
+					}))
+
+					// Always include current user in options
+					const currentUser = this.getCurrentUser()
+					if (currentUser && !this.userOptions.some(u => u.id === currentUser.id)) {
+						this.userOptions.unshift({
+							...currentUser,
+							label: currentUser.displayName,
+						})
+					}
+				} catch (error) {
+					console.error('Error searching users:', error)
+					// Don't clear existing options on error
+				} finally {
+					this.loadingUsers = false
+				}
+			}, 500)
+		},
+		/**
+		 * Filter organisation for local filtering
+		 * @param {object} option - The organisation option to filter
+		 * @param {string} label - The label of the organisation option
+		 * @param {string} search - The search query
+		 */
+		filterOrganisation(option, label, search) {
+			return (
+				option.name?.toLowerCase().includes(search.toLowerCase())
+				|| option.description?.toLowerCase().includes(search.toLowerCase())
 			)
 		},
-		async joinOrganisation(organisation) {
-			this.joiningUuid = organisation.uuid
+		/**
+		 * Join the selected organisation
+		 */
+		async joinSelectedOrganisation() {
+			if (!this.selectedOrganisation) {
+				this.error = 'Please select an organisation'
+				return
+			}
+
+			if (!this.selectedUser) {
+				this.error = 'Please select a user'
+				return
+			}
+
+			this.joining = true
 			this.error = null
 
 			try {
-				await organisationStore.joinOrganisation(organisation.uuid)
+				// Get userId - use selected user or default to current user
+				const userId = this.selectedUser?.id || null
+
+				// Check if the SELECTED USER (not logged-in user) is already a member
+				// We can't easily check this client-side, so we'll rely on the backend to validate
+				// and return an appropriate error message
+
+				await organisationStore.joinOrganisation(this.selectedOrganisation.uuid, userId)
 
 				this.success = true
-				this.joinedOrganisationName = organisation.name
-
-				// Clear search results and show success
-				this.searchResults = []
-				this.searchQuery = ''
+				this.joinedOrganisationName = this.selectedOrganisation.name
 
 				this.closeModalTimeout = setTimeout(this.closeModal, 3000)
-
 			} catch (error) {
 				console.error('Error joining organisation:', error)
-				this.error = error.message || 'Failed to join organisation'
+				this.error = error.message || 'Failed to add user to organisation'
 			} finally {
-				this.joiningUuid = null
+				this.joining = false
 			}
 		},
-		formatDate(dateString) {
-			return new Date(dateString).toLocaleDateString({
-				day: '2-digit',
-				month: '2-digit',
-				year: 'numeric',
-			})
-		},
+		/**
+		 * Close the modal
+		 */
 		closeModal() {
 			this.success = false
 			this.error = null
-			this.searchQuery = ''
-			this.searchResults = []
-			this.hasSearched = false
-			this.joiningUuid = null
+			this.selectedOrganisation = null
+			this.organisationOptions = []
 			this.joinedOrganisationName = ''
+			this.joining = false
+			this.setDefaultUser() // Reset to current user
 			navigationStore.setModal(false)
 			clearTimeout(this.closeModalTimeout)
+			clearTimeout(this.searchTimeout)
+			clearTimeout(this.userSearchTimeout)
 		},
+		/**
+		 * Handle dialog close event
+		 */
 		handleDialogClose() {
 			this.closeModal()
 		},
@@ -241,130 +511,100 @@ export default {
 
 <style scoped>
 /* JoinOrganisation-specific styles */
-.search-section {
-	margin-bottom: 24px;
-}
-
-.search-help {
-	margin-top: 16px;
-}
-
-.search-results {
-	margin-top: 24px;
-}
-
-.search-results h3 {
-	margin-bottom: 16px;
-	color: var(--color-text-dark);
-	font-size: 16px;
-	font-weight: 600;
-}
-
-.organisation-list {
+.selection-section {
 	display: flex;
 	flex-direction: column;
-	gap: 12px;
-	max-height: 400px;
-	overflow-y: auto;
+	gap: 20px;
 }
 
-.organisation-item {
+.field-group {
 	display: flex;
-	align-items: flex-start;
-	justify-content: space-between;
-	padding: 16px;
-	background: var(--color-background-dark);
-	border: 1px solid var(--color-border);
-	border-radius: 8px;
-	transition: background-color 0.2s ease;
+	flex-direction: column;
+	gap: 8px;
 }
 
-.organisation-item:hover {
-	background: var(--color-background-hover);
+.field-group label {
+	font-weight: 600;
+	color: var(--color-text-dark);
+	font-size: 14px;
 }
 
-.organisation-item.already-member {
-	opacity: 0.7;
+.helper-text {
+	font-size: 12px;
+	color: var(--color-text-lighter);
+	margin: 4px 0 0 0;
 }
 
-.organisation-info {
-	flex: 1;
-	margin-right: 16px;
+.info-help {
+	margin-top: 8px;
+}
+
+/* Organisation option styling */
+.organisation-option {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 4px 0;
 }
 
 .organisation-header {
 	display: flex;
 	align-items: center;
 	gap: 8px;
-	margin-bottom: 8px;
 }
 
-.organisation-header h4 {
-	margin: 0;
-	color: var(--color-text-dark);
-	font-size: 16px;
+.organisation-name {
 	font-weight: 600;
+	color: var(--color-text-dark);
 }
 
-.defaultBadge {
+.badge {
 	display: inline-block;
 	padding: 2px 8px;
 	border-radius: 12px;
 	font-size: 11px;
 	font-weight: 600;
 	text-transform: uppercase;
+}
+
+.badge-default {
 	background: var(--color-warning);
 	color: var(--color-primary-text);
 }
 
 .organisation-description {
 	color: var(--color-text-lighter);
-	font-size: 14px;
-	margin-bottom: 8px;
+	font-size: 13px;
 	line-height: 1.4;
+	margin: 0;
 }
 
 .organisation-meta {
-	display: flex;
-	gap: 16px;
 	font-size: 12px;
 	color: var(--color-text-lighter);
 }
 
-.member-count {
-	font-weight: 500;
-}
-
-.organisation-actions {
-	flex-shrink: 0;
-}
-
-.search-loading {
+/* User option styling */
+.user-option {
 	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: 8px;
-	padding: 32px;
+	flex-direction: column;
+	gap: 2px;
+	padding: 4px 0;
+}
+
+.user-name {
+	font-weight: 500;
+	color: var(--color-text-dark);
+}
+
+.user-id {
+	font-size: 12px;
 	color: var(--color-text-lighter);
 }
 
-.no-results {
-	padding: 32px 0;
-}
-
 @media screen and (max-width: 768px) {
-	.organisation-item {
-		flex-direction: column;
-		align-items: stretch;
+	.selection-section {
 		gap: 16px;
-	}
-
-	.organisation-info {
-		margin-right: 0;
-	}
-
-	.organisation-actions {
-		align-self: flex-start;
 	}
 }
 </style>

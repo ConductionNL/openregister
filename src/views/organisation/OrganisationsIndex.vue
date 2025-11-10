@@ -8,18 +8,18 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 			<!-- Header -->
 			<div class="viewHeader">
 				<h1 class="viewHeaderTitleIndented">
-					{{ t('openregister', 'Organisations') }}
+					Organisaties
 				</h1>
-				<p>{{ t('openregister', 'Manage your organisations and switch between them') }}</p>
+				<p>Beheer uw organisaties en wissel tussen hen</p>
 			</div>
 
 			<!-- Active Organisation Status -->
 			<div v-if="organisationStore.userStats.active" class="activeOrgBanner">
 				<div class="activeOrgInfo">
-					<span class="activeOrgLabel">{{ t('openregister', 'Active Organisation:') }}</span>
+					<span class="activeOrgLabel">Actieve Organisatie:</span>
 					<span class="activeOrgName">{{ organisationStore.userStats.active.name }}</span>
 					<span v-if="organisationStore.userStats.active.isDefault" class="defaultBadge">
-						{{ t('openregister', 'Default') }}
+						Standaard
 					</span>
 				</div>
 				<NcButton v-if="organisationStore.userStats.total > 1"
@@ -28,7 +28,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 					<template #icon>
 						<SwapHorizontal :size="20" />
 					</template>
-					{{ t('openregister', 'Switch Organisation') }}
+					Wissel Organisatie
 				</NcButton>
 			</div>
 
@@ -36,10 +36,10 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 			<div class="viewActionsBar">
 				<div class="viewInfo">
 					<span class="viewTotalCount">
-						{{ t('openregister', 'Showing {showing} of {total} organisations', { showing: paginatedOrganisations.length, total: organisationStore.userStats.total }) }}
+						Toont {{ paginatedOrganisations.length }} van {{ organisationStore.userStats.total }} organisaties
 					</span>
 					<span v-if="selectedOrganisations.length > 0" class="viewIndicator">
-						({{ t('openregister', '{count} selected', { count: selectedOrganisations.length }) }})
+						({{ selectedOrganisations.length }} geselecteerd)
 					</span>
 				</div>
 				<div class="viewActions">
@@ -52,7 +52,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							name="view_mode_radio"
 							type="radio"
 							button-variant-grouped="horizontal">
-							Cards
+							Kaarten
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
 							v-model="organisationStore.viewMode"
@@ -62,7 +62,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							name="view_mode_radio"
 							type="radio"
 							button-variant-grouped="horizontal">
-							Table
+							Tabel
 						</NcCheckboxRadioSwitch>
 					</div>
 
@@ -73,11 +73,11 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 						<NcActionButton
 							:primary="true"
 							close-after-click
-							@click="organisationStore.setOrganisationItem(null); navigationStore.setModal('editOrganisation')">
+							@click="createOrganisation">
 							<template #icon>
 								<Plus :size="20" />
 							</template>
-							Create Organisation
+							Organisatie Aanmaken
 						</NcActionButton>
 						<NcActionButton
 							close-after-click
@@ -85,7 +85,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							<template #icon>
 								<AccountPlus :size="20" />
 							</template>
-							Join Organisation
+							Add User to Organisation
 						</NcActionButton>
 						<NcActionButton
 							close-after-click
@@ -93,7 +93,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							<template #icon>
 								<Refresh :size="20" />
 							</template>
-							Refresh
+							Vernieuwen
 						</NcActionButton>
 					</NcActions>
 				</div>
@@ -101,8 +101,8 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 
 			<!-- Empty State -->
 			<NcEmptyContent v-if="!organisationStore.userStats.total"
-				:name="t('openregister', 'No organisations found')"
-				:description="t('openregister', 'You are not a member of any organisations yet.')">
+				:name="'Geen organisaties gevonden'"
+				:description="'U bent nog geen lid van organisaties.'">
 				<template #icon>
 					<OfficeBuilding :size="64" />
 				</template>
@@ -120,53 +120,59 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 								<h2>
 									<OfficeBuilding :size="20" />
 									{{ organisation.name }}
-									<span v-if="organisation.isDefault" class="defaultBadge">Default</span>
-									<span v-if="isActiveOrganisation(organisation)" class="activeBadge">Active</span>
+									<span v-if="organisation.isDefault" class="defaultBadge">Standaard</span>
+									<span v-if="isActiveOrganisation(organisation)" class="activeBadge">Actief</span>
 								</h2>
 								<NcActions :primary="true" menu-name="Actions">
 									<template #icon>
 										<DotsHorizontal :size="20" />
 									</template>
+									<NcActionButton close-after-click
+										@click="viewOrganisation(organisation)">
+										<template #icon>
+											<Eye :size="20" />
+										</template>
+										Bekijken
+									</NcActionButton>
 									<NcActionButton v-if="!isActiveOrganisation(organisation)"
 										close-after-click
 										@click="setActiveOrganisation(organisation.uuid)">
 										<template #icon>
-											<CheckCircle :size="20" />
+											<Check :size="20" />
 										</template>
-										Set as Active
+										Instellen als Actief
 									</NcActionButton>
 									<NcActionButton v-if="canEditOrganisation(organisation)"
 										close-after-click
-										@click="organisationStore.setOrganisationItem(organisation); navigationStore.setModal('editOrganisation')">
+										@click="editOrganisation(organisation)">
 										<template #icon>
 											<Pencil :size="20" />
 										</template>
-										Edit
+										Bewerken
 									</NcActionButton>
-									<NcActionButton close-after-click
-										@click="organisationStore.setOrganisationItem(organisation); navigationStore.setSelected('organisationDetails')">
-										<template #icon>
-											<InformationOutline :size="20" />
-										</template>
-										View Details
-									</NcActionButton>
-									<NcActionButton v-if="canLeaveOrganisation(organisation)"
-										v-tooltip="organisationStore.userStats.total === 1 ? 'Cannot leave your only organisation' : ''"
+									<NcActionButton v-if="organisation.website"
 										close-after-click
-										:disabled="organisationStore.userStats.total === 1"
-										@click="leaveOrganisation(organisation)">
+										@click="goToOrganisation(organisation)">
 										<template #icon>
-											<AccountMinus :size="20" />
+											<OpenInNew :size="20" />
 										</template>
-										Leave Organisation
+										Ga naar organisatie
+									</NcActionButton>
+									<NcActionButton
+										close-after-click
+										@click="openJoinModal(organisation)">
+										<template #icon>
+											<AccountMultiplePlus :size="20" />
+										</template>
+										Add User
 									</NcActionButton>
 									<NcActionButton v-if="canDeleteOrganisation(organisation)"
 										close-after-click
-										@click="organisationStore.setOrganisationItem(organisation); navigationStore.setDialog('deleteOrganisation')">
+										@click="organisationStore.setOrganisationItem(organisation); navigationStore.setModal('deleteOrganisation')">
 										<template #icon>
 											<TrashCanOutline :size="20" />
 										</template>
-										Delete Organisation
+										Verwijderen
 									</NcActionButton>
 								</NcActions>
 							</div>
@@ -177,15 +183,15 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 								</p>
 								<div class="organisationStats">
 									<div class="stat">
-										<span class="statLabel">{{ t('openregister', 'Members:') }}</span>
-										<span class="statValue">{{ organisation.userCount || 0 }}</span>
+										<span class="statLabel">Leden:</span>
+										<span class="statValue">{{ organisation.users?.length || 0 }}</span>
 									</div>
 									<div class="stat">
-										<span class="statLabel">{{ t('openregister', 'Owner:') }}</span>
+										<span class="statLabel">Eigenaar:</span>
 										<span class="statValue">{{ organisation.owner || 'System' }}</span>
 									</div>
 									<div v-if="organisation.created" class="stat">
-										<span class="statLabel">{{ t('openregister', 'Created:') }}</span>
+										<span class="statLabel">Aangemaakt:</span>
 										<span class="statValue">{{ formatDate(organisation.created) }}</span>
 									</div>
 								</div>
@@ -204,14 +210,14 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 											:indeterminate="someSelected"
 											@update:checked="toggleSelectAll" />
 									</th>
-									<th>{{ t('openregister', 'Name') }}</th>
-									<th>{{ t('openregister', 'Members') }}</th>
-									<th>{{ t('openregister', 'Owner') }}</th>
-									<th>{{ t('openregister', 'Status') }}</th>
-									<th>{{ t('openregister', 'Created') }}</th>
-									<th>{{ t('openregister', 'Updated') }}</th>
+									<th>Naam</th>
+									<th>Leden</th>
+									<th>Eigenaar</th>
+									<th>Status</th>
+									<th>Aangemaakt</th>
+									<th>Bijgewerkt</th>
 									<th class="tableColumnActions">
-										{{ t('openregister', 'Actions') }}
+										Acties
 									</th>
 								</tr>
 							</thead>
@@ -232,17 +238,17 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 										<div class="titleContent">
 											<strong>{{ organisation.name }}</strong>
 											<div class="badges">
-												<span v-if="organisation.isDefault" class="defaultBadge">Default</span>
-												<span v-if="isActiveOrganisation(organisation)" class="activeBadge">Active</span>
+												<span v-if="organisation.isDefault" class="defaultBadge">Standaard</span>
+												<span v-if="isActiveOrganisation(organisation)" class="activeBadge">Actief</span>
 											</div>
 											<span v-if="organisation.description" class="textDescription textEllipsis">{{ organisation.description }}</span>
 										</div>
 									</td>
-									<td>{{ organisation.userCount || 0 }}</td>
+									<td>{{ organisation.users?.length || 0 }}</td>
 									<td>{{ organisation.owner || 'System' }}</td>
 									<td>
-										<span v-if="isActiveOrganisation(organisation)" class="statusActive">Active</span>
-										<span v-else class="statusInactive">Inactive</span>
+										<span v-if="isActiveOrganisation(organisation)" class="statusActive">Actief</span>
+										<span v-else class="statusInactive">Inactief</span>
 									</td>
 									<td>{{ organisation.created ? formatDate(organisation.created) : '-' }}</td>
 									<td>{{ organisation.updated ? formatDate(organisation.updated) : '-' }}</td>
@@ -251,37 +257,52 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 											<template #icon>
 												<DotsHorizontal :size="20" />
 											</template>
+											<NcActionButton close-after-click
+												@click="viewOrganisation(organisation)">
+												<template #icon>
+													<Eye :size="20" />
+												</template>
+												Bekijken
+											</NcActionButton>
 											<NcActionButton v-if="!isActiveOrganisation(organisation)"
 												close-after-click
 												@click="setActiveOrganisation(organisation.uuid)">
 												<template #icon>
-													<CheckCircle :size="20" />
+													<Check :size="20" />
 												</template>
-												Set as Active
+												Instellen als Actief
 											</NcActionButton>
 											<NcActionButton v-if="canEditOrganisation(organisation)"
 												close-after-click
-												@click="organisationStore.setOrganisationItem(organisation); navigationStore.setModal('editOrganisation')">
+												@click="editOrganisation(organisation)">
 												<template #icon>
 													<Pencil :size="20" />
 												</template>
-												Edit
+												Bewerken
 											</NcActionButton>
-											<NcActionButton close-after-click
-												@click="organisationStore.setOrganisationItem(organisation); navigationStore.setSelected('organisationDetails')">
-												<template #icon>
-													<InformationOutline :size="20" />
-												</template>
-												View Details
-											</NcActionButton>
-											<NcActionButton v-if="canLeaveOrganisation(organisation)"
+											<NcActionButton v-if="organisation.website"
 												close-after-click
-												:disabled="organisationStore.userStats.total === 1"
-												@click="leaveOrganisation(organisation)">
+												@click="goToOrganisation(organisation)">
 												<template #icon>
-													<AccountMinus :size="20" />
+													<OpenInNew :size="20" />
 												</template>
-												Leave Organisation
+												Ga naar organisatie
+											</NcActionButton>
+											<NcActionButton
+												close-after-click
+												@click="openJoinModal(organisation)">
+												<template #icon>
+													<AccountMultiplePlus :size="20" />
+												</template>
+												Add User
+											</NcActionButton>
+											<NcActionButton v-if="canDeleteOrganisation(organisation)"
+												close-after-click
+												@click="organisationStore.setOrganisationItem(organisation); navigationStore.setModal('deleteOrganisation')">
+												<template #icon>
+													<TrashCanOutline :size="20" />
+												</template>
+												Verwijderen
 											</NcActionButton>
 										</NcActions>
 									</td>
@@ -306,10 +327,10 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 
 		<!-- Organisation Switcher Modal -->
 		<NcModal v-if="showOrganisationSwitcher"
-			:name="t('openregister', 'Switch Active Organisation')"
+			:name="'Wissel Actieve Organisatie'"
 			@close="showOrganisationSwitcher = false">
 			<div class="organisationSwitcher">
-				<h3>{{ t('openregister', 'Select Active Organisation') }}</h3>
+				<h3>Selecteer Actieve Organisatie</h3>
 				<div class="organisationList">
 					<div v-for="org in organisationStore.userStats.list"
 						:key="org.uuid"
@@ -319,13 +340,15 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 						<div class="organisationOptionContent">
 							<span class="organisationOptionName">{{ org.name }}</span>
 							<span v-if="org.isDefault" class="defaultBadge">Default</span>
-							<span v-if="isActiveOrganisation(org)" class="activeBadge">Current</span>
+							<span v-if="isActiveOrganisation(org)" class="activeBadge">Huidig</span>
 						</div>
 						<span v-if="org.description" class="organisationOptionDescription">{{ org.description }}</span>
 					</div>
 				</div>
 			</div>
 		</NcModal>
+
+		<!-- Organisation Management Modal -->
 	</NcAppContent>
 </template>
 
@@ -336,14 +359,16 @@ import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
-import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
-import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
-import AccountMinus from 'vue-material-design-icons/AccountMinus.vue'
+import AccountMultiplePlus from 'vue-material-design-icons/AccountMultiplePlus.vue'
 import SwapHorizontal from 'vue-material-design-icons/SwapHorizontal.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
+import Eye from 'vue-material-design-icons/Eye.vue'
+import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import { reloadAppData } from '../../services/AppInitializationService.js'
+import Check from 'vue-material-design-icons/Check.vue'
 
 export default {
 	name: 'OrganisationsIndex',
@@ -360,12 +385,13 @@ export default {
 		Pencil,
 		TrashCanOutline,
 		Refresh,
-		InformationOutline,
-		CheckCircle,
 		AccountPlus,
-		AccountMinus,
+		AccountMultiplePlus,
 		SwapHorizontal,
 		Plus,
+		Eye,
+		OpenInNew,
+		Check,
 		PaginationComponent,
 	},
 	data() {
@@ -389,14 +415,11 @@ export default {
 	},
 	async mounted() {
 		try {
+			// Load Nextcloud groups into store first (needed for edit modal)
+			await organisationStore.loadNextcloudGroups()
+			// Then load organisations
 			await organisationStore.refreshOrganisationList()
-
-			// Check if the method exists before calling it
-			if (typeof organisationStore.getActiveOrganisation === 'function') {
-				await organisationStore.getActiveOrganisation()
-			} else {
-				console.warn('getActiveOrganisation method not available in organisationStore')
-			}
+			await organisationStore.getActiveOrganisation()
 		} catch (error) {
 			console.error('Error loading organisation data:', error)
 		}
@@ -430,6 +453,10 @@ export default {
 			try {
 				await organisationStore.setActiveOrganisationById(uuid)
 				this.showSuccessMessage('Active organisation changed successfully')
+				
+				// Reload all hot-loaded data for the new organisation context
+				console.log('[OrganisationsIndex] Reloading application data after organisation switch...')
+				await reloadAppData()
 			} catch (error) {
 				this.showErrorMessage('Failed to change active organisation: ' + error.message)
 			}
@@ -483,6 +510,44 @@ export default {
 				hour: '2-digit',
 				minute: '2-digit',
 			})
+		},
+		// Organisation Modal Methods
+		createOrganisation() {
+			organisationStore.setOrganisationItem(null)
+			navigationStore.setModal('editOrganisation')
+		},
+		editOrganisation(organisation) {
+			organisationStore.setOrganisationItem(organisation)
+			navigationStore.setModal('editOrganisation')
+		},
+		openJoinModal(organisation) {
+			// Set the transfer data with the organisation UUID
+			navigationStore.setTransferData({
+				organisationUuid: organisation.uuid,
+			})
+			// Open the join organisation modal
+			navigationStore.setModal('joinOrganisation')
+		},
+		openManageRolesModal(organisation) {
+			// Set the organisation item in store
+			organisationStore.setOrganisationItem(organisation)
+			// Open the manage organisation roles modal
+			navigationStore.setModal('manageOrganisationRoles')
+		},
+		// Organisation Action Methods
+		viewOrganisation(organisation) {
+			const publicationUrl = `https://www.softwarecatalogus.nl/publicatie/${organisation.id}`
+			window.open(publicationUrl, '_blank')
+		},
+		goToOrganisation(organisation) {
+			if (organisation.website) {
+				let websiteUrl = organisation.website
+				// Add https:// if no protocol is specified
+				if (!websiteUrl.startsWith('http://') && !websiteUrl.startsWith('https://')) {
+					websiteUrl = 'https://' + websiteUrl
+				}
+				window.open(websiteUrl, '_blank')
+			}
 		},
 		showSuccessMessage(message) {
 			// Implementation would depend on your notification system

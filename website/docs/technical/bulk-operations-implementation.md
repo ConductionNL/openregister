@@ -260,7 +260,10 @@ public function getMaxAllowedPacketSize(): int
             return (int) $result['Value'];
         }
     } catch (\Exception $e) {
-        error_log('[ObjectEntityMapper] Could not get max_allowed_packet, using default: 16777216 bytes');
+        $this->logger->warning('Could not get max_allowed_packet, using default', [
+            'defaultSize' => 16777216,
+            'unit' => 'bytes'
+        ]);
     }
     
     // Default fallback value (16MB)

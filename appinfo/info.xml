@@ -22,7 +22,7 @@ Create a [bug report](https://github.com/OpenRegister/.github/issues/new/choose)
 
 Create a [feature request](https://github.com/OpenRegister/.github/issues/new/choose)
     ]]></description>
-    <version>0.2.3</version>
+    <version>0.2.6</version>
     <licence>agpl</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -42,11 +42,12 @@ Create a [feature request](https://github.com/OpenRegister/.github/issues/new/ch
         <database min-version="10">pgsql</database>
         <database>sqlite</database>
         <database min-version="8.0">mysql</database>
-        <nextcloud min-version="28" max-version="32"/>
+        <nextcloud min-version="28" max-version="33"/>
     </dependencies>
 
 	<background-jobs>
 		<job>OCA\OpenRegister\Cron\LogCleanUpTask</job>
+		<job>OCA\OpenRegister\Cron\ConfigurationCheckJob</job>
 	</background-jobs>
 
     <navigations>
@@ -62,4 +63,13 @@ Create a [feature request](https://github.com/OpenRegister/.github/issues/new/ch
 		<admin>OCA\OpenRegister\Settings\OpenRegisterAdmin</admin>
 		<admin-section>OCA\OpenRegister\Sections\OpenRegisterAdmin</admin-section>
 	</settings>
+
+	<commands>
+		<command>OCA\OpenRegister\Command\SolrDebugCommand</command>
+		<command>OCA\OpenRegister\Command\SolrManagementCommand</command>
+	</commands>
+
+	<notification>
+		<service>OCA\OpenRegister\Notification\Notifier</service>
+	</notification>
 </info>

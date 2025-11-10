@@ -52,8 +52,8 @@ import { deletedStore, navigationStore, registerStore, schemaStore } from '../..
 						:input-label="t('openregister', 'Deleted By')"
 						:clearable="true"
 						@input="applyFilters">
-						<template #option="{ option }">
-							{{ option.label }}
+						<template #option="{ label }">
+							{{ label }}
 						</template>
 					</NcSelect>
 				</div>
@@ -273,6 +273,23 @@ export default {
 			return userOptions
 		},
 	},
+	watch: {
+		// Keep component/store in sync with URL query params (single source of truth)
+		'$route.query': {
+			handler() {
+				if (this.$route.path !== '/deleted') return
+				this.applyQueryParamsFromRoute()
+			},
+			deep: true,
+		},
+		// Watch for changes in the global stores
+		'registerStore.registerItem'() {
+			this.applyFilters()
+		},
+		'schemaStore.schemaItem'() {
+			this.applyFilters()
+		},
+	},
 	async mounted() {
 		// Load required data
 		if (!registerStore.registerList.length) {
@@ -286,6 +303,9 @@ export default {
 		// Load statistics and top deleters
 		await this.loadStatistics()
 		await this.loadTopDeleters()
+
+		// Initialize from current URL query params
+		this.applyQueryParamsFromRoute()
 
 		// Listen for filtered count updates
 		this.$root.$on('deleted-filtered-count', (count) => {
@@ -301,14 +321,7 @@ export default {
 		 * @return {void}
 		 */
 		applyFilters() {
-			const filters = {
-				register: registerStore.registerItem?.id || null,
-				schema: schemaStore.schemaItem?.id || null,
-				deletedBy: this.selectedDeletedBy?.value || null,
-				dateFrom: this.dateFrom || null,
-				dateTo: this.dateTo || null,
-			}
-			this.$root.$emit('deleted-filters-changed', filters)
+			this.updateRouteQueryFromState()
 		},
 		/**
 		 * Load deletion statistics
@@ -350,6 +363,118 @@ export default {
 		handleSchemaChange(schema) {
 			schemaStore.setSchemaItem(schema)
 			this.applyFilters()
+		},
+		/**
+		 * Build URL query object from current sidebar state
+		 * @return {object}
+		 */
+		buildQueryFromState() {
+			const query = {}
+			if (registerStore.registerItem && registerStore.registerItem.id) {
+				query.register = String(registerStore.registerItem.id)
+			}
+			if (schemaStore.schemaItem && schemaStore.schemaItem.id) {
+				query.schema = String(schemaStore.schemaItem.id)
+			}
+			if (this.selectedDeletedBy && this.selectedDeletedBy.value) {
+				query.deletedBy = String(this.selectedDeletedBy.value)
+			}
+			// JS dates are awful, so we first check if it's a valid date and then get the ISO string.
+			if (this.dateFrom) query.dateFrom = new Date(this.dateFrom).getDate() ? new Date(this.dateFrom).toISOString() : null
+			if (this.dateTo) query.dateTo = new Date(this.dateTo).getDate() ? new Date(this.dateTo).toISOString() : null
+			return query
+		},
+		/**
+		 * Compare two shallow query objects (keys and stringified values)
+		 * @param {object} a - First query object to compare
+		 * @param {object} b - Second query object to compare
+		 * @return {boolean} Whether the two query objects are equal
+		 */
+		queriesEqual(a, b) {
+			const ka = Object.keys(a || {}).sort()
+			const kb = Object.keys(b || {}).sort()
+			if (ka.length !== kb.length) return false
+			for (let i = 0; i < ka.length; i++) {
+				if (ka[i] !== kb[i]) return false
+				if (String(a[ka[i]]) !== String(b[kb[i]])) return false
+			}
+			return true
+		},
+		/**
+		 * Write current state to the router query (only on /deleted)
+		 * @return {void}
+		 */
+		updateRouteQueryFromState() {
+			if (this.$route.path !== '/deleted') return
+			const nextQuery = this.buildQueryFromState()
+			if (this.queriesEqual(nextQuery, this.$route.query || {})) return
+			this.$router.replace({
+				path: this.$route.path,
+				query: nextQuery,
+			})
+		},
+		/**
+		 * Apply URL query params to component/store state and emit filters
+		 * @return {void}
+		 */
+		applyQueryParamsFromRoute() {
+			if (this.$route.path !== '/deleted') return
+			const { register, schema, deletedBy, dateFrom, dateTo } = this.$route.query || {}
+
+			// Dates
+			this.dateFrom = dateFrom && new Date(dateFrom).getDate() ? new Date(dateFrom) : null
+			this.dateTo = dateTo && new Date(dateTo).getDate() ? new Date(dateTo) : null
+
+			// Deleted by
+			if (typeof deletedBy === 'string' && deletedBy.length > 0) {
+				this.selectedDeletedBy = { value: deletedBy, label: deletedBy }
+			} else {
+				this.selectedDeletedBy = null
+			}
+
+			// Registers and schemas depend on lists being loaded
+			const applyRegister = () => {
+				if (!register) return true
+				if (!registerStore.registerList.length) return false
+				const reg = registerStore.registerList.find(r => String(r.id) === String(register))
+				if (reg) registerStore.setRegisterItem(reg)
+				return true
+			}
+			const applySchema = () => {
+				if (!schema) return true
+				if (!schemaStore.schemaList.length) return false
+				const sch = schemaStore.schemaList.find(s => String(s.id) === String(schema))
+				if (sch) schemaStore.setSchemaItem(sch)
+				return true
+			}
+
+			const tryApply = (attempt = 0) => {
+				const regOk = applyRegister()
+				const schOk = applySchema()
+				if (regOk && schOk) {
+					// Once state is set from URL, emit filters for legacy compatibility
+					this.applyFiltersToStore()
+					return
+				}
+				if (attempt < 10) {
+					setTimeout(() => tryApply(attempt + 1), 200)
+				}
+			}
+			tryApply()
+		},
+		/**
+		 * Build filters from state and emit to parent (legacy compatibility)
+		 * @return {void}
+		 */
+		applyFiltersToStore() {
+			const filters = {
+				register: registerStore.registerItem?.id || null,
+				schema: schemaStore.schemaItem?.id || null,
+				deletedBy: this.selectedDeletedBy?.value || null,
+				dateFrom: this.dateFrom || null,
+				dateTo: this.dateTo || null,
+			}
+			this.$root.$emit('deleted-filters-changed', filters)
 		},
 	},
 }

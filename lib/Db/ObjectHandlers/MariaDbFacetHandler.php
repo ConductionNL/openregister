@@ -68,7 +68,7 @@ class MariaDbFacetHandler
     {
         // Build JSON path for the field
         $jsonPath = '$.'.$field;
-        
+
         // First, check if this field commonly contains arrays
         if ($this->fieldContainsArrays($field, $baseQuery)) {
             return $this->getTermsFacetForArrayField($field, $baseQuery);
@@ -76,7 +76,7 @@ class MariaDbFacetHandler
 
         // For non-array fields, use the standard approach
         $queryBuilder = $this->db->getQueryBuilder();
-        
+
         // Build aggregation query for JSON field
         $queryBuilder->selectAlias(
                 $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."))"),
@@ -138,7 +138,7 @@ class MariaDbFacetHandler
     {
         $queryBuilder = $this->db->getQueryBuilder();
         $jsonPath     = '$.'.$field;
-        
+
         // Sample a few objects to check if the field contains arrays
         $queryBuilder->select('object')
             ->from('openregister_objects')
@@ -195,7 +195,7 @@ class MariaDbFacetHandler
         // Get all objects that have this field
         $queryBuilder = $this->db->getQueryBuilder();
         $jsonPath     = '$.'.$field;
-        
+
         $queryBuilder->select('object')
             ->from('openregister_objects')
             ->where(
@@ -215,7 +215,7 @@ class MariaDbFacetHandler
             $objectData = json_decode($row['object'], true);
             if ($objectData && isset($objectData[$field])) {
                 $fieldValue = $objectData[$field];
-                
+
                 // Handle both arrays and single values
                 if (is_array($fieldValue)) {
                     // For arrays, count each element separately
@@ -281,15 +281,15 @@ class MariaDbFacetHandler
         if ($value === null) {
             return null;
         }
-        
+
         if (is_bool($value)) {
             return $value ? 'true' : 'false';
         }
-        
+
         if (is_scalar($value)) {
             return trim((string) $value);
         }
-        
+
         // Skip complex types (objects, nested arrays)
         return null;
 
@@ -320,10 +320,10 @@ class MariaDbFacetHandler
     public function getDateHistogramFacet(string $field, string $interval, array $baseQuery=[]): array
     {
         $queryBuilder = $this->db->getQueryBuilder();
-        
+
         $jsonPath   = '$.'.$field;
         $dateFormat = $this->getDateFormatForInterval($interval);
-        
+
         $queryBuilder->selectAlias(
                 $queryBuilder->createFunction(
                     "DATE_FORMAT(JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")), '$dateFormat')"
@@ -392,7 +392,7 @@ class MariaDbFacetHandler
 
         foreach ($ranges as $range) {
             $queryBuilder = $this->db->getQueryBuilder();
-            
+
             $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
                 ->from('openregister_objects')
                 ->where(
@@ -791,15 +791,15 @@ class MariaDbFacetHandler
     {
         foreach ($objectFilters as $field => $value) {
             $jsonPath = '$.'.$field;
-            
+
             // Handle simple values (backwards compatibility)
             if (!is_array($value)) {
-            if ($value === 'IS NOT NULL') {
+                if ($value === 'IS NOT NULL') {
                     $queryBuilder->andWhere(
                         $queryBuilder->expr()->isNotNull(
                             $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                         )
-                    );
+                        );
                 } else if ($value === 'IS NULL') {
                     $queryBuilder->andWhere(
                         $queryBuilder->expr()->isNull(
@@ -890,7 +890,7 @@ class MariaDbFacetHandler
                         $queryBuilder->createNamedParameter($value)
                     )
                 );
-                
+
                 // Check if the value exists within an array using JSON_CONTAINS
         $conditions->add(
                     $queryBuilder->expr()->eq(
@@ -898,7 +898,7 @@ class MariaDbFacetHandler
                         $queryBuilder->createNamedParameter(1)
                     )
                 );
-                
+
     }//end addObjectFieldValueCondition()
 
 
@@ -1097,21 +1097,21 @@ class MariaDbFacetHandler
     {
         // Get sample objects to analyze
         $sampleObjects = $this->getSampleObjects($baseQuery, $sampleSize);
-        
+
         if (empty($sampleObjects)) {
             return [];
         }
 
         // Analyze fields across all sample objects
         $fieldAnalysis = [];
-        
+
         foreach ($sampleObjects as $objectData) {
             $this->analyzeObjectFields($objectData, $fieldAnalysis);
         }
 
         // Convert analysis to facetable field configuration
         $facetableFields = [];
-        
+
         foreach ($fieldAnalysis as $fieldPath => $analysis) {
             // Only include fields that appear in at least 10% of objects
             $appearanceRate = $analysis['count'] / count($sampleObjects);
@@ -1147,7 +1147,7 @@ class MariaDbFacetHandler
     private function getSampleObjects(array $baseQuery, int $sampleSize): array
     {
         $queryBuilder = $this->db->getQueryBuilder();
-        
+
         $queryBuilder->select('object')
             ->from('openregister_objects')
             ->where($queryBuilder->expr()->isNotNull('object'))
@@ -1200,7 +1200,7 @@ class MariaDbFacetHandler
 
         foreach ($objectData as $key => $value) {
             $fieldPath = $prefix === '' ? $key : $prefix.'.'.$key;
-            
+
             // Skip system fields
             if (str_starts_with($key, '@') || str_starts_with($key, '_')) {
                 continue;
@@ -1223,7 +1223,7 @@ class MariaDbFacetHandler
             // Analyze value type and characteristics
             if (is_array($value)) {
                 $fieldAnalysis[$fieldPath]['is_array'] = true;
-                
+
                 // Check if it's an array of objects (nested structure)
                 if (!empty($value) && is_array($value[0])) {
                     $fieldAnalysis[$fieldPath]['is_nested'] = true;
@@ -1271,7 +1271,7 @@ class MariaDbFacetHandler
     private function recordValueType(array &$fieldAnalysis, mixed $value): void
     {
         $type = $this->determineValueType($value);
-        
+
         if (!isset($fieldAnalysis['types'][$type])) {
             $fieldAnalysis['types'][$type] = 0;
         }
@@ -1299,7 +1299,7 @@ class MariaDbFacetHandler
     {
         // Convert value to string for storage
         $stringValue = $this->valueToString($value);
-        
+
         if (!in_array($stringValue, $fieldAnalysis['sample_values']) && count($fieldAnalysis['sample_values']) < 20) {
             $fieldAnalysis['sample_values'][] = $stringValue;
         }
@@ -1323,33 +1323,33 @@ class MariaDbFacetHandler
         if ($value === null) {
             return 'null';
         }
-        
+
         if (is_bool($value)) {
             return 'boolean';
         }
-        
+
         if (is_int($value)) {
             return 'integer';
         }
-        
+
         if (is_float($value)) {
             return 'float';
         }
-        
+
         if (is_string($value)) {
             // Check if it looks like a date
             if ($this->looksLikeDate($value)) {
                 return 'date';
             }
-            
+
             // Check if it's numeric
             if (is_numeric($value)) {
                 return 'numeric_string';
             }
-            
+
             return 'string';
         }
-        
+
         return 'unknown';
 
     }//end determineValueType()
@@ -1409,15 +1409,15 @@ class MariaDbFacetHandler
         if ($value === null) {
             return 'null';
         }
-        
+
         if (is_bool($value)) {
             return $value ? 'true' : 'false';
         }
-        
+
         if (is_array($value) || is_object($value)) {
             return json_encode($value);
         }
-        
+
         return (string) $value;
 
     }//end valueToString()
@@ -1446,7 +1446,7 @@ class MariaDbFacetHandler
 
         // Determine primary type
         $primaryType = $this->getPrimaryType($analysis['types']);
-        
+
         if ($primaryType === null) {
             return null;
         }
@@ -1472,24 +1472,24 @@ class MariaDbFacetHandler
                     return null;
                 }
                 break;
-                
+
             case 'integer':
             case 'float':
             case 'numeric_string':
                 $config['facet_types'] = ['range', 'terms'];
                 $config['cardinality'] = 'numeric';
                 break;
-                
+
             case 'date':
                 $config['facet_types'] = ['date_histogram', 'range'];
                 $config['intervals']   = ['day', 'week', 'month', 'year'];
                 break;
-                
+
             case 'boolean':
                 $config['facet_types'] = ['terms'];
                 $config['cardinality'] = 'binary';
                 break;
-                
+
             default:
                 return null;
         }//end switch
@@ -1520,16 +1520,16 @@ class MariaDbFacetHandler
         // If it's nested, check if the types are simple
         if ($analysis['is_nested'] ?? false) {
             $types = $analysis['types'] ?? [];
-            
+
             // Check if all types are simple (string, integer, float, boolean, numeric_string, date)
             $simpleTypes = ['string', 'integer', 'float', 'boolean', 'numeric_string', 'date'];
-            
+
             foreach (array_keys($types) as $type) {
                 if (!in_array($type, $simpleTypes)) {
                     return false;
                 }
             }
-            
+
             return true;
         }
 
@@ -1557,11 +1557,11 @@ class MariaDbFacetHandler
 
         // Sort by count descending
         arsort($types);
-        
+
         $totalCount   = array_sum($types);
         $primaryType  = array_key_first($types);
         $primaryCount = $types[$primaryType];
-        
+
         // Primary type should represent at least 70% of values
         if ($primaryCount / $totalCount >= 0.7) {
             return $primaryType;
@@ -1572,4 +1572,4 @@ class MariaDbFacetHandler
     }//end getPrimaryType()
 
 
-}//end class 
+}//end class
