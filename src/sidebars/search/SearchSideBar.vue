@@ -4,541 +4,540 @@ import { navigationStore, objectStore, registerStore, schemaStore, viewsStore } 
 
 <template>
 	<div>
-	<NcAppSidebar
-		ref="sidebar"
-		v-model="activeTab"
-		name="Search Objects"
-		subtitle="Select registers, schemas and search"
-		subname="Within the federative network"
-		:open="navigationStore.sidebarState.search"
-		@update:open="(e) => navigationStore.setSidebarState('search', e)">
-		<!-- Search Tab -->
-		<NcAppSidebarTab
-			id="search-tab"
-			:name="t('openregister', 'Search')"
-			:order="1">
-			<template #icon>
-				<Magnify :size="20" />
-			</template>
-
-		<!-- Save View Action -->
-		<div class="saveViewSection">
-			<!-- Active View Mode: Show view name with Save and Delete buttons -->
-			<div v-if="viewsStore.activeView && !showSaveForm" class="activeViewActions">
-				<div class="activeViewHeader">
-					<NcTextField
-						v-model="activeViewName"
-						:placeholder="t('openregister', 'View name')"
-						:label="t('openregister', 'View Name')"
-						class="activeViewNameInput">
-						<template #trailing-button-icon>
-							<Pencil :size="20" />
-						</template>
-					</NcTextField>
-					<NcButton
-						type="tertiary"
-						:aria-label="t('openregister', 'Edit view details')"
-						@click="openEditDialogForActiveView">
-						<template #icon>
-							<CogOutline :size="20" />
-						</template>
-					</NcButton>
-				</div>
-				<div class="activeViewButtons">
-					<NcButton
-						type="primary"
-						:disabled="!canSaveView || !activeViewName.trim()"
-						@click="updateActiveView">
-						<template #icon>
-							<ContentSaveOutline :size="20" />
-						</template>
-						{{ t('openregister', 'Save') }}
-					</NcButton>
-					<NcButton
-						type="error"
-						@click="confirmDeleteActiveView">
-						<template #icon>
-							<Delete :size="20" />
-						</template>
-						{{ t('openregister', 'Delete') }}
-					</NcButton>
-				</div>
-			</div>
-
-			<!-- No Active View: Show "Save current search as view" button -->
-			<NcButton
-				v-else-if="!showSaveForm && !viewsStore.activeView"
-				type="primary"
-				:disabled="!canSaveView"
-				@click="showSaveForm = true">
-				<template #icon>
-					<ContentSaveOutline :size="20" />
-				</template>
-				{{ t('openregister', 'Save current search as view') }}
-			</NcButton>
-
-			<!-- Show inline form when creating new view -->
-			<div v-else-if="showSaveForm" class="saveViewForm">
-				<NcTextField
-					v-model="viewName"
-					:placeholder="t('openregister', 'Enter view name...')"
-					:label="t('openregister', 'View Name')"
-					:required="true"
-					:error="viewName.trim() === '' && viewNameTouched"
-					:helper-text="viewName.trim() === '' && viewNameTouched ? t('openregister', 'View name is required') : ''"
-					@blur="viewNameTouched = true"
-					@keyup.enter="saveView">
-					<template #icon>
-						<ContentSaveOutline :size="20" />
-					</template>
-				</NcTextField>
-				<div class="saveViewFormActions">
-					<NcButton
-						type="primary"
-						:disabled="!viewName.trim()"
-						@click="saveView">
-						{{ t('openregister', 'Save') }}
-					</NcButton>
-					<NcButton
-						type="secondary"
-						@click="cancelSaveView">
-						{{ t('openregister', 'Cancel') }}
-					</NcButton>
-				</div>
-			</div>
-
-			<p v-if="!canSaveView && !showSaveForm && !viewsStore.activeView" class="saveViewHint">
-				{{ t('openregister', 'Select registers and schemas to save a view') }}
-			</p>
-		</div>
-
-			<!-- Filter Section -->
-			<div class="filterSection">
-			<h3>{{ t('openregister', 'Filter Objects') }}</h3>
-			<div class="filterGroup">
-				<label for="registerSelect">{{ t('openregister', 'Registers') }}</label>
-				<NcSelect v-bind="registerOptions"
-					id="registerSelect"
-					:model-value="selectedRegisters"
-					:loading="registerLoading"
-					:disabled="registerLoading"
-					:input-label="t('openregister', 'Registers')"
-					:multiple="true"
-					:close-on-select="false"
-					placeholder="Select one or more registers"
-					@update:model-value="handleRegisterChange">
-					<template #option="{ title, description }">
-						<div class="option-content">
-							<span class="option-title">{{ title }}</span>
-							<span v-if="description" class="option-description">{{ description }}</span>
-						</div>
-					</template>
-				</NcSelect>
-				<p class="field-hint">
-					{{ selectedRegisters.length }} {{ t('openregister', 'register(s) selected') }}
-				</p>
-			</div>
-			<div class="filterGroup">
-				<label for="schemaSelect">{{ t('openregister', 'Schemas') }}</label>
-				<NcSelect v-bind="schemaOptions"
-					id="schemaSelect"
-					:model-value="selectedSchemas"
-					:loading="schemaLoading"
-					:disabled="selectedRegisters.length === 0 || schemaLoading"
-					:input-label="t('openregister', 'Schemas')"
-					:multiple="true"
-					:close-on-select="false"
-					placeholder="Select one or more schemas"
-					@update:model-value="handleSchemaChange">
-					<template #option="{ title, description }">
-						<div class="option-content">
-							<span class="option-title">{{ title }}</span>
-							<span v-if="description" class="option-description">{{ description }}</span>
-						</div>
-					</template>
-				</NcSelect>
-				<p class="field-hint">
-					{{ selectedSchemas.length }} {{ t('openregister', 'schema(s) selected') }}
-				</p>
-			</div>
-			<div class="filterGroup">
-				<label for="sourceSelect">{{ t('openregister', 'Data Source') }}</label>
-				<NcSelect
-					id="sourceSelect"
-					:model-value="selectedSourceValue"
-					:options="sourceOptions"
-					:input-label="t('openregister', 'Data Source')"
-					placeholder="Select data source"
-					@update:model-value="handleSourceChange" />
-			</div>
-		</div>
-
-		<!-- Search Section -->
-		<div class="section">
-			<h3 class="sectionTitle">
-				{{ t('openregister', 'Search') }}
-			</h3>
-			<div class="search-input-container">
-				<NcTextField
-					v-model="searchQuery"
-					:placeholder="searchPlaceholder"
-					:disabled="searchLoading"
-					@keyup.enter="performSearch" />
-				<NcButton
-					type="primary"
-					:disabled="!canSearch || searchLoading"
-					@click="performSearch">
-					<template #icon>
-						<NcLoadingIcon v-if="searchLoading" :size="20" />
-						<Magnify v-else :size="20" />
-					</template>
-					{{ t('openregister', 'Search') }}
-				</NcButton>
-			</div>
-			<div v-if="searchTerms.length > 0" class="search-terms">
-				<span class="search-terms-label">{{ t('openregister', 'Search terms:') }}</span>
-				<div class="search-chips">
-					<div
-						v-for="(term, index) in searchTerms"
-						:key="index"
-						class="search-chip">
-						<span class="chip-text">{{ term }}</span>
-						<button class="chip-remove" @click="removeSearchTerm(index)">
-							<Close :size="16" />
-						</button>
-					</div>
-				</div>
-			</div>
-			<div v-if="lastSearchStats" class="search-stats">
-				{{ t('openregister', 'Found {total} objects in {time}ms', lastSearchStats) }}
-			</div>
-		</div>
-
-		<!-- Unified Faceting Section -->
-		<div class="section">
-			<h3 class="sectionTitle">
-				{{ t('openregister', 'Advanced Filters') }}
-			</h3>
-
-			<!-- Stage 1: Facet Discovery -->
-			<div v-if="!facetableFields && canSearch && !isDatabaseSource" class="facets-discovery-container">
-				<NcButton
-					type="secondary"
-					:disabled="facetsLoading"
-					@click="discoverFacets">
-					<template #icon>
-						<NcLoadingIcon v-if="facetsLoading" :size="20" />
-						<FilterIcon v-else :size="20" />
-					</template>
-					{{ t('openregister', 'Load Advanced Filters') }}
-				</NcButton>
-				<p class="facets-description">
-					{{ t('openregister', 'Load advanced filters with live data from your search index') }}
-				</p>
-			</div>
-
-			<!-- Database Source Notice -->
-			<div v-if="isDatabaseSource && canSearch" class="database-source-notice">
-				<p class="database-notice-text">
-					{{ t('openregister', 'Advanced filters are not available when using database source. Switch to Auto or SOLR Index for filtering options.') }}
-				</p>
-			</div>
-
-			<!-- Loading -->
-			<div v-if="facetsLoading && !facetableFields" class="loading-container">
-				<NcLoadingIcon :size="20" />
-				<span>{{ t('openregister', 'Loading advanced filters...') }}</span>
-			</div>
-
-			<!-- Available Facets (Stage 1 Complete) -->
-			<div v-else-if="facetableFields && !isDatabaseSource" class="available-facets-container">
-				<h4 class="available-facets-title">
-					{{ t('openregister', 'Available Filters') }}
-				</h4>
-
-				<!-- Metadata Facets -->
-				<div v-if="facetableFields['@self']" class="facet-category">
-					<h5 class="facet-category-title">
-						{{ t('openregister', 'Metadata Filters') }}
-					</h5>
-					<div class="facet-checkboxes">
-						<div v-for="(field, fieldName) in facetableFields['@self']" :key="`@self.${fieldName}`" class="facet-checkbox">
-							<input
-								:id="`facet-@self-${fieldName}`"
-								v-model="enabledFacets[`@self.${fieldName}`]"
-								type="checkbox"
-								@change="toggleFacet(`@self.${fieldName}`, field)">
-							<label :for="`facet-@self-${fieldName}`" class="facet-checkbox-label">
-								{{ field.description || fieldName }}
-								<span class="facet-types">({{ field.facet_types.join(', ') }})</span>
-							</label>
-						</div>
-					</div>
-				</div>
-
-				<!-- Object Field Facets -->
-				<div v-if="facetableFields.object_fields" class="facet-category">
-					<h5 class="facet-category-title">
-						{{ t('openregister', 'Content Filters') }}
-					</h5>
-					<div class="facet-checkboxes">
-						<div v-for="(field, fieldName) in facetableFields.object_fields" :key="fieldName" class="facet-checkbox">
-							<input
-								:id="`facet-${fieldName}`"
-								v-model="enabledFacets[fieldName]"
-								type="checkbox"
-								@change="toggleFacet(fieldName, field)">
-							<label :for="`facet-${fieldName}`" class="facet-checkbox-label">
-								{{ field.title || field.description || fieldName }}
-								<span class="facet-types">({{ field.facet_types.join(', ') }})</span>
-							</label>
-						</div>
-					</div>
-				</div>
-
-				<!-- Info about loaded facets -->
-				<div v-if="facetData && Object.keys(facetData).length > 0" class="facets-loaded-info">
-					<p class="facets-loaded-description">
-						{{ t('openregister', 'Filter data loaded automatically. Use the filters below to refine your search.') }}
-					</p>
-				</div>
-			</div>
-
-			<!-- Stage 2 Loading -->
-			<div v-if="facetDataLoading" class="loading-container">
-				<NcLoadingIcon :size="20" />
-				<span>{{ t('openregister', 'Loading filter data...') }}</span>
-			</div>
-
-			<!-- Stage 2: Facet Data (Active Filters) -->
-			<div v-else-if="facetData && Object.keys(facetData).length > 0 && !isDatabaseSource" class="active-facets-container">
-				<h4 class="active-facets-title">
-					{{ t('openregister', 'Active Filters') }}
-				</h4>
-
-				<!-- Metadata facets (@self) -->
-				<div v-for="(facet, field) in facetData?.['@self'] || {}" :key="`@self.${field}`" class="facet-group">
-					<label class="facet-label">{{ getFacetLabel(field, facet, true) }}</label>
-					<NcSelect
-						:model-value="facetFilters[`@self.${field}`] || []"
-						:options="getFacetOptions(facet)"
-						:multiple="true"
-						:placeholder="t('openregister', 'Select options...')"
-						:input-label="getFacetLabel(field, facet, true)"
-						@update:model-value="(value) => updateFacetFilter(`@self.${field}`, value)" />
-				</div>
-
-				<!-- Object field facets -->
-				<div v-for="(facet, field) in facetData?.object_fields || {}" :key="field" class="facet-group">
-					<label class="facet-label">{{ getFacetLabel(field, facet, false) }}</label>
-					<NcSelect
-						:model-value="facetFilters[field] || []"
-						:options="getFacetOptions(facet)"
-						:multiple="true"
-						:placeholder="t('openregister', 'Select options...')"
-						:input-label="getFacetLabel(field, facet, false)"
-						@update:model-value="(value) => updateFacetFilter(field, value)" />
-				</div>
-
-			<!-- Reset Facets Button -->
-			<div class="facets-reset-container">
-				<NcButton
-					type="secondary"
-					@click="resetFacets">
-					{{ t('openregister', 'Reset Filters') }}
-				</NcButton>
-			</div>
-		</div>
-	</div>
-
-	<div class="section">
-		<NcNoteCard type="info" class="search-hint">
-			{{ t('openregister', 'Type search terms and press Enter or click Add to add them. Click Search to find objects.') }}
-		</NcNoteCard>
-	</div>
-	</NcAppSidebarTab>
-
-	<!-- Views Tab -->
-	<NcAppSidebarTab
-		id="views-tab"
-		:name="t('openregister', 'Views')"
-		:order="2">
-		<template #icon>
-			<ViewDashboardOutline :size="20" />
-		</template>
-
-		<div class="viewsSection">
-			<h3>{{ t('openregister', 'Saved Views') }}</h3>
-			<p class="viewsDescription">
-				{{ t('openregister', 'Manage your saved search configurations') }}
-			</p>
-
-		<!-- Search Views -->
-		<div class="viewsSearchContainer">
-			<NcTextField
-				v-model="viewSearchQuery"
-				:placeholder="t('openregister', 'Search views...')"
-				:label="t('openregister', 'Search Views')">
+		<NcAppSidebar
+			ref="sidebar"
+			v-model="activeTab"
+			name="Search Objects"
+			subtitle="Select registers, schemas and search"
+			subname="Within the federative network"
+			:open="navigationStore.sidebarState.search"
+			@update:open="(e) => navigationStore.setSidebarState('search', e)">
+			<!-- Search Tab -->
+			<NcAppSidebarTab
+				id="search-tab"
+				:name="t('openregister', 'Search')"
+				:order="1">
 				<template #icon>
 					<Magnify :size="20" />
 				</template>
-			</NcTextField>
-		</div>
 
-		<!-- Views Table -->
-			<div v-if="viewsStore.isLoading" class="viewsLoading">
-				<NcLoadingIcon :size="32" />
-				<p>{{ t('openregister', 'Loading views...') }}</p>
-			</div>
-
-			<div v-else-if="filteredViews.length === 0" class="noViews">
-				<NcNoteCard type="info">
-					{{ viewSearchQuery ? t('openregister', 'No views match your search') : t('openregister', 'No saved views yet. Create one in the Search tab!') }}
-				</NcNoteCard>
-			</div>
-
-			<div v-else class="viewsTable">
-				<div
-					v-for="view in filteredViews"
-					:key="view.id || view.uuid"
-					class="viewRow"
-					:class="{ 'viewRow--active': isActiveView(view) }">
-					<div class="viewRowHeader">
-						<div class="viewRowTitle">
-							<strong>{{ view.name || t('openregister', 'Untitled View') }}</strong>
-							<span v-if="view.isDefault" class="viewBadge viewBadge--default">
-								{{ t('openregister', 'Default') }}
-							</span>
-							<span v-if="view.isPublic" class="viewBadge viewBadge--public">
-								{{ t('openregister', 'Public') }}
-							</span>
-						</div>
-						<div class="viewRowActions">
-							<!-- Star/Favorite button -->
-							<NcButton
-								:type="isFavorited(view) ? 'primary' : 'secondary'"
-								:aria-label="isFavorited(view) ? t('openregister', 'Remove from favorites') : t('openregister', 'Add to favorites')"
-								@click="toggleFavorite(view)">
-								<template #icon>
-									<Star v-if="isFavorited(view)" :size="20" />
-									<StarOutline v-else :size="20" />
-								</template>
-							</NcButton>
-							
-						<!-- Load View (Magnify) -->
-						<NcButton
-							:type="isActiveView(view) ? 'primary' : 'secondary'"
-							:aria-label="t('openregister', 'Load view')"
-							@click="loadView(view)">
-							<template #icon>
-								<Magnify :size="20" />
-							</template>
-						</NcButton>
-							
-							<!-- Edit View (Pencil) -->
-							<NcButton
-								type="secondary"
-								:aria-label="t('openregister', 'Edit view')"
-								@click="openEditDialog(view)">
-								<template #icon>
+				<!-- Save View Action -->
+				<div class="saveViewSection">
+					<!-- Active View Mode: Show view name with Save and Delete buttons -->
+					<div v-if="viewsStore.activeView && !showSaveForm" class="activeViewActions">
+						<div class="activeViewHeader">
+							<NcTextField
+								v-model="activeViewName"
+								:placeholder="t('openregister', 'View name')"
+								:label="t('openregister', 'View Name')"
+								class="activeViewNameInput">
+								<template #trailing-button-icon>
 									<Pencil :size="20" />
 								</template>
+							</NcTextField>
+							<NcButton
+								type="tertiary"
+								:aria-label="t('openregister', 'Edit view details')"
+								@click="openEditDialogForActiveView">
+								<template #icon>
+									<CogOutline :size="20" />
+								</template>
 							</NcButton>
-							
-							<!-- Delete View -->
+						</div>
+						<div class="activeViewButtons">
+							<NcButton
+								type="primary"
+								:disabled="!canSaveView || !activeViewName.trim()"
+								@click="updateActiveView">
+								<template #icon>
+									<ContentSaveOutline :size="20" />
+								</template>
+								{{ t('openregister', 'Save') }}
+							</NcButton>
 							<NcButton
 								type="error"
-								:aria-label="t('openregister', 'Delete view')"
-								@click="confirmDeleteView(view)">
+								@click="confirmDeleteActiveView">
 								<template #icon>
 									<Delete :size="20" />
 								</template>
+								{{ t('openregister', 'Delete') }}
 							</NcButton>
 						</div>
 					</div>
-					<p v-if="view.description" class="viewRowDescription">
-						{{ view.description }}
-					</p>
-					<p v-else class="viewRowDescription viewRowDescription--empty">
-						{{ t('openregister', 'No description provided') }}
-					</p>
-				</div>
-			</div>
-		</div>
-	</NcAppSidebarTab>
 
-	<!-- Columns Tab -->
-	<NcAppSidebarTab
-		id="columns-tab"
-		:name="t('openregister', 'Columns')"
-		:order="3">
-		<template #icon>
-			<FormatColumns :size="20" />
-		</template>
+					<!-- No Active View: Show "Save current search as view" button -->
+					<NcButton
+						v-else-if="!showSaveForm && !viewsStore.activeView"
+						type="primary"
+						:disabled="!canSaveView"
+						@click="showSaveForm = true">
+						<template #icon>
+							<ContentSaveOutline :size="20" />
+						</template>
+						{{ t('openregister', 'Save current search as view') }}
+					</NcButton>
 
-		<div class="columnsSection">
-			<h3>{{ t('openregister', 'Column Visibility') }}</h3>
-			<p class="columnsDescription">
-				{{ t('openregister', 'Select which columns to display in the table') }}
-			</p>
-
-			<!-- Schema Properties Sections -->
-			<div v-if="selectedSchemasWithProperties.length > 0">
-				<div v-for="schemaData in selectedSchemasWithProperties" :key="`schema_${schemaData.id}`" class="columnGroup collapsible">
-					<div class="columnGroupHeader" @click="toggleSchemaGroup(schemaData.id)">
-						<ChevronDown v-if="expandedSchemas[schemaData.id]" :size="20" />
-						<ChevronRight v-else :size="20" />
-						<h4>{{ schemaData.title }}</h4>
+					<!-- Show inline form when creating new view -->
+					<div v-else-if="showSaveForm" class="saveViewForm">
+						<NcTextField
+							v-model="viewName"
+							:placeholder="t('openregister', 'Enter view name...')"
+							:label="t('openregister', 'View Name')"
+							:required="true"
+							:error="viewName.trim() === '' && viewNameTouched"
+							:helper-text="viewName.trim() === '' && viewNameTouched ? t('openregister', 'View name is required') : ''"
+							@blur="viewNameTouched = true"
+							@keyup.enter="saveView">
+							<template #icon>
+								<ContentSaveOutline :size="20" />
+							</template>
+						</NcTextField>
+						<div class="saveViewFormActions">
+							<NcButton
+								type="primary"
+								:disabled="!viewName.trim()"
+								@click="saveView">
+								{{ t('openregister', 'Save') }}
+							</NcButton>
+							<NcButton
+								type="secondary"
+								@click="cancelSaveView">
+								{{ t('openregister', 'Cancel') }}
+							</NcButton>
+						</div>
 					</div>
-					<div v-if="expandedSchemas[schemaData.id]" class="columnGroupContent">
-						<NcCheckboxRadioSwitch
-							v-for="(property, propertyName) in schemaData.properties"
-							:key="`schema_${schemaData.id}_prop_${propertyName}`"
-							:checked="objectStore.columnFilters[`schema_${schemaData.id}_prop_${propertyName}`]"
-							@update:checked="(status) => objectStore.updateColumnFilter(`schema_${schemaData.id}_prop_${propertyName}`, status)">
-							{{ property.title || property.label || propertyName }}
-						</NcCheckboxRadioSwitch>
+
+					<p v-if="!canSaveView && !showSaveForm && !viewsStore.activeView" class="saveViewHint">
+						{{ t('openregister', 'Select registers and schemas to save a view') }}
+					</p>
+				</div>
+
+				<!-- Filter Section -->
+				<div class="filterSection">
+					<h3>{{ t('openregister', 'Filter Objects') }}</h3>
+					<div class="filterGroup">
+						<label for="registerSelect">{{ t('openregister', 'Registers') }}</label>
+						<NcSelect v-bind="registerOptions"
+							id="registerSelect"
+							:model-value="selectedRegisters"
+							:loading="registerLoading"
+							:disabled="registerLoading"
+							:input-label="t('openregister', 'Registers')"
+							:multiple="true"
+							:close-on-select="false"
+							placeholder="Select one or more registers"
+							@update:model-value="handleRegisterChange">
+							<template #option="{ title, description }">
+								<div class="option-content">
+									<span class="option-title">{{ title }}</span>
+									<span v-if="description" class="option-description">{{ description }}</span>
+								</div>
+							</template>
+						</NcSelect>
+						<p class="field-hint">
+							{{ selectedRegisters.length }} {{ t('openregister', 'register(s) selected') }}
+						</p>
+					</div>
+					<div class="filterGroup">
+						<label for="schemaSelect">{{ t('openregister', 'Schemas') }}</label>
+						<NcSelect v-bind="schemaOptions"
+							id="schemaSelect"
+							:model-value="selectedSchemas"
+							:loading="schemaLoading"
+							:disabled="selectedRegisters.length === 0 || schemaLoading"
+							:input-label="t('openregister', 'Schemas')"
+							:multiple="true"
+							:close-on-select="false"
+							placeholder="Select one or more schemas"
+							@update:model-value="handleSchemaChange">
+							<template #option="{ title, description }">
+								<div class="option-content">
+									<span class="option-title">{{ title }}</span>
+									<span v-if="description" class="option-description">{{ description }}</span>
+								</div>
+							</template>
+						</NcSelect>
+						<p class="field-hint">
+							{{ selectedSchemas.length }} {{ t('openregister', 'schema(s) selected') }}
+						</p>
+					</div>
+					<div class="filterGroup">
+						<label for="sourceSelect">{{ t('openregister', 'Data Source') }}</label>
+						<NcSelect
+							id="sourceSelect"
+							:model-value="selectedSourceValue"
+							:options="sourceOptions"
+							:input-label="t('openregister', 'Data Source')"
+							placeholder="Select data source"
+							@update:model-value="handleSourceChange" />
 					</div>
 				</div>
-			</div>
 
-			<NcNoteCard v-else type="info">
-				{{ t('openregister', 'No properties available. Select a schema to view properties.') }}
-			</NcNoteCard>
-
-			<!-- Metadata Section (Collapsible) -->
-			<div class="columnGroup collapsible">
-				<div class="columnGroupHeader" @click="metadataExpanded = !metadataExpanded">
-					<ChevronDown v-if="metadataExpanded" :size="20" />
-					<ChevronRight v-else :size="20" />
-					<h4>{{ t('openregister', 'Metadata') }}</h4>
+				<!-- Search Section -->
+				<div class="section">
+					<h3 class="sectionTitle">
+						{{ t('openregister', 'Search') }}
+					</h3>
+					<div class="search-input-container">
+						<NcTextField
+							v-model="searchQuery"
+							:placeholder="searchPlaceholder"
+							:disabled="searchLoading"
+							@keyup.enter="performSearch" />
+						<NcButton
+							type="primary"
+							:disabled="!canSearch || searchLoading"
+							@click="performSearch">
+							<template #icon>
+								<NcLoadingIcon v-if="searchLoading" :size="20" />
+								<Magnify v-else :size="20" />
+							</template>
+							{{ t('openregister', 'Search') }}
+						</NcButton>
+					</div>
+					<div v-if="searchTerms.length > 0" class="search-terms">
+						<span class="search-terms-label">{{ t('openregister', 'Search terms:') }}</span>
+						<div class="search-chips">
+							<div
+								v-for="(term, index) in searchTerms"
+								:key="index"
+								class="search-chip">
+								<span class="chip-text">{{ term }}</span>
+								<button class="chip-remove" @click="removeSearchTerm(index)">
+									<Close :size="16" />
+								</button>
+							</div>
+						</div>
+					</div>
+					<div v-if="lastSearchStats" class="search-stats">
+						{{ t('openregister', 'Found {total} objects in {time}ms', lastSearchStats) }}
+					</div>
 				</div>
-				<div v-if="metadataExpanded" class="columnGroupContent">
-					<NcCheckboxRadioSwitch
-						v-for="meta in metadataColumns"
-						:key="`meta_${meta.id}`"
-						:checked="objectStore.columnFilters[`meta_${meta.id}`]"
-						@update:checked="(status) => objectStore.updateColumnFilter(`meta_${meta.id}`, status)">
-						{{ meta.label }}
-					</NcCheckboxRadioSwitch>
+
+				<!-- Unified Faceting Section -->
+				<div class="section">
+					<h3 class="sectionTitle">
+						{{ t('openregister', 'Advanced Filters') }}
+					</h3>
+
+					<!-- Stage 1: Facet Discovery -->
+					<div v-if="!facetableFields && canSearch && !isDatabaseSource" class="facets-discovery-container">
+						<NcButton
+							type="secondary"
+							:disabled="facetsLoading"
+							@click="discoverFacets">
+							<template #icon>
+								<NcLoadingIcon v-if="facetsLoading" :size="20" />
+								<FilterIcon v-else :size="20" />
+							</template>
+							{{ t('openregister', 'Load Advanced Filters') }}
+						</NcButton>
+						<p class="facets-description">
+							{{ t('openregister', 'Load advanced filters with live data from your search index') }}
+						</p>
+					</div>
+
+					<!-- Database Source Notice -->
+					<div v-if="isDatabaseSource && canSearch" class="database-source-notice">
+						<p class="database-notice-text">
+							{{ t('openregister', 'Advanced filters are not available when using database source. Switch to Auto or SOLR Index for filtering options.') }}
+						</p>
+					</div>
+
+					<!-- Loading -->
+					<div v-if="facetsLoading && !facetableFields" class="loading-container">
+						<NcLoadingIcon :size="20" />
+						<span>{{ t('openregister', 'Loading advanced filters...') }}</span>
+					</div>
+
+					<!-- Available Facets (Stage 1 Complete) -->
+					<div v-else-if="facetableFields && !isDatabaseSource" class="available-facets-container">
+						<h4 class="available-facets-title">
+							{{ t('openregister', 'Available Filters') }}
+						</h4>
+
+						<!-- Metadata Facets -->
+						<div v-if="facetableFields['@self']" class="facet-category">
+							<h5 class="facet-category-title">
+								{{ t('openregister', 'Metadata Filters') }}
+							</h5>
+							<div class="facet-checkboxes">
+								<div v-for="(field, fieldName) in facetableFields['@self']" :key="`@self.${fieldName}`" class="facet-checkbox">
+									<input
+										:id="`facet-@self-${fieldName}`"
+										v-model="enabledFacets[`@self.${fieldName}`]"
+										type="checkbox"
+										@change="toggleFacet(`@self.${fieldName}`, field)">
+									<label :for="`facet-@self-${fieldName}`" class="facet-checkbox-label">
+										{{ field.description || fieldName }}
+										<span class="facet-types">({{ field.facet_types.join(', ') }})</span>
+									</label>
+								</div>
+							</div>
+						</div>
+
+						<!-- Object Field Facets -->
+						<div v-if="facetableFields.object_fields" class="facet-category">
+							<h5 class="facet-category-title">
+								{{ t('openregister', 'Content Filters') }}
+							</h5>
+							<div class="facet-checkboxes">
+								<div v-for="(field, fieldName) in facetableFields.object_fields" :key="fieldName" class="facet-checkbox">
+									<input
+										:id="`facet-${fieldName}`"
+										v-model="enabledFacets[fieldName]"
+										type="checkbox"
+										@change="toggleFacet(fieldName, field)">
+									<label :for="`facet-${fieldName}`" class="facet-checkbox-label">
+										{{ field.title || field.description || fieldName }}
+										<span class="facet-types">({{ field.facet_types.join(', ') }})</span>
+									</label>
+								</div>
+							</div>
+						</div>
+
+						<!-- Info about loaded facets -->
+						<div v-if="facetData && Object.keys(facetData).length > 0" class="facets-loaded-info">
+							<p class="facets-loaded-description">
+								{{ t('openregister', 'Filter data loaded automatically. Use the filters below to refine your search.') }}
+							</p>
+						</div>
+					</div>
+
+					<!-- Stage 2 Loading -->
+					<div v-if="facetDataLoading" class="loading-container">
+						<NcLoadingIcon :size="20" />
+						<span>{{ t('openregister', 'Loading filter data...') }}</span>
+					</div>
+
+					<!-- Stage 2: Facet Data (Active Filters) -->
+					<div v-else-if="facetData && Object.keys(facetData).length > 0 && !isDatabaseSource" class="active-facets-container">
+						<h4 class="active-facets-title">
+							{{ t('openregister', 'Active Filters') }}
+						</h4>
+
+						<!-- Metadata facets (@self) -->
+						<div v-for="(facet, field) in facetData?.['@self'] || {}" :key="`@self.${field}`" class="facet-group">
+							<label class="facet-label">{{ getFacetLabel(field, facet, true) }}</label>
+							<NcSelect
+								:model-value="facetFilters[`@self.${field}`] || []"
+								:options="getFacetOptions(facet)"
+								:multiple="true"
+								:placeholder="t('openregister', 'Select options...')"
+								:input-label="getFacetLabel(field, facet, true)"
+								@update:model-value="(value) => updateFacetFilter(`@self.${field}`, value)" />
+						</div>
+
+						<!-- Object field facets -->
+						<div v-for="(facet, field) in facetData?.object_fields || {}" :key="field" class="facet-group">
+							<label class="facet-label">{{ getFacetLabel(field, facet, false) }}</label>
+							<NcSelect
+								:model-value="facetFilters[field] || []"
+								:options="getFacetOptions(facet)"
+								:multiple="true"
+								:placeholder="t('openregister', 'Select options...')"
+								:input-label="getFacetLabel(field, facet, false)"
+								@update:model-value="(value) => updateFacetFilter(field, value)" />
+						</div>
+
+						<!-- Reset Facets Button -->
+						<div class="facets-reset-container">
+							<NcButton
+								type="secondary"
+								@click="resetFacets">
+								{{ t('openregister', 'Reset Filters') }}
+							</NcButton>
+						</div>
+					</div>
 				</div>
-			</div>
-		</div>
-	</NcAppSidebarTab>
-	
-	</NcAppSidebar>
 
-	<!-- Edit View Modal -->
-	<EditView
-		v-if="showEditDialog"
-		:view="editingView"
-		@close="cancelEditView" />
+				<div class="section">
+					<NcNoteCard type="info" class="search-hint">
+						{{ t('openregister', 'Type search terms and press Enter or click Add to add them. Click Search to find objects.') }}
+					</NcNoteCard>
+				</div>
+			</NcAppSidebarTab>
 
-	<!-- Delete View Modal -->
-	<DeleteView
-		v-if="showDeleteDialog"
-		:view="viewToDelete"
-		@close="handleDeleteClose" />
+			<!-- Views Tab -->
+			<NcAppSidebarTab
+				id="views-tab"
+				:name="t('openregister', 'Views')"
+				:order="2">
+				<template #icon>
+					<ViewDashboardOutline :size="20" />
+				</template>
+
+				<div class="viewsSection">
+					<h3>{{ t('openregister', 'Saved Views') }}</h3>
+					<p class="viewsDescription">
+						{{ t('openregister', 'Manage your saved search configurations') }}
+					</p>
+
+					<!-- Search Views -->
+					<div class="viewsSearchContainer">
+						<NcTextField
+							v-model="viewSearchQuery"
+							:placeholder="t('openregister', 'Search views...')"
+							:label="t('openregister', 'Search Views')">
+							<template #icon>
+								<Magnify :size="20" />
+							</template>
+						</NcTextField>
+					</div>
+
+					<!-- Views Table -->
+					<div v-if="viewsStore.isLoading" class="viewsLoading">
+						<NcLoadingIcon :size="32" />
+						<p>{{ t('openregister', 'Loading views...') }}</p>
+					</div>
+
+					<div v-else-if="filteredViews.length === 0" class="noViews">
+						<NcNoteCard type="info">
+							{{ viewSearchQuery ? t('openregister', 'No views match your search') : t('openregister', 'No saved views yet. Create one in the Search tab!') }}
+						</NcNoteCard>
+					</div>
+
+					<div v-else class="viewsTable">
+						<div
+							v-for="view in filteredViews"
+							:key="view.id || view.uuid"
+							class="viewRow"
+							:class="{ 'viewRow--active': isActiveView(view) }">
+							<div class="viewRowHeader">
+								<div class="viewRowTitle">
+									<strong>{{ view.name || t('openregister', 'Untitled View') }}</strong>
+									<span v-if="view.isDefault" class="viewBadge viewBadge--default">
+										{{ t('openregister', 'Default') }}
+									</span>
+									<span v-if="view.isPublic" class="viewBadge viewBadge--public">
+										{{ t('openregister', 'Public') }}
+									</span>
+								</div>
+								<div class="viewRowActions">
+									<!-- Star/Favorite button -->
+									<NcButton
+										:type="isFavorited(view) ? 'primary' : 'secondary'"
+										:aria-label="isFavorited(view) ? t('openregister', 'Remove from favorites') : t('openregister', 'Add to favorites')"
+										@click="toggleFavorite(view)">
+										<template #icon>
+											<Star v-if="isFavorited(view)" :size="20" />
+											<StarOutline v-else :size="20" />
+										</template>
+									</NcButton>
+
+									<!-- Load View (Magnify) -->
+									<NcButton
+										:type="isActiveView(view) ? 'primary' : 'secondary'"
+										:aria-label="t('openregister', 'Load view')"
+										@click="loadView(view)">
+										<template #icon>
+											<Magnify :size="20" />
+										</template>
+									</NcButton>
+
+									<!-- Edit View (Pencil) -->
+									<NcButton
+										type="secondary"
+										:aria-label="t('openregister', 'Edit view')"
+										@click="openEditDialog(view)">
+										<template #icon>
+											<Pencil :size="20" />
+										</template>
+									</NcButton>
+
+									<!-- Delete View -->
+									<NcButton
+										type="error"
+										:aria-label="t('openregister', 'Delete view')"
+										@click="confirmDeleteView(view)">
+										<template #icon>
+											<Delete :size="20" />
+										</template>
+									</NcButton>
+								</div>
+							</div>
+							<p v-if="view.description" class="viewRowDescription">
+								{{ view.description }}
+							</p>
+							<p v-else class="viewRowDescription viewRowDescription--empty">
+								{{ t('openregister', 'No description provided') }}
+							</p>
+						</div>
+					</div>
+				</div>
+			</NcAppSidebarTab>
+
+			<!-- Columns Tab -->
+			<NcAppSidebarTab
+				id="columns-tab"
+				:name="t('openregister', 'Columns')"
+				:order="3">
+				<template #icon>
+					<FormatColumns :size="20" />
+				</template>
+
+				<div class="columnsSection">
+					<h3>{{ t('openregister', 'Column Visibility') }}</h3>
+					<p class="columnsDescription">
+						{{ t('openregister', 'Select which columns to display in the table') }}
+					</p>
+
+					<!-- Schema Properties Sections -->
+					<div v-if="selectedSchemasWithProperties.length > 0">
+						<div v-for="schemaData in selectedSchemasWithProperties" :key="`schema_${schemaData.id}`" class="columnGroup collapsible">
+							<div class="columnGroupHeader" @click="toggleSchemaGroup(schemaData.id)">
+								<ChevronDown v-if="expandedSchemas[schemaData.id]" :size="20" />
+								<ChevronRight v-else :size="20" />
+								<h4>{{ schemaData.title }}</h4>
+							</div>
+							<div v-if="expandedSchemas[schemaData.id]" class="columnGroupContent">
+								<NcCheckboxRadioSwitch
+									v-for="(property, propertyName) in schemaData.properties"
+									:key="`schema_${schemaData.id}_prop_${propertyName}`"
+									:checked="objectStore.columnFilters[`schema_${schemaData.id}_prop_${propertyName}`]"
+									@update:checked="(status) => objectStore.updateColumnFilter(`schema_${schemaData.id}_prop_${propertyName}`, status)">
+									{{ property.title || property.label || propertyName }}
+								</NcCheckboxRadioSwitch>
+							</div>
+						</div>
+					</div>
+
+					<NcNoteCard v-else type="info">
+						{{ t('openregister', 'No properties available. Select a schema to view properties.') }}
+					</NcNoteCard>
+
+					<!-- Metadata Section (Collapsible) -->
+					<div class="columnGroup collapsible">
+						<div class="columnGroupHeader" @click="metadataExpanded = !metadataExpanded">
+							<ChevronDown v-if="metadataExpanded" :size="20" />
+							<ChevronRight v-else :size="20" />
+							<h4>{{ t('openregister', 'Metadata') }}</h4>
+						</div>
+						<div v-if="metadataExpanded" class="columnGroupContent">
+							<NcCheckboxRadioSwitch
+								v-for="meta in metadataColumns"
+								:key="`meta_${meta.id}`"
+								:checked="objectStore.columnFilters[`meta_${meta.id}`]"
+								@update:checked="(status) => objectStore.updateColumnFilter(`meta_${meta.id}`, status)">
+								{{ meta.label }}
+							</NcCheckboxRadioSwitch>
+						</div>
+					</div>
+				</div>
+			</NcAppSidebarTab>
+		</NcAppSidebar>
+
+		<!-- Edit View Modal -->
+		<EditView
+			v-if="showEditDialog"
+			:view="editingView"
+			@close="cancelEditView" />
+
+		<!-- Delete View Modal -->
+		<DeleteView
+			v-if="showDeleteDialog"
+			:view="viewToDelete"
+			@close="handleDeleteClose" />
 	</div>
 </template>
 
@@ -550,7 +549,6 @@ import FilterIcon from 'vue-material-design-icons/Filter.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import ViewDashboardOutline from 'vue-material-design-icons/ViewDashboardOutline.vue'
-import FolderOpenOutline from 'vue-material-design-icons/FolderOpenOutline.vue'
 import Star from 'vue-material-design-icons/Star.vue'
 import StarOutline from 'vue-material-design-icons/StarOutline.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
@@ -580,7 +578,6 @@ export default {
 		ContentSaveOutline,
 		Delete,
 		ViewDashboardOutline,
-		FolderOpenOutline,
 		Star,
 		StarOutline,
 		Pencil,
@@ -611,7 +608,7 @@ export default {
 			facetsLoading: false, // Stage 1 loading
 			facetDataLoading: false, // Stage 2 loading
 			selectedSource: 'auto', // 'auto', 'database', 'index'
-		// View management
+			// View management
 			viewSearchQuery: '', // Search query for filtering views
 			showSaveForm: false, // Show inline save form
 			viewName: '',
@@ -620,15 +617,15 @@ export default {
 			viewIsPublic: false,
 			viewIsDefault: false,
 			activeViewName: '', // Editable name for the active view
-		// Edit view dialog
-		showEditDialog: false,
-		editingView: null,
-		// Delete view dialog
-		showDeleteDialog: false,
-		viewToDelete: null,
-		// Column visibility collapsible state
-		expandedSchemas: {}, // Track which schema groups are expanded
-		metadataExpanded: true, // Metadata section expanded by default
+			// Edit view dialog
+			showEditDialog: false,
+			editingView: null,
+			// Delete view dialog
+			showDeleteDialog: false,
+			viewToDelete: null,
+			// Column visibility collapsible state
+			expandedSchemas: {}, // Track which schema groups are expanded
+			metadataExpanded: true, // Metadata section expanded by default
 		}
 	},
 	computed: {
@@ -722,19 +719,19 @@ export default {
 			if (this.viewSearchQuery) {
 				const query = this.viewSearchQuery.toLowerCase()
 				views = views.filter(view => {
-					return view.name.toLowerCase().includes(query) ||
-						(view.description && view.description.toLowerCase().includes(query))
+					return view.name.toLowerCase().includes(query)
+						|| (view.description && view.description.toLowerCase().includes(query))
 				})
 			}
-			
+
 			// Sort: favorited views first, then by name
 			return views.sort((a, b) => {
 				const aFavorited = this.isFavorited(a)
 				const bFavorited = this.isFavorited(b)
-				
+
 				if (aFavorited && !bFavorited) return -1
 				if (!aFavorited && bFavorited) return 1
-				
+
 				// Both favorited or both not favorited - sort by name
 				return (a.name || '').localeCompare(b.name || '')
 			})
@@ -992,8 +989,8 @@ export default {
 		},
 		handleRegisterChange(options) {
 			// Handle multi-select - options is an array of values
-			console.log('Register change - raw options:', options)
-			
+			console.info('Register change - raw options:', options)
+
 			// NcSelect with reduce returns the reduced values directly
 			// For multi-select, it's an array of the reduced values (IDs)
 			if (!options || options.length === 0) {
@@ -1006,7 +1003,7 @@ export default {
 				this.selectedRegisters = [options]
 			}
 
-			console.log('Selected registers after processing:', this.selectedRegisters)
+			console.info('Selected registers after processing:', this.selectedRegisters)
 
 			// Clear schemas that are no longer valid for selected registers
 			const validSchemaIds = new Set()
@@ -1036,8 +1033,8 @@ export default {
 		},
 		async handleSchemaChange(options) {
 			// Handle multi-select - options is an array of values
-			console.log('Schema change - raw options:', options)
-			
+			console.info('Schema change - raw options:', options)
+
 			// NcSelect with reduce returns the reduced values directly
 			// For multi-select, it's an array of the reduced values (IDs)
 			if (!options || options.length === 0) {
@@ -1050,8 +1047,8 @@ export default {
 				this.selectedSchemas = [options]
 			}
 
-			console.log('Selected schemas after processing:', this.selectedSchemas)
-			console.log('Can search?', this.canSearch, 'Registers:', this.selectedRegisters.length, 'Schemas:', this.selectedSchemas.length)
+			console.info('Selected schemas after processing:', this.selectedSchemas)
+			console.info('Can search?', this.canSearch, 'Registers:', this.selectedRegisters.length, 'Schemas:', this.selectedSchemas.length)
 
 			// Clear object list when schemas change
 			objectStore.setObjectList({
@@ -1539,10 +1536,10 @@ export default {
 				}
 
 				const updatedView = await viewsStore.updateView(viewsStore.activeView.id || viewsStore.activeView.uuid, viewData)
-				
+
 				// Refresh the view list to show the updated view
 				await viewsStore.fetchViews()
-				
+
 				// Update the active view with the latest data
 				viewsStore.activeView = updatedView
 				this.activeViewName = viewsStore.activeView.name
@@ -1565,19 +1562,18 @@ export default {
 			this.showDeleteDialog = true
 		},
 
-
 		async loadView(view) {
 			try {
 				// Fetch the full view details
 				const fullView = await viewsStore.fetchView(view.id || view.uuid)
-				
+
 				// Set as active view
 				viewsStore.activeView = fullView
 				this.activeViewName = fullView.name || ''
-				
+
 				// Apply the view configuration to current search state
 				this.applyViewConfiguration(fullView)
-				
+
 				// Switch to search tab to see the applied configuration
 				this.activeTab = 'search-tab'
 			} catch (error) {
@@ -1600,6 +1596,8 @@ export default {
 
 		isFavorited(view) {
 			// Check if current user has favorited this view
+			// TODO: Remove this once we have a proper user store
+			// eslint-disable-next-line @nextcloud/no-deprecations
 			const currentUser = OC.getCurrentUser()?.uid
 			if (!currentUser || !view || !view.favoredBy) return false
 			return view.favoredBy.includes(currentUser)
@@ -1607,6 +1605,8 @@ export default {
 
 		async toggleFavorite(view) {
 			try {
+				// TODO: Remove this once we have a proper user store
+				// eslint-disable-next-line @nextcloud/no-deprecations
 				const currentUser = OC.getCurrentUser()?.uid
 				if (!currentUser) {
 					OC.Notification.showTemporary(this.t('openregister', 'You must be logged in to favorite views'))
@@ -1615,7 +1615,7 @@ export default {
 
 				const isFavorited = this.isFavorited(view)
 				const currentFavoredBy = view.favoredBy || []
-				
+
 				// Add or remove user from favoredBy array
 				const updatedFavoredBy = isFavorited
 					? currentFavoredBy.filter(uid => uid !== currentUser)
@@ -1626,10 +1626,10 @@ export default {
 					method: 'PATCH',
 					headers: {
 						'Content-Type': 'application/json',
-						'requesttoken': OC.requestToken,
+						requesttoken: OC.requestToken,
 					},
-					body: JSON.stringify({ 
-						favoredBy: updatedFavoredBy 
+					body: JSON.stringify({
+						favoredBy: updatedFavoredBy,
 					}),
 				})
 
@@ -1643,7 +1643,7 @@ export default {
 				OC.Notification.showTemporary(
 					!isFavorited
 						? this.t('openregister', 'Added to favorites')
-						: this.t('openregister', 'Removed from favorites')
+						: this.t('openregister', 'Removed from favorites'),
 				)
 			} catch (error) {
 				console.error('Error toggling favorite:', error)
@@ -1662,8 +1662,8 @@ export default {
 		},
 
 		async handleDeleteClose() {
-			const wasActiveView = this.viewToDelete && viewsStore.activeView && 
-				(this.viewToDelete.id === viewsStore.activeView.id || this.viewToDelete.uuid === viewsStore.activeView.uuid)
+			const wasActiveView = this.viewToDelete && viewsStore.activeView
+				&& (this.viewToDelete.id === viewsStore.activeView.id || this.viewToDelete.uuid === viewsStore.activeView.uuid)
 
 			this.showDeleteDialog = false
 			this.viewToDelete = null

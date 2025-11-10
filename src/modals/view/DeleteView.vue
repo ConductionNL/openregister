@@ -4,7 +4,7 @@
 		size="normal"
 		:can-close="false">
 		<p v-if="!success">
-			{{ t('openregister', 'Are you sure you want to permanently delete') }} <b>{{ view?.name || t('openregister', 'Untitled View') }}</b>? 
+			{{ t('openregister', 'Are you sure you want to permanently delete') }} <b>{{ view?.name || t('openregister', 'Untitled View') }}</b>?
 			{{ t('openregister', 'This action cannot be undone.') }}
 		</p>
 
@@ -132,7 +132,3 @@ li {
 	margin: 4px 0;
 }
 </style>
-
-
-
-

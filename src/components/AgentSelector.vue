@@ -27,7 +27,7 @@
 			<p>{{ t('openregister', 'You need an AI agent to start a conversation.') }}</p>
 			<div class="empty-state-help">
 				<p>
-					{{ t('openregister', 'Please create an agent in the') }} 
+					{{ t('openregister', 'Please create an agent in the') }}
 					<router-link to="/agents" class="agents-link">
 						{{ t('openregister', 'Agents') }}
 					</router-link>
@@ -354,4 +354,3 @@ export default {
 	}
 }
 </style>
-

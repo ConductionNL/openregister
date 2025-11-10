@@ -1,5 +1,5 @@
 <script setup>
-import { configurationStore, navigationStore, registerStore, schemaStore, organisationStore, applicationStore, sourceStore, viewsStore, agentStore, objectStore } from '../../store/store.js'
+import { configurationStore, navigationStore, organisationStore, applicationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -23,46 +23,46 @@ import { configurationStore, navigationStore, registerStore, schemaStore, organi
 					</template>
 
 					<div class="form-editor">
-					<NcTextField
-						label="Title *"
-						placeholder="Enter configuration title"
-						:value="configurationStore.configurationItem?.title || ''"
-						:error="!configurationStore.configurationItem?.title?.trim?.()"
-						@update:value="updateTitle" />
+						<NcTextField
+							label="Title *"
+							placeholder="Enter configuration title"
+							:value="configurationStore.configurationItem?.title || ''"
+							:error="!configurationStore.configurationItem?.title?.trim?.()"
+							@update:value="updateTitle" />
 
-					<NcTextArea
-						label="Description"
-						placeholder="Enter configuration description (optional)"
-						:value="configurationStore.configurationItem?.description || ''"
-						@update:value="updateDescription" />
+						<NcTextArea
+							label="Description"
+							placeholder="Enter configuration description (optional)"
+							:value="configurationStore.configurationItem?.description || ''"
+							@update:value="updateDescription" />
 
-					<div class="selectField">
-						<label for="application-select">Owner Application</label>
-						<NcSelect
-							id="application-select"
-							v-model="selectedApplication"
-							:options="applicationOptions"
-							label="name"
-							track-by="id"
-							:label-outside="true"
-							placeholder="Select owner application (optional)..."
-							@input="updateApplication">
-							<template #option="{ name, description }">
-								<div class="option-content">
-									<span class="option-title">{{ name }}</span>
-									<span v-if="description" class="option-description">{{ description }}</span>
-								</div>
-							</template>
-						</NcSelect>
-						<p v-if="selectedApplication" class="field-hint">
-							Owner: {{ selectedApplication.name }}
-						</p>
-						<p v-else class="field-hint">
-							The application that owns this configuration (optional)
-						</p>
-					</div>
+						<div class="selectField">
+							<label for="application-select">Owner Application</label>
+							<NcSelect
+								id="application-select"
+								v-model="selectedApplication"
+								:options="applicationOptions"
+								label="name"
+								track-by="id"
+								:label-outside="true"
+								placeholder="Select owner application (optional)..."
+								@input="updateApplication">
+								<template #option="{ name, description }">
+									<div class="option-content">
+										<span class="option-title">{{ name }}</span>
+										<span v-if="description" class="option-description">{{ description }}</span>
+									</div>
+								</template>
+							</NcSelect>
+							<p v-if="selectedApplication" class="field-hint">
+								Owner: {{ selectedApplication.name }}
+							</p>
+							<p v-else class="field-hint">
+								The application that owns this configuration (optional)
+							</p>
+						</div>
 
-				<!-- Organisation is automatically set to active organisation by backend -->
+						<!-- Organisation is automatically set to active organisation by backend -->
 					</div>
 				</BTab>
 
@@ -74,232 +74,232 @@ import { configurationStore, navigationStore, registerStore, schemaStore, organi
 					</template>
 
 					<div class="form-editor">
-					<div class="selectField">
-						<label for="registers-select">Registers</label>
-						<NcSelect
-							id="registers-select"
-							v-model="selectedRegisters"
-							:options="registerOptions"
-							:loading="loadingRegisters"
-							:multiple="true"
-							label="title"
-							track-by="id"
-							:label-outside="true"
-							:filterable="false"
-							placeholder="Search registers..."
-							:close-on-select="false"
-							@search-change="searchRegisters"
-							@input="updateRegisters">
-							<template #option="{ title, description }">
-								<div class="option-content">
-									<span class="option-title">{{ title }}</span>
-									<span v-if="description" class="option-description">{{ description }}</span>
-								</div>
-							</template>
-							<template #no-options>
-								<span v-if="loadingRegisters">Searching...</span>
-								<span v-else>No registers found</span>
-							</template>
-						</NcSelect>
-						<p class="field-hint">
-							{{ selectedRegisters.length }} register(s) selected
-						</p>
-					</div>
+						<div class="selectField">
+							<label for="registers-select">Registers</label>
+							<NcSelect
+								id="registers-select"
+								v-model="selectedRegisters"
+								:options="registerOptions"
+								:loading="loadingRegisters"
+								:multiple="true"
+								label="title"
+								track-by="id"
+								:label-outside="true"
+								:filterable="false"
+								placeholder="Search registers..."
+								:close-on-select="false"
+								@search-change="searchRegisters"
+								@input="updateRegisters">
+								<template #option="{ title, description }">
+									<div class="option-content">
+										<span class="option-title">{{ title }}</span>
+										<span v-if="description" class="option-description">{{ description }}</span>
+									</div>
+								</template>
+								<template #no-options>
+									<span v-if="loadingRegisters">Searching...</span>
+									<span v-else>No registers found</span>
+								</template>
+							</NcSelect>
+							<p class="field-hint">
+								{{ selectedRegisters.length }} register(s) selected
+							</p>
+						</div>
 
-					<div class="selectField">
-						<label for="schemas-select">Schemas</label>
-						<NcSelect
-							id="schemas-select"
-							v-model="selectedSchemas"
-							:options="schemaOptions"
-							:loading="loadingSchemas"
-							:multiple="true"
-							label="title"
-							track-by="id"
-							:label-outside="true"
-							:filterable="false"
-							placeholder="Search schemas..."
-							:close-on-select="false"
-							@search-change="searchSchemas"
-							@input="updateSchemas">
-							<template #option="{ title, description }">
-								<div class="option-content">
-									<span class="option-title">{{ title }}</span>
-									<span v-if="description" class="option-description">{{ description }}</span>
-								</div>
-							</template>
-							<template #no-options>
-								<span v-if="loadingSchemas">Searching...</span>
-								<span v-else>No schemas found</span>
-							</template>
-						</NcSelect>
-						<p class="field-hint">
-							{{ selectedSchemas.length }} schema(s) selected
-						</p>
-					</div>
+						<div class="selectField">
+							<label for="schemas-select">Schemas</label>
+							<NcSelect
+								id="schemas-select"
+								v-model="selectedSchemas"
+								:options="schemaOptions"
+								:loading="loadingSchemas"
+								:multiple="true"
+								label="title"
+								track-by="id"
+								:label-outside="true"
+								:filterable="false"
+								placeholder="Search schemas..."
+								:close-on-select="false"
+								@search-change="searchSchemas"
+								@input="updateSchemas">
+								<template #option="{ title, description }">
+									<div class="option-content">
+										<span class="option-title">{{ title }}</span>
+										<span v-if="description" class="option-description">{{ description }}</span>
+									</div>
+								</template>
+								<template #no-options>
+									<span v-if="loadingSchemas">Searching...</span>
+									<span v-else>No schemas found</span>
+								</template>
+							</NcSelect>
+							<p class="field-hint">
+								{{ selectedSchemas.length }} schema(s) selected
+							</p>
+						</div>
 
-					<div class="selectField">
-						<label for="objects-select">Objects</label>
-						<NcSelect
-							id="objects-select"
-							v-model="selectedObjects"
-							:options="objectOptions"
-							:loading="loadingObjects"
-							:multiple="true"
-							label="title"
-							track-by="id"
-							:label-outside="true"
-							:filterable="false"
-							placeholder="Search objects..."
-							:close-on-select="false"
-							:disabled="selectedRegisters.length === 0 && selectedSchemas.length === 0"
-							@search-change="searchObjects"
-							@input="updateObjects">
-							<template #option="{ title, description }">
-								<div class="option-content">
-									<span class="option-title">{{ title }}</span>
-									<span v-if="description" class="option-description">{{ description }}</span>
-								</div>
-							</template>
-							<template #no-options>
-								<span v-if="loadingObjects">Searching...</span>
-								<span v-else-if="selectedRegisters.length === 0 && selectedSchemas.length === 0">Please select registers or schemas first</span>
-								<span v-else>No objects found</span>
-							</template>
-						</NcSelect>
-						<p class="field-hint">
-							{{ selectedObjects.length }} object(s) selected
-							<span v-if="selectedRegisters.length === 0 && selectedSchemas.length === 0"> - filtered by selected registers/schemas</span>
-						</p>
-					</div>
+						<div class="selectField">
+							<label for="objects-select">Objects</label>
+							<NcSelect
+								id="objects-select"
+								v-model="selectedObjects"
+								:options="objectOptions"
+								:loading="loadingObjects"
+								:multiple="true"
+								label="title"
+								track-by="id"
+								:label-outside="true"
+								:filterable="false"
+								placeholder="Search objects..."
+								:close-on-select="false"
+								:disabled="selectedRegisters.length === 0 && selectedSchemas.length === 0"
+								@search-change="searchObjects"
+								@input="updateObjects">
+								<template #option="{ title, description }">
+									<div class="option-content">
+										<span class="option-title">{{ title }}</span>
+										<span v-if="description" class="option-description">{{ description }}</span>
+									</div>
+								</template>
+								<template #no-options>
+									<span v-if="loadingObjects">Searching...</span>
+									<span v-else-if="selectedRegisters.length === 0 && selectedSchemas.length === 0">Please select registers or schemas first</span>
+									<span v-else>No objects found</span>
+								</template>
+							</NcSelect>
+							<p class="field-hint">
+								{{ selectedObjects.length }} object(s) selected
+								<span v-if="selectedRegisters.length === 0 && selectedSchemas.length === 0"> - filtered by selected registers/schemas</span>
+							</p>
+						</div>
 
-					<div class="selectField">
-						<label for="sources-select">Data Sources</label>
-						<NcSelect
-							id="sources-select"
-							v-model="selectedSources"
-							:options="sourceOptions"
-							:loading="loadingSources"
-							:multiple="true"
-							label="title"
-							track-by="id"
-							:label-outside="true"
-							:filterable="false"
-							placeholder="Search data sources..."
-							:close-on-select="false"
-							@search-change="searchSources"
-							@input="updateSources">
-							<template #option="{ title, description }">
-								<div class="option-content">
-									<span class="option-title">{{ title }}</span>
-									<span v-if="description" class="option-description">{{ description }}</span>
-								</div>
-							</template>
-							<template #no-options>
-								<span v-if="loadingSources">Searching...</span>
-								<span v-else>No sources found</span>
-							</template>
-						</NcSelect>
-						<p class="field-hint">
-							{{ selectedSources.length }} source(s) selected
-						</p>
-					</div>
+						<div class="selectField">
+							<label for="sources-select">Data Sources</label>
+							<NcSelect
+								id="sources-select"
+								v-model="selectedSources"
+								:options="sourceOptions"
+								:loading="loadingSources"
+								:multiple="true"
+								label="title"
+								track-by="id"
+								:label-outside="true"
+								:filterable="false"
+								placeholder="Search data sources..."
+								:close-on-select="false"
+								@search-change="searchSources"
+								@input="updateSources">
+								<template #option="{ title, description }">
+									<div class="option-content">
+										<span class="option-title">{{ title }}</span>
+										<span v-if="description" class="option-description">{{ description }}</span>
+									</div>
+								</template>
+								<template #no-options>
+									<span v-if="loadingSources">Searching...</span>
+									<span v-else>No sources found</span>
+								</template>
+							</NcSelect>
+							<p class="field-hint">
+								{{ selectedSources.length }} source(s) selected
+							</p>
+						</div>
 
-					<div class="selectField">
-						<label for="agents-select">Agents</label>
-						<NcSelect
-							id="agents-select"
-							v-model="selectedAgents"
-							:options="agentOptions"
-							:loading="loadingAgents"
-							:multiple="true"
-							label="name"
-							track-by="id"
-							:label-outside="true"
-							:filterable="false"
-							placeholder="Search agents..."
-							:close-on-select="false"
-							@search-change="searchAgents"
-							@input="updateAgents">
-							<template #option="{ name, description }">
-								<div class="option-content">
-									<span class="option-title">{{ name }}</span>
-									<span v-if="description" class="option-description">{{ description }}</span>
-								</div>
-							</template>
-							<template #no-options>
-								<span v-if="loadingAgents">Searching...</span>
-								<span v-else>No agents found</span>
-							</template>
-						</NcSelect>
-						<p class="field-hint">
-							{{ selectedAgents.length }} agent(s) selected
-						</p>
-					</div>
+						<div class="selectField">
+							<label for="agents-select">Agents</label>
+							<NcSelect
+								id="agents-select"
+								v-model="selectedAgents"
+								:options="agentOptions"
+								:loading="loadingAgents"
+								:multiple="true"
+								label="name"
+								track-by="id"
+								:label-outside="true"
+								:filterable="false"
+								placeholder="Search agents..."
+								:close-on-select="false"
+								@search-change="searchAgents"
+								@input="updateAgents">
+								<template #option="{ name, description }">
+									<div class="option-content">
+										<span class="option-title">{{ name }}</span>
+										<span v-if="description" class="option-description">{{ description }}</span>
+									</div>
+								</template>
+								<template #no-options>
+									<span v-if="loadingAgents">Searching...</span>
+									<span v-else>No agents found</span>
+								</template>
+							</NcSelect>
+							<p class="field-hint">
+								{{ selectedAgents.length }} agent(s) selected
+							</p>
+						</div>
 
-					<div class="selectField">
-						<label for="views-select">Views</label>
-						<NcSelect
-							id="views-select"
-							v-model="selectedViews"
-							:options="viewOptions"
-							:loading="loadingViews"
-							:multiple="true"
-							label="name"
-							track-by="id"
-							:label-outside="true"
-							:filterable="false"
-							placeholder="Search views..."
-							:close-on-select="false"
-							@search-change="searchViews"
-							@input="updateViews">
-							<template #option="{ name, description }">
-								<div class="option-content">
-									<span class="option-title">{{ name }}</span>
-									<span v-if="description" class="option-description">{{ description }}</span>
-								</div>
-							</template>
-							<template #no-options>
-								<span v-if="loadingViews">Searching...</span>
-								<span v-else>No views found</span>
-							</template>
-						</NcSelect>
-						<p class="field-hint">
-							{{ selectedViews.length }} view(s) selected
-						</p>
-					</div>
+						<div class="selectField">
+							<label for="views-select">Views</label>
+							<NcSelect
+								id="views-select"
+								v-model="selectedViews"
+								:options="viewOptions"
+								:loading="loadingViews"
+								:multiple="true"
+								label="name"
+								track-by="id"
+								:label-outside="true"
+								:filterable="false"
+								placeholder="Search views..."
+								:close-on-select="false"
+								@search-change="searchViews"
+								@input="updateViews">
+								<template #option="{ name, description }">
+									<div class="option-content">
+										<span class="option-title">{{ name }}</span>
+										<span v-if="description" class="option-description">{{ description }}</span>
+									</div>
+								</template>
+								<template #no-options>
+									<span v-if="loadingViews">Searching...</span>
+									<span v-else>No views found</span>
+								</template>
+							</NcSelect>
+							<p class="field-hint">
+								{{ selectedViews.length }} view(s) selected
+							</p>
+						</div>
 
-					<div class="selectField">
-						<label for="managed-applications-select">Applications</label>
-						<NcSelect
-							id="managed-applications-select"
-							v-model="selectedManagedApplications"
-							:options="applicationOptions"
-							:loading="loadingApplications"
-							:multiple="true"
-							label="name"
-							track-by="id"
-							:label-outside="true"
-							:filterable="false"
-							placeholder="Search applications..."
-							:close-on-select="false"
-							@search-change="searchApplications"
-							@input="updateManagedApplications">
-							<template #option="{ name, description }">
-								<div class="option-content">
-									<span class="option-title">{{ name }}</span>
-									<span v-if="description" class="option-description">{{ description }}</span>
-								</div>
-							</template>
-							<template #no-options>
-								<span v-if="loadingApplications">Searching...</span>
-								<span v-else>No applications found</span>
-							</template>
-						</NcSelect>
-						<p class="field-hint">
-							{{ selectedManagedApplications.length }} application(s) selected
-						</p>
-					</div>
+						<div class="selectField">
+							<label for="managed-applications-select">Applications</label>
+							<NcSelect
+								id="managed-applications-select"
+								v-model="selectedManagedApplications"
+								:options="applicationOptions"
+								:loading="loadingApplications"
+								:multiple="true"
+								label="name"
+								track-by="id"
+								:label-outside="true"
+								:filterable="false"
+								placeholder="Search applications..."
+								:close-on-select="false"
+								@search-change="searchApplications"
+								@input="updateManagedApplications">
+								<template #option="{ name, description }">
+									<div class="option-content">
+										<span class="option-title">{{ name }}</span>
+										<span v-if="description" class="option-description">{{ description }}</span>
+									</div>
+								</template>
+								<template #no-options>
+									<span v-if="loadingApplications">Searching...</span>
+									<span v-else>No applications found</span>
+								</template>
+							</NcSelect>
+							<p class="field-hint">
+								{{ selectedManagedApplications.length }} application(s) selected
+							</p>
+						</div>
 					</div>
 				</BTab>
 
@@ -507,10 +507,10 @@ export default {
 			selectedSchemas: [],
 			selectedObjects: [],
 			selectedSources: [],
-		selectedAgents: [],
-		selectedViews: [],
-		selectedManagedApplications: [],
-		selectedApplication: null,
+			selectedAgents: [],
+			selectedViews: [],
+			selectedManagedApplications: [],
+			selectedApplication: null,
 			// Management tab selections
 			selectedSourceType: null,
 			selectedNotificationGroups: [],
@@ -541,12 +541,9 @@ export default {
 		}
 	},
 	computed: {
-	isValid() {
-		const item = configurationStore.configurationItem
-		return Boolean(item?.title?.trim())
-	},
-	applicationOptions() {
-			return applicationStore.applicationList || []
+		isValid() {
+			const item = configurationStore.configurationItem
+			return Boolean(item?.title?.trim())
 		},
 		sourceTypeOptions() {
 			return [
@@ -574,7 +571,7 @@ export default {
 		if (!applicationStore.applicationList || applicationStore.applicationList.length === 0) {
 			applicationStore.refreshApplicationList()
 		}
-		
+
 		// Perform initial searches for Configuration tab entities (load top 10)
 		this.searchRegisters('')
 		this.searchSchemas('')
@@ -611,11 +608,11 @@ export default {
 			this.selectedRegisters = []
 			this.selectedSchemas = []
 			this.selectedObjects = []
-		this.selectedSources = []
-		this.selectedAgents = []
-		this.selectedViews = []
-		this.selectedApplication = null
-		// Management tab defaults
+			this.selectedSources = []
+			this.selectedAgents = []
+			this.selectedViews = []
+			this.selectedApplication = null
+			// Management tab defaults
 			this.selectedSourceType = this.sourceTypeOptions[0] // 'local'
 			this.selectedNotificationGroups = []
 		} else {
@@ -640,10 +637,10 @@ export default {
 			if (!configurationStore.configurationItem) {
 				configurationStore.configurationItem = {}
 			}
-		// Store the application UUID
-		configurationStore.configurationItem.application = value ? value.uuid : ''
-		this.selectedApplication = value
-	},
+			// Store the application UUID
+			configurationStore.configurationItem.application = value ? value.uuid : ''
+			this.selectedApplication = value
+		},
 		updateRegisters(value) {
 			if (!configurationStore.configurationItem) {
 				configurationStore.configurationItem = {}
@@ -760,97 +757,97 @@ export default {
 						a => a.uuid === item.application,
 					) || null
 				}
-			// Organisation is automatically set by backend based on active organisation
-				
+				// Organisation is automatically set by backend based on active organisation
+
 				// Load Management tab selections
 				if (item.sourceType) {
 					this.selectedSourceType = this.sourceTypeOptions.find(
-						st => st.value === item.sourceType
+						st => st.value === item.sourceType,
 					) || null
 				}
 				if (item.notificationGroups && Array.isArray(item.notificationGroups)) {
-					this.selectedNotificationGroups = item.notificationGroups.map(groupValue => 
-						this.notificationGroupOptions.find(g => g.value === groupValue)
+					this.selectedNotificationGroups = item.notificationGroups.map(groupValue =>
+						this.notificationGroupOptions.find(g => g.value === groupValue),
 					).filter(Boolean)
 				}
-				
+
 				// Load selected registers by fetching them individually
 				if (item.registers && Array.isArray(item.registers) && item.registers.length > 0) {
 					try {
-						const promises = item.registers.map(id => 
-							fetch(`/index.php/apps/openregister/api/registers/${id}`).then(r => r.json())
+						const promises = item.registers.map(id =>
+							fetch(`/index.php/apps/openregister/api/registers/${id}`).then(r => r.json()),
 						)
 						this.selectedRegisters = await Promise.all(promises)
 					} catch (error) {
 						console.error('Error loading selected registers:', error)
 					}
 				}
-				
+
 				// Load selected schemas by fetching them individually
 				if (item.schemas && Array.isArray(item.schemas) && item.schemas.length > 0) {
 					try {
-						const promises = item.schemas.map(id => 
-							fetch(`/index.php/apps/openregister/api/schemas/${id}`).then(r => r.json())
+						const promises = item.schemas.map(id =>
+							fetch(`/index.php/apps/openregister/api/schemas/${id}`).then(r => r.json()),
 						)
 						this.selectedSchemas = await Promise.all(promises)
 					} catch (error) {
 						console.error('Error loading selected schemas:', error)
 					}
 				}
-				
+
 				// Load selected objects by fetching them individually
 				if (item.objects && Array.isArray(item.objects) && item.objects.length > 0) {
 					try {
-						const promises = item.objects.map(id => 
-							fetch(`/index.php/apps/openregister/api/objects/${id}`).then(r => r.json())
+						const promises = item.objects.map(id =>
+							fetch(`/index.php/apps/openregister/api/objects/${id}`).then(r => r.json()),
 						)
 						this.selectedObjects = await Promise.all(promises)
 					} catch (error) {
 						console.error('Error loading selected objects:', error)
 					}
 				}
-				
+
 				// Load selected sources by fetching them individually
 				if (item.sources && Array.isArray(item.sources) && item.sources.length > 0) {
 					try {
-						const promises = item.sources.map(id => 
-							fetch(`/index.php/apps/openregister/api/sources/${id}`).then(r => r.json())
+						const promises = item.sources.map(id =>
+							fetch(`/index.php/apps/openregister/api/sources/${id}`).then(r => r.json()),
 						)
 						this.selectedSources = await Promise.all(promises)
 					} catch (error) {
 						console.error('Error loading selected sources:', error)
 					}
 				}
-				
+
 				// Load selected agents by fetching them individually
 				if (item.agents && Array.isArray(item.agents) && item.agents.length > 0) {
 					try {
-						const promises = item.agents.map(id => 
-							fetch(`/index.php/apps/openregister/api/agents/${id}`).then(r => r.json())
+						const promises = item.agents.map(id =>
+							fetch(`/index.php/apps/openregister/api/agents/${id}`).then(r => r.json()),
 						)
 						this.selectedAgents = await Promise.all(promises)
 					} catch (error) {
 						console.error('Error loading selected agents:', error)
 					}
 				}
-				
+
 				// Load selected views by fetching them individually
 				if (item.views && Array.isArray(item.views) && item.views.length > 0) {
 					try {
-						const promises = item.views.map(id => 
-							fetch(`/index.php/apps/openregister/api/views/${id}`).then(r => r.json())
+						const promises = item.views.map(id =>
+							fetch(`/index.php/apps/openregister/api/views/${id}`).then(r => r.json()),
 						)
 						this.selectedViews = await Promise.all(promises)
 					} catch (error) {
 						console.error('Error loading selected views:', error)
 					}
 				}
-				
+
 				// Load selected managed applications by fetching them individually
 				if (item.applications && Array.isArray(item.applications) && item.applications.length > 0) {
 					try {
-						const promises = item.applications.map(id => 
-							fetch(`/index.php/apps/openregister/api/applications/${id}`).then(r => r.json())
+						const promises = item.applications.map(id =>
+							fetch(`/index.php/apps/openregister/api/applications/${id}`).then(r => r.json()),
 						)
 						this.selectedManagedApplications = await Promise.all(promises)
 					} catch (error) {
@@ -869,7 +866,6 @@ export default {
 					const data = await response.json()
 					this.registerOptions = data.results || data || []
 					// Include already selected items
-					const selectedIds = this.selectedRegisters.map(r => r.id)
 					this.selectedRegisters.forEach(selected => {
 						if (!this.registerOptions.find(r => r.id === selected.id)) {
 							this.registerOptions.unshift(selected)
@@ -892,7 +888,6 @@ export default {
 					const data = await response.json()
 					this.schemaOptions = data.results || data || []
 					// Include already selected items
-					const selectedIds = this.selectedSchemas.map(s => s.id)
 					this.selectedSchemas.forEach(selected => {
 						if (!this.schemaOptions.find(s => s.id === selected.id)) {
 							this.schemaOptions.unshift(selected)
@@ -915,26 +910,25 @@ export default {
 					const params = new URLSearchParams()
 					params.append('_search', query)
 					params.append('_limit', '10')
-					
+
 					// Filter by selected registers
 					if (this.selectedRegisters.length > 0) {
 						this.selectedRegisters.forEach(register => {
 							params.append('_register[]', register.id)
 						})
 					}
-					
+
 					// Filter by selected schemas
 					if (this.selectedSchemas.length > 0) {
 						this.selectedSchemas.forEach(schema => {
 							params.append('_schema[]', schema.id)
 						})
 					}
-					
+
 					const response = await fetch(`/index.php/apps/openregister/api/objects?${params.toString()}`)
 					const data = await response.json()
 					this.objectOptions = data.results || data || []
 					// Include already selected items
-					const selectedIds = this.selectedObjects.map(o => o.id)
 					this.selectedObjects.forEach(selected => {
 						if (!this.objectOptions.find(o => o.id === selected.id)) {
 							this.objectOptions.unshift(selected)
@@ -957,7 +951,6 @@ export default {
 					const data = await response.json()
 					this.sourceOptions = data.results || data || []
 					// Include already selected items
-					const selectedIds = this.selectedSources.map(s => s.id)
 					this.selectedSources.forEach(selected => {
 						if (!this.sourceOptions.find(s => s.id === selected.id)) {
 							this.sourceOptions.unshift(selected)
@@ -980,7 +973,6 @@ export default {
 					const data = await response.json()
 					this.agentOptions = data.results || data || []
 					// Include already selected items
-					const selectedIds = this.selectedAgents.map(a => a.id)
 					this.selectedAgents.forEach(selected => {
 						if (!this.agentOptions.find(a => a.id === selected.id)) {
 							this.agentOptions.unshift(selected)
@@ -1003,7 +995,6 @@ export default {
 					const data = await response.json()
 					this.viewOptions = data.results || data || []
 					// Include already selected items
-					const selectedIds = this.selectedViews.map(v => v.id)
 					this.selectedViews.forEach(selected => {
 						if (!this.viewOptions.find(v => v.id === selected.id)) {
 							this.viewOptions.unshift(selected)
@@ -1026,7 +1017,6 @@ export default {
 					const data = await response.json()
 					this.applicationOptions = data.results || data || []
 					// Include already selected items
-					const selectedIds = this.selectedManagedApplications.map(a => a.id)
 					this.selectedManagedApplications.forEach(selected => {
 						if (!this.applicationOptions.find(a => a.id === selected.id)) {
 							this.applicationOptions.unshift(selected)
@@ -1050,11 +1040,11 @@ export default {
 			this.selectedRegisters = []
 			this.selectedSchemas = []
 			this.selectedObjects = []
-		this.selectedSources = []
-		this.selectedAgents = []
-		this.selectedViews = []
-		this.selectedApplication = null
-	},
+			this.selectedSources = []
+			this.selectedAgents = []
+			this.selectedViews = []
+			this.selectedApplication = null
+		},
 		async saveConfiguration() {
 			this.loading = true
 			this.error = null

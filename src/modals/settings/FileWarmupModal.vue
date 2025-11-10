@@ -238,11 +238,11 @@ export default {
 		open: {
 			immediate: true,
 			handler(newVal) {
-				console.log('🔍 FileWarmupModal: open prop changed to:', newVal)
+				console.info('🔍 FileWarmupModal: open prop changed to:', newVal)
 				this.showDialog = newVal
-				console.log('🔍 FileWarmupModal: showDialog set to:', this.showDialog)
+				console.info('🔍 FileWarmupModal: showDialog set to:', this.showDialog)
 				if (newVal) {
-					console.log('📊 FileWarmupModal: Loading stats...')
+					console.info('📊 FileWarmupModal: Loading stats...')
 					this.loadStats()
 				}
 			},
@@ -254,15 +254,15 @@ export default {
 		 */
 		async loadStats() {
 			try {
-				console.log('📊 FileWarmupModal: Fetching extraction stats...')
+				console.info('📊 FileWarmupModal: Fetching extraction stats...')
 				// Get extraction stats
 				const extractionResponse = await axios.get(generateUrl('/apps/openregister/api/files/extraction/stats'))
-				console.log('✅ FileWarmupModal: Extraction stats loaded:', extractionResponse.data)
+				console.info('✅ FileWarmupModal: Extraction stats loaded:', extractionResponse.data)
 
-				console.log('📊 FileWarmupModal: Fetching SOLR index stats...')
+				console.info('📊 FileWarmupModal: Fetching SOLR index stats...')
 				// Get index stats
 				const indexResponse = await axios.get(generateUrl('/apps/openregister/api/solr/files/stats'))
-				console.log('✅ FileWarmupModal: SOLR stats loaded:', indexResponse.data)
+				console.info('✅ FileWarmupModal: SOLR stats loaded:', indexResponse.data)
 
 				this.stats = {
 					total_extracted: extractionResponse.data.stats?.completed || 0,
@@ -270,7 +270,7 @@ export default {
 					pending_extraction: extractionResponse.data.stats?.pending || 0,
 					pending_indexing: extractionResponse.data.stats?.completed - indexResponse.data.unique_files || 0,
 				}
-				console.log('✅ FileWarmupModal: Combined stats:', this.stats)
+				console.info('✅ FileWarmupModal: Combined stats:', this.stats)
 			} catch (error) {
 				console.error('❌ FileWarmupModal: Failed to load stats:', error)
 			}
@@ -339,10 +339,10 @@ export default {
 
 		/**
 		 * Handle dialog open/close state update
-		 * @param isOpen
+		 * @param {boolean} isOpen - The new state of the dialog
 		 */
 		handleDialogUpdate(isOpen) {
-			console.log('🔄 FileWarmupModal: Dialog update event, isOpen:', isOpen)
+			console.info('🔄 FileWarmupModal: Dialog update event, isOpen:', isOpen)
 			if (!isOpen) {
 				this.handleClose()
 			}
@@ -352,7 +352,7 @@ export default {
 		 * Handle dialog close
 		 */
 		handleClose() {
-			console.log('❌ FileWarmupModal: Closing dialog...')
+			console.info('❌ FileWarmupModal: Closing dialog...')
 			this.showDialog = false
 			this.$emit('update:open', false)
 			this.$emit('close')
