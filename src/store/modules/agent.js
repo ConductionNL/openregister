@@ -1,13 +1,11 @@
 /**
  * Agent Store Module
  *
- * @category Store
- * @package  openregister
+ * @package
  * @author   Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license  EUPL-1.2
  * @version  1.0.0
- * @link     https://www.openregister.nl
  */
 
 /* eslint-disable no-console */
@@ -64,7 +62,7 @@ export const useAgentStore = defineStore('agent', {
 		/**
 		 * Set the agent list
 		 *
-		 * @param {array} agentList - Array of agent objects
+		 * @param {Array} agentList - Array of agent objects
 		 */
 		setAgentList(agentList) {
 			this.agentList = agentList.map(
@@ -96,40 +94,40 @@ export const useAgentStore = defineStore('agent', {
 		 *
 		 * @param {string|null} search - Optional search term
 		 * @param {boolean} soft - If true, don't show loading state (default: false)
-		 * @returns {Promise} Promise with response and data
+		 * @return {Promise} Promise with response and data
 		 */
 		/* istanbul ignore next */
 		async refreshAgentList(search = null, soft = false) {
 			console.log('AgentStore: Starting refreshAgentList (soft=' + soft + ')')
-			
+
 			// Only set loading state for hard reloads
 			if (!soft) {
 				this.loading = true
 			}
 			this.error = null
-			
+
 			try {
 				let endpoint = '/index.php/apps/openregister/api/agents'
 				if (search !== null && search !== '') {
 					endpoint = endpoint + '?_search=' + encodeURIComponent(search)
 				}
-				
+
 				const response = await fetch(endpoint, {
 					method: 'GET',
 				})
 
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`)
-			}
+				if (!response.ok) {
+					throw new Error(`HTTP error! status: ${response.status}`)
+				}
 
-			const responseData = await response.json()
-			console.log('AgentStore: API response type:', Array.isArray(responseData) ? 'array' : 'object', responseData)
-			
-			// API returns array directly, not wrapped in 'results'
-			const data = Array.isArray(responseData) ? responseData : (responseData.results || [])
+				const responseData = await response.json()
+				console.log('AgentStore: API response type:', Array.isArray(responseData) ? 'array' : 'object', responseData)
 
-			this.setAgentList(data)
-			console.log('AgentStore: refreshAgentList completed, got', data.length, 'agents', 'agentList now has', this.agentList.length, 'items')
+				// API returns array directly, not wrapped in 'results'
+				const data = Array.isArray(responseData) ? responseData : (responseData.results || [])
+
+				this.setAgentList(data)
+				console.log('AgentStore: refreshAgentList completed, got', data.length, 'agents', 'agentList now has', this.agentList.length, 'items')
 
 				return { response, data }
 			} catch (error) {
@@ -146,7 +144,7 @@ export const useAgentStore = defineStore('agent', {
 		 * Get a single agent by ID
 		 *
 		 * @param {number} id - Agent ID
-		 * @returns {Promise} Promise with agent data
+		 * @return {Promise} Promise with agent data
 		 */
 		async getAgent(id) {
 			const endpoint = `/index.php/apps/openregister/api/agents/${id}`
@@ -155,11 +153,11 @@ export const useAgentStore = defineStore('agent', {
 				const response = await fetch(endpoint, {
 					method: 'GET',
 				})
-				
+
 				if (!response.ok) {
 					throw new Error(`HTTP error! status: ${response.status}`)
 				}
-				
+
 				const data = await response.json()
 				this.setAgentItem(data)
 				return data
@@ -175,7 +173,7 @@ export const useAgentStore = defineStore('agent', {
 		 * Delete an agent
 		 *
 		 * @param {object} agentItem - The agent to delete
-		 * @returns {Promise} Promise with response
+		 * @return {Promise} Promise with response
 		 */
 		async deleteAgent(agentItem) {
 			if (!agentItem.id) {
@@ -212,7 +210,7 @@ export const useAgentStore = defineStore('agent', {
 		 * Save (create or update) an agent
 		 *
 		 * @param {object} agentItem - The agent to save
-		 * @returns {Promise} Promise with response and data
+		 * @return {Promise} Promise with response and data
 		 */
 		async saveAgent(agentItem) {
 			if (!agentItem) {
@@ -229,28 +227,28 @@ export const useAgentStore = defineStore('agent', {
 			const method = isNewAgent ? 'POST' : 'PUT'
 
 			try {
-			const response = await fetch(
-				endpoint,
-				{
-					method,
-					headers: {
-						'Content-Type': 'application/json',
+				const response = await fetch(
+					endpoint,
+					{
+						method,
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify(agentItem),
 					},
-					body: JSON.stringify(agentItem),
-				},
-			)
+				)
 
-			if (!response.ok) {
+				if (!response.ok) {
 				// Try to parse error message from response
-				try {
-					const errorData = await response.json()
-					const errorMessage = errorData.message || errorData.error || `HTTP error! status: ${response.status}`
-					throw new Error(errorMessage)
-				} catch (jsonError) {
+					try {
+						const errorData = await response.json()
+						const errorMessage = errorData.message || errorData.error || `HTTP error! status: ${response.status}`
+						throw new Error(errorMessage)
+					} catch (jsonError) {
 					// If JSON parsing fails, use status code
-					throw new Error(`HTTP error! status: ${response.status}`)
+						throw new Error(`HTTP error! status: ${response.status}`)
+					}
 				}
-			}
 
 				const responseData = await response.json()
 				const data = new Agent(responseData)
@@ -270,7 +268,7 @@ export const useAgentStore = defineStore('agent', {
 		/**
 		 * Get agent statistics
 		 *
-		 * @returns {Promise} Promise with statistics data
+		 * @return {Promise} Promise with statistics data
 		 */
 		async getStats() {
 			const endpoint = '/index.php/apps/openregister/api/agents/stats'
@@ -278,11 +276,11 @@ export const useAgentStore = defineStore('agent', {
 				const response = await fetch(endpoint, {
 					method: 'GET',
 				})
-				
+
 				if (!response.ok) {
 					throw new Error(`HTTP error! status: ${response.status}`)
 				}
-				
+
 				return await response.json()
 			} catch (err) {
 				console.error('Error fetching agent stats:', err)
@@ -291,5 +289,3 @@ export const useAgentStore = defineStore('agent', {
 		},
 	},
 })
-
-

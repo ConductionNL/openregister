@@ -728,7 +728,7 @@ export const useSettingsStore = defineStore('settings', {
 				}
 
 				// Show success message only if not just toggling enabled
-				if (Object.keys(partialData).length > 1 || !partialData.hasOwnProperty('enabled')) {
+				if (Object.keys(partialData).length > 1 || !Object.prototype.hasOwnProperty.call(partialData, 'enabled')) {
 					showSuccess('LLM settings updated successfully')
 				}
 
@@ -742,7 +742,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Get vector statistics
-		 * @returns {Promise<object>} Vector statistics including counts by type
+		 * @return {Promise<object>} Vector statistics including counts by type
 		 */
 		async getVectorStats() {
 			try {
@@ -841,17 +841,17 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Get file extraction statistics
 		 */
-	async getExtractionStats() {
-		try {
-			const response = await axios.get(generateUrl('/apps/openregister/api/files/stats'))
-			const stats = response.data.data || response.data
-			this.extractionStats = stats // Cache in state
-			return stats
-		} catch (error) {
-			console.error('Failed to load extraction stats:', error)
-			return null
-		}
-	},
+		async getExtractionStats() {
+			try {
+				const response = await axios.get(generateUrl('/apps/openregister/api/files/stats'))
+				const stats = response.data.data || response.data
+				this.extractionStats = stats // Cache in state
+				return stats
+			} catch (error) {
+				console.error('Failed to load extraction stats:', error)
+				return null
+			}
+		},
 
 		/**
 		 * Discover files in Nextcloud that aren't tracked yet
@@ -979,7 +979,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Get chat and agent statistics
-		 * @returns {Promise<object>} Chat statistics including agents, conversations, and messages
+		 * @return {Promise<object>} Chat statistics including agents, conversations, and messages
 		 */
 		async getChatStats() {
 			try {

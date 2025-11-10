@@ -228,10 +228,10 @@ export default {
 
 			try {
 				const url = generateUrl('/apps/openregister/api/solr/collection/delete')
-				console.log('Deleting SOLR collection via:', url)
+				console.info('Deleting SOLR collection via:', url)
 
 				const response = await axios.delete(url)
-				console.log('Delete collection response:', response.data)
+				console.info('Delete collection response:', response.data)
 
 				this.results = response.data
 				this.completed = true

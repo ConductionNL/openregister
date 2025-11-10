@@ -1,13 +1,11 @@
 /**
  * Conversation entity mock data
  *
- * @category Entities
- * @package  openregister
+ * @package
  * @author   Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license  EUPL-1.2
  * @version  1.0.0
- * @link     https://www.openregister.nl
  */
 
 import { Conversation } from './conversation'
@@ -56,4 +54,3 @@ export const mockConversationData = (): TConversation[] => [
 ]
 
 export const mockConversation = (data: TConversation[] = mockConversationData()): Conversation[] => data.map((item) => new Conversation(item))
-

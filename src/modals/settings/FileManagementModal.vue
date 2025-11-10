@@ -3,30 +3,30 @@
 		:name="t('openregister', 'File Vectorization')"
 		size="large"
 		@closing="$emit('closing')">
-	<div class="file-config-content">
-		<!-- Using Pre-Generated Chunks -->
-		<div class="info-box">
-			<InformationOutline :size="20" />
-			<div>
-				<h4>{{ t('openregister', 'Using Pre-Generated Chunks') }}</h4>
-				<p>{{ t('openregister', 'Text chunks are generated during file extraction and stored in the database. Vectorization reads these pre-chunked files and converts them to embeddings.') }}</p>
-				<p><strong>{{ t('openregister', 'To adjust chunk size or strategy, go to File Configuration → Processing Limits.') }}</strong></p>
+		<div class="file-config-content">
+			<!-- Using Pre-Generated Chunks -->
+			<div class="info-box">
+				<InformationOutline :size="20" />
+				<div>
+					<h4>{{ t('openregister', 'Using Pre-Generated Chunks') }}</h4>
+					<p>{{ t('openregister', 'Text chunks are generated during file extraction and stored in the database. Vectorization reads these pre-chunked files and converts them to embeddings.') }}</p>
+					<p><strong>{{ t('openregister', 'To adjust chunk size or strategy, go to File Configuration → Processing Limits.') }}</strong></p>
+				</div>
 			</div>
-		</div>
 
-		<!-- Vectorization Settings -->
-		<div class="config-section">
-			<h3>{{ t('openregister', '🔢 Vectorization Settings') }}</h3>
+			<!-- Vectorization Settings -->
+			<div class="config-section">
+				<h3>{{ t('openregister', '🔢 Vectorization Settings') }}</h3>
 
-			<div class="form-group">
-				<NcCheckboxRadioSwitch
-					v-model="config.vectorizationEnabled"
-					type="switch">
-					{{ t('openregister', 'Enable automatic file vectorization') }}
-				</NcCheckboxRadioSwitch>
-				<small>{{ t('openregister', 'Automatically generate vector embeddings from text chunks when files are uploaded and processed') }}</small>
+				<div class="form-group">
+					<NcCheckboxRadioSwitch
+						v-model="config.vectorizationEnabled"
+						type="switch">
+						{{ t('openregister', 'Enable automatic file vectorization') }}
+					</NcCheckboxRadioSwitch>
+					<small>{{ t('openregister', 'Automatically generate vector embeddings from text chunks when files are uploaded and processed') }}</small>
+				</div>
 			</div>
-		</div>
 
 			<!-- Batch Processing -->
 			<div v-if="config.vectorizationEnabled" class="config-section">
@@ -45,38 +45,38 @@
 					<small>{{ t('openregister', 'Number of chunks to vectorize in one API call. Higher = faster but more memory. Recommended: 10-50.') }}</small>
 				</div>
 
-			<div class="form-group">
-				<NcCheckboxRadioSwitch
-					v-model="config.autoRetry"
-					type="switch">
-					{{ t('openregister', 'Auto-retry failed vectorizations') }}
-				</NcCheckboxRadioSwitch>
-				<small>{{ t('openregister', 'Automatically retry failed vectorization attempts (max 3 retries)') }}</small>
+				<div class="form-group">
+					<NcCheckboxRadioSwitch
+						v-model="config.autoRetry"
+						type="switch">
+						{{ t('openregister', 'Auto-retry failed vectorizations') }}
+					</NcCheckboxRadioSwitch>
+					<small>{{ t('openregister', 'Automatically retry failed vectorization attempts (max 3 retries)') }}</small>
+				</div>
 			</div>
 		</div>
-	</div>
 
-	<!-- Dialog Actions -->
-	<template #actions>
-		<NcButton @click="$emit('closing')">
-			{{ t('openregister', 'Cancel') }}
-		</NcButton>
-		<NcButton
-			type="primary"
-			:disabled="saving"
-			@click="saveConfiguration">
-			<template #icon>
-				<NcLoadingIcon v-if="saving" :size="20" />
-				<ContentSave v-else :size="20" />
-			</template>
-			{{ saving ? t('openregister', 'Saving...') : t('openregister', 'Save Configuration') }}
-		</NcButton>
-	</template>
+		<!-- Dialog Actions -->
+		<template #actions>
+			<NcButton @click="$emit('closing')">
+				{{ t('openregister', 'Cancel') }}
+			</NcButton>
+			<NcButton
+				type="primary"
+				:disabled="saving"
+				@click="saveConfiguration">
+				<template #icon>
+					<NcLoadingIcon v-if="saving" :size="20" />
+					<ContentSave v-else :size="20" />
+				</template>
+				{{ saving ? t('openregister', 'Saving...') : t('openregister', 'Save Configuration') }}
+			</NcButton>
+		</template>
 	</NcDialog>
 </template>
 
 <script>
-import { NcDialog, NcButton, NcLoadingIcon, NcSelect, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { NcDialog, NcButton, NcLoadingIcon, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import axios from '@nextcloud/axios'
@@ -90,7 +90,6 @@ export default {
 		NcDialog,
 		NcButton,
 		NcLoadingIcon,
-		NcSelect,
 		NcCheckboxRadioSwitch,
 		InformationOutline,
 		ContentSave,
@@ -104,15 +103,15 @@ export default {
 	},
 
 	data() {
-	return {
-		loading: true,
-		saving: false,
+		return {
+			loading: true,
+			saving: false,
 
-		config: {
-			vectorizationEnabled: true,
-			batchSize: 25,
-			autoRetry: true,
-		},
+			config: {
+				vectorizationEnabled: true,
+				batchSize: 25,
+				autoRetry: true,
+			},
 
 		}
 	},
@@ -132,7 +131,7 @@ export default {
 			}
 		},
 
-	async saveConfiguration() {
+		async saveConfiguration() {
 			this.saving = true
 
 			try {
