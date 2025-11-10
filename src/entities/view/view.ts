@@ -1,13 +1,11 @@
 /**
  * View entity class
  *
- * @category Entities
- * @package  openregister
+ * @package
  * @author   Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license  EUPL-1.2
  * @version  1.0.0
- * @link     https://www.openregister.nl
  */
 
 import { SafeParseReturnType, z } from 'zod'
@@ -90,8 +88,3 @@ export class View implements TView {
 	}
 
 }
-
-
-
-
-

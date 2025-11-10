@@ -1,13 +1,11 @@
 /**
  * Agent entity type definitions
  *
- * @category Entities
- * @package  openregister
+ * @package
  * @author   Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license  EUPL-1.2
  * @version  1.0.0
- * @link     https://www.openregister.nl
  */
 
 export type TAgent = {
@@ -40,8 +38,8 @@ export type TAgent = {
 	isPrivate?: boolean
 	invitedUsers?: string[]
 	// Tool support
-	tools?: string[]		// Array of enabled tool names: 'register', 'schema', 'objects'
-	user?: string			// User ID for cron/background scenarios
+	tools?: string[] // Array of enabled tool names: 'register', 'schema', 'objects'
+	user?: string // User ID for cron/background scenarios
 	created?: string
 	updated?: string
 }
@@ -49,5 +47,3 @@ export type TAgent = {
 export type TAgentPath = {
 	agentId?: string
 }
-
-

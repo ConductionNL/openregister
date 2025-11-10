@@ -286,7 +286,6 @@
 				</div>
 			</div>
 
-
 			<!-- AI Features -->
 			<div class="config-section">
 				<h3>{{ t('openregister', '✨ AI Features') }}</h3>
@@ -523,92 +522,92 @@ export default {
 	},
 
 	methods: {
-	async loadConfiguration() {
-		this.loading = true
-		
-		try {
-			const response = await axios.get(generateUrl('/apps/openregister/api/settings/llm'))
-			const llmSettings = response.data
-			
-		// Set enabled state
-		this.llmEnabled = llmSettings.enabled || false
-		
-		// Set embedding provider
-		if (llmSettings.embeddingProvider) {
-			this.selectedEmbeddingProvider = this.embeddingProviderOptions.find(
-				p => p.id === llmSettings.embeddingProvider,
-			)
-		}
-		
-		// Set chat provider
-		if (llmSettings.chatProvider) {
-			this.selectedChatProvider = this.chatProviderOptions.find(
-				p => p.id === llmSettings.chatProvider,
-			)
-		}
-			
-		// Load OpenAI config
-		if (llmSettings.openaiConfig) {
-			this.openaiConfig = {
-				apiKey: llmSettings.openaiConfig.apiKey || '',
-				model: llmSettings.openaiConfig.model || null,
-				chatModel: llmSettings.openaiConfig.chatModel || null,
-				organizationId: llmSettings.openaiConfig.organizationId || '',
-			}
-		}
-		
-		// Load Ollama config
-		if (llmSettings.ollamaConfig) {
-			this.ollamaConfig = {
-				url: llmSettings.ollamaConfig.url || 'http://localhost:11434',
-				model: llmSettings.ollamaConfig.model || null,
-				chatModel: llmSettings.ollamaConfig.chatModel || null,
-			}
-		}
-		
-		// Load Fireworks config
-		if (llmSettings.fireworksConfig) {
-			this.fireworksConfig = {
-				apiKey: llmSettings.fireworksConfig.apiKey || '',
-				embeddingModel: llmSettings.fireworksConfig.embeddingModel || null,
-				chatModel: llmSettings.fireworksConfig.chatModel || null,
-				baseUrl: llmSettings.fireworksConfig.baseUrl || 'https://api.fireworks.ai/inference/v1',
-			}
-			
-			// Map model strings to model objects from the dropdown options
-			if (llmSettings.fireworksConfig.embeddingModel) {
-				const modelObj = this.fireworksEmbeddingModelOptions.find(
-					m => m.id === llmSettings.fireworksConfig.embeddingModel,
-				)
-				if (modelObj) {
-					this.fireworksConfig.embeddingModel = modelObj
+		async loadConfiguration() {
+			this.loading = true
+
+			try {
+				const response = await axios.get(generateUrl('/apps/openregister/api/settings/llm'))
+				const llmSettings = response.data
+
+				// Set enabled state
+				this.llmEnabled = llmSettings.enabled || false
+
+				// Set embedding provider
+				if (llmSettings.embeddingProvider) {
+					this.selectedEmbeddingProvider = this.embeddingProviderOptions.find(
+						p => p.id === llmSettings.embeddingProvider,
+					)
 				}
-			}
-			if (llmSettings.fireworksConfig.chatModel) {
-				const modelObj = this.fireworksChatModelOptions.find(
-					m => m.id === llmSettings.fireworksConfig.chatModel,
-				)
-				if (modelObj) {
-					this.fireworksConfig.chatModel = modelObj
+
+				// Set chat provider
+				if (llmSettings.chatProvider) {
+					this.selectedChatProvider = this.chatProviderOptions.find(
+						p => p.id === llmSettings.chatProvider,
+					)
 				}
+
+				// Load OpenAI config
+				if (llmSettings.openaiConfig) {
+					this.openaiConfig = {
+						apiKey: llmSettings.openaiConfig.apiKey || '',
+						model: llmSettings.openaiConfig.model || null,
+						chatModel: llmSettings.openaiConfig.chatModel || null,
+						organizationId: llmSettings.openaiConfig.organizationId || '',
+					}
+				}
+
+				// Load Ollama config
+				if (llmSettings.ollamaConfig) {
+					this.ollamaConfig = {
+						url: llmSettings.ollamaConfig.url || 'http://localhost:11434',
+						model: llmSettings.ollamaConfig.model || null,
+						chatModel: llmSettings.ollamaConfig.chatModel || null,
+					}
+				}
+
+				// Load Fireworks config
+				if (llmSettings.fireworksConfig) {
+					this.fireworksConfig = {
+						apiKey: llmSettings.fireworksConfig.apiKey || '',
+						embeddingModel: llmSettings.fireworksConfig.embeddingModel || null,
+						chatModel: llmSettings.fireworksConfig.chatModel || null,
+						baseUrl: llmSettings.fireworksConfig.baseUrl || 'https://api.fireworks.ai/inference/v1',
+					}
+
+					// Map model strings to model objects from the dropdown options
+					if (llmSettings.fireworksConfig.embeddingModel) {
+						const modelObj = this.fireworksEmbeddingModelOptions.find(
+							m => m.id === llmSettings.fireworksConfig.embeddingModel,
+						)
+						if (modelObj) {
+							this.fireworksConfig.embeddingModel = modelObj
+						}
+					}
+					if (llmSettings.fireworksConfig.chatModel) {
+						const modelObj = this.fireworksChatModelOptions.find(
+							m => m.id === llmSettings.fireworksConfig.chatModel,
+						)
+						if (modelObj) {
+							this.fireworksConfig.chatModel = modelObj
+						}
+					}
+				}
+
+				// Load enabled features (if available)
+				if (llmSettings.enabledFeatures && Array.isArray(llmSettings.enabledFeatures)) {
+					this.aiFeatures.forEach(feature => {
+						feature.enabled = llmSettings.enabledFeatures.includes(feature.id)
+					})
+				}
+
+				console.info('LLM configuration loaded', llmSettings)
+			} catch (error) {
+				console.error('Failed to load LLM configuration:', error)
+				showError(this.t('openregister', 'Failed to load LLM configuration'))
+			} finally {
+				this.loading = false
 			}
-		}
-			
-			// Load enabled features (if available)
-			if (llmSettings.enabledFeatures && Array.isArray(llmSettings.enabledFeatures)) {
-				this.aiFeatures.forEach(feature => {
-					feature.enabled = llmSettings.enabledFeatures.includes(feature.id)
-				})
-			}
-			
-			console.log('LLM configuration loaded', llmSettings)
-		} catch (error) {
-			console.error('Failed to load LLM configuration:', error)
-			showError(this.t('openregister', 'Failed to load LLM configuration'))
-		} finally {
-			this.loading = false
-		}
-	},
+		},
 
 		handleEmbeddingProviderChange() {
 			this.embeddingTestResult = null

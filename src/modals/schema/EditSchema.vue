@@ -1175,7 +1175,7 @@ export default {
 			const parentSchema = schemaStore.schemaList.find(schema =>
 				schema.id === this.schemaItem.extend
 				|| schema.uuid === this.schemaItem.extend
-				|| schema.slug === this.schemaItem.extend
+				|| schema.slug === this.schemaItem.extend,
 			)
 
 			return parentSchema ? (parentSchema.title || parentSchema.name || `Schema ${parentSchema.id}`) : null

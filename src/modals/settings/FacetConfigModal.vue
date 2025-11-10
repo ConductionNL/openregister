@@ -413,17 +413,17 @@ export default {
 		 * Load facets from SOLR API
 		 */
 		async loadFacets() {
-			console.log('🚀 FacetConfigModal: loadFacets called')
+			console.info('🚀 FacetConfigModal: loadFacets called')
 			this.loading = true
 			this.error = null
 
 			try {
 				// Use the new unified endpoint that merges discovery with configuration
 				const url = generateUrl('/apps/openregister/api/solr/facet-config')
-				console.log('📡 FacetConfigModal: Making API call to:', url)
+				console.info('📡 FacetConfigModal: Making API call to:', url)
 
 				const response = await axios.get(url)
-				console.log('✅ FacetConfigModal: API response received:', response.data)
+				console.info('✅ FacetConfigModal: API response received:', response.data)
 
 				if (response.data && response.data.success) {
 					this.facetsData = response.data
@@ -471,9 +471,9 @@ export default {
 						this.metadataFacets.sort((a, b) => a.config.order - b.config.order)
 					}
 
-					console.log(`✅ FacetConfigModal: Processed ${this.metadataFacets.length} metadata facets`)
-					console.log(`✅ FacetConfigModal: Processed ${this.objectFieldFacets.length} object field facets`)
-					console.log('✅ FacetConfigModal: Facets loaded with existing configuration')
+					console.info(`✅ FacetConfigModal: Processed ${this.metadataFacets.length} metadata facets`)
+					console.info(`✅ FacetConfigModal: Processed ${this.objectFieldFacets.length} object field facets`)
+					console.info('✅ FacetConfigModal: Facets loaded with existing configuration')
 				} else {
 					throw new Error('Invalid response format: ' + JSON.stringify(response.data))
 				}
@@ -488,7 +488,7 @@ export default {
 
 		/**
 		 * Format display type for human-readable labels
-		 * @param displayType
+		 * @param {string} displayType - The display type to format
 		 */
 		formatDisplayType(displayType) {
 			const typeMap = {
@@ -506,7 +506,7 @@ export default {
 		 * Save facet configuration
 		 */
 		async saveFacetConfiguration() {
-			console.log('💾 Saving facet configuration...')
+			console.info('💾 Saving facet configuration...')
 			this.loading = true
 
 			try {
@@ -526,7 +526,7 @@ export default {
 					facetConfig.facets[facet.fieldName] = facet.config
 				})
 
-				console.log('💾 Facet configuration to save:', facetConfig)
+				console.info('💾 Facet configuration to save:', facetConfig)
 
 				// Make API call to save configuration using the new unified endpoint
 				const url = generateUrl('/apps/openregister/api/solr/facet-config')
@@ -535,7 +535,7 @@ export default {
 				// Check if the response is successful
 				if (response.data && response.data.success) {
 					showSuccess(`Successfully saved configuration for ${Object.keys(facetConfig.facets).length} facets!`)
-					console.log('✅ Facet configuration saved successfully:', response.data)
+					console.info('✅ Facet configuration saved successfully:', response.data)
 				} else {
 					throw new Error(response.data?.message || response.data?.error || 'Failed to save configuration')
 				}
@@ -550,7 +550,7 @@ export default {
 
 		/**
 		 * Toggle facet expanded state
-		 * @param facet
+		 * @param {object} facet - The facet to toggle
 		 */
 		toggleFacetExpanded(facet) {
 			facet.expanded = !facet.expanded

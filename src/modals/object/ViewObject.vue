@@ -26,7 +26,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 						<p class="selection-hint">
 							{{ t('openregister', 'Please select which register and schema to use for the new object') }}
 						</p>
-						
+
 						<div class="selection-fields">
 							<div v-if="availableRegisters.length > 1" class="field-group">
 								<label for="register-select">{{ t('openregister', 'Register') }}</label>
@@ -39,7 +39,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									:placeholder="t('openregister', 'Choose a register')"
 									:clearable="false" />
 							</div>
-							
+
 							<div v-if="availableSchemas.length > 1" class="field-group">
 								<label for="schema-select">{{ t('openregister', 'Schema') }}</label>
 								<NcSelect
@@ -51,7 +51,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									:placeholder="t('openregister', 'Choose a schema')"
 									:clearable="false" />
 							</div>
-							
+
 							<NcButton
 								type="primary"
 								:disabled="!canProceedToProperties"
@@ -779,30 +779,30 @@ export default {
 	computed: {
 		// Check if we need to show register/schema selection
 		showRegisterSchemaSelection() {
-			return this.isNewObject && 
-				!this.registerSchemaSelectionConfirmed &&
-				(this.availableRegisters.length > 1 || this.availableSchemas.length > 1)
+			return this.isNewObject
+				&& !this.registerSchemaSelectionConfirmed
+				&& (this.availableRegisters.length > 1 || this.availableSchemas.length > 1)
 		},
-		
+
 		// Available registers for selection
 		availableRegisters() {
 			return objectStore.availableRegistersForNewObject || []
 		},
-		
+
 		// Available schemas for selection
 		availableSchemas() {
 			return objectStore.availableSchemasForNewObject || []
 		},
-		
+
 		// Can proceed to properties if selections are made
 		canProceedToProperties() {
 			const hasRegister = this.availableRegisters.length === 1 || this.selectedRegisterForNewObject
 			const hasSchema = this.availableSchemas.length === 1 || this.selectedSchemaForNewObject
 			return hasRegister && hasSchema
 		},
-		
+
 		objectProperties() {
-			console.log('objectProperties computed called:', {
+			console.info('objectProperties computed called:', {
 				objectItem: objectStore?.objectItem,
 				currentSchema: this.currentSchema,
 				isNewObject: this.isNewObject,
@@ -814,11 +814,11 @@ export default {
 			if (!objectStore?.objectItem) {
 				const schemaProperties = this.currentSchema?.properties
 				if (!schemaProperties) {
-					console.log('No schema properties available')
+					console.info('No schema properties available')
 					return []
 				}
 
-				console.log('Schema properties found:', Object.keys(schemaProperties))
+				console.info('Schema properties found:', Object.keys(schemaProperties))
 				const defaultProperties = []
 
 				for (const [key, schemaProperty] of Object.entries(schemaProperties)) {
@@ -847,7 +847,7 @@ export default {
 					defaultProperties.push([key, defaultValue])
 				}
 
-				console.log('objectProperties returning default properties:', defaultProperties)
+				console.info('objectProperties returning default properties:', defaultProperties)
 				return defaultProperties
 			}
 
@@ -963,7 +963,7 @@ export default {
 			return this.selectedAttachments.length > 0 && !this.allFilesSelected
 		},
 		formFields() {
-			console.log('formFields computed called:', {
+			console.info('formFields computed called:', {
 				currentSchema: this.currentSchema,
 				hasProperties: this.currentSchema?.properties,
 				propertiesCount: this.currentSchema?.properties ? Object.keys(this.currentSchema.properties).length : 0,
@@ -1004,7 +1004,7 @@ export default {
 				}
 			}
 
-			console.log('formFields returning:', fields)
+			console.info('formFields returning:', fields)
 			return fields
 		},
 		metadataProperties() {
@@ -1122,7 +1122,7 @@ export default {
 		// Watch for schema changes to re-initialize data
 		currentSchema: {
 			handler(newSchema) {
-				console.log('Schema changed in ViewObject:', newSchema)
+				console.info('Schema changed in ViewObject:', newSchema)
 				if (newSchema && this.isNewObject) {
 					// Re-initialize data when schema becomes available for new objects
 					this.initializeData()
@@ -1135,7 +1135,7 @@ export default {
 		// Watch for register changes to re-initialize data
 		currentRegister: {
 			handler(newRegister) {
-				console.log('Register changed in ViewObject:', newRegister)
+				console.info('Register changed in ViewObject:', newRegister)
 				if (newRegister && this.isNewObject) {
 					// Re-initialize data when register becomes available for new objects
 					this.initializeData()
@@ -1161,7 +1161,7 @@ export default {
 	},
 	mounted() {
 		// Debug: Log current state when modal opens
-		console.log('ViewObject mounted:', {
+		console.info('ViewObject mounted:', {
 			objectItem: objectStore.objectItem,
 			schemaItem: schemaStore.schemaItem,
 			registerItem: registerStore.registerItem,
@@ -1184,22 +1184,22 @@ export default {
 			// Set the selected register and schema in the store
 			const selectedRegister = this.selectedRegisterForNewObject || this.availableRegisters[0]
 			const selectedSchema = this.selectedSchemaForNewObject || this.availableSchemas[0]
-			
+
 			registerStore.setRegisterItem(selectedRegister)
 			schemaStore.setSchemaItem(selectedSchema)
-			
-			console.log('Register and schema selected:', {
+
+			console.info('Register and schema selected:', {
 				register: selectedRegister?.title,
 				schema: selectedSchema?.title,
 			})
-			
+
 			// Confirm selection so we show the properties
 			this.registerSchemaSelectionConfirmed = true
-			
+
 			// Initialize data with the selected schema
 			this.initializeData()
 		},
-		
+
 		getModalTitle() {
 			if (!objectStore?.objectItem || !objectStore.objectItem['@self']?.id) {
 				return 'Add Object'
@@ -1331,7 +1331,7 @@ export default {
 			}
 		},
 		initializeData() {
-			console.log('initializeData called:', {
+			console.info('initializeData called:', {
 				objectItem: objectStore.objectItem,
 				currentSchema: this.currentSchema,
 				currentSchemaProperties: this.currentSchema?.properties,
@@ -1358,10 +1358,10 @@ export default {
 						owner: '',
 					},
 				}
-				
+
 				// Add schema properties with default values
 				if (this.currentSchema?.properties) {
-					console.log('Adding schema properties to initial data:', Object.keys(this.currentSchema.properties))
+					console.info('Adding schema properties to initial data:', Object.keys(this.currentSchema.properties))
 					for (const [key, property] of Object.entries(this.currentSchema.properties)) {
 						// Set default value based on property type
 						let defaultValue = null
@@ -1376,14 +1376,14 @@ export default {
 						} else if (property.type === 'object') {
 							defaultValue = {}
 						}
-						
+
 						initialData[key] = property.default !== undefined ? property.default : defaultValue
 					}
 				}
-				
+
 				this.formData = initialData
 				this.jsonData = JSON.stringify(initialData, null, 2)
-				console.log('Initialized new object with data:', initialData)
+				console.info('Initialized new object with data:', initialData)
 				return
 			}
 
@@ -1422,7 +1422,7 @@ export default {
 					register: this.currentRegister.id,
 					schema: this.currentSchema.id,
 				})
-				console.log('Save object response:', response)
+				console.info('Save object response:', response)
 				this.success = response.ok
 				if (this.success) {
 					// Re-initialize data to refresh jsonData with the newly created object
@@ -1711,7 +1711,7 @@ export default {
 			// You'll need to implement the labels editing functionality
 			// This could open a modal or inline editor for file labels
 			// eslint-disable-next-line no-console
-			console.log('Editing labels for file:', file.name)
+			console.info('Editing labels for file:', file.name)
 			// Placeholder for labels editing implementation
 		},
 		getPropertyValidationClass(key, value) {

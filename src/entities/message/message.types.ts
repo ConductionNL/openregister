@@ -1,14 +1,20 @@
 /**
  * Message entity type definitions
  *
- * @category Entities
- * @package  openregister
+ * @package
  * @author   Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license  EUPL-1.2
  * @version  1.0.0
- * @link     https://www.openregister.nl
  */
+
+export type TMessageSource = {
+	type: 'file' | 'object'
+	id: string
+	name: string
+	relevance?: number
+	excerpt?: string
+}
 
 export type TMessage = {
 	id?: number
@@ -20,15 +26,6 @@ export type TMessage = {
 	created?: string
 }
 
-export type TMessageSource = {
-	type: 'file' | 'object'
-	id: string
-	name: string
-	relevance?: number
-	excerpt?: string
-}
-
 export type TMessagePath = {
 	messageId?: string
 }
-

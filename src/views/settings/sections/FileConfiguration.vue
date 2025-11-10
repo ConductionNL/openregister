@@ -13,44 +13,44 @@
 					<DotsVertical :size="20" />
 				</template>
 
-			<!-- Discover Files -->
-			<NcActionButton
-				:disabled="isProcessing"
-				@click="discoverFiles">
-				<template #icon>
-					<span class="action-icon-wrapper">
-						<NcLoadingIcon v-if="discoveringFiles" :size="20" />
-						<MagnifyIcon v-else :size="20" />
-					</span>
-				</template>
-				{{ t('openregister', 'Discover Files') }}
-			</NcActionButton>
+				<!-- Discover Files -->
+				<NcActionButton
+					:disabled="isProcessing"
+					@click="discoverFiles">
+					<template #icon>
+						<span class="action-icon-wrapper">
+							<NcLoadingIcon v-if="discoveringFiles" :size="20" />
+							<MagnifyIcon v-else :size="20" />
+						</span>
+					</template>
+					{{ t('openregister', 'Discover Files') }}
+				</NcActionButton>
 
-			<!-- Extract Pending Files -->
-			<NcActionButton
-				:disabled="isProcessing"
-				@click="extractAllPendingFiles">
-				<template #icon>
-					<span class="action-icon-wrapper">
-						<NcLoadingIcon v-if="extractingFiles" :size="20" />
-						<FileDocumentIcon v-else :size="20" />
-					</span>
-				</template>
-				{{ t('openregister', 'Extract Pending Files') }}
-			</NcActionButton>
+				<!-- Extract Pending Files -->
+				<NcActionButton
+					:disabled="isProcessing"
+					@click="extractAllPendingFiles">
+					<template #icon>
+						<span class="action-icon-wrapper">
+							<NcLoadingIcon v-if="extractingFiles" :size="20" />
+							<FileDocumentIcon v-else :size="20" />
+						</span>
+					</template>
+					{{ t('openregister', 'Extract Pending Files') }}
+				</NcActionButton>
 
-			<!-- Retry Failed Extractions -->
-			<NcActionButton
-				:disabled="isProcessing"
-				@click="reprocessFailedFiles">
-				<template #icon>
-					<span class="action-icon-wrapper">
-						<NcLoadingIcon v-if="retryingFiles" :size="20" />
-						<RefreshIcon v-else :size="20" />
-					</span>
-				</template>
-				{{ t('openregister', 'Retry Failed Extractions') }}
-			</NcActionButton>
+				<!-- Retry Failed Extractions -->
+				<NcActionButton
+					:disabled="isProcessing"
+					@click="reprocessFailedFiles">
+					<template #icon>
+						<span class="action-icon-wrapper">
+							<NcLoadingIcon v-if="retryingFiles" :size="20" />
+							<RefreshIcon v-else :size="20" />
+						</span>
+					</template>
+					{{ t('openregister', 'Retry Failed Extractions') }}
+				</NcActionButton>
 			</NcActions>
 		</template>
 
@@ -332,7 +332,9 @@
 
 		<!-- File Processing Statistics -->
 		<div class="stats-section">
-			<h3 class="stats-title">📊 File Processing Statistics</h3>
+			<h3 class="stats-title">
+				📊 File Processing Statistics
+			</h3>
 			<div class="stats-grid stats-grid-6">
 				<div class="stat-card">
 					<div class="stat-value">

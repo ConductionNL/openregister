@@ -10,13 +10,13 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 				<h1 class="viewHeaderTitleIndented">
 					{{ pageTitle }}
 				</h1>
-			<p v-if="hasSelectedRegisters && hasSelectedSchemas">
-				{{ t('openregister', 'Search and browse objects in this schema') }}
-			</p>
-		</div>
+				<p v-if="hasSelectedRegisters && hasSelectedSchemas">
+					{{ t('openregister', 'Search and browse objects in this schema') }}
+				</p>
+			</div>
 
-		<!-- Actions Bar -->
-		<div v-if="hasSelectedRegisters && hasSelectedSchemas" class="viewActionsBar">
+			<!-- Actions Bar -->
+			<div v-if="hasSelectedRegisters && hasSelectedSchemas" class="viewActionsBar">
 				<div class="viewInfo">
 					<span v-if="objectStore.objectList?.results?.length" class="viewTotalCount">
 						{{ t('openregister', 'Showing {showing} of {total} objects', {
@@ -133,8 +133,8 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 				</template>
 			</NcEmptyContent>
 
-		<!-- Search List Content -->
-		<div v-else-if="objectStore.objectList?.results?.length && hasSelectedRegisters && hasSelectedSchemas" class="searchList">
+			<!-- Search List Content -->
+			<div v-else-if="objectStore.objectList?.results?.length && hasSelectedRegisters && hasSelectedSchemas" class="searchList">
 				<div class="viewTableContainer">
 					<VueDraggable v-model="objectStore.enabledColumns"
 						target=".sort-target"
@@ -329,7 +329,7 @@ export default {
 		selectedRegisterIds() {
 			const registerParam = this.$route.query.register
 			if (!registerParam) return []
-			return Array.isArray(registerParam) 
+			return Array.isArray(registerParam)
 				? registerParam.map(r => parseInt(r))
 				: registerParam.split(',').map(r => parseInt(r.trim()))
 		},
@@ -363,12 +363,12 @@ export default {
 					return reg ? (reg.label || reg.title) : null
 				})
 				.filter(Boolean)
-			
+
 			if (registerNames.length === 0) {
 				return 'No register selected'
 			}
 
-			const registerTitle = registerNames.length === 1 
+			const registerTitle = registerNames.length === 1
 				? registerNames[0].charAt(0).toUpperCase() + registerNames[0].slice(1)
 				: `${registerNames.length} Registers (${registerNames.join(', ')})`
 
@@ -395,14 +395,14 @@ export default {
 			// Don't show warning if objects are already loaded (register/schema set in store)
 			const hasObjectsLoaded = objectStore.objectList?.results?.length > 0
 			const hasRegisterInStore = registerStore.registerItem !== null
-			
+
 			return !this.hasSelectedRegisters && !hasObjectsLoaded && !hasRegisterInStore
 		},
 		showNoSchemaWarning() {
 			// Don't show warning if objects are already loaded (register/schema set in store)
 			const hasObjectsLoaded = objectStore.objectList?.results?.length > 0
 			const hasSchemaInStore = schemaStore.schemaItem !== null
-			
+
 			return this.hasSelectedRegisters && !this.hasSelectedSchemas && !hasObjectsLoaded && !hasSchemaInStore
 		},
 		showNoObjectsMessage() {
@@ -451,19 +451,19 @@ export default {
 		// Watch for URL changes and update stores accordingly
 		selectedRegisterIds: {
 			async handler(newIds, oldIds) {
-				console.log('SearchIndex: selectedRegisterIds changed', { newIds, oldIds })
-				
+				console.info('SearchIndex: selectedRegisterIds changed', { newIds, oldIds })
+
 				// If we have exactly one register selected, set it in the store
 				if (newIds.length === 1) {
 					const registerId = newIds[0]
 					const register = registerStore.registerList.find(r => r.id === registerId)
-					
+
 					if (register) {
-						console.log('SearchIndex: Setting registerItem to', register)
+						console.info('SearchIndex: Setting registerItem to', register)
 						registerStore.setRegisterItem(register)
 					} else {
 						// Register not in list yet, fetch it
-						console.log('SearchIndex: Fetching register', registerId)
+						console.info('SearchIndex: Fetching register', registerId)
 						try {
 							const fetchedRegister = await registerStore.getRegister(registerId)
 							if (fetchedRegister) {
@@ -476,7 +476,7 @@ export default {
 				} else if (newIds.length > 1) {
 					// Multiple registers selected - set the first one as active for now
 					// TODO: Implement proper multi-register object loading
-					console.log('SearchIndex: Multiple registers selected, setting first register as active')
+					console.info('SearchIndex: Multiple registers selected, setting first register as active')
 					const firstRegisterId = newIds[0]
 					const register = registerStore.registerList.find(r => r.id === firstRegisterId)
 					if (register) {
@@ -484,42 +484,42 @@ export default {
 					}
 				} else {
 					// No registers selected
-					console.log('SearchIndex: No registers selected, clearing registerItem')
+					console.info('SearchIndex: No registers selected, clearing registerItem')
 					registerStore.setRegisterItem(null)
 				}
 			},
 			immediate: true,
 		},
-		
+
 		selectedSchemaIds: {
 			async handler(newIds, oldIds) {
-				console.log('SearchIndex: selectedSchemaIds changed', { newIds, oldIds })
-				
+				console.info('SearchIndex: selectedSchemaIds changed', { newIds, oldIds })
+
 				// If we have exactly one schema selected, set it in the store
 				if (newIds.length === 1) {
 					const schemaId = newIds[0]
 					const schema = schemaStore.schemaList.find(s => s.id === schemaId)
-					
+
 					if (schema) {
-						console.log('SearchIndex: Setting schemaItem to', schema)
+						console.info('SearchIndex: Setting schemaItem to', schema)
 						schemaStore.setSchemaItem(schema)
-						
+
 						// Refresh objects when both register and schema are set
 						if (registerStore.registerItem) {
-							console.log('SearchIndex: Both register and schema set, refreshing objects')
+							console.info('SearchIndex: Both register and schema set, refreshing objects')
 							await objectStore.refreshObjectList()
 						}
 					} else {
 						// Schema not in list yet, fetch it
-						console.log('SearchIndex: Fetching schema', schemaId)
+						console.info('SearchIndex: Fetching schema', schemaId)
 						try {
 							const fetchedSchema = await schemaStore.getSchema(schemaId)
 							if (fetchedSchema) {
 								schemaStore.setSchemaItem(fetchedSchema)
-								
+
 								// Refresh objects when both register and schema are set
 								if (registerStore.registerItem) {
-									console.log('SearchIndex: Both register and schema set, refreshing objects')
+									console.info('SearchIndex: Both register and schema set, refreshing objects')
 									await objectStore.refreshObjectList()
 								}
 							}
@@ -529,11 +529,11 @@ export default {
 					}
 				} else if (newIds.length > 1) {
 					// Multiple schemas selected - don't set a single item
-					console.log('SearchIndex: Multiple schemas selected, not setting schemaItem')
+					console.info('SearchIndex: Multiple schemas selected, not setting schemaItem')
 					schemaStore.setSchemaItem(null)
 				} else {
 					// No schemas selected
-					console.log('SearchIndex: No schemas selected, clearing schemaItem')
+					console.info('SearchIndex: No schemas selected, clearing schemaItem')
 					schemaStore.setSchemaItem(null)
 				}
 			},
@@ -644,46 +644,45 @@ export default {
 		addObject() {
 			// Clear any existing object
 			objectStore.setObjectItem(null)
-			
+
 			// Check if registers and schemas are selected
 			if (this.selectedRegisterIds.length === 0 || this.selectedSchemaIds.length === 0) {
-				showError(this.t('openregister', 'Please select at least one register and schema first'))
 				return
 			}
-			
+
 			// Get the selected registers and schemas
 			const selectedRegisters = this.selectedRegisterIds
 				.map(id => registerStore.registerList.find(r => r.id === id))
 				.filter(Boolean)
-			
+
 			const selectedSchemas = this.selectedSchemaIds
 				.map(id => schemaStore.schemaList.find(s => s.id === id))
 				.filter(Boolean)
-			
+
 			// If only one register and one schema, use them directly
 			if (selectedRegisters.length === 1 && selectedSchemas.length === 1) {
 				registerStore.setRegisterItem(selectedRegisters[0])
 				schemaStore.setSchemaItem(selectedSchemas[0])
-				
-				console.log('Opening add object modal with single register/schema:', {
+
+				console.info('Opening add object modal with single register/schema:', {
 					register: selectedRegisters[0]?.title,
 					schema: selectedSchemas[0]?.title,
 					schemaProperties: selectedSchemas[0]?.properties,
 				})
-				
+
 				navigationStore.setModal('viewObject')
 				return
 			}
-			
+
 			// If multiple registers or schemas, store them for selection in the modal
 			objectStore.availableRegistersForNewObject = selectedRegisters
 			objectStore.availableSchemasForNewObject = selectedSchemas
-			
-			console.log('Opening add object modal with multiple options:', {
+
+			console.info('Opening add object modal with multiple options:', {
 				registers: selectedRegisters.map(r => r.title),
 				schemas: selectedSchemas.map(s => s.title),
 			})
-			
+
 			navigationStore.setModal('viewObject')
 		},
 		refreshObjects() {
