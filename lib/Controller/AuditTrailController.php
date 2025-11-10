@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Service\LogService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IRequest;
 
 /**
@@ -47,7 +48,6 @@ class AuditTrailController extends Controller
         parent::__construct($appName, $request);
 
     }//end __construct()
-
 
     /**
      * Extract pagination, filter, and search parameters from request
@@ -256,7 +256,7 @@ class AuditTrailController extends Controller
                 ['error' => 'Object not found'],
                 404
             );
-        }
+        }//end try
 
     }//end objects()
 
@@ -273,18 +273,18 @@ class AuditTrailController extends Controller
     {
         // Extract request parameters
         $params = $this->extractRequestParameters();
-        
+
         // Get export specific parameters
-        $format = $this->request->getParam('format', 'csv');
-        $includeChanges = $this->request->getParam('includeChanges', true);
+        $format          = $this->request->getParam('format', 'csv');
+        $includeChanges  = $this->request->getParam('includeChanges', true);
         $includeMetadata = $this->request->getParam('includeMetadata', false);
 
         try {
             // Build export configuration
             $exportConfig = [
-                'filters' => $params['filters'],
-                'search' => $params['search'],
-                'includeChanges' => filter_var($includeChanges, FILTER_VALIDATE_BOOLEAN),
+                'filters'         => $params['filters'],
+                'search'          => $params['search'],
+                'includeChanges'  => filter_var($includeChanges, FILTER_VALIDATE_BOOLEAN),
                 'includeMetadata' => filter_var($includeMetadata, FILTER_VALIDATE_BOOLEAN),
             ];
 
@@ -292,24 +292,32 @@ class AuditTrailController extends Controller
             $exportResult = $this->logService->exportLogs($format, $exportConfig);
 
             // Return export data
-            return new JSONResponse([
-                'success' => true,
-                'data' => [
-                    'content' => $exportResult['content'],
-                    'filename' => $exportResult['filename'],
-                    'contentType' => $exportResult['contentType'],
-                    'size' => strlen($exportResult['content']),
-                ]
-            ]);
+            return new JSONResponse(
+                    [
+                        'success' => true,
+                        'data'    => [
+                            'content'     => $exportResult['content'],
+                            'filename'    => $exportResult['filename'],
+                            'contentType' => $exportResult['contentType'],
+                            'size'        => strlen($exportResult['content']),
+                        ],
+                    ]
+                    );
         } catch (\InvalidArgumentException $e) {
-            return new JSONResponse([
-                'error' => 'Invalid export format: ' . $e->getMessage()
-            ], 400);
+            return new JSONResponse(
+                    [
+                        'error' => 'Invalid export format: '.$e->getMessage(),
+                    ],
+                    400
+                    );
         } catch (\Exception $e) {
-            return new JSONResponse([
-                'error' => 'Export failed: ' . $e->getMessage()
-            ], 500);
-        }
+            return new JSONResponse(
+                    [
+                        'error' => 'Export failed: '.$e->getMessage(),
+                    ],
+                    500
+                    );
+        }//end try
 
     }//end export()
 
@@ -328,26 +336,37 @@ class AuditTrailController extends Controller
     {
         try {
             $success = $this->logService->deleteLog($id);
-            
+
             if ($success) {
-                return new JSONResponse([
-                    'success' => true,
-                    'message' => 'Audit trail deleted successfully'
-                ]);
+                return new JSONResponse(
+                        [
+                            'success' => true,
+                            'message' => 'Audit trail deleted successfully',
+                        ]
+                        );
             } else {
-                return new JSONResponse([
-                    'error' => 'Failed to delete audit trail'
-                ], 500);
+                return new JSONResponse(
+                        [
+                            'error' => 'Failed to delete audit trail',
+                        ],
+                        500
+                        );
             }
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return new JSONResponse([
-                'error' => 'Audit trail not found'
-            ], 404);
+            return new JSONResponse(
+                    [
+                        'error' => 'Audit trail not found',
+                    ],
+                    404
+                    );
         } catch (\Exception $e) {
-            return new JSONResponse([
-                'error' => 'Deletion failed: ' . $e->getMessage()
-            ], 500);
-        }
+            return new JSONResponse(
+                    [
+                        'error' => 'Deletion failed: '.$e->getMessage(),
+                    ],
+                    500
+                    );
+        }//end try
 
     }//end destroy()
 
@@ -364,7 +383,7 @@ class AuditTrailController extends Controller
     {
         // Extract request parameters
         $params = $this->extractRequestParameters();
-        
+
         // Get specific parameters for mass deletion
         $ids = $this->request->getParam('ids', null);
 
@@ -372,7 +391,7 @@ class AuditTrailController extends Controller
             // Build deletion configuration
             $deleteConfig = [
                 'filters' => $params['filters'],
-                'search' => $params['search'],
+                'search'  => $params['search'],
             ];
 
             // Add specific IDs if provided
@@ -388,21 +407,66 @@ class AuditTrailController extends Controller
             // Delete logs using service
             $result = $this->logService->deleteLogs($deleteConfig);
 
-            return new JSONResponse([
-                'success' => true,
-                'results' => $result,
-                'message' => sprintf(
+            return new JSONResponse(
+                    [
+                        'success' => true,
+                        'results' => $result,
+                        'message' => sprintf(
                     'Deleted %d audit trails successfully. %d failed.',
                     $result['deleted'],
                     $result['failed']
-                )
-            ]);
+                ),
+                    ]
+                    );
         } catch (\Exception $e) {
-            return new JSONResponse([
-                'error' => 'Mass deletion failed: ' . $e->getMessage()
-            ], 500);
-        }
+            return new JSONResponse(
+                    [
+                        'error' => 'Mass deletion failed: '.$e->getMessage(),
+                    ],
+                    500
+                    );
+        }//end try
 
     }//end destroyMultiple()
+
+
+    /**
+     * Clear all audit trail logs
+     *
+     * @return JSONResponse A JSON response indicating success or failure
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function clearAll(): JSONResponse
+    {
+        try {
+            // Get the audit trail mapper from the container
+            $auditTrailMapper = \OC::$server->get('OCA\OpenRegister\Db\AuditTrailMapper');
+            
+                    // Use the clearAllLogs method from the mapper
+                    $result = $auditTrailMapper->clearAllLogs();
+            
+            if ($result) {
+                return new JSONResponse([
+                    'success' => true,
+                    'message' => 'All audit trails cleared successfully',
+                    'deleted' => 'All expired audit trails have been deleted'
+                ]);
+            } else {
+                return new JSONResponse([
+                    'success' => true,
+                    'message' => 'No expired audit trails found to clear',
+                    'deleted' => 0
+                ]);
+            }
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => 'Failed to clear audit trails: ' . $e->getMessage()
+            ], 500);
+        }
+    }//end clearAll()
+
 
 }//end class

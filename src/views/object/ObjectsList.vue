@@ -1,5 +1,5 @@
 <script setup>
-import { objectStore, navigationStore } from '../../store/store.js'
+import { objectStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -29,7 +29,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 							</template>
 							Upload
 						</NcActionButton>
-						<NcActionButton close-after-click @click="objectStore.setObjectItem(null); navigationStore.setModal('editObject')">
+						<NcActionButton close-after-click @click="addObject">
 							<template #icon>
 								<Plus :size="20" />
 							</template>
@@ -61,7 +61,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 						{{ object.uuid }}
 					</template>
 					<template #actions>
-						<NcActionButton close-after-click @click="objectStore.setObjectItem(object); navigationStore.setModal('editObject')">
+						<NcActionButton close-after-click @click="objectStore.setObjectItem(object); navigationStore.setModal('viewObject')">
 							<template #icon>
 								<Pencil />
 							</template>
@@ -169,6 +169,20 @@ export default {
 		objectStore.refreshObjectList({ limit: this.limit, page: this.currentPage, search: this.search }).finally(() => {
 			this.loading = false
 		})
+	},
+	methods: {
+		addObject() {
+			// Clear any existing object and open the add object modal
+			objectStore.setObjectItem(null)
+			// Ensure register and schema are set for new object creation
+			if (registerStore.registerItem) {
+				registerStore.setRegisterItem(registerStore.registerItem)
+			}
+			if (schemaStore.schemaItem) {
+				schemaStore.setSchemaItem(schemaStore.schemaItem)
+			}
+			navigationStore.setModal('viewObject')
+		},
 	},
 }
 </script>

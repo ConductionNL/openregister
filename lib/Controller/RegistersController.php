@@ -25,7 +25,6 @@ use OCA\OpenRegister\Db\RegisterMapper;
 
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RegisterService;
-use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Service\UploadService;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -38,8 +37,10 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\DB\Exception as DBException;
+use OCP\IUserSession;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCP\IRequest;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -90,6 +91,7 @@ class RegistersController extends Controller
      */
     private readonly RegisterMapper $registerMapper;
 
+
     /**
      * Constructor for the RegistersController
      *
@@ -98,6 +100,7 @@ class RegistersController extends Controller
      * @param RegisterService      $registerService      The register service
      * @param ObjectEntityMapper   $objectEntityMapper   The object entity mapper
      * @param UploadService        $uploadService        The upload service
+     * @param LoggerInterface      $logger               The logger interface
      * @param ConfigurationService $configurationService The configuration service
      * @param AuditTrailMapper     $auditTrailMapper     The audit trail mapper
      * @param ExportService        $exportService        The export service
@@ -113,6 +116,8 @@ class RegistersController extends Controller
         private readonly RegisterService $registerService,
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly UploadService $uploadService,
+        private readonly LoggerInterface $logger,
+        private readonly IUserSession $userSession,
         ConfigurationService $configurationService,
         AuditTrailMapper $auditTrailMapper,
         ExportService $exportService,
@@ -127,38 +132,13 @@ class RegistersController extends Controller
         $this->importService        = $importService;
         $this->schemaMapper         = $schemaMapper;
         $this->registerMapper       = $registerMapper;
+
     }//end __construct()
-
-
-    /**
-     * Returns the template of the main app's page
-     *
-     * This method renders the main page of the application, adding any necessary data to the template.
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return TemplateResponse The rendered template response
-     */
-    public function page(): TemplateResponse
-    {
-        return new TemplateResponse(
-            'openconnector',
-            'index',
-            []
-        );
-
-    }//end page()
-
 
     /**
      * Retrieves a list of all registers
      *
      * This method returns a JSON response containing an array of all registers in the system.
-     *
-     * @param ObjectService $objectService The object service
-     * @param SearchService $searchService The search service
      *
      * @return JSONResponse A JSON response containing the list of registers
      *
@@ -166,19 +146,29 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function index(
-        ObjectService $objectService,
-        SearchService $searchService
-    ): JSONResponse {
+    public function index(): JSONResponse {
         // Get request parameters for filtering and searching.
-        $filters = $this->request->getParam(key: 'filters', default: []);
-        $search  = $this->request->getParam(key: '_search', default: '');
-        $extend  = $this->request->getParam(key: '_extend', default: []);
+        $params = $this->request->getParams();
+        
+        // Extract pagination and search parameters
+        $limit  = isset($params['_limit']) ? (int) $params['_limit'] : null;
+        $offset = isset($params['_offset']) ? (int) $params['_offset'] : null;
+        $page   = isset($params['_page']) ? (int) $params['_page'] : null;
+        $search = $params['_search'] ?? '';
+        $extend = $params['_extend'] ?? [];
         if (is_string($extend)) {
             $extend = [$extend];
         }
-
-        $registers    = $this->registerService->findAll(null, null, $filters, [], [], []);
+        
+        // Convert page to offset if provided
+        if ($page !== null && $limit !== null) {
+            $offset = ($page - 1) * $limit;
+        }
+        
+        // Extract filters
+        $filters = $params['filters'] ?? [];
+        
+        $registers    = $this->registerService->findAll($limit, $offset, $filters, [], [], []);
         $registersArr = array_map(fn($register) => $register->jsonSerialize(), $registers);
         // If '@self.stats' is requested, attach statistics to each register
         if (in_array('@self.stats', $extend, true)) {
@@ -259,7 +249,7 @@ class RegistersController extends Controller
 
         try {
             // Create a new register from the data.
-            return new JSONResponse($this->registerService->createFromArray($data));
+            return new JSONResponse($this->registerService->createFromArray($data), 201);
         } catch (DBException $e) {
             // Handle database constraint violations with user-friendly messages
             $constraintException = DatabaseConstraintException::fromDatabaseException($e, 'register');
@@ -297,10 +287,11 @@ class RegistersController extends Controller
             }
         }
 
-        // Remove ID if present to prevent conflicts.
-        if (isset($data['id']) === true) {
-            unset($data['id']);
-        }
+        // Remove immutable fields to prevent tampering
+        unset($data['id']);
+        unset($data['organisation']);
+        unset($data['owner']);
+        unset($data['created']);
 
         try {
             // Update the register with the provided data.
@@ -315,6 +306,29 @@ class RegistersController extends Controller
         }
 
     }//end update()
+
+
+    /**
+     * Patch (partially update) a register
+     *
+     * This method handles partial updates (PATCH requests) by updating only
+     * the fields provided in the request body. This is different from PUT
+     * which typically requires all fields to be provided.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param int $id The ID of the register to patch
+     *
+     * @return JSONResponse The updated register data
+     */
+    public function patch(int $id): JSONResponse
+    {
+        // PATCH works the same as PUT for this resource
+        // The service layer handles partial updates automatically
+        return $this->update($id);
+
+    }//end patch()
 
 
     /**
@@ -334,12 +348,20 @@ class RegistersController extends Controller
      */
     public function destroy(int $id): JSONResponse
     {
-        // Find the register by ID and delete it.
-        $register = $this->registerService->find((int) $id);
-        $this->registerService->delete($register);
+        try {
+            // Find the register by ID and delete it.
+            $register = $this->registerService->find((int) $id);
+            $this->registerService->delete($register);
 
-        // Return an empty response.
-        return new JSONResponse([]);
+            // Return an empty response.
+            return new JSONResponse([]);
+        } catch (\OCA\OpenRegister\Exception\ValidationException $e) {
+            // Return 409 Conflict for cascade protection (objects still attached)
+            return new JSONResponse(['error' => $e->getMessage()], 409);
+        } catch (\Exception $e) {
+            // Return 500 for other errors
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
 
     }//end destroy()
 
@@ -355,32 +377,34 @@ class RegistersController extends Controller
      *
      * @NoAdminRequired
      *
-     * @NoCSRFRequired  
+     * @NoCSRFRequired
      */
     public function schemas(int|string $id): JSONResponse
     {
         try {
             // Find the register first to validate it exists and get its ID
-            $register = $this->registerService->find($id);
+            $register   = $this->registerService->find($id);
             $registerId = $register->getId();
-            
+
             // Get the schemas associated with this register
             $schemas = $this->registerMapper->getSchemasByRegisterId($registerId);
-            
+
             // Convert schemas to array format for JSON response
             $schemasArray = array_map(fn($schema) => $schema->jsonSerialize(), $schemas);
-            
-            return new JSONResponse([
-                'results' => $schemasArray,
-                'total' => count($schemasArray)
-            ]);
+
+            return new JSONResponse(
+                    [
+                        'results' => $schemasArray,
+                        'total'   => count($schemasArray),
+                    ]
+                    );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Return a 404 error if the register doesn't exist
             return new JSONResponse(['error' => 'Register not found'], 404);
         } catch (\Exception $e) {
             // Return a 500 error for other exceptions
-            return new JSONResponse(['error' => 'Internal server error: ' . $e->getMessage()], 500);
-        }
+            return new JSONResponse(['error' => 'Internal server error: '.$e->getMessage()], 500);
+        }//end try
 
     }//end schemas()
 
@@ -402,8 +426,14 @@ class RegistersController extends Controller
     public function objects(int $register, int $schema): JSONResponse
     {
         // Find objects by register and schema IDs.
+        $query = [
+            '@self' => [
+                'register' => $register,
+                'schema'   => $schema,
+            ],
+        ];
         return new JSONResponse(
-            $this->objectEntityMapper->findByRegisterAndSchema(register: $register, schema: $schema)
+            $this->objectEntityMapper->searchObjects($query)
         );
 
     }//end objects()
@@ -426,15 +456,15 @@ class RegistersController extends Controller
     {
         try {
             // Get export format from query parameter
-            $format = $this->request->getParam(key: 'format', default: 'configuration');
+            $format         = $this->request->getParam(key: 'format', default: 'configuration');
             $includeObjects = filter_var($this->request->getParam(key: 'includeObjects', default: false), FILTER_VALIDATE_BOOLEAN);
-            $register = $this->registerService->find($id);
+            $register       = $this->registerService->find($id);
 
             switch ($format) {
                 case 'excel':
-                    $spreadsheet = $this->exportService->exportToExcel($register);
-                    $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-                    $filename = sprintf('%s_%s.xlsx', $register->getSlug(), (new \DateTime())->format('Y-m-d_His'));
+                    $spreadsheet = $this->exportService->exportToExcel($register, null, [], $this->userSession->getUser());
+                    $writer      = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+                    $filename    = sprintf('%s_%s.xlsx', $register->getSlug(), (new \DateTime())->format('Y-m-d_His'));
                     ob_start();
                     $writer->save('php://output');
                     $content = ob_get_clean();
@@ -442,30 +472,33 @@ class RegistersController extends Controller
                 case 'csv':
                     // CSV exports require a specific schema
                     $schemaId = $this->request->getParam('schema');
-                    
+
                     if (!$schemaId) {
                         // If no schema specified, return error (CSV cannot handle multiple schemas)
                         return new JSONResponse(data: ['error' => 'CSV export requires a specific schema to be selected'], statusCode: 400);
                     }
-                    
-                    $schema = $this->schemaMapper->find($schemaId);
-                    $csv = $this->exportService->exportToCsv($register, $schema);
+
+                    $schema   = $this->schemaMapper->find($schemaId);
+                    $csv      = $this->exportService->exportToCsv($register, $schema, [], $this->userSession->getUser());
                     $filename = sprintf('%s_%s_%s.csv', $register->getSlug(), $schema->getSlug(), (new \DateTime())->format('Y-m-d_His'));
                     return new DataDownloadResponse($csv, $filename, 'text/csv');
                 case 'configuration':
                 default:
-                    $exportData = $this->configurationService->exportConfig($register, $includeObjects);
+                    $exportData  = $this->configurationService->exportConfig($register, $includeObjects);
                     $jsonContent = json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
                     if ($jsonContent === false) {
                         throw new Exception('Failed to encode register data to JSON');
                     }
+
                     $filename = sprintf('%s_%s.json', $register->getSlug(), (new \DateTime())->format('Y-m-d_His'));
                     return new DataDownloadResponse($jsonContent, $filename, 'application/json');
-            }
+            }//end switch
         } catch (Exception $e) {
             return new JSONResponse(['error' => 'Failed to export register: '.$e->getMessage()], 400);
-        }
-    }
+        }//end try
+
+    }//end export()
+
 
     /**
      * Import data into a register
@@ -475,9 +508,9 @@ class RegistersController extends Controller
      * @param int  $id    The ID of the register to import into
      * @param bool $force Force import even if the same or newer version already exists
      *
-     * @return JSONResponse The result of the import operation with summary
+     * @return         JSONResponse The result of the import operation with summary
      * @phpstan-return JSONResponse
-     * @psalm-return JSONResponse
+     * @psalm-return   JSONResponse
      *
      * @NoAdminRequired
      * @NoCSRFRequired
@@ -494,59 +527,83 @@ class RegistersController extends Controller
             // Dynamically determine import type if not provided
             $type = $this->request->getParam('type');
             if (!$type) {
-                $mimeType = $uploadedFile['type'] ?? '';
-                $filename = $uploadedFile['name'] ?? '';
+                $mimeType  = $uploadedFile['type'] ?? '';
+                $filename  = $uploadedFile['name'] ?? '';
                 $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
                 if (in_array($extension, ['xlsx', 'xls'])) {
                     $type = 'excel';
-                } elseif ($extension === 'csv') {
+                } else if ($extension === 'csv') {
                     $type = 'csv';
                 } else {
                     $type = 'configuration';
                 }
             }
 
-            // Get import options for all types
-            $includeObjects = filter_var($this->request->getParam('includeObjects', false), FILTER_VALIDATE_BOOLEAN);
-            $validation = filter_var($this->request->getParam('validation', false), FILTER_VALIDATE_BOOLEAN);
-            $events = filter_var($this->request->getParam('events', false), FILTER_VALIDATE_BOOLEAN);
+            // Get import options for all types - support both boolean and string values
+            $includeObjects = $this->parseBooleanParam('includeObjects', false);
+            $validation     = $this->parseBooleanParam('validation', false);
+            $events         = $this->parseBooleanParam('events', false);
+            $publish        = $this->parseBooleanParam('publish', false);
+            
+            // Log import parameters for debugging
+            $this->logger->debug('Import parameters received', [
+                'includeObjects' => $includeObjects,
+                'validation' => $validation,
+                'events' => $events,
+                'publish' => $publish,
+                'registerId' => $id
+            ]);
             // Find the register
             $register = $this->registerService->find($id);
             // Handle different import types
             switch ($type) {
                 case 'excel':
                     // Import from Excel and get summary (now returns sheet-based format)
+                    // Get additional performance parameters with enhanced boolean parsing
+                    $rbac      = $this->parseBooleanParam('rbac', true);
+                    $multi     = $this->parseBooleanParam('multi', true);
+                    $chunkSize = (int) $this->request->getParam('chunkSize', 5);
+                    // Use optimized default
                     $summary = $this->importService->importFromExcel(
                         $uploadedFile['tmp_name'],
                         $register,
                         null,
-                        25, // chunk size
+                        $chunkSize,
                         $validation,
-                        $events
+                        $events,
+                        $rbac,
+                        $multi,
+                        $publish,
+                        $this->userSession->getUser()
                     );
                     break;
                 case 'csv':
                     // Import from CSV and get summary (now returns sheet-based format)
-                    // For CSV, schema can be specified in the request
+                    // For CSV, schema MUST be specified in the request
                     $schemaId = $this->request->getParam('schema');
-                    
+
                     if (!$schemaId) {
-                        // If no schema specified, use the first schema from the register
-                        $schemas = $register->getSchemas();
-                        if (empty($schemas)) {
-                            return new JSONResponse(['error' => 'No schema found for register'], 400);
-                        }
-                        $schemaId = is_array($schemas) ? reset($schemas) : $schemas;
+                        return new JSONResponse(['error' => 'Schema parameter is required for CSV imports. Please specify ?schema=105 in your request.'], 400);
                     }
-                    
+
                     $schema = $this->schemaMapper->find($schemaId);
+
+                    // Get additional performance parameters with enhanced boolean parsing
+                    $rbac      = $this->parseBooleanParam('rbac', true);
+                    $multi     = $this->parseBooleanParam('multi', true);
+                    $chunkSize = (int) $this->request->getParam('chunkSize', 5);
+                    // Use optimized default
                     $summary = $this->importService->importFromCsv(
                         $uploadedFile['tmp_name'],
                         $register,
                         $schema,
-                        25, // chunk size
+                        $chunkSize,
                         $validation,
-                        $events
+                        $events,
+                        $rbac,
+                        $multi,
+                        $publish,
+                        $this->userSession->getUser()
                     );
                     break;
                 case 'configuration':
@@ -558,6 +615,7 @@ class RegistersController extends Controller
                     if ($jsonData instanceof JSONResponse) {
                         return $jsonData;
                     }
+
                     // Import the data and get the result
                     $result = $this->configurationService->importFromJson(
                         $jsonData,
@@ -569,24 +627,25 @@ class RegistersController extends Controller
                     // Build a summary for objects if present in sheet-based format
                     $summary = [
                         'configuration' => [
-                            'created' => [],
-                            'updated' => [],
+                            'created'   => [],
+                            'updated'   => [],
                             'unchanged' => [],
-                            'errors' => []
-                        ]
+                            'errors'    => [],
+                        ],
                     ];
                     if (isset($result['objects']) && is_array($result['objects'])) {
                         foreach ($result['objects'] as $object) {
                             // For now, treat all as 'created' (improve if possible)
                             $summary['configuration']['created'][] = [
-                                'id' => $object->getId(),
-                                'uuid' => $object->getUuid(),
-                                'sheet' => 'configuration',
+                                'id'       => $object->getId(),
+                                'uuid'     => $object->getUuid(),
+                                'sheet'    => 'configuration',
                                 'register' => [
-                                    'id' => $register->getId(),
-                                    'name' => $register->getTitle()
+                                    'id'   => $register->getId(),
+                                    'name' => $register->getTitle(),
                                 ],
-                                'schema' => null // Schema info not available in configuration import
+                                'schema'   => null,
+                                // Schema info not available in configuration import
                             ];
                         }
                     }
@@ -600,7 +659,7 @@ class RegistersController extends Controller
                         }
 
                         // Get existing schemas
-                        $register = $this->registerService->find($id);
+                        $register        = $this->registerService->find($id);
                         $registerSchemas = $register->getSchemas();
 
                         // Merge new with existing
@@ -612,21 +671,25 @@ class RegistersController extends Controller
                         $this->registerService->updateFromArray($id, $register->jsonSerialize());
                     }
                     break;
-            }
-            
-            return new JSONResponse([
-                'message' => 'Import successful',
-                'summary' => $summary
-            ]);
+            }//end switch
+
+            return new JSONResponse(
+                    [
+                        'message' => 'Import successful',
+                        'summary' => $summary,
+                    ]
+                    );
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 400);
-        }
-    }
+        }//end try
+
+    }//end import()
+
 
     /**
      * Get statistics for a specific register
      *
-     * @param int $id The register ID
+     * @param  int $id The register ID
      * @return JSONResponse The register statistics
      * @throws DoesNotExistException When the register is not found
      *
@@ -638,20 +701,60 @@ class RegistersController extends Controller
         try {
             // Get the register with stats
             $register = $this->registerService->find($id);
-            
+
             if (!$register) {
                 return new JSONResponse(['error' => 'Register not found'], 404);
             }
 
             // Calculate statistics for this register
             $stats = $this->registerService->calculateStats($register);
-            
+
             return new JSONResponse($stats);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Register not found'], 404);
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }
-    }
+
+    }//end stats()
+
+
+    /**
+     * Parse boolean parameter from request with enhanced support for string values
+     *
+     * Supports both actual booleans and string representations:
+     * - true, "true", "1", "on", "yes" -> true
+     * - false, "false", "0", "off", "no", "" -> false
+     *
+     * @param string $paramName The parameter name to retrieve
+     * @param bool   $default   Default value if parameter is not present
+     *
+     * @return bool The parsed boolean value
+     */
+    private function parseBooleanParam(string $paramName, bool $default=false): bool
+    {
+        $value = $this->request->getParam($paramName, $default);
+
+        // If already boolean, return as-is
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        // Handle string values
+        if (is_string($value)) {
+            $value = strtolower(trim($value));
+            return in_array($value, ['true', '1', 'on', 'yes'], true);
+        }
+
+        // Handle numeric values
+        if (is_numeric($value)) {
+            return (bool) $value;
+        }
+
+        // Fallback to default
+        return $default;
+
+    }//end parseBooleanParam()
+
 
 }//end class

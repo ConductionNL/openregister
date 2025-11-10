@@ -35,6 +35,7 @@ use Exception;
 class BulkController extends Controller
 {
 
+
     /**
      * Constructor for the BulkController
      *
@@ -97,7 +98,7 @@ class BulkController extends Controller
             }
 
             // Get request data
-            $data = $this->request->getParams();
+            $data  = $this->request->getParams();
             $uuids = $data['uuids'] ?? [];
 
             // Validate input
@@ -115,21 +116,22 @@ class BulkController extends Controller
             // Perform bulk delete operation
             $deletedUuids = $this->objectService->deleteObjects($uuids);
 
-            return new JSONResponse([
-                'success' => true,
-                'message' => 'Bulk delete operation completed successfully',
-                'deleted_count' => count($deletedUuids),
-                'deleted_uuids' => $deletedUuids,
-                'requested_count' => count($uuids),
-                'skipped_count' => count($uuids) - count($deletedUuids)
-            ]);
-
+            return new JSONResponse(
+                    [
+                        'success'         => true,
+                        'message'         => 'Bulk delete operation completed successfully',
+                        'deleted_count'   => count($deletedUuids),
+                        'deleted_uuids'   => $deletedUuids,
+                        'requested_count' => count($uuids),
+                        'skipped_count'   => count($uuids) - count($deletedUuids),
+                    ]
+                    );
         } catch (Exception $e) {
             return new JSONResponse(
-                ['error' => 'Bulk delete operation failed: ' . $e->getMessage()],
+                ['error' => 'Bulk delete operation failed: '.$e->getMessage()],
                 Http::STATUS_INTERNAL_SERVER_ERROR
             );
-        }
+        }//end try
 
     }//end delete()
 
@@ -156,8 +158,8 @@ class BulkController extends Controller
             }
 
             // Get request data
-            $data = $this->request->getParams();
-            $uuids = $data['uuids'] ?? [];
+            $data     = $this->request->getParams();
+            $uuids    = $data['uuids'] ?? [];
             $datetime = $data['datetime'] ?? true;
 
             // Validate input
@@ -187,22 +189,23 @@ class BulkController extends Controller
             // Perform bulk publish operation
             $publishedUuids = $this->objectService->publishObjects($uuids, $datetime);
 
-            return new JSONResponse([
-                'success' => true,
-                'message' => 'Bulk publish operation completed successfully',
-                'published_count' => count($publishedUuids),
-                'published_uuids' => $publishedUuids,
-                'requested_count' => count($uuids),
-                'skipped_count' => count($uuids) - count($publishedUuids),
-                'datetime_used' => $datetime instanceof \DateTime ? $datetime->format('Y-m-d H:i:s') : $datetime
-            ]);
-
+            return new JSONResponse(
+                    [
+                        'success'         => true,
+                        'message'         => 'Bulk publish operation completed successfully',
+                        'published_count' => count($publishedUuids),
+                        'published_uuids' => $publishedUuids,
+                        'requested_count' => count($uuids),
+                        'skipped_count'   => count($uuids) - count($publishedUuids),
+                        'datetime_used'   => $datetime instanceof \DateTime ? $datetime->format('Y-m-d H:i:s') : $datetime,
+                    ]
+                    );
         } catch (Exception $e) {
             return new JSONResponse(
-                ['error' => 'Bulk publish operation failed: ' . $e->getMessage()],
+                ['error' => 'Bulk publish operation failed: '.$e->getMessage()],
                 Http::STATUS_INTERNAL_SERVER_ERROR
             );
-        }
+        }//end try
 
     }//end publish()
 
@@ -229,8 +232,8 @@ class BulkController extends Controller
             }
 
             // Get request data
-            $data = $this->request->getParams();
-            $uuids = $data['uuids'] ?? [];
+            $data     = $this->request->getParams();
+            $uuids    = $data['uuids'] ?? [];
             $datetime = $data['datetime'] ?? true;
 
             // Validate input
@@ -260,22 +263,23 @@ class BulkController extends Controller
             // Perform bulk depublish operation
             $depublishedUuids = $this->objectService->depublishObjects($uuids, $datetime);
 
-            return new JSONResponse([
-                'success' => true,
-                'message' => 'Bulk depublish operation completed successfully',
-                'depublished_count' => count($depublishedUuids),
-                'depublished_uuids' => $depublishedUuids,
-                'requested_count' => count($uuids),
-                'skipped_count' => count($uuids) - count($depublishedUuids),
-                'datetime_used' => $datetime instanceof \DateTime ? $datetime->format('Y-m-d H:i:s') : $datetime
-            ]);
-
+            return new JSONResponse(
+                    [
+                        'success'           => true,
+                        'message'           => 'Bulk depublish operation completed successfully',
+                        'depublished_count' => count($depublishedUuids),
+                        'depublished_uuids' => $depublishedUuids,
+                        'requested_count'   => count($uuids),
+                        'skipped_count'     => count($uuids) - count($depublishedUuids),
+                        'datetime_used'     => $datetime instanceof \DateTime ? $datetime->format('Y-m-d H:i:s') : $datetime,
+                    ]
+                    );
         } catch (Exception $e) {
             return new JSONResponse(
-                ['error' => 'Bulk depublish operation failed: ' . $e->getMessage()],
+                ['error' => 'Bulk depublish operation failed: '.$e->getMessage()],
                 Http::STATUS_INTERNAL_SERVER_ERROR
             );
-        }
+        }//end try
 
     }//end depublish()
 
@@ -302,7 +306,7 @@ class BulkController extends Controller
             }
 
             // Get request data
-            $data = $this->request->getParams();
+            $data    = $this->request->getParams();
             $objects = $data['objects'] ?? [];
 
             // Validate input
@@ -313,29 +317,273 @@ class BulkController extends Controller
                 );
             }
 
+            // FLEXIBLE SCHEMA HANDLING: Support both single-schema and mixed-schema operations
+            // Use schema=0 to indicate mixed-schema operations where objects specify their own schemas
+            
+            $isMixedSchemaOperation = ($schema === '0' || $schema === 0);
+            
+            if ($isMixedSchemaOperation) {
+                // Mixed-schema operation - don't set a specific schema context
+                $this->objectService->setRegister($register);
+                // Don't call setSchema() for mixed operations
+                
+                $savedObjects = $this->objectService->saveObjects(
+                    objects: $objects,
+                    register: $register,
+                    schema: null, // Allow objects to specify their own schemas
+                    rbac: true,
+                    multi: true,
+                    validation: true,
+                    events: false
+                );
+            } else {
+                // Single-schema operation - traditional behavior
+                $this->objectService->setRegister($register);
+                $this->objectService->setSchema($schema);
+
+                $savedObjects = $this->objectService->saveObjects(
+                    objects: $objects,
+                    register: $register,
+                    schema: $schema,
+                    rbac: true,
+                    multi: true,
+                    validation: true,
+                    events: false
+                );
+            }
+
+            return new JSONResponse(
+                    [
+                        'success'         => true,
+                        'message'         => 'Bulk save operation completed successfully',
+                        'saved_count'     => ($savedObjects['statistics']['saved'] ?? 0) + ($savedObjects['statistics']['updated'] ?? 0),
+                        'saved_objects'   => $savedObjects,
+                        'requested_count' => count($objects),
+                    ]
+                    );
+        } catch (Exception $e) {
+            return new JSONResponse(
+                ['error' => 'Bulk save operation failed: '.$e->getMessage()],
+                Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }//end try
+
+    }//end save()
+
+
+    /**
+     * Publish all objects belonging to a specific schema
+     *
+     * @param string $register The register identifier
+     * @param string $schema   The schema identifier
+     *
+     * @return JSONResponse Response with the result of the schema publishing operation
+     *
+     * @NoCSRFRequired
+     */
+    public function publishSchema(string $register, string $schema): JSONResponse
+    {
+        try {
+            // Check if user is admin
+            if (!$this->isCurrentUserAdmin()) {
+                return new JSONResponse(
+                    ['error' => 'Insufficient permissions. Admin access required.'],
+                    Http::STATUS_FORBIDDEN
+                );
+            }
+
+            // Validate input
+            if (!is_numeric($schema)) {
+                return new JSONResponse(
+                    ['error' => 'Invalid schema ID. Must be numeric.'],
+                    Http::STATUS_BAD_REQUEST
+                );
+            }
+
+            // Get request data
+            $data = $this->request->getParams();
+            $publishAll = $data['publishAll'] ?? false;
+
             // Set register and schema context
             $this->objectService->setRegister($register);
             $this->objectService->setSchema($schema);
 
-            // Perform bulk save operation
-            $savedObjects = $this->objectService->saveObjects($objects);
+            // Perform schema publishing operation
+            $result = $this->objectService->publishObjectsBySchema((int) $schema, $publishAll);
 
-            return new JSONResponse([
-                'success' => true,
-                'message' => 'Bulk save operation completed successfully',
-                'saved_count' => count($savedObjects),
-                'saved_objects' => $savedObjects,
-                'requested_count' => count($objects)
-            ]);
-
+            return new JSONResponse(
+                [
+                    'success' => true,
+                    'message' => 'Schema objects publishing completed successfully',
+                    'published_count' => $result['published_count'],
+                    'published_uuids' => $result['published_uuids'],
+                    'schema_id' => $result['schema_id'],
+                    'publish_all' => $publishAll,
+                ]
+            );
         } catch (Exception $e) {
             return new JSONResponse(
-                ['error' => 'Bulk save operation failed: ' . $e->getMessage()],
+                ['error' => 'Schema objects publishing failed: '.$e->getMessage()],
                 Http::STATUS_INTERNAL_SERVER_ERROR
             );
-        }
+        }//end try
 
-    }//end save()
+    }//end publishSchema()
+
+
+    /**
+     * Delete all objects belonging to a specific schema
+     *
+     * @param string $register The register identifier
+     * @param string $schema   The schema identifier
+     *
+     * @return JSONResponse Response with the result of the schema deletion operation
+     *
+     * @NoCSRFRequired
+     */
+    public function deleteSchema(string $register, string $schema): JSONResponse
+    {
+        try {
+            // Check if user is admin
+            if (!$this->isCurrentUserAdmin()) {
+                return new JSONResponse(
+                    ['error' => 'Insufficient permissions. Admin access required.'],
+                    Http::STATUS_FORBIDDEN
+                );
+            }
+
+            // Validate input
+            if (!is_numeric($schema)) {
+                return new JSONResponse(
+                    ['error' => 'Invalid schema ID. Must be numeric.'],
+                    Http::STATUS_BAD_REQUEST
+                );
+            }
+
+            // Get request data
+            $data = $this->request->getParams();
+            $hardDelete = $data['hardDelete'] ?? false;
+
+            // Set register and schema context
+            $this->objectService->setRegister($register);
+            $this->objectService->setSchema($schema);
+
+            // Perform schema deletion operation
+            $result = $this->objectService->deleteObjectsBySchema((int) $schema, $hardDelete);
+
+            return new JSONResponse(
+                [
+                    'success' => true,
+                    'message' => 'Schema objects deletion completed successfully',
+                    'deleted_count' => $result['deleted_count'],
+                    'deleted_uuids' => $result['deleted_uuids'],
+                    'schema_id' => $result['schema_id'],
+                    'hard_delete' => $hardDelete,
+                ]
+            );
+        } catch (Exception $e) {
+            return new JSONResponse(
+                ['error' => 'Schema objects deletion failed: '.$e->getMessage()],
+                Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }//end try
+
+    }//end deleteSchema()
+
+
+    /**
+     * Delete all objects belonging to a specific register
+     *
+     * @param string $register The register identifier
+     *
+     * @return JSONResponse Response with the result of the register deletion operation
+     *
+     * @NoCSRFRequired
+     */
+    public function deleteRegister(string $register): JSONResponse
+    {
+        try {
+            // Check if user is admin
+            if (!$this->isCurrentUserAdmin()) {
+                return new JSONResponse(
+                    ['error' => 'Insufficient permissions. Admin access required.'],
+                    Http::STATUS_FORBIDDEN
+                );
+            }
+
+            // Validate input
+            if (!is_numeric($register)) {
+                return new JSONResponse(
+                    ['error' => 'Invalid register ID. Must be numeric.'],
+                    Http::STATUS_BAD_REQUEST
+                );
+            }
+
+            // Set register context
+            $this->objectService->setRegister($register);
+
+            // Perform register deletion operation
+            $result = $this->objectService->deleteObjectsByRegister((int) $register);
+
+            return new JSONResponse(
+                [
+                    'success' => true,
+                    'message' => 'Register objects deletion completed successfully',
+                    'deleted_count' => $result['deleted_count'],
+                    'deleted_uuids' => $result['deleted_uuids'],
+                    'register_id' => $result['register_id'],
+                ]
+            );
+        } catch (Exception $e) {
+            return new JSONResponse(
+                ['error' => 'Register objects deletion failed: '.$e->getMessage()],
+                Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }//end try
+
+    }//end deleteRegister()
+
+
+    /**
+     * Validate all objects belonging to a specific schema
+     *
+     * @param string $schema The schema identifier
+     *
+     * @return JSONResponse Response with the validation results
+     *
+     * @NoCSRFRequired
+     */
+    public function validateSchema(string $schema): JSONResponse
+    {
+        try {
+            // Check if user is admin
+            if (!$this->isCurrentUserAdmin()) {
+                return new JSONResponse(
+                    ['error' => 'Insufficient permissions. Admin access required.'],
+                    Http::STATUS_FORBIDDEN
+                );
+            }
+
+            // Validate input
+            if (!is_numeric($schema)) {
+                return new JSONResponse(
+                    ['error' => 'Invalid schema ID. Must be numeric.'],
+                    Http::STATUS_BAD_REQUEST
+                );
+            }
+
+            // Perform schema validation operation and return service result directly
+            $result = $this->objectService->validateObjectsBySchema((int) $schema);
+            
+            return new JSONResponse($result);
+        } catch (Exception $e) {
+            return new JSONResponse(
+                ['error' => 'Schema validation failed: '.$e->getMessage()],
+                Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }//end try
+
+    }//end validateSchema()
 
 
 }//end class

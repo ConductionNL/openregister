@@ -166,15 +166,19 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 							</div>
 							<!-- Schemas section -->
 							<div class="nestedCardContainer">
-								<h3>{{ t('openregister', 'Schemas') }} ({{ register.schemas?.length || 0 }})</h3>
-								<div v-for="schema in register.schemas" :key="schema.id" class="nestedCard">
-									<div class="nestedCardTitle">
-										<FileCodeOutline :size="16" />
-										{{ schema.title }}
-										<span v-if="schema.description" class="schemaDescription">- {{ schema.description }}</span>
-									</div>
+								<h3>
+									<FileCodeOutline :size="16" />
+									{{ t('openregister', 'Schemas') }} ({{ register.schemas?.length || 0 }})
+								</h3>
+								<div v-if="register.schemas?.length > 0" class="schemaCount">
+									<p>
+										{{ t('openregister', 'This register contains {count} schema{plural}', {
+											count: register.schemas.length,
+											plural: register.schemas.length !== 1 ? 's' : ''
+										}) }}
+									</p>
 								</div>
-								<div v-if="!register.schemas?.length" class="emptySchemas">
+								<div v-else class="emptySchemas">
 									{{ t('openregister', 'No schemas found') }}
 								</div>
 							</div>
@@ -218,7 +222,9 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 										</div>
 									</td>
 									<td class="tableColumnConstrained">
-										{{ register.schemas.map(schema => schema.title).join(', ') }}
+										{{ register.schemas?.length || 0 }} {{ t('openregister', 'schema{plural}', {
+											plural: register.schemas?.length !== 1 ? 's' : ''
+										}) }}
 									</td>
 									<td>{{ register.created ? new Date(register.created).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(register.created).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}</td>
 									<td>{{ register.updated ? new Date(register.updated).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(register.updated).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}</td>
@@ -464,7 +470,7 @@ export default {
 			// Set the register ID in the register store for reference
 			registerStore.setRegisterItem({ id: register.id })
 			// Navigate to detail view which will use dashboard store data
-			navigationStore.setSelected('register-detail')
+			this.$router.push(`/registers/${register.id}`)
 		},
 
 		toggleSelectAll(checked) {
@@ -491,6 +497,24 @@ export default {
 	color: var(--color-text-maxcontrast);
 	font-size: 0.9em;
 	margin-inline-start: 4px;
+}
+
+.schemaCount {
+	color: var(--color-text-maxcontrast);
+	font-size: 0.9em;
+	font-style: italic;
+	margin-top: 0.5rem;
+}
+
+.schemaCount p {
+	margin: 0;
+}
+
+.emptySchemas {
+	color: var(--color-text-maxcontrast);
+	font-size: 0.9em;
+	font-style: italic;
+	margin-top: 0.5rem;
 }
 
 /* So that the actions menu is not overlapped by the sidebar button when it is closed */

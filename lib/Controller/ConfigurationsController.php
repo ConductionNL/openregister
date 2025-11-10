@@ -20,13 +20,12 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Service\ConfigurationService;
-use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\DataDownloadResponse;
+use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Symfony\Component\Uid\Uuid;
@@ -60,30 +59,26 @@ class ConfigurationsController extends Controller
 
     }//end __construct()
 
-
     /**
      * List all configurations
-     *
-     * @param SearchService $searchService The search service.
      *
      * @return JSONResponse List of configurations.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function index(SearchService $searchService): JSONResponse
+    public function index(): JSONResponse
     {
         // Get request parameters for filtering and searching.
         $filters        = $this->request->getParams();
-        $fieldsToSearch = ['title', 'description'];
 
-        // Create search parameters and conditions.
-        $searchParams     = $searchService->createMySQLSearchParams($filters);
-        $searchConditions = $searchService->createMySQLSearchConditions(
-            $filters,
-            $fieldsToSearch
-        );
-        $filters          = $searchService->unsetSpecialQueryParams($filters);
+        unset($filters['_route']);
+
+        $searchParams     = [];
+        $searchConditions = [];
+        $filters          = $filters;
+
+
 
         // Return all configurations that match the search conditions.
         return new JSONResponse(
@@ -184,6 +179,12 @@ class ConfigurationsController extends Controller
             }
         }
 
+        // Remove immutable fields to prevent tampering
+        unset($data['id']);
+        unset($data['organisation']);
+        unset($data['owner']);
+        unset($data['created']);
+
         try {
             return new JSONResponse(
                 $this->configurationMapper->updateFromArray($id, $data)
@@ -196,6 +197,23 @@ class ConfigurationsController extends Controller
         }
 
     }//end update()
+
+
+    /**
+     * Patch (partially update) a configuration
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param int $id The ID of the configuration to patch
+     *
+     * @return JSONResponse The updated configuration data
+     */
+    public function patch(int $id): JSONResponse
+    {
+        return $this->update($id);
+
+    }//end patch()
 
 
     /**

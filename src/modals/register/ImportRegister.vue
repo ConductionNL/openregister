@@ -7,10 +7,16 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 		name="import"
 		title="Import Data into Register"
 		size="large"
-		@close="closeModal">
-		<NcNoteCard v-if="success && importSummary" type="success">
+		:can-close="true"
+		@update:open="handleDialogClose">
+		<NcNoteCard v-if="success && importSummary && !hasImportErrors" type="success">
 			<p>Register imported successfully!</p>
 			<p><small>The register list is being refreshed in the background.</small></p>
+		</NcNoteCard>
+
+		<NcNoteCard v-if="success && importSummary && hasImportErrors" type="warning">
+			<p>Import completed with errors!</p>
+			<p><small>Some objects could not be imported. Check the details below.</small></p>
 		</NcNoteCard>
 
 		<div v-if="importResults" class="importResults">
@@ -48,7 +54,10 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 										<small class="errorText">{{ getInvalidCount(sheetSummary) }} objects failed validation</small>
 									</div>
 									<div v-else-if="sheetSummary.found === 0 && sheetSummary.errors && sheetSummary.errors.length > 0" class="errorInfo">
-										<small class="errorText">No data found - check schema matching</small>
+										<small class="errorText">No data found - check schema matching or cache issues</small>
+									</div>
+									<div v-if="isCacheRelatedError(sheetSummary)" class="cacheWarning">
+										<small class="warningText">⚠️ Cache-related error detected. Try refreshing the page or contact support.</small>
 									</div>
 									<div v-if="sheetSummary.found === 0 && sheetSummary.errors && sheetSummary.errors.length === 0" class="infoInfo">
 										<small class="infoText">Sheet appears empty or has no matching data</small>
@@ -116,10 +125,15 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 														{{ importError.row }}
 													</td>
 													<td class="errorType">
-														{{ importError.type }}
+														{{ importError.type || 'Unknown' }}
 													</td>
 													<td class="errorMessage">
 														{{ importError.error }}
+														<div v-if="importError.debug" class="errorDebugInfo">
+															<small>File: {{ importError.debug.file }}</small><br>
+															<small>Line: {{ importError.debug.line }}</small><br>
+															<small>Class: {{ importError.debug.class }}</small>
+														</div>
 													</td>
 													<td class="errorData">
 														<pre v-if="importError.data && Object.keys(importError.data).length > 0">{{ JSON.stringify(importError.data, null, 2) }}</pre>
@@ -148,6 +162,19 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
+		</NcNoteCard>
+
+		<!-- Heartbeat indicator for long imports -->
+		<NcNoteCard v-if="loading && isHeartbeatActive" type="info">
+			<p>🔄 Processing large file - keeping connection alive...</p>
+			<p><small>This may take several minutes for large datasets. The system is actively preventing timeouts.</small></p>
+			<div v-if="heartbeatStatus && heartbeatStatus.count > 0" class="heartbeatStatus">
+				<small>
+					<span v-if="heartbeatStatus.healthy" class="heartbeatHealthy">✓ Connection stable</span>
+					<span v-else class="heartbeatUnhealthy">⚠ Connection issues detected</span>
+					({{ heartbeatStatus.count }} heartbeats sent)
+				</small>
+			</div>
 		</NcNoteCard>
 
 		<div v-if="!success && !importResults" class="formContainer">
@@ -255,6 +282,36 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 						Dispatch object lifecycle events during bulk operations. May impact performance.
 					</template>
 				</NcCheckboxRadioSwitch>
+
+				<NcCheckboxRadioSwitch
+					:checked="rbac"
+					type="switch"
+					@update:checked="rbac = $event">
+					Enable RBAC (Role-Based Access Control)
+					<template #helper>
+						Apply role-based access control checks during import. Recommended for production environments.
+					</template>
+				</NcCheckboxRadioSwitch>
+
+				<NcCheckboxRadioSwitch
+					:checked="multi"
+					type="switch"
+					@update:checked="multi = $event">
+					Enable Multi-tenancy
+					<template #helper>
+						Apply multi-tenancy filtering during import. Recommended for multi-organization setups.
+					</template>
+				</NcCheckboxRadioSwitch>
+
+				<NcCheckboxRadioSwitch
+					:checked="publish"
+					type="switch"
+					@update:checked="publish = $event">
+					Auto-publish imported objects
+					<template #helper>
+						Automatically set the published date for all created and updated objects to the current timestamp.
+					</template>
+				</NcCheckboxRadioSwitch>
 			</div>
 		</div>
 
@@ -322,6 +379,9 @@ export default {
 			includeObjects: true, // Whether to include objects (default: true)
 			validation: true, // Whether to enable validation (default: true)
 			events: false, // Whether to enable events (default: false)
+			rbac: true, // Whether to enable RBAC (default: true)
+			multi: true, // Whether to enable multi-tenancy (default: true)
+			publish: false, // Whether to auto-publish imported objects (default: false)
 			allowedFileTypes: ['json', 'xlsx', 'xls', 'csv'], // Allowed file types
 			importSummary: null, // The import summary from the backend
 			importResults: null, // The import results for display
@@ -330,6 +390,8 @@ export default {
 			expandedSheets: {}, // To track expanded details for each sheet
 			expandedErrors: {}, // To track expanded error details for each sheet
 			sheetName: null, // Current sheet name for error details
+			isHeartbeatActive: false, // Whether heartbeat is currently running for timeout prevention
+			heartbeatStatus: null, // Current heartbeat status (healthy, failure count, etc.)
 		}
 	},
 	computed: {
@@ -395,6 +457,18 @@ export default {
 				title: schema.title,
 				schema,
 			}
+		},
+		/**
+		 * Check if there are any errors in the import results
+		 * @return {boolean} - Whether there are import errors
+		 */
+		hasImportErrors() {
+			if (!this.importResults) return false
+
+			// Check if any sheet has errors
+			return Object.values(this.importResults).some(sheetSummary =>
+				sheetSummary.errors && sheetSummary.errors.length > 0,
+			)
 		},
 	},
 	mounted() {
@@ -484,10 +558,24 @@ export default {
 			this.includeObjects = true // Reset to default
 			this.validation = true // Reset to default
 			this.events = false // Reset to default
+			this.rbac = true // Reset to default
+			this.multi = true // Reset to default
+			this.publish = false // Reset to default
 			this.importSummary = null
 			this.importResults = null
 			this.expandedSheets = {} // Reset expanded state
 			this.expandedErrors = {} // Reset expanded errors state
+			this.isHeartbeatActive = false // Reset heartbeat state
+			this.heartbeatStatus = null // Reset heartbeat status
+		},
+		/**
+		 * Handle dialog close event from X button
+		 * @param {boolean} isOpen - Whether the dialog is open
+		 */
+		handleDialogClose(isOpen) {
+			if (!isOpen) {
+				this.closeModal()
+			}
 		},
 		/**
 		 * Import the selected register file and handle the summary
@@ -503,11 +591,24 @@ export default {
 			this.loading = true
 			this.error = null
 
+			// Activate heartbeat indicator for large files (>500KB) to show timeout prevention
+			const isLargeFile = this.selectedFile.size > 500 * 1024 // 500KB threshold
+			if (isLargeFile) {
+				console.info('ImportRegister: Large file detected, activating heartbeat indicator')
+				this.isHeartbeatActive = true
+			}
+
 			try {
 				console.info('ImportRegister: Calling registerStore.importRegister')
-				// Call importRegister - the register refresh will happen in the background
-				// This way the loading state is turned off as soon as the import is done
-				const result = await registerStore.importRegister(this.selectedFile, this.includeObjects, this.validation, this.events)
+				// Call importRegister with heartbeat status monitoring
+				const result = await registerStore.importRegister(
+					this.selectedFile,
+					// Heartbeat status callback
+					(status) => {
+						this.heartbeatStatus = status
+						console.info('ImportRegister: Heartbeat status updated:', status)
+					},
+				)
 
 				console.info('ImportRegister: Import completed, setting success state')
 				// Store the import summary from the backend response
@@ -526,6 +627,10 @@ export default {
 				console.error('ImportRegister: Import failed:', error)
 				this.error = error.message || 'Failed to import register'
 				this.loading = false
+			} finally {
+				// Always disable heartbeat indicator when import ends
+				this.isHeartbeatActive = false
+				console.info('ImportRegister: Heartbeat indicator deactivated')
 			}
 		},
 		/**
@@ -596,6 +701,30 @@ export default {
 			// Count validation errors (objects that failed validation)
 			// Now that invalid objects contain their error info directly, we still count ValidationException types
 			return sheetSummary.errors.filter(error => error.type === 'ValidationException').length
+		},
+		/**
+		 * Check if the error might be cache-related
+		 * @param {object} sheetSummary - The sheet summary object
+		 * @return {boolean} - Whether cache issues might be causing problems
+		 */
+		isCacheRelatedError(sheetSummary) {
+			if (!sheetSummary.errors || !Array.isArray(sheetSummary.errors)) {
+				return false
+			}
+
+			// Check for error messages that suggest cache issues
+			const cacheIndicators = [
+				'data is not a valid attribute',
+				'not a valid attribute',
+				'ProcessingException',
+				'Invalid property',
+			]
+
+			return sheetSummary.errors.some(error =>
+				cacheIndicators.some(indicator =>
+					error.error && error.error.includes(indicator),
+				),
+			)
 		},
 	},
 }
@@ -1076,6 +1205,50 @@ export default {
 .errorData .noData {
 	color: var(--color-text-maxcontrast);
 	font-style: italic;
+}
+
+.errorDebugInfo {
+	margin-top: 0.5rem;
+	padding: 0.5rem;
+	background: var(--color-background-dark);
+	border-radius: var(--border-radius-small);
+	border: 1px solid var(--color-border);
+	font-family: monospace;
+}
+
+.errorDebugInfo small {
+	color: var(--color-text-maxcontrast);
+	font-size: 0.75rem;
+}
+
+.cacheWarning {
+	margin-top: 0.25rem;
+	padding: 0.5rem;
+	background: var(--color-warning-background);
+	border-radius: var(--border-radius-small);
+	border: 1px solid var(--color-warning);
+}
+
+.cacheWarning .warningText {
+	color: var(--color-warning-text);
+	font-size: 0.8rem;
+	font-weight: 600;
+}
+
+/* Heartbeat Status Styles */
+.heartbeatStatus {
+	margin-top: 0.5rem;
+	padding: 0.25rem;
+}
+
+.heartbeatHealthy {
+	color: var(--color-success);
+	font-weight: 600;
+}
+
+.heartbeatUnhealthy {
+	color: var(--color-warning);
+	font-weight: 600;
 }
 
 /* Responsive adjustments */

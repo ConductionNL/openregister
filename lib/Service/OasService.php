@@ -139,7 +139,6 @@ class OasService
             // Ensure schema has valid title
             $schemaTitle = $schema->getTitle();
             if (empty($schemaTitle)) {
-                error_log("OpenAPI Warning: Schema with ID {$schema->getId()} has no title, skipping");
                 continue;
             }
             
@@ -157,7 +156,6 @@ class OasService
                     'description' => $schema->getDescription() ?? 'Operations for '.$schemaTitle,
                 ];
             } else {
-                error_log("OpenAPI Warning: Invalid schema definition for {$schemaTitle}, skipping");
             }
         }
 
@@ -1261,13 +1259,11 @@ class OasService
         // Check allOf constructs
         if (isset($schema['allOf'])) {
             if (!is_array($schema['allOf']) || empty($schema['allOf'])) {
-                error_log("OpenAPI Validation Warning: Invalid allOf in {$context} - removing");
                 unset($schema['allOf']);
             } else {
                 $validAllOfItems = [];
                 foreach ($schema['allOf'] as $index => $item) {
                     if (!is_array($item) || empty($item)) {
-                        error_log("OpenAPI Validation Warning: Invalid allOf item at index {$index} in {$context} - removing");
                     } else {
                         // Validate each allOf item has required structure
                         if (isset($item['$ref']) && !empty($item['$ref']) && is_string($item['$ref'])) {
@@ -1275,14 +1271,12 @@ class OasService
                         } elseif (isset($item['type']) || isset($item['properties'])) {
                             $validAllOfItems[] = $item;
                         } else {
-                            error_log("OpenAPI Validation Warning: allOf item at index {$index} in {$context} lacks valid schema structure - removing");
                         }
                     }
                 }
                 
                 // If no valid items remain, remove allOf
                 if (empty($validAllOfItems)) {
-                    error_log("OpenAPI Validation Warning: Empty allOf after cleanup in {$context} - removing");
                     unset($schema['allOf']);
                 } else {
                     $schema['allOf'] = $validAllOfItems;
@@ -1293,14 +1287,12 @@ class OasService
         // Check $ref validity
         if (isset($schema['$ref'])) {
             if (empty($schema['$ref']) || !is_string($schema['$ref'])) {
-                error_log("OpenAPI Validation Warning: Invalid \$ref in {$context} - removing");
                 unset($schema['$ref']);
             } else {
                 // Check if reference points to existing schema
                 $refPath = str_replace('#/components/schemas/', '', $schema['$ref']);
                 if (strpos($schema['$ref'], '#/components/schemas/') === 0 && 
                     !isset($this->oas['components']['schemas'][$refPath])) {
-                    error_log("OpenAPI Validation Warning: Broken \$ref '{$schema['$ref']}' in {$context}");
                 }
             }
         }

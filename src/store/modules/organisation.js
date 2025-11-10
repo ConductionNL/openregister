@@ -12,6 +12,7 @@ export const useOrganisationStore = defineStore('organisation', {
 			active: null,
 			list: [],
 		},
+		nextcloudGroups: [], // Cached Nextcloud groups for organisation access control
 		viewMode: 'cards',
 		filters: [], // List of query
 		pagination: {
@@ -21,7 +22,7 @@ export const useOrganisationStore = defineStore('organisation', {
 	}),
 	getters: {
 		getViewMode: (state) => state.viewMode,
-		getActiveOrganisation: (state) => state.activeOrganisation,
+		activeOrganisationGetter: (state) => state.activeOrganisation,
 		getUserOrganisations: (state) => state.userStats.list,
 	},
 	actions: {
@@ -75,6 +76,11 @@ export const useOrganisationStore = defineStore('organisation', {
 
 			const data = await response.json()
 			this.setUserStats(data)
+
+			// Also populate the organisationList for use in dropdowns
+			if (data.results) {
+				this.setOrganisationList(data.results)
+			}
 
 			return { response, data }
 		},
@@ -143,12 +149,25 @@ export const useOrganisationStore = defineStore('organisation', {
 				throw new Error(`Failed to set active organisation: ${error.message}`)
 			}
 		},
-		// Join an organisation
-		async joinOrganisation(uuid) {
+		/**
+		 * Join an organisation with optional user selection
+		 *
+		 * @param {string} uuid - Organisation UUID to join
+		 * @param {string|null} userId - Optional user ID to join the organisation. If null, current user joins.
+		 * @return {Promise<{response: Response, data: object}>} API response
+		 */
+		async joinOrganisation(uuid, userId = null) {
 			const endpoint = `/index.php/apps/openregister/api/organisations/${uuid}/join`
 			try {
+				// Prepare request body with optional userId
+				const requestBody = userId ? { userId } : {}
+
 				const response = await fetch(endpoint, {
 					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(requestBody),
 				})
 
 				if (!response.ok) {
@@ -212,54 +231,108 @@ export const useOrganisationStore = defineStore('organisation', {
 
 			return { response }
 		},
-		// Create or update an organisation
-		async saveOrganisation(organisationItem) {
-			console.log('Saving organisation...')
+		// Create a new organisation
+		async createOrganisation(organisationData) {
+			console.log('Creating organisation...', organisationData)
 
-			const isNewOrganisation = !organisationItem.uuid
+			const endpoint = '/index.php/apps/openregister/api/organisations'
 
-			let endpoint = '/index.php/apps/openregister/api/organisations'
-			let method = 'POST'
-			const body = {
-				name: organisationItem.name,
-				description: organisationItem.description || '',
-			}
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(organisationData),
+				})
 
-			if (organisationItem.uuid) {
-				endpoint += `/${organisationItem.uuid}`
-				method = 'PUT'
-			}
+				if (!response.ok) {
+					const errorData = await response.json()
+					throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
+				}
 
-			const response = await fetch(endpoint, {
-				method,
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify(body),
-			})
+				const data = await response.json()
+				const savedOrganisation = data.organisation || data
 
-			const data = await response.json()
-
-			// Handle both creation and update response formats
-			const savedOrganisation = data.organisation || data
-
-			// Update local state
-			if (isNewOrganisation) {
-				// Add to list and set as item
+				// Update local state
 				this.setOrganisationItem(savedOrganisation)
-			} else {
+
+				// Refresh the full list to get updated stats
+				await this.refreshOrganisationList()
+
+				console.log('Organisation created successfully:', savedOrganisation)
+				return { response, data: savedOrganisation }
+			} catch (error) {
+				console.error('Error creating organisation:', error)
+				throw new Error(`Failed to create organisation: ${error.message}`)
+			}
+		},
+
+		// Update an existing organisation
+		async updateOrganisation(organisationData) {
+			console.log('Updating organisation...', organisationData)
+
+			if (!organisationData.id && !organisationData.uuid) {
+				throw new Error('Organisation UUID is required for updates')
+			}
+
+			// API expects UUID, not ID
+			const organisationId = organisationData.uuid || organisationData.id
+			const endpoint = `/index.php/apps/openregister/api/organisations/${organisationId}`
+
+			// Clean the data before sending - remove read-only fields
+			const cleanedData = this.cleanOrganisationForSave(organisationData)
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'PUT',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(cleanedData),
+				})
+
+				if (!response.ok) {
+					const errorData = await response.json()
+					throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
+				}
+
+				const data = await response.json()
+				const savedOrganisation = data.organisation || data
+
 				// Update existing in list
-				const index = this.organisationList.findIndex(org => org.uuid === savedOrganisation.uuid)
+				const index = this.organisationList.findIndex(org =>
+					org.uuid === organisationId || org.id === organisationId,
+				)
 				if (index !== -1) {
 					this.organisationList[index] = new Organisation(savedOrganisation)
 				}
-				this.setOrganisationItem(savedOrganisation)
+
+				// Update current item if it's the same organisation
+				if (this.organisationItem && (this.organisationItem.uuid === organisationId || this.organisationItem.id === organisationId)) {
+					this.setOrganisationItem(savedOrganisation)
+				}
+
+				// Refresh the full list to get updated stats
+				await this.refreshOrganisationList()
+
+				console.log('Organisation updated successfully:', savedOrganisation)
+				return { response, data: savedOrganisation }
+			} catch (error) {
+				console.error('Error updating organisation:', error)
+				throw new Error(`Failed to update organisation: ${error.message}`)
 			}
+		},
 
-			// Refresh the full list to get updated stats
-			this.refreshOrganisationList()
+		// Create or update an organisation (legacy method for backward compatibility)
+		async saveOrganisation(organisationItem) {
+			const isNewOrganisation = !organisationItem.uuid && !organisationItem.id
 
-			return { response, data: savedOrganisation }
+			if (isNewOrganisation) {
+				return await this.createOrganisation(organisationItem)
+			} else {
+				return await this.updateOrganisation(organisationItem)
+			}
 		},
 		// Clean organisation data for saving - remove read-only fields
 		cleanOrganisationForSave(organisationItem) {
@@ -270,18 +343,45 @@ export const useOrganisationStore = defineStore('organisation', {
 			delete cleaned.uuid
 			delete cleaned.users
 			delete cleaned.userCount
+			delete cleaned.groupCount
+			delete cleaned.usage // Usage is calculated by backend, not set by frontend
+			delete cleaned.owner
 			delete cleaned.created
 			delete cleaned.updated
 
-			return cleaned
-		},
-		// Search organisations by name
-		async searchOrganisations(query = '') {
-			if (!query.trim()) {
-				return []
+			// Remove empty slug to avoid database errors
+			if (cleaned.slug === '' || cleaned.slug === null) {
+				delete cleaned.slug
 			}
 
-			const endpoint = `/index.php/apps/openregister/api/organisations/search?query=${encodeURIComponent(query.trim())}`
+			// Remove isDefault as it's now managed via config, not database
+			delete cleaned.isDefault
+
+			// Ensure boolean fields are actually booleans, not empty strings
+			if (cleaned.active !== undefined) {
+				cleaned.active = cleaned.active === '' ? true : Boolean(cleaned.active)
+			}
+
+			return cleaned
+		},
+		/**
+		 * Search organisations by name with pagination support
+		 *
+		 * @param {string} query - Search query (empty returns all)
+		 * @param {number} limit - Maximum number of results to return
+		 * @param {number} offset - Number of results to skip
+		 * @return {Promise<Array>} List of organisations
+		 */
+		async searchOrganisations(query = '', limit = 50, offset = 0) {
+			// Build query parameters
+			const params = new URLSearchParams()
+			if (query.trim()) {
+				params.append('query', query.trim())
+			}
+			params.append('_limit', limit)
+			params.append('_offset', offset)
+
+			const endpoint = `/index.php/apps/openregister/api/organisations/search?${params.toString()}`
 
 			try {
 				const response = await fetch(endpoint, {
@@ -318,6 +418,39 @@ export const useOrganisationStore = defineStore('organisation', {
 			} catch (error) {
 				console.error('Error clearing cache:', error)
 				throw new Error(`Failed to clear cache: ${error.message}`)
+			}
+		},
+		/**
+		 * Load and cache Nextcloud groups for organisation access control
+		 * This should be called on the organisations index page to preload groups
+		 *
+		 * @return {Promise<void>}
+		 */
+		async loadNextcloudGroups() {
+			try {
+				// Fetch groups from Nextcloud OCS API (using v1 for compatibility)
+				const response = await fetch('/ocs/v1.php/cloud/groups?format=json', {
+					headers: {
+						'OCS-APIRequest': 'true',
+					},
+				})
+
+				if (response.ok) {
+					const data = await response.json()
+					if (data.ocs?.data?.groups) {
+						// Transform group IDs into objects with additional info
+						this.nextcloudGroups = data.ocs.data.groups.map(groupId => ({
+							id: groupId,
+							name: groupId,
+							userCount: 0, // Could be fetched separately if needed
+						}))
+						console.log('Loaded', this.nextcloudGroups.length, 'Nextcloud groups into organisation store')
+					}
+				} else {
+					console.warn('Failed to load Nextcloud groups:', response.statusText)
+				}
+			} catch (error) {
+				console.error('Error loading Nextcloud groups:', error)
 			}
 		},
 	},

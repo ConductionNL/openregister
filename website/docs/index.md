@@ -85,9 +85,18 @@ Open Register operates on three fundamental principles:
     @enduml
     ```
 
+## Developer Documentation
+
+For developers working with OpenRegister, see our comprehensive developer guides:
+
+- **[Object Handling](developers/object-handling.md)** - Working with the ObjectService and response classes
+- **[Self Metadata Handling](developers/self-metadata-handling.md)** - Managing @self metadata, ownership, and organization assignment
+- **[Object Handlers](developers/object-handlers.md)** - Custom object processing and validation
+- **[Response Classes](developers/response-classes.md)** - Understanding response types and method chaining
+
 ## Troubleshooting & Fixes
 
-For information about recent fixes and solutions to common issues, see the [Fixes section](fixes/).
+For information about recent fixes and solutions to common issues, see the [Fixes section](./fixes/index.md).
 
 ## Contributing
 

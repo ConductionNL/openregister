@@ -67,6 +67,12 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 					:options="availableSchemas"
 					:value="properties.$ref"
 					@update:value="handleSchemaChange($event)" />
+				<NcTextField
+					:disabled="loading || !properties.$ref"
+					label="Extra Query Parameters"
+					:value.sync="properties.objectConfiguration.queryParams"
+					placeholder="key1=value1&key2=value2"
+					helper-text="Optional: Add query parameters to filter the referenced schema (e.g., status=active&type=public)" />
 				<NcSelect
 					:disabled="loading || !properties.$ref"
 					v-bind="inversedByOptions"
@@ -367,6 +373,12 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 						:options="availableSchemas"
 						:value="properties.items.$ref"
 						@update:value="handleSchemaChange($event)" />
+					<NcTextField
+						:disabled="loading || !properties.items.$ref"
+						label="Extra Query Parameters"
+						:value.sync="properties.items.objectConfiguration.queryParams"
+						placeholder="key1=value1&key2=value2"
+						helper-text="Optional: Add query parameters to filter the referenced schema (e.g., status=active&type=public)" />
 					<NcSelect
 						:disabled="loading || !properties.items.$ref"
 						v-bind="inversedByOptions"
@@ -548,10 +560,16 @@ export default {
 					register: '',
 					writeBack: false,
 					removeAfterWriteBack: false,
+					objectConfiguration: {
+						handling: 'nested-object',
+						schema: '',
+						queryParams: '', // Extra query parameters for items.$ref
+					},
 				},
 				objectConfiguration: {
 					handling: 'nested-object',
 					schema: '',
+					queryParams: '', // Extra query parameters for $ref
 				},
 				fileConfiguration: {
 					handling: 'ignore',
@@ -574,7 +592,7 @@ export default {
 			formatOptions: {
 				inputLabel: 'Format',
 				multiple: false,
-				options: ['text', 'markdown', 'html', 'date', 'time', 'duration', 'date-time', 'url', 'uri', 'uuid', 'email', 'idn-email', 'hostname', 'idn-hostname', 'ipv4', 'ipv6', 'uri-reference', 'iri', 'iri-reference', 'uri-template', 'json-pointer', 'regex', 'binary', 'byte', 'password', 'rsin', 'kvk', 'bsn', 'oidn', 'telephone', 'accessUrl', 'shareUrl', 'downloadUrl', 'extension', 'filename'],
+				options: ['text', 'markdown', 'html', 'date-time', 'date', 'time', 'duration', 'email', 'idn-email', 'hostname', 'idn-hostname', 'ipv4', 'ipv6', 'uri', 'uri-reference', 'iri', 'iri-reference', 'uuid', 'uri-template', 'json-pointer', 'relative-json-pointer', 'regex', 'url', 'color', 'color-hex', 'color-hex-alpha', 'color-rgb', 'color-rgba', 'color-hsl', 'color-hsla'],
 			},
 			loading: false,
 			success: null,
@@ -726,10 +744,21 @@ export default {
 					objectConfiguration: {
 						...this.properties.objectConfiguration,
 						...(schemaProperty.objectConfiguration || {}),
+						queryParams: (schemaProperty.objectConfiguration && schemaProperty.objectConfiguration.queryParams) ? schemaProperty.objectConfiguration.queryParams : '',
 					},
 					fileConfiguration: {
 						...this.properties.fileConfiguration,
 						...(schemaProperty.fileConfiguration || {}),
+					},
+					// Ensure items configuration is properly loaded
+					items: {
+						...this.properties.items,
+						...(schemaProperty.items || {}),
+						objectConfiguration: {
+							...this.properties.items.objectConfiguration,
+							...((schemaProperty.items && schemaProperty.items.objectConfiguration) || {}),
+							queryParams: (schemaProperty.items && schemaProperty.items.objectConfiguration && schemaProperty.items.objectConfiguration.queryParams) ? schemaProperty.items.objectConfiguration.queryParams : '',
+						},
 					},
 				}
 			}
@@ -858,11 +887,17 @@ export default {
 			this.selectedRegister = register
 			this.properties.register = registerId
 			this.properties.items.register = registerId
-			// Clear schema and inversedBy when register changes
+			// Clear schema, inversedBy and query parameters when register changes
 			this.properties.$ref = ''
 			this.properties.inversedBy = ''
+			if (this.properties.objectConfiguration) {
+				this.properties.objectConfiguration.queryParams = ''
+			}
 			this.properties.items.$ref = ''
 			this.properties.items.inversedBy = ''
+			if (this.properties.items.objectConfiguration) {
+				this.properties.items.objectConfiguration.queryParams = ''
+			}
 		},
 
 		handleSchemaChange(schema) {
@@ -871,15 +906,28 @@ export default {
 			this.selectedSchema = schema
 			this.properties.$ref = schemaId
 			this.properties.items.$ref = schemaId
-			// Clear inversedBy when schema changes
+			// Clear inversedBy and query parameters when schema changes
 			this.properties.inversedBy = ''
 			this.properties.items.inversedBy = ''
+			if (this.properties.objectConfiguration) {
+				this.properties.objectConfiguration.queryParams = ''
+			}
+			if (this.properties.items.objectConfiguration) {
+				this.properties.items.objectConfiguration.queryParams = ''
+			}
 		},
 
 		handleInversedByChange(property) {
 			const propertyName = typeof property === 'object' ? property.value || property.id : property
 			this.properties.inversedBy = propertyName
 			this.properties.items.inversedBy = propertyName
+			// Clear query parameters when inversedBy changes
+			if (this.properties.objectConfiguration) {
+				this.properties.objectConfiguration.queryParams = ''
+			}
+			if (this.properties.items.objectConfiguration) {
+				this.properties.items.objectConfiguration.queryParams = ''
+			}
 		},
 	},
 }

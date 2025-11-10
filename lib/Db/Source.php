@@ -74,6 +74,20 @@ class Source extends Entity implements JsonSerializable
     protected ?string $type = null;
 
     /**
+     * Organisation UUID this source belongs to
+     *
+     * @var string|null Organisation UUID
+     */
+    protected ?string $organisation = null;
+
+    /**
+     * Configuration that manages this source (transient, not stored in DB)
+     *
+     * @var Configuration|null
+     */
+    private ?Configuration $managedByConfiguration = null;
+
+    /**
      * Last update timestamp
      *
      * @var DateTime|null Last update timestamp
@@ -101,6 +115,7 @@ class Source extends Entity implements JsonSerializable
         $this->addType(fieldName: 'description', type: 'string');
         $this->addType(fieldName: 'databaseUrl', type: 'string');
         $this->addType(fieldName: 'type', type: 'string');
+        $this->addType(fieldName: 'organisation', type: 'string');
         $this->addType(fieldName: 'updated', type: 'datetime');
         $this->addType(fieldName: 'created', type: 'datetime');
 
@@ -165,6 +180,33 @@ class Source extends Entity implements JsonSerializable
 
 
     /**
+     * Get the organisation UUID
+     *
+     * @return string|null The organisation UUID
+     */
+    public function getOrganisation(): ?string
+    {
+        return $this->organisation;
+
+    }//end getOrganisation()
+
+
+    /**
+     * Set the organisation UUID
+     *
+     * @param string|null $organisation The organisation UUID
+     *
+     * @return void
+     */
+    public function setOrganisation(?string $organisation): void
+    {
+        $this->organisation = $organisation;
+        $this->markFieldUpdated('organisation');
+
+    }//end setOrganisation()
+
+
+    /**
      * Convert entity to JSON serializable array
      *
      * Prepares the entity data for JSON serialization
@@ -184,25 +226,32 @@ class Source extends Entity implements JsonSerializable
         }
 
         return [
-            'id'          => $this->id,
-            'uuid'        => $this->uuid,
-            'title'       => $this->title,
-            'version'     => $this->version,
-            'description' => $this->description,
-            'databaseUrl' => $this->databaseUrl,
-            'type'        => $this->type,
-            'updated'     => $updated,
-            'created'     => $created,
+            'id'           => $this->id,
+            'uuid'         => $this->uuid,
+            'title'        => $this->title,
+            'version'      => $this->version,
+            'description'  => $this->description,
+            'databaseUrl'  => $this->databaseUrl,
+            'type'         => $this->type,
+            'organisation' => $this->organisation,
+            'updated'      => $updated,
+            'created'      => $created,
+            'managedByConfiguration' => $this->managedByConfiguration !== null ? [
+                'id' => $this->managedByConfiguration->getId(),
+                'uuid' => $this->managedByConfiguration->getUuid(),
+                'title' => $this->managedByConfiguration->getTitle(),
+            ] : null,
         ];
 
     }//end jsonSerialize()
 
+
     /**
      * String representation of the source
-     * 
+     *
      * This magic method is required for proper entity handling in Nextcloud
      * when the framework needs to convert the object to a string.
-     * 
+     *
      * @return string String representation of the source
      */
     public function __toString(): string
@@ -211,19 +260,108 @@ class Source extends Entity implements JsonSerializable
         if ($this->title !== null && $this->title !== '') {
             return $this->title;
         }
-        
+
         // Fallback to UUID if available
         if ($this->uuid !== null && $this->uuid !== '') {
             return $this->uuid;
         }
-        
+
         // Fallback to ID if available
         if ($this->id !== null) {
-            return 'Source #' . $this->id;
+            return 'Source #'.$this->id;
         }
-        
+
         // Final fallback
         return 'Source';
-    }
+
+    }//end __toString()
+
+
+    /**
+     * Get the configuration that manages this source (transient property)
+     *
+     * @return Configuration|null The managing configuration or null
+     */
+    public function getManagedByConfigurationEntity(): ?Configuration
+    {
+        return $this->managedByConfiguration;
+
+    }//end getManagedByConfigurationEntity()
+
+
+    /**
+     * Set the configuration that manages this source (transient property)
+     *
+     * @param Configuration|null $configuration The managing configuration
+     *
+     * @return void
+     */
+    public function setManagedByConfigurationEntity(?Configuration $configuration): void
+    {
+        $this->managedByConfiguration = $configuration;
+
+    }//end setManagedByConfigurationEntity()
+
+
+    /**
+     * Check if this source is managed by a configuration
+     *
+     * Returns true if this source's ID appears in any of the provided configurations' sources arrays.
+     *
+     * @param array<Configuration> $configurations Array of Configuration entities to check against
+     *
+     * @return bool True if managed by a configuration, false otherwise
+     *
+     * @phpstan-param array<Configuration> $configurations
+     * @psalm-param   array<Configuration> $configurations
+     */
+    public function isManagedByConfiguration(array $configurations): bool
+    {
+        if (empty($configurations) === true || $this->id === null) {
+            return false;
+        }
+
+        foreach ($configurations as $configuration) {
+            $sources = $configuration->getSources();
+            if (in_array($this->id, $sources, true) === true) {
+                return true;
+            }
+        }
+
+        return false;
+
+    }//end isManagedByConfiguration()
+
+
+    /**
+     * Get the configuration that manages this source
+     *
+     * Returns the first configuration that has this source's ID in its sources array.
+     * Returns null if the source is not managed by any configuration.
+     *
+     * @param array<Configuration> $configurations Array of Configuration entities to check against
+     *
+     * @return Configuration|null The configuration managing this source, or null
+     *
+     * @phpstan-param array<Configuration> $configurations
+     * @psalm-param   array<Configuration> $configurations
+     */
+    public function getManagedByConfiguration(array $configurations): ?Configuration
+    {
+        if (empty($configurations) === true || $this->id === null) {
+            return null;
+        }
+
+        foreach ($configurations as $configuration) {
+            $sources = $configuration->getSources();
+            if (in_array($this->id, $sources, true) === true) {
+                return $configuration;
+            }
+        }
+
+        return null;
+
+    }//end getManagedByConfiguration()
+
 
 }//end class

@@ -17,6 +17,13 @@ export class Schema implements TSchema {
 	public configuration?: {
 		objectNameField?: string
 		objectDescriptionField?: string
+		objectSummaryField?: string
+		objectImageField?: string
+		allowFiles?: boolean
+		allowedTags?: string[]
+		unique?: boolean
+		facetCacheTtl?: number
+		autoPublish?: boolean
 	}
 
 	public hardValidation: boolean
@@ -39,6 +46,13 @@ export class Schema implements TSchema {
 		this.configuration = schema.configuration || {
 			objectNameField: '',
 			objectDescriptionField: '',
+			objectSummaryField: '',
+			objectImageField: '',
+			allowFiles: false,
+			allowedTags: [],
+			unique: false,
+			facetCacheTtl: 0,
+			autoPublish: false,
 		}
 		this.hardValidation = schema.hardValidation || false
 		this.maxDepth = schema.maxDepth || 0

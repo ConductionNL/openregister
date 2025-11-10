@@ -3,7 +3,11 @@ export type TConfiguration = {
 	title: string
 	description: string | null
 	type: string
+	application: string
 	owner: string
+	organisation: number | null
+	registers?: number[]
+	schemas?: number[]
 	created: string
 	updated: string
 }

@@ -1,0 +1,9 @@
+# Example synonyms for OpenRegister
+# Format: word1,word2,word3
+# or: word1 => word2,word3
+
+# Basic synonyms
+app,application,software
+doc,document,file
+org,organization,organisation
+user,person,individual

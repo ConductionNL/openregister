@@ -23,6 +23,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\ISearch;
 use OCP\Search\Result;
+use OCA\OpenRegister\Service\SolrService;
 
 /**
  * Class SearchController
@@ -35,24 +36,30 @@ class SearchController extends Controller
 
     // phpcs:ignore Squiz.Commenting.VariableComment.Missing
     private readonly ISearch $searchService;
+    
+    // phpcs:ignore Squiz.Commenting.VariableComment.Missing
+    private readonly SolrService $solrService;
 
 
     /**
      * Constructor for the SearchController
      *
-     * @param string   $appName       The name of the app
-     * @param IRequest $request       The request object
-     * @param ISearch  $searchService The search service
+     * @param string      $appName       The name of the app
+     * @param IRequest    $request       The request object
+     * @param ISearch     $searchService The search service
+     * @param SolrService $solrService   The Solr search service
      *
      * @return void
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        ISearch $searchService
+        ISearch $searchService,
+        SolrService $solrService
     ) {
         parent::__construct($appName, $request);
         $this->searchService = $searchService;
+        $this->solrService = $solrService;
 
     }//end __construct()
 
@@ -139,15 +146,16 @@ class SearchController extends Controller
         foreach ($searchTerms as $term) {
             // Convert to lowercase for case-insensitive matching
             $lowerTerm = strtolower(trim($term));
-            
+
             // Add wildcards for partial matching if not already present
             if (str_starts_with($lowerTerm, '*') === false && str_starts_with($lowerTerm, '%') === false) {
-                $lowerTerm = '*' . $lowerTerm;
+                $lowerTerm = '*'.$lowerTerm;
             }
+
             if (str_ends_with($lowerTerm, '*') === false && str_ends_with($lowerTerm, '%') === false) {
-                $lowerTerm = $lowerTerm . '*';
+                $lowerTerm = $lowerTerm.'*';
             }
-            
+
             $processedTerms[] = $lowerTerm;
         }
 

@@ -190,6 +190,7 @@ class AuditTrailMapper extends QBMapper
             } else {
                 $direction = 'ASC';
             }
+
             $qb->addOrderBy($field, $direction);
         }//end foreach
 
@@ -274,9 +275,9 @@ class AuditTrailMapper extends QBMapper
     /**
      * Creates an audit trail for object changes
      *
-     * @param ObjectEntity|null $old The old state of the object
-     * @param ObjectEntity|null $new The new state of the object
-     * @param string|null     $action The action to create the audit trail for
+     * @param ObjectEntity|null $old    The old state of the object
+     * @param ObjectEntity|null $new    The new state of the object
+     * @param string|null       $action The action to create the audit trail for
      *
      * @return AuditTrail The created audit trail
      */
@@ -287,7 +288,7 @@ class AuditTrailMapper extends QBMapper
             $action       = 'delete';
             $objectEntity = $old;
         } else if ($old === null && $action === 'update') {
-            $action = 'create';
+            $action       = 'create';
             $objectEntity = $new;
         } else if ($action === 'delete') {
             $objectEntity = $old;
@@ -532,7 +533,7 @@ class AuditTrailMapper extends QBMapper
      *               - total: Total number of audit trails
      *               - size: Total size of all audit trails in bytes
      */
-    public function getStatistics(?int $registerId = null, ?int $schemaId = null, array $exclude = []): array
+    public function getStatistics(?int $registerId=null, ?int $schemaId=null, array $exclude=[]): array
     {
         try {
             $qb = $this->db->getQueryBuilder();
@@ -574,21 +575,22 @@ class AuditTrailMapper extends QBMapper
                         $qb->andWhere($orConditions);
                     }
                 }
-            }
+            }//end if
 
             $result = $qb->executeQuery()->fetch();
 
             return [
                 'total' => (int) ($result['total'] ?? 0),
-                'size' => (int) ($result['size'] ?? 0)
+                'size'  => (int) ($result['size'] ?? 0),
             ];
         } catch (\Exception $e) {
             return [
                 'total' => 0,
-                'size' => 0
+                'size'  => 0,
             ];
-        }
-    }
+        }//end try
+
+    }//end getStatistics()
 
 
     /**
@@ -608,16 +610,17 @@ class AuditTrailMapper extends QBMapper
         $entity->setSize(max($serializedSize, 14));
 
         return parent::update($entity);
-    }
+
+    }//end update()
 
 
     /**
      * Get chart data for audit trail actions over time
      *
-     * @param \DateTime|null $from      Start date for the chart data
-     * @param \DateTime|null $till      End date for the chart data
-     * @param int|null      $registerId Optional register ID to filter by
-     * @param int|null      $schemaId   Optional schema ID to filter by
+     * @param \DateTime|null $from       Start date for the chart data
+     * @param \DateTime|null $till       End date for the chart data
+     * @param int|null       $registerId Optional register ID to filter by
+     * @param int|null       $schemaId   Optional schema ID to filter by
      *
      * @return array Array containing chart data:
      *               - labels: Array of dates
@@ -625,7 +628,7 @@ class AuditTrailMapper extends QBMapper
      *                 - name: Action name (create, update, delete)
      *                 - data: Array of counts for each date
      */
-    public function getActionChartData(?\DateTime $from = null, ?\DateTime $till = null, ?int $registerId = null, ?int $schemaId = null): array
+    public function getActionChartData(?\DateTime $from=null, ?\DateTime $till=null, ?int $registerId=null, ?int $schemaId=null): array
     {
         try {
             $qb = $this->db->getQueryBuilder();
@@ -644,6 +647,7 @@ class AuditTrailMapper extends QBMapper
             if ($from !== null) {
                 $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d'), IQueryBuilder::PARAM_STR)));
             }
+
             if ($till !== null) {
                 $qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($till->format('Y-m-d'), IQueryBuilder::PARAM_STR)));
             }
@@ -662,7 +666,7 @@ class AuditTrailMapper extends QBMapper
 
             // Process results into chart format
             $dateData = [];
-            $actions = ['create', 'update', 'delete','read'];
+            $actions  = ['create', 'update', 'delete','read'];
 
             // Initialize data structure
             foreach ($results as $row) {
@@ -670,7 +674,8 @@ class AuditTrailMapper extends QBMapper
                 if (!isset($dateData[$date])) {
                     $dateData[$date] = array_fill_keys($actions, 0);
                 }
-                $dateData[$date][$row['action']] = (int)$row['count'];
+
+                $dateData[$date][$row['action']] = (int) $row['count'];
             }
 
             // Sort dates and ensure all dates in range are included
@@ -681,23 +686,29 @@ class AuditTrailMapper extends QBMapper
             foreach ($actions as $action) {
                 $series[] = [
                     'name' => ucfirst($action),
-                    'data' => array_values(array_map(function($data) use ($action) {
-                        return $data[$action];
-                    }, $dateData))
+                    'data' => array_values(
+                            array_map(
+                            function ($data) use ($action) {
+                                return $data[$action];
+                            },
+                            $dateData
+                            )
+                            ),
                 ];
             }
 
             return [
                 'labels' => array_keys($dateData),
-                'series' => $series
+                'series' => $series,
             ];
         } catch (\Exception $e) {
             return [
                 'labels' => [],
-                'series' => []
+                'series' => [],
             ];
-        }
-    }
+        }//end try
+
+    }//end getActionChartData()
 
 
     /**
@@ -714,12 +725,12 @@ class AuditTrailMapper extends QBMapper
      *               - deletes: Number of delete actions in timeframe
      *               - reads: Number of read actions in timeframe
      */
-    public function getDetailedStatistics(?int $registerId = null, ?int $schemaId = null, ?int $hours = 24): array
+    public function getDetailedStatistics(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): array
     {
         try {
             // Get total count
             $totalStats = $this->getStatistics($registerId, $schemaId);
-            $total = $totalStats['total'];
+            $total      = $totalStats['total'];
 
             // Get recent action counts
             $qb = $this->db->getQueryBuilder();
@@ -756,13 +767,13 @@ class AuditTrailMapper extends QBMapper
                 'creates' => 0,
                 'updates' => 0,
                 'deletes' => 0,
-                'reads' => 0
+                'reads'   => 0,
             ];
 
             // Process results
             foreach ($results as $row) {
                 $action = $row['action'];
-                $count = (int)$row['count'];
+                $count  = (int) $row['count'];
 
                 switch ($action) {
                     case 'create':
@@ -781,22 +792,23 @@ class AuditTrailMapper extends QBMapper
             }
 
             return [
-                'total' => $total,
+                'total'   => $total,
                 'creates' => $actionCounts['creates'],
                 'updates' => $actionCounts['updates'],
                 'deletes' => $actionCounts['deletes'],
-                'reads' => $actionCounts['reads']
+                'reads'   => $actionCounts['reads'],
             ];
         } catch (\Exception $e) {
             return [
-                'total' => 0,
+                'total'   => 0,
                 'creates' => 0,
                 'updates' => 0,
                 'deletes' => 0,
-                'reads' => 0
+                'reads'   => 0,
             ];
-        }
-    }
+        }//end try
+
+    }//end getDetailedStatistics()
 
 
     /**
@@ -809,7 +821,7 @@ class AuditTrailMapper extends QBMapper
      * @return array Array containing action distribution data:
      *               - actions: Array of action data with name, count, and percentage
      */
-    public function getActionDistribution(?int $registerId = null, ?int $schemaId = null, ?int $hours = 24): array
+    public function getActionDistribution(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): array
     {
         try {
             $qb = $this->db->getQueryBuilder();
@@ -842,15 +854,15 @@ class AuditTrailMapper extends QBMapper
             $results = $qb->executeQuery()->fetchAll();
 
             // Calculate total for percentages
-            $total = 0;
+            $total      = 0;
             $actionData = [];
 
             foreach ($results as $row) {
-                $count = (int)$row['count'];
-                $total += $count;
+                $count        = (int) $row['count'];
+                $total       += $count;
                 $actionData[] = [
-                    'name' => $row['action'],
-                    'count' => $count
+                    'name'  => $row['action'],
+                    'count' => $count,
                 ];
             }
 
@@ -860,14 +872,15 @@ class AuditTrailMapper extends QBMapper
             }
 
             return [
-                'actions' => $actionData
+                'actions' => $actionData,
             ];
         } catch (\Exception $e) {
             return [
-                'actions' => []
+                'actions' => [],
             ];
-        }
-    }
+        }//end try
+
+    }//end getActionDistribution()
 
 
     /**
@@ -881,7 +894,7 @@ class AuditTrailMapper extends QBMapper
      * @return array Array containing most active objects:
      *               - objects: Array of object data with name, id, and count
      */
-    public function getMostActiveObjects(?int $registerId = null, ?int $schemaId = null, ?int $limit = 10, ?int $hours = 24): array
+    public function getMostActiveObjects(?int $registerId=null, ?int $schemaId=null, ?int $limit=10, ?int $hours=24): array
     {
         try {
             $qb = $this->db->getQueryBuilder();
@@ -923,21 +936,23 @@ class AuditTrailMapper extends QBMapper
             $objects = [];
             foreach ($results as $row) {
                 $objects[] = [
-                    'id' => $row['object'],
-                    'name' => 'Object ' . $row['object'], // Could be enhanced to get actual object name
-                    'count' => (int)$row['count']
+                    'id'    => $row['object'],
+                    'name'  => 'Object '.$row['object'],
+                // Could be enhanced to get actual object name
+                    'count' => (int) $row['count'],
                 ];
             }
 
             return [
-                'objects' => $objects
+                'objects' => $objects,
             ];
         } catch (\Exception $e) {
             return [
-                'objects' => []
+                'objects' => [],
             ];
-        }
-    }
+        }//end try
+
+    }//end getMostActiveObjects()
 
 
     /**
@@ -950,7 +965,7 @@ class AuditTrailMapper extends QBMapper
      *
      * @throws \Exception Database operation exceptions
      *
-     * @psalm-return bool
+     * @psalm-return   bool
      * @phpstan-return bool
      */
     public function clearLogs(): bool
@@ -961,8 +976,8 @@ class AuditTrailMapper extends QBMapper
 
             // Build the delete query to remove expired audit trail logs that have the 'expires' column set
             $qb->delete('openregister_audit_trails')
-               ->where($qb->expr()->isNotNull('expires'))
-               ->andWhere($qb->expr()->lt('expires', $qb->createFunction('NOW()')));
+                ->where($qb->expr()->isNotNull('expires'))
+                ->andWhere($qb->expr()->lt('expires', $qb->createFunction('NOW()')));
 
             // Execute the query and get the number of affected rows
             $result = $qb->executeStatement();
@@ -971,16 +986,59 @@ class AuditTrailMapper extends QBMapper
             return $result > 0;
         } catch (\Exception $e) {
             // Log the error for debugging purposes
-            \OC::$server->getLogger()->error('Failed to clear expired audit trail logs: ' . $e->getMessage(), [
-                'app' => 'openregister',
-                'exception' => $e
-            ]);
-            
+            \OC::$server->getLogger()->error(
+                    'Failed to clear expired audit trail logs: '.$e->getMessage(),
+                    [
+                        'app'       => 'openregister',
+                        'exception' => $e,
+                    ]
+                    );
+
             // Re-throw the exception so the caller knows something went wrong
             throw $e;
-        }
+        }//end try
 
     }//end clearLogs()
+
+
+    /**
+     * Clear all audit trail logs (not just expired ones)
+     *
+     * This method deletes all audit trail logs from the database
+     *
+     * @return bool True if any logs were deleted, false otherwise
+     *
+     * @throws \Exception If the deletion fails
+     */
+    public function clearAllLogs(): bool
+    {
+        try {
+            // Get the query builder for database operations
+            $qb = $this->db->getQueryBuilder();
+
+            // Build the delete query to remove ALL audit trail logs
+            $qb->delete('openregister_audit_trails');
+
+            // Execute the query and get the number of affected rows
+            $result = $qb->executeStatement();
+
+            // Return true if any rows were affected (i.e., any logs were deleted)
+            return $result > 0;
+        } catch (\Exception $e) {
+            // Log the error for debugging purposes
+            \OC::$server->getLogger()->error(
+                    'Failed to clear all audit trail logs: '.$e->getMessage(),
+                    [
+                        'app'       => 'openregister',
+                        'exception' => $e,
+                    ]
+                    );
+
+            // Re-throw the exception so the caller knows something went wrong
+            throw $e;
+        }//end try
+
+    }//end clearAllLogs()
 
 
     /**
@@ -990,7 +1048,7 @@ class AuditTrailMapper extends QBMapper
      *
      * @return int The count of audit trails matching the filters
      */
-    public function count(?array $filters = []): int
+    public function count(?array $filters=[]): int
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -1049,6 +1107,7 @@ class AuditTrailMapper extends QBMapper
                         $conditions[] = $qb->expr()->eq($field, $qb->createNamedParameter($val));
                     }
                 }
+
                 if (!empty($conditions)) {
                     $qb->andWhere($qb->expr()->orX(...$conditions));
                 }
@@ -1060,13 +1119,14 @@ class AuditTrailMapper extends QBMapper
                 } else {
                     $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value)));
                 }
-            }
+            }//end if
         }//end foreach
 
         $result = $qb->executeQuery();
-        $row = $result->fetch();
+        $row    = $result->fetch();
 
-        return (int)($row['COUNT(*)'] ?? 0);
+        return (int) ($row['COUNT(*)'] ?? 0);
+
     }//end count()
 
 
@@ -1077,7 +1137,7 @@ class AuditTrailMapper extends QBMapper
      *
      * @return int The total size of audit trails matching the filters in bytes
      */
-    public function sizeAuditTrails(?array $filters = []): int
+    public function sizeAuditTrails(?array $filters=[]): int
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -1137,6 +1197,7 @@ class AuditTrailMapper extends QBMapper
                         $conditions[] = $qb->expr()->eq($field, $qb->createNamedParameter($val));
                     }
                 }
+
                 if (!empty($conditions)) {
                     $qb->andWhere($qb->expr()->orX(...$conditions));
                 }
@@ -1148,14 +1209,15 @@ class AuditTrailMapper extends QBMapper
                 } else {
                     $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value)));
                 }
-            }
+            }//end if
         }//end foreach
 
         $result = $qb->executeQuery();
-        $size = $result->fetchOne();
+        $size   = $result->fetchOne();
         $result->closeCursor();
 
-        return (int)($size ?? 0);
+        return (int) ($size ?? 0);
+
     }//end sizeAuditTrails()
 
 
@@ -1176,29 +1238,37 @@ class AuditTrailMapper extends QBMapper
         try {
             // Convert milliseconds to seconds for DateTime calculation
             $retentionSeconds = intval($retentionMs / 1000);
-            
+
             // Get the query builder
             $qb = $this->db->getQueryBuilder();
-            
+
             // Update audit trails that don't have an expiry date set
             $qb->update($this->getTableName())
-               ->set('expires', $qb->createFunction(
+                ->set(
+                       'expires',
+                       $qb->createFunction(
                    sprintf('DATE_ADD(created, INTERVAL %d SECOND)', $retentionSeconds)
-               ))
-               ->where($qb->expr()->isNull('expires'));
-            
+                )
+                       )
+                ->where($qb->expr()->isNull('expires'));
+
             // Execute the update and return number of affected rows
             return $qb->executeStatement();
         } catch (\Exception $e) {
             // Log the error for debugging purposes
-            \OC::$server->getLogger()->error('Failed to set expiry dates for audit trails: ' . $e->getMessage(), [
-                'app' => 'openregister',
-                'exception' => $e
-            ]);
-            
+            \OC::$server->getLogger()->error(
+                    'Failed to set expiry dates for audit trails: '.$e->getMessage(),
+                    [
+                        'app'       => 'openregister',
+                        'exception' => $e,
+                    ]
+                    );
+
             // Re-throw the exception so the caller knows something went wrong
             throw $e;
-        }
+        }//end try
+
     }//end setExpiryDate()
+
 
 }//end class

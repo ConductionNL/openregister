@@ -3,10 +3,10 @@ name: Documentation
 on:
   push:
       branches: 
-        - documentation
+        - development
   pull_request:
     branches: 
-      - documentation
+      - development
 
 jobs:
   deploy:

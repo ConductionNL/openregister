@@ -13,10 +13,18 @@ export type TSchema = {
     configuration?: {
         objectNameField?: string; // Field to use as object name
         objectDescriptionField?: string; // Field to use as object description
+        objectSummaryField?: string; // Field to use as object summary
+        objectImageField?: string; // Field to use as object image
+        allowFiles?: boolean; // Whether files are allowed for this schema
+        allowedTags?: string[]; // Array of allowed tags for files
+        unique?: boolean; // Whether objects must be unique
+        facetCacheTtl?: number; // Cache TTL for facets in seconds
+        autoPublish?: boolean; // Whether objects should be auto-published on creation
     }
     hardValidation: boolean; // Whether hard validation is enabled
     maxDepth: number; // Maximum depth of the schema
     authorization?: Record<string, string[]>; // RBAC authorization configuration
+    extend?: string; // ID or UUID of the parent schema that this schema extends
     stats?: {
         objects: {
             total: number

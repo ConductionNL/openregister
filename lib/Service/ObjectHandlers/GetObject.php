@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FileService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\SettingsService;
 
 /**
  * Handler class for retrieving objects in the OpenRegister application.
@@ -58,11 +59,13 @@ class GetObject
      * @param ObjectEntityMapper $objectEntityMapper Object entity data mapper.
      * @param FileService        $fileService        File service for managing files.
      * @param AuditTrailMapper   $auditTrailMapper   Audit trail mapper for logs.
+     * @param SettingsService    $settingsService    Settings service for accessing trail settings.
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly FileService $fileService,
-        private readonly AuditTrailMapper $auditTrailMapper
+        private readonly AuditTrailMapper $auditTrailMapper,
+        private readonly SettingsService $settingsService
     ) {
 
     }//end __construct()
@@ -73,13 +76,13 @@ class GetObject
      *
      * This method also creates an audit trail entry for the 'read' action.
      *
-     * @param string    $id       The ID of the object to get.
-     * @param Register  $register The register containing the object.
-     * @param Schema    $schema   The schema of the object.
-     * @param array     $extend   Properties to extend with.
-     * @param bool      $files    Include file information.
-     * @param bool      $rbac     Whether to apply RBAC checks (default: true).
-     * @param bool      $multi    Whether to apply multitenancy filtering (default: true).
+     * @param string   $id       The ID of the object to get.
+     * @param Register $register The register containing the object.
+     * @param Schema   $schema   The schema of the object.
+     * @param array    $extend   Properties to extend with.
+     * @param bool     $files    Include file information.
+     * @param bool     $rbac     Whether to apply RBAC checks (default: true).
+     * @param bool     $multi    Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity The retrieved object.
      *
@@ -100,9 +103,11 @@ class GetObject
             $object = $this->hydrateFiles($object, $this->fileService->getFiles($object));
         }
 
-        // Create an audit trail for the 'read' action
-        $log = $this->auditTrailMapper->createAuditTrail(null, $object, 'read');
-        $object->setLastLog($log->jsonSerialize());
+        // Create an audit trail for the 'read' action if audit trails are enabled
+        if ($this->isAuditTrailsEnabled()) {
+            $log = $this->auditTrailMapper->createAuditTrail(null, $object, 'read');
+            $object->setLastLog($log->jsonSerialize());
+        }
 
         return $object;
 
@@ -110,22 +115,61 @@ class GetObject
 
 
     /**
+     * Gets an object by its ID without creating an audit trail.
+     *
+     * This method is used internally by other operations (like UPDATE) that need to
+     * retrieve an object without logging the read action.
+     *
+     * @param string   $id       The ID of the object to get.
+     * @param Register $register The register containing the object.
+     * @param Schema   $schema   The schema of the object.
+     * @param array    $extend   Properties to extend with.
+     * @param bool     $files    Include file information.
+     * @param bool     $rbac     Whether to apply RBAC checks (default: true).
+     * @param bool     $multi    Whether to apply multitenancy filtering (default: true).
+     *
+     * @return ObjectEntity The retrieved object.
+     *
+     * @throws DoesNotExistException If object not found.
+     */
+    public function findSilent(
+        string $id,
+        ?Register $register=null,
+        ?Schema $schema=null,
+        ?array $extend=[],
+        bool $files=false,
+        bool $rbac=true,
+        bool $multi=true
+    ): ObjectEntity {
+        $object = $this->objectEntityMapper->find($id, $register, $schema, false, $rbac, $multi);
+
+        if ($files === true) {
+            $object = $this->hydrateFiles($object, $this->fileService->getFiles($object));
+        }
+
+        // No audit trail creation - this is a silent read
+        return $object;
+
+    }//end findSilent()
+
+
+    /**
      * Finds all objects matching the given criteria.
      *
-     * @param int|null      $limit    Maximum number of objects to return.
-     * @param int|null      $offset   Number of objects to skip.
-     * @param array         $filters  Filter criteria.
-     * @param array         $sort     Sort criteria.
-     * @param string|null   $search   Search term.
-     * @param array|null    $extend   Properties to extend the objects with.
-     * @param bool          $files    Whether to include file information.
-     * @param string|null   $uses     Filter by object usage.
-     * @param Register|null $register Optional register to filter objects.
-     * @param Schema|null   $schema   Optional schema to filter objects.
-     * @param array|null    $ids      Array of IDs or UUIDs to filter by.
+     * @param int|null      $limit     Maximum number of objects to return.
+     * @param int|null      $offset    Number of objects to skip.
+     * @param array         $filters   Filter criteria.
+     * @param array         $sort      Sort criteria.
+     * @param string|null   $search    Search term.
+     * @param array|null    $extend    Properties to extend the objects with.
+     * @param bool          $files     Whether to include file information.
+     * @param string|null   $uses      Filter by object usage.
+     * @param Register|null $register  Optional register to filter objects.
+     * @param Schema|null   $schema    Optional schema to filter objects.
+     * @param array|null    $ids       Array of IDs or UUIDs to filter by.
      * @param bool|null     $published Whether to filter by published status.
-     * @param bool          $rbac     Whether to apply RBAC checks (default: true).
-     * @param bool          $multi    Whether to apply multitenancy filtering (default: true).
+     * @param bool          $rbac      Whether to apply RBAC checks (default: true).
+     * @param bool          $multi     Whether to apply multitenancy filtering (default: true).
      *
      * @return array The found objects.
      */
@@ -324,14 +368,14 @@ class GetObject
     /**
      * Find logs for a given object.
      *
-     * @param ObjectEntity $object           The object to find logs for
-     * @param int|null     $limit            Maximum number of logs to return
-     * @param int|null     $offset           Number of logs to skip
-     * @param array|null   $filters          Additional filters to apply
-     * @param array|null   $sort             Sort criteria ['field' => 'ASC|DESC']
-     * @param string|null  $search           Optional search term
-     * @param bool         $rbac             Whether to apply RBAC checks (default: true).
-     * @param bool         $multi            Whether to apply multitenancy filtering (default: true).
+     * @param ObjectEntity $object  The object to find logs for
+     * @param int|null     $limit   Maximum number of logs to return
+     * @param int|null     $offset  Number of logs to skip
+     * @param array|null   $filters Additional filters to apply
+     * @param array|null   $sort    Sort criteria ['field' => 'ASC|DESC']
+     * @param string|null  $search  Optional search term
+     * @param bool         $rbac    Whether to apply RBAC checks (default: true).
+     * @param bool         $multi   Whether to apply multitenancy filtering (default: true).
      *
      * @return array Array of log entries
      */
@@ -358,6 +402,23 @@ class GetObject
         );
 
     }//end findLogs()
+
+
+    /**
+     * Check if audit trails are enabled in the settings
+     *
+     * @return bool True if audit trails are enabled, false otherwise
+     */
+    private function isAuditTrailsEnabled(): bool
+    {
+        try {
+            $retentionSettings = $this->settingsService->getRetentionSettingsOnly();
+            return $retentionSettings['auditTrailsEnabled'] ?? true;
+        } catch (\Exception $e) {
+            // If we can't get settings, default to enabled for safety
+            return true;
+        }
+    }//end isAuditTrailsEnabled()
 
 
 }//end class

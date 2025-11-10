@@ -153,9 +153,9 @@ class Register extends Entity implements JsonSerializable
      *   'delete' => ['group-admin']
      * ]
      *
-     * @var array|null
+     * @var         array|null
      * @phpstan-var array<string, array<string>>|null
-     * @psalm-var array<string, list<string>>|null
+     * @psalm-var   array<string, list<string>>|null
      */
     protected ?array $groups = [];
 
@@ -219,18 +219,24 @@ class Register extends Entity implements JsonSerializable
         if (is_string($schemas)) {
             $schemas = json_decode($schemas, true) ?: [];
         }
+
         if (!is_array($schemas)) {
             $schemas = [];
         }
+
         // Only keep IDs (int or string)
-        $schemas = array_filter($schemas, function ($item) {
-            return is_int($item) || is_string($item);
-        });
+        $schemas = array_filter(
+                $schemas,
+                function ($item) {
+                    return is_int($item) || is_string($item);
+                }
+                );
 
         parent::setSchemas($schemas);
 
         return $this;
-    }
+
+    }//end setSchemas()
 
 
     /**
@@ -315,9 +321,14 @@ class Register extends Entity implements JsonSerializable
         }
 
         // Always return schemas as array of IDs (int/string)
-        $schemas = array_filter($this->schemas ?? [], function ($item) {
-            return is_int($item) || is_string($item);
-        });
+        $schemas = array_filter(
+                $this->schemas ?? [],
+                function ($item) {
+                    return is_int($item) || is_string($item);
+                }
+                );
+
+        $groups = $this->groups ?? [];
 
         return [
             'id'            => $this->id,
@@ -336,18 +347,33 @@ class Register extends Entity implements JsonSerializable
             'application'   => $this->application,
             'organisation'  => $this->organisation,
             'authorization' => $this->authorization,
-            'groups'        => $this->groups,
+            'groups'        => $groups,
+            'quota'         => [
+                'storage'   => null, // To be set via admin configuration
+                'bandwidth' => null, // To be set via admin configuration
+                'requests'  => null, // To be set via admin configuration
+                'users'     => null, // To be set via admin configuration
+                'groups'    => null, // To be set via admin configuration
+            ],
+            'usage'         => [
+                'storage'   => 0, // To be calculated from actual usage
+                'bandwidth' => 0, // To be calculated from actual usage
+                'requests'  => 0, // To be calculated from actual usage
+                'users'     => 0, // Registers don't have direct users
+                'groups'    => count($groups),
+            ],
             'deleted'       => $deleted,
         ];
 
     }//end jsonSerialize()
 
+
     /**
      * String representation of the register
-     * 
+     *
      * This magic method is required for proper entity handling in Nextcloud
      * when the framework needs to convert the object to a string.
-     * 
+     *
      * @return string String representation of the register
      */
     public function __toString(): string
@@ -356,14 +382,78 @@ class Register extends Entity implements JsonSerializable
         if ($this->title !== null && $this->title !== '') {
             return $this->title;
         }
-        
+
         // Fallback to slug if title is not available
         if ($this->slug !== null && $this->slug !== '') {
             return $this->slug;
         }
-        
+
         // Final fallback with ID
-        return 'Register #' . ($this->id ?? 'unknown');
-    }
+        return 'Register #'.($this->id ?? 'unknown');
+
+    }//end __toString()
+
+
+    /**
+     * Check if this register is managed by any configuration
+     *
+     * This method checks if the register's ID is present in the registers array
+     * of any provided configuration entities.
+     *
+     * @param array<Configuration> $configurations Array of Configuration entities to check against
+     *
+     * @return bool True if this register is managed by at least one configuration
+     *
+     * @phpstan-param array<Configuration> $configurations
+     * @psalm-param   array<Configuration> $configurations
+     */
+    public function isManagedByConfiguration(array $configurations): bool
+    {
+        if (empty($configurations) === true || $this->id === null) {
+            return false;
+        }
+
+        foreach ($configurations as $configuration) {
+            $registers = $configuration->getRegisters();
+            if (in_array($this->id, $registers, true) === true) {
+                return true;
+            }
+        }
+
+        return false;
+
+    }//end isManagedByConfiguration()
+
+
+    /**
+     * Get the configuration that manages this register
+     *
+     * Returns the first configuration that has this register's ID in its registers array.
+     * Returns null if the register is not managed by any configuration.
+     *
+     * @param array<Configuration> $configurations Array of Configuration entities to check against
+     *
+     * @return Configuration|null The configuration managing this register, or null
+     *
+     * @phpstan-param array<Configuration> $configurations
+     * @psalm-param   array<Configuration> $configurations
+     */
+    public function getManagedByConfiguration(array $configurations): ?Configuration
+    {
+        if (empty($configurations) === true || $this->id === null) {
+            return null;
+        }
+
+        foreach ($configurations as $configuration) {
+            $registers = $configuration->getRegisters();
+            if (in_array($this->id, $registers, true) === true) {
+                return $configuration;
+            }
+        }
+
+        return null;
+
+    }//end getManagedByConfiguration()
+
 
 }//end class

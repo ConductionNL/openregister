@@ -6,7 +6,7 @@ The frontend now uses the '/filesMultipart' endpoint for uploading files to obje
 
 ### Endpoint
 
-- POST '/index.php/apps/openregister/api/objects/{register}/{schema}/{objectId}/filesMultipart'
+- POST `/index.php/apps/openregister/api/objects/{register}/{schema}/{objectId}/filesMultipart`
 
 ### Required Parameters
 - 'register': Register ID (string or number)
@@ -29,6 +29,33 @@ The previous endpoint ('/files') did not support multipart file uploads as requi
 - Tags and share flag are processed if provided.
 - The backend returns a JSON response with the upload result.
 
+### Error Handling
+
+The file upload endpoint includes comprehensive error handling to prevent data corruption and provide clear feedback:
+
+#### Upload Validation
+Before processing any file, the system validates:
+1. **Upload Errors**: Checks for PHP upload errors (size limits, partial uploads, etc.)
+2. **File Existence**: Verifies the temporary file exists and is readable
+3. **Content Reading**: Ensures file content can be read successfully
+
+#### Error Messages
+If an error occurs during upload, you'll receive a detailed error message:
+- `File upload error for {filename}: The uploaded file exceeds the upload_max_filesize directive in php.ini`
+- `Temporary file not found or not readable for: {filename}`
+- `Failed to read uploaded file content for: {filename}`
+
+These validations prevent issues such as:
+- Database constraint violations in the versioning system
+- Corruption from partial file uploads
+- Silent failures when temporary files are inaccessible
+
+#### Best Practices
+- Always check the response for error messages
+- Handle errors gracefully in your frontend application
+- Consider implementing retry logic for transient failures
+- Monitor server logs for patterns in upload failures
+
 ---
 
-*This documentation was updated to reflect the change in file upload handling as of version 1.0.0.* 
+*This documentation was last updated to reflect improved error handling in the file upload process.* 

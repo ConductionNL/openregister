@@ -19,15 +19,21 @@
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
+use OCP\IGroupManager;
+use OCP\ISession;
+use OCP\IUserSession;
 
 /**
  * Class ConfigurationMapper
+ *
+ * Mapper for Configuration entities with multi-tenancy and RBAC support.
  *
  * @package OCA\OpenRegister\Db
  *
@@ -37,16 +43,64 @@ use OCP\IDBConnection;
  */
 class ConfigurationMapper extends QBMapper
 {
+    use MultiTenancyTrait;
 
+    /**
+     * Organisation service for multi-tenancy
+     *
+     * @var OrganisationService
+     */
+    private OrganisationService $organisationService;
+
+    /**
+     * User session for current user
+     *
+     * @var IUserSession
+     */
+    private IUserSession $userSession;
+
+    /**
+     * Group manager for RBAC
+     *
+     * @var IGroupManager
+     */
+    private IGroupManager $groupManager;
+
+    /**
+     * Session for caching configurations
+     *
+     * @var ISession
+     */
+    private ISession $session;
+
+    /**
+     * Session key prefix for storing configurations
+     *
+     * @var string
+     */
+    private const SESSION_KEY_PREFIX = 'openregister_configurations_';
 
     /**
      * ConfigurationMapper constructor.
      *
-     * @param IDBConnection $db Database connection instance
+     * @param IDBConnection       $db                  Database connection instance
+     * @param OrganisationService $organisationService Organisation service for multi-tenancy
+     * @param IUserSession        $userSession         User session
+     * @param IGroupManager       $groupManager        Group manager for RBAC
+     * @param ISession            $session             Session for caching
      */
-    public function __construct(IDBConnection $db)
-    {
+    public function __construct(
+        IDBConnection $db,
+        OrganisationService $organisationService,
+        IUserSession $userSession,
+        IGroupManager $groupManager,
+        ISession $session
+    ) {
         parent::__construct($db, 'openregister_configurations', Configuration::class);
+        $this->organisationService = $organisationService;
+        $this->userSession         = $userSession;
+        $this->groupManager        = $groupManager;
+        $this->session             = $session;
 
     }//end __construct()
 
@@ -60,14 +114,21 @@ class ConfigurationMapper extends QBMapper
      *
      * @throws DoesNotExistException
      * @throws MultipleObjectsReturnedException
+     * @throws \Exception If user doesn't have read permission
      */
     public function find(int $id): Configuration
     {
+        // Verify RBAC permission to read
+        $this->verifyRbacPermission('read', 'configuration');
+
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
             ->from($this->tableName)
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
+
+        // Apply organisation filter (all users including admins must have active org)
+        $this->applyOrganisationFilter($qb);
 
         return $this->findEntity($qb);
 
@@ -82,9 +143,13 @@ class ConfigurationMapper extends QBMapper
      * @param int    $offset Offset for pagination
      *
      * @return Configuration[] Array of configuration entities
+     * @throws \Exception If user doesn't have read permission
      */
     public function findByType(string $type, int $limit=50, int $offset=0): array
     {
+        // Verify RBAC permission to read
+        $this->verifyRbacPermission('read', 'configuration');
+
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
@@ -93,6 +158,9 @@ class ConfigurationMapper extends QBMapper
             ->setMaxResults($limit)
             ->setFirstResult($offset)
             ->orderBy('created', 'DESC');
+
+        // Apply organisation filter
+        $this->applyOrganisationFilter($qb);
 
         return $this->findEntities($qb);
 
@@ -107,9 +175,13 @@ class ConfigurationMapper extends QBMapper
      * @param int    $offset Offset for pagination
      *
      * @return Configuration[] Array of configuration entities
+     * @throws \Exception If user doesn't have read permission
      */
     public function findByApp(string $app, int $limit=50, int $offset=0): array
     {
+        // Verify RBAC permission to read
+        $this->verifyRbacPermission('read', 'configuration');
+
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
@@ -118,6 +190,9 @@ class ConfigurationMapper extends QBMapper
             ->setMaxResults($limit)
             ->setFirstResult($offset)
             ->orderBy('created', 'DESC');
+
+        // Apply organisation filter
+        $this->applyOrganisationFilter($qb);
 
         return $this->findEntities($qb);
 
@@ -130,15 +205,45 @@ class ConfigurationMapper extends QBMapper
      * @param Configuration $entity Configuration entity to insert
      *
      * @return Configuration The inserted configuration with updated ID
+     * @throws \Exception If user doesn't have create permission
      */
     public function insert(Entity $entity): Entity
     {
+        // Verify RBAC permission to create
+        $this->verifyRbacPermission('create', 'configuration');
+
         if ($entity instanceof Configuration) {
+            // Generate UUID if not set
+            if (empty($entity->getUuid())) {
+                $entity->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
+            }
+            
+            // Set default type if not provided (required by database)
+            if (empty($entity->getType())) {
+                $entity->setType('default');
+            }
+
+            // Auto-set owner to current user if not already set
+            if (empty($entity->getOwner())) {
+                $currentUserId = $this->getCurrentUserId();
+                if ($currentUserId !== null) {
+                    $entity->setOwner($currentUserId);
+                }
+            }
+            
             $entity->setCreated(new DateTime());
             $entity->setUpdated(new DateTime());
         }
 
-        return parent::insert($entity);
+        // Auto-set organisation from active session
+        $this->setOrganisationOnCreate($entity);
+
+        $result = parent::insert($entity);
+
+        // Invalidate configuration cache
+        $this->invalidateConfigurationCache();
+
+        return $result;
 
     }//end insert()
 
@@ -149,14 +254,26 @@ class ConfigurationMapper extends QBMapper
      * @param Configuration $entity Configuration entity to update
      *
      * @return Configuration The updated configuration
+     * @throws \Exception If user doesn't have update permission or access to this organisation
      */
     public function update(Entity $entity): Entity
     {
+        // Verify RBAC permission to update
+        $this->verifyRbacPermission('update', 'configuration');
+
+        // Verify user has access to this organisation
+        $this->verifyOrganisationAccess($entity);
+
         if ($entity instanceof Configuration) {
             $entity->setUpdated(new DateTime());
         }
 
-        return parent::update($entity);
+        $result = parent::update($entity);
+
+        // Invalidate configuration cache
+        $this->invalidateConfigurationCache();
+
+        return $result;
 
     }//end update()
 
@@ -167,10 +284,22 @@ class ConfigurationMapper extends QBMapper
      * @param Configuration $entity Configuration entity to delete
      *
      * @return Configuration The deleted configuration
+     * @throws \Exception If user doesn't have delete permission or access to this organisation
      */
     public function delete(Entity $entity): Entity
     {
-        return parent::delete($entity);
+        // Verify RBAC permission to delete
+        $this->verifyRbacPermission('delete', 'configuration');
+
+        // Verify user has access to this organisation
+        $this->verifyOrganisationAccess($entity);
+
+        $result = parent::delete($entity);
+
+        // Invalidate configuration cache
+        $this->invalidateConfigurationCache();
+
+        return $result;
 
     }//end delete()
 
@@ -205,7 +334,7 @@ class ConfigurationMapper extends QBMapper
      */
     public function updateFromArray(int $id, array $data): Configuration
     {
-        $object = $this->find($id);        
+        $object = $this->find($id);
 
         // Set or update the version.
         if (isset($data['version']) === false) {
@@ -279,6 +408,7 @@ class ConfigurationMapper extends QBMapper
      * @param array|null $searchParams     Array of search parameters
      *
      * @return Configuration[] Array of found configurations
+     * @throws \Exception If user doesn't have read permission
      */
     public function findAll(
         ?int $limit=null,
@@ -287,6 +417,9 @@ class ConfigurationMapper extends QBMapper
         ?array $searchConditions=[],
         ?array $searchParams=[]
     ): array {
+        // Verify RBAC permission to read
+        $this->verifyRbacPermission('read', 'configuration');
+
         $qb = $this->db->getQueryBuilder();
 
         // Build the base query.
@@ -315,10 +448,37 @@ class ConfigurationMapper extends QBMapper
             }
         }
 
+        // Apply organisation filter (all users including admins must have active org)
+        $this->applyOrganisationFilter($qb);
+
         // Execute the query and return the results.
         return $this->findEntities($qb);
 
     }//end findAll()
+
+
+    /**
+     * Invalidate the configuration cache for the active organisation
+     *
+     * This method removes cached configurations from the session
+     * to ensure fresh data is loaded on the next request.
+     *
+     * @return void
+     */
+    private function invalidateConfigurationCache(): void
+    {
+        $activeOrg = $this->organisationService->getActiveOrganisation();
+        if ($activeOrg === null) {
+            return;
+        }
+
+        $orgUuid = $activeOrg->getUuid();
+        $sessionKey = self::SESSION_KEY_PREFIX.$orgUuid;
+
+        // Remove from session
+        $this->session->remove($sessionKey);
+
+    }//end invalidateConfigurationCache()
 
 
 }//end class
