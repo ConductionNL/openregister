@@ -121,7 +121,7 @@ class ViewMapper extends QBMapper
             );
 
         // Apply organisation filter (all users including admins must have active org)
-        $this->applyOrganisationFilter($qb);
+        //$this->applyOrganisationFilter($qb);
 
         $entity = $this->findEntity(query: $qb);
 
@@ -162,7 +162,7 @@ class ViewMapper extends QBMapper
         $qb->orderBy('created', 'DESC');
 
         // Apply organisation filter (all users including admins must have active org)
-        $this->applyOrganisationFilter($qb);
+        //$this->applyOrganisationFilter($qb);
 
         $entities = $this->findEntities(query: $qb);
 

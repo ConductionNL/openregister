@@ -107,7 +107,9 @@
 				<p v-if="providerConfig.embeddingProvider" class="provider-name">
 					{{ getProviderDisplayName(providerConfig.embeddingProvider) }}
 				</p>
-				<p v-else class="not-configured">Not configured</p>
+				<p v-else class="not-configured">
+					Not configured
+				</p>
 				<p v-if="providerConfig.embeddingModel" class="model-info">
 					{{ providerConfig.embeddingModel }}
 				</p>
@@ -118,7 +120,9 @@
 				<p v-if="providerConfig.chatProvider" class="provider-name">
 					{{ getProviderDisplayName(providerConfig.chatProvider) }}
 				</p>
-				<p v-else class="not-configured">Not configured</p>
+				<p v-else class="not-configured">
+					Not configured
+				</p>
 				<p v-if="providerConfig.chatModel" class="model-info">
 					{{ providerConfig.chatModel }}
 				</p>
@@ -128,28 +132,52 @@
 		<!-- Chat Statistics -->
 		<div class="stats-grid">
 			<div class="stat-tile">
-				<div class="stat-value">{{ formatNumber(chatStats.totalAgents) }}</div>
-				<div class="stat-label">Agents</div>
+				<div class="stat-value">
+					{{ formatNumber(chatStats.totalAgents) }}
+				</div>
+				<div class="stat-label">
+					Agents
+				</div>
 			</div>
 			<div class="stat-tile">
-				<div class="stat-value">{{ formatNumber(chatStats.totalConversations) }}</div>
-				<div class="stat-label">Conversations</div>
+				<div class="stat-value">
+					{{ formatNumber(chatStats.totalConversations) }}
+				</div>
+				<div class="stat-label">
+					Conversations
+				</div>
 			</div>
 			<div class="stat-tile">
-				<div class="stat-value">{{ formatNumber(chatStats.totalMessages) }}</div>
-				<div class="stat-label">Messages</div>
+				<div class="stat-value">
+					{{ formatNumber(chatStats.totalMessages) }}
+				</div>
+				<div class="stat-label">
+					Messages
+				</div>
 			</div>
 			<div class="stat-tile">
-				<div class="stat-value">{{ formatNumber(vectorStats.totalVectors) }}</div>
-				<div class="stat-label">Total Vectors</div>
+				<div class="stat-value">
+					{{ formatNumber(vectorStats.totalVectors) }}
+				</div>
+				<div class="stat-label">
+					Total Vectors
+				</div>
 			</div>
 			<div class="stat-tile">
-				<div class="stat-value">{{ formatNumber(vectorStats.objectVectors) }}</div>
-				<div class="stat-label">Object Embeddings</div>
+				<div class="stat-value">
+					{{ formatNumber(vectorStats.objectVectors) }}
+				</div>
+				<div class="stat-label">
+					Object Embeddings
+				</div>
 			</div>
 			<div class="stat-tile">
-				<div class="stat-value">{{ formatNumber(vectorStats.fileVectors) }}</div>
-				<div class="stat-label">File Embeddings</div>
+				<div class="stat-value">
+					{{ formatNumber(vectorStats.fileVectors) }}
+				</div>
+				<div class="stat-label">
+					File Embeddings
+				</div>
 			</div>
 		</div>
 
@@ -195,29 +223,29 @@
 			@closing="showLLMConfigDialog = false" />
 
 		<!-- File Management Modal -->
-	<FileManagementModal
-		:show="showFileManagementDialog"
-		@closing="showFileManagementDialog = false" />
+		<FileManagementModal
+			:show="showFileManagementDialog"
+			@closing="showFileManagementDialog = false" />
 
-	<!-- Object Management Modal -->
-	<ObjectManagementModal
-		:show="showObjectManagementDialog"
-		@closing="showObjectManagementDialog = false" />
+		<!-- Object Management Modal -->
+		<ObjectManagementModal
+			:show="showObjectManagementDialog"
+			@closing="showObjectManagementDialog = false" />
 
-	<!-- Object Vectorization Modal -->
-	<ObjectVectorizationModal
-		:show="showObjectVectorizationModal"
-		@closing="showObjectVectorizationModal = false"
-		@completed="loadAllStats" />
+		<!-- Object Vectorization Modal -->
+		<ObjectVectorizationModal
+			:show="showObjectVectorizationModal"
+			@closing="showObjectVectorizationModal = false"
+			@completed="loadAllStats" />
 
-	<!-- File Vectorization Modal -->
-	<FileVectorizationModal
-		:show="showFileVectorizationModal"
-		:extraction-stats="settingsStore.extractionStats"
-		:vector-stats="settingsStore.vectorStats"
-		@closing="showFileVectorizationModal = false"
-		@completed="loadAllStats" />
-</SettingsSection>
+		<!-- File Vectorization Modal -->
+		<FileVectorizationModal
+			:show="showFileVectorizationModal"
+			:extraction-stats="settingsStore.extractionStats"
+			:vector-stats="settingsStore.vectorStats"
+			@closing="showFileVectorizationModal = false"
+			@completed="loadAllStats" />
+	</SettingsSection>
 </template>
 
 <script>
@@ -275,11 +303,11 @@ export default {
 		VectorSquare,
 		FileVectorOutline,
 		LLMConfigModal,
-	FileManagementModal,
-	ObjectManagementModal,
-	ObjectVectorizationModal,
-	FileVectorizationModal,
-},
+		FileManagementModal,
+		ObjectManagementModal,
+		ObjectVectorizationModal,
+		FileVectorizationModal,
+	},
 
 	data() {
 		return {
@@ -298,12 +326,12 @@ export default {
 			llmError: false,
 			llmErrorMessage: '',
 			llmConnectionStatus: 'Unknown',
-		showLLMConfigDialog: false,
-		showFileManagementDialog: false,
-		showObjectManagementDialog: false,
-		showObjectVectorizationModal: false,
-		showFileVectorizationModal: false,
-		providerConfig: {
+			showLLMConfigDialog: false,
+			showFileManagementDialog: false,
+			showObjectManagementDialog: false,
+			showObjectVectorizationModal: false,
+			showFileVectorizationModal: false,
+			providerConfig: {
 				embeddingProvider: null,
 				embeddingModel: null,
 				chatProvider: null,
@@ -356,7 +384,7 @@ export default {
 	async mounted() {
 		await this.loadSettings()
 		await this.loadAllStats()
-},
+	},
 
 	methods: {
 		/**
@@ -367,11 +395,11 @@ export default {
 				const settings = await this.settingsStore.getLlmSettings()
 				if (settings) {
 					this.llmSettings = { ...this.llmSettings, ...settings }
-					
+
 					// Extract provider configuration
 					this.providerConfig.embeddingProvider = settings.embeddingProvider || null
 					this.providerConfig.chatProvider = settings.chatProvider || null
-					
+
 					// Extract model names based on provider
 					if (settings.embeddingProvider === 'openai') {
 						this.providerConfig.embeddingModel = settings.openaiConfig?.model || null
@@ -380,7 +408,7 @@ export default {
 					} else if (settings.embeddingProvider === 'ollama') {
 						this.providerConfig.embeddingModel = settings.ollamaConfig?.model || null
 					}
-					
+
 					if (settings.chatProvider === 'openai') {
 						this.providerConfig.chatModel = settings.openaiConfig?.chatModel || null
 					} else if (settings.chatProvider === 'fireworks') {
@@ -393,9 +421,11 @@ export default {
 				console.error('Failed to load LLM settings:', error)
 			}
 		},
-		
+
 		/**
-		 * Get display name for provider
+		 * Get display name for provider.
+		 * @param {string} providerId - The ID of the provider.
+		 * @return {string} The display name for the provider.
 		 */
 		getProviderDisplayName(providerId) {
 			const providerNames = {
@@ -405,7 +435,7 @@ export default {
 			}
 			return providerNames[providerId] || providerId
 		},
-		
+
 		/**
 		 * Load all statistics (chat, vector, etc.)
 		 */
@@ -416,7 +446,7 @@ export default {
 				this.settingsStore.getExtractionStats(),
 			])
 		},
-		
+
 		/**
 		 * Load chat and agent statistics
 		 */
@@ -435,14 +465,14 @@ export default {
 				// Don't throw error, just use zeros
 			}
 		},
-		
+
 		/**
 		 * Retry connection - tests LLM connectivity
 		 */
 		async retryConnection() {
 			this.loadingStats = true
 			this.llmError = false
-			
+
 			try {
 				// Reload all statistics and test connection
 				await this.loadAllStats()
@@ -496,7 +526,7 @@ export default {
 				if (response) {
 					// Extract stats from response (data is in 'stats' object)
 					const stats = response.stats || response
-					
+
 					// Update connection status
 					this.llmConnectionStatus = response.success ? 'Connected' : 'Disconnected'
 
@@ -548,12 +578,12 @@ export default {
 			this.showObjectVectorizationModal = true
 		},
 
-	/**
-	 * Show dialog to vectorize all files
-	 */
-	showVectorizeFilesDialog() {
-		this.showFileVectorizationModal = true
-	},
+		/**
+		 * Show dialog to vectorize all files
+		 */
+		showVectorizeFilesDialog() {
+			this.showFileVectorizationModal = true
+		},
 
 		/**
 		 * Vectorize all files

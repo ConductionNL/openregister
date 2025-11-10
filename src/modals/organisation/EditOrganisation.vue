@@ -243,38 +243,38 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 											@update="updateEntityPermission" />
 									</BTab>
 
-								<!-- Agents -->
-								<BTab title="Agents">
-									<RbacTable
-										entity-type="agent"
-										:authorization="organisationItem.authorization || {}"
-										:available-groups="availableGroups"
-										:organisation-groups="organisationItem.groups || []"
-										@update="updateEntityPermission" />
-								</BTab>
+									<!-- Agents -->
+									<BTab title="Agents">
+										<RbacTable
+											entity-type="agent"
+											:authorization="organisationItem.authorization || {}"
+											:available-groups="availableGroups"
+											:organisation-groups="organisationItem.groups || []"
+											@update="updateEntityPermission" />
+									</BTab>
 
-								<!-- Configurations -->
-								<BTab title="Configurations">
-									<RbacTable
-										entity-type="configuration"
-										:authorization="organisationItem.authorization || {}"
-										:available-groups="availableGroups"
-										:organisation-groups="organisationItem.groups || []"
-										@update="updateEntityPermission" />
-								</BTab>
+									<!-- Configurations -->
+									<BTab title="Configurations">
+										<RbacTable
+											entity-type="configuration"
+											:authorization="organisationItem.authorization || {}"
+											:available-groups="availableGroups"
+											:organisation-groups="organisationItem.groups || []"
+											@update="updateEntityPermission" />
+									</BTab>
 
-								<!-- Applications -->
-								<BTab title="Applications">
-									<RbacTable
-										entity-type="application"
-										:authorization="organisationItem.authorization || {}"
-										:available-groups="availableGroups"
-										:organisation-groups="organisationItem.groups || []"
-										@update="updateEntityPermission" />
-								</BTab>
+									<!-- Applications -->
+									<BTab title="Applications">
+										<RbacTable
+											entity-type="application"
+											:authorization="organisationItem.authorization || {}"
+											:available-groups="availableGroups"
+											:organisation-groups="organisationItem.groups || []"
+											@update="updateEntityPermission" />
+									</BTab>
 
-								<!-- Special Rights -->
-								<BTab title="Special Rights">
+									<!-- Special Rights -->
+									<BTab title="Special Rights">
 										<div class="special-rights-container">
 											<p class="rbac-description">
 												Grant additional permissions beyond standard CRUD operations
@@ -901,14 +901,14 @@ export default {
 			}
 
 			try {
-				const { response, data } = await organisationStore.saveOrganisation({
+				const { response } = await organisationStore.saveOrganisation({
 					...this.organisationItem,
 				})
 
 				if (response.ok) {
 					// Explicitly refresh the organisation list to ensure UI is updated
 					await organisationStore.refreshOrganisationList()
-					
+
 					// Also refresh active organisation in case it was just created
 					if (!this.organisationItem.uuid) {
 						await organisationStore.getActiveOrganisation()

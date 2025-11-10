@@ -66,16 +66,16 @@ import { navigationStore, conversationStore } from '../../store/store.js'
 									<span class="conversationDate">{{ formatDate(conversation.updated) }}</span>
 								</div>
 							</div>
-						<div class="conversationRowActions">
-							<NcButton
-								type="tertiary"
-								:aria-label="t('openregister', 'Archive conversation')"
-								@click.stop="handleArchiveConversation(conversation)">
-								<template #icon>
-									<Archive :size="20" />
-								</template>
-							</NcButton>
-						</div>
+							<div class="conversationRowActions">
+								<NcButton
+									type="tertiary"
+									:aria-label="t('openregister', 'Archive conversation')"
+									@click.stop="handleArchiveConversation(conversation)">
+									<template #icon>
+										<Archive :size="20" />
+									</template>
+								</NcButton>
+							</div>
 						</div>
 					</div>
 				</div>
@@ -189,7 +189,7 @@ export default {
 		},
 		formatDate(dateString) {
 			if (!dateString) return ''
-			
+
 			const date = new Date(dateString)
 			const now = new Date()
 			const diff = now - date
@@ -361,4 +361,3 @@ export default {
 	justify-content: flex-end;
 }
 </style>
-

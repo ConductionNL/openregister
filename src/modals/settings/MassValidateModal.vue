@@ -548,9 +548,9 @@ export default {
 
 		getSuccessRate() {
 			if (!this.results || !this.results.stats) return 0
-			const { successful_saves, total_objects } = this.results.stats
-			if (total_objects === 0) return 100
-			return (successful_saves / total_objects) * 100
+			const { successfulSaves, totalObjects } = this.results.stats
+			if (totalObjects === 0) return 100
+			return (successfulSaves / totalObjects) * 100
 		},
 
 		getSuccessRateClass() {

@@ -1,5 +1,5 @@
 <script setup>
-import { agentStore, organisationStore, navigationStore } from '../../store/store.js'
+import { agentStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -48,41 +48,43 @@ import { agentStore, organisationStore, navigationStore } from '../../store/stor
 										<span v-if="description" class="option-description">{{ description }}</span>
 									</div>
 								</template>
-						</NcSelect>
+							</NcSelect>
 
-						<NcTextArea
+							<NcTextArea
 								:disabled="loading"
 								label="System Prompt"
 								:value.sync="agentItem.prompt"
 								placeholder="Enter system prompt for the agent"
 								:rows="6" />
 
-						<div class="form-field">
-							<label for="temperature" class="slider-label">
-								{{ t('openregister', 'Temperature') }}: {{ agentItem.temperature }}
-							</label>
-							<input
-								id="temperature"
-								v-model.number="agentItem.temperature"
-								:disabled="loading"
-								type="range"
-								min="0"
-								max="2"
-								step="0.1"
-								class="temperature-slider">
-							<p class="field-hint">{{ t('openregister', 'Controls randomness (0 = deterministic, 2 = very creative)') }}</p>
-						</div>
+							<div class="form-field">
+								<label for="temperature" class="slider-label">
+									{{ t('openregister', 'Temperature') }}: {{ agentItem.temperature }}
+								</label>
+								<input
+									id="temperature"
+									v-model.number="agentItem.temperature"
+									:disabled="loading"
+									type="range"
+									min="0"
+									max="2"
+									step="0.1"
+									class="temperature-slider">
+								<p class="field-hint">
+									{{ t('openregister', 'Controls randomness (0 = deterministic, 2 = very creative)') }}
+								</p>
+							</div>
 
-						<NcTextField
-							:disabled="loading"
-							label="Max Tokens"
-							type="number"
-							:value.sync="agentItem.maxTokens"
-							placeholder="1000">
-							<template #helper-text-message>
-								{{ t('openregister', 'Maximum tokens to generate') }}
-							</template>
-						</NcTextField>
+							<NcTextField
+								:disabled="loading"
+								label="Max Tokens"
+								type="number"
+								:value.sync="agentItem.maxTokens"
+								placeholder="1000">
+								<template #helper-text-message>
+									{{ t('openregister', 'Maximum tokens to generate') }}
+								</template>
+							</NcTextField>
 
 							<NcCheckboxRadioSwitch
 								:checked="agentItem.active"
@@ -108,81 +110,81 @@ import { agentStore, organisationStore, navigationStore } from '../../store/stor
 						</div>
 					</BTab>
 
-				<BTab title="RAG Configuration">
-					<div class="form-editor">
-						<NcCheckboxRadioSwitch
-							:checked="agentItem.enableRag"
-							type="switch"
-							@update:checked="agentItem.enableRag = $event">
-							Enable RAG
-						</NcCheckboxRadioSwitch>
+					<BTab title="RAG Configuration">
+						<div class="form-editor">
+							<NcCheckboxRadioSwitch
+								:checked="agentItem.enableRag"
+								type="switch"
+								@update:checked="agentItem.enableRag = $event">
+								Enable RAG
+							</NcCheckboxRadioSwitch>
 
-						<div v-if="agentItem.enableRag" class="rag-config">
-							<NcSelect
-								v-model="selectedRagSearchMode"
-								:disabled="loading"
-								:options="ragSearchModes"
-								input-label="Search Mode"
-								label="label"
-								track-by="value"
-								placeholder="Select search mode"
-								@input="updateRagSearchMode">
-								<template #option="{ label, description }">
-									<div class="option-content">
-										<span class="option-title">{{ label }}</span>
-										<span v-if="description" class="option-description">{{ description }}</span>
-									</div>
-								</template>
-							</NcSelect>
-
-							<NcTextField
-								:disabled="loading"
-								label="Number of Sources"
-								type="number"
-								min="1"
-								max="20"
-								:value.sync="agentItem.ragNumSources"
-								placeholder="5" />
-
-							<div class="views-select-container">
+							<div v-if="agentItem.enableRag" class="rag-config">
 								<NcSelect
-									v-model="selectedViews"
-									:disabled="loading || loadingViews"
-									:options="availableViews"
-									input-label="Data Views"
-									label="name"
-									track-by="id"
-									:multiple="true"
-									placeholder="Select views to filter data (optional)"
-									@input="updateViews">
-									<template #option="{ name, description }">
-										<div class="view-option">
-											<span class="view-name">{{ name }}</span>
-											<span v-if="description" class="view-description">{{ description }}</span>
+									v-model="selectedRagSearchMode"
+									:disabled="loading"
+									:options="ragSearchModes"
+									input-label="Search Mode"
+									label="label"
+									track-by="value"
+									placeholder="Select search mode"
+									@input="updateRagSearchMode">
+									<template #option="{ label, description }">
+										<div class="option-content">
+											<span class="option-title">{{ label }}</span>
+											<span v-if="description" class="option-description">{{ description }}</span>
 										</div>
 									</template>
 								</NcSelect>
-								<p class="field-hint">
-									Select views to limit which data the agent can access
-								</p>
+
+								<NcTextField
+									:disabled="loading"
+									label="Number of Sources"
+									type="number"
+									min="1"
+									max="20"
+									:value.sync="agentItem.ragNumSources"
+									placeholder="5" />
+
+								<div class="views-select-container">
+									<NcSelect
+										v-model="selectedViews"
+										:disabled="loading || loadingViews"
+										:options="availableViews"
+										input-label="Data Views"
+										label="name"
+										track-by="id"
+										:multiple="true"
+										placeholder="Select views to filter data (optional)"
+										@input="updateViews">
+										<template #option="{ name, description }">
+											<div class="view-option">
+												<span class="view-name">{{ name }}</span>
+												<span v-if="description" class="view-description">{{ description }}</span>
+											</div>
+										</template>
+									</NcSelect>
+									<p class="field-hint">
+										Select views to limit which data the agent can access
+									</p>
+								</div>
+
+								<NcCheckboxRadioSwitch
+									:checked="agentItem.searchFiles"
+									type="switch"
+									@update:checked="agentItem.searchFiles = $event">
+									Search in Files
+								</NcCheckboxRadioSwitch>
+
+								<NcCheckboxRadioSwitch
+									:checked="agentItem.searchObjects"
+									type="switch"
+									@update:checked="agentItem.searchObjects = $event">
+									Search in Database Objects
+								</NcCheckboxRadioSwitch>
 							</div>
-
-							<NcCheckboxRadioSwitch
-								:checked="agentItem.searchFiles"
-								type="switch"
-								@update:checked="agentItem.searchFiles = $event">
-								Search in Files
-							</NcCheckboxRadioSwitch>
-
-							<NcCheckboxRadioSwitch
-								:checked="agentItem.searchObjects"
-								type="switch"
-								@update:checked="agentItem.searchObjects = $event">
-								Search in Database Objects
-							</NcCheckboxRadioSwitch>
 						</div>
-					</div>
-				</BTab>
+					</BTab>
 
 					<BTab title="Resource Quotas">
 						<div class="form-editor">
@@ -207,138 +209,140 @@ import { agentStore, organisationStore, navigationStore } from '../../store/stor
 						</div>
 					</BTab>
 
-				<BTab title="Security">
-					<div class="security-section">
-						<NcCheckboxRadioSwitch
-							:checked="agentItem.isPrivate"
-							type="switch"
-							@update:checked="agentItem.isPrivate = $event">
-							Private Agent (Default)
-						</NcCheckboxRadioSwitch>
-						<p class="field-hint">
-							<strong>Private agents</strong> are only accessible to invited users. 
-							Disable this to make the agent <strong>public</strong> and accessible to all users in selected groups (or all users if no groups selected).
-						</p>
-
-						<div v-if="!agentItem.isPrivate" class="groups-select-container">
-							<NcSelect
-								v-model="selectedGroups"
-								:disabled="loading || loadingGroups"
-								:options="availableGroups"
-								input-label="Select groups with access to this agent"
-								label="name"
-								track-by="id"
-								:multiple="true"
-								placeholder="Select groups (optional)"
-								@input="updateGroups">
-								<template #option="{ name }">
-									<div class="group-option">
-										<span class="group-name">{{ name }}</span>
-									</div>
-								</template>
-							</NcSelect>
+					<BTab title="Security">
+						<div class="security-section">
+							<NcCheckboxRadioSwitch
+								:checked="agentItem.isPrivate"
+								type="switch"
+								@update:checked="agentItem.isPrivate = $event">
+								Private Agent (Default)
+							</NcCheckboxRadioSwitch>
 							<p class="field-hint">
-								Leave empty to allow all users access
-							</p>
-						</div>
-
-						<div v-if="agentItem.isPrivate" class="invited-users-container">
-							<NcTextField
-								:value.sync="newUserInput"
-								:disabled="loading"
-								label="Invite Users"
-								placeholder="Enter username and press Enter"
-								@keyup.enter="addInvitedUser">
-								<template #trailing-button-icon>
-									<NcButton
-										type="tertiary"
-										:disabled="!newUserInput || loading"
-										@click="addInvitedUser">
-										Add
-									</NcButton>
-								</template>
-							</NcTextField>
-							<p class="field-hint">
-								Enter Nextcloud usernames to grant access to this private agent
+								<strong>Private agents</strong> are only accessible to invited users.
+								Disable this to make the agent <strong>public</strong> and accessible to all users in selected groups (or all users if no groups selected).
 							</p>
 
-							<div v-if="selectedInvitedUsers.length > 0" class="invited-users-list">
-								<h3>Invited Users</h3>
-								<div class="user-items">
-									<div v-for="user in selectedInvitedUsers" :key="user" class="user-item">
-										<span class="user-badge">{{ user }}</span>
+							<div v-if="!agentItem.isPrivate" class="groups-select-container">
+								<NcSelect
+									v-model="selectedGroups"
+									:disabled="loading || loadingGroups"
+									:options="availableGroups"
+									input-label="Select groups with access to this agent"
+									label="name"
+									track-by="id"
+									:multiple="true"
+									placeholder="Select groups (optional)"
+									@input="updateGroups">
+									<template #option="{ name }">
+										<div class="group-option">
+											<span class="group-name">{{ name }}</span>
+										</div>
+									</template>
+								</NcSelect>
+								<p class="field-hint">
+									Leave empty to allow all users access
+								</p>
+							</div>
+
+							<div v-if="agentItem.isPrivate" class="invited-users-container">
+								<NcTextField
+									:value.sync="newUserInput"
+									:disabled="loading"
+									label="Invite Users"
+									placeholder="Enter username and press Enter"
+									@keyup.enter="addInvitedUser">
+									<template #trailing-button-icon>
 										<NcButton
 											type="tertiary"
-											:disabled="loading"
-											@click="removeInvitedUser(user)">
-											<template #icon>
-												<Close :size="16" />
-											</template>
+											:disabled="!newUserInput || loading"
+											@click="addInvitedUser">
+											Add
 										</NcButton>
-									</div>
-								</div>
-							</div>
-						</div>
+									</template>
+								</NcTextField>
+								<p class="field-hint">
+									Enter Nextcloud usernames to grant access to this private agent
+								</p>
 
-						<div v-if="loadingGroups" class="loading-indicator">
-							<NcLoadingIcon :size="20" />
-							<span>Loading groups...</span>
-						</div>
-					</div>
-				</BTab>
-
-				<BTab title="Tools">
-					<div class="form-editor">
-						<NcNoteCard type="info">
-							<p><strong>Function Tools</strong></p>
-							<p>Enable tools that allow the agent to interact with data through function calling.</p>
-							<p>Tools respect the agent's views, permissions, and organization boundaries.</p>
-						</NcNoteCard>
-
-						<div v-if="loadingTools" class="loading-indicator">
-							<NcLoadingIcon :size="20" />
-							<span>Loading available tools...</span>
-						</div>
-
-						<div v-else-if="availableTools.length > 0" class="tools-selection">
-							<div v-for="tool in availableTools" 
-								:key="tool.id" 
-								class="tool-item"
-								@click="handleCardClick(tool.id, $event)">
-								<div class="tool-row">
-									<div class="tool-icon-wrapper">
-										<span v-if="tool.icon" :class="tool.icon" class="tool-icon" />
-										<span v-else class="tool-icon icon-category-office" />
-									</div>
-									<div class="tool-content">
-										<div class="tool-header">
-											<div class="tool-title">
-												<strong>{{ tool.name }}</strong>
-												<span v-if="tool.app" class="tool-app-badge">{{ tool.app }}</span>
-											</div>
-											<div class="tool-toggle" @click.stop>
-												<NcCheckboxRadioSwitch
-													:key="`toggle-${tool.id}-${isToolChecked(tool.id)}`"
-													:checked="isToolChecked(tool.id)"
-													type="switch"
-													@update:checked="handleToggleChange(tool.id, $event)" />
-											</div>
+								<div v-if="selectedInvitedUsers.length > 0" class="invited-users-list">
+									<h3>Invited Users</h3>
+									<div class="user-items">
+										<div v-for="user in selectedInvitedUsers" :key="user" class="user-item">
+											<span class="user-badge">{{ user }}</span>
+											<NcButton
+												type="tertiary"
+												:disabled="loading"
+												@click="removeInvitedUser(user)">
+												<template #icon>
+													<Close :size="16" />
+												</template>
+											</NcButton>
 										</div>
-										<p class="tool-description">{{ tool.description }}</p>
 									</div>
 								</div>
 							</div>
+
+							<div v-if="loadingGroups" class="loading-indicator">
+								<NcLoadingIcon :size="20" />
+								<span>Loading groups...</span>
+							</div>
 						</div>
+					</BTab>
 
-						<NcNoteCard v-else type="warning">
-							<p>No tools available. Tools can be registered by installed apps.</p>
-						</NcNoteCard>
+					<BTab title="Tools">
+						<div class="form-editor">
+							<NcNoteCard type="info">
+								<p><strong>Function Tools</strong></p>
+								<p>Enable tools that allow the agent to interact with data through function calling.</p>
+								<p>Tools respect the agent's views, permissions, and organization boundaries.</p>
+							</NcNoteCard>
 
-						<NcNoteCard v-if="agentItem.tools && agentItem.tools.length > 0" type="warning">
-							<p><strong>Note:</strong> Tools execute with the agent's default user permissions when no user session is active (e.g., cron jobs). Configure the default user in the Settings tab.</p>
-						</NcNoteCard>
-					</div>
-				</BTab>
+							<div v-if="loadingTools" class="loading-indicator">
+								<NcLoadingIcon :size="20" />
+								<span>Loading available tools...</span>
+							</div>
+
+							<div v-else-if="availableTools.length > 0" class="tools-selection">
+								<div v-for="tool in availableTools"
+									:key="tool.id"
+									class="tool-item"
+									@click="handleCardClick(tool.id, $event)">
+									<div class="tool-row">
+										<div class="tool-icon-wrapper">
+											<span v-if="tool.icon" :class="tool.icon" class="tool-icon" />
+											<span v-else class="tool-icon icon-category-office" />
+										</div>
+										<div class="tool-content">
+											<div class="tool-header">
+												<div class="tool-title">
+													<strong>{{ tool.name }}</strong>
+													<span v-if="tool.app" class="tool-app-badge">{{ tool.app }}</span>
+												</div>
+												<div class="tool-toggle" @click.stop>
+													<NcCheckboxRadioSwitch
+														:key="`toggle-${tool.id}-${isToolChecked(tool.id)}`"
+														:checked="isToolChecked(tool.id)"
+														type="switch"
+														@update:checked="handleToggleChange(tool.id, $event)" />
+												</div>
+											</div>
+											<p class="tool-description">
+												{{ tool.description }}
+											</p>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<NcNoteCard v-else type="warning">
+								<p>No tools available. Tools can be registered by installed apps.</p>
+							</NcNoteCard>
+
+							<NcNoteCard v-if="agentItem.tools && agentItem.tools.length > 0" type="warning">
+								<p><strong>Note:</strong> Tools execute with the agent's default user permissions when no user session is active (e.g., cron jobs). Configure the default user in the Settings tab.</p>
+							</NcNoteCard>
+						</div>
+					</BTab>
 				</BTabs>
 			</div>
 		</div>
@@ -588,7 +592,7 @@ export default {
 					},
 				})
 				const orgData = await orgResponse.json()
-				
+
 				if (!orgData || !orgData.users || !Array.isArray(orgData.users)) {
 					// Fallback: get all users if organisation doesn't have specific users
 					const usersResponse = await fetch('/ocs/v2.php/cloud/users', {
@@ -598,7 +602,7 @@ export default {
 						},
 					})
 					const usersData = await usersResponse.json()
-					
+
 					if (usersData.ocs && usersData.ocs.data && usersData.ocs.data.users) {
 						// Fetch details for each user
 						const userDetails = await Promise.all(
@@ -619,7 +623,7 @@ export default {
 								} catch (err) {
 									return { id: userId, displayName: userId, email: '' }
 								}
-							})
+							}),
 						)
 						this.availableUsers = userDetails
 					}
@@ -631,7 +635,7 @@ export default {
 						email: '',
 					}))
 				}
-				
+
 				// Update selectedUser if agentItem.user is set
 				if (this.agentItem.user) {
 					this.selectedUser = this.availableUsers.find(u => u.id === this.agentItem.user) || null
@@ -661,7 +665,7 @@ export default {
 			// Support both old format (e.g., 'register') and new format (e.g., 'openregister.register')
 			// Normalize to new format
 			const normalizedId = toolId.includes('.') ? toolId : `openregister.${toolId}`
-			
+
 			if (enabled) {
 				// Check if not already present
 				if (!this.agentItem.tools.includes(normalizedId) && !this.agentItem.tools.includes(toolId)) {
@@ -672,7 +676,7 @@ export default {
 				// Create new array to trigger Vue reactivity
 				this.agentItem.tools = this.agentItem.tools.filter(t => t !== normalizedId && t !== toolId)
 			}
-			
+
 			// Force Vue to detect the change by updating the reference
 			this.$set(this.agentItem, 'tools', [...this.agentItem.tools])
 		},
@@ -699,7 +703,7 @@ export default {
 						id: groupId,
 						name: groupId,
 					}))
-					
+
 					// Synchronize selectedGroups after availableGroups is loaded
 					if (this.agentItem.groups && Array.isArray(this.agentItem.groups)) {
 						this.selectedGroups = this.availableGroups.filter(g => this.agentItem.groups.includes(g.id))
@@ -720,18 +724,18 @@ export default {
 						'Content-Type': 'application/json',
 					},
 				})
-				
+
 				if (!response.ok) {
 					throw new Error(`HTTP error! status: ${response.status}`)
 				}
-				
+
 				const data = await response.json()
 				this.availableViews = (data.results || []).map(view => ({
 					id: view.id,
 					name: view.name || 'Unnamed View',
 					description: view.description || '',
 				}))
-				
+
 				// Synchronize selectedViews after availableViews is loaded
 				if (this.agentItem.views && Array.isArray(this.agentItem.views)) {
 					this.selectedViews = this.availableViews.filter(v => this.agentItem.views.includes(v.id))
@@ -1097,4 +1101,3 @@ export default {
 	padding-left: 0;
 }
 </style>
-

@@ -68,12 +68,12 @@ export const useApplicationStore = defineStore('application', {
 		 *
 		 * @param {string|null} search - Optional search term
 		 * @param {boolean} soft - If true, don't show loading state (default: false)
-		 * @returns {Promise} Promise with response and data
+		 * @return {Promise} Promise with response and data
 		 */
 		/* istanbul ignore next */
 		async refreshApplicationList(search = null, soft = false) {
 			console.log('ApplicationStore: Starting refreshApplicationList (soft=' + soft + ')')
-			
+
 			// Only set loading state for hard reloads
 			if (!soft) {
 				this.loading = true
