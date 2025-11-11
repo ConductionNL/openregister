@@ -153,9 +153,10 @@ abstract class AbstractTool implements ToolInterface
             return $params;
         }
 
-        // Add view filtering to params
-        // This will be handled by the services when querying data
-        $params['_views'] = $views;
+        // TODO: Implement view filtering in mappers
+        // View filtering allows agents to only see data filtered by predefined views
+        // For now, this is disabled as the mappers don't have a 'views' column yet
+        // $params['_views'] = $views;
 
         return $params;
     }
@@ -277,7 +278,50 @@ abstract class AbstractTool implements ToolInterface
         $camelCaseMethod = lcfirst(str_replace('_', '', ucwords($name, '_')));
         
         if (method_exists($this, $camelCaseMethod)) {
-            return $this->$camelCaseMethod(...$arguments);
+            // Get method reflection to understand parameter types
+            $reflection = new \ReflectionMethod($this, $camelCaseMethod);
+            $parameters = $reflection->getParameters();
+            
+            // Type-cast arguments based on method signature
+            $typedArguments = [];
+            foreach ($parameters as $index => $param) {
+                $value = $arguments[$index] ?? null;
+                
+                // Handle string 'null' from LLM
+                if ($value === 'null' || $value === null) {
+                    // Use default value if available, otherwise null
+                    $value = $param->isDefaultValueAvailable() ? $param->getDefaultValue() : null;
+                } elseif ($param->hasType()) {
+                    // Cast to the expected type
+                    $type = $param->getType();
+                    if ($type && $type instanceof \ReflectionNamedType) {
+                        $typeName = $type->getName();
+                        if ($typeName === 'int') {
+                            $value = (int) $value;
+                        } elseif ($typeName === 'float') {
+                            $value = (float) $value;
+                        } elseif ($typeName === 'bool') {
+                            $value = filter_var($value, FILTER_VALIDATE_BOOLEAN);
+                        } elseif ($typeName === 'string') {
+                            $value = (string) $value;
+                        } elseif ($typeName === 'array') {
+                            $value = is_array($value) ? $value : [];
+                        }
+                    }
+                }
+                
+                $typedArguments[] = $value;
+            }
+            
+            $result = $this->$camelCaseMethod(...$typedArguments);
+            
+            // LLPhant expects tool results to be JSON strings, not arrays
+            // Convert array results to JSON for LLM consumption
+            if (is_array($result)) {
+                return json_encode($result);
+            }
+            
+            return $result;
         }
         
         throw new \BadMethodCallException("Method {$name} (or {$camelCaseMethod}) does not exist");

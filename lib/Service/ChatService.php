@@ -829,12 +829,6 @@ class ChatService
             $functions = [];
             if (!empty($tools)) {
                 $functions = $this->convertToolsToFunctions($tools);
-                $this->logger->info('[ChatService] Prepared functions for LLM', [
-                    'toolCount' => count($tools),
-                    'toolClasses' => array_map(fn($t) => get_class($t), $tools),
-                    'functionCount' => count($functions),
-                    'functionNames' => array_map(fn($f) => $f['name'], $functions),
-                ]);
             }
 
             // Create chat instance based on provider
@@ -856,11 +850,6 @@ class ChatService
                     // Convert array-based function definitions to FunctionInfo objects
                     $functionInfoObjects = $this->convertFunctionsToFunctionInfo($functions, $tools);
                     $chat->setTools($functionInfoObjects);
-                    
-                    $this->logger->info('[ChatService] Ollama tools configured', [
-                        'toolCount' => count($functionInfoObjects),
-                        'toolNames' => array_map(fn($f) => $f->name, $functionInfoObjects),
-                    ]);
                 }
                 
                 // Use generateChat() for message arrays
@@ -1737,10 +1726,22 @@ class ChatService
                     // Determine parameter type from definition
                     $type = $paramDef['type'] ?? 'string';
                     $description = $paramDef['description'] ?? '';
+                    $enum = $paramDef['enum'] ?? [];
+                    $format = $paramDef['format'] ?? null;
+                    $itemsOrProperties = null;
+                    
+                    // Handle nested object/array types
+                    if ($type === 'object') {
+                        // For object types, pass the properties definition (empty array if not specified)
+                        $itemsOrProperties = $paramDef['properties'] ?? [];
+                    } elseif ($type === 'array') {
+                        // For array types, pass the items definition (empty array if not specified)
+                        $itemsOrProperties = $paramDef['items'] ?? [];
+                    }
                     
                     // Create parameter using constructor
                     // Constructor: __construct(string $name, string $type, string $description, array $enum = [], ?string $format = null, array|string|null $itemsOrProperties = null)
-                    $parameters[] = new Parameter($paramName, $type, $description);
+                    $parameters[] = new Parameter($paramName, $type, $description, $enum, $format, $itemsOrProperties);
                 }
             }
             
