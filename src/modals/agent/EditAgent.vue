@@ -484,12 +484,6 @@ export default {
 				this.agentItem = { ...agentStore.agentItem }
 				// Force set the tools array to ensure reactivity
 				this.$set(this.agentItem, 'tools', toolsArray)
-				
-				console.log('[AgentTools] Initialized agent with tools:', {
-					sourceTools: agentStore.agentItem.tools,
-					copiedTools: toolsArray,
-					finalTools: this.agentItem.tools,
-				})
 				this.selectedType = this.agentTypes.find(t => t.value === this.agentItem.type)
 				this.selectedRagSearchMode = this.ragSearchModes.find(m => m.value === this.agentItem.ragSearchMode)
 				if (this.agentItem.groups && Array.isArray(this.agentItem.groups)) {
@@ -586,7 +580,6 @@ export default {
 						id,
 						...metadata,
 					}))
-					console.log('[AgentTools] Loaded available tools:', this.availableTools.map(t => ({ id: t.id, name: t.name })))
 				}
 			} catch (error) {
 				console.error('Failed to fetch tools:', error)
@@ -665,12 +658,10 @@ export default {
 		handleCardClick(toolId, event) {
 			// Card click handler - toggle the tool
 			const currentState = this.isToolChecked(toolId)
-			console.log('[AgentTools] Card clicked:', toolId, 'current state:', currentState, 'new state:', !currentState)
 			this.toggleTool(toolId, !currentState)
 		},
 		handleToggleChange(toolId, newValue) {
 			// Toggle change handler - called when toggle is clicked directly
-			console.log('[AgentTools] Toggle changed:', toolId, 'new value:', newValue)
 			this.toggleTool(toolId, newValue)
 		},
 		toggleTool(toolId, enabled) {
@@ -681,26 +672,17 @@ export default {
 			// Normalize to new format
 			const normalizedId = toolId.includes('.') ? toolId : `openregister.${toolId}`
 
-			console.log('[AgentTools] Toggling tool:', {
-				toolId,
-				normalizedId,
-				enabled,
-				currentTools: [...this.agentItem.tools],
-			})
-
 			if (enabled) {
 				// Check if not already present
 				if (!this.agentItem.tools.includes(normalizedId) && !this.agentItem.tools.includes(toolId)) {
 					// Create new array to trigger Vue reactivity
 					const newTools = [...this.agentItem.tools, normalizedId]
 					this.$set(this.agentItem, 'tools', newTools)
-					console.log('[AgentTools] Tool enabled, new tools:', newTools)
 				}
 			} else {
 				// Create new array to trigger Vue reactivity
 				const newTools = this.agentItem.tools.filter(t => t !== normalizedId && t !== toolId)
 				this.$set(this.agentItem, 'tools', newTools)
-				console.log('[AgentTools] Tool disabled, new tools:', newTools)
 			}
 		},
 		isToolChecked(toolId) {
@@ -709,16 +691,7 @@ export default {
 			}
 			// Support both formats for backward compatibility
 			const legacyId = toolId.split('.').pop() // Extract 'register' from 'openregister.register'
-			const isChecked = this.agentItem.tools.includes(toolId) || this.agentItem.tools.includes(legacyId)
-			
-			console.log('[AgentTools] Checking if tool is enabled:', {
-				toolId,
-				legacyId,
-				currentTools: this.agentItem.tools,
-				isChecked,
-			})
-			
-			return isChecked
+			return this.agentItem.tools.includes(toolId) || this.agentItem.tools.includes(legacyId)
 		},
 		async fetchGroups() {
 			this.loadingGroups = true

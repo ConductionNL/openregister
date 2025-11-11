@@ -218,7 +218,7 @@
 </template>
 
 <script>
-import { NcAppContent, NcButton, NcDialog } from '@nextcloud/vue'
+import { NcAppContent, NcButton, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
 import AgentSelector from '../../components/AgentSelector.vue'
 import Robot from 'vue-material-design-icons/Robot.vue'
 import MessageText from 'vue-material-design-icons/MessageText.vue'
@@ -244,6 +244,7 @@ export default {
 		NcAppContent,
 		NcButton,
 		NcDialog,
+		NcLoadingIcon,
 		AgentSelector,
 		Robot,
 		MessageText,
