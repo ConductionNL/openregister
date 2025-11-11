@@ -21,12 +21,13 @@
 						{{ t('openregister', 'For vector embeddings and semantic search') }}
 					</p>
 
-					<NcSelect
-						v-model="selectedEmbeddingProvider"
-						:options="embeddingProviderOptions"
-						label="name"
-						:placeholder="t('openregister', 'Select provider')"
-						@input="handleEmbeddingProviderChange">
+				<NcSelect
+					v-model="selectedEmbeddingProvider"
+					:options="embeddingProviderOptions"
+					label="name"
+					:input-label="t('openregister', 'Embedding Provider')"
+					:placeholder="t('openregister', 'Select provider')"
+					@input="handleEmbeddingProviderChange">
 						<template #option="{ name, description }">
 							<div class="provider-option">
 								<strong>{{ name }}</strong>
@@ -43,11 +44,12 @@
 						{{ t('openregister', 'For chat and retrieval-augmented generation') }}
 					</p>
 
-					<NcSelect
-						v-model="selectedChatProvider"
-						:options="chatProviderOptions"
-						label="name"
-						:placeholder="t('openregister', 'Select provider')">
+				<NcSelect
+					v-model="selectedChatProvider"
+					:options="chatProviderOptions"
+					label="name"
+					:input-label="t('openregister', 'Chat Provider')"
+					:placeholder="t('openregister', 'Select provider')">
 						<template #option="{ name, description }">
 							<div class="provider-option">
 								<strong>{{ name }}</strong>
@@ -819,21 +821,12 @@ export default {
 			}
 		},
 
-		async confirmClearEmbeddings() {
-			// Show confirmation dialog
-			const confirmed = await OC.dialogs.confirm(
-				this.t('openregister', 'This will permanently delete ALL embeddings (vectors) from the database. You will need to re-vectorize all objects and files. This action cannot be undone.\n\nAre you sure you want to continue?'),
-				this.t('openregister', 'Clear All Embeddings?'),
-				{
-					type: OC.dialogs.YES_NO_BUTTONS,
-					confirm: this.t('openregister', 'Yes, Clear All'),
-					confirmClasses: 'error',
-					cancel: this.t('openregister', 'Cancel')
-				}
-			)
-
-			if (confirmed) {
-				await this.clearAllEmbeddings()
+		confirmClearEmbeddings() {
+			// Use native browser confirm to avoid focus-trap conflicts with nested modals
+			const message = this.t('openregister', 'This will permanently delete ALL embeddings (vectors) from the database. You will need to re-vectorize all objects and files. This action cannot be undone.\n\nAre you sure you want to continue?')
+			
+			if (confirm(message)) {
+				this.clearAllEmbeddings()
 			}
 		},
 
@@ -845,6 +838,9 @@ export default {
 				
 				if (response.data.success) {
 					showSuccess(this.t('openregister', 'Successfully deleted {count} embeddings. Please re-vectorize your data.', { count: response.data.deleted }))
+					
+					// Emit event to parent to refresh stats
+					this.$emit('embeddings-cleared')
 				} else {
 					showError(this.t('openregister', 'Failed to clear embeddings: {error}', { error: response.data.error || 'Unknown error' }))
 				}

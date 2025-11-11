@@ -127,12 +127,13 @@ class SettingsController extends Controller
     /**
      * SettingsController constructor.
      *
-     * @param string             $appName         The name of the app
-     * @param IRequest           $request         The request object
-     * @param IAppConfig         $config          The app configuration
-     * @param ContainerInterface $container       The container
-     * @param IAppManager        $appManager      The app manager
-     * @param SettingsService    $settingsService The settings service
+     * @param string                  $appName                 The name of the app
+     * @param IRequest                $request                 The request object
+     * @param IAppConfig              $config                  The app configuration
+     * @param ContainerInterface      $container               The container
+     * @param IAppManager             $appManager              The app manager
+     * @param SettingsService         $settingsService         The settings service
+     * @param VectorEmbeddingService  $vectorEmbeddingService  The vector embedding service
      */
     public function __construct(
         $appName,
@@ -141,6 +142,7 @@ class SettingsController extends Controller
         private readonly ContainerInterface $container,
         private readonly IAppManager $appManager,
         private readonly SettingsService $settingsService,
+        private readonly VectorEmbeddingService $vectorEmbeddingService,
     ) {
         parent::__construct($appName, $request);
 
