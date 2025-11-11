@@ -332,6 +332,18 @@
 					{{ testingChat ? t('openregister', 'Testing...') : t('openregister', 'Test Chat') }}
 				</NcButton>
 
+				<!-- Clear All Embeddings -->
+				<NcButton
+					type="error"
+					:disabled="clearingEmbeddings"
+					@click="confirmClearEmbeddings">
+					<template #icon>
+						<NcLoadingIcon v-if="clearingEmbeddings" :size="20" />
+						<Delete v-else :size="20" />
+					</template>
+					{{ clearingEmbeddings ? t('openregister', 'Clearing...') : t('openregister', 'Clear All Embeddings') }}
+				</NcButton>
+
 				<!-- Test Results -->
 				<div v-if="embeddingTestResult" class="test-result-inline" :class="embeddingTestResult.success ? 'success' : 'error'">
 					{{ embeddingTestResult.success ? '✅' : '❌' }} Embedding: {{ embeddingTestResult.message }}
@@ -365,6 +377,7 @@ import { NcDialog, NcButton, NcLoadingIcon, NcSelect, NcCheckboxRadioSwitch } fr
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import TestTube from 'vue-material-design-icons/TestTube.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess, showError } from '@nextcloud/dialogs'
@@ -381,6 +394,7 @@ export default {
 		InformationOutline,
 		TestTube,
 		ContentSave,
+		Delete,
 	},
 
 	props: {
@@ -396,6 +410,7 @@ export default {
 			saving: false,
 			testingEmbedding: false,
 			testingChat: false,
+			clearingEmbeddings: false,
 			embeddingTestResult: null,
 			chatTestResult: null,
 
@@ -429,17 +444,18 @@ export default {
 			],
 
 			ollamaModelOptions: [
-				{ id: 'llama2', name: 'llama2', description: 'Meta\'s Llama 2 model' },
-				{ id: 'llama3', name: 'llama3', description: 'Meta\'s Llama 3 model' },
+				{ id: 'llama3.2', name: 'llama3.2', description: 'Meta\'s Llama 3.2 (latest)' },
+				{ id: 'llama3.1', name: 'llama3.1', description: 'Meta\'s Llama 3.1' },
+				{ id: 'llama3', name: 'llama3', description: 'Meta\'s Llama 3' },
+				{ id: 'llama2', name: 'llama2', description: 'Meta\'s Llama 2' },
 				{ id: 'mistral', name: 'mistral', description: 'Mistral 7B model' },
 				{ id: 'mixtral', name: 'mixtral', description: 'Mistral\'s Mixtral 8x7B model' },
-				{ id: 'phi', name: 'phi', description: 'Microsoft\'s Phi model' },
-				{ id: 'codellama', name: 'codellama', description: 'Code-specialized Llama model' },
-				{ id: 'gemma', name: 'gemma', description: 'Google\'s Gemma model' },
-				{ id: 'neural-chat', name: 'neural-chat', description: 'Intel\'s Neural Chat model' },
-				{ id: 'starling-lm', name: 'starling-lm', description: 'Starling language model' },
-				{ id: 'orca-mini', name: 'orca-mini', description: 'Microsoft\'s Orca Mini' },
+				{ id: 'phi3', name: 'phi3', description: 'Microsoft\'s Phi-3 model' },
+				{ id: 'codellama', name: 'codellama', description: 'Code-specialized Llama' },
+				{ id: 'gemma2', name: 'gemma2', description: 'Google\'s Gemma 2' },
+				{ id: 'nomic-embed-text', name: 'nomic-embed-text', description: 'Nomic embeddings' },
 			],
+			loadingOllamaModels: false,
 
 			chatProviderOptions: [
 				{ id: 'openai', name: 'OpenAI ChatGPT', description: 'GPT-4, GPT-3.5 models' },
@@ -514,6 +530,26 @@ export default {
 				return !!this.ollamaConfig.url && !!this.ollamaConfig.chatModel
 			}
 			return false
+		},
+	},
+
+	watch: {
+		// Fetch Ollama models when Ollama is selected
+		selectedEmbeddingProvider(newVal) {
+			if (newVal?.id === 'ollama' && this.ollamaConfig.url) {
+				this.fetchOllamaModels()
+			}
+		},
+		selectedChatProvider(newVal) {
+			if (newVal?.id === 'ollama' && this.ollamaConfig.url) {
+				this.fetchOllamaModels()
+			}
+		},
+		// Refetch models when URL changes
+		'ollamaConfig.url'(newVal) {
+			if (newVal && (this.selectedEmbeddingProvider?.id === 'ollama' || this.selectedChatProvider?.id === 'ollama')) {
+				this.fetchOllamaModels()
+			}
 		},
 	},
 
@@ -601,6 +637,11 @@ export default {
 				}
 
 				console.info('LLM configuration loaded', llmSettings)
+
+				// Fetch Ollama models if Ollama is selected
+				if ((this.selectedEmbeddingProvider?.id === 'ollama' || this.selectedChatProvider?.id === 'ollama') && this.ollamaConfig.url) {
+					this.fetchOllamaModels()
+				}
 			} catch (error) {
 				console.error('Failed to load LLM configuration:', error)
 				showError(this.t('openregister', 'Failed to load LLM configuration'))
@@ -748,6 +789,69 @@ export default {
 				showError(this.t('openregister', 'Failed to save configuration: {error}', { error: error.response?.data?.error || error.message }))
 			} finally {
 				this.saving = false
+			}
+		},
+
+		async fetchOllamaModels() {
+			if (!this.ollamaConfig.url || this.loadingOllamaModels) {
+				return
+			}
+
+			this.loadingOllamaModels = true
+
+			try {
+				const response = await axios.get(generateUrl('/apps/openregister/api/llm/ollama-models'))
+				
+				if (response.data.success && response.data.models && response.data.models.length > 0) {
+					// Replace the hardcoded list with fetched models
+					this.ollamaModelOptions = response.data.models
+					
+					console.log(`Loaded ${response.data.count} Ollama models from API`)
+				} else {
+					// Keep fallback list if API returns empty or fails
+					console.warn('No models returned from Ollama API, using fallback list')
+				}
+			} catch (error) {
+				// Silently fail and keep using the hardcoded fallback list
+				console.warn('Failed to fetch Ollama models:', error.message)
+			} finally {
+				this.loadingOllamaModels = false
+			}
+		},
+
+		async confirmClearEmbeddings() {
+			// Show confirmation dialog
+			const confirmed = await OC.dialogs.confirm(
+				this.t('openregister', 'This will permanently delete ALL embeddings (vectors) from the database. You will need to re-vectorize all objects and files. This action cannot be undone.\n\nAre you sure you want to continue?'),
+				this.t('openregister', 'Clear All Embeddings?'),
+				{
+					type: OC.dialogs.YES_NO_BUTTONS,
+					confirm: this.t('openregister', 'Yes, Clear All'),
+					confirmClasses: 'error',
+					cancel: this.t('openregister', 'Cancel')
+				}
+			)
+
+			if (confirmed) {
+				await this.clearAllEmbeddings()
+			}
+		},
+
+		async clearAllEmbeddings() {
+			this.clearingEmbeddings = true
+
+			try {
+				const response = await axios.delete(generateUrl('/apps/openregister/api/vectors/clear-all'))
+				
+				if (response.data.success) {
+					showSuccess(this.t('openregister', 'Successfully deleted {count} embeddings. Please re-vectorize your data.', { count: response.data.deleted }))
+				} else {
+					showError(this.t('openregister', 'Failed to clear embeddings: {error}', { error: response.data.error || 'Unknown error' }))
+				}
+			} catch (error) {
+				showError(this.t('openregister', 'Failed to clear embeddings: {error}', { error: error.response?.data?.error || error.message }))
+			} finally {
+				this.clearingEmbeddings = false
 			}
 		},
 	},

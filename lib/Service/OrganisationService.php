@@ -242,27 +242,13 @@ class OrganisationService
                     }
                 }
             } else {
-                // No UUID in settings, check if there's an organisation with is_default flag (legacy)
-                try {
-                    $defaultOrg = $this->organisationMapper->findDefault();
-                    $this->logger->info('Found legacy default organisation with is_default flag', [
-                        'uuid' => $defaultOrg->getUuid(),
-                    ]);
-                    
-                    // Migrate to settings
-                    if ($this->settingsService !== null) {
-                        $this->settingsService->setDefaultOrganisationUuid($defaultOrg->getUuid());
-                        $this->logger->info('Migrated default organisation to settings');
-                    }
-                } catch (DoesNotExistException $e) {
-                    // No default found at all, create new one
-                    $this->logger->info('No default organisation found, creating new one');
-                    $defaultOrg = $this->organisationMapper->createDefault();
-                    
-                    // Store in settings
-                    if ($this->settingsService !== null) {
-                        $this->settingsService->setDefaultOrganisationUuid($defaultOrg->getUuid());
-                    }
+                // No UUID in settings, create a new default organisation
+                $this->logger->info('No default organisation found in settings, creating new one');
+                $defaultOrg = $this->organisationMapper->createDefault();
+                
+                // Store in settings
+                if ($this->settingsService !== null) {
+                    $this->settingsService->setDefaultOrganisationUuid($defaultOrg->getUuid());
                 }
             }
 

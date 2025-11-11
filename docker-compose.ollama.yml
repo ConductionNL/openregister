@@ -1,0 +1,115 @@
+version: "3.5"
+
+# Standalone Ollama Service for OpenRegister
+# This compose file can be used to run Ollama separately from the main OpenRegister stack
+# Perfect for production environments where you want Ollama on a different server/machine
+
+volumes:
+  ollama:
+    driver: local
+  ollama-webui:
+    driver: local
+
+networks:
+  ollama-network:
+    driver: bridge
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: standalone-ollama
+    restart: always
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+      # Increase concurrent requests for production
+      - OLLAMA_NUM_PARALLEL=4
+      # Set max loaded models (adjust based on your RAM)
+      - OLLAMA_MAX_LOADED_MODELS=2
+      # Keep models loaded for 30 minutes
+      - OLLAMA_KEEP_ALIVE=30m
+    # Memory configuration for larger models (Llama 3.2 8B+)
+    deploy:
+      resources:
+        limits:
+          # Adjust based on your models:
+          # - Llama 3.2 8B: 16GB
+          # - Llama 3.2 70B: 80GB
+          # - Llama 3.1 8B: 16GB
+          memory: 16G
+        reservations:
+          memory: 8G
+    # Shared memory for model loading (recommended for large models)
+    shm_size: '2gb'
+    networks:
+      - ollama-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:11434/api/tags || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+  # Ollama Web UI for easy model management and testing
+  ollama-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: ollama-webui
+    restart: always
+    ports:
+      - "4000:8080"
+    volumes:
+      - ollama-webui:/app/backend/data
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+    depends_on:
+      - ollama
+    networks:
+      - ollama-network
+
+# For GPU Support (NVIDIA):
+# Uncomment the section below and ensure NVIDIA Container Toolkit is installed
+# 
+# services:
+#   ollama:
+#     deploy:
+#       resources:
+#         reservations:
+#           devices:
+#             - driver: nvidia
+#               count: all  # or specify count: 1 for single GPU
+#               capabilities: [gpu]
+
+# Usage Instructions:
+# 
+# 1. Start Ollama:
+#    docker-compose -f docker-compose.ollama.yml up -d
+#
+# 2. Pull a model (Llama 3.2 8B recommended):
+#    docker exec standalone-ollama ollama pull llama3.2
+#
+# 3. Pull embedding model (for RAG):
+#    docker exec standalone-ollama ollama pull nomic-embed-text
+#
+# 4. Configure OpenRegister:
+#    - If on same host: http://localhost:11434
+#    - If on different host: http://your-ollama-server:11434
+#    - If using Docker network: http://standalone-ollama:11434
+#
+# 5. Test the connection:
+#    curl http://localhost:11434/api/tags
+#
+# 6. Monitor resource usage:
+#    docker stats standalone-ollama
+#
+# Available Models:
+# - llama3.2:latest (8B) - Recommended, good balance
+# - llama3.2:3b - Smaller, faster
+# - llama3.1:8b - Previous generation
+# - llama3.1:70b - High quality (requires 64GB+ RAM)
+# - mistral:latest - Fast alternative
+# - codellama:latest - Code generation
+# - nomic-embed-text - Embeddings for RAG
+

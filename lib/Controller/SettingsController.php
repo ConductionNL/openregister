@@ -3026,6 +3026,151 @@ class SettingsController extends Controller
     }
 
     /**
+     * Get available Ollama models from the configured Ollama instance
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse List of available models
+     */
+    public function getOllamaModels(): JSONResponse
+    {
+        try {
+            // Get Ollama URL from settings
+            $settings = $this->settingsService->getLLMSettingsOnly();
+            $ollamaUrl = $settings['ollamaConfig']['url'] ?? 'http://localhost:11434';
+            
+            // Call Ollama API to get available models
+            $apiUrl = rtrim($ollamaUrl, '/') . '/api/tags';
+            
+            $ch = curl_init($apiUrl);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 5,
+                CURLOPT_FOLLOWLOCATION => true,
+            ]);
+            
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+            
+            if ($curlError) {
+                return new JSONResponse([
+                    'success' => false,
+                    'error' => 'Failed to connect to Ollama: ' . $curlError,
+                    'models' => []
+                ]);
+            }
+            
+            if ($httpCode !== 200) {
+                return new JSONResponse([
+                    'success' => false,
+                    'error' => "Ollama API returned HTTP {$httpCode}",
+                    'models' => []
+                ]);
+            }
+            
+            $data = json_decode($response, true);
+            if (!isset($data['models']) || !is_array($data['models'])) {
+                return new JSONResponse([
+                    'success' => false,
+                    'error' => 'Unexpected response from Ollama API',
+                    'models' => []
+                ]);
+            }
+            
+            // Format models for frontend dropdown
+            $models = array_map(function($model) {
+                $name = $model['name'] ?? 'unknown';
+                $size = isset($model['size']) ? $this->formatBytes($model['size']) : '';
+                $family = $model['details']['family'] ?? '';
+                
+                // Build description
+                $description = $family;
+                if ($size) {
+                    $description .= ($description ? ' • ' : '') . $size;
+                }
+                
+                return [
+                    'id' => $name,
+                    'name' => $name,
+                    'description' => $description,
+                    'size' => $model['size'] ?? 0,
+                    'modified' => $model['modified_at'] ?? null,
+                ];
+            }, $data['models']);
+            
+            // Sort by name
+            usort($models, function($a, $b) {
+                return strcmp($a['name'], $b['name']);
+            });
+            
+            return new JSONResponse([
+                'success' => true,
+                'models' => $models,
+                'count' => count($models),
+            ]);
+            
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'models' => []
+            ], 500);
+        }
+    }
+
+    /**
+     * Check if embedding model has changed and vectors need regeneration
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Mismatch status
+     */
+    public function checkEmbeddingModelMismatch(): JSONResponse
+    {
+        try {
+            $result = $this->vectorEmbeddingService->checkEmbeddingModelMismatch();
+            
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'has_vectors' => false,
+                'mismatch' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Clear all embeddings from the database
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Result with deleted count
+     */
+    public function clearAllEmbeddings(): JSONResponse
+    {
+        try {
+            $result = $this->vectorEmbeddingService->clearAllEmbeddings();
+            
+            if ($result['success']) {
+                return new JSONResponse($result);
+            } else {
+                return new JSONResponse($result, 500);
+            }
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Update File Management settings
      *
      * @NoAdminRequired
