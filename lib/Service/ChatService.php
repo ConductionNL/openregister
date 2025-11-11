@@ -830,8 +830,10 @@ class ChatService
             if (!empty($tools)) {
                 $functions = $this->convertToolsToFunctions($tools);
                 $this->logger->info('[ChatService] Prepared functions for LLM', [
+                    'toolCount' => count($tools),
+                    'toolClasses' => array_map(fn($t) => get_class($t), $tools),
                     'functionCount' => count($functions),
-                    'functionNames' => array_map(fn($f) => $f->name, $functions),
+                    'functionNames' => array_map(fn($f) => $f['name'], $functions),
                 ]);
             }
 
@@ -854,6 +856,11 @@ class ChatService
                     // Convert array-based function definitions to FunctionInfo objects
                     $functionInfoObjects = $this->convertFunctionsToFunctionInfo($functions, $tools);
                     $chat->setTools($functionInfoObjects);
+                    
+                    $this->logger->info('[ChatService] Ollama tools configured', [
+                        'toolCount' => count($functionInfoObjects),
+                        'toolNames' => array_map(fn($f) => $f->name, $functionInfoObjects),
+                    ]);
                 }
                 
                 // Use generateChat() for message arrays
