@@ -555,8 +555,8 @@ export default {
 		},
 		/**
 		 * Compare two shallow query objects (keys and stringified values)
-		 * @param {object} a
-		 * @param {object} b
+		 * @param {object} a - First query object to compare
+		 * @param {object} b - Second query object to compare
 		 * @return {boolean}
 		 */
 		queriesEqual(a, b) {

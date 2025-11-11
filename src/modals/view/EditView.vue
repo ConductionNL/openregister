@@ -29,13 +29,13 @@
 								:error="!viewData.name.trim() && nameTouched"
 								:helper-text="!viewData.name.trim() && nameTouched ? t('openregister', 'View name is required') : ''"
 								@blur="nameTouched = true" />
-							
+
 							<NcTextField
 								:disabled="loading"
 								:label="t('openregister', 'Description')"
 								:value.sync="viewData.description"
 								:placeholder="t('openregister', 'Enter description (optional)...')" />
-							
+
 							<NcCheckboxRadioSwitch
 								:disabled="loading"
 								:checked.sync="viewData.isPublic"
@@ -208,16 +208,16 @@ export default {
 						isDefault: newView.isDefault || false,
 						query: newView.query || newView.configuration || {},
 					}
-					
+
 					// Initialize selected groups and users from the view
 					// Convert string IDs to objects for NcSelect
 					this.selectedGroups = (newView.sharedGroups || []).map(id => ({ id, name: id }))
 					this.selectedUsers = (newView.sharedUsers || []).map(id => ({ id, name: id }))
-					
+
 					// Populate available options with currently selected items
 					this.availableGroups = [...this.selectedGroups]
 					this.availableUsers = [...this.selectedUsers]
-					
+
 					this.activeTab = 'settings'
 					this.nameTouched = false
 					this.success = false
@@ -364,9 +364,9 @@ export default {
 				}
 
 				await viewsStore.updateView(this.view.id || this.view.uuid, updateData)
-				
+
 				this.success = true
-				
+
 				// Refresh views list
 				await viewsStore.fetchViews()
 
@@ -452,4 +452,3 @@ export default {
 	margin-top: 24px;
 }
 </style>
-
