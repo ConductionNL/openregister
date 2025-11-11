@@ -168,7 +168,7 @@ export const useViewsStore = defineStore('views', {
 				}
 
 				const data = await response.json()
-				
+
 				// API returns { view: {...} }, so unwrap it
 				const view = data.view || data
 
@@ -206,7 +206,7 @@ export const useViewsStore = defineStore('views', {
 				}
 
 				const data = await response.json()
-				
+
 				// API returns { view: {...} }, so unwrap it
 				const newView = data.view || data
 
@@ -251,7 +251,7 @@ export const useViewsStore = defineStore('views', {
 				}
 
 				const data = await response.json()
-				
+
 				// API returns { view: {...} }, so unwrap it
 				const updatedView = data.view || data
 

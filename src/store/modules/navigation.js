@@ -12,17 +12,17 @@ export const useNavigationStore = defineStore('ui', {
 		// Any data needed in various models, dialogs, views which cannot be transferred through normal means or without writing crappy/excessive code
 		transferData: null,
 
-	sidebarState: {
-		registers: true,
-		register: true,
-		organisations: true,
-		search: true,
-		deleted: true,
-		logs: true,
-		searchTrail: true,
-		auditTrail: true,
-		chat: true,
-	},
+		sidebarState: {
+			registers: true,
+			register: true,
+			organisations: true,
+			search: true,
+			deleted: true,
+			logs: true,
+			searchTrail: true,
+			auditTrail: true,
+			chat: true,
+		},
 	}),
 	actions: {
 		setSidebarState(sidebar, state) {

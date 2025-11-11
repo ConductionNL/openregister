@@ -89,7 +89,7 @@
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="file in filesList" :key="file.id">						
+						<tr v-for="file in filesList" :key="file.id">
 							<td class="column-filename">
 								<div class="file-name-cell">
 									<FileDocumentOutline :size="20" class="file-icon" />

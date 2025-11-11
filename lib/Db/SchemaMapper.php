@@ -138,7 +138,7 @@ class SchemaMapper extends QBMapper
             );
 
         // Apply organisation filter (all users including admins must have active org)
-        $this->applyOrganisationFilter($qb);
+        //$this->applyOrganisationFilter($qb);
 
         // Get the schema entity
         $schema = $this->findEntity(query: $qb);
@@ -265,7 +265,7 @@ class SchemaMapper extends QBMapper
         }
 
         // Apply organisation filter (all users including admins must have active org)
-        $this->applyOrganisationFilter($qb);
+        // $this->applyOrganisationFilter($qb);
 
         // Just return the entities; do not attach stats here
         return $this->findEntities(query: $qb);

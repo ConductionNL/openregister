@@ -438,17 +438,17 @@ export default {
 		async checkVersion(configuration) {
 			try {
 				const response = await axios.post(
-					generateUrl(`/apps/openregister/api/configurations/${configuration.id}/check-version`)
+					generateUrl(`/apps/openregister/api/configurations/${configuration.id}/check-version`),
 				)
-				
+
 				if (response.data.hasUpdate) {
 					showSuccess(
-						`Update available: ${response.data.localVersion} → ${response.data.remoteVersion}`
+						`Update available: ${response.data.localVersion} → ${response.data.remoteVersion}`,
 					)
 				} else {
 					showSuccess('Configuration is up to date')
 				}
-				
+
 				// Refresh the list to show updated version info
 				await configurationStore.refreshConfigurationList()
 			} catch (error) {

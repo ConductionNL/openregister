@@ -453,9 +453,9 @@ export default {
 			try {
 				await organisationStore.setActiveOrganisationById(uuid)
 				this.showSuccessMessage('Active organisation changed successfully')
-				
+
 				// Reload all hot-loaded data for the new organisation context
-				console.log('[OrganisationsIndex] Reloading application data after organisation switch...')
+				console.info('[OrganisationsIndex] Reloading application data after organisation switch...')
 				await reloadAppData()
 			} catch (error) {
 				this.showErrorMessage('Failed to change active organisation: ' + error.message)
