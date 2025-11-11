@@ -220,7 +220,8 @@
 		<!-- LLM Configuration Modal -->
 		<LLMConfigModal
 			:show="showLLMConfigDialog"
-			@closing="showLLMConfigDialog = false" />
+			@closing="showLLMConfigDialog = false"
+			@embeddings-cleared="loadAllStats" />
 
 		<!-- File Management Modal -->
 		<FileManagementModal

@@ -38,6 +38,9 @@ use Psr\Log\LoggerInterface;
 use LLPhant\Chat\OpenAIChat;
 use LLPhant\Chat\OllamaChat;
 use LLPhant\Chat\Message as LLPhantMessage;
+use LLPhant\Chat\Enums\ChatRole;
+use LLPhant\Chat\FunctionInfo\FunctionInfo;
+use LLPhant\Chat\FunctionInfo\Parameter;
 use LLPhant\OpenAIConfig;
 use LLPhant\OllamaConfig;
 use OpenAI\Exceptions\ErrorException as OpenAIErrorException;
@@ -843,15 +846,17 @@ class ChatService
                     $functions  // Pass functions
                 );
             } elseif ($chatProvider === 'ollama') {
-                // Use native Ollama chat
+                // Use native Ollama chat with LLPhant's built-in tool support
                 $chat = new OllamaChat($config);
                 
-                // Add functions if available
+                // Add functions if available - Ollama supports tools via LLPhant!
                 if (!empty($functions)) {
-                    $chat->setTools($functions);
+                    // Convert array-based function definitions to FunctionInfo objects
+                    $functionInfoObjects = $this->convertFunctionsToFunctionInfo($functions, $tools);
+                    $chat->setTools($functionInfoObjects);
                 }
                 
-                // Use generateChat() for message arrays, which properly handles tools/functions
+                // Use generateChat() for message arrays
                 $response = $chat->generateChat($messageHistory);
             } else {
                 // OpenAI chat
@@ -859,7 +864,9 @@ class ChatService
                 
                 // Add functions if available
                 if (!empty($functions)) {
-                    $chat->setTools($functions);
+                    // Convert array-based function definitions to FunctionInfo objects
+                    $functionInfoObjects = $this->convertFunctionsToFunctionInfo($functions, $tools);
+                    $chat->setTools($functionInfoObjects);
                 }
                 
                 // Use generateChat() for message arrays, which properly handles tools/functions
@@ -1695,6 +1702,72 @@ class ChatService
 
         return $functions;
     }//end convertToolsToFunctions()
+
+
+    /**
+     * Convert array-based function definitions to FunctionInfo objects
+     *
+     * Converts the array format returned by our Tool classes into
+     * FunctionInfo objects that LLPhant expects for setTools().
+     * Now includes the tool instance so LLPhant can call methods directly.
+     *
+     * @param array $functions Array of function definitions
+     * @param array $tools     Tool instances that have the methods
+     *
+     * @return array Array of FunctionInfo objects
+     */
+    private function convertFunctionsToFunctionInfo(array $functions, array $tools): array
+    {
+        $functionInfoObjects = [];
+
+        foreach ($functions as $func) {
+            // Create parameters array
+            $parameters = [];
+            $required = [];
+            
+            if (isset($func['parameters']['properties'])) {
+                foreach ($func['parameters']['properties'] as $paramName => $paramDef) {
+                    // Determine parameter type from definition
+                    $type = $paramDef['type'] ?? 'string';
+                    $description = $paramDef['description'] ?? '';
+                    
+                    // Create parameter using constructor
+                    // Constructor: __construct(string $name, string $type, string $description, array $enum = [], ?string $format = null, array|string|null $itemsOrProperties = null)
+                    $parameters[] = new Parameter($paramName, $type, $description);
+                }
+            }
+            
+            if (isset($func['parameters']['required'])) {
+                $required = $func['parameters']['required'];
+            }
+
+            // Find the tool instance that has this function
+            $toolInstance = null;
+            foreach ($tools as $tool) {
+                $toolFunctions = $tool->getFunctions();
+                foreach ($toolFunctions as $toolFunc) {
+                    if ($toolFunc['name'] === $func['name']) {
+                        $toolInstance = $tool;
+                        break 2;
+                    }
+                }
+            }
+
+            // Create FunctionInfo object with the tool instance
+            // LLPhant will call $toolInstance->{$func['name']}(...$args)
+            $functionInfo = new FunctionInfo(
+                $func['name'],
+                $toolInstance, // Pass the tool instance
+                $func['description'] ?? '',
+                $parameters,
+                $required
+            );
+
+            $functionInfoObjects[] = $functionInfo;
+        }
+
+        return $functionInfoObjects;
+    }//end convertFunctionsToFunctionInfo()
 
 
     /**

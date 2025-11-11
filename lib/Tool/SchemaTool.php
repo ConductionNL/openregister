@@ -218,20 +218,11 @@ class SchemaTool extends AbstractTool
         }
 
         try {
-            switch ($functionName) {
-                case 'list_schemas':
-                    return $this->listSchemas($parameters);
-                case 'get_schema':
-                    return $this->getSchema($parameters);
-                case 'create_schema':
-                    return $this->createSchema($parameters);
-                case 'update_schema':
-                    return $this->updateSchema($parameters);
-                case 'delete_schema':
-                    return $this->deleteSchema($parameters);
-                default:
-                    throw new \InvalidArgumentException("Unknown function: {$functionName}");
-            }
+            // Convert snake_case to camelCase for PSR compliance
+            $methodName = lcfirst(str_replace('_', '', ucwords($functionName, '_')));
+            
+            // Call the method directly (LLPhant-compatible)
+            return $this->$methodName(...array_values($parameters));
         } catch (\Exception $e) {
             $this->log($functionName, $parameters, 'error', $e->getMessage());
             return $this->formatError($e->getMessage());
@@ -245,14 +236,11 @@ class SchemaTool extends AbstractTool
      *
      * @return array Result with list of schemas
      */
-    private function listSchemas(array $parameters): array
+    public function listSchemas(int $limit = 100, int $offset = 0, ?string $register = null): array
     {
-        $limit = $parameters['limit'] ?? 100;
-        $offset = $parameters['offset'] ?? 0;
-
         $filters = [];
-        if (isset($parameters['register'])) {
-            $filters['register'] = $parameters['register'];
+        if ($register !== null) {
+            $filters['register'] = $register;
         }
         $filters = $this->applyViewFilters($filters);
 
@@ -281,11 +269,9 @@ class SchemaTool extends AbstractTool
      *
      * @throws \Exception If schema not found
      */
-    private function getSchema(array $parameters): array
+    public function getSchema(string $id): array
     {
-        $this->validateParameters($parameters, ['id']);
-
-        $schema = $this->schemaMapper->find($parameters['id']);
+        $schema = $this->schemaMapper->find($id);
 
         return $this->formatSuccess(
             [
@@ -315,18 +301,16 @@ class SchemaTool extends AbstractTool
      *
      * @throws \Exception If creation fails
      */
-    private function createSchema(array $parameters): array
+    public function createSchema(string $title, array $properties, string $description = '', ?array $required = null): array
     {
-        $this->validateParameters($parameters, ['title', 'properties']);
-
         $data = [
-            'title' => $parameters['title'],
-            'description' => $parameters['description'] ?? '',
-            'properties' => $parameters['properties'],
+            'title' => $title,
+            'description' => $description,
+            'properties' => $properties,
         ];
 
-        if (isset($parameters['required'])) {
-            $data['required'] = $parameters['required'];
+        if ($required !== null) {
+            $data['required'] = $required;
         }
 
         $schema = $this->schemaMapper->createFromArray($data);
@@ -353,23 +337,21 @@ class SchemaTool extends AbstractTool
      *
      * @throws \Exception If update fails
      */
-    private function updateSchema(array $parameters): array
+    public function updateSchema(string $id, ?string $title = null, ?string $description = null, ?array $properties = null, ?array $required = null): array
     {
-        $this->validateParameters($parameters, ['id']);
+        $schema = $this->schemaMapper->find($id);
 
-        $schema = $this->schemaMapper->find($parameters['id']);
-
-        if (isset($parameters['title'])) {
-            $schema->setTitle($parameters['title']);
+        if ($title !== null) {
+            $schema->setTitle($title);
         }
-        if (isset($parameters['description'])) {
-            $schema->setDescription($parameters['description']);
+        if ($description !== null) {
+            $schema->setDescription($description);
         }
-        if (isset($parameters['properties'])) {
-            $schema->setProperties($parameters['properties']);
+        if ($properties !== null) {
+            $schema->setProperties($properties);
         }
-        if (isset($parameters['required'])) {
-            $schema->setRequired($parameters['required']);
+        if ($required !== null) {
+            $schema->setRequired($required);
         }
 
         $schema = $this->schemaMapper->update($schema);
@@ -396,15 +378,13 @@ class SchemaTool extends AbstractTool
      *
      * @throws \Exception If deletion fails
      */
-    private function deleteSchema(array $parameters): array
+    public function deleteSchema(string $id): array
     {
-        $this->validateParameters($parameters, ['id']);
-
-        $schema = $this->schemaMapper->find($parameters['id']);
+        $schema = $this->schemaMapper->find($id);
         $this->schemaMapper->delete($schema);
 
         return $this->formatSuccess(
-            ['id' => $parameters['id']],
+            ['id' => $id],
             'Schema deleted successfully'
         );
     }
