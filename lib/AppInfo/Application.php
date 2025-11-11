@@ -185,10 +185,11 @@ class Application extends App implements IBootstrap
                     $container->get('OCP\IUserManager'),
                     $container->get('OCP\IAppConfig'),
                     $container->get('Psr\Log\LoggerInterface'),
+                    $container->get(OrganisationService::class),
                     null // AuthorizationExceptionService
                     );
                 }
-                );
+        );
 
         // Register SolrService for advanced search capabilities (disabled due to performance issues)
         // Issue: Even with lazy loading, DI registration causes performance problems

@@ -36,8 +36,10 @@ use OCA\OpenRegister\Tool\ObjectsTool;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use LLPhant\Chat\OpenAIChat;
+use LLPhant\Chat\OllamaChat;
 use LLPhant\Chat\Message as LLPhantMessage;
 use LLPhant\OpenAIConfig;
+use LLPhant\OllamaConfig;
 use OpenAI\Exceptions\ErrorException as OpenAIErrorException;
 use DateTime;
 use Symfony\Component\Uid\Uuid;
@@ -742,53 +744,65 @@ class ChatService
 
         try {
             // Configure LLM client based on provider
-            $config = new OpenAIConfig();
-            
-            if ($chatProvider === 'openai') {
-                $openaiConfig = $llmConfig['openaiConfig'] ?? [];
-                if (empty($openaiConfig['apiKey'])) {
-                    throw new \Exception('OpenAI API key is not configured');
-                }
-                $config->apiKey = $openaiConfig['apiKey'];
-                // Use agent model if set and not empty, otherwise fallback to global config
-                $agentModel = $agent?->getModel();
-                $config->model = (!empty($agentModel)) ? $agentModel : ($openaiConfig['chatModel'] ?? 'gpt-4o-mini');
-                
-                if (!empty($openaiConfig['organizationId'])) {
-                    $config->organizationId = $openaiConfig['organizationId'];
-                }
-            } elseif ($chatProvider === 'fireworks') {
-                $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
-                if (empty($fireworksConfig['apiKey'])) {
-                    throw new \Exception('Fireworks AI API key is not configured');
-                }
-                $config->apiKey = $fireworksConfig['apiKey'];
-                // Use agent model if set and not empty, otherwise fallback to global config
-                $agentModel = $agent?->getModel();
-                $config->model = (!empty($agentModel)) ? $agentModel : ($fireworksConfig['chatModel'] ?? 'accounts/fireworks/models/llama-v3p1-8b-instruct');
-                
-                // Fireworks AI uses OpenAI-compatible API
-                $baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
-                if (!str_ends_with($baseUrl, '/v1')) {
-                    $baseUrl .= '/v1';
-                }
-                $config->url = $baseUrl;
-            } elseif ($chatProvider === 'ollama') {
+            // Ollama uses its own native config and chat class
+            if ($chatProvider === 'ollama') {
                 $ollamaConfig = $llmConfig['ollamaConfig'] ?? [];
                 if (empty($ollamaConfig['url'])) {
                     throw new \Exception('Ollama URL is not configured');
                 }
-                $config->url = rtrim($ollamaConfig['url'], '/');
+                
+                // Use native Ollama configuration
+                $config = new OllamaConfig();
+                $config->url = rtrim($ollamaConfig['url'], '/') . '/api/';
                 // Use agent model if set and not empty, otherwise fallback to global config
                 $agentModel = $agent?->getModel();
                 $config->model = (!empty($agentModel)) ? $agentModel : ($ollamaConfig['chatModel'] ?? 'llama2');
+                
+                // Set temperature from agent or default
+                if ($agent?->getTemperature() !== null) {
+                    $config->modelOptions['temperature'] = $agent->getTemperature();
+                }
             } else {
-                throw new \Exception("Unsupported chat provider: {$chatProvider}");
-            }
+                // OpenAI and Fireworks use OpenAIConfig
+                $config = new OpenAIConfig();
+                
+                if ($chatProvider === 'openai') {
+                    $openaiConfig = $llmConfig['openaiConfig'] ?? [];
+                    if (empty($openaiConfig['apiKey'])) {
+                        throw new \Exception('OpenAI API key is not configured');
+                    }
+                    $config->apiKey = $openaiConfig['apiKey'];
+                    // Use agent model if set and not empty, otherwise fallback to global config
+                    $agentModel = $agent?->getModel();
+                    $config->model = (!empty($agentModel)) ? $agentModel : ($openaiConfig['chatModel'] ?? 'gpt-4o-mini');
+                    
+                    if (!empty($openaiConfig['organizationId'])) {
+                        $config->organizationId = $openaiConfig['organizationId'];
+                    }
+                } elseif ($chatProvider === 'fireworks') {
+                    $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
+                    if (empty($fireworksConfig['apiKey'])) {
+                        throw new \Exception('Fireworks AI API key is not configured');
+                    }
+                    $config->apiKey = $fireworksConfig['apiKey'];
+                    // Use agent model if set and not empty, otherwise fallback to global config
+                    $agentModel = $agent?->getModel();
+                    $config->model = (!empty($agentModel)) ? $agentModel : ($fireworksConfig['chatModel'] ?? 'accounts/fireworks/models/llama-v3p1-8b-instruct');
+                    
+                    // Fireworks AI uses OpenAI-compatible API
+                    $baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
+                    if (!str_ends_with($baseUrl, '/v1')) {
+                        $baseUrl .= '/v1';
+                    }
+                    $config->url = $baseUrl;
+                } else {
+                    throw new \Exception("Unsupported chat provider: {$chatProvider}");
+                }
 
-            // Set temperature from agent or default
-            if ($agent?->getTemperature() !== null) {
-                $config->temperature = $agent->getTemperature();
+                // Set temperature from agent or default (OpenAI/Fireworks)
+                if ($agent?->getTemperature() !== null) {
+                    $config->temperature = $agent->getTemperature();
+                }
             }
 
             // Build system prompt
@@ -818,8 +832,9 @@ class ChatService
                 ]);
             }
 
-            // For Fireworks, use direct HTTP to avoid OpenAI library error handling bugs
+            // Create chat instance based on provider
             if ($chatProvider === 'fireworks') {
+                // For Fireworks, use direct HTTP to avoid OpenAI library error handling bugs
                 $response = $this->callFireworksChatAPIWithHistory(
                     $config->apiKey,
                     $config->model,
@@ -827,8 +842,19 @@ class ChatService
                     $messageHistory,
                     $functions  // Pass functions
                 );
+            } elseif ($chatProvider === 'ollama') {
+                // Use native Ollama chat
+                $chat = new OllamaChat($config);
+                
+                // Add functions if available
+                if (!empty($functions)) {
+                    $chat->setTools($functions);
+                }
+                
+                // Use generateChat() for message arrays, which properly handles tools/functions
+                $response = $chat->generateChat($messageHistory);
             } else {
-                // Create chat instance
+                // OpenAI chat
                 $chat = new OpenAIChat($config);
                 
                 // Add functions if available
@@ -836,7 +862,8 @@ class ChatService
                     $chat->setTools($functions);
                 }
                 
-                $response = $chat->generateText($messageHistory);
+                // Use generateChat() for message arrays, which properly handles tools/functions
+                $response = $chat->generateChat($messageHistory);
             }
 
             $this->logger->info('[ChatService] Response generated', [
@@ -880,54 +907,68 @@ class ChatService
             }
 
             // Configure LLM based on provider
-            $config = new OpenAIConfig();
-            
-            if ($chatProvider === 'openai') {
-                $openaiConfig = $llmConfig['openaiConfig'] ?? [];
-                if (empty($openaiConfig['apiKey'])) {
-                    return $this->generateFallbackTitle($firstMessage);
-                }
-                $config->apiKey = $openaiConfig['apiKey'];
-                $config->model = 'gpt-4o-mini'; // Use fast model for titles
-            } elseif ($chatProvider === 'fireworks') {
-                $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
-                if (empty($fireworksConfig['apiKey'])) {
-                    return $this->generateFallbackTitle($firstMessage);
-                }
-                $config->apiKey = $fireworksConfig['apiKey'];
-                $config->model = 'accounts/fireworks/models/llama-v3p1-8b-instruct';
-                $baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
-                if (!str_ends_with($baseUrl, '/v1')) {
-                    $baseUrl .= '/v1';
-                }
-                $config->url = $baseUrl;
-            } elseif ($chatProvider === 'ollama') {
+            // Ollama uses its own native config
+            if ($chatProvider === 'ollama') {
                 $ollamaConfig = $llmConfig['ollamaConfig'] ?? [];
                 if (empty($ollamaConfig['url'])) {
                     return $this->generateFallbackTitle($firstMessage);
                 }
-                $config->url = rtrim($ollamaConfig['url'], '/');
+                
+                // Use native Ollama configuration
+                $config = new OllamaConfig();
+                $config->url = rtrim($ollamaConfig['url'], '/') . '/api/';
                 $config->model = $ollamaConfig['chatModel'] ?? 'llama2';
+                $config->modelOptions['temperature'] = 0.7;
             } else {
-                return $this->generateFallbackTitle($firstMessage);
+                // OpenAI and Fireworks use OpenAIConfig
+                $config = new OpenAIConfig();
+                
+                if ($chatProvider === 'openai') {
+                    $openaiConfig = $llmConfig['openaiConfig'] ?? [];
+                    if (empty($openaiConfig['apiKey'])) {
+                        return $this->generateFallbackTitle($firstMessage);
+                    }
+                    $config->apiKey = $openaiConfig['apiKey'];
+                    $config->model = 'gpt-4o-mini'; // Use fast model for titles
+                } elseif ($chatProvider === 'fireworks') {
+                    $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
+                    if (empty($fireworksConfig['apiKey'])) {
+                        return $this->generateFallbackTitle($firstMessage);
+                    }
+                    $config->apiKey = $fireworksConfig['apiKey'];
+                    $config->model = 'accounts/fireworks/models/llama-v3p1-8b-instruct';
+                    $baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
+                    if (!str_ends_with($baseUrl, '/v1')) {
+                        $baseUrl .= '/v1';
+                    }
+                    $config->url = $baseUrl;
+                } else {
+                    return $this->generateFallbackTitle($firstMessage);
+                }
+                
+                $config->temperature = 0.7;
             }
-            
-            $config->temperature = 0.7;
 
             // Generate title
             $prompt = "Generate a short, descriptive title (max 60 characters) for a conversation that starts with this message:\n\n";
             $prompt .= "\"{$firstMessage}\"\n\n";
             $prompt .= "Title:";
 
-            // Use direct HTTP for Fireworks to avoid OpenAI library issues
+            // Generate title based on provider
             if ($chatProvider === 'fireworks') {
+                // Use direct HTTP for Fireworks to avoid OpenAI library issues
                 $title = $this->callFireworksChatAPI(
                     $config->apiKey,
                     $config->model,
                     $config->url,
                     $prompt
                 );
+            } elseif ($chatProvider === 'ollama') {
+                // Use native Ollama chat
+                $chat = new OllamaChat($config);
+                $title = $chat->generateText($prompt);
             } else {
+                // OpenAI chat
                 $chat = new OpenAIChat($config);
                 $title = $chat->generateText($prompt);
             }
@@ -1069,55 +1110,80 @@ class ChatService
             }
 
             // Configure LLM client based on provider
-            $llphantConfig = new OpenAIConfig();
-            
-            if ($provider === 'openai') {
-                if (empty($config['apiKey'])) {
-                    throw new \Exception('OpenAI API key is required');
-                }
-                $llphantConfig->apiKey = $config['apiKey'];
-                $llphantConfig->model = $config['chatModel'] ?? $config['model'] ?? 'gpt-4o-mini';
-                
-                if (!empty($config['organizationId'])) {
-                    $llphantConfig->organizationId = $config['organizationId'];
-                }
-            } elseif ($provider === 'fireworks') {
-                if (empty($config['apiKey'])) {
-                    throw new \Exception('Fireworks AI API key is required');
-                }
-                $llphantConfig->apiKey = $config['apiKey'];
-                $llphantConfig->model = $config['chatModel'] ?? $config['model'] ?? 'accounts/fireworks/models/llama-v3p1-8b-instruct';
-                
-                // Fireworks AI uses OpenAI-compatible API but needs specific URL format
-                $baseUrl = rtrim($config['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
-                // Ensure the URL ends with /v1 for compatibility
-                if (!str_ends_with($baseUrl, '/v1')) {
-                    $baseUrl .= '/v1';
-                }
-                $llphantConfig->url = $baseUrl;
-            } elseif ($provider === 'ollama') {
+            // Ollama uses its own native config
+            if ($provider === 'ollama') {
                 if (empty($config['url'])) {
                     throw new \Exception('Ollama URL is required');
                 }
-                $llphantConfig->url = rtrim($config['url'], '/');
+                
+                // Use native Ollama configuration
+                $llphantConfig = new OllamaConfig();
+                $llphantConfig->url = rtrim($config['url'], '/') . '/api/';
                 $llphantConfig->model = $config['chatModel'] ?? $config['model'] ?? 'llama2';
+                
+                // Set temperature if provided
+                if (isset($config['temperature'])) {
+                    $llphantConfig->modelOptions['temperature'] = (float) $config['temperature'];
+                }
+            } else {
+                // OpenAI and Fireworks use OpenAIConfig
+                $llphantConfig = new OpenAIConfig();
+                
+                if ($provider === 'openai') {
+                    if (empty($config['apiKey'])) {
+                        throw new \Exception('OpenAI API key is required');
+                    }
+                    $llphantConfig->apiKey = $config['apiKey'];
+                    $llphantConfig->model = $config['chatModel'] ?? $config['model'] ?? 'gpt-4o-mini';
+                    
+                    if (!empty($config['organizationId'])) {
+                        $llphantConfig->organizationId = $config['organizationId'];
+                    }
+                } elseif ($provider === 'fireworks') {
+                    if (empty($config['apiKey'])) {
+                        throw new \Exception('Fireworks AI API key is required');
+                    }
+                    $llphantConfig->apiKey = $config['apiKey'];
+                    $llphantConfig->model = $config['chatModel'] ?? $config['model'] ?? 'accounts/fireworks/models/llama-v3p1-8b-instruct';
+                    
+                    // Fireworks AI uses OpenAI-compatible API but needs specific URL format
+                    $baseUrl = rtrim($config['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
+                    // Ensure the URL ends with /v1 for compatibility
+                    if (!str_ends_with($baseUrl, '/v1')) {
+                        $baseUrl .= '/v1';
+                    }
+                    $llphantConfig->url = $baseUrl;
+                }
+
+                // Set temperature if provided
+                if (isset($config['temperature'])) {
+                    $llphantConfig->temperature = (float) $config['temperature'];
+                }
             }
 
-            // Set temperature if provided
-            if (isset($config['temperature'])) {
-                $llphantConfig->temperature = (float) $config['temperature'];
-            }
-
-            // For Fireworks, use direct HTTP to avoid OpenAI library error handling bugs
+            // Generate test response based on provider
             if ($provider === 'fireworks') {
+                // For Fireworks, use direct HTTP to avoid OpenAI library error handling bugs
                 $response = $this->callFireworksChatAPI(
                     $llphantConfig->apiKey,
                     $llphantConfig->model,
                     $llphantConfig->url,
                     $testMessage
                 );
+            } elseif ($provider === 'ollama') {
+                // Use native Ollama chat
+                $chat = new OllamaChat($llphantConfig);
+
+                // Generate response
+                $this->logger->debug('[ChatService] Sending test message to Ollama', [
+                    'provider' => $provider,
+                    'model' => $llphantConfig->model,
+                    'url' => $llphantConfig->url ?? 'default',
+                ]);
+                
+                $response = $chat->generateText($testMessage);
             } else {
-                // Use OpenAI client for OpenAI and Ollama
+                // Use OpenAI chat
                 $chat = new OpenAIChat($llphantConfig);
 
                 // Generate response
@@ -1471,34 +1537,41 @@ class ChatService
         }
 
         // Configure LLM based on provider
-        $config = new OpenAIConfig();
-        
-        if ($chatProvider === 'openai') {
-            $openaiConfig = $llmConfig['openaiConfig'] ?? [];
-            if (empty($openaiConfig['apiKey'])) {
-                throw new \Exception('OpenAI API key not configured');
-            }
-            $config->apiKey = $openaiConfig['apiKey'];
-            $config->model = 'gpt-4o-mini';
-        } elseif ($chatProvider === 'fireworks') {
-            $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
-            if (empty($fireworksConfig['apiKey'])) {
-                throw new \Exception('Fireworks AI API key not configured');
-            }
-            $config->apiKey = $fireworksConfig['apiKey'];
-            $config->model = 'accounts/fireworks/models/llama-v3p1-8b-instruct';
-            $baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
-            if (!str_ends_with($baseUrl, '/v1')) {
-                $baseUrl .= '/v1';
-            }
-            $config->url = $baseUrl;
-        } elseif ($chatProvider === 'ollama') {
+        // Ollama uses its own native config
+        if ($chatProvider === 'ollama') {
             $ollamaConfig = $llmConfig['ollamaConfig'] ?? [];
             if (empty($ollamaConfig['url'])) {
                 throw new \Exception('Ollama URL not configured');
             }
-            $config->url = rtrim($ollamaConfig['url'], '/');
+            
+            // Use native Ollama configuration
+            $config = new OllamaConfig();
+            $config->url = rtrim($ollamaConfig['url'], '/') . '/api/';
             $config->model = $ollamaConfig['chatModel'] ?? 'llama2';
+        } else {
+            // OpenAI and Fireworks use OpenAIConfig
+            $config = new OpenAIConfig();
+            
+            if ($chatProvider === 'openai') {
+                $openaiConfig = $llmConfig['openaiConfig'] ?? [];
+                if (empty($openaiConfig['apiKey'])) {
+                    throw new \Exception('OpenAI API key not configured');
+                }
+                $config->apiKey = $openaiConfig['apiKey'];
+                $config->model = 'gpt-4o-mini';
+            } elseif ($chatProvider === 'fireworks') {
+                $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
+                if (empty($fireworksConfig['apiKey'])) {
+                    throw new \Exception('Fireworks AI API key not configured');
+                }
+                $config->apiKey = $fireworksConfig['apiKey'];
+                $config->model = 'accounts/fireworks/models/llama-v3p1-8b-instruct';
+                $baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
+                if (!str_ends_with($baseUrl, '/v1')) {
+                    $baseUrl .= '/v1';
+                }
+                $config->url = $baseUrl;
+            }
         }
 
         // Generate summary
@@ -1506,15 +1579,21 @@ class ChatService
         $prompt .= $conversationText;
         $prompt .= "\n\nSummary:";
 
-        // Use direct HTTP for Fireworks to avoid OpenAI library issues
+        // Generate summary based on provider
         if ($chatProvider === 'fireworks') {
+            // Use direct HTTP for Fireworks to avoid OpenAI library issues
             return $this->callFireworksChatAPI(
                 $config->apiKey,
                 $config->model,
                 $config->url,
                 $prompt
             );
+        } elseif ($chatProvider === 'ollama') {
+            // Use native Ollama chat
+            $chat = new OllamaChat($config);
+            return $chat->generateText($prompt);
         } else {
+            // OpenAI chat
             $chat = new OpenAIChat($config);
             return $chat->generateText($prompt);
         }

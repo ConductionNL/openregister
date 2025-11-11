@@ -12,6 +12,7 @@ namespace OCA\OpenRegister\Service;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use LLPhant\OpenAIConfig;
+use LLPhant\OllamaConfig;
 use LLPhant\Embeddings\EmbeddingGenerator\OpenAI\OpenAIADA002EmbeddingGenerator;
 use LLPhant\Embeddings\EmbeddingGenerator\OpenAI\OpenAI3SmallEmbeddingGenerator;
 use LLPhant\Embeddings\EmbeddingGenerator\OpenAI\OpenAI3LargeEmbeddingGenerator;
@@ -1021,22 +1022,11 @@ class VectorEmbeddingService
                 'model' => $config['model']
             ]);
 
-            // Create LLPhant config
-            $llphantConfig = new OpenAIConfig();
-            
-            if (!empty($config['api_key'])) {
-                $llphantConfig->apiKey = $config['api_key'];
-            }
-            
-            if (!empty($config['base_url'])) {
-                $llphantConfig->url = $config['base_url'];
-            }
-
             // Create appropriate generator based on provider and model
             $generator = match ($config['provider']) {
-                'openai' => $this->createOpenAIGenerator($config['model'], $llphantConfig),
-                'fireworks' => $this->createFireworksGenerator($config['model'], $llphantConfig),
-                'ollama' => $this->createOllamaGenerator($config['model'], $llphantConfig),
+                'openai' => $this->createOpenAIGenerator($config['model'], $config),
+                'fireworks' => $this->createFireworksGenerator($config['model'], $config),
+                'ollama' => $this->createOllamaGenerator($config['model'], $config),
                 default => throw new \Exception("Unsupported embedding provider: {$config['provider']}")
             };
 
@@ -1055,19 +1045,29 @@ class VectorEmbeddingService
     /**
      * Create OpenAI embedding generator
      * 
-     * @param string        $model  Model name
-     * @param OpenAIConfig  $config LLPhant config
+     * @param string $model  Model name
+     * @param array  $config Configuration array with api_key and base_url
      * 
      * @return EmbeddingGeneratorInterface Generator instance
      * 
      * @throws \Exception If model is not supported
      */
-    private function createOpenAIGenerator(string $model, OpenAIConfig $config): EmbeddingGeneratorInterface
+    private function createOpenAIGenerator(string $model, array $config): EmbeddingGeneratorInterface
     {
+        $llphantConfig = new OpenAIConfig();
+        
+        if (!empty($config['api_key'])) {
+            $llphantConfig->apiKey = $config['api_key'];
+        }
+        
+        if (!empty($config['base_url'])) {
+            $llphantConfig->url = $config['base_url'];
+        }
+        
         return match ($model) {
-            'text-embedding-ada-002' => new OpenAIADA002EmbeddingGenerator($config),
-            'text-embedding-3-small' => new OpenAI3SmallEmbeddingGenerator($config),
-            'text-embedding-3-large' => new OpenAI3LargeEmbeddingGenerator($config),
+            'text-embedding-ada-002' => new OpenAIADA002EmbeddingGenerator($llphantConfig),
+            'text-embedding-3-small' => new OpenAI3SmallEmbeddingGenerator($llphantConfig),
+            'text-embedding-3-large' => new OpenAI3LargeEmbeddingGenerator($llphantConfig),
             default => throw new \Exception("Unsupported OpenAI model: {$model}")
         };
     }
@@ -1078,23 +1078,23 @@ class VectorEmbeddingService
      * Fireworks AI uses OpenAI-compatible API, so we create a custom wrapper
      * that works with any Fireworks model.
      * 
-     * @param string        $model  Model name (e.g., 'nomic-ai/nomic-embed-text-v1.5')
-     * @param OpenAIConfig  $config LLPhant config with API key and base URL
+     * @param string $model  Model name (e.g., 'nomic-ai/nomic-embed-text-v1.5')
+     * @param array  $config Configuration array with api_key and base_url
      * 
      * @return EmbeddingGeneratorInterface Generator instance
      * 
      * @throws \Exception If model is not supported
      */
-    private function createFireworksGenerator(string $model, OpenAIConfig $config): EmbeddingGeneratorInterface
+    private function createFireworksGenerator(string $model, array $config): EmbeddingGeneratorInterface
     {
         // Create a custom anonymous class that implements the EmbeddingGeneratorInterface
         // This allows us to use any Fireworks model name without LLPhant's restrictions
         return new class($model, $config, $this->logger) implements EmbeddingGeneratorInterface {
             private string $model;
-            private OpenAIConfig $config;
+            private array $config;
             private $logger;
 
-            public function __construct(string $model, OpenAIConfig $config, $logger)
+            public function __construct(string $model, array $config, $logger)
             {
                 $this->model = $model;
                 $this->config = $config;
@@ -1103,7 +1103,7 @@ class VectorEmbeddingService
 
             public function embedText(string $text): array
             {
-                $url = rtrim($this->config->url ?? 'https://api.fireworks.ai/inference/v1', '/') . '/embeddings';
+                $url = rtrim($this->config['base_url'] ?? 'https://api.fireworks.ai/inference/v1', '/') . '/embeddings';
                 
                 $this->logger->debug('Calling Fireworks AI API', [
                     'url' => $url,
@@ -1114,7 +1114,7 @@ class VectorEmbeddingService
                 curl_setopt($ch, CURLOPT_POST, true);
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
                 curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                    'Authorization: Bearer ' . $this->config->apiKey,
+                    'Authorization: Bearer ' . $this->config['api_key'],
                     'Content-Type: application/json',
                 ]);
                 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
@@ -1176,17 +1176,20 @@ class VectorEmbeddingService
     /**
      * Create Ollama embedding generator
      * 
-     * @param string        $model  Model name
-     * @param OpenAIConfig  $config LLPhant config (used for base URL)
+     * @param string $model  Model name (e.g., 'nomic-embed-text')
+     * @param array  $config Configuration array with base_url
      * 
      * @return EmbeddingGeneratorInterface Generator instance
      */
-    private function createOllamaGenerator(string $model, OpenAIConfig $config): EmbeddingGeneratorInterface
+    private function createOllamaGenerator(string $model, array $config): EmbeddingGeneratorInterface
     {
-        // Ollama generator uses different initialization
-        // For now, return a generic Ollama generator
-        // The user will need to have Ollama running locally
-        return new OllamaEmbeddingGenerator();
+        // Create native Ollama configuration
+        $ollamaConfig = new OllamaConfig();
+        $ollamaConfig->url = rtrim($config['base_url'] ?? 'http://localhost:11434', '/') . '/api/';
+        $ollamaConfig->model = $model;
+        
+        // Create and return Ollama embedding generator with native config
+        return new OllamaEmbeddingGenerator($ollamaConfig);
     }
 
 
@@ -1408,6 +1411,171 @@ class VectorEmbeddingService
         $text = preg_replace('/\s+/u', ' ', $text);
         
         return trim($text);
+    }
+
+    /**
+     * Check if embedding model has changed since vectors were created
+     *
+     * Compares the configured embedding model with models used in existing vectors.
+     * If they don't match, vectors need to be regenerated.
+     *
+     * @return array Status information with mismatch details
+     */
+    public function checkEmbeddingModelMismatch(): array
+    {
+        try {
+            // Get current configured model
+            $settings = $this->settingsService->getLLMSettingsOnly();
+            $currentProvider = $settings['embeddingProvider'] ?? null;
+            $currentModel = null;
+
+            if ($currentProvider === 'openai') {
+                $currentModel = $settings['openaiConfig']['model'] ?? null;
+            } elseif ($currentProvider === 'ollama') {
+                $currentModel = $settings['ollamaConfig']['model'] ?? null;
+            } elseif ($currentProvider === 'fireworks') {
+                $currentModel = $settings['fireworksConfig']['embeddingModel'] ?? null;
+            }
+
+            if (!$currentModel) {
+                return [
+                    'has_vectors' => false,
+                    'mismatch' => false,
+                    'message' => 'No embedding model configured'
+                ];
+            }
+
+            // Check if any vectors exist
+            $qb = $this->db->getQueryBuilder();
+            $qb->select($qb->func()->count('*', 'total'))
+                ->from('openregister_vectors');
+            
+            $result = $qb->executeQuery();
+            $totalVectors = (int) $result->fetchOne();
+            $result->closeCursor();
+
+            if ($totalVectors === 0) {
+                return [
+                    'has_vectors' => false,
+                    'mismatch' => false,
+                    'current_model' => $currentModel,
+                    'message' => 'No vectors exist yet'
+                ];
+            }
+
+            // Get distinct embedding models used in existing vectors
+            $qb = $this->db->getQueryBuilder();
+            $qb->selectDistinct('embedding_model')
+                ->from('openregister_vectors')
+                ->where($qb->expr()->isNotNull('embedding_model'));
+
+            $result = $qb->executeQuery();
+            $existingModels = [];
+            while ($row = $result->fetch()) {
+                $existingModels[] = $row['embedding_model'];
+            }
+            $result->closeCursor();
+
+            // Count vectors with NULL model (created before tracking)
+            $qb = $this->db->getQueryBuilder();
+            $qb->select($qb->func()->count('*', 'null_count'))
+                ->from('openregister_vectors')
+                ->where($qb->expr()->isNull('embedding_model'));
+            
+            $result = $qb->executeQuery();
+            $nullModelCount = (int) $result->fetchOne();
+            $result->closeCursor();
+
+            // Check for mismatch
+            $hasMismatch = false;
+            $mismatchDetails = [];
+
+            foreach ($existingModels as $existingModel) {
+                if ($existingModel !== $currentModel) {
+                    $hasMismatch = true;
+                    $mismatchDetails[] = $existingModel;
+                }
+            }
+
+            return [
+                'has_vectors' => true,
+                'mismatch' => $hasMismatch || $nullModelCount > 0,
+                'current_model' => $currentModel,
+                'existing_models' => $existingModels,
+                'total_vectors' => $totalVectors,
+                'null_model_count' => $nullModelCount,
+                'mismatched_models' => $mismatchDetails,
+                'message' => $hasMismatch || $nullModelCount > 0
+                    ? 'Embedding model has changed. Please clear all vectors and re-vectorize.'
+                    : 'All vectors use the current embedding model'
+            ];
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to check embedding model mismatch', [
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'has_vectors' => false,
+                'mismatch' => false,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Clear all embeddings from the database
+     *
+     * Deletes all vectors. This should be done when changing embedding models.
+     *
+     * @return array Result with count of deleted vectors
+     */
+    public function clearAllEmbeddings(): array
+    {
+        try {
+            // Count vectors before deletion
+            $qb = $this->db->getQueryBuilder();
+            $qb->select($qb->func()->count('*', 'total'))
+                ->from('openregister_vectors');
+            
+            $result = $qb->executeQuery();
+            $totalVectors = (int) $result->fetchOne();
+            $result->closeCursor();
+
+            if ($totalVectors === 0) {
+                return [
+                    'success' => true,
+                    'deleted' => 0,
+                    'message' => 'No vectors to delete'
+                ];
+            }
+
+            // Delete all vectors
+            $qb = $this->db->getQueryBuilder();
+            $qb->delete('openregister_vectors');
+            $deletedCount = $qb->executeStatement();
+
+            $this->logger->info('All embeddings cleared', [
+                'deleted_count' => $deletedCount
+            ]);
+
+            return [
+                'success' => true,
+                'deleted' => $deletedCount,
+                'message' => "Deleted {$deletedCount} vectors successfully"
+            ];
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to clear embeddings', [
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'message' => 'Failed to clear embeddings: ' . $e->getMessage()
+            ];
+        }
     }
 }
 
