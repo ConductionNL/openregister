@@ -12,6 +12,17 @@ OpenRegister includes a complete Docker Compose setup for developers and partner
 
 OpenRegister provides **two docker-compose configurations** to suit different needs:
 
+| Feature | Production/Testing Mode | Developer Mode |
+|---------|------------------------|----------------|
+| **File** | `docker-compose.yml` | `docker-compose.dev.yml` |
+| **Best For** | Partners, testers, evaluation | Developers, contributors |
+| **App Source** | Nextcloud App Store | Local code (mounted) |
+| **Code Changes** | ❌ Not possible | ✅ Live editing |
+| **Dependencies** | Auto-downloaded | Auto-built from source |
+| **Startup Time** | ~2-3 minutes | ~3-5 minutes |
+| **Use Case** | Testing features | Developing features |
+| **Command** | `docker-compose up -d` | `docker-compose -f docker-compose.dev.yml up -d` |
+
 ### 📦 **Production/Testing Mode** (`docker-compose.yml`)
 
 Perfect for partners, testers, and quick evaluation.
@@ -534,24 +545,33 @@ docker exec -u 33 nextcloud php /var/www/html/occ maintenance:mode --off
 
 ## Stopping the Environment
 
-### Temporary Stop (preserves data)
+### Production/Testing Mode
 
 ```bash
+# Temporary stop (preserves data)
 docker-compose stop
-```
 
-### Full Shutdown (preserves data)
-
-```bash
+# Full shutdown (preserves data)
 docker-compose down
-```
 
-### Complete Reset (DESTROYS ALL DATA)
-
-```bash
-# WARNING: This deletes all data including databases, uploaded files, and downloaded models
+# Complete reset (DESTROYS ALL DATA)
 docker-compose down -v
 ```
+
+### Developer Mode
+
+```bash
+# Temporary stop (preserves data)
+docker-compose -f docker-compose.dev.yml stop
+
+# Full shutdown (preserves data)
+docker-compose -f docker-compose.dev.yml down
+
+# Complete reset (DESTROYS ALL DATA)
+docker-compose -f docker-compose.dev.yml down -v
+```
+
+**⚠️ Warning:** Using `-v` flag will delete all data including databases, uploaded files, and downloaded models!
 
 ## Advanced Configuration
 
