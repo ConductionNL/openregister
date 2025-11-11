@@ -40,6 +40,8 @@ export class Agent implements TAgent {
 	public searchObjects?: boolean
 	public isPrivate?: boolean
 	public invitedUsers?: string[]
+	public tools?: string[]
+	public user?: string
 	public created?: string
 	public updated?: string
 
@@ -71,6 +73,8 @@ export class Agent implements TAgent {
 		this.searchObjects = agent.searchObjects !== false
 		this.isPrivate = agent.isPrivate || false
 		this.invitedUsers = agent.invitedUsers || []
+		this.tools = agent.tools || []
+		this.user = agent.user || null
 		this.created = agent.created || ''
 		this.updated = agent.updated || ''
 	}
@@ -104,6 +108,8 @@ export class Agent implements TAgent {
 			searchObjects: z.boolean().optional(),
 			isPrivate: z.boolean().optional(),
 			invitedUsers: z.array(z.string()).optional(),
+			tools: z.array(z.string()).optional(),
+			user: z.string().optional().nullable(),
 			created: z.string().optional(),
 			updated: z.string().optional(),
 		})

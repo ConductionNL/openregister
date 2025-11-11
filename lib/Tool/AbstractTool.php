@@ -257,5 +257,30 @@ abstract class AbstractTool implements ToolInterface
             }
         }
     }
+
+    /**
+     * Magic method to support snake_case method calls for LLPhant compatibility
+     *
+     * Automatically converts snake_case method calls to camelCase for PSR compliance.
+     * Example: list_registers() -> listRegisters()
+     *
+     * @param string $name      Method name (snake_case)
+     * @param array  $arguments Method arguments
+     *
+     * @return mixed Method result
+     *
+     * @throws \BadMethodCallException If the camelCase method doesn't exist
+     */
+    public function __call(string $name, array $arguments)
+    {
+        // Convert snake_case to camelCase
+        $camelCaseMethod = lcfirst(str_replace('_', '', ucwords($name, '_')));
+        
+        if (method_exists($this, $camelCaseMethod)) {
+            return $this->$camelCaseMethod(...$arguments);
+        }
+        
+        throw new \BadMethodCallException("Method {$name} (or {$camelCaseMethod}) does not exist");
+    }
 }
 
