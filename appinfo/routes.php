@@ -94,6 +94,8 @@ return [
         ['name' => 'settings#updateOrganisationSettings', 'url' => '/api/settings/organisation', 'verb' => 'PUT'],
         
         ['name' => 'settings#getLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'GET'],
+        ['name' => 'settings#getDatabaseInfo', 'url' => '/api/settings/database', 'verb' => 'GET'],
+        ['name' => 'settings#getSolrInfo', 'url' => '/api/settings/solr-info', 'verb' => 'GET'],
         ['name' => 'settings#updateLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'POST'],
         ['name' => 'settings#patchLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'PATCH'],
         ['name' => 'settings#updateLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'PUT'],

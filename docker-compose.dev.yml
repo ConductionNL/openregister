@@ -55,12 +55,17 @@ services:
       # Keep models loaded longer during development
       - OLLAMA_KEEP_ALIVE=30m
     # Memory limits for larger models (Llama 3.2 8B, Mistral, etc.)
+    # GPU support enabled for NVIDIA GPUs
     deploy:
       resources:
         limits:
           memory: 16G  # Sufficient for 8B models
         reservations:
           memory: 8G   # Minimum required
+          devices:
+            - driver: nvidia
+              count: all  # Use all available GPUs
+              capabilities: [gpu]
     # Shared memory for model loading
     shm_size: '2gb'
     healthcheck:

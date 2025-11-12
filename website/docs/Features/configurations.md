@@ -234,6 +234,318 @@ graph LR
     style E fill:#c8e6c9
 ```
 
+## Programmatic Configuration Import for Apps
+
+Apps can programmatically import their configurations using the ConfigurationService without needing to manually create Configuration entities. This is useful for:
+
+- App initialization and setup
+- Automatic configuration deployment
+- Version-based configuration updates
+- Bundling configurations with app releases
+
+### Using importFromApp
+
+The `importFromApp` method provides a simplified way for apps to import their configuration data:
+
+```php
+// Get the configuration service
+$configurationService = $this->container->get('OCA\OpenRegister\Service\ConfigurationService');
+
+// Load your configuration data (from JSON file, array, etc.)
+$configData = json_decode(file_get_contents('path/to/config.json'), true);
+
+// Import the configuration
+$result = $configurationService->importFromApp(
+    appId: 'myapp',           // Your app ID
+    data: $configData,        // Configuration data array
+    version: '1.0.0',         // Version string
+    force: false              // Force import even if version is not newer
+);
+
+// Result contains imported entities
+// $result['registers'] - Array of imported Register entities
+// $result['schemas'] - Array of imported Schema entities  
+// $result['objects'] - Array of imported Object entities
+```
+
+### How It Works
+
+The `importFromApp` method automatically:
+
+1. **Finds or Creates Configuration Entity**: Checks if a Configuration entity exists for your app ID. If not, creates one.
+2. **Handles Version Checking**: Compares versions and skips import if the same or older version is already installed (unless force=true).
+3. **Tracks Imported Entities**: Associates all imported registers, schemas, and objects with the Configuration entity.
+4. **Updates Configuration**: Merges new entity IDs with existing ones on subsequent imports.
+
+```mermaid
+sequenceDiagram
+    participant App
+    participant Service as ConfigurationService
+    participant Mapper as ConfigurationMapper
+    participant DB as Database
+    
+    App->>Service: importFromApp(appId, data, version)
+    Service->>Mapper: findByApp(appId)
+    
+    alt Configuration exists
+        Mapper-->>Service: Existing Configuration
+    else Configuration does not exist
+        Service->>Service: Create new Configuration
+        Service->>Mapper: insert(configuration)
+        Mapper-->>Service: Configuration with ID
+    end
+    
+    Service->>Service: importFromJson(data, configuration)
+    Service->>DB: Save registers, schemas, objects
+    DB-->>Service: Import results
+    
+    Service->>Service: Update Configuration with entity IDs
+    Service->>Mapper: update(configuration)
+    Mapper-->>Service: Updated Configuration
+    
+    Service-->>App: Import results
+```
+
+### Example: App Installation Hook
+
+Use this in your app's installation or upgrade hooks:
+
+```php
+namespace OCA\MyApp\Migration;
+
+use OCP\Migration\IOutput;
+use OCP\Migration\IRepairStep;
+use Psr\Container\ContainerInterface;
+
+class InstallConfiguration implements IRepairStep {
+    
+    private ContainerInterface $container;
+    
+    public function __construct(ContainerInterface $container) {
+        $this->container = $container;
+    }
+    
+    public function getName(): string {
+        return 'Install MyApp configuration';
+    }
+    
+    public function run(IOutput $output): void {
+        try {
+            // Get configuration service
+            $configService = $this->container->get(
+                'OCA\OpenRegister\Service\ConfigurationService'
+            );
+            
+            // Load configuration from bundled JSON file
+            $configPath = __DIR__ . '/../Settings/configuration.json';
+            $configData = json_decode(file_get_contents($configPath), true);
+            
+            // Import configuration
+            $result = $configService->importFromApp(
+                appId: 'myapp',
+                data: $configData,
+                version: '1.0.0',
+                force: false
+            );
+            
+            $output->info(sprintf(
+                'Configuration imported: %d registers, %d schemas, %d objects',
+                count($result['registers']),
+                count($result['schemas']),
+                count($result['objects'])
+            ));
+            
+        } catch (\Exception $e) {
+            $output->warning('Failed to import configuration: ' . $e->getMessage());
+        }
+    }
+}
+```
+
+### Example: Version-Based Updates
+
+Update configurations only when app version increases:
+
+```php
+// In your app's upgrade logic
+$appManager = \OC::$server->getAppManager();
+$currentVersion = $appManager->getAppVersion('myapp');
+
+$configService = $this->container->get('OCA\OpenRegister\Service\ConfigurationService');
+
+// Check if update is needed
+$storedVersion = $configService->getConfiguredAppVersion('myapp');
+
+if ($storedVersion === null || version_compare($currentVersion, $storedVersion, '>')) {
+    // Load updated configuration
+    $configData = $this->loadConfiguration();
+    
+    // Import with app version
+    $result = $configService->importFromApp(
+        appId: 'myapp',
+        data: $configData,
+        version: $currentVersion,
+        force: false
+    );
+    
+    // Configuration is now at the current app version
+}
+```
+
+### Configuration Data Format
+
+Your configuration data should follow the OpenAPI 3.0 specification with OpenRegister-specific metadata stored in the `x-openregister` extension field following the [OpenAPI Extensions specification](https://swagger.io/docs/specification/v3_0/openapi-extensions/).
+
+```json
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "MyApp Configuration",
+    "description": "Default configuration for MyApp",
+    "version": "1.0.0"
+  },
+  "x-openregister": {
+    "title": "MyApp Configuration",
+    "description": "Default configuration for MyApp",
+    "type": "app",
+    "app": "myapp",
+    "version": "1.0.0",
+    "sourceType": "local",
+    "sourceUrl": null,
+    "githubRepo": null,
+    "githubBranch": null,
+    "githubPath": null
+  },
+  "components": {
+    "registers": {
+      "myregister": {
+        "title": "My Register",
+        "slug": "myregister",
+        "description": "Application data register",
+        "version": "1.0.0",
+        "schemas": ["myschema"]
+      }
+    },
+    "schemas": {
+      "myschema": {
+        "title": "My Schema",
+        "slug": "myschema",
+        "version": "1.0.0",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          }
+        },
+        "required": ["name"]
+      }
+    }
+  }
+}
+```
+
+#### x-openregister Extension
+
+The `x-openregister` extension contains OpenRegister-specific metadata following the OpenAPI Extensions specification. This extension is used to store configuration properties that are not part of the standard OpenAPI specification.
+
+**Properties in x-openregister:**
+
+- `title`: Configuration title
+- `description`: Configuration description
+- `type`: Type of configuration (e.g., 'app', 'imported', 'manual')
+- `app`: Application identifier
+- `version`: Configuration version
+- `sourceType`: Source type ('local', 'github', 'gitlab', 'url', 'manual')
+- `sourceUrl`: URL to remote configuration source (if applicable)
+- `githubRepo`: GitHub repository (format: 'owner/repo')
+- `githubBranch`: GitHub branch name
+- `githubPath`: Path within GitHub repository
+
+**Properties excluded from export/import:**
+
+The following internal properties are managed automatically by the system and are NOT included in configuration exports or processed during imports:
+
+**System-managed metadata:**
+- `id`: Internal database ID
+- `uuid`: Internal UUID
+- `created`: Creation timestamp
+- `updated`: Last update timestamp
+- `lastChecked`: Last version check timestamp
+- `remoteVersion`: Remote version (auto-detected)
+- `localVersion`: Local version (auto-updated)
+
+**Instance-specific settings:**
+- `autoUpdate`: Whether to automatically update (instance-specific preference)
+- `notificationGroups`: Groups to notify on updates (instance-specific)
+- `owner`: Owner user ID (instance-specific)
+- `organisation`: Organisation UUID (instance-specific, may not exist in target instance)
+
+**Entity references (tracked automatically during import):**
+- `registers`: Array of register IDs (built from components.registers)
+- `schemas`: Array of schema IDs (built from components.schemas)
+- `objects`: Array of object IDs (built from components.objects)
+- `views`: Array of view IDs (tracked automatically)
+- `agents`: Array of agent IDs (tracked automatically)
+- `sources`: Array of source IDs (tracked automatically)
+- `applications`: Array of application IDs (tracked automatically)
+
+**Minimal Configuration Example:**
+
+For simple use cases, you only need to include the essential fields:
+
+```json
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "MyApp Configuration",
+    "version": "1.0.0"
+  },
+  "x-openregister": {
+    "type": "app",
+    "app": "myapp",
+    "version": "1.0.0"
+  },
+  "components": {
+    "registers": {},
+    "schemas": {}
+  }
+}
+```
+
+### Best Practices
+
+#### Configuration Files
+
+- Store configuration in `Settings/` or `Config/` directory within your app
+- Use semantic versioning for your configuration
+- Include metadata (appId, version, title, description) in the JSON
+
+#### Version Management
+
+- Set version to match your app version
+- Increment configuration version with app updates
+- Use `force: false` to respect version checks
+- Only use `force: true` during development or explicit reinstalls
+
+#### Error Handling
+
+- Wrap imports in try-catch blocks
+- Log errors appropriately
+- Provide meaningful error messages to admins
+- Consider fallback behavior if import fails
+
+#### Testing
+
+- Test configuration imports in development environment first
+- Verify all registers, schemas, and objects are created correctly
+- Test upgrade scenarios (version updates)
+- Test fresh install scenarios
+
 ## Configuration API
 
 ### List Configurations
@@ -789,12 +1101,49 @@ Response:
 GET /index.php/apps/openregister/api/configurations/{id}/export?format=json
 ```
 
-Exports the configuration with all managed entities.
+Exports the configuration with all managed entities following the OpenAPI 3.0 specification with OpenRegister metadata in the `x-openregister` extension.
 
 Query Parameters:
 
 - 'format': 'json' or 'yaml'
 - 'includeObjects': 'true' or 'false' (default: false)
+
+Response Structure:
+
+```json
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Configuration Title",
+    "description": "Configuration Description",
+    "version": "1.0.0"
+  },
+  "x-openregister": {
+    "title": "Configuration Title",
+    "description": "Configuration Description",
+    "type": "app",
+    "app": "myapp",
+    "version": "1.0.0",
+    "sourceType": "local",
+    "sourceUrl": null,
+    "githubRepo": null,
+    "githubBranch": null,
+    "githubPath": null
+  },
+  "components": {
+    "registers": {},
+    "schemas": {},
+    "objects": []
+  }
+}
+```
+
+**Note**: The exported configuration follows the [OpenAPI Extensions specification](https://swagger.io/docs/specification/v3_0/openapi-extensions/) by storing OpenRegister-specific metadata in the `x-openregister` extension field. 
+
+**Excluded properties**: 
+- **From Configuration**: System-managed metadata (id, uuid, created, updated, lastChecked, remoteVersion, localVersion), instance-specific settings (autoUpdate, notificationGroups, owner, organisation), and entity reference arrays (registers, schemas, objects, views, agents, sources, applications)
+- **From Registers/Schemas/Objects**: id, uuid, organisation (all instance-specific)
+- Entity references are tracked automatically during import from the `components` section
 
 ### Background Jobs
 
@@ -897,6 +1246,21 @@ Set the check interval in Nextcloud admin settings (in seconds, 0 to disable):
 - For local configurations, edit through the configuration itself
 
 ## Changelog
+
+### Version 0.2.9 (2025-01-16)
+
+- **OpenAPI Extensions Support**: Configuration export/import now follows [OpenAPI Extensions specification](https://swagger.io/docs/specification/v3_0/openapi-extensions/)
+- Added `x-openregister` extension field for OpenRegister-specific metadata
+- **Excluded from export/import**:
+  - **Configuration**: System-managed metadata (id, uuid, created, updated, lastChecked, remoteVersion, localVersion), instance-specific settings (autoUpdate, notificationGroups, owner, organisation), entity reference arrays (registers, schemas, objects, views, agents, sources, applications)
+  - **Registers/Schemas/Objects**: id, uuid, organisation (all instance-specific)
+- **Critical Fix**: Removed organisation field from all exported entities (Configuration, Registers, Schemas, Objects) to prevent cross-instance UUID conflicts
+- **Import Resilience**: Import now gracefully handles organisation filtering - when registers/schemas aren't found due to organisation context, they're created as new entities
+- Each imported configuration automatically gets the current instance's organisation context
+- Cross-instance imports work seamlessly without organisation UUID conflicts
+- Backward compatibility maintained: import still supports legacy format without `x-openregister`
+- Added `importFromApp()` convenience method for programmatic configuration imports
+- Enhanced documentation with OpenAPI extension examples and clear property exclusion list
 
 ### Version 0.2.8 (2025-01-15)
 

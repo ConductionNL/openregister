@@ -32,6 +32,7 @@ services:
       # Keep models loaded for 30 minutes
       - OLLAMA_KEEP_ALIVE=30m
     # Memory configuration for larger models (Llama 3.2 8B+)
+    # GPU support enabled by default for 10-100x speedup
     deploy:
       resources:
         limits:
@@ -42,6 +43,10 @@ services:
           memory: 16G
         reservations:
           memory: 8G
+          devices:
+            - driver: nvidia
+              count: all  # Use all available GPUs (or count: 1 for single GPU)
+              capabilities: [gpu]
     # Shared memory for model loading (recommended for large models)
     shm_size: '2gb'
     networks:
@@ -69,18 +74,10 @@ services:
     networks:
       - ollama-network
 
-# For GPU Support (NVIDIA):
-# Uncomment the section below and ensure NVIDIA Container Toolkit is installed
-# 
-# services:
-#   ollama:
-#     deploy:
-#       resources:
-#         reservations:
-#           devices:
-#             - driver: nvidia
-#               count: all  # or specify count: 1 for single GPU
-#               capabilities: [gpu]
+# GPU Support (NVIDIA) is now enabled by default in the main configuration above.
+# The NVIDIA Container Toolkit is installed and working.
+# If you need to disable GPU support, comment out the 'devices' section under
+# deploy -> resources -> reservations in the ollama service configuration.
 
 # Usage Instructions:
 # 

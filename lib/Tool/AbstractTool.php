@@ -283,9 +283,19 @@ abstract class AbstractTool implements ToolInterface
             $parameters = $reflection->getParameters();
             
             // Type-cast arguments based on method signature
+            // Handle both positional and named arguments from LLPhant
+            $isAssociative = array_keys($arguments) !== range(0, count($arguments) - 1);
+            
             $typedArguments = [];
             foreach ($parameters as $index => $param) {
-                $value = $arguments[$index] ?? null;
+                $paramName = $param->getName();
+                
+                // Get value from either named argument or positional argument
+                if ($isAssociative && isset($arguments[$paramName])) {
+                    $value = $arguments[$paramName];
+                } else {
+                    $value = $arguments[$index] ?? null;
+                }
                 
                 // Handle string 'null' from LLM
                 if ($value === 'null' || $value === null) {

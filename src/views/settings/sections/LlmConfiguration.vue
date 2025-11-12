@@ -127,6 +127,22 @@
 					{{ providerConfig.chatModel }}
 				</p>
 			</div>
+
+			<div class="provider-info-card" :class="{'warning-card': !databaseInfo.vectorSupport}">
+				<h5>Database Service</h5>
+				<p class="provider-name">
+					{{ databaseInfo.type }}
+				</p>
+				<p v-if="databaseInfo.version !== 'Unknown'" class="model-info">
+					{{ databaseInfo.version }}
+				</p>
+				<p v-if="databaseInfo.recommendedPlugin" class="plugin-info" :class="{'warning-text': !databaseInfo.vectorSupport, 'success-text': databaseInfo.vectorSupport}">
+					{{ databaseInfo.recommendedPlugin }}
+				</p>
+				<p v-if="databaseInfo.performanceNote" class="performance-note" :title="databaseInfo.performanceNote">
+					{{ databaseInfo.performanceNote }}
+				</p>
+			</div>
 		</div>
 
 		<!-- Chat Statistics -->
@@ -338,6 +354,13 @@ export default {
 				chatProvider: null,
 				chatModel: null,
 			},
+			databaseInfo: {
+				type: 'Unknown',
+				version: 'Unknown',
+				vectorSupport: false,
+				recommendedPlugin: null,
+				performanceNote: null,
+			},
 			chatStats: {
 				totalAgents: 0,
 				totalConversations: 0,
@@ -444,6 +467,7 @@ export default {
 			await Promise.all([
 				this.loadChatStats(),
 				this.loadVectorStats(),
+				this.loadDatabaseInfo(),
 				this.settingsStore.getExtractionStats(),
 			])
 		},
@@ -464,6 +488,28 @@ export default {
 			} catch (error) {
 				console.error('Failed to load chat stats:', error)
 				// Don't throw error, just use zeros
+			}
+		},
+
+		/**
+		 * Load database information
+		 */
+		async loadDatabaseInfo() {
+			try {
+				const response = await axios.get(generateUrl('/apps/openregister/api/settings/database'))
+				if (response.data && response.data.success) {
+					const db = response.data.database
+					this.databaseInfo = {
+						type: db.type || 'Unknown',
+						version: db.version || 'Unknown',
+						vectorSupport: db.vectorSupport || false,
+						recommendedPlugin: db.recommendedPlugin || null,
+						performanceNote: db.performanceNote || null,
+					}
+				}
+			} catch (error) {
+				console.error('Failed to load database info:', error)
+				// Don't throw error, just use defaults
 			}
 		},
 
@@ -823,7 +869,7 @@ export default {
 /* Provider Info Cards */
 .provider-info-grid {
 	display: grid;
-	grid-template-columns: repeat(2, 1fr);
+	grid-template-columns: repeat(3, 1fr);
 	gap: 16px;
 	margin-bottom: 24px;
 }
@@ -833,6 +879,11 @@ export default {
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius);
 	padding: 16px;
+}
+
+.provider-info-card.warning-card {
+	border-color: var(--color-warning);
+	background: var(--color-warning-hover, rgba(255, 180, 0, 0.1));
 }
 
 .provider-info-card h5 {
@@ -862,6 +913,31 @@ export default {
 	font-size: 12px;
 	color: var(--color-text-lighter);
 	font-family: monospace;
+}
+
+.provider-info-card .plugin-info {
+	margin: 8px 0 0 0;
+	font-size: 12px;
+	font-weight: 500;
+}
+
+.provider-info-card .plugin-info.warning-text {
+	color: var(--color-warning);
+}
+
+.provider-info-card .plugin-info.success-text {
+	color: var(--color-success);
+}
+
+.provider-info-card .performance-note {
+	margin: 8px 0 0 0;
+	font-size: 11px;
+	color: var(--color-text-maxcontrast);
+	line-height: 1.3;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	cursor: help;
 }
 
 /* Statistics Grid (matching File Configuration tiles) */
@@ -936,6 +1012,13 @@ export default {
 
 	.provider-info-grid {
 		grid-template-columns: 1fr;
+	}
+}
+
+/* Tablet breakpoint - 2 columns for medium screens */
+@media (min-width: 641px) and (max-width: 1024px) {
+	.provider-info-grid {
+		grid-template-columns: repeat(2, 1fr);
 	}
 
 	.stats-grid {

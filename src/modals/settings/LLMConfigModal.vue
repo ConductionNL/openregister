@@ -288,6 +288,66 @@
 				</div>
 			</div>
 
+			<!-- Vector Search Backend -->
+			<div class="config-section">
+				<h3>{{ t('openregister', 'Vector Search Backend') }}</h3>
+				<p class="section-description">
+					{{ t('openregister', 'Choose how vector similarity calculations are performed for semantic search') }}
+				</p>
+
+				<div class="form-group">
+					<label for="vector-backend">{{ t('openregister', 'Search Method') }}</label>
+					<NcSelect
+						v-model="selectedVectorBackend"
+						:options="vectorBackendOptions"
+						label="name"
+						:placeholder="t('openregister', 'Select backend')"
+						:disabled="loadingBackends">
+						<template #option="{ name, description, performance, available }">
+							<div class="backend-option" :class="{'backend-disabled': !available}">
+								<div class="backend-header">
+									<strong>{{ name }}</strong>
+									<span v-if="performance" :class="'badge badge-' + performance">
+										{{ performance === 'slow' ? '🐌 Slow' : performance === 'fast' ? '⚡ Fast' : '🚀 Very Fast' }}
+									</span>
+								</div>
+								<small>{{ description }}</small>
+								<small v-if="!available" class="warning-text">⚠️ Not available</small>
+							</div>
+						</template>
+					</NcSelect>
+					<small v-if="selectedVectorBackend && selectedVectorBackend.performanceNote" class="help-text">
+						{{ selectedVectorBackend.performanceNote }}
+					</small>
+				</div>
+
+				<!-- Solr Collection Selection (only if Solr backend selected) -->
+				<div v-if="selectedVectorBackend && selectedVectorBackend.id === 'solr'" class="solr-config">
+					<div class="form-group">
+						<label for="solr-collection">{{ t('openregister', 'Solr Collection') }}</label>
+						<NcSelect
+							v-model="solrVectorCollection"
+							:options="solrCollectionOptions"
+							label="name"
+							:placeholder="t('openregister', 'Select collection')"
+							:disabled="loadingSolrCollections">
+						</NcSelect>
+						<small>{{ t('openregister', 'Collection where vectors will be stored and searched') }}</small>
+					</div>
+
+					<div class="form-group">
+						<label for="solr-vector-field">{{ t('openregister', 'Vector Field Name') }}</label>
+						<input
+							id="solr-vector-field"
+							v-model="solrVectorField"
+							type="text"
+							:placeholder="t('openregister', 'embedding_vector')"
+							class="input-field">
+						<small>{{ t('openregister', 'Field name in Solr schema for storing dense vectors') }}</small>
+					</div>
+				</div>
+			</div>
+
 			<!-- AI Features -->
 			<div class="config-section">
 				<h3>{{ t('openregister', '✨ AI Features') }}</h3>
@@ -494,6 +554,15 @@ export default {
 				{ id: 'accounts/fireworks/models/mixtral-8x22b-instruct', name: 'Mixtral 8x22B', contextWindow: '64K', cost: '$1.2/1M' },
 			],
 
+			// Vector Search Backend
+			loadingBackends: false,
+			selectedVectorBackend: null,
+			vectorBackendOptions: [],
+			loadingSolrCollections: false,
+			solrVectorCollection: null,
+			solrCollectionOptions: [],
+			solrVectorField: 'embedding_vector',
+
 			aiFeatures: [
 				{ id: 'text_generation', label: 'Text Generation', icon: '✍️', enabled: true },
 				{ id: 'summarization', label: 'Document Summarization', icon: '📋', enabled: true },
@@ -557,6 +626,7 @@ export default {
 
 	mounted() {
 		this.loadConfiguration()
+		this.loadAvailableBackends()
 	},
 
 	methods: {
@@ -777,6 +847,9 @@ export default {
 						chatModel: this.fireworksConfig.chatModel?.id || this.fireworksConfig.chatModel,
 						baseUrl: this.fireworksConfig.baseUrl,
 					},
+				vectorSearchBackend: this.selectedVectorBackend?.id || 'php',
+				solrVectorCollection: this.solrVectorCollection?.rawName || this.solrVectorCollection?.id || this.solrVectorCollection,
+				solrVectorField: this.solrVectorField || 'embedding_vector',
 					enabledFeatures: this.aiFeatures
 						.filter(f => f.enabled)
 						.map(f => f.id),
@@ -848,6 +921,117 @@ export default {
 				showError(this.t('openregister', 'Failed to clear embeddings: {error}', { error: error.response?.data?.error || error.message }))
 			} finally {
 				this.clearingEmbeddings = false
+			}
+		},
+
+		/**
+		 * Load available vector search backends
+		 */
+		async loadAvailableBackends() {
+			this.loadingBackends = true
+
+			try {
+				// Get database info
+				const dbResponse = await axios.get(generateUrl('/apps/openregister/api/settings/database'))
+				
+				// Build backend options
+				const backends = []
+
+				// PHP backend (always available)
+				backends.push({
+					id: 'php',
+					name: 'PHP Cosine Similarity',
+					description: 'Always available, but slow for large datasets (>500 vectors)',
+					performance: 'slow',
+					available: true,
+					performanceNote: 'Calculates similarity in PHP. Suitable for small datasets.',
+				})
+
+				// Database backend (PostgreSQL + pgvector)
+				if (dbResponse.data.success && dbResponse.data.database) {
+					const db = dbResponse.data.database
+					backends.push({
+						id: 'database',
+						name: db.type + ' + pgvector',
+						description: db.vectorSupport ? 'Fast database-level vector search (Recommended)' : 'PostgreSQL with pgvector extension required',
+						performance: db.vectorSupport ? 'fast' : null,
+						available: db.vectorSupport,
+						performanceNote: db.performanceNote,
+					})
+				}
+
+			// Solr backend (check if Solr is available)
+			let solrAvailable = false
+			let solrNote = 'Not connected'
+			try {
+				const solrResponse = await axios.get(generateUrl('/apps/openregister/api/settings/solr-info'))
+				if (solrResponse.data.success && solrResponse.data.solr) {
+					const solr = solrResponse.data.solr
+					solrAvailable = solr.available || false
+					
+					if (solrAvailable) {
+						solrNote = 'Very fast distributed vector search using KNN/HNSW indexing'
+						
+						// Load collections from Solr
+						if (solr.collections && solr.collections.length > 0) {
+							this.solrCollectionOptions = solr.collections.map(col => ({
+								id: col.id,
+								name: col.name + ' (' + col.documentCount + ' docs)',
+								rawName: col.name,
+								documentCount: col.documentCount,
+								health: col.health,
+							}))
+						}
+					} else {
+						solrNote = solr.error || 'SOLR not connected. Enable in Search Configuration.'
+					}
+				}
+			} catch (error) {
+				console.error('Failed to fetch Solr info:', error)
+				solrNote = 'Failed to check Solr status'
+			}
+			
+			backends.push({
+				id: 'solr',
+				name: 'Solr 9+ Dense Vector',
+				description: solrAvailable 
+					? 'Very fast distributed vector search (connected ✓)' 
+					: 'Very fast distributed vector search (not connected)',
+				performance: solrAvailable ? 'very_fast' : null,
+				available: solrAvailable,
+				performanceNote: solrNote,
+			})
+
+				this.vectorBackendOptions = backends
+
+				// Load current backend setting from LLM settings
+				const llmResponse = await axios.get(generateUrl('/apps/openregister/api/settings/llm'))
+				const vectorBackend = llmResponse.data.vectorSearchBackend || 'php'
+				this.selectedVectorBackend = backends.find(b => b.id === vectorBackend) || backends[0]
+
+			// Load Solr settings if Solr backend
+			if (vectorBackend === 'solr') {
+				const savedCollection = llmResponse.data.solrVectorCollection
+				// Find the collection object in solrCollectionOptions
+				if (savedCollection && this.solrCollectionOptions.length > 0) {
+					this.solrVectorCollection = this.solrCollectionOptions.find(c => c.id === savedCollection || c.rawName === savedCollection)
+				}
+				this.solrVectorField = llmResponse.data.solrVectorField || 'embedding_vector'
+			}
+
+			} catch (error) {
+				console.error('Failed to load vector backends:', error)
+				// Fallback to PHP only
+				this.vectorBackendOptions = [{
+					id: 'php',
+					name: 'PHP Cosine Similarity',
+					description: 'Always available fallback',
+					performance: 'slow',
+					available: true,
+				}]
+				this.selectedVectorBackend = this.vectorBackendOptions[0]
+			} finally {
+				this.loadingBackends = false
 			}
 		},
 	},
@@ -968,6 +1152,70 @@ export default {
 		color: var(--color-text-maxcontrast);
 		font-size: 12px;
 	}
+}
+
+.backend-option {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 4px 0;
+
+	&.backend-disabled {
+		opacity: 0.5;
+	}
+
+	.backend-header {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.badge {
+		padding: 2px 8px;
+		border-radius: 12px;
+		font-size: 11px;
+		font-weight: 500;
+
+		&.badge-slow {
+			background: var(--color-warning);
+			color: white;
+		}
+
+		&.badge-fast {
+			background: var(--color-success);
+			color: white;
+		}
+
+		&.badge-very_fast {
+			background: var(--color-primary-element);
+			color: white;
+		}
+	}
+
+	small {
+		color: var(--color-text-maxcontrast);
+		font-size: 12px;
+
+		&.warning-text {
+			color: var(--color-warning);
+			font-weight: 500;
+		}
+	}
+}
+
+.help-text {
+	margin-top: 4px;
+	font-size: 12px;
+	color: var(--color-text-maxcontrast);
+	font-style: italic;
+}
+
+.solr-config {
+	margin-top: 16px;
+	padding: 16px;
+	background: var(--color-background-hover);
+	border-radius: 8px;
+	border: 1px solid var(--color-border);
 }
 
 .test-result {
