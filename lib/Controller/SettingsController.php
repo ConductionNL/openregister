@@ -23,6 +23,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\IDBConnection;
 use Psr\Container\ContainerInterface;
 use OCP\App\IAppManager;
 use OCA\OpenRegister\Service\SettingsService;
@@ -130,6 +131,7 @@ class SettingsController extends Controller
      * @param string                  $appName                 The name of the app
      * @param IRequest                $request                 The request object
      * @param IAppConfig              $config                  The app configuration
+     * @param IDBConnection           $db                      The database connection
      * @param ContainerInterface      $container               The container
      * @param IAppManager             $appManager              The app manager
      * @param SettingsService         $settingsService         The settings service
@@ -139,6 +141,7 @@ class SettingsController extends Controller
         $appName,
         IRequest $request,
         private readonly IAppConfig $config,
+        private readonly IDBConnection $db,
         private readonly ContainerInterface $container,
         private readonly IAppManager $appManager,
         private readonly SettingsService $settingsService,
@@ -2762,6 +2765,206 @@ class SettingsController extends Controller
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }
     }
+
+    /**
+     * Get Solr information and vector search capabilities
+     *
+     * Returns information about Solr availability, version, and vector search support.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Solr information
+     */
+    public function getSolrInfo(): JSONResponse
+    {
+        try {
+            $solrAvailable = false;
+            $solrVersion = 'Unknown';
+            $vectorSupport = false;
+            $collections = [];
+            $errorMessage = null;
+
+            // Check if Solr service is available
+            try {
+                // Get GuzzleSolrService from container
+                $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+                $solrAvailable = $guzzleSolrService->isAvailable();
+                
+                if ($solrAvailable) {
+                    // Get Solr system info
+                    $stats = $guzzleSolrService->getDashboardStats();
+                    
+                    // Try to detect version from Solr admin API
+                    // For now, assume if it's available, it could support vectors
+                    // TODO: Add actual version detection from Solr admin API
+                    $solrVersion = '9.x (detection pending)';
+                    $vectorSupport = false; // Set to false until we implement it
+                    
+                    // Get list of collections from Solr
+                    try {
+                        $collectionsList = $guzzleSolrService->listCollections();
+                        // Transform to format expected by frontend (array of objects with 'name' and 'id')
+                        $collections = array_map(function($collection) {
+                            return [
+                                'id' => $collection['name'],
+                                'name' => $collection['name'],
+                                'documentCount' => $collection['documentCount'] ?? 0,
+                                'shards' => $collection['shards'] ?? 0,
+                                'health' => $collection['health'] ?? 'unknown',
+                            ];
+                        }, $collectionsList);
+                    } catch (\Exception $e) {
+                        $this->logger->warning('[SettingsController] Failed to list Solr collections', [
+                            'error' => $e->getMessage(),
+                        ]);
+                        $collections = [];
+                    }
+                }
+            } catch (\Exception $e) {
+                $errorMessage = $e->getMessage();
+            }
+
+            return new JSONResponse([
+                'success' => true,
+                'solr' => [
+                    'available' => $solrAvailable,
+                    'version' => $solrVersion,
+                    'vectorSupport' => $vectorSupport,
+                    'collections' => $collections,
+                    'error' => $errorMessage,
+                ],
+            ]);
+            
+        } catch (\Exception $e) {
+            $this->logger->error('[SettingsController] Failed to get Solr info', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
+            return new JSONResponse([
+                'success' => false,
+                'error' => 'Failed to get Solr information: ' . $e->getMessage(),
+            ], 500);
+        }
+    }//end getSolrInfo()
+
+    /**
+     * Get database information and vector search capabilities
+     *
+     * Returns information about the current database system and whether it
+     * supports native vector operations for optimal semantic search performance.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Database information
+     */
+    public function getDatabaseInfo(): JSONResponse
+    {
+        try {
+            // Get database platform information
+            $platform = $this->db->getDatabasePlatform();
+            $platformName = $platform->getName();
+            
+            // Determine database type and version
+            $dbType = 'Unknown';
+            $dbVersion = 'Unknown';
+            $vectorSupport = false;
+            $recommendedPlugin = null;
+            $performanceNote = null;
+            
+            if (strpos($platformName, 'mysql') !== false || strpos($platformName, 'mariadb') !== false) {
+                // Check if it's MariaDB or MySQL
+                try {
+                    $stmt = $this->db->prepare('SELECT VERSION()');
+                    $result = $stmt->execute();
+                    $version = $result->fetchOne();
+                    
+                    if (stripos($version, 'MariaDB') !== false) {
+                        $dbType = 'MariaDB';
+                        preg_match('/\d+\.\d+\.\d+/', $version, $matches);
+                        $dbVersion = $matches[0] ?? $version;
+                    } else {
+                        $dbType = 'MySQL';
+                        preg_match('/\d+\.\d+\.\d+/', $version, $matches);
+                        $dbVersion = $matches[0] ?? $version;
+                    }
+                } catch (\Exception $e) {
+                    $dbType = 'MySQL/MariaDB';
+                    $dbVersion = 'Unknown';
+                }
+                
+                // MariaDB/MySQL do not support native vector operations
+                $vectorSupport = false;
+                $recommendedPlugin = 'pgvector for PostgreSQL';
+                $performanceNote = 'Current: Similarity calculated in PHP (slow). Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.';
+                
+            } elseif (strpos($platformName, 'postgres') !== false) {
+                $dbType = 'PostgreSQL';
+                
+                try {
+                    $stmt = $this->db->prepare('SELECT VERSION()');
+                    $result = $stmt->execute();
+                    $version = $result->fetchOne();
+                    preg_match('/PostgreSQL (\d+\.\d+)/', $version, $matches);
+                    $dbVersion = $matches[1] ?? 'Unknown';
+                } catch (\Exception $e) {
+                    $dbVersion = 'Unknown';
+                }
+                
+                // Check if pgvector extension is installed
+                try {
+                    $stmt = $this->db->prepare("SELECT COUNT(*) FROM pg_extension WHERE extname = 'vector'");
+                    $result = $stmt->execute();
+                    $hasVector = $result->fetchOne() > 0;
+                    
+                    if ($hasVector) {
+                        $vectorSupport = true;
+                        $recommendedPlugin = 'pgvector (installed ✓)';
+                        $performanceNote = 'Optimal: Using database-level vector operations for fast semantic search.';
+                    } else {
+                        $vectorSupport = false;
+                        $recommendedPlugin = 'pgvector (not installed)';
+                        $performanceNote = 'Install pgvector extension: CREATE EXTENSION vector;';
+                    }
+                } catch (\Exception $e) {
+                    $vectorSupport = false;
+                    $recommendedPlugin = 'pgvector (not found)';
+                    $performanceNote = 'Unable to detect pgvector. Install with: CREATE EXTENSION vector;';
+                }
+                
+            } elseif (strpos($platformName, 'sqlite') !== false) {
+                $dbType = 'SQLite';
+                $vectorSupport = false;
+                $recommendedPlugin = 'sqlite-vss or migrate to PostgreSQL';
+                $performanceNote = 'SQLite not recommended for production vector search.';
+            }
+            
+            return new JSONResponse([
+                'success' => true,
+                'database' => [
+                    'type' => $dbType,
+                    'version' => $dbVersion,
+                    'platform' => $platformName,
+                    'vectorSupport' => $vectorSupport,
+                    'recommendedPlugin' => $recommendedPlugin,
+                    'performanceNote' => $performanceNote,
+                ],
+            ]);
+            
+        } catch (\Exception $e) {
+            $this->logger->error('[SettingsController] Failed to get database info', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
+            return new JSONResponse([
+                'success' => false,
+                'error' => 'Failed to get database information: ' . $e->getMessage(),
+            ], 500);
+        }
+    }//end getDatabaseInfo()
 
     /**
      * Update LLM (Large Language Model) settings

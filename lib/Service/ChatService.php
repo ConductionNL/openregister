@@ -284,18 +284,24 @@ class ChatService
             $this->checkAndSummarize($conversation);
 
             // Retrieve context using agent settings
+            $contextStartTime = microtime(true);
             $context = $this->retrieveContext($userMessage, $agent);
+            $contextTime = microtime(true) - $contextStartTime;
 
             // Get recent conversation history for context
+            $historyStartTime = microtime(true);
             $messageHistory = $this->buildMessageHistory($conversationId);
+            $historyTime = microtime(true) - $historyStartTime;
 
             // Generate response using LLM
+            $llmStartTime = microtime(true);
             $aiResponse = $this->generateResponse(
                 $userMessage,
                 $context,
                 $messageHistory,
                 $agent
             );
+            $llmTotalTime = microtime(true) - $llmStartTime;
 
             // Store AI response
             $aiMsgEntity = $this->storeMessage(
@@ -348,6 +354,19 @@ class ChatService
             // Update conversation timestamp
             $conversation->setUpdated(new DateTime());
             $this->conversationMapper->update($conversation);
+
+            // Log overall performance
+            $this->logger->info('[ChatService] Message processed - OVERALL PERFORMANCE', [
+                'conversationId' => $conversationId,
+                'timings' => [
+                    'contextRetrieval' => round($contextTime, 2) . 's',
+                    'historyBuilding' => round($historyTime, 3) . 's',
+                    'llmGeneration' => round($llmTotalTime, 2) . 's',
+                ],
+                'contextSize' => strlen($context['text']),
+                'historyMessages' => count($messageHistory),
+                'responseLength' => strlen($aiResponse),
+            ]);
 
             return [
                 'message' => $aiMsgEntity->jsonSerialize(),
@@ -714,6 +733,8 @@ class ChatService
         array $messageHistory,
         ?Agent $agent
     ): string {
+        $startTime = microtime(true);
+        
         $this->logger->info('[ChatService] Generating response', [
             'messageLength' => strlen($userMessage),
             'contextLength' => strlen($context['text']),
@@ -721,7 +742,9 @@ class ChatService
         ]);
 
         // Get enabled tools for agent
+        $toolsStartTime = microtime(true);
         $tools = $this->getAgentTools($agent);
+        $toolsTime = microtime(true) - $toolsStartTime;
         if (!empty($tools)) {
             $this->logger->info('[ChatService] Agent has tools enabled', [
                 'toolCount' => count($tools),
@@ -853,7 +876,9 @@ class ChatService
                 }
                 
                 // Use generateChat() for message arrays
+                $llmStartTime = microtime(true);
                 $response = $chat->generateChat($messageHistory);
+                $llmTime = microtime(true) - $llmStartTime;
             } else {
                 // OpenAI chat
                 $chat = new OpenAIChat($config);
@@ -866,13 +891,23 @@ class ChatService
                 }
                 
                 // Use generateChat() for message arrays, which properly handles tools/functions
+                $llmStartTime = microtime(true);
                 $response = $chat->generateChat($messageHistory);
+                $llmTime = microtime(true) - $llmStartTime;
             }
 
-            $this->logger->info('[ChatService] Response generated', [
+            $totalTime = microtime(true) - $startTime;
+            
+            $this->logger->info('[ChatService] Response generated - PERFORMANCE', [
                 'provider' => $chatProvider,
                 'model' => $config->model,
                 'responseLength' => strlen($response),
+                'timings' => [
+                    'total' => round($totalTime, 2) . 's',
+                    'toolsLoading' => round($toolsTime, 3) . 's',
+                    'llmGeneration' => round($llmTime, 2) . 's',
+                    'overhead' => round($totalTime - $llmTime - $toolsTime, 3) . 's',
+                ],
             ]);
 
             return $response;

@@ -129,41 +129,317 @@ docker-compose -f docker-compose.ollama.yml up -d
 
 ## GPU Support
 
+GPU acceleration provides **10-100x speedup** compared to CPU inference. This dramatically improves:
+- Model loading time (60s → 5s)
+- First token latency (10s → 1s)  
+- Inference speed (5 tokens/sec → 50-200 tokens/sec)
+- Ability to run larger models smoothly
+
 ### Prerequisites
-- NVIDIA GPU with CUDA support
-- [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) installed
 
-### Enable GPU
+1. **NVIDIA GPU** with CUDA support (check https://developer.nvidia.com/cuda-gpus)
+2. **NVIDIA drivers** installed on Windows/Linux host (version 525+ recommended)
+3. **WSL2** (if using Windows - included in Windows 10/11)
+4. **Docker** with NVIDIA Container Toolkit support
+5. **NVIDIA Container Toolkit** for Docker
 
-Uncomment the GPU section in `docker-compose.ollama.yml`:
+### Step 1: Verify WSL GPU Support (Windows + WSL)
+
+First, verify your GPU is accessible from WSL2:
+
+```bash
+# Check GPU is visible in WSL
+nvidia-smi
+
+# Expected output:
+# +---------------------------------------------------------------------------------------+
+# | NVIDIA-SMI 546.30      Driver Version: 546.30       CUDA Version: 12.3     |
+# |-----------------------------------------+----------------------+----------------------+
+# | GPU  Name                     TCC/WDDM  | Bus-Id        Disp.A | Volatile Uncorr. ECC |
+# |   0  NVIDIA GeForce RTX 3070 ...  WDDM  | 00000000:01:00.0  On |                  N/A |
+# +---------------------------------------------------------------------------------------+
+```
+
+**Troubleshooting if nvidia-smi fails:**
+
+```bash
+# Update NVIDIA drivers on Windows host first
+# Then update WSL2 kernel
+wsl --update
+
+# Restart WSL
+wsl --shutdown
+# Then reopen WSL terminal
+
+# Test again
+nvidia-smi
+```
+
+### Step 2: Verify Docker GPU Support
+
+Check if Docker can access the GPU:
+
+```bash
+# Test GPU passthrough to Docker containers
+docker run --rm --gpus all nvidia/cuda:12.3.0-base-ubuntu20.04 nvidia-smi
+
+# Should show the same GPU information as above
+```
+
+**If this fails**, you need to install NVIDIA Container Toolkit:
+
+```bash
+# For Ubuntu/Debian (in WSL or Linux)
+distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
+curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | \
+  sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+
+sudo apt-get update
+sudo apt-get install -y nvidia-container-toolkit
+sudo systemctl restart docker
+
+# Test again
+docker run --rm --gpus all nvidia/cuda:12.3.0-base-ubuntu20.04 nvidia-smi
+```
+
+For other operating systems, see: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html
+
+### Step 3: Enable GPU in Docker Compose
+
+The GPU configuration is already included in `docker-compose.ollama.yml` (starting from v0.2.7+). Verify it contains:
 
 ```yaml
 services:
   ollama:
+    image: ollama/ollama:latest
+    container_name: standalone-ollama
+    # ... other config ...
     deploy:
       resources:
+        limits:
+          memory: 16G
         reservations:
+          memory: 8G
           devices:
             - driver: nvidia
-              count: all  # or count: 1 for single GPU
+              count: all  # Use all available GPUs (or count: 1 for single GPU)
               capabilities: [gpu]
 ```
 
-Restart Ollama:
+If not present, add the `devices` section under `deploy.resources.reservations`.
+
+### Step 4: Apply GPU Configuration
+
+Restart Ollama with GPU support:
 
 ```bash
+# Stop and remove old container
 docker-compose -f docker-compose.ollama.yml down
+
+# Start with GPU configuration
 docker-compose -f docker-compose.ollama.yml up -d
+
+# Check container status
+docker-compose -f docker-compose.ollama.yml ps
 ```
 
-Verify GPU is being used:
+### Step 5: Verify GPU is Working
+
+Run these verification commands:
 
 ```bash
-# Check GPU usage
+# 1. Check GPU is accessible inside container
+docker exec standalone-ollama nvidia-smi
+
+# Should show your GPU information from inside the container
+# If this shows "command not found", GPU is NOT configured!
+
+# 2. Verify Docker GPU device configuration
+docker inspect standalone-ollama --format '{{json .HostConfig.DeviceRequests}}' | python3 -m json.tool
+
+# Should show:
+# [
+#     {
+#         "Driver": "",
+#         "Count": -1,
+#         "Capabilities": [["gpu"]],
+#         ...
+#     }
+# ]
+# If it shows 'null', container was created without GPU support
+
+# 3. Check Ollama logs for GPU detection
+docker logs standalone-ollama 2>&1 | grep -i "inference compute"
+
+# Should show something like:
+# inference compute id=GPU-xxx library=CUDA compute=8.6 name=CUDA0
+# description="NVIDIA GeForce RTX 3070 Laptop GPU"
+# total="8.0 GiB" available="6.2 GiB"
+
+# 4. Test inference speed (should be MUCH faster with GPU)
+time docker exec standalone-ollama ollama run llama3.2 "What is 2+2?"
+
+# GPU: ~5-10 seconds total
+# CPU: ~60+ seconds total
+```
+
+### Performance Comparison
+
+| Metric | CPU Mode | GPU Mode | Improvement |
+|--------|----------|----------|-------------|
+| **Model Loading** | 30-60s | 2-5s | **10-12x faster** |
+| **First Token** | 5-10s | 0.5-1s | **5-10x faster** |
+| **Tokens/Second** | 2-5 | 50-200 | **10-100x faster** |
+| **Concurrent Requests** | 1-2 | 4-8 | **4x better** |
+| **8B Model Usability** | Poor | Excellent | Production-ready |
+| **70B Model** | Impossible | Possible | With 24GB+ VRAM |
+
+### GPU Troubleshooting
+
+#### Issue: 'nvidia-smi: command not found' inside container
+
+**Diagnosis:** GPU was NOT configured when container was created.
+
+```bash
+# Confirm GPU is not configured
+docker inspect standalone-ollama --format '{{json .HostConfig.DeviceRequests}}'
+
+# If output is 'null', GPU is not configured
+```
+
+**Solution:**
+
+```bash
+# Remove container completely
+docker stop standalone-ollama
+docker rm standalone-ollama
+
+# Verify docker-compose.ollama.yml has GPU config (see Step 3)
+# Then recreate container
+docker-compose -f docker-compose.ollama.yml up -d
+
+# Verify again
+docker exec standalone-ollama nvidia-smi
+```
+
+#### Issue: GPU not detected in Ollama logs
+
+**Diagnosis:** GPU is passed to container but Ollama can't use it.
+
+```bash
+# Check Ollama startup logs
+docker logs standalone-ollama 2>&1 | grep -A 10 "discovering available GPUs"
+
+# Check for errors like:
+# - "no GPUs detected"
+# - "Failed to initialize NVML"
+# - "CUDA error"
+```
+
+**Common Causes:**
+
+1. **Driver version mismatch**
+   ```bash
+   # Check CUDA version compatibility
+   nvidia-smi | grep "CUDA Version"
+   
+   # Update NVIDIA drivers on host
+   # Then restart WSL:
+   wsl --shutdown
+   # Restart Docker Desktop
+   # Recreate container
+   ```
+
+2. **CUDA libraries missing**
+   ```bash
+   # Use the official ollama image (not custom builds)
+   docker pull ollama/ollama:latest
+   docker-compose -f docker-compose.ollama.yml up -d
+   ```
+
+3. **Multiple GPU drivers conflict**
+   ```bash
+   # Disable integrated GPU in BIOS (if using laptop with dual GPU)
+   # Or specify exact GPU:
+   # In docker-compose.yml: count: 1 instead of count: all
+   ```
+
+#### Issue: Out of VRAM / GPU Memory
+
+```bash
+# Check GPU memory usage
 nvidia-smi
 
-# Check Ollama can see GPU
-docker exec standalone-ollama nvidia-smi
+# If VRAM is full:
+# +-----------------------------------------------------------------------------+
+# |   0  NVIDIA GeForce RTX 3070   | ... | 7800MiB / 8192MiB | 95% | ...      |
+# +-----------------------------------------------------------------------------+
+```
+
+**Solutions:**
+
+```bash
+# 1. Reduce loaded models
+# Edit docker-compose.ollama.yml:
+environment:
+  - OLLAMA_MAX_LOADED_MODELS=1  # Only keep 1 model in VRAM
+
+# 2. Reduce keep-alive time
+environment:
+  - OLLAMA_KEEP_ALIVE=5m  # Unload after 5 minutes of inactivity
+
+# 3. Use smaller models
+docker exec standalone-ollama ollama pull llama3.2:3b  # Instead of 8B
+
+# 4. Restart container to clear VRAM
+docker restart standalone-ollama
+
+# 5. For 70B models, need 24GB+ VRAM
+# Consider cloud GPU instance or use quantized versions
+```
+
+#### Issue: Slow inference despite GPU
+
+```bash
+# 1. Verify GPU is actually being used
+nvidia-smi -l 1  # Monitor GPU usage in real-time
+# Then run: docker exec standalone-ollama ollama run llama3.2 "test"
+# GPU-Util should spike to 70-100%
+
+# 2. Check if model is loaded in GPU memory
+docker logs standalone-ollama 2>&1 | grep "loaded"
+
+# 3. Check GPU compute mode
+nvidia-smi -q | grep "Compute Mode"
+# Should be "Default" (not "Prohibited")
+
+# 4. Ensure model fits in VRAM
+# 8B models need ~6GB VRAM
+# 70B models need ~40GB VRAM
+```
+
+#### Issue: 'Failed to initialize NVML: Unknown Error'
+
+**Cause:** NVIDIA Management Library (NVML) initialization failed.
+
+**Solution:**
+
+```bash
+# 1. Update NVIDIA drivers on Windows host
+# Download from: https://www.nvidia.com/Download/index.aspx
+
+# 2. Restart WSL and Docker
+wsl --shutdown
+# Restart Docker Desktop
+# Wait 30 seconds
+
+# 3. Verify driver version
+nvidia-smi
+
+# 4. Recreate container
+docker-compose -f docker-compose.ollama.yml down
+docker-compose -f docker-compose.ollama.yml up -d
 ```
 
 ## Web UI
@@ -449,6 +725,7 @@ docker run --rm \
 
 ---
 
-**Last Updated**: November 11, 2025  
-**OpenRegister Version**: v0.2.7+
+**Last Updated**: November 12, 2025  
+**OpenRegister Version**: v0.2.7+  
+**GPU Support**: Enabled by default (v0.2.7+)
 

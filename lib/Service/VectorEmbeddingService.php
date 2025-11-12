@@ -577,13 +577,19 @@ class VectorEmbeddingService
             if (isset($filters['embedding_model'])) {
                 $qb->andWhere($qb->expr()->eq('embedding_model', $qb->createNamedParameter($filters['embedding_model'])));
             }
-
-            // Order by creation date (most recent first) for consistency
-            $qb->orderBy('created_at', 'DESC');
-
-            // Limit to prevent memory issues (configurable later)
-            $maxVectors = $filters['max_vectors'] ?? 10000;
+            
+            // PERFORMANCE OPTIMIZATION: Limit vectors fetched to reduce PHP similarity calculations
+            // TODO: Replace with proper database-level vector search (PostgreSQL + pgvector)
+            // For now, limit to most recent vectors to improve performance
+            // This is a temporary fix until we migrate to a database with native vector operations
+            $maxVectors = $filters['max_vectors'] ?? 500; // Default: Compare against max 500 vectors (reduced from 10000)
             $qb->setMaxResults($maxVectors);
+            $qb->orderBy('created_at', 'DESC'); // Get most recent vectors first
+            
+            $this->logger->debug('[VectorEmbeddingService] Applied vector fetch limit for performance', [
+                'max_vectors' => $maxVectors,
+                'note' => 'Temporary optimization until PostgreSQL + pgvector migration'
+            ]);
 
             $result = $qb->executeQuery();
             $vectors = $result->fetchAll();
