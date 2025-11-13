@@ -1129,7 +1129,7 @@ class ObjectEntityMapper extends QBMapper
 
         // Handle filtering by IDs/UUIDs if provided.
         if ($ids !== null && empty($ids) === false) {
-            
+
             $numericIds = array_filter($ids, function (string $id) {
                 return strlen(intval($id)) === strlen($id);
             });
@@ -2152,7 +2152,7 @@ class ObjectEntityMapper extends QBMapper
             // Check if this is an operator array (e.g., ['or' => '...'], ['and' => '...'])
             // Operator keys to preserve
             $operatorKeys = ['or', 'and', 'gte', 'lte', 'gt', 'lt', 'eq', 'ne', '~', '!~', '^', '!^', '$', '!$'];
-            
+
             // If any operator key exists, preserve the entire structure
             foreach ($operatorKeys as $opKey) {
                 if (isset($value[$opKey]) === true) {
@@ -2160,7 +2160,7 @@ class ObjectEntityMapper extends QBMapper
                     return $value;
                 }
             }
-            
+
             // Otherwise, process as a regular value array
             $processedValues = [];
             foreach ($value as $item) {
