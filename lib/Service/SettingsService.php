@@ -2831,12 +2831,16 @@ class SettingsService
                         'model' => null,
                         'chatModel' => null,
                     ],
-                    'fireworksConfig' => [
-                        'apiKey' => '',
-                        'embeddingModel' => null,
-                        'chatModel' => null,
-                        'baseUrl' => 'https://api.fireworks.ai/inference/v1',
-                    ],
+                'fireworksConfig' => [
+                    'apiKey' => '',
+                    'embeddingModel' => null,
+                    'chatModel' => null,
+                    'baseUrl' => 'https://api.fireworks.ai/inference/v1',
+                ],
+                'vectorConfig' => [
+                    'backend' => 'php',
+                    'solrField' => '_embedding_',
+                ],
                 ];
             }
             
@@ -2845,6 +2849,24 @@ class SettingsService
             // Ensure enabled field exists (for backward compatibility)
             if (isset($decoded['enabled']) === false) {
                 $decoded['enabled'] = false;
+            }
+            
+            // Ensure vector config exists (for backward compatibility)
+            if (isset($decoded['vectorConfig']) === false) {
+                $decoded['vectorConfig'] = [
+                    'backend' => 'php',
+                    'solrField' => '_embedding_',
+                ];
+            } else {
+                // Ensure all vector config fields exist
+                if (isset($decoded['vectorConfig']['backend']) === false) {
+                    $decoded['vectorConfig']['backend'] = 'php';
+                }
+                if (isset($decoded['vectorConfig']['solrField']) === false) {
+                    $decoded['vectorConfig']['solrField'] = '_embedding_';
+                }
+                // Remove deprecated solrCollection if it exists
+                unset($decoded['vectorConfig']['solrCollection']);
             }
             
             return $decoded;
@@ -2887,6 +2909,10 @@ class SettingsService
                     'embeddingModel' => $llmData['fireworksConfig']['embeddingModel'] ?? $existingConfig['fireworksConfig']['embeddingModel'] ?? null,
                     'chatModel' => $llmData['fireworksConfig']['chatModel'] ?? $existingConfig['fireworksConfig']['chatModel'] ?? null,
                     'baseUrl' => $llmData['fireworksConfig']['baseUrl'] ?? $existingConfig['fireworksConfig']['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1',
+                ],
+                'vectorConfig' => [
+                    'backend' => $llmData['vectorConfig']['backend'] ?? $existingConfig['vectorConfig']['backend'] ?? 'php',
+                    'solrField' => $llmData['vectorConfig']['solrField'] ?? $existingConfig['vectorConfig']['solrField'] ?? '_embedding_',
                 ],
             ];
             

@@ -158,6 +158,14 @@
 						@keydown.enter.exact.prevent="handleSendMessage"
 						@input="autoResize" />
 					<NcButton
+						type="secondary"
+						:aria-label="t('openregister', 'Chat settings')"
+						@click="showChatSettings = true">
+						<template #icon>
+							<CogOutline :size="20" />
+						</template>
+					</NcButton>
+					<NcButton
 						type="primary"
 						:disabled="!currentMessage.trim() || loading"
 						@click="handleSendMessage">
@@ -214,11 +222,137 @@
 				</NcButton>
 			</template>
 		</NcDialog>
+
+		<!-- Chat Settings Dialog -->
+		<NcDialog
+			v-if="showChatSettings"
+			:name="t('openregister', 'Chat Settings')"
+			size="normal"
+			@closing="showChatSettings = false">
+			<div class="chat-settings-dialog">
+				<p class="settings-description">
+					{{ t('openregister', 'Control which views and tools the AI can use in this conversation. By default, all agent capabilities are enabled.') }}
+				</p>
+
+				<!-- Views Section -->
+				<div v-if="availableViews.length > 0" class="settings-section">
+					<h3>
+						<CubeOutline :size="20" />
+						{{ t('openregister', 'Views') }}
+					</h3>
+					<p class="section-description">
+						{{ t('openregister', 'Select which data views the AI can search') }}
+					</p>
+					<div class="checkbox-list">
+						<NcCheckboxRadioSwitch
+							v-for="view in availableViews"
+							:key="view.uuid"
+							:checked="selectedViews.includes(view.uuid)"
+							@update:checked="toggleView(view.uuid)">
+							{{ view.name }}
+						</NcCheckboxRadioSwitch>
+					</div>
+				</div>
+
+				<!-- Tools Section -->
+				<div v-if="availableTools.length > 0" class="settings-section">
+					<h3>
+						<CogOutline :size="20" />
+						{{ t('openregister', 'Tools') }}
+					</h3>
+					<p class="section-description">
+						{{ t('openregister', 'Select which tools the AI can use to perform actions') }}
+					</p>
+					<div class="checkbox-list">
+						<NcCheckboxRadioSwitch
+							v-for="tool in availableTools"
+							:key="tool.uuid"
+							:checked="selectedTools.includes(tool.uuid)"
+							@update:checked="toggleTool(tool.uuid)">
+							{{ tool.name }}
+						</NcCheckboxRadioSwitch>
+					</div>
+				</div>
+
+				<!-- RAG Configuration Section -->
+				<div class="settings-section">
+					<h3>
+						<FileDocument :size="20" />
+						{{ t('openregister', 'RAG Configuration') }}
+					</h3>
+					<p class="section-description">
+						{{ t('openregister', 'Configure which types of data to search and how many sources to retrieve') }}
+					</p>
+
+					<!-- Search Targets -->
+					<div class="checkbox-list">
+						<NcCheckboxRadioSwitch
+							:checked="includeObjects"
+							@update:checked="includeObjects = $event">
+							{{ t('openregister', 'Search in Objects') }}
+						</NcCheckboxRadioSwitch>
+						<NcCheckboxRadioSwitch
+							:checked="includeFiles"
+							@update:checked="includeFiles = $event">
+							{{ t('openregister', 'Search in Files') }}
+						</NcCheckboxRadioSwitch>
+					</div>
+
+					<!-- Number of Sources -->
+					<div class="number-inputs">
+						<div class="number-input-group">
+							<label for="numSourcesObjects">{{ t('openregister', 'Object sources') }}</label>
+							<input
+								id="numSourcesObjects"
+								v-model.number="numSourcesObjects"
+								type="number"
+								min="1"
+								max="20"
+								class="number-input">
+							<span class="input-hint">{{ t('openregister', 'Default: 5') }}</span>
+						</div>
+						<div class="number-input-group">
+							<label for="numSourcesFiles">{{ t('openregister', 'File sources') }}</label>
+							<input
+								id="numSourcesFiles"
+								v-model.number="numSourcesFiles"
+								type="number"
+								min="1"
+								max="20"
+								class="number-input">
+							<span class="input-hint">{{ t('openregister', 'Default: 5') }}</span>
+						</div>
+					</div>
+
+					<!-- RAG Information Box -->
+					<div class="info-box">
+						<InformationOutline :size="16" />
+						<div class="info-content">
+							<p><strong>{{ t('openregister', 'Fewer sources (1-3):') }}</strong></p>
+							<p>{{ t('openregister', '✓ Faster responses ✓ More focused answers ✗ May miss relevant information') }}</p>
+							<p><strong>{{ t('openregister', 'More sources (10-20):') }}</strong></p>
+							<p>{{ t('openregister', '✓ Comprehensive context ✓ Less likely to miss details ✗ Slower responses ✗ May include less relevant information') }}</p>
+							<p><strong>{{ t('openregister', 'Recommended: 5 sources') }}</strong> {{ t('openregister', 'provides a good balance between speed and accuracy.') }}</p>
+						</div>
+					</div>
+				</div>
+
+				<!-- No views/tools message -->
+				<div v-if="availableViews.length === 0 && availableTools.length === 0" class="no-views-tools-notice">
+					<p>{{ t('openregister', 'This agent has no configurable views or tools, but you can still adjust RAG settings below.') }}</p>
+				</div>
+			</div>
+			<template #actions>
+				<NcButton @click="showChatSettings = false">
+					{{ t('openregister', 'Close') }}
+				</NcButton>
+			</template>
+		</NcDialog>
 	</NcAppContent>
 </template>
 
 <script>
-import { NcAppContent, NcButton, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
+import { NcAppContent, NcButton, NcDialog, NcLoadingIcon, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import AgentSelector from '../../components/AgentSelector.vue'
 import Robot from 'vue-material-design-icons/Robot.vue'
 import MessageText from 'vue-material-design-icons/MessageText.vue'
@@ -228,6 +362,7 @@ import AccountCircle from 'vue-material-design-icons/AccountCircle.vue'
 import FileDocument from 'vue-material-design-icons/FileDocument.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
+import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import ThumbUp from 'vue-material-design-icons/ThumbUp.vue'
 import ThumbDown from 'vue-material-design-icons/ThumbDown.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
@@ -245,6 +380,7 @@ export default {
 		NcButton,
 		NcDialog,
 		NcLoadingIcon,
+		NcCheckboxRadioSwitch,
 		AgentSelector,
 		Robot,
 		MessageText,
@@ -254,6 +390,7 @@ export default {
 		FileDocument,
 		FileDocumentOutline,
 		CubeOutline,
+		CogOutline,
 		ThumbUp,
 		ThumbDown,
 		InformationOutline,
@@ -275,6 +412,19 @@ export default {
 			// Rename dialog
 			showRenameDialog: false,
 			newConversationTitle: '',
+
+		// Chat settings
+		showChatSettings: false,
+		selectedViews: [], // UUIDs of selected views
+		selectedTools: [], // UUIDs of selected tools
+		availableViews: [], // Views from current agent
+		availableTools: [], // Tools from current agent
+		
+		// RAG settings
+		includeObjects: true, // Search in objects
+		includeFiles: true, // Search in files
+		numSourcesFiles: 5, // Number of file sources to retrieve
+		numSourcesObjects: 5, // Number of object sources to retrieve
 		}
 	},
 
@@ -373,6 +523,10 @@ export default {
 			try {
 				const conversation = await conversationStore.createConversation(this.selectedAgent.uuid)
 				this.currentAgent = this.selectedAgent
+				
+				// Load agent capabilities (views and tools) and select all by default
+				await this.loadAgentCapabilities()
+				
 				// Keep selected agent for next time, but clear for UX
 				const agentCopy = this.selectedAgent
 				this.selectedAgent = null
@@ -400,6 +554,9 @@ export default {
 				if (conversation.agentId) {
 					const response = await axios.get(generateUrl(`/apps/openregister/api/agents/${conversation.agentId}`))
 					this.currentAgent = response.data
+					
+					// Load agent capabilities (views and tools) and select all by default
+					await this.loadAgentCapabilities()
 				}
 
 				this.scrollToBottom()
@@ -475,6 +632,14 @@ export default {
 					userMessage,
 					this.activeConversation.uuid,
 					this.currentAgent?.uuid,
+					this.selectedViews,  // Pass selected views
+					this.selectedTools,  // Pass selected tools
+					{
+						includeObjects: this.includeObjects,
+						includeFiles: this.includeFiles,
+						numSourcesFiles: this.numSourcesFiles,
+						numSourcesObjects: this.numSourcesObjects,
+					}
 				)
 
 				this.scrollToBottom()
@@ -482,6 +647,96 @@ export default {
 				showError(this.t('openregister', 'Failed to get response: {error}', { error: error.response?.data?.error || error.message }))
 			} finally {
 				this.loading = false
+			}
+		},
+
+		/**
+		 * Load available views and tools from the current agent
+		 * and initialize selections with all items enabled by default
+		 */
+		async loadAgentCapabilities() {
+			if (!this.currentAgent) {
+				this.availableViews = []
+				this.availableTools = []
+				this.selectedViews = []
+				this.selectedTools = []
+				return
+			}
+
+			try {
+				// Load views from agent - handle both arrays of objects and arrays of strings
+				const rawViews = this.currentAgent.views || []
+				this.availableViews = rawViews.map(v => {
+					if (typeof v === 'string') {
+						return { uuid: v, name: v }
+					}
+					return v
+				})
+				
+				// Load tools from agent - handle both arrays of objects and arrays of strings
+				const rawTools = this.currentAgent.tools || []
+				this.availableTools = rawTools.map(t => {
+					if (typeof t === 'string') {
+						// Convert tool ID to readable name
+						const toolName = t.replace('openregister.', '').replace(/_/g, ' ')
+						const displayName = toolName.charAt(0).toUpperCase() + toolName.slice(1)
+						return { uuid: t, name: displayName }
+					}
+					return t
+				})
+
+				// Initialize all views as selected by default
+				this.selectedViews = this.availableViews.map(v => v.uuid)
+				
+				// Initialize all tools as selected by default
+				this.selectedTools = this.availableTools.map(t => t.uuid)
+				
+				// Load RAG settings from agent or use defaults
+				this.includeObjects = this.currentAgent.searchObjects ?? true
+				this.includeFiles = this.currentAgent.searchFiles ?? true
+				this.numSourcesFiles = this.currentAgent.ragNumSources ?? 5
+				this.numSourcesObjects = this.currentAgent.ragNumSources ?? 5
+				
+				console.info('[ChatIndex] Loaded agent capabilities:', {
+					views: this.availableViews.length,
+					tools: this.availableTools.length,
+					includeObjects: this.includeObjects,
+					includeFiles: this.includeFiles,
+				})
+			} catch (error) {
+				console.error('[ChatIndex] Failed to load agent capabilities:', error)
+				this.availableViews = []
+				this.availableTools = []
+				this.selectedViews = []
+				this.selectedTools = []
+			}
+		},
+
+		/**
+		 * Toggle view selection
+		 */
+		toggleView(viewUuid) {
+			const index = this.selectedViews.indexOf(viewUuid)
+			if (index > -1) {
+				// Remove from selection
+				this.selectedViews.splice(index, 1)
+			} else {
+				// Add to selection
+				this.selectedViews.push(viewUuid)
+			}
+		},
+
+		/**
+		 * Toggle tool selection
+		 */
+		toggleTool(toolUuid) {
+			const index = this.selectedTools.indexOf(toolUuid)
+			if (index > -1) {
+				// Remove from selection
+				this.selectedTools.splice(index, 1)
+			} else {
+				// Add to selection
+				this.selectedTools.push(toolUuid)
 			}
 		},
 
@@ -1013,6 +1268,134 @@ export default {
 		&:focus {
 			outline: none;
 			border-color: var(--color-primary-element);
+		}
+	}
+}
+
+.chat-settings-dialog {
+	padding: 20px;
+	max-height: 60vh;
+	overflow-y: auto;
+
+	.settings-description {
+		margin-bottom: 20px;
+		color: var(--color-text-maxcontrast);
+		font-size: 14px;
+		line-height: 1.6;
+	}
+
+	.settings-section {
+		margin-bottom: 24px;
+
+		h3 {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			font-size: 16px;
+			font-weight: 600;
+			margin: 0 0 8px 0;
+			color: var(--color-main-text);
+		}
+
+		.section-description {
+			margin: 0 0 12px 0;
+			font-size: 13px;
+			color: var(--color-text-maxcontrast);
+		}
+
+		.checkbox-list {
+			display: flex;
+			flex-direction: column;
+			gap: 8px;
+			padding-left: 4px;
+			margin-bottom: 16px;
+		}
+
+		.number-inputs {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 16px;
+			margin-bottom: 16px;
+
+			.number-input-group {
+				display: flex;
+				flex-direction: column;
+				gap: 6px;
+
+				label {
+					font-size: 13px;
+					font-weight: 500;
+					color: var(--color-main-text);
+				}
+
+				.number-input {
+					padding: 8px 12px;
+					border: 1px solid var(--color-border);
+					border-radius: 6px;
+					font-size: 14px;
+					background: var(--color-main-background);
+					color: var(--color-main-text);
+
+					&:focus {
+						outline: none;
+						border-color: var(--color-primary-element);
+					}
+				}
+
+				.input-hint {
+					font-size: 11px;
+					color: var(--color-text-maxcontrast);
+				}
+			}
+		}
+
+		.info-box {
+			display: flex;
+			gap: 10px;
+			padding: 12px;
+			background: var(--color-background-hover);
+			border-radius: 8px;
+			border-left: 3px solid var(--color-primary-element);
+
+			.info-content {
+				flex: 1;
+
+				p {
+					margin: 0 0 8px 0;
+					font-size: 12px;
+					line-height: 1.5;
+					color: var(--color-main-text);
+
+					&:last-child {
+						margin-bottom: 0;
+					}
+
+					strong {
+						font-weight: 600;
+					}
+				}
+			}
+		}
+	}
+
+	.no-settings {
+		text-align: center;
+		padding: 40px 20px;
+		color: var(--color-text-maxcontrast);
+		font-size: 14px;
+	}
+
+	.no-views-tools-notice {
+		padding: 16px;
+		background: var(--color-background-hover);
+		border-radius: 8px;
+		margin-bottom: 16px;
+
+		p {
+			margin: 0;
+			font-size: 13px;
+			color: var(--color-text-maxcontrast);
+			text-align: center;
 		}
 	}
 }

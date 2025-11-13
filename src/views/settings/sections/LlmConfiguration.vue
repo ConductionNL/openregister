@@ -129,7 +129,7 @@
 			</div>
 
 			<div class="provider-info-card" :class="{'warning-card': !databaseInfo.vectorSupport}">
-				<h5>Database Service</h5>
+				<h5>Vector Storage</h5>
 				<p class="provider-name">
 					{{ databaseInfo.type }}
 				</p>
@@ -233,11 +233,11 @@
 			</div>
 		</div>
 
-		<!-- LLM Configuration Modal -->
-		<LLMConfigModal
-			:show="showLLMConfigDialog"
-			@closing="showLLMConfigDialog = false"
-			@embeddings-cleared="loadAllStats" />
+	<!-- LLM Configuration Modal -->
+	<LLMConfigModal
+		:show="showLLMConfigDialog"
+		@closing="onLLMConfigClosed"
+		@embeddings-cleared="loadAllStats" />
 
 		<!-- File Management Modal -->
 		<FileManagementModal
@@ -499,12 +499,47 @@ export default {
 				const response = await axios.get(generateUrl('/apps/openregister/api/settings/database'))
 				if (response.data && response.data.success) {
 					const db = response.data.database
+					
+				// Check if a different vector backend is configured
+				let performanceNote = db.performanceNote
+				let vectorSupport = db.vectorSupport
+				let displayType = db.type || 'Unknown'
+				let displayVersion = db.version || 'Unknown'
+				
+				// Check LLM settings for vector backend
+				let recommendedPlugin = db.recommendedPlugin
+				try {
+					const llmResponse = await axios.get(generateUrl('/apps/openregister/api/settings/llm'))
+					const vectorBackend = llmResponse.data.vectorConfig?.backend
+						
+						if (vectorBackend === 'solr') {
+							displayType = 'Solr'
+							displayVersion = '9.x (Dense Vector)'
+							performanceNote = `✅ Using Solr for vector search (100-1000x faster than PHP). Database used only for application data.`
+							recommendedPlugin = 'KNN/HNSW Indexing (active ✓)'
+							vectorSupport = true // Solr provides vector support
+						} else if (vectorBackend === 'database' && db.vectorSupport) {
+							performanceNote = `✅ Using ${db.type} with native vector operations for fast similarity search.`
+							recommendedPlugin = db.recommendedPlugin + ' (active ✓)'
+							vectorSupport = true
+						} else if (vectorBackend === 'database' && !db.vectorSupport) {
+							performanceNote = db.performanceNote
+							recommendedPlugin = db.recommendedPlugin
+						} else if (vectorBackend === 'php' || !vectorBackend) {
+							performanceNote = db.performanceNote
+							recommendedPlugin = db.recommendedPlugin
+						}
+					} catch (e) {
+						// If we can't check LLM settings, use default
+						recommendedPlugin = db.recommendedPlugin
+					}
+					
 					this.databaseInfo = {
-						type: db.type || 'Unknown',
-						version: db.version || 'Unknown',
-						vectorSupport: db.vectorSupport || false,
-						recommendedPlugin: db.recommendedPlugin || null,
-						performanceNote: db.performanceNote || null,
+						type: displayType,
+						version: displayVersion,
+						vectorSupport: vectorSupport,
+						recommendedPlugin: recommendedPlugin || null,
+						performanceNote: performanceNote,
 					}
 				}
 			} catch (error) {
@@ -513,25 +548,34 @@ export default {
 			}
 		},
 
-		/**
-		 * Retry connection - tests LLM connectivity
-		 */
-		async retryConnection() {
-			this.loadingStats = true
-			this.llmError = false
+	/**
+	 * Retry connection - tests LLM connectivity
+	 */
+	async retryConnection() {
+		this.loadingStats = true
+		this.llmError = false
 
-			try {
-				// Reload all statistics and test connection
-				await this.loadAllStats()
-				this.llmConnectionStatus = 'Connected ✓'
-			} catch (error) {
-				this.llmError = true
-				this.llmErrorMessage = error.message || 'Failed to connect to LLM service'
-				this.llmConnectionStatus = 'Disconnected ✗'
-			} finally {
-				this.loadingStats = false
-			}
-		},
+		try {
+			// Reload all statistics and test connection
+			await this.loadAllStats()
+			this.llmConnectionStatus = 'Connected ✓'
+		} catch (error) {
+			this.llmError = true
+			this.llmErrorMessage = error.message || 'Failed to connect to LLM service'
+			this.llmConnectionStatus = 'Disconnected ✗'
+		} finally {
+			this.loadingStats = false
+		}
+	},
+
+	/**
+	 * Handle LLM Config Modal closing - reload stats to show updated backend
+	 */
+	onLLMConfigClosed() {
+		this.showLLMConfigDialog = false
+		// Reload all stats to reflect the new vector backend configuration
+		this.loadAllStats()
+	},
 
 		/**
 		 * Save LLM configuration settings
