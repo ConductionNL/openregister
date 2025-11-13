@@ -501,6 +501,79 @@ When you ask "What is the return policy?", AI finds the specific chunk (paragrap
 
 ![img_5.png](img_5.png)
 
+#### Vector Storage Backends
+
+OpenRegister supports multiple vector storage backends for optimal performance:
+
+| Backend | Speed | Best For | Requirements |
+|---------|-------|----------|--------------|
+| **Solr 9+ Dense Vector** | ⚡⚡⚡ Very Fast (100-1000x faster than PHP) | Production, large datasets | Solr 9.0+, configured collections |
+| **PostgreSQL + pgvector** | ⚡⚡ Fast (native DB queries) | Production, PostgreSQL users | PostgreSQL with pgvector extension |
+| **PHP (MariaDB/MySQL)** | ⚡ Slower (in-memory comparison) | Development, small datasets | No special requirements |
+
+**Configure Vector Storage:**
+
+1. Navigate to **Settings → AI → LLM Configuration**
+2. Click **Configure LLM**
+3. Scroll to **Vector Search Backend** section
+4. Select your preferred backend:
+   - **PHP** - Default, works everywhere, but slow for large datasets
+   - **Database** - Fast if you have PostgreSQL + pgvector
+   - **Solr 9+ Dense Vector** - Fastest, uses KNN (K-Nearest Neighbors) search
+
+**Solr Vector Search Configuration:**
+
+If you select Solr as your vector backend:
+
+1. **Ensure Solr Schema is Configured:**
+   - Run: `docker exec -u 33 master-nextcloud-1 php occ openregister:solr:manage setup`
+   - This adds the required `knn_vector` field type to your Solr collections
+   - Embeddings are stored in existing object and file collections
+
+2. **How it Works:**
+   - Vectors are stored in the `_embedding_` field of Solr documents
+   - Uses Solr's native dense vector search (HNSW algorithm)
+   - Searches both object and file collections automatically
+   - Returns full document metadata along with similarity scores
+
+3. **Performance:**
+   - KNN search completes in milliseconds
+   - 100-1000x faster than PHP cosine similarity
+   - Scales well with dataset size
+
+**💡 Recommendation:** Use Solr for production with more than 100 vectors, PHP for development/testing.
+
+**📊 Statistics:** The Vector Statistics cards show counts from your active backend (Solr or database).
+
+#### Performance Notes: Local Ollama
+
+When using Ollama locally (in Docker or on your machine), be aware of embedding generation performance:
+
+**Embedding Generation:**
+- **Time per embedding:** ~0.3-0.5 seconds (local Docker)
+- **With GPU:** ~0.1-0.2 seconds (much faster!)
+- **Batch of 100 objects:** ~30-50 seconds
+- **Large file (200 chunks):** ~1-2 minutes
+
+**Why it Takes Time:**
+- Ollama models run on YOUR hardware
+- Each chunk/object needs separate embedding generation
+- CPU-only is slower than GPU-accelerated
+
+**Tips for Better Performance:**
+1. **Enable GPU:** See [GPU Setup Guide](../../OLLAMA.md#gpu-support) for 3-5x speedup
+2. **Use Serial Mode:** Safer for stability, processes one at a time
+3. **Batch Wisely:** Don't vectorize everything at once - do it in stages
+4. **Smaller Models:** Use `nomic-embed-text` (fast) vs `mxbai-embed-large` (accurate but slower)
+5. **Schedule Off-Peak:** Run vectorization during low-usage hours
+
+**Comparison: Cloud vs Local:**
+- **OpenAI API:** ~0.01-0.05 seconds per embedding (very fast)
+- **Ollama CPU:** ~0.3-0.5 seconds per embedding
+- **Ollama GPU:** ~0.1-0.2 seconds per embedding
+
+**Trade-off:** Local Ollama is slower but gives you complete data sovereignty and zero API costs. For production with many vectorization jobs, consider GPU acceleration or using OpenAI for embeddings only.
+
 ---
 
 ### Step 3: Create Views (What Data Should AI Access?)

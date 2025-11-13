@@ -242,20 +242,32 @@ class ChatService
     /**
      * Process a chat message within a conversation
      *
-     * @param int    $conversationId Conversation ID
-     * @param string $userId         User ID
-     * @param string $userMessage    User message
+     * @param int    $conversationId  Conversation ID
+     * @param string $userId          User ID
+     * @param string $userMessage     User message
+     * @param array  $selectedViews   Array of view UUIDs to use (empty = use all agent views)
+     * @param array  $selectedTools   Array of tool UUIDs to use (empty = use all agent tools)
+     * @param array  $ragSettings     RAG configuration settings (includeObjects, includeFiles, numSources)
      *
      * @return array Response data with 'message', 'sources', 'title'
      *
      * @throws \Exception If processing fails
      */
-    public function processMessage(int $conversationId, string $userId, string $userMessage): array
-    {
+    public function processMessage(
+        int $conversationId, 
+        string $userId, 
+        string $userMessage,
+        array $selectedViews = [],
+        array $selectedTools = [],
+        array $ragSettings = []
+    ): array {
         $this->logger->info('[ChatService] Processing message', [
             'conversationId' => $conversationId,
             'userId' => $userId,
             'messageLength' => strlen($userMessage),
+            'selectedViews' => count($selectedViews),
+            'selectedTools' => count($selectedTools),
+            'ragSettings' => $ragSettings,
         ]);
 
         try {
@@ -283,9 +295,9 @@ class ChatService
             // Check if we need to summarize (token limit reached)
             $this->checkAndSummarize($conversation);
 
-            // Retrieve context using agent settings
+            // Retrieve context using agent settings, selected views, and RAG settings
             $contextStartTime = microtime(true);
-            $context = $this->retrieveContext($userMessage, $agent);
+            $context = $this->retrieveContext($userMessage, $agent, $selectedViews, $ragSettings);
             $contextTime = microtime(true) - $contextStartTime;
 
             // Get recent conversation history for context
@@ -293,13 +305,14 @@ class ChatService
             $messageHistory = $this->buildMessageHistory($conversationId);
             $historyTime = microtime(true) - $historyStartTime;
 
-            // Generate response using LLM
+            // Generate response using LLM with selected tools
             $llmStartTime = microtime(true);
             $aiResponse = $this->generateResponse(
                 $userMessage,
                 $context,
                 $messageHistory,
-                $agent
+                $agent,
+                $selectedTools
             );
             $llmTotalTime = microtime(true) - $llmStartTime;
 
@@ -388,30 +401,57 @@ class ChatService
     /**
      * Retrieve relevant context for a query using agent settings
      *
-     * @param string     $query User query
-     * @param Agent|null $agent Optional agent with search configuration
+     * @param string     $query         User query
+     * @param Agent|null $agent         Optional agent with search configuration
+     * @param array      $selectedViews Array of view UUIDs to search (empty = all agent views)
+     * @param array      $ragSettings   RAG configuration overrides
      *
      * @return array Context data with 'text' and 'sources'
      */
-    private function retrieveContext(string $query, ?Agent $agent): array
+    private function retrieveContext(string $query, ?Agent $agent, array $selectedViews = [], array $ragSettings = []): array
     {
         $this->logger->info('[ChatService] Retrieving context', [
             'query' => substr($query, 0, 100),
             'hasAgent' => $agent !== null,
+            'ragSettings' => $ragSettings,
         ]);
 
-        // Get search settings from agent or use defaults
+        // Get search settings from agent or use defaults, then apply RAG settings overrides
         $searchMode = $agent?->getRagSearchMode() ?? 'hybrid';
         $numSources = $agent?->getRagNumSources() ?? 5;
-        $includeFiles = $agent?->getSearchFiles() ?? true;
-        $includeObjects = $agent?->getSearchObjects() ?? true;
+        $includeFiles = $ragSettings['includeFiles'] ?? ($agent?->getSearchFiles() ?? true);
+        $includeObjects = $ragSettings['includeObjects'] ?? ($agent?->getSearchObjects() ?? true);
+        $numSourcesFiles = $ragSettings['numSourcesFiles'] ?? $numSources;
+        $numSourcesObjects = $ragSettings['numSourcesObjects'] ?? $numSources;
+        
+        // Calculate total sources needed (will be filtered by type later)
+        $totalSources = max($numSourcesFiles, $numSourcesObjects);
 
         // Get view filters if agent has views configured
         $viewFilters = [];
         if ($agent !== null && $agent->getViews() !== null && !empty($agent->getViews())) {
-            $viewFilters = $agent->getViews();
-            $this->logger->info('[ChatService] Using view-based filtering', [
-                'views' => $viewFilters,
+            $agentViews = $agent->getViews();
+            
+            // If selectedViews provided, filter to only those views
+            if (!empty($selectedViews)) {
+                $viewFilters = array_intersect($agentViews, $selectedViews);
+                $this->logger->info('[ChatService] Using filtered views', [
+                    'agentViews' => count($agentViews),
+                    'selectedViews' => count($selectedViews),
+                    'filteredViews' => count($viewFilters),
+                ]);
+            } else {
+                // Use all agent views
+                $viewFilters = $agentViews;
+                $this->logger->info('[ChatService] Using all agent views', [
+                    'views' => count($viewFilters),
+                ]);
+            }
+        } else if (!empty($selectedViews)) {
+            // User selected views but agent has no views configured - use selected ones
+            $viewFilters = $selectedViews;
+            $this->logger->info('[ChatService] Using user-selected views (agent has none)', [
+                'views' => count($viewFilters),
             ]);
         }
 
@@ -436,24 +476,26 @@ class ChatService
                 $vectorFilters['entity_type'] = $entityTypes;
             }
             
-            // Determine search method
+            // Determine search method - fetch more results than needed for filtering
+            $fetchLimit = $totalSources * 2;
+            
             if ($searchMode === 'semantic') {
                 $results = $this->vectorService->semanticSearch(
                     $query,
-                    $numSources * 2,
+                    $fetchLimit,
                     $vectorFilters  // Pass filters array instead of 0.7
                 );
             } elseif ($searchMode === 'hybrid') {
                 $hybridResponse = $this->vectorService->hybridSearch(
                     $query,
                     ['vector_filters' => $vectorFilters], // Pass filters in SOLR filters array
-                    $numSources * 2 // Limit parameter
+                    $fetchLimit // Limit parameter
                 );
                 // Extract results array from hybrid search response
                 $results = $hybridResponse['results'] ?? [];
             } else {
                 // Keyword search
-                $results = $this->searchKeywordOnly($query, $numSources * 2);
+                $results = $this->searchKeywordOnly($query, $fetchLimit);
             }
 
             // Ensure results is an array
@@ -466,7 +508,10 @@ class ChatService
                 $results = [];
             }
 
-            // Filter and build context
+            // Filter and build context - track file and object counts separately
+            $fileSourceCount = 0;
+            $objectSourceCount = 0;
+            
             foreach ($results as $result) {
                 // Skip if result is not an array
                 if (!is_array($result)) {
@@ -484,13 +529,16 @@ class ChatService
                     continue;
                 }
 
+                // Check if we've reached the limit for this source type
+                if ($isFile && $fileSourceCount >= $numSourcesFiles) {
+                    continue;
+                }
+                if ($isObject && $objectSourceCount >= $numSourcesObjects) {
+                    continue;
+                }
+
                 // TODO: Apply view filters here when view filtering is implemented
                 // For now, we'll skip view filtering and implement it later
-
-                // Stop if we have enough sources
-                if (count($sources) >= $numSources) {
-                    break;
-                }
 
                 // Extract source information
                 $source = [
@@ -523,18 +571,35 @@ class ChatService
                 }
 
                 $sources[] = $source;
+                
+                // Increment the appropriate counter
+                if ($isFile) {
+                    $fileSourceCount++;
+                } elseif ($isObject) {
+                    $objectSourceCount++;
+                }
 
                 // Add to context text
                 $contextText .= "Source: {$source['name']}\n";
                 $contextText .= "{$source['text']}\n\n";
+                
+                // Stop if we've reached limits for both types
+                if ((!$includeFiles || $fileSourceCount >= $numSourcesFiles) && 
+                    (!$includeObjects || $objectSourceCount >= $numSourcesObjects)) {
+                    break;
+                }
             }
 
             $this->logger->info('[ChatService] Context retrieved', [
                 'numSources' => count($sources),
+                'fileSources' => $fileSourceCount,
+                'objectSources' => $objectSourceCount,
                 'contextLength' => strlen($contextText),
                 'searchMode' => $searchMode,
                 'includeObjects' => $includeObjects,
                 'includeFiles' => $includeFiles,
+                'numSourcesFiles' => $numSourcesFiles,
+                'numSourcesObjects' => $numSourcesObjects,
                 'rawResultsCount' => is_array($results) ? count($results) : gettype($results),
             ]);
             
@@ -722,6 +787,7 @@ class ChatService
      * @param array      $context        Context data
      * @param array      $messageHistory Message history
      * @param Agent|null $agent          Optional agent
+     * @param array      $selectedTools  Array of tool UUIDs to use (empty = all agent tools)
      *
      * @return string Generated response
      *
@@ -731,7 +797,8 @@ class ChatService
         string $userMessage,
         array $context,
         array $messageHistory,
-        ?Agent $agent
+        ?Agent $agent,
+        array $selectedTools = []
     ): string {
         $startTime = microtime(true);
         
@@ -739,11 +806,12 @@ class ChatService
             'messageLength' => strlen($userMessage),
             'contextLength' => strlen($context['text']),
             'historyCount' => count($messageHistory),
+            'selectedTools' => count($selectedTools),
         ]);
 
-        // Get enabled tools for agent
+        // Get enabled tools for agent, filtered by selectedTools
         $toolsStartTime = microtime(true);
-        $tools = $this->getAgentTools($agent);
+        $tools = $this->getAgentTools($agent, $selectedTools);
         $toolsTime = microtime(true) - $toolsStartTime;
         if (!empty($tools)) {
             $this->logger->info('[ChatService] Agent has tools enabled', [
@@ -1678,7 +1746,15 @@ class ChatService
      *
      * @return array Array of ToolInterface instances
      */
-    private function getAgentTools(?Agent $agent): array
+    /**
+     * Get agent tools, optionally filtered by selected tool UUIDs
+     *
+     * @param Agent|null $agent         Agent with tools configuration
+     * @param array      $selectedTools Array of tool UUIDs to filter by (empty = all agent tools)
+     *
+     * @return array Array of ToolInterface instances
+     */
+    private function getAgentTools(?Agent $agent, array $selectedTools = []): array
     {
         if ($agent === null) {
             return [];
@@ -1687,6 +1763,16 @@ class ChatService
         $enabledToolIds = $agent->getTools();
         if ($enabledToolIds === null || empty($enabledToolIds)) {
             return [];
+        }
+
+        // If selectedTools provided, filter enabled tools
+        if (!empty($selectedTools)) {
+            $enabledToolIds = array_intersect($enabledToolIds, $selectedTools);
+            $this->logger->info('[ChatService] Filtering tools', [
+                'agentTools' => count($agent->getTools()),
+                'selectedTools' => count($selectedTools),
+                'filteredTools' => count($enabledToolIds),
+            ]);
         }
 
         $tools = [];

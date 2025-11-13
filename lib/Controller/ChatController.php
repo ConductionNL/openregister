@@ -181,6 +181,16 @@ class ChatController extends Controller
             $conversationUuid = (string) $this->request->getParam('conversation');
             $agentUuid = (string) $this->request->getParam('agentUuid');
             $message = (string) $this->request->getParam('message');
+            $selectedViews = $this->request->getParam('views') ?: [];  // Array of view UUIDs
+            $selectedTools = $this->request->getParam('tools') ?: [];  // Array of tool UUIDs
+            
+            // Get RAG configuration settings
+            $ragSettings = [
+                'includeObjects' => $this->request->getParam('includeObjects') ?? true,
+                'includeFiles' => $this->request->getParam('includeFiles') ?? true,
+                'numSourcesFiles' => $this->request->getParam('numSourcesFiles') ?? 5,
+                'numSourcesObjects' => $this->request->getParam('numSourcesObjects') ?? 5,
+            ];
 
             if (empty($message)) {
                 return new JSONResponse([
@@ -188,6 +198,12 @@ class ChatController extends Controller
                     'message' => 'message content is required',
                 ], 400);
             }
+
+            $this->logger->info('[ChatController] Received message with settings', [
+                'views' => count($selectedViews),
+                'tools' => count($selectedTools),
+                'ragSettings' => $ragSettings,
+            ]);
 
             // Load or create conversation
             $conversation = null;
@@ -255,7 +271,10 @@ class ChatController extends Controller
             $result = $this->chatService->processMessage(
                 $conversation->getId(),
                 $this->userId,
-                $message
+                $message,
+                $selectedViews,
+                $selectedTools,
+                $ragSettings
             );
 
             // Add conversation UUID to result for frontend

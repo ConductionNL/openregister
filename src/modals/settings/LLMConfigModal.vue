@@ -321,31 +321,14 @@
 					</small>
 				</div>
 
-				<!-- Solr Collection Selection (only if Solr backend selected) -->
-				<div v-if="selectedVectorBackend && selectedVectorBackend.id === 'solr'" class="solr-config">
-					<div class="form-group">
-						<label for="solr-collection">{{ t('openregister', 'Solr Collection') }}</label>
-						<NcSelect
-							v-model="solrVectorCollection"
-							:options="solrCollectionOptions"
-							label="name"
-							:placeholder="t('openregister', 'Select collection')"
-							:disabled="loadingSolrCollections">
-						</NcSelect>
-						<small>{{ t('openregister', 'Collection where vectors will be stored and searched') }}</small>
-					</div>
-
-					<div class="form-group">
-						<label for="solr-vector-field">{{ t('openregister', 'Vector Field Name') }}</label>
-						<input
-							id="solr-vector-field"
-							v-model="solrVectorField"
-							type="text"
-							:placeholder="t('openregister', 'embedding_vector')"
-							class="input-field">
-						<small>{{ t('openregister', 'Field name in Solr schema for storing dense vectors') }}</small>
-					</div>
+			<!-- Solr Configuration (only if Solr backend selected) -->
+			<div v-if="selectedVectorBackend && selectedVectorBackend.id === 'solr'" class="solr-config">
+				<div class="info-box">
+					<p>{{ t('openregister', 'Vectors will be stored in your existing object and file collections') }}</p>
+					<p>{{ t('openregister', 'Files → fileCollection, Objects → objectCollection') }}</p>
+					<p><strong>{{ t('openregister', 'Vector field: _embedding_') }}</strong></p>
 				</div>
+			</div>
 			</div>
 
 			<!-- AI Features -->
@@ -505,18 +488,18 @@ export default {
 				{ id: 'ollama', name: 'Ollama', description: 'Local models (free, requires Ollama)' },
 			],
 
-			ollamaModelOptions: [
-				{ id: 'llama3.2', name: 'llama3.2', description: 'Meta\'s Llama 3.2 (latest)' },
-				{ id: 'llama3.1', name: 'llama3.1', description: 'Meta\'s Llama 3.1' },
-				{ id: 'llama3', name: 'llama3', description: 'Meta\'s Llama 3' },
-				{ id: 'llama2', name: 'llama2', description: 'Meta\'s Llama 2' },
-				{ id: 'mistral', name: 'mistral', description: 'Mistral 7B model' },
-				{ id: 'mixtral', name: 'mixtral', description: 'Mistral\'s Mixtral 8x7B model' },
-				{ id: 'phi3', name: 'phi3', description: 'Microsoft\'s Phi-3 model' },
-				{ id: 'codellama', name: 'codellama', description: 'Code-specialized Llama' },
-				{ id: 'gemma2', name: 'gemma2', description: 'Google\'s Gemma 2' },
-				{ id: 'nomic-embed-text', name: 'nomic-embed-text', description: 'Nomic embeddings' },
-			],
+		ollamaModelOptions: [
+			{ id: 'llama3.2:latest', name: 'llama3.2:latest', description: 'Meta\'s Llama 3.2 (latest)' },
+			{ id: 'llama3.1:latest', name: 'llama3.1:latest', description: 'Meta\'s Llama 3.1' },
+			{ id: 'llama3:latest', name: 'llama3:latest', description: 'Meta\'s Llama 3' },
+			{ id: 'llama2:latest', name: 'llama2:latest', description: 'Meta\'s Llama 2' },
+			{ id: 'mistral:7b', name: 'mistral:7b', description: 'Mistral 7B model' },
+			{ id: 'mixtral:8x7b', name: 'mixtral:8x7b', description: 'Mistral\'s Mixtral 8x7B model' },
+			{ id: 'phi3:mini', name: 'phi3:mini', description: 'Microsoft\'s Phi-3 model' },
+			{ id: 'codellama:latest', name: 'codellama:latest', description: 'Code-specialized Llama' },
+			{ id: 'gemma2:latest', name: 'gemma2:latest', description: 'Google\'s Gemma 2' },
+			{ id: 'nomic-embed-text:latest', name: 'nomic-embed-text:latest', description: 'Nomic embeddings' },
+		],
 			loadingOllamaModels: false,
 
 			chatProviderOptions: [
@@ -554,14 +537,10 @@ export default {
 				{ id: 'accounts/fireworks/models/mixtral-8x22b-instruct', name: 'Mixtral 8x22B', contextWindow: '64K', cost: '$1.2/1M' },
 			],
 
-			// Vector Search Backend
-			loadingBackends: false,
-			selectedVectorBackend: null,
-			vectorBackendOptions: [],
-			loadingSolrCollections: false,
-			solrVectorCollection: null,
-			solrCollectionOptions: [],
-			solrVectorField: 'embedding_vector',
+		// Vector Search Backend
+		loadingBackends: false,
+		selectedVectorBackend: null,
+		vectorBackendOptions: [],
 
 			aiFeatures: [
 				{ id: 'text_generation', label: 'Text Generation', icon: '✍️', enabled: true },
@@ -847,9 +826,10 @@ export default {
 						chatModel: this.fireworksConfig.chatModel?.id || this.fireworksConfig.chatModel,
 						baseUrl: this.fireworksConfig.baseUrl,
 					},
-				vectorSearchBackend: this.selectedVectorBackend?.id || 'php',
-				solrVectorCollection: this.solrVectorCollection?.rawName || this.solrVectorCollection?.id || this.solrVectorCollection,
-				solrVectorField: this.solrVectorField || 'embedding_vector',
+			vectorConfig: {
+				backend: this.selectedVectorBackend?.id || 'php',
+				solrField: '_embedding_', // Reserved field in Solr schema
+			},
 					enabledFeatures: this.aiFeatures
 						.filter(f => f.enabled)
 						.map(f => f.id),
@@ -969,20 +949,9 @@ export default {
 					const solr = solrResponse.data.solr
 					solrAvailable = solr.available || false
 					
-					if (solrAvailable) {
-						solrNote = 'Very fast distributed vector search using KNN/HNSW indexing'
-						
-						// Load collections from Solr
-						if (solr.collections && solr.collections.length > 0) {
-							this.solrCollectionOptions = solr.collections.map(col => ({
-								id: col.id,
-								name: col.name + ' (' + col.documentCount + ' docs)',
-								rawName: col.name,
-								documentCount: col.documentCount,
-								health: col.health,
-							}))
-						}
-					} else {
+				if (solrAvailable) {
+					solrNote = 'Very fast distributed vector search using KNN/HNSW indexing. Vectors stored in existing file and object collections.'
+				} else {
 						solrNote = solr.error || 'SOLR not connected. Enable in Search Configuration.'
 					}
 				}
@@ -1004,20 +973,10 @@ export default {
 
 				this.vectorBackendOptions = backends
 
-				// Load current backend setting from LLM settings
-				const llmResponse = await axios.get(generateUrl('/apps/openregister/api/settings/llm'))
-				const vectorBackend = llmResponse.data.vectorSearchBackend || 'php'
-				this.selectedVectorBackend = backends.find(b => b.id === vectorBackend) || backends[0]
-
-			// Load Solr settings if Solr backend
-			if (vectorBackend === 'solr') {
-				const savedCollection = llmResponse.data.solrVectorCollection
-				// Find the collection object in solrCollectionOptions
-				if (savedCollection && this.solrCollectionOptions.length > 0) {
-					this.solrVectorCollection = this.solrCollectionOptions.find(c => c.id === savedCollection || c.rawName === savedCollection)
-				}
-				this.solrVectorField = llmResponse.data.solrVectorField || 'embedding_vector'
-			}
+		// Load current backend setting from LLM settings
+		const llmResponse = await axios.get(generateUrl('/apps/openregister/api/settings/llm'))
+		const vectorBackend = llmResponse.data.vectorConfig?.backend || 'php'
+		this.selectedVectorBackend = backends.find(b => b.id === vectorBackend) || backends[0]
 
 			} catch (error) {
 				console.error('Failed to load vector backends:', error)

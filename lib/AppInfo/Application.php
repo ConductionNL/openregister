@@ -534,6 +534,7 @@ class Application extends App implements IBootstrap
                     return new VectorEmbeddingService(
                     $container->get('OCP\IDBConnection'),
                     $container->get(SettingsService::class),
+                    $container->get(GuzzleSolrService::class),
                     $container->get('Psr\Log\LoggerInterface')
                     );
                 }
