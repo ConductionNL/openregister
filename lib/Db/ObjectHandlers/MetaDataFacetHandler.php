@@ -67,7 +67,7 @@ class MetaDataFacetHandler
     {
         // FACET FIX: Map @self metadata field names to actual database columns
         $actualField = $this->mapMetadataFieldToColumn($field);
-        
+
         $queryBuilder = $this->db->getQueryBuilder();
 
         // Build aggregation query using the actual database column
@@ -117,7 +117,7 @@ class MetaDataFacetHandler
         // Map @self metadata fields to database columns
         $fieldMappings = [
             'register' => 'register',         // @self.register -> register column (stores register ID)
-            'schema' => 'schema',             // @self.schema -> schema column (stores schema ID) 
+            'schema' => 'schema',             // @self.schema -> schema column (stores schema ID)
             'organisation' => 'organisation', // @self.organisation -> organisation column (stores org UUID)
             'created' => 'created',           // @self.created -> created column
             'updated' => 'updated',           // @self.updated -> updated column
@@ -572,6 +572,17 @@ class MetaDataFacetHandler
                         } else {
                             $queryBuilder->andWhere($queryBuilder->expr()->isNotNull($field));
                         }
+                        break;
+
+                    case 'or':
+                        $values = is_string($operatorValue) ? array_map('trim', explode(',', $operatorValue)) : $operatorValue;
+                        $orConditions = $queryBuilder->expr()->orX();
+                        foreach ($values as $val) {
+                            $orConditions->add(
+                                $queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($val))
+                            );
+                        }
+                        $queryBuilder->andWhere($orConditions);
                         break;
                     default:
                         // Default to equals for unknown operators
