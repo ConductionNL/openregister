@@ -4556,4 +4556,97 @@ class SettingsController extends Controller
         }
     }
 
+    /**
+     * Get API tokens for GitHub and GitLab
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse The API tokens
+     */
+    public function getApiTokens(): JSONResponse
+    {
+        try {
+            $githubToken = $this->config->getAppValue('openregister', 'github_api_token', '');
+            $gitlabToken = $this->config->getAppValue('openregister', 'gitlab_api_token', '');
+            $gitlabUrl = $this->config->getAppValue('openregister', 'gitlab_api_url', '');
+
+            // Mask tokens for security (only show first/last few characters)
+            $maskedGithubToken = $githubToken ? $this->maskToken($githubToken) : '';
+            $maskedGitlabToken = $gitlabToken ? $this->maskToken($gitlabToken) : '';
+
+            return new JSONResponse([
+                'github_token' => $maskedGithubToken,
+                'gitlab_token' => $maskedGitlabToken,
+                'gitlab_url' => $gitlabUrl,
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'error' => 'Failed to retrieve API tokens: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Save API tokens for GitHub and GitLab
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Success or error message
+     */
+    public function saveApiTokens(): JSONResponse
+    {
+        try {
+            $data = $this->request->getParams();
+
+            if (isset($data['github_token'])) {
+                // Only save if not masked
+                if (!str_contains($data['github_token'], '***')) {
+                    $this->config->setAppValue('openregister', 'github_api_token', $data['github_token']);
+                }
+            }
+
+            if (isset($data['gitlab_token'])) {
+                // Only save if not masked
+                if (!str_contains($data['gitlab_token'], '***')) {
+                    $this->config->setAppValue('openregister', 'gitlab_api_token', $data['gitlab_token']);
+                }
+            }
+
+            if (isset($data['gitlab_url'])) {
+                $this->config->setAppValue('openregister', 'gitlab_api_url', $data['gitlab_url']);
+            }
+
+            return new JSONResponse([
+                'success' => true,
+                'message' => 'API tokens saved successfully'
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'error' => 'Failed to save API tokens: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Mask sensitive token for display
+     *
+     * @param string $token The token to mask
+     *
+     * @return string The masked token
+     */
+    private function maskToken(string $token): string
+    {
+        if (strlen($token) <= 8) {
+            return str_repeat('*', strlen($token));
+        }
+
+        $start = substr($token, 0, 4);
+        $end = substr($token, -4);
+        $middle = str_repeat('*', min(20, strlen($token) - 8));
+
+        return $start . $middle . $end;
+    }
+
 }//end class

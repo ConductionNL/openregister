@@ -7,7 +7,8 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 		name="importConfiguration"
 		title="Import Configuration"
 		size="large"
-		:can-close="!loading">
+		:can-close="!loading"
+		@update:open="closeModal">
 		<NcNoteCard v-if="success" type="success">
 			<p>{{ successMessage }}</p>
 		</NcNoteCard>
@@ -16,38 +17,46 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 			<p>{{ error }}</p>
 		</NcNoteCard>
 
-		<NcTabs v-model="activeTab">
-			<!-- Discover Tab -->
-			<NcTab name="discover" label="Discover">
+		<div class="tabContainer">
+			<BTabs v-model="activeTab" content-class="mt-3" justified>
+				<!-- Discover Tab -->
+				<BTab active>
+					<template #title>
+						<Magnify :size="16" />
+						<span>Discover</span>
+					</template>
 				<div class="tabContent">
 					<p class="tabDescription">
 						Search GitHub and GitLab for OpenRegister configurations created by the community.
 					</p>
 
-					<div class="searchContainer">
-						<NcTextField
-							:value.sync="searchQuery"
-							label="Search configurations"
-							placeholder="Enter search terms or leave empty to browse all"
-							@keyup.enter="searchConfigurations">
-							<Magnify :size="20" />
-						</NcTextField>
+				<div class="searchContainer">
+					<NcTextField
+						:value.sync="searchQuery"
+						label="Search configurations"
+						placeholder="Enter search terms or leave empty to browse all"
+						@keyup.enter="searchConfigurations">
+						<Magnify :size="20" />
+					</NcTextField>
 
-						<NcActions>
-							<NcActionButton @click="searchSource = 'github'; searchConfigurations()">
-								<template #icon>
-									<Github :size="20" />
-								</template>
-								Search GitHub
-							</NcActionButton>
-							<NcActionButton @click="searchSource = 'gitlab'; searchConfigurations()">
-								<template #icon>
-									<Gitlab :size="20" />
-								</template>
-								Search GitLab
-							</NcActionButton>
-						</NcActions>
-					</div>
+				<NcButton
+					class="github-button"
+					@click="searchSource = 'github'; searchConfigurations()">
+					<template #icon>
+						<Github :size="20" />
+					</template>
+					{{ t('openregister', 'Search GitHub') }}
+				</NcButton>
+
+				<NcButton
+					class="gitlab-button"
+					@click="searchSource = 'gitlab'; searchConfigurations()">
+					<template #icon>
+						<Gitlab :size="20" />
+					</template>
+					{{ t('openregister', 'Search GitLab') }}
+				</NcButton>
+				</div>
 
 					<NcLoadingIcon v-if="searchLoading" :size="64" />
 
@@ -67,19 +76,23 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 						</template>
 					</NcEmptyContent>
 				</div>
-			</NcTab>
+				</BTab>
 
-			<!-- GitHub/GitLab Tab -->
-			<NcTab name="repository" label="GitHub / GitLab">
+				<!-- GitHub/GitLab Tab -->
+				<BTab>
+					<template #title>
+						<Github :size="16" />
+						<span>GitHub / GitLab</span>
+					</template>
 				<div class="tabContent">
 					<p class="tabDescription">
 						Import a configuration from a specific GitHub or GitLab repository and branch.
 					</p>
 
-					<NcSelect
-						v-model="repoSource"
-						:options="['GitHub', 'GitLab']"
-						label="Source Platform" />
+				<NcSelect
+					v-model="repoSource"
+					:options="['GitHub', 'GitLab']"
+					input-label="Source Platform" />
 
 					<NcTextField
 						v-if="repoSource === 'GitHub'"
@@ -107,110 +120,94 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 						Load Branches
 					</NcButton>
 
-					<NcSelect
-						v-if="branches.length > 0"
-						v-model="selectedBranch"
-						:options="branches"
-						label="Branch"
-						@change="fetchConfigurationFiles" />
+				<NcSelect
+					v-if="branches.length > 0"
+					v-model="selectedBranch"
+					:options="branches"
+					input-label="Branch"
+					@change="fetchConfigurationFiles" />
 
-					<div v-if="configFiles.length > 0" class="filesGrid">
-						<div
-							v-for="file in configFiles"
-							:key="file.path"
-							class="fileCard"
-							:class="{ selected: selectedFile === file }"
-							@click="selectedFile = file">
-							<h4>{{ file.config.title }}</h4>
-							<p class="fileDescription">{{ file.config.description || 'No description' }}</p>
-							<span class="filePath">{{ file.path }}</span>
-							<span class="fileVersion">v{{ file.config.version }}</span>
-						</div>
-					</div>
-
-					<div v-if="selectedFile" class="syncSettings">
-						<h4>Synchronization Settings</h4>
-						<NcCheckboxRadioSwitch
-							:checked="syncEnabled"
-							type="switch"
-							@update:checked="syncEnabled = $event">
-							Enable automatic synchronization
-						</NcCheckboxRadioSwitch>
-
-						<NcTextField
-							v-if="syncEnabled"
-							:value.sync="syncInterval"
-							type="number"
-							label="Sync Interval (hours)"
-							:min="1"
-							:max="168" />
+				<div v-if="configFiles.length > 0" class="filesGrid">
+					<div
+						v-for="file in configFiles"
+						:key="file.path"
+						class="fileCard"
+						:class="{ selected: selectedFile === file }"
+						@click="selectedFile = file">
+						<h4>{{ file.config.title }}</h4>
+						<p class="fileDescription">{{ file.config.description || 'No description' }}</p>
+						<span class="filePath">{{ file.path }}</span>
+						<span class="fileVersion">v{{ file.config.version }}</span>
 					</div>
 				</div>
-			</NcTab>
+				</div>
+				</BTab>
 
-			<!-- URL Tab -->
-			<NcTab name="url" label="Import from URL">
+				<!-- URL Tab -->
+				<BTab>
+					<template #title>
+						<LinkVariant :size="16" />
+						<span>Import from URL</span>
+					</template>
 				<div class="tabContent">
 					<p class="tabDescription">
 						Import a configuration from a direct URL. The URL must point to a valid OpenRegister JSON file.
 					</p>
 
-					<NcTextField
-						:value.sync="importUrl"
-						label="Configuration URL"
-						placeholder="https://example.com/config.json"
-						@input="urlError = null" />
+				<NcTextField
+					:value.sync="importUrl"
+					label="Configuration URL"
+					placeholder="https://example.com/config.json"
+					@input="urlError = null" />
 
-					<NcNoteCard v-if="urlError" type="warning">
-						<p>{{ urlError }}</p>
-					</NcNoteCard>
-
-					<div class="syncSettings">
-						<h4>Synchronization Settings</h4>
-						<NcCheckboxRadioSwitch
-							:checked="syncEnabled"
-							type="switch"
-							@update:checked="syncEnabled = $event">
-							Enable automatic synchronization
-							<template #helper>
-								Keep this configuration in sync with the source URL
-							</template>
-						</NcCheckboxRadioSwitch>
-
-						<NcTextField
-							v-if="syncEnabled"
-							:value.sync="syncInterval"
-							type="number"
-							label="Sync Interval (hours)"
-							placeholder="24"
-							:min="1"
-							:max="168">
-							<template #helper>
-								How often to check for updates (1-168 hours)
-							</template>
-						</NcTextField>
-					</div>
+				<NcNoteCard v-if="urlError" type="warning">
+					<p>{{ urlError }}</p>
+				</NcNoteCard>
 				</div>
-			</NcTab>
-		</NcTabs>
+				</BTab>
+			</BTabs>
+		</div>
+
+		<!-- Synchronization Settings - Always Visible -->
+		<div v-if="!success" class="syncSettings">
+			<h4>{{ t('openregister', 'Synchronization Settings') }}</h4>
+			<NcCheckboxRadioSwitch
+				:checked="syncEnabled"
+				type="switch"
+				@update:checked="syncEnabled = $event">
+				{{ t('openregister', 'Enable automatic synchronization') }}
+			</NcCheckboxRadioSwitch>
+
+			<NcTextField
+				v-if="syncEnabled"
+				:value.sync="syncInterval"
+				type="number"
+				label="Sync Interval (hours)"
+				placeholder="24"
+				:min="1"
+				:max="168">
+				<template #helper>
+					{{ t('openregister', 'How often to check for updates (1-168 hours)') }}
+				</template>
+			</NcTextField>
+		</div>
 
 		<template #actions>
 			<NcButton @click="closeModal" :disabled="loading">
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				Cancel
+				{{ t('openregister', 'Cancel') }}
 			</NcButton>
 			<NcButton
-				v-if="canImport"
-				:disabled="loading"
+				:disabled="loading || !canImport"
 				type="primary"
 				@click="performImport">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
 					<Import v-else :size="20" />
 				</template>
-				Import
+				{{ t('openregister', 'Import') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -223,14 +220,12 @@ import {
 	NcLoadingIcon,
 	NcNoteCard,
 	NcCheckboxRadioSwitch,
-	NcTabs,
-	NcTab,
 	NcTextField,
 	NcSelect,
-	NcActions,
-	NcActionButton,
 	NcEmptyContent,
 } from '@nextcloud/vue'
+
+import { BTabs, BTab } from 'bootstrap-vue'
 
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Import from 'vue-material-design-icons/Import.vue'
@@ -238,25 +233,24 @@ import Magnify from 'vue-material-design-icons/Magnify.vue'
 import Github from 'vue-material-design-icons/Github.vue'
 import Gitlab from 'vue-material-design-icons/Gitlab.vue'
 import SourceBranch from 'vue-material-design-icons/SourceBranch.vue'
+import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 
 import DiscoveredConfigurationCard from '../../components/DiscoveredConfigurationCard.vue'
 
 export default {
 	name: 'ImportConfiguration',
 	components: {
-		NcDialog,
-		NcButton,
-		NcLoadingIcon,
-		NcNoteCard,
-		NcCheckboxRadioSwitch,
-		NcTabs,
-		NcTab,
-		NcTextField,
-		NcSelect,
-		NcActions,
-		NcActionButton,
-		NcEmptyContent,
-		DiscoveredConfigurationCard,
+	NcDialog,
+	NcButton,
+	NcLoadingIcon,
+	NcNoteCard,
+	NcCheckboxRadioSwitch,
+	BTabs,
+	BTab,
+	NcTextField,
+	NcSelect,
+	NcEmptyContent,
+	DiscoveredConfigurationCard,
 		// Icons
 		Cancel,
 		Import,
@@ -264,10 +258,11 @@ export default {
 		Github,
 		Gitlab,
 		SourceBranch,
+		LinkVariant,
 	},
 	data() {
 		return {
-			activeTab: 'discover',
+			activeTab: 0,
 			loading: false,
 			success: false,
 			successMessage: '',
@@ -306,15 +301,18 @@ export default {
 			}
 			return this.repoNamespace && this.repoName
 		},
-		canImport() {
-			if (this.activeTab === 'repository') {
-				return this.selectedFile !== null
-			}
-			if (this.activeTab === 'url') {
-				return this.importUrl !== ''
-			}
-			return false
-		},
+	canImport() {
+		// Tab 0: Discover (imports are handled per-card, not via main button)
+		// Tab 1: GitHub/GitLab
+		if (this.activeTab === 1) {
+			return this.selectedFile !== null
+		}
+		// Tab 2: URL
+		if (this.activeTab === 2) {
+			return this.importUrl !== ''
+		}
+		return false
+	},
 	},
 	methods: {
 		closeModal() {
@@ -450,54 +448,57 @@ export default {
 				this.loading = false
 			}
 		},
-		async performImport() {
-			this.loading = true
-			this.error = null
+	async performImport() {
+		this.loading = true
+		this.error = null
 
-			try {
-				if (this.activeTab === 'repository') {
-					const params = {
-						path: this.selectedFile.path,
-						syncEnabled: this.syncEnabled,
-						syncInterval: parseInt(this.syncInterval),
-					}
-
-					if (this.repoSource === 'GitHub') {
-						await configurationStore.importFromGitHub({
-							owner: this.repoOwner,
-							repo: this.repoName,
-							branch: this.selectedBranch.id,
-							...params,
-						})
-					} else {
-						await configurationStore.importFromGitLab({
-							namespace: this.repoNamespace,
-							project: this.repoName,
-							ref: this.selectedBranch.id,
-							...params,
-						})
-					}
-
-					this.successMessage = `Configuration imported from ${this.repoSource}!`
-				} else if (this.activeTab === 'url') {
-					// Validate URL
-					try {
-						const validUrl = new URL(this.importUrl)
-						void validUrl // URL validation successful
-					} catch {
-						this.urlError = 'Please enter a valid URL'
-						this.loading = false
-						return
-					}
-
-					await configurationStore.importFromUrl({
-						url: this.importUrl,
-						syncEnabled: this.syncEnabled,
-						syncInterval: parseInt(this.syncInterval),
-					})
-
-					this.successMessage = 'Configuration imported from URL!'
+		try {
+			// Tab 1: GitHub/GitLab
+			if (this.activeTab === 1) {
+				const params = {
+					path: this.selectedFile.path,
+					syncEnabled: this.syncEnabled,
+					syncInterval: parseInt(this.syncInterval),
 				}
+
+				if (this.repoSource === 'GitHub') {
+					await configurationStore.importFromGitHub({
+						owner: this.repoOwner,
+						repo: this.repoName,
+						branch: this.selectedBranch.id,
+						...params,
+					})
+				} else {
+					await configurationStore.importFromGitLab({
+						namespace: this.repoNamespace,
+						project: this.repoName,
+						ref: this.selectedBranch.id,
+						...params,
+					})
+				}
+
+				this.successMessage = `Configuration imported from ${this.repoSource}!`
+			} 
+			// Tab 2: URL
+			else if (this.activeTab === 2) {
+				// Validate URL
+				try {
+					const validUrl = new URL(this.importUrl)
+					void validUrl // URL validation successful
+				} catch {
+					this.urlError = 'Please enter a valid URL'
+					this.loading = false
+					return
+				}
+
+				await configurationStore.importFromUrl({
+					url: this.importUrl,
+					syncEnabled: this.syncEnabled,
+					syncInterval: parseInt(this.syncInterval),
+				})
+
+				this.successMessage = 'Configuration imported from URL!'
+			}
 
 				this.success = true
 				await configurationStore.refreshConfigurationList()
@@ -513,6 +514,10 @@ export default {
 </script>
 
 <style scoped>
+.tabContainer {
+	width: 100%;
+}
+
 .tabContent {
 	padding: 20px;
 	display: flex;
@@ -593,14 +598,43 @@ export default {
 }
 
 .syncSettings {
-	margin-top: 24px;
-	padding: 16px;
+	margin: 24px 0;
+	padding: 20px;
 	border: 1px solid var(--color-border);
 	border-radius: 8px;
 	background-color: var(--color-background-hover);
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
 }
 
 .syncSettings h4 {
-	margin: 0 0 12px 0;
+	margin: 0 0 8px 0;
+	font-weight: 600;
+	color: var(--color-main-text);
+}
+
+/* GitHub button styling */
+.github-button {
+	background-color: #24292e !important;
+	color: white !important;
+	border-color: #24292e !important;
+}
+
+.github-button:hover {
+	background-color: #1b1f23 !important;
+	border-color: #1b1f23 !important;
+}
+
+/* GitLab button styling */
+.gitlab-button {
+	background-color: #fc6d26 !important;
+	color: white !important;
+	border-color: #fc6d26 !important;
+}
+
+.gitlab-button:hover {
+	background-color: #e24329 !important;
+	border-color: #e24329 !important;
 }
 </style>

@@ -40,12 +40,15 @@
 		<!-- LLM Configuration Section -->
 		<LlmConfiguration />
 
-		<!-- File Configuration Section -->
-		<FileConfiguration />
+	<!-- File Configuration Section -->
+	<FileConfiguration />
 
-		<!-- Dialogs -->
-		<Dialogs />
-	</div>
+	<!-- API Token Configuration Section -->
+	<ApiTokenConfiguration />
+
+	<!-- Dialogs -->
+	<Dialogs />
+</div>
 </template>
 
 <script>
@@ -64,6 +67,7 @@ import MultitenancyConfiguration from './sections/MultitenancyConfiguration.vue'
 import RetentionConfiguration from './sections/RetentionConfiguration.vue'
 import LlmConfiguration from './sections/LlmConfiguration.vue'
 import FileConfiguration from './sections/FileConfiguration.vue'
+import ApiTokenConfiguration from './sections/ApiTokenConfiguration.vue'
 import Dialogs from '../../dialogs/Dialogs.vue'
 
 /**
@@ -82,11 +86,12 @@ export default {
 		RbacConfiguration,
 		OrganisationConfiguration,
 		MultitenancyConfiguration,
-		RetentionConfiguration,
-		LlmConfiguration,
-		FileConfiguration,
-		Dialogs,
-	},
+	RetentionConfiguration,
+	LlmConfiguration,
+	FileConfiguration,
+	ApiTokenConfiguration,
+	Dialogs,
+},
 
 	computed: {
 		...mapStores(useSettingsStore),

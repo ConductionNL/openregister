@@ -665,6 +665,30 @@ class Application extends App implements IBootstrap
                 }
                 );
 
+        // Register GitHubService for GitHub API operations
+        $context->registerService(
+                \OCA\OpenRegister\Service\GitHubService::class,
+                function ($container) {
+                    return new \OCA\OpenRegister\Service\GitHubService(
+                    $container->get('OCP\Http\Client\IClientService')->newClient(),
+                    $container->get('OCP\IConfig'),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register GitLabService for GitLab API operations
+        $context->registerService(
+                \OCA\OpenRegister\Service\GitLabService::class,
+                function ($container) {
+                    return new \OCA\OpenRegister\Service\GitLabService(
+                    $container->get('OCP\Http\Client\IClientService')->newClient(),
+                    $container->get('OCP\IConfig'),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
         // Register Solr event listeners for automatic indexing
         $context->registerEventListener(ObjectCreatedEvent::class, SolrEventListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, SolrEventListener::class);

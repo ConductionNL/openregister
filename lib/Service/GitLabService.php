@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use GuzzleHttp\Client;
+use OCP\Http\Client\IClient;
 use GuzzleHttp\Exception\GuzzleException;
 use OCP\IConfig;
 use Psr\Log\LoggerInterface;
@@ -48,9 +48,9 @@ class GitLabService
     /**
      * HTTP client for API requests
      *
-     * @var Client
+     * @var IClient
      */
-    private Client $client;
+    private IClient $client;
 
     /**
      * Configuration service
@@ -69,12 +69,12 @@ class GitLabService
     /**
      * GitLabService constructor
      *
-     * @param Client          $client HTTP client
+     * @param IClient         $client HTTP client
      * @param IConfig         $config Configuration service
      * @param LoggerInterface $logger Logger instance
      */
     public function __construct(
-        Client $client,
+        IClient $client,
         IConfig $config,
         LoggerInterface $logger
     ) {
@@ -82,8 +82,29 @@ class GitLabService
         $this->config = $config;
         $this->logger = $logger;
         
-        // Allow configuration of GitLab URL for self-hosted instances
-        $this->apiBase = $this->config->getSystemValue('gitlab_api_url', 'https://gitlab.com/api/v4');
+        // Allow configuration of GitLab URL (app-level setting takes precedence over system setting)
+        $this->apiBase = $this->config->getAppValue('openregister', 'gitlab_api_url', '');
+        if (empty($this->apiBase)) {
+            $this->apiBase = $this->config->getSystemValue('gitlab_api_url', 'https://gitlab.com/api/v4');
+        }
+    }
+
+    /**
+     * Get authentication headers for GitLab API
+     *
+     * @return array Headers array
+     */
+    private function getHeaders(): array
+    {
+        $headers = [];
+
+        // Add authentication token if configured
+        $token = $this->config->getAppValue('openregister', 'gitlab_api_token', '');
+        if (!empty($token)) {
+            $headers['PRIVATE-TOKEN'] = $token;
+        }
+
+        return $headers;
     }
 
     /**

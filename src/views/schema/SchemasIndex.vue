@@ -106,122 +106,71 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 										{{ t('openregister', 'Configuration') }}
 									</span>
 								</h2>
-								<NcActions :primary="true" menu-name="Actions">
+							<NcActions :primary="true" menu-name="Actions">
+								<template #icon>
+									<DotsHorizontal :size="20" />
+								</template>
+								<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchema')">
 									<template #icon>
-										<DotsHorizontal :size="20" />
+										<Pencil :size="20" />
 									</template>
-									<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchema')">
-										<template #icon>
-											<Pencil :size="20" />
-										</template>
-										Edit
-									</NcActionButton>
-									<NcActionButton close-after-click @click="schemaStore.setSchemaPropertyKey(null); schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchemaProperty')">
-										<template #icon>
-											<Plus :size="20" />
-										</template>
-										Add Property
-									</NcActionButton>
-									<NcActionButton close-after-click @click="createExtendedSchema(schema)">
-										<template #icon>
-											<CallSplit :size="20" />
-										</template>
-										Extend Schema
-									</NcActionButton>
-									<NcActionButton close-after-click @click="schemaStore.downloadSchema(schema)">
-										<template #icon>
-											<Download :size="20" />
-										</template>
-										Download
-									</NcActionButton>
-									<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('exploreSchema')">
-										<template #icon>
-											<DatabaseSearch :size="20" />
-										</template>
-										Analyze Properties
-									</NcActionButton>
-									<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('validateSchema')">
-										<template #icon>
-											<CheckCircle :size="20" />
-										</template>
-										Validate Objects
-									</NcActionButton>
-									<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
-										close-after-click
-										:disabled="schema.stats?.objects?.total > 0"
-										@click="schemaStore.setSchemaItem(schema); navigationStore.setDialog('deleteSchema')">
-										<template #icon>
-											<TrashCanOutline :size="20" />
-										</template>
-										Delete
-									</NcActionButton>
-									<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Delete all objects in this schema' : 'No objects to delete'"
-										close-after-click
-										:disabled="schema.stats?.objects?.total === 0"
-										@click="schemaStore.setSchemaItem(schema); navigationStore.setModal('deleteSchemaObjects')">
-										<template #icon>
-											<DeleteSweep :size="20" />
-										</template>
-										Delete Objects
-									</NcActionButton>
-									<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Publish all objects in this schema' : 'No objects to publish'"
-										close-after-click
-										:disabled="schema.stats?.objects?.total === 0"
-										@click="schemaStore.setSchemaItem(schema); navigationStore.setModal('publishSchemaObjects')">
-										<template #icon>
-											<CheckCircle :size="20" />
-										</template>
-										Publish Objects
-									</NcActionButton>
-									<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); $router.push(`/schemas/${schema.id}`)">
-										<template #icon>
-											<InformationOutline :size="20" />
-										</template>
-										View Details
-									</NcActionButton>
-								</NcActions>
-							</div>
-							<!-- Show properties table -->
-							<table class="statisticsTable schemaStats">
-								<thead>
-									<tr>
-										<th>{{ t('openregister', 'Name') }}</th>
-										<th>{{ t('openregister', 'Type') }}</th>
-										<th>{{ t('openregister', 'Actions') }}</th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr v-for="(property, key) in sortedProperties(schema)" :key="key">
-										<td>{{ key }} <span v-if="isPropertyRequired(schema, key)" class="required-indicator">({{ t('openregister', 'required') }})</span></td>
-										<td>{{ property.type }}</td>
-										<td>
-											<NcActions :primary="false">
-												<NcActionButton close-after-click
-													:aria-label="'Edit ' + key"
-													@click="schemaStore.setSchemaPropertyKey(key); schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchemaProperty')">
-													<template #icon>
-														<Pencil :size="16" />
-													</template>
-													Edit
-												</NcActionButton>
-												<NcActionButton close-after-click
-													:aria-label="'Delete ' + key"
-													@click="schemaStore.setSchemaPropertyKey(key); schemaStore.setSchemaItem(schema); navigationStore.setModal('deleteSchemaProperty')">
-													<template #icon>
-														<TrashCanOutline :size="16" />
-													</template>
-													Delete
-												</NcActionButton>
-											</NcActions>
-										</td>
-									</tr>
-									<tr v-if="!Object.keys(schema.properties).length">
-										<td colspan="3">
-											No properties found
-										</td>
-									</tr>
-								</tbody>
-							</table>
+									Edit
+								</NcActionButton>
+								<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
+									close-after-click
+									:disabled="schema.stats?.objects?.total > 0"
+									@click="schemaStore.setSchemaItem(schema); navigationStore.setDialog('deleteSchema')">
+									<template #icon>
+										<TrashCanOutline :size="20" />
+									</template>
+									Delete
+								</NcActionButton>
+						</NcActions>
+						</div>
+						
+						<!-- Schema Description -->
+						<div class="schemaDescription"
+							:class="{ 'schemaDescription--expanded': isDescriptionExpanded(schema.id), 'schemaDescription--empty': !schema.description }"
+							@click="schema.description ? toggleDescriptionExpanded(schema.id) : null">
+							{{ schema.description || t('openregister', 'No description found') }}
+						</div>
+						
+						<!-- Show properties table -->
+						<table class="statisticsTable schemaStats">
+							<thead>
+								<tr>
+									<th>{{ t('openregister', 'Name') }}</th>
+									<th>{{ t('openregister', 'Type') }}</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr v-for="(property, key, index) in getDisplayedProperties(schema)" :key="key">
+									<td>{{ key }} <span v-if="isPropertyRequired(schema, key)" class="required-indicator">({{ t('openregister', 'required') }})</span></td>
+									<td>{{ property.type }}</td>
+								</tr>
+								<tr v-if="!Object.keys(schema.properties || {}).length">
+									<td colspan="2" class="emptyText">
+										{{ t('openregister', 'No properties found') }}
+									</td>
+								</tr>
+							</tbody>
+						</table>
+						
+						<!-- View More Button -->
+						<div v-if="getRemainingPropertiesCount(schema) > 0" class="viewMoreContainer">
+							<NcButton
+								type="secondary"
+								@click="toggleSchemaExpanded(schema.id)">
+								<template #icon>
+									<ChevronDown v-if="!isSchemaExpanded(schema.id)" :size="20" />
+									<ChevronUp v-else :size="20" />
+								</template>
+								{{ isSchemaExpanded(schema.id) 
+									? t('openregister', 'Show less') 
+									: t('openregister', 'View {count} more', { count: getRemainingPropertiesCount(schema) }) 
+								}}
+							</NcButton>
+						</div>
 						</div>
 					</div>
 				</template>
@@ -280,71 +229,26 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 									<td>{{ schema.created ? new Date(schema.created).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(schema.created).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}</td>
 									<td>{{ schema.updated ? new Date(schema.updated).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(schema.updated).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}</td>
 									<td class="tableColumnActions">
-										<NcActions :primary="false">
+									<NcActions :primary="false">
+										<template #icon>
+											<DotsHorizontal :size="20" />
+										</template>
+										<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchema')">
 											<template #icon>
-												<DotsHorizontal :size="20" />
+												<Pencil :size="20" />
 											</template>
-											<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchema')">
-												<template #icon>
-													<Pencil :size="20" />
-												</template>
-												Edit
-											</NcActionButton>
-											<NcActionButton close-after-click @click="schemaStore.setSchemaPropertyKey(null); schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchemaProperty')">
-												<template #icon>
-													<Plus :size="20" />
-												</template>
-												Add Property
-											</NcActionButton>
-											<NcActionButton close-after-click @click="createExtendedSchema(schema)">
-												<template #icon>
-													<CallSplit :size="20" />
-												</template>
-												Extend Schema
-											</NcActionButton>
-											<NcActionButton close-after-click @click="schemaStore.downloadSchema(schema)">
-												<template #icon>
-													<Download :size="20" />
-												</template>
-												Download
-											</NcActionButton>
-											<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('exploreSchema')">
-												<template #icon>
-													<DatabaseSearch :size="20" />
-												</template>
-												Analyze Properties
-											</NcActionButton>
-											<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('validateSchema')">
-												<template #icon>
-													<CheckCircle :size="20" />
-												</template>
-												Validate Objects
-											</NcActionButton>
-											<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
-												close-after-click
-												:disabled="schema.stats?.objects?.total > 0"
-												@click="schemaStore.setSchemaItem(schema); navigationStore.setDialog('deleteSchema')">
-												<template #icon>
-													<TrashCanOutline :size="20" />
-												</template>
-												Delete
-											</NcActionButton>
-											<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Delete all objects in this schema' : 'No objects to delete'"
-												close-after-click
-												:disabled="schema.stats?.objects?.total === 0"
-												@click="schemaStore.setSchemaItem(schema); navigationStore.setModal('deleteSchemaObjects')">
-												<template #icon>
-													<DeleteSweep :size="20" />
-												</template>
-												Delete Objects
-											</NcActionButton>
-											<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); $router.push(`/schemas/${schema.id}`)">
-												<template #icon>
-													<InformationOutline :size="20" />
-												</template>
-												View Details
-											</NcActionButton>
-										</NcActions>
+											Edit
+										</NcActionButton>
+										<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
+											close-after-click
+											:disabled="schema.stats?.objects?.total > 0"
+											@click="schemaStore.setSchemaItem(schema); navigationStore.setDialog('deleteSchema')">
+											<template #icon>
+												<TrashCanOutline :size="20" />
+											</template>
+											Delete
+										</NcActionButton>
+									</NcActions>
 									</td>
 								</tr>
 							</tbody>
@@ -368,20 +272,15 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
-import { NcAppContent, NcEmptyContent, NcActions, NcActionButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { NcAppContent, NcEmptyContent, NcActions, NcActionButton, NcCheckboxRadioSwitch, NcButton } from '@nextcloud/vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
-import Download from 'vue-material-design-icons/Download.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
-import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
-import DatabaseSearch from 'vue-material-design-icons/DatabaseSearch.vue'
-import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
-import DeleteSweep from 'vue-material-design-icons/DeleteSweep.vue'
-import CallSplit from 'vue-material-design-icons/CallSplit.vue'
-
 import Plus from 'vue-material-design-icons/Plus.vue'
+import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
+import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
 
 import PaginationComponent from '../../components/PaginationComponent.vue'
 
@@ -393,24 +292,22 @@ export default {
 		NcEmptyContent,
 		NcActions,
 		NcActionButton,
+		NcButton,
 		FileTreeOutline,
 		DotsHorizontal,
 		Pencil,
 		TrashCanOutline,
-		Download,
 		Refresh,
-		InformationOutline,
-		DatabaseSearch,
-		CheckCircle,
-		DeleteSweep,
-		CallSplit,
-
 		Plus,
+		ChevronDown,
+		ChevronUp,
 		PaginationComponent,
 	},
 	data() {
 		return {
 			selectedSchemas: [],
+			expandedSchemas: [], // Track which schemas are expanded
+			expandedDescriptions: [], // Track which descriptions are expanded
 		}
 	},
 	computed: {
@@ -449,8 +346,94 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * Check if a property is required
+		 *
+		 * @param {object} schema - Schema object
+		 * @param {string} key - Property key
+		 * @return {boolean} True if property is required
+		 */
 		isPropertyRequired(schema, key) {
 			return schema.required && schema.required.includes(key)
+		},
+
+		/**
+		 * Check if a schema is expanded
+		 *
+		 * @param {number} schemaId - Schema ID
+		 * @return {boolean} True if schema is expanded
+		 */
+		isSchemaExpanded(schemaId) {
+			return this.expandedSchemas.includes(schemaId)
+		},
+
+		/**
+		 * Toggle schema expanded state
+		 *
+		 * @param {number} schemaId - Schema ID
+		 * @return {void}
+		 */
+		toggleSchemaExpanded(schemaId) {
+			const index = this.expandedSchemas.indexOf(schemaId)
+			if (index > -1) {
+				this.expandedSchemas.splice(index, 1)
+			} else {
+				this.expandedSchemas.push(schemaId)
+			}
+		},
+
+		/**
+		 * Check if a description is expanded
+		 *
+		 * @param {number} schemaId - Schema ID
+		 * @return {boolean} True if description is expanded
+		 */
+		isDescriptionExpanded(schemaId) {
+			return this.expandedDescriptions.includes(schemaId)
+		},
+
+		/**
+		 * Toggle description expanded state
+		 *
+		 * @param {number} schemaId - Schema ID
+		 * @return {void}
+		 */
+		toggleDescriptionExpanded(schemaId) {
+			const index = this.expandedDescriptions.indexOf(schemaId)
+			if (index > -1) {
+				this.expandedDescriptions.splice(index, 1)
+			} else {
+				this.expandedDescriptions.push(schemaId)
+			}
+		},
+
+		/**
+		 * Get displayed properties for a schema (first 5 or all if expanded)
+		 *
+		 * @param {object} schema - Schema object
+		 * @return {object} Properties to display
+		 */
+		getDisplayedProperties(schema) {
+			const sorted = this.sortedProperties(schema)
+			const entries = Object.entries(sorted)
+			
+			if (this.isSchemaExpanded(schema.id)) {
+				return sorted
+			}
+			
+			// Show only first 5 properties
+			return Object.fromEntries(entries.slice(0, 5))
+		},
+
+		/**
+		 * Get count of remaining properties not displayed
+		 *
+		 * @param {object} schema - Schema object
+		 * @return {number} Count of remaining properties
+		 */
+		getRemainingPropertiesCount(schema) {
+			const total = Object.keys(schema.properties || {}).length
+			return Math.max(0, total - 5)
 		},
 		/**
 		 * Check if schema has objects
@@ -471,19 +454,6 @@ export default {
 			// Check if schema has configuration references
 			// You can customize this logic based on your data structure
 			return schema.configurations && schema.configurations.length > 0
-		},
-		createExtendedSchema(parentSchema) {
-			// Create a new schema that extends the parent schema
-			const newSchema = {
-				title: `Extended ${parentSchema.title}`,
-				description: `Schema extending ${parentSchema.title}`,
-				extend: parentSchema.id, // Set the parent schema ID
-				properties: {}, // Start with empty properties (will inherit from parent)
-				required: [],
-			}
-			// Set the new schema and open the edit modal
-			schemaStore.setSchemaItem(newSchema)
-			navigationStore.setModal('editSchema')
 		},
 		toggleSelectAll(checked) {
 			if (checked) {
@@ -576,6 +546,100 @@ export default {
 	align-items: center;
 	gap: 8px;
 	flex-wrap: wrap;
+}
+
+/* Schema card description */
+.schemaDescription {
+	padding: 16px;
+	margin: 12px 0 12px 0;
+	background-color: var(--color-background-hover);
+	color: var(--color-text-lighter);
+	font-size: 0.95em;
+	line-height: 1.5;
+	min-height: 80px;
+	max-height: 100px;
+	overflow: hidden;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+	word-break: break-word;
+	hyphens: auto;
+	box-sizing: border-box;
+	cursor: pointer;
+	transition: max-height 0.3s ease;
+	display: -webkit-box;
+	-webkit-line-clamp: 4;
+	line-clamp: 4;
+	-webkit-box-orient: vertical;
+}
+
+.schemaDescription:hover {
+	background-color: var(--color-background-dark);
+}
+
+.schemaDescription--expanded {
+	max-height: none !important;
+	display: block;
+	-webkit-line-clamp: unset;
+	line-clamp: unset;
+}
+
+.schemaDescription--empty {
+	cursor: default;
+	font-style: italic;
+	color: var(--color-text-maxcontrast);
+}
+
+.schemaDescription--empty:hover {
+	background-color: var(--color-background-hover);
+}
+
+/* View more button container */
+.viewMoreContainer {
+	display: flex;
+	justify-content: stretch;
+	padding: 0;
+}
+
+.viewMoreContainer button {
+	width: 100%;
+	border-radius: 0 0 8px 8px;
+}
+
+/* Empty text styling */
+.emptyText {
+	text-align: center;
+	color: var(--color-text-lighter);
+	font-style: italic;
+	padding: 16px !important;
+}
+
+/* Remove all borders between sections */
+.card .schemaStats {
+	border-top: none !important;
+	margin-top: 0 !important;
+}
+
+.card .schemaStats thead {
+	border-top: none !important;
+}
+
+.card .schemaStats thead tr {
+	border-top: none !important;
+}
+
+.card .schemaStats thead th {
+	border-top: none !important;
+}
+
+/* Remove border after card header */
+.card .cardHeader {
+	border-bottom: none !important;
+	margin-bottom: 0 !important;
+	padding-bottom: 0 !important;
+}
+
+.card .cardHeader h2 {
+	margin-bottom: 0;
 }
 
 /* No component-specific table styles needed - all styles are now generic in main.css */
