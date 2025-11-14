@@ -143,10 +143,8 @@ class SchemaMapper extends QBMapper
         // Get the schema entity
         $schema = $this->findEntity(query: $qb);
         
-        // Resolve schema extension if present
-        if ($schema->getExtend() !== null) {
-            $schema = $this->resolveSchemaExtension($schema);
-        }
+        // Resolve schema composition if present (allOf, oneOf, anyOf)
+        $schema = $this->resolveSchemaExtension($schema);
         
         return $schema;
 
@@ -480,11 +478,9 @@ class SchemaMapper extends QBMapper
         // Clean the schema object to ensure UUID, slug, and version are set.
         $this->cleanObject($schema);
         
-        // **SCHEMA EXTENSION**: Extract delta if schema extends another
+        // **SCHEMA COMPOSITION**: Extract delta if schema uses composition (allOf)
         // This ensures we only store the differences, not the full resolved schema
-        if ($schema->getExtend() !== null) {
-            $schema = $this->extractSchemaDelta($schema);
-        }
+        $schema = $this->extractSchemaDelta($schema);
 
         // **PERFORMANCE OPTIMIZATION**: Generate facet configuration from schema properties
         $this->generateFacetConfiguration($schema);
@@ -529,11 +525,9 @@ class SchemaMapper extends QBMapper
         // Clean the schema object to ensure UUID, slug, and version are set.
         $this->cleanObject($entity);
         
-        // **SCHEMA EXTENSION**: Extract delta if schema extends another
+        // **SCHEMA COMPOSITION**: Extract delta if schema uses composition (allOf)
         // This ensures we only store the differences, not the full resolved schema
-        if ($entity->getExtend() !== null) {
-            $entity = $this->extractSchemaDelta($entity);
-        }
+        $entity = $this->extractSchemaDelta($entity);
 
         // **PERFORMANCE OPTIMIZATION**: Generate facet configuration from schema properties
         $this->generateFacetConfiguration($entity);
@@ -1812,14 +1806,14 @@ class SchemaMapper extends QBMapper
 
 
     /**
-     * Find schemas that extend a given schema
+     * Find schemas that compose with a given schema
      *
-     * Returns an array of schema UUIDs for schemas that have their 'extend'
-     * property set to the ID, UUID, or slug of the given schema.
+     * Returns an array of schema UUIDs for schemas that reference the given schema
+     * in their allOf, oneOf, or anyOf composition patterns.
      *
      * @param int|string $schemaIdentifier The ID, UUID, or slug of the schema
      *
-     * @return array Array of schema UUIDs that extend this schema
+     * @return array Array of schema UUIDs that compose with this schema
      */
     public function findExtendedBy(int|string $schemaIdentifier): array
     {
@@ -1835,35 +1829,52 @@ class SchemaMapper extends QBMapper
         $targetUuid = $targetSchema->getUuid();
         $targetSlug = $targetSchema->getSlug();
 
-        // Build query to find schemas that extend this schema
+        // Build query to find schemas that reference this schema in composition
         $qb = $this->db->getQueryBuilder();
         $qb->select('uuid')
-            ->from($this->getTableName())
-            ->where($qb->expr()->isNotNull('extend'));
+            ->from($this->getTableName());
 
         // Add conditions for all possible ways to reference the schema
         $orConditions = [];
         
-        // Check for ID match
+        // Check in allOf field (JSON array)
         if ($targetId) {
-            $orConditions[] = $qb->expr()->eq('extend', $qb->createNamedParameter($targetId));
+            $orConditions[] = $qb->expr()->like('all_of', $qb->createNamedParameter('%"' . $targetId . '"%'));
         }
-        
-        // Check for UUID match
         if ($targetUuid) {
-            $orConditions[] = $qb->expr()->eq('extend', $qb->createNamedParameter($targetUuid));
+            $orConditions[] = $qb->expr()->like('all_of', $qb->createNamedParameter('%"' . $targetUuid . '"%'));
+        }
+        if ($targetSlug) {
+            $orConditions[] = $qb->expr()->like('all_of', $qb->createNamedParameter('%"' . $targetSlug . '"%'));
         }
         
-        // Check for slug match
+        // Check in oneOf field (JSON array)
+        if ($targetId) {
+            $orConditions[] = $qb->expr()->like('one_of', $qb->createNamedParameter('%"' . $targetId . '"%'));
+        }
+        if ($targetUuid) {
+            $orConditions[] = $qb->expr()->like('one_of', $qb->createNamedParameter('%"' . $targetUuid . '"%'));
+        }
         if ($targetSlug) {
-            $orConditions[] = $qb->expr()->eq('extend', $qb->createNamedParameter($targetSlug));
+            $orConditions[] = $qb->expr()->like('one_of', $qb->createNamedParameter('%"' . $targetSlug . '"%'));
+        }
+        
+        // Check in anyOf field (JSON array)
+        if ($targetId) {
+            $orConditions[] = $qb->expr()->like('any_of', $qb->createNamedParameter('%"' . $targetId . '"%'));
+        }
+        if ($targetUuid) {
+            $orConditions[] = $qb->expr()->like('any_of', $qb->createNamedParameter('%"' . $targetUuid . '"%'));
+        }
+        if ($targetSlug) {
+            $orConditions[] = $qb->expr()->like('any_of', $qb->createNamedParameter('%"' . $targetSlug . '"%'));
         }
 
         if (empty($orConditions)) {
             return [];
         }
 
-        $qb->andWhere($qb->expr()->orX(...$orConditions));
+        $qb->where($qb->expr()->orX(...$orConditions));
 
         $result = $qb->executeQuery();
         $uuids = [];
