@@ -482,7 +482,8 @@ export default {
 				} else if (this.activeTab === 'url') {
 					// Validate URL
 					try {
-						new URL(this.importUrl)
+						const validUrl = new URL(this.importUrl)
+						void validUrl // URL validation successful
 					} catch {
 						this.urlError = 'Please enter a valid URL'
 						this.loading = false

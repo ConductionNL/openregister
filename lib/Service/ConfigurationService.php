@@ -332,6 +332,7 @@ class ConfigurationService
                 'app'          => $input->getApp(),
                 'sourceType'   => $input->getSourceType(),
                 'sourceUrl'    => $input->getSourceUrl(),
+                'openregister' => $input->getOpenregister(),
                 'github'       => [
                     'repo'   => $input->getGithubRepo(),
                     'branch' => $input->getGithubBranch(),
@@ -1313,6 +1314,11 @@ class ConfigurationService
                 $configuration->setSyncEnabled(false);
                 $configuration->setSyncStatus('never');
                 
+                // Set version requirements from x-openregister if available
+                if (isset($xOpenregister['openregister']) === true) {
+                    $configuration->setOpenregister($xOpenregister['openregister']);
+                }
+                
                 // Set additional metadata from x-openregister if available
                 // Note: Internal properties (autoUpdate, notificationGroups, owner, organisation) 
                 // are not imported as they are instance-specific settings
@@ -2052,6 +2058,11 @@ class ConfigurationService
                 $configuration->setIsLocal(true);
                 $configuration->setSyncEnabled(false);
                 $configuration->setSyncStatus('never');
+                
+                // Set version requirements from x-openregister if available
+                if (isset($xOpenregister['openregister']) === true) {
+                    $configuration->setOpenregister($xOpenregister['openregister']);
+                }
                 
                 // Set additional metadata from x-openregister if available
                 // Note: Internal properties (autoUpdate, notificationGroups, owner, organisation) 
