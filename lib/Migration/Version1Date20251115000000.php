@@ -125,6 +125,20 @@ class Version1Date20251115000000 extends SimpleMigrationStep
             } else {
                 $output->info('   ⚠️  sync_status column already exists');
             }
+
+            // Add openregister field (string) - required OpenRegister version
+            if (!$table->hasColumn('openregister')) {
+                $table->addColumn('openregister', Types::STRING, [
+                    'notnull' => false,
+                    'length' => 100,
+                    'default' => null,
+                    'comment' => 'Required OpenRegister version using Composer notation (e.g., ^v8.14.0, ~1.2.0, >=1.0.0 <2.0.0)'
+                ]);
+                
+                $output->info('   ✓ Added openregister column to configurations table');
+            } else {
+                $output->info('   ⚠️  openregister column already exists');
+            }
                 
             $output->info('✅ Configuration management columns added successfully');
             $output->info('🎯 Features enabled:');

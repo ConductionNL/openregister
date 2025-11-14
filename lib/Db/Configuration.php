@@ -70,6 +70,8 @@ use Symfony\Component\Uid\Uuid;
  * @method void setLastSyncDate(?DateTime $lastSyncDate)
  * @method string getSyncStatus()
  * @method void setSyncStatus(string $syncStatus)
+ * @method string|null getOpenregister()
+ * @method void setOpenregister(?string $openregister)
  * @method array|null getRegisters()
  * @method void setRegisters(?array $registers)
  * @method array|null getSchemas()
@@ -247,6 +249,14 @@ class Configuration extends Entity implements JsonSerializable
      * @var string
      */
     protected string $syncStatus = 'never';
+
+    /**
+     * Required OpenRegister version constraint (Composer notation)
+     * Examples: '^v8.14.0', '~1.2.0', '>=1.0.0 <2.0.0'
+     *
+     * @var string|null
+     */
+    protected ?string $openregister = null;
 
     /**
      * Array of register IDs managed by this configuration
@@ -476,6 +486,7 @@ class Configuration extends Entity implements JsonSerializable
             'syncInterval'       => $this->syncInterval,
             'lastSyncDate'       => ($this->lastSyncDate !== null) ? $this->lastSyncDate->format('c') : null,
             'syncStatus'         => $this->syncStatus,
+            'openregister'       => $this->openregister,
             'organisation'       => $this->organisation,
             'owner'              => $this->owner,
             'registers'          => $this->registers,

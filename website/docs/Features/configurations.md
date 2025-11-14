@@ -234,6 +234,340 @@ graph LR
     style E fill:#c8e6c9
 ```
 
+## Local vs External Configurations
+
+OpenRegister distinguishes between two types of configurations:
+
+### Local Configurations
+
+**Local configurations** are created and maintained within your Nextcloud installation. These are configurations you own and control.
+
+**Characteristics:**
+- Created using the 'Create Configuration' button
+- Maintained and updated within your installation
+- Marked with a green 'Local' pill in the UI
+- Can be exported to share with others
+- Version is managed by you
+
+```mermaid
+graph LR
+    A[Create Configuration] --> B[Local Config]
+    B --> C[Edit & Manage]
+    B --> D[Export to Share]
+    D --> E[Other Installations]
+    
+    style B fill:#d4edda,color:#155724
+```
+
+### External Configurations
+
+**External configurations** are imported from external sources and kept in sync with their origin. These are configurations created by others that you import and use.
+
+**Characteristics:**
+- Imported from GitHub, GitLab, or URLs
+- Marked with a blue 'External' pill in the UI
+- Can be automatically synchronized
+- Read-only (modifications would be overwritten on sync)
+- Version controlled by the source
+
+```mermaid
+graph LR
+    A[External Source] --> B[Import Config]
+    B --> C[External Config]
+    C --> D[Auto-Sync]
+    D --> A
+    
+    style C fill:#d1ecf1,color:#0c5460
+```
+
+### Sync Status Indicators
+
+External configurations display sync status badges showing:
+- **Synced just now**: Recently synchronized
+- **Synced 2h ago**: Time since last sync
+- **Sync failed**: Last sync attempt failed
+- **Never synced**: No sync performed yet
+
+## Discovering and Importing Configurations
+
+OpenRegister provides multiple ways to discover and import configurations from external sources:
+
+### Discovery from GitHub/GitLab
+
+1. Click **Import Configuration**
+2. Select the **Discover** tab
+3. Enter search terms or leave empty to browse
+4. Click **Search GitHub** or **Search GitLab**
+5. Browse discovered configurations
+6. Click **Import** on any configuration
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant UI as Import Modal
+    participant API as OpenRegister API
+    participant GitHub as GitHub API
+    
+    User->>UI: Click 'Import Configuration'
+    User->>UI: Select 'Discover' tab
+    User->>UI: Enter search query
+    User->>UI: Click 'Search GitHub'
+    UI->>API: /api/configurations/discover/github?query=...
+    API->>GitHub: Search for 'x-openregister'
+    GitHub-->>API: Return matching files
+    API-->>UI: Return parsed configurations
+    UI-->>User: Display configuration cards
+    User->>UI: Click 'Import'
+    UI->>API: /api/configurations/import/github
+    API-->>UI: Configuration imported
+```
+
+### Import from Specific Repository
+
+1. Click **Import Configuration**
+2. Select the **GitHub / GitLab** tab
+3. Select source platform (GitHub or GitLab)
+4. Enter repository details:
+   - For GitHub: Owner and Repository name
+   - For GitLab: Namespace and Project name
+5. Click **Load Branches**
+6. Select a branch
+7. Choose a configuration file from the list
+8. Configure sync settings
+9. Click **Import**
+
+### Import from Direct URL
+
+1. Click **Import Configuration**
+2. Select the **Import from URL** tab
+3. Enter the direct URL to a JSON configuration file
+4. Configure sync settings:
+   - Enable automatic synchronization
+   - Set sync interval (in hours)
+5. Click **Import**
+
+## File Naming Conventions for Discoverability
+
+To make your configurations discoverable by others, follow these naming conventions:
+
+### Recommended File Names
+
+- **General format**: '{app}.openregister.json'
+- **Simple format**: 'openregister.json'
+- **Descriptive**: '{feature}.openregister.json'
+
+### Examples
+
+```
+opencatalogi.openregister.json
+publication-register.openregister.json
+customer-management.openregister.json
+openregister.json
+```
+
+### File Location
+
+Place configuration files in a logical location within your repository:
+
+```
+my-app/
+├── lib/
+│   └── Settings/
+│       └── my-app.openregister.json
+├── config/
+│   └── openregister.json
+└── README.md
+```
+
+### Metadata for Discovery
+
+Ensure your configuration includes proper metadata in the 'x-openregister' section:
+
+```json
+{
+    'openapi': '3.0.0',
+    'info': {
+        'title': 'My App Configuration',
+        'description': 'Configuration for my awesome application',
+        'version': '1.0.0'
+    },
+    'x-openregister': {
+        'type': 'application',
+        'app': 'myapp',
+        'sourceType': 'local',
+        'sourceUrl': 'lib/Settings/myapp.openregister.json',
+        'openregister': '^v0.2.10',
+        'github': {
+            'repo': 'MyOrg/myapp',
+            'branch': 'main',
+            'path': 'lib/Settings/myapp.openregister.json'
+        }
+    },
+    'components': {
+        'registers': {},
+        'schemas': {}
+    }
+}
+```
+
+## OpenRegister Version Requirements
+
+Configurations can specify which OpenRegister versions they are compatible with using Composer-style notation:
+
+### Version Constraint Format
+
+Use the 'openregister' field in 'x-openregister':
+
+```json
+{
+    'x-openregister': {
+        'openregister': '^v0.2.10'
+    }
+}
+```
+
+### Supported Constraint Formats
+
+Following Composer notation:
+
+- **Caret (^)**: '^v1.2.3' - Allow version 1.2.3 and up, but not 2.0.0
+- **Tilde (~)**: '~1.2.3' - Allow version 1.2.3 to 1.3.0 (excluding)
+- **Exact**: 'v1.2.3' - Only version 1.2.3
+- **Greater/Less**: '>=1.2.0' - Version 1.2.0 or higher
+- **Range**: '>=1.0.0 <2.0.0' - Between 1.0.0 and 2.0.0
+
+### Examples
+
+```json
+// Require v0.2.10 or higher (but not v0.3.0)
+{'openregister': '^v0.2.10'}
+
+// Require at least v1.0.0
+{'openregister': '>=v1.0.0'}
+
+// Require between v1.0 and v2.0
+{'openregister': '>=v1.0.0 <v2.0.0'}
+
+// Exact version
+{'openregister': 'v1.5.0'}
+```
+
+## Automatic Synchronization
+
+External configurations can be automatically synchronized with their source to keep them up-to-date.
+
+### Configuring Auto-Sync
+
+When importing a configuration from GitHub, GitLab, or URL:
+
+1. Enable the **Enable automatic synchronization** toggle
+2. Set the **Sync Interval** (in hours, 1-168)
+3. Complete the import
+
+### Sync Behavior
+
+- **Check Interval**: OpenRegister checks for updates based on the configured interval
+- **Version Comparison**: Compares local and remote versions
+- **Automatic Update**: If a new version is available, automatically imports it
+- **Status Tracking**: Records sync status and timestamp
+- **Error Handling**: Failed syncs are logged and displayed in the UI
+
+```mermaid
+sequenceDiagram
+    participant Cron as Background Job
+    participant Service as ConfigurationService
+    participant GitHub as External Source
+    participant DB as Database
+    
+    Cron->>Service: Check configurations due for sync
+    Service->>DB: Find syncEnabled=true configs
+    DB-->>Service: Return configurations
+    
+    loop For each configuration
+        Service->>GitHub: Fetch current version
+        GitHub-->>Service: Return configuration
+        Service->>Service: Compare versions
+        alt New version available
+            Service->>Service: Import updates
+            Service->>DB: Update configuration
+            Service->>DB: Set syncStatus='success'
+        else No update needed
+            Service->>DB: Update lastSyncDate
+        end
+    end
+```
+
+### Manual Sync
+
+You can also manually trigger a sync:
+
+1. Navigate to Configurations
+2. Find the external configuration
+3. Click **Actions** → **Check Version**
+4. If an update is available, you'll be notified
+
+### Sync Frequency
+
+Recommended intervals based on use case:
+
+- **Production**: 24-48 hours
+- **Development**: 1-6 hours
+- **Testing**: 1-2 hours
+
+## Uploading Local Configurations for Sharing
+
+To share your local configurations with others:
+
+### Option 1: Upload to GitHub
+
+1. Export your configuration (JSON file)
+2. Create or navigate to your GitHub repository
+3. Create a directory for configurations (e.g., 'config/')
+4. Upload your configuration file
+5. Commit with descriptive message
+6. Others can now import using your repository URL
+
+**File structure:**
+```
+my-repository/
+├── config/
+│   └── myapp.openregister.json
+└── README.md
+```
+
+### Option 2: Upload to GitLab
+
+Similar to GitHub:
+
+1. Export configuration
+2. Navigate to your GitLab project
+3. Upload to a logical directory
+4. Commit changes
+5. Share project URL
+
+### Option 3: Host on Your Server
+
+1. Export configuration
+2. Upload to your web server
+3. Make accessible via HTTPS
+4. Share the direct URL
+5. Others can import using 'Import from URL'
+
+**Example URL:**
+```
+https://mysite.com/configs/myapp.openregister.json
+```
+
+### Best Practices for Sharing
+
+1. **Include README**: Document what your configuration does
+2. **Version Properly**: Use semantic versioning in 'info.version'
+3. **Set Version Requirements**: Specify compatible OpenRegister versions
+4. **Test Before Sharing**: Verify imports work correctly
+5. **Maintain Documentation**: Keep usage instructions updated
+6. **Use Descriptive Names**: Make file names self-explanatory
+7. **Regular Updates**: Keep configurations current with your app
+
 ## Programmatic Configuration Import for Apps
 
 Apps can programmatically import their configurations using the ConfigurationService without needing to manually create Configuration entities. This is useful for:
