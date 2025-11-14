@@ -2,7 +2,7 @@
 
 **Date**: November 13, 2025  
 **Status**: ✅ Complete  
-**Version**: 2.2.0
+**Version**: 2.2.1
 
 ## Overview
 
@@ -137,11 +137,12 @@ methods: {
 
 #### Responsive Design
 
-**Large screens (>1280px):** Up to 3 cards per row  
-**Medium screens (960px - 1280px):** 2 cards per row  
-**Small screens (<960px):** 1 card per row (full width)  
+**Very wide screens (>1280px):** 2-3 cards per row (320px min width)  
+**Wide screens (960px - 1280px):** 2-3 cards per row (300px min width)  
+**Medium screens (640px - 960px):** 2 cards per row (280px min width)  
+**Small screens (<640px):** 1-2 cards per row (280px min width)  
 
-Grid automatically adjusts based on minmax(320px, 1fr).
+Grid automatically adjusts using CSS Grid's auto-fill feature, calculating optimal columns based on available width.
 
 ### 2. Chat Settings & View/Tool Selection (v1.0)
 
@@ -548,6 +549,13 @@ async sendMessage(
 - **Vector Search**: VECTOR-SEARCH-BACKENDS.md
 
 ## Changelog
+
+### Version 2.2.1 - November 13, 2025
+- ✅ Optimized grid for side-by-side display on larger screens
+- ✅ Reduced minimum card width from 320px to 280px
+- ✅ Added responsive breakpoints for optimal multi-column layout
+- ✅ Ensures 2+ cards display side by side when space permits
+- ✅ Fixed container max-width constraint (600px → 1200px) in ChatIndex
 
 ### Version 2.2.0 - November 13, 2025
 - ✅ Moved start button to right of agent name/description

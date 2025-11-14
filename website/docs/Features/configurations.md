@@ -243,9 +243,34 @@ Apps can programmatically import their configurations using the ConfigurationSer
 - Version-based configuration updates
 - Bundling configurations with app releases
 
-### Using importFromApp
+OpenRegister provides two methods for importing configurations:
 
-The `importFromApp` method provides a simplified way for apps to import their configuration data:
+### Method 1: Import from File Path (Recommended)
+
+The `importFromFilePath` method is the recommended approach when your configuration is stored in a JSON file. OpenRegister handles all file reading and parsing:
+
+```php
+// Get the configuration service
+$configurationService = $this->container->get('OCA\OpenRegister\Service\ConfigurationService');
+
+// Import from file path (relative to Nextcloud root)
+$result = $configurationService->importFromFilePath(
+    appId: 'myapp',
+    filePath: 'apps-extra/myapp/lib/Settings/myapp_config.json',
+    version: '1.0.0',
+    force: false
+);
+```
+
+**Benefits:**
+- OpenRegister handles file reading and JSON parsing
+- Automatically sets sourceUrl for cron job tracking
+- Ensures configuration uniqueness by sourceUrl
+- Enables automatic update checking by the cron job
+
+### Method 2: Import from Data Array
+
+The `importFromApp` method is for when you already have configuration data in memory:
 
 ```php
 // Get the configuration service
@@ -270,12 +295,15 @@ $result = $configurationService->importFromApp(
 
 ### How It Works
 
-The `importFromApp` method automatically:
+Both import methods automatically:
 
-1. **Finds or Creates Configuration Entity**: Checks if a Configuration entity exists for your app ID. If not, creates one.
+1. **Finds or Creates Configuration Entity**: 
+   - First checks by sourceUrl (if provided) to ensure uniqueness
+   - Falls back to checking by app ID if no sourceUrl match
+   - Creates a new Configuration entity if none exists
 2. **Handles Version Checking**: Compares versions and skips import if the same or older version is already installed (unless force=true).
 3. **Tracks Imported Entities**: Associates all imported registers, schemas, and objects with the Configuration entity.
-4. **Updates Configuration**: Merges new entity IDs with existing ones on subsequent imports.
+4. **Updates Configuration**: Merges new entity IDs with existing ones on subsequent imports, and updates metadata from the import data.
 
 ```mermaid
 sequenceDiagram
@@ -405,16 +433,15 @@ Your configuration data should follow the OpenAPI 3.0 specification with OpenReg
     "version": "1.0.0"
   },
   "x-openregister": {
-    "title": "MyApp Configuration",
-    "description": "Default configuration for MyApp",
     "type": "app",
     "app": "myapp",
-    "version": "1.0.0",
     "sourceType": "local",
-    "sourceUrl": null,
-    "githubRepo": null,
-    "githubBranch": null,
-    "githubPath": null
+    "sourceUrl": "apps-extra/myapp/lib/Settings/myapp_config.json",
+    "github": {
+      "repo": null,
+      "branch": null,
+      "path": null
+    }
   },
   "components": {
     "registers": {
@@ -453,18 +480,21 @@ Your configuration data should follow the OpenAPI 3.0 specification with OpenReg
 
 The `x-openregister` extension contains OpenRegister-specific metadata following the OpenAPI Extensions specification. This extension is used to store configuration properties that are not part of the standard OpenAPI specification.
 
-**Properties in x-openregister:**
-
+**Standard OAS Properties (in info section):**
 - `title`: Configuration title
 - `description`: Configuration description
+- `version`: Configuration version
+
+**OpenRegister-specific Properties (in x-openregister extension):**
+
 - `type`: Type of configuration (e.g., 'app', 'imported', 'manual')
 - `app`: Application identifier
-- `version`: Configuration version
 - `sourceType`: Source type ('local', 'github', 'gitlab', 'url', 'manual')
-- `sourceUrl`: URL to remote configuration source (if applicable)
-- `githubRepo`: GitHub repository (format: 'owner/repo')
-- `githubBranch`: GitHub branch name
-- `githubPath`: Path within GitHub repository
+- `sourceUrl`: File path or URL to configuration source (relative to Nextcloud root for local files)
+- `github`: Object containing GitHub-specific properties:
+  - `repo`: GitHub repository (format: 'owner/repo')
+  - `branch`: GitHub branch name (e.g., 'main', 'develop')
+  - `path`: Path within GitHub repository (e.g., 'configs/schema.json')
 
 **Properties excluded from export/import:**
 
@@ -1126,9 +1156,11 @@ Response Structure:
     "version": "1.0.0",
     "sourceType": "local",
     "sourceUrl": null,
-    "githubRepo": null,
-    "githubBranch": null,
-    "githubPath": null
+    "github": {
+      "repo": null,
+      "branch": null,
+      "path": null
+    }
   },
   "components": {
     "registers": {},
@@ -1246,6 +1278,39 @@ Set the check interval in Nextcloud admin settings (in seconds, 0 to disable):
 - For local configurations, edit through the configuration itself
 
 ## Changelog
+
+### Version 0.2.10 (2025-01-16)
+
+- **OAS Compliance**: Moved standard OpenAPI properties (title, description, version) from x-openregister to info section
+  - Follows OpenAPI 3.0 specification more closely
+  - x-openregister now contains only OpenRegister-specific properties (type, app, sourceType, sourceUrl, github)
+  - Backward compatible: import still checks x-openregister if info properties are missing
+- **New Method: importFromFilePath()**: Added method for apps to import configurations from file paths
+  - OpenRegister handles file reading and JSON parsing
+  - Automatically sets sourceUrl for cron job tracking
+  - Recommended method for apps with configuration files
+- **Configuration Uniqueness**: Configurations are now unique by sourceUrl
+  - Added ConfigurationMapper::findBySourceUrl() method
+  - Import checks by sourceUrl first (if provided), then by appId
+  - Prevents duplicate configurations from the same source
+- **File Path Handling**: sourceUrl now stores relative paths from Nextcloud root
+  - Example: 'apps-extra/opencatalogi/lib/Settings/publication_register.json'
+  - Enables cron job to locate and check configuration files for updates
+- **OpenCatalogi Integration**: Updated OpenCatalogi SettingsService to use importFromFilePath()
+  - Delegates file reading responsibility to OpenRegister
+  - Cleaner separation of concerns between app and OpenRegister
+- **Frontend Fix**: Fixed export dialog showing 'No configuration selected for export' error
+- Made error message reactive using computed property instead of created hook
+- Export dialog now properly detects configuration selection from Actions menu
+- Fixed race condition where modal was checking configuration before store update completed
+- **Critical Import Fix**: Fixed organisation filter error by passing Register/Schema objects instead of IDs to saveObject()
+- This prevents find() lookups that would fail due to organisation filtering in multi-tenancy
+- Fixed object import by replacing string slugs with integer IDs in objectData['@self'] before calling saveObject()
+- Updated SoftwareCatalog SettingsService to use `importFromApp()` method
+- **API Fix**: Changed export route from POST to GET method (was causing 405 errors)
+- Updated OpenCatalogi publication_register.json to include x-openregister extension
+- **Structure Improvement**: Reorganized x-openregister structure - GitHub properties now nested in 'github' object
+- Maintains backward compatibility with flat structure during import (githubRepo, githubBranch, githubPath)
 
 ### Version 0.2.9 (2025-01-16)
 

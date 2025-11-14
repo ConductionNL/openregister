@@ -21,13 +21,13 @@
 						{{ t('openregister', 'For vector embeddings and semantic search') }}
 					</p>
 
-				<NcSelect
-					v-model="selectedEmbeddingProvider"
-					:options="embeddingProviderOptions"
-					label="name"
-					:input-label="t('openregister', 'Embedding Provider')"
-					:placeholder="t('openregister', 'Select provider')"
-					@input="handleEmbeddingProviderChange">
+					<NcSelect
+						v-model="selectedEmbeddingProvider"
+						:options="embeddingProviderOptions"
+						label="name"
+						:input-label="t('openregister', 'Embedding Provider')"
+						:placeholder="t('openregister', 'Select provider')"
+						@input="handleEmbeddingProviderChange">
 						<template #option="{ name, description }">
 							<div class="provider-option">
 								<strong>{{ name }}</strong>
@@ -44,12 +44,12 @@
 						{{ t('openregister', 'For chat and retrieval-augmented generation') }}
 					</p>
 
-				<NcSelect
-					v-model="selectedChatProvider"
-					:options="chatProviderOptions"
-					label="name"
-					:input-label="t('openregister', 'Chat Provider')"
-					:placeholder="t('openregister', 'Select provider')">
+					<NcSelect
+						v-model="selectedChatProvider"
+						:options="chatProviderOptions"
+						label="name"
+						:input-label="t('openregister', 'Chat Provider')"
+						:placeholder="t('openregister', 'Select provider')">
 						<template #option="{ name, description }">
 							<div class="provider-option">
 								<strong>{{ name }}</strong>
@@ -321,14 +321,14 @@
 					</small>
 				</div>
 
-			<!-- Solr Configuration (only if Solr backend selected) -->
-			<div v-if="selectedVectorBackend && selectedVectorBackend.id === 'solr'" class="solr-config">
-				<div class="info-box">
-					<p>{{ t('openregister', 'Vectors will be stored in your existing object and file collections') }}</p>
-					<p>{{ t('openregister', 'Files → fileCollection, Objects → objectCollection') }}</p>
-					<p><strong>{{ t('openregister', 'Vector field: _embedding_') }}</strong></p>
+				<!-- Solr Configuration (only if Solr backend selected) -->
+				<div v-if="selectedVectorBackend && selectedVectorBackend.id === 'solr'" class="solr-config">
+					<div class="info-box">
+						<p>{{ t('openregister', 'Vectors will be stored in your existing object and file collections') }}</p>
+						<p>{{ t('openregister', 'Files → fileCollection, Objects → objectCollection') }}</p>
+						<p><strong>{{ t('openregister', 'Vector field: _embedding_') }}</strong></p>
+					</div>
 				</div>
-			</div>
 			</div>
 
 			<!-- AI Features -->
@@ -488,18 +488,18 @@ export default {
 				{ id: 'ollama', name: 'Ollama', description: 'Local models (free, requires Ollama)' },
 			],
 
-		ollamaModelOptions: [
-			{ id: 'llama3.2:latest', name: 'llama3.2:latest', description: 'Meta\'s Llama 3.2 (latest)' },
-			{ id: 'llama3.1:latest', name: 'llama3.1:latest', description: 'Meta\'s Llama 3.1' },
-			{ id: 'llama3:latest', name: 'llama3:latest', description: 'Meta\'s Llama 3' },
-			{ id: 'llama2:latest', name: 'llama2:latest', description: 'Meta\'s Llama 2' },
-			{ id: 'mistral:7b', name: 'mistral:7b', description: 'Mistral 7B model' },
-			{ id: 'mixtral:8x7b', name: 'mixtral:8x7b', description: 'Mistral\'s Mixtral 8x7B model' },
-			{ id: 'phi3:mini', name: 'phi3:mini', description: 'Microsoft\'s Phi-3 model' },
-			{ id: 'codellama:latest', name: 'codellama:latest', description: 'Code-specialized Llama' },
-			{ id: 'gemma2:latest', name: 'gemma2:latest', description: 'Google\'s Gemma 2' },
-			{ id: 'nomic-embed-text:latest', name: 'nomic-embed-text:latest', description: 'Nomic embeddings' },
-		],
+			ollamaModelOptions: [
+				{ id: 'llama3.2:latest', name: 'llama3.2:latest', description: 'Meta\'s Llama 3.2 (latest)' },
+				{ id: 'llama3.1:latest', name: 'llama3.1:latest', description: 'Meta\'s Llama 3.1' },
+				{ id: 'llama3:latest', name: 'llama3:latest', description: 'Meta\'s Llama 3' },
+				{ id: 'llama2:latest', name: 'llama2:latest', description: 'Meta\'s Llama 2' },
+				{ id: 'mistral:7b', name: 'mistral:7b', description: 'Mistral 7B model' },
+				{ id: 'mixtral:8x7b', name: 'mixtral:8x7b', description: 'Mistral\'s Mixtral 8x7B model' },
+				{ id: 'phi3:mini', name: 'phi3:mini', description: 'Microsoft\'s Phi-3 model' },
+				{ id: 'codellama:latest', name: 'codellama:latest', description: 'Code-specialized Llama' },
+				{ id: 'gemma2:latest', name: 'gemma2:latest', description: 'Google\'s Gemma 2' },
+				{ id: 'nomic-embed-text:latest', name: 'nomic-embed-text:latest', description: 'Nomic embeddings' },
+			],
 			loadingOllamaModels: false,
 
 			chatProviderOptions: [
@@ -537,10 +537,10 @@ export default {
 				{ id: 'accounts/fireworks/models/mixtral-8x22b-instruct', name: 'Mixtral 8x22B', contextWindow: '64K', cost: '$1.2/1M' },
 			],
 
-		// Vector Search Backend
-		loadingBackends: false,
-		selectedVectorBackend: null,
-		vectorBackendOptions: [],
+			// Vector Search Backend
+			loadingBackends: false,
+			selectedVectorBackend: null,
+			vectorBackendOptions: [],
 
 			aiFeatures: [
 				{ id: 'text_generation', label: 'Text Generation', icon: '✍️', enabled: true },
@@ -826,10 +826,10 @@ export default {
 						chatModel: this.fireworksConfig.chatModel?.id || this.fireworksConfig.chatModel,
 						baseUrl: this.fireworksConfig.baseUrl,
 					},
-			vectorConfig: {
-				backend: this.selectedVectorBackend?.id || 'php',
-				solrField: '_embedding_', // Reserved field in Solr schema
-			},
+					vectorConfig: {
+						backend: this.selectedVectorBackend?.id || 'php',
+						solrField: '_embedding_', // Reserved field in Solr schema
+					},
 					enabledFeatures: this.aiFeatures
 						.filter(f => f.enabled)
 						.map(f => f.id),
@@ -856,20 +856,20 @@ export default {
 
 			try {
 				const response = await axios.get(generateUrl('/apps/openregister/api/llm/ollama-models'))
-				
-				if (response.data.success && response.data.models && response.data.models.length > 0) {
-					// Replace the hardcoded list with fetched models
-					this.ollamaModelOptions = response.data.models
-					
-					console.log(`Loaded ${response.data.count} Ollama models from API`)
-				} else {
-					// Keep fallback list if API returns empty or fails
-					console.warn('No models returned from Ollama API, using fallback list')
-				}
-			} catch (error) {
-				// Silently fail and keep using the hardcoded fallback list
-				console.warn('Failed to fetch Ollama models:', error.message)
-			} finally {
+
+			if (response.data.success && response.data.models && response.data.models.length > 0) {
+				// Replace the hardcoded list with fetched models
+				this.ollamaModelOptions = response.data.models
+
+				// Loaded models from Ollama API successfully
+			} else {
+				// Keep fallback list if API returns empty or fails
+				// Using fallback model list
+			}
+		} catch (error) {
+			// Silently fail and keep using the hardcoded fallback list
+			// Error fetching Ollama models, using fallback
+		} finally {
 				this.loadingOllamaModels = false
 			}
 		},
@@ -877,7 +877,7 @@ export default {
 		confirmClearEmbeddings() {
 			// Use native browser confirm to avoid focus-trap conflicts with nested modals
 			const message = this.t('openregister', 'This will permanently delete ALL embeddings (vectors) from the database. You will need to re-vectorize all objects and files. This action cannot be undone.\n\nAre you sure you want to continue?')
-			
+
 			if (confirm(message)) {
 				this.clearAllEmbeddings()
 			}
@@ -888,10 +888,10 @@ export default {
 
 			try {
 				const response = await axios.delete(generateUrl('/apps/openregister/api/vectors/clear-all'))
-				
+
 				if (response.data.success) {
 					showSuccess(this.t('openregister', 'Successfully deleted {count} embeddings. Please re-vectorize your data.', { count: response.data.deleted }))
-					
+
 					// Emit event to parent to refresh stats
 					this.$emit('embeddings-cleared')
 				} else {
@@ -913,7 +913,7 @@ export default {
 			try {
 				// Get database info
 				const dbResponse = await axios.get(generateUrl('/apps/openregister/api/settings/database'))
-				
+
 				// Build backend options
 				const backends = []
 
@@ -940,43 +940,43 @@ export default {
 					})
 				}
 
-			// Solr backend (check if Solr is available)
-			let solrAvailable = false
-			let solrNote = 'Not connected'
-			try {
-				const solrResponse = await axios.get(generateUrl('/apps/openregister/api/settings/solr-info'))
-				if (solrResponse.data.success && solrResponse.data.solr) {
-					const solr = solrResponse.data.solr
-					solrAvailable = solr.available || false
-					
-				if (solrAvailable) {
-					solrNote = 'Very fast distributed vector search using KNN/HNSW indexing. Vectors stored in existing file and object collections.'
-				} else {
-						solrNote = solr.error || 'SOLR not connected. Enable in Search Configuration.'
+				// Solr backend (check if Solr is available)
+				let solrAvailable = false
+				let solrNote = 'Not connected'
+				try {
+					const solrResponse = await axios.get(generateUrl('/apps/openregister/api/settings/solr-info'))
+					if (solrResponse.data.success && solrResponse.data.solr) {
+						const solr = solrResponse.data.solr
+						solrAvailable = solr.available || false
+
+						if (solrAvailable) {
+							solrNote = 'Very fast distributed vector search using KNN/HNSW indexing. Vectors stored in existing file and object collections.'
+						} else {
+							solrNote = solr.error || 'SOLR not connected. Enable in Search Configuration.'
+						}
 					}
+				} catch (error) {
+					console.error('Failed to fetch Solr info:', error)
+					solrNote = 'Failed to check Solr status'
 				}
-			} catch (error) {
-				console.error('Failed to fetch Solr info:', error)
-				solrNote = 'Failed to check Solr status'
-			}
-			
-			backends.push({
-				id: 'solr',
-				name: 'Solr 9+ Dense Vector',
-				description: solrAvailable 
-					? 'Very fast distributed vector search (connected ✓)' 
-					: 'Very fast distributed vector search (not connected)',
-				performance: solrAvailable ? 'very_fast' : null,
-				available: solrAvailable,
-				performanceNote: solrNote,
-			})
+
+				backends.push({
+					id: 'solr',
+					name: 'Solr 9+ Dense Vector',
+					description: solrAvailable
+						? 'Very fast distributed vector search (connected ✓)'
+						: 'Very fast distributed vector search (not connected)',
+					performance: solrAvailable ? 'very_fast' : null,
+					available: solrAvailable,
+					performanceNote: solrNote,
+				})
 
 				this.vectorBackendOptions = backends
 
-		// Load current backend setting from LLM settings
-		const llmResponse = await axios.get(generateUrl('/apps/openregister/api/settings/llm'))
-		const vectorBackend = llmResponse.data.vectorConfig?.backend || 'php'
-		this.selectedVectorBackend = backends.find(b => b.id === vectorBackend) || backends[0]
+				// Load current backend setting from LLM settings
+				const llmResponse = await axios.get(generateUrl('/apps/openregister/api/settings/llm'))
+				const vectorBackend = llmResponse.data.vectorConfig?.backend || 'php'
+				this.selectedVectorBackend = backends.find(b => b.id === vectorBackend) || backends[0]
 
 			} catch (error) {
 				console.error('Failed to load vector backends:', error)

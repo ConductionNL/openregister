@@ -208,6 +208,9 @@ export default {
 
 		/**
 		 * Check if agent has any capabilities to display
+		 *
+		 * @param {object} agent - The agent object to check
+		 * @return {boolean} True if agent has views or tools
 		 */
 		hasCapabilities(agent) {
 			return (agent.views && agent.views.length > 0) || (agent.tools && agent.tools.length > 0)
@@ -215,6 +218,9 @@ export default {
 
 		/**
 		 * Get view name from view object or string
+		 *
+		 * @param {object|string} view - The view object or string identifier
+		 * @return {string} The view name
 		 */
 		getViewName(view) {
 			if (typeof view === 'string') {
@@ -225,6 +231,9 @@ export default {
 
 		/**
 		 * Get tool name from tool object or string
+		 *
+		 * @param {object|string} tool - The tool object or string identifier
+		 * @return {string} The tool name
 		 */
 		getToolName(tool) {
 			if (typeof tool === 'string') {
@@ -237,6 +246,8 @@ export default {
 
 		/**
 		 * Handle start conversation click
+		 *
+		 * @param {object} agent - The agent to start conversation with
 		 */
 		handleStartConversation(agent) {
 			this.startingAgentId = agent.id
@@ -247,6 +258,9 @@ export default {
 
 		/**
 		 * Toggle expand state for views or tools
+		 *
+		 * @param {string|number} agentId - The agent ID
+		 * @param {string} section - The section to toggle ('views' or 'tools')
 		 */
 		toggleExpand(agentId, section) {
 			const key = `${agentId}-${section}`
@@ -255,6 +269,10 @@ export default {
 
 		/**
 		 * Check if a section is expanded
+		 *
+		 * @param {string|number} agentId - The agent ID
+		 * @param {string} section - The section to check ('views' or 'tools')
+		 * @return {boolean} True if section is expanded
 		 */
 		isExpanded(agentId, section) {
 			const key = `${agentId}-${section}`
@@ -263,6 +281,9 @@ export default {
 
 		/**
 		 * Get visible views based on expand state
+		 *
+		 * @param {object} agent - The agent object
+		 * @return {Array} Array of visible views
 		 */
 		getVisibleViews(agent) {
 			if (this.isExpanded(agent.id, 'views')) {
@@ -273,6 +294,9 @@ export default {
 
 		/**
 		 * Get visible tools based on expand state
+		 *
+		 * @param {object} agent - The agent object
+		 * @return {Array} Array of visible tools
 		 */
 		getVisibleTools(agent) {
 			if (this.isExpanded(agent.id, 'tools')) {
@@ -380,9 +404,24 @@ export default {
 		overflow-y: auto;
 		padding: 24px;
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 		gap: 20px;
 		align-content: start;
+		
+		// Ensure at least 2 columns on larger screens
+		@media (min-width: 640px) {
+			grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+		}
+		
+		// Prefer 2-3 columns on wide screens
+		@media (min-width: 960px) {
+			grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+		}
+		
+		// Allow up to 3 columns on very wide screens
+		@media (min-width: 1280px) {
+			grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+		}
 
 		.agent-card {
 			display: flex;

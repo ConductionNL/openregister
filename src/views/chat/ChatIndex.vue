@@ -413,18 +413,18 @@ export default {
 			showRenameDialog: false,
 			newConversationTitle: '',
 
-		// Chat settings
-		showChatSettings: false,
-		selectedViews: [], // UUIDs of selected views
-		selectedTools: [], // UUIDs of selected tools
-		availableViews: [], // Views from current agent
-		availableTools: [], // Tools from current agent
-		
-		// RAG settings
-		includeObjects: true, // Search in objects
-		includeFiles: true, // Search in files
-		numSourcesFiles: 5, // Number of file sources to retrieve
-		numSourcesObjects: 5, // Number of object sources to retrieve
+			// Chat settings
+			showChatSettings: false,
+			selectedViews: [], // UUIDs of selected views
+			selectedTools: [], // UUIDs of selected tools
+			availableViews: [], // Views from current agent
+			availableTools: [], // Tools from current agent
+
+			// RAG settings
+			includeObjects: true, // Search in objects
+			includeFiles: true, // Search in files
+			numSourcesFiles: 5, // Number of file sources to retrieve
+			numSourcesObjects: 5, // Number of object sources to retrieve
 		}
 	},
 
@@ -523,10 +523,10 @@ export default {
 			try {
 				const conversation = await conversationStore.createConversation(this.selectedAgent.uuid)
 				this.currentAgent = this.selectedAgent
-				
+
 				// Load agent capabilities (views and tools) and select all by default
 				await this.loadAgentCapabilities()
-				
+
 				// Keep selected agent for next time, but clear for UX
 				const agentCopy = this.selectedAgent
 				this.selectedAgent = null
@@ -554,7 +554,7 @@ export default {
 				if (conversation.agentId) {
 					const response = await axios.get(generateUrl(`/apps/openregister/api/agents/${conversation.agentId}`))
 					this.currentAgent = response.data
-					
+
 					// Load agent capabilities (views and tools) and select all by default
 					await this.loadAgentCapabilities()
 				}
@@ -632,14 +632,14 @@ export default {
 					userMessage,
 					this.activeConversation.uuid,
 					this.currentAgent?.uuid,
-					this.selectedViews,  // Pass selected views
-					this.selectedTools,  // Pass selected tools
+					this.selectedViews, // Pass selected views
+					this.selectedTools, // Pass selected tools
 					{
 						includeObjects: this.includeObjects,
 						includeFiles: this.includeFiles,
 						numSourcesFiles: this.numSourcesFiles,
 						numSourcesObjects: this.numSourcesObjects,
-					}
+					},
 				)
 
 				this.scrollToBottom()
@@ -672,7 +672,7 @@ export default {
 					}
 					return v
 				})
-				
+
 				// Load tools from agent - handle both arrays of objects and arrays of strings
 				const rawTools = this.currentAgent.tools || []
 				this.availableTools = rawTools.map(t => {
@@ -687,16 +687,16 @@ export default {
 
 				// Initialize all views as selected by default
 				this.selectedViews = this.availableViews.map(v => v.uuid)
-				
+
 				// Initialize all tools as selected by default
 				this.selectedTools = this.availableTools.map(t => t.uuid)
-				
+
 				// Load RAG settings from agent or use defaults
 				this.includeObjects = this.currentAgent.searchObjects ?? true
 				this.includeFiles = this.currentAgent.searchFiles ?? true
 				this.numSourcesFiles = this.currentAgent.ragNumSources ?? 5
 				this.numSourcesObjects = this.currentAgent.ragNumSources ?? 5
-				
+
 				console.info('[ChatIndex] Loaded agent capabilities:', {
 					views: this.availableViews.length,
 					tools: this.availableTools.length,
@@ -714,6 +714,7 @@ export default {
 
 		/**
 		 * Toggle view selection
+		 * @param viewUuid
 		 */
 		toggleView(viewUuid) {
 			const index = this.selectedViews.indexOf(viewUuid)
@@ -728,6 +729,7 @@ export default {
 
 		/**
 		 * Toggle tool selection
+		 * @param toolUuid
 		 */
 		toggleTool(toolUuid) {
 			const index = this.selectedTools.indexOf(toolUuid)
@@ -924,7 +926,7 @@ export default {
 
 	.agent-selector-container {
 		width: 100%;
-		max-width: 600px;
+		max-width: 1200px;
 		margin-top: 24px;
 	}
 }

@@ -480,7 +480,7 @@ export default {
 				// Deep copy to avoid reactivity issues
 				const sourceTools = agentStore.agentItem.tools || []
 				const toolsArray = Array.isArray(sourceTools) ? [...sourceTools] : []
-				
+
 				this.agentItem = { ...agentStore.agentItem }
 				// Force set the tools array to ensure reactivity
 				this.$set(this.agentItem, 'tools', toolsArray)
