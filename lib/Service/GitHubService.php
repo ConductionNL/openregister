@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use GuzzleHttp\Client;
+use OCP\Http\Client\IClient;
 use GuzzleHttp\Exception\GuzzleException;
 use OCP\IConfig;
 use Psr\Log\LoggerInterface;
@@ -53,9 +53,9 @@ class GitHubService
     /**
      * HTTP client for API requests
      *
-     * @var Client
+     * @var IClient
      */
-    private Client $client;
+    private IClient $client;
 
     /**
      * Configuration service
@@ -74,18 +74,39 @@ class GitHubService
     /**
      * GitHubService constructor
      *
-     * @param Client          $client HTTP client
+     * @param IClient         $client HTTP client
      * @param IConfig         $config Configuration service
      * @param LoggerInterface $logger Logger instance
      */
     public function __construct(
-        Client $client,
+        IClient $client,
         IConfig $config,
         LoggerInterface $logger
     ) {
         $this->client = $client;
         $this->config = $config;
         $this->logger = $logger;
+    }
+
+    /**
+     * Get authentication headers for GitHub API
+     *
+     * @return array Headers array
+     */
+    private function getHeaders(): array
+    {
+        $headers = [
+            'Accept' => 'application/vnd.github+json',
+            'X-GitHub-Api-Version' => '2022-11-28',
+        ];
+
+        // Add authentication token if configured
+        $token = $this->config->getAppValue('openregister', 'github_api_token', '');
+        if (!empty($token)) {
+            $headers['Authorization'] = 'Bearer ' . $token;
+        }
+
+        return $headers;
     }
 
     /**

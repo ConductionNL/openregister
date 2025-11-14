@@ -126,6 +126,13 @@ class Schema extends Entity implements JsonSerializable
     protected ?string $source = null;
 
     /**
+     * Schema that this schema extends from
+     *
+     * @var string|null Schema that this schema extends from
+     */
+    protected ?string $extend = null;
+
+    /**
      * Whether hard validation is enabled
      *
      * @var boolean Whether hard validation is enabled

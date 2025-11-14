@@ -28,14 +28,14 @@
 		</div>
 
 		<div class="cardActions">
-			<NcButton
-				type="primary"
-				@click="$emit('import')">
-				<template #icon>
-					<Download :size="20" />
-				</template>
-				Import
-			</NcButton>
+		<NcButton
+			type="primary"
+			@click="$emit('import')">
+			<template #icon>
+				<CloudUpload :size="20" />
+			</template>
+			Import
+		</NcButton>
 			<NcButton
 				v-if="configuration.url"
 				@click="openInNewTab(configuration.url)">
@@ -54,7 +54,7 @@ import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import SourceBranch from 'vue-material-design-icons/SourceBranch.vue'
 import TagOutline from 'vue-material-design-icons/TagOutline.vue'
 import Star from 'vue-material-design-icons/Star.vue'
-import Download from 'vue-material-design-icons/Download.vue'
+import CloudUpload from 'vue-material-design-icons/CloudUpload.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 
 export default {
@@ -65,7 +65,7 @@ export default {
 		SourceBranch,
 		TagOutline,
 		Star,
-		Download,
+		CloudUpload,
 		OpenInNew,
 	},
 	props: {

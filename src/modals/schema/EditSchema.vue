@@ -973,32 +973,89 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 			</div>
 		</div>
 
-		<template #actions>
-			<NcCheckboxRadioSwitch
-				v-if="!schemaStore.schemaItem?.id"
-				class="create-another-checkbox"
+	<template #actions>
+		<NcCheckboxRadioSwitch
+			v-if="!schemaStore.schemaItem?.id"
+			class="create-another-checkbox"
+			:disabled="loading"
+			:checked.sync="createAnother">
+			Create another
+		</NcCheckboxRadioSwitch>
+		<NcButton @click="closeModal">
+			<template #icon>
+				<Cancel :size="20" />
+			</template>
+			{{ success ? 'Close' : 'Cancel' }}
+		</NcButton>
+
+		<!-- Additional Actions for Existing Schemas -->
+		<template v-if="schemaStore.schemaItem?.id && !success">
+			<NcButton
 				:disabled="loading"
-				:checked.sync="createAnother">
-				Create another
-			</NcCheckboxRadioSwitch>
-			<NcButton @click="closeModal">
+				@click="extendSchema()">
 				<template #icon>
-					<Cancel :size="20" />
+					<CallSplit :size="20" />
 				</template>
-				{{ success ? 'Close' : 'Cancel' }}
+				{{ t('openregister', 'Extend Schema') }}
 			</NcButton>
-			<NcButton v-if="createAnother ||!success"
-				:disabled="loading || !schemaItem.title"
-				type="primary"
-				@click="editSchema()">
+			<NcButton
+				:disabled="loading"
+				@click="analyzeProperties()">
 				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<ContentSaveOutline v-if="!loading && schemaStore.schemaItem?.id" :size="20" />
-					<Plus v-if="!loading && !schemaStore.schemaItem?.id" :size="20" />
+					<DatabaseSearch :size="20" />
 				</template>
-				{{ schemaStore.schemaItem?.id && !createAnother ? 'Save' : 'Create' }}
+				{{ t('openregister', 'Analyze Properties') }}
+			</NcButton>
+			<NcButton
+				:disabled="loading"
+				@click="validateObjects()">
+				<template #icon>
+					<CheckCircle :size="20" />
+				</template>
+				{{ t('openregister', 'Validate Objects') }}
+			</NcButton>
+			<NcButton
+				v-tooltip="schemaItem.stats?.objects?.total > 0 ? t('openregister', 'Delete all objects in this schema') : t('openregister', 'No objects to delete')"
+				:disabled="loading || schemaItem.stats?.objects?.total === 0"
+				@click="deleteObjects()">
+				<template #icon>
+					<DeleteSweep :size="20" />
+				</template>
+				{{ t('openregister', 'Delete Objects') }}
+			</NcButton>
+			<NcButton
+				v-tooltip="schemaItem.stats?.objects?.total > 0 ? t('openregister', 'Publish all objects in this schema') : t('openregister', 'No objects to publish')"
+				:disabled="loading || schemaItem.stats?.objects?.total === 0"
+				@click="publishObjects()">
+				<template #icon>
+					<Upload :size="20" />
+				</template>
+				{{ t('openregister', 'Publish Objects') }}
+			</NcButton>
+			<NcButton
+				v-tooltip="schemaItem.stats?.objects?.total > 0 ? t('openregister', 'Cannot delete: objects are still attached') : ''"
+				:disabled="loading || schemaItem.stats?.objects?.total > 0"
+				type="error"
+				@click="deleteSchema()">
+				<template #icon>
+					<TrashCanOutline :size="20" />
+				</template>
+				{{ t('openregister', 'Delete') }}
 			</NcButton>
 		</template>
+
+		<NcButton v-if="createAnother ||!success"
+			:disabled="loading || !schemaItem.title"
+			type="primary"
+			@click="editSchema()">
+			<template #icon>
+				<NcLoadingIcon v-if="loading" :size="20" />
+				<ContentSaveOutline v-if="!loading && schemaStore.schemaItem?.id" :size="20" />
+				<Plus v-if="!loading && !schemaStore.schemaItem?.id" :size="20" />
+			</template>
+			{{ schemaStore.schemaItem?.id && !createAnother ? 'Save' : 'Create' }}
+		</NcButton>
+	</template>
 	</NcDialog>
 </template>
 
@@ -1030,6 +1087,11 @@ import Check from 'vue-material-design-icons/Check.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import AlertOutline from 'vue-material-design-icons/AlertOutline.vue'
 import Close from 'vue-material-design-icons/Close.vue'
+import CallSplit from 'vue-material-design-icons/CallSplit.vue'
+import DatabaseSearch from 'vue-material-design-icons/DatabaseSearch.vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import DeleteSweep from 'vue-material-design-icons/DeleteSweep.vue'
+import Upload from 'vue-material-design-icons/Upload.vue'
 
 export default {
 	name: 'EditSchema',
@@ -1049,18 +1111,23 @@ export default {
 		NcActionCaption,
 		NcActionSeparator,
 		NcActionText,
-		BTabs,
-		BTab,
-		// Icons
-		ContentSaveOutline,
-		Cancel,
-		Plus,
-		ContentCopy,
-		Check,
-		TrashCanOutline,
-		AlertOutline,
-		Close,
-	},
+	BTabs,
+	BTab,
+	// Icons
+	ContentSaveOutline,
+	Cancel,
+	Plus,
+	ContentCopy,
+	Check,
+	TrashCanOutline,
+	AlertOutline,
+	Close,
+	CallSplit,
+	DatabaseSearch,
+	CheckCircle,
+	DeleteSweep,
+	Upload,
+},
 	data() {
 		return {
 			activeTab: 0,
@@ -3080,9 +3147,79 @@ export default {
 				this.$delete(this.schemaItem.properties[key].items.objectConfiguration, 'queryParams')
 			}
 
-			this.checkPropertiesModified()
-		},
+		this.checkPropertiesModified()
 	},
+
+	/**
+	 * Create an extended schema based on the current schema
+	 *
+	 * @return {void}
+	 */
+	extendSchema() {
+		// Create a new schema that extends the current schema
+		const newSchema = {
+			title: `Extended ${this.schemaItem.title}`,
+			description: `Schema extending ${this.schemaItem.title}`,
+			extend: this.schemaItem.id, // Set the parent schema ID
+			properties: {}, // Start with empty properties (will inherit from parent)
+			required: [],
+		}
+		// Set the new schema and keep the modal open with new schema
+		schemaStore.setSchemaItem(newSchema)
+		// Reset the form state
+		this.initializeSchemaItem()
+	},
+
+	/**
+	 * Open the Analyze Properties modal
+	 *
+	 * @return {void}
+	 */
+	analyzeProperties() {
+		// The current schema is already set in schemaStore, just open the modal
+		navigationStore.setModal('exploreSchema')
+	},
+
+	/**
+	 * Open the Validate Objects modal
+	 *
+	 * @return {void}
+	 */
+	validateObjects() {
+		// The current schema is already set in schemaStore, just open the modal
+		navigationStore.setModal('validateSchema')
+	},
+
+	/**
+	 * Open the Delete Objects modal
+	 *
+	 * @return {void}
+	 */
+	deleteObjects() {
+		// The current schema is already set in schemaStore, just open the modal
+		navigationStore.setModal('deleteSchemaObjects')
+	},
+
+	/**
+	 * Open the Publish Objects modal
+	 *
+	 * @return {void}
+	 */
+	publishObjects() {
+		// The current schema is already set in schemaStore, just open the modal
+		navigationStore.setModal('publishSchemaObjects')
+	},
+
+	/**
+	 * Delete the current schema
+	 *
+	 * @return {void}
+	 */
+	deleteSchema() {
+		// The current schema is already set in schemaStore, just open the dialog
+		navigationStore.setDialog('deleteSchema')
+	},
+},
 }
 </script>
 
