@@ -2,7 +2,8 @@
 	<NcSettingsSection
 		:name="name"
 		:description="description"
-		:doc-url="docUrl">
+		:doc-url="docUrl"
+		v-bind="$attrs">
 		<!-- Action buttons positioned top-right -->
 		<div v-if="$slots.actions" class="action-buttons">
 			<slot name="actions" />
@@ -74,6 +75,8 @@ import InformationOutline from 'vue-material-design-icons/InformationOutline.vue
  */
 export default {
 	name: 'SettingsSection',
+
+	inheritAttrs: false,
 
 	components: {
 		NcSettingsSection,

@@ -144,6 +144,8 @@ return [
         // API Tokens for GitHub and GitLab
         ['name' => 'settings#getApiTokens', 'url' => '/api/settings/api-tokens', 'verb' => 'GET'],
         ['name' => 'settings#saveApiTokens', 'url' => '/api/settings/api-tokens', 'verb' => 'POST'],
+        ['name' => 'settings#testGitHubToken', 'url' => '/api/settings/api-tokens/test/github', 'verb' => 'POST'],
+        ['name' => 'settings#testGitLabToken', 'url' => '/api/settings/api-tokens/test/gitlab', 'verb' => 'POST'],
         
         // Statistics endpoint  
         ['name' => 'settings#getStatistics', 'url' => '/api/settings/statistics', 'verb' => 'GET'],
