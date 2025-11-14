@@ -58,7 +58,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 							<template #icon>
 								<Plus :size="20" />
 							</template>
-							Add Configuration
+							Create Configuration
 						</NcActionButton>
 						<NcActionButton
 							close-after-click
@@ -99,12 +99,23 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 								<h2 v-tooltip.bottom="configuration.description">
 									<CogOutline :size="20" />
 									{{ configuration.title }}
+									<span v-if="configuration.isLocal" class="localPill">
+										<CheckCircle :size="16" />
+										Local
+									</span>
+									<span v-else class="externalPill">
+										<CloudDownload :size="16" />
+										External
+									</span>
+									<span v-if="!configuration.isLocal && configuration.syncEnabled" class="syncPill" :class="getSyncStatusClass(configuration)">
+										<Sync v-if="configuration.syncStatus === 'success'" :size="16" />
+										<AlertCircle v-else-if="configuration.syncStatus === 'failed'" :size="16" />
+										<ClockOutline v-else :size="16" />
+										{{ getSyncStatusText(configuration) }}
+									</span>
 									<span v-if="hasUpdateAvailable(configuration)" class="updatePill">
 										<Update :size="16" />
 										Update Available
-									</span>
-									<span v-else-if="isManualConfiguration(configuration)" class="manualPill">
-										Manual
 									</span>
 								</h2>
 								<NcActions :primary="true" menu-name="Actions">
@@ -222,19 +233,26 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 									<td>{{ configuration.localVersion || '-' }}</td>
 									<td>{{ configuration.remoteVersion || '-' }}</td>
 									<td>
-										<span v-if="hasUpdateAvailable(configuration)" class="tablePill tablePill-warning">
-											<Update :size="16" />
-											Update Available
-										</span>
-										<span v-else-if="configuration.autoUpdate" class="tablePill tablePill-success">
-											Auto-Update
-										</span>
-										<span v-else-if="isManualConfiguration(configuration)" class="tablePill tablePill-default">
-											Manual
-										</span>
-										<span v-else class="tablePill tablePill-success">
-											Up to Date
-										</span>
+										<div class="statusPillsContainer">
+											<span v-if="configuration.isLocal" class="tablePill tablePill-success">
+												<CheckCircle :size="16" />
+												Local
+											</span>
+											<span v-else class="tablePill tablePill-primary">
+												<CloudDownload :size="16" />
+												External
+											</span>
+											<span v-if="!configuration.isLocal && configuration.syncEnabled" class="tablePill" :class="getSyncStatusClass(configuration)">
+												<Sync v-if="configuration.syncStatus === 'success'" :size="16" />
+												<AlertCircle v-else-if="configuration.syncStatus === 'failed'" :size="16" />
+												<ClockOutline v-else :size="16" />
+												{{ getSyncStatusText(configuration) }}
+											</span>
+											<span v-if="hasUpdateAvailable(configuration)" class="tablePill tablePill-warning">
+												<Update :size="16" />
+												Update Available
+											</span>
+										</div>
 									</td>
 									<td>{{ configuration.updated ? new Date(configuration.updated).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(configuration.updated).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}</td>
 									<td class="tableColumnActions">
@@ -316,6 +334,10 @@ import Eye from 'vue-material-design-icons/Eye.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
 import Update from 'vue-material-design-icons/Update.vue'
 import Sync from 'vue-material-design-icons/Sync.vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import CloudDownload from 'vue-material-design-icons/CloudDownload.vue'
+import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
+import ClockOutline from 'vue-material-design-icons/ClockOutline.vue'
 
 import PaginationComponent from '../../components/PaginationComponent.vue'
 import axios from '@nextcloud/axios'
@@ -342,6 +364,10 @@ export default {
 		EyeOutline,
 		Update,
 		Sync,
+		CheckCircle,
+		CloudDownload,
+		AlertCircle,
+		ClockOutline,
 		PaginationComponent,
 	},
 	data() {
@@ -461,6 +487,37 @@ export default {
 			configurationStore.setConfigurationItem(configuration)
 			navigationStore.setModal('previewConfiguration')
 		},
+		getSyncStatusClass(configuration) {
+			const statusClasses = {
+				success: 'tablePill-success',
+				failed: 'tablePill-error',
+				pending: 'tablePill-warning',
+				never: 'tablePill-default',
+			}
+			return statusClasses[configuration.syncStatus] || 'tablePill-default'
+		},
+		getSyncStatusText(configuration) {
+			if (configuration.syncStatus === 'success' && configuration.lastSyncDate) {
+				const now = new Date()
+				const lastSync = new Date(configuration.lastSyncDate)
+				const diffInHours = Math.floor((now - lastSync) / (1000 * 60 * 60))
+				
+				if (diffInHours < 1) {
+					return 'Synced just now'
+				} else if (diffInHours < 24) {
+					return `Synced ${diffInHours}h ago`
+				} else {
+					const diffInDays = Math.floor(diffInHours / 24)
+					return `Synced ${diffInDays}d ago`
+				}
+			} else if (configuration.syncStatus === 'failed') {
+				return 'Sync failed'
+			} else if (configuration.syncStatus === 'pending') {
+				return 'Sync pending'
+			} else {
+				return 'Never synced'
+			}
+		},
 	},
 }
 </script>
@@ -531,7 +588,34 @@ export default {
 	color: var(--color-text-lighter);
 }
 
+.localPill {
+	background-color: #d4edda;
+	color: #155724;
+}
+
+.externalPill {
+	background-color: #d1ecf1;
+	color: #0c5460;
+}
+
+.syncPill {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 12px;
+	border-radius: 12px;
+	font-size: 0.85em;
+	font-weight: 500;
+	margin-left: 12px;
+	vertical-align: middle;
+}
+
 /* Pills for table */
+.statusPillsContainer {
+	display: flex;
+	gap: 6px;
+	flex-wrap: wrap;
+}
 .tablePill {
 	display: inline-flex;
 	align-items: center;
@@ -556,5 +640,15 @@ export default {
 .tablePill-default {
 	background-color: var(--color-background-dark);
 	color: var(--color-text-lighter);
+}
+
+.tablePill-primary {
+	background-color: #d1ecf1;
+	color: #0c5460;
+}
+
+.tablePill-error {
+	background-color: var(--color-error);
+	color: white;
 }
 </style>

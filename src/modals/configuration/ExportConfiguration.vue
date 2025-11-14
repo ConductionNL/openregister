@@ -10,8 +10,8 @@ import axios from '@nextcloud/axios'
 		title="Export Configuration"
 		size="small"
 		:can-close="false">
-		<NcNoteCard v-if="error" type="error">
-			<p>{{ error }}</p>
+		<NcNoteCard v-if="errorMessage" type="error">
+			<p>{{ errorMessage }}</p>
 		</NcNoteCard>
 
 		<div class="formContainer">
@@ -87,12 +87,13 @@ export default {
 			const item = configurationStore.configurationItem
 			return Boolean(item?.id)
 		},
-	},
-	created() {
-		// Check if we have a configuration when component is created
-		if (!configurationStore.configurationItem?.id) {
-			this.error = 'No configuration selected for export'
-		}
+		errorMessage() {
+			// Computed error message that updates reactively
+			if (!configurationStore.configurationItem?.id) {
+				return 'No configuration selected for export'
+			}
+			return this.error
+		},
 	},
 	methods: {
 		closeModal() {

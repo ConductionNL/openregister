@@ -323,20 +323,20 @@ class ConfigurationService
 
             // Add OpenRegister-specific metadata as an extension following OpenAPI spec
             // https://swagger.io/docs/specification/v3_0/openapi-extensions/
+            // Standard OAS properties (title, description, version) are in the info section above
             // Note: Internal properties (autoUpdate, notificationGroups, owner, organisation, registers, 
             // schemas, objects, views, agents, sources, applications) are excluded as they are 
             // instance-specific or automatically managed during import
             $openApiSpec['x-openregister'] = [
-                'title'        => $input->getTitle(),
-                'description'  => $input->getDescription(),
                 'type'         => $input->getType(),
                 'app'          => $input->getApp(),
-                'version'      => $input->getVersion(),
                 'sourceType'   => $input->getSourceType(),
                 'sourceUrl'    => $input->getSourceUrl(),
-                'githubRepo'   => $input->getGithubRepo(),
-                'githubBranch' => $input->getGithubBranch(),
-                'githubPath'   => $input->getGithubPath(),
+                'github'       => [
+                    'repo'   => $input->getGithubRepo(),
+                    'branch' => $input->getGithubBranch(),
+                    'path'   => $input->getGithubPath(),
+                ],
             ];
         } else if ($input instanceof Register) {
             // Pass the register as an array to the exportConfig function.
@@ -1072,21 +1072,8 @@ class ConfigurationService
             }//end foreach
         }//end if
 
-        // Build register slug to ID map after register import
-        $registerSlugToId = [];
-        foreach ($this->registersMap as $slug => $register) {
-            if ($register instanceof \OCA\OpenRegister\Db\Register) {
-                $registerSlugToId[$slug] = $register->getId();
-            }
-        }
-
-        // Build schema slug to ID map after schema import
-        $schemaSlugToId = [];
-        foreach ($this->schemasMap as $slug => $schema) {
-            if ($schema instanceof \OCA\OpenRegister\Db\Schema) {
-                $schemaSlugToId[$slug] = $schema->getId();
-            }
-        }
+        // NOTE: We do NOT build ID maps - we'll pass the actual objects to avoid organisation filter issues
+        // When saveObject() receives Register/Schema objects, it skips the find() lookup entirely
 
         // Process and import objects.
         if (isset($data['components']['objects']) === true && is_array($data['components']['objects']) === true) {
@@ -1102,79 +1089,71 @@ class ConfigurationService
                     continue;
                 }
 
-                // Map register and schema
-                $registerId = $registerSlugToId[$rawRegister] ?? null;
-                $schemaId   = $schemaSlugToId[$rawSchema] ?? null;
-                if (empty($registerId) || empty($schemaId)) {
+                // Get the actual Register and Schema objects from maps (not IDs!)
+                // This is CRITICAL - passing objects avoids organisation filter in find()
+                $registerObject = $this->registersMap[$rawRegister] ?? null;
+                $schemaObject   = $this->schemasMap[$rawSchema] ?? null;
+                if ($registerObject === null || $schemaObject === null) {
+                    $this->logger->warning(
+                        'Skipping object import - register or schema not found in maps',
+                        [
+                            'objectSlug'     => $slug,
+                            'registerSlug'   => $rawRegister,
+                            'schemaSlug'     => $rawSchema,
+                            'registerFound'  => $registerObject !== null,
+                            'schemaFound'    => $schemaObject !== null,
+                        ]
+                    );
                     continue;
                 }
+
+                // Get IDs for searching existing objects
+                $registerId = $registerObject->getId();
+                $schemaId   = $schemaObject->getId();
 
                 // Use ObjectService::searchObjects to find existing object by register+schema+slug
                 $search = [
                     '@self'  => [
                         'register' => (int) $registerId,
-                // ensure integer
                         'schema'   => (int) $schemaId,
-                // ensure integer
                         'slug'     => $slug,
-                // string
                     ],
                     '_limit' => 1,
                 ];
                 $this->logger->debug('Import object search filter', ['filter' => $search]);
-                // Log what we are searching for (now as warning for visibility)
-                $this->logger->warning(
-                        'Import: searching for existing object',
-                        [
-                            'registerId'   => $registerId,
-                            'schemaId'     => $schemaId,
-                            'slug'         => $slug,
-                            'searchFilter' => $search,
-                        ]
-                        );
-                // TEMP: Always log search filter to Docker logs for debugging
+                
+                // Search for existing object
                 $results = $this->objectService->searchObjects($search, true, true);
-                $this->logger->warning(
-                        'Import: search result',
-                        [
-                            'resultType'  => gettype($results),
-                            'resultCount' => is_array($results) ? count($results) : null,
-                            'resultValue' => $results,
-                        ]
-                        );
                 $existingObject = is_array($results) && count($results) > 0 ? $results[0] : null;
+                
                 if (!$existingObject) {
-                    $this->logger->warning(
-                            'Import: No existing object found for update',
-                            [
-                                'registerId'   => $registerId,
-                                'schemaId'     => $schemaId,
-                                'slug'         => $slug,
-                                'searchFilter' => $search,
-                            ]
-                            );
-                    $this->logger->error(
-                            'No existing object found for insert, about to insert new object',
-                            [
-                                'registerId' => $registerId,
-                                'schemaId'   => $schemaId,
-                                'slug'       => $slug,
-                                'search'     => $search,
-                                'objectData' => $objectData,
-                            ]
-                            );
-                }//end if
+                    $this->logger->info(
+                        'No existing object found - will create new object',
+                        [
+                            'registerId' => $registerId,
+                            'schemaId'   => $schemaId,
+                            'slug'       => $slug,
+                        ]
+                    );
+                }
 
+                // Replace string slugs with integer IDs in objectData's @self metadata
+                // This prevents any internal lookups from using string slugs
+                $objectData['@self']['register'] = (int) $registerId;
+                $objectData['@self']['schema'] = (int) $schemaId;
+                
                 if ($existingObject) {
                     $existingObjectData = is_array($existingObject) ? $existingObject : $existingObject->jsonSerialize();
                     $importedVersion    = $objectData['@self']['version'] ?? $objectData['version'] ?? '1.0.0';
                     $existingVersion    = $existingObjectData['@self']['version'] ?? $existingObjectData['version'] ?? '1.0.0';
                     if (version_compare($importedVersion, $existingVersion, '>')) {
                         $uuid   = $existingObjectData['@self']['id'] ?? $existingObjectData['id'] ?? null;
+                        // CRITICAL: Pass Register and Schema OBJECTS, not IDs
+                        // This avoids organisation filter issues in find()
                         $object = $this->objectService->saveObject(
                             object: $objectData,
-                            register: (int) $registerId,
-                            schema: (int) $schemaId,
+                            register: $registerObject,
+                            schema: $schemaObject,
                             uuid: $uuid
                         );
                         if ($object !== null) {
@@ -1195,10 +1174,12 @@ class ConfigurationService
                     }//end if
                 } else {
                     // Create new object
+                    // CRITICAL: Pass Register and Schema OBJECTS, not IDs
+                    // This avoids organisation filter issues in find()
                     $object = $this->objectService->saveObject(
                         object: $objectData,
-                        register: (int) $registerId,
-                        schema: (int) $schemaId
+                        register: $registerObject,
+                        schema: $schemaObject
                     );
                     if ($object !== null) {
                         $result['objects'][] = $object;
@@ -1264,11 +1245,15 @@ class ConfigurationService
                 // No existing configuration found, we'll create a new one
             }
 
-            // Extract metadata from x-openregister extension or fallback to legacy locations
+            // Extract metadata following OAS standard first, then x-openregister extension
+            $info = $data['info'] ?? [];
             $xOpenregister = $data['x-openregister'] ?? [];
             
-            $title       = $xOpenregister['title'] ?? $data['info']['title'] ?? $data['title'] ?? "Configuration for {$appId}";
-            $description = $xOpenregister['description'] ?? $data['info']['description'] ?? $data['description'] ?? "Imported configuration for application {$appId}";
+            // Standard OAS properties from info section
+            $title       = $info['title'] ?? $xOpenregister['title'] ?? $data['title'] ?? "Configuration for {$appId}";
+            $description = $info['description'] ?? $xOpenregister['description'] ?? $data['description'] ?? "Imported configuration for application {$appId}";
+            
+            // OpenRegister-specific properties
             $type        = $xOpenregister['type'] ?? $data['type'] ?? 'imported';
 
             // Collect IDs of imported entities
@@ -1323,6 +1308,11 @@ class ConfigurationService
                 $configuration->setSchemas($schemaIds);
                 $configuration->setObjects($objectIds);
                 
+                // Mark as local configuration (maintained by the app)
+                $configuration->setIsLocal(true);
+                $configuration->setSyncEnabled(false);
+                $configuration->setSyncStatus('never');
+                
                 // Set additional metadata from x-openregister if available
                 // Note: Internal properties (autoUpdate, notificationGroups, owner, organisation) 
                 // are not imported as they are instance-specific settings
@@ -1332,14 +1322,30 @@ class ConfigurationService
                 if (isset($xOpenregister['sourceUrl']) === true) {
                     $configuration->setSourceUrl($xOpenregister['sourceUrl']);
                 }
-                if (isset($xOpenregister['githubRepo']) === true) {
-                    $configuration->setGithubRepo($xOpenregister['githubRepo']);
-                }
-                if (isset($xOpenregister['githubBranch']) === true) {
-                    $configuration->setGithubBranch($xOpenregister['githubBranch']);
-                }
-                if (isset($xOpenregister['githubPath']) === true) {
-                    $configuration->setGithubPath($xOpenregister['githubPath']);
+                
+                // Support both nested github structure (new) and flat structure (backward compatibility)
+                if (isset($xOpenregister['github']) === true && is_array($xOpenregister['github'])) {
+                    // New nested structure
+                    if (isset($xOpenregister['github']['repo']) === true) {
+                        $configuration->setGithubRepo($xOpenregister['github']['repo']);
+                    }
+                    if (isset($xOpenregister['github']['branch']) === true) {
+                        $configuration->setGithubBranch($xOpenregister['github']['branch']);
+                    }
+                    if (isset($xOpenregister['github']['path']) === true) {
+                        $configuration->setGithubPath($xOpenregister['github']['path']);
+                    }
+                } else {
+                    // Legacy flat structure (backward compatibility)
+                    if (isset($xOpenregister['githubRepo']) === true) {
+                        $configuration->setGithubRepo($xOpenregister['githubRepo']);
+                    }
+                    if (isset($xOpenregister['githubBranch']) === true) {
+                        $configuration->setGithubBranch($xOpenregister['githubBranch']);
+                    }
+                    if (isset($xOpenregister['githubPath']) === true) {
+                        $configuration->setGithubPath($xOpenregister['githubPath']);
+                    }
                 }
                 
                 // Set owner from parameter if provided (for backward compatibility)
@@ -1874,6 +1880,79 @@ class ConfigurationService
 
 
     /**
+     * Import configuration from a file path.
+     *
+     * This method reads a configuration file from the filesystem and imports it.
+     * It's designed to be used by apps that store their configurations as JSON files
+     * and want OpenRegister to handle the file reading and import process.
+     *
+     * The file path should be relative to the Nextcloud root (e.g., 'apps-extra/opencatalogi/lib/Settings/publication_register.json')
+     * This enables the cron job to later check if the configuration file has been updated.
+     *
+     * @param string $appId    The application ID (e.g. 'opencatalogi')
+     * @param string $filePath The file path relative to Nextcloud root
+     * @param string $version  The version of the configuration
+     * @param bool   $force    Whether to force import regardless of version checks
+     *
+     * @return array Import result with counts and IDs
+     *
+     * @throws Exception If file cannot be read or import fails
+     *
+     * @since 0.2.10
+     */
+    public function importFromFilePath(string $appId, string $filePath, string $version, bool $force = false): array
+    {
+        try {
+            // Resolve the file path relative to Nextcloud root
+            $fullPath = $this->appDataPath . '/../../../' . $filePath;
+            $fullPath = realpath($fullPath);
+            
+            if ($fullPath === false || !file_exists($fullPath)) {
+                throw new Exception("Configuration file not found: {$filePath}");
+            }
+            
+            // Read the file contents
+            $jsonContent = file_get_contents($fullPath);
+            if ($jsonContent === false) {
+                throw new Exception("Failed to read configuration file: {$filePath}");
+            }
+            
+            // Parse JSON
+            $data = json_decode($jsonContent, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Exception("Invalid JSON in configuration file: " . json_last_error_msg());
+            }
+            
+            // Set the sourceUrl in the data if not already set
+            // This allows the cron job to track the file location
+            if (!isset($data['x-openregister'])) {
+                $data['x-openregister'] = [];
+            }
+            if (!isset($data['x-openregister']['sourceUrl'])) {
+                $data['x-openregister']['sourceUrl'] = $filePath;
+            }
+            if (!isset($data['x-openregister']['sourceType'])) {
+                $data['x-openregister']['sourceType'] = 'local';
+            }
+            
+            // Call importFromApp with the parsed data
+            return $this->importFromApp(
+                appId: $appId,
+                data: $data,
+                version: $version,
+                force: $force
+            );
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to import configuration from file: ' . $e->getMessage(), [
+                'appId'    => $appId,
+                'filePath' => $filePath,
+            ]);
+            throw new Exception('Failed to import configuration from file: ' . $e->getMessage());
+        }
+    }
+
+
+    /**
      * Import configuration from an app's JSON data.
      *
      * This is a convenience wrapper method for apps that want to import their
@@ -1909,31 +1988,58 @@ class ConfigurationService
             $data = $this->ensureArrayStructure($data);
 
             // Try to find existing configuration for this app
+            // First check by sourceUrl (unique identifier), then by appId
             $configuration = null;
-            try {
-                $configurations = $this->configurationMapper->findByApp($appId);
-                if (count($configurations) > 0) {
-                    // Use the first (most recent) configuration
-                    $configuration = $configurations[0];
-                    $this->logger->info("Found existing configuration for app {$appId}", [
-                        'configurationId' => $configuration->getId(),
-                        'currentVersion' => $configuration->getVersion()
-                    ]);
+            $xOpenregister = $data['x-openregister'] ?? [];
+            $sourceUrl = $xOpenregister['sourceUrl'] ?? null;
+            
+            // If sourceUrl is provided, try to find by sourceUrl first (ensures uniqueness)
+            if ($sourceUrl !== null) {
+                try {
+                    $configuration = $this->configurationMapper->findBySourceUrl($sourceUrl);
+                    if ($configuration !== null) {
+                        $this->logger->info("Found existing configuration by sourceUrl", [
+                            'sourceUrl'       => $sourceUrl,
+                            'configurationId' => $configuration->getId(),
+                            'currentVersion'  => $configuration->getVersion()
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    // No configuration found by sourceUrl
                 }
-            } catch (\Exception $e) {
-                // No existing configuration found, we'll create a new one
-                $this->logger->info("No existing configuration found for app {$appId}, will create new one");
+            }
+            
+            // If not found by sourceUrl, try by appId
+            if ($configuration === null) {
+                try {
+                    $configurations = $this->configurationMapper->findByApp($appId);
+                    if (count($configurations) > 0) {
+                        // Use the first (most recent) configuration
+                        $configuration = $configurations[0];
+                        $this->logger->info("Found existing configuration for app {$appId}", [
+                            'configurationId' => $configuration->getId(),
+                            'currentVersion' => $configuration->getVersion()
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    // No existing configuration found, we'll create a new one
+                    $this->logger->info("No existing configuration found for app {$appId}, will create new one");
+                }
             }
 
             // Create new configuration if none exists
             if ($configuration === null) {
                 $configuration = new Configuration();
                 
-                // Extract metadata from x-openregister extension or fallback to legacy locations
+                // Extract metadata following OAS standard first, then x-openregister extension
+                $info = $data['info'] ?? [];
                 $xOpenregister = $data['x-openregister'] ?? [];
                 
-                $title = $xOpenregister['title'] ?? $data['info']['title'] ?? $data['title'] ?? "Configuration for {$appId}";
-                $description = $xOpenregister['description'] ?? $data['info']['description'] ?? $data['description'] ?? "Configuration imported by application {$appId}";
+                // Standard OAS properties from info section
+                $title = $info['title'] ?? $xOpenregister['title'] ?? $data['title'] ?? "Configuration for {$appId}";
+                $description = $info['description'] ?? $xOpenregister['description'] ?? $data['description'] ?? "Configuration imported by application {$appId}";
+                
+                // OpenRegister-specific properties
                 $type = $xOpenregister['type'] ?? $data['type'] ?? 'app';
                 
                 $configuration->setTitle($title);
@@ -1941,6 +2047,11 @@ class ConfigurationService
                 $configuration->setType($type);
                 $configuration->setApp($appId);
                 $configuration->setVersion($version);
+                
+                // Mark as local configuration (maintained by the app)
+                $configuration->setIsLocal(true);
+                $configuration->setSyncEnabled(false);
+                $configuration->setSyncStatus('never');
                 
                 // Set additional metadata from x-openregister if available
                 // Note: Internal properties (autoUpdate, notificationGroups, owner, organisation) 
@@ -1951,14 +2062,30 @@ class ConfigurationService
                 if (isset($xOpenregister['sourceUrl']) === true) {
                     $configuration->setSourceUrl($xOpenregister['sourceUrl']);
                 }
-                if (isset($xOpenregister['githubRepo']) === true) {
-                    $configuration->setGithubRepo($xOpenregister['githubRepo']);
-                }
-                if (isset($xOpenregister['githubBranch']) === true) {
-                    $configuration->setGithubBranch($xOpenregister['githubBranch']);
-                }
-                if (isset($xOpenregister['githubPath']) === true) {
-                    $configuration->setGithubPath($xOpenregister['githubPath']);
+                
+                // Support both nested github structure (new) and flat structure (backward compatibility)
+                if (isset($xOpenregister['github']) === true && is_array($xOpenregister['github'])) {
+                    // New nested structure
+                    if (isset($xOpenregister['github']['repo']) === true) {
+                        $configuration->setGithubRepo($xOpenregister['github']['repo']);
+                    }
+                    if (isset($xOpenregister['github']['branch']) === true) {
+                        $configuration->setGithubBranch($xOpenregister['github']['branch']);
+                    }
+                    if (isset($xOpenregister['github']['path']) === true) {
+                        $configuration->setGithubPath($xOpenregister['github']['path']);
+                    }
+                } else {
+                    // Legacy flat structure (backward compatibility)
+                    if (isset($xOpenregister['githubRepo']) === true) {
+                        $configuration->setGithubRepo($xOpenregister['githubRepo']);
+                    }
+                    if (isset($xOpenregister['githubBranch']) === true) {
+                        $configuration->setGithubBranch($xOpenregister['githubBranch']);
+                    }
+                    if (isset($xOpenregister['githubPath']) === true) {
+                        $configuration->setGithubPath($xOpenregister['githubPath']);
+                    }
                 }
                 
                 $configuration->setRegisters([]);
@@ -2013,6 +2140,55 @@ class ConfigurationService
                 $configuration->setSchemas($existingSchemaIds);
                 $configuration->setObjects($existingObjectIds);
                 $configuration->setVersion($version);
+                
+                // Update metadata following OAS standard first, then x-openregister extension
+                // This ensures sourceUrl and other tracking info stays current
+                $info = $data['info'] ?? [];
+                $xOpenregister = $data['x-openregister'] ?? [];
+                
+                // Standard OAS properties from info section
+                if (isset($info['title']) === true) {
+                    $configuration->setTitle($info['title']);
+                } elseif (isset($xOpenregister['title']) === true) {
+                    $configuration->setTitle($xOpenregister['title']);
+                }
+                if (isset($info['description']) === true) {
+                    $configuration->setDescription($info['description']);
+                } elseif (isset($xOpenregister['description']) === true) {
+                    $configuration->setDescription($xOpenregister['description']);
+                }
+                
+                // OpenRegister-specific properties from x-openregister
+                if (isset($xOpenregister['sourceType']) === true) {
+                    $configuration->setSourceType($xOpenregister['sourceType']);
+                }
+                if (isset($xOpenregister['sourceUrl']) === true) {
+                    $configuration->setSourceUrl($xOpenregister['sourceUrl']);
+                }
+                
+                // Update github properties (nested or flat)
+                if (isset($xOpenregister['github']) === true && is_array($xOpenregister['github'])) {
+                    if (isset($xOpenregister['github']['repo']) === true) {
+                        $configuration->setGithubRepo($xOpenregister['github']['repo']);
+                    }
+                    if (isset($xOpenregister['github']['branch']) === true) {
+                        $configuration->setGithubBranch($xOpenregister['github']['branch']);
+                    }
+                    if (isset($xOpenregister['github']['path']) === true) {
+                        $configuration->setGithubPath($xOpenregister['github']['path']);
+                    }
+                } else {
+                    // Legacy flat structure
+                    if (isset($xOpenregister['githubRepo']) === true) {
+                        $configuration->setGithubRepo($xOpenregister['githubRepo']);
+                    }
+                    if (isset($xOpenregister['githubBranch']) === true) {
+                        $configuration->setGithubBranch($xOpenregister['githubBranch']);
+                    }
+                    if (isset($xOpenregister['githubPath']) === true) {
+                        $configuration->setGithubPath($xOpenregister['githubPath']);
+                    }
+                }
                 
                 $this->configurationMapper->update($configuration);
                 

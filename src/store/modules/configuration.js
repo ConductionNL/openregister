@@ -263,5 +263,147 @@ export const useConfigurationStore = defineStore('configuration', {
 				throw error // Pass through the original error message
 			}
 		},
+		async discoverConfigurations(source, query = '') {
+			console.log(`ConfigurationStore: Discovering configurations on ${source}`)
+			const endpoint = `/index.php/apps/openregister/api/configurations/discover/${source}`
+			const params = new URLSearchParams()
+			if (query) params.append('query', query)
+
+			try {
+				const response = await fetch(`${endpoint}?${params}`, {
+					method: 'GET',
+				})
+
+				if (!response.ok) {
+					throw new Error(`HTTP error! status: ${response.status}`)
+				}
+
+				const data = await response.json()
+				return data.items || []
+			} catch (error) {
+				console.error('Error discovering configurations:', error)
+				throw error
+			}
+		},
+		async getBranches(source, params) {
+			console.log(`ConfigurationStore: Fetching branches from ${source}`)
+			const endpoint = `/index.php/apps/openregister/api/configurations/${source}/branches`
+			const query = new URLSearchParams(params)
+
+			try {
+				const response = await fetch(`${endpoint}?${query}`, {
+					method: 'GET',
+				})
+
+				if (!response.ok) {
+					throw new Error(`HTTP error! status: ${response.status}`)
+				}
+
+				const data = await response.json()
+				return data.branches || []
+			} catch (error) {
+				console.error('Error fetching branches:', error)
+				throw error
+			}
+		},
+		async getConfigurationFiles(source, params) {
+			console.log(`ConfigurationStore: Fetching configuration files from ${source}`)
+			const endpoint = `/index.php/apps/openregister/api/configurations/${source}/files`
+			const query = new URLSearchParams(params)
+
+			try {
+				const response = await fetch(`${endpoint}?${query}`, {
+					method: 'GET',
+				})
+
+				if (!response.ok) {
+					throw new Error(`HTTP error! status: ${response.status}`)
+				}
+
+				const data = await response.json()
+				return data.files || []
+			} catch (error) {
+				console.error('Error fetching configuration files:', error)
+				throw error
+			}
+		},
+		async importFromGitHub(params) {
+			console.log('ConfigurationStore: Importing from GitHub')
+			const endpoint = '/index.php/apps/openregister/api/configurations/import/github'
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(params),
+				})
+
+				if (!response.ok) {
+					const errorData = await response.json()
+					throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+				}
+
+				const data = await response.json()
+				await this.refreshConfigurationList()
+				return data
+			} catch (error) {
+				console.error('Error importing from GitHub:', error)
+				throw error
+			}
+		},
+		async importFromGitLab(params) {
+			console.log('ConfigurationStore: Importing from GitLab')
+			const endpoint = '/index.php/apps/openregister/api/configurations/import/gitlab'
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(params),
+				})
+
+				if (!response.ok) {
+					const errorData = await response.json()
+					throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+				}
+
+				const data = await response.json()
+				await this.refreshConfigurationList()
+				return data
+			} catch (error) {
+				console.error('Error importing from GitLab:', error)
+				throw error
+			}
+		},
+		async importFromUrl(params) {
+			console.log('ConfigurationStore: Importing from URL')
+			const endpoint = '/index.php/apps/openregister/api/configurations/import/url'
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(params),
+				})
+
+				if (!response.ok) {
+					const errorData = await response.json()
+					throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+				}
+
+				const data = await response.json()
+				await this.refreshConfigurationList()
+				return data
+			} catch (error) {
+				console.error('Error importing from URL:', error)
+				throw error
+			}
+		},
 	},
 })

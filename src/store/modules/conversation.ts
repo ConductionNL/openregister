@@ -536,11 +536,18 @@ export const useConversationStore = defineStore('conversation', {
 		 * @param {string} content - Message content
 		 * @param {string} conversationUuid - Optional conversation UUID (creates new if not provided)
 		 * @param {string} agentUuid - Optional agent UUID (required if creating new conversation)
+		 * @param selectedViews
+		 * @param selectedTools
+		 * @param ragSettings
+		 * @param ragSettings.includeObjects
+		 * @param ragSettings.includeFiles
+		 * @param ragSettings.numSourcesFiles
+		 * @param ragSettings.numSourcesObjects
 		 * @return {Promise} Promise with response data
 		 */
 		async sendMessage(
-			content: string, 
-			conversationUuid?: string, 
+			content: string,
+			conversationUuid?: string,
 			agentUuid?: string,
 			selectedViews?: string[],
 			selectedTools?: string[],
@@ -554,7 +561,7 @@ export const useConversationStore = defineStore('conversation', {
 			console.log('ConversationStore: Sending message', {
 				views: selectedViews?.length || 0,
 				tools: selectedTools?.length || 0,
-				ragSettings: ragSettings,
+				ragSettings,
 			})
 
 			this.loading = true

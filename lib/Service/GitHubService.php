@@ -1,549 +1,397 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * OpenRegister GitHub Service
  *
- * This file contains the service class for handling GitHub integration
- * in the OpenRegister application, including configuration management and publishing.
+ * This file contains the GitHubService class for interacting with the GitHub API
+ * to discover, fetch, and manage OpenRegister configurations stored in GitHub repositories.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @author    Conduction Development Team <info@conduction.nl>
- * @copyright 2024 Conduction B.V.
- * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author   Conduction Development Team <info@conduction.nl>
+ * @copyright 2025 Conduction B.V.
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version GIT: <git_id>
+ * @version  GIT: <git_id>
  *
- * @link https://www.OpenRegister.app
+ * @link     https://www.OpenRegister.nl
  */
 
 namespace OCA\OpenRegister\Service;
 
-use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenRegister\Db\Configuration;
 use OCP\IConfig;
 use Psr\Log\LoggerInterface;
 
 /**
- * Class GitHubService
+ * Service for GitHub API operations
  *
- * Service for managing GitHub integration and operations.
+ * Provides methods for:
+ * - Searching for OpenRegister configurations across GitHub
+ * - Fetching file contents from repositories
+ * - Listing branches
+ * - Parsing and validating configuration files
  *
  * @package OCA\OpenRegister\Service
  */
 class GitHubService
 {
+    /**
+     * GitHub API base URL
+     */
+    private const API_BASE = 'https://api.github.com';
 
     /**
-     * HTTP Client for making GitHub API requests.
+     * Rate limit for code search (per minute)
+     */
+    private const SEARCH_RATE_LIMIT = 30;
+
+    /**
+     * HTTP client for API requests
      *
-     * @var Client The HTTP client instance.
+     * @var Client
      */
     private Client $client;
 
     /**
-     * Configuration instance for storing user settings.
+     * Configuration service
      *
-     * @var IConfig The configuration instance.
+     * @var IConfig
      */
     private IConfig $config;
 
     /**
-     * Logger instance for logging operations.
+     * Logger instance
      *
-     * @var LoggerInterface The logger instance.
+     * @var LoggerInterface
      */
     private LoggerInterface $logger;
 
     /**
-     * Current user ID.
+     * GitHubService constructor
      *
-     * @var string|null The current user ID.
-     */
-    private ?string $userId = null;
-
-    /**
-     * GitHub API base URL.
-     *
-     * @var string The GitHub API base URL.
-     */
-    private const GITHUB_API_BASE = 'https://api.github.com';
-
-
-    /**
-     * Constructor
-     *
-     * @param Client            $client The HTTP client instance
-     * @param IConfig           $config The configuration instance
-     * @param LoggerInterface   $logger The logger instance
-     * @param string|null       $userId The current user ID
+     * @param Client          $client HTTP client
+     * @param IConfig         $config Configuration service
+     * @param LoggerInterface $logger Logger instance
      */
     public function __construct(
         Client $client,
         IConfig $config,
-        LoggerInterface $logger,
-        ?string $userId = null
+        LoggerInterface $logger
     ) {
         $this->client = $client;
         $this->config = $config;
         $this->logger = $logger;
-        $this->userId = $userId;
-
-    }//end __construct()
-
+    }
 
     /**
-     * Set the current user ID
+     * Search for OpenRegister configurations on GitHub
      *
-     * @param string|null $userId The user ID to set
+     * Uses GitHub Code Search API to find JSON files containing x-openregister property
      *
-     * @return void
+     * @param string $query  Search query (default: searches for x-openregister)
+     * @param int    $page   Page number for pagination
+     * @param int    $perPage Results per page (max 100)
+     *
+     * @return array Search results with repository info and file details
+     * @throws \Exception If API request fails
+     *
+     * @since 0.2.10
      */
-    public function setUserId(?string $userId): void
-    {
-        $this->userId = $userId;
-
-    }//end setUserId()
-
-
-    /**
-     * Store GitHub personal access token for a user
-     *
-     * @param string $token  The GitHub personal access token
-     * @param string $userId Optional user ID (uses current user if not provided)
-     *
-     * @return bool True if token was stored successfully
-     */
-    public function setUserToken(string $token, ?string $userId = null): bool
-    {
-        $userId = $userId ?? $this->userId;
-        
-        if ($userId === null) {
-            $this->logger->error('Cannot store GitHub token: no user ID provided');
-            return false;
-        }
-
-        try {
-            // Store token encrypted in user config
-            $this->config->setUserValue($userId, 'openregister', 'github_token', $token);
-            $this->logger->info("GitHub token stored for user: {$userId}");
-            return true;
-        } catch (Exception $e) {
-            $this->logger->error("Failed to store GitHub token: ".$e->getMessage());
-            return false;
-        }
-
-    }//end setUserToken()
-
-
-    /**
-     * Get GitHub personal access token for a user
-     *
-     * @param string|null $userId Optional user ID (uses current user if not provided)
-     *
-     * @return string|null The GitHub personal access token or null if not found
-     */
-    public function getUserToken(?string $userId = null): ?string
-    {
-        $userId = $userId ?? $this->userId;
-        
-        if ($userId === null) {
-            $this->logger->warning('Cannot retrieve GitHub token: no user ID provided');
-            return null;
-        }
-
-        $token = $this->config->getUserValue($userId, 'openregister', 'github_token', '');
-        
-        return $token !== '' ? $token : null;
-
-    }//end getUserToken()
-
-
-    /**
-     * Validate a GitHub personal access token
-     *
-     * Makes a test API call to verify the token is valid and has required permissions.
-     *
-     * @param string $token The GitHub personal access token to validate
-     *
-     * @return bool True if token is valid
-     * @throws GuzzleException If API request fails
-     */
-    public function validateToken(string $token): bool
+    public function searchConfigurations(string $query = '', int $page = 1, int $perPage = 30): array
     {
         try {
-            $response = $this->client->request('GET', self::GITHUB_API_BASE.'/user', [
-                'headers' => [
-                    'Authorization' => "Bearer {$token}",
-                    'Accept'        => 'application/vnd.github+json',
-                    'X-GitHub-Api-Version' => '2022-11-28',
-                ],
+            // Build search query
+            // Search for files containing "x-openregister" in JSON files
+            $searchQuery = $query ?: 'x-openregister in:file language:json extension:json';
+            
+            $this->logger->info('Searching GitHub for OpenRegister configurations', [
+                'query' => $searchQuery,
+                'page'  => $page,
             ]);
 
-            $statusCode = $response->getStatusCode();
-            
-            if ($statusCode === 200) {
-                $this->logger->info('GitHub token validation successful');
-                return true;
-            }
-
-            $this->logger->warning("GitHub token validation returned unexpected status: {$statusCode}");
-            return false;
-        } catch (GuzzleException $e) {
-            $this->logger->error('GitHub token validation failed: '.$e->getMessage());
-            return false;
-        }
-
-    }//end validateToken()
-
-
-    /**
-     * Search GitHub for configuration files
-     *
-     * Searches GitHub repositories for configuration files matching the query.
-     * Returns a list of matching files with their download URLs.
-     *
-     * @param string      $query Search query
-     * @param string|null $token Optional GitHub token (uses stored token if not provided)
-     *
-     * @return array Array of search results
-     * @throws GuzzleException If API request fails
-     *
-     * @phpstan-return array<array{
-     *     name: string,
-     *     path: string,
-     *     repository: string,
-     *     url: string,
-     *     htmlUrl: string
-     * }>
-     */
-    public function searchConfigurations(string $query, ?string $token = null): array
-    {
-        $token = $token ?? $this->getUserToken();
-        
-        if ($token === null) {
-            $this->logger->warning('No GitHub token available for search');
-            return [];
-        }
-
-        try {
-            // Search for JSON and YAML configuration files
-            $searchQuery = urlencode("{$query} extension:json extension:yaml extension:yml");
-            
-            $response = $this->client->request('GET', self::GITHUB_API_BASE."/search/code?q={$searchQuery}", [
-                'headers' => [
-                    'Authorization' => "Bearer {$token}",
-                    'Accept'        => 'application/vnd.github+json',
-                    'X-GitHub-Api-Version' => '2022-11-28',
+            $response = $this->client->request('GET', self::API_BASE . '/search/code', [
+                'query' => [
+                    'q'        => $searchQuery,
+                    'page'     => $page,
+                    'per_page' => $perPage,
                 ],
+                'headers' => $this->getHeaders(),
             ]);
 
             $data = json_decode($response->getBody()->getContents(), true);
-            
+
+            // Parse and enrich results
             $results = [];
             foreach ($data['items'] ?? [] as $item) {
-                $results[] = [
-                    'name'       => $item['name'],
-                    'path'       => $item['path'],
-                    'repository' => $item['repository']['full_name'],
-                    'url'        => $item['git_url'],
-                    'htmlUrl'    => $item['html_url'],
+                $configData = $this->parseConfigurationFile($item['repository']['owner']['login'], $item['repository']['name'], $item['path']);
+                
+                if ($configData !== null) {
+                    $results[] = [
+                        'repository'  => $item['repository']['full_name'],
+                        'owner'       => $item['repository']['owner']['login'],
+                        'repo'        => $item['repository']['name'],
+                        'path'        => $item['path'],
+                        'url'         => $item['html_url'],
+                        'stars'       => $item['repository']['stargazers_count'] ?? 0,
+                        'description' => $item['repository']['description'] ?? '',
+                        'config'      => [
+                            'title'       => $configData['info']['title'] ?? $configData['x-openregister']['title'] ?? 'Unknown',
+                            'description' => $configData['info']['description'] ?? $configData['x-openregister']['description'] ?? '',
+                            'version'     => $configData['info']['version'] ?? $configData['x-openregister']['version'] ?? '1.0.0',
+                            'app'         => $configData['x-openregister']['app'] ?? null,
+                            'type'        => $configData['x-openregister']['type'] ?? 'manual',
+                        ],
+                    ];
+                }
+            }
+
+            return [
+                'total_count' => $data['total_count'] ?? 0,
+                'items'       => $results,
+                'page'        => $page,
+                'per_page'    => $perPage,
+            ];
+        } catch (GuzzleException $e) {
+            $this->logger->error('GitHub API search failed', [
+                'error' => $e->getMessage(),
+                'query' => $searchQuery ?? '',
+            ]);
+            throw new \Exception('Failed to search GitHub: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get list of branches for a repository
+     *
+     * @param string $owner Repository owner
+     * @param string $repo  Repository name
+     *
+     * @return array List of branches with name and commit info
+     * @throws \Exception If API request fails
+     *
+     * @since 0.2.10
+     */
+    public function getBranches(string $owner, string $repo): array
+    {
+        try {
+            $this->logger->info('Fetching branches from GitHub', [
+                'owner' => $owner,
+                'repo'  => $repo,
+            ]);
+
+            $response = $this->client->request('GET', self::API_BASE . "/repos/{$owner}/{$repo}/branches", [
+                'headers' => $this->getHeaders(),
+            ]);
+
+            $branches = json_decode($response->getBody()->getContents(), true);
+
+            return array_map(function ($branch) {
+                return [
+                    'name'   => $branch['name'],
+                    'commit' => $branch['commit']['sha'] ?? null,
+                    'protected' => $branch['protected'] ?? false,
                 ];
-            }
-
-            $this->logger->info("Found ".count($results)." configuration files on GitHub");
-            return $results;
+            }, $branches);
         } catch (GuzzleException $e) {
-            $this->logger->error('GitHub search failed: '.$e->getMessage());
-            throw $e;
+            $this->logger->error('GitHub API get branches failed', [
+                'error' => $e->getMessage(),
+                'owner' => $owner,
+                'repo'  => $repo,
+            ]);
+            throw new \Exception('Failed to fetch branches: ' . $e->getMessage());
         }
-
-    }//end searchConfigurations()
-
+    }
 
     /**
-     * Push configuration to GitHub repository
+     * Get file content from a repository
      *
-     * Creates or updates a file in a GitHub repository with the configuration content.
-     * Supports both creating new files and updating existing ones.
+     * @param string $owner  Repository owner
+     * @param string $repo   Repository name
+     * @param string $path   File path in repository
+     * @param string $branch Branch name (default: main)
      *
-     * @param Configuration $configuration The configuration to push
-     * @param string        $content       The configuration content (JSON/YAML)
-     * @param string        $message       Commit message
-     * @param string|null   $token         Optional GitHub token (uses stored token if not provided)
+     * @return array Decoded JSON content
+     * @throws \Exception If file cannot be fetched or parsed
      *
-     * @return array Response from GitHub API
-     * @throws Exception If push fails or required fields are missing
-     * @throws GuzzleException If API request fails
-     *
-     * @phpstan-return array{
-     *     success: bool,
-     *     message: string,
-     *     sha?: string,
-     *     url?: string
-     * }
+     * @since 0.2.10
      */
-    public function pushToRepository(Configuration $configuration, string $content, string $message, ?string $token = null): array
+    public function getFileContent(string $owner, string $repo, string $path, string $branch = 'main'): array
     {
-        $token = $token ?? $this->getUserToken();
-        
-        if ($token === null) {
-            throw new Exception('No GitHub token available');
-        }
-
-        // Validate required configuration fields
-        $repo = $configuration->getGithubRepo();
-        if (empty($repo) === true) {
-            throw new Exception('GitHub repository not configured');
-        }
-
-        $branch = $configuration->getGithubBranch() ?? 'main';
-        $path   = $configuration->getGithubPath() ?? 'configuration.json';
-
         try {
-            // First, try to get the current file (to get its SHA for updates)
-            $currentSha = null;
-            try {
-                $getResponse = $this->client->request('GET', self::GITHUB_API_BASE."/repos/{$repo}/contents/{$path}?ref={$branch}", [
-                    'headers' => [
-                        'Authorization' => "Bearer {$token}",
-                        'Accept'        => 'application/vnd.github+json',
-                        'X-GitHub-Api-Version' => '2022-11-28',
-                    ],
+            $this->logger->info('Fetching file from GitHub', [
+                'owner'  => $owner,
+                'repo'   => $repo,
+                'path'   => $path,
+                'branch' => $branch,
+            ]);
+
+            $response = $this->client->request('GET', self::API_BASE . "/repos/{$owner}/{$repo}/contents/{$path}", [
+                'query' => ['ref' => $branch],
+                'headers' => $this->getHeaders(),
+            ]);
+
+            $data = json_decode($response->getBody()->getContents(), true);
+
+            // Decode base64 content
+            if (isset($data['content'])) {
+                $content = base64_decode($data['content']);
+                $json = json_decode($content, true);
+
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    throw new \Exception('Invalid JSON in file: ' . json_last_error_msg());
+                }
+
+                return $json;
+            }
+
+            throw new \Exception('No content found in file');
+        } catch (GuzzleException $e) {
+            $this->logger->error('GitHub API get file content failed', [
+                'error'  => $e->getMessage(),
+                'owner'  => $owner,
+                'repo'   => $repo,
+                'path'   => $path,
+                'branch' => $branch,
+            ]);
+            throw new \Exception('Failed to fetch file: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * List OpenRegister configuration files in a repository
+     *
+     * Searches for files matching naming conventions:
+     * - openregister.json
+     * - *.openregister.json
+     * - Files containing x-openregister property
+     *
+     * @param string $owner  Repository owner
+     * @param string $repo   Repository name
+     * @param string $branch Branch name (default: main)
+     * @param string $path   Directory path to search (default: root)
+     *
+     * @return array List of configuration files with metadata
+     * @throws \Exception If API request fails
+     *
+     * @since 0.2.10
+     */
+    public function listConfigurationFiles(string $owner, string $repo, string $branch = 'main', string $path = ''): array
+    {
+        try {
+            $this->logger->info('Listing configuration files from GitHub', [
+                'owner'  => $owner,
+                'repo'   => $repo,
+                'branch' => $branch,
+                'path'   => $path,
+            ]);
+
+            // Search in the repository for configuration files
+            $searchQuery = "repo:{$owner}/{$repo} filename:openregister.json OR filename:*.openregister.json extension:json";
+            
+            $response = $this->client->request('GET', self::API_BASE . '/search/code', [
+                'query' => [
+                    'q' => $searchQuery,
+                ],
+                'headers' => $this->getHeaders(),
+            ]);
+
+            $data = json_decode($response->getBody()->getContents(), true);
+
+            $files = [];
+            foreach ($data['items'] ?? [] as $item) {
+                $configData = $this->parseConfigurationFile($owner, $repo, $item['path'], $branch);
+                
+                if ($configData !== null) {
+                    $files[] = [
+                        'path'   => $item['path'],
+                        'sha'    => $item['sha'] ?? null,
+                        'url'    => $item['html_url'] ?? null,
+                        'config' => [
+                            'title'       => $configData['info']['title'] ?? $configData['x-openregister']['title'] ?? basename($item['path']),
+                            'description' => $configData['info']['description'] ?? $configData['x-openregister']['description'] ?? '',
+                            'version'     => $configData['info']['version'] ?? $configData['x-openregister']['version'] ?? '1.0.0',
+                            'app'         => $configData['x-openregister']['app'] ?? null,
+                            'type'        => $configData['x-openregister']['type'] ?? 'manual',
+                        ],
+                    ];
+                }
+            }
+
+            return $files;
+        } catch (GuzzleException $e) {
+            $this->logger->error('GitHub API list files failed', [
+                'error'  => $e->getMessage(),
+                'owner'  => $owner,
+                'repo'   => $repo,
+                'branch' => $branch,
+            ]);
+            throw new \Exception('Failed to list configuration files: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Parse and validate a configuration file
+     *
+     * @param string $owner  Repository owner
+     * @param string $repo   Repository name
+     * @param string $path   File path
+     * @param string $branch Branch name (default: main)
+     *
+     * @return array|null Parsed configuration or null if invalid
+     *
+     * @since 0.2.10
+     */
+    private function parseConfigurationFile(string $owner, string $repo, string $path, string $branch = 'main'): ?array
+    {
+        try {
+            $content = $this->getFileContent($owner, $repo, $path, $branch);
+
+            // Validate that it's a valid OpenRegister configuration
+            if (!isset($content['openapi']) || !isset($content['x-openregister'])) {
+                $this->logger->debug('File does not contain required OpenRegister structure', [
+                    'path' => $path,
                 ]);
-
-                $fileData   = json_decode($getResponse->getBody()->getContents(), true);
-                $currentSha = $fileData['sha'] ?? null;
-                $this->logger->info("Found existing file with SHA: {$currentSha}");
-            } catch (GuzzleException $e) {
-                // File doesn't exist, will create new one
-                $this->logger->info("File doesn't exist, will create new one");
+                return null;
             }
 
-            // Prepare the payload
-            $payload = [
-                'message' => $message,
-                'content' => base64_encode($content),
-                'branch'  => $branch,
-            ];
-
-            // Add SHA if updating existing file
-            if ($currentSha !== null) {
-                $payload['sha'] = $currentSha;
-            }
-
-            // Create or update the file
-            $response = $this->client->request('PUT', self::GITHUB_API_BASE."/repos/{$repo}/contents/{$path}", [
-                'headers' => [
-                    'Authorization' => "Bearer {$token}",
-                    'Accept'        => 'application/vnd.github+json',
-                    'X-GitHub-Api-Version' => '2022-11-28',
-                    'Content-Type'  => 'application/json',
-                ],
-                'json' => $payload,
+            return $content;
+        } catch (\Exception $e) {
+            $this->logger->debug('Failed to parse configuration file', [
+                'path'  => $path,
+                'error' => $e->getMessage(),
             ]);
-
-            $responseData = json_decode($response->getBody()->getContents(), true);
-
-            $this->logger->info("Successfully pushed configuration to GitHub: {$repo}/{$path}");
-
-            return [
-                'success' => true,
-                'message' => 'Configuration pushed successfully',
-                'sha'     => $responseData['content']['sha'] ?? null,
-                'url'     => $responseData['content']['html_url'] ?? null,
-            ];
-        } catch (GuzzleException $e) {
-            $this->logger->error('Failed to push to GitHub: '.$e->getMessage());
-            throw new Exception('Failed to push to GitHub: '.$e->getMessage());
+            return null;
         }
-
-    }//end pushToRepository()
-
+    }
 
     /**
-     * Create a pull request with configuration changes
+     * Get HTTP headers for GitHub API requests
      *
-     * Creates a new branch with the configuration and opens a pull request.
-     * Useful for proposing configuration changes without direct commits.
+     * Includes authentication if token is configured
      *
-     * @param Configuration $configuration The configuration to push
-     * @param string        $content       The configuration content (JSON/YAML)
-     * @param string        $title         Pull request title
-     * @param string        $body          Pull request description
-     * @param string|null   $token         Optional GitHub token (uses stored token if not provided)
+     * @return array HTTP headers
      *
-     * @return array Response from GitHub API
-     * @throws Exception If PR creation fails or required fields are missing
-     * @throws GuzzleException If API request fails
-     *
-     * @phpstan-return array{
-     *     success: bool,
-     *     message: string,
-     *     prNumber?: int,
-     *     prUrl?: string
-     * }
+     * @since 0.2.10
      */
-    public function createPullRequest(Configuration $configuration, string $content, string $title, string $body, ?string $token = null): array
+    private function getHeaders(): array
     {
-        $token = $token ?? $this->getUserToken();
-        
-        if ($token === null) {
-            throw new Exception('No GitHub token available');
+        $headers = [
+            'Accept'     => 'application/vnd.github.v3+json',
+            'User-Agent' => 'OpenRegister-Nextcloud',
+        ];
+
+        // Add authentication token if configured
+        $token = $this->config->getSystemValue('github_api_token', '');
+        if (!empty($token)) {
+            $headers['Authorization'] = 'token ' . $token;
         }
 
-        // Validate required configuration fields
-        $repo = $configuration->getGithubRepo();
-        if (empty($repo) === true) {
-            throw new Exception('GitHub repository not configured');
-        }
-
-        $baseBranch = $configuration->getGithubBranch() ?? 'main';
-        $path       = $configuration->getGithubPath() ?? 'configuration.json';
-        $newBranch  = 'openregister-config-'.time();
-
-        try {
-            // Step 1: Get the base branch reference
-            $refResponse = $this->client->request('GET', self::GITHUB_API_BASE."/repos/{$repo}/git/ref/heads/{$baseBranch}", [
-                'headers' => [
-                    'Authorization' => "Bearer {$token}",
-                    'Accept'        => 'application/vnd.github+json',
-                    'X-GitHub-Api-Version' => '2022-11-28',
-                ],
-            ]);
-
-            $refData = json_decode($refResponse->getBody()->getContents(), true);
-            $baseSha = $refData['object']['sha'];
-
-            // Step 2: Create new branch
-            $this->client->request('POST', self::GITHUB_API_BASE."/repos/{$repo}/git/refs", [
-                'headers' => [
-                    'Authorization' => "Bearer {$token}",
-                    'Accept'        => 'application/vnd.github+json',
-                    'X-GitHub-Api-Version' => '2022-11-28',
-                    'Content-Type'  => 'application/json',
-                ],
-                'json' => [
-                    'ref' => "refs/heads/{$newBranch}",
-                    'sha' => $baseSha,
-                ],
-            ]);
-
-            // Step 3: Create/update file in new branch
-            $this->client->request('PUT', self::GITHUB_API_BASE."/repos/{$repo}/contents/{$path}", [
-                'headers' => [
-                    'Authorization' => "Bearer {$token}",
-                    'Accept'        => 'application/vnd.github+json',
-                    'X-GitHub-Api-Version' => '2022-11-28',
-                    'Content-Type'  => 'application/json',
-                ],
-                'json' => [
-                    'message' => $title,
-                    'content' => base64_encode($content),
-                    'branch'  => $newBranch,
-                ],
-            ]);
-
-            // Step 4: Create pull request
-            $prResponse = $this->client->request('POST', self::GITHUB_API_BASE."/repos/{$repo}/pulls", [
-                'headers' => [
-                    'Authorization' => "Bearer {$token}",
-                    'Accept'        => 'application/vnd.github+json',
-                    'X-GitHub-Api-Version' => '2022-11-28',
-                    'Content-Type'  => 'application/json',
-                ],
-                'json' => [
-                    'title' => $title,
-                    'body'  => $body,
-                    'head'  => $newBranch,
-                    'base'  => $baseBranch,
-                ],
-            ]);
-
-            $prData = json_decode($prResponse->getBody()->getContents(), true);
-
-            $this->logger->info("Successfully created pull request #{$prData['number']} on GitHub");
-
-            return [
-                'success'  => true,
-                'message'  => 'Pull request created successfully',
-                'prNumber' => $prData['number'],
-                'prUrl'    => $prData['html_url'],
-            ];
-        } catch (GuzzleException $e) {
-            $this->logger->error('Failed to create pull request: '.$e->getMessage());
-            throw new Exception('Failed to create pull request: '.$e->getMessage());
-        }
-
-    }//end createPullRequest()
-
-
-    /**
-     * Create a new GitHub repository
-     *
-     * Creates a new repository on GitHub for storing configurations.
-     * Useful for users who don't have an existing repository.
-     *
-     * @param string      $name        Repository name
-     * @param string      $description Repository description
-     * @param bool        $private     Whether the repository should be private
-     * @param string|null $token       Optional GitHub token (uses stored token if not provided)
-     *
-     * @return array Response from GitHub API
-     * @throws Exception If repository creation fails
-     * @throws GuzzleException If API request fails
-     *
-     * @phpstan-return array{
-     *     success: bool,
-     *     message: string,
-     *     repoName?: string,
-     *     repoUrl?: string
-     * }
-     */
-    public function createRepository(string $name, string $description, bool $private = false, ?string $token = null): array
-    {
-        $token = $token ?? $this->getUserToken();
-        
-        if ($token === null) {
-            throw new Exception('No GitHub token available');
-        }
-
-        try {
-            $response = $this->client->request('POST', self::GITHUB_API_BASE.'/user/repos', [
-                'headers' => [
-                    'Authorization' => "Bearer {$token}",
-                    'Accept'        => 'application/vnd.github+json',
-                    'X-GitHub-Api-Version' => '2022-11-28',
-                    'Content-Type'  => 'application/json',
-                ],
-                'json' => [
-                    'name'        => $name,
-                    'description' => $description,
-                    'private'     => $private,
-                    'auto_init'   => true, // Initialize with README
-                ],
-            ]);
-
-            $repoData = json_decode($response->getBody()->getContents(), true);
-
-            $this->logger->info("Successfully created GitHub repository: {$repoData['full_name']}");
-
-            return [
-                'success'  => true,
-                'message'  => 'Repository created successfully',
-                'repoName' => $repoData['full_name'],
-                'repoUrl'  => $repoData['html_url'],
-            ];
-        } catch (GuzzleException $e) {
-            $this->logger->error('Failed to create GitHub repository: '.$e->getMessage());
-            throw new Exception('Failed to create GitHub repository: '.$e->getMessage());
-        }
-
-    }//end createRepository()
-
-
-}//end class
-
+        return $headers;
+    }
+}
 
